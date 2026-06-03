@@ -34,13 +34,44 @@ package apoplexy
 
 import soundness.*
 
+import strategies.throwUnsafely
+import logging.silent
+import internetAccess.enabled
+import charEncoders.utf8
+import jsonPrinters.minimal
+import errorDiagnostics.stackTraces
+
 case class Credentials(username: Text, password: Text)
 case class NewPet(name: Text, tag: Optional[Text] = Unset)
 case class Photo(url: Text, width: Optional[Int] = Unset, height: Optional[Int] = Unset)
+case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
+
+// A test `Http.Backend` that captures the request it is given and replies with a
+// canned response, so `.as` can be exercised without any network access.
+class Recorder(canned: () => Http.Response) extends Http.Backend:
+  var lastUrl:    Optional[Text]        = Unset
+  var lastMethod: Optional[Http.Method] = Unset
+  var lastBody:   Optional[IArray[Byte]] = Unset
+
+  def request
+     ( url: Text, method: Http.Method, headers: List[Http.Header], body: () => Stream[Data] )
+     ( using Tactic[ConnectError] )
+  :   Http.Response =
+    lastUrl = url
+    lastMethod = method
+    val chunks = body().to(List)
+    lastBody = if chunks.isEmpty then Unset else chunks.head
+    canned()
 
 object ApiTests extends Suite(m"Api client tests"):
   def run(): Unit =
     val api = Api(cp"/apoplexy/petstore.json")
+
+    val petJson  = t"""{"id": 42, "name": "Milo", "tag": "cat"}"""
+    val petsJson = t"""[{"id": 1, "name": "Ada"}, {"id": 2, "name": "Bea"}]"""
+
+    def ok(body: Text): Http.Response =
+      Http.Response(Http.Ok, contentType = media"application/json")(body)
 
     suite(m"navigation refines the path type"):
       test(m"a literal segment refines Locus"):
@@ -131,4 +162,51 @@ object ApiTests extends Suite(m"Api client tests"):
 
       test(m"omitting a required query parameter is rejected"):
         demilitarize(api.pets(42).photos(height = 20)).length
+      . assert(_ > 0)
+
+    suite(m"sending and decoding responses"):
+      test(m".as[Pet] decodes a single pet"):
+        given Http.Backend = Recorder(() => ok(petJson))
+        api.pets(42).get.as[Pet]
+      . assert(_ == Pet(42, t"Milo", t"cat"))
+
+      test(m".as[List[Pet]] decodes a list of pets"):
+        given Http.Backend = Recorder(() => ok(petsJson))
+        api.pets.get(limit = 10).as[List[Pet]]
+      . assert(_ == List(Pet(1, t"Ada"), Pet(2, t"Bea")))
+
+      test(m".as[Json] returns the raw body"):
+        given Http.Backend = Recorder(() => ok(petJson))
+        api.pets(42).get.as[Json]
+      . assert(_.as[Pet] == Pet(42, t"Milo", t"cat"))
+
+      test(m".as[Http.Response] returns the raw response"):
+        given Http.Backend = Recorder(() => ok(petJson))
+        api.pets(42).get.as[Http.Response].status
+      . assert(_ == Http.Ok)
+
+      test(m"the request URL and method are sent as navigated"):
+        val recorder = Recorder(() => ok(petJson))
+        given Http.Backend = recorder
+        api.pets(42).get.as[Pet]
+        (recorder.lastUrl, recorder.lastMethod)
+      . assert(_ == (t"https://api.example.com/v1/pets/42", Http.Get))
+
+      test(m"a POST sends its body"):
+        val recorder = Recorder(() => ok(petJson))
+        given Http.Backend = recorder
+        api.pets.post(NewPet(t"Milo", tag = t"cat")).as[Pet]
+        (recorder.lastMethod, recorder.lastBody.present)
+      . assert(_ == (Http.Post, true))
+
+      test(m"a non-2xx response raises ApiError"):
+        given Http.Backend = Recorder(() => Http.Response(Http.NotFound)(t"{}"))
+        capture[ApiError](api.pets(42).get.as[Pet]).reason
+      . assert(_ == ApiError.Reason.Status(404))
+
+      test(m"a type that does not conform to the schema is rejected"):
+        demilitarize:
+          given Http.Backend = Recorder(() => ok(petJson))
+          api.pets(42).get.as[Photo]
+        . length
       . assert(_ > 0)

@@ -32,120 +32,53 @@
                                                                                                   */
 package apoplexy
 
-import language.dynamics
-
 import anticipation.*
 import contingency.*
 import distillate.*
-import gossamer.*
-import hellenism.*
-import hieroglyph.*
+import fulminate.*
 import jacinta.*
 import prepositional.*
-import spectacular.*
 import telekinesis.*
 import turbulence.*
-import urticose.*
-import vacuous.*
+import zephyrine.ParseError
 
-import jacinta.postables.jsonIsPostable
+import errorDiagnostics.empty
 
-object Api:
-  // Root constructor: `Api(cp"/spec.json")` reads the spec resource's `Locus`,
-  // validates the spec at compile time, and returns `Api at "/"` carrying the
-  // spec source so navigation macros can re-read it.
-  transparent inline def apply(inline resource: Resource): Any = ${Apoplexy.root('resource)}
+// Interprets an `Http.Response` as a value of `Self`. The instances decide how a
+// response body is read; the `.as[T]` macro performs the compile-time check that
+// `T` conforms to the endpoint's response schema before summoning one.
+trait Conformant extends Typeclass:
+  def read(response: Http.Response): Self
 
-  def make(apiRequest: Api.Request): Api = new Api:
-    def request: Api.Request = apiRequest
+object Conformant:
+  // Raise `ApiError` unless the response status is in the 2xx range.
+  def successful(response: Http.Response)(using Tactic[ApiError]): Unit =
+    if response.status.category != Http.Status.Category.Successful
+    then abort(ApiError(ApiError.Reason.Status(response.status.code)))
 
-  // The runtime send (invoked by the code `.as` emits): assemble the URL (base +
-  // substituted path + query), build the `Http.Request`, and dispatch through the
-  // telekinesis `HttpClient` — which uses whichever `Http.Backend` is in scope.
-  def send(request: Api.Request)
-      ( using Online,
-              HttpEvent is Loggable,
-              Tactic[ConnectError],
-              Tactic[UrlError],
-              CharEncoder,
-              JsonPrinter )
-      (using client: HttpClient onto Origin["http" | "https"])
-  :   Http.Response =
+  // The escape hatch: the raw response, with no status check.
+  given response: Http.Response is Conformant = response => response
 
-    val substituted =
-      request.substitutions.foldLeft(request.path): (path, entry) =>
-        path.sub(t"{${entry(0)}}", entry(1))
+  // The raw 2xx body as JSON.
+  given json: Tactic[ApiError] => Json is Conformant = response =>
+    successful(response)
 
-    val full =
-      if request.query.isEmpty then t"${request.base}$substituted"
-      else
-        val parameters = request.query.map((key, value) => t"${key.urlEncode}=${value.urlEncode}")
-        t"${request.base}$substituted?${parameters.join(t"&")}"
+    whereas:
+      case ParseError(_, _, _) => ApiError(ApiError.Reason.Malformed)
 
-    val url = full.decode[HttpUrl]
+    . mitigate(response.body.stream.read[Json])
 
-    val headers: List[Http.Header] = request.body.lay(Nil): json =>
-      List(Http.Header(t"content-type", summon[Json is Postable].mediaType(json).show))
+  // A 2xx body decoded to any JSON-decodable type. The `.as[T]` inline method
+  // only summons this after the conformance macro has verified `T` matches the
+  // endpoint's response schema. Resolving `value is Decodable in Json` here, at
+  // the concrete call site, lets jacinta pick the collection decoder for
+  // `List[T]` etc. — which a macro-spliced summon over an abstract type cannot.
+  given decodable: [value: Decodable in Json] => Tactic[ApiError] => value is Conformant =
+    response =>
+      successful(response)
 
-    val body: () => Stream[Data] =
-      request.body.lay(() => Stream())(json => () => summon[Json is Postable].stream(json))
+      whereas:
+        case ParseError(_, _, _) => ApiError(ApiError.Reason.Malformed)
+        case JsonError(_)        => ApiError(ApiError.Reason.Malformed)
 
-    val httpRequest =
-      Http.Request(request.method, 1.1, url.host.vouch, url.requestTarget, headers, body)
-
-    client.request(httpRequest, url.origin)
-
-  // The runtime description of a navigated/invoked call. `base` is the server
-  // URL from the spec; `path` is the still-templated path; `substitutions`
-  // binds path templates to concrete values; `query` is the query string;
-  // `body` is an optional JSON request body.
-  case class Request
-    ( method:        Http.Method,
-      base:          Text,
-      path:          Text,
-      substitutions: Map[Text, Text]    = Map(),
-      query:         List[(Text, Text)] = Nil,
-      body:          Optional[Json]     = Unset )
-
-  // The result of invoking an endpoint. Its refined type records `Result` (a
-  // JSON-pointer to the 2xx response schema) and `Form` (the spec source),
-  // which `as` reads to check a target type for conformance against the schema.
-  object Response:
-    def make(apiRequest: Api.Request): Api.Response = new Api.Response:
-      def request: Api.Request = apiRequest
-
-  trait Response:
-    type Result
-    type Form
-    def request: Api.Request
-
-    // First, the macro checks (at compile time) that `value` conforms to the
-    // endpoint's response schema. Then we send and interpret the response in
-    // *inline* code, so `value` is concrete when the `Conformant` (and hence the
-    // jacinta `Decodable`) instance is summoned — which is what lets `List[T]`
-    // and other collections resolve their decoders.
-    transparent inline def as[value]
-        ( using online:     Online,
-                loggable:   HttpEvent is Loggable,
-                connect:    Tactic[ConnectError],
-                urlError:   Tactic[UrlError],
-                encoder:    CharEncoder,
-                printer:    JsonPrinter,
-                client:     HttpClient onto Origin["http" | "https"],
-                conformant: value is Conformant )
-    :   value =
-      Apoplexy.check[value](this)
-      conformant.read:
-        Api.send(request)(using online, loggable, connect, urlError, encoder, printer)(using client)
-
-trait Api extends Dynamic, Locatable:
-  def request: Api.Request
-
-  transparent inline def selectDynamic(field: String): Any =
-    ${Apoplexy.select('this, 'field)}
-
-  transparent inline def applyDynamic(field: String)(inline args: Any*): Any =
-    ${Apoplexy.applied('this, 'field, 'args)}
-
-  transparent inline def applyDynamicNamed(field: String)(inline args: (String, Any)*): Any =
-    ${Apoplexy.appliedNamed('this, 'field, 'args)}
+      . mitigate(response.body.stream.read[Json].as[value])

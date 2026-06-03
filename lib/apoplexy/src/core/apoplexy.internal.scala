@@ -40,11 +40,13 @@ import fulminate.*
 import gigantism.*
 import gossamer.*
 import hellenism.*
+import hieroglyph.*
 import jacinta.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
 import strategies.throwUnsafely
+import charEncoders.utf8
 import telekinesis.*
 import turbulence.*
 import vacuous.*
@@ -454,5 +456,91 @@ object Apoplexy:
 
         shortcut(self, doc, source, newLocus, named, positional)
 
-  def decode[value: Type](self: Expr[Api.Response]): Macro[value] =
-    halt(m"apoplexy: .as is not implemented yet")
+  // --- response decoding ---------------------------------------------------
+
+  private val specJsons: scala.collection.mutable.HashMap[Text, Json] =
+    scala.collection.mutable.HashMap()
+
+  private def specJson(using Quotes)(source: Text): Json =
+    specJsons.synchronized:
+      specJsons.at(source).or:
+        val stream = Optional(getClass.getResourceAsStream(source.s)).or:
+          halt(m"apoplexy: could not read the OpenAPI spec at $source on the classpath")
+
+        val content = scala.io.Source.fromInputStream(stream).mkString.tt
+
+        val json =
+          try content.read[Json]
+          catch case error: Exception => halt(m"apoplexy: the OpenAPI spec at $source is not valid")
+
+        specJsons(source) = json
+        json
+
+  // Resolve the response-schema `JsonSchema` at a JSON-pointer into the spec.
+  private def resolveSchema(using Quotes)(source: Text, pointer: Text): JsonSchema =
+    val segments = pointer.cut(t"/").to(List).drop(1)
+
+    val node =
+      segments.foldLeft(specJson(source)): (node, segment) =>
+        try node(segment.sub(t"~1", t"/").sub(t"~0", t"~"))
+        catch case error: Exception => halt(m"apoplexy: could not resolve the schema at $pointer")
+
+    try node.as[JsonSchema]
+    catch case error: Exception => halt(m"apoplexy: the response schema at $pointer is not valid")
+
+  // Compile-time check that `value` structurally matches the response schema.
+  private def conformsTo(using quotes: Quotes)(value: quotes.reflect.TypeRepr, schema: JsonSchema)
+  :   Unit =
+    import quotes.reflect.*
+
+    def simpleName(repr: TypeRepr): Text = repr.dealias.typeSymbol.name.tt
+
+    def listElement(repr: TypeRepr): Optional[TypeRepr] = repr match
+      case AppliedType(_, List(element)) if repr <:< TypeRepr.of[List[Any]] => element
+      case _                                                                => Unset
+
+    def componentName(pointer: JsonPointer): Text = pointer.encode.cut(t"/").to(List).last
+
+    def ok(value: TypeRepr, schema: JsonSchema): Boolean = schema match
+      case ref: JsonSchema.Ref   => simpleName(value) == componentName(ref.pointer)
+      case _: JsonSchema.String  => value =:= TypeRepr.of[Text]
+      case _: JsonSchema.Integer => value =:= TypeRepr.of[Int]
+      case _: JsonSchema.Number  => value =:= TypeRepr.of[Double]
+      case _: JsonSchema.Boolean => value =:= TypeRepr.of[Boolean]
+      case _: JsonSchema.Object  => value.typeSymbol.flags.is(Flags.Case)
+
+      case array: JsonSchema.Array => listElement(value) match
+        case element: TypeRepr => array.items.lay(true)(ok(element, _))
+        case _                 => false
+
+      case _ => true
+
+    if !ok(value, schema)
+    then halt(m"apoplexy: ${value.show} does not conform to the response schema")
+
+  // The inline entry point called from `Api.Response.as`: a splice cannot appear
+  // as a mid-body statement in an inline method, so the macro is wrapped here.
+  transparent inline def check[value](inline self: Api.Response): Unit =
+    ${conform[value]('self)}
+
+  // Compile-time only: verify `value` conforms to the endpoint's response
+  // schema. The actual send and decode happen in inline code in `Api.Response.as`
+  // (where `value` is concrete), so this returns `Unit`. The raw `Http.Response`
+  // and `Json` targets bypass the schema check.
+  def conform[value: Type](self: Expr[Api.Response]): Macro[Unit] =
+    import quotes.reflect.*
+
+    val valueRepr = TypeRepr.of[value]
+
+    if !(valueRepr =:= TypeRepr.of[Http.Response]) && !(valueRepr =:= TypeRepr.of[Json]) then
+      val members = refinements(self.asTerm.tpe) ++ refinements(self.asTerm.tpe.widen)
+
+      val pointer =
+        members.at(t"Result").lay(halt(m"apoplexy: the response has no schema pointer"))(stringOf(_))
+
+      val source =
+        members.at(t"Form").lay(halt(m"apoplexy: the response has no spec source"))(stringOf(_))
+
+      conformsTo(valueRepr, resolveSchema(source, pointer))
+
+    '{()}
