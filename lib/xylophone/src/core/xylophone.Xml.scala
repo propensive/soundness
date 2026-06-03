@@ -250,10 +250,11 @@ object Xml extends Tag.Container
 
       // Fields marked `@attribute` are read from the element's attributes
       // rather than its child elements, mirroring the encoder.
-      val attributeFields: Map[Text, Set[attribute]] =
-        infer[derivation is Annotated by attribute] match
-          case annotated: Annotated.Fields => annotated.fields
-          case _                           => Map()
+      val attributeFields: Map[Text, Set[attribute]] = fieldAnnotations[derivation, attribute]
+
+      // `@name[Xml]` / bare `@name` renames: field name -> element/attribute
+      // name on the wire. Read back the same way they are written.
+      val renames: Map[Text, Text] = relabelling[derivation, Xml]
 
       val children: scm.HashMap[String, Element] = scm.HashMap.empty
       var i = 0
@@ -269,20 +270,21 @@ object Xml extends Tag.Container
       build: [field] =>
         context =>
           val fieldLabel: Text = wisteria.label[Text]
+          val wireName: Text = renames.at(fieldLabel).or(fieldLabel)
           focus({
             // Each outer `focus` runs *after* the inner one, so we
             // extend `prior` at the root side (`/outer/inner`), not the
             // leaf side that `XPath#element` would use.
             val base = prior.let(_.path).or(XPath())
-            Xml.Focus(base.prepend(fieldLabel, 1))
+            Xml.Focus(base.prepend(wireName, 1))
           }):
             if attributeFields.contains(fieldLabel) then
               // `@attribute` field: decode from the matching attribute as a
               // `TextNode`; a missing attribute falls back to the declared
               // default, else the `Absent` sentinel (raise + continue).
-              element.attributes.at(fieldLabel).lay(default.or(context.decoded(Absent))): text =>
+              element.attributes.at(wireName).lay(default.or(context.decoded(Absent))): text =>
                 context.decoded(TextNode(text))
-            else children.get(fieldLabel.s) match
+            else children.get(wireName.s) match
               case Some(child) => context.decoded(child)
               // Missing field: fall back to the case-class declared
               // default (Wisteria's `default`); if absent, hand the
@@ -351,10 +353,11 @@ object Xml extends Tag.Container
     :   derivation is Encodable in Xml =
 
       value =>
-        val attributeFields: Map[Text, Set[attribute]] =
-          infer[derivation is Annotated by attribute] match
-            case annotated: Annotated.Fields => annotated.fields
-            case _                           => Map()
+        val attributeFields: Map[Text, Set[attribute]] = fieldAnnotations[derivation, attribute]
+
+        // `@name[Xml]` / bare `@name` renames: field name -> element/attribute
+        // name on the wire.
+        val renames: Map[Text, Text] = relabelling[derivation, Xml]
 
         val attributes: scm.ArrayBuffer[(Text, Text)] = scm.ArrayBuffer()
         val children: scm.ArrayBuffer[Node] = scm.ArrayBuffer()
@@ -362,13 +365,14 @@ object Xml extends Tag.Container
         fields(value): [field] =>
           field =>
             val fieldLabel: Text = wisteria.label[Text]
+            val wireName: Text = renames.at(fieldLabel).or(fieldLabel)
             val encoded: Xml = contextual.encode(field)
 
             // `@attribute` fields become attributes carrying the encoded leaf's
             // text; every other field becomes a child element via `wrap`.
             if attributeFields.contains(fieldLabel)
-            then attributes += fieldLabel -> textOf(encoded).or(t"")
-            else children += wrap(fieldLabel, encoded)
+            then attributes += wireName -> textOf(encoded).or(t"")
+            else children += wrap(wireName, encoded)
 
         Element
          (typeName[derivation],
