@@ -43,6 +43,8 @@ case class Outer(inner: Inner) derives CanEqual
 case class NamedOuter(name: Text, inner: Inner) derives CanEqual
 case class WithDefault(name: Text, age: Int = 18) derives CanEqual
 case class WithOption(name: Text, age: Option[Int]) derives CanEqual
+case class YRenamed(@name[Yaml](t"full_name") fullName: Text, @name(t"yob") year: Int)
+derives CanEqual
 
 enum Shape derives CanEqual:
   case Circle(radius: Double)
@@ -340,6 +342,14 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       test(m"Decode a case class with all fields supplied"):
         t"{name: Eve, age: 99}".read[Yaml].as[WithDefault]
       . assert(_ == WithDefault(t"Eve", 99))
+
+      test(m"Decode honours @name[Yaml] and bare @name keys"):
+        t"{full_name: Ann, yob: 1984}".read[Yaml].as[YRenamed]
+      . assert(_ == YRenamed(t"Ann", 1984))
+
+      test(m"@name renames round-trip"):
+        YRenamed(t"Ann", 1984).yaml.as[YRenamed]
+      . assert(_ == YRenamed(t"Ann", 1984))
 
       test(m"Decode a present Option field"):
         t"{name: Frank, age: 40}".read[Yaml].as[WithOption]

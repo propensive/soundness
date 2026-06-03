@@ -39,6 +39,7 @@ import scala.collection as sc
 import scala.collection.mutable as scm
 import scala.compiletime.*
 
+import adversaria.*
 import anticipation.*
 import contingency.*
 import distillate.*
@@ -98,11 +99,13 @@ trait Cbor2:
             if key.isTextString then values.update(key.string, root.value(index))
             index += 1
 
+          // `@name[Cbor]` / bare `@name` renames: field name -> map key, read
+          // back the same way they are written.
+          val renames: Map[Text, Text] = relabelling[derivation, Cbor]
+
           build: [field] =>
             context =>
-              val key: Text = compiletime.summonFrom:
-                case relabelling: CborRelabelling[derivation] => relabelling(label).or(label)
-                case _                                        => label
+              val key: Text = renames.at(label).or(label)
               values.get(key.s) match
                 case Some(value) => context.decoded(new Cbor(value))
                 case None        => default.or(context.decoded(new Cbor(Ast(Unset))))
@@ -123,9 +126,8 @@ trait Cbor2:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Cbor =
 
-      val mapping: Map[Text, Text] = compiletime.summonFrom:
-        case relabelling: CborRelabelling[derivation] => relabelling.relabelling()
-        case _                                        => Map()
+      // `@name[Cbor]` / bare `@name` renames: field name -> map key.
+      val mapping: Map[Text, Text] = relabelling[derivation, Cbor]
 
       value =>
         val labels: scm.ArrayBuffer[Any] = scm.ArrayBuffer()

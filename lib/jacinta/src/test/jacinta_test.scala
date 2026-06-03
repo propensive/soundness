@@ -55,6 +55,8 @@ case class OptionalFoo(x: Optional[Int])
 case class Bar(a: Int, b: Text)
 case class BarOpt(a: Int, b: Optional[Text])
 case class Marked(@memo(t"the count") n: Int)
+case class Renamed(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
+derives CanEqual
 
 enum Choice:
   case First(value: Int)
@@ -230,6 +232,14 @@ object Tests extends Suite(m"Jacinta Tests"):
       test(m"Read case class"):
         t"""{"x": 1, "y": "two"}""".read[Json].as[Foo]
       . assert(_ == Foo(1, t"two"))
+
+      test(m"@name[Json] and bare @name rename keys when encoding"):
+        Renamed(t"Ann", 1984).json.show
+      . assert(_ == t"""{"first_name":"Ann","yob":1984}""")
+
+      test(m"@name renames round-trip"):
+        Renamed(t"Ann", 1984).json.as[Renamed]
+      . assert(_ == Renamed(t"Ann", 1984))
 
       test(m"Extract an absent Option"):
         case class OptFoo(x: Option[Int])

@@ -39,11 +39,10 @@ import strategies.throwUnsafely
 case class Point(x: Int, y: Int) derives CanEqual
 case class Person(name: Text, age: Int) derives CanEqual
 case class Wrapper(values: List[Int], label: Text) derives CanEqual
-case class Renamed(dataFiles: List[Long], indexFiles: List[Long]) derives CanEqual
-
-given CborRelabelling[Renamed] = () => Map(
-  t"dataFiles"  -> t"data_files",
-  t"indexFiles" -> t"index_files")
+case class Renamed
+   (@name[Cbor](t"data_files")  dataFiles:  List[Long],
+    @name[Cbor](t"index_files") indexFiles: List[Long])
+derives CanEqual
 
 enum Shape derives CanEqual:
   case Circle(radius: Double)
@@ -273,7 +272,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
         Stream(bytes).read[Wrapper over Cbor]
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
 
-    suite(m"Relabelling"):
+    suite(m"@name field renaming"):
       test(m"Encode renames fields to wire keys"):
         val cbor = Renamed(List(1L, 2L), List(3L)).cbor
         val ast = Cbor.unseal(cbor)
