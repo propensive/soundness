@@ -32,7 +32,9 @@
                                                                                                   */
 package enigmatic
 
+import anticipation.*
 import fulminate.*
+import vacuous.*
 
 object CryptoError:
   given communicable: Reason is Communicable =
@@ -49,5 +51,6 @@ object CryptoError:
     case InvalidAlgorithm extends Reason(4)
     case IoFailure        extends Reason(5)
 
-case class CryptoError(reason: CryptoError.Reason)(using Diagnostics)
-extends Error(521, reason.number)(m"could not decode the encrypted data because $reason")
+case class CryptoError(reason: CryptoError.Reason, detail: Optional[Text] = Unset)
+  ( using Diagnostics )
+extends Error(521, reason.number)(m"could not decrypt the data because $reason")

@@ -34,10 +34,20 @@ package enigmatic
 
 import language.experimental.captureChecking
 
+import java.security as js
+import javax.crypto as jc
+
 import anticipation.*
 import contingency.*
 import distillate.*
+import gossamer.*
 import prepositional.*
+import vacuous.*
+
+// Encryption is total: a valid transformation is guaranteed by the static types
+// (see `Permits`), so `encrypt` cannot fail. Only `decrypt` can fail at runtime —
+// from a wrong key, corrupted ciphertext, or malformed input — and those JCE
+// failures are surfaced as a `CryptoError`.
 
 extension [value: Encodable in Data](value: value)
   def encrypt[cipher <: Cipher]
@@ -51,7 +61,28 @@ extension (data: Data)
     ( using decryptor: Decryptor[cipher]^, algorithm: cipher & Encryption )
   :   decodable raises CryptoError =
 
-    decodable.decoded(algorithm.decrypt(data, decryptor.bytes))
+    def detail(error: Throwable): Optional[Text] = error.getMessage match
+      case null         => Unset
+      case text: String => text.tt
+
+    val plaintext =
+      try algorithm.decrypt(data, decryptor.bytes) catch
+        case error: jc.AEADBadTagException =>
+          abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
+
+        case error: jc.BadPaddingException =>
+          abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
+
+        case error: jc.IllegalBlockSizeException =>
+          abort(CryptoError(CryptoError.Reason.IllegalBlockSize, detail(error)))
+
+        case error: js.InvalidKeyException =>
+          abort(CryptoError(CryptoError.Reason.InvalidKey, detail(error)))
+
+        case error: js.GeneralSecurityException =>
+          abort(CryptoError(CryptoError.Reason.IoFailure, detail(error)))
+
+    decodable.decoded(plaintext)
 
 extension [cipher <: Cipher](key: PublicKey[cipher])
   def expose[result](block: Encryptor[cipher]^ ?-> result): result =

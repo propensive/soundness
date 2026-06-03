@@ -36,17 +36,17 @@ import anticipation.*
 import gossamer.*
 import prepositional.*
 
-object Aes:
-  given value: [bits <: 128 | 192 | 256: ValueOf, mode, padding]
+object Blowfish:
+  given value: [bits <: 128 | 256 | 448: ValueOf, mode, padding]
   =>  ( blockMode: mode is BlockCipherMode )
   =>  ( blockPadding: padding is BlockCipherPadding )
   =>  ( mode Permits padding )
   =>  ( vector: InitializationVector )
-  =>  ( Aes[bits] over mode against padding ) =
-    Aes(blockMode, blockPadding, vector).asInstanceOf[Aes[bits] over mode against padding]
+  =>  ( Blowfish[bits] over mode against padding ) =
+    Blowfish(blockMode, blockPadding, vector).asInstanceOf[Blowfish[bits] over mode against padding]
 
-class Aes[bits <: 128 | 192 | 256: ValueOf]
+class Blowfish[bits <: 128 | 256 | 448: ValueOf]
   ( mode: BlockCipherMode, padding: BlockCipherPadding, vector: InitializationVector )
-extends BlockCipher(t"AES", mode, padding, vector):
+extends BlockCipher(t"Blowfish", mode, padding, vector):
   type Size = bits
   def keySize: bits = valueOf[bits]
