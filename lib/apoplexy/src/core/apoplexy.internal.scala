@@ -45,11 +45,12 @@ import jacinta.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
-import strategies.throwUnsafely
-import charEncoders.utf8
 import telekinesis.*
 import turbulence.*
 import vacuous.*
+
+import charEncoders.utf8
+import strategies.throwUnsafely
 
 object Apoplexy:
   // --- compile-time spec access -------------------------------------------
@@ -239,6 +240,7 @@ object Apoplexy:
       case Nil =>
         if operation.requestBody.let(_.required.or(false)).or(false)
         then halt(m"apoplexy: $verb $locus requires a request body")
+
         '{Unset}
 
       case List(argExpr) =>
@@ -259,8 +261,10 @@ object Apoplexy:
     val status =
       operation.responses.keys.filter(_.starts(t"2")).to(List).sortBy(_.s).prim.or(t"200")
 
+    val jsonContent = escape(t"application/json")
+
     val pointer =
-      t"#/paths/${escape(locus)}/$verb/responses/$status/content/${escape(t"application/json")}/schema"
+      t"#/paths/${escape(locus)}/$verb/responses/$status/content/$jsonContent/schema"
 
     val mExpr = methodExpr(method)
     val locusExpr = Expr(locus.s)
@@ -273,10 +277,13 @@ object Apoplexy:
 
     responseType.asType.absolve match
       case '[type result <: Api.Response; result] =>
-        '{
+        ' {
             val request =
               $self.request.copy
-               (method = $mExpr, path = $locusExpr.tt, query = $queryExpr, body = $bodyExpr)
+                ( method = $mExpr,
+                  path   = $locusExpr.tt,
+                  query  = $queryExpr,
+                  body   = $bodyExpr )
 
             Api.Response.make(request).asInstanceOf[result]
           }
@@ -350,7 +357,8 @@ object Apoplexy:
         navigate(self, source, doc, locus, name)
 
   private def navigate(using quotes: Quotes)
-    (self: Expr[Api], source: Text, doc: OpenApi, locus: Text, name: Text): Expr[Any] =
+    ( self: Expr[Api], source: Text, doc: OpenApi, locus: Text, name: Text )
+  :   Expr[Any] =
 
     val newLocus = join(locus, name)
     val newSegs = segments(newLocus)
@@ -384,18 +392,23 @@ object Apoplexy:
 
         if !keys.exists(isPrefix(newSegs, _)) then halt(m"apoplexy: no path begins with $newLocus")
 
-        val following =
-          keys.filter { key => isPrefix(newSegs, key) && key.length > newSegs.length }
-           .map(_(newSegs.length))
-           .find(isTemplate)
+        def deeper(key: List[Text]): Boolean =
+          isPrefix(newSegs, key) && key.length > newSegs.length
+
+        val following = keys.filter(deeper).map(_(newSegs.length)).find(isTemplate)
 
         following match
           case Some(template) => fillTemplate(self, source, doc, newLocus, template, positional)
           case None           => shortcut(self, doc, source, newLocus, Nil, positional)
 
   private def fillTemplate(using quotes: Quotes)
-    (self: Expr[Api], source: Text, doc: OpenApi, newLocus: Text, template: Text,
-     positional: List[Expr[Any]]): Expr[Any] =
+    ( self:       Expr[Api],
+      source:     Text,
+      doc:        OpenApi,
+      newLocus:   Text,
+      template:   Text,
+      positional: List[Expr[Any]] )
+  :   Expr[Any] =
 
     import quotes.reflect.*
 
@@ -451,6 +464,7 @@ object Apoplexy:
         val keys = doc.paths.keys.map(segments).to(List)
 
         if !keys.exists(isPrefix(newSegs, _)) then halt(m"apoplexy: no path begins with $newLocus")
+
         if doc.paths.at(newLocus).absent
         then halt(m"apoplexy: $newLocus is not a complete endpoint")
 
@@ -491,6 +505,7 @@ object Apoplexy:
   // Compile-time check that `value` structurally matches the response schema.
   private def conformsTo(using quotes: Quotes)(value: quotes.reflect.TypeRepr, schema: JsonSchema)
   :   Unit =
+
     import quotes.reflect.*
 
     def simpleName(repr: TypeRepr): Text = repr.dealias.typeSymbol.name.tt
@@ -509,9 +524,9 @@ object Apoplexy:
       case _: JsonSchema.Boolean => value =:= TypeRepr.of[Boolean]
       case _: JsonSchema.Object  => value.typeSymbol.flags.is(Flags.Case)
 
-      case array: JsonSchema.Array => listElement(value) match
-        case element: TypeRepr => array.items.lay(true)(ok(element, _))
-        case _                 => false
+      case array: JsonSchema.Array =>
+        listElement(value).lay(false): element =>
+          array.items.lay(true)(ok(element, _))
 
       case _ => true
 
@@ -536,10 +551,10 @@ object Apoplexy:
       val members = refinements(self.asTerm.tpe) ++ refinements(self.asTerm.tpe.widen)
 
       val pointer =
-        members.at(t"Result").lay(halt(m"apoplexy: the response has no schema pointer"))(stringOf(_))
+        members.at(t"Result").lay(halt(m"apoplexy: missing response schema pointer"))(stringOf(_))
 
       val source =
-        members.at(t"Form").lay(halt(m"apoplexy: the response has no spec source"))(stringOf(_))
+        members.at(t"Form").lay(halt(m"apoplexy: missing spec source"))(stringOf(_))
 
       conformsTo(valueRepr, resolveSchema(source, pointer))
 

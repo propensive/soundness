@@ -44,7 +44,6 @@ import jacinta.*
 import prepositional.*
 import spectacular.*
 import telekinesis.*
-import turbulence.*
 import urticose.*
 import vacuous.*
 
@@ -63,13 +62,13 @@ object Api:
   // substituted path + query), build the `Http.Request`, and dispatch through the
   // telekinesis `HttpClient` — which uses whichever `Http.Backend` is in scope.
   def send(request: Api.Request)
-      ( using Online,
-              HttpEvent is Loggable,
-              Tactic[ConnectError],
-              Tactic[UrlError],
-              CharEncoder,
-              JsonPrinter )
-      (using client: HttpClient onto Origin["http" | "https"])
+    ( using Online,
+            HttpEvent is Loggable,
+            Tactic[ConnectError],
+            Tactic[UrlError],
+            CharEncoder,
+            JsonPrinter )
+    ( using client: HttpClient onto Origin["http" | "https"] )
   :   Http.Response =
 
     val substituted =
@@ -79,7 +78,10 @@ object Api:
     val full =
       if request.query.isEmpty then t"${request.base}$substituted"
       else
-        val parameters = request.query.map((key, value) => t"${key.urlEncode}=${value.urlEncode}")
+        val parameters =
+          request.query.map: (key, value) =>
+            t"${key.urlEncode}=${value.urlEncode}"
+
         t"${request.base}$substituted?${parameters.join(t"&")}"
 
     val url = full.decode[HttpUrl]
@@ -87,8 +89,10 @@ object Api:
     val headers: List[Http.Header] = request.body.lay(Nil): json =>
       List(Http.Header(t"content-type", summon[Json is Postable].mediaType(json).show))
 
-    val body: () => Stream[Data] =
-      request.body.lay(() => Stream())(json => () => summon[Json is Postable].stream(json))
+    val empty: () => Stream[Data] = () => Stream()
+
+    val body: () => Stream[Data] = request.body.lay(empty): json =>
+      () => summon[Json is Postable].stream(json)
 
     val httpRequest =
       Http.Request(request.method, 1.1, url.host.vouch, url.requestTarget, headers, body)
@@ -125,16 +129,18 @@ object Api:
     // jacinta `Decodable`) instance is summoned — which is what lets `List[T]`
     // and other collections resolve their decoders.
     transparent inline def as[value]
-        ( using online:     Online,
-                loggable:   HttpEvent is Loggable,
-                connect:    Tactic[ConnectError],
-                urlError:   Tactic[UrlError],
-                encoder:    CharEncoder,
-                printer:    JsonPrinter,
-                client:     HttpClient onto Origin["http" | "https"],
-                conformant: value is Conformant )
+      ( using online:     Online,
+              loggable:   HttpEvent is Loggable,
+              connect:    Tactic[ConnectError],
+              urlError:   Tactic[UrlError],
+              encoder:    CharEncoder,
+              printer:    JsonPrinter,
+              client:     HttpClient onto Origin["http" | "https"],
+              conformant: value is Conformant )
     :   value =
+
       Apoplexy.check[value](this)
+
       conformant.read:
         Api.send(request)(using online, loggable, connect, urlError, encoder, printer)(using client)
 

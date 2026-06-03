@@ -32,7 +32,6 @@
                                                                                                   */
 package apoplexy
 
-import anticipation.*
 import contingency.*
 import distillate.*
 import fulminate.*
@@ -40,16 +39,13 @@ import jacinta.*
 import prepositional.*
 import telekinesis.*
 import turbulence.*
-import zephyrine.ParseError
 
 import errorDiagnostics.empty
+import zephyrine.ParseError
 
 // Interprets an `Http.Response` as a value of `Self`. The instances decide how a
 // response body is read; the `.as[T]` macro performs the compile-time check that
 // `T` conforms to the endpoint's response schema before summoning one.
-trait Conformant extends Typeclass:
-  def read(response: Http.Response): Self
-
 object Conformant:
   // Raise `ApiError` unless the response status is in the 2xx range.
   def successful(response: Http.Response)(using Tactic[ApiError]): Unit =
@@ -82,3 +78,6 @@ object Conformant:
         case JsonError(_)        => ApiError(ApiError.Reason.Malformed)
 
       . mitigate(response.body.stream.read[Json].as[value])
+
+trait Conformant extends Typeclass:
+  def read(response: Http.Response): Self
