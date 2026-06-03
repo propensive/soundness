@@ -308,6 +308,28 @@ object Http:
       . to(Map)
 
 
+  // The swappable transport that physically sends a single request and returns
+  // its response. The URL is fully resolved (passed as `Text`) so non-JVM
+  // backends can parse it themselves; redirects are handled by `HttpClient`, not
+  // the backend. The JVM default (using `java.net.http`) is provided in
+  // `HttpClient`; other platforms or implementations (e.g. HTTP/2) supply their
+  // own given.
+  object Backend:
+    // The default transport. telekinesis is currently JVM-only, so this
+    // delegates to the `java.net.http` client; when the module is split for
+    // other platforms this default moves to a platform-specific source. A
+    // user-supplied `Http.Backend` given in scope overrides it.
+    given default: Backend = HttpClient.javaBackend
+
+  trait Backend:
+    def request
+      ( url:     Text,
+        method:  Http.Method,
+        headers: List[Http.Header],
+        body:    () => Stream[Data] )
+      ( using Tactic[ConnectError] )
+    :   Http.Response
+
   object Response extends Dynamic:
     transparent inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
     :   Prototype | Response =

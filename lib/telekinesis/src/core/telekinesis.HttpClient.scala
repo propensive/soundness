@@ -44,6 +44,7 @@ import scala.util.NotGiven
 import anticipation.*
 import coaxial.*
 import contingency.*
+import gossamer.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
@@ -147,7 +148,25 @@ object HttpClient:
     case 301 | 302 | 303 | 307 | 308 => true
     case _                           => false
 
-  given httpStrict: Tactic[ConnectError] => Online => Redirects.Disabled => HttpClient:
+  // The JVM default transport, using `java.net.http`. Other platforms (e.g.
+  // Scala.js) or implementations (e.g. an HTTP/2 client) supply their own
+  // `Http.Backend` given instead.
+  val javaBackend: Http.Backend = new Http.Backend:
+    def request
+      ( url:     Text,
+        method:  Http.Method,
+        headers: List[Http.Header],
+        body:    () => Stream[Data] )
+      ( using Tactic[ConnectError] )
+    :   Http.Response =
+
+      buildResponse(send(buildJavaRequest(jn.URI.create(url.s).nn, method, headers, body)))
+
+  given httpStrict: Tactic[ConnectError]
+  =>  Online
+  =>  Redirects.Disabled
+  =>  ( backend: Http.Backend )
+  =>  HttpClient:
     type Target = Origin["http" | "https"]
 
     def request(httpRequest: Http.Request, origin: Origin["http" | "https"])
@@ -156,19 +175,13 @@ object HttpClient:
       val url = httpRequest.on(origin)
       Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
 
-      val javaRequest =
-        buildJavaRequest
-          ( jn.URI.create(url.show.s).nn,
-            httpRequest.method,
-            httpRequest.textHeaders,
-            httpRequest.body )
-
-      buildResponse(send(javaRequest))
+      backend.request(url.show, httpRequest.method, httpRequest.textHeaders, httpRequest.body)
 
   given http: Tactic[ConnectError]
   =>  Online
   =>  NotGiven[Redirects.Disabled]
   =>  ( redirection: HttpRedirection )
+  =>  ( backend: Http.Backend )
   =>  HttpClient:
     type Target = Origin["http" | "https"]
 
@@ -181,22 +194,25 @@ object HttpClient:
       def loop(uri: jn.URI, method: Http.Method, bodyFn: () => Stream[Data], remaining: Int)
       :   Http.Response =
 
-        val javaResponse = send(buildJavaRequest(uri, method, httpRequest.textHeaders, bodyFn))
-        val code = javaResponse.statusCode()
+        val response = backend.request(uri.toString.tt, method, httpRequest.textHeaders, bodyFn)
+        val code = response.status.code
 
-        if !isRedirect(code) || remaining <= 0 then buildResponse(javaResponse) else
-          val location = javaResponse.headers.nn.firstValue("Location").nn
+        if !isRedirect(code) || remaining <= 0 then response else
+          response.textHeaders.find(_.key.lower == t"location") match
+            case None =>
+              response
 
-          if !location.isPresent then buildResponse(javaResponse) else
-            try javaResponse.body().nn.close() catch case _: ji.IOException => ()
+            case Some(header) =>
+              // Drain the discarded intermediate body to free its connection.
+              safely(response.body.stream.each { _ => () })
 
-            val nextUri = uri.resolve(jn.URI.create(location.get.nn).nn).nn
-            val nextMethod = redirectMethod(code, method)
+              val nextUri = uri.resolve(jn.URI.create(header.value.s).nn).nn
+              val nextMethod = redirectMethod(code, method)
 
-            val nextBody: () => Stream[Data] =
-              if nextMethod == method then bodyFn else () => Stream()
+              val nextBody: () => Stream[Data] =
+                if nextMethod == method then bodyFn else () => Stream()
 
-            loop(nextUri, nextMethod, nextBody, remaining - 1)
+              loop(nextUri, nextMethod, nextBody, remaining - 1)
 
       loop(jn.URI.create(url.show.s).nn, httpRequest.method, httpRequest.body, redirection.value)
 
