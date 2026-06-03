@@ -188,7 +188,7 @@ object internal:
           Ascii(show.text(value).sysData)
 
         def segment(ascii: Ascii, interval: Interval): Ascii =
-          ascii.slice(interval.start.n0, interval.end.n0)
+          ascii.slice(interval.start.n0, interval.limit.n0)
 
   def ascii(context: Expr[StringContext], parts: Expr[Seq[Ascii]]): Macro[Ascii] =
     val dynamicParts: List[Expr[Ascii]] = parts.absolve match

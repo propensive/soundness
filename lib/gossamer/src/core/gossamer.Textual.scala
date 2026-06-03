@@ -63,7 +63,7 @@ object Textual:
     def segment(text: Text, interval: Interval): Text =
       val limit = length(text)
       val start = interval.start.n0.max(0).min(limit)
-      val end = interval.end.n0.max(start).min(limit)
+      val end = interval.limit.n0.max(start).min(limit)
 
       text.s.substring(start, end).nn.tt
 

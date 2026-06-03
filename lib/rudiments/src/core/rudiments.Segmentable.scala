@@ -38,14 +38,14 @@ import prepositional.*
 
 object Segmentable:
   given indexedSeq: [element] => IndexedSeq[element] is Segmentable =
-    (sequence, interval) => sequence.slice(interval.start.n0, interval.end.n0)
+    (sequence, interval) => sequence.slice(interval.start.n0, interval.limit.n0)
 
   given iarray: [element] => IArray[element] is Segmentable =
-    (iarray, interval) => iarray.slice(interval.start.n0, interval.end.n0)
+    (iarray, interval) => iarray.slice(interval.start.n0, interval.limit.n0)
 
   given text: Text is Segmentable = (text, interval) =>
     val min = interval.start.n0.max(0)
-    val max = interval.end.n0.min(text.s.length)
+    val max = interval.limit.n0.min(text.s.length)
     text.s.substring(min, max).nn.tt
 
 trait Segmentable extends Typeclass:

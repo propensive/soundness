@@ -117,7 +117,7 @@ object Writing:
     def segment(writing: Writing, interval: Interval): Writing =
       val limit = length(writing)
       val s = interval.start.n0.max(0).min(limit)
-      val e = interval.end.n0.max(s).min(limit)
+      val e = interval.limit.n0.max(s).min(limit)
       val slice = writing.text.s.substring(writing.boundaries(s), writing.boundaries(e)).nn
       Writing(slice.tt)
 

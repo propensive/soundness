@@ -50,7 +50,7 @@ extension (inline cardinal: Int)
   inline def upto(ordinal: Ordinal): Interval = (ordinal - cardinal) till ordinal
 
 extension [countable: Countable](value: countable)
-  inline def gamut: Interval = Interval(Prim, (countable.size(value) - 1).z)
+  inline def gamut: Interval = Interval.initial(countable.size(value))
   inline def nil: Boolean = countable.nil(value)
 
 export denominative.internal.{Ordinal, Interval}
