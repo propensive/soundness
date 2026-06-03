@@ -32,6 +32,8 @@
                                                                                                   */
 package profanity
 
+import java.lang as jl
+
 import soundness.*
 
 import classloaders.system
@@ -121,15 +123,19 @@ object Tests extends Suite(m"Profanity Tests"):
 
     def waitFor(text: Text, ms: Int = 5000)(using Tmux, Monitor, WorkingDirectory): Boolean =
       def matches: Boolean = Tmux.screenshot().screen.toList.exists(_.contains(text))
-      var elapsed = 0
+      // Bound the wait against a wall-clock deadline rather than counting fixed
+      // 50 ms iterations: each poll spawns a `tmux` screenshot subprocess whose
+      // latency varies wildly under load, so an iteration count made the real
+      // timeout unbounded (a miss could cost tens of seconds under `make
+      // attest`). A real deadline keeps a missed marker cheap and predictable.
+      val deadline = jl.System.currentTimeMillis + ms
       var found = matches
-      while !found && elapsed < ms do
+      while !found && jl.System.currentTimeMillis < deadline do
         delay(0.05*Second)
-        elapsed += 50
         found = matches
       found
 
-    def runFixture(arg: Text)(input: Tmux ?=> Unit)
+    def runFixture(arg: Text, marker: Text = t"RESULT:")(input: Tmux ?=> Unit)
       ( using Enclave.Tool, Monitor, WorkingDirectory, TemporaryDirectory )
     :   Text =
 
@@ -139,17 +145,20 @@ object Tests extends Suite(m"Profanity Tests"):
         Tmux.enter('\r')
         if !waitFor(t"READY") then panic(m"profanity fixture did not become ready")
         input
-        if !waitFor(t"RESULT:") then waitFor(t"GOT:")
+        // Wait only for the marker this fixture actually prints. The `echo`
+        // fixture emits `GOT:` and never `RESULT:`, so the old `RESULT:`-first
+        // probe always burnt the full timeout before falling back to `GOT:`.
+        waitFor(marker)
         Tmux.screenshot().screen.join(t"\n")
 
     launcher.sandbox:
       // Warmup run to spawn the daemon and avoid timing flake on the first real test
-      runFixture(t"echo"):
+      runFixture(t"echo", marker = t"GOT:"):
         Tmux.enter('a')
 
       suite(m"Line buffering"):
         test(m"a single keypress reaches the app before Enter is pressed"):
-          runFixture(t"echo"):
+          runFixture(t"echo", marker = t"GOT:"):
             Tmux.enter('a')
         . assert(_.contains(t"GOT:a"))
 
