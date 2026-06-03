@@ -32,5 +32,4 @@
                                                                                                   */
 package soundness
 
-export breviloquence.{Cbor, Cbor2, CborPrinter, CborRelabelling, DynamicCborEnabler,
-    dynamicCborAccess}
+export breviloquence.{Cbor, Cbor2, CborPrinter, DynamicCborEnabler, dynamicCborAccess}

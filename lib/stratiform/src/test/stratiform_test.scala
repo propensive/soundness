@@ -36,6 +36,7 @@ import scala.language.unsafeNulls
 
 import java.lang as jl
 
+import adversaria.name
 import anticipation.*
 import contingency.*
 import fulminate.*
@@ -60,6 +61,8 @@ import Tel.given
 
 object Tests extends Suite(m"Stratiform Tests"):
   case class Person(name: Text, age: Int) derives CanEqual
+  case class Renamed(@name[Tel](t"full_name") fullName: Text, @name(t"yob") year: Int)
+  derives CanEqual
   case class PersonAge(name: Text, age: Int) derives CanEqual
 
 
@@ -161,6 +164,14 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"case class round-trip"):
         Tests.Person(t"Alice", 30).encode.as[Tests.Person]
       . assert(_ == Tests.Person(t"Alice", 30))
+
+      test(m"@name[Tel] keyword is used verbatim (overriding camel→kebab)"):
+        t"full_name Ann\nyob 1984\n".read[Tel].as[Tests.Renamed]
+      . assert(_ == Tests.Renamed(t"Ann", 1984))
+
+      test(m"@name renames round-trip"):
+        Tests.Renamed(t"Ann", 1984).encode.as[Tests.Renamed]
+      . assert(_ == Tests.Renamed(t"Ann", 1984))
 
     suite(m"`over Tel` decoder shorthand"):
       test(m"`read[T over Tel]` resolves a value directly from text"):

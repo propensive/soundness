@@ -34,6 +34,7 @@ package stratiform
 
 import scala.compiletime.*
 
+import adversaria.*
 import anticipation.*
 import contextual.*
 import contingency.*
@@ -100,9 +101,14 @@ trait Tel2:
     :   derivation is Decodable in Tel =
       telVal =>
         provide[Tactic[TelError]]:
+          // `@name[Tel]` / bare `@name` renames: field name -> keyword, used
+          // verbatim; an unannotated field falls back to its camel→kebab form.
+          val renames: Map[Text, Text] = relabelling[derivation, Tel]
+
           build: [field] =>
             ctx =>
-              val match0 = telVal.field(Tel.camelToKebab(label.s))
+              val keyword: Text = renames.getOrElse(label, Tel.camelToKebab(label.s))
+              val match0 = telVal.field(keyword)
               if match0.absent then default.or(ctx.decoded(Tel.empty))
               else ctx.decoded(match0.vouch)
 
@@ -118,10 +124,15 @@ trait Tel2:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Tel = value =>
       val compounds = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
+
+      // `@name[Tel]` / bare `@name` renames: field name -> keyword, used
+      // verbatim; an unannotated field falls back to its camel→kebab form.
+      val renames: Map[Text, Text] = relabelling[derivation, Tel]
+
       fields(value): [field] =>
         fieldValue =>
           val encoded = contextual.encode(fieldValue)
-          val keyword = Tel.camelToKebab(label.s)
+          val keyword = renames.getOrElse(label, Tel.camelToKebab(label.s))
           encoded.subtree match
             case c: Tel.Compound =>
               compounds += c.copy(keyword = keyword)

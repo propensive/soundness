@@ -38,6 +38,7 @@ import scala.collection.Factory
 import scala.collection.mutable as scm
 import scala.compiletime.*
 
+import adversaria.*
 import anticipation.*
 import contextual.*
 import contingency.*
@@ -138,16 +139,21 @@ trait Yaml2:
       ( using Foci[Yaml.Focus], Tactic[YamlError] )
     :   derivation =
 
+      // `@name[Yaml]` / bare `@name` renames: field name -> mapping key, read
+      // back the same way they are written.
+      val renames: Map[Text, Text] = relabelling[derivation, Yaml]
+
       build: [field] =>
         context =>
-          val target = label.s
+          val key: Text = renames.at(label).or(label)
+          val target = key.s
           var found: Yaml.Ast | Null = null
           if arr != null then
             val n = arr.length
             var i = 0
             while i < n && found == null do
-              val key = arr(i).asInstanceOf[Yaml.Ast]
-              key.asMatchable match
+              val entryKey = arr(i).asInstanceOf[Yaml.Ast]
+              entryKey.asMatchable match
                 case s: String if s == target => found = arr(i + 1).asInstanceOf[Yaml.Ast]
                 case _                        => ()
               i += 2
@@ -159,7 +165,7 @@ trait Yaml2:
           // lesson 4.
           focus({
             val base = prior.let(_.pointer).or(YamlPath())
-            Yaml.Focus(base.prepend(label))
+            Yaml.Focus(base.prepend(key))
           }):
             if found != null then context.decoded(new Yaml(found))
             // Missing field: try the case-class declared default
@@ -206,15 +212,20 @@ trait Yaml2:
     :   derivation is Encodable in Yaml = value =>
       provide[Foci[Yaml.Focus]]:
         val entries = scm.ArrayBuffer.empty[Any]
+
+        // `@name[Yaml]` / bare `@name` renames: field name -> mapping key.
+        val renames: Map[Text, Text] = relabelling[derivation, Yaml]
+
         fields(value): [field] =>
           field =>
+            val key: Text = renames.at(label).or(label)
             focus({
               val base = prior.let(_.pointer).or(YamlPath())
-              Yaml.Focus(base.prepend(label))
+              Yaml.Focus(base.prepend(key))
             }):
               val encoded = contextual.encode(field).root
               if !(encoded.asInstanceOf[AnyRef] eq Unset) then
-                entries += Yaml.Ast.Str(label).asInstanceOf[Any]
+                entries += Yaml.Ast.Str(key).asInstanceOf[Any]
                 entries += encoded.asInstanceOf[Any]
         Yaml.ast(Yaml.Ast.mapFromAnyArray(entries.toArray))
 

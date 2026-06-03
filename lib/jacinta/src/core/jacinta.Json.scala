@@ -39,6 +39,7 @@ import scala.collection.Factory
 import scala.collection.mutable as scm
 import scala.compiletime.*
 
+import adversaria.*
 import anticipation.*
 import contextual.*
 import contingency.*
@@ -132,8 +133,13 @@ trait Json2:
               values.update(root.objectKey(i), root.objectValue(i))
               i += 1
 
+            // `@name[Json]` / bare `@name` renames: field name -> JSON key, read
+            // back the same way they are written.
+            val renames: Map[Text, Text] = relabelling[derivation, Json]
+
             build: [field] =>
               context =>
+                val key: Text = renames.at(label).or(label)
                 focus({
                   val base = prior.let(_.pointer).or(JsonPointer())
 
@@ -141,11 +147,11 @@ trait Json2:
                     JsonPointer
                       ( base.url,
                         Path[JsonPointer, JsonPointer.type, Tuple]
-                          ( base.path.root, base.path.descent :+ label ) )
+                          ( base.path.root, base.path.descent :+ key ) )
 
                   Json.Focus(newPointer)
                 }):
-                  values.get(label.s) match
+                  values.get(key.s) match
                     case Some(value) => context.decoded(new Json(value))
                     case None        => default.or(context.decoded(new Json(Json.Ast(Unset))))
 
@@ -170,8 +176,12 @@ trait Json2:
           val labels: scm.ArrayBuffer[String] = scm.ArrayBuffer()
           val values: scm.ArrayBuffer[Json.Ast] = scm.ArrayBuffer()
 
+          // `@name[Json]` / bare `@name` renames: field name -> JSON key.
+          val renames: Map[Text, Text] = relabelling[derivation, Json]
+
           fields(value): [field] =>
             field =>
+              val key: Text = renames.at(label).or(label)
               focus({
                 val base = prior.let(_.pointer).or(JsonPointer())
 
@@ -179,13 +189,13 @@ trait Json2:
                   JsonPointer
                     ( base.url,
                       Path[JsonPointer, JsonPointer.type, Tuple]
-                        ( base.path.root, base.path.descent :+ label ) )
+                        ( base.path.root, base.path.descent :+ key ) )
 
                 Json.Focus(newPointer)
               }):
                 contextual.encode(field).root.tap: encoded =>
                   if !encoded.isAbsent then
-                    labels += label.s
+                    labels += key.s
                     values += encoded
 
           Json.ast
