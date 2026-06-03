@@ -84,6 +84,19 @@ extension (tel: Tel)
   :     Data raises TelError raises BintelError =
     Bintel.frame(tel.bintel(schema), signature)
 
+  // Encode this document as a complete §6.2 self-contained BinTEL byte
+  // sequence — magic + signature + embedded schema body + document root.
+  // `schemaDoc` is the schema as a TEL document, parseable under the
+  // tel-schema axiom; its signature and bintel body are embedded so that a
+  // receiver holding only the axiom can decode the result with no external
+  // schema resolution.
+  def bintelSelfContained(schemaDoc: Tel): Data raises TelError raises BintelError =
+    val axiom      = Tels.Axiom.tels
+    val schema     = Tels.Layers.compose(Tels.Reconstructor.fromTel(schemaDoc))
+    val signature  = SchemaSignature.fromDocument(schemaDoc, axiom)
+    val schemaBody = schemaDoc.bintel(axiom)
+    Bintel.frameSelfContained(signature, schemaBody, tel.bintel(schema))
+
 extension (element: Tel.Element)
   // Encode a pre-assigned semantic-model element to BinTEL body bytes.
   // The schema supplies the member layout needed for §7.2 canonical
@@ -100,6 +113,13 @@ object Bintel:
   // `β τ ε λ` — visually evocative of "binary TEL".
   val magic: Data =
     Array[Byte](0xb2.toByte, 0xc4.toByte, 0xb5.toByte, 0xbb.toByte)
+      .asInstanceOf[IArray[Byte]]
+
+  // §6.2 self-contained magic number. In BASE-256 text these are the four
+  // characters `β τ ε μ` — the trailing `μ` (for *monolithic*) distinguishes
+  // self-contained mode from external mode's `βτελ`.
+  val magicSelfContained: Data =
+    Array[Byte](0xb2.toByte, 0xc4.toByte, 0xb5.toByte, 0xbc.toByte)
       .asInstanceOf[IArray[Byte]]
 
   // The result of unframing a complete §6 file: the carried schema
@@ -204,6 +224,91 @@ object Bintel:
   def decodeDocument(data: Data, schema: Tels): Document raises BintelError =
     val framed = unframe(data)
     Document(framed.signature, decode(framed.body, schema))
+
+  // §6.2 self-contained framing: magic_BC, signature (length varint +
+  // bytes), embedded schema body (length varint + bytes), document root.
+  // The signature length MUST be a valid palimpsest length; otherwise
+  // raises `BadSignatureLength`.
+  def frameSelfContained(signature: Data, schemaBody: Data, body: Data)
+  :     Data raises BintelError =
+    if !validSignatureLength(signature)
+    then abort(BintelError(BintelError.Reason.BadSignatureLength))
+
+    val out = new ByteArrayOutputStream(
+        magicSelfContained.length + 20 + signature.length + schemaBody.length + body.length)
+    out.write(magicSelfContained.asInstanceOf[Array[Byte]])
+    writeVarint(out, signature.length.toLong)
+    out.write(signature.asInstanceOf[Array[Byte]])
+    writeVarint(out, schemaBody.length.toLong)
+    out.write(schemaBody.asInstanceOf[Array[Byte]])
+    out.write(body.asInstanceOf[Array[Byte]])
+    out.toByteArray.asInstanceOf[IArray[Byte]]
+
+  // §6.2 decoder. Decode a complete self-contained BinTEL document. The
+  // embedded schema body is decoded under the tel-schema axiom and used to
+  // reconstruct the composed schema (B12 on any failure); its signature is
+  // recomputed and verified byte-for-byte against the carried signature
+  // (B11 on mismatch) before the document root is decoded under the
+  // reconstructed schema.
+  def decodeDocumentSelfContained(data: Data): Document raises BintelError =
+    import errorDiagnostics.empty
+
+    if data.length < magicSelfContained.length
+    then abort(BintelError(BintelError.Reason.BadMagic))
+
+    var i = 0
+    while i < magicSelfContained.length do
+      if data(i) != magicSelfContained(i) then abort(BintelError(BintelError.Reason.BadMagic))
+      i += 1
+
+    def varint(at: Int) =
+      whereas:
+        case _: VarintError => BintelError(BintelError.Reason.VarintError)
+      . mitigate(Varint.decode(data, at))
+
+    val sigLenD   = varint(magicSelfContained.length)
+    val sigStart  = sigLenD.next
+    val sigEnd    = sigStart + sigLenD.value.toInt
+    if sigEnd > data.length then abort(BintelError(BintelError.Reason.UnexpectedEoi))
+    val signature = data.slice(sigStart, sigEnd)
+    if !validSignatureLength(signature)
+    then abort(BintelError(BintelError.Reason.BadSignatureLength))
+
+    val schLenD   = varint(sigEnd)
+    val schStart  = schLenD.next
+    val schEnd    = schStart + schLenD.value.toInt
+    if schEnd > data.length then abort(BintelError(BintelError.Reason.UnexpectedEoi))
+    val schemaBody = data.slice(schStart, schEnd)
+    val docBody    = data.slice(schEnd, data.length)
+
+    val axiom = Tels.Axiom.tels
+
+    // Decode + reconstruct the embedded schema and recompute its signature;
+    // any structural failure here is B12.
+    val (composed, recomputed) =
+      whereas:
+        case _: TelError    => BintelError(BintelError.Reason.EmbeddedSchemaUndecodable)
+        case _: BintelError => BintelError(BintelError.Reason.EmbeddedSchemaUndecodable)
+      . mitigate:
+          val schemaRoot = decode(schemaBody, axiom).asInstanceOf[Tel.Element.Node]
+          val baseTels   = Tels.SemanticReconstructor.fromElement(schemaRoot)
+          val sig        = SchemaSignature.fromElement(schemaRoot, axiom)
+          (Tels.Layers.compose(baseTels), sig)
+
+    if !bytesEqual(recomputed, signature)
+    then abort(BintelError(BintelError.Reason.EmbeddedSignatureMismatch))
+
+    Document(signature, decode(docBody, composed))
+
+  private def bytesEqual(a: Data, b: Data): Boolean =
+    a.length == b.length && {
+      var i = 0
+      var equal = true
+      while i < a.length && equal do
+        if a(i) != b(i) then equal = false
+        i += 1
+      equal
+    }
 
   // §9 textual encoding. The text form is one BASE-256 character per
   // byte of the underlying BinTEL document; round-trips losslessly

@@ -39,7 +39,9 @@ object BintelError:
 
   object Reason:
     given communicable: Reason is Communicable =
-      case BadMagic            => m"the magic number is missing or does not match B2 C4 B5 BB"
+      case BadMagic =>
+        m"the magic number is missing or matches neither B2 C4 B5 BB (external mode) nor B2 C4 B5 BC (self-contained mode)"
+
       case VarintError         => m"a variable-length integer in the stream is invalid"
 
       case BadSignatureLength =>
@@ -53,6 +55,12 @@ object BintelError:
       case UnexpectedEoi       => m"the decoder requested bytes beyond end of input"
       case ReferenceUnresolved => m"a Reference type in the schema does not resolve"
 
+      case EmbeddedSignatureMismatch =>
+        m"the signature recomputed from the embedded schema body does not equal the carried signature"
+
+      case EmbeddedSchemaUndecodable =>
+        m"the embedded schema body does not decode as a valid TEL document under tel-schema"
+
   enum Reason(val number: Int) extends Clarification:
     case BadMagic            extends Reason(1)
     case VarintError         extends Reason(2)
@@ -64,6 +72,8 @@ object BintelError:
     case TrailingBytes       extends Reason(8)
     case UnexpectedEoi       extends Reason(9)
     case ReferenceUnresolved extends Reason(10)
+    case EmbeddedSignatureMismatch extends Reason(11)
+    case EmbeddedSchemaUndecodable extends Reason(12)
 
 case class BintelError(reason: BintelError.Reason)(using Diagnostics)
 extends Error(609, reason.number)(m"the BinTEL stream is invalid because $reason")

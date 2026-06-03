@@ -782,3 +782,164 @@ object Tels:
         j += 1
 
       SelectRef(required, repeatable, reference)
+
+  // Inverse of `Tel.Type.assign` for schema documents: reconstruct a
+  // `Tels` from the type-assigned semantic model produced by decoding an
+  // embedded schema body (BinTEL §6.2) under the hardwired `tel-schema`
+  // axiom. The element children are in §7.2 canonical order — grouped by
+  // member, source order within a member — so iterating them in order
+  // rebuilds each member sequence. The flat keyword indices below mirror
+  // the member layout of `Tels.Axiom` (the schema-of-schemas).
+  object SemanticReconstructor:
+
+    def fromElement(root: Tel.Element): Tels raises TelError =
+      val ch = childrenOf(root)
+      // Document struct: name=0, sigil=1, record=2, scalar=3, select=4,
+      // document=5, layer=6.
+      val name = textAt(ch, 0).or(abort(TelError(Reason.RequiredMemberAbsent)))
+      val sigil: Optional[Char] = textAt(ch, 1) match
+        case t: Text => if t.s.isEmpty then Unset else Optional(t.s.charAt(0))
+        case _       => Unset
+
+      val records  = nodesAt(ch, 2).map(recordFromElement)
+      val scalars  = nodesAt(ch, 3).map(scalarFromElement)
+      val selects  = nodesAt(ch, 4).map(selectFromElement)
+      val document = nodeAt(ch, 5).let(bodyFromElement)
+                       .or(abort(TelError(Reason.RequiredMemberAbsent)))
+      val layers   = nodesAt(ch, 6).map(layerFromElement)
+
+      val builtinScalars = IArray
+       ( ScalarDefinition(t"Identifier", IArray(t"identifier")),
+         ScalarDefinition(t"TypeName",   IArray(t"type-name")),
+         ScalarDefinition(t"Sigil",      IArray(t"sigil")),
+         ScalarDefinition(t"String",     IArray(t"string")) )
+
+      Tels(name, document, layers, sigil, records, builtinScalars ++ scalars, selects)
+
+    private def typeFromText(name: Text): Type =
+      if name == t"Flag" then Flag else Reference(name)
+
+    private def childrenOf(element: Tel.Element): IArray[Tel.Element] = element match
+      case Tel.Element.Node(_, _, c) => c
+      case _                         => IArray.empty[Tel.Element]
+
+    private def kidx(element: Tel.Element): Int = element match
+      case Tel.Element.Node(i, _, _)  => i.or(0)
+      case Tel.Element.Value(i, _, _) => i
+
+    private def textAt(children: IArray[Tel.Element], idx: Int): Optional[Text] =
+      var i = 0
+      var result: Optional[Text] = Unset
+      while i < children.length do
+        children(i) match
+          case Tel.Element.Value(j, _, t) if j == idx => result = t
+          case _                                      => ()
+        i += 1
+      result
+
+    private def nodesAt(children: IArray[Tel.Element], idx: Int): IArray[Tel.Element] =
+      children.filter(kidx(_) == idx)
+
+    private def nodeAt(children: IArray[Tel.Element], idx: Int): Optional[Tel.Element] =
+      val found = nodesAt(children, idx)
+      if found.isEmpty then Unset else found(0)
+
+    private def present(children: IArray[Tel.Element], idx: Int): Boolean =
+      children.exists(kidx(_) == idx)
+
+    // tight if the tightening flag is present, else loose if the loosening
+    // flag is present, else implicit (§20 Polarity).
+    private def polarity(children: IArray[Tel.Element], looseIdx: Int, tightIdx: Int): Polarity =
+      if present(children, tightIdx) then Polarity.Tight
+      else if present(children, looseIdx) then Polarity.Loose
+      else Polarity.Implicit
+
+    private def textsAt(children: IArray[Tel.Element], idx: Int): IArray[Text] =
+      children.collect { case Tel.Element.Value(j, _, t) if j == idx => t }
+
+    // Field meta: keyword=0, type=1, optional=2, required=3, repeatable=4,
+    // irrepeatable=5, default=6, description=7.
+    private def fieldFromElement(element: Tel.Element): Field =
+      val ch = childrenOf(element)
+      Field
+       ( required    = polarity(ch, 2, 3),
+         repeatable  = polarity(ch, 4, 5),
+         keyword     = textAt(ch, 0).or(t""),
+         fieldType   = typeFromText(textAt(ch, 1).or(t"")),
+         default     = textAt(ch, 6),
+         description = textAt(ch, 7) )
+
+    // SelectRef meta: reference=0, optional=1, required=2, repeatable=3,
+    // irrepeatable=4.
+    private def selectRefFromElement(element: Tel.Element): SelectRef =
+      val ch = childrenOf(element)
+      SelectRef(polarity(ch, 1, 2), polarity(ch, 3, 4), textAt(ch, 0).or(t""))
+
+    // Variant meta: keyword=0, type=1, description=2.
+    private def variantFromElement(element: Tel.Element): Variant =
+      val ch = childrenOf(element)
+      Variant(textAt(ch, 0).or(t""), typeFromText(textAt(ch, 1).or(t"")), textAt(ch, 2))
+
+    // Member group (field / select / validate at the given flat indices),
+    // consumed in canonical order so members keep their source sequence.
+    private def membersFromBody
+         (children: IArray[Tel.Element], fieldIdx: Int, selectIdx: Int, validateIdx: Int)
+    :     (IArray[Member], IArray[Text]) =
+      val members    = scala.collection.mutable.ArrayBuffer.empty[Member]
+      val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
+      var i = 0
+      while i < children.length do
+        val e = children(i)
+        kidx(e) match
+          case k if k == fieldIdx    => members += fieldFromElement(e)
+          case k if k == selectIdx   => members += selectRefFromElement(e)
+          case k if k == validateIdx => e match
+            case Tel.Element.Value(_, _, t) => validators += t
+            case _                          => ()
+          case _ => ()
+        i += 1
+      (IArray.from(members), IArray.from(validators))
+
+    // Record meta: name=0, Member{field=1, select=2, validate=3}, description=4.
+    private def recordFromElement(element: Tel.Element): RecordDefinition =
+      val ch = childrenOf(element)
+      val (members, validators) = membersFromBody(ch, 1, 2, 3)
+      RecordDefinition(textAt(ch, 0).or(t""), members, validators, textAt(ch, 4))
+
+    // Scalar meta: name=0, validate=1, description=2.
+    private def scalarFromElement(element: Tel.Element): ScalarDefinition =
+      val ch = childrenOf(element)
+      ScalarDefinition(textAt(ch, 0).or(t""), textsAt(ch, 1), textAt(ch, 2))
+
+    // Select meta: name=0, SelectChild{variant=1, exclude=2, validate=3}, description=4.
+    private def selectFromElement(element: Tel.Element): SelectDefinition =
+      val ch = childrenOf(element)
+      val variants   = scala.collection.mutable.ArrayBuffer.empty[Variant]
+      val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
+      var i = 0
+      while i < ch.length do
+        val e = ch(i)
+        kidx(e) match
+          case 1 => variants += variantFromElement(e)
+          case 3 => e match
+            case Tel.Element.Value(_, _, t) => validators += t
+            case _                          => ()
+          case _ => ()
+        i += 1
+      SelectDefinition(textAt(ch, 0).or(t""), IArray.from(variants), IArray.from(validators),
+          textAt(ch, 4))
+
+    // Body meta: Member{field=0, select=1, validate=2}.
+    private def bodyFromElement(element: Tel.Element): Struct =
+      val (members, validators) = membersFromBody(childrenOf(element), 0, 1, 2)
+      Struct(members, validators)
+
+    // Layer meta: name=0, record=1, scalar=2, select=3, overlay=4.
+    private def layerFromElement(element: Tel.Element): Layer =
+      val ch = childrenOf(element)
+      Layer
+       ( name    = textAt(ch, 0).or(t""),
+         overlay = nodeAt(ch, 4).let(bodyFromElement).or(Struct(IArray.empty, IArray.empty)),
+         records = nodesAt(ch, 1).map(recordFromElement),
+         scalars = nodesAt(ch, 2).map(scalarFromElement),
+         selects = nodesAt(ch, 3).map(selectFromElement) )

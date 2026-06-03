@@ -1601,4 +1601,62 @@ object Tests extends Suite(m"Stratiform Tests"):
         digest.data.toSeq.map(b => f"${b & 0xff}%02x").mkString
       . assert(_ == "626dd8958809da354a2f8bd9f7dac1cfda7f549ecbe047eb0d8c0a17c278d517")
 
+    suite(m"BinTEL §6.2 self-contained mode"):
+      val schemaDoc = """name greeting
+                        |
+                        |document
+                        |  field name Identifier
+                        |""".stripMargin.tt
+      val dataDoc = t"name Alice\n"
+
+      def selfContained(): Data =
+        dataDoc.read[Tel].bintelSelfContained(schemaDoc.read[Tel])
+
+      test(m"self-contained document begins with the B2 C4 B5 BC magic"):
+        selfContained().slice(0, 4).toSeq
+      . assert(_ == Seq[Byte](0xb2.toByte, 0xc4.toByte, 0xb5.toByte, 0xbc.toByte))
+
+      test(m"self-contained text form begins with βτεμ"):
+        Bintel.text(selfContained()).s.substring(0, 4)
+      . assert(_ == "βτεμ")
+
+      test(m"round-trips: decode recovers the single document-root child"):
+        Bintel.decodeDocumentSelfContained(selfContained()).root match
+          case Tel.Element.Node(_, _, children) => children.length
+          case _                                => -1
+      . assert(_ == 1)
+
+      test(m"value hash is mode-independent (external == self-contained)"):
+        val schema = Tels.Layers.compose(Tels.Reconstructor.fromTel(schemaDoc.read[Tel]))
+        val external = dataDoc.read[Tel].bintel(schema)
+        val recovered = Bintel.decodeDocumentSelfContained(selfContained()).root.bintel(schema)
+        recovered.toSeq == external.toSeq
+      . assert(_ == true)
+
+      test(m"signature not matching the embedded schema raises B11"):
+        val axiom      = Tels.Axiom.tels
+        val sd         = schemaDoc.read[Tel]
+        val schemaBody = sd.bintel(axiom)
+        val schema     = Tels.Layers.compose(Tels.Reconstructor.fromTel(sd))
+        val docBody    = dataDoc.read[Tel].bintel(schema)
+        // A valid-length but wrong signature: flip the first body byte and
+        // the trailing cadence byte so the XOR-fold length check still passes.
+        val wrong = SchemaSignature.fromDocument(sd, axiom).asInstanceOf[Array[Byte]].clone()
+        wrong(0) = (wrong(0) ^ 0x01).toByte
+        wrong(wrong.length - 1) = (wrong(wrong.length - 1) ^ 0x01).toByte
+        val bytes = Bintel.frameSelfContained(wrong.asInstanceOf[IArray[Byte]], schemaBody, docBody)
+        capture[BintelError](Bintel.decodeDocumentSelfContained(bytes)).reason
+      . assert(_ == BintelError.Reason.EmbeddedSignatureMismatch)
+
+      test(m"undecodable embedded schema raises B12"):
+        val axiom   = Tels.Axiom.tels
+        val sd      = schemaDoc.read[Tel]
+        val schema  = Tels.Layers.compose(Tels.Reconstructor.fromTel(sd))
+        val docBody = dataDoc.read[Tel].bintel(schema)
+        val sig     = SchemaSignature.fromDocument(sd, axiom)
+        val garbage: Data = IArray[Byte](0x7f, 0x7f, 0x7f, 0x7f)
+        val bytes = Bintel.frameSelfContained(sig, garbage, docBody)
+        capture[BintelError](Bintel.decodeDocumentSelfContained(bytes)).reason
+      . assert(_ == BintelError.Reason.EmbeddedSchemaUndecodable)
+
     RecordsTests()

@@ -64,8 +64,13 @@ object SchemaSignature:
   // BASE-256 encoding.
   def fromDocument(doc: Tel, axiom: Tels)(using cadence: Cadence)
   :   Data raises BintelError raises TelError =
+    fromElement(Tel.Type.assign(doc, axiom).asInstanceOf[Tel.Element.Node], axiom)
 
-    val root = Tel.Type.assign(doc, axiom).asInstanceOf[Tel.Element.Node]
+  // As `fromDocument`, but starting from an already type-assigned schema
+  // root — used when recomputing the signature of an embedded schema body
+  // decoded from a self-contained BinTEL document (§6.2, B11).
+  def fromElement(root: Tel.Element.Node, axiom: Tels)(using cadence: Cadence)
+  :   Data raises BintelError raises TelError =
 
     // Resolve the flat keyword index of "layer" and the Layer
     // RecordDefinition's struct from the axiom. If either is missing
