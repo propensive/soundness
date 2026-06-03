@@ -69,6 +69,26 @@ object Tests extends Suite(m"Adversaria tests"):
       summon[Annotated under Colored].subtypes
     . assert(_ == Map("Rgb" -> Set(unique()), "Hsv" -> Set(number(3))))
 
+    test(m"read a type-parameterized annotation, filtered by type argument"):
+      summon[Marked is Annotated by marker[Person]].fields
+    . assert(_ == Map("one" -> Set(marker[Person](1)), "two" -> Set()))
+
+    test(m"a different type argument selects different annotations"):
+      summon[Marked is Annotated by marker[Company]].fields
+    . assert(_ == Map("one" -> Set(marker[Company](2)), "two" -> Set(marker[Company](3))))
+
+    test(m"fieldAnnotations drops fields without the queried annotation"):
+      fieldAnnotations[Marked, marker[Person]]
+    . assert(_ == Map(t"one" -> Set(marker[Person](1))))
+
+    test(m"a bare annotation (no type argument) is read as the `Any` instance"):
+      fieldAnnotations[Tagged, marker[Any]]
+    . assert(_ == Map(t"bare" -> Set(marker(1)), t"anyArg" -> Set(marker(2))))
+
+    test(m"a bare annotation is not read by a specific type-argument query"):
+      fieldAnnotations[Tagged, marker[Person]]
+    . assert(_ == Map(t"specific" -> Set(marker[Person](3))))
+
     test(m"List map of fields of an object"):
       summon[Example1.type is Dereferenceable to Int].members(Example1)
     . assert(_ == Map(t"foo" -> 42, t"baz" -> 12))

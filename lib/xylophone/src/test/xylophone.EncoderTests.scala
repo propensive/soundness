@@ -44,6 +44,20 @@ import strategies.throwUnsafely
 // `isbn`, defined in `xylophone_test.scala`) is written to / read from the
 // element's attributes, so it round-trips.
 
+// A stand-in for some other serialization format, to check that a `@name`
+// scoped to it is ignored by XML.
+sealed trait OtherFormat
+
+// `title` is renamed for XML only; `author` for all formats (a bare `@name`,
+// which infers `@name[Any]`); `note`'s rename is scoped to another format, so
+// XML must ignore it and use the field name.
+case class Labelled
+   (@name[Xml](t"Title")          title:  Text,
+    @name(t"writer")              author: Text,
+    @name[OtherFormat](t"n")      note:   Text,
+                                  pages:  Int)
+derives CanEqual
+
 object EncoderTests extends Suite(m"Xylophone case-class encoder tests"):
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
@@ -92,3 +106,13 @@ object EncoderTests extends Suite(m"Xylophone case-class encoder tests"):
       test(m"An @attribute field round-trips"):
         Book(t"Dune", t"0441013597").xml.as[Book]
       . assert(_ == Book(t"Dune", t"0441013597"))
+
+    suite(m"@name fields"):
+      test(m"@name[Xml] and bare @name rename elements; other-format @name ignored"):
+        Labelled(t"Dune", t"Herbert", t"sci-fi", 412).xml
+      . assert: xml =>
+          xml == x"""<Labelled><Title>Dune</Title><writer>Herbert</writer><note>sci-fi</note><pages>412</pages></Labelled>"""
+
+      test(m"@name fields round-trip"):
+        Labelled(t"Dune", t"Herbert", t"sci-fi", 412).xml.as[Labelled]
+      . assert(_ == Labelled(t"Dune", t"Herbert", t"sci-fi", 412))

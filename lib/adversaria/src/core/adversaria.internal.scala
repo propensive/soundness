@@ -62,6 +62,23 @@ object internal:
           case New(tpt)                => New(transformTypeTree(tpt)(sym))
           case Literal(constant)       => Literal(constant)
 
+          // A type-parameterized annotation constructor, e.g. `new name[Xml](…)`
+          // — or a bare `new name(…)`, whose type argument is inferred. Both
+          // carry their type arguments in a `TypeApply` around the constructor.
+          // Rebuild the constructor application from the fully-resolved
+          // annotation type, so an inferred argument (no syntactic tree) or one
+          // loaded from another unit's TASTy (no source position) is
+          // resynthesised cleanly and positioned.
+          case Apply(TypeApply(Select(New(_), _), _), arguments) =>
+            tree.tpe match
+              case AppliedType(constructor, typeArguments) =>
+                val newTree = New(TypeTree.ref(constructor.typeSymbol))
+                val typeTrees = typeArguments.map { argument => TypeTree.of(using argument.asType) }
+                Apply(TypeApply(Select(newTree, tree.symbol), typeTrees), transformTerms(arguments)(sym))
+
+              case _ =>
+                throw jl.Error()
+
           case Apply(fn, arguments) =>
             Apply(transformTerm(fn)(sym), transformTerms(arguments)(sym))
 
@@ -85,12 +102,7 @@ object internal:
 
     def matching(annotations: List[Term]): Expr[List[operand]] =
       Expr.ofList:
-        annotations.map(_.asExpr).collect:
-          case '{$annotation: `operand`} => rebuild(annotation.asTerm)
-
-        . compact
-        . map(_.asExprOf[operand])
-        . reverse
+        annotations.filter(_.tpe <:< operand).map(rebuild(_)).compact.map(_.asExprOf[operand]).reverse
 
     if limit =:= TypeRepr.of[Any] then
       val annotations = matching(self.typeSymbol.annotations)

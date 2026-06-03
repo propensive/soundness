@@ -32,8 +32,38 @@
                                                                                                   */
 package adversaria
 
+import scala.compiletime.summonInline
+
+import anticipation.*
 import prepositional.*
+import vacuous.*
 
 extension [entity](entity: entity)
   def membersOfType[value](using deref: entity is Dereferenceable to value): Iterable[value] =
     deref.values(entity)
+
+// Read the `ann`-typed annotations on each field of `self`, keyed by field name,
+// keeping only fields that actually carry one (an `Annotated.Fields` lists every
+// field bearing *any* annotation, with an empty set for the others). Replaces the
+// `match { case _: Annotated.Fields => … case _ => Map() }` boilerplate callers
+// would otherwise repeat.
+inline def fieldAnnotations[self, annotation <: StaticAnnotation]
+:   Map[Text, Set[annotation]] =
+
+  summonInline[self is Annotated by annotation] match
+    case annotated: Annotated.Fields => annotated.fields.filter(_(1).nonEmpty)
+    case _                           => Map()
+
+// The serialization renames for `format`: a map from each `@name`-annotated
+// field's name to its serialized name, with a `@name[format]` overriding a bare
+// `@name` (i.e. `@name[Any]`) default on the same field. Fields without a `@name`
+// are absent (callers fall back to the field's own name). Used by each format's
+// derivation to honour `@name[Xml](t"…")` / `@name(t"…")` in encode and decode.
+inline def relabelling[self, format]: Map[Text, Text] =
+  val general:  Map[Text, Text] =
+    fieldAnnotations[self, name[Any]].map((field, set) => field -> set.head.name)
+
+  val specific: Map[Text, Text] =
+    fieldAnnotations[self, name[format]].map((field, set) => field -> set.head.name)
+
+  general ++ specific

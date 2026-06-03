@@ -30,6 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package adversaria
 
-export adversaria.{Annotated, Dereferenceable, name}
+import anticipation.*
+
+// Renames a case-class field for serialization. The `format` type parameter
+// scopes the rename to one serialization format — e.g. `@name[Xml](t"Book")`
+// only affects XML — while a bare `@name(t"…")` (which infers `@name[Any]`)
+// applies to every format. A derivation reads the format-specific names first,
+// then the `Any` defaults, then falls back to the field's own name; see each
+// format's `relabelling` wiring. Multiple `@name`s with different `format`s may
+// sit on one field.
+case class name[format](name: Text) extends StaticAnnotation
