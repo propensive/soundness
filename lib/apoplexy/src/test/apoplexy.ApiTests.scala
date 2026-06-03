@@ -124,15 +124,15 @@ object ApiTests extends Suite(m"Api client tests"):
 
     suite(m"delete is always explicit"):
       test(m"DELETE /pets/{petId}"):
-        api.pets(42).delete().request.method
+        api.pets(42).delete.request.method
       . assert(_ == Http.Delete)
 
       test(m"a DELETE-only endpoint with a path parameter"):
-        api.sessions(t"abc").delete().request
+        api.sessions(t"abc").delete.request
       . assert(request => request.method == Http.Delete && request.substitutions == Map(t"token" -> t"abc"))
 
       test(m"a DELETE-only endpoint reached by a bare segment"):
-        api.logout.delete().request.method
+        api.logout.delete.request.method
       . assert(_ == Http.Delete)
 
     suite(m"compile-time safety"):
@@ -165,48 +165,60 @@ object ApiTests extends Suite(m"Api client tests"):
       . assert(_ > 0)
 
     suite(m"sending and decoding responses"):
-      test(m".call[Pet] decodes a single pet"):
+      test(m".call[Pet]() decodes a single pet"):
         given Http.Backend = Recorder(() => ok(petJson))
-        api.pets(42).get.call[Pet]
+        api.pets(42).get.call[Pet]()
       . assert(_ == Pet(42, t"Milo", t"cat"))
 
-      test(m".call[List[Pet]] decodes a list of pets"):
+      test(m".call[List[Pet]]() decodes a list of pets"):
         given Http.Backend = Recorder(() => ok(petsJson))
-        api.pets.get(limit = 10).call[List[Pet]]
+        api.pets.get(limit = 10).call[List[Pet]]()
       . assert(_ == List(Pet(1, t"Ada"), Pet(2, t"Bea")))
 
-      test(m".call[Json] returns the raw body"):
+      test(m".call[Json]() returns the raw body"):
         given Http.Backend = Recorder(() => ok(petJson))
-        api.pets(42).get.call[Json]
+        api.pets(42).get.call[Json]()
       . assert(_.as[Pet] == Pet(42, t"Milo", t"cat"))
 
-      test(m".call[Http.Response] returns the raw response"):
+      test(m".call[Http.Response]() returns the raw response"):
         given Http.Backend = Recorder(() => ok(petJson))
-        api.pets(42).get.call[Http.Response].status
+        api.pets(42).get.call[Http.Response]().status
       . assert(_ == Http.Ok)
+
+      test(m".call[Unit]() on a DELETE checks success and discards the body"):
+        given Http.Backend = Recorder(() => Http.Response(Http.NoContent)())
+        api.sessions(t"abc").delete.call[Unit]()
+      . assert(_ == ())
+
+      test(m"a bare .call() defaults to Unit"):
+        val recorder = Recorder(() => Http.Response(Http.NoContent)())
+        given Http.Backend = recorder
+        api.logout.delete.call()
+        recorder.lastMethod
+      . assert(_ == Http.Delete)
 
       test(m"the request URL and method are sent as navigated"):
         val recorder = Recorder(() => ok(petJson))
         given Http.Backend = recorder
-        api.pets(42).get.call[Pet]
+        api.pets(42).get.call[Pet]()
         (recorder.lastUrl, recorder.lastMethod)
       . assert(_ == (t"https://api.example.com/v1/pets/42", Http.Get))
 
       test(m"a POST sends its body"):
         val recorder = Recorder(() => ok(petJson))
         given Http.Backend = recorder
-        api.pets.post(NewPet(t"Milo", tag = t"cat")).call[Pet]
+        api.pets.post(NewPet(t"Milo", tag = t"cat")).call[Pet]()
         (recorder.lastMethod, recorder.lastBody.present)
       . assert(_ == (Http.Post, true))
 
       test(m"a non-2xx response raises ApiError"):
         given Http.Backend = Recorder(() => Http.Response(Http.NotFound)(t"{}"))
-        capture[ApiError](api.pets(42).get.call[Pet]).reason
+        capture[ApiError](api.pets(42).get.call[Pet]()).reason
       . assert(_ == ApiError.Reason.Status(404))
 
       test(m"a type that does not conform to the schema is rejected"):
         demilitarize:
           given Http.Backend = Recorder(() => ok(petJson))
-          api.pets(42).get.call[Photo]
+          api.pets(42).get.call[Photo]()
         . length
       . assert(_ > 0)

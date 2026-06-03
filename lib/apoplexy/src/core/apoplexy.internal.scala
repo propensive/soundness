@@ -547,7 +547,12 @@ object Apoplexy:
 
     val valueRepr = TypeRepr.of[value]
 
-    if !(valueRepr =:= TypeRepr.of[Http.Response]) && !(valueRepr =:= TypeRepr.of[Json]) then
+    val raw =
+      valueRepr =:= TypeRepr.of[Http.Response]
+      || valueRepr =:= TypeRepr.of[Json]
+      || valueRepr =:= TypeRepr.of[Unit]
+
+    if !raw then
       val members = refinements(self.asTerm.tpe) ++ refinements(self.asTerm.tpe.widen)
 
       val pointer =

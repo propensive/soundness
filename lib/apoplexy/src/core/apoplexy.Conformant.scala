@@ -55,6 +55,11 @@ object Conformant:
   // The escape hatch: the raw response, with no status check.
   given response: Http.Response is Conformant = response => response
 
+  // Just check for success and discard the body — for no-content (204) endpoints
+  // such as `delete`, and the default target of a bare `.call()`. Unlike the
+  // `decodable` instance, this never reads the body, so an empty one is fine.
+  given unit: Tactic[ApiError] => Unit is Conformant = response => successful(response)
+
   // The raw 2xx body as JSON.
   given json: Tactic[ApiError] => Json is Conformant = response =>
     successful(response)

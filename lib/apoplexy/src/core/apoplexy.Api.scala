@@ -42,6 +42,7 @@ import hellenism.*
 import hieroglyph.*
 import jacinta.*
 import prepositional.*
+import rudiments.*
 import spectacular.*
 import telekinesis.*
 import urticose.*
@@ -123,13 +124,19 @@ object Api:
     type Form
     def request: Api.Request
 
-    // Performs the request and decodes the response as `value`. First, the macro
-    // checks (at compile time) that `value` conforms to the endpoint's response
-    // schema. Then we send and interpret the response in *inline* code, so `value`
-    // is concrete when the `Conformant` (and hence the jacinta `Decodable`)
-    // instance is summoned — which is what lets `List[T]` and other collections
-    // resolve their decoders.
-    transparent inline def call[value]
+    // Performs the request and decodes the response as `value`. The empty
+    // parentheses mark the side effect. A bare `.call()` leaves `value`
+    // unconstrained, so `value is Defaulting to Unit` resolves it to `Unit`:
+    // perform the request, check for a 2xx status, and discard the body — the
+    // natural default for `delete` and other no-content endpoints.
+    //
+    // First the macro checks (at compile time) that `value` conforms to the
+    // endpoint's response schema. Then we send and interpret the response in
+    // *inline* code, so `value` is concrete when the `Conformant` (and hence the
+    // jacinta `Decodable`) instance is summoned — which is what lets `List[T]` and
+    // other collections resolve their decoders.
+    transparent inline def call[value]()
+      ( using erased default: value is Defaulting to Unit )
       ( using online:     Online,
               loggable:   HttpEvent is Loggable,
               connect:    Tactic[ConnectError],
