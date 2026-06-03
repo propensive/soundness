@@ -42,8 +42,8 @@ import codicils.cancel
 case class Worker(name: Text, age: Int)
 case class Firm(name: Text, ceo: Worker)
 
-case class Book(title: Text, @attribute isbn: Text)
-case class Bibliography(author: Text, book: Book)
+case class Book(title: Text, @attribute isbn: Text) derives CanEqual
+case class Bibliography(author: Text, book: Book) derives CanEqual
 
 enum ColorVal:
   case Rgb(red: Int, green: Int, blue: Int)
@@ -949,3 +949,4 @@ object Tests extends Suite(m"Xylophone tests"):
 
     PositionTests()
     DecoderTests()
+    EncoderTests()

@@ -41,6 +41,7 @@ import scala.collection.mutable as scm
 import scala.compiletime.*
 import scala.quoted.*
 
+import adversaria.*
 import anticipation.*
 import contextual.*
 import contingency.*
@@ -194,6 +195,18 @@ object Xml extends Tag.Container
     case given Reflection[`value`] =>
       DecodableDerivation.derived
 
+  // Single entry-point for resolving `Encodable in Xml`, the exact mirror of
+  // `decodable` above. Prefers a textual encoder when one exists (so any
+  // `Encodable in Text` value — `Text`, `Int`, `Long`, user identifiers, … —
+  // becomes a leaf `TextNode`); otherwise falls back to Wisteria-derived
+  // case-class / sealed-trait encoding via `EncodableDerivation`.
+  inline given encodable: [value] => value is Encodable in Xml = summonFrom:
+    case given (`value` is Encodable in Text) =>
+      value => TextNode(value.encode)
+
+    case given Reflection[`value`] =>
+      EncodableDerivation.derived
+
   // Wisteria-based derivation for case classes (conjunction) and sealed
   // traits / enums (disjunction). Each field is decoded from the first
   // child element whose label matches the field name; sum-type variants
@@ -235,6 +248,13 @@ object Xml extends Tag.Container
       ( using Foci[Xml.Focus], Tactic[XmlError] )
     :   derivation =
 
+      // Fields marked `@attribute` are read from the element's attributes
+      // rather than its child elements, mirroring the encoder.
+      val attributeFields: Map[Text, Set[attribute]] =
+        infer[derivation is Annotated by attribute] match
+          case annotated: Annotated.Fields => annotated.fields
+          case _                           => Map()
+
       val children: scm.HashMap[String, Element] = scm.HashMap.empty
       var i = 0
       while i < element.children.length do
@@ -256,7 +276,13 @@ object Xml extends Tag.Container
             val base = prior.let(_.path).or(XPath())
             Xml.Focus(base.prepend(fieldLabel, 1))
           }):
-            children.get(fieldLabel.s) match
+            if attributeFields.contains(fieldLabel) then
+              // `@attribute` field: decode from the matching attribute as a
+              // `TextNode`; a missing attribute falls back to the declared
+              // default, else the `Absent` sentinel (raise + continue).
+              element.attributes.at(fieldLabel).lay(default.or(context.decoded(Absent))): text =>
+                context.decoded(TextNode(text))
+            else children.get(fieldLabel.s) match
               case Some(child) => context.decoded(child)
               // Missing field: fall back to the case-class declared
               // default (Wisteria's `default`); if absent, hand the
@@ -295,6 +321,66 @@ object Xml extends Tag.Container
                       raise(XmlError()) yet derivationDefault()
                     case _ =>
                       abort(XmlError())
+
+  // Wisteria-based encoder, the mirror of `DecodableDerivation`. A product
+  // encodes to an `Element` labelled with the type's short name (`typeName`);
+  // each field becomes a child `Element` labelled with the field name via
+  // `wrap` — the exact inverse of the decoder reading a field from the child
+  // element of that name. A sum encodes its selected variant and relabels the
+  // resulting element to the variant name, so it round-trips through the
+  // `Discriminable`-by-label default that `disjunction` reads back.
+  //
+  // A field marked `@attribute` is written to the element's attributes rather
+  // than as a child element, and read back the same way by the decoder, so it
+  // round-trips. The annotation is read at derivation time via adversaria's
+  // `Annotated by attribute`.
+  //
+  // As in `DecodableDerivation`, `wisteria.label[Text]` is used in place of the
+  // bare `label` identifier, which `Tag.Container`'s `label = "xml"` shadows.
+  object EncodableDerivation extends Derivable[Encodable in Xml]:
+
+    // Relabel an encoded field value to its field name and guarantee an
+    // `Element` wrapper, so it decodes back from `<fieldName>…</fieldName>`.
+    private def wrap(fieldName: Text, encoded: Xml): Node = encoded match
+      case Element(_, attributes, children)           => Element(fieldName, attributes, children)
+      case Fragment(Element(_, attributes, children)) => Element(fieldName, attributes, children)
+      case Fragment(nodes*)                           => Element(fieldName, Attributes.empty, nodes.toArray.immutable(using Unsafe))
+      case node: Node                                 => Element(fieldName, Attributes.empty, IArray(node))
+
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   derivation is Encodable in Xml =
+
+      value =>
+        val attributeFields: Map[Text, Set[attribute]] =
+          infer[derivation is Annotated by attribute] match
+            case annotated: Annotated.Fields => annotated.fields
+            case _                           => Map()
+
+        val attributes: scm.ArrayBuffer[(Text, Text)] = scm.ArrayBuffer()
+        val children: scm.ArrayBuffer[Node] = scm.ArrayBuffer()
+
+        fields(value): [field] =>
+          field =>
+            val fieldLabel: Text = wisteria.label[Text]
+            val encoded: Xml = contextual.encode(field)
+
+            // `@attribute` fields become attributes carrying the encoded leaf's
+            // text; every other field becomes a child element via `wrap`.
+            if attributeFields.contains(fieldLabel)
+            then attributes += fieldLabel -> textOf(encoded).or(t"")
+            else children += wrap(fieldLabel, encoded)
+
+        Element
+         (typeName[derivation],
+          Attributes(attributes.toSeq*),
+          children.toArray.immutable(using Unsafe))
+
+    inline def disjunction[derivation: SumReflection]: derivation is Encodable in Xml =
+      value =>
+        val discriminable = infer[derivation is Discriminable in Xml]
+
+        variant(value): [variant <: derivation] =>
+          value => discriminable.rewrite(wisteria.label[Text], contextual.encode(value))
 
   case class attribute() extends StaticAnnotation
 
@@ -658,7 +744,7 @@ object Xml extends Tag.Container
   given comment: [content <: Label] =>  Conversion[Comment, Xml of content] =
     _.of[content]
 
-  given encodable: [value: Encodable in Xml] => Conversion[value, Xml] =
+  given xmlConversion: [value: Encodable in Xml] => Conversion[value, Xml] =
     value.encoded(_)
 
   given sequences: [nodal, xml <: Xml] => (conversion: Conversion[nodal, xml])
