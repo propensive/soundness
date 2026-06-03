@@ -38,6 +38,8 @@ import strategies.throwUnsafely
 import logging.silent
 import internetAccess.enabled
 import charEncoders.utf8
+import charDecoders.utf8
+import textSanitizers.skip
 import jsonPrinters.minimal
 import errorDiagnostics.stackTraces
 
@@ -45,13 +47,15 @@ case class Credentials(username: Text, password: Text)
 case class NewPet(name: Text, tag: Optional[Text] = Unset)
 case class Photo(url: Text, width: Optional[Int] = Unset, height: Optional[Int] = Unset)
 case class Pet(id: Int, name: Text, tag: Optional[Text] = Unset)
+case class Note(id: Int, text: Text)
 
 // A test `Http.Backend` that captures the request it is given and replies with a
-// canned response, so `.as` can be exercised without any network access.
+// canned response, so `.call` can be exercised without any network access.
 class Recorder(canned: () => Http.Response) extends Http.Backend:
-  var lastUrl:    Optional[Text]        = Unset
-  var lastMethod: Optional[Http.Method] = Unset
-  var lastBody:   Optional[IArray[Byte]] = Unset
+  var lastUrl:     Optional[Text]        = Unset
+  var lastMethod:  Optional[Http.Method] = Unset
+  var lastBody:    Optional[IArray[Byte]] = Unset
+  var lastHeaders: List[Http.Header]     = Nil
 
   def request
      ( url: Text, method: Http.Method, headers: List[Http.Header], body: () => Stream[Data] )
@@ -59,12 +63,15 @@ class Recorder(canned: () => Http.Response) extends Http.Backend:
   :   Http.Response =
     lastUrl = url
     lastMethod = method
+    lastHeaders = headers
     val chunks = body().to(List)
     lastBody = if chunks.isEmpty then Unset else chunks.head
     canned()
 
 object ApiTests extends Suite(m"Api client tests"):
   def run(): Unit =
+    given XmlSchema = XmlSchema.Freeform
+
     val api = Api(cp"/apoplexy/petstore.json")
 
     val petJson  = t"""{"id": 42, "name": "Milo", "tag": "cat"}"""
@@ -99,11 +106,11 @@ object ApiTests extends Suite(m"Api client tests"):
 
       test(m"POST sole method with a positional body"):
         api.login(Credentials(t"jon", t"pw")).request
-      . assert(request => request.method == Http.Post && request.path == t"/login" && request.body.present)
+      . assert(request => request.method == Http.Post && request.path == t"/login" && (request.body != Api.Body.Empty))
 
       test(m"PUT sole method with a positional body (verb omitted)"):
         api.profile(NewPet(t"Rex")).request
-      . assert(request => request.method == Http.Put && request.path == t"/profile" && request.body.present)
+      . assert(request => request.method == Http.Put && request.path == t"/profile" && (request.body != Api.Body.Empty))
 
       test(m"the verb is still explicitly usable on a sole-method endpoint"):
         api.profile.put(NewPet(t"Rex")).request.method
@@ -120,7 +127,7 @@ object ApiTests extends Suite(m"Api client tests"):
 
       test(m"POST /pets via explicit .post with a body"):
         api.pets.post(NewPet(t"Milo", tag = t"cat")).request
-      . assert(request => request.method == Http.Post && request.body.present)
+      . assert(request => request.method == Http.Post && (request.body != Api.Body.Empty))
 
       test(m"GET /pets/{petId} via explicit .get with no arguments"):
         api.pets(42).get.request
@@ -230,3 +237,38 @@ object ApiTests extends Suite(m"Api client tests"):
           api.pets(42).get.call[Photo]()
         . length
       . assert(_ > 0)
+
+    suite(m"the spec decides the wire format (Api over Json / over Xml)"):
+      val xmlApi = Api(cp"/apoplexy/xmlstore.json")
+      val noteXml = t"<Note><id>1</id><text>hello</text></Note>"
+
+      def okXml(body: Text): Http.Response =
+        Http.Response(Http.Ok, contentType = media"application/xml")(body)
+
+      test(m"a uniform JSON spec is tracked as `Api over Json`"):
+        val typed: Api over Json = api
+        typed.request.path
+      . assert(_ == t"/")
+
+      test(m"a uniform XML spec is tracked as `Api over Xml`"):
+        val typed: Api over Xml = xmlApi
+        typed.request.path
+      . assert(_ == t"/")
+
+      test(m"an XML endpoint's response is `Api.Response over Xml`"):
+        given Http.Backend = Recorder(() => okXml(noteXml))
+        val typed: Api.Response over Xml = xmlApi.notes(1).get
+        typed.request.method
+      . assert(_ == Http.Get)
+
+      test(m".call[Note]() decodes an XML response body"):
+        given Http.Backend = Recorder(() => okXml(noteXml))
+        xmlApi.notes(1).get.call[Note]()
+      . assert(_ == Note(1, t"hello"))
+
+      test(m"an XML GET sends `Accept: application/xml`"):
+        val recorder = Recorder(() => okXml(noteXml))
+        given Http.Backend = recorder
+        xmlApi.notes(1).get.call[Note]()
+        recorder.lastHeaders.filter(_.key == t"accept").map(_.value)
+      . assert(_ == List(t"application/xml"))

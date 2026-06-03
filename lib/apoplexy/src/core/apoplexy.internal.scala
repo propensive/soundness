@@ -48,6 +48,7 @@ import spectacular.*
 import telekinesis.*
 import turbulence.*
 import vacuous.*
+import xylophone.*
 
 import charEncoders.utf8
 import strategies.throwUnsafely
@@ -104,20 +105,24 @@ object Apoplexy:
     import quotes.reflect.*
     TypeBounds(repr, repr)
 
-  private def apiType(using quotes: Quotes)(locus: Text, source: Text): quotes.reflect.TypeRepr =
+  private def apiType(using quotes: Quotes)(locus: Text, source: Text, wire: Wire)
+  :   quotes.reflect.TypeRepr =
+
     import quotes.reflect.*
 
     val withLocus = Refinement(TypeRepr.of[Api], "Locus", bounds(literalType(locus)))
-    Refinement(withLocus, "Source", bounds(literalType(source)))
+    val withSource = Refinement(withLocus, "Source", bounds(literalType(source)))
+    Refinement(withSource, "Transport", bounds(transportRepr(wire)))
 
-  private def receiver(using quotes: Quotes)(self: Expr[Api]): (Text, Text) =
+  private def receiver(using quotes: Quotes)(self: Expr[Api]): (Text, Text, Wire) =
     import quotes.reflect.*
 
     val members = refinements(self.asTerm.tpe.widen)
     val locus = members.at(t"Locus").lay(t"/")(stringOf(_))
     val source = members.at(t"Source").or(halt(m"apoplexy: the receiver has no spec `Source`"))
+    val wire = members.at(t"Transport").lay(Wire.Json)(wireOfRepr(_))
 
-    (locus, stringOf(source))
+    (locus, stringOf(source), wire)
 
   // --- path utilities ------------------------------------------------------
 
@@ -186,6 +191,54 @@ object Apoplexy:
       case Some(param) => param.schema.lay(TypeRepr.of[Text])(schemaType(doc, _))
       case None        => TypeRepr.of[Text]
 
+  // --- wire format ---------------------------------------------------------
+
+  // The wire format an operation speaks, inferred from its `content` media types.
+  // The end-user never chooses this; the OpenAPI spec dictates it.
+  private enum Wire:
+    case Json, Xml
+
+  private def mediaOf(wire: Wire): Text = wire match
+    case Wire.Json => t"application/json"
+    case Wire.Xml  => t"application/xml"
+
+  // JSON wins ties (the OpenAPI default, and the historical behaviour).
+  private def wireOf(content: Map[Text, OpenApi.MediaTypeObject]): Optional[Wire] =
+    if content.isEmpty then Unset
+    else if content.contains(t"application/json") then Wire.Json
+    else if content.contains(t"application/xml") || content.contains(t"text/xml") then Wire.Xml
+    else Wire.Json
+
+  // The wire format of an operation's first 2xx response body, if any.
+  private def responseWire(operation: OpenApi.Operation): Optional[Wire] =
+    val status = operation.responses.keys.filter(_.starts(t"2")).to(List).sortBy(_.s).prim
+
+    status.let(operation.responses.at(_)).let: response =>
+      wireOf(response.content)
+
+  // The spec-wide wire format if every operation agrees, else `Json` as a neutral
+  // placeholder for navigation types. The authoritative format is always recomputed
+  // per operation by `invoke`.
+  private def uniformWire(doc: OpenApi): Wire =
+    val wires =
+      doc.paths.values.flatMap(_.operations.values).to(List).flatMap: operation =>
+        responseWire(operation).lay(List[Wire]())(List(_))
+
+    . to(Set)
+
+    if wires.size == 1 then wires.head else Wire.Json
+
+  private def transportRepr(using quotes: Quotes)(wire: Wire): quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+
+    wire match
+      case Wire.Json => TypeRepr.of[Json]
+      case Wire.Xml  => TypeRepr.of[Xml]
+
+  private def wireOfRepr(using quotes: Quotes)(repr: quotes.reflect.TypeRepr): Wire =
+    import quotes.reflect.*
+    if repr =:= TypeRepr.of[Xml] then Wire.Xml else Wire.Json
+
   // --- invocation ----------------------------------------------------------
 
   // Builds the `Api.Response` for invoking `method` on the complete endpoint
@@ -236,12 +289,29 @@ object Apoplexy:
 
     val queryExpr = Expr.ofList(queryEntries)
 
-    val bodyExpr: Expr[Optional[Json]] = positional match
+    val status =
+      operation.responses.keys.filter(_.starts(t"2")).to(List).sortBy(_.s).prim.or(t"200")
+
+    // The wire format the spec dictates for this operation: the response body's
+    // media type, else the request body's, else JSON. An operation that mixes
+    // request and response media types is not supported.
+    val respWire = operation.responses.at(status).let: response =>
+      wireOf(response.content)
+
+    val reqWire = operation.requestBody.let: body =>
+      wireOf(body.content)
+
+    if respWire.present && reqWire.present && respWire.vouch != reqWire.vouch
+    then halt(m"apoplexy: $verb $locus mixes request and response media types")
+
+    val wire = respWire.or(reqWire.or(Wire.Json))
+
+    val bodyExpr: Expr[Api.Body] = positional match
       case Nil =>
         if operation.requestBody.let(_.required.or(false)).or(false)
         then halt(m"apoplexy: $verb $locus requires a request body")
 
-        '{Unset}
+        '{Api.Body.Empty}
 
       case List(argExpr) =>
         if operation.requestBody.absent then halt(m"apoplexy: $verb $locus takes no request body")
@@ -250,30 +320,38 @@ object Apoplexy:
           case '[bodyType] =>
             val value = argExpr.asExprOf[bodyType]
 
-            val encodable = Expr.summon[bodyType is Encodable in Json].getOrElse:
-              halt(m"apoplexy: the request body cannot be encoded as JSON")
+            wire match
+              case Wire.Json =>
+                val encodable = Expr.summon[bodyType is Encodable in Json].getOrElse:
+                  halt(m"apoplexy: the request body cannot be encoded as JSON")
 
-            '{$encodable.encoded($value)}
+                '{Api.Body.Json($encodable.encoded($value))}
+
+              case Wire.Xml =>
+                val encodable = Expr.summon[bodyType is Encodable in Xml].getOrElse:
+                  halt(m"apoplexy: the request body cannot be encoded as XML")
+
+                '{Api.Body.Xml($encodable.encoded($value))}
 
       case _ =>
         halt(m"apoplexy: $verb $locus takes a single request body")
 
-    val status =
-      operation.responses.keys.filter(_.starts(t"2")).to(List).sortBy(_.s).prim.or(t"200")
-
-    val jsonContent = escape(t"application/json")
+    val mediaContent = escape(mediaOf(wire))
 
     val pointer =
-      t"#/paths/${escape(locus)}/$verb/responses/$status/content/$jsonContent/schema"
+      t"#/paths/${escape(locus)}/$verb/responses/$status/content/$mediaContent/schema"
 
     val mExpr = methodExpr(method)
     val locusExpr = Expr(locus.s)
 
     val responseType =
       Refinement
-        ( Refinement(TypeRepr.of[Api.Response], "Result", bounds(literalType(pointer))),
-          "Form",
-          bounds(literalType(source)) )
+        ( Refinement
+           ( Refinement(TypeRepr.of[Api.Response], "Result", bounds(literalType(pointer))),
+             "Form",
+             bounds(literalType(source)) ),
+          "Transport",
+          bounds(transportRepr(wire)) )
 
     responseType.asType.absolve match
       case '[type result <: Api.Response; result] =>
@@ -339,14 +417,15 @@ object Apoplexy:
     val doc = spec(source)
     val base = if doc.servers.isEmpty then t"" else doc.servers.head.url
     val baseExpr = Expr(base.s)
+    val wire = uniformWire(doc)
 
-    apiType(t"/", source).asType.absolve match
+    apiType(t"/", source, wire).asType.absolve match
       case '[type result <: Api; result] =>
         '{Api.make(Api.Request(Http.Get, $baseExpr.tt, t"/")).asInstanceOf[result]}
 
   def select(self: Expr[Api], field: Expr[String]): Macro[Any] =
     val name = field.valueOrAbort.tt
-    val (locus, source) = receiver(self)
+    val (locus, source, wire) = receiver(self)
     val doc = spec(source)
 
     verbs.at(name) match
@@ -354,10 +433,10 @@ object Apoplexy:
         invoke(self, doc, source, locus, method, Nil, Nil)
 
       case _ =>
-        navigate(self, source, doc, locus, name)
+        navigate(self, source, doc, locus, name, wire)
 
   private def navigate(using quotes: Quotes)
-    ( self: Expr[Api], source: Text, doc: OpenApi, locus: Text, name: Text )
+    ( self: Expr[Api], source: Text, doc: OpenApi, locus: Text, name: Text, wire: Wire )
   :   Expr[Any] =
 
     val newLocus = join(locus, name)
@@ -368,13 +447,13 @@ object Apoplexy:
 
     val locusExpr = Expr(newLocus.s)
 
-    apiType(newLocus, source).asType.absolve match
+    apiType(newLocus, source, wire).asType.absolve match
       case '[type result <: Api; result] =>
         '{Api.make($self.request.copy(path = $locusExpr.tt)).asInstanceOf[result]}
 
   def applied(self: Expr[Api], field: Expr[String], args: Expr[Seq[Any]]): Macro[Any] =
     val name = field.valueOrAbort.tt
-    val (locus, source) = receiver(self)
+    val (locus, source, wire) = receiver(self)
     val doc = spec(source)
 
     val positional = args match
@@ -398,8 +477,10 @@ object Apoplexy:
         val following = keys.filter(deeper).map(_(newSegs.length)).find(isTemplate)
 
         following match
-          case Some(template) => fillTemplate(self, source, doc, newLocus, template, positional)
-          case None           => shortcut(self, doc, source, newLocus, Nil, positional)
+          case None => shortcut(self, doc, source, newLocus, Nil, positional)
+
+          case Some(template) =>
+            fillTemplate(self, source, doc, newLocus, template, positional, wire)
 
   private def fillTemplate(using quotes: Quotes)
     ( self:       Expr[Api],
@@ -407,7 +488,8 @@ object Apoplexy:
       doc:        OpenApi,
       newLocus:   Text,
       template:   Text,
-      positional: List[Expr[Any]] )
+      positional: List[Expr[Any]],
+      wire:       Wire )
   :   Expr[Any] =
 
     import quotes.reflect.*
@@ -428,7 +510,7 @@ object Apoplexy:
     val locusExpr = Expr(templatedLocus.s)
     val paramExpr = Expr(parameter.s)
 
-    apiType(templatedLocus, source).asType.absolve match
+    apiType(templatedLocus, source, wire).asType.absolve match
       case '[type result <: Api; result] => actual.asType.absolve match
         case '[argType] =>
           val value = arg.asExprOf[argType]
@@ -448,7 +530,7 @@ object Apoplexy:
   :   Macro[Any] =
 
     val name = field.valueOrAbort.tt
-    val (locus, source) = receiver(self)
+    val (locus, source, wire) = receiver(self)
     val doc = spec(source)
     val entries = pairs(args)
     val named = entries.filter(_(0) != t"")

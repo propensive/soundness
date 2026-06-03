@@ -47,8 +47,7 @@ import spectacular.*
 import telekinesis.*
 import urticose.*
 import vacuous.*
-
-import jacinta.postables.jsonIsPostable
+import xylophone.*
 
 object Api:
   // Root constructor: `Api(cp"/spec.json")` reads the spec resource's `Locus`,
@@ -60,17 +59,22 @@ object Api:
     def request: Api.Request = apiRequest
 
   // The runtime send (invoked by the code `.call` emits): assemble the URL (base +
-  // substituted path + query), build the `Http.Request`, and dispatch through the
-  // telekinesis `HttpClient` — which uses whichever `Http.Backend` is in scope.
-  def send(request: Api.Request)
+  // substituted path + query), serialize the request body to bytes in its wire
+  // format, set the `content-type` (from the body) and `accept` (the response
+  // format the caller passes) headers, and dispatch through the telekinesis
+  // `HttpClient` — which uses whichever `Http.Backend` is in scope. The body
+  // printers/encoders are fixed internal defaults (minimal JSON, UTF-8), resolved
+  // here, so callers never supply them.
+  def send(request: Api.Request, accept: Text)
     ( using Online,
             HttpEvent is Loggable,
             Tactic[ConnectError],
-            Tactic[UrlError],
-            CharEncoder,
-            JsonPrinter )
+            Tactic[UrlError] )
     ( using client: HttpClient onto Origin["http" | "https"] )
   :   Http.Response =
+
+    import jsonPrinters.minimal
+    import charEncoders.utf8
 
     val substituted =
       request.substitutions.foldLeft(request.path): (path, entry) =>
@@ -87,30 +91,42 @@ object Api:
 
     val url = full.decode[HttpUrl]
 
-    val headers: List[Http.Header] = request.body.lay(Nil): json =>
-      List(Http.Header(t"content-type", summon[Json is Postable].mediaType(json).show))
-
     val empty: () => Stream[Data] = () => Stream()
 
-    val body: () => Stream[Data] = request.body.lay(empty): json =>
-      () => summon[Json is Postable].stream(json)
+    val (contentType, body): (Optional[Text], () => Stream[Data]) = request.body match
+      case Api.Body.Empty       => (Unset, empty)
+      case Api.Body.Json(value) => (t"application/json", () => Stream(value.show.data))
+      case Api.Body.Xml(value)  => (t"application/xml", () => Stream(value.show.data))
+
+    val contentTypeHeader: List[Http.Header] = contentType.lay(Nil): media =>
+      List(Http.Header(t"content-type", media))
+
+    val headers: List[Http.Header] = Http.Header(t"accept", accept) :: contentTypeHeader
 
     val httpRequest =
       Http.Request(request.method, 1.1, url.host.vouch, url.requestTarget, headers, body)
 
     client.request(httpRequest, url.origin)
 
+  // A request body already encoded to its wire-format AST. The spec's media type
+  // for the operation decides which case is built (in the `invoke` macro); `.call`
+  // serializes it to bytes with the matching printer.
+  enum Body derives CanEqual:
+    case Empty
+    case Json(value: jacinta.Json)
+    case Xml(value: xylophone.Xml)
+
   // The runtime description of a navigated/invoked call. `base` is the server
   // URL from the spec; `path` is the still-templated path; `substitutions`
   // binds path templates to concrete values; `query` is the query string;
-  // `body` is an optional JSON request body.
+  // `body` is the encoded request body (`Body.Empty` when there is none).
   case class Request
     ( method:        Http.Method,
       base:          Text,
       path:          Text,
       substitutions: Map[Text, Text]    = Map(),
       query:         List[(Text, Text)] = Nil,
-      body:          Optional[Json]     = Unset )
+      body:          Api.Body           = Api.Body.Empty )
 
   // The result of invoking an endpoint. Its refined type records `Result` (a
   // JSON-pointer to the 2xx response schema) and `Form` (the spec source),
@@ -119,9 +135,10 @@ object Api:
     def make(apiRequest: Api.Request): Api.Response = new Api.Response:
       def request: Api.Request = apiRequest
 
-  trait Response:
+  trait Response extends Transportive:
     type Result
     type Form
+    // type Transport (the wire format) inherited from Transportive
     def request: Api.Request
 
     // Performs the request and decodes the response as `value`. The empty
@@ -130,29 +147,36 @@ object Api:
     // perform the request, check for a 2xx status, and discard the body — the
     // natural default for `delete` and other no-content endpoints.
     //
-    // First the macro checks (at compile time) that `value` conforms to the
-    // endpoint's response schema. Then we send and interpret the response in
-    // *inline* code, so `value` is concrete when the `Conformant` (and hence the
-    // jacinta `Decodable`) instance is summoned — which is what lets `List[T]` and
-    // other collections resolve their decoders.
+    // The `inline` match on `this.Transport` selects the JSON or XML arm by the
+    // spec-decided wire format, so only the matching format's givens are demanded
+    // at a concrete call site. The macro first checks `value` against the response
+    // schema; the send + decode run in *inline* code, so `value` is concrete when
+    // the `Conformant` (and hence the jacinta/xylophone `Decodable`) is summoned —
+    // which is what lets `List[T]` and other collections resolve their decoders.
     transparent inline def call[value]()
       ( using erased default: value is Defaulting to Unit )
-      ( using online:     Online,
-              loggable:   HttpEvent is Loggable,
-              connect:    Tactic[ConnectError],
-              urlError:   Tactic[UrlError],
-              encoder:    CharEncoder,
-              printer:    JsonPrinter,
-              client:     HttpClient onto Origin["http" | "https"],
-              conformant: value is Conformant )
+      ( using online:   Online,
+              loggable: HttpEvent is Loggable,
+              connect:  Tactic[ConnectError],
+              urlError: Tactic[UrlError],
+              client:   HttpClient onto Origin["http" | "https"] )
     :   value =
 
       Apoplexy.check[value](this)
 
-      conformant.read:
-        Api.send(request)(using online, loggable, connect, urlError, encoder, printer)(using client)
+      def dispatch(accept: Text): Http.Response =
+        Api.send(request, accept)(using online, loggable, connect, urlError)(using client)
 
-trait Api extends Dynamic, Locatable:
+      inline compiletime.erasedValue[this.Transport] match
+        case _: jacinta.Json =>
+          val response = dispatch(t"application/json")
+          compiletime.summonInline[(value is Conformant) over jacinta.Json].read(response)
+
+        case _: xylophone.Xml =>
+          val response = dispatch(t"application/xml")
+          compiletime.summonInline[(value is Conformant) over xylophone.Xml].read(response)
+
+trait Api extends Dynamic, Locatable, Transportive:
   def request: Api.Request
 
   transparent inline def selectDynamic(field: String): Any =

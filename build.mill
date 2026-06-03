@@ -404,7 +404,7 @@ object anticipation extends Library:
 
 object apoplexy extends Library:
   object core extends Component(jacinta.schema, jacinta.http, ypsiloid.core, telekinesis.core,
-    urticose.core, legerdemain.core, hellenism.core, fulminate.core):
+    urticose.core, legerdemain.core, hellenism.core, fulminate.core, xylophone.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
