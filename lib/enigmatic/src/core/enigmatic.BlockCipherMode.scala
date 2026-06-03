@@ -37,36 +37,45 @@ import gossamer.*
 import prepositional.*
 
 object BlockCipherMode:
-  def apply[mode](name0: Text, usesIv0: Boolean): mode is BlockCipherMode = new BlockCipherMode:
-    type Self = mode
-    val name: Text = name0
-    val usesIv: Boolean = usesIv0
+  def apply[mode](name0: Text, usesIv0: Boolean, blockAligned0: Boolean)
+  :   mode is BlockCipherMode =
+
+    new BlockCipherMode:
+      type Self = mode
+      val name: Text = name0
+      val usesIv: Boolean = usesIv0
+      val blockAligned: Boolean = blockAligned0
+
+// `blockAligned` is true for block-structured modes (ECB, CBC) which, with
+// `NoPadding`, require the input length to be a multiple of the block size; it is
+// false for stream-style modes (CTR, CFB, OFB) which accept any length.
 
 trait BlockCipherMode extends Typeclass:
   def name: Text
   def usesIv: Boolean
+  def blockAligned: Boolean
 
 object Cbc:
-  given mode: Cbc is BlockCipherMode = BlockCipherMode(t"CBC", true)
+  given mode: Cbc is BlockCipherMode = BlockCipherMode(t"CBC", true, true)
 
 sealed trait Cbc
 
 object Ecb:
-  given mode: Ecb is BlockCipherMode = BlockCipherMode(t"ECB", false)
+  given mode: Ecb is BlockCipherMode = BlockCipherMode(t"ECB", false, true)
 
 sealed trait Ecb
 
 object Ctr:
-  given mode: Ctr is BlockCipherMode = BlockCipherMode(t"CTR", true)
+  given mode: Ctr is BlockCipherMode = BlockCipherMode(t"CTR", true, false)
 
 sealed trait Ctr
 
 object Cfb:
-  given mode: Cfb is BlockCipherMode = BlockCipherMode(t"CFB", true)
+  given mode: Cfb is BlockCipherMode = BlockCipherMode(t"CFB", true, false)
 
 sealed trait Cfb
 
 object Ofb:
-  given mode: Ofb is BlockCipherMode = BlockCipherMode(t"OFB", true)
+  given mode: Ofb is BlockCipherMode = BlockCipherMode(t"OFB", true, false)
 
 sealed trait Ofb

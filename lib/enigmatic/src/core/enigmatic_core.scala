@@ -59,7 +59,9 @@ package blockCipherMode:
 package blockCipherPadding:
   export Pkcs7.padding as pkcs7
   export Iso10126.padding as iso10126
-  export NoPadding.padding as noPadding
+  // `NoPadding` is not re-exported for import-based inference: its `given` takes a
+  // `Tactic[CryptoError]`, and re-exporting a context-function given trips a
+  // compiler assertion ("bad adapt"). Use `against NoPadding` explicitly instead.
 
 package initializationVector:
   export InitializationVector.random

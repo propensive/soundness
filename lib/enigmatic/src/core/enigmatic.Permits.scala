@@ -32,21 +32,23 @@
                                                                                                   */
 package enigmatic
 
-import anticipation.*
-import gossamer.*
-import prepositional.*
+// Evidence that a block-cipher `mode` may be combined with a `padding`, matching
+// the combinations the JDK actually supports. Block-structured modes accept all
+// three paddings; the counter mode accepts only `NoPadding`.
 
-object Aes:
-  given value: [bits <: 128 | 192 | 256: ValueOf, mode, padding]
-  =>  ( blockMode: mode is BlockCipherMode )
-  =>  ( blockPadding: padding is BlockCipherPadding )
-  =>  ( mode Permits padding )
-  =>  ( vector: InitializationVector )
-  =>  ( Aes[bits] over mode against padding ) =
-    Aes(blockMode, blockPadding, vector).asInstanceOf[Aes[bits] over mode against padding]
+object Permits:
+  given ecbNoPadding:  (Ecb Permits NoPadding)  = Permits()
+  given ecbPkcs7:      (Ecb Permits Pkcs7)      = Permits()
+  given ecbIso10126:   (Ecb Permits Iso10126)   = Permits()
+  given cbcNoPadding:  (Cbc Permits NoPadding)  = Permits()
+  given cbcPkcs7:      (Cbc Permits Pkcs7)      = Permits()
+  given cbcIso10126:   (Cbc Permits Iso10126)   = Permits()
+  given cfbNoPadding:  (Cfb Permits NoPadding)  = Permits()
+  given cfbPkcs7:      (Cfb Permits Pkcs7)      = Permits()
+  given cfbIso10126:   (Cfb Permits Iso10126)   = Permits()
+  given ofbNoPadding:  (Ofb Permits NoPadding)  = Permits()
+  given ofbPkcs7:      (Ofb Permits Pkcs7)      = Permits()
+  given ofbIso10126:   (Ofb Permits Iso10126)   = Permits()
+  given ctrNoPadding:  (Ctr Permits NoPadding)  = Permits()
 
-class Aes[bits <: 128 | 192 | 256: ValueOf]
-  ( mode: BlockCipherMode, padding: BlockCipherPadding, vector: InitializationVector )
-extends BlockCipher(t"AES", mode, padding, vector):
-  type Size = bits
-  def keySize: bits = valueOf[bits]
+infix class Permits[mode, padding]()

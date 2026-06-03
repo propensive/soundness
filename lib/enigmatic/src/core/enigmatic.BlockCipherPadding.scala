@@ -33,6 +33,7 @@
 package enigmatic
 
 import anticipation.*
+import contingency.*
 import gossamer.*
 import prepositional.*
 
@@ -41,8 +42,15 @@ object BlockCipherPadding:
     type Self = padding
     val name: Text = name0
 
+// `verify` is a no-op for paddings that accept any input length. `NoPadding`
+// overrides it to reject misaligned input (for block-structured modes), raising a
+// `CryptoError` through the `Tactic` its `given` captures — which is why
+// constructing a `NoPadding` cipher, and hence encrypting with one, demands a
+// `Tactic[CryptoError]` in scope while all other paddings remain total.
+
 trait BlockCipherPadding extends Typeclass:
   def name: Text
+  def verify(length: Int, blockSize: Int, blockAligned: Boolean): Unit = ()
 
 object Pkcs7:
   // The JDK calls PKCS#7 padding "PKCS5Padding" for historical reasons.
@@ -56,6 +64,13 @@ object Iso10126:
 sealed trait Iso10126
 
 object NoPadding:
-  given padding: NoPadding is BlockCipherPadding = BlockCipherPadding(t"NoPadding")
+  given padding: Tactic[CryptoError] => (NoPadding is BlockCipherPadding) =
+    new BlockCipherPadding:
+      type Self = NoPadding
+      val name: Text = t"NoPadding"
+
+      override def verify(length: Int, blockSize: Int, blockAligned: Boolean): Unit =
+        if blockAligned && length%blockSize != 0
+        then abort(CryptoError(CryptoError.Reason.IllegalBlockSize))
 
 sealed trait NoPadding

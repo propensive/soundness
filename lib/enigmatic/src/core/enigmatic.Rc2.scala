@@ -32,31 +32,21 @@
                                                                                                   */
 package enigmatic
 
-import language.experimental.captureChecking
+import anticipation.*
+import gossamer.*
+import prepositional.*
 
-import soundness.*
+object Rc2:
+  given value: [bits <: 40 | 64 | 128: ValueOf, mode, padding]
+  =>  ( blockMode: mode is BlockCipherMode )
+  =>  ( blockPadding: padding is BlockCipherPadding )
+  =>  ( mode Permits padding )
+  =>  ( vector: InitializationVector )
+  =>  ( Rc2[bits] over mode against padding ) =
+    Rc2(blockMode, blockPadding, vector).asInstanceOf[Rc2[bits] over mode against padding]
 
-import charEncoders.utf8
-import blockCipherMode.cbc, blockCipherPadding.pkcs7
-
-// Capture-checking regression for `expose`.
-//
-// The exposed `Encryptor`/`Decryptor` capability must not escape its scope; only
-// pure values (e.g. the ciphertext `Data`) may leave the block. The commented-out
-// line fails to compile with a capture error of the form
-//
-//   Capability `contextual$1` outlives its scope: it leaks into outer capture set
-//   's1 which is owned by value escaped.
-//
-// (verified manually — uncomment to re-check).
-object LeakCheck:
-  val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
-
-  // Legitimate: only the pure `Data` ciphertext leaves the scope.
-  val ciphertext: Data = key.expose:
-    t"Hello world".encrypt
-
-  // LEAK (must NOT compile): smuggling the capability out directly.
-  //
-  //   val escaped = key.expose:
-  //     summon[Encryptor[Aes[256]]]
+class Rc2[bits <: 40 | 64 | 128: ValueOf]
+  ( mode: BlockCipherMode, padding: BlockCipherPadding, vector: InitializationVector )
+extends BlockCipher(t"RC2", mode, padding, vector):
+  type Size = bits
+  def keySize: bits = valueOf[bits]

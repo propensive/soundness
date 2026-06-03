@@ -36,17 +36,18 @@ import anticipation.*
 import gossamer.*
 import prepositional.*
 
-object Aes:
-  given value: [bits <: 128 | 192 | 256: ValueOf, mode, padding]
+object TripleDes:
+  given value: [bits <: 112 | 168: ValueOf, mode, padding]
   =>  ( blockMode: mode is BlockCipherMode )
   =>  ( blockPadding: padding is BlockCipherPadding )
   =>  ( mode Permits padding )
   =>  ( vector: InitializationVector )
-  =>  ( Aes[bits] over mode against padding ) =
-    Aes(blockMode, blockPadding, vector).asInstanceOf[Aes[bits] over mode against padding]
+  =>  ( TripleDes[bits] over mode against padding ) =
+    TripleDes(blockMode, blockPadding, vector)
+    . asInstanceOf[TripleDes[bits] over mode against padding]
 
-class Aes[bits <: 128 | 192 | 256: ValueOf]
+class TripleDes[bits <: 112 | 168: ValueOf]
   ( mode: BlockCipherMode, padding: BlockCipherPadding, vector: InitializationVector )
-extends BlockCipher(t"AES", mode, padding, vector):
+extends BlockCipher(t"DESede", mode, padding, vector):
   type Size = bits
   def keySize: bits = valueOf[bits]

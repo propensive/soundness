@@ -32,21 +32,31 @@
                                                                                                   */
 package enigmatic
 
-import anticipation.*
-import gossamer.*
-import prepositional.*
+import soundness.*
 
-object Aes:
-  given value: [bits <: 128 | 192 | 256: ValueOf, mode, padding]
-  =>  ( blockMode: mode is BlockCipherMode )
-  =>  ( blockPadding: padding is BlockCipherPadding )
-  =>  ( mode Permits padding )
-  =>  ( vector: InitializationVector )
-  =>  ( Aes[bits] over mode against padding ) =
-    Aes(blockMode, blockPadding, vector).asInstanceOf[Aes[bits] over mode against padding]
+import charEncoders.utf8
+import blockCipherMode.cbc, blockCipherPadding.pkcs7
 
-class Aes[bits <: 128 | 192 | 256: ValueOf]
-  ( mode: BlockCipherMode, padding: BlockCipherPadding, vector: InitializationVector )
-extends BlockCipher(t"AES", mode, padding, vector):
-  type Size = bits
-  def keySize: bits = valueOf[bits]
+// Compile-time regressions for the cipher API. (Capture-checking confinement of
+// the exposed `Encryptor`/`Decryptor` capability is not yet enabled — see
+// `expose` — so a capability-escape regression is not included here.)
+object CompileChecks:
+  val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
+
+  val ciphertext: Data = key.expose:
+    t"Hello world".encrypt
+
+  // Validity regression: only cipher/mode/padding triples the JDK supports have a
+  // `given`, so an invalid combination does not compile. CTR permits only
+  // `NoPadding`, so the line below fails with "no implicit values were found that
+  // match type Ctr Permits Pkcs7" (verified manually — uncomment to re-check).
+  //
+  //   val invalid = SymmetricKey.generate[Aes[256] over Ctr against Pkcs7]()
+  val valid = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+
+  // Totality regression: `NoPadding` can fail on misaligned input, so its `given`
+  // demands a `Tactic[CryptoError]`. With no error-handling strategy in scope,
+  // summoning a `NoPadding` cipher (and hence encrypting with one) does not
+  // compile, whereas every padded cipher is total (verified manually — uncomment).
+  //
+  //   val noTactic = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
