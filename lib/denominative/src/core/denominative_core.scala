@@ -100,8 +100,8 @@ package ordinalShowables:
           case _ => ordinal.n1.toString+"ᵗʰ"
 
   given french: Ordinal is Textualizable = ordinal =>
-    if ordinal.n1 == 1 then "1ᵉʳ" else s"${ordinal}ᵉ"
+    if ordinal.n1 == 1 then "1ᵉʳ" else s"${ordinal.n1}ᵉ"
 
-  given italian: Ordinal is Textualizable = ordinal => s"${ordinal}ᵒ"
-  given spanish: Ordinal is Textualizable = ordinal => s"$ordinal.ᵒ"
-  given russian: Ordinal is Textualizable = ordinal => s"${ordinal}-й"
+  given italian: Ordinal is Textualizable = ordinal => s"${ordinal.n1}ᵒ"
+  given spanish: Ordinal is Textualizable = ordinal => s"${ordinal.n1}.ᵒ"
+  given russian: Ordinal is Textualizable = ordinal => s"${ordinal.n1}-й"
