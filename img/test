@@ -94,7 +94,7 @@ RUN --mount=type=cache,target=/root/.cache/coursier \
     --mount=type=cache,target=/root/.cache/mill \
     --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
-    --mount=type=cache,target=/src/out \
+    --mount=type=cache,target=/src/out,sharing=locked \
     CLAUDECODE=1 ./mill --ticker false soundness.all.compile
 
 # Stage 2: compile tests and assemble the fat test JAR. Mill sees the
@@ -104,10 +104,10 @@ RUN --mount=type=cache,target=/root/.cache/coursier \
     --mount=type=cache,target=/root/.cache/mill \
     --mount=type=cache,target=/root/.cargo/registry \
     --mount=type=cache,target=/root/.cargo/git \
-    --mount=type=cache,target=/src/out \
+    --mount=type=cache,target=/src/out,sharing=locked \
     CLAUDECODE=1 ./mill --ticker false test.assembly
 
 # Stage 3: run the assembled test JAR. No mill JVM in this stage.
 FROM compile-tests AS run-tests
-RUN --mount=type=cache,target=/src/out \
+RUN --mount=type=cache,target=/src/out,sharing=locked \
     CLAUDECODE=1 make ci
