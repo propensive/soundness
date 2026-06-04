@@ -97,20 +97,33 @@ done
 # developer's (possibly dirty) working tree. The developer's own `out/` is left
 # untouched. Output is tee'd to a log here in the original tree because the
 # build is verbose and a real failure can scroll far off-screen.
+#
+# `--no-daemon` makes each mill invocation its own short-lived JVM that exits
+# when the command finishes. That keeps this attest fully self-contained: it
+# never starts or stops a shared mill daemon, so concurrent attests (or an
+# interactive `mill -w`) on the same machine can't interfere with each other,
+# and the compile JVM releases its heap before the test JVM starts — no
+# `mill shutdown` needed.
+#
+# `-j $JOBS` caps how many modules compile concurrently. Each parallel module is
+# a separate Scala compiler holding live state, so this bounds peak heap. On a
+# 12-core box, -j 6 compiles the clean tree as fast as -j 12 (the build is
+# dependency-graph bound) while peaking ~1.5 GB lower — headroom that keeps a
+# single attest from swapping the machine. Override with SOUNDNESS_CI_JOBS.
+JOBS="${SOUNDNESS_CI_JOBS:-6}"
 if [[ "${SOUNDNESS_CI_SKIP_BUILD:-0}" != "1" ]]; then
   mkdir -p out
   LOG="out/attest-$(date -u +%Y%m%dT%H%M%SZ).log"
   WORKTREE_PARENT=$(mktemp -d)
   WORKTREE="$WORKTREE_PARENT/build"
-  echo "Running full clean build + test suite in $WORKTREE; full output → $LOG" >&2
+  echo "Running full clean build + test suite in $WORKTREE (-j $JOBS); full output → $LOG" >&2
   git worktree add --detach "$WORKTREE" "$HEAD_SHA" >&2
 
   set +e
   (
     cd "$WORKTREE" || exit 1
-    CLAUDECODE=1 ./mill --ticker false soundness.all.compile \
-      && CLAUDECODE=1 ./mill --ticker false test.assembly \
-      && { CLAUDECODE=1 ./mill shutdown || true; } \
+    CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.all.compile \
+      && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false test.assembly \
       && CLAUDECODE=1 make ci
   ) 2>&1 | tee "$LOG"
   rc=${PIPESTATUS[0]}
@@ -148,8 +161,8 @@ statement = {
     "predicateType": "https://soundness.dev/local-ci/v1",
     "predicate": {
         "commands": [
-            "./mill --ticker false soundness.all.compile",
-            "./mill --ticker false test.assembly",
+            "./mill --no-daemon -j 6 --ticker false soundness.all.compile",
+            "./mill --no-daemon -j 6 --ticker false test.assembly",
             "make ci",
         ],
         "ranAt": now,

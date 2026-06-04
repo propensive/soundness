@@ -22,7 +22,13 @@ set -uo pipefail
 JAR=out/test/assembly.dest/out.jar
 TIMEOUT="${SOUNDNESS_CI_TEST_TIMEOUT:-1800}"
 
-java -cp "$JAR" soundness.Tests &
+# The suite's measured peak is ~2.5 GB used / ~3.2 GB committed, so a 4 GB heap
+# leaves comfortable headroom. Set it explicitly rather than inheriting the
+# JVM's machine-dependent default (25% of RAM), so the run behaves identically
+# regardless of host size. Override with SOUNDNESS_CI_TEST_HEAP.
+HEAP="${SOUNDNESS_CI_TEST_HEAP:-4g}"
+
+java -Xss2m "-Xmx$HEAP" -cp "$JAR" soundness.Tests &
 pid=$!
 
 # Watchdog: if the suite is still alive after $TIMEOUT, capture a full thread
