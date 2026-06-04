@@ -30,10 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
-import prepositional.*
+import anticipation.*
+import locomotion.field
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// The request for `Containers.List`: optional `filters` narrow the result (containerd
+// filter expressions, e.g. `labels."tier"==db`); an empty list returns everything.
+case class ListContainersRequest(@field(1) filters: List[Text] = Nil)

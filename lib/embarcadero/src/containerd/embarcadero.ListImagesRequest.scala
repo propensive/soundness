@@ -30,10 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
-import prepositional.*
+import anticipation.*
+import locomotion.field
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// The request for `Images.List`: optional containerd filter expressions.
+case class ListImagesRequest(@field(1) filters: List[Text] = Nil)

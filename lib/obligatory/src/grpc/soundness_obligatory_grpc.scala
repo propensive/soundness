@@ -30,10 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package soundness
 
-import prepositional.*
-
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+export obligatory.{Grpc, GrpcChannel, GrpcError, GrpcFraming}

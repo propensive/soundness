@@ -30,10 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package soundness
 
-import prepositional.*
-
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// `Timestamp` is intentionally not exported: it collides with `aviation.Timestamp` in
+// the umbrella, and callers normally reach times through `…createdAt.instant[Instant]`
+// rather than naming it. Use `embarcadero.Timestamp` directly when constructing one.
+export embarcadero.{AnyMessage, Containerd, Container, ContentDescriptor,
+    CreateContainerRequest, CreateContainerResponse, CreateNamespaceRequest,
+    CreateNamespaceResponse, CreateTaskRequest, CreateTaskResponse, DeleteContainerRequest,
+    DeleteImageRequest, DeleteNamespaceRequest, DeleteTaskRequest, DeleteTaskResponse, Empty,
+    GetContainerRequest, GetContainerResponse, GetImageRequest, GetImageResponse, GetTaskRequest,
+    GetTaskResponse, ImageRecord, KillRequest, ListContainersRequest, ListContainersResponse,
+    ListImagesRequest, ListImagesResponse, ListNamespacesRequest, ListNamespacesResponse,
+    ListTasksRequest, ListTasksResponse, Mount, Namespace, Process, ProcessStatus, Runtime,
+    StartRequest, StartResponse, VersionResponse, WaitRequest, WaitResponse}

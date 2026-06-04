@@ -32,8 +32,11 @@
                                                                                                   */
 package obligatory
 
-import prepositional.*
+import anticipation.*
+import fulminate.*
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// Raised when a gRPC call completes with a non-`Ok` `grpc-status` trailer, or when
+// the response cannot be framed or decoded. The `status` mirrors the canonical
+// gRPC code; `detail` carries the `grpc-message` text (or a local diagnostic).
+case class GrpcError(status: Grpc.Status, detail: Text)(using Diagnostics)
+extends Error(m"the gRPC call failed with status $status: $detail")

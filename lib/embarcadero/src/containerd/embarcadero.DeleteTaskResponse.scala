@@ -30,10 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
-import prepositional.*
+import anticipation.*
+import gossamer.*
+import locomotion.field
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// The reply from `Tasks.Delete`: the removed task's exec `id`, host `pid`, and the
+// `exitStatus`/`exitedAt` it stopped with.
+case class DeleteTaskResponse
+  ( @field(1) id:         Text      = t"",
+    @field(2) pid:        Int       = 0,
+    @field(3) exitStatus: Int       = 0,
+    @field(4) exitedAt:   Timestamp = Timestamp() )
+derives CanEqual

@@ -30,10 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package soundness
 
-import prepositional.*
-
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+export cordillera.{Http2, Hpack, HpackEntry, HpackTable, Huffman, H2Connection, H2Stream,
+    Http2Error, FrameReader, PseudoHeaders}

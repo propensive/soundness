@@ -30,10 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
-import prepositional.*
+import anticipation.*
+import gossamer.*
+import locomotion.field
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// A container's runtime binding (`containerd.services.containers.v1.Container.Runtime`):
+// the runtime plugin `name` (e.g. `io.containerd.runc.v2`) and its opaque `options`.
+case class Runtime(@field(1) name: Text = t"", @field(2) options: AnyMessage = AnyMessage())

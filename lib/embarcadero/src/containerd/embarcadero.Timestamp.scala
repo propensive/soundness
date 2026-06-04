@@ -30,10 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
+import anticipation.*
+import locomotion.field
 import prepositional.*
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+object Timestamp:
+  // Build a protobuf timestamp from any instant type — e.g. Aviation's `Instant` —
+  // through anticipation's generic time abstraction, so no dependency on a specific
+  // time library is needed. Millisecond precision: the generic representation is
+  // epoch milliseconds, so protobuf's sub-millisecond `nanos` are not carried.
+  def of[time: Abstractable across Instants to Long](time: time): Timestamp =
+    val millis = time.generic
+    Timestamp(millis/1000, ((millis%1000)*1000000).toInt)
+
+// The protobuf well-known `google.protobuf.Timestamp`: whole seconds and the
+// nanosecond fraction since the Unix epoch.
+case class Timestamp(@field(1) seconds: Long = 0L, @field(2) nanos: Int = 0)
+derives CanEqual:
+
+  // Convert to any instant type — e.g. Aviation's `Instant` — at millisecond
+  // precision, via the same generic time abstraction.
+  def instant[time: Instantiable across Instants from Long]: time =
+    (seconds*1000 + nanos/1000000).instantiate

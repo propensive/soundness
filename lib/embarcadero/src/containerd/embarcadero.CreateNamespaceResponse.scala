@@ -30,10 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
-import prepositional.*
+import gossamer.*
+import locomotion.field
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// The reply from `Namespaces.Create`: the created namespace, as stored.
+case class CreateNamespaceResponse(@field(1) namespace: Namespace = Namespace(t""))

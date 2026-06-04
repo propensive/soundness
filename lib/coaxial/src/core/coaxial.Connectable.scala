@@ -30,10 +30,34 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package coaxial
 
+import java.net as jn
+import java.nio.channels as jnc
+import java.nio.file as jnf
+
+import anticipation.*
 import prepositional.*
+import urticose.*
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// Opens a persistent, bidirectional `Duplex` connection to an endpoint. The
+// counterpart to `Serviceable` for protocols that keep a connection open and read
+// and write concurrently (e.g. HTTP/2), rather than the single request/response
+// exchange `Serviceable` models. Channels are opened in blocking mode so a read
+// loop parks in `read` instead of busy-polling.
+object Connectable:
+  given domainSocket: DomainSocket is Connectable = domainSocket =>
+    val path = jnf.Path.of(domainSocket.address.s)
+    val address = jn.UnixDomainSocketAddress.of(path)
+    val channel = jnc.SocketChannel.open(address).nn
+    channel.configureBlocking(true)
+    Duplex.channel(channel)
+
+  given tcpEndpoint: Online => Endpoint[TcpPort] is Connectable = endpoint =>
+    val address = jn.InetSocketAddress(endpoint.remote.s, endpoint.port.number)
+    val channel = jnc.SocketChannel.open(address).nn
+    channel.configureBlocking(true)
+    Duplex.channel(channel)
+
+trait Connectable extends Typeclass:
+  def connect(endpoint: Self): Duplex

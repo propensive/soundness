@@ -30,10 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
-import prepositional.*
+import vacuous.*
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+object ProcessStatus:
+  // The status code carried in a `Process` (a protobuf enum, encoded as its number).
+  def of(code: Int): Optional[ProcessStatus] = values.find(_.code == code).optional
+
+enum ProcessStatus(val code: Int) derives CanEqual:
+  case Unknown extends ProcessStatus(0)
+  case Created extends ProcessStatus(1)
+  case Running extends ProcessStatus(2)
+  case Stopped extends ProcessStatus(3)
+  case Paused  extends ProcessStatus(4)
+  case Pausing extends ProcessStatus(5)

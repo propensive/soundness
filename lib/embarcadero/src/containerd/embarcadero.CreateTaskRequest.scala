@@ -30,10 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
-import prepositional.*
+import anticipation.*
+import gossamer.*
+import locomotion.field
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// The request for `Tasks.Create`: a new task for `containerId`, with its root filesystem
+// `rootfs` mounts, optional stdio paths, a `terminal` flag, and opaque runtime `options`.
+case class CreateTaskRequest
+  ( @field(1)  containerId: Text        = t"",
+    @field(3)  rootfs:      List[Mount] = Nil,
+    @field(4)  stdin:       Text        = t"",
+    @field(5)  stdout:      Text        = t"",
+    @field(6)  stderr:      Text        = t"",
+    @field(7)  terminal:    Boolean     = false,
+    @field(10) options:     AnyMessage  = AnyMessage() )
+derives CanEqual

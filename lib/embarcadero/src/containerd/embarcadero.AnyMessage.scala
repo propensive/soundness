@@ -30,10 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
-import prepositional.*
+import anticipation.*
+import gossamer.*
+import locomotion.field
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// The protobuf well-known `google.protobuf.Any`: a serialized message tagged with its
+// type URL. containerd uses it to carry opaque payloads — notably a container's OCI
+// runtime spec and a task's runtime options — that this client passes through verbatim.
+// Named `AnyMessage` to avoid `scala.Any`.
+case class AnyMessage(@field(1) typeUrl: Text = t"", @field(2) value: Data = IArray[Byte]())

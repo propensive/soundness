@@ -30,10 +30,36 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package cordillera
 
-import prepositional.*
+import anticipation.*
+import fulminate.*
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+object Http2Error:
+  object Reason:
+    given communicable: Reason is Communicable =
+      case Truncated         => m"the HTTP/2 data ended unexpectedly"
+      case BadPreface        => m"the connection preface was not valid"
+      case BadHuffman        => m"the Huffman-coded string was not valid"
+      case BadInteger        => m"an HPACK integer was malformed or too large"
+      case BadIndex(index)   => m"the HPACK table index $index was out of range"
+      case BadFrameType(id)  => m"the frame type $id was not recognized"
+      case FrameTooLarge     => m"a frame exceeded the maximum permitted size"
+      case FlowControl       => m"a flow-control window was exceeded"
+      case Protocol(message) => m"a protocol error occurred: $message"
+      case GoAway(code)      => m"the peer closed the connection with error code $code"
+
+  enum Reason:
+    case Truncated
+    case BadPreface
+    case BadHuffman
+    case BadInteger
+    case BadIndex(index: Int)
+    case BadFrameType(id: Int)
+    case FrameTooLarge
+    case FlowControl
+    case Protocol(message: Text)
+    case GoAway(code: Long)
+
+case class Http2Error(reason: Http2Error.Reason)(using Diagnostics)
+extends Error(m"the HTTP/2 operation failed because $reason")

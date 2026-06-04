@@ -30,10 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
-import prepositional.*
+import anticipation.*
+import gossamer.*
+import locomotion.field
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// containerd's protobuf content descriptor (`containerd.types.Descriptor`): a typed,
+// digest-addressed pointer to a blob. Named `ContentDescriptor` to avoid clashing with
+// the OCI JSON `Descriptor` in this same package; the field numbers match the proto.
+case class ContentDescriptor
+  ( @field(1) mediaType:   Text            = t"",
+    @field(2) digest:      Text            = t"",
+    @field(3) size:        Long            = 0L,
+    @field(5) annotations: Map[Text, Text] = Map() )
+derives CanEqual

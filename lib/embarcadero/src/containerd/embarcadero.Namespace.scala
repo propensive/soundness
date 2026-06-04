@@ -30,10 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
-import prepositional.*
+import anticipation.*
+import locomotion.field
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// A containerd namespace (`containerd.services.namespaces.v1`): an isolation scope for
+// containers, images and the rest, identified by `name` and carrying free-form `labels`.
+case class Namespace(@field(1) name: Text, @field(2) labels: Map[Text, Text] = Map())
+derives CanEqual

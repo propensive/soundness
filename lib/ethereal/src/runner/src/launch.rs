@@ -63,7 +63,7 @@ pub fn launch(
     mark_stdio_non_inheritable();
     crate::debug!("launch: spawning daemon: {} (wrapper)", executable.display());
 
-    let child = match command.spawn() {
+    let mut child = match command.spawn() {
         Ok(child) => child,
         Err(e) => {
             crate::debug!("launch: spawn failed: {}", e);
@@ -82,6 +82,16 @@ pub fn launch(
         && !fail_file.exists()
         && attempts < STARTUP_MAX_ATTEMPTS
     {
+        // If the daemon process exits before its socket appears, it failed during
+        // startup. Stop immediately and signal failure rather than polling out the
+        // full window — or, worse, falling through to connect to a socket that will
+        // never accept (which can block forever).
+        if matches!(child.try_wait(), Ok(Some(_))) && !crate::state::socket_ready(socket_file) {
+            crate::debug!("launch: daemon exited during startup, aborting");
+            crate::state::abort(fail_file);
+            crate::state::backout(fail_file, pid_file, name);
+            std::process::exit(1);
+        }
         if !shown && start.elapsed() >= Duration::from_secs(2) {
             crate::xeq::step(name, "Starting…");
             shown = true;

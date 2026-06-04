@@ -30,10 +30,48 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package cordillera
 
-import prepositional.*
+import anticipation.{Data as Bytes, *}
+import contingency.*
+import rudiments.*
+import vacuous.*
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+import Http2.Frame
+import Http2Error.Reason
+
+// Pulls whole HTTP/2 frames from a byte stream that arrives in arbitrary chunks
+// (a socket). Buffers leftover bytes between reads and blocks (by demanding the
+// next chunk from the underlying iterator) until a full frame — its 9-byte header
+// plus declared payload — is available. Returns `Unset` at end of stream.
+class FrameReader(chunks: Iterator[Bytes]):
+  private var buffer: Array[Byte] = new Array(0)
+  private var pos: Int = 0
+
+  // Ensure at least `n` unread bytes are buffered; false if the stream ends first.
+  private def ensure(n: Int): Boolean =
+    while buffer.length - pos < n && chunks.hasNext do
+      val remaining = buffer.length - pos
+      val chunk = chunks.next()
+      val grown = new Array[Byte](remaining + chunk.length)
+      System.arraycopy(buffer, pos, grown, 0, remaining)
+      System.arraycopy(chunk.mutable(using Unsafe), 0, grown, remaining, chunk.length)
+      buffer = grown
+      pos = 0
+
+    buffer.length - pos >= n
+
+  private def slice(n: Int): Bytes =
+    val out = new Array[Byte](n)
+    System.arraycopy(buffer, pos, out, 0, n)
+    pos += n
+    out.immutable(using Unsafe)
+
+  // Read the next frame, or `Unset` at clean end of stream.
+  def next(): Optional[Frame] raises Http2Error =
+    if !ensure(9) then Unset else
+      val header = slice(9)
+      val length = Frame.uint24(header, 0)
+      if !ensure(length) then abort(Http2Error(Reason.Truncated))
+      val whole = header ++ slice(length)
+      Frame.decode(whole, 0)(0)

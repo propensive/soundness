@@ -30,10 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
-import prepositional.*
+import anticipation.*
+import gossamer.*
+import locomotion.field
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// A containerd image metadata record (`containerd.services.images.v1`): a `name`
+// (the image reference) pointing at content via `target`, plus labels and timestamps.
+// Named `ImageRecord` to avoid clashing with the OCI `Image` config in this package.
+case class ImageRecord
+  ( @field(1) name:      Text                = t"",
+    @field(2) labels:    Map[Text, Text]     = Map(),
+    @field(3) target:    ContentDescriptor   = ContentDescriptor(),
+    @field(7) createdAt: Timestamp           = Timestamp(),
+    @field(8) updatedAt: Timestamp           = Timestamp() )
+derives CanEqual

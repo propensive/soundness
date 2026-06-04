@@ -30,10 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
-import prepositional.*
+import anticipation.*
+import gossamer.*
+import locomotion.field
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// A mount in a task's root filesystem (`containerd.types.Mount`): a `source` mounted at
+// `target` with a filesystem `mountType` (proto `type`) and mount `options`.
+case class Mount
+  ( @field(1) mountType: Text       = t"",
+    @field(2) source:    Text       = t"",
+    @field(3) target:    Text       = t"",
+    @field(4) options:   List[Text] = Nil )
+derives CanEqual

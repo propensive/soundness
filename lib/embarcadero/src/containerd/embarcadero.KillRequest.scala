@@ -30,10 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
-import prepositional.*
+import anticipation.*
+import gossamer.*
+import locomotion.field
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// The request for `Tasks.Kill`: send `signal` to the task (or a specific exec process),
+// or to `all` processes in the container.
+case class KillRequest
+  ( @field(1) containerId: Text    = t"",
+    @field(2) execId:      Text    = t"",
+    @field(3) signal:      Int     = 0,
+    @field(4) all:         Boolean = false )
+derives CanEqual

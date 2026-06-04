@@ -30,10 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
-import prepositional.*
+import anticipation.*
+import gossamer.*
+import locomotion.field
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// A containerd container metadata record (`containerd.services.containers.v1`). The
+// protobuf field numbers are preserved, so this round-trips with the daemon even
+// though only a subset of fields is modelled — unknown fields are skipped on decode.
+// `spec` carries the OCI runtime spec as an opaque `AnyMessage`; the `extensions`
+// `Any` map (10) is still omitted.
+case class Container
+  ( @field(1)  id:          Text,
+    @field(2)  labels:      Map[Text, Text] = Map(),
+    @field(3)  image:       Text            = t"",
+    @field(4)  runtime:     Runtime         = Runtime(),
+    @field(5)  spec:        AnyMessage      = AnyMessage(),
+    @field(6)  snapshotter: Text            = t"",
+    @field(7)  snapshotKey: Text            = t"",
+    @field(8)  createdAt:   Timestamp       = Timestamp(),
+    @field(9)  updatedAt:   Timestamp       = Timestamp(),
+    @field(11) sandbox:     Text            = t"" )
+derives CanEqual

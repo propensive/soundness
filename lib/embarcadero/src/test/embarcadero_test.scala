@@ -39,6 +39,7 @@ import alphabets.hex.lowerCase
 import charEncoders.utf8
 import jsonPrinters.minimal
 import strategies.throwUnsafely
+import Http2.*
 
 object Tests extends Suite(m"Embarcadero OCI Tests"):
   def run(): Unit =
@@ -152,3 +153,223 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       test(m"oci-layout declares image layout version 1.0.0"):
         layoutData.map(bytes => bytes.to(List))
       . assert(_ == List(t"""{"imageLayoutVersion":"1.0.0"}""".data.to(List)))
+
+    suite(m"containerd over a gRPC loopback"):
+      import threading.virtual
+      import codicils.cancel
+
+      def pair(): (Duplex, Duplex) =
+        val clientToServer = Spool[Data]()
+        val serverToClient = Spool[Data]()
+
+        def duplex(inbound: Spool[Data], outbound: Spool[Data]) = new Duplex:
+          def stream: Stream[Data] = inbound.stream
+          def send(data: Stream[Data]): Unit = data.each(outbound.put)
+          def close(): Unit = outbound.stop()
+
+        (duplex(serverToClient, clientToServer), duplex(clientToServer, serverToClient))
+
+      // A fake containerd: completes the HTTP/2 handshake, records the namespace header
+      // from the request, and replies to the `Version` call with a framed response.
+      def runServer(serverSide: Duplex, namespace: Promise[Text], body: Data)
+          ( using Monitor, Codicil )
+      :   Daemon =
+
+        daemon:
+          safely:
+            serverSide.send(Stream(Frame.Settings(Nil, ack = false).serialize))
+            val raw = serverSide.stream.iterator
+
+            val afterPreface: Iterator[Data] =
+              var buffered = IArray.empty[Byte]
+              while buffered.length < 24 && raw.hasNext do buffered = buffered ++ raw.next()
+              val leftover = buffered.drop(24)
+              (if leftover.isEmpty then Iterator.empty else Iterator(leftover)) ++ raw
+
+            val reader = FrameReader(afterPreface)
+            val hpack = Hpack()
+            var continue = true
+
+            while continue do reader.next() match
+              case Unset    => continue = false
+
+              case f: Frame => f match
+                case Frame.Settings(_, false) =>
+                  serverSide.send(Stream(Frame.Settings(Nil, ack = true).serialize))
+
+                case Frame.Headers(id, block, _, _) =>
+                  val fields = hpack.decode(block)
+                  fields.find(_.name == t"containerd-namespace").each: entry =>
+                    namespace.offer(entry.value)
+
+                  val status = hpack.encode(List(HpackEntry(t":status", t"200"),
+                      HpackEntry(t"content-type", t"application/grpc")))
+
+                  val trailer = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
+                  serverSide.send(Stream(Frame.Headers(id, status, false, true).serialize))
+                  serverSide.send(Stream(Frame.Data(id, body, false).serialize))
+                  serverSide.send(Stream(Frame.Headers(id, trailer, true, true).serialize))
+
+                case _ => ()
+
+      test(m"version() round-trips a VersionResponse and sends the namespace"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val namespace = Promise[Text]()
+          val body = GrpcFraming.encode(VersionResponse(t"1.7.0", t"deadbeef").protobuf.encode)
+          runServer(serverSide, namespace, body)
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val containerd = Containerd(endpoint, t"example")
+          val response = containerd.version()
+          (response.version, response.revision, namespace.await())
+      . assert(_ == (t"1.7.0", t"deadbeef", t"example"))
+
+      test(m"containers() decodes a repeated, labelled list"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val namespace = Promise[Text]()
+
+          val list = ListContainersResponse(List(Container(t"alpha", Map(t"tier" -> t"db")),
+              Container(t"beta")))
+
+          val body = GrpcFraming.encode(list.protobuf.encode)
+          runServer(serverSide, namespace, body)
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val containerd = Containerd(endpoint, t"example")
+          containerd.containers().map(container => (container.id, container.labels))
+      . assert(_ == List((t"alpha", Map(t"tier" -> t"db")), (t"beta", Map())))
+
+      test(m"container(id) decodes a nested Container response"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val namespace = Promise[Text]()
+
+          val response =
+            GetContainerResponse(Container(t"gamma", Map(t"x" -> t"y"), image = t"img:1"))
+
+          val body = GrpcFraming.encode(response.protobuf.encode)
+          runServer(serverSide, namespace, body)
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val container = Containerd(endpoint, t"example").container(t"gamma")
+          (container.id, container.labels, container.image)
+      . assert(_ == (t"gamma", Map(t"x" -> t"y"), t"img:1"))
+
+      test(m"namespaces() decodes the namespace list"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val namespace = Promise[Text]()
+
+          val list = ListNamespacesResponse(List(Namespace(t"default"),
+              Namespace(t"k8s.io", Map(t"managed" -> t"true"))))
+
+          val body = GrpcFraming.encode(list.protobuf.encode)
+          runServer(serverSide, namespace, body)
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          Containerd(endpoint, t"example").namespaces().map(ns => (ns.name, ns.labels))
+      . assert(_ == List((t"default", Map()), (t"k8s.io", Map(t"managed" -> t"true"))))
+
+      test(m"images() decodes a list with nested descriptors and labels"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val namespace = Promise[Text]()
+
+          val target = ContentDescriptor(t"application/vnd.oci.image.manifest.v1+json",
+              t"sha256:abc", 1234L)
+
+          val list = ListImagesResponse(List(ImageRecord(t"docker.io/library/alpine:latest",
+              Map(t"arch" -> t"amd64"), target)))
+
+          val body = GrpcFraming.encode(list.protobuf.encode)
+          runServer(serverSide, namespace, body)
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+
+          Containerd(endpoint, t"example").images().map: image =>
+            (image.name, image.labels, image.target.digest, image.target.size)
+      . assert(_ == List((t"docker.io/library/alpine:latest", Map(t"arch" -> t"amd64"),
+          t"sha256:abc", 1234L)))
+
+      test(m"createContainer round-trips a container with an opaque spec"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val namespace = Promise[Text]()
+
+          val container = Container(t"web", image = t"img:1",
+              runtime = Runtime(t"io.containerd.runc.v2"),
+              spec = AnyMessage(t"oci-spec", t"hello".data))
+
+          val body = GrpcFraming.encode(CreateContainerResponse(container).protobuf.encode)
+          runServer(serverSide, namespace, body)
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val created = Containerd(endpoint, t"example").createContainer(container)
+          (created.id, created.runtime.name, created.spec.typeUrl, created.spec.value.to(List))
+      . assert(_ == (t"web", t"io.containerd.runc.v2", t"oci-spec", t"hello".data.to(List)))
+
+      test(m"createTask sends rootfs mounts and returns the task pid"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val namespace = Promise[Text]()
+          val body = GrpcFraming.encode(CreateTaskResponse(t"web", 4321).protobuf.encode)
+          runServer(serverSide, namespace, body)
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          val rootfs = List(Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
+          Containerd(endpoint, t"example").createTask(t"web", rootfs).pid
+      . assert(_ == 4321)
+
+      test(m"tasks() decodes processes and maps the status code to ProcessStatus"):
+        supervise:
+          val (clientSide, serverSide) = pair()
+          val namespace = Promise[Text]()
+
+          val list =
+            ListTasksResponse(List(Process(t"web", t"", 4321, ProcessStatus.Running.code)))
+
+          val body = GrpcFraming.encode(list.protobuf.encode)
+          runServer(serverSide, namespace, body)
+
+          case class Loopback(duplex: Duplex)
+          given (Loopback is Connectable) = _.duplex
+
+          val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
+          Containerd(endpoint, t"example").tasks().map(task => (task.containerId, task.pid, task.state))
+      . assert(_ == List((t"web", 4321, ProcessStatus.Running)))
+
+    suite(m"containerd timestamps via the generic time abstraction"):
+      // The `Long`-as-instant given lets us mint an Aviation `Instant` from epoch
+      // millis; Aviation's own `Instant` abstractable/instantiable instances are found
+      // via its companion, so `embarcadero` needs no dependency on Aviation.
+      import abstractables.instantIsAbstractable
+      val moment = Instant(1_700_000_001_000L)
+
+      test(m"a Container timestamp round-trips and converts to an Aviation Instant"):
+        val container = Container(t"svc", createdAt = embarcadero.Timestamp.of(moment))
+        val restored = Stream(container.protobuf.encode).read[Container over Protobuf]
+        restored.createdAt.instant[Instant]
+      . assert(_ == moment)

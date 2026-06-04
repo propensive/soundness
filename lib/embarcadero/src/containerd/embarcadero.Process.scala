@@ -30,10 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package obligatory
+package embarcadero
 
-import prepositional.*
+import anticipation.*
+import gossamer.*
+import locomotion.field
+import vacuous.*
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
-    framable.frames(stream)
+// A task's process state (`containerd.v1.types.Process`, a subset): which container and
+// exec it belongs to, its `pid`, the raw `status` code, and the exit status/time once
+// it has stopped. `state` decodes the status code to the `ProcessStatus` enum.
+case class Process
+  ( @field(1)  containerId: Text      = t"",
+    @field(2)  id:          Text      = t"",
+    @field(3)  pid:         Int       = 0,
+    @field(4)  status:      Int       = 0,
+    @field(9)  exitStatus:  Int       = 0,
+    @field(10) exitedAt:    Timestamp = Timestamp() )
+derives CanEqual:
+
+  def state: ProcessStatus = ProcessStatus.of(status).or(ProcessStatus.Unknown)
