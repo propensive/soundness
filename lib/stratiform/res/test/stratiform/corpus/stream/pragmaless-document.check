@@ -1,0 +1,80 @@
+=== document 0 ===
+Document {
+    interpreter_directive: None,
+    pragma: None,
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "loose",
+                    atoms: [
+                        Inline {
+                            text: "content",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+                Compound {
+                    keyword: "no",
+                    atoms: [
+                        Inline {
+                            text: "pragma",
+                            preceding_spaces: 1,
+                        },
+                        Inline {
+                            text: "here",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 0,
+        },
+    ],
+}
+=== document 1 ===
+Document {
+    interpreter_directive: None,
+    pragma: Some(
+        Pragma {
+            version: (
+                1,
+                0,
+            ),
+            schema: None,
+            sigil: None,
+        },
+    ),
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "second",
+                    atoms: [
+                        Inline {
+                            text: "has",
+                            preceding_spaces: 1,
+                        },
+                        Inline {
+                            text: "pragma",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}

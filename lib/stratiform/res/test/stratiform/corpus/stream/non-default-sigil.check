@@ -1,0 +1,100 @@
+=== document 0 ===
+Document {
+    interpreter_directive: None,
+    pragma: Some(
+        Pragma {
+            version: (
+                1,
+                0,
+            ),
+            schema: Some(
+                "https://example.org/notes",
+            ),
+            sigil: Some(
+                '%',
+            ),
+        },
+    ),
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "##",
+                    atoms: [],
+                    remark: None,
+                    children: [],
+                },
+                Compound {
+                    keyword: "note",
+                    atoms: [
+                        Inline {
+                            text: "this",
+                            preceding_spaces: 1,
+                        },
+                        Inline {
+                            text: "document",
+                            preceding_spaces: 1,
+                        },
+                        Inline {
+                            text: "uses",
+                            preceding_spaces: 1,
+                        },
+                        Inline {
+                            text: "a",
+                            preceding_spaces: 1,
+                        },
+                        Inline {
+                            text: "percent",
+                            preceding_spaces: 1,
+                        },
+                        Inline {
+                            text: "sigil",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 0,
+        },
+    ],
+}
+=== document 1 ===
+Document {
+    interpreter_directive: None,
+    pragma: Some(
+        Pragma {
+            version: (
+                1,
+                0,
+            ),
+            schema: None,
+            sigil: None,
+        },
+    ),
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "second",
+                    atoms: [
+                        Inline {
+                            text: "document",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}

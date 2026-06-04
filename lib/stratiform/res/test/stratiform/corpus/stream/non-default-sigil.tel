@@ -1,0 +1,8 @@
+tel 1.0 https://example.org/notes %
+
+##
+note this document uses a percent sigil
+%%
+tel 1.0
+
+second document
