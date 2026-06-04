@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Run all tests: `make test`
 - Watch mode for development: `mill -w soundness.all`
 - Run single test: `mill module.test.run` (e.g., `mill abacist.test.run`)
-- Run the full CI test suite in Docker and sign the result: `make attest` (see "CI workflow" below)
+- Run the full CI test suite from a clean build and sign the result: `make attest` (see "CI workflow" below)
 
 ## Code Style
 
@@ -55,12 +55,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### CI workflow
 
-This repository runs CI locally and verifies signed attestations on GitHub Actions. The slow build/test work happens in Docker on the developer's machine; the GitHub `Build` check only verifies the attestation note.
+This repository runs CI locally and verifies signed attestations on GitHub Actions. The slow build/test work happens on the developer's machine; the GitHub `Build` check only verifies the attestation note.
 
-- The CI input set is the Docker build context of `img/test`, controlled by `.dockerignore`. Anything inside it changes the input digest.
-- `make attest` builds and runs the test suite in `img/test`. On success, it computes the input digest, signs it with SSH (`ssh-keygen -Y sign`), and attaches a JSON envelope (in-toto Statement v1 + signature) as a git note in `refs/notes/ci-attestation` on HEAD.
+- The CI input set is controlled by `.dockerignore` (reused as the input-set definition): everything *not* excluded there is part of the input digest. Anything inside it changes the input digest.
+- `make attest` does a full, from-scratch build and runs the test suite in a throwaway git worktree checked out at HEAD (clean build cache every time; the committed tree, not the working tree). On success, it computes the input digest, signs it with SSH (`ssh-keygen -Y sign`), and attaches a JSON envelope (in-toto Statement v1 + signature) as a git note in `refs/notes/ci-attestation` on HEAD. Set `SOUNDNESS_CI_SKIP_BUILD=1` to skip the build when you know the inputs are unchanged.
+- The attest build runs mill with `--no-daemon` (each invocation is its own short-lived JVM, so concurrent attests/`mill -w` on the same machine never collide, and no `mill shutdown` is needed) and `-j 6` (caps concurrent compilers to bound peak heap; as fast as `-j 12` on a clean build but ~1.5 GB lower). Memory is sized for a 24 GB box: mill heap `-Xmx8g` (`.mill-jvm-opts`), test heap `-Xmx4g` (`run-tests.sh`; measured peak ~2.5 GB). Override with `SOUNDNESS_CI_JOBS` / `SOUNDNESS_CI_TEST_HEAP`.
 - If only files outside the input set changed (docs, `.github/`, `.claude/`, etc.), `make attest` re-uses the existing attestation rather than rebuilding.
-- `make verify-attest` is the local dry-run of what GitHub Actions does. It does not invoke Docker.
+- `make verify-attest` is the local dry-run of what GitHub Actions does.
 - `make push` pushes commits and the attestation notes ref together. Plain `git push` works too but you must also `git push origin refs/notes/ci-attestation`, otherwise the `Build` check will fail with "no attestation note".
-- Required tooling locally: Docker (Desktop / Colima / dockerd), Python 3, `ssh-keygen`. The signing key defaults to `~/.ssh/id_ed25519`; override with `SOUNDNESS_CI_KEY=…`.
+- Required tooling locally: a JDK plus the userland the suite exercises (shells like zsh/fish/tmux, and PowerShell/Zig/Rust for the modules that shell out to them), Python 3, and `ssh-keygen`. The signing key defaults to `~/.ssh/id_ed25519`; override with `SOUNDNESS_CI_KEY=…`.
 - The signer's email (from `git config user.email`) must appear in `.ci/allowed_signers` with their SSH public key. Adding a co-signer = a PR that adds a line.

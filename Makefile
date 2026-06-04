@@ -3,16 +3,16 @@ publishLocal:
 
 test:
 	./mill test.assembly
-	java -cp out/test/assembly.dest/out.jar soundness.Tests
+	java -Xss2m -Xmx4g -cp out/test/assembly.dest/out.jar soundness.Tests
 
 test.%:
 	./mill clean $*.test
 	./mill $*.test.assembly
-	java -cp out/$*/test/assembly.dest/out.jar $*.Tests
+	java -Xss2m -Xmx4g -cp out/$*/test/assembly.dest/out.jar $*.Tests
 
 failing:
 	./mill test.assembly
-	java -cp out/test/assembly.dest/out.jar soundness.FailingTests
+	java -Xss2m -Xmx4g -cp out/test/assembly.dest/out.jar soundness.FailingTests
 
 build:
 	./mill groupCheck.validate

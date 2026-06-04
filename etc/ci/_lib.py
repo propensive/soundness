@@ -2,10 +2,10 @@
 
 Two responsibilities:
 
-  1. Parse `.dockerignore` and decide which tracked files are part of the
-     CI input set, then compute a deterministic SHA-256 digest over them.
-     The algorithm is intentionally independent of `docker` so that
-     GitHub Actions can verify without a docker daemon.
+  1. Parse `.dockerignore` (reused as the canonical CI input-set definition)
+     and decide which tracked files are part of the CI input set, then compute
+     a deterministic SHA-256 digest over them. The algorithm only uses git, so
+     GitHub Actions can verify the digest without docker.
 
   2. Canonicalise the in-toto statement JSON for signing/verification.
 

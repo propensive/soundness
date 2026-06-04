@@ -4,10 +4,10 @@
 #
 # The `probably` table reporter buffers its output until the run completes, so a
 # hung or deadlocked test produces no output at all — it just stalls forever.
-# Inside `docker build` (img/test stage 3) that hangs the whole CI build with no
-# diagnostics. This wrapper bounds the run: if the suite exceeds the timeout, it
-# dumps every thread's stack (so a deadlock is pinpointed) and fails, instead of
-# hanging indefinitely.
+# During `make attest` that would hang the whole build with no diagnostics. This
+# wrapper bounds the run: if the suite exceeds the timeout, it dumps every
+# thread's stack (so a deadlock is pinpointed) and fails, instead of hanging
+# indefinitely.
 #
 # Environment:
 #   SOUNDNESS_CI_TEST_TIMEOUT   seconds before the suite is declared hung
@@ -22,7 +22,13 @@ set -uo pipefail
 JAR=out/test/assembly.dest/out.jar
 TIMEOUT="${SOUNDNESS_CI_TEST_TIMEOUT:-1800}"
 
-java -cp "$JAR" soundness.Tests &
+# The suite's measured peak is ~2.5 GB used / ~3.2 GB committed, so a 4 GB heap
+# leaves comfortable headroom. Set it explicitly rather than inheriting the
+# JVM's machine-dependent default (25% of RAM), so the run behaves identically
+# regardless of host size. Override with SOUNDNESS_CI_TEST_HEAP.
+HEAP="${SOUNDNESS_CI_TEST_HEAP:-4g}"
+
+java -Xss2m "-Xmx$HEAP" -cp "$JAR" soundness.Tests &
 pid=$!
 
 # Watchdog: if the suite is still alive after $TIMEOUT, capture a full thread
