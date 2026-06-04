@@ -51,6 +51,11 @@ enum Shape derives CanEqual:
   case Square(side: Double)
   case Triangle(a: Double, b: Double, c: Double)
 
+enum YStatus derives CanEqual:
+  @name[Yaml](t"ok") case Active(since: Int)
+  @name(t"gone")     case Removed(at: Int)
+                     case Pending(at: Int)
+
 object Tests extends Suite(m"Ypsiloid Tests"):
   def run(): Unit =
     suite(m"Plain scalar parsing"):
@@ -761,6 +766,19 @@ object Tests extends Suite(m"Ypsiloid Tests"):
             . getOrElse("none")
           case _ => "none"
       . assert(_ == "Circle")
+
+      test(m"@name renames a variant's `type` discriminator"):
+        (YStatus.Active(5): YStatus).yaml.root match
+          case Yaml.Ast.Mapping(entries) =>
+            entries.collectFirst:
+              case (Yaml.Ast.Str(k), Yaml.Ast.Str(v)) if k == t"type" => v.s
+            . getOrElse("none")
+          case _ => "none"
+      . assert(_ == "ok")
+
+      test(m"@name variants round-trip"):
+        List(YStatus.Active(5), YStatus.Removed(9), YStatus.Pending(1)).map(_.yaml.as[YStatus])
+      . assert(_ == List(YStatus.Active(5), YStatus.Removed(9), YStatus.Pending(1)))
 
       test(m"Decode a sum-type variant from a flow mapping"):
         t"{type: Circle, radius: 2.5}".read[Yaml].as[Shape]

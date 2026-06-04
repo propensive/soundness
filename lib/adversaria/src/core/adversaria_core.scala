@@ -67,3 +67,25 @@ inline def relabelling[self, format]: Map[Text, Text] =
     fieldAnnotations[self, name[format]].map((field, set) => field -> set.head.name)
 
   general ++ specific
+
+// Like `fieldAnnotations`, but reads the `annotation`-typed annotations on the
+// subtypes (enum cases / sealed variants) of `self`, keyed by variant name,
+// keeping only variants that carry one. Used for renaming sum-type variants.
+inline def subtypeAnnotations[self, annotation <: StaticAnnotation]
+:   Map[Text, Set[annotation]] =
+
+  summonInline[Annotated by annotation under self] match
+    case annotated: Annotated.Subtypes => annotated.subtypes.filter(_(1).nonEmpty)
+    case _                             => Map()
+
+// The serialization renames for the variants of a sum type `self`: exactly like
+// `relabelling` but for `@name`-annotated enum cases / sealed variants. Maps each
+// renamed variant's name to its serialized discriminator.
+inline def variantRelabelling[self, format]: Map[Text, Text] =
+  val general:  Map[Text, Text] =
+    subtypeAnnotations[self, name[Any]].map((variant, set) => variant -> set.head.name)
+
+  val specific: Map[Text, Text] =
+    subtypeAnnotations[self, name[format]].map((variant, set) => variant -> set.head.name)
+
+  general ++ specific

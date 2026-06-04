@@ -192,8 +192,15 @@ trait Yaml2:
           provide[Tactic[VariantError]]:
             val discriminable = infer[derivation is Discriminable in Yaml]
             val labels: List[Text] = variantLabels[derivation]
+
+            // `@name[Yaml]` / bare `@name` variant renames: map the serialized
+            // discriminator back to the variant name before delegating.
+            val variantNames: Map[Text, Text] =
+              variantRelabelling[derivation, Yaml].map((variant, wire) => wire -> variant)
+
             val resolved: Optional[Text] =
-              discriminable.discriminate(yaml).let: discriminant =>
+              discriminable.discriminate(yaml).let: wire =>
+                val discriminant = variantNames.getOrElse(wire, wire)
                 if labels.contains(discriminant) then discriminant else Unset
 
             resolved.let: discriminant =>
@@ -231,8 +238,13 @@ trait Yaml2:
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Yaml = value =>
       val discriminable = infer[derivation is Discriminable in Yaml]
+
+      // `@name[Yaml]` / bare `@name` variant renames: variant name -> wire
+      // discriminator, read back the same way by the decoder.
+      val variantNames: Map[Text, Text] = variantRelabelling[derivation, Yaml]
+
       variant(value): [variant <: derivation] =>
-        value => discriminable.rewrite(label, contextual.encode(value))
+        value => discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
 
 object Yaml extends Yaml2, Dynamic:
   type YamlString    = String

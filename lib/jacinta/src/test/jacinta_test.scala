@@ -66,6 +66,11 @@ enum Shape:
   case Circle(radius: Double)
   case Square(side: Double)
 
+enum Status derives CanEqual:
+  @name[Json](t"ok") case Active(since: Int)
+  @name(t"gone")     case Removed(at: Int)
+                     case Pending(at: Int)
+
 object Tests extends Suite(m"Jacinta Tests"):
   def run(): Unit =
     suite(m"Parsing tests"):
@@ -732,6 +737,14 @@ object Tests extends Suite(m"Jacinta Tests"):
         val s: Shape = Shape.Square(2.0)
         s.json.as[Shape]
       . assert(_ == Shape.Square(2.0))
+
+      test(m"@name renames a variant's discriminator"):
+        (Status.Active(5): Status).json.show
+      . assert(_ == t"""{"since":5,"kind":"ok"}""")
+
+      test(m"@name variants round-trip"):
+        List(Status.Active(5), Status.Removed(9), Status.Pending(1)).map(_.json.as[Status])
+      . assert(_ == List(Status.Active(5), Status.Removed(9), Status.Pending(1)))
 
       locally:
         import jsonDiscriminables.discriminatedUnionByType

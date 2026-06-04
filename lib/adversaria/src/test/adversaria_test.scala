@@ -34,6 +34,14 @@ package adversaria
 
 import soundness.*
 
+// A sum type with `@name`-annotated variants, for `subtypeAnnotations` /
+// `variantRelabelling`. `Accept` is renamed for one type argument, `Reject` by a
+// bare `@name` (i.e. `name[Any]`), and `Defer` is unannotated.
+sealed trait Decision
+@name[Person](t"yes") case object Accept extends Decision
+@name(t"no")          case object Reject extends Decision
+                      case object Defer  extends Decision
+
 object Tests extends Suite(m"Adversaria tests"):
 
   def run(): Unit =
@@ -88,6 +96,14 @@ object Tests extends Suite(m"Adversaria tests"):
     test(m"a bare annotation is not read by a specific type-argument query"):
       fieldAnnotations[Tagged, marker[Person]]
     . assert(_ == Map(t"specific" -> Set(marker[Person](3))))
+
+    test(m"subtypeAnnotations reads @name on sum-type variants"):
+      subtypeAnnotations[Decision, name[Person]]
+    . assert(_ == Map(t"Accept" -> Set(adversaria.name[Person](t"yes"))))
+
+    test(m"variantRelabelling merges per-format and bare variant renames"):
+      variantRelabelling[Decision, Person]
+    . assert(_ == Map(t"Accept" -> t"yes", t"Reject" -> t"no"))
 
     test(m"List map of fields of an object"):
       summon[Example1.type is Dereferenceable to Int].members(Example1)

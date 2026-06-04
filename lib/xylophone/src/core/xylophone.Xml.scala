@@ -310,8 +310,15 @@ object Xml extends Tag.Container
             provide[Tactic[VariantError]]:
               val discriminable = infer[derivation is Discriminable in Xml]
               val labels: List[Text]    = variantLabels[derivation]
+
+              // `@name[Xml]` / bare `@name` variant renames: map the serialized
+              // element label back to the variant name before delegating.
+              val variantNames: Map[Text, Text] =
+                variantRelabelling[derivation, Xml].map((variant, wire) => wire -> variant)
+
               val resolved: Optional[Text] =
-                discriminable.discriminate(xml).let: discriminant =>
+                discriminable.discriminate(xml).let: wire =>
+                  val discriminant = variantNames.getOrElse(wire, wire)
                   if labels.contains(discriminant) then discriminant else Unset
 
               resolved.let: discriminant =>
@@ -383,8 +390,14 @@ object Xml extends Tag.Container
       value =>
         val discriminable = infer[derivation is Discriminable in Xml]
 
+        // `@name[Xml]` / bare `@name` variant renames: variant name -> element
+        // label, read back the same way by the decoder.
+        val variantNames: Map[Text, Text] = variantRelabelling[derivation, Xml]
+
         variant(value): [variant <: derivation] =>
-          value => discriminable.rewrite(wisteria.label[Text], contextual.encode(value))
+          value =>
+            val label = wisteria.label[Text]
+            discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
 
   case class attribute() extends StaticAnnotation
 

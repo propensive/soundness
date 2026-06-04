@@ -161,8 +161,15 @@ trait Json2:
           provide[Tactic[VariantError]]:
             val discriminable = infer[derivation is Discriminable in Json]
 
-            val discriminant: Text = discriminable.discriminate(json).or:
+            // `@name[Json]` / bare `@name` variant renames: map the serialized
+            // discriminator back to the variant name before delegating.
+            val variantNames: Map[Text, Text] =
+              variantRelabelling[derivation, Json].map((variant, wire) => wire -> variant)
+
+            val wire: Text = discriminable.discriminate(json).or:
               focus(prior.or(Json.Focus(JsonPointer())))(abort(JsonError(Reason.Absent)))
+
+            val discriminant: Text = variantNames.getOrElse(wire, wire)
 
             delegate(discriminant): [variant <: derivation] =>
               context => context.decoded(json)
@@ -205,8 +212,12 @@ trait Json2:
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Json = value =>
       val discriminable = infer[derivation is Discriminable in Json]
 
+      // `@name[Json]` / bare `@name` variant renames: variant name -> wire
+      // discriminator, read back the same way by the decoder.
+      val variantNames: Map[Text, Text] = variantRelabelling[derivation, Json]
+
       variant(value): [variant <: derivation] =>
-        value => discriminable.rewrite(label, contextual.encode(value))
+        value => discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
 
 object Json extends Json2, Dynamic:
   type JsonString  = String
