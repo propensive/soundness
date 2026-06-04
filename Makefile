@@ -22,7 +22,7 @@ dev:
 	./mill -w soundness.all
 
 ci:
-	java -cp out/test/assembly.dest/out.jar soundness.Tests
+	./etc/ci/run-tests.sh
 
 attest:
 	./etc/ci/attest.sh
