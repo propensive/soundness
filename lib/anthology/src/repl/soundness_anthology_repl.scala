@@ -30,42 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package soundness
 
-import soundness.*
-
-import classloaders.threadContext
-import codicils.await
-import logging.silent
-import strategies.throwUnsafely
-import systems.java
-import temporaryDirectories.system
-import threading.platform
-
-object Tests extends Suite(m"Anthology Tests"):
-  def run(): Unit =
-    suite(m"REPL tests"):
-      given Scalac[3.8] = Scalac(Nil)
-
-      test(m"a definition is visible on a later line"):
-        supervise:
-          val repl = Repl()
-          repl.interpret(t"val x = 40")
-          repl.interpret(t"println(x + 2)")
-      . assert:
-          case Repl.Outcome.Ran(_) => true
-          case _                   => false
-
-      test(m"a type error is reported as Rejected with notices"):
-        supervise:
-          Repl().interpret(t"val n: Int = \"forty\"")
-      . assert:
-          case Repl.Outcome.Rejected(notices) => notices.nonEmpty
-          case _                              => false
-
-      test(m"a runtime exception is reported as Threw"):
-        supervise:
-          Repl().interpret(t"throw new RuntimeException(\"boom\")")
-      . assert:
-          case Repl.Outcome.Threw(_, _) => true
-          case _                        => false
+export anthology.Repl
