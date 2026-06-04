@@ -947,6 +947,18 @@ object Tests extends Suite(m"Xylophone tests"):
         . map(_.focus.nonEmpty)
       . assert(_ == List(true))
 
+    suite(m"HTTP content-type integration"):
+      import charEncoders.utf8
+
+      test(m"serialises with an application/xml media type"):
+        x"<doc/>".generic(0)
+      . assert(_.starts(t"application/xml"))
+
+      test(m"request body parses back via Instantiable"):
+        val instantiable = summon[Xml is Instantiable across HttpRequests from Text]
+        instantiable(t"<doc><a>1</a></doc>").show
+      . assert(_ == t"<doc><a>1</a></doc>".read[Xml].show)
+
     PositionTests()
     DecoderTests()
     EncoderTests()

@@ -1166,6 +1166,19 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         astStable(t"[]")
       . assert(identity)
 
+    suite(m"HTTP content-type integration"):
+      import charEncoders.utf8
+      import yamlPrinters.block
+
+      test(m"serialises with an application/yaml media type"):
+        Person(t"Jon", 42).yaml.generic(0)
+      . assert(_.starts(t"application/yaml"))
+
+      test(m"request body parses back via Instantiable"):
+        val instantiable = summon[Yaml is Instantiable across HttpRequests from Text]
+        instantiable(t"name: Jon\nage: 42").as[Person]
+      . assert(_ == Person(t"Jon", 42))
+
     ConformanceTests.all()
 
     PositionTests()

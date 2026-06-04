@@ -464,6 +464,26 @@ object Xml extends Tag.Container
   given aggregable2: (schema: XmlSchema) => Tactic[ParseError] => Xml is Aggregable by Text =
     input => XmlParser.fromIterator(input.iterator).parseXml(headers0 = false)
 
+  // HTTP content-type integration. `Abstractable across HttpStreams` makes an
+  // `Xml` value usable as an HTTP request/response body (telekinesis derives
+  // `Postable`/`Servable` from it); `Instantiable across HttpRequests` reads a
+  // request/response body back into `Xml`.
+  given abstractable: (encoder: CharEncoder)
+  =>  Xml is Abstractable across HttpStreams to HttpStreams.Content =
+
+    new Abstractable:
+      type Self = Xml
+      type Domain = HttpStreams
+      type Result = HttpStreams.Content
+
+      def genericize(xml: Xml): HttpStreams.Content =
+        (t"application/xml; charset=${encoder.encoding.name}", Stream(xml.show.data))
+
+  given instantiable: (schema: XmlSchema) => Tactic[ParseError]
+  =>  Xml is Instantiable across HttpRequests from Text =
+
+    text => Stream(text).read[Xml]
+
   // `source.read[Foo over Xml]` shorthand for
   // `source.read[Xml].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`
   // for `value over Json`. The `Transport` type-tag is added by an

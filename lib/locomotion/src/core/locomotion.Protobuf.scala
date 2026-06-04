@@ -44,6 +44,7 @@ import adversaria.*
 import anticipation.*
 import contingency.*
 import distillate.*
+import gossamer.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
@@ -100,6 +101,19 @@ object Protobuf extends Protobuf2:
   // `Encodable`) — the same verb jacinta uses for `Json`. `serialize` is reserved
   // for monotonous's byte→text encodings (hex, base64, …).
   given encodableInData: Protobuf is Encodable in Data = _.payload
+
+  // HTTP content-type integration: `Abstractable across HttpStreams` makes a
+  // `Protobuf` message usable as an HTTP request/response body (telekinesis
+  // derives `Postable`/`Servable` from it). Decoding a response body back into
+  // `Protobuf` is already covered by `aggregable` (`Aggregable by Data`).
+  given abstractable: Protobuf is Abstractable across HttpStreams to HttpStreams.Content =
+    new Abstractable:
+      type Self = Protobuf
+      type Domain = HttpStreams
+      type Result = HttpStreams.Content
+
+      def genericize(value: Protobuf): HttpStreams.Content =
+        (t"application/protobuf", Stream(value.encode))
 
   // `bytes.read[Protobuf]` aggregates the byte stream and wraps it as a message.
   given aggregable: Protobuf is Aggregable by Data = bytes => message(bytes.read[Data])
