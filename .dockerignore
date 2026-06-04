@@ -1,8 +1,9 @@
 # soundness local-CI input set
 #
-# Everything *not* excluded here is part of the Docker build context for
-# `img/test`, which means it is also part of the CI input digest.
-# Keep this list as the single source of truth for "what counts as a CI input".
+# Everything *not* excluded here is part of the CI input digest that
+# `make attest` signs (see etc/ci/_lib.py). Keep this list as the single source
+# of truth for "what counts as a CI input". It doubles as the .dockerignore for
+# the bootstrap image builds (`img/scala`, `img/soundness`).
 
 # Git metadata
 .git
@@ -28,11 +29,8 @@ bin
 **/target
 lib/ethereal/target
 
-# Bootstrap docker image build path — not used by `mill test.assembly && make ci`.
-# But keep `img/test` itself as an input: changes to the test Dockerfile must
-# invalidate the attestation, since they change *how* tests run.
+# Bootstrap docker image build path — not a test input.
 img
-!img/test
 etc/build1
 etc/build2
 etc/build3

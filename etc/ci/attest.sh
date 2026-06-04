@@ -1,14 +1,18 @@
 #!/usr/bin/env bash
 #
-# Run the test suite in Docker. On success, sign an attestation over the
-# CI input digest and attach it as a git note on HEAD.
+# Run a full, from-scratch build and the test suite locally. On success, sign
+# an attestation over the CI input digest and attach it as a git note on HEAD.
+#
+# The build runs in a throwaway git worktree checked out at HEAD, so it always
+# starts from a clean build cache (no reused `out/`) and compiles exactly the
+# committed tree the digest is taken over — never the dirty working tree.
 #
 # Environment:
 #   SOUNDNESS_CI_KEY  path to the private SSH key used for signing
 #                     (default: ~/.ssh/id_ed25519)
-#   SOUNDNESS_CI_SKIP_DOCKER=1
-#                     skip the docker build step (use only when you know
-#                     the inputs are unchanged from an existing attestation)
+#   SOUNDNESS_CI_SKIP_BUILD=1
+#                     skip the build/test step (use only when you know the
+#                     inputs are unchanged from an existing attestation)
 #
 # Exit codes:
 #   0  attestation written to refs/notes/ci-attestation for HEAD
@@ -85,20 +89,41 @@ for ancestor in $(git log --format='%H' -n 50 HEAD --skip=1 2>/dev/null); do
   fi
 done
 
-# Slow path: run the test suite in Docker. Tee the BuildKit output to a log
-# file because Docker's UI truncates long step output, which makes diagnosing
-# real test failures painful.
-if [[ "${SOUNDNESS_CI_SKIP_DOCKER:-0}" != "1" ]]; then
+# Slow path: do a full clean build and run the test suite locally.
+#
+# We build inside a throwaway detached worktree pinned to HEAD. A fresh worktree
+# has no `out/`, so the compile starts from a clean cache every time, and it
+# builds the exact committed tree the digest is computed over rather than the
+# developer's (possibly dirty) working tree. The developer's own `out/` is left
+# untouched. Output is tee'd to a log here in the original tree because the
+# build is verbose and a real failure can scroll far off-screen.
+if [[ "${SOUNDNESS_CI_SKIP_BUILD:-0}" != "1" ]]; then
   mkdir -p out
   LOG="out/attest-$(date -u +%Y%m%dT%H%M%SZ).log"
-  echo "Running test suite in Docker (img/test); full output → $LOG" >&2
+  WORKTREE_PARENT=$(mktemp -d)
+  WORKTREE="$WORKTREE_PARENT/build"
+  echo "Running full clean build + test suite in $WORKTREE; full output → $LOG" >&2
+  git worktree add --detach "$WORKTREE" "$HEAD_SHA" >&2
+
   set +e
-  DOCKER_BUILDKIT=1 docker build -f img/test --progress=plain . 2>&1 | tee "$LOG"
+  (
+    cd "$WORKTREE" || exit 1
+    CLAUDECODE=1 ./mill --ticker false soundness.all.compile \
+      && CLAUDECODE=1 ./mill --ticker false test.assembly \
+      && { CLAUDECODE=1 ./mill shutdown || true; } \
+      && CLAUDECODE=1 make ci
+  ) 2>&1 | tee "$LOG"
   rc=${PIPESTATUS[0]}
   set -e
+
+  # Tear the worktree down on both paths; don't add a second `trap … EXIT`, it
+  # would clobber the statement-tempdir trap installed below.
+  git worktree remove --force "$WORKTREE" 2>/dev/null || rm -rf "$WORKTREE"
+  rm -rf "$WORKTREE_PARENT"
+
   if [[ $rc -ne 0 ]]; then
     echo >&2
-    echo "docker build exited with $rc. Full log at $LOG" >&2
+    echo "build/test exited with $rc. Full log at $LOG" >&2
     echo "Last 80 lines of the log:" >&2
     echo "----" >&2
     tail -n 80 "$LOG" >&2
@@ -123,8 +148,8 @@ statement = {
     "predicateType": "https://soundness.dev/local-ci/v1",
     "predicate": {
         "commands": [
-            "./mill --ticker false --silent soundness.all.compile",
-            "./mill --ticker false --silent test.assembly",
+            "./mill --ticker false soundness.all.compile",
+            "./mill --ticker false test.assembly",
             "make ci",
         ],
         "ranAt": now,

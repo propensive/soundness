@@ -4,10 +4,10 @@
 #
 # The `probably` table reporter buffers its output until the run completes, so a
 # hung or deadlocked test produces no output at all — it just stalls forever.
-# Inside `docker build` (img/test stage 3) that hangs the whole CI build with no
-# diagnostics. This wrapper bounds the run: if the suite exceeds the timeout, it
-# dumps every thread's stack (so a deadlock is pinpointed) and fails, instead of
-# hanging indefinitely.
+# During `make attest` that would hang the whole build with no diagnostics. This
+# wrapper bounds the run: if the suite exceeds the timeout, it dumps every
+# thread's stack (so a deadlock is pinpointed) and fails, instead of hanging
+# indefinitely.
 #
 # Environment:
 #   SOUNDNESS_CI_TEST_TIMEOUT   seconds before the suite is declared hung
