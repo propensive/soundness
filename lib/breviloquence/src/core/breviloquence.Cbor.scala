@@ -43,6 +43,7 @@ import adversaria.*
 import anticipation.*
 import contingency.*
 import distillate.*
+import gossamer.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
@@ -242,6 +243,19 @@ object Cbor extends Cbor2, Dynamic:
 
   given aggregable: Tactic[CborError] => Cbor is Aggregable by Data =
     bytes => Cbor.ast(bytes.read[Cbor.Ast])
+
+  // HTTP content-type integration: `Abstractable across HttpStreams` makes a
+  // `Cbor` value usable as an HTTP request/response body (telekinesis derives
+  // `Postable`/`Servable` from it). Decoding a response body back into `Cbor`
+  // is already covered by `aggregable` (`Aggregable by Data`).
+  given abstractable: Cbor is Abstractable across HttpStreams to HttpStreams.Content =
+    new Abstractable:
+      type Self = Cbor
+      type Domain = HttpStreams
+      type Result = HttpStreams.Content
+
+      def genericize(value: Cbor): HttpStreams.Content =
+        (t"application/cbor", Stream(CborPrinter.encode(Cbor.unseal(value))))
 
   // `source.read[Foo over Cbor]` shorthand for
   // `source.read[Cbor].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`

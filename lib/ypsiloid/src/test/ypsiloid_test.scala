@@ -1028,6 +1028,157 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         updated.items.as[List[Int]]
       . assert(_ == List(99, 20, 30))
 
+    suite(m"Serializer roundtrip"):
+      import yamlPrinters.block
+
+      // Encode a value to `Yaml`, render it with the printer, parse the text
+      // back, and decode: the full encode → print → parse → decode loop.
+      def roundtrip[value: {Encodable in Yaml, Decodable in Yaml}](value: value): value =
+        value.yaml.show.read[Yaml].as[value]
+
+      // Print a parsed AST and re-parse it: print ∘ parse must be the identity
+      // on the structural AST (compared by `deepEquals`).
+      def astStable(source: Text): Boolean =
+        val original = source.read[Yaml]
+        Yaml.Ast.deepEquals(Yaml.unseal(original), Yaml.unseal(original.show.read[Yaml]))
+
+      test(m"Roundtrip a positive integer"):
+        roundtrip(42)
+      . assert(_ == 42)
+
+      test(m"Roundtrip a negative integer"):
+        roundtrip(-99)
+      . assert(_ == -99)
+
+      test(m"Roundtrip a long"):
+        roundtrip(1234567890123L)
+      . assert(_ == 1234567890123L)
+
+      test(m"Roundtrip a double"):
+        roundtrip(3.1415926)
+      . assert(_ == 3.1415926)
+
+      test(m"Roundtrip positive infinity"):
+        roundtrip(Double.PositiveInfinity)
+      . assert(_ == Double.PositiveInfinity)
+
+      test(m"Roundtrip negative infinity"):
+        roundtrip(Double.NegativeInfinity)
+      . assert(_ == Double.NegativeInfinity)
+
+      test(m"Roundtrip NaN"):
+        roundtrip(Double.NaN)
+      . assert(_.isNaN)
+
+      test(m"Roundtrip true"):
+        roundtrip(true)
+      . assert(identity)
+
+      test(m"Roundtrip false"):
+        roundtrip(false)
+      . assert(!_)
+
+      test(m"Roundtrip a simple string"):
+        roundtrip(t"hello")
+      . assert(_ == t"hello")
+
+      test(m"Roundtrip a string with a space"):
+        roundtrip(t"hello world")
+      . assert(_ == t"hello world")
+
+      test(m"Roundtrip a string that looks like an integer"):
+        roundtrip(t"42")
+      . assert(_ == t"42")
+
+      test(m"Roundtrip a string that looks like a boolean"):
+        roundtrip(t"true")
+      . assert(_ == t"true")
+
+      test(m"Roundtrip a string that looks like null"):
+        roundtrip(t"null")
+      . assert(_ == t"null")
+
+      test(m"Roundtrip an empty string"):
+        roundtrip(t"")
+      . assert(_ == t"")
+
+      test(m"Roundtrip a string with a colon"):
+        roundtrip(t"key: value")
+      . assert(_ == t"key: value")
+
+      test(m"Roundtrip a string with a newline"):
+        roundtrip(t"line1\nline2")
+      . assert(_ == t"line1\nline2")
+
+      test(m"Roundtrip a string with a quote and backslash"):
+        roundtrip(t"a\"b\\c")
+      . assert(_ == t"a\"b\\c")
+
+      test(m"Roundtrip a string with leading indicator"):
+        roundtrip(t"- not a list")
+      . assert(_ == t"- not a list")
+
+      test(m"Roundtrip a list of integers"):
+        roundtrip(List(1, 2, 3))
+      . assert(_ == List(1, 2, 3))
+
+      test(m"Roundtrip a list of strings"):
+        roundtrip(List(t"alice", t"bob"))
+      . assert(_ == List(t"alice", t"bob"))
+
+      test(m"Roundtrip an empty list"):
+        roundtrip(List[Int]())
+      . assert(_ == Nil)
+
+      test(m"Roundtrip a map"):
+        roundtrip(Map(t"a" -> 1, t"b" -> 2))
+      . assert(_ == Map(t"a" -> 1, t"b" -> 2))
+
+      test(m"Roundtrip a case class"):
+        roundtrip(Person(t"Jon", 42))
+      . assert(_ == Person(t"Jon", 42))
+
+      test(m"Roundtrip a nested case class"):
+        roundtrip(NamedOuter(t"a", Inner(7)))
+      . assert(_ == NamedOuter(t"a", Inner(7)))
+
+      test(m"Roundtrip a list of case classes"):
+        roundtrip(List(Person(t"a", 1), Person(t"b", 2)))
+      . assert(_ == List(Person(t"a", 1), Person(t"b", 2)))
+
+      test(m"Roundtrip a list of lists"):
+        roundtrip(List(List(1, 2), List(3, 4)))
+      . assert(_ == List(List(1, 2), List(3, 4)))
+
+      test(m"AST stable: nested mapping"):
+        astStable(t"outer:\n  inner: 1\n  other: two")
+      . assert(identity)
+
+      test(m"AST stable: sequence of mappings"):
+        astStable(t"- a: 1\n  b: 2\n- a: 3\n  b: 4")
+      . assert(identity)
+
+      test(m"AST stable: empty flow mapping"):
+        astStable(t"{}")
+      . assert(identity)
+
+      test(m"AST stable: empty flow sequence"):
+        astStable(t"[]")
+      . assert(identity)
+
+    suite(m"HTTP content-type integration"):
+      import charEncoders.utf8
+      import yamlPrinters.block
+
+      test(m"serialises with an application/yaml media type"):
+        Person(t"Jon", 42).yaml.generic(0)
+      . assert(_.starts(t"application/yaml"))
+
+      test(m"request body parses back via Instantiable"):
+        val instantiable = summon[Yaml is Instantiable across HttpRequests from Text]
+        instantiable(t"name: Jon\nage: 42").as[Person]
+      . assert(_ == Person(t"Jon", 42))
+
     ConformanceTests.all()
 
     PositionTests()

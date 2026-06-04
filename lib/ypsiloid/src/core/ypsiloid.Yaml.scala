@@ -46,6 +46,7 @@ import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
+import hieroglyph.CharEncoder
 import jacinta.Bcd
 import panopticon.*
 import prepositional.*
@@ -1187,6 +1188,28 @@ object Yaml extends Yaml2, Dynamic:
           new Yaml(ast, Yaml.PositionIndex(ints))
         case Yaml.Tracking.Off =>
           Yaml(YamlParser.parse(text))
+
+  // HTTP content-type integration. `Abstractable across HttpStreams` makes a
+  // `Yaml` value usable as an HTTP request/response body (telekinesis derives
+  // `Postable`/`Servable` from it); `Instantiable across HttpRequests` reads a
+  // request/response body back into `Yaml`. Encoding needs a `YamlPrinter` (see
+  // `yamlPrinters`).
+  given abstractable: (encoder: CharEncoder, printer: YamlPrinter)
+  =>  Yaml is Abstractable across HttpStreams to HttpStreams.Content =
+
+    new Abstractable:
+      type Self = Yaml
+      type Domain = HttpStreams
+      type Result = HttpStreams.Content
+
+      def genericize(value: Yaml): HttpStreams.Content =
+        ( t"application/yaml; charset=${encoder.encoding.name}",
+          Stream(printer.print(Yaml.unseal(value)).data) )
+
+  given instantiable: (Tactic[ParseError], Yaml.Tracking)
+  =>  Yaml is Instantiable across HttpRequests from Text =
+
+    text => Stream(text).read[Yaml]
 
   // `source.read[Foo over Yaml]` shorthand for
   // `source.read[Yaml].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`

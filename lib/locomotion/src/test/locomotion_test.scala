@@ -220,3 +220,13 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
           decode(0x80.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte,
               0x80.toByte, 0x80.toByte, 0x80.toByte, 0x02)
       . assert(_ == ProtobufError(ProtobufError.Reason.Overflow(0)))
+
+    suite(m"HTTP content-type integration"):
+      test(m"serialises with the application/protobuf media type"):
+        Person(t"Alice", 30).protobuf.generic(0)
+      . assert(_ == t"application/protobuf")
+
+      test(m"request/response body round-trips"):
+        val message = Person(t"Alice", 30).protobuf
+        message.generic(1).read[Person over Protobuf]
+      . assert(_ == Person(t"Alice", 30))
