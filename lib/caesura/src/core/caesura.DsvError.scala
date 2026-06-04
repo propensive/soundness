@@ -32,6 +32,7 @@
                                                                                                   */
 package caesura
 
+import denominative.*
 import fulminate.*
 
 object DsvError:
@@ -41,5 +42,12 @@ object DsvError:
   enum Reason(val number: Int) extends Clarification:
     case MisplacedQuote extends Reason(1)
 
-case class DsvError(format: DsvFormat, reason: DsvError.Reason)(using Diagnostics)
-extends Error(364, reason.number)(m"could not parse row data because $reason")
+// `row` and `column` are the 1-based position of the offending cell, and `offset`
+// is the character (UTF-16 code-unit) offset into the input at which the failure
+// was detected. A byte offset is not available here because the parser operates on
+// already-decoded `Text`, the source bytes having been discarded upstream.
+case class DsvError
+  ( format: DsvFormat, reason: DsvError.Reason, row: Ordinal, column: Ordinal, offset: Int )
+  ( using Diagnostics )
+extends Error(364, reason.number)
+  ( m"could not parse row data at row ${row.n1}, column ${column.n1} because $reason" )

@@ -113,6 +113,8 @@ object Sheet:
     private var current: String = ""
     private var currentLen: Int = 0
     private var pos: Int = 0
+    private var consumed: Int = 0
+    private var rowOrdinal: Ordinal = Prim
     private val builder: jl.StringBuilder = new jl.StringBuilder(64)
     private val cellsBuf: scm.ArrayBuffer[Text] = new scm.ArrayBuffer[Text](16)
     private var state: State = State.Fresh
@@ -127,6 +129,7 @@ object Sheet:
       if pos < currentLen then true
       else content match
         case head #:: tail =>
+          consumed += currentLen
           current = head.s
           currentLen = current.length
           pos = 0
@@ -145,6 +148,7 @@ object Sheet:
       val arr = new Array[Text](n)
       cellsBuf.copyToArray(arr)
       cellsBuf.clear()
+      rowOrdinal = rowOrdinal.next
       Dsv(IArray.unsafeFromArray(arr), headings)
 
     // Scan ahead in Fresh state for the next delimiter, quote, or line-ending,
@@ -171,7 +175,8 @@ object Sheet:
             return Unset
           else if ch == q then
             if builder.length > 0 then
-              raise(DsvError(format, DsvError.Reason.MisplacedQuote))
+              val reason = DsvError.Reason.MisplacedQuote
+              raise(DsvError(format, reason, rowOrdinal, cellsBuf.length.z, consumed + p))
 
             state = State.Quoted
             return Unset
