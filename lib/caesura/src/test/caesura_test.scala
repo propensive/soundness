@@ -86,7 +86,11 @@ object Tests extends Suite(m"Caesura tests"):
 
       test(m"misplaced quote"):
         capture[DsvError](t"""hello,wo"rld""".read[Sheet])
-      . assert(_ == DsvError(summon[DsvFormat], DsvError.Reason.MisplacedQuote))
+      . assert(_ == DsvError(summon[DsvFormat], DsvError.Reason.MisplacedQuote, Prim, Sec, 8))
+
+      test(m"misplaced quote reports row and offset on a later row"):
+        capture[DsvError](t"""a,b\nc,d\nef,g"h""".read[Sheet].rows.to(List))
+      . assert(_ == DsvError(summon[DsvFormat], DsvError.Reason.MisplacedQuote, Prim.next.next, Sec, 12))
 
       test(m"multi-line CSV without trailing newline"):
         t"""foo,bar\nbaz,quux""".read[Sheet].rows
