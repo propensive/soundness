@@ -1,0 +1,12 @@
+tel 1.0
+
+title Document with a TEL header
+author Ada
+
+# The single-document parser stops at the separator below, so none of the
+# non-TEL content that follows is parsed or validated.
+##
+This is not TEL at all. It might be base64, CSV, or a binary blob:
+  - { unbalanced brackets ][
+	tabs and	whatever  ## even a stray double-sigil here is ignored
+%%% &&& not a pragma: tel 9.9 nonsense

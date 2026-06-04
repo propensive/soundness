@@ -113,6 +113,7 @@ tabulation-row-with-remark
 tabulation-second-replaces-first
 tabulation-terminated-by-blank
 tabulation-three-columns
+tel-header-then-garbage
 unicode-keyword
 word-separation-resets-per-line
 zero-bytes

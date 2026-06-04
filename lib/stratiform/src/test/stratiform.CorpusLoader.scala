@@ -50,11 +50,18 @@ object CorpusLoader:
   def positive: List[Case] = load(t"pos")
   def negative: List[Case] = load(t"neg")
 
+  // Multi-document stream fixtures (§6.1): `.check` files hold a sequence of
+  // `=== document N ===` sections (see CheckFormat.parseStream).
+  def streaming: List[Case] = load(t"stream")
+
   private def load(category: Text): List[Case] =
-    readIndex(category).filterNot(_.s.startsWith("_")).map: stem =>
-      val source = readResource(t"/stratiform/corpus/$category/$stem.tel")
-      val check = readResourceText(t"/stratiform/corpus/$category/$stem.check")
-      Case(stem, IArray.from(source), check)
+    readIndex(category).filterNot(_.s.startsWith("_")).map(caseByStem(category, _))
+
+  // Load a single corpus case by category and stem (e.g. an off-index fixture).
+  def caseByStem(category: Text, stem: Text): Case =
+    val source = readResource(t"/stratiform/corpus/$category/$stem.tel")
+    val check = readResourceText(t"/stratiform/corpus/$category/$stem.check")
+    Case(stem, IArray.from(source), check)
 
   // Extract the expected E-code from a negative case's stem name. Filenames
   // follow the upstream convention `e<n>-<description>.tel`; cases without

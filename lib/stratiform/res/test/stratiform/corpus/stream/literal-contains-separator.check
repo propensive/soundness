@@ -1,0 +1,46 @@
+=== document 0 ===
+Document {
+    interpreter_directive: None,
+    pragma: Some(
+        Pragma {
+            version: (
+                1,
+                0,
+            ),
+            schema: None,
+            sigil: None,
+        },
+    ),
+    line_endings: LF,
+    children: [
+        Block {
+            comments: [],
+            tabulation: None,
+            compounds: [
+                Compound {
+                    keyword: "code",
+                    atoms: [
+                        Literal {
+                            delimiter: "END",
+                            text: "      line one\n##\n      line three",
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+                Compound {
+                    keyword: "after",
+                    atoms: [
+                        Inline {
+                            text: "plain",
+                            preceding_spaces: 1,
+                        },
+                    ],
+                    remark: None,
+                    children: [],
+                },
+            ],
+            trailing_blank_lines: 1,
+        },
+    ],
+}

@@ -143,6 +143,43 @@ object Tests extends Suite(m"Stratiform Tests"):
             tree == baseline
         . assert(identity)
 
+    suite(m"Document streams (§6.1)"):
+      // Each `.check` fixture holds a `=== document N ===` sequence; the parsed
+      // documents must match it document-for-document.
+      CorpusLoader.streaming.each: testcase =>
+        test(m"read[List[Tel]] parses ${testcase.stem}"):
+          testcase.source.read[List[Tel]].map(TelCheckTree.of)
+        . assert(_ == CheckFormat.parseStream(testcase.check).map(_.tree))
+
+        // `LazyList[Tel]` is proscenium's `Stream[Tel]`; this file doesn't
+        // import the predef alias, so spell it out.
+        test(m"read[Stream[Tel]] parses ${testcase.stem}"):
+          testcase.source.read[LazyList[Tel]].map(TelCheckTree.of).to(List)
+        . assert(_ == CheckFormat.parseStream(testcase.check).map(_.tree))
+
+      test(m"two documents yield a list of two"):
+        CorpusLoader.caseByStem(t"stream", t"two-documents").source.read[List[Tel]].length
+      . assert(_ == 2)
+
+      test(m"a trailing separator yields no empty trailing document"):
+        CorpusLoader.caseByStem(t"stream", t"trailing-separator").source.read[List[Tel]].length
+      . assert(_ == 1)
+
+      test(m"two consecutive separators yield an empty document between them"):
+        CorpusLoader.caseByStem(t"stream", t"empty-between").source.read[List[Tel]].length
+      . assert(_ == 3)
+
+      test(m"a malformed document in a stream raises (fail-fast)"):
+        // The second document has an odd indentation (E107); reading the whole
+        // list eagerly surfaces it.
+        capture[TelError](t"a 1\n##\nparent\n   bad".read[List[Tel]]).reason.number
+      . assert(_ == 107)
+
+      test(m"read[Stream[Tel]] is lazy past a malformed later document"):
+        val source = t"first ok\n##\nparent\n   bad"
+        TelCheckTree.of(source.read[LazyList[Tel]].head)
+      . assert(_ == TelCheckTree.of(t"first ok".read[Tel]))
+
     suite(m"Encode/decode primitives"):
       test(m"Text round-trip"):
         t"hello".encode.as[Text]

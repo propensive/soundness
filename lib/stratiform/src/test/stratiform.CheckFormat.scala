@@ -68,6 +68,18 @@ object CheckFormat:
 
     CheckFile(tree, errors)
 
+  // Parse a multi-document stream `.check` fixture (§6.1): a sequence of
+  // `=== document N ===` header lines, each followed by a `Document { … }`
+  // value and an optional per-document `errors:` block. Each section is parsed
+  // independently with `parse`.
+  def parseStream(source: Text): List[CheckFile] =
+    val sections = scala.collection.mutable.ListBuffer.empty[StringBuilder]
+    source.s.split('\n').foreach: line =>
+      if line.startsWith("=== document ") then sections += new StringBuilder()
+      else if sections.nonEmpty then sections.last.append(line).append('\n')
+
+    sections.toList.map(section => parse(Text(section.toString)))
+
   private def parseValue(cursor: Cursor): CheckTree =
     cursor.skipWhitespace()
     val c = cursor.peek()

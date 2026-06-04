@@ -107,6 +107,22 @@ object TelParser:
     p.reset(Cursor[Data](input), schema: Optional[Tels])
     p.parse()
 
+  // Streaming parse (§6.1) of a multi-document source into the documents it
+  // contains. `parseDocuments` is eager; `parseStream` parses lazily on demand.
+  def parseDocuments(input: Data): List[Tel.Document] raises TelError =
+    import zephyrine.Lineation.untrackedData
+    val p = cached.get.nn
+    p.reset(Cursor[Data](input), Unset)
+    p.parseAllDocuments()
+
+  def parseStream(input: Data): Stream[Tel.Document] raises TelError =
+    import zephyrine.Lineation.untrackedData
+    // A dedicated parser instance, not the shared per-thread cache: the lazy
+    // tail parses later document(s) on demand and must own its parser state.
+    val p = new TelParser()
+    p.reset(Cursor[Data](input), Unset)
+    p.documentStream(first = true)
+
   private final val SP: Byte = 0x20
   private final val LF: Byte = 0x0A
   private final val CR: Byte = 0x0D
@@ -168,6 +184,12 @@ object TelParser:
     var blank:         Boolean = false
     var eof:           Boolean = false
     var startLine:     Int = 1      // 1-indexed source line of this line
+    // §5/§6.1: this line is a document separator — exactly two resolved-sigil
+    // characters at column zero and nothing else. It ends the current document
+    // (like EOF) and the next document begins on the following line. Recognised
+    // only at the structural level, so it is computed only for non-blank,
+    // non-EOF, zero-indent lines.
+    var separator:     Boolean = false
 
 
 private final class TelParser():
@@ -642,6 +664,7 @@ private final class TelParser():
     head.blank = false
     head.eof   = false
     head.startLine = 1
+    head.separator = false
     prevLineWasBoundary = true
     prevContentLeadingSpaces = -1
     hasConsumedNonBlankLine = false
@@ -669,11 +692,56 @@ private final class TelParser():
     compoundLineKeyword = t""
     compoundLineRemark  = Unset
 
+  // Soft reset between documents in a stream (§6.1). Re-initialises only
+  // per-document state; preserves the live cursor position, the continuous
+  // `lineNo` counter, and the whole-source line-ending mode (§4). The BOM is
+  // significant only at the true start of the source, so it is not re-checked.
+  // A fresh `atomArena` is allocated per document because each parsed
+  // document's `Inline` atoms keep their own arena alive.
+  private[stratiform] def resetForNextDocument(): Unit =
+    margin = 0
+    sigil  = '#'.toByte
+    head.leadingSpaces = 0
+    head.indentLevels  = 0
+    head.blank = false
+    head.eof   = false
+    head.startLine = lineNo
+    head.separator = false
+    prevLineWasBoundary = true
+    prevContentLeadingSpaces = -1
+    hasConsumedNonBlankLine = false
+    documentEndsWithLf = false
+    ancestors.clear()
+    sb.setLength(0)
+    atomArena     = new Array[Byte](256)
+    arenaPos      = 0
+    inFlightStart = -1
+    java.util.Arrays.fill(scratchAtoms.asInstanceOf[Array[AnyRef]], null)
+    atomScratchIx = 0
+    java.util.Arrays.fill(scratchComments.asInstanceOf[Array[AnyRef]], null)
+    commentScratchIx = 0
+    java.util.Arrays.fill(scratchCompounds.asInstanceOf[Array[AnyRef]], null)
+    compoundScratchIx = 0
+    java.util.Arrays.fill(scratchBlocks.asInstanceOf[Array[AnyRef]], null)
+    blockScratchIx = 0
+    compoundLineKeyword = t""
+    compoundLineRemark  = Unset
+
   // ── Top-level parse ───────────────────────────────────────────────────────
 
+  // Single-document parse (§6.1): reads exactly one document and stops at the
+  // first document separator. Any content after the separator is left
+  // unconsumed and need not be valid TEL.
   def parse(): Tel.Document raises TelError =
     syncFrom()
     checkBom()
+    parseOneDocument()
+
+  // Parse one document from the current cursor position, stopping at the first
+  // document separator or at end of input. The caller has already synced from
+  // the cursor and (for the first document only) checked the BOM. On return,
+  // `head` is parked either on a separator (`head.separator`) or at EOF.
+  private def parseOneDocument(): Tel.Document raises TelError =
     val directive = parseInterpreterDirective()
     val pragma = parsePragma()
     fillHead()  // park head at the next line
@@ -687,6 +755,70 @@ private final class TelParser():
 
     val children = parseChildren(parentIndent = -1)
     Tel.Document(directive, pragma, lineEndings, children)
+
+  // ── Document streams (§6.1) ────────────────────────────────────────────────
+
+  // Streaming parse: yield each document of the source in order, parsed
+  // independently. Eager — all documents are parsed (and any TelError raised)
+  // before returning. A separator followed only by blank lines or nothing
+  // yields no trailing empty document; two consecutive separators yield one
+  // empty document between them.
+  def parseAllDocuments(): List[Tel.Document] raises TelError =
+    syncFrom()
+    checkBom()
+    val buffer = scala.collection.mutable.ListBuffer.empty[Tel.Document]
+    var first = true
+    var continue = true
+    while continue do
+      if !first then resetForNextDocument()
+      first = false
+      val doc = parseOneDocument()
+      val terminatedBySeparator = head.separator
+      if terminatedBySeparator then consumeSeparatorLine()
+      // A document terminated by a separator is always emitted (even when
+      // empty — the empty document between two separators). A document
+      // terminated by EOF is dropped if empty: this is the trailing
+      // separator-then-blanks case, and the entirely-blank source.
+      if terminatedBySeparator || !documentIsEmpty(doc) then buffer += doc
+      if !terminatedBySeparator then continue = false
+
+    buffer.to(List)
+
+  // Lazy streaming parse: documents are parsed on demand as the returned
+  // `Stream` is forced. Mirrors turbulence's deferred `Streamable` readers,
+  // which likewise capture the error capability in the lazy tail; the consumer
+  // must drive the stream within the `raises TelError` handler's scope. Uses a
+  // dedicated parser instance (never the shared per-thread cache) so the
+  // parser state survives across element demands.
+  private def documentStream(first: Boolean): Stream[Tel.Document] raises TelError =
+    if first then
+      syncFrom()
+      checkBom()
+    else resetForNextDocument()
+
+    val doc = parseOneDocument()
+    if head.separator then
+      consumeSeparatorLine()
+      doc #:: documentStream(first = false)
+    else if documentIsEmpty(doc) then Stream.empty
+    else Stream(doc)
+
+  // A document with no prologue and no children: the empty document yielded
+  // between two separators, or the absence of any document at the end of a
+  // stream.
+  private def documentIsEmpty(doc: Tel.Document): Boolean =
+    doc.children.isEmpty && doc.interpreterDirective.absent && doc.pragma.absent
+
+  // `head` is parked on a separator (the cursor sits on its first sigil).
+  // Consume both sigil bytes and the terminating line-ending so the next
+  // document begins on the following line. At true EOF the separator has no
+  // line-ending and `consumeLineEnding` is a no-op.
+  private def consumeSeparatorLine(): Unit raises TelError = inHold:
+    ensureLookahead(2)
+    advance()  // first sigil
+    advance()  // second sigil
+    consumeLineEnding()
+    prevLineWasBoundary = true
 
   // ── BOM ──────────────────────────────────────────────────────────────────
 
@@ -1032,6 +1164,7 @@ private final class TelParser():
   // also mark-using) execute inside an active `cursor.hold` scope.
   private def fillHead(): Unit raises TelError = inHold:
     head.startLine = lineNo
+    head.separator = false
 
     val spaces = countLeadingSpaces()
     head.leadingSpaces = spaces
@@ -1051,6 +1184,12 @@ private final class TelParser():
     else
       head.blank = false
       head.eof = false
+      // A document separator is recognised only at column zero (§5). The
+      // resolved sigil is already in `sigil` (the pragma, if any, was parsed
+      // before any body fillHead). When the line is a separator we leave the
+      // cursor parked on its first sigil; the multi-document driver consumes
+      // the separator line, and the body-parsing loops treat it like EOF.
+      head.separator = spaces == 0 && headLineIsSeparator()
       val rel = spaces - margin
       head.indentLevels =
         if rel < 0 then
@@ -1058,20 +1197,32 @@ private final class TelParser():
         else if rel % 2 == 0 then rel / 2
         else recoverOddIndent(spaces, head.startLine)
 
+  // True iff the cursor is parked on the first byte of a document separator:
+  // exactly two `sigil` bytes followed immediately by a line-ending or EOF —
+  // no third character and (given the zero-indent precondition) no leading or
+  // trailing spaces. Does not consume.
+  private def headLineIsSeparator(): Boolean =
+    ensureLookahead(3)
+    pos + 1 < bufEnd
+    && bytes(pos) == sigil && bytes(pos + 1) == sigil
+    && (pos + 2 >= bufEnd || bytes(pos + 2) == LF || bytes(pos + 2) == CR)
+
   // ── parseChildren ────────────────────────────────────────────────────────
 
   private def parseChildren(parentIndent: Int): IArray[Tel.Block] raises TelError =
     val expected = parentIndent + 1
 
-    if head.eof || head.indentLevels < expected then IArray.empty[Tel.Block]
+    if head.eof || head.separator || head.indentLevels < expected
+    then IArray.empty[Tel.Block]
     else
       val start = blockScratchIx
-      while !head.eof && head.indentLevels == expected do
+      while !head.eof && !head.separator && head.indentLevels == expected do
         parseBlock(expected)  // pushes one block onto scratchBlocks
 
       // After consuming children at `expected`, a remaining non-blank line
-      // more indented than `expected` is an error.
-      if !head.eof && head.indentLevels > expected then
+      // more indented than `expected` is an error. A document separator
+      // (always at column zero) is never over-indented, so it is excluded.
+      if !head.eof && !head.separator && head.indentLevels > expected then
         val line = head.startLine
         val lastIx = blockScratchIx - 1
         if lastIx >= start then
@@ -1101,7 +1252,9 @@ private final class TelParser():
     val compoundStart = compoundScratchIx
 
     // Leading comments at this indent.
-    while !head.eof && !head.blank && head.indentLevels == indent && isCommentBody() do
+    while !head.eof && !head.separator && !head.blank && head.indentLevels == indent
+          && isCommentBody()
+    do
       // §9 E109 check — fires only if the immediately preceding line was a
       // content line (compound / tabulation) at indent ≥ this comment's.
       if !prevLineWasBoundary && prevContentLeadingSpaces >= 0
@@ -1124,7 +1277,8 @@ private final class TelParser():
 
     // Optional tabulation header.
     val tabulation: Optional[Tel.Tabulation] =
-      if !head.eof && !head.blank && head.indentLevels == indent && isTabulationBody()
+      if !head.eof && !head.separator && !head.blank && head.indentLevels == indent
+         && isTabulationBody()
       then
         val ls = head.leadingSpaces
         val tab = parseTabulationLine()
@@ -1137,7 +1291,9 @@ private final class TelParser():
 
     // Compound loop.
     var keepLoop = true
-    while keepLoop && !head.eof && !head.blank && head.indentLevels == indent do
+    while keepLoop && !head.eof && !head.separator && !head.blank
+          && head.indentLevels == indent
+    do
       if isCommentBody() || isTabulationBody() then keepLoop = false
       else
         val compoundLeadingSpaces = head.leadingSpaces
@@ -1202,7 +1358,7 @@ private final class TelParser():
     val savedLineNo = lineNo
     while !head.eof && head.blank do fillHead()
     val keep =
-      !head.eof && head.indentLevels == indent && !isCommentBody()
+      !head.eof && !head.separator && head.indentLevels == indent && !isCommentBody()
     if !keep then
       // Rewind.
       syncTo()
