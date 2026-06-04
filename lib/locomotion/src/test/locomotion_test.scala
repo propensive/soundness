@@ -35,6 +35,7 @@ package locomotion
 import soundness.*
 
 import strategies.throwUnsafely
+import errorDiagnostics.stackTraces
 
 case class Sample(@field(1) value: Int) derives CanEqual
 case class Point(@field(1) x: Int, @field(2) y: Int) derives CanEqual
@@ -193,3 +194,29 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       test(m"a single entry encodes as a length-delimited message"):
         wire(Labels(Map(t"a" -> t"b")))
       . assert(_ == List(0x0a, 0x06, 0x0a, 0x01, 0x61, 0x12, 0x01, 0x62))
+
+    suite(m"Parse errors carry a byte offset"):
+      def decode(bytes: Byte*): Sample raises ProtobufError =
+        Stream(IArray.from(bytes)).read[Sample over Protobuf]
+
+      test(m"a truncated length-delimited payload reports the offset where data ran out"):
+        // field 1, wire type Len, length 5, but only one payload byte present.
+        capture[ProtobufError](decode(0x0a, 0x05, 0x41))
+      . assert(_ == ProtobufError(ProtobufError.Reason.Truncated(2)))
+
+      test(m"an unexpected wire type reports the offset of the tag"):
+        // field 1, wire type 3 (group-start) is not a valid proto3 wire type.
+        capture[ProtobufError](decode(0x0b))
+      . assert(_ == ProtobufError(ProtobufError.Reason.UnexpectedWireType(3, 0)))
+
+      test(m"a varint longer than ten bytes is malformed"):
+        capture[ProtobufError]:
+          Stream(IArray.fill(11)(0x80.toByte)).read[Sample over Protobuf]
+      . assert(_ == ProtobufError(ProtobufError.Reason.MalformedVarint(0)))
+
+      test(m"a varint whose value overflows 64 bits is rejected"):
+        // nine continuation bytes then a tenth byte contributing more than bit 63.
+        capture[ProtobufError]:
+          decode(0x80.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte, 0x80.toByte,
+              0x80.toByte, 0x80.toByte, 0x80.toByte, 0x02)
+      . assert(_ == ProtobufError(ProtobufError.Reason.Overflow(0)))

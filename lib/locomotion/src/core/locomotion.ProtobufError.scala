@@ -37,17 +37,27 @@ import fulminate.*
 object ProtobufError:
   object Reason:
     given communicable: Reason is Communicable =
-      case Truncated                 => m"the protobuf data ended unexpectedly"
-      case MalformedVarint           => m"a varint was malformed"
-      case UnexpectedWireType(found) => m"an unexpected wire type, $found, was encountered"
-      case Overflow                  => m"a numeric value was too large for its type"
-      case MissingField(number)      => m"the required field number $number was missing"
+      case Truncated(offset)       => m"the protobuf data ended unexpectedly at offset $offset"
+      case MalformedVarint(offset) => m"a varint was malformed at offset $offset"
+      case MissingField(number)    => m"the required field number $number was missing"
 
+      case UnexpectedWireType(found, offset) =>
+        m"an unexpected wire type, $found, was encountered at offset $offset"
+
+      case Overflow(offset) =>
+        m"a numeric value was too large for its type at offset $offset"
+
+  // The `offset` on the byte-level reasons is the position, in bytes, within the
+  // protobuf message (or sub-message payload) currently being parsed — not an
+  // absolute offset into the original input. Scalar fields and nested messages are
+  // each decoded with a fresh parser over their own payload slice, so only the
+  // top-level message's offsets are absolute. `MissingField` is a semantic
+  // (decode-level) failure and carries no offset.
   enum Reason:
-    case Truncated
-    case MalformedVarint
-    case UnexpectedWireType(found: Int)
-    case Overflow
+    case Truncated(offset: Int)
+    case MalformedVarint(offset: Int)
+    case UnexpectedWireType(found: Int, offset: Int)
+    case Overflow(offset: Int)
     case MissingField(number: Int)
 
 case class ProtobufError(reason: ProtobufError.Reason)(using Diagnostics)

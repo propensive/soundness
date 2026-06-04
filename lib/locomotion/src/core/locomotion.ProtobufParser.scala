@@ -48,14 +48,19 @@ class ProtobufParser(data: Data):
   def atEnd: Boolean = pos >= data.length
 
   def varint(): Long raises ProtobufError =
+    val start = pos
     var result = 0L
     var shift = 0
     var continue = true
 
     while continue do
-      if pos >= data.length then abort(ProtobufError(Reason.Truncated))
+      if pos >= data.length then abort(ProtobufError(Reason.Truncated(pos)))
+      if shift >= 70 then abort(ProtobufError(Reason.MalformedVarint(start)))
       val byte = data(pos) & 0xff
       pos += 1
+      // The 10th byte (shift == 63) may only contribute bit 63; any higher bit set
+      // means the value does not fit in 64 bits.
+      if shift == 63 && (byte & 0x7f) > 1 then abort(ProtobufError(Reason.Overflow(start)))
       if shift < 64 then result |= (byte.toLong & 0x7f) << shift
       shift += 7
       if (byte & 0x80) == 0 then continue = false
@@ -63,7 +68,7 @@ class ProtobufParser(data: Data):
     result
 
   def fixed32(): Int raises ProtobufError =
-    if pos + 4 > data.length then abort(ProtobufError(Reason.Truncated))
+    if pos + 4 > data.length then abort(ProtobufError(Reason.Truncated(pos)))
     var result = 0
     var i = 0
 
@@ -75,7 +80,7 @@ class ProtobufParser(data: Data):
     result
 
   def fixed64(): Long raises ProtobufError =
-    if pos + 8 > data.length then abort(ProtobufError(Reason.Truncated))
+    if pos + 8 > data.length then abort(ProtobufError(Reason.Truncated(pos)))
     var result = 0L
     var i = 0
 
@@ -87,7 +92,7 @@ class ProtobufParser(data: Data):
     result
 
   def slice(length: Int): Data raises ProtobufError =
-    if length < 0 || pos + length > data.length then abort(ProtobufError(Reason.Truncated))
+    if length < 0 || pos + length > data.length then abort(ProtobufError(Reason.Truncated(pos)))
     val result = data.slice(pos, pos + length)
     pos += length
     result
@@ -96,12 +101,13 @@ class ProtobufParser(data: Data):
     val accumulator = scm.LinkedHashMap.empty[Int, scm.ListBuffer[Protobuf]]
 
     while !atEnd do
+      val tagStart = pos
       val tag = varint().toInt
       val number = tag >>> 3
       val code = tag & 0x7
 
       val wireType =
-        WireType.fromId(code).lest(ProtobufError(Reason.UnexpectedWireType(code)))
+        WireType.fromId(code).lest(ProtobufError(Reason.UnexpectedWireType(code, tagStart)))
 
       val value = wireType match
         case WireType.Varint =>
