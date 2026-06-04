@@ -708,11 +708,18 @@ object Tel extends Tel2:
   def parse(bytes: Data, schema: Tels): Tel raises TelError =
     Tel(TelParser.parse(bytes, schema))
 
-  // `bytes.read[Tel]` for any Stream[Data] source: concatenates the
-  // chunks and parses the result. The metadata (interpreter directive,
-  // pragma, line-endings) is *not* surfaced — use `.load[Tel]` to
-  // recover those alongside the value.
-  given aggregable: Tactic[TelError] => Tel is Aggregable by Data = source =>
+  // Parse a multi-document source (§6.1) into its sequence of documents.
+  // `parseAll` is eager; `parseStream` parses lazily on demand. Used internally
+  // by the collection Aggregable typeclasses; user code should prefer
+  // `bytes.read[List[Tel]]` or `bytes.read[Stream[Tel]]`.
+  def parseAll(bytes: Data): List[Tel] raises TelError =
+    TelParser.parseDocuments(bytes).map(Tel(_))
+
+  def parseStream(bytes: Data): Stream[Tel] raises TelError =
+    TelParser.parseStream(bytes).map(Tel(_))
+
+  // Concatenate the chunks of a `Stream[Data]` source into a single byte array.
+  private def concatenate(source: Stream[Data]): Data =
     import denominative.nil
     var acc    = IArray.empty[Byte]
     var stream = source
@@ -720,7 +727,15 @@ object Tel extends Tel2:
       acc = acc ++ stream.head
       stream = stream.tail
 
-    parse(acc)
+    acc
+
+  // `bytes.read[Tel]` for any Stream[Data] source: concatenates the
+  // chunks and parses the result. The metadata (interpreter directive,
+  // pragma, line-endings) is *not* surfaced — use `.load[Tel]` to
+  // recover those alongside the value. Per §6.1, single-document parsing
+  // stops at the first document separator; content after it is ignored.
+  given aggregable: Tactic[TelError] => Tel is Aggregable by Data =
+    source => parse(concatenate(source))
 
   // `source.read[Foo over Tel]` shorthand for
   // `source.read[Tel].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`
@@ -729,15 +744,18 @@ object Tel extends Tel2:
   // `value { type Transport = Tel }` so the cast is a no-op at runtime.
   given aggregableOver: [value: Decodable in Tel] => Tactic[TelError]
   =>  (value over Tel) is Aggregable by Data =
-    source =>
-      import denominative.nil
-      var acc    = IArray.empty[Byte]
-      var stream = source
-      while !stream.nil do
-        acc = acc ++ stream.head
-        stream = stream.tail
+    source => parse(concatenate(source)).as[value].asInstanceOf[value over Tel]
 
-      parse(acc).as[value].asInstanceOf[value over Tel]
+  // `source.read[List[Tel]]` / `read[Stream[Tel]]` for a multi-document source
+  // (§6.1). `List[Tel]` parses every document eagerly; `Stream[Tel]` parses
+  // them lazily on demand (the more specific instance wins over turbulence's
+  // generic `Stream` Aggregable, which would otherwise wrap the whole source as
+  // a single element).
+  given listAggregable: Tactic[TelError] => List[Tel] is Aggregable by Data =
+    source => parseAll(concatenate(source))
+
+  given streamAggregable: Tactic[TelError] => Stream[Tel] is Aggregable by Data =
+    source => parseStream(concatenate(source))
 
   // `text.load[Tel]` for any Stream[Text] source: concatenates the
   // chunks, UTF-8 encodes, parses, and pairs the resulting Tel with a
