@@ -32,40 +32,99 @@
                                                                                                   */
 package anthology
 
-import soundness.*
+import java.nio.file as jnf
 
-import classloaders.threadContext
-import codicils.await
-import logging.silent
-import strategies.throwUnsafely
-import systems.java
-import temporaryDirectories.system
-import threading.platform
+import scala.util.control as suc
 
-object Tests extends Suite(m"Anthology Tests"):
-  def run(): Unit =
-    suite(m"REPL tests"):
-      given Scalac[3.8] = Scalac(Nil)
+import ambience.*
+import anticipation.*
+import contingency.*
+import digression.*
+import distillate.*
+import gossamer.*
+import hellenism.*
+import inimitable.*
+import parasite.*
+import prepositional.*
+import serpentine.*
+import vacuous.*
 
-      test(m"a definition is visible on a later line"):
-        supervise:
-          val repl = Repl()
-          repl.interpret(t"val x = 40")
-          repl.interpret(t"println(x + 2)")
-      . assert:
-          case Repl.Outcome.Ran(_) => true
-          case _                   => false
+import interfaces.paths.pathOnLinux
 
-      test(m"a type error is reported as Rejected with notices"):
-        supervise:
-          Repl().interpret(t"val n: Int = \"forty\"")
-      . assert:
-          case Repl.Outcome.Rejected(notices) => notices.nonEmpty
-          case _                              => false
+object Repl:
+  object Layout:
+    class Standard() extends Layout:
+      def objectName(index: Int): Text = t"rs$$line$$$index"
 
-      test(m"a runtime exception is reported as Threw"):
-        supervise:
-          Repl().interpret(t"throw new RuntimeException(\"boom\")")
-      . assert:
-          case Repl.Outcome.Threw(_, _) => true
-          case _                        => false
+      def wrap(index: Int, history: List[Text], code: Text): Text =
+        val imports = history.map: previous =>
+          t"  import $previous.*"
+
+        val body = code.cut(t"\n").map: line =>
+          t"  $line"
+
+        (t"object ${objectName(index)}:" :: imports ::: body).join(t"\n")
+
+  trait Layout:
+    def objectName(index: Int): Text
+    def wrap(index: Int, history: List[Text], code: Text): Text
+
+  enum Outcome:
+    case Ran(notices: List[Notice])
+    case Threw(notices: List[Notice], error: Throwable)
+    case Rejected(notices: List[Notice])
+    case Crashed(notices: List[Notice], error: StackTrace)
+
+class Repl[version <: Scalac.Versions]
+  ( layout: Repl.Layout = Repl.Layout.Standard() )
+  ( using scalac: Scalac[version], classloader: Classloader, temporary: TemporaryDirectory ):
+
+  import Repl.Outcome
+
+  private var index:   Int        = 0
+  private var history: List[Text] = Nil
+
+  private val out: Path on Linux = unsafely(temporaryDirectory/Uuid())
+  locally(jnf.Files.createDirectories(jnf.Path.of(out.encode.s)).nn)
+
+  private lazy val loader: Classloader =
+    LocalClasspath((Classpath.Directory(out) :: Nil)*).classloader(classloader)
+
+  private def classpath(using System): LocalClasspath =
+    val entries = Classpath.Directory(out) :: (classloaders.threadContext.classpath.match
+      case classpath: LocalClasspath => classpath.entries
+
+      case _ =>
+        unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries)
+
+    LocalClasspath(entries*)
+
+  def interpret(line: Text)(using Monitor, System, Codicil)
+  :   Outcome logs CompileEvent raises CompilerError raises AsyncError =
+
+    val name:    Text = layout.objectName(index)
+    val source:  Text = layout.wrap(index, history, line)
+    val process       = scalac(classpath)(Map(t"$name.scala" -> source), out)
+    val result        = process.complete()
+    val notices       = process.notices.to(List)
+
+    result match
+      case CompileResult.Crash(trace) =>
+        Outcome.Crashed(notices, trace)
+
+      case CompileResult.Failure =>
+        Outcome.Rejected(notices)
+
+      case CompileResult.Success =>
+        index += 1
+        history = history :+ name
+
+        try
+          loader.on(t"$name$$")
+          Outcome.Ran(notices)
+        catch
+          case error: ExceptionInInitializerError =>
+            Outcome.Threw(notices, Optional(error.getCause).or(error))
+
+          case suc.NonFatal(error) =>
+            Outcome.Threw(notices, error)
