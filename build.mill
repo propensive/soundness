@@ -444,8 +444,7 @@ object breviloquence extends Library:
   object core extends Component(urticose.url, panopticon.core, turbulence.core, adversaria.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, sedentary.core, eucalyptus.core):
-    override def enabled = false
+  object test extends Tests(core, sedentary.core, eucalyptus.core)
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(
       mvn"com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.18.2",

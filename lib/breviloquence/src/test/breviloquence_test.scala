@@ -313,3 +313,13 @@ object Tests extends Suite(m"Breviloquence Tests"):
           val bytes = CborPrinter.encode(Cbor.unseal((status: CStatus).cbor))
           Cbor.ast(Cbor.Ast.parse(bytes)).as[CStatus]
       . assert(_ == List(CStatus.Active(5), CStatus.Removed(9), CStatus.Pending(1)))
+
+    suite(m"HTTP content-type integration"):
+      test(m"serialises with the application/cbor media type"):
+        Person(t"Alice", 30).cbor.generic(0)
+      . assert(_ == t"application/cbor")
+
+      test(m"request/response body round-trips"):
+        val body = Person(t"Alice", 30).cbor
+        body.generic(1).read[Person over Cbor]
+      . assert(_ == Person(t"Alice", 30))
