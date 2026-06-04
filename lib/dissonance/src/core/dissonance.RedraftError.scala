@@ -30,9 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package dissonance
 
-export
-  dissonance
-  . { Change, Chunk, Del, Diff, diff, DiffError, Edit, Evolution, evolve, Ins, Par, RDiff, Redraft,
-      RedraftError, Region, Sub }
+import anticipation.*
+import fulminate.*
+
+object RedraftError:
+  object Reason:
+    given communicable: Reason is Communicable =
+      case NoMatch    => m"no matching line could be found in the original"
+      case Ambiguous  => m"the change could be interpreted in more than one way"
+      case Unanchored => m"there is not enough context to locate the change unambiguously"
+
+  enum Reason(val number: Int) extends Clarification:
+    case NoMatch    extends Reason(1)
+    case Ambiguous  extends Reason(2)
+    case Unanchored extends Reason(3)
+
+case class RedraftError(line: Int, text: Text, reason: RedraftError.Reason)(using Diagnostics)
+extends Error(472, reason.number)
+  ( m"the redraft could not be applied at line $line ($text) because $reason" )

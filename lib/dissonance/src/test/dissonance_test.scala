@@ -37,6 +37,9 @@ import soundness.*
 import proximities.levenshteinDistance
 import caseSensitivity.sensitive
 import strategies.throwUnsafely
+import errorDiagnostics.empty
+
+import Redraft.Directive as D
 
 object Tests extends Suite(m"Dissonance tests"):
   def run(): Unit =
@@ -252,6 +255,87 @@ object Tests extends Suite(m"Dissonance tests"):
         val evolution = evolve(List(t"Jack and Jill", t"Jack with Jill", t"Jack und Jill").map(_.chars.to(List)))
         List(Prim, Sec, Ter).map(evolution(_).mkString)
       . assert(_ == List("Jack and Jill", "Jack with Jill", "Jack und Jill"))
+
+    val source = Vector(t"line1", t"line2", t"line3")
+    val dup = Vector(t"a", t"b", t"a")
+    val list = Vector(t"- alpha", t"- beta", t"- gamma")
+
+    suite(m"Redraft parsing tests"):
+      val roundtrip = Stream(t"line1", t"- line2", t"+ new", t"\\- escaped", t"< forced", t"> add")
+
+      test(m"Parse a simple redraft"):
+        Redraft.parse(Stream(t"line1", t"- line2", t"+ new line 2a", t"line3"))
+      . assert(_ == Redraft(D.Keep(t"line1"), D.Mark(t"line2", false), D.Mark(t"new line 2a", true),
+          D.Keep(t"line3")))
+
+      test(m"Parse forced and escaped directives"):
+        Redraft.parse(Stream(t"< forced", t"> add", t"\\- escaped"))
+      . assert(_ == Redraft(D.Cut(t"forced"), D.Add(t"add"), D.Keep(t"- escaped")))
+
+      test(m"Serialize round-trips through parse"):
+        Redraft.parse(roundtrip).serialize.to(List)
+      . assert(_ == roundtrip.to(List))
+
+    suite(m"Redraft application tests"):
+      test(m"Apply a simple redraft"):
+        Redraft.parse(Stream(t"- line2", t"+ new line 2a")).patch(source).to(Vector)
+      . assert(_ == Vector(t"line1", t"new line 2a", t"line3"))
+
+      test(m"Omitted unchanged lines are skipped"):
+        Redraft.parse(Stream(t"- line2")).patch(source).to(Vector)
+      . assert(_ == Vector(t"line1", t"line3"))
+
+      test(m"Insert before the first line"):
+        Redraft.parse(Stream(t"+ line0")).patch(source).to(Vector)
+      . assert(_ == Vector(t"line0", t"line1", t"line2", t"line3"))
+
+      test(m"Forced insert with the alternate marker"):
+        Redraft.parse(Stream(t"> line0")).patch(source).to(Vector)
+      . assert(_ == Vector(t"line0", t"line1", t"line2", t"line3"))
+
+      test(m"Deletion anchored by context"):
+        Redraft.parse(Stream(t"b", t"- a")).patch(dup).to(Vector)
+      . assert(_ == Vector(t"a", t"b"))
+
+      test(m"A verbatim marker line is kept as context"):
+        Redraft.parse(Stream(t"- alpha", t"< - beta", t"- gamma")).patch(list).to(Vector)
+      . assert(_ == Vector(t"- alpha", t"- gamma"))
+
+      test(m"Escaped context matches a literal marker line"):
+        Redraft.parse(Stream(t"\\- alpha")).patch(list).to(Vector)
+      . assert(_ == Vector(t"- alpha", t"- beta", t"- gamma"))
+
+      test(m"Delete a literal marker line with a doubled marker"):
+        Redraft.parse(Stream(t"- alpha", t"- - beta", t"- gamma")).patch(list).to(Vector)
+      . assert(_ == Vector(t"- alpha", t"- gamma"))
+
+    suite(m"Redraft ambiguity tests"):
+      test(m"An under-anchored deletion is rejected"):
+        capture[RedraftError](Redraft.parse(Stream(t"- a")).patch(dup))
+      . assert(_.reason == RedraftError.Reason.Unanchored)
+
+      test(m"verify reports the under-anchored line"):
+        Redraft.parse(Stream(t"- a")).verify(dup)
+      . assert(_ == List(Redraft.Anomaly(0, t"a", RedraftError.Reason.Unanchored)))
+
+      test(m"A non-matching context line is rejected"):
+        capture[RedraftError](Redraft.parse(Stream(t"absent", t"- line2")).patch(source))
+      . assert(_.reason == RedraftError.Reason.NoMatch)
+
+    suite(m"Redraft rendering tests"):
+      val target = Vector(t"line1", t"new", t"line3")
+
+      test(m"Render a minimal redraft, dropping all context"):
+        diff(source, Vector(t"line1", t"new line 2a", t"line3")).redraft().serialize.to(List)
+      . assert(_ == List(t"- line2", t"+ new line 2a"))
+
+      test(m"Render minimal context to anchor an ambiguous deletion"):
+        diff(dup, Vector(t"a", t"b")).redraft().serialize.to(List)
+      . assert(_ == List(t"b", t"- a"))
+
+      test(m"A rendered redraft reproduces the target when applied"):
+        diff(source, target).redraft().patch(source).to(Vector)
+      . assert(_ == target)
 
     // suite(m"Casual diff tests"):
     //   test(m"Parse a simple casual diff"):
