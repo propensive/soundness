@@ -30,6 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xylophone
 
-export xylophone.{Xml, XmlError, XmlSchema, DynamicXmlEnabler, dynamicXmlAccess}
+import rudiments.*
+
+// Phantom-typed gate for `xml.selectDynamic("…")` and friends. Importing
+// `dynamicXmlAccess.enabled` brings the given into scope and unlocks the
+// dynamic navigation syntax (`xml.foo`, `xml.foo(Prim)`); without that import
+// the dynamic methods are inaccessible, mirroring jacinta's
+// `DynamicJsonEnabler` and stratiform's `DynamicTelEnabler`.
+
+sealed trait DynamicXmlEnabler
+
+object dynamicXmlAccess:
+  inline given enabled: DynamicXmlEnabler = !!

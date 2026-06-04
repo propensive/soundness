@@ -2331,6 +2331,49 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
     case Fragment(value) => result.decoded(value)
     case xml: Xml        => result.decoded(xml)
 
+  // Dynamic navigation. `xml.foo` selects every child element named `foo`,
+  // flattening across all element-nodes in the current `Fragment` (XML tags
+  // are not unique, so a dereference yields a `Fragment` of zero or more
+  // matches). `xml.foo(ordinal)` picks a single one; the ordinal defaults to
+  // `Prim`, so `xml.foo()` is the first match. Both are gated by an imported
+  // `DynamicXmlEnabler` (see `dynamicXmlAccess.enabled`).
+
+  private def selfNodes: IArray[Node] = this match
+    case Fragment(nodes*) => IArray.from(nodes)
+    case node: Node       => IArray(node)
+
+  private def childElements(name: String): IArray[Node] =
+    val buffer = scm.ArrayBuffer[Node]()
+    val nodes = selfNodes
+    var i = 0
+
+    while i < nodes.length do
+      nodes(i) match
+        case Element(_, _, children) =>
+          var j = 0
+
+          while j < children.length do
+            children(j) match
+              case child: Element if child.label == name.tt => buffer.append(child)
+              case _                                        => ()
+
+            j += 1
+
+        case _ =>
+          ()
+
+      i += 1
+
+    IArray.from(buffer)
+
+  def selectDynamic(name: String)(using erased DynamicXmlEnabler): Fragment =
+    new Fragment(childElements(name)*)
+
+  def applyDynamic(name: String)(ordinal: Ordinal = Prim)(using erased DynamicXmlEnabler)
+  :   Fragment =
+
+    childElements(name).at(ordinal).lay(new Fragment())(new Fragment(_))
+
 sealed trait Node extends Xml
 
 case class Comment(text: Text) extends Node:
