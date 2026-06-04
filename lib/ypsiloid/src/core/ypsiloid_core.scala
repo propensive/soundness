@@ -38,11 +38,18 @@ import contingency.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
+import spectacular.{Showable, show}
 import vacuous.*
 import wisteria.*
 import zephyrine.*
 
 import YamlError.Reason
+
+// Render a `Yaml` / `Yaml.Ast` to YAML text using the `YamlPrinter` in scope.
+// Mirrors jacinta's `Json` / `Json.Ast` `Showable` givens. Bring a printer into
+// scope (e.g. `import yamlPrinters.block`) to enable `.show` and HTTP encoding.
+given astShowable: (printer: YamlPrinter) => Yaml.Ast is Showable = printer.print(_)
+given showable: YamlPrinter => Yaml is Showable = Yaml.unseal(_).show
 
 extension (text: Text)
   def readAll(using Tactic[ParseError]): List[Yaml] = Yaml.parseAll(text)
@@ -146,6 +153,11 @@ extension (yaml: Yaml.Ast)
     else expected(YamlPrimitive.Bool) yet false
 
   def primitive: YamlPrimitive = Yaml.primitive(yaml)
+
+package yamlPrinters:
+  // Block-style serializer. The default (and currently only) printer; flow
+  // style may be added later. Mirrors jacinta's `jsonPrinters.indented`.
+  given block: YamlPrinter = YamlPrinter.print(_)
 
 package yamlDiscriminables:
   given discriminatedUnionByType: [value] => value is Discriminable in Yaml =
