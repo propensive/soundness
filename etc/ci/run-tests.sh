@@ -26,13 +26,23 @@ java -cp "$JAR" soundness.Tests &
 pid=$!
 
 # Watchdog: if the suite is still alive after $TIMEOUT, capture a full thread
-# dump (deadlock diagnosis) and kill it.
+# dump and kill it. We emit two dumps because the suite runs on virtual threads:
+#   * jstack — platform threads and carrier→virtual-thread mounting, readable.
+#   * jcmd Thread.dump_to_file -format=json — EVERY thread including *parked*
+#     virtual threads with their application stacks. jstack alone cannot show an
+#     unmounted virtual thread (e.g. a parasite daemon parked on a promise), so a
+#     deadlock among virtual threads is invisible without this.
 (
   sleep "$TIMEOUT"
   if kill -0 "$pid" 2>/dev/null; then
     echo >&2
-    echo "::: test suite exceeded ${TIMEOUT}s — assuming a hang; thread dump follows :::" >&2
+    echo "::: test suite exceeded ${TIMEOUT}s — assuming a hang; thread dumps follow :::" >&2
+    echo "::: --- jstack (platform threads + carrier mounting) --- :::" >&2
     jstack "$pid" >&2 2>/dev/null || jcmd "$pid" Thread.print >&2 2>/dev/null || true
+    echo "::: --- jcmd Thread.dump_to_file -format=json (all threads, incl. virtual) --- :::" >&2
+    if jcmd "$pid" Thread.dump_to_file -format=json -overwrite /tmp/threaddump.json >&2 2>/dev/null
+    then cat /tmp/threaddump.json >&2
+    fi
     kill -9 "$pid" 2>/dev/null
     exit 124
   fi

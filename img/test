@@ -10,8 +10,11 @@
 #
 # A successful build implies `./mill test.assembly && make ci` passed.
 
-ARG JDK=23
-FROM eclipse-temurin:${JDK}-jdk AS base
+ARG JDK=25
+# Pin the Ubuntu base to "noble" (24.04 LTS): the default `${JDK}-jdk` tag tracks
+# a newer Ubuntu for JDK 25 where the apt packages below (e.g. libicu74) no longer
+# exist. Noble keeps the userland this image's apt list targets, independent of JDK.
+FROM eclipse-temurin:${JDK}-jdk-noble AS base
 
 # Shells and tooling the tests exercise. We need the same userland as the
 # GitHub Actions ubuntu-latest runner image, which preinstalls many of these.
