@@ -58,6 +58,13 @@ case class Labelled
                                   pages:  Int)
 derives CanEqual
 
+// `Stop` is renamed for XML only; `Go` for all formats (a bare `@name`); `Wait`
+// is unannotated.
+enum Light derives CanEqual:
+  @name[Xml](t"red") case Stop(seconds: Int)
+  @name(t"green")    case Go(seconds: Int)
+                     case Wait(seconds: Int)
+
 object EncoderTests extends Suite(m"Xylophone case-class encoder tests"):
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
@@ -116,3 +123,20 @@ object EncoderTests extends Suite(m"Xylophone case-class encoder tests"):
       test(m"@name fields round-trip"):
         Labelled(t"Dune", t"Herbert", t"sci-fi", 412).xml.as[Labelled]
       . assert(_ == Labelled(t"Dune", t"Herbert", t"sci-fi", 412))
+
+    suite(m"@name variants"):
+      test(m"@name[Xml] renames a variant's element"):
+        (Light.Stop(30): Light).xml
+      . assert(_ == x"<red><seconds>30</seconds></red>")
+
+      test(m"bare @name renames a variant's element"):
+        (Light.Go(45): Light).xml
+      . assert(_ == x"<green><seconds>45</seconds></green>")
+
+      test(m"an unannotated variant keeps its name"):
+        (Light.Wait(5): Light).xml
+      . assert(_ == x"<Wait><seconds>5</seconds></Wait>")
+
+      test(m"@name variants round-trip"):
+        List(Light.Stop(30), Light.Go(45), Light.Wait(5)).map(_.xml.as[Light])
+      . assert(_ == List(Light.Stop(30), Light.Go(45), Light.Wait(5)))

@@ -116,8 +116,15 @@ trait Cbor2:
           provide[Tactic[VariantError]]:
             val discriminable = infer[derivation is Discriminable in Cbor]
 
-            val discriminant: Text =
+            // `@name[Cbor]` / bare `@name` variant renames: map the serialized
+            // discriminator back to the variant name before delegating.
+            val variantNames: Map[Text, Text] =
+              variantRelabelling[derivation, Cbor].map((variant, wire) => wire -> variant)
+
+            val wire: Text =
               discriminable.discriminate(cbor).lest(CborError(Reason.Absent))
+
+            val discriminant: Text = variantNames.getOrElse(wire, wire)
 
             delegate(discriminant): [variant <: derivation] =>
               context => context.decoded(cbor)
@@ -145,8 +152,12 @@ trait Cbor2:
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Cbor = value =>
       val discriminable = infer[derivation is Discriminable in Cbor]
 
+      // `@name[Cbor]` / bare `@name` variant renames: variant name -> wire
+      // discriminator, read back the same way by the decoder.
+      val variantNames: Map[Text, Text] = variantRelabelling[derivation, Cbor]
+
       variant(value): [variant <: derivation] =>
-        value => discriminable.rewrite(label, contextual.encode(value))
+        value => discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
 
 object Cbor extends Cbor2, Dynamic:
   // CBOR major-type representation in storage. Arrays are stored as an

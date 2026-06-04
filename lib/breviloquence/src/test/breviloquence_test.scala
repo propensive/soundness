@@ -48,6 +48,13 @@ enum Shape derives CanEqual:
   case Circle(radius: Double)
   case Square(side: Double)
 
+enum CStatus derives CanEqual:
+  @name[Cbor](t"ok") case Active(since: Int)
+  @name(t"gone")     case Removed(at: Int)
+                     case Pending(at: Int)
+
+given (CStatus is Discriminable in Cbor) = Cbor.discriminatedUnion(t"kind")
+
 private def hex(s: String): IArray[Byte] =
   val clean = s.filter(c => !c.isWhitespace)
   val out = new Array[Byte](clean.length/2)
@@ -293,3 +300,16 @@ object Tests extends Suite(m"Breviloquence Tests"):
         val keys = (0 until ast.entries).map(ast.key(_).string).toSet
         keys == Set("values", "label")
       . assert(identity)
+
+      test(m"@name renames a variant's discriminator"):
+        val ast = Cbor.unseal((CStatus.Active(5): CStatus).cbor)
+        (0 until ast.entries).collectFirst:
+          case i if ast.key(i).string == "kind" => ast.value(i).string
+        . getOrElse("none")
+      . assert(_ == "ok")
+
+      test(m"@name variants round-trip"):
+        List(CStatus.Active(5), CStatus.Removed(9), CStatus.Pending(1)).map: status =>
+          val bytes = CborPrinter.encode(Cbor.unseal((status: CStatus).cbor))
+          Cbor.ast(Cbor.Ast.parse(bytes)).as[CStatus]
+      . assert(_ == List(CStatus.Active(5), CStatus.Removed(9), CStatus.Pending(1)))
