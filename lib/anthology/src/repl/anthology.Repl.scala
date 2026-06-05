@@ -34,6 +34,7 @@ package anthology
 
 import java.nio.file as jnf
 
+import scala.quoted.*
 import scala.util.control as suc
 
 import ambience.*
@@ -75,14 +76,46 @@ object Repl:
     case Rejected(notices: List[Notice])
     case Crashed(notices: List[Notice], error: StackTrace)
 
+  // A value/variable lifted from an inline binding block: its REPL-visible name
+  // and the source rendering of its type, used to build a typed accessor.
+  case class Binding(mutable: Boolean, name: String, typeName: String)
+
+  object Prelude:
+    val empty: Prelude = Prelude(Nil, Nil, Nil)
+
+  // Declarations lifted from an inline binding block to seed the REPL context:
+  // `imports` are re-injected into every line; `definitions` and binding
+  // accessors are established once in a seed object.
+  case class Prelude
+    ( imports:     List[String],
+      definitions: List[String],
+      bindings:    List[Binding] )
+
+  def make[version <: Scalac.Versions]
+    ( prelude: Repl.Prelude )
+    ( using Scalac[version], Classloader, TemporaryDirectory )
+  :   Repl[version] =
+
+    new Repl[version](prelude = prelude)
+
+  inline def apply[version <: Scalac.Versions](inline body: Unit = ())
+    ( using scalac: Scalac[version], classloader: Classloader, temporary: TemporaryDirectory )
+  :   Repl[version] =
+
+    ${ReplMacro.bound[version]('body, 'scalac, 'classloader, 'temporary)}
+
 class Repl[version <: Scalac.Versions]
-  ( layout: Repl.Layout = Repl.Layout.Standard() )
+  ( layout:  Repl.Layout   = Repl.Layout.Standard(),
+    prelude: Repl.Prelude  = Repl.Prelude.empty )
   ( using scalac: Scalac[version], classloader: Classloader, temporary: TemporaryDirectory ):
 
   import Repl.Outcome
 
+  val session: Long = ReplBridge.freshSession()
+
   private var index:   Int        = 0
   private var history: List[Text] = Nil
+  private var seeded:  Boolean     = false
 
   private val out: Path on Linux = unsafely(temporaryDirectory/Uuid())
   locally(jnf.Files.createDirectories(jnf.Path.of(out.encode.s)).nn)
@@ -99,11 +132,11 @@ class Repl[version <: Scalac.Versions]
 
     LocalClasspath(entries*)
 
-  def interpret(line: Text)(using Monitor, System, Codicil)
+  private def run(code: Text)(using Monitor, System, Codicil)
   :   Outcome logs CompileEvent raises CompilerError raises AsyncError =
 
     val name:    Text = layout.objectName(index)
-    val source:  Text = layout.wrap(index, history, line)
+    val source:  Text = layout.wrap(index, history, code)
     val process       = scalac(classpath)(Map(t"$name.scala" -> source), out)
     val result        = process.complete()
     val notices       = process.notices.to(List)
@@ -128,3 +161,34 @@ class Repl[version <: Scalac.Versions]
 
           case suc.NonFatal(error) =>
             Outcome.Threw(notices, error)
+
+  // The prelude's definitions and binding accessors are compiled once, as the
+  // first object (`rs$line$0`); later lines see them via the history import.
+  // Imports create no members, so they are re-injected into every line instead.
+  private def seedBody: Text =
+    val accessors = prelude.bindings.map: binding =>
+      val keyword:  Text = if binding.mutable then t"var" else t"val"
+      val name:     Text = binding.name.tt
+      val typeName: Text = binding.typeName.tt
+      val key:      Text = t"${session.toString.tt}L, \"$name\""
+
+      t"$keyword $name: $typeName = anthology.ReplBridge.fetch[$typeName]($key)"
+
+    (prelude.imports.map(_.tt) ::: prelude.definitions.map(_.tt) ::: accessors).join(t"\n")
+
+  private def ensureSeeded()(using Monitor, System, Codicil)
+  :   Optional[Outcome] logs CompileEvent raises CompilerError raises AsyncError =
+
+    if seeded || prelude.definitions.isEmpty && prelude.bindings.isEmpty then Unset
+    else
+      seeded = true
+      run(seedBody)
+
+  def interpret(line: Text)(using Monitor, System, Codicil)
+  :   Outcome logs CompileEvent raises CompilerError raises AsyncError =
+
+    def lineOutcome: Outcome = run((prelude.imports.map(_.tt) :+ line).join(t"\n"))
+
+    ensureSeeded().lay(lineOutcome):
+      case _: Outcome.Ran => lineOutcome
+      case failure        => failure

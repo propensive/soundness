@@ -32,82 +32,73 @@
                                                                                                   */
 package anthology
 
-import soundness.*
+import scala.collection.mutable as scm
+import scala.quoted.*
 
-import classloaders.threadContext
-import codicils.await
-import logging.silent
-import strategies.throwUnsafely
-import systems.java
-import temporaryDirectories.system
-import threading.platform
+import ambience.*
+import hellenism.*
 
-object Tests extends Suite(m"Anthology Tests"):
-  def run(): Unit =
-    suite(m"REPL tests"):
-      given Scalac[3.8] = Scalac(Nil)
+// Macro support for `Repl.apply(inline body)`: it reads the inline binding
+// block's AST and lifts each statement into the REPL context. Imports/exports
+// and definitions are lifted as source text; `val`/`var` bindings capture the
+// runtime value of their right-hand side (evaluated in the host scope) into
+// `ReplBridge`, exposing it in the REPL via a typed accessor.
+object ReplMacro:
+  def bound[version <: Scalac.Versions: Type]
+    ( body:        Expr[Unit],
+      scalac:      Expr[Scalac[version]],
+      classloader: Expr[Classloader],
+      temporary:   Expr[TemporaryDirectory] )
+    ( using Quotes )
+  :   Expr[Repl[version]] =
 
-      test(m"a definition is visible on a later line"):
-        supervise:
-          val repl = Repl()
-          repl.interpret(t"val x = 40")
-          repl.interpret(t"println(x + 2)")
-      . assert:
-          case Repl.Outcome.Ran(_) => true
-          case _                   => false
+    import quotes.reflect.*
 
-      test(m"a type error is reported as Rejected with notices"):
-        supervise:
-          Repl().interpret(t"val n: Int = \"forty\"")
-      . assert:
-          case Repl.Outcome.Rejected(notices) => notices.nonEmpty
-          case _                              => false
+    def statements(term: Term): List[Statement] = term match
+      case Inlined(_, _, inner)    => statements(inner)
+      case Literal(UnitConstant()) => Nil
+      case Block(stats, last)      => stats ++ statements(last)
+      case other                   => List(other)
 
-      test(m"a runtime exception is reported as Threw"):
-        supervise:
-          Repl().interpret(t"throw new RuntimeException(\"boom\")")
-      . assert:
-          case Repl.Outcome.Threw(_, _) => true
-          case _                        => false
+    def sourceText(tree: Tree): String = tree.pos.sourceCode.getOrElse(tree.show)
 
-    suite(m"REPL binding tests"):
-      given Scalac[3.8] = Scalac(Nil)
+    val imports:     scm.ListBuffer[String]                 = scm.ListBuffer()
+    val definitions: scm.ListBuffer[String]                 = scm.ListBuffer()
+    val bindings:    scm.ListBuffer[(Boolean, String, String)] = scm.ListBuffer()
+    val captures:    scm.ListBuffer[(String, Term)]         = scm.ListBuffer()
 
-      test(m"captured values and a lifted definition are usable in the REPL"):
-        supervise:
-          val greeting: String = "hello"
-          var counter:  Int    = 5
+    statements(body.asTerm).foreach:
+      case statement: Import => imports += sourceText(statement)
+      case statement: Export => imports += sourceText(statement)
 
-          val repl = Repl[3.8]:
-            val text  = greeting
-            val count = counter
-            def total: Int = text.length + count
+      case statement: ValDef if !statement.symbol.flags.is(Flags.Given) =>
+        val mutable: Boolean = statement.symbol.flags.is(Flags.Mutable)
+        bindings += ((mutable, statement.name, statement.tpt.tpe.show))
 
-          repl.interpret(t"println(total)")     // "hello".length + 5
-      . assert:
-          case Repl.Outcome.Ran(_) => true
-          case _                   => false
+        statement.rhs.foreach: rhs =>
+          captures += ((statement.name, rhs))
 
-      test(m"a lifted import is in scope for REPL lines"):
-        supervise:
-          // the lifted import is consumed by the macro, so it reads as unused here
-          @annotation.nowarn val repl = Repl[3.8]:
-            import scala.collection.mutable.ListBuffer
+      case statement: Definition => definitions += sourceText(statement)
+      case _                     => ()
 
-          repl.interpret(t"println(ListBuffer(1, 2, 3).sum)")
-      . assert:
-          case Repl.Outcome.Ran(_) => true
-          case _                   => false
+    val importsExpr: Expr[List[String]] = Expr(imports.to(List))
+    val definitionsExpr: Expr[List[String]] = Expr(definitions.to(List))
 
-      test(m"a captured value persists across several lines"):
-        supervise:
-          val secret: Int = 42
+    val bindingsExpr: Expr[List[Repl.Binding]] = Expr.ofList:
+      bindings.to(List).map: (mutable, name, typeName) =>
+        '{Repl.Binding(${Expr(mutable)}, ${Expr(name)}, ${Expr(typeName)})}
 
-          val repl = Repl[3.8]:
-            val seed = secret
+    val preludeExpr: Expr[Repl.Prelude] =
+      '{Repl.Prelude($importsExpr, $definitionsExpr, $bindingsExpr)}
 
-          repl.interpret(t"val doubled = seed*2")
-          repl.interpret(t"println(doubled + seed)")
-      . assert:
-          case Repl.Outcome.Ran(_) => true
-          case _                   => false
+    ' {
+        val repl: Repl[version] =
+          Repl.make[version]($preludeExpr)(using $scalac, $classloader, $temporary)
+
+        $ {
+            val puts: List[Expr[Unit]] = captures.to(List).map: (name, rhs) =>
+              '{ReplBridge.put(repl.session, ${Expr(name)}, ${rhs.asExprOf[Any]})}
+
+            Expr.block(puts, 'repl)
+          }
+      }
