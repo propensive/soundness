@@ -149,7 +149,7 @@ a book from the _library_ example above could be read with:
 library.book().as[Book]
 ```
 
-The `as` method can also extract collection types (e.g. `Set`, `List` or `Vector`) from an `Xml` value, so
+The `as` method can also extract collection types (e.g. `Set`, `List` or `Series`) from an `Xml` value, so
 _all_ the books in the library could be accessed with,
 ```scala
 library.book.as[Set[Book]]
