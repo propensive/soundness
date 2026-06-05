@@ -60,8 +60,8 @@ object Tests extends Suite(m"Rudiments Tests"):
         List(1, 2, 3).has(4)
       . assert(_ == false)
 
-      test(m"Vector[Int] has is membership, not index validity"):
-        Vector(10, 20, 30).has(2)
+      test(m"Series[Int] has is membership, not index validity"):
+        Series(10, 20, 30).has(2)
       . assert(_ == false)
 
       test(m"Range has is membership, not index validity"):

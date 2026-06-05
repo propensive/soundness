@@ -37,7 +37,7 @@ import soundness.*
 sealed trait Something
 case class Person(name: Text, age: Int) extends Something
 case class Group(persons: List[Person], size: Int) extends Something
-case class Colors(colors: Trie[Color]) extends Something
+case class Colors(colors: Series[Color]) extends Something
 
 enum Color:
   case Red, Green, Blue
@@ -76,7 +76,7 @@ object Tests extends Suite(m"Austronesian tests"):
     // val data = List
     //             (Person(t"Jim", 19),
     //              Group(persons = List(Person(t"Jane", 25), Person(t"John", 30)), size = 2),
-    //              Colors(Trie(Color.Red, Color.Green)))
+    //              Colors(Series(Color.Red, Color.Green)))
 
     // test(m"Roundtrip a complex datatype"):
     //   recover:

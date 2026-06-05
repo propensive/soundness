@@ -42,7 +42,7 @@ import spectacular.*
 import symbolism.*
 
 object Delta:
-  def apply(dx: Float, dy: Float): Delta = Delta(Tensor((dx, dy)))
+  def apply(dx: Float, dy: Float): Delta = Delta(Vector((dx, dy)))
 
   given showable: Delta is Showable = delta =>
     t"${delta.dx.toString} ${delta.dy.toString}"
@@ -74,9 +74,9 @@ object Delta:
   given multiplicableByInt: Delta is Multiplicable by Int to Delta = Multiplicable:
     (delta, scalar) => Delta(delta.dx*scalar, delta.dy*scalar)
 
-final case class Delta(tensor: Tensor[Float, 2]):
-  def dx: Float = tensor.element(0)
-  def dy: Float = tensor.element(1)
+final case class Delta(vector: Vector[Float, 2]):
+  def dx: Float = vector.element(0)
+  def dy: Float = vector.element(1)
 
 val Up:    Delta = Delta(0.0f, -1.0f)
 val Down:  Delta = Delta(0.0f, 1.0f)

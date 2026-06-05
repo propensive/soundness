@@ -34,9 +34,9 @@ package mosquito
 
 import vacuous.*
 
-export mosquito.internal.Tensor
+export mosquito.internal.Vector
 
 extension [element](list: List[element])
-  def slide(size: Int): Stream[Tensor[element, size.type]] = list match
+  def slide(size: Int): Stream[Vector[element, size.type]] = list match
     case Nil          => Stream()
-    case head :: tail => Tensor.take(list, size).lay(Stream())(_ #:: tail.slide(size))
+    case head :: tail => Vector.take(list, size).lay(Stream())(_ #:: tail.slide(size))

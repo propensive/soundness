@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export scala.collection.immutable.Vector as Trie
+export scala.collection.immutable.Vector as Series
 export Predef.runtimeChecked as absolve
 export scala.reflect.{ClassTag, Typeable}
 export scala.collection.immutable.{List, ListMap, Map, Set, TreeMap, TreeSet}

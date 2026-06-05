@@ -485,7 +485,7 @@ object Tests extends Suite(m"Parasite tests"):
         test(m"Race returns first completed result"):
           val gate = Promise[Unit]()
           val winner = Promise[Unit]()
-          val tasks = Vector(
+          val tasks = Series(
             async { winner.await(); t"first" },
             async { gate.await(); t"second" },
             async { gate.await(); t"third" } )
@@ -986,7 +986,7 @@ object Tests extends Suite(m"Parasite tests"):
           val later = async:
             snooze(1.0*Second)
             -1
-          val result = async(Vector(ready, later).race()).await()
+          val result = async(Series(ready, later).race()).await()
           later.cancel()
           result
         . assert(_ == 99)
@@ -1085,7 +1085,7 @@ object Tests extends Suite(m"Parasite tests"):
       suite(m"Race extension"):
         test(m"Race propagates result of fastest"):
           val gate = Promise[Unit]()
-          val tasks = Vector(
+          val tasks = Series(
             async:
               snooze(200.0*Milli(Second))
               t"slow",
@@ -1107,7 +1107,7 @@ object Tests extends Suite(m"Parasite tests"):
           val winner = async:
             winnerGate.await()
             t"winner"
-          val tasks = Vector(winner, loser)
+          val tasks = Series(winner, loser)
           val raceTask = async(tasks.race())
           winnerGate.fulfill(())
           raceTask.await()

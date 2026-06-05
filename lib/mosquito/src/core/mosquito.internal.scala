@@ -45,11 +45,11 @@ import symbolism.*
 import vacuous.*
 
 object internal:
-  object Tensor:
-    def apply(tuple: Tuple): Tensor[Tuple.Union[tuple.type], Tuple.Size[tuple.type]] =
-      new Tensor(tuple.toIArray)
+  object Vector:
+    def apply(tuple: Tuple): Vector[Tuple.Union[tuple.type], Tuple.Size[tuple.type]] =
+      new Vector(tuple.toIArray)
 
-    def take[element](list: List[element], size: Int): Optional[Tensor[element, size.type]] =
+    def take[element](list: List[element], size: Int): Optional[Vector[element, size.type]] =
       val array: Array[Any] = new Array(size)
       var i = 0
       var rest = list
@@ -64,23 +64,23 @@ object internal:
             rest = tail
             i += 1
 
-      new Tensor[element, size.type](array.immutable(using Unsafe))
+      new Vector[element, size.type](array.immutable(using Unsafe))
 
 
     given addable
     :   [ value,
           size   <: Int,
-          left   <: Tensor[value, size],
+          left   <: Vector[value, size],
           value2,
-          right  <: Tensor[value2, size],
+          right  <: Vector[value2, size],
           result ]
     =>  ( addable: value is Addable by value2 to result )
     =>  left is Addable:
 
       type Operand = right
-      type Result = Tensor[result, size]
+      type Result = Vector[result, size]
 
-      def add(left: left, right: right): Tensor[result, size] =
+      def add(left: left, right: right): Vector[result, size] =
         val length = left.data.length
 
         val arr = IArray.build[Any](length): array =>
@@ -92,33 +92,33 @@ object internal:
 
             i += 1
 
-        new Tensor[result, size](arr)
+        new Vector[result, size](arr)
 
 
-    given negatable: [value, size <: Int, tensor <: Tensor[value, size], result]
+    given negatable: [value, size <: Int, vector <: Vector[value, size], result]
     =>  ( negatable: value is Negatable to result )
-    =>  tensor is Negatable:
+    =>  vector is Negatable:
 
-      type Result = Tensor[result, size]
+      type Result = Vector[result, size]
 
-      def negate(operand: tensor): Tensor[result, size] = operand.map(negatable.negate(_))
+      def negate(operand: vector): Vector[result, size] = operand.map(negatable.negate(_))
 
 
     given subtractable
     :   [ value,
           size   <: Int,
-          left   <: Tensor[value, size],
+          left   <: Vector[value, size],
           value2,
-          right  <: Tensor[value2, size],
+          right  <: Vector[value2, size],
           result ]
     =>  ( subtractable: value is Subtractable by value2 to result )
     =>  left is Subtractable:
 
       type Self = left
       type Operand = right
-      type Result = Tensor[result, size]
+      type Result = Vector[result, size]
 
-      def subtract(left: left, right: right): Tensor[result, size] =
+      def subtract(left: left, right: right): Vector[result, size] =
         val length = left.data.length
 
         val arr = IArray.build[Any](length): array =>
@@ -131,14 +131,14 @@ object internal:
 
             i += 1
 
-        new Tensor[result, size](arr)
+        new Vector[result, size](arr)
 
 
     given showable: [size <: Int: ValueOf, element: Showable] => Text is Measurable
-    =>  Tensor[element, size] is Showable =
+    =>  Vector[element, size] is Showable =
 
-      tensor =>
-        val items = tensor.list.map(_.show)
+      vector =>
+        val items = vector.list.map(_.show)
         val width = items.maxBy(_.length).length
         val size = valueOf[size]
 
@@ -151,29 +151,29 @@ object internal:
           (top :: middle ::: bottom :: Nil).join(t"\n")
 
 
-  extension [left](left: Tensor[left, 3])
-    def cross[right](right: Tensor[right, 3])
+  extension [left](left: Vector[left, 3])
+    def cross[right](right: Vector[right, 3])
       ( using multiplication: left is Multiplicable by right,
               addition:       multiplication.Result is Addable by multiplication.Result,
               subtraction:    multiplication.Result is Subtractable by multiplication.Result )
-    :   Tensor[addition.Result, 3] =
+    :   Vector[addition.Result, 3] =
 
       val first = left.element(1)*right.element(2) - left.element(2)*right.element(1)
       val second = left.element(2)*right.element(0) - left.element(0)*right.element(2)
       val third = left.element(0)*right.element(1) - left.element(1)*right.element(0)
 
-      new Tensor[addition.Result, 3](IArray[Any](first, second, third))
+      new Vector[addition.Result, 3](IArray[Any](first, second, third))
 
 
-  extension [left](left: Tensor[left, 7])
+  extension [left](left: Vector[left, 7])
     @targetName("cross7")
-    def cross[right](right: Tensor[right, 7])
+    def cross[right](right: Vector[right, 7])
       ( using multiplication: left is Multiplicable by right,
               addition:       multiplication.Result is Addable by multiplication.Result,
               subtraction:    multiplication.Result is Subtractable by multiplication.Result,
               addEq:          addition.Result =:= multiplication.Result,
               subEq:          subtraction.Result =:= multiplication.Result )
-    :   Tensor[addition.Result, 7] =
+    :   Vector[addition.Result, 7] =
 
       val a0 = left.element(0); val a1 = left.element(1); val a2 = left.element(2)
       val a3 = left.element(3); val a4 = left.element(4); val a5 = left.element(5)
@@ -205,10 +205,10 @@ object internal:
       val c5 = combine(a6*b1, a1*b6, a0*b4, a4*b0, a2*b3, a3*b2)
       val c6 = combine(a0*b2, a2*b0, a1*b5, a5*b1, a3*b4, a4*b3)
 
-      new Tensor[addition.Result, 7](IArray[Any](c0, c1, c2, c3, c4, c5, c6))
+      new Vector[addition.Result, 7](IArray[Any](c0, c1, c2, c3, c4, c5, c6))
 
 
-  extension [size <: Int, left](left: Tensor[left, size])
+  extension [size <: Int, left](left: Vector[left, size])
     def element(index: Int): left = left.data(index).asInstanceOf[left]
 
     def apply(index: Int): left = left.data(index).asInstanceOf[left]
@@ -232,7 +232,7 @@ object internal:
       recur(left.element(0)*left.element(0), left.data.length - 1)
 
 
-    def map[left2](fn: left => left2): Tensor[left2, size] =
+    def map[left2](fn: left => left2): Vector[left2, size] =
       val length = left.data.length
 
       val arr = IArray.build[Any](length): array =>
@@ -242,7 +242,7 @@ object internal:
           array(i) = fn(left.data(i).asInstanceOf[left])
           i += 1
 
-      new Tensor[left2, size](arr)
+      new Vector[left2, size](arr)
 
 
     def unitary[square]
@@ -250,7 +250,7 @@ object internal:
               addable:       square is Addable by square to square,
               rootable:      square is Rootable[2] to left,
               divisible:     left is Divisible by left to Double )
-    :   Tensor[Double, size] =
+    :   Vector[Double, size] =
 
       val magnitude: left = left.norm
       val length = left.data.length
@@ -262,10 +262,10 @@ object internal:
           array(i) = left.data(i).asInstanceOf[left]/magnitude
           i += 1
 
-      new Tensor[Double, size](arr)
+      new Vector[Double, size](arr)
 
 
-    def dot[right](right: Tensor[right, size])
+    def dot[right](right: Vector[right, size])
       ( using multiply: left is Multiplicable by right,
               size:     ValueOf[size],
               addable:  multiply.Result is Addable by multiply.Result,
@@ -279,12 +279,12 @@ object internal:
       val start = size.value - 1
       recur(start - 1, left.element(start)*right.element(start))
 
-  class Tensor[value, size <: Int](val data: IArray[Any]):
+  class Vector[value, size <: Int](val data: IArray[Any]):
     override def equals(right: Any): Boolean = right.asMatchable match
-      case that: Tensor[?, ?] => data.sameElements(that.data)
+      case that: Vector[?, ?] => data.sameElements(that.data)
       case _                  => false
 
     override def hashCode: Int =
       scala.util.hashing.MurmurHash3.arrayHash(data.mutable(using Unsafe))
 
-    override def toString: String = data.mkString("Tensor(", ", ", ")")
+    override def toString: String = data.mkString("Vector(", ", ", ")")

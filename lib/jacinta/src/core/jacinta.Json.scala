@@ -603,8 +603,8 @@ object Json extends Json2, Dynamic:
     values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
 
 
-  given trieEncodable: [trie <: Trie, element] => (encodable: => element is Encodable in Json)
-  =>  trie[element] is Encodable in Json =
+  given seriesEncodable: [series <: Series, element] => (encodable: => element is Encodable in Json)
+  =>  series[element] is Encodable in Json =
 
     values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
 

@@ -42,7 +42,7 @@ import spectacular.*
 import symbolism.*
 
 object Point:
-  def apply(x: Float, y: Float): Point = Point(Tensor((x, y)))
+  def apply(x: Float, y: Float): Point = Point(Vector((x, y)))
 
   given showable: Point is Showable = point =>
     t"${point.x.toString} ${point.y.toString}"
@@ -63,6 +63,6 @@ object Point:
     Subtractable: (left, right) =>
       Delta(left.x - right.x, left.y - right.y)
 
-final case class Point(tensor: Tensor[Float, 2]):
-  def x: Float = tensor.element(0)
-  def y: Float = tensor.element(1)
+final case class Point(vector: Vector[Float, 2]):
+  def x: Float = vector.element(0)
+  def y: Float = vector.element(1)

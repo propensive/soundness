@@ -109,8 +109,8 @@ object Inspectable extends Inspectable2:
     _.map(inspectable.text(_)).mkString("{", ", ", "}").tt
 
 
-  given vector: [element] => (inspectable: => element is Inspectable)
-  =>  Trie[element] is Inspectable =
+  given series: [element] => (inspectable: => element is Inspectable)
+  =>  Series[element] is Inspectable =
 
     _.map(inspectable.text(_)).mkString("⟨ ", " ", " ⟩").tt
 

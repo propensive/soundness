@@ -51,9 +51,9 @@ object Tests extends Suite(m"Mercator tests"):
       summon[Identity[Set]].point(1)
     . assert(_ == Set(1))
 
-    test(m"Identity for Vector"):
-      summon[Identity[Vector]].point(1)
-    . assert(_ == Vector(1))
+    test(m"Identity for Series"):
+      summon[Identity[Series]].point(1)
+    . assert(_ == Series(1))
 
     test(m"Identity for Try"):
       summon[Identity[scala.util.Try]].point(1)
@@ -78,10 +78,10 @@ object Tests extends Suite(m"Mercator tests"):
       functor.map(Set(1, 3, 5))(_ + 1)
     . assert(_ == Set(2, 4, 6))
 
-    test(m"Functor for Vector"):
-      val functor = summon[Functor[Vector]]
-      functor.map(Vector(1, 2, 3))(_ + 1)
-    . assert(_ == Vector(2, 3, 4))
+    test(m"Functor for Series"):
+      val functor = summon[Functor[Series]]
+      functor.map(Series(1, 2, 3))(_ + 1)
+    . assert(_ == Series(2, 3, 4))
 
     test(m"Functor for Try"):
       val functor = summon[Functor[scala.util.Try]]
@@ -108,10 +108,10 @@ object Tests extends Suite(m"Mercator tests"):
       monad.flatMap(Set(1, 3, 5)) { v => Set(v + 1) }
     . assert(_ == Set(2, 4, 6))
 
-    test(m"Monad for Vector"):
-      val monad = summon[Monad[Vector]]
-      monad.flatMap(Vector(1, 2, 3)) { v => Vector(v + 1, v + 1) }
-    . assert(_ == Vector(2, 2, 3, 3, 4, 4))
+    test(m"Monad for Series"):
+      val monad = summon[Monad[Series]]
+      monad.flatMap(Series(1, 2, 3)) { v => Series(v + 1, v + 1) }
+    . assert(_ == Series(2, 2, 3, 3, 4, 4))
 
     test(m"Monad for Try"):
       val monad = summon[Monad[scala.util.Try]]
@@ -122,9 +122,9 @@ object Tests extends Suite(m"Mercator tests"):
       List(Try(1), Try(2), Try(3)).sequence
     . assert(_ == Success(List(1, 2, 3)))
 
-    // test(m"Sequence on Vector/Try"):
-    //   Vector(Try(1), Try(2), Try(3)).sequence
-    // .assert(_ == Success(Vector(1, 2, 3)))
+    // test(m"Sequence on Series/Try"):
+    //   Series(Try(1), Try(2), Try(3)).sequence
+    // .assert(_ == Success(Series(1, 2, 3)))
 
     test(m"Sequence on List/Set"):
       List(Set(1), Set(2), Set(3)).sequence

@@ -327,7 +327,7 @@ object Tests extends Suite(m"Denominative Tests"):
       . assert(_ == 4)
 
       test(m"an indexed sequence's gamut spans all its elements"):
-        val sequence: IndexedSeq[Int] = Vector(1, 2)
+        val sequence: IndexedSeq[Int] = Series(1, 2)
         sequence.gamut.size
       . assert(_ == 2)
 

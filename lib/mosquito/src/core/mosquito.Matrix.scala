@@ -44,7 +44,7 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-import mosquito.internal.Tensor
+import mosquito.internal.Vector
 
 object Matrix:
   given showable: [element: Showable] => Text is Measurable => Matrix[element, ?, ?] is Showable =
@@ -305,13 +305,13 @@ object Matrix:
       if (row + column) % 2 == 0 then minorValue else zeroic.zero - minorValue
 
 
-    def solve(rhs: Tensor[element, n])
+    def solve(rhs: Vector[element, n])
       ( using zeroic:         element is Zeroic,
               subtraction:    element is Subtractable by element to element,
               multiplication: element is Multiplicable by element to element,
               divisible:      element is Divisible by element to element,
               classTag:       ClassTag[element] )
-    :   Optional[Tensor[element, n]] =
+    :   Optional[Vector[element, n]] =
 
       val size = matrix.rows
       val zero = zeroic.zero
@@ -381,14 +381,14 @@ object Matrix:
           x(i) = sum/a(size*i + i)
           i -= 1
 
-        val tensorData = IArray.build[Any](size): array =>
+        val vectorData = IArray.build[Any](size): array =>
           var k = 0
 
           while k < size do
             array(k) = x(k)
             k += 1
 
-        new Tensor[element, n](tensorData)
+        new Vector[element, n](vectorData)
 
 
     def adjugate
@@ -478,7 +478,7 @@ object Matrix:
 
   extension [n <: Int](matrix: Matrix[Double, n, n])
     def eigensystem(using ValueOf[n])
-    :   Optional[(Tensor[Double, n], Matrix[Double, n, n])] =
+    :   Optional[(Vector[Double, n], Matrix[Double, n, n])] =
 
       val dimension = matrix.rows
       val tolerance = 1.0e-12
@@ -597,12 +597,12 @@ object Matrix:
               array(i) = vec(i)
               i += 1
 
-          val eigvals = new Tensor[Double, n](eigvalArr)
+          val eigvals = new Vector[Double, n](eigvalArr)
           val eigvecs = new Matrix[Double, n, n](dimension, dimension, eigvecArr)
           (eigvals, eigvecs)
 
 
-    def eigenvalues(using ValueOf[n]): Optional[Tensor[Double, n]] =
+    def eigenvalues(using ValueOf[n]): Optional[Vector[Double, n]] =
       matrix.eigensystem.let(_(0))
 
 
@@ -615,7 +615,7 @@ class Matrix[element, rows <: Int, columns <: Int]
 
   def apply(row: Int, column: Int): element = elements(columns*row + column)
 
-  def row(index: Int): Tensor[element, columns] =
+  def row(index: Int): Vector[element, columns] =
     val cols = columns
 
     val arr = IArray.build[Any](cols): array =>
@@ -625,10 +625,10 @@ class Matrix[element, rows <: Int, columns <: Int]
         array(i) = elements(cols*index + i)
         i += 1
 
-    new Tensor[element, columns](arr)
+    new Vector[element, columns](arr)
 
 
-  def column(index: Int): Tensor[element, rows] =
+  def column(index: Int): Vector[element, rows] =
     val arr = IArray.build[Any](rows): array =>
       var i = 0
 
@@ -636,7 +636,7 @@ class Matrix[element, rows <: Int, columns <: Int]
         array(i) = elements(columns*i + index)
         i += 1
 
-    new Tensor[element, rows](arr)
+    new Vector[element, rows](arr)
 
 
   def transpose(using ClassTag[element]): Matrix[element, columns, rows] =
@@ -821,12 +821,12 @@ class Matrix[element, rows <: Int, columns <: Int]
 
   @targetName("mulVec")
   def * [right]
-    ( right: Tensor[right, columns] )
+    ( right: Vector[right, columns] )
     ( using multiplication: element is Multiplicable by right,
             addition:       multiplication.Result is Addable by multiplication.Result,
             equality:       addition.Result =:= multiplication.Result,
             columnValue:    ValueOf[columns] )
-  :   Tensor[multiplication.Result, rows] =
+  :   Vector[multiplication.Result, rows] =
 
     val inner = valueOf[columns]
 
@@ -846,4 +846,4 @@ class Matrix[element, rows <: Int, columns <: Int]
         array(row) = sum
         row += 1
 
-    new Tensor[multiplication.Result, rows](arr)
+    new Vector[multiplication.Result, rows](arr)

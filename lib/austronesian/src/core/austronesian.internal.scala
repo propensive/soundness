@@ -105,9 +105,9 @@ object internal:
     // => list[element] is Encodable in Pojo =
     //   list => IArray.from(list.map(_.encode))
 
-    // given trie: [trie <: Trie, element: Encodable in Pojo]
-    // => trie[element] is Encodable in Pojo =
-    //   trie => IArray.from(trie.map(_.encode))
+    // given series: [series <: Series, element: Encodable in Pojo]
+    // => series[element] is Encodable in Pojo =
+    //   series => IArray.from(series.map(_.encode))
 
     given list: [collection <: Iterable, element: Encodable in Pojo]
     =>  collection[element] is Encodable in Pojo =

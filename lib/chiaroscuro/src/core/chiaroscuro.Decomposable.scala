@@ -73,12 +73,12 @@ object Decomposable extends Decomposable2:
       Decomposition.Sequence(t"List", list.map(decomposable.decomposition(_)), list)
 
 
-  given trie: [element, collection <: Trie[element]]
+  given series: [element, collection <: Series[element]]
   =>  ( decomposable: => element is Decomposable )
   =>  collection is Decomposable =
 
-    trie =>
-      Decomposition.Sequence(t"Trie", trie.map(decomposable.decomposition(_)).to(List), trie)
+    series =>
+      Decomposition.Sequence(t"Series", series.map(decomposable.decomposition(_)).to(List), series)
 
 
   given iarray: [element]

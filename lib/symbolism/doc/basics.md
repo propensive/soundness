@@ -13,7 +13,7 @@ abstract over the arithmetic operations. That means it's possible to write code
 against these typeclasses which will work on any type which implements them.
 
 For example, [Mosquito](https://github.com/propensive/mosquito/) is a library
-for working with Euclidean vectors (called `Euclidean`) and matrices of
+for working with Euclidean vectors (called `Vector`) and matrices of
 arbitrary types, such as `Double`s or even `Exception`s. With Mosquito, you can
 add two vectors if, and only if, you can add their elements. So you can add two
 vectors of `Double` (as long as they have the same dimension), but you can't

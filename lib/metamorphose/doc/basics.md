@@ -12,7 +12,7 @@ import soundness.*
 There are two ways to construct a new `Permutation`. Firstly, from an ordered
 sequence of distinct indexes, for example,
 ```scala
-val permutation = Permutation(Vector(1, 4, 2, 3, 0))
+val permutation = Permutation(Series(1, 4, 2, 3, 0))
 ```
 which interprets the ordering of the indexes to yield the permutation with
 factoradic number 45, i.e. `Permutation(Factoradic(45))`.
