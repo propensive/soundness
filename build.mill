@@ -1372,7 +1372,7 @@ object querencia extends Library:
   object test extends Tests(core)
 
 object xylophone extends Library:
-  object core extends Component(zephyrine.core, adversaria.core, typonym.core, hellenism.core, urticose.core, wisteria.core):
+  object core extends Component(zephyrine.core, adversaria.core, typonym.core, hellenism.core, urticose.core, wisteria.core, panopticon.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
