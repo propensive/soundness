@@ -65,23 +65,28 @@ object SourceCode:
   private val soft: Set[Text] =
     Set(t"inline", t"opaque", t"open", t"transparent", t"infix", t"update", t"erased", t"tracked")
 
-  def apply(language: ProgrammingLanguage, text: Text)(using highlighting: Highlight)
+  def apply(language: ProgrammingLanguage, text: Text, caret: Optional[Ordinal])
+     (using highlighting: Highlight)
   :   SourceCode =
 
     // For the typechecked/compiled pipelines, run the compiler frontend (and, for
-    // `Compiled`, the post-typer phases) to resolve types and collect diagnostics.
-    // Types are always read from the typer-stopped run, so they stay source-level.
-    val resolved: Optional[(Map[(Int, Int), Syntax], List[Diagnostic])] =
+    // `Compiled`, the post-typer phases) to resolve types, collect diagnostics, and
+    // — when a caret is given — compute completions. Types are always read from the
+    // typer-stopped run, so they stay source-level.
+    val resolved
+    :   Optional[(Map[(Int, Int), Syntax], List[Diagnostic], Optional[Completions])] =
       if highlighting.pipeline == Pipeline.Tokenized then Unset else
         (highlighting.scalac, highlighting.classpath) match
           case (scalac: Scalac[?], classpath: LocalClasspath) =>
-            resolveTypes(text, scalac, classpath, highlighting.pipeline == Pipeline.Compiled)
+            resolveTypes
+             (text, scalac, classpath, highlighting.pipeline == Pipeline.Compiled, caret)
 
           case _ =>
             Unset
 
-    val metaMap: Map[(Int, Int), Syntax] = resolved.let(_(0)).or(Map())
-    val diagnostics: List[Diagnostic] = resolved.let(_(1)).or(Nil)
+    val metaMap: Map[(Int, Int), Syntax] = resolved.lay(Map())(_(0))
+    val diagnostics: List[Diagnostic] = resolved.lay(Nil)(_(1))
+    val completions: Optional[Completions] = resolved.lay(Unset)(_(2))
 
     val source: SourceFile = SourceFile.virtual("<highlighting>", text.s)
     val context0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
@@ -170,7 +175,8 @@ object SourceCode:
       tokens.zip(tokens.scanLeft(0)(_ + _.length)).map: (token, column) =>
         token.copy(span = Span.line(index.z, column.z, token.length))
 
-    SourceCode(language, 1, IArray(positioned*), diagnostics = diagnostics)
+    SourceCode
+     (language, 1, IArray(positioned*), diagnostics = diagnostics, completions = completions)
 
   private class Trees() extends ast.untpd.UntypedTreeTraverser:
     import ast.*, untpd.*
@@ -217,8 +223,12 @@ object SourceCode:
     . join(java.io.File.pathSeparator.nn.tt)
 
   private def resolveTypes
-    ( text: Text, scalac: Scalac[?], classpath: LocalClasspath, full: Boolean )
-  :   (Map[(Int, Int), Syntax], List[Diagnostic]) =
+    ( text:      Text,
+      scalac:    Scalac[?],
+      classpath: LocalClasspath,
+      full:      Boolean,
+      caret:     Optional[Ordinal] )
+  :   (Map[(Int, Int), Syntax], List[Diagnostic], Optional[Completions]) =
 
     val cp = classpathText(classpath)
 
@@ -229,6 +239,7 @@ object SourceCode:
         context.setSetting(context.settings.YstopAfter, List("typer"))
 
     val metaMap = collectTypes(typerRun)
+    val completions = caret.let(collectCompletions(typerRun, _))
 
     // `Compiled` runs the post-typer phases (stopping before bytecode generation,
     // so nothing is written to disk) purely to surface later diagnostics.
@@ -239,7 +250,7 @@ object SourceCode:
 
         ._3
 
-    (metaMap, diagnostics)
+    (metaMap, diagnostics, completions)
 
   private def frontend
     ( text: Text, scalac: Scalac[?], cp: Text )
@@ -284,6 +295,36 @@ object SourceCode:
 
   private def syntaxOf(using quotes: scala.quoted.Quotes)(tpe: Types.Type): Syntax =
     Syntax(tpe.asInstanceOf[quotes.reflect.TypeRepr])
+
+  private def completionKind(symbol: Symbols.Symbol)(using Contexts.Context): Completion.Kind =
+    if symbol.is(Flags.Extension) then Completion.Kind.Extension
+    else if symbol.is(Flags.Package) then Completion.Kind.Package
+    else if symbol.is(Flags.Module) then Completion.Kind.Module
+    else if symbol.isType then Completion.Kind.Type
+    else if symbol.is(Flags.Given) then Completion.Kind.Given
+    else if symbol.is(Flags.Method) then Completion.Kind.Method
+    else Completion.Kind.Term
+
+  // Reuse the compiler's interactive completion engine over the typed tree, so we
+  // inherit its full behaviour — direct members, inherited members, extension
+  // methods (all four resolution routes), implicit-conversion members and givens.
+  private def collectCompletions(run: Run, caret: Ordinal): Completions =
+    val unit = run.units.head
+
+    given context: Contexts.Context =
+      dotty.tools.dotc.quoted.QuotesCache.init(run.runContext.fresh.setCompilationUnit(unit))
+
+    given quotes: scala.quoted.Quotes = scala.quoted.runtime.impl.QuotesImpl()(using context)
+
+    val position = SourcePosition(unit.source, Spans.Span(caret.n0))
+    val (offset, raw) = dotty.tools.dotc.interactive.Completion.completions(position)
+
+    val items = raw.flatMap: completion =>
+      completion.symbols.map: symbol =>
+        Completion
+         (completion.label.tt, completionKind(symbol), syntaxOf(symbol.info.widenTermRefExpr))
+
+    Completions(Span.offset(offset.z, 0), items)
 
   private def collectTypes(run: Run): Map[(Int, Int), Syntax] =
     // Use the run's own context: the compilation advanced the compiler's periods,
@@ -340,7 +381,8 @@ case class SourceCode
     offset:      Int,
     lines:       IArray[List[Token]],
     focus:       Optional[Span] = Unset,
-    diagnostics: List[Diagnostic] = Nil ):
+    diagnostics: List[Diagnostic] = Nil,
+    completions: Optional[Completions] = Unset ):
 
   def lastLine: Int = offset + lines.length - 1
   def apply(line: Int): List[Token] = lines(line - offset)

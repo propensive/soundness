@@ -33,6 +33,7 @@
 package harlequin
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import symbolism.*
 import vacuous.*
@@ -43,8 +44,11 @@ sealed trait ProgrammingLanguage:
   def preprocess(text: Text, context: Optional[Context]): Text = text
   def postprocess(code: SourceCode, context: Optional[Context]): SourceCode = code
 
-  def highlight(text: Text, context: Optional[Context] = Unset)(using Highlight): SourceCode =
-    postprocess(SourceCode(this, preprocess(text, context)), context)
+  def highlight(text: Text, context: Optional[Context] = Unset, caret: Optional[Ordinal] = Unset)
+     (using Highlight)
+  :   SourceCode =
+
+    postprocess(SourceCode(this, preprocess(text, context), caret), context)
 
 object Scala extends ProgrammingLanguage:
   enum Context:
