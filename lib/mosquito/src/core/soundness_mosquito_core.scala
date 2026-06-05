@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export mosquito.{Matrix, slide, Tensor}
+export mosquito.{Matrix, slide, Vector}
