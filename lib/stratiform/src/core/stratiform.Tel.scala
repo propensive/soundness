@@ -827,3 +827,26 @@ object Tel extends Tel2:
         out(lastIdx) = out(lastIdx).copy(compounds = out(lastIdx).compounds :+ compound)
 
     IArray.from(out)
+
+  // Replace the `index`-th child compound (flattened across blocks) by applying
+  // `transform`, preserving block structure and surrounding formatting. An
+  // out-of-range index leaves the children unchanged. Used by the panopticon
+  // `Ordinal` optic.
+  private[stratiform] def withChildCompound
+       (blocks: IArray[Block], index: Int, transform: Compound => Compound)
+  :     IArray[Block] =
+    var offset = 0
+    blocks.map: block =>
+      val compounds = block.compounds
+      val base = offset
+      offset += compounds.length
+      if index >= base && index < base + compounds.length
+      then block.copy(compounds = compounds.updated(index - base, transform(compounds(index - base))))
+      else block
+
+  // Apply `transform` to every child compound (flattened across blocks),
+  // preserving block structure. Used by the panopticon `Each` optic.
+  private[stratiform] def mapChildCompounds
+       (blocks: IArray[Block], transform: Compound => Compound)
+  :     IArray[Block] =
+    blocks.map(block => block.copy(compounds = block.compounds.map(transform)))

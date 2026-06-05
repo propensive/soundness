@@ -38,6 +38,7 @@ import adversaria.*
 import anticipation.*
 import contextual.*
 import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import panopticon.*
@@ -64,6 +65,36 @@ trait Tel2:
   given lens: [name <: Label: ValueOf] => (erased DynamicTelEnabler) => Tactic[TelError]
   =>  name is Lens from Tel onto Tel =
     Lens(_.selectDynamic(valueOf[name]), _.modify(valueOf[name], _))
+
+  // Positional optics over a node's child compounds (TEL has no positional arrays,
+  // but a compound's children are ordered — this mirrors the read-side
+  // `applyDynamic(field)(index)`). `Ordinal` addresses the n-th child; `Each` every
+  // child. The transform's result keeps the original child's keyword, so a positional
+  // update preserves the field identity while replacing its value/children.
+  private def rewrap(original: Tel.Compound, replacement: Tel): Tel.Compound =
+    replacement.subtree match
+      case compound: Tel.Compound =>
+        compound.copy(keyword = original.keyword)
+      case document: Tel.Document =>
+        original.copy(atoms = IArray.empty[Tel.Atom], remark = Unset, children = document.children)
+
+  private def rebuild(origin: Tel, children: IArray[Tel.Block]): Tel = origin.subtree match
+    case document: Tel.Document => Tel.make(document.copy(children = children))
+    case compound: Tel.Compound => Tel.make(compound.copy(children = children))
+
+  given ordinalOptical: [element] => Ordinal is Optical from Tel onto Tel = ordinal =>
+    Optic: (origin, lambda) =>
+      if ordinal.n0 < 0 || ordinal.n0 >= origin.childCompounds.length then origin
+      else rebuild
+       ( origin,
+         Tel.withChildCompound
+          (origin.subtree.children, ordinal.n0, c => rewrap(c, lambda(Tel.make(c)))) )
+
+  given eachOptical: Each.type is Optical from Tel onto Tel = _ =>
+    Optic: (origin, lambda) =>
+      rebuild
+       ( origin,
+         Tel.mapChildCompounds(origin.subtree.children, c => rewrap(c, lambda(Tel.make(c)))) )
 
   // `tel"…"` interpolator: parses at compile time and substitutes typed
   // holes via Encodable in Tel.
