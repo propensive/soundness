@@ -67,7 +67,7 @@ object Routable:
         val packet =
           jn.DatagramPacket
             ( bytes.mutable(using Unsafe),
-              input.length,
+              bytes.length,
               jn.InetAddress.getLocalHost.nn,
               connection.port )
 
