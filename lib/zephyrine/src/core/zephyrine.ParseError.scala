@@ -32,9 +32,13 @@
                                                                                                   */
 package zephyrine
 
+import denominative.*
 import fulminate.*
 
 case class ParseError(format: Format, position: format.Position, issue: format.Issue)
   ( using Diagnostics )
 extends Error(594, 0)
-  ( m"the ${format.name} was not valid at ${position.describe} because ${issue.describe}" )
+  ( m"the ${format.name} was not valid at ${position.describe} because ${issue.describe}" ):
+
+  // The internal parser `Position` rendered as a uniform `Span` for public use.
+  def span: Span = position.span

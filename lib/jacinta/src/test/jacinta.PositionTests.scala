@@ -187,3 +187,16 @@ object PositionTests extends Suite(m"Jacinta position-index tests"):
       test(m"Plain parse leaves positionIndex Unset"):
         t"42".read[Json].positionIndex
       . assert(_ == Unset)
+
+    suite(m"Span derivation"):
+      test(m"a position's span carries its line as a 0-based ordinal"):
+        at(2, 8, 3).span.startLine.vouch
+      . assert(_ == 1.z)
+
+      test(m"a position's span carries its column as a 0-based ordinal"):
+        at(2, 8, 3).span.startColumn.vouch
+      . assert(_ == 7.z)
+
+      test(m"a position's span carries its length"):
+        at(2, 8, 3).span.length.vouch
+      . assert(_ == 3)

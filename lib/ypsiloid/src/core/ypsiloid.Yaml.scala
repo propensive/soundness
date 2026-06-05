@@ -323,6 +323,10 @@ object Yaml extends Yaml2, Dynamic:
         override val length: Optional[Int] = Unset )
     extends Format.Position:
       def describe: Text = ("line "+line+", column "+column).tt
+
+      // `line`/`column` are 1-based here; the public span is 0-based.
+      override def span: Span =
+        Span.line((line - 1).max(0).z, (column - 1).max(0).z, length.or(0))
   
     enum Issue extends Format.Issue:
       case DirectiveWithoutDocumentStart
