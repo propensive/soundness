@@ -40,16 +40,19 @@ export urticose.internal.Ipv6
 export urticose.internal.Opaques.Ipv4
 export urticose.internal.Opaques.MacAddress
 export urticose.internal.Opaques.DnsLabel
-export urticose.internal.Opaques.TcpPort
-export urticose.internal.Opaques.UdpPort
+export urticose.internal.Opaques.Port
+
+// `TcpPort` and `UdpPort` are now the two protocol refinements of the unified
+// `Port` type; the names are retained for readability and backwards source
+// compatibility.
+type TcpPort = Port over Tcp
+type UdpPort = Port over Udp
 
 extension (inline context: StringContext)
   transparent inline def ip(): Ipv4 | Ipv6 = ${urticose.internal.ip('context)}
   inline def mac(): MacAddress = ${urticose.internal.mac('context)}
-  transparent inline def tcp(): TcpPort | UdpPort = ${urticose.internal.portService('context, true)}
-
-  transparent inline def udp(): TcpPort | UdpPort =
-    ${urticose.internal.portService('context, false)}
+  transparent inline def tcp(): Port = ${urticose.internal.portService('context, true)}
+  transparent inline def udp(): Port = ${urticose.internal.portService('context, false)}
 
 extension [remote: Connectable](value: remote)
   infix def via [port](port: port): Endpoint[port] =

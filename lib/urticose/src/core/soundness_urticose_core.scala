@@ -36,8 +36,8 @@ export
   urticose
   . { Connectable, EmailAddress, EmailAddressError, Endpoint, Host, Hostname, HostnameError,
       Internet, internet, ip, IpAddressError, Localhost, LocalPart, mac, MacAddressError,
-      OfflineError, Online, online, Port, PortError, Protocolic, serve, Service, tcp, TcpPort, udp,
-      UdpPort, via }
+      OfflineError, Online, online, Allocatable, Port, PortError, Protocolic, Quic, serve, Service,
+      Tcp, tcp, TcpPort, Udp, udp, UdpPort, via }
 
 package internetAccess:
   export urticose.internetAccess.{disabled, enabled}
