@@ -480,7 +480,7 @@ object caduceus extends Library:
   object test extends Tests(core)
 
 object caesura extends Library:
-  object core extends Component(turbulence.core, escritoire.core):
+  object core extends Component(turbulence.core, escritoire.core, panopticon.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
