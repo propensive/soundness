@@ -465,3 +465,128 @@ object Tests extends Suite(m"Denominative Tests"):
         import ordinalShowables.russian
         Sec.textual
       . assert(_ == t"2-й")
+
+    suite(m"Span offset-mode tests"):
+      val span = Span.offset(10.z, 5)
+
+      test(m"offset mode reports Offset"):
+        span.mode
+      . assert(_ == Span.Mode.Offset)
+
+      test(m"offset round-trips the start offset"):
+        span.offset.vouch
+      . assert(_ == 10.z)
+
+      test(m"offset round-trips the length"):
+        span.length.vouch
+      . assert(_ == 5)
+
+      test(m"an offset span has no line"):
+        span.startLine
+      . assert(_ == Unset)
+
+    suite(m"Span line-mode tests"):
+      val span = Span.line(3.z, 7.z, 4)
+
+      test(m"line mode reports Line"):
+        span.mode
+      . assert(_ == Span.Mode.Line)
+
+      test(m"line round-trips the line"):
+        span.startLine.vouch
+      . assert(_ == 3.z)
+
+      test(m"line round-trips the column"):
+        span.startColumn.vouch
+      . assert(_ == 7.z)
+
+      test(m"line round-trips the length"):
+        span.length.vouch
+      . assert(_ == 4)
+
+      test(m"line end column is start column plus length"):
+        span.endColumn.vouch
+      . assert(_ == 11.z)
+
+      test(m"a line span is single-line"):
+        span.singleLine
+      . assert(identity(_))
+
+      test(m"a line span spans one line"):
+        span.lineCount.vouch
+      . assert(_ == 1)
+
+    suite(m"Span lines-mode tests"):
+      val span = Span.lines(5.z, 3)
+
+      test(m"lines mode reports Lines"):
+        span.mode
+      . assert(_ == Span.Mode.Lines)
+
+      test(m"lines round-trips the start line"):
+        span.startLine.vouch
+      . assert(_ == 5.z)
+
+      test(m"lines reports the inclusive end line"):
+        span.endLine.vouch
+      . assert(_ == 7.z)
+
+      test(m"lines round-trips the line count"):
+        span.lineCount.vouch
+      . assert(_ == 3)
+
+      test(m"a lines span has no columns"):
+        span.startColumn
+      . assert(_ == Unset)
+
+    suite(m"Span region-mode tests"):
+      val span = Span.region(2.z, 4.z, 6.z, 9.z)
+
+      test(m"region mode reports Region"):
+        span.mode
+      . assert(_ == Span.Mode.Region)
+
+      test(m"region round-trips the start line"):
+        span.startLine.vouch
+      . assert(_ == 2.z)
+
+      test(m"region round-trips the start column"):
+        span.startColumn.vouch
+      . assert(_ == 4.z)
+
+      test(m"region round-trips the end line"):
+        span.endLine.vouch
+      . assert(_ == 6.z)
+
+      test(m"region round-trips the end column"):
+        span.endColumn.vouch
+      . assert(_ == 9.z)
+
+      test(m"a multi-line region is not single-line"):
+        span.singleLine
+      . assert(_ == false)
+
+      test(m"region line count is inclusive"):
+        Span.region(10.z, 0.z, 13.z, 0.z).lineCount.vouch
+      . assert(_ == 4)
+
+    suite(m"Span empty-mode tests"):
+      test(m"the empty span is vacant"):
+        Span.empty.vacant
+      . assert(identity(_))
+
+      test(m"the empty span does not exist"):
+        Span.empty.exists
+      . assert(_ == false)
+
+      test(m"the empty span reports Empty mode"):
+        Span.empty.mode
+      . assert(_ == Span.Mode.Empty)
+
+      test(m"a zero-valued line span still exists"):
+        Span.line(Prim, Prim, 0).exists
+      . assert(identity(_))
+
+      test(m"a large line number round-trips in line mode"):
+        Span.line(1000000.z, Prim, 0).startLine.vouch
+      . assert(_ == 1000000.z)

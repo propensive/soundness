@@ -36,10 +36,24 @@ import scala.annotation.targetName
 
 import prepositional.*
 import symbolism.*
+import vacuous.*
 
 object internal:
   opaque type Ordinal = Int
   opaque type Interval = Long
+
+  // A `Span` packs a located region of characters into a single `Long`, tagged by
+  // a 3-bit mode in the top bits. Lines, columns and offsets are 0-based and fit
+  // an `Ordinal` (a 32-bit `Int`). Accessors return `Unset` for fields a mode does
+  // not carry. The five modes (3 reserved for the future) are:
+  //
+  //   Empty  (0)  all-zero — absence, in-band (no `Optional[Span]` boxing needed)
+  //   Offset (1)  offset(31), length(30)                       — line-less sources
+  //   Line   (2)  line(23), column(19), length(19)             — single-line spans
+  //   Lines  (3)  startLine(31), lineCount(30)                 — whole-line ranges
+  //   Region (4)  startLine(22), startColumn(14), lineDelta(11), endColumn(14)
+  //                                  — multi-line with columns; endLine = start+delta
+  opaque type Span = Long
 
   extension (ordinal: Ordinal)
     @targetName("minus2")
@@ -123,3 +137,98 @@ object internal:
 
     inline def apply(inline start: Ordinal, inline end: Ordinal): Interval =
       sized(start.n0, end.n0 - start.n0 + 1)
+
+
+  extension (span: Span)
+    inline def bits: Long = span
+    inline def vacant: Boolean = (span >>> 61) == 0L
+    inline def exists: Boolean = (span >>> 61) != 0L
+
+    def mode: Span.Mode = ((span >>> 61) & 0x7L).toInt match
+      case 1 => Span.Mode.Offset
+      case 2 => Span.Mode.Line
+      case 3 => Span.Mode.Lines
+      case 4 => Span.Mode.Region
+      case _ => Span.Mode.Empty
+
+    def startLine: Optional[Ordinal] = mode match
+      case Span.Mode.Line   => Ordinal.zerary(((span >>> 38) & 0x7fffffL).toInt)
+      case Span.Mode.Lines  => Ordinal.zerary(((span >>> 30) & 0x7fffffffL).toInt)
+      case Span.Mode.Region => Ordinal.zerary(((span >>> 39) & 0x3fffffL).toInt)
+      case _                => Unset
+
+    def startColumn: Optional[Ordinal] = mode match
+      case Span.Mode.Line   => Ordinal.zerary(((span >>> 19) & 0x7ffffL).toInt)
+      case Span.Mode.Region => Ordinal.zerary(((span >>> 25) & 0x3fffL).toInt)
+      case _                => Unset
+
+    def endLine: Optional[Ordinal] = mode match
+      case Span.Mode.Line => Ordinal.zerary(((span >>> 38) & 0x7fffffL).toInt)
+
+      case Span.Mode.Lines =>
+        Ordinal.zerary((((span >>> 30) & 0x7fffffffL) + (span & 0x3fffffffL) - 1).toInt)
+
+      case Span.Mode.Region =>
+        Ordinal.zerary((((span >>> 39) & 0x3fffffL) + ((span >>> 14) & 0x7ffL)).toInt)
+
+      case _ => Unset
+
+    def endColumn: Optional[Ordinal] = mode match
+      case Span.Mode.Line =>
+        Ordinal.zerary(((span >>> 19) & 0x7ffffL).toInt + (span & 0x7ffffL).toInt)
+
+      case Span.Mode.Region => Ordinal.zerary((span & 0x3fffL).toInt)
+      case _                => Unset
+
+    def length: Optional[Int] = mode match
+      case Span.Mode.Offset => (span & 0x3fffffffL).toInt
+      case Span.Mode.Line   => (span & 0x7ffffL).toInt
+      case _                => Unset
+
+    def offset: Optional[Ordinal] = mode match
+      case Span.Mode.Offset => Ordinal.zerary(((span >>> 30) & 0x7fffffffL).toInt)
+      case _                => Unset
+
+    def lineCount: Optional[Int] = mode match
+      case Span.Mode.Line   => 1
+      case Span.Mode.Lines  => (span & 0x3fffffffL).toInt
+      case Span.Mode.Region => ((span >>> 14) & 0x7ffL).toInt + 1
+      case _                => Unset
+
+    def singleLine: Boolean = mode match
+      case Span.Mode.Line   => true
+      case Span.Mode.Region => ((span >>> 14) & 0x7ffL) == 0L
+      case _                => false
+
+
+  object Span:
+    enum Mode derives CanEqual:
+      case Empty, Offset, Line, Lines, Region
+
+    given equality: CanEqual[Span, Span] = CanEqual.derived
+
+    final val empty: Span = 0L
+
+    inline def offset(start: Ordinal, length: Int): Span =
+      (1L << 61) | ((start.n0.toLong & 0x7fffffffL) << 30) | (length.toLong & 0x3fffffffL)
+
+    inline def line(line: Ordinal, column: Ordinal, length: Int): Span =
+      (2L << 61)
+        | ((line.n0.toLong & 0x7fffffL) << 38)
+        | ((column.n0.toLong & 0x7ffffL) << 19)
+        | (length.toLong & 0x7ffffL)
+
+    inline def lines(startLine: Ordinal, lineCount: Int): Span =
+      (3L << 61) | ((startLine.n0.toLong & 0x7fffffffL) << 30) | (lineCount.toLong & 0x3fffffffL)
+
+    inline def region
+      ( startLine: Ordinal, startColumn: Ordinal, endLine: Ordinal, endColumn: Ordinal )
+    :   Span =
+
+      val delta = (endLine.n0 - startLine.n0).max(0)
+
+      (4L << 61)
+        | ((startLine.n0.toLong & 0x3fffffL) << 39)
+        | ((startColumn.n0.toLong & 0x3fffL) << 25)
+        | ((delta.toLong & 0x7ffL) << 14)
+        | (endColumn.n0.toLong & 0x3fffL)
