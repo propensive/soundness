@@ -32,13 +32,15 @@
                                                                                                   */
 package anthology
 
+import java.io as ji
+import java.net as jn
 import java.nio.file as jnf
 
 import scala.quoted.*
-import scala.util.control as suc
 
 import ambience.*
 import anticipation.*
+import coaxial.*
 import contingency.*
 import digression.*
 import distillate.*
@@ -47,7 +49,10 @@ import hellenism.*
 import inimitable.*
 import parasite.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
+import turbulence.*
+import urticose.*
 import vacuous.*
 
 import interfaces.paths.pathOnLinux
@@ -105,13 +110,17 @@ object Repl:
     ${ReplMacro.bound[version]('body, 'scalac, 'classloader, 'temporary)}
 
 class Repl[version <: Scalac.Versions]
-  ( layout:  Repl.Layout   = Repl.Layout.Standard(),
-    prelude: Repl.Prelude  = Repl.Prelude.empty )
+  ( layout:  Repl.Layout  = Repl.Layout.Standard(),
+    prelude: Repl.Prelude = Repl.Prelude.empty )
   ( using scalac: Scalac[version], classloader: Classloader, temporary: TemporaryDirectory ):
 
   import Repl.Outcome
 
   val session: Long = ReplBridge.freshSession()
+
+  // Serializes `interpret` across connections: the shared `Scalac` compiler is
+  // not reentrant and the REPL's state is mutable.
+  private val mutex: Mutex = Mutex()
 
   private var index:   Int        = 0
   private var result:  Int        = 0
@@ -124,8 +133,14 @@ class Repl[version <: Scalac.Versions]
   private lazy val loader: Classloader =
     LocalClasspath((Classpath.Directory(out) :: Nil)*).classloader(classloader)
 
+  // The compile classpath must come from the *same* loader the wrapper objects
+  // are run against (`classloader`, below), not from `classloaders.threadContext`:
+  // `interpret` may run on a background worker thread (the TCP accept loop) whose
+  // thread-context loader differs from the REPL's, which would compile against one
+  // copy of the soundness classes and run against another — a loader-constraint
+  // violation.
   private def classpath(using System): LocalClasspath =
-    val entries = Classpath.Directory(out) :: (classloaders.threadContext.classpath.match
+    val entries = Classpath.Directory(out) :: (classloader.classpath.match
       case classpath: LocalClasspath => classpath.entries
 
       case _ =>
@@ -164,7 +179,10 @@ class Repl[version <: Scalac.Versions]
           case error: ExceptionInInitializerError =>
             Outcome.Threw(notices, Optional(error.getCause).or(error))
 
-          case suc.NonFatal(error) =>
+          // Running arbitrary user code can throw anything, including `Error`s
+          // (`LinkageError`, `StackOverflowError`, …), which must not escape and
+          // kill the session.
+          case error: Throwable =>
             Outcome.Threw(notices, error)
 
   private def statementCode(line: Text): Text =
@@ -237,3 +255,63 @@ class Repl[version <: Scalac.Versions]
     ensureSeeded().lay(lineOutcome):
       case _: Outcome.Ran => lineOutcome
       case failure        => failure
+
+  // Starts a TCP server on `port` and accepts connections. Each connection is an
+  // interactive session over the *same* REPL state, speaking a plain-text,
+  // double-newline-delimited protocol (a blank line ends a message), so it can
+  // be driven with `telnet`. Returns a handle whose `stop()` shuts the server
+  // down. A binary protocol and a dedicated client will replace the text framing
+  // later.
+  def serve(port: Port over Tcp)(using Monitor, System, Codicil)
+  :   SocketService logs CompileEvent raises BindError raises StreamError =
+
+    port.listen: socket =>
+      converse(socket)
+      Data()
+
+  private def converse(socket: jn.Socket)(using Monitor, System, Codicil)
+  :   Unit logs CompileEvent =
+
+    val reader = ji.BufferedReader(ji.InputStreamReader(socket.getInputStream.nn, "UTF-8"))
+    val writer = ji.OutputStreamWriter(socket.getOutputStream.nn, "UTF-8")
+
+    try
+      val buffer: StringBuilder = StringBuilder()
+      var line: String | Null = reader.readLine()
+
+      while line != null do
+        if line.nn.isEmpty then
+          if buffer.length > 0 then
+            val message: Text = buffer.toString.tt.trim
+            buffer.clear()
+
+            // A stray throwable in one message becomes an error reply, not a
+            // dropped connection, so the session survives.
+            val response: Text =
+              try respond(message) catch case error: Throwable => t"! error: ${error.toString.tt}"
+
+            writer.write(response.s)
+            writer.write("\n\n")
+            writer.flush()
+        else buffer.append(line.nn).append("\n")
+
+        line = reader.readLine()
+
+    finally
+      safely(reader.close())
+      safely(writer.close())
+      safely(socket.close())
+
+  private def respond(message: Text)(using Monitor, System, Codicil): Text logs CompileEvent =
+    safely(mutex(interpret(message))).lay(t"! the REPL could not process that input"):
+      case Outcome.Ran(notices, value) =>
+        (value.lay(Nil)(List(_)) ::: notices.map(_.message)).join(t"\n")
+
+      case Outcome.Rejected(notices) =>
+        notices.map(_.message).join(t"\n")
+
+      case Outcome.Threw(_, error) =>
+        t"threw ${error.toString.tt}"
+
+      case Outcome.Crashed(_, _) =>
+        t"the compiler crashed"

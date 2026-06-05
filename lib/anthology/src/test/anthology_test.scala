@@ -32,6 +32,9 @@
                                                                                                   */
 package anthology
 
+import _root_.java.io as ji
+import _root_.java.net as jn
+
 import soundness.*
 
 import classloaders.threadContext
@@ -137,3 +140,24 @@ object Tests extends Suite(m"Anthology Tests"):
       . assert:
           case Repl.Outcome.Ran(_, value) => value.let(_ == t"43").or(false)
           case _                          => false
+
+    suite(m"REPL TCP server"):
+      given Scalac[3.8] = Scalac(Nil)
+
+      test(m"a message sent over TCP is evaluated and answered"):
+        supervise:
+          val tcpPort = Port[Tcp]()
+          val service = Repl().serve(tcpPort)
+          val socket  = jn.Socket("localhost", tcpPort.number)
+
+          try
+            val output = socket.getOutputStream.nn
+            output.write("1 + 1\n\n".getBytes("UTF-8").nn)
+            output.flush()
+
+            val input = ji.BufferedReader(ji.InputStreamReader(socket.getInputStream.nn, "UTF-8"))
+            input.readLine()
+          finally
+            socket.close()
+            service.stop()
+      . assert(_ == "2")
