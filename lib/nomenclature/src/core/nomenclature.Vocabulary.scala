@@ -43,40 +43,68 @@ import charDecoders.utf8
 import textSanitizers.skip
 
 object Vocabulary:
-  def apply[source: Streamable by Data, transport](adjectives: source, animals: source)
+  def apply[source: Streamable by Data, transport]
+    ( adverbs: source, adjectives: source, animals: source )
   :   Vocabulary over transport =
 
-    new Vocabulary(load(adjectives), load(animals)).asInstanceOf[Vocabulary over transport]
+    new Vocabulary(load(adverbs), load(adjectives), load(animals))
+    . asInstanceOf[Vocabulary over transport]
 
   private def load[source: Streamable by Data](resource: source): List[Text] =
     resource.read[Text].cut(t"\n").map(_.trim).filter(_ != t"")
 
-class Vocabulary private (adjectives: List[Text], animals: List[Text]):
+class Vocabulary private (adverbs: List[Text], adjectives: List[Text], animals: List[Text]):
   type Transport
 
+  private val adverbArray:    IArray[Text] = IArray.from(adverbs)
   private val adjectiveArray: IArray[Text] = IArray.from(adjectives)
   private val animalArray:    IArray[Text] = IArray.from(animals)
+  private val adverbCount:    Int          = adverbs.length
+  private val adjectiveCount: Int          = adjectives.length
   private val animalCount:    Int          = animals.length
+  private val adverbIndex:    Map[Text, Int] = adverbs.zipWithIndex.to(Map)
   private val adjectiveIndex: Map[Text, Int] = adjectives.zipWithIndex.to(Map)
   private val animalIndex:    Map[Text, Int] = animals.zipWithIndex.to(Map)
 
-  def size: Int = adjectiveArray.length*animalCount
+  // A moniker is animal-only below `adjectiveBase`, adjective-animal below `adverbBase`,
+  // and adverb-adjective-animal above it.
+  private val adjectiveBase: Int = animalCount
+  private val adverbBase:    Int = adjectiveBase + adjectiveCount*animalCount
+
+  def size: Int = adverbBase + adverbCount*adjectiveCount*animalCount
 
   def name(ordinal: Int)(using Tactic[MonikerError]): Text =
-    if ordinal < 0 || ordinal >= size
-    then abort(MonikerError(MonikerError.Reason.OutOfRange(ordinal)))
-    else t"${adjectiveArray(ordinal/animalCount)}-${animalArray(ordinal%animalCount)}"
+    if ordinal < 0 || ordinal >= size then
+      abort(MonikerError(MonikerError.Reason.OutOfRange(ordinal)))
+    else if ordinal < adjectiveBase then
+      animalArray(ordinal)
+    else if ordinal < adverbBase then
+      val rest = ordinal - adjectiveBase
+      t"${adjectiveArray(rest/animalCount)}-${animalArray(rest%animalCount)}"
+    else
+      val rest = ordinal - adverbBase
+      val group = adjectiveCount*animalCount
+      val tail = rest%group
+      val adverb = adverbArray(rest/group)
+      val adjective = adjectiveArray(tail/animalCount)
+      val animal = animalArray(tail%animalCount)
+      t"$adverb-$adjective-$animal"
 
   def number(moniker: Text)(using Tactic[MonikerError]): Int =
     moniker.cut(t"-") match
+      case List(animal) =>
+        lookup(animalIndex, animal)
+
       case List(adjective, animal) =>
-        val first = adjectiveIndex.get(adjective).getOrElse:
-          abort(MonikerError(MonikerError.Reason.UnknownWord(adjective)))
+        adjectiveBase + lookup(adjectiveIndex, adjective)*animalCount + lookup(animalIndex, animal)
 
-        val second = animalIndex.get(animal).getOrElse:
-          abort(MonikerError(MonikerError.Reason.UnknownWord(animal)))
-
-        first*animalCount + second
+      case List(adverb, adjective, animal) =>
+        val prefix = lookup(adverbIndex, adverb)*adjectiveCount*animalCount
+        val middle = lookup(adjectiveIndex, adjective)*animalCount
+        adverbBase + prefix + middle + lookup(animalIndex, animal)
 
       case _ =>
         abort(MonikerError(MonikerError.Reason.Malformed(moniker)))
+
+  private def lookup(index: Map[Text, Int], word: Text)(using Tactic[MonikerError]): Int =
+    index.get(word).getOrElse(abort(MonikerError(MonikerError.Reason.UnknownWord(word))))

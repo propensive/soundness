@@ -45,7 +45,7 @@ object MonikerError:
   given communicable: Reason is Communicable =
     case Reason.Unreadable        => m"the vocabulary could not be read"
     case Reason.OutOfRange(n)     => m"the number $n is outside the representable range"
-    case Reason.Malformed(name)   => m"$name is not of the form <adjective>-<animal>"
+    case Reason.Malformed(name)   => m"$name is not a valid moniker"
     case Reason.UnknownWord(word) => m"the word $word does not appear in the vocabulary"
 
 case class MonikerError(reason: MonikerError.Reason)(using Diagnostics)

@@ -85,55 +85,68 @@ object Tests extends Suite(m"Nomenclature tests"):
       capture[NameError](Name[Required](t"")).message.show
     . assert(_ == t"""the name “” is not valid because it must not be empty""")
 
+    val adverbs = cp"/nomenclature/adverbs.txt"
     val adjectives = cp"/nomenclature/adjectives.txt"
     val animals = cp"/nomenclature/animals.txt"
 
-    test(m"Encode a moniker with an explicit plane"):
-      given (Vocabulary over Session) = Vocabulary(adjectives, animals)
-      Moniker[Session](10351).encode
-    . assert(_ == t"brilliant-leopard")
+    test(m"Low monikers are just an animal"):
+      given (Vocabulary over Session) = Vocabulary(adverbs, adjectives, animals)
+      (Moniker[Session](0).encode, Moniker[Session](249).encode)
+    . assert(_ == (t"aardvark", t"ocelot"))
+
+    test(m"Mid monikers add an adjective prefix"):
+      given (Vocabulary over Session) = Vocabulary(adverbs, adjectives, animals)
+      (Moniker[Session](250).encode, Moniker[Session](10351).encode)
+    . assert(_ == (t"able-aardvark", t"bright-leopard"))
+
+    test(m"High monikers add an adverb prefix too"):
+      given (Vocabulary over Session) = Vocabulary(adverbs, adjectives, animals)
+      (Moniker[Session](100250).encode, Moniker[Session](310351).encode)
+    . assert(_ == (t"barely-able-aardvark", t"slightly-bright-leopard"))
 
     test(m"Infer the plane from the single vocabulary in scope"):
-      given (Vocabulary over Session) = Vocabulary(adjectives, animals)
-      Moniker(10351).encode
-    . assert(_ == t"brilliant-leopard")
+      given (Vocabulary over Session) = Vocabulary(adverbs, adjectives, animals)
+      Moniker(310351).encode
+    . assert(_ == t"slightly-bright-leopard")
 
     test(m"Infer the plane from a single unplaned vocabulary"):
-      given Vocabulary = Vocabulary(adjectives, animals)
-      Moniker(10351).encode
-    . assert(_ == t"brilliant-leopard")
+      given Vocabulary = Vocabulary(adverbs, adjectives, animals)
+      Moniker(250).encode
+    . assert(_ == t"able-aardvark")
 
-    test(m"Decode a friendly name to a moniker"):
-      given (Vocabulary over Session) = Vocabulary(adjectives, animals)
-      t"brilliant-leopard".decode[Moniker over Session].ordinal
-    . assert(_ == 10351)
+    test(m"Decode names from each tier back to numbers"):
+      given (Vocabulary over Session) = Vocabulary(adverbs, adjectives, animals)
+      ( t"aardvark".decode[Moniker over Session].ordinal,
+        t"able-aardvark".decode[Moniker over Session].ordinal,
+        t"slightly-bright-leopard".decode[Moniker over Session].ordinal )
+    . assert(_ == (0, 250, 310351))
 
     test(m"Round-trip a moniker through its name"):
-      given (Vocabulary over Session) = Vocabulary(adjectives, animals)
-      t"brilliant-leopard".decode[Moniker over Session].encode
-    . assert(_ == t"brilliant-leopard")
+      given (Vocabulary over Session) = Vocabulary(adverbs, adjectives, animals)
+      t"slightly-bright-leopard".decode[Moniker over Session].encode
+    . assert(_ == t"slightly-bright-leopard")
 
-    test(m"Vocabulary size is the product of the word counts"):
-      Vocabulary(adjectives, animals).size
-    . assert(_ == 100000)
+    test(m"Vocabulary size spans all three tiers"):
+      Vocabulary(adverbs, adjectives, animals).size
+    . assert(_ == 250 + 400*250 + 55*400*250)
 
-    test(m"Select between planes explicitly"):
-      given (Vocabulary over Session) = Vocabulary(adjectives, animals)
-      given (Vocabulary over Other) = Vocabulary(animals, adjectives)
-      (Moniker[Session](10351).encode, Moniker[Other](10351).encode)
-    . assert(_ == (t"brilliant-leopard", t"capybara-tart"))
+    test(m"Select a plane explicitly when several are in scope"):
+      given (Vocabulary over Session) = Vocabulary(adverbs, adjectives, animals)
+      given (Vocabulary over Other) = Vocabulary(adverbs, animals, adjectives)
+      (Moniker[Session](310351).encode, Moniker[Other](310351).encode == Moniker[Session](310351).encode)
+    . assert(_ == (t"slightly-bright-leopard", false))
 
     test(m"An out-of-range number cannot be encoded"):
-      given (Vocabulary over Session) = Vocabulary(adjectives, animals)
-      capture[MonikerError](Moniker[Session](100000).encode).message.show
-    . assert(_ == t"the moniker is not valid because the number 100000 is outside the representable range")
+      given (Vocabulary over Session) = Vocabulary(adverbs, adjectives, animals)
+      capture[MonikerError](Moniker[Session](5600250).encode).message.show
+    . assert(_ == t"the moniker is not valid because the number 5600250 is outside the representable range")
 
     test(m"A malformed name cannot be decoded"):
-      given (Vocabulary over Session) = Vocabulary(adjectives, animals)
-      capture[MonikerError](t"justoneword".decode[Moniker over Session]).message.show
-    . assert(_ == t"the moniker is not valid because justoneword is not of the form <adjective>-<animal>")
+      given (Vocabulary over Session) = Vocabulary(adverbs, adjectives, animals)
+      capture[MonikerError](t"too-many-words-here".decode[Moniker over Session]).message.show
+    . assert(_ == t"the moniker is not valid because too-many-words-here is not a valid moniker")
 
     test(m"An unknown word cannot be decoded"):
-      given (Vocabulary over Session) = Vocabulary(adjectives, animals)
+      given (Vocabulary over Session) = Vocabulary(adverbs, adjectives, animals)
       capture[MonikerError](t"notathing-leopard".decode[Moniker over Session]).message.show
     . assert(_ == t"the moniker is not valid because the word notathing does not appear in the vocabulary")
