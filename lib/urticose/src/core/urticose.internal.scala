@@ -83,8 +83,7 @@ object internal:
     opaque type Ipv4 <: Matchable = Int
     opaque type MacAddress <: Matchable = Long
     opaque type DnsLabel = anticipation.Text
-    opaque type TcpPort <: Port = Int & Port
-    opaque type UdpPort <: Port = Int & Port
+    opaque type Port <: PortType = Int & PortType
 
     object DnsLabel:
       given showable: DnsLabel is Showable = identity(_)
@@ -173,48 +172,32 @@ object internal:
 
         recur(List(byte0, byte1, byte2, byte3, byte4, byte5), 0L)
 
-    object TcpPort:
-      inline given underlying: Underlying[TcpPort, Int] = !!
-      given showable: TcpPort is Showable = _.number.show
-      given encodable: TcpPort is Encodable in Text = _.number.show
+    object Port:
+      inline given underlying: Underlying[Port, Int] = !!
+      given showable: Port is Showable = _.number.show
+      given encodable: Port is Encodable in Text = _.number.show
 
-      given decodable: (Tactic[NumberError], Tactic[PortError]) => TcpPort is Decodable in Text =
+      given decodable: (Tactic[NumberError], Tactic[PortError]) => Port is Decodable in Text =
         text => apply(text.decode[Int])
 
-      def unsafe(value: Int): TcpPort = value.asInstanceOf[TcpPort]
+      def unsafe[transport](value: Int): Port over transport =
+        value.asInstanceOf[Port over transport]
 
-      def apply(value: Int): TcpPort raises PortError =
-        if 1 <= value <= 65535 then value.asInstanceOf[TcpPort]
+      // A numbered port. The transport is taken from an explicit type argument
+      // (`Port[Udp](8237)`) or inferred from the expected type (`Port(8237)` where a
+      // `Port over Udp` is wanted).
+      def apply[transport](value: Int): (Port over transport) raises PortError =
+        if 1 <= value <= 65535 then value.asInstanceOf[Port over transport]
         else abort(PortError())
 
-      // Ask the OS for a free port by binding an ephemeral socket, then release it
-      // so the caller can rebind. Subject to a benign TOCTOU race.
-      def unused(): TcpPort =
-        val socket = java.net.ServerSocket(0)
-        try unsafe(socket.getLocalPort) finally socket.close()
-
-    object UdpPort:
-      inline given underlying: Underlying[UdpPort, Int] = !!
-      given showable: UdpPort is Showable = _.number.show
-      given encodable: UdpPort is Encodable in Text = _.number.show
-
-      given decodable: (Tactic[NumberError], Tactic[PortError]) => UdpPort is Decodable in Text =
-        text => apply(text.decode[Int])
-
-      def unsafe(value: Int): UdpPort = value.asInstanceOf[UdpPort]
-
-      def apply(value: Int): UdpPort raises PortError =
-        if 1 <= value <= 65535 then value.asInstanceOf[UdpPort]
-        else abort(PortError())
-
-      // Ask the OS for a free port by binding an ephemeral socket, then release it
-      // so the caller can rebind. Subject to a benign TOCTOU race.
-      def unused(): UdpPort =
-        val socket = java.net.DatagramSocket(0)
-        try unsafe(socket.getLocalPort) finally socket.close()
+      // An unused port supplied by the OS: bind an ephemeral probe socket of the
+      // right kind for the transport, then release it so the caller can rebind.
+      // Subject to a benign TOCTOU race.
+      def apply[transport]()(using allocatable: transport is Allocatable): Port over transport =
+        allocatable.unused().asInstanceOf[Port over transport]
 
 
-    extension (port: TcpPort | UdpPort)
+    extension (port: Port)
       def number: Int = port
 
       def privileged: Boolean = port < 1024
@@ -327,7 +310,7 @@ object internal:
 
 
   def portService(context: Expr[StringContext], tcp: Boolean)
-  :   Macro[TcpPort | UdpPort] =
+  :   Macro[Port] =
 
     import quotes.reflect.*
 
@@ -338,8 +321,8 @@ object internal:
       if 1 <= portNumber <= 65535 then
         ConstantType(IntConstant(portNumber)).asType.absolve match
           case '[number] =>
-            if tcp then '{TcpPort.unsafe(${Expr(portNumber)}).asInstanceOf[TcpPort of number]}
-            else '{UdpPort.unsafe(${Expr(portNumber)}).asInstanceOf[UdpPort of number]}
+            if tcp then '{Port.unsafe(${Expr(portNumber)}).asInstanceOf[Port over Tcp of number]}
+            else '{Port.unsafe(${Expr(portNumber)}).asInstanceOf[Port over Udp of number]}
 
       else
         halt(340, m"the $portType port number ${portNumber} is not in the range 1-65535")
@@ -349,8 +332,8 @@ object internal:
           case port: Int =>
             ConstantType(IntConstant(port)).asType.absolve match
               case '[type number <: Int; number] =>
-                if tcp then '{TcpPort.unsafe(${Expr(port)}).asInstanceOf[TcpPort of number]}
-                else '{UdpPort.unsafe(${Expr(port)}).asInstanceOf[UdpPort of number]}
+                if tcp then '{Port.unsafe(${Expr(port)}).asInstanceOf[Port over Tcp of number]}
+                else '{Port.unsafe(${Expr(port)}).asInstanceOf[Port over Udp of number]}
 
 
   def ip(context: Expr[StringContext]): Macro[Ipv4 | Ipv6] =

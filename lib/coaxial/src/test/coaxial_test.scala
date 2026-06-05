@@ -71,7 +71,7 @@ object Tests extends Suite(m"Coaxial tests"):
       . assert(_ == bytes(ascii(t"hello")))
 
       test(m"An Encodable value is transmitted via its Text encoding"):
-        joined(summon[TcpPort is Transmissible].serialize(TcpPort.unsafe(8080)))
+        joined(summon[Port is Transmissible].serialize(Port.unsafe[Tcp](8080)))
       . assert(_ == bytes(ascii(t"8080")))
 
       test(m"contramap adapts a Transmissible to a new source type"):
@@ -89,7 +89,7 @@ object Tests extends Suite(m"Coaxial tests"):
       . assert(_ == t"hello")
 
       test(m"A Decodable value is received via its Text decoding"):
-        Ingressive.decoder[TcpPort].deserialize(ascii(t"443")).number
+        Ingressive.decoder[Port].deserialize(ascii(t"443")).number
       . assert(_ == 443)
 
       test(m"map adapts an Ingressive to a new result type"):
@@ -147,7 +147,7 @@ object Tests extends Suite(m"Coaxial tests"):
 
     suite(m"Packet"):
       test(m"A Packet exposes its data, sender and port"):
-        val packet = Packet(ascii(t"payload"), ip"192.168.0.1", UdpPort.unsafe(9999))
+        val packet = Packet(ascii(t"payload"), ip"192.168.0.1", Port.unsafe[Udp](9999))
         (bytes(packet.data), packet.sender, packet.port.number)
       . assert(_ == (bytes(ascii(t"payload")), ip"192.168.0.1", 9999))
 
@@ -178,7 +178,7 @@ object Tests extends Suite(m"Coaxial tests"):
     supervise:
       suite(m"UDP server and client"):
         test(m"A bound UDP server receives a transmitted datagram"):
-          val port = UdpPort.unused()
+          val port = Port[Udp]()
           val received: Promise[Text] = Promise()
 
           val server = port.listen[Data]: packet =>
@@ -196,7 +196,7 @@ object Tests extends Suite(m"Coaxial tests"):
 
       suite(m"TCP server and client"):
         test(m"A client exchange receives the server's pushed message"):
-          val port = TcpPort.unused()
+          val port = Port[Tcp]()
           val server = port.listen[Data](socket => ascii(t"greeting"))
 
           val received: Data = port.exchange(Data())[Data](Data()): message =>

@@ -651,11 +651,11 @@ object Tests extends Suite(m"Urticose tests"):
     suite(m"Named port services"):
       test(m"Check SMTP over TCP port"):
         tcp"smtp"
-      . assert(_ == TcpPort(25))
+      . assert(_ == Port[Tcp](25))
 
       test(m"Check Docker over TCP port"):
         tcp"docker"
-      . assert(_ == UdpPort(2375))
+      . assert(_ == Port[Udp](2375))
 
       test(m"Check Docker over UDP port is not valid"):
         demilitarize(udp"docker").map(_.message)
@@ -667,15 +667,15 @@ object Tests extends Suite(m"Urticose tests"):
 
     suite(m"Unused port allocation"):
       test(m"An unused TCP port is in the valid range"):
-        TcpPort.unused().number
+        Port[Tcp]().number
       . assert(1 <= _ <= 65535)
 
       test(m"An unused UDP port is in the valid range"):
-        UdpPort.unused().number
+        Port[Udp]().number
       . assert(1 <= _ <= 65535)
 
       test(m"An unused TCP port can be bound"):
-        val port = TcpPort.unused().number
+        val port = Port[Tcp]().number
         val socket = java.net.ServerSocket(port)
         try socket.getLocalPort finally socket.close()
       . assert(_ > 0)

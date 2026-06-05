@@ -32,5 +32,10 @@
                                                                                                   */
 package urticose
 
-sealed trait Port:
-  type Topic <: Int
+import prepositional.*
+
+// A protocol for which the operating system can allocate an ephemeral port. Keyed
+// on the transport phantom (`Tcp`, `Udp`, …) so `Port[transport]()` can pick the
+// right kind of probe socket at run-time despite the transport being erased.
+trait Allocatable extends Typeclass:
+  def unused(): Int
