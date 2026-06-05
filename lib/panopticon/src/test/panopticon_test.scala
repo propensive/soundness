@@ -229,6 +229,20 @@ object Tests extends Suite(m"Panopticon tests"):
       ( r.depts.head.lead.name, r.depts.head.lead.age, r.depts.head.lead.role.name )
     . assert(_ == ("Renamed", 99, "Boss"))
 
+    case class Bag(items: Vector[Int])
+    test(m"ordinal optic on a Vector field"):
+      Bag(Vector(1, 2, 3)).lens(_.items(Sec) = 9)
+    . assert(_ == Bag(Vector(1, 9, 3)))
+
+    case class Crew(members: Seq[Text])
+    test(m"ordinal optic on a Seq field"):
+      Crew(Seq(t"a", t"b", t"c")).lens(_.members(Prim) = t"z")
+    . assert(_ == Crew(Seq(t"z", t"b", t"c")))
+
+    test(m"filter-by-key traversal over a Map field"):
+      user.lens(_.roles(Filter[Text](_ == t"cfo")).name = "X")
+    . assert(_ == User("John", Map(t"ceo" -> Role("CEO", 1), t"cfo" -> Role("X", 2), t"cio" -> Role("CIO", 3))))
+
     import doms.html.whatwg.*
 
     test(m"adjust an HTML value"):
