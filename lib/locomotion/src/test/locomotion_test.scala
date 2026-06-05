@@ -230,3 +230,20 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
         val message = Person(t"Alice", 30).protobuf
         message.generic(1).read[Person over Protobuf]
       . assert(_ == Person(t"Alice", 30))
+
+    suite(m"Optics"):
+      // Protobuf is number-keyed: the `Ordinal` selects a field by number (Prim =
+      // field 1). Wrapper encodes `point` at field 1 and `label` at field 2.
+      def wrapper: Protobuf = Wrapper(Point(3, 4), t"origin").protobuf
+
+      test(m"field optic replaces a sub-message field by number"):
+        wrapper.lens(_(Prim) = Point(7, 8).protobuf).as[Wrapper]
+      . assert(_ == Wrapper(Point(7, 8), t"origin"))
+
+      test(m"field optic leaves other fields unchanged"):
+        wrapper.lens(_(Prim) = Point(7, 8).protobuf).as[Wrapper].label
+      . assert(_ == t"origin")
+
+      test(m"an absent field number is a no-op"):
+        wrapper.lens(_(Sen) = Point(7, 8).protobuf).as[Wrapper]
+      . assert(_ == Wrapper(Point(3, 4), t"origin"))

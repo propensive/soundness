@@ -883,6 +883,37 @@ object Yaml extends Yaml2, Dynamic:
       else
         origin
 
+  // `Each` applies the transform to every sequence element; `Filter` to those
+  // matching its predicate. Both rebuild the sequence immutably and no-op otherwise.
+  given eachOptical: Each.type is Optical from Yaml onto Yaml = _ =>
+    Optic: (origin, lambda) =>
+      if origin.root.isArray then
+        val n = origin.root.arrayLength
+        Yaml.ast:
+          val updated = new Array[Any](n)
+          var i = 0
+          while i < n do
+            updated(i) = lambda(Yaml.ast(origin.root.arrayElement(i))).root
+            i += 1
+          Yaml.Ast.seqFromAnyArray(updated)
+      else
+        origin
+
+  given filterOptical: Filter[Yaml] is Optical from Yaml onto Yaml = filter =>
+    Optic: (origin, lambda) =>
+      if origin.root.isArray then
+        val n = origin.root.arrayLength
+        Yaml.ast:
+          val updated = new Array[Any](n)
+          var i = 0
+          while i < n do
+            val element = Yaml.ast(origin.root.arrayElement(i))
+            updated(i) = (if filter.predicate(element) then lambda(element) else element).root
+            i += 1
+          Yaml.Ast.seqFromAnyArray(updated)
+      else
+        origin
+
   // Single-error abort variant retained for non-primitive accessors
   // (`yaml(t"foo")`, `yaml(0)`, etc.) that need to short-circuit on
   // wrong-shape access. Primitive `Decodable in Yaml` instances no

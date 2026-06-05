@@ -1007,6 +1007,35 @@ object Tests extends Suite(m"Xylophone tests"):
         . nonEmpty
       . assert(identity)
 
+    suite(m"Optics"):
+      import dynamicXmlAccess.enabled
+      def doc: Xml = t"<doc><x>1</x><x>2</x><x>3</x></doc>".read[Xml]
+
+      test(m"lens replaces the first matching child element"):
+        doc.lens(_.x = x"<x>9</x>").show
+      . assert(_ == t"<doc><x>9</x><x>2</x><x>3</x></doc>")
+
+      test(m"lens appends when no matching child exists"):
+        doc.lens(_.y = x"<y>5</y>").show
+      . assert(_ == t"<doc><x>1</x><x>2</x><x>3</x><y>5</y></doc>")
+
+      test(m"lens navigates and updates a nested element"):
+        t"<doc><item><name>a</name></item></doc>".read[Xml]
+         .lens(_.item.name = x"<name>b</name>").show
+      . assert(_ == t"<doc><item><name>b</name></item></doc>")
+
+      test(m"ordinal optic replaces the n-th child element"):
+        doc.lens(_(Sec) = x"<x>9</x>").show
+      . assert(_ == t"<doc><x>1</x><x>9</x><x>3</x></doc>")
+
+      test(m"each optic replaces every child element"):
+        doc.lens(_(Each) = x"<x>0</x>").show
+      . assert(_ == t"<doc><x>0</x><x>0</x><x>0</x></doc>")
+
+      test(m"an out-of-range ordinal is a no-op"):
+        doc.lens(_(Sen) = x"<x>9</x>").show
+      . assert(_ == t"<doc><x>1</x><x>2</x><x>3</x></doc>")
+
     PositionTests()
     DecoderTests()
     EncoderTests()

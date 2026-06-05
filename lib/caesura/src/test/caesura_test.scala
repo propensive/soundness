@@ -228,6 +228,32 @@ object Tests extends Suite(m"Caesura tests"):
       Seq(Foo(t"hello", t"world")).dsv.show
     . assert(_ == t"hello\tworld")
 
+    suite(m"Optics"):
+      import dsvFormats.csvWithHeader
+      import dynamicDsvAccess.enabled
+      def sheet: Sheet = t"name,age\nAlice,30\nBob,25".read[Sheet]
+
+      test(m"cell lens reads a cell by column name"):
+        summon["name" is Lens from Dsv onto Text](sheet.rows.head)
+      . assert(_ == t"Alice")
+
+      test(m"cell lens replaces a cell by column name"):
+        sheet.rows.head.lens(_.name = t"Carol").data.head
+      . assert(_ == t"Carol")
+
+      test(m"row optic updates a cell in the n-th row"):
+        sheet.lens(_(Sec).name = t"Carol").rows.to(List).map(_.data.head)
+      . assert(_ == List(t"Alice", t"Carol"))
+
+      test(m"each-row optic updates every row"):
+        sheet.lens(_(Each).name = t"X").rows.to(List).map(_.data.head)
+      . assert(_ == List(t"X", t"X"))
+
+      test(m"filter-row optic updates only matching rows"):
+        sheet.lens(_(Filter[Dsv](_.data.head == t"Bob")).name = t"X")
+         .rows.to(List).map(_.data.head)
+      . assert(_ == List(t"Alice", t"X"))
+
 case class Foo(one: Text, two: Text)
 case class Bar(one: Double, foo1: Foo, four: Int, foo2: Foo)
 case class Quux(name: Text, greeting: Text)

@@ -39,7 +39,15 @@ pid=$!
 #     unmounted virtual thread (e.g. a parasite daemon parked on a promise), so a
 #     deadlock among virtual threads is invisible without this.
 (
-  sleep "$TIMEOUT"
+  # Run the timeout as a tracked background child with a TERM trap that reaps it.
+  # If we instead ran a bare `sleep "$TIMEOUT"` and the parent later did
+  # `kill "$watchdog"`, that would kill this subshell but ORPHAN the external
+  # `sleep`, which keeps the inherited write-end of the caller's `… | tee` pipe
+  # open — wedging `tee` (and `make attest`) until the stray sleep finally ends.
+  sleep "$TIMEOUT" &
+  sp=$!
+  trap 'kill "$sp" 2>/dev/null; exit 0' TERM
+  wait "$sp"
   if kill -0 "$pid" 2>/dev/null; then
     echo >&2
     echo "::: test suite exceeded ${TIMEOUT}s — assuming a hang; thread dumps follow :::" >&2

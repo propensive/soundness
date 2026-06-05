@@ -806,6 +806,27 @@ object Tests extends Suite(m"Honeycombd Tests"):
           t"""<table>x<b>y</b>z<tr><td>w</td></tr></table>""".read[Html of Flow]
         . assert(_ == Fragment(TextNode("x"), B("y"), TextNode("z"), Table(Tbody(Tr(Td("w"))))))
 
+      suite(m"Optics"):
+        test(m"Tag optic transforms every matching child element"):
+          Div(P("a"), P("b")).lens(_(P) = P("x")).show
+        . assert(_ == t"<div><p>x</p><p>x</p></div>")
+
+        test(m"Tag optic leaves non-matching children unchanged"):
+          Div(P("a"), B("b")).lens(_(P) = P("x")).show
+        . assert(_ == t"<div><p>x</p><b>b</b></div>")
+
+        test(m"Tag optic over a single matching child"):
+          Div(P("a")).lens(_(P) = P("z")).show
+        . assert(_ == t"<div><p>z</p></div>")
+
+        test(m"Tag optic with no matching children is a no-op"):
+          Div(B("a")).lens(_(P) = P("x")).show
+        . assert(_ == t"<div><b>a</b></div>")
+
+        test(m"nested Tag optics compose"):
+          Div(Ul(Li("a"), Li("b"))).lens(_(Ul)(Li) = Li("x")).show
+        . assert(_ == t"<div><ul><li>x</li><li>x</li></ul></div>")
+
       suite(m"Interpolator tests"):
         import attributives.textAttributes
 

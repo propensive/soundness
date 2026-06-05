@@ -39,6 +39,7 @@ import java.lang as jl
 import adversaria.name
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gastronomy.*
 import gossamer.*
@@ -927,6 +928,38 @@ object Tests extends Suite(m"Stratiform Tests"):
         val updated = lens.modify(tel)(_ => Tel.scalar(t"Carol"))
         updated.selectDynamic("name").primaryAtom
       . assert(_ == t"Carol")
+
+    suite(m"Optics: positional child traversal"):
+      import dynamicTelAccess.enabled
+      def doc(source: String): Tel = source.tt.read[Tel]
+      def contacts: Tel = doc("contacts\n  contact alice\n  contact bob\n")
+
+      test(m"ordinal optic replaces the n-th child compound"):
+        contacts.lens(_.contacts(Sec) = Tel.scalar(t"carol")).contacts(1).primaryAtom
+      . assert(_ == t"carol")
+
+      test(m"ordinal optic leaves siblings unchanged"):
+        contacts.lens(_.contacts(Sec) = Tel.scalar(t"carol")).contacts(0).primaryAtom
+      . assert(_ == t"alice")
+
+      test(m"ordinal optic preserves the child's keyword"):
+        contacts.lens(_.contacts(Sec) = Tel.scalar(t"carol")).applyDynamic("contacts")(1).keyword
+      . assert(_ == t"contact")
+
+      test(m"each optic transforms every child compound"):
+        val updated = contacts.lens(_.contacts(Each) = Tel.scalar(t"x"))
+        (updated.contacts(0).primaryAtom, updated.contacts(1).primaryAtom)
+      . assert(_ == (t"x", t"x"))
+
+      test(m"an out-of-range ordinal is a no-op"):
+        contacts.lens(_.contacts(Quat) = Tel.scalar(t"none")).contacts(1).primaryAtom
+      . assert(_ == t"bob")
+
+      test(m"editing through an ordinal optic preserves surrounding formatting"):
+        val original = doc("# header\ncontacts\n  contact alice\n  contact bob\n")
+        val updated = original.lens(_.contacts(Sec) = Tel.scalar(t"carol"))
+        Tel.show(updated.document.vouch)
+      . assert(_ == t"# header\ncontacts\n  contact alice\n  contact carol\n")
 
     suite(m"Edit DSL"):
       def doc(source: String): Tel = source.tt.read[Tel]

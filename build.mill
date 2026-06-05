@@ -480,7 +480,7 @@ object caduceus extends Library:
   object test extends Tests(core)
 
 object caesura extends Library:
-  object core extends Component(turbulence.core, escritoire.core):
+  object core extends Component(turbulence.core, escritoire.core, panopticon.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
@@ -985,7 +985,7 @@ object mandible extends Library:
 object locomotion extends Library:
   object core
       extends Component(turbulence.core, wisteria.core, adversaria.core, hypotenuse.core,
-        gossamer.core, spectacular.core):
+        gossamer.core, spectacular.core, panopticon.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
@@ -1372,7 +1372,7 @@ object querencia extends Library:
   object test extends Tests(core)
 
 object xylophone extends Library:
-  object core extends Component(zephyrine.core, adversaria.core, typonym.core, hellenism.core, urticose.core, wisteria.core):
+  object core extends Component(zephyrine.core, adversaria.core, typonym.core, hellenism.core, urticose.core, wisteria.core, panopticon.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
