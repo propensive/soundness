@@ -38,6 +38,7 @@ import java.lang as jl
 import java.nio.charset.StandardCharsets.UTF_8
 
 import scala.collection.Factory
+import scala.collection.mutable as scm
 import scala.compiletime.*
 
 import adversaria.*
@@ -125,6 +126,38 @@ object Protobuf extends Protobuf2:
   given aggregableOver: [value: Decodable in Protobuf] => Tactic[ProtobufError]
   =>  (value over Protobuf) is Aggregable by Data =
     bytes => message(bytes.read[Data]).as[value].asInstanceOf[value over Protobuf]
+
+  // Length-delimited message stream: each message is a varint length prefix followed
+  // by that many payload bytes (the standard framing for multiple Protobuf messages).
+  // `parseSequence` is eager; `parseSequenceStream` reads each message lazily.
+  private def parseSequence(bytes: Data): List[Protobuf] raises ProtobufError =
+    val parser = ProtobufParser(bytes)
+    val buffer = scm.ListBuffer.empty[Protobuf]
+    while !parser.atEnd do buffer += message(parser.slice(parser.varint().toInt))
+    buffer.to(List)
+
+  private def parseSequenceStream(bytes: Data): Stream[Protobuf] raises ProtobufError =
+    // A dedicated parser instance: the lazy tail reads later messages on demand and
+    // must own its parser state.
+    val parser = ProtobufParser(bytes)
+
+    def recur(): Stream[Protobuf] =
+      if parser.atEnd then Stream()
+      else message(parser.slice(parser.varint().toInt)) #:: recur()
+
+    recur()
+
+  // `source.read[List[Protobuf]]` / `read[Vector[Protobuf]]` / `read[Stream[Protobuf]]`
+  // etc. for a length-delimited message stream. The collection bound
+  // `<: Iterable[Protobuf]` keeps this from overlapping the single-message `Protobuf`
+  // instance, and the fully-ground `streamAggregable` wins for `Stream`/`LazyList`.
+  given collectionAggregable: [collection <: Iterable[Protobuf]]
+  =>  (factory: Factory[Protobuf, collection], tactic: Tactic[ProtobufError])
+  =>  collection is Aggregable by Data =
+    source => parseSequence(source.read[Data]).to(factory)
+
+  given streamAggregable: Tactic[ProtobufError] => Stream[Protobuf] is Aggregable by Data =
+    source => parseSequenceStream(source.read[Data])
 
   private def printed(lambda: ProtobufPrinter => Unit): Data =
     val printer = ProtobufPrinter()

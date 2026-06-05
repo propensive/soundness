@@ -34,9 +34,23 @@ package locomotion
 
 import anticipation.*
 import prepositional.*
+import turbulence.*
 
 // Encodes any value with an `Encodable in Protobuf` instance to its `Protobuf` wire
 // form; `.encode` then yields the message bytes (`Data`). Decoding is
 // `bytes.read[Protobuf].as[T]` or the `bytes.read[T over Protobuf]` shorthand.
 extension [value: Encodable in Protobuf](value: value)
   def protobuf: Protobuf = value.encode
+
+// Serialise a sequence of Protobuf messages as a length-delimited stream: each message
+// is a varint length prefix followed by its payload bytes (the standard framing for
+// multiple messages). Lazy: a `Stream[Protobuf]` is serialised on demand, one frame per
+// chunk. The inverse of `bytes.read[List[Protobuf]]` / `read[Stream[Protobuf]]` — use
+// `documents.writeTo(target)` to emit it.
+given documentsStreamable: [source <: Seq[Protobuf]] => source is Streamable by Data =
+  values => values.to(Stream).map: message =>
+    val payload = message.encode
+    val printer = ProtobufPrinter()
+    printer.varint(payload.length)
+    printer.raw(payload)
+    printer.result

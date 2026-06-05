@@ -109,6 +109,33 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
         Stream(Sparse(9, t"x").protobuf.encode).read[Sparse over Protobuf]
       . assert(_ == Sparse(9, t"x"))
 
+    suite(m"Length-delimited streams"):
+      // Frame a single message as a varint length prefix (single byte for lengths
+      // below 128) followed by its payload bytes.
+      def frame[value: Encodable in Protobuf](value: value): IArray[Byte] =
+        val payload = value.protobuf.encode
+        IArray(payload.length.toByte) ++ payload
+
+      test(m"read[List[Protobuf]] parses length-delimited messages"):
+        val bytes = frame(Sample(1)) ++ frame(Sample(2)) ++ frame(Sample(3))
+        Stream(bytes).read[List[Protobuf]].map(_.as[Sample])
+      . assert(_ == List(Sample(1), Sample(2), Sample(3)))
+
+      test(m"read[Vector[Protobuf]] builds a Vector via the generic builder"):
+        Stream(frame(Sample(1)) ++ frame(Sample(2))).read[Vector[Protobuf]].length
+      . assert(_ == 2)
+
+      test(m"read[Stream[Protobuf]] is lazy past a malformed later message"):
+        // A length prefix of 9 with no following payload bytes is truncated.
+        val bytes = frame(Sample(1)) ++ IArray(9.toByte)
+        Stream(bytes).read[LazyList[Protobuf]].head.as[Sample]
+      . assert(_ == Sample(1))
+
+      test(m"a length-delimited stream round-trips through serialization"):
+        val bytes = frame(Person(t"Alice", 30)) ++ frame(Person(t"Bob", 25))
+        Stream(bytes).read[List[Protobuf]].read[List[Protobuf]].map(_.as[Person])
+      . assert(_ == List(Person(t"Alice", 30), Person(t"Bob", 25)))
+
     suite(m"Repeated fields"):
       test(m"repeated strings round-trip in order"):
         Stream(Tags(List(t"a", t"b", t"c")).protobuf.encode).read[Tags over Protobuf]
