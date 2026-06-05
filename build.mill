@@ -356,7 +356,7 @@ object anthology extends Library:
   object bundle extends Component(core, zeppelin.core, revolution.core, eucalyptus.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object repl extends Component(`scala`, inimitable.core, coaxial.core, eucalyptus.core):
+  object repl extends Component(`scala`, inimitable.core, coaxial.core, eucalyptus.core, stratiform.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")

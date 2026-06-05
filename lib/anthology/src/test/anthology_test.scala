@@ -144,7 +144,7 @@ object Tests extends Suite(m"Anthology Tests"):
     suite(m"REPL TCP server"):
       given Scalac[3.8] = Scalac(Nil)
 
-      test(m"a message sent over TCP is evaluated and answered"):
+      test(m"a message sent over TCP is answered with a TEL-encoded reply"):
         supervise:
           val tcpPort = Port[Tcp]()
           val service = Repl().serve(tcpPort)
@@ -155,9 +155,17 @@ object Tests extends Suite(m"Anthology Tests"):
             output.write("1 + 1\n\n".getBytes("UTF-8").nn)
             output.flush()
 
-            val input = ji.BufferedReader(ji.InputStreamReader(socket.getInputStream.nn, "UTF-8"))
-            input.readLine()
+            val input   = ji.BufferedReader(ji.InputStreamReader(socket.getInputStream.nn, "UTF-8"))
+            val builder = StringBuilder()
+            var line: String | Null = input.readLine()
+
+            while line != null && !line.nn.isEmpty do
+              builder.append(line.nn).append("\n")
+              line = input.readLine()
+
+            builder.toString
           finally
             socket.close()
             service.stop()
-      . assert(_ == "2")
+      . assert: reply =>
+          reply.contains("status") && reply.contains("ran") && reply.contains("2")

@@ -51,9 +51,11 @@ import parasite.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
+import stratiform.*
 import turbulence.*
 import urticose.*
 import vacuous.*
+import wisteria.*
 
 import interfaces.paths.pathOnLinux
 
@@ -80,6 +82,9 @@ object Repl:
     case Threw(notices: List[Notice], error: Throwable)
     case Rejected(notices: List[Notice])
     case Crashed(notices: List[Notice], error: StackTrace)
+
+  // The reply sent to a connected client, serialized to the client as TEL.
+  case class Response(status: Text, value: Text, diagnostics: Text)
 
   // A value/variable lifted from an inline binding block: its REPL-visible name
   // and the source rendering of its type, used to build a typed accessor.
@@ -303,15 +308,19 @@ class Repl[version <: Scalac.Versions]
       safely(socket.close())
 
   private def respond(message: Text)(using Monitor, System, Codicil): Text logs CompileEvent =
-    safely(mutex(interpret(message))).lay(t"! the REPL could not process that input"):
-      case Outcome.Ran(notices, value) =>
-        (value.lay(Nil)(List(_)) ::: notices.map(_.message)).join(t"\n")
+    val response: Repl.Response =
+      safely(mutex(interpret(message))).lay(Repl.Response(t"error", t"", t"the input could not be processed")):
+        case Outcome.Ran(notices, value) =>
+          Repl.Response(t"ran", value.or(t""), notices.map(_.message).join(t"; "))
 
-      case Outcome.Rejected(notices) =>
-        notices.map(_.message).join(t"\n")
+        case Outcome.Rejected(notices) =>
+          Repl.Response(t"rejected", t"", notices.map(_.message).join(t"; "))
 
-      case Outcome.Threw(_, error) =>
-        t"threw ${error.toString.tt}"
+        case Outcome.Threw(_, error) =>
+          Repl.Response(t"threw", t"", error.toString.tt)
 
-      case Outcome.Crashed(_, _) =>
-        t"the compiler crashed"
+        case Outcome.Crashed(notices, _) =>
+          Repl.Response(t"crashed", t"", notices.map(_.message).join(t"; "))
+
+    val tel: Tel = summon[Repl.Response is Encodable in Tel].encoded(response)
+    Tel.show(tel)

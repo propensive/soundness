@@ -775,8 +775,13 @@ object Tel extends Tel2:
     turbulence.Document(Tel(doc): Tel, meta)
 
   // Print the document presentation (presentation-preserving when given a
-  // Tel produced by `parse`).
-  def show(tel: Tel): Text = tel.document.lay(t"")(TelPrinter.print)
+  // Tel produced by `parse`). A Tel produced by `encode` is rooted at a
+  // Compound rather than a Document, so its children are wrapped in a Document
+  // before printing — otherwise encoded values would render as the empty Text.
+  def show(tel: Tel): Text = TelPrinter.print:
+    tel.subtree match
+      case document: Document => document
+      case other              => Document(Unset, Unset, LineEndings.Lf, other.children)
 
   def show(document: Document): Text = TelPrinter.print(document)
 
