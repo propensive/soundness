@@ -34,13 +34,19 @@ package harlequin
 
 import scala.collection.mutable as scm
 
-import dotty.tools.dotc.*, core.*, parsing.*, util.*, reporting.*
+import dotty.tools.dotc.*, core.*, parsing.*, util.*
+import dotty.tools.dotc.reporting.Diagnostic as CompilerDiagnostic
+import dotty.tools.dotc.reporting.HideNonSensicalMessages
+import dotty.tools.dotc.reporting.Reporter
+import dotty.tools.dotc.reporting.UniqueMessagePositions
 
 import anthology.*
 import anticipation.*
 import denominative.*
 import gossamer.*
+import hellenism.*
 import rudiments.*
+import stenography.*
 import vacuous.*
 
 object SourceCode:
@@ -59,7 +65,24 @@ object SourceCode:
   private val soft: Set[Text] =
     Set(t"inline", t"opaque", t"open", t"transparent", t"infix", t"update", t"erased", t"tracked")
 
-  def apply(language: ProgrammingLanguage, text: Text): SourceCode =
+  def apply(language: ProgrammingLanguage, text: Text)(using highlighting: Highlight)
+  :   SourceCode =
+
+    // For the typechecked/compiled pipelines, run the compiler frontend (and, for
+    // `Compiled`, the post-typer phases) to resolve types and collect diagnostics.
+    // Types are always read from the typer-stopped run, so they stay source-level.
+    val resolved: Optional[(Map[(Int, Int), Syntax], List[Diagnostic])] =
+      if highlighting.pipeline == Pipeline.Tokenized then Unset else
+        (highlighting.scalac, highlighting.classpath) match
+          case (scalac: Scalac[?], classpath: LocalClasspath) =>
+            resolveTypes(text, scalac, classpath, highlighting.pipeline == Pipeline.Compiled)
+
+          case _ =>
+            Unset
+
+    val metaMap: Map[(Int, Int), Syntax] = resolved.let(_(0)).or(Map())
+    val diagnostics: List[Diagnostic] = resolved.let(_(1)).or(Nil)
+
     val source: SourceFile = SourceFile.virtual("<highlighting>", text.s)
     val context0 = Contexts.ContextBase().initialCtx.fresh.setReporter(Reporter.NoReporter)
 
@@ -80,16 +103,16 @@ object SourceCode:
       Stream(Token(text.sub(t"\t", t"  "), Accent.Unparsed), Token.Newline)
 
     def hard(stream: Stream[Token]): Boolean = stream match
-      case Token(_, Accent.Unparsed) #:: more                   => hard(more)
-      case Token(text, Accent.Ident) #:: more if soft.has(text) => hard(more)
-      case Token(text, Accent.Keyword | Accent.Modifier) #:: _  => true
-      case other                                                => false
+      case Token(_, Accent.Unparsed, _, _) #:: more                   => hard(more)
+      case Token(text, Accent.Ident, _, _) #:: more if soft.has(text) => hard(more)
+      case Token(text, Accent.Keyword | Accent.Modifier, _, _) #:: _  => true
+      case other                                                      => false
 
     def soften(stream: Stream[Token]): Stream[Token] = stream match
-      case (Token(text@(t"using" | t"erased"), Accent.Ident)) #:: more =>
+      case (Token(text@(t"using" | t"erased"), Accent.Ident, _, _)) #:: more =>
         Token(text, Accent.Modifier) #:: soften(more)
 
-      case (token@Token(text, Accent.Ident)) #:: more if soft.has(text) =>
+      case (token@Token(text, Accent.Ident, _, _)) #:: more if soft.has(text) =>
         if hard(more) then Token(text, Accent.Modifier) #:: soften(more)
         else token #:: soften(more)
 
@@ -116,10 +139,14 @@ object SourceCode:
         scanner.nextToken()
         val end = scanner.lastOffset max start
 
+        val meta: Optional[Token.Meta] = metaMap.get((start, end)) match
+          case Some(syntax) => Token.Meta(syntax)
+          case None         => Unset
+
         val content: Stream[Token] =
           if start == end then Stream() else
             text.segment(start.z thru end.u).cut(t"\n").to(Stream).flatMap: line =>
-              Stream(Token(line, trees(start, end).getOrElse(accent(token))), Token.Newline)
+              Stream(Token(line, trees(start, end).getOrElse(accent(token)), meta), Token.Newline)
 
             . init
 
@@ -137,7 +164,13 @@ object SourceCode:
             case -1    => xs :: acc
             case index => lines(xs.drop(index + 1), xs.take(index) :: acc)
 
-    SourceCode(language, 1, IArray(lines(soften(stream()).to(List)).reverse*))
+    // Give each token a `Line`-mode `Span` with its 0-based line and column,
+    // accumulating token widths along each assembled line.
+    val positioned = lines(soften(stream()).to(List)).reverse.zipWithIndex.map: (tokens, index) =>
+      tokens.zip(tokens.scanLeft(0)(_ + _.length)).map: (token, column) =>
+        token.copy(span = Span.line(index.z, column.z, token.length))
+
+    SourceCode(language, 1, IArray(positioned*), diagnostics = diagnostics)
 
   private class Trees() extends ast.untpd.UntypedTreeTraverser:
     import ast.*, untpd.*
@@ -173,25 +206,153 @@ object SourceCode:
 
       traverseChildren(tree)
 
+  // Render a classpath to the `-classpath` argument string without needing an
+  // ambient `System` capability (we only have directory and jar entries here).
+  private def classpathText(classpath: LocalClasspath): Text =
+    classpath.entries.flatMap:
+      case ClasspathEntry.Directory(directory) => List(directory)
+      case ClasspathEntry.Jar(jar)             => List(jar)
+      case _                                   => Nil
+
+    . join(java.io.File.pathSeparator.nn.tt)
+
+  private def resolveTypes
+    ( text: Text, scalac: Scalac[?], classpath: LocalClasspath, full: Boolean )
+  :   (Map[(Int, Int), Syntax], List[Diagnostic]) =
+
+    val cp = classpathText(classpath)
+
+    // Types always come from a typer-stopped run, so they are source-level even
+    // in `Compiled` mode (later phases such as erasure would rewrite them).
+    val (typerRun, _, typerDiagnostics) =
+      frontend(text, scalac, cp): context =>
+        context.setSetting(context.settings.YstopAfter, List("typer"))
+
+    val metaMap = collectTypes(typerRun)
+
+    // `Compiled` runs the post-typer phases (stopping before bytecode generation,
+    // so nothing is written to disk) purely to surface later diagnostics.
+    val diagnostics =
+      if !full then typerDiagnostics else
+        frontend(text, scalac, cp): context =>
+          context.setSetting(context.settings.YstopBefore, List("genBCode"))
+
+        ._3
+
+    (metaMap, diagnostics)
+
+  private def frontend
+    ( text: Text, scalac: Scalac[?], cp: Text )
+    ( stop: Contexts.FreshContext => Contexts.FreshContext )
+  :   (Run, Contexts.Context, List[Diagnostic]) =
+
+    val collected: scm.ListBuffer[Diagnostic] = scm.ListBuffer()
+
+    object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
+      def doReport(diagnostic: CompilerDiagnostic)(using Contexts.Context): Unit =
+        val pos = diagnostic.pos.span
+
+        if pos.exists then
+          val importance = diagnostic.level match
+            case dotty.tools.dotc.interfaces.Diagnostic.ERROR   => Importance.Error
+            case dotty.tools.dotc.interfaces.Diagnostic.WARNING => Importance.Warning
+            case _                                              => Importance.Info
+
+          val span = Span.offset(pos.start.z, pos.end - pos.start)
+          collected += Diagnostic(span, diagnostic.message.tt, importance)
+
+    object driver extends Driver:
+      def context: Contexts.Context =
+        val base = initCtx.fresh
+
+        // The trailing empty argument stops the driver from treating an argument
+        // list with no source files as a request to print usage and bail out.
+        val arguments =
+          (t"-classpath" :: cp :: scalac.commandLineArguments ::: List(t"")).map(_.s).toArray
+
+        setup(arguments, base).map(_(1)).get
+
+    val base: Contexts.FreshContext = driver.context.fresh
+    base.setReporter(reporter)
+    given context: Contexts.Context = stop(base)
+
+    val source = SourceFile.virtual("<highlighting>", text.s)
+    val run = Scalac.compiler().newRun
+    run.compileSources(List(source))
+
+    (run, context, collected.to(List))
+
+  private def syntaxOf(using quotes: scala.quoted.Quotes)(tpe: Types.Type): Syntax =
+    Syntax(tpe.asInstanceOf[quotes.reflect.TypeRepr])
+
+  private def collectTypes(run: Run): Map[(Int, Int), Syntax] =
+    // Use the run's own context: the compilation advanced the compiler's periods,
+    // so denotations created during typing are only valid relative to it. The
+    // reflection API additionally needs a quote cache in the context property
+    // (normally installed by macro expansion).
+    given context: Contexts.Context =
+      dotty.tools.dotc.quoted.QuotesCache.init(run.runContext.fresh)
+
+    given quotes: scala.quoted.Quotes = scala.quoted.runtime.impl.QuotesImpl()(using context)
+
+    val types: scm.HashMap[(Int, Int), Syntax] = scm.HashMap()
+
+    // Highlighting must never fail on a type Stenography can't render; such a
+    // token simply carries no type metadata.
+    def record(start: Int, end: Int, tpe: Types.Type): Unit =
+      if tpe.exists then
+        try types((start, end)) = syntaxOf(tpe)
+        catch case scala.util.control.NonFatal(_) => ()
+
+    def ignored(name: Names.Name): Boolean =
+      name == StdNames.nme.ERROR || name == StdNames.nme.CONSTRUCTOR
+
+    object traverser extends ast.tpd.TreeTraverser:
+      import ast.tpd.*
+
+      def traverse(tree: Tree)(using Contexts.Context): Unit =
+        tree match
+          case tree: ValOrDefDef if tree.nameSpan.exists && !ignored(tree.name) =>
+            record(tree.nameSpan.start, tree.nameSpan.end, tree.tpt.tpe)
+
+          case tree: Select if tree.nameSpan.exists && !ignored(tree.name) =>
+            record(tree.nameSpan.start, tree.nameSpan.end, tree.tpe)
+
+          case tree: Ident if tree.span.exists && !ignored(tree.name) =>
+            record(tree.span.start, tree.span.end, tree.tpe)
+
+          case tree: TypeTree if tree.span.exists =>
+            record(tree.span.start, tree.span.end, tree.tpe)
+
+          case _ =>
+            ()
+
+        traverseChildren(tree)
+
+    run.units.foreach: unit =>
+      traverser.traverse(unit.tpdTree)
+
+    types.to(Map)
+
 
 case class SourceCode
-  ( language: ProgrammingLanguage,
-    offset:   Int,
-    lines:    IArray[List[Token]],
-    focus:    Optional[((Int, Int), (Int, Int))] = Unset ):
+  ( language:    ProgrammingLanguage,
+    offset:      Int,
+    lines:       IArray[List[Token]],
+    focus:       Optional[Span] = Unset,
+    diagnostics: List[Diagnostic] = Nil ):
 
   def lastLine: Int = offset + lines.length - 1
   def apply(line: Int): List[Token] = lines(line - offset)
 
-  def extract(range: CodeRange): SourceCode =
-    val focus = ((range.startLine, range.startColumn), (range.endLine, range.endColumn))
+  def extract(range: Span): SourceCode =
+    val startLine = range.startLine.lay(0)(_.n0)
+    val endLine = range.endLine.lay(startLine)(_.n0)
 
-    if range.startLine != range.endLine
-    then fragment(range.startLine, (range.endLine + 2).min(lastLine), focus)
-    else fragment(range.startLine, (range.endLine + 1).min(lastLine), focus)
+    if startLine != endLine
+    then fragment(startLine, (endLine + 2).min(lastLine), range)
+    else fragment(startLine, (endLine + 1).min(lastLine), range)
 
 
-  def fragment(startLine: Int, endLine: Int, focus: Optional[((Int, Int), (Int, Int))] = Unset)
-  :   SourceCode =
-
+  def fragment(startLine: Int, endLine: Int, focus: Optional[Span] = Unset): SourceCode =
     SourceCode(language, startLine, lines.slice(startLine - offset, endLine - offset + 1), focus)

@@ -862,7 +862,7 @@ object hallucination extends Library:
   object test extends Tests(ansi)
 
 object harlequin extends Library:
-  object core extends Component(anthology.scala):
+  object core extends Component(anthology.scala, stenography.core, hellenism.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")

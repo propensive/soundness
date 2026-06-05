@@ -32,27 +32,35 @@
                                                                                                   */
 package harlequin
 
-import anticipation.*
-import gossamer.*
-import harlequin.*
-import honeycomb.*
-import prepositional.*
-import punctuation.*
-import spectacular.*
+import anthology.*
+import hellenism.*
 import vacuous.*
 
-import doms.html.whatwg, whatwg.*
+enum Pipeline:
+  case Tokenized, Typechecked, Compiled
 
-trait CommonFormattable extends Formattable:
-  given lineClass: (Stylesheet of "line" | "amok") = Stylesheet()
+trait Highlight:
+  def pipeline: Pipeline
+  def scalac: Optional[Scalac[?]]
+  def classpath: Optional[LocalClasspath]
 
-  def classes(accent: Accent): Stylesheet = Stylesheet(Set(accent.show.lower))
+object Highlight:
+  given default: Highlight = highlighting.tokenizedScala
 
-  def element(accent: Accent, text: Text): Element of "code" =
-    whatwg.Code(`class` = classes(accent))(text)
+object highlighting:
+  given tokenizedScala: Highlight = new Highlight:
+    def pipeline: Pipeline = Pipeline.Tokenized
+    def scalac: Optional[Scalac[?]] = Unset
+    def classpath: Optional[LocalClasspath] = Unset
 
-  protected def postprocess(source: SourceCode): Html of Flow =
-    val code = source.lines.map: line =>
-      Span.line(line.map { case Token(text, accent, _, _) => element(accent, text) }*)
+  given typecheckedScala(using scalac0: Scalac[?], classpath0: LocalClasspath): Highlight =
+    new Highlight:
+      def pipeline: Pipeline = Pipeline.Typechecked
+      def scalac: Optional[Scalac[?]] = scalac0
+      def classpath: Optional[LocalClasspath] = classpath0
 
-    Fragment(Div.amok(Pre(code*)))
+  given compiledScala(using scalac0: Scalac[?], classpath0: LocalClasspath): Highlight =
+    new Highlight:
+      def pipeline: Pipeline = Pipeline.Compiled
+      def scalac: Optional[Scalac[?]] = scalac0
+      def classpath: Optional[LocalClasspath] = classpath0

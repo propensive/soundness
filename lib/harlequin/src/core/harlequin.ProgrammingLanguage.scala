@@ -43,7 +43,7 @@ sealed trait ProgrammingLanguage:
   def preprocess(text: Text, context: Optional[Context]): Text = text
   def postprocess(code: SourceCode, context: Optional[Context]): SourceCode = code
 
-  def highlight(text: Text, context: Optional[Context] = Unset): SourceCode =
+  def highlight(text: Text, context: Optional[Context] = Unset)(using Highlight): SourceCode =
     postprocess(SourceCode(this, preprocess(text, context)), context)
 
 object Scala extends ProgrammingLanguage:
