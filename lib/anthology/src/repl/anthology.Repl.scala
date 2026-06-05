@@ -55,7 +55,6 @@ import stratiform.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-import wisteria.*
 
 import interfaces.paths.pathOnLinux
 
@@ -308,8 +307,10 @@ class Repl[version <: Scalac.Versions]
       safely(socket.close())
 
   private def respond(message: Text)(using Monitor, System, Codicil): Text logs CompileEvent =
+    val unprocessed = Repl.Response(t"error", t"", t"the input could not be processed")
+
     val response: Repl.Response =
-      safely(mutex(interpret(message))).lay(Repl.Response(t"error", t"", t"the input could not be processed")):
+      safely(mutex(interpret(message))).lay(unprocessed):
         case Outcome.Ran(notices, value) =>
           Repl.Response(t"ran", value.or(t""), notices.map(_.message).join(t"; "))
 
@@ -322,5 +323,4 @@ class Repl[version <: Scalac.Versions]
         case Outcome.Crashed(notices, _) =>
           Repl.Response(t"crashed", t"", notices.map(_.message).join(t"; "))
 
-    val tel: Tel = summon[Repl.Response is Encodable in Tel].encoded(response)
-    Tel.show(tel)
+    Tel.show(response.tel)
