@@ -42,8 +42,10 @@ import scala.compiletime.*
 import adversaria.*
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
+import panopticon.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
@@ -230,6 +232,67 @@ object Cbor extends Cbor2, Dynamic:
 
   def ast(value: Ast): Cbor = new Cbor(value)
   def unseal(cbor: Cbor): Ast = cbor.root
+
+  // Panopticon optics: navigate and immutably update a CBOR document. `lens` is the
+  // map-key (object-field) lens; `ordinalOptical` indexes an array; `eachOptical`
+  // and `filterOptical` traverse every (or matching) array element. All reuse the
+  // existing `selectDynamic`/`modify`/`element`/`Ast.array` primitives and rebuild
+  // immutably. Mirrors jacinta's `Json` optics.
+  given lens: [name <: Label: ValueOf] => (erased DynamicCborEnabler) => Tactic[CborError]
+  =>  name is Lens from Cbor onto Cbor =
+    Lens(_.selectDynamic(valueOf[name]), _.modify(valueOf[name], _))
+
+  given ordinalOptical: [element] => Ordinal is Optical from Cbor onto Cbor = ordinal =>
+    Optic: (origin, lambda) =>
+      if origin.root.isArray then
+        val n = origin.root.elements
+
+        if n <= ordinal.n0 then origin else Cbor.ast:
+          val updated = new Array[Any](n)
+          var i = 0
+
+          while i < n do
+            updated(i) =
+              if i == ordinal.n0 then lambda(Cbor.ast(origin.root.element(i))).root
+              else origin.root.element(i)
+
+            i += 1
+
+          Cbor.Ast.array(updated.asInstanceOf[IArray[Any]])
+      else origin
+
+  given eachOptical: Each.type is Optical from Cbor onto Cbor = _ =>
+    Optic: (origin, lambda) =>
+      if origin.root.isArray then
+        val n = origin.root.elements
+
+        Cbor.ast:
+          val updated = new Array[Any](n)
+          var i = 0
+
+          while i < n do
+            updated(i) = lambda(Cbor.ast(origin.root.element(i))).root
+            i += 1
+
+          Cbor.Ast.array(updated.asInstanceOf[IArray[Any]])
+      else origin
+
+  given filterOptical: Filter[Cbor] is Optical from Cbor onto Cbor = filter =>
+    Optic: (origin, lambda) =>
+      if origin.root.isArray then
+        val n = origin.root.elements
+
+        Cbor.ast:
+          val updated = new Array[Any](n)
+          var i = 0
+
+          while i < n do
+            val element = Cbor.ast(origin.root.element(i))
+            updated(i) = (if filter.predicate(element) then lambda(element) else element).root
+            i += 1
+
+          Cbor.Ast.array(updated.asInstanceOf[IArray[Any]])
+      else origin
 
   given boolean: Tactic[CborError] => Boolean is Decodable in Cbor = _.root.boolean
   given double: Tactic[CborError] => Double is Decodable in Cbor = _.root.double

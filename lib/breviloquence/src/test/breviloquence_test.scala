@@ -39,6 +39,7 @@ import strategies.throwUnsafely
 case class Point(x: Int, y: Int) derives CanEqual
 case class Person(name: Text, age: Int) derives CanEqual
 case class Wrapper(values: List[Int], label: Text) derives CanEqual
+case class Team(lead: Person, size: Int) derives CanEqual
 case class Renamed
    (@name[Cbor](t"data_files")  dataFiles:  List[Long],
     @name[Cbor](t"index_files") indexFiles: List[Long])
@@ -323,3 +324,42 @@ object Tests extends Suite(m"Breviloquence Tests"):
         val body = Person(t"Alice", 30).cbor
         body.generic(1).read[Person over Cbor]
       . assert(_ == Person(t"Alice", 30))
+
+    suite(m"Optics"):
+      import dynamicCborAccess.enabled
+
+      val team = Team(Person(t"John", 40), 3).cbor
+      val list = Wrapper(List(1, 2, 3), t"hi").cbor
+
+      test(m"lens reads a field by name"):
+        summon["size" is Lens from Cbor onto Cbor](team).as[Int]
+      . assert(_ == 3)
+
+      test(m"lens sets a top-level field"):
+        team.lens(_.size = 5.cbor).as[Team]
+      . assert(_ == Team(Person(t"John", 40), 5))
+
+      test(m"lens sets a nested field"):
+        team.lens(_.lead.name = t"Bob".cbor).as[Team]
+      . assert(_ == Team(Person(t"Bob", 40), 3))
+
+      test(m"lens.modify transforms a field through a function"):
+        val lens = summon["size" is Lens from Cbor onto Cbor]
+        lens.modify(team)(cbor => (cbor.as[Int] + 1).cbor).as[Team]
+      . assert(_ == Team(Person(t"John", 40), 4))
+
+      test(m"ordinal optic updates an array element"):
+        list.lens(_.values(Sec) = 9.cbor).as[Wrapper]
+      . assert(_ == Wrapper(List(1, 9, 3), t"hi"))
+
+      test(m"each optic updates every array element"):
+        list.lens(_.values(Each) = 0.cbor).as[Wrapper]
+      . assert(_ == Wrapper(List(0, 0, 0), t"hi"))
+
+      test(m"filter optic updates only matching elements"):
+        list.lens(_.values(Filter[Cbor](_.as[Int] > 1)) = 0.cbor).as[Wrapper]
+      . assert(_ == Wrapper(List(1, 0, 0), t"hi"))
+
+      test(m"setting an absent field inserts it"):
+        list.lens(_.extra = 7.cbor).selectDynamic("extra").as[Int]
+      . assert(_ == 7)
