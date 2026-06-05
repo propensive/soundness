@@ -34,6 +34,7 @@ package exegesis
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import jacinta.*
@@ -42,10 +43,26 @@ import prepositional.*
 import vacuous.*
 
 object Lsp:
-  // Basic geometry
+  // Basic geometry. LSP and `Span` are both 0-based, so conversions are direct.
 
-  case class Position(line: Int, character: Int)
-  case class Range(start: Position, end: Position)
+  object Position:
+    def from(span: Span): Optional[Position] = span.startLine.let: line =>
+      Position(line.n0, span.startColumn.lay(0)(_.n0))
+
+  case class Position(line: Int, character: Int):
+    def span: Span = Span.line(line.z, character.z, 0)
+
+  object Range:
+    def from(span: Span): Optional[Range] = span.startLine.let: startLine =>
+      val startColumn = span.startColumn.lay(0)(_.n0)
+      val endLine = span.endLine.lay(startLine.n0)(_.n0)
+      val endColumn = span.endColumn.lay(startColumn)(_.n0)
+      Range(Position(startLine.n0, startColumn), Position(endLine, endColumn))
+
+  case class Range(start: Position, end: Position):
+    def span: Span =
+      Span.region(start.line.z, start.character.z, end.line.z, end.character.z)
+
   case class Location(uri: Text, range: Range)
 
   // Documents
