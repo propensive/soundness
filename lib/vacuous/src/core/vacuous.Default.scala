@@ -32,8 +32,6 @@
                                                                                                   */
 package vacuous
 
-import scala.collection.immutable as sci
-
 import anticipation.*
 import beneficence.*
 
@@ -47,7 +45,7 @@ object Default:
   given string: Default[String] = () => ""
   given list: [element] => Default[List[element]] = () => Nil
   given set: [element] => Default[Set[element]] = () => Set()
-  given vector: [element] => Default[sci.Vector[element]] = () => sci.Vector()
+  given series: [element] => Default[Series[element]] = () => Series()
 
 trait Default[+value] extends Findable:
   def apply(): value

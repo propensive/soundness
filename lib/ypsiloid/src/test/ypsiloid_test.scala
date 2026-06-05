@@ -241,9 +241,9 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"[\"a,b\", \"c,d\"]".read[Yaml].as[List[Text]]
       . assert(_ == List(t"a,b", t"c,d"))
 
-      test(m"Parse a flow sequence into a Vector"):
-        t"[10, 20, 30]".read[Yaml].as[Vector[Int]]
-      . assert(_ == Vector(10, 20, 30))
+      test(m"Parse a flow sequence into a Series"):
+        t"[10, 20, 30]".read[Yaml].as[Series[Int]]
+      . assert(_ == Series(10, 20, 30))
 
       test(m"Parse a flow sequence into a Set"):
         t"[1, 2, 3]".read[Yaml].as[Set[Int]]

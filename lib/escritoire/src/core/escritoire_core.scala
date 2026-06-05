@@ -224,7 +224,7 @@ package columnar:
           (0 until count).each: index =>
             result = line.segment((width*index).z span width) :: result
 
-        result.reverse.to(Vector)
+        result.reverse.to(Series)
 
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double)

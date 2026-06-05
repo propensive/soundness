@@ -42,7 +42,7 @@ import spectacular.*
 
 object DagDiagram:
   def apply[node](dag: Dag[node]): DagDiagram[node] raises DagError =
-    val nodes = dag.sorted.to(Vector)
+    val nodes = dag.sorted.to(Series)
     val indexes: Map[node, Int] = nodes.zipWithIndex.to(Map)
 
     val layout: Array[Array[Int]] = Array.from:

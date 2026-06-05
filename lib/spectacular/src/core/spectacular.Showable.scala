@@ -66,7 +66,7 @@ object Showable:
   given list: [element: Showable] => List[element] is Showable =
     _.map(_.show).mkString("[", ", ", "]").tt
 
-  given trie: [element: Showable] => Trie[element] is Showable =
+  given series: [element: Showable] => Series[element] is Showable =
     _.map(_.show).mkString("[ ", " ", " ]").tt
 
   given none: None.type is Showable = none => "none".tt

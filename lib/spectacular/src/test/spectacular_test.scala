@@ -181,8 +181,8 @@ object Tests extends Suite(m"Spectacular Tests"):
         Array(1, 2, 3).inspect
       . assert(_ == t"""⦋🅸₀1∣₁2∣₂3⦌""")
 
-      test(m"serialize Vector of shorts"):
-        Vector(1.toShort, 2.toShort, 3.toShort).inspect
+      test(m"serialize Series of shorts"):
+        Series(1.toShort, 2.toShort, 3.toShort).inspect
       . assert(_ == t"""⟨ 1.toShort 2.toShort 3.toShort ⟩""")
 
       test(m"serialize Array of Longs"):

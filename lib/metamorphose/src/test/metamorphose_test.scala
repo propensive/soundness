@@ -100,35 +100,35 @@ object Tests extends Suite(m"Metamorphose tests"):
 
     suite(m"Permutations"):
       test(m"Construct an identity permutation"):
-        Permutation(Vector(0, 1, 2, 3, 4, 5))
+        Permutation(Series(0, 1, 2, 3, 4, 5))
       . assert(_ == Permutation(Factoradic(0)))
 
       test(m"Construct a reversal permutation"):
-        Permutation(Vector(5, 4, 3, 2, 1, 0))
+        Permutation(Series(5, 4, 3, 2, 1, 0))
       . assert(_ == Permutation(Factoradic(719)))
 
       test(m"Reverse a list of numbers"):
-        Permutation(Vector(5, 4, 3, 2, 1, 0))(List("one", "two", "three", "four", "five", "six"))
+        Permutation(Series(5, 4, 3, 2, 1, 0))(List("one", "two", "three", "four", "five", "six"))
       . assert(_ == List("six", "five", "four", "three", "two", "one"))
 
       test(m"Reorder a list of numbers"):
-        Permutation(Vector(3, 1, 4, 2, 0, 5))(List("zero", "one", "two", "three", "four", "five"))
+        Permutation(Series(3, 1, 4, 2, 0, 5))(List("zero", "one", "two", "three", "four", "five"))
       . assert(_ == List("three", "one", "four", "two", "zero", "five"))
 
       test(m"Check duplicate indexes are caught"):
-        capture[PermutationError](Permutation(Vector(3, 1, 4, 2, 3, 5)))
+        capture[PermutationError](Permutation(Series(3, 1, 4, 2, 3, 5)))
       . assert(_ == PermutationError(PermutationError.Reason.DuplicateIndex(3, 4)))
 
       test(m"Check negative indexes are caught"):
-        capture[PermutationError](Permutation(Vector(3, 1, 4, 2, -3, 5)))
+        capture[PermutationError](Permutation(Series(3, 1, 4, 2, -3, 5)))
       . assert(_ == PermutationError(PermutationError.Reason.InvalidIndex(-3, 5)))
 
       test(m"Check high indexes are caught"):
-        capture[PermutationError](Permutation(Vector(3, 1, 4, 6, 0, 5)))
+        capture[PermutationError](Permutation(Series(3, 1, 4, 6, 0, 5)))
       . assert(_ == PermutationError(PermutationError.Reason.InvalidIndex(6, 5)))
 
       test(m"Check input is long enough"):
-        val permutation = Permutation(Vector(3, 1, 4, 2, 0, 5))
+        val permutation = Permutation(Series(3, 1, 4, 2, 0, 5))
         capture[PermutationError](permutation(List(1, 2, 3)))
       . assert(_ == PermutationError(PermutationError.Reason.TooShort(3, 6)))
 
@@ -146,7 +146,7 @@ object Tests extends Suite(m"Metamorphose tests"):
         . assert(_ == list)
 
 
-      val indices = Vector(6, 2, 1, 0, 3, 5, 4)
+      val indices = Series(6, 2, 1, 0, 3, 5, 4)
       val permutation = Permutation(indices)
       for i <- 0 to 6 do
         test(m"Apply permutation indexwise"):

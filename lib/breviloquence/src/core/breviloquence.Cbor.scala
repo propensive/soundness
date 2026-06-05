@@ -384,8 +384,8 @@ object Cbor extends Cbor2, Dynamic:
     values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
 
 
-  given trieEncodable: [trie <: Trie, element] => (encodable: => element is Encodable in Cbor)
-  =>  trie[element] is Encodable in Cbor =
+  given seriesEncodable: [series <: Series, element] => (encodable: => element is Encodable in Cbor)
+  =>  series[element] is Encodable in Cbor =
 
     values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
 

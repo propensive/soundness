@@ -75,7 +75,7 @@ object LaneDagDiagram:
         case _                            => Space
 
   def apply[node](dag: Dag[node]): LaneDagDiagram[node] raises DagError =
-    val nodes: Vector[node] = dag.sorted.to(Vector)
+    val nodes: Series[node] = dag.sorted.to(Series)
     val total: Int = nodes.length
 
     if total == 0 then LaneDagDiagram(Nil) else
@@ -84,7 +84,7 @@ object LaneDagDiagram:
 
       val nodeCol: Array[Int] = new Array[Int](total)
       val laneState: Array[Map[Int, Lane[node]]] = Array.fill(total + 1)(Map.empty[Int, Lane[node]])
-      val started: Array[Vector[Lane[node]]] = Array.fill(total)(Vector.empty[Lane[node]])
+      val started: Array[Series[Lane[node]]] = Array.fill(total)(Series.empty[Lane[node]])
       val directOut: Array[Boolean] = new Array[Boolean](total)
 
       for r <- 0 until total do
@@ -105,9 +105,9 @@ object LaneDagDiagram:
         nodeCol(r) = chosenCol
 
         val nextNode: Optional[node] = if r + 1 < total then nodes(r + 1) else Unset
-        val targets: Vector[node] = forward.getOrElse(current, Set.empty).to(Vector).sortBy(rowOf)
+        val targets: Series[node] = forward.getOrElse(current, Set.empty).to(Series).sortBy(rowOf)
 
-        val (directs, indirects) = nextNode.lay((Vector.empty[node], targets)): nx =>
+        val (directs, indirects) = nextNode.lay((Series.empty[node], targets)): nx =>
           targets.partition(_ == nx)
 
         directOut(r) = directs.nonEmpty
@@ -162,7 +162,7 @@ object LaneDagDiagram:
 
   private def connectorRow[node]
     ( state:        Map[Int, Lane[node]],
-      justStarted:  Vector[Lane[node]],
+      justStarted:  Series[Lane[node]],
       prevNodeCol:  Int,
       curNodeCol:   Int,
       directEdge:   Boolean,

@@ -73,10 +73,10 @@ object Digestible extends Derivable[Digestible]:
     (digestion, set) => set.each(digestible.digest(digestion, _))
 
 
-  given trie: [trie <: Trie, value] => (digestible: => value is Digestible)
-  =>  trie[value] is Digestible =
+  given series: [series <: Series, value] => (digestible: => value is Digestible)
+  =>  series[value] is Digestible =
 
-    (digestion, trie) => trie.each(digestible.digest(digestion, _))
+    (digestion, series) => series.each(digestible.digest(digestion, _))
 
 
   given iarray: [value] => (digestible: => value is Digestible) => IArray[value] is Digestible =

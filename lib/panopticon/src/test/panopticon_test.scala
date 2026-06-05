@@ -229,10 +229,10 @@ object Tests extends Suite(m"Panopticon tests"):
       ( r.depts.head.lead.name, r.depts.head.lead.age, r.depts.head.lead.role.name )
     . assert(_ == ("Renamed", 99, "Boss"))
 
-    case class Bag(items: Vector[Int])
-    test(m"ordinal optic on a Vector field"):
-      Bag(Vector(1, 2, 3)).lens(_.items(Sec) = 9)
-    . assert(_ == Bag(Vector(1, 9, 3)))
+    case class Bag(items: Series[Int])
+    test(m"ordinal optic on a Series field"):
+      Bag(Series(1, 2, 3)).lens(_.items(Sec) = 9)
+    . assert(_ == Bag(Series(1, 9, 3)))
 
     case class Crew(members: Seq[Text])
     test(m"ordinal optic on a Seq field"):

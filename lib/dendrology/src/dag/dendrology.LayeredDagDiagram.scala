@@ -79,7 +79,7 @@ object LayeredDagDiagram:
         case _                            => Space
 
   def apply[node](dag: Dag[node]): LayeredDagDiagram[node] raises DagError =
-    val nodes: Vector[node] = dag.sorted.to(Vector)
+    val nodes: Series[node] = dag.sorted.to(Series)
 
     if nodes.isEmpty then LayeredDagDiagram(Nil) else
       val parents: Map[node, Set[node]] = dag.edgeMap
@@ -93,8 +93,8 @@ object LayeredDagDiagram:
 
       val maxLevel: Int = level.values.max
 
-      val byLevel: Vector[Vector[node]] =
-        (0 to maxLevel).to(Vector).map: l =>
+      val byLevel: Series[Series[node]] =
+        (0 to maxLevel).to(Series).map: l =>
           nodes.filter(level(_) == l)
 
       val state: scm.HashMap[Int, Lane[node]] = scm.HashMap()
@@ -107,14 +107,14 @@ object LayeredDagDiagram:
         val terminating = state.toMap.filter: (_, lane) => level(lane.target) == l
         val continuing = state.toMap -- terminating.keys
 
-        val incomingByNode: Map[node, Vector[Int]] =
+        val incomingByNode: Map[node, Series[Int]] =
           terminating
             . groupBy(_._2.target)
             . map: (n, m) =>
-                n -> m.keys.to(Vector).sorted
+                n -> m.keys.to(Series).sorted
 
         val desired: Map[node, Int] = levelNodes.map: n =>
-          val incoming = incomingByNode.getOrElse(n, Vector.empty)
+          val incoming = incomingByNode.getOrElse(n, Series.empty)
 
           val centre =
             if incoming.nonEmpty then incoming(incoming.length/2)
@@ -143,7 +143,7 @@ object LayeredDagDiagram:
 
         for n <- ordered do
           val outgoing = forward.getOrElse(n, Set.empty).filter(level(_) > l)
-          val sortedOut = outgoing.to(Vector).sortBy(level)
+          val sortedOut = outgoing.to(Series).sortBy(level)
 
           for target <- sortedOut do
             var col = nodeCol(n)

@@ -134,8 +134,8 @@ object Tests extends Suite(m"Dissonance tests"):
         diff(IArray(t"A", t"B"), IArray(t"B", t"C", t"D"))
       . assert(_ == Diff(Del(0, t"A"), Par(1, 0, t"B"), Ins(1, t"C"), Ins(2, t"D")))
 
-    val start = Vector(t"foo", t"bar", t"baz")
-    val end = Vector(t"foo", t"quux", t"bop", t"baz")
+    val start = Series(t"foo", t"bar", t"baz")
+    val end = Series(t"foo", t"quux", t"bop", t"baz")
 
     suite(m"Diff parsing tests"):
       val diffStream = Stream(t"2c2,3", t"< bar", t"---", t"> quux", t"> bop")
@@ -162,15 +162,15 @@ object Tests extends Suite(m"Dissonance tests"):
       val reverseChanges = diff(end, start)
 
       test(m"Serialize a trivial diff"):
-        diff(Vector(), Vector(t"a")).serialize.to(List)
+        diff(Series(), Series(t"a")).serialize.to(List)
       . assert(_ == List(t"0a1", t"> a"))
 
       test(m"Serialize a trivial deletion diff"):
-        diff(Vector(t"a", t"b", t"c", t"d"), Vector(t"a", t"d")).serialize.to(List)
+        diff(Series(t"a", t"b", t"c", t"d"), Series(t"a", t"d")).serialize.to(List)
       . assert(_ == List(t"2,3d1", t"< b", t"< c"))
 
       test(m"Serialize another trivial diff"):
-        diff(Vector(t"a"), Vector()).serialize.to(List)
+        diff(Series(t"a"), Series()).serialize.to(List)
       . assert(_ == List(t"1d0", t"< a"))
 
       test(m"Serialize a simple diff"):
@@ -182,19 +182,19 @@ object Tests extends Suite(m"Dissonance tests"):
       . assert(_ == List(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar"))
 
       test(m"Experimental diff"):
-        diff(Vector(t"one"), Vector(t"two")).serialize.to(List)
+        diff(Series(t"one"), Series(t"two")).serialize.to(List)
       . assert(_ == List(t"1c1", t"< one", t"---", t"> two"))
 
       test(m"Experimental diff 2"):
-        diff(Vector(t"zero", t"one"), Vector(t"two")).serialize.to(List)
+        diff(Series(t"zero", t"one"), Series(t"two")).serialize.to(List)
       . assert(_ == List(t"1,2c1", t"< zero", t"< one", t"---", t"> two"))
 
       test(m"Experimental diff 3"):
-        diff(Vector(t"zero", t"one"), Vector(t"zero", t"two")).serialize.to(List)
+        diff(Series(t"zero", t"one"), Series(t"zero", t"two")).serialize.to(List)
       . assert(_ == List(t"2c2", t"< one", t"---", t"> two"))
 
-    val italian = Vector(t"zero", t"uno", t"due", t"tre", t"quattro", t"cinque", t"sei", t"sette")
-    val spanish = Vector(t"cero", t"uno", t"dos", t"tres", t"cuatro", t"cinco", t"seis", t"siete")
+    val italian = Series(t"zero", t"uno", t"due", t"tre", t"quattro", t"cinque", t"sei", t"sette")
+    val spanish = Series(t"cero", t"uno", t"dos", t"tres", t"cuatro", t"cinco", t"seis", t"siete")
 
     suite(m"Rdiff tests"):
       val italianToSpanish = test(m"Do a normal diff on Italian/Spanish numbers"):
@@ -256,9 +256,9 @@ object Tests extends Suite(m"Dissonance tests"):
         List(Prim, Sec, Ter).map(evolution(_).mkString)
       . assert(_ == List("Jack and Jill", "Jack with Jill", "Jack und Jill"))
 
-    val source = Vector(t"line1", t"line2", t"line3")
-    val dup = Vector(t"a", t"b", t"a")
-    val list = Vector(t"- alpha", t"- beta", t"- gamma")
+    val source = Series(t"line1", t"line2", t"line3")
+    val dup = Series(t"a", t"b", t"a")
+    val list = Series(t"- alpha", t"- beta", t"- gamma")
 
     suite(m"Redraft parsing tests"):
       val roundtrip = Stream(t"line1", t"- line2", t"+ new", t"\\- escaped", t"< forced", t"> add")
@@ -278,36 +278,36 @@ object Tests extends Suite(m"Dissonance tests"):
 
     suite(m"Redraft application tests"):
       test(m"Apply a simple redraft"):
-        Redraft.parse(Stream(t"- line2", t"+ new line 2a")).patch(source).to(Vector)
-      . assert(_ == Vector(t"line1", t"new line 2a", t"line3"))
+        Redraft.parse(Stream(t"- line2", t"+ new line 2a")).patch(source).to(Series)
+      . assert(_ == Series(t"line1", t"new line 2a", t"line3"))
 
       test(m"Omitted unchanged lines are skipped"):
-        Redraft.parse(Stream(t"- line2")).patch(source).to(Vector)
-      . assert(_ == Vector(t"line1", t"line3"))
+        Redraft.parse(Stream(t"- line2")).patch(source).to(Series)
+      . assert(_ == Series(t"line1", t"line3"))
 
       test(m"Insert before the first line"):
-        Redraft.parse(Stream(t"+ line0")).patch(source).to(Vector)
-      . assert(_ == Vector(t"line0", t"line1", t"line2", t"line3"))
+        Redraft.parse(Stream(t"+ line0")).patch(source).to(Series)
+      . assert(_ == Series(t"line0", t"line1", t"line2", t"line3"))
 
       test(m"Forced insert with the alternate marker"):
-        Redraft.parse(Stream(t"> line0")).patch(source).to(Vector)
-      . assert(_ == Vector(t"line0", t"line1", t"line2", t"line3"))
+        Redraft.parse(Stream(t"> line0")).patch(source).to(Series)
+      . assert(_ == Series(t"line0", t"line1", t"line2", t"line3"))
 
       test(m"Deletion anchored by context"):
-        Redraft.parse(Stream(t"b", t"- a")).patch(dup).to(Vector)
-      . assert(_ == Vector(t"a", t"b"))
+        Redraft.parse(Stream(t"b", t"- a")).patch(dup).to(Series)
+      . assert(_ == Series(t"a", t"b"))
 
       test(m"A verbatim marker line is kept as context"):
-        Redraft.parse(Stream(t"- alpha", t"< - beta", t"- gamma")).patch(list).to(Vector)
-      . assert(_ == Vector(t"- alpha", t"- gamma"))
+        Redraft.parse(Stream(t"- alpha", t"< - beta", t"- gamma")).patch(list).to(Series)
+      . assert(_ == Series(t"- alpha", t"- gamma"))
 
       test(m"Escaped context matches a literal marker line"):
-        Redraft.parse(Stream(t"\\- alpha")).patch(list).to(Vector)
-      . assert(_ == Vector(t"- alpha", t"- beta", t"- gamma"))
+        Redraft.parse(Stream(t"\\- alpha")).patch(list).to(Series)
+      . assert(_ == Series(t"- alpha", t"- beta", t"- gamma"))
 
       test(m"Delete a literal marker line with a doubled marker"):
-        Redraft.parse(Stream(t"- alpha", t"- - beta", t"- gamma")).patch(list).to(Vector)
-      . assert(_ == Vector(t"- alpha", t"- gamma"))
+        Redraft.parse(Stream(t"- alpha", t"- - beta", t"- gamma")).patch(list).to(Series)
+      . assert(_ == Series(t"- alpha", t"- gamma"))
 
     suite(m"Redraft ambiguity tests"):
       test(m"An under-anchored deletion is rejected"):
@@ -323,18 +323,18 @@ object Tests extends Suite(m"Dissonance tests"):
       . assert(_.reason == RedraftError.Reason.NoMatch)
 
     suite(m"Redraft rendering tests"):
-      val target = Vector(t"line1", t"new", t"line3")
+      val target = Series(t"line1", t"new", t"line3")
 
       test(m"Render a minimal redraft, dropping all context"):
-        diff(source, Vector(t"line1", t"new line 2a", t"line3")).redraft().serialize.to(List)
+        diff(source, Series(t"line1", t"new line 2a", t"line3")).redraft().serialize.to(List)
       . assert(_ == List(t"- line2", t"+ new line 2a"))
 
       test(m"Render minimal context to anchor an ambiguous deletion"):
-        diff(dup, Vector(t"a", t"b")).redraft().serialize.to(List)
+        diff(dup, Series(t"a", t"b")).redraft().serialize.to(List)
       . assert(_ == List(t"b", t"- a"))
 
       test(m"A rendered redraft reproduces the target when applied"):
-        diff(source, target).redraft().patch(source).to(Vector)
+        diff(source, target).redraft().patch(source).to(Series)
       . assert(_ == target)
 
     // suite(m"Casual diff tests"):
@@ -369,10 +369,10 @@ object Tests extends Suite(m"Dissonance tests"):
     //   def allPermutations(n: Int): List[List[Text]] =
     //     if n == 0 then Nil else permutations(n) ++ allPermutations(n - 1)
 
-    //   allPermutations(3).map(_.to(Vector)).each: perm1 =>
-    //     allPermutations(3).map(_.to(Vector)).each: perm2 =>
+    //   allPermutations(3).map(_.to(Series)).each: perm1 =>
+    //     allPermutations(3).map(_.to(Series)).each: perm2 =>
     //       import unsafeExceptions.canThrowAny
     //       val d = diff(perm1, perm2).casual
     //       test(m"Check differences"):
-    //         d.patch(perm1).to(Vector)
+    //         d.patch(perm1).to(Series)
     //       . assert(_ == perm2)
