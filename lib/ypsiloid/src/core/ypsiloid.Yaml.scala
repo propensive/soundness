@@ -1198,12 +1198,18 @@ object Yaml extends Yaml2, Dynamic:
   =>  collection is Aggregable by Text =
     summon[Text is Aggregable by Text].map(parseAll(_).to(factory))
 
-  // NOTE: not truly lazy — `parseAll` parses the whole input eagerly and only the
-  // wrapping into a `Stream` is deferred. A genuinely lazy per-`---` document
-  // parser is future work (out of scope for #1250).
+  // Genuinely lazy: each `---`-separated document is parsed on demand by
+  // `YamlParser.parseStream`, so a malformed later document doesn't prevent reading
+  // the earlier ones and consumption can stop early.
   given streamAggregable: (Tactic[ParseError], Yaml.Tracking)
   =>  Stream[Yaml] is Aggregable by Text =
-    summon[Text is Aggregable by Text].map(parseAll(_).to(Stream))
+    summon[Text is Aggregable by Text].map: text =>
+      summon[Yaml.Tracking] match
+        case Yaml.Tracking.On =>
+          YamlParser.parseStreamTracked(text).map: (ast, ints) =>
+            new Yaml(ast, Yaml.PositionIndex(ints))
+        case Yaml.Tracking.Off =>
+          YamlParser.parseStream(text).map(Yaml(_))
 
   // HTTP content-type integration. `Abstractable across HttpStreams` makes a
   // `Yaml` value usable as an HTTP request/response body (telekinesis derives

@@ -116,6 +116,35 @@ object YamlParser:
       parser.parseAllTracked()
     finally parser.tracking = false
 
+  // Lazy streaming entry points (§6.1). Unlike the eager variants these use a
+  // dedicated parser instance, not the shared pool: the lazy tail parses later
+  // documents on demand and must own its parser state across those demands.
+  def parseStream(input: Text)(using Tactic[ParseError]): Stream[Yaml.Ast] =
+    val parser = new YamlParser
+    parser.tracking = false
+    parser.resetText(input)
+    parser.documentStream()
+
+  def parseStream(input: Data)(using Tactic[ParseError]): Stream[Yaml.Ast] =
+    val parser = new YamlParser
+    parser.tracking = false
+    parser.resetData(input)
+    parser.documentStream()
+
+  def parseStreamTracked(input: Text)(using Tactic[ParseError])
+  :   Stream[(Yaml.Ast, IArray[Int])] =
+    val parser = new YamlParser
+    parser.tracking = true
+    parser.resetText(input)
+    parser.documentStreamTracked()
+
+  def parseStreamTracked(input: Data)(using Tactic[ParseError])
+  :   Stream[(Yaml.Ast, IArray[Int])] =
+    val parser = new YamlParser
+    parser.tracking = true
+    parser.resetData(input)
+    parser.documentStreamTracked()
+
 private[ypsiloid] final class YamlParser:
   // Parser-local snapshot of the cursor's buffer, mirroring Jacinta's
   // pattern: keep `bytes`/`pos`/`bufEnd` as plain fields so the JIT can
@@ -137,6 +166,18 @@ private[ypsiloid] final class YamlParser:
   // Finalised root-level position index produced by the previous `parse()`
   // call when `tracking` was on. Reset to `null` at the start of every parse.
   protected[ypsiloid] var rootIndex: Array[Int] | Null = null
+
+  // Cross-document state for the streaming parser. `firstDoc` and
+  // `lastDocEndedWithFooter` were locals in `parseAll`; promoting them to fields
+  // lets a single `stepDocument` be driven either eagerly (one enclosing
+  // `holding`) or lazily (a fresh `holding` per document, valid because the YAML
+  // cursor is always fully in-memory and never compacts a consumed offset away).
+  // `streamDone` flips once the input is exhausted; `pendingDocument` carries the
+  // most recently parsed root node back to the driver.
+  private var firstDoc: Boolean = true
+  private var lastDocEndedWithFooter: Boolean = true
+  private var streamDone: Boolean = false
+  private var pendingDocument: Yaml.Ast = Yaml.Ast.Null
 
   // Local-buffer offset up to which `cursor.lineNo` / `cursor.columnNo`
   // have been brought up to date. The hot-loop `syncTo()` bypasses the
@@ -245,6 +286,9 @@ private[ypsiloid] final class YamlParser:
     lastNodeHadAnchor = false
     inInlineMappingValue = false
     docStartLineEnd = -1
+    firstDoc = true
+    lastDocEndedWithFooter = true
+    streamDone = false
     anchors.clear()
     tagHandles.clear()
 
@@ -468,155 +512,146 @@ private[ypsiloid] final class YamlParser:
         consumeOptionalDocumentEnd()
         node
 
+  // One iteration of the shared multi-document loop (§6.1). Parses the next
+  // document, returning `true` with the root node in `pendingDocument` (and, under
+  // tracking, its index in `rootIndex`), or `false` when this iteration consumed a
+  // boundary without producing a document. `streamDone` flips once the input is
+  // exhausted. Must run inside an active `holding` scope; the eager (`parseAll`)
+  // and lazy (`documentStream`) drivers differ only in how they wrap it.
+  private def stepDocument()(using Tactic[ParseError]): Boolean =
+    skipBlankAndCommentLines()
+    // %TAG/%YAML directives apply only to the document immediately following them
+    // — clear before reading the next directives block.
+    tagHandles.clear()
+    val sawDirectives = parseDirectivesIfAny()
+    if sawDirectives && !firstDoc && !lastDocEndedWithFooter then
+      errorAt(Issue.DirectivesOutOfPlace)
+    val explicitStart = consumeOptionalDocumentStart()
+    if sawDirectives && !explicitStart then
+      errorAt(Issue.DirectiveWithoutDocumentStart)
+    // After a `...` footer, a bare document (no `---`) is allowed; otherwise every
+    // doc beyond the first needs a directives-end marker.
+    if
+      !firstDoc && more && !explicitStart && !atDocumentBoundary
+      && !lastDocEndedWithFooter
+    then errorAt(Issue.MissingDocumentStart)
+    // After a `---` marker we may be on the same line as the body; otherwise the
+    // body is on a fresh line whose leading whitespace determines the indent. A
+    // trailing `# comment` on the marker line is metadata: consume it so the body
+    // parses from the next line.
+    if explicitStart && more && peek == Hash then
+      while more && peek != Newline do advance()
+    val sameLineAsMarker = explicitStart && more && peek != Newline
+    if !explicitStart || (more && peek == Newline) then
+      if more && peek == Newline then advance()
+      skipBlankAndCommentLines()
+
+    if !more then
+      streamDone = true
+      explicitStart && { pendingDocument = emitNull(); true }
+    else if atDocumentBoundary then
+      val emitted = explicitStart && { pendingDocument = emitNull(); true }
+      lastDocEndedWithFooter = consumeOptionalDocumentEnd()
+      if explicitStart then firstDoc = false
+      emitted
+    else
+      // The first content line of the document determines the indent passed to
+      // parseNode.
+      val indent = consumeLeadingSpaces()
+      if !more || atDocumentBoundary then
+        val emitted = explicitStart && { pendingDocument = emitNull(); true }
+        lastDocEndedWithFooter = consumeOptionalDocumentEnd()
+        if explicitStart then firstDoc = false
+        emitted
+      else
+        // If `---` was consumed and content is on the same line, the node may not
+        // be a block mapping — only a single inline node (scalar / flow / quoted).
+        // Snapshot the position of the marker-line newline so the check naturally
+        // lifts as soon as the parser advances past it.
+        val savedDocStart = docStartLineEnd
+        if sameLineAsMarker then
+          var end = pos
+          while end < bufEnd && bytes(end) != Newline do end += 1
+          docStartLineEnd = end
+        else
+          docStartLineEnd = -1
+        pendingDocument = parseRootNode(indent)
+        docStartLineEnd = savedDocStart
+        skipBlankAndCommentLines()
+        lastDocEndedWithFooter = consumeOptionalDocumentEnd()
+        firstDoc = false
+        true
+
+  // Parse a document's root node, capturing the tracking index into `rootIndex`
+  // when `tracking` is on. Mirrors the inline handling in single-document `parse`.
+  private def parseRootNode(indent: Int)(using Tactic[ParseError]): Yaml.Ast =
+    if tracking then
+      val rootBuf = acquireIndexBuffer()
+      val node = parseNodeTracked(indent, rootBuf)
+      rootIndex = rootBuf.toArray
+      releaseIndexBuffer()
+      node
+    else parseNode(indent)
+
+  // Emit an explicit-but-empty document's Null root, capturing a 4-int Null
+  // descriptor into `rootIndex` when `tracking` is on.
+  private def emitNull(): Yaml.Ast =
+    if tracking then
+      val rootBuf = acquireIndexBuffer()
+      emitNullHere(rootBuf)
+      rootIndex = rootBuf.toArray
+      releaseIndexBuffer()
+    Yaml.Ast.Null
+
   def parseAll()(using Tactic[ParseError]): List[Yaml.Ast] = holding:
     val docs = scala.collection.mutable.ArrayBuffer[Yaml.Ast]()
     skipBom()
-
-    var continue = true
-    var firstDoc = true
-    var lastDocEndedWithFooter = true  // start of stream is OK for directives
-    while continue do
-      skipBlankAndCommentLines()
-      // %TAG/%YAML directives apply only to the document immediately
-      // following them — clear before reading the next directives block.
-      tagHandles.clear()
-      val sawDirectives = parseDirectivesIfAny()
-      if sawDirectives && !firstDoc && !lastDocEndedWithFooter then
-        errorAt(Issue.DirectivesOutOfPlace)
-      val explicitStart = consumeOptionalDocumentStart()
-      if sawDirectives && !explicitStart then
-        errorAt(Issue.DirectiveWithoutDocumentStart)
-      // After a `...` footer, a bare document (no `---`) is allowed;
-      // otherwise every doc beyond the first needs a directives-end
-      // marker.
-      if
-        !firstDoc && more && !explicitStart && !atDocumentBoundary
-        && !lastDocEndedWithFooter
-      then errorAt(Issue.MissingDocumentStart)
-      // After a `---` marker we may be on the same line as the body;
-      // otherwise the body is on a fresh line whose leading whitespace
-      // determines the indent. A trailing `# comment` on the marker
-      // line is metadata: consume it so the body parses from the next
-      // line.
-      if explicitStart && more && peek == Hash then
-        while more && peek != Newline do advance()
-      val sameLineAsMarker = explicitStart && more && peek != Newline
-      if !explicitStart || (more && peek == Newline) then
-        if more && peek == Newline then advance()
-        skipBlankAndCommentLines()
-
-      if !more then
-        if explicitStart then docs.append(Yaml.Ast.Null)
-        continue = false
-      else if atDocumentBoundary then
-        if explicitStart then docs.append(Yaml.Ast.Null)
-        lastDocEndedWithFooter = consumeOptionalDocumentEnd()
-        if explicitStart then firstDoc = false
-      else
-        // The first content line of the document determines the indent
-        // passed to parseNode.
-        val indent = consumeLeadingSpaces()
-        if !more || atDocumentBoundary then
-          if explicitStart then docs.append(Yaml.Ast.Null)
-          lastDocEndedWithFooter = consumeOptionalDocumentEnd()
-          if explicitStart then firstDoc = false
-        else
-          // If `---` was consumed and content is on the same line, the
-          // node may not be a block mapping — only a single inline node
-          // (scalar / flow / quoted). Snapshot the position of the
-          // marker-line newline so the check naturally lifts as soon
-          // as the parser advances past it.
-          val savedDocStart = docStartLineEnd
-          if sameLineAsMarker then
-            var end = pos
-            while end < bufEnd && bytes(end) != Newline do end += 1
-            docStartLineEnd = end
-          else
-            docStartLineEnd = -1
-          val node = parseNode(indent)
-          docStartLineEnd = savedDocStart
-          docs.append(node)
-          skipBlankAndCommentLines()
-          lastDocEndedWithFooter = consumeOptionalDocumentEnd()
-          firstDoc = false
-
+    while !streamDone do if stepDocument() then docs.append(pendingDocument)
     docs.toList
 
-  // Tracked variant of `parseAll`: parses every document like `parseAll`
-  // but also captures a per-document `PositionIndex` for the
-  // tracking-aware `Yaml.parseAll` companion entry.
-  def parseAllTracked()(using Tactic[ParseError])
-  :   List[(Yaml.Ast, IArray[Int])] = holding:
-    val docs = scala.collection.mutable.ArrayBuffer[(Yaml.Ast, IArray[Int])]()
-    skipBom()
+  // Tracked variant of `parseAll`: parses every document like `parseAll` but also
+  // captures a per-document `PositionIndex` for the tracking-aware `Yaml.parseAll`
+  // companion entry.
+  def parseAllTracked()(using Tactic[ParseError]): List[(Yaml.Ast, IArray[Int])] =
+    holding:
+      val docs = scala.collection.mutable.ArrayBuffer[(Yaml.Ast, IArray[Int])]()
+      skipBom()
+      while !streamDone do
+        if stepDocument()
+        then docs.append((pendingDocument, IArray.unsafeFromArray(rootIndex.nn)))
+      docs.toList
 
-    var continue = true
-    var firstDoc = true
-    var lastDocEndedWithFooter = true
-    while continue do
-      skipBlankAndCommentLines()
-      tagHandles.clear()
-      val sawDirectives = parseDirectivesIfAny()
-      if sawDirectives && !firstDoc && !lastDocEndedWithFooter then
-        errorAt(Issue.DirectivesOutOfPlace)
-      val explicitStart = consumeOptionalDocumentStart()
-      if sawDirectives && !explicitStart then
-        errorAt(Issue.DirectiveWithoutDocumentStart)
-      if
-        !firstDoc && more && !explicitStart && !atDocumentBoundary
-        && !lastDocEndedWithFooter
-      then errorAt(Issue.MissingDocumentStart)
-      if explicitStart && more && peek == Hash then
-        while more && peek != Newline do advance()
-      val sameLineAsMarker = explicitStart && more && peek != Newline
-      if !explicitStart || (more && peek == Newline) then
-        if more && peek == Newline then advance()
-        skipBlankAndCommentLines()
+  // Lazy multi-document parse: each document is parsed on demand inside its own
+  // `holding` scope. Safe because the YAML cursor is always fully in-memory, so a
+  // byte offset stays valid across holds (nothing compacts a consumed region away).
+  // A dedicated parser instance owns the state across the lazy tail — see the
+  // companion `parseStream`.
+  def documentStream()(using Tactic[ParseError]): Stream[Yaml.Ast] =
+    holding(skipBom())
 
-      if !more then
-        if explicitStart then
-          val rootBuf = acquireIndexBuffer()
-          emitNullHere(rootBuf)
-          docs.append((Yaml.Ast.Null, IArray.unsafeFromArray(rootBuf.toArray)))
-          releaseIndexBuffer()
-        continue = false
-      else if atDocumentBoundary then
-        if explicitStart then
-          val rootBuf = acquireIndexBuffer()
-          emitNullHere(rootBuf)
-          docs.append((Yaml.Ast.Null, IArray.unsafeFromArray(rootBuf.toArray)))
-          releaseIndexBuffer()
-        lastDocEndedWithFooter = consumeOptionalDocumentEnd()
-        if explicitStart then firstDoc = false
-      else
-        val indent = consumeLeadingSpaces()
-        if !more || atDocumentBoundary then
-          if explicitStart then
-            val rootBuf = acquireIndexBuffer()
-            emitNullHere(rootBuf)
-            docs.append((Yaml.Ast.Null, IArray.unsafeFromArray(rootBuf.toArray)))
-            releaseIndexBuffer()
-          lastDocEndedWithFooter = consumeOptionalDocumentEnd()
-          if explicitStart then firstDoc = false
-        else
-          val savedDocStart = docStartLineEnd
-          if sameLineAsMarker then
-            var end = pos
-            while end < bufEnd && bytes(end) != Newline do end += 1
-            docStartLineEnd = end
-          else
-            docStartLineEnd = -1
-          val rootBuf = acquireIndexBuffer()
-          val node = parseNodeTracked(indent, rootBuf)
-          val ints = IArray.unsafeFromArray(rootBuf.toArray)
-          releaseIndexBuffer()
-          docStartLineEnd = savedDocStart
-          docs.append((node, ints))
-          skipBlankAndCommentLines()
-          lastDocEndedWithFooter = consumeOptionalDocumentEnd()
-          firstDoc = false
+    def recur(): Stream[Yaml.Ast] =
+      if streamDone then Stream()
+      else if holding(stepDocument()) then
+        // Capture the field into a local before consing: the lazy tail re-runs
+        // `stepDocument` and overwrites `pendingDocument`.
+        val doc = pendingDocument
+        doc #:: recur()
+      else recur()
 
-    docs.toList
+    recur()
+
+  def documentStreamTracked()(using Tactic[ParseError])
+  :   Stream[(Yaml.Ast, IArray[Int])] =
+    holding(skipBom())
+
+    def recur(): Stream[(Yaml.Ast, IArray[Int])] =
+      if streamDone then Stream()
+      else if holding(stepDocument()) then
+        val pair = (pendingDocument, IArray.unsafeFromArray(rootIndex.nn))
+        pair #:: recur()
+      else recur()
+
+    recur()
 
   // Consume `---` if at the current position. Returns true if consumed.
   // Per spec the marker requires either a following line-boundary

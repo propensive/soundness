@@ -603,6 +603,29 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"---\n1\n---\n2".read[LazyList[Yaml]].map(_.as[Int]).to(List)
       . assert(_ == List(1, 2))
 
+      test(m"read[Stream[Yaml]] is lazy past a malformed later document"):
+        // The second document is an unterminated flow sequence; reading only the
+        // first document must not parse (and fail on) it.
+        t"1\n---\n[1, 2".read[LazyList[Yaml]].head.as[Int]
+      . assert(_ == 1)
+
+      test(m"read[Stream[Yaml]] parses the second document lazily on demand"):
+        t"1\n---\n2\n---\n3".read[LazyList[Yaml]].tail.head.as[Int]
+      . assert(_ == 2)
+
+      test(m"lazy stream and eager list agree on a mixed-type stream"):
+        import yamlPrinters.block
+        val source = t"---\nname: Alice\n---\n[1, 2, 3]\n---\n42"
+        val lazyList = source.read[LazyList[Yaml]].map(_.show).to(List)
+        val eager = source.read[List[Yaml]].map(_.show)
+        lazyList == eager
+      . assert(identity)
+
+      test(m"read[Stream[Yaml]] yields each document under tracking"):
+        given Yaml.Tracking = Yaml.Tracking.On
+        t"---\n1\n---\n2".read[LazyList[Yaml]].map(_.as[Int]).to(List)
+      . assert(_ == List(1, 2))
+
       test(m"a multi-document stream round-trips through serialization"):
         import yamlPrinters.block, charDecoders.utf8, textSanitizers.skip
         t"1\n---\n2\n---\n3".read[List[Yaml]].read[List[Yaml]].map(_.as[Int])
