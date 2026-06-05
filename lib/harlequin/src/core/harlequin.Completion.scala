@@ -32,59 +32,25 @@
                                                                                                   */
 package harlequin
 
-import soundness.*
+import anticipation.*
+import denominative.*
+import stenography.*
+import vacuous.*
 
-import ambience.systems.java
+object Completion:
+  enum Kind:
+    case Term, Method, Given, Extension, Type, Module, Package
 
-object Tests extends Suite(m"Harlequin Tests"):
-  def run(): Unit =
-    val snippet = t"val xs = List(1, 2, 3)"
+// A single completion candidate at a requested position. `name` is the text to
+// insert; `kind` distinguishes methods, extensions, types, etc.; `signature` is
+// the member's type rendered as a Stenography `Syntax` (a method's full
+// parameter/result signature, a value's type, …).
+case class Completion
+   ( name:          Text,
+     kind:          Completion.Kind,
+     signature:     Syntax,
+     documentation: Optional[Text] = Unset )
 
-    def typeOf(tokens: List[Token], text: Text): Optional[Text] =
-      tokens.find(_.text == text) match
-        case Some(Token(_, _, meta, _)) => meta.let(_.tpe.qualified)
-        case _                          => Unset
-
-    test(m"tokenized highlighting attaches no type metadata"):
-      Scala.highlight(snippet).lines.to(List).flatten.flatMap(_.meta.option)
-    .assert(_ == Nil)
-
-    test(m"each token carries its line and column position"):
-      val tokens = Scala.highlight(t"val n =\n  List").lines.to(List).flatten
-
-      tokens.map: token =>
-        (token.text, token.span.startLine.lay(-1)(_.n0), token.span.startColumn.lay(-1)(_.n0))
-    .assert(_.contains((t"List", 1, 2)))
-
-    test(m"typechecked highlighting resolves the type of a val"):
-      given Scalac[3.8] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().decode[LocalClasspath])
-      import highlighting.typecheckedScala
-
-      typeOf(Scala.highlight(snippet).lines.to(List).flatten, t"xs").or(t"")
-    .assert { rendered => rendered.contains(t"List") && rendered.contains(t"Int") }
-
-    test(m"typechecked highlighting reports diagnostics for ill-typed code"):
-      given Scalac[3.8] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().decode[LocalClasspath])
-      import highlighting.typecheckedScala
-
-      Scala.highlight(t"val n: Int = \"oops\"").diagnostics.length
-    .assert(_ > 0)
-
-    test(m"no completions are computed without a caret"):
-      given Scalac[3.8] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().decode[LocalClasspath])
-      import highlighting.typecheckedScala
-
-      Scala.highlight(snippet).completions
-    .assert(_ == Unset)
-
-    test(m"completions at a member selection include the type's methods"):
-      given Scalac[3.8] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().decode[LocalClasspath])
-      import highlighting.typecheckedScala
-
-      val source = t"val xs = List(1, 2, 3)\nval y = xs.m"
-      Scala.highlight(source, caret = source.length.z).completions.lay(Nil)(_.items.map(_.name))
-    .assert(_.contains(t"map"))
+// The result of a completion request: `replace` is the source region the chosen
+// completion replaces (an `Offset`-mode `Span`), and `items` the candidates.
+case class Completions(replace: Span, items: List[Completion])
