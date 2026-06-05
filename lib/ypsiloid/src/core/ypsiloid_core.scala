@@ -36,9 +36,11 @@ import anticipation.*
 import contextual.*
 import contingency.*
 import gossamer.*
+import hieroglyph.*, charEncoders.utf8
 import prepositional.*
 import rudiments.*
 import spectacular.{Showable, show}
+import turbulence.*
 import vacuous.*
 import wisteria.*
 import zephyrine.*
@@ -53,6 +55,22 @@ given showable: YamlPrinter => Yaml is Showable = Yaml.unseal(_).show
 
 extension (text: Text)
   def readAll(using Tactic[ParseError]): List[Yaml] = Yaml.parseAll(text)
+
+// Serialise a sequence of YAML documents as a single `---`-separated multi-document
+// byte stream, each rendered with the `YamlPrinter` in scope. Lazy: a `Stream[Yaml]`
+// is serialised on demand. The inverse of `text.read[List[Yaml]]` /
+// `read[Stream[Yaml]]` — use `documents.writeTo(target)` to emit it.
+given documentsStreamable: [source <: Seq[Yaml]] => YamlPrinter
+=>  source is Streamable by Data = values =>
+  def recur(rest: Stream[Yaml], first: Boolean): Stream[Data] = rest match
+    case head #:: tail =>
+      val prefix = if first then t"" else t"\n---\n"
+      t"$prefix${head.show}".data #:: recur(tail, first = false)
+
+    case _ =>
+      Stream()
+
+  recur(values.to(Stream), first = true)
 
 extension [entity: Encodable in Yaml](value: entity) def yaml: Yaml = value.encode
 

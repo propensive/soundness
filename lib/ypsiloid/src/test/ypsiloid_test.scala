@@ -595,6 +595,23 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"1\n---\n2\n...".readAll.map(_.as[Int])
       . assert(_ == List(1, 2))
 
+      test(m"read[List[Yaml]] parses a multi-document stream"):
+        t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int])
+      . assert(_ == List(1, 2, 3))
+
+      test(m"read[Vector[Yaml]] builds a Vector via the generic builder"):
+        t"---\n1\n---\n2\n---\n3".read[Vector[Yaml]].length
+      . assert(_ == 3)
+
+      test(m"read[Stream[Yaml]] yields each document"):
+        t"---\n1\n---\n2".read[LazyList[Yaml]].map(_.as[Int]).to(List)
+      . assert(_ == List(1, 2))
+
+      test(m"a multi-document stream round-trips through serialization"):
+        import yamlPrinters.block, charDecoders.utf8, textSanitizers.skip
+        t"1\n---\n2\n---\n3".read[List[Yaml]].read[List[Yaml]].map(_.as[Int])
+      . assert(_ == List(1, 2, 3))
+
     suite(m"Comment handling"):
       test(m"Comment after a scalar is ignored"):
         t"42 # the answer".read[Yaml].as[Int]

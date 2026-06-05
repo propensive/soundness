@@ -1189,6 +1189,22 @@ object Yaml extends Yaml2, Dynamic:
         case Yaml.Tracking.Off =>
           Yaml(YamlParser.parse(text))
 
+  // `source.read[List[Yaml]]` / `read[Vector[Yaml]]` / `read[Stream[Yaml]]` etc. for
+  // a multi-document `---`-separated stream. The collection bound `<: Iterable[Yaml]`
+  // keeps this from overlapping the single-document `Yaml` instance, and the
+  // fully-ground `streamAggregable` wins for `Stream`/`LazyList`.
+  given collectionAggregable: [collection <: Iterable[Yaml]]
+  =>  (factory: Factory[Yaml, collection], tactic: Tactic[ParseError], tracking: Yaml.Tracking)
+  =>  collection is Aggregable by Text =
+    summon[Text is Aggregable by Text].map(parseAll(_).to(factory))
+
+  // NOTE: not truly lazy — `parseAll` parses the whole input eagerly and only the
+  // wrapping into a `Stream` is deferred. A genuinely lazy per-`---` document
+  // parser is future work (out of scope for #1250).
+  given streamAggregable: (Tactic[ParseError], Yaml.Tracking)
+  =>  Stream[Yaml] is Aggregable by Text =
+    summon[Text is Aggregable by Text].map(parseAll(_).to(Stream))
+
   // HTTP content-type integration. `Abstractable across HttpStreams` makes a
   // `Yaml` value usable as an HTTP request/response body (telekinesis derives
   // `Postable`/`Servable` from it); `Instantiable across HttpRequests` reads a
