@@ -43,9 +43,11 @@ import scala.compiletime.*
 import adversaria.*
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import hypotenuse.*
+import panopticon.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
@@ -125,6 +127,27 @@ object Protobuf extends Protobuf2:
   given aggregableOver: [value: Decodable in Protobuf] => Tactic[ProtobufError]
   =>  (value over Protobuf) is Aggregable by Data =
     bytes => message(bytes.read[Data]).as[value].asInstanceOf[value over Protobuf]
+
+  // Number-keyed optic: Protobuf fields are addressed by number, not name, so an
+  // `Ordinal` selects field `n` (`Prim` = field 1). Updating parses the message's
+  // fields, replaces field `n`'s wire value with the transform's result, and
+  // re-encodes. A parse failure, or an absent field number, leaves the message
+  // unchanged. This is the only optic Protobuf affords — there are no field labels.
+  given fieldOptical: [element] => Ordinal is Optical from Protobuf onto Protobuf = ordinal =>
+    Optic: (origin, lambda) =>
+      val number = ordinal.n0 + 1
+
+      safely:
+        val fields = ProtobufParser(origin.payload).fields()
+        if !fields.contains(number) then origin else
+          val printer = ProtobufPrinter()
+          fields.each: (key, values) =>
+            val value = Protobuf.Repeated(values)
+            printer.field(key, if key == number then lambda(value) else value)
+
+          Protobuf.Wire(WireType.Len, printer.result)
+
+      . or(origin)
 
   private def printed(lambda: ProtobufPrinter => Unit): Data =
     val printer = ProtobufPrinter()
