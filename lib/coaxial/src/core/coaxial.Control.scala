@@ -43,7 +43,7 @@ object Control:
       ( message: transmissible, state: Optional[state] = Unset )
     :   Conclude[state] =
 
-      Conclude(transmissible.serialize(message), state)
+      Conclude(transmissible.serialize(message).foldLeft(Data())(_ ++ _), state)
 
   case object Terminate extends Control[Nothing]
 
@@ -54,7 +54,7 @@ object Control:
       ( message: transmissible, state: Optional[state] = Unset )
     :   Reply[state] =
 
-      Reply(transmissible.serialize(message), state)
+      Reply(transmissible.serialize(message).foldLeft(Data())(_ ++ _), state)
 
   case class Conclude[+state](message: Data, state: Optional[state]) extends Control[state]
 
