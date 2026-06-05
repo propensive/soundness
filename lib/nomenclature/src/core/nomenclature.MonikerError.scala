@@ -32,15 +32,21 @@
                                                                                                   */
 package nomenclature
 
+import anticipation.*
+import fulminate.*
 
-export nomenclature.internal.Name
-export nomenclature.Moniker.Moniker
+object MonikerError:
+  enum Reason(val number: Int) extends Clarification:
+    case Unreadable               extends Reason(1)
+    case OutOfRange(value: Int)   extends Reason(2)
+    case Malformed(moniker: Text) extends Reason(3)
+    case UnknownWord(word: Text)  extends Reason(4)
 
-extension (inline context: StringContext)
-  transparent inline def n: Any = ${protointernal.extractor('context)}
+  given communicable: Reason is Communicable =
+    case Reason.Unreadable        => m"the vocabulary could not be read"
+    case Reason.OutOfRange(n)     => m"the number $n is outside the representable range"
+    case Reason.Malformed(name)   => m"$name is not of the form <adjective>-<animal>"
+    case Reason.UnknownWord(word) => m"the word $word does not appear in the vocabulary"
 
-transparent inline def disintersect[intersection] =
-  ${protointernal.disintersection[intersection]}
-
-transparent inline def staticCompanion[instance]: Matchable =
-  ${anteprotointernal.staticCompanion[instance]}
+case class MonikerError(reason: MonikerError.Reason)(using Diagnostics)
+extends Error(80, reason.number)(m"the moniker is not valid because $reason")
