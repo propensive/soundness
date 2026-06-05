@@ -266,6 +266,18 @@ object Cbor extends Cbor2, Dynamic:
   =>  (value over Cbor) is Aggregable by Data =
     bytes => Cbor.ast(bytes.read[Cbor.Ast]).as[value].asInstanceOf[value over Cbor]
 
+  // `source.read[List[Cbor]]` / `read[Vector[Cbor]]` / `read[Stream[Cbor]]` etc. for
+  // a CBOR sequence (RFC 8742). The collection bound `<: Iterable[Cbor]` keeps this
+  // from overlapping the single-document `Cbor` instance, and the fully-ground
+  // `streamAggregable` wins for `Stream`/`LazyList`.
+  given collectionAggregable: [collection <: Iterable[Cbor]]
+  =>  (factory: sc.Factory[Cbor, collection], tactic: Tactic[CborError])
+  =>  collection is Aggregable by Data =
+    source => CborParser.parseSequence(source.read[Data]).map(Cbor.ast).to(factory)
+
+  given streamAggregable: Tactic[CborError] => Stream[Cbor] is Aggregable by Data =
+    source => CborParser.parseSequenceStream(source.read[Data]).map(Cbor.ast)
+
   given unit: Tactic[CborError] => Unit is Decodable in Cbor =
     value =>
       if !value.root.nullary then

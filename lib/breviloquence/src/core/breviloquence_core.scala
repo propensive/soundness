@@ -36,10 +36,18 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 import rudiments.*
+import turbulence.*
 
 import CborError.{Primitive, Reason}
 
 extension [entity: Encodable in Cbor](value: entity) def cbor: Cbor = value.encode
+
+// Serialise a sequence of CBOR documents as a CBOR sequence (RFC 8742): the encoded
+// items concatenated with no framing. Lazy: a `Stream[Cbor]` is serialised on demand,
+// one encoded item per chunk. The inverse of `bytes.read[List[Cbor]]` /
+// `read[Stream[Cbor]]` — use `documents.writeTo(target)` to emit it.
+given documentsStreamable: [source <: Seq[Cbor]] => source is Streamable by Data =
+  values => values.to(Stream).map(cbor => CborPrinter.encode(Cbor.unseal(cbor)))
 
 extension (cbor: Cbor.Ast)
   inline def unset: Boolean = cbor == vacuous.Unset

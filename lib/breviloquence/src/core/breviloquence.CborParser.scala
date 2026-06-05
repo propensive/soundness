@@ -74,6 +74,26 @@ private[breviloquence] object CborParser:
 
     result
 
+  // CBOR sequence (RFC 8742): concatenated CBOR items with no framing. Read every
+  // item until the bytes are exhausted. `parseSequence` is eager; `parseSequenceStream`
+  // parses each item lazily on demand. Unlike `parse`, trailing bytes are expected.
+  def parseSequence(source: IArray[Byte]): List[Cbor.Ast] raises CborError =
+    val parser = new CborParser(source)
+    val buffer = ArrayBuffer.empty[Cbor.Ast]
+    while parser.offset < parser.data.length do buffer += parser.value()
+    buffer.to(List)
+
+  def parseSequenceStream(source: IArray[Byte]): Stream[Cbor.Ast] raises CborError =
+    // A dedicated parser instance: the lazy tail parses later items on demand and
+    // must own its parser state.
+    val parser = new CborParser(source)
+
+    def recur(): Stream[Cbor.Ast] =
+      if parser.offset >= parser.data.length then Stream()
+      else parser.value() #:: recur()
+
+    recur()
+
 private[breviloquence] final class CborParser(input: IArray[Byte]):
   import CborParser.{Break, boxLong}
 

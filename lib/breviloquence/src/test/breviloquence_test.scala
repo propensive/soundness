@@ -266,6 +266,28 @@ object Tests extends Suite(m"Breviloquence Tests"):
         Cbor.ast(Stream(bytes).read[Cbor.Ast]).as[Wrapper]
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
 
+    suite(m"CBOR sequences (RFC 8742)"):
+      def sequence: IArray[Byte] =
+        CborPrinter.encode(Cbor.unseal(Point(1, 2).cbor))
+        ++ CborPrinter.encode(Cbor.unseal(Point(3, 4).cbor))
+
+      test(m"read[List[Cbor]] parses concatenated items"):
+        Stream(sequence).read[List[Cbor]].map(_.as[Point])
+      . assert(_ == List(Point(1, 2), Point(3, 4)))
+
+      test(m"read[Vector[Cbor]] builds a Vector via the generic builder"):
+        Stream(sequence).read[Vector[Cbor]].length
+      . assert(_ == 2)
+
+      test(m"read[Stream[Cbor]] is lazy past a malformed later item"):
+        val bytes = CborPrinter.encode(Cbor.unseal(Point(1, 2).cbor)) ++ hex("ff")
+        Stream(bytes).read[LazyList[Cbor]].head.as[Point]
+      . assert(_ == Point(1, 2))
+
+      test(m"a CBOR sequence round-trips through serialization"):
+        Stream(sequence).read[List[Cbor]].read[List[Cbor]].map(_.as[Point])
+      . assert(_ == List(Point(1, 2), Point(3, 4)))
+
     suite(m"`over Cbor` decoder shorthand"):
       test(m"`read[T over Cbor]` resolves a value directly from bytes"):
         val original = Point(3, 4)
