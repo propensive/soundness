@@ -32,7 +32,12 @@
                                                                                                   */
 package stratiform
 
+import anticipation.*
 import contextual.*
+import gossamer.*
+import hieroglyph.*, charEncoders.utf8
+import prepositional.*
+import turbulence.*
 
 // `tel"…"` extension on StringContext routes through contextual's
 // interpolation framework; the actual macro lives in `stratiform.internal`.
@@ -40,3 +45,21 @@ import contextual.*
 // `lib/jacinta/src/core/jacinta_core.scala:230`.
 extension (inline context: StringContext)
   transparent inline def tel: Interpolation = interpolation[Tel](context)
+
+// Serialise a sequence of TEL documents (§6.1) as a single multi-document byte
+// stream, each document rendered with `Tel.show` and separated by a `##`
+// document-separator line. Lazy: a `Stream[Tel]` is serialised on demand. This is
+// the inverse of `bytes.read[List[Tel]]` / `read[Stream[Tel]]` — use
+// `documents.writeTo(target)` to emit it, or `documents.read[Text]` to recover the
+// combined text. Framing always uses the default `##` sigil; documents that carry a
+// non-default pragma sigil are not round-tripped through multi-document output.
+given documentsStreamable: [source <: Seq[Tel]] => source is Streamable by Data = values =>
+  def recur(rest: Stream[Tel], first: Boolean): Stream[Data] = rest match
+    case head #:: tail =>
+      val prefix = if first then t"" else t"\n##\n"
+      t"$prefix${Tel.show(head)}".data #:: recur(tail, first = false)
+
+    case _ =>
+      Stream()
+
+  recur(values.to(Stream), first = true)

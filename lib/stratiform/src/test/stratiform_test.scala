@@ -180,6 +180,18 @@ object Tests extends Suite(m"Stratiform Tests"):
         TelCheckTree.of(source.read[LazyList[Tel]].head)
       . assert(_ == TelCheckTree.of(t"first ok".read[Tel]))
 
+      test(m"read[Vector[Tel]] builds a Vector via the generic builder"):
+        CorpusLoader.caseByStem(t"stream", t"two-documents").source.read[Vector[Tel]].length
+      . assert(_ == 2)
+
+      test(m"a document stream round-trips through serialization"):
+        t"a 1\n##\nb 2".read[List[Tel]].read[List[Tel]].map(TelCheckTree.of)
+      . assert(_ == t"a 1\n##\nb 2".read[List[Tel]].map(TelCheckTree.of))
+
+      test(m"a serialized document stream preserves the document count"):
+        t"a 1\n##\nb 2\n##\nc 3".read[List[Tel]].read[List[Tel]].length
+      . assert(_ == 3)
+
     suite(m"Encode/decode primitives"):
       test(m"Text round-trip"):
         t"hello".encode.as[Text]

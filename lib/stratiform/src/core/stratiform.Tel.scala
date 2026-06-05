@@ -33,6 +33,7 @@
 package stratiform
 
 import scala.language.dynamics
+import scala.collection as sc
 
 import anticipation.*
 import contingency.*
@@ -708,16 +709,6 @@ object Tel extends Tel2:
   def parse(bytes: Data, schema: Tels): Tel raises TelError =
     Tel(TelParser.parse(bytes, schema))
 
-  // Parse a multi-document source (§6.1) into its sequence of documents.
-  // `parseAll` is eager; `parseStream` parses lazily on demand. Used internally
-  // by the collection Aggregable typeclasses; user code should prefer
-  // `bytes.read[List[Tel]]` or `bytes.read[Stream[Tel]]`.
-  def parseAll(bytes: Data): List[Tel] raises TelError =
-    TelParser.parseDocuments(bytes).map(Tel(_))
-
-  def parseStream(bytes: Data): Stream[Tel] raises TelError =
-    TelParser.parseStream(bytes).map(Tel(_))
-
   // Concatenate the chunks of a `Stream[Data]` source into a single byte array.
   private def concatenate(source: Stream[Data]): Data =
     import denominative.nil
@@ -746,16 +737,20 @@ object Tel extends Tel2:
   =>  (value over Tel) is Aggregable by Data =
     source => parse(concatenate(source)).as[value].asInstanceOf[value over Tel]
 
-  // `source.read[List[Tel]]` / `read[Stream[Tel]]` for a multi-document source
-  // (§6.1). `List[Tel]` parses every document eagerly; `Stream[Tel]` parses
-  // them lazily on demand (the more specific instance wins over turbulence's
-  // generic `Stream` Aggregable, which would otherwise wrap the whole source as
-  // a single element).
-  given listAggregable: Tactic[TelError] => List[Tel] is Aggregable by Data =
-    source => parseAll(concatenate(source))
+  // `source.read[List[Tel]]` / `read[Vector[Tel]]` / `read[Stream[Tel]]` etc. for
+  // a multi-document source (§6.1). `collectionAggregable` builds any strict
+  // collection eagerly through its `Factory`; `streamAggregable` parses lazily on
+  // demand. The collection bound `<: Iterable[Tel]` keeps this from overlapping the
+  // single-document `Tel` instance, and the fully-ground `streamAggregable` wins for
+  // `Stream`/`LazyList` over both this instance and turbulence's generic `Stream`
+  // Aggregable (which would otherwise wrap the whole source as a single element).
+  given collectionAggregable: [collection <: Iterable[Tel]]
+  =>  (factory: sc.Factory[Tel, collection], tactic: Tactic[TelError])
+  =>  collection is Aggregable by Data =
+    source => TelParser.parseDocuments(concatenate(source)).map(Tel(_)).to(factory)
 
   given streamAggregable: Tactic[TelError] => Stream[Tel] is Aggregable by Data =
-    source => parseStream(concatenate(source))
+    source => TelParser.parseStream(concatenate(source)).map(Tel(_))
 
   // `text.load[Tel]` for any Stream[Text] source: concatenates the
   // chunks, UTF-8 encodes, parses, and pairs the resulting Tel with a
