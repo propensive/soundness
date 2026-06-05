@@ -53,9 +53,6 @@ import YamlError.Reason
 given astShowable: (printer: YamlPrinter) => Yaml.Ast is Showable = printer.print(_)
 given showable: YamlPrinter => Yaml is Showable = Yaml.unseal(_).show
 
-extension (text: Text)
-  def readAll(using Tactic[ParseError]): List[Yaml] = Yaml.parseAll(text)
-
 // Serialise a sequence of YAML documents as a single `---`-separated multi-document
 // byte stream, each rendered with the `YamlPrinter` in scope. Lazy: a `Stream[Yaml]`
 // is serialised on demand. The inverse of `text.read[List[Yaml]]` /

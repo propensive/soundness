@@ -576,28 +576,24 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == 42)
 
       test(m"Stream of three documents"):
-        t"---\n1\n---\n2\n---\n3".readAll.map(_.as[Int])
+        t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int])
       . assert(_ == List(1, 2, 3))
 
       test(m"Empty stream yields no documents"):
-        t"".readAll.length
+        t"".read[List[Yaml]].length
       . assert(_ == 0)
 
       test(m"Stream of mixed-type documents"):
-        t"---\nname: Alice\n---\n[1, 2, 3]".readAll.length
+        t"---\nname: Alice\n---\n[1, 2, 3]".read[List[Yaml]].length
       . assert(_ == 2)
 
       test(m"Single-document stream without leading separator"):
-        t"42".readAll.map(_.as[Int])
+        t"42".read[List[Yaml]].map(_.as[Int])
       . assert(_ == List(42))
 
       test(m"Stream with trailing end marker"):
-        t"1\n---\n2\n...".readAll.map(_.as[Int])
+        t"1\n---\n2\n...".read[List[Yaml]].map(_.as[Int])
       . assert(_ == List(1, 2))
-
-      test(m"read[List[Yaml]] parses a multi-document stream"):
-        t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int])
-      . assert(_ == List(1, 2, 3))
 
       test(m"read[Vector[Yaml]] builds a Vector via the generic builder"):
         t"---\n1\n---\n2\n---\n3".read[Vector[Yaml]].length

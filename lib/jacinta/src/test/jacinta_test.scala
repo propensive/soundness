@@ -970,23 +970,7 @@ object Tests extends Suite(m"Jacinta Tests"):
         JsonSchema.Format.Email.encode.decode[JsonSchema.Format]
       . assert(_ == JsonSchema.Format.Email)
 
-    suite(m"Ndjson tests"):
-      test(m"Ndjson stream of three values decodes to a List"):
-        val stream = Stream(
-          t"1".read[Json],
-          t"2".read[Json],
-          t"3".read[Json])
-        Ndjson(stream).stream.map(_.as[Int]).to(List)
-      . assert(_ == List(1, 2, 3))
-
-      test(m"Ndjson can hold heterogeneous values"):
-        val stream = Stream(
-          t""""hi"""".read[Json],
-          t"42".read[Json],
-          t"true".read[Json])
-        Ndjson(stream).stream.length
-      . assert(_ == 3)
-
+    suite(m"NDJSON document streams"):
       test(m"read[List[Json]] parses NDJSON into a List"):
         t"1\n2\n3".read[List[Json]].map(_.as[Int])
       . assert(_ == List(1, 2, 3))

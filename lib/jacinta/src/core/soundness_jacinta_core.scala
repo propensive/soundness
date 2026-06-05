@@ -35,7 +35,7 @@ package soundness
 export
   jacinta
   . { dynamicJsonAccess, DynamicJsonEnabler, Json, json, Json2, JsonError, JsonPointer,
-      JsonPrimitive, JsonPrinter, Ndjson, parserAggregable, showable }
+      JsonPrimitive, JsonPrinter, parserAggregable, showable }
 
 package jsonPrinters:
   export jacinta.jsonPrinters.{indented, minimal}
