@@ -33,6 +33,7 @@
 package anthology
 
 import anticipation.*
+import denominative.*
 import vacuous.*
 
-case class Notice(importance: Importance, file: Text, message: Text, codeRange: Optional[CodeRange])
+case class Notice(importance: Importance, file: Text, message: Text, span: Optional[Span])

@@ -341,7 +341,7 @@ object anamnesis extends Library:
   object test extends Tests(core)
 
 object anthology extends Library:
-  object core extends Component(hellenism.core):
+  object core extends Component(hellenism.core, denominative.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
 

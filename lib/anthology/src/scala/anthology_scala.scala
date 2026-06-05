@@ -37,6 +37,7 @@ import language.adhocExtensions
 import dotty.tools.dotc.reporting.*
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import spectacular.*
@@ -136,14 +137,14 @@ extension (companion: Notice.type)
 
     diagnostic.position.map: position =>
       position.nn.pipe: position =>
-        val codeRange =
-          CodeRange
-            ( position.startLine.nn,
-              position.startColumn.nn,
-              position.endLine.nn,
-              position.endColumn.nn )
+        val span =
+          Span.region
+            ( position.startLine.nn.z,
+              position.startColumn.nn.z,
+              position.endLine.nn.z,
+              position.endColumn.nn.z )
 
-        Notice(importance, file, message, codeRange)
+        Notice(importance, file, message, span)
 
     . nn
     . orElse(Notice(importance, file, message, Unset))
