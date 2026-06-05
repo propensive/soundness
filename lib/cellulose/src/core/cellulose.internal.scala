@@ -75,6 +75,7 @@ object internal extends protointernal:
     case class Position(line: Int, column: Int, override val length: Optional[Int])
     extends Format.Position:
       def describe: Text = t"line $line, column $column"
+      override def span: Span = Span.line(line.z, column.z, length.or(0))
 
     inline given derivedEncodable: [value] => value is Encodable in Codl = compiletime.summonFrom:
       case given (`value` is Encodable in Text) => Codl.field[value]

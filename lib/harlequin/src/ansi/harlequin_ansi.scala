@@ -62,37 +62,42 @@ package syntaxHighlighting:
   import Accent.*
 
   given teletypeable: (palette: ScalaSyntaxPalette) => Token is Teletypeable =
-    case Token(text, Error)    => e"${palette.scalaError}($text)"
-    case Token(text, Number)   => e"${palette.scalaNumber}($text)"
-    case Token(text, Modifier) => e"${palette.scalaModifier}($text)"
-    case Token(text, Keyword)  => e"${palette.scalaKeyword}($text)"
-    case Token(text, Ident)    => e"${palette.scalaIdentifier}($text)"
-    case Token(text, Term)     => e"${palette.scalaTerm}($text)"
-    case Token(text, Typed)    => e"${palette.scalaType}($text)"
-    case Token(text, String)   => e"${palette.scalaString}($text)"
-    case Token(text, Parens)   => e"${palette.scalaParenthesis}($text)"
-    case Token(text, Symbol)   => e"${palette.scalaSymbol}($text)"
-    case Token(text, Unparsed) => e"${palette.scalaComment}($Italic($text))"
+    case Token(text, Error, _, _)    => e"${palette.scalaError}($text)"
+    case Token(text, Number, _, _)   => e"${palette.scalaNumber}($text)"
+    case Token(text, Modifier, _, _) => e"${palette.scalaModifier}($text)"
+    case Token(text, Keyword, _, _)  => e"${palette.scalaKeyword}($text)"
+    case Token(text, Ident, _, _)    => e"${palette.scalaIdentifier}($text)"
+    case Token(text, Term, _, _)     => e"${palette.scalaTerm}($text)"
+    case Token(text, Typed, _, _)    => e"${palette.scalaType}($text)"
+    case Token(text, String, _, _)   => e"${palette.scalaString}($text)"
+    case Token(text, Parens, _, _)   => e"${palette.scalaParenthesis}($text)"
+    case Token(text, Symbol, _, _)   => e"${palette.scalaSymbol}($text)"
+    case Token(text, Unparsed, _, _) => e"${palette.scalaComment}($Italic($text))"
 
   given numbered: (palette: ScalaSyntaxPalette) => SourceCode is Teletypeable = source =>
     val indent = source.lastLine.show.length
     lazy val error = e"${Fg(palette.subdued)}(║)"
 
-    val markup = source.focus.lay(e""):
-      case ((startLine, startColumn), (endLine, endColumn)) =>
-        if startLine != endLine then e"\n" else
-          val foreground = Fg(palette.scalaError)
+    val markup = source.focus.lay(e""): span =>
+      val startLine = span.startLine.lay(0)(_.n0)
+      val endLine = span.endLine.lay(startLine)(_.n0)
+      val startColumn = span.startColumn.lay(0)(_.n0)
+      val endColumn = span.endColumn.lay(startColumn)(_.n0)
 
-          if startColumn == endColumn
-          then e"\n${t" "*(startColumn + indent + 2)}$foreground(╱╲)"
-          else e"\n${t" "*(startColumn + indent + 3)}$foreground(${t"‾"*(endColumn - startColumn)})"
+      if startLine != endLine then e"\n" else
+        val foreground = Fg(palette.scalaError)
+
+        if startColumn == endColumn
+        then e"\n${t" "*(startColumn + indent + 2)}$foreground(╱╲)"
+        else e"\n${t" "*(startColumn + indent + 3)}$foreground(${t"‾"*(endColumn - startColumn)})"
 
     (source.offset to source.lastLine).map: lineNo =>
       val content = source(lineNo).map(_.teletype).join
 
-      source.focus.mask:
-        case ((startLine, _), (endLine, _)) =>
-          startLine != endLine && lineNo > startLine && lineNo <= endLine + 1
+      source.focus.mask: span =>
+        val startLine = span.startLine.lay(0)(_.n0)
+        val endLine = span.endLine.lay(startLine)(_.n0)
+        startLine != endLine && lineNo > startLine && lineNo <= endLine + 1
 
       . let: focus =>
           val prefix = lineNo.show.pad(indent, Rtl)

@@ -466,6 +466,7 @@ object Html extends Tag.Container
       override val length: Optional[Int] = Unset )
   extends Format.Position:
     def describe: Text = t"line ${line.n1}, column ${column.n1}"
+    override def span: Span = Span.line(line, column, length.or(0))
 
 
   enum Mode:

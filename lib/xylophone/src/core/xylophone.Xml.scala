@@ -843,6 +843,7 @@ object Xml extends Tag.Container
       override val length: Optional[Int] = Unset )
   extends Format.Position:
     def describe: Text = t"line ${line.n1}, column ${column.n1}"
+    override def span: Span = Span.line(line, column, length.or(0))
 
   // All internal references in a `PositionIndex` are stored as offsets
   // relative to the start of the containing element descriptor, so any

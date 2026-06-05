@@ -42,6 +42,7 @@ import scala.util.control as suc
 import ambience.*
 import anticipation.*
 import contingency.*
+import denominative.*
 import digression.*
 import gossamer.*
 import hellenism.*
@@ -78,21 +79,19 @@ case class Javac(options: List[JavacOption]):
             case jt.Diagnostic.Kind.MANDATORY_WARNING => Importance.Warning
             case _                                    => Importance.Info
 
-          val codeRange: Optional[CodeRange] =
+          val span: Optional[Span] =
             if diagnostic.getPosition == jt.Diagnostic.NOPOS then Unset else
-              CodeRange
-                ( diagnostic.getLineNumber.toInt,
-                  diagnostic.getColumnNumber.toInt,
-                  diagnostic.getLineNumber.toInt,
-                  (diagnostic.getColumnNumber + diagnostic.getEndPosition
-                  - diagnostic.getPosition).toInt )
+              Span.line
+                ( diagnostic.getLineNumber.toInt.z,
+                  diagnostic.getColumnNumber.toInt.z,
+                  (diagnostic.getEndPosition - diagnostic.getPosition).toInt )
 
           process.put:
             Notice
               ( importance,
                 "name".tt,
                 diagnostic.getMessage(ju.Locale.getDefault()).nn.tt,
-                codeRange )
+                span )
 
     val options = List(t"-classpath", classpath(), t"-d", out.generic)
     val javaSources = sources.map(JavaSource(_, _)).asJava

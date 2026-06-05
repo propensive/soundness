@@ -30,6 +30,37 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package harlequin
 
-case class CodeRange(startLine: Int, startColumn: Int, endLine: Int, endColumn: Int)
+import anthology.*
+import hellenism.*
+import vacuous.*
+
+enum Pipeline:
+  case Tokenized, Typechecked, Compiled
+
+trait Highlight:
+  def pipeline: Pipeline
+  def scalac: Optional[Scalac[?]]
+  def classpath: Optional[LocalClasspath]
+
+object Highlight:
+  given default: Highlight = highlighting.tokenizedScala
+
+object highlighting:
+  given tokenizedScala: Highlight = new Highlight:
+    def pipeline: Pipeline = Pipeline.Tokenized
+    def scalac: Optional[Scalac[?]] = Unset
+    def classpath: Optional[LocalClasspath] = Unset
+
+  given typecheckedScala(using scalac0: Scalac[?], classpath0: LocalClasspath): Highlight =
+    new Highlight:
+      def pipeline: Pipeline = Pipeline.Typechecked
+      def scalac: Optional[Scalac[?]] = scalac0
+      def classpath: Optional[LocalClasspath] = classpath0
+
+  given compiledScala(using scalac0: Scalac[?], classpath0: LocalClasspath): Highlight =
+    new Highlight:
+      def pipeline: Pipeline = Pipeline.Compiled
+      def scalac: Optional[Scalac[?]] = scalac0
+      def classpath: Optional[LocalClasspath] = classpath0

@@ -341,7 +341,7 @@ object anamnesis extends Library:
   object test extends Tests(core)
 
 object anthology extends Library:
-  object core extends Component(hellenism.core):
+  object core extends Component(hellenism.core, denominative.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
 
@@ -586,7 +586,7 @@ object decorum extends Library:
   object test extends Tests(plugin)
 
 object denominative extends Library:
-  object core extends Component(fulminate.core):
+  object core extends Component(fulminate.core, vacuous.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
@@ -862,7 +862,7 @@ object hallucination extends Library:
   object test extends Tests(ansi)
 
 object harlequin extends Library:
-  object core extends Component(anthology.scala):
+  object core extends Component(anthology.scala, stenography.core, hellenism.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")

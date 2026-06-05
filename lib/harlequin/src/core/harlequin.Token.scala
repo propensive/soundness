@@ -33,15 +33,25 @@
 package harlequin
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import spectacular.*
+import stenography.*
+import vacuous.*
 
 object Token:
   val Newline: Token = Token("\n", Accent.Unparsed)
   given showable: Token is Showable = _.text
 
-case class Token(text: Text, accent: Accent):
+  case class Meta(tpe: Syntax)
+
+// `span` locates the token in its `SourceCode`: a `Line`-mode `Span` carrying the
+// token's 0-based line and column and its length. It is `Span.empty` until the
+// token is placed into a `SourceCode`'s line grid.
+case class Token
+   ( text: Text, accent: Accent, meta: Optional[Token.Meta] = Unset, span: Span = Span.empty ):
   def length: Int = text.length
 
   def snip(point: Int): (Token, Token) =
-    (Token(text.keep(point), accent), Token(text.skip(point), accent))
+    ( Token(text.keep(point), accent, meta, span),
+      Token(text.skip(point), accent, meta, span) )

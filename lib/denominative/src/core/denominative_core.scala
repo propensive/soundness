@@ -53,7 +53,7 @@ extension [countable: Countable](value: countable)
   inline def gamut: Interval = Interval.initial(countable.size(value))
   inline def nil: Boolean = countable.nil(value)
 
-export denominative.internal.{Ordinal, Interval}
+export denominative.internal.{Ordinal, Interval, Span}
 
 infix type aka [subject, label <: Label] = denominative.protointernal.Tagged[subject, label]
 

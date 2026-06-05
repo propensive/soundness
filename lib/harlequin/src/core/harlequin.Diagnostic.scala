@@ -32,27 +32,12 @@
                                                                                                   */
 package harlequin
 
+import anthology.*
 import anticipation.*
-import gossamer.*
-import harlequin.*
-import honeycomb.*
-import prepositional.*
-import punctuation.*
-import spectacular.*
-import vacuous.*
+import denominative.*
 
-import doms.html.whatwg, whatwg.*
-
-trait CommonFormattable extends Formattable:
-  given lineClass: (Stylesheet of "line" | "amok") = Stylesheet()
-
-  def classes(accent: Accent): Stylesheet = Stylesheet(Set(accent.show.lower))
-
-  def element(accent: Accent, text: Text): Element of "code" =
-    whatwg.Code(`class` = classes(accent))(text)
-
-  protected def postprocess(source: SourceCode): Html of Flow =
-    val code = source.lines.map: line =>
-      Span.line(line.map { case Token(text, accent, _, _) => element(accent, text) }*)
-
-    Fragment(Div.amok(Pre(code*)))
+// A compiler diagnostic captured during typechecked/compiled highlighting. The
+// `span` is an `Offset`-mode `Span` (source offset + length); because a diagnostic
+// may cover part of a token or several tokens, it is kept separate from the token
+// stream and reapplied by the caller.
+case class Diagnostic(span: Span, message: Text, importance: Importance)

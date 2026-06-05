@@ -33,6 +33,7 @@
 package stratiform
 
 import anticipation.*
+import denominative.*
 import fulminate.*
 import vacuous.*
 
@@ -269,4 +270,8 @@ extends Error
   ( 605, reason.number )
   ( position.let: p =>
       m"the TEL document is invalid at $p because $reason"
-    . or(m"the TEL document is invalid because $reason"))
+    . or(m"the TEL document is invalid because $reason")):
+
+  // The internal 1-indexed position rendered as a uniform 0-based `Span`.
+  def span: Span = position.lay(Span.empty): p =>
+    Span.line((p.line - 1).max(0).z, (p.column - 1).max(0).z, 0)
