@@ -360,7 +360,7 @@ object anthology extends Library:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
-  object test extends Tests(`scala`, `java`, core, repl)
+  object test extends Tests(`scala`, `java`, core, repl, spectacular.core)
 
 object anticipation extends Library:
   object generic extends Component(prepositional.core):

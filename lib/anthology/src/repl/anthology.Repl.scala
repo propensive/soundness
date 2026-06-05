@@ -71,7 +71,7 @@ object Repl:
     def wrap(index: Int, history: List[Text], code: Text): Text
 
   enum Outcome:
-    case Ran(notices: List[Notice])
+    case Ran(notices: List[Notice], value: Optional[Text])
     case Threw(notices: List[Notice], error: Throwable)
     case Rejected(notices: List[Notice])
     case Crashed(notices: List[Notice], error: StackTrace)
@@ -114,6 +114,7 @@ class Repl[version <: Scalac.Versions]
   val session: Long = ReplBridge.freshSession()
 
   private var index:   Int        = 0
+  private var result:  Int        = 0
   private var history: List[Text] = Nil
   private var seeded:  Boolean     = false
 
@@ -132,16 +133,20 @@ class Repl[version <: Scalac.Versions]
 
     LocalClasspath(entries*)
 
-  private def run(code: Text)(using Monitor, System, Codicil)
+  // Compiles `code` as the next wrapper object and, on success, loads it (which
+  // runs its body). `rendered` is evaluated after a successful run to supply the
+  // `Outcome.Ran` value — `Unset` for statements, or the inspected result for an
+  // expression line.
+  private def compile(code: Text)(rendered: => Optional[Text])(using Monitor, System, Codicil)
   :   Outcome logs CompileEvent raises CompilerError raises AsyncError =
 
     val name:    Text = layout.objectName(index)
     val source:  Text = layout.wrap(index, history, code)
     val process       = scalac(classpath)(Map(t"$name.scala" -> source), out)
-    val result        = process.complete()
+    val outcome       = process.complete()
     val notices       = process.notices.to(List)
 
-    result match
+    outcome match
       case CompileResult.Crash(trace) =>
         Outcome.Crashed(notices, trace)
 
@@ -154,13 +159,53 @@ class Repl[version <: Scalac.Versions]
 
         try
           loader.on(t"$name$$")
-          Outcome.Ran(notices)
+          Outcome.Ran(notices, rendered)
         catch
           case error: ExceptionInInitializerError =>
             Outcome.Threw(notices, Optional(error.getCause).or(error))
 
           case suc.NonFatal(error) =>
             Outcome.Threw(notices, error)
+
+  private def statementCode(line: Text): Text =
+    (prelude.imports.map(_.tt) :+ line).join(t"\n")
+
+  // Wraps an expression line as `val resN = <line>`, then renders the bound value
+  // through `Inspectable` and stashes the rendering in `ReplBridge`. The renderer
+  // sits in an `@experimental` scope because `Inspectable` is `@experimental`, so
+  // this compiles even when the contextual `Scalac` is not in experimental mode.
+  private def expressionCode(name: Text, key: Text, line: Text): Text =
+    val put: Text = t"anthology.ReplBridge.put(${session.toString.tt}L, \"$key\", $name.inspect)"
+
+    val lines: List[Text] =
+      List
+        ( t"val $name = $line",
+          t"@scala.annotation.experimental private val ${name}_inspected: scala.Unit =",
+          t"  { import spectacular.inspect; $put }" )
+
+    (prelude.imports.map(_.tt) ::: lines).join(t"\n")
+
+  private def evaluate(line: Text)(using Monitor, System, Codicil)
+  :   Outcome logs CompileEvent raises CompilerError raises AsyncError =
+
+    val name: Text = t"res${result.toString.tt}"
+    val key:  Text = t"result:${session.toString.tt}:${index.toString.tt}"
+
+    // Try the line as an expression first; a definition or import fails to parse
+    // as `val resN = …` and falls back to being compiled as a plain statement.
+    val expression: Outcome = compile(expressionCode(name, key, line)):
+      Optional(ReplBridge.fetch[String](session, key.s)).let(_.tt)
+
+    expression match
+      case _: Outcome.Rejected =>
+        compile(statementCode(line))(Unset)
+
+      case ran: Outcome.Ran =>
+        result += 1
+        ran
+
+      case other =>
+        other
 
   // The prelude's definitions and binding accessors are compiled once, as the
   // first object (`rs$line$0`); later lines see them via the history import.
@@ -182,12 +227,12 @@ class Repl[version <: Scalac.Versions]
     if seeded || prelude.definitions.isEmpty && prelude.bindings.isEmpty then Unset
     else
       seeded = true
-      run(seedBody)
+      compile(seedBody)(Unset)
 
   def interpret(line: Text)(using Monitor, System, Codicil)
   :   Outcome logs CompileEvent raises CompilerError raises AsyncError =
 
-    def lineOutcome: Outcome = run((prelude.imports.map(_.tt) :+ line).join(t"\n"))
+    def lineOutcome: Outcome = evaluate(line)
 
     ensureSeeded().lay(lineOutcome):
       case _: Outcome.Ran => lineOutcome

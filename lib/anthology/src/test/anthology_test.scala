@@ -53,8 +53,8 @@ object Tests extends Suite(m"Anthology Tests"):
           repl.interpret(t"val x = 40")
           repl.interpret(t"println(x + 2)")
       . assert:
-          case Repl.Outcome.Ran(_) => true
-          case _                   => false
+          case Repl.Outcome.Ran(_, _) => true
+          case _                      => false
 
       test(m"a type error is reported as Rejected with notices"):
         supervise:
@@ -85,8 +85,8 @@ object Tests extends Suite(m"Anthology Tests"):
 
           repl.interpret(t"println(total)")     // "hello".length + 5
       . assert:
-          case Repl.Outcome.Ran(_) => true
-          case _                   => false
+          case Repl.Outcome.Ran(_, _) => true
+          case _                      => false
 
       test(m"a lifted import is in scope for REPL lines"):
         supervise:
@@ -96,8 +96,8 @@ object Tests extends Suite(m"Anthology Tests"):
 
           repl.interpret(t"println(ListBuffer(1, 2, 3).sum)")
       . assert:
-          case Repl.Outcome.Ran(_) => true
-          case _                   => false
+          case Repl.Outcome.Ran(_, _) => true
+          case _                      => false
 
       test(m"a captured value persists across several lines"):
         supervise:
@@ -109,5 +109,31 @@ object Tests extends Suite(m"Anthology Tests"):
           repl.interpret(t"val doubled = seed*2")
           repl.interpret(t"println(doubled + seed)")
       . assert:
-          case Repl.Outcome.Ran(_) => true
-          case _                   => false
+          case Repl.Outcome.Ran(_, _) => true
+          case _                      => false
+
+    suite(m"REPL result rendering"):
+      given Scalac[3.8] = Scalac(Nil)
+
+      test(m"an expression's value is rendered via Inspectable"):
+        supervise:
+          Repl().interpret(t"21 * 2")
+      . assert:
+          case Repl.Outcome.Ran(_, value) => value.let(_ == t"42").or(false)
+          case _                          => false
+
+      test(m"a definition renders no value"):
+        supervise:
+          Repl().interpret(t"val x = 5")
+      . assert:
+          case Repl.Outcome.Ran(_, value) => value.absent
+          case _                          => false
+
+      test(m"a rendered result is bound to res0 for later lines"):
+        supervise:
+          val repl = Repl()
+          repl.interpret(t"40 + 2")
+          repl.interpret(t"res0 + 1")
+      . assert:
+          case Repl.Outcome.Ran(_, value) => value.let(_ == t"43").or(false)
+          case _                          => false
