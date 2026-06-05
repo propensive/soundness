@@ -987,6 +987,26 @@ object Tests extends Suite(m"Jacinta Tests"):
         Ndjson(stream).stream.length
       . assert(_ == 3)
 
+      test(m"read[List[Json]] parses NDJSON into a List"):
+        t"1\n2\n3".read[List[Json]].map(_.as[Int])
+      . assert(_ == List(1, 2, 3))
+
+      test(m"read[Vector[Json]] builds a Vector via the generic builder"):
+        t"1\n2\n3".read[Vector[Json]].length
+      . assert(_ == 3)
+
+      test(m"blank lines between documents are ignored"):
+        t"1\n\n2\n".read[List[Json]].length
+      . assert(_ == 2)
+
+      test(m"read[Stream[Json]] is lazy past a malformed later line"):
+        t"1\n{bad".read[LazyList[Json]].head.as[Int]
+      . assert(_ == 1)
+
+      test(m"an NDJSON stream round-trips through serialization"):
+        t"1\n2\n3".read[List[Json]].read[List[Json]].map(_.as[Int])
+      . assert(_ == List(1, 2, 3))
+
     suite(m"j\"\" interpolator"):
       test(m"Construct a number"):
         j"42"

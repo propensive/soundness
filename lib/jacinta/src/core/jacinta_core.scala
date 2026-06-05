@@ -40,15 +40,26 @@ import scala.compiletime.*
 import anticipation.*
 import contextual.*
 import contingency.*
+import gossamer.*
+import hieroglyph.*, charEncoders.utf8
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import turbulence.*
 import vacuous.*
 import wisteria.*
 
 import JsonError.Reason
 
 given showable: (printer: JsonPrinter) => Json.Ast is Showable = printer.print(_)
+
+// Serialise a sequence of JSON documents as an NDJSON byte stream: each document
+// is printed minimally on its own line, terminated by a newline. Lazy: a
+// `Stream[Json]` is serialised on demand. The inverse of `bytes.read[List[Json]]`
+// / `read[Stream[Json]]` — use `documents.writeTo(target)` to emit it.
+given documentsStreamable: [source <: Seq[Json]] => source is Streamable by Data = values =>
+  values.to(Stream).map: json =>
+    t"${JsonPrinter.print(json.root, false)}\n".data
 
 extension (json: Json.Ast)
   inline def isNumber: Boolean = isDouble || isLong || isBcd || isSmallBcd

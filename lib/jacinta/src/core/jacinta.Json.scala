@@ -640,6 +640,30 @@ object Json extends Json2, Dynamic:
     bytes => Json(bytes.read[Json.Ast]).as[value].asInstanceOf[value over Json]
 
 
+  // NDJSON (newline-delimited JSON): each non-blank line is one JSON document.
+  // Reached through the canonical `read[collection[Json]]` / `read[Stream[Json]]`
+  // entry points. The per-line JSON parse is deferred, so `read[Stream[Json]]`
+  // yields the first document without parsing later (possibly malformed) lines;
+  // the line-splitting itself is eager.
+  private[jacinta] def ndjson(source: Stream[Data])(using Tactic[ParseError]): Stream[Json] =
+    import charDecoders.utf8, textSanitizers.skip
+
+    source.read[Text].lines.to(Stream).filter(!_.blank).map: line =>
+      Json(Stream(line.data(using charEncoders.utf8)).read[Json.Ast])
+
+  // `source.read[List[Json]]` / `read[Vector[Json]]` / `read[Stream[Json]]` etc. for
+  // an NDJSON source. The collection bound `<: Iterable[Json]` keeps this from
+  // overlapping the single-document `Json` instance, and the fully-ground
+  // `streamAggregable` wins for `Stream`/`LazyList`.
+  given collectionAggregable: [collection <: Iterable[Json]]
+  =>  (factory: Factory[Json, collection], tactic: Tactic[ParseError])
+  =>  collection is Aggregable by Data =
+    source => ndjson(source).to(factory)
+
+  given streamAggregable: Tactic[ParseError] => Stream[Json] is Aggregable by Data =
+    source => ndjson(source)
+
+
   given showable: JsonPrinter => Json is Showable = _.root.show
 
 
