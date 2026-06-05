@@ -538,8 +538,7 @@ object coaxial extends Library:
   object core extends Component(galilei.core, urticose.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, jacinta.core, superlunary.core):
-    override def enabled = false
+  object test extends Tests(core)
 
 object contextual extends Library:
   object core extends Component(rudiments.core):
