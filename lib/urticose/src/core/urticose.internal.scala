@@ -187,6 +187,12 @@ object internal:
         if 1 <= value <= 65535 then value.asInstanceOf[TcpPort]
         else abort(PortError())
 
+      // Ask the OS for a free port by binding an ephemeral socket, then release it
+      // so the caller can rebind. Subject to a benign TOCTOU race.
+      def unused(): TcpPort =
+        val socket = java.net.ServerSocket(0)
+        try unsafe(socket.getLocalPort) finally socket.close()
+
     object UdpPort:
       inline given underlying: Underlying[UdpPort, Int] = !!
       given showable: UdpPort is Showable = _.number.show
@@ -200,6 +206,12 @@ object internal:
       def apply(value: Int): UdpPort raises PortError =
         if 1 <= value <= 65535 then value.asInstanceOf[UdpPort]
         else abort(PortError())
+
+      // Ask the OS for a free port by binding an ephemeral socket, then release it
+      // so the caller can rebind. Subject to a benign TOCTOU race.
+      def unused(): UdpPort =
+        val socket = java.net.DatagramSocket(0)
+        try unsafe(socket.getLocalPort) finally socket.close()
 
 
     extension (port: TcpPort | UdpPort)

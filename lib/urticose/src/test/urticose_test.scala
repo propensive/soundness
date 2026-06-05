@@ -665,5 +665,20 @@ object Tests extends Suite(m"Urticose tests"):
         demilitarize(tcp"abcdef").map(_.message)
       . assert(_ == List(t"[↯SN-915] abcdef is not a valid TCP port"))
 
+    suite(m"Unused port allocation"):
+      test(m"An unused TCP port is in the valid range"):
+        TcpPort.unused().number
+      . assert(1 <= _ <= 65535)
+
+      test(m"An unused UDP port is in the valid range"):
+        UdpPort.unused().number
+      . assert(1 <= _ <= 65535)
+
+      test(m"An unused TCP port can be bound"):
+        val port = TcpPort.unused().number
+        val socket = java.net.ServerSocket(port)
+        try socket.getLocalPort finally socket.close()
+      . assert(_ > 0)
+
 object example:
   val com = Hostname(DnsLabel(t"example"), DnsLabel(t"com"))
