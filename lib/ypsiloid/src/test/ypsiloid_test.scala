@@ -1028,6 +1028,30 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         updated.items.as[List[Int]]
       . assert(_ == List(99, 20, 30))
 
+      test(m"Lens reads a field by name"):
+        summon["name" is Lens from Yaml onto Yaml](org).as[Text]
+      . assert(_ == t"a")
+
+      test(m"Lens.modify transforms a field through a function"):
+        val lens = summon["n" is Lens from Yaml onto Yaml]
+        val inner = Yaml.ast(Inner(7).yaml.root)
+        lens.modify(inner)(yaml => (yaml.as[Int] + 1).yaml).as[Inner]
+      . assert(_ == Inner(8))
+
+      test(m"Each optic updates every sequence element"):
+        val y = t"items: [10, 20, 30]".read[Yaml]
+        y.lens(_.items(Each) = 0.yaml).items.as[List[Int]]
+      . assert(_ == List(0, 0, 0))
+
+      test(m"Filter optic updates only matching elements"):
+        val y = t"items: [10, 20, 30]".read[Yaml]
+        y.lens(_.items(Filter[Yaml](_.as[Int] > 15)) = 0.yaml).items.as[List[Int]]
+      . assert(_ == List(10, 0, 0))
+
+      test(m"Setting an absent field inserts it"):
+        org.lens(_.extra = 7.yaml).selectDynamic("extra").as[Int]
+      . assert(_ == 7)
+
     suite(m"Serializer roundtrip"):
       import yamlPrinters.block
 

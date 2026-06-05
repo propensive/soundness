@@ -377,6 +377,34 @@ object Tests extends Suite(m"Jacinta Tests"):
         org2.as[Org]
       . assert(_ == Org("The Beatles", Entity("John", 40, List(Role("-")))))
 
+      val band = Org("Q", Entity("John", 40, List(Role("a"), Role("b"), Role("c")))).json
+
+      test(m"Lens reads a field by name"):
+        import dynamicJsonAccess.enabled
+        summon["name" is Lens from Json onto Json](org).as[String]
+      . assert(_ == "The Beatles")
+
+      test(m"Lens.modify transforms a field through a function"):
+        import dynamicJsonAccess.enabled
+        val lens = summon["name" is Lens from Json onto Json]
+        lens.modify(org)(json => (json.as[String]+"!").json).as[Org]
+      . assert(_ == Org("The Beatles!", Entity("John", 40, List(Role("Leader")))))
+
+      test(m"Each optic updates every array element"):
+        import dynamicJsonAccess.enabled
+        band.lens(_.leader.roles(Each).name = "x".json).as[Org]
+      . assert(_ == Org("Q", Entity("John", 40, List(Role("x"), Role("x"), Role("x")))))
+
+      test(m"Filter optic updates only matching elements"):
+        import dynamicJsonAccess.enabled
+        band.lens(_.leader.roles(Filter[Json](_.name.as[String] == "b")).name = "x".json).as[Org]
+      . assert(_ == Org("Q", Entity("John", 40, List(Role("a"), Role("x"), Role("c")))))
+
+      test(m"Setting an absent field inserts it"):
+        import dynamicJsonAccess.enabled
+        org.lens(_.extra = 9.json).selectDynamic("extra").as[Int]
+      . assert(_ == 9)
+
     suite(m"Json construction"):
       test(m"Json.make with one field"):
         Json.make(name = t"Anna".json).show

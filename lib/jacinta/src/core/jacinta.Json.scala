@@ -500,6 +500,41 @@ object Json extends Json2, Dynamic:
         else
           origin
 
+  // `Each` applies the transform to every array element; `Filter` to those matching
+  // its predicate. Both rebuild the array immutably and no-op on non-arrays.
+  given eachOptical: Each.type is Optical from Json onto Json = _ =>
+    Optic: (origin, lambda) =>
+      if origin.root.isArray then
+        val n = origin.root.arrayLength
+
+        Json.ast:
+          val updated = new Array[Any](n)
+          var i = 0
+
+          while i < n do
+            updated(i) = lambda(Json.ast(origin.root.arrayElement(i))).root
+            i += 1
+
+          Json.Ast.arr(updated.asInstanceOf[IArray[Any]])
+      else origin
+
+  given filterOptical: Filter[Json] is Optical from Json onto Json = filter =>
+    Optic: (origin, lambda) =>
+      if origin.root.isArray then
+        val n = origin.root.arrayLength
+
+        Json.ast:
+          val updated = new Array[Any](n)
+          var i = 0
+
+          while i < n do
+            val element = Json.ast(origin.root.arrayElement(i))
+            updated(i) = (if filter.predicate(element) then lambda(element) else element).root
+            i += 1
+
+          Json.Ast.arr(updated.asInstanceOf[IArray[Any]])
+      else origin
+
   given boolean: Json is Decodable in Json = identity(_)
   given boolean: Tactic[JsonError] => Boolean is Decodable in Json = _.root.boolean
   given double: Tactic[JsonError] => Double is Decodable in Json = _.root.double
