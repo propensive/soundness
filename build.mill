@@ -1024,10 +1024,10 @@ object urticose extends Library:
   object test extends Tests(core, url)
 
 object nomenclature extends Library:
-  object core extends Component(gossamer.core):
+  object core extends Component(gossamer.core, turbulence.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+  object test extends Tests(core, hellenism.core)
 
 object octogenarian extends Library:
   object core extends Component(galilei.core, urticose.core, enigmatic.core, anticipation.url,

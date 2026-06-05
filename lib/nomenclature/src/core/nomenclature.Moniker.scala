@@ -32,15 +32,26 @@
                                                                                                   */
 package nomenclature
 
+import anticipation.*
+import contingency.*
+import distillate.*
+import prepositional.*
 
-export nomenclature.internal.Name
-export nomenclature.Moniker.Moniker
+object Moniker:
+  opaque type Moniker = Int
 
-extension (inline context: StringContext)
-  transparent inline def n: Any = ${protointernal.extractor('context)}
+  private def wrap[transport](ordinal: Int): Moniker over transport =
+    ordinal.asInstanceOf[Moniker over transport]
 
-transparent inline def disintersect[intersection] =
-  ${protointernal.disintersection[intersection]}
+  def apply[transport](ordinal: Int)(using Vocabulary over transport): Moniker over transport =
+    wrap(ordinal)
 
-transparent inline def staticCompanion[instance]: Matchable =
-  ${anteprotointernal.staticCompanion[instance]}
+  extension (moniker: Moniker) def ordinal: Int = moniker
+
+  given encodable: [transport] => (Vocabulary over transport, Tactic[MonikerError])
+  =>  (Moniker over transport) is Encodable in Text =
+    moniker => summon[Vocabulary over transport].name(moniker.ordinal)
+
+  given decodable: [transport] => (Vocabulary over transport, Tactic[MonikerError])
+  =>  (Moniker over transport) is Decodable in Text =
+    text => wrap(summon[Vocabulary over transport].number(text))
