@@ -151,18 +151,29 @@ class ReplModuleCompiler extends dtd.Compiler:
           // definition is owned by the module; then enter them as members. The
           // block is closed, so empty type/term holes suffice.
           val ownerCtx = unitCtx.withOwner(moduleClass)
+          val noTypes = PickledQuotes.TypeHole.V2(null)
+          val noExprs = PickledQuotes.ExprHole.V2(null)
+          val tree = PickledQuotes.unpickleTerm(unit.tasty, noTypes, noExprs)(using ownerCtx)
 
-          val tree =
-            PickledQuotes.unpickleTerm
-              ( unit.tasty, PickledQuotes.TypeHole.V2(null), PickledQuotes.ExprHole.V2(null) )
-              (using ownerCtx)
+          // Unwrap to the pickled block and re-own its members onto the module
+          // class — they were pickled under the macro's owner, and the backend
+          // emits each method under its symbol's owner, so this must match the
+          // class the members are declared in. Re-owning the whole block at once
+          // keeps cross-references between members consistent.
+          def unwrap(tree: Tree): Tree = tree match
+            case Inlined(_, _, inner) => unwrap(inner)
+            case other                => other
 
-          def block(tree: Tree): List[Tree] = tree match
-            case Inlined(_, _, inner) => block(inner)
-            case Block(stats, _)      => stats
-            case _                    => Nil
+          val members: List[Tree] = unwrap(tree) match
+            case block: Block =>
+              val from =
+                block.stats.collectFirst { case definition: MemberDef => definition.symbol.owner }
+                . getOrElse(moduleClass)
 
-          val members: List[Tree] = block(tree)
+              block.changeOwner(from, moduleClass).stats
+
+            case _ =>
+              Nil
 
           members.foreach:
             case member: MemberDef => member.symbol.entered(using unitCtx)

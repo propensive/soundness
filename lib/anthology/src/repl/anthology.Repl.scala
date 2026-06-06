@@ -85,23 +85,15 @@ object Repl:
   // The reply sent to a connected client, serialized to the client as TEL.
   case class Response(status: Text, value: Text, diagnostics: Text)
 
-  // A value/variable lifted from an inline binding block: its REPL-visible name
-  // and the source rendering of its type, used to build a typed accessor. A
-  // `dynamic` binding is read live on each access (a `def` accessor), so a
-  // reference captured from a lifted definition tracks the host `var`; a static
-  // one is a snapshot (a `val`/`var` accessor).
-  case class Binding(mutable: Boolean, dynamic: Boolean, name: String, typeName: String)
-
   object Prelude:
-    val empty: Prelude = Prelude(Nil, Nil, Nil)
+    val empty: Prelude = Prelude(Nil, Nil)
 
   // Declarations lifted from an inline binding block to seed the REPL context:
-  // `imports` are re-injected into every line; `definitions` and binding
-  // accessors are established once in a seed object.
-  case class Prelude
-    ( imports:     List[String],
-      definitions: List[String],
-      bindings:    List[Binding] )
+  // `imports` are re-injected into every line; `seedTasty` is a TASTy-pickled
+  // block of the lifted definitions and binding accessors (carried as data from
+  // macro-expansion time), recompiled once into a seed object with full type
+  // fidelity.
+  case class Prelude(imports: List[String], seedTasty: List[String])
 
   def make[version <: Scalac.Versions]
     ( prelude: Repl.Prelude )
@@ -180,6 +172,8 @@ class Repl[version <: Scalac.Versions]
         history = history :+ name
 
         try
+          // Seed accessors read their session from this thread-local.
+          ReplBridge.setCurrentSession(session)
           loader.on(t"$name$$")
           Outcome.Ran(notices, rendered)
         catch
@@ -232,40 +226,28 @@ class Repl[version <: Scalac.Versions]
       case other =>
         other
 
-  // The prelude's definitions and binding accessors are compiled once, as the
-  // first object (`rs$line$0`); later lines see them via the history import.
-  // Imports create no members, so they are re-injected into every line instead.
-  private def seedBody: Text =
-    val accessors: List[Text] = prelude.bindings.flatMap: binding =>
-      val name:     Text = binding.name.tt
-      val typeName: Text = binding.typeName.tt
-      val key:      Text = t"${session.toString.tt}L, \"$name\""
-
-      if binding.dynamic then
-        val getter: Text = t"def $name: $typeName = anthology.ReplBridge.fetchLive[$typeName]($key)"
-
-        // A mutable dynamic binding gets a setter too, so a lifted definition may
-        // assign to it and the write flows back to the host `var`.
-        if binding.mutable then
-          val setter: Text =
-            t"def ${name}_=(value: $typeName): Unit = anthology.ReplBridge.updateLive($key, value)"
-
-          List(getter, setter)
-        else
-          List(getter)
-      else
-        val keyword: Text = if binding.mutable then t"var" else t"val"
-        List(t"$keyword $name: $typeName = anthology.ReplBridge.fetch[$typeName]($key)")
-
-    (prelude.imports.map(_.tt) ::: prelude.definitions.map(_.tt) ::: accessors).join(t"\n")
-
+  // The prelude's pickled definitions and binding accessors are recompiled once,
+  // as the first object (`rs$line$0`), straight from TASTy — preserving the
+  // original types rather than re-rendering them as source. Later lines see its
+  // members via the history import. Imports create no members, so they are
+  // re-injected into every line instead.
   private def ensureSeeded()(using Monitor, System, Codicil)
   :   Optional[Outcome] logs CompileEvent raises CompilerError raises AsyncError =
 
-    if seeded || prelude.definitions.isEmpty && prelude.bindings.isEmpty then Unset
+    if seeded || prelude.seedTasty.isEmpty then Unset
     else
       seeded = true
-      compile(seedBody)(Unset)
+      val name:   Text       = layout.objectName(index)
+
+      val errors: List[Text] =
+        ReplModuleCompiler.compile(classpath)(name, out.encode)(prelude.seedTasty)
+
+      if errors.isEmpty then
+        index += 1
+        history = history :+ name
+        Outcome.Ran(Nil, Unset)
+      else
+        Outcome.Rejected(errors.map(Notice(Importance.Error, t"<seed>", _, Unset)))
 
   def interpret(line: Text)(using Monitor, System, Codicil)
   :   Outcome logs CompileEvent raises CompilerError raises AsyncError =

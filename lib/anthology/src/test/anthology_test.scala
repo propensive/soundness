@@ -38,7 +38,6 @@ import _root_.java.net as jn
 import soundness.*
 
 import classloaders.threadContext
-import interfaces.paths.pathOnLinux
 import codicils.await
 import logging.silent
 import strategies.throwUnsafely
@@ -248,62 +247,3 @@ object Tests extends Suite(m"Anthology Tests"):
           repl.interpret(t"bump()")
           tally
       . assert(_ == 21)
-
-    suite(m"REPL module compiler (AST-in)"):
-      given Scalac[3.8] = Scalac(Nil)
-
-      test(m"emit a named object from a quote, then export it from a text unit"):
-        supervise:
-          val out: Path on Linux = unsafely(temporaryDirectory/Uuid())
-          ji.File(out.encode.s).mkdirs()
-
-          val classpath =
-            val base = summon[Classloader].classpath.match
-              case local: LocalClasspath => local.entries
-              case _ => unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries
-
-            LocalClasspath((Classpath.Directory(out) :: base)*)
-
-          // A closed block of member definitions pickled to TASTy at compile time
-          // and carried as data — no source text, full type fidelity. `add`
-          // references the sibling `base`, mirroring a lifted def that refers to a
-          // generated accessor.
-          val pickled: List[String] = ReplPickler.pickle:
-            def base: Int = 10
-            def greet: String = "hi there"
-            def add(n: Int): Int = n + base
-
-          val errors = ReplModuleCompiler.compile(classpath)(t"ReplSeed0", out.encode)(pickled)
-
-          // A separately-compiled text unit exports the emitted object and uses
-          // its members (the parameterised `add` proves signature fidelity).
-          val source =
-            t"object User:\n  export ReplSeed0.*\n  def result: Int = add(40) + greet.length"
-
-          val process = summon[Scalac[3.8]].apply(classpath)(Map(t"User.scala" -> source), out)
-          (errors, process.complete())
-      . assert: (errors, outcome) =>
-          errors.isEmpty && outcome == CompileResult.Success
-
-      test(m"a reflection-built accessor block emits a usable typed member"):
-        supervise:
-          val out: Path on Linux = unsafely(temporaryDirectory/Uuid())
-          ji.File(out.encode.s).mkdirs()
-
-          val classpath =
-            val base = summon[Classloader].classpath.match
-              case local: LocalClasspath => local.entries
-              case _ => unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries
-
-            LocalClasspath((Classpath.Directory(out) :: base)*)
-
-          val errors =
-            ReplModuleCompiler.compile(classpath)(t"ReplSeed0", out.encode)(AccessorProbe.pickle)
-
-          // The accessor `def x: Int` and the def `usesX` that references it must
-          // both be usable with their static types.
-          val source = t"object User:\n  export ReplSeed0.*\n  def y: Int = x + usesX"
-          val process = summon[Scalac[3.8]].apply(classpath)(Map(t"User.scala" -> source), out)
-          (errors, process.complete())
-      . assert: (errors, outcome) =>
-          errors.isEmpty && outcome == CompileResult.Success

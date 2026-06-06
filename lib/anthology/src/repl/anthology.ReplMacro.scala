@@ -36,15 +36,22 @@ import java.util as ju
 
 import scala.collection.mutable as scm
 import scala.quoted.*
+import scala.quoted.runtime.impl.QuotesImpl
+
+import dotty.tools.dotc.ast.tpd
+import dotty.tools.dotc.quoted.PickledQuotes
 
 import ambience.*
 import hellenism.*
 
 // Macro support for `Repl.apply(inline body)`: it reads the inline binding
 // block's AST and lifts each statement into the REPL context. Imports/exports
-// and definitions are lifted as source text; `val`/`var` bindings capture the
-// runtime value of their right-hand side (evaluated in the host scope) into
-// `ReplBridge`, exposing it in the REPL via a typed accessor.
+// are lifted as source text (re-injected into every line). Definitions and the
+// accessors for captured `val`/`var` bindings are assembled into a single typed
+// block, pickled to TASTy and carried (as data) to the REPL, where they are
+// recompiled into a seed object with full type fidelity (`Repl.Prelude`). A
+// captured value is exposed through a `def` accessor backed by `ReplBridge`, and
+// free references inside lifted definitions are redirected to those accessors.
 object ReplMacro:
   def bound[version <: Scalac.Versions: Type]
     ( body:        Expr[Unit],
@@ -55,6 +62,8 @@ object ReplMacro:
   :   Expr[Repl[version]] =
 
     import quotes.reflect.*
+
+    val owner: Symbol = Symbol.spliceOwner
 
     def statements(term: Term): List[Statement] = term match
       case Inlined(_, _, inner)    => statements(inner)
@@ -78,43 +87,47 @@ object ReplMacro:
 
         foldOverTree(unit, tree)(owner)
 
-    stats.foreach(definedSymbols.foldTree((), _)(Symbol.spliceOwner))
+    stats.foreach(definedSymbols.foldTree((), _)(owner))
 
-    val imports:      scm.ListBuffer[String]                              = scm.ListBuffer()
-    val definitions:  scm.ListBuffer[String]                              = scm.ListBuffer()
-    val bindings:     scm.ListBuffer[(Boolean, Boolean, String, String)]  = scm.ListBuffer()
-    val captures:     scm.ListBuffer[(String, Term)]                      = scm.ListBuffer()
-    val liveCaptures: scm.ListBuffer[(String, Boolean, Symbol)]           = scm.ListBuffer()
-    val lifted:       scm.ListBuffer[Tree]                                = scm.ListBuffer()
+    // A captured binding lifted into the seed object: `value` is the host-side
+    // expression supplying its value; `symbol` is what the block (and host) use
+    // to refer to it, used both to redirect lifted references to the accessor and
+    // — when `writeBack` is set (a free `var`) — to assign back to the host.
+    case class Bind
+      ( name:      String,
+        tpe:       TypeRepr,
+        mutable:   Boolean,
+        value:     Term,
+        symbol:    Symbol,
+        writeBack: Boolean )
+
+    val imports: scm.ListBuffer[String]    = scm.ListBuffer()
+    val binds:   scm.ListBuffer[Bind]      = scm.ListBuffer()
+    val lifted:  scm.ListBuffer[Statement] = scm.ListBuffer()
 
     stats.foreach:
       case statement: Import => imports += sourceText(statement)
       case statement: Export => imports += sourceText(statement)
 
       case statement: ValDef if !statement.symbol.flags.is(Flags.Given) =>
-        val mutable: Boolean = statement.symbol.flags.is(Flags.Mutable)
-        bindings += ((mutable, false, statement.name, statement.tpt.tpe.show))
-
         statement.rhs.foreach: rhs =>
-          captures += ((statement.name, rhs))
+          val mutable: Boolean = statement.symbol.flags.is(Flags.Mutable)
+          binds += Bind(statement.name, statement.tpt.tpe, mutable, rhs, statement.symbol, false)
 
       case statement: Definition =>
-        definitions += sourceText(statement)
         lifted += statement
 
       case _ =>
         ()
 
-    // A lifted definition (`def`/`class`/…) is recompiled inside the REPL, so a
-    // value it refers to from the enclosing scope must be captured too, or it
-    // would fail to resolve. Collect simple-name references to a val/var/param
-    // the block does not itself define and that is not part of the REPL's own
-    // default scope (`scala`/`java`), and capture each as a binding (keyed by
-    // name, so the lifted source resolves it in the REPL). This covers enclosing
-    // method locals and parameters as well as fields of an enclosing object —
-    // e.g. a value defined earlier in an enclosing REPL session.
-    val bound: scm.Set[String] = scm.Set.from(bindings.map(_._3))
-    val free:  scm.LinkedHashMap[String, (String, Boolean, Symbol)] = scm.LinkedHashMap()
+    // A lifted definition is recompiled in the seed, so a value it refers to from
+    // the enclosing scope must be captured too, or it would not resolve. Collect
+    // simple-name references to a val/var/param the block does not itself define
+    // and that is not part of the REPL's default scope (`scala`/`java`). Such a
+    // reference is captured live (`writeBack` for a `var`, so an assignment in a
+    // lifted definition flows back to the host).
+    val bound: scm.Set[String] = scm.Set.from(binds.map(_.name))
+    val free:  scm.LinkedHashMap[String, (TypeRepr, Boolean, Symbol)] = scm.LinkedHashMap()
 
     val freeReferences = new TreeAccumulator[Unit]:
       def foldTree(unit: Unit, tree: Tree)(owner: Symbol): Unit =
@@ -129,51 +142,101 @@ object ReplMacro:
               || ownerName == "java" || ownerName.startsWith("java.")
 
             if !predefined && !blockSymbols.contains(symbol) && !bound.contains(ident.name)
-            then free.getOrElseUpdate(ident.name, (ident.tpe.widen.show, mutable, symbol))
+            then free.getOrElseUpdate(ident.name, (ident.tpe.widen, mutable, symbol))
 
           case _ =>
             ()
 
         foldOverTree(unit, tree)(owner)
 
-    lifted.foreach(freeReferences.foldTree((), _)(Symbol.spliceOwner))
+    lifted.foreach(freeReferences.foldTree((), _)(owner))
 
     free.foreach: (name, info) =>
-      bindings += ((info(1), true, name, info(0)))
-      liveCaptures += ((name, info(1), info(2)))
+      binds += Bind(name, info(0), info(1), Ref(info(2)), info(2), info(1))
+
+    // Build accessors and the maps that redirect captured references to them.
+    val getters: scm.Map[Symbol, Symbol] = scm.Map()
+    val setters: scm.Map[Symbol, Symbol] = scm.Map()
+
+    def accessorsFor(bind: Bind): List[Statement] =
+      val getterSymbol = Symbol.newMethod(owner, bind.name, ByNameType(bind.tpe))
+      getters(bind.symbol) = getterSymbol
+
+      val getter = (bind.tpe.asType: @unchecked) match
+        case '[t] =>
+          DefDef(getterSymbol, _ => Some('{ReplBridge.fetchLive[t](${Expr(bind.name)})}.asTerm))
+
+      if !(bind.mutable && bind.writeBack) then List(getter) else
+        val setterType =
+          MethodType(List("value"))(_ => List(bind.tpe), _ => TypeRepr.of[Unit])
+
+        val setterSymbol = Symbol.newMethod(owner, bind.name+"_=", setterType)
+        setters(bind.symbol) = setterSymbol
+
+        val setter = DefDef(setterSymbol, params =>
+          val value: Term = params.head.head.asInstanceOf[Term]
+          val boxed: Expr[Object] = '{${value.asExprOf[Any]}.asInstanceOf[Object]}
+          Some('{ReplBridge.updateLive(${Expr(bind.name)}, $boxed)}.asTerm))
+
+        List(getter, setter)
+
+    val accessors: List[Statement] = binds.to(List).flatMap(accessorsFor)
+
+    // Redirect each captured reference in a lifted definition to its accessor: a
+    // read becomes a call to the getter, an assignment a call to the setter.
+    val redirect = new TreeMap:
+      override def transformTerm(tree: Term)(owner: Symbol): Term = tree match
+        case Assign(lhs, rhs) if lhs.symbol.exists && setters.contains(lhs.symbol) =>
+          Apply(Ref(setters(lhs.symbol)), List(transformTerm(rhs)(owner)))
+
+        case ident: Ident if ident.symbol.exists && getters.contains(ident.symbol) =>
+          Ref(getters(ident.symbol))
+
+        case other =>
+          super.transformTerm(other)(owner)
+
+    val redirected: List[Statement] = lifted.to(List).map(redirect.transformStatement(_)(owner))
+
+    // The quote-built accessor bodies carry `Inlined` nodes whose `call`
+    // references this (`@experimental`) object; strip them so the recompiled seed
+    // refers only to `ReplBridge` and stdlib symbols.
+    val stripper = new TreeMap:
+      override def transformTerm(tree: Term)(owner: Symbol): Term = tree match
+        case Inlined(_, Nil, expansion) => transformTerm(expansion)(owner)
+        case other                      => super.transformTerm(other)(owner)
+
+    val seedStatements: List[Statement] = accessors ++ redirected
+
+    val pickled: List[String] =
+      if seedStatements.isEmpty then Nil else
+        // Re-own the whole block to one owner so the lifted definitions (owned by
+        // the call site) and the accessors (owned by the splice) pickle under a
+        // single owner; the seed compiler then re-roots them onto the module.
+        val block = Block(seedStatements, '{()}.asTerm).changeOwner(owner)
+        val stripped = stripper.transformTerm(block)(owner)
+        val tree = Inlined(None, Nil, stripped).asInstanceOf[tpd.Tree]
+        PickledQuotes.pickleQuote(tree)(using quotes.asInstanceOf[QuotesImpl].ctx)
 
     val importsExpr: Expr[List[String]] = Expr(imports.to(List))
-    val definitionsExpr: Expr[List[String]] = Expr(definitions.to(List))
-
-    val bindingsExpr: Expr[List[Repl.Binding]] = Expr.ofList:
-      bindings.to(List).map: (mutable, dynamic, name, typeName) =>
-        '{Repl.Binding(${Expr(mutable)}, ${Expr(dynamic)}, ${Expr(name)}, ${Expr(typeName)})}
-
-    val preludeExpr: Expr[Repl.Prelude] =
-      '{Repl.Prelude($importsExpr, $definitionsExpr, $bindingsExpr)}
+    val preludeExpr: Expr[Repl.Prelude] = '{Repl.Prelude($importsExpr, ${Expr(pickled)})}
 
     ' {
         val repl: Repl[version] =
           Repl.make[version]($preludeExpr)(using $scalac, $classloader, $temporary)
 
         $ {
-            val puts: List[Expr[Unit]] = captures.to(List).map: (name, rhs) =>
-              '{ReplBridge.put(repl.session, ${Expr(name)}, ${rhs.asExprOf[Any]})}
-
-            // Dynamic bindings store a supplier, read live by the REPL's `def`
-            // accessor, so a captured reference tracks the host value. A mutable
-            // reference also stores a consumer that assigns back to the host
-            // `var`, so a lifted definition may write to it through the REPL.
-            val live: List[Expr[Unit]] = liveCaptures.to(List).flatMap: (name, mutable, symbol) =>
-              val read: Expr[Object] = '{${Ref(symbol).asExprOf[Any]}.asInstanceOf[Object]}
+            // Each binding's value is registered live, keyed by session and name;
+            // a free `var` also registers a consumer that assigns back to the host.
+            val puts: List[Expr[Unit]] = binds.to(List).flatMap: bind =>
+              val read: Expr[Object] = '{${bind.value.asExprOf[Any]}.asInstanceOf[Object]}
 
               val supplier: Expr[ju.function.Supplier[Object]] =
                 '{new ju.function.Supplier[Object] { def get(): Object = $read }}
 
               val put: Expr[Unit] =
-                '{ReplBridge.putSupplier(repl.session, ${Expr(name)}, $supplier)}
+                '{ReplBridge.putSupplier(repl.session, ${Expr(bind.name)}, $supplier)}
 
-              if !mutable then List(put) else
+              if !(bind.mutable && bind.writeBack) then List(put) else
                 val methodType =
                   MethodType(List("value"))(_ => List(TypeRepr.of[Object]), _ => TypeRepr.of[Unit])
 
@@ -181,14 +244,14 @@ object ReplMacro:
                   Lambda(Symbol.spliceOwner, methodType, (_, params) =>
                     val value: Term = params.head.asInstanceOf[Term]
 
-                    (symbol.info.widen.asType: @unchecked) match
+                    (bind.symbol.info.widen.asType: @unchecked) match
                       case '[t] =>
-                        Assign(Ref(symbol), '{${value.asExprOf[Object]}.asInstanceOf[t]}.asTerm)
+                        val cast = '{${value.asExprOf[Object]}.asInstanceOf[t]}.asTerm
+                        Assign(Ref(bind.symbol), cast)
                   ).asExprOf[Object => Unit]
 
                 // `accept`'s parameter is typed `Object | Null` so the override
-                // matches Java's `Consumer` under explicit-nulls (and collapses to
-                // `Object` without it).
+                // matches Java's `Consumer` under explicit-nulls.
                 val consumer: Expr[ju.function.Consumer[Object]] =
                   ' { val function = $setter
 
@@ -197,10 +260,10 @@ object ReplMacro:
                           function(value.asInstanceOf[Object]) }
 
                 val putSetter: Expr[Unit] =
-                  '{ReplBridge.putSetter(repl.session, ${Expr(name)}, $consumer)}
+                  '{ReplBridge.putSetter(repl.session, ${Expr(bind.name)}, $consumer)}
 
                 List(put, putSetter)
 
-            Expr.block(puts ++ live, 'repl)
+            Expr.block(puts, 'repl)
           }
       }
