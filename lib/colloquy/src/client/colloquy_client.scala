@@ -32,6 +32,9 @@
                                                                                                   */
 package colloquy
 
+import java.io as ji
+import java.net as jn
+import java.nio.file as jnf
 import java.util.concurrent as juc
 
 import scala.collection.mutable as scm
@@ -73,6 +76,7 @@ def repl(): Unit = cli:
 // Runs a REPL server on the given TCP port and blocks until interrupted.
 private def serve(portNumber: Int)(using Stdio, Monitor, Codicil, System): Exit =
   given Scalac[3.8] = Scalac(Nil)
+  given Classloader = serverClassloader
 
   safely(Port[Tcp](portNumber)).lay(invalidPort(portNumber)): port =>
     whereas:
@@ -85,6 +89,25 @@ private def serve(portNumber: Int)(using Stdio, Monitor, Codicil, System): Exit 
         juc.CountDownLatch(1).await()
         service.stop()
         Exit.Ok
+
+// Builds the classloader the REPL compiles against inside the Ethereal daemon.
+// The launch classloader is not a `URLClassLoader`, so it exposes no compile
+// classpath, and `java.class.path` is this executable — a shebang-prefixed jar
+// with no `.jar` suffix, which dotc refuses to read as a library. We symlink it
+// to a `.jar` path (a `ZipFile` reads the appended archive past the shebang) and
+// hand the REPL a *parent-first* `URLClassLoader` over it: the jar lands on
+// dotc's compile classpath so it finds the bundled scala libraries, while
+// parent-first delegation keeps runtime classes (notably `ReplBridge`, whose
+// session registry must be shared) identical to the daemon's. Outside the daemon
+// (e.g. `ethereal.script` unset) we fall back to the thread-context loader.
+private def serverClassloader(using System): Classloader =
+  try
+    val executable: Text = unsafely(System.properties.ethereal.script[Text]())
+    val link: jnf.Path = jnf.Files.createTempDirectory("colloquy").nn.resolve("colloquy.jar").nn
+    jnf.Files.createSymbolicLink(link, jnf.Path.of(executable.s)).nn
+    val url: jn.URL = ji.File(link.toString).toURI.nn.toURL.nn
+    new Classloader(jn.URLClassLoader(Array(url), threadContext.java))
+  catch case _: Throwable => threadContext
 
 private def invalidPort(portNumber: Int)(using Stdio): Exit =
   Out.println(t"colloquy: $portNumber is not a valid TCP port")
