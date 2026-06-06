@@ -21,6 +21,13 @@ object AccessorProbe:
 
     val getter = DefDef(getterSymbol, _ => Some('{ReplBridge.fetchLive[Int]("x")}.asTerm))
 
+    // A second def that references the accessor by symbol — mirrors a lifted user
+    // definition whose free reference has been redirected to the accessor.
+    val usesSymbol = Symbol.newMethod(owner, "usesX", ByNameType(TypeRepr.of[Int]))
+
+    val uses = DefDef(usesSymbol, _ =>
+      Some('{${Ref(getterSymbol).asExprOf[Int]} + 1}.asTerm))
+
     // The quote-built bodies carry `Inlined` nodes whose `call` references this
     // (`@experimental`) object; strip them so the recompiled tree refers only to
     // `ReplBridge` and stdlib symbols.
@@ -29,7 +36,7 @@ object AccessorProbe:
         case Inlined(_, Nil, expansion) => transformTerm(expansion)(owner)
         case other                      => super.transformTerm(other)(owner)
 
-    val block = Block(List(getter), '{()}.asTerm)
+    val block = Block(List(getter, uses), '{()}.asTerm)
     val stripped = stripper.transformTerm(block)(owner)
     val tree = Inlined(None, Nil, stripped).asInstanceOf[tpd.Tree]
     val context = quotes.asInstanceOf[QuotesImpl].ctx

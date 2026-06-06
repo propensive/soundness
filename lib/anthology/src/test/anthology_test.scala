@@ -300,8 +300,9 @@ object Tests extends Suite(m"Anthology Tests"):
           val errors =
             ReplModuleCompiler.compile(classpath)(t"ReplSeed0", out.encode)(AccessorProbe.pickle)
 
-          // The accessor `def x: Int` must be usable with its static type.
-          val source = t"object User:\n  export ReplSeed0.*\n  def y: Int = x + 1"
+          // The accessor `def x: Int` and the def `usesX` that references it must
+          // both be usable with their static types.
+          val source = t"object User:\n  export ReplSeed0.*\n  def y: Int = x + usesX"
           val process = summon[Scalac[3.8]].apply(classpath)(Map(t"User.scala" -> source), out)
           (errors, process.complete())
       . assert: (errors, outcome) =>
