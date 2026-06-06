@@ -46,10 +46,12 @@ extension [encodable: Encodable in Data](value: encodable)
 
 package blockCipherMode:
   export Cbc.mode as cbc
-  export Ecb.mode as ecb
   export Ctr.mode as ctr
   export Cfb.mode as cfb
   export Ofb.mode as ofb
+  // `Ecb.mode` is not re-exported: it is now a context-function given (it requires
+  // an erased `Permit[Concession.Ecb]`), and re-exporting such a given trips a
+  // compiler assertion. ECB is summoned from its own companion; use `over Ecb`.
 
 package blockCipherPadding:
   export Pkcs7.padding as pkcs7
@@ -71,3 +73,36 @@ package initializationVector:
 // algorithms it offers remain visible to consumers that require them.
 package cryptoProviders:
   given javaStdlibCrypto: JavaStdlibCrypto.type = JavaStdlibCrypto
+
+// Opt-in permits for sub-optimal cryptography, named after NIST SP 800-131A's
+// algorithm statuses. Each is an (erased) intersection of fine-grained `Permit`s,
+// so the named levels and any future year-based levels compose from the same
+// primitives. The levels nest by inclusion: `permitDisallowedCrypto` contains
+// every other permit, and since `Permit <: ProcessingPermit` it also covers
+// "legacy use". Import the weakest level that covers what you need.
+package crypto:
+  // Unauthenticated (non-AEAD) encryption — currently every block-cipher mode.
+  erased given permitUnauthenticatedCrypto: Permit[Concession.Unauthenticated] =
+    caps.unsafe.unsafeErasedValue
+
+  // "Deprecated": usable but transitional (e.g. Triple-DES).
+  erased given permitDeprecatedCrypto: Permit[Concession.TripleDes] =
+    caps.unsafe.unsafeErasedValue
+
+  // "Legacy use": processing already-protected data only (decrypt/verify).
+  erased given permitLegacyCrypto
+      : ProcessingPermit[Concession.TripleDes] & ProcessingPermit[Concession.Dsa] =
+    caps.unsafe.unsafeErasedValue
+
+  // "Disallowed": broken or non-approved algorithms, key lengths and modes;
+  // subsumes every weaker permit above.
+  erased given permitDisallowedCrypto
+      : Permit[Concession.Des]
+      & Permit[Concession.Rc2]
+      & Permit[Concession.Blowfish]
+      & Permit[Concession.TripleDes]
+      & Permit[Concession.Dsa]
+      & Permit[Concession.SmallRsa]
+      & Permit[Concession.Ecb]
+      & Permit[Concession.Unauthenticated] =
+    caps.unsafe.unsafeErasedValue

@@ -37,6 +37,7 @@ import soundness.*
 import charEncoders.utf8
 import blockCipherMode.cbc, blockCipherPadding.pkcs7
 import cryptoProviders.javaStdlibCrypto
+import crypto.permitUnauthenticatedCrypto   // AES-CBC is unauthenticated
 
 // Compile-time regressions for the cipher API. (Capture-checking confinement of
 // the exposed `Encryptor`/`Decryptor` capability is not yet enabled — see
@@ -61,3 +62,12 @@ object CompileChecks:
   // compile, whereas every padded cipher is total (verified manually — uncomment).
   //
   //   val noTactic = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
+
+  // Permission regression: only `crypto.permitUnauthenticatedCrypto` is imported
+  // here, so AES (above) compiles, but reaching a "disallowed" algorithm without
+  // `crypto.permitDisallowedCrypto` does not — encrypting with DES fails with the
+  // `Permit` "no given instance" diagnostic (verified manually — uncomment). Note
+  // that key generation is *not* gated; only the encryption operation is.
+  //
+  //   val desKey = SymmetricKey.generate[Des over Cbc against Pkcs7]()
+  //   val desText = desKey.expose(t"Hello world".encrypt)

@@ -32,89 +32,28 @@
                                                                                                   */
 package enigmatic
 
-import java.security as js
-import javax.crypto as jc
+import scala.annotation.implicitNotFound
 
-import anticipation.*
-import contingency.*
-import distillate.*
-import gossamer.*
-import prepositional.*
-import vacuous.*
+// Capability evidence that a `concession` (a weak algorithm, key length or mode)
+// is permitted. Following NIST SP 800-131A's apply-vs-process distinction:
+// `ProcessingPermit` allows *processing already-protected* data (decrypt/verify),
+// while `Permit` (a subtype) additionally allows *applying new protection*
+// (encrypt/sign). Both are erased — purely compile-time gates with no runtime cost.
+// Bring them into scope with a `crypto.permit…Crypto` import.
 
-// Encryption is total: a valid transformation is guaranteed by the static types
-// (see `Permits`), so `encrypt` cannot fail. Only `decrypt` can fail at runtime —
-// from a wrong key, corrupted ciphertext, or malformed input — and those JCE
-// failures are surfaced as a `CryptoError`.
+@implicitNotFound("this operation uses an algorithm whose status is \"legacy use\" or worse; "+
+    "import a permit (e.g. `crypto.permitLegacyCrypto` to process existing data, or "+
+    "`crypto.permitDisallowedCrypto`) to allow it")
+trait ProcessingPermit[concession]
 
-extension [value: Encodable in Data](value: value)
-  def encrypt[cipher <: Cipher]
-    ( using encryptor: Encryptor[cipher],
-            algorithm: cipher & Encryption,
-            erased weakness: Permit[Weakness[cipher]],
-            erased authentication: Permit[Authentication[cipher]] )
-  :   Data =
+@implicitNotFound("this operation uses a sub-optimal algorithm, key length or mode; import the "+
+    "matching permit (`crypto.permitUnauthenticatedCrypto`, `crypto.permitDeprecatedCrypto` or "+
+    "`crypto.permitDisallowedCrypto`) to allow it")
+trait Permit[concession] extends ProcessingPermit[concession]
 
-    algorithm.encrypt(value.bytestream, encryptor.bytes)
+object Permit:
+  // `Acceptable` crypto needs no permission, so this permit is always available.
+  erased given acceptable: Permit[Concession.Acceptable] = caps.unsafe.unsafeErasedValue
 
-// Streaming encryption (block ciphers only) lazily transforms a `Stream`, driving
-// the JCE cipher through update/doFinal. The IV is emitted as the leading chunk
-// and the `NoPadding` alignment check runs at end-of-stream. Drain it within the
-// `expose` block — only the fixed ciphertext of `stream` could otherwise leak.
-
-extension (stream: Stream[Data])
-  def encrypt[cipher <: BlockCipher]
-    ( using encryptor: Encryptor[cipher],
-            algorithm: cipher & Encryption,
-            erased weakness: Permit[Weakness[cipher]],
-            erased authentication: Permit[Authentication[cipher]] )
-  :   Stream[Data] =
-
-    algorithm.encryptStream(stream, encryptor.bytes)
-
-extension (data: Data)
-  def decrypt[decodable: Decodable in Data, cipher <: Cipher]
-    ( using decryptor: Decryptor[cipher],
-            algorithm: cipher & Encryption,
-            erased weakness: ProcessingPermit[Weakness[cipher]],
-            erased authentication: ProcessingPermit[Authentication[cipher]] )
-  :   decodable raises CryptoError =
-
-    def detail(error: Throwable): Optional[Text] = error.getMessage match
-      case null         => Unset
-      case text: String => text.tt
-
-    val plaintext =
-      try algorithm.decrypt(data, decryptor.bytes) catch
-        case error: jc.AEADBadTagException =>
-          abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
-
-        case error: jc.BadPaddingException =>
-          abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
-
-        case error: jc.IllegalBlockSizeException =>
-          abort(CryptoError(CryptoError.Reason.IllegalBlockSize, detail(error)))
-
-        case error: js.InvalidKeyException =>
-          abort(CryptoError(CryptoError.Reason.InvalidKey, detail(error)))
-
-        case error: js.GeneralSecurityException =>
-          abort(CryptoError(CryptoError.Reason.IoFailure, detail(error)))
-
-    decodable.decoded(plaintext)
-
-// `expose` lends the key to the block as an `Encryptor`/`Decryptor` capability.
-// Capture checking (which would confine the capability to this scope) is not yet
-// enabled; the capability types are kept so it can be turned on as an enhancement.
-
-extension [cipher <: Cipher](key: PublicKey[cipher])
-  def expose[result](block: Encryptor[cipher] ?=> result): result =
-    block(using Encryptor(key.bytes))
-
-extension [cipher <: Cipher](key: PrivateKey[cipher])
-  def expose[result](block: Decryptor[cipher] ?=> result): result =
-    block(using Decryptor(key.privateData))
-
-extension [cipher <: Cipher](key: SymmetricKey[cipher])
-  def expose[result](block: (Encryptor[cipher], Decryptor[cipher]) ?=> result): result =
-    block(using Encryptor(key.bytes), Decryptor(key.bytes))
+object ProcessingPermit:
+  erased given acceptable: ProcessingPermit[Concession.Acceptable] = caps.unsafe.unsafeErasedValue
