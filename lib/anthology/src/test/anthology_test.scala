@@ -45,6 +45,18 @@ import systems.java
 import temporaryDirectories.system
 import threading.platform
 
+// Mimics a standard-REPL session: `size` references `greeting`, a field of the
+// enclosing object, by simple name (as `var name = …` would be in the Scala REPL).
+object ReplFixture:
+  var greeting: String = "hello"
+
+  def session(using Scalac[3.8], Classloader, TemporaryDirectory, Monitor, System, Codicil)
+  :   Repl.Outcome =
+    val repl = Repl[3.8]:
+      def size: Int = greeting.length
+
+    repl.interpret(t"size")
+
 object Tests extends Suite(m"Anthology Tests"):
   def run(): Unit =
     suite(m"REPL tests"):
@@ -169,3 +181,51 @@ object Tests extends Suite(m"Anthology Tests"):
             service.stop()
       . assert: reply =>
           reply.contains("status") && reply.contains("ran") && reply.contains("2")
+
+    suite(m"REPL block captures outside references"):
+      given Scalac[3.8] = Scalac(Nil)
+
+      test(m"a lifted def can reference a value from the enclosing scope"):
+        supervise:
+          val base = 100
+
+          val repl = Repl[3.8]:
+            def shifted(n: Int): Int = n + base
+
+          repl.interpret(t"shifted(5)")
+      . assert:
+          case Repl.Outcome.Ran(_, value) => value.let(_ == t"105").or(false)
+          case _                          => false
+
+      test(m"a lifted def captures an enclosing method parameter"):
+        def session(base: Int): Repl.Outcome = supervise:
+          val repl = Repl[3.8]:
+            def plus(n: Int): Int = n + base
+
+          repl.interpret(t"plus(2)")
+
+        session(40)
+      . assert:
+          case Repl.Outcome.Ran(_, value) => value.let(_ == t"42").or(false)
+          case _                          => false
+
+      test(m"a lifted def can reference both a block binding and an outside value"):
+        supervise:
+          val base = 100
+
+          val repl = Repl[3.8]:
+            val offset = 5
+            def total: Int = offset + base
+
+          repl.interpret(t"total")
+      . assert:
+          case Repl.Outcome.Ran(_, value) => value.let(_ == t"105").or(false)
+          case _                          => false
+
+      test(m"a lifted def can reference a field of an enclosing object"):
+        supervise:
+          ReplFixture.greeting = "world"
+          ReplFixture.session
+      . assert:
+          case Repl.Outcome.Ran(_, value) => value.let(_ == t"5").or(false)
+          case _                          => false
