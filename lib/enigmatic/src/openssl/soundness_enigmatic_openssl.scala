@@ -32,4 +32,7 @@
                                                                                                   */
 package soundness
 
-export xenophile.{Native, ForeignLibrary}
+export enigmatic.OpensslCrypto
+
+package cryptoProviders:
+  export enigmatic.cryptoProviders.opensslCrypto

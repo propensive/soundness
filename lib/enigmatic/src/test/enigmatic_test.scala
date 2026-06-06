@@ -335,3 +335,61 @@ object Tests extends Suite(m"Gastronomy tests"):
         tampered(tampered.length - 5) = (tampered(tampered.length - 5) ^ 0xFF.toByte).toByte
         tampered.immutable(using Unsafe).verify[Cose](key)
       . assert(!_)
+
+    suite(m"OpenSSL provider (libcrypto via xenophile FFM)"):
+      // A local `given Crypto` outranks the file-level `javaStdlibCrypto` import,
+      // so each block unambiguously selects its provider; cross-validating the two
+      // proves the OpenSSL path agrees with the JDK on the wire.
+      val key32: Data = t"a-32-byte-key-for-aes-256-cbc!!!".data
+
+      test(m"RAND_bytes returns the requested number of bytes"):
+        OpensslCrypto.random.bytes(32).length
+      . assert(_ == 32)
+
+      test(m"HMAC-SHA256 agrees with the JDK provider"):
+        val jdk = pangram.hmac[Sha2[256]](t"key".data).serialize[Hex]
+        val openssl = { given Crypto = OpensslCrypto; pangram.hmac[Sha2[256]](t"key".data).serialize[Hex] }
+        jdk == openssl
+      . assert(_ == true)
+
+      test(m"HMAC-SHA512 agrees with the JDK provider"):
+        val jdk = pangram.hmac[Sha2[512]](t"key".data).serialize[Hex]
+        val openssl = { given Crypto = OpensslCrypto; pangram.hmac[Sha2[512]](t"key".data).serialize[Hex] }
+        jdk == openssl
+      . assert(_ == true)
+
+      test(m"AES-256-CBC ciphertext agrees with the JDK provider (fixed IV)"):
+        given InitializationVector = InitializationVector.fixed(t"0123456789abcdef".data)
+        val key: SymmetricKey[Aes[256] over Cbc against Pkcs7] = SymmetricKey(key32)
+        val jdk = key.expose(t"Hello world".encrypt.serialize[Hex])
+        val openssl = { given Crypto = OpensslCrypto; key.expose(t"Hello world".encrypt.serialize[Hex]) }
+        jdk == openssl
+      . assert(_ == true)
+
+      test(m"AES-256-CBC round-trips under the OpenSSL provider"):
+        given Crypto = OpensslCrypto
+        val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+        key.expose(t"Hello world".encrypt.decrypt.text)
+      . assert(_ == t"Hello world")
+
+      test(m"OpenSSL decrypts what the JDK encrypted (CBC, fixed IV)"):
+        given InitializationVector = InitializationVector.fixed(t"0123456789abcdef".data)
+        val key: SymmetricKey[Aes[256] over Cbc against Pkcs7] = SymmetricKey(key32)
+        val ciphertext = key.expose(t"Interoperable!".encrypt)
+        val plaintext = { given Crypto = OpensslCrypto; key.expose(ciphertext.decrypt.text) }
+        plaintext
+      . assert(_ == t"Interoperable!")
+
+      test(m"AES-128-CTR/NoPadding round-trips under the OpenSSL provider"):
+        given Crypto = OpensslCrypto
+        val key = SymmetricKey.generate[Aes[128] over Ctr against NoPadding]()
+        key.expose(t"Hello world".encrypt.decrypt.text)
+      . assert(_ == t"Hello world")
+
+      test(m"OpenSSL streaming encryption round-trips via one-shot decryption"):
+        given Crypto = OpensslCrypto
+        val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+        key.expose:
+          val chunks = Stream(t"Hello, ".data, t"streaming ".data, t"world!".data)
+          chunks.encrypt.reduce(_ ++ _).decrypt.text
+      . assert(_ == t"Hello, streaming world!")
