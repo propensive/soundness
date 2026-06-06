@@ -99,11 +99,13 @@ object Bundler:
             . compact
 
           case ClasspathEntry.Jar(jar) =>
-            workingDirectory[Path on Linux].resolve(jar).open: handle =>
-              ZipStream(handle).keep(_.encode != t"META-INF/MANIFEST.MF").map: entry =>
-                Zip.Entry(entry.ref, entry.read[Data])
+            val jarfile = workingDirectory[Path on Linux].resolve(jar)
 
-              . to(List)
+            // Re-emit each entry verbatim: it already carries its compressed bytes, so no
+            // decompression or recompression is needed.
+            Zipfile.read(jarfile).entries.to(List).filter: entry =>
+              val name: Text = entry.ref.encode
+              !entry.directory && name != t"META-INF/MANIFEST.MF"
 
           case _ =>
             Nil

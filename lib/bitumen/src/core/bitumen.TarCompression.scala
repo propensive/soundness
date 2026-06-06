@@ -44,11 +44,11 @@ extension (tar: Tarfile)
   def deflate: Stream[Data] = tar.stream[Data].compress[Deflate]
 
 extension (tarType: Tarfile.type)
-  def fromGzip(stream: Stream[Data]): Stream[TarEntry] raises TarError =
+  def fromGzip(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
     Tarfile.read(stream.decompress[Gzip])
 
-  def fromZlib(stream: Stream[Data]): Stream[TarEntry] raises TarError =
+  def fromZlib(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
     Tarfile.read(stream.decompress[Zlib])
 
-  def fromDeflate(stream: Stream[Data]): Stream[TarEntry] raises TarError =
+  def fromDeflate(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
     Tarfile.read(stream.decompress[Deflate])

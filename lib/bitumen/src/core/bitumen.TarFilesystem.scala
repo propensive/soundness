@@ -60,7 +60,7 @@ extension (tarType: Tarfile.type)
                       Tactic[TarError] )
   :   Tarfile =
 
-    val entries: LazyList[TarEntry] = root.descendants.to(LazyList).map: path =>
+    val entries: LazyList[Tar.Entry] = root.descendants.to(LazyList).map: path =>
       TarFilesystem.entryFor(root, path)
 
     Tarfile(entries)
@@ -82,7 +82,7 @@ private[bitumen] object TarFilesystem:
   def entryFor[plane <: Posix: Filesystem]
               (root: Path on plane, path: Path on plane)
               ( using DereferenceSymlinks, Tactic[IoError], Tactic[TarError] )
-  :   TarEntry =
+  :   Tar.Entry =
 
     val ref = relativize(root, path)
     val mtime: U32 = (jnf.Files.getLastModifiedTime(path.javaPath).nn.toMillis/1000L).toInt.bits.u32
@@ -96,32 +96,32 @@ private[bitumen] object TarFilesystem:
         val bytes: Array[Byte] = jnf.Files.readAllBytes(path.javaPath).nn
         val data: LazyList[Data] = LazyList(bytes.immutable(using Unsafe))
 
-        TarEntry.File(ref, mode, user, group, mtime, data)
+        Tar.Entry.File(ref, mode, user, group, mtime, data)
 
       case galilei.Directory =>
-        TarEntry.Directory(ref, mode, user, group, mtime)
+        Tar.Entry.Directory(ref, mode, user, group, mtime)
 
       case galilei.Symlink =>
         val target = jnf.Files.readSymbolicLink(path.javaPath).nn.toString.nn.tt
-        TarEntry.Symlink(ref, mode, user, group, mtime, target)
+        Tar.Entry.Symlink(ref, mode, user, group, mtime, target)
 
       case galilei.Fifo =>
-        TarEntry.Fifo(ref, mode, user, group, mtime)
+        Tar.Entry.Fifo(ref, mode, user, group, mtime)
 
       case galilei.CharDevice =>
         val (major, minor) = readDeviceNumbers(path.javaPath)
-        TarEntry.CharSpecial(ref, mode, user, group, mtime, (major.bits.u32, minor.bits.u32))
+        Tar.Entry.CharSpecial(ref, mode, user, group, mtime, (major.bits.u32, minor.bits.u32))
 
       case galilei.BlockDevice =>
         val (major, minor) = readDeviceNumbers(path.javaPath)
-        TarEntry.BlockSpecial(ref, mode, user, group, mtime, (major.bits.u32, minor.bits.u32))
+        Tar.Entry.BlockSpecial(ref, mode, user, group, mtime, (major.bits.u32, minor.bits.u32))
 
       case _ =>
         raise(TarError(TarError.Reason.DeviceCreationUnsupported(path.show)))
-        TarEntry.Fifo(ref, mode, user, group, mtime)
+        Tar.Entry.Fifo(ref, mode, user, group, mtime)
 
   def applyEntry[plane <: Posix: Filesystem]
-                (root: Path on plane, entry: TarEntry)
+                (root: Path on plane, entry: Tar.Entry)
                 ( using CreateNonexistentParents on plane,
                         OverwritePreexisting on plane,
                         Tactic[IoError],
@@ -129,7 +129,7 @@ private[bitumen] object TarFilesystem:
   :   Unit =
 
     entry match
-      case f: TarEntry.File =>
+      case f: Tar.Entry.File =>
         val path = absolutize(root, f.path)
         jnf.Files.createDirectories(path.javaPath.getParent)
         val bytes: Array[Byte] = f.data.flatMap(_.iterator).toArray
@@ -137,28 +137,28 @@ private[bitumen] object TarFilesystem:
         applyPermissions(path.javaPath, f.mode)
         applyTimestamps(path.javaPath, f.mtime)
 
-      case d: TarEntry.Directory =>
+      case d: Tar.Entry.Directory =>
         val path = absolutize(root, d.path)
         jnf.Files.createDirectories(path.javaPath)
         applyPermissions(path.javaPath, d.mode)
 
-      case s: TarEntry.Symlink =>
+      case s: Tar.Entry.Symlink =>
         val path = absolutize(root, s.path)
         jnf.Files.createDirectories(path.javaPath.getParent)
         if jnf.Files.exists(path.javaPath, jnf.LinkOption.NOFOLLOW_LINKS) then
           jnf.Files.delete(path.javaPath)
         jnf.Files.createSymbolicLink(path.javaPath, jnf.Path.of(s.target.s))
 
-      case l: TarEntry.Link =>
+      case l: Tar.Entry.Link =>
         val path = absolutize(root, l.path)
         val target = absolutize(root, decodePath(l.target))
         jnf.Files.createDirectories(path.javaPath.getParent)
         jnf.Files.createLink(path.javaPath, target.javaPath)
 
-      case _: TarEntry.Fifo | _: TarEntry.CharSpecial | _: TarEntry.BlockSpecial =>
+      case _: Tar.Entry.Fifo | _: Tar.Entry.CharSpecial | _: Tar.Entry.BlockSpecial =>
         raise(TarError(TarError.Reason.DeviceCreationUnsupported(entry.entryName)))
 
-      case _: TarEntry.Pax | _: TarEntry.GnuLong => ()
+      case _: Tar.Entry.Pax | _: Tar.Entry.GnuLong => ()
 
   private def relativize[plane <: Posix: Filesystem]
                         (root: Path on plane, child: Path on plane)

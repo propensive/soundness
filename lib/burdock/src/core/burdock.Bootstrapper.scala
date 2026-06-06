@@ -144,15 +144,18 @@ object Bootstrapper:
             Nil
 
           else
-            ZipStream(data).keep(_.encode != t"META-INF/MANIFEST.MF").map: entry =>
+            Zipfile.read(data).entries.filter: entry =>
+              val name: Text = entry.ref.encode
+              !entry.directory && name != t"META-INF/MANIFEST.MF"
+            . map: entry =>
               (entry.ref.show, entry.checksum[Sha1].serialize[Hex]) -> Requirement(url2, digest)
 
         . to(Map)
 
         val manifest: Promise[Manifest] = Promise()
 
-        val todo: List[Requirement | Entry] = jarfile.open: handle =>
-          ZipStream(handle.read[Data]).map: entry =>
+        val todo: List[Requirement | Entry] =
+          Zipfile.read(jarfile).entries.map: entry =>
             if entry.ref.show == t"META-INF/MANIFEST.MF"
             then manifest.fulfill(entry.read[Data].read[Manifest]) yet Unset
             else if entry.ref.show == t"burdock/Bootstrap.class"

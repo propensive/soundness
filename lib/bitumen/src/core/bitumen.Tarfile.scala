@@ -53,7 +53,7 @@ object Tarfile:
 
   given streamable: Tarfile is Streamable by Data = _.blocks
 
-  def read(stream: Stream[Data]): Stream[TarEntry] raises TarError =
+  def read(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
     readEntries(stream.chunked(512), Map.empty, Map.empty, Unset, Unset)
 
   def from(stream: Stream[Data]): Tarfile raises TarError = Tarfile(read(stream))
@@ -64,7 +64,7 @@ object Tarfile:
       globalOverlay: Map[Text, Text],
       longName:      Optional[Text],
       longLink:      Optional[Text] )
-  :   Stream[TarEntry] raises TarError =
+  :   Stream[Tar.Entry] raises TarError =
 
     blocks match
       case head #:: tail =>
@@ -120,7 +120,7 @@ object Tarfile:
               val extras: Map[Text, Text] =
                 (globalOverlay ++ paxOverlay).filter((k, _) => !structuralPaxKeys.contains(k))
 
-              val entry = TarEntry.Sparse
+              val entry = Tar.Entry.Sparse
                             ( path, mode, user, group, mtime, realSize, allSegments,
                               Stream(data), extras )
 
@@ -156,38 +156,38 @@ object Tarfile:
       extras: Map[Text, Text],
       header: TarHeader,
       blocks: Stream[Data] )
-  :   (TarEntry, Stream[Data]) raises TarError =
+  :   (Tar.Entry, Stream[Data]) raises TarError =
 
     flag match
       case 0 | '0' | '7' =>
         val (data, rest) = takeData(blocks, size)
-        (TarEntry.File(path, mode, user, group, mtime, Stream(data), extras), rest)
+        (Tar.Entry.File(path, mode, user, group, mtime, Stream(data), extras), rest)
 
       case '5' =>
-        (TarEntry.Directory(path, mode, user, group, mtime, extras), blocks)
+        (Tar.Entry.Directory(path, mode, user, group, mtime, extras), blocks)
 
       case '1' =>
-        (TarEntry.Link(path, mode, user, group, mtime, link, extras), blocks)
+        (Tar.Entry.Link(path, mode, user, group, mtime, link, extras), blocks)
 
       case '2' =>
-        (TarEntry.Symlink(path, mode, user, group, mtime, link, extras), blocks)
+        (Tar.Entry.Symlink(path, mode, user, group, mtime, link, extras), blocks)
 
       case '3' =>
         val major = TarHeader.decodeOctal(header.devMajor, t"devmajor")
         val minor = TarHeader.decodeOctal(header.devMinor, t"devminor")
-        (TarEntry.CharSpecial(path, mode, user, group, mtime, (major, minor), extras), blocks)
+        (Tar.Entry.CharSpecial(path, mode, user, group, mtime, (major, minor), extras), blocks)
 
       case '4' =>
         val major = TarHeader.decodeOctal(header.devMajor, t"devmajor")
         val minor = TarHeader.decodeOctal(header.devMinor, t"devminor")
-        (TarEntry.BlockSpecial(path, mode, user, group, mtime, (major, minor), extras), blocks)
+        (Tar.Entry.BlockSpecial(path, mode, user, group, mtime, (major, minor), extras), blocks)
 
       case '6' =>
-        (TarEntry.Fifo(path, mode, user, group, mtime, extras), blocks)
+        (Tar.Entry.Fifo(path, mode, user, group, mtime, extras), blocks)
 
       case other =>
         raise(TarError(TarError.Reason.UnknownTypeFlag(other.toByte)))
-        (TarEntry.Directory(path, mode, user, group, mtime, extras), blocks)
+        (Tar.Entry.Directory(path, mode, user, group, mtime, extras), blocks)
 
   private def takeData(blocks: Stream[Data], size: Int): (Data, Stream[Data]) =
     val nBlocks = (size + 511)/512
@@ -286,7 +286,7 @@ object Tarfile:
 
   private val structuralPaxKeys: Set[Text] = Set(t"path", t"linkpath", t"uname", t"gname")
 
-  private def paxRecordsFor(entry: TarEntry): List[(Text, Text)] =
+  private def paxRecordsFor(entry: Tar.Entry): List[(Text, Text)] =
     val builder = List.newBuilder[(Text, Text)]
     if entry.entryName.data.length > 100 then builder += ((t"path", entry.entryName))
 
@@ -306,48 +306,48 @@ object Tarfile:
 
     builder.result()
 
-  private def userAndGroup(entry: TarEntry): (UnixUser, UnixGroup) = entry match
-    case f: TarEntry.File         => (f.user, f.group)
-    case d: TarEntry.Directory    => (d.user, d.group)
-    case l: TarEntry.Link         => (l.user, l.group)
-    case s: TarEntry.Symlink      => (s.user, s.group)
-    case c: TarEntry.CharSpecial  => (c.user, c.group)
-    case b: TarEntry.BlockSpecial => (b.user, b.group)
-    case f: TarEntry.Fifo         => (f.user, f.group)
-    case sp: TarEntry.Sparse      => (sp.user, sp.group)
-    case _: TarEntry.Pax          => (UnixUser(0), UnixGroup(0))
-    case _: TarEntry.GnuLong      => (UnixUser(0), UnixGroup(0))
+  private def userAndGroup(entry: Tar.Entry): (UnixUser, UnixGroup) = entry match
+    case f: Tar.Entry.File         => (f.user, f.group)
+    case d: Tar.Entry.Directory    => (d.user, d.group)
+    case l: Tar.Entry.Link         => (l.user, l.group)
+    case s: Tar.Entry.Symlink      => (s.user, s.group)
+    case c: Tar.Entry.CharSpecial  => (c.user, c.group)
+    case b: Tar.Entry.BlockSpecial => (b.user, b.group)
+    case f: Tar.Entry.Fifo         => (f.user, f.group)
+    case sp: Tar.Entry.Sparse      => (sp.user, sp.group)
+    case _: Tar.Entry.Pax          => (UnixUser(0), UnixGroup(0))
+    case _: Tar.Entry.GnuLong      => (UnixUser(0), UnixGroup(0))
 
-  private def paxOf(entry: TarEntry): Map[Text, Text] = entry match
-    case f: TarEntry.File         => f.pax
-    case d: TarEntry.Directory    => d.pax
-    case l: TarEntry.Link         => l.pax
-    case s: TarEntry.Symlink      => s.pax
-    case c: TarEntry.CharSpecial  => c.pax
-    case b: TarEntry.BlockSpecial => b.pax
-    case f: TarEntry.Fifo         => f.pax
-    case sp: TarEntry.Sparse      => sp.pax
-    case _: TarEntry.Pax          => Map.empty
-    case _: TarEntry.GnuLong      => Map.empty
+  private def paxOf(entry: Tar.Entry): Map[Text, Text] = entry match
+    case f: Tar.Entry.File         => f.pax
+    case d: Tar.Entry.Directory    => d.pax
+    case l: Tar.Entry.Link         => l.pax
+    case s: Tar.Entry.Symlink      => s.pax
+    case c: Tar.Entry.CharSpecial  => c.pax
+    case b: Tar.Entry.BlockSpecial => b.pax
+    case f: Tar.Entry.Fifo         => f.pax
+    case sp: Tar.Entry.Sparse      => sp.pax
+    case _: Tar.Entry.Pax          => Map.empty
+    case _: Tar.Entry.GnuLong      => Map.empty
 
 case class Tarfile
-    (entries: LazyList[TarEntry], longNameFormat: LongNameFormat = LongNameFormat.Pax):
+    (entries: LazyList[Tar.Entry], longNameFormat: LongNameFormat = LongNameFormat.Pax):
   // The raw 512-byte blocks of the archive, including the two trailing zero blocks.
   // Reach this externally through the `Streamable` given, i.e. `tarfile.stream[Data]`.
   private[bitumen] def blocks: LazyList[Data] =
     entries.flatMap(emitEntry) #::: LazyList(Tarfile.zeroBlock, Tarfile.zeroBlock)
 
-  private def emitEntry(entry: TarEntry): LazyList[Data] =
+  private def emitEntry(entry: Tar.Entry): LazyList[Data] =
     val longNamePart: LazyList[Data] = longNameFormat match
       case LongNameFormat.Pax => LazyList()
       case LongNameFormat.Gnu =>
         val nameBlocks =
           if entry.entryName.data.length > 100
-          then TarEntry.GnuLong(TypeFlag.LongName, entry.entryName).serialize
+          then Tar.Entry.GnuLong(TypeFlag.LongName, entry.entryName).serialize
           else LazyList()
 
         val linkBlocks = entry.link.let: l =>
-          if l.data.length > 100 then TarEntry.GnuLong(TypeFlag.LongLink, l).serialize
+          if l.data.length > 100 then Tar.Entry.GnuLong(TypeFlag.LongLink, l).serialize
           else LazyList()
 
         . or(LazyList())
@@ -361,6 +361,6 @@ case class Tarfile
 
     val paxPart: LazyList[Data] =
       if records.isEmpty then LazyList()
-      else TarEntry.Pax(Pax.records(records)).serialize
+      else Tar.Entry.Pax(Pax.records(records)).serialize
 
     longNamePart #::: paxPart #::: entry.serialize

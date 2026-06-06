@@ -107,8 +107,8 @@ case class Image
   // `blobs/sha256/`. Suitable for `ctr images import`, `podman load`, or
   // `skopeo copy oci-archive:…`.
   def archive: Tarfile =
-    def entry(path: Text, content: Data): TarEntry =
-      TarEntry.File
+    def entry(path: Text, content: Data): Tar.Entry =
+      Tar.Entry.File
         ( path  = path.decode[Relative on Tar],
           mode  = UnixMode(),
           user  = UnixUser(0),

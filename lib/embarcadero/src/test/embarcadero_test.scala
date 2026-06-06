@@ -43,8 +43,8 @@ import Http2.*
 
 object Tests extends Suite(m"Embarcadero OCI Tests"):
   def run(): Unit =
-    def fileEntry(name: Text, content: Text): TarEntry =
-      TarEntry.File
+    def fileEntry(name: Text, content: Text): Tar.Entry =
+      Tar.Entry.File
        ( path  = name.decode[Relative on Tar],
          mode  = UnixMode(),
          user  = UnixUser(0),
@@ -135,7 +135,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       val entries    = Tarfile.read(image.archive.stream[Data]).to(List)
       val names      = entries.map(_.entryName)
       val layoutData = entries.collect:
-        case file: TarEntry.File if file.entryName == t"oci-layout" => bytesOf(file.data)
+        case file: Tar.Entry.File if file.entryName == t"oci-layout" => bytesOf(file.data)
 
       test(m"archive contains the oci-layout marker and index.json"):
         (names.contains(t"oci-layout"), names.contains(t"index.json"))
