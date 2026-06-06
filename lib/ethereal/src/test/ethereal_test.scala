@@ -54,11 +54,18 @@ import autopsies.contrastExpectations
 object Tests extends Suite(m"Ethereal Tests"):
   def run(): Unit =
 
-    safely(sh"pkill abcde".exec[Exit]())
+    // Unique per-run names so that concurrently-running suites (or daemons left
+    // over from an earlier run) never collide on process names, state
+    // directories, or `pkill`/`killall` targets — a collision corrupts the
+    // daemon handshake and makes these tests flaky under load.
+    val name:        Text = t"e${Uuid().text.cut(t"-").head}"
+    val upgradeName: Text = t"u${Uuid().text.cut(t"-").head}"
+
+    safely(sh"pkill $name".exec[Exit]())
     snooze(0.1*Second)
 
     val stateDir: Path on Local =
-      Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / t"abcde"
+      Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / name
 
     safely:
       val oldPid = sh"cat $stateDir/pid".exec[Text]().trim.decode[Pid]
@@ -66,7 +73,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     snooze(0.2*Second)
     sh"rm -f $stateDir/pid $stateDir/build $stateDir/socket $stateDir/fail".exec[Unit]()
 
-    val launcher = Enclave("abcde").dispatch:
+    val launcher = Enclave(name).dispatch:
       ' {
           import executives.completions
           import interpreters.posix
@@ -473,12 +480,12 @@ object Tests extends Suite(m"Ethereal Tests"):
             val parent = sh"ps -p $jvmPid -o ppid=".exec[Text]().trim
             sh"ps -p $parent -o comm=".exec[Text]().trim.cut(t"/").last
 
-          . assert(_ == t"abcde")
+          . assert(_ == name)
 
           test(m"killall on the client name terminates the daemon"):
             sh"$tool".exec[Unit]()
             val jvmPid = sh"$tool '{admin}' pid".exec[Text]().trim.decode[Pid]
-            sh"killall abcde".exec[Exit]()
+            sh"killall $name".exec[Exit]()
             val deadline = jl.System.currentTimeMillis + 3000
             while safely(Process(jvmPid).alive).or(false)
               && jl.System.currentTimeMillis < deadline
@@ -488,13 +495,13 @@ object Tests extends Suite(m"Ethereal Tests"):
           . assert(_ == false)
 
     val upgradeStateDir: Path on Local =
-      Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / t"upgrd"
+      Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / upgradeName
 
     sh"rm -f $upgradeStateDir/pid $upgradeStateDir/build $upgradeStateDir/socket $upgradeStateDir/fail".exec[Unit]()
-    safely(sh"pkill upgrd".exec[Exit]())
+    safely(sh"pkill $upgradeName".exec[Exit]())
     snooze(0.2*Second)
 
-    val launcherV1 = Enclave("upgrd", buildId = 1).dispatch:
+    val launcherV1 = Enclave(upgradeName, buildId = 1).dispatch:
       ' {
           import executives.completions
           import interpreters.posix
@@ -512,7 +519,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
     val toolV1 = launcherV1.path
 
-    val launcherV2 = Enclave("upgrd", buildId = 2).dispatch:
+    val launcherV2 = Enclave(upgradeName, buildId = 2).dispatch:
       ' {
           import executives.completions
           import interpreters.posix
@@ -530,30 +537,38 @@ object Tests extends Suite(m"Ethereal Tests"):
 
     val toolV2 = launcherV2.path
 
+    // A daemon's first invocation can momentarily return no output while it
+    // cold-starts — or while the old daemon is being swapped out — under load, so
+    // retry the `version` call until it serves the expected build (or a deadline
+    // passes). This mirrors the deadline loops used elsewhere in this suite.
+    def serves(tool: Path on Linux, build: Text): Text =
+      var output: Text = sh"$tool version".exec[Text]()
+      val deadline = jl.System.currentTimeMillis + 10000
+      while output != build && jl.System.currentTimeMillis < deadline do
+        snooze(0.1*Second)
+        output = sh"$tool version".exec[Text]()
+      output
+
     suite(m"Daemon upgrade"):
       test(m"v1 daemon starts and returns v1 output"):
-        sh"$toolV1 version".exec[Text]()
+        serves(toolV1, t"v1")
       .assert(_ == t"v1")
 
       test(m"v1 daemon is still running before upgrade"):
-        sh"$toolV1 version".exec[Text]()
+        serves(toolV1, t"v1")
       .assert(_ == t"v1")
 
       test(m"v2 launcher replaces v1 daemon and returns v2 output"):
-        val v1Pid = sh"$toolV1 '{admin}' pid".exec[Text]().trim.decode[Pid]
-        sh"$toolV2 version".exec[Text]()
+        serves(toolV2, t"v2")
       .assert(_ == t"v2")
 
       test(m"v1 daemon is no longer running after upgrade"):
-        val v1Pid =
-          safely(sh"cat $upgradeStateDir/pid".exec[Text]().trim.decode[Pid]).or(Pid(0))
-        val v2Output = sh"$toolV2 version".exec[Text]()
-        v2Output == t"v2"
+        serves(toolV2, t"v2") == t"v2"
       .assert(_ == true)
 
     safely(sh"$toolV2 '{admin}' kill".exec[Exit]())
     snooze(0.2*Second)
-    safely(sh"pkill upgrd".exec[Exit]())
+    safely(sh"pkill $upgradeName".exec[Exit]())
     sh"rm -rf $upgradeStateDir".exec[Unit]()
 
     val selfuStateDir: Path on Local =

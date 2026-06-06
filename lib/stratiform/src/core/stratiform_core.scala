@@ -32,7 +32,13 @@
                                                                                                   */
 package stratiform
 
+import anticipation.*
 import contextual.*
+import prepositional.*
+
+// Encodes any value with an `Encodable in Tel` instance to its `Tel` form.
+// Mirrors jacinta's `.json`, xylophone's `.xml`, ypsiloid's `.yaml`, etc.
+extension [entity: Encodable in Tel](value: entity) def tel: Tel = value.encode
 
 // `tel"…"` extension on StringContext routes through contextual's
 // interpolation framework; the actual macro lives in `stratiform.internal`.

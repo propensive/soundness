@@ -32,13 +32,15 @@
                                                                                                   */
 package anthology
 
+import java.io as ji
+import java.net as jn
 import java.nio.file as jnf
 
 import scala.quoted.*
-import scala.util.control as suc
 
 import ambience.*
 import anticipation.*
+import coaxial.*
 import contingency.*
 import digression.*
 import distillate.*
@@ -47,7 +49,11 @@ import hellenism.*
 import inimitable.*
 import parasite.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
+import stratiform.*
+import turbulence.*
+import urticose.*
 import vacuous.*
 
 import interfaces.paths.pathOnLinux
@@ -76,20 +82,18 @@ object Repl:
     case Rejected(notices: List[Notice])
     case Crashed(notices: List[Notice], error: StackTrace)
 
-  // A value/variable lifted from an inline binding block: its REPL-visible name
-  // and the source rendering of its type, used to build a typed accessor.
-  case class Binding(mutable: Boolean, name: String, typeName: String)
+  // The reply sent to a connected client, serialized to the client as TEL.
+  case class Response(status: Text, value: Text, diagnostics: Text)
 
   object Prelude:
-    val empty: Prelude = Prelude(Nil, Nil, Nil)
+    val empty: Prelude = Prelude(Nil, Nil)
 
   // Declarations lifted from an inline binding block to seed the REPL context:
-  // `imports` are re-injected into every line; `definitions` and binding
-  // accessors are established once in a seed object.
-  case class Prelude
-    ( imports:     List[String],
-      definitions: List[String],
-      bindings:    List[Binding] )
+  // `imports` are re-injected into every line; `seedTasty` is a TASTy-pickled
+  // block of the lifted definitions and binding accessors (carried as data from
+  // macro-expansion time), recompiled once into a seed object with full type
+  // fidelity.
+  case class Prelude(imports: List[String], seedTasty: List[String])
 
   def make[version <: Scalac.Versions]
     ( prelude: Repl.Prelude )
@@ -105,13 +109,17 @@ object Repl:
     ${ReplMacro.bound[version]('body, 'scalac, 'classloader, 'temporary)}
 
 class Repl[version <: Scalac.Versions]
-  ( layout:  Repl.Layout   = Repl.Layout.Standard(),
-    prelude: Repl.Prelude  = Repl.Prelude.empty )
+  ( layout:  Repl.Layout  = Repl.Layout.Standard(),
+    prelude: Repl.Prelude = Repl.Prelude.empty )
   ( using scalac: Scalac[version], classloader: Classloader, temporary: TemporaryDirectory ):
 
   import Repl.Outcome
 
   val session: Long = ReplBridge.freshSession()
+
+  // Serializes `interpret` across connections: the shared `Scalac` compiler is
+  // not reentrant and the REPL's state is mutable.
+  private val mutex: Mutex = Mutex()
 
   private var index:   Int        = 0
   private var result:  Int        = 0
@@ -124,8 +132,14 @@ class Repl[version <: Scalac.Versions]
   private lazy val loader: Classloader =
     LocalClasspath((Classpath.Directory(out) :: Nil)*).classloader(classloader)
 
+  // The compile classpath must come from the *same* loader the wrapper objects
+  // are run against (`classloader`, below), not from `classloaders.threadContext`:
+  // `interpret` may run on a background worker thread (the TCP accept loop) whose
+  // thread-context loader differs from the REPL's, which would compile against one
+  // copy of the soundness classes and run against another — a loader-constraint
+  // violation.
   private def classpath(using System): LocalClasspath =
-    val entries = Classpath.Directory(out) :: (classloaders.threadContext.classpath.match
+    val entries = Classpath.Directory(out) :: (classloader.classpath.match
       case classpath: LocalClasspath => classpath.entries
 
       case _ =>
@@ -158,13 +172,18 @@ class Repl[version <: Scalac.Versions]
         history = history :+ name
 
         try
+          // Seed accessors read their session from this thread-local.
+          ReplBridge.setCurrentSession(session)
           loader.on(t"$name$$")
           Outcome.Ran(notices, rendered)
         catch
           case error: ExceptionInInitializerError =>
             Outcome.Threw(notices, Optional(error.getCause).or(error))
 
-          case suc.NonFatal(error) =>
+          // Running arbitrary user code can throw anything, including `Error`s
+          // (`LinkageError`, `StackOverflowError`, …), which must not escape and
+          // kill the session.
+          case error: Throwable =>
             Outcome.Threw(notices, error)
 
   private def statementCode(line: Text): Text =
@@ -207,27 +226,28 @@ class Repl[version <: Scalac.Versions]
       case other =>
         other
 
-  // The prelude's definitions and binding accessors are compiled once, as the
-  // first object (`rs$line$0`); later lines see them via the history import.
-  // Imports create no members, so they are re-injected into every line instead.
-  private def seedBody: Text =
-    val accessors = prelude.bindings.map: binding =>
-      val keyword:  Text = if binding.mutable then t"var" else t"val"
-      val name:     Text = binding.name.tt
-      val typeName: Text = binding.typeName.tt
-      val key:      Text = t"${session.toString.tt}L, \"$name\""
-
-      t"$keyword $name: $typeName = anthology.ReplBridge.fetch[$typeName]($key)"
-
-    (prelude.imports.map(_.tt) ::: prelude.definitions.map(_.tt) ::: accessors).join(t"\n")
-
+  // The prelude's pickled definitions and binding accessors are recompiled once,
+  // as the first object (`rs$line$0`), straight from TASTy — preserving the
+  // original types rather than re-rendering them as source. Later lines see its
+  // members via the history import. Imports create no members, so they are
+  // re-injected into every line instead.
   private def ensureSeeded()(using Monitor, System, Codicil)
   :   Optional[Outcome] logs CompileEvent raises CompilerError raises AsyncError =
 
-    if seeded || prelude.definitions.isEmpty && prelude.bindings.isEmpty then Unset
+    if seeded || prelude.seedTasty.isEmpty then Unset
     else
       seeded = true
-      compile(seedBody)(Unset)
+      val name:   Text       = layout.objectName(index)
+
+      val errors: List[Text] =
+        ReplModuleCompiler.compile(classpath)(name, out.encode)(prelude.seedTasty)
+
+      if errors.isEmpty then
+        index += 1
+        history = history :+ name
+        Outcome.Ran(Nil, Unset)
+      else
+        Outcome.Rejected(errors.map(Notice(Importance.Error, t"<seed>", _, Unset)))
 
   def interpret(line: Text)(using Monitor, System, Codicil)
   :   Outcome logs CompileEvent raises CompilerError raises AsyncError =
@@ -237,3 +257,69 @@ class Repl[version <: Scalac.Versions]
     ensureSeeded().lay(lineOutcome):
       case _: Outcome.Ran => lineOutcome
       case failure        => failure
+
+  // Starts a TCP server on `port` and accepts connections. Each connection is an
+  // interactive session over the *same* REPL state, speaking a plain-text,
+  // double-newline-delimited protocol (a blank line ends a message), so it can
+  // be driven with `telnet`. Returns a handle whose `stop()` shuts the server
+  // down. A binary protocol and a dedicated client will replace the text framing
+  // later.
+  def serve(port: Port over Tcp)(using Monitor, System, Codicil)
+  :   SocketService logs CompileEvent raises BindError raises StreamError =
+
+    port.listen: socket =>
+      converse(socket)
+      Data()
+
+  private def converse(socket: jn.Socket)(using Monitor, System, Codicil)
+  :   Unit logs CompileEvent =
+
+    val reader = ji.BufferedReader(ji.InputStreamReader(socket.getInputStream.nn, "UTF-8"))
+    val writer = ji.OutputStreamWriter(socket.getOutputStream.nn, "UTF-8")
+
+    try
+      val buffer: StringBuilder = StringBuilder()
+      var line: String | Null = reader.readLine()
+
+      while line != null do
+        if line.nn.isEmpty then
+          if buffer.length > 0 then
+            val message: Text = buffer.toString.tt.trim
+            buffer.clear()
+
+            // A stray throwable in one message becomes an error reply, not a
+            // dropped connection, so the session survives.
+            val response: Text =
+              try respond(message) catch case error: Throwable => t"! error: ${error.toString.tt}"
+
+            writer.write(response.s)
+            writer.write("\n\n")
+            writer.flush()
+        else
+          buffer.append(line.nn).append("\n")
+
+        line = reader.readLine()
+
+    finally
+      safely(reader.close())
+      safely(writer.close())
+      safely(socket.close())
+
+  private def respond(message: Text)(using Monitor, System, Codicil): Text logs CompileEvent =
+    val unprocessed = Repl.Response(t"error", t"", t"the input could not be processed")
+
+    val response: Repl.Response =
+      safely(mutex(interpret(message))).lay(unprocessed):
+        case Outcome.Ran(notices, value) =>
+          Repl.Response(t"ran", value.or(t""), notices.map(_.message).join(t"; "))
+
+        case Outcome.Rejected(notices) =>
+          Repl.Response(t"rejected", t"", notices.map(_.message).join(t"; "))
+
+        case Outcome.Threw(_, error) =>
+          Repl.Response(t"threw", t"", error.toString.tt)
+
+        case Outcome.Crashed(notices, _) =>
+          Repl.Response(t"crashed", t"", notices.map(_.message).join(t"; "))
+
+    Tel.show(response.tel)
