@@ -39,14 +39,24 @@ import serpentine.*
 
 object ZipError:
   enum Reason(val number: Int) extends Clarification:
-    case DuplicateEntry(path: Path on Zip) extends Reason(1)
-    case NotFound(path: Path on Zip)       extends Reason(2)
-    case InvalidName(name: Text)           extends Reason(3)
+    case DuplicateEntry(path: Path on Zip)   extends Reason(1)
+    case NotFound(path: Path on Zip)         extends Reason(2)
+    case InvalidName(name: Text)             extends Reason(3)
+    case UnsupportedMethod(method: Int)      extends Reason(4)
+    case MissingEocd                         extends Reason(5)
+    case TruncatedArchive                    extends Reason(6)
+    case BadSignature(expected: Int)         extends Reason(7)
+    case Zip64Error                          extends Reason(8)
 
   given communicable: Reason is Communicable =
-    case Reason.DuplicateEntry(path) => m"the path $path is a duplicate entry"
-    case Reason.NotFound(path)       => m"path $path was not found in the ZIP file"
-    case Reason.InvalidName(name)    => m"the name $name is not valid for a ZIP entry"
+    case Reason.DuplicateEntry(path)    => m"the path $path is a duplicate entry"
+    case Reason.NotFound(path)          => m"path $path was not found in the ZIP file"
+    case Reason.InvalidName(name)       => m"the name $name is not valid for a ZIP entry"
+    case Reason.UnsupportedMethod(code) => m"the compression method $code is not supported"
+    case Reason.MissingEocd             => m"no end-of-central-directory record could be found"
+    case Reason.TruncatedArchive        => m"the ZIP archive ended unexpectedly"
+    case Reason.BadSignature(expected)  => m"an expected record signature ($expected) was absent"
+    case Reason.Zip64Error              => m"the ZIP64 metadata could not be interpreted"
 
 case class ZipError(reason: ZipError.Reason)(using Diagnostics)
 extends Error(751, reason.number)(m"the ZIP operation failed because $reason")
