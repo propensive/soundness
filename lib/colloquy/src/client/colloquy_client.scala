@@ -32,26 +32,35 @@
                                                                                                   */
 package colloquy
 
+import java.util.concurrent as juc
+
 import scala.collection.mutable as scm
 
 import soundness.*
 
 import backstops.silent
 import charEncoders.utf8
+import classloaders.threadContext
 import codicils.cancel
 import executives.completions
 import internetAccess.enabled
 import interpreters.posix
+import logging.silent
 import supervisors.global
+import systems.java
+import temporaryDirectories.system
 import threading.platform
 
-// An interactive front-end for a Colloquy REPL server. It connects to a server's
-// TCP port on localhost, then loops: read a line in a Profanity line editor, send
-// it (double-newline-terminated) to the server, print the verbatim reply, and
-// repeat until the user presses Ctrl+D or Ctrl+C.
+// A front-end for a Colloquy REPL. `colloquy serve <port>` runs a REPL server on
+// that TCP port; `colloquy <port>` connects to a server on localhost and drives
+// an interactive session — read a line in a Profanity line editor, send it
+// (double-newline-terminated), print the verbatim reply — until Ctrl+D or Ctrl+C.
 @main
 def repl(): Unit = cli:
   arguments match
+    case Argument("serve") :: Argument(As[Int](portNumber)) :: Nil =>
+      execute(serve(portNumber))
+
     case Argument(As[Int](portNumber)) :: Nil =>
       execute:
         safely(Port[Tcp](portNumber)).lay(invalidPort(portNumber)): port =>
@@ -60,6 +69,22 @@ def repl(): Unit = cli:
 
     case _ =>
       execute(Exit.Fail(1))
+
+// Runs a REPL server on the given TCP port and blocks until interrupted.
+private def serve(portNumber: Int)(using Stdio, Monitor, Codicil, System): Exit =
+  given Scalac[3.8] = Scalac(Nil)
+
+  safely(Port[Tcp](portNumber)).lay(invalidPort(portNumber)): port =>
+    whereas:
+      case BindError(_) => Out.println(t"colloquy: port $portNumber is unavailable"); Exit.Fail(5)
+      case error: Error => Out.println(t"colloquy: ${error.message}"); Exit.Fail(6)
+
+    . recover:
+        val service = Repl().serve(port)
+        Out.println(t"colloquy: serving a REPL on port $portNumber (Ctrl+C to stop)")
+        juc.CountDownLatch(1).await()
+        service.stop()
+        Exit.Ok
 
 private def invalidPort(portNumber: Int)(using Stdio): Exit =
   Out.println(t"colloquy: $portNumber is not a valid TCP port")

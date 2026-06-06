@@ -544,7 +544,7 @@ object colloquy extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object client extends Component(ethereal.core, exoskeleton.completions, profanity.core,
+  object client extends Component(core, ethereal.core, exoskeleton.completions, profanity.core,
                                   coaxial.core, urticose.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
