@@ -43,4 +43,5 @@ package hashProviders:
 
 package crypto:
   export gastronomy.crypto.{permitUnauthenticatedCrypto, permitDeprecatedCrypto, permitLegacyCrypto,
-      permitDisallowedCrypto}
+      permitDisallowedCrypto, permitCryptoThrough2014, permitCryptoThrough2024,
+      permitCryptoThrough2030}
