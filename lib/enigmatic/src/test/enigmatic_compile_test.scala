@@ -36,6 +36,7 @@ import soundness.*
 
 import charEncoders.utf8
 import blockCipherMode.cbc, blockCipherPadding.pkcs7
+import cryptoProviders.javaStdlibCrypto
 
 // Compile-time regressions for the cipher API. (Capture-checking confinement of
 // the exposed `Encryptor`/`Decryptor` capability is not yet enabled — see

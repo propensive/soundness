@@ -37,6 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import charDecoders.utf8, charEncoders.utf8, textSanitizers.skip
 import errorDiagnostics.stackTraces
+import cryptoProviders.javaStdlibCrypto
 
 import alphabets.hex.upperCase
 
@@ -178,6 +179,21 @@ object Tests extends Suite(m"Gastronomy tests"):
 
     test(m"An imported zero IV makes CBC encryption deterministic"):
       import initializationVector.zero
+      val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+      key.expose:
+        t"Hello world".encrypt.serialize[Hex] == t"Hello world".encrypt.serialize[Hex]
+    . assert(_ == true)
+
+    test(m"A custom Crypto provider can supply deterministic randomness"):
+      // A provider that reuses the JDK's algorithms but fixes its randomness; the
+      // resulting all-zero IV makes CBC encryption repeatable, demonstrating that
+      // the provider seam (and its random source) is injectable.
+      given Crypto:
+        def random: Crypto.Random = size => IArray.fill[Byte](size)(0.toByte)
+        def aes: Crypto.SymmetricCipher = javaStdlibCrypto.aes
+        def rsa: Crypto.PublicKeyCipher = javaStdlibCrypto.rsa
+        def hmac(algorithm: Text): Crypto.Mac = javaStdlibCrypto.hmac(algorithm)
+
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.expose:
         t"Hello world".encrypt.serialize[Hex] == t"Hello world".encrypt.serialize[Hex]

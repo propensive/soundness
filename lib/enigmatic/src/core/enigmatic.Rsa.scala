@@ -32,53 +32,16 @@
                                                                                                   */
 package enigmatic
 
-import java.security as js, js.spec as jss, js.interfaces as jsi
-import javax.crypto as jc
-
 import anticipation.*
-import contingency.*
-import fulminate.*
-import rudiments.*
-import vacuous.*
 
 object Rsa:
-  given value: [bits <: 1024 | 2048: ValueOf] => Rsa[bits] = Rsa()
+  given value: [bits <: 1024 | 2048: ValueOf] => (crypto: Crypto) => Rsa[bits] = Rsa(crypto.rsa)
 
-class Rsa[bits <: 1024 | 2048: ValueOf]() extends Cipher, Encryption:
+class Rsa[bits <: 1024 | 2048: ValueOf](cipher: Crypto.PublicKeyCipher) extends Cipher, Encryption:
   type Size = bits
 
   def keySize: bits = valueOf[bits]
-
-  def privateToPublic(bytes: Data): Data =
-    val javaKey = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(unsafely(bytes.mutable))).nn
-
-    val key = javaKey match
-      case key: jsi.RSAPrivateCrtKey => key
-      case key: js.PrivateKey        => panic(m"unexpected private key type")
-
-    val spec = jss.RSAPublicKeySpec(key.getModulus, key.getPublicExponent)
-    keyFactory().generatePublic(spec).nn.getEncoded.nn.immutable(using Unsafe)
-
-  def decrypt(bytes: Data, key: Data): Data =
-    val cipher = initialize()
-
-    val privateKey =
-      keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(key.mutable(using Unsafe)))
-
-    cipher.init(jc.Cipher.DECRYPT_MODE, privateKey)
-    cipher.doFinal(bytes.mutable(using Unsafe)).nn.immutable(using Unsafe)
-
-  def encrypt(bytes: Data, key: Data): Data =
-    val cipher = initialize()
-    val publicKey = keyFactory().generatePublic(jss.X509EncodedKeySpec(key.mutable(using Unsafe)))
-    cipher.init(jc.Cipher.ENCRYPT_MODE, publicKey)
-    cipher.doFinal(bytes.mutable(using Unsafe)).nn.immutable(using Unsafe)
-
-  def genKey(): Data =
-    val generator = js.KeyPairGenerator.getInstance("RSA").nn
-    generator.initialize(keySize)
-    val keyPair = generator.generateKeyPair().nn
-    keyPair.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
-
-  private def initialize(): jc.Cipher = jc.Cipher.getInstance("RSA").nn
-  private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("RSA").nn
+  def privateToPublic(bytes: Data): Data = cipher.privateToPublic(bytes)
+  def decrypt(bytes: Data, key: Data): Data = cipher.decrypt(bytes, key)
+  def encrypt(bytes: Data, key: Data): Data = cipher.encrypt(bytes, key)
+  def genKey(): Data = cipher.generateKeyPair(keySize)

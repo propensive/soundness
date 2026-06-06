@@ -32,17 +32,10 @@
                                                                                                   */
 package enigmatic
 
-import java.security as js
-
 import anticipation.*
-import rudiments.*
-import vacuous.*
 
 object InitializationVector:
-  given random: InitializationVector = size =>
-    val iv = new Array[Byte](size)
-    js.SecureRandom().nextBytes(iv)
-    iv.immutable(using Unsafe)
+  given random: (crypto: Crypto) => InitializationVector = size => crypto.random.bytes(size)
 
   def fixed(iv: Data): InitializationVector = _ => iv
 

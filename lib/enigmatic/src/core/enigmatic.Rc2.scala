@@ -36,17 +36,21 @@ import anticipation.*
 import gossamer.*
 import prepositional.*
 
+import scala.reflect.Selectable.reflectiveSelectable
+
 object Rc2:
   given value: [bits <: 40 | 64 | 128: ValueOf, mode, padding]
   =>  ( blockMode: mode is BlockCipherMode )
   =>  ( blockPadding: padding is BlockCipherPadding )
   =>  ( mode Permits padding )
   =>  ( vector: InitializationVector )
+  =>  ( crypto: Crypto { def rc2: Crypto.SymmetricCipher } )
   =>  ( Rc2[bits] over mode against padding ) =
-    Rc2(blockMode, blockPadding, vector).asInstanceOf[Rc2[bits] over mode against padding]
+    Rc2(blockMode, blockPadding, vector, crypto.rc2).asInstanceOf[Rc2[bits] over mode against padding]
 
 class Rc2[bits <: 40 | 64 | 128: ValueOf]
-  ( mode: BlockCipherMode, padding: BlockCipherPadding, vector: InitializationVector )
-extends BlockCipher(t"RC2", mode, padding, vector):
+  ( mode: BlockCipherMode, padding: BlockCipherPadding, vector: InitializationVector,
+    cipher: Crypto.SymmetricCipher )
+extends BlockCipher(t"RC2", mode, padding, vector, cipher):
   type Size = bits
   def keySize: bits = valueOf[bits]

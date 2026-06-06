@@ -32,84 +32,59 @@
                                                                                                   */
 package enigmatic
 
-import javax.crypto as jc, javax.crypto.spec.*
-
 import anticipation.*
 import gossamer.*
-import rudiments.*
 import vacuous.*
 
+// A block cipher's type-level *policy* (which mode and padding apply, whether an
+// IV is needed and how input length is checked) lives here; the byte-level
+// *mechanics* are delegated to the in-scope `Crypto` provider's
+// `Crypto.SymmetricCipher`, captured at construction by the algorithm's given.
 abstract class BlockCipher
   ( val algorithm: Text,
     mode:          BlockCipherMode,
     padding:       BlockCipherPadding,
-    vector:        InitializationVector )
+    vector:        InitializationVector,
+    cipher:        Crypto.SymmetricCipher )
 extends Cipher, Encryption, Symmetric:
   type Transport
   type Contrast
 
   private def transformation: Text = t"$algorithm/${mode.name}/${padding.name}"
-  private def initialize(): jc.Cipher = jc.Cipher.getInstance(transformation.s).nn
-
-  private def makeKey(key: Data): SecretKeySpec =
-    SecretKeySpec(key.mutable(using Unsafe), algorithm.s)
 
   def encrypt(bytes: Data, key: Data): Data =
-    val cipher = initialize()
-    padding.verify(bytes.length, cipher.getBlockSize, mode.blockAligned)
+    val blockSize = cipher.blockSize(transformation)
+    padding.verify(bytes.length, blockSize, mode.blockAligned)
+    val iv: Optional[Data] = if mode.usesIv then vector(blockSize) else Unset
+    cipher.encrypt(transformation, key, iv, bytes)
 
-    if mode.usesIv then
-      val iv = vector(cipher.getBlockSize).mutable(using Unsafe)
-      cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key), IvParameterSpec(iv))
-      (iv ++ cipher.doFinal(bytes.mutable(using Unsafe)).nn).immutable(using Unsafe)
-    else
-      cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key))
-      cipher.doFinal(bytes.mutable(using Unsafe)).nn.immutable(using Unsafe)
-
-  // Streaming encryption feeds each chunk through `Cipher.update` and flushes with
-  // `doFinal`, mirroring `turbulence.Compression`. The IV (if any) is emitted as
-  // the first chunk; the `NoPadding` alignment check happens at end-of-stream,
-  // where the total length is finally known.
+  // Streaming encryption feeds each chunk through the provider's `CipherSession`,
+  // mirroring `turbulence.Compression`. The IV (if any) is emitted as the first
+  // chunk; the `NoPadding` alignment check happens at end-of-stream, where the
+  // total length is finally known.
   def encryptStream(stream: Stream[Data], key: Data): Stream[Data] =
-    val cipher = initialize()
-
-    val prefix: Stream[Data] =
-      if mode.usesIv then
-        val iv = vector(cipher.getBlockSize).mutable(using Unsafe)
-        cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key), IvParameterSpec(iv))
-        Stream(iv.immutable(using Unsafe))
-      else
-        cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key))
-        Stream()
+    val blockSize = cipher.blockSize(transformation)
+    val iv: Optional[Data] = if mode.usesIv then vector(blockSize) else Unset
+    val session = cipher.stream(transformation, key, iv)
+    val prefix: Stream[Data] = iv.lay(Stream())(Stream(_))
 
     def recur(stream: Stream[Data], total: Int): Stream[Data] = stream match
       case head #:: tail =>
-        val updated = cipher.update(head.mutable(using Unsafe)).nn.immutable(using Unsafe)
+        val updated = session.update(head)
         val rest = recur(tail, total + head.length)
         if updated.length > 0 then updated #:: rest else rest
 
       case _ =>
-        padding.verify(total, cipher.getBlockSize, mode.blockAligned)
-        val last = cipher.doFinal().nn.immutable(using Unsafe)
+        padding.verify(total, blockSize, mode.blockAligned)
+        val last = session.finish()
         if last.length > 0 then Stream(last) else Stream()
 
     prefix #::: recur(stream, 0)
 
   def decrypt(bytes: Data, key: Data): Data =
-    val cipher = initialize()
-    val input = bytes.mutable(using Unsafe)
+    val ivSize: Optional[Int] = if mode.usesIv then cipher.blockSize(transformation) else Unset
+    cipher.decrypt(transformation, key, ivSize, bytes)
 
-    if mode.usesIv then
-      val blockSize = cipher.getBlockSize
-      cipher.init(jc.Cipher.DECRYPT_MODE, makeKey(key), IvParameterSpec(input.take(blockSize)))
-      cipher.doFinal(input.drop(blockSize)).nn.immutable(using Unsafe)
-    else
-      cipher.init(jc.Cipher.DECRYPT_MODE, makeKey(key))
-      cipher.doFinal(input).nn.immutable(using Unsafe)
-
-  def genKey(): Data =
-    val keyGen = jc.KeyGenerator.getInstance(algorithm.s).nn
-    keyGen.init(keySize)
-    keyGen.generateKey().nn.getEncoded.nn.immutable(using Unsafe)
+  def genKey(): Data = cipher.generateKey(keySize)
 
   def privateToPublic(key: Data): Data = key

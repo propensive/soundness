@@ -33,41 +33,56 @@
 package enigmatic
 
 import anticipation.*
-import gastronomy.*
-import prepositional.*
-import rudiments.*
 import vacuous.*
 
-extension [encodable: Encodable in Data](value: encodable)
-  def hmac[algorithm <: Algorithm](key: Data)(using hash: Hash in algorithm, crypto: Crypto)
-  :   Hmac in algorithm =
+// A pluggable cryptographic provider: it supplies the raw algorithmic
+// implementations (the JDK's JCE, BouncyCastle, OpenSSL, …) that the typed
+// enigmatic API delegates to. Pick one with an explicit import, e.g.
+// `import cryptoProviders.javaStdlibCrypto`.
+//
+// Every provider must implement the mandatory baseline below — the modern,
+// universally-supported primitives. Legacy or provider-specific algorithms (DES,
+// Blowfish, RC2, DSA, …) are contributed as additional members and reached
+// through a structural refinement, so an algorithm a provider does not offer is a
+// compile error at the use site rather than a runtime failure.
+//
+// All inputs and outputs are byte arrays (`Data`) and string descriptors
+// (`Text`); no platform crypto types appear in this contract. Key material
+// follows JCE-compatible encodings: symmetric keys are raw bytes; asymmetric
+// private keys are PKCS#8, public keys X.509 (SubjectPublicKeyInfo); a symmetric
+// ciphertext is `iv ++ rawCiphertext` when the mode uses an IV.
 
-    Hmac(crypto.hmac(hash.hmacName).mac(key, encodable.encode(value)))
+trait Crypto:
+  def random: Crypto.Random
+  def aes: Crypto.SymmetricCipher
+  def rsa: Crypto.PublicKeyCipher
+  def hmac(algorithm: Text): Crypto.Mac
 
-package blockCipherMode:
-  export Cbc.mode as cbc
-  export Ecb.mode as ecb
-  export Ctr.mode as ctr
-  export Cfb.mode as cfb
-  export Ofb.mode as ofb
+object Crypto:
+  // A symmetric block cipher. `transformation` is the full JCE-style spec
+  // (e.g. `t"AES/CBC/PKCS5Padding"`); `encrypt`/`decrypt` frame the IV as the
+  // leading block of the ciphertext when one is supplied.
+  trait SymmetricCipher:
+    def encrypt(transformation: Text, key: Data, iv: Optional[Data], data: Data): Data
+    def decrypt(transformation: Text, key: Data, ivSize: Optional[Int], data: Data): Data
+    def blockSize(transformation: Text): Int
+    def generateKey(bits: Int): Data
+    def stream(transformation: Text, key: Data, iv: Optional[Data]): CipherSession
 
-package blockCipherPadding:
-  export Pkcs7.padding as pkcs7
-  export Iso10126.padding as iso10126
-  // `NoPadding` is not re-exported for import-based inference: its `given` takes a
-  // `Tactic[CryptoError]`, and re-exporting a context-function given trips a
-  // compiler assertion ("bad adapt"). Use `against NoPadding` explicitly instead.
+  trait PublicKeyCipher:
+    def encrypt(input: Data, publicKey: Data): Data
+    def decrypt(input: Data, privateKey: Data): Data
+    def generateKeyPair(bits: Int): Data
+    def privateToPublic(privateKey: Data): Data
 
-package initializationVector:
-  // `random` is the default `InitializationVector` (in `InitializationVector`'s
-  // companion). It is not re-exported here: it is now a context-function given
-  // over `Crypto`, and re-exporting such a given trips a compiler assertion
-  // ("bad adapt") — see the note in `blockCipherPadding` above.
-  given zero: InitializationVector = size => Array.fill[Byte](size)(0).immutable(using Unsafe)
+  trait SignatureScheme:
+    def sign(data: Data, privateKey: Data): Data
+    def verify(data: Data, signature: Data, publicKey: Data): Boolean
+    def generateKeyPair(bits: Int): Data
+    def privateToPublic(privateKey: Data): Data
 
-// Crypto providers select the algorithmic backend. Pick one with an explicit
-// import, e.g. `import cryptoProviders.javaStdlibCrypto`. The given's type is the
-// provider object's singleton type, so the optional (structurally-typed)
-// algorithms it offers remain visible to consumers that require them.
-package cryptoProviders:
-  given javaStdlibCrypto: JavaStdlibCrypto.type = JavaStdlibCrypto
+  trait Mac:
+    def mac(key: Data, data: Data): Data
+
+  trait Random:
+    def bytes(size: Int): Data

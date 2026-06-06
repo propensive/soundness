@@ -33,44 +33,32 @@
 package enigmatic
 package cose
 
-import javax.crypto.spec.SecretKeySpec
-
 import anticipation.*
 import enigmatic.*
 import gastronomy.*
 import prepositional.*
-import rudiments.*
-import vacuous.*
 
 // Adapter that exposes HMAC as a `Cipher & Signing & Symmetric`, so that
 // `SymmetricKey[HmacCipher[Sha2[256]]]` plugs into the existing
 // `PrivateKey`/`SymmetricKey` machinery in enigmatic.core. Avoids a refactor
-// of `enigmatic.Hmac` (which is an output type, not a cipher).
+// of `enigmatic.Hmac` (which is an output type, not a cipher). The HMAC and
+// secure-random work is delegated to the in-scope `Crypto` provider.
 object HmacCipher:
-  given value: [algorithm <: Algorithm] => (hash: Hash in algorithm) => HmacCipher[algorithm] =
+  given value: [algorithm <: Algorithm] => (hash: Hash in algorithm) => (crypto: Crypto)
+            => HmacCipher[algorithm] =
     HmacCipher[algorithm]()
 
-class HmacCipher[algorithm <: Algorithm]()(using hash: Hash in algorithm)
+class HmacCipher[algorithm <: Algorithm]()(using hash: Hash in algorithm, crypto: Crypto)
 extends Cipher, Signing, Symmetric:
   type Size = 256
   def keySize: 256 = 256
 
-  def genKey(): Data =
-    val random = java.security.SecureRandom()
-    val bytes = new Array[Byte](32)
-    random.nextBytes(bytes)
-    bytes.immutable(using Unsafe)
-
+  def genKey(): Data = crypto.random.bytes(32)
   def privateToPublic(key: Data): Data = key
-
-  def sign(data: Data, keyData: Data): Data =
-    val mac = hash.hmac0
-    mac.init(SecretKeySpec(keyData.to(Array), hash.name.s))
-    mac.doFinal(data.to(Array)).nn.immutable(using Unsafe)
+  def sign(data: Data, keyData: Data): Data = crypto.hmac(hash.hmacName).mac(keyData, data)
 
   def verify(data: Data, signature: Data, keyData: Data): Boolean =
-    val expected = sign(data, keyData)
-    constantTimeEquals(expected, signature)
+    constantTimeEquals(sign(data, keyData), signature)
 
   private def constantTimeEquals(a: Data, b: Data): Boolean =
     if a.length != b.length then false else
