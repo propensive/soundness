@@ -44,7 +44,6 @@ abstract class BlockCipher
   ( val algorithm: Text,
     mode:          BlockCipherMode,
     padding:       BlockCipherPadding,
-    vector:        InitializationVector,
     cipher:        Crypto.SymmetricCipher )
 extends Cipher, Encryption, Symmetric:
   type Transport
@@ -52,7 +51,9 @@ extends Cipher, Encryption, Symmetric:
 
   private def transformation: Text = t"$algorithm/${mode.name}/${padding.name}"
 
-  def encrypt(bytes: Data, key: Data): Data =
+  // The initialization vector is supplied explicitly by the caller; modes that
+  // don't use one (ECB) ignore it.
+  def encrypt(bytes: Data, key: Data, vector: InitializationVector): Data =
     val blockSize = cipher.blockSize(transformation)
     padding.verify(bytes.length, blockSize, mode.blockAligned)
     val iv: Optional[Data] = if mode.usesIv then vector(blockSize) else Unset
@@ -62,7 +63,7 @@ extends Cipher, Encryption, Symmetric:
   // mirroring `turbulence.Compression`. The IV (if any) is emitted as the first
   // chunk; the `NoPadding` alignment check happens at end-of-stream, where the
   // total length is finally known.
-  def encryptStream(stream: Stream[Data], key: Data): Stream[Data] =
+  def encryptStream(stream: Stream[Data], key: Data, vector: InitializationVector): Stream[Data] =
     val blockSize = cipher.blockSize(transformation)
     val iv: Optional[Data] = if mode.usesIv then vector(blockSize) else Unset
     val session = cipher.stream(transformation, key, iv)

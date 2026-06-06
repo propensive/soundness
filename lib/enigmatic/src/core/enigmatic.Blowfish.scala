@@ -43,15 +43,13 @@ object Blowfish:
   =>  ( blockMode: mode is BlockCipherMode )
   =>  ( blockPadding: padding is BlockCipherPadding )
   =>  ( mode Permits padding )
-  =>  ( vector: InitializationVector )
   =>  ( crypto: Crypto { def blowfish: Crypto.SymmetricCipher } )
   =>  ( Blowfish[bits] over mode against padding ) =
-    Blowfish(blockMode, blockPadding, vector, crypto.blowfish)
+    Blowfish(blockMode, blockPadding, crypto.blowfish)
     . asInstanceOf[Blowfish[bits] over mode against padding]
 
 class Blowfish[bits <: 128 | 256 | 448: ValueOf]
-  ( mode: BlockCipherMode, padding: BlockCipherPadding, vector: InitializationVector,
-    cipher: Crypto.SymmetricCipher )
-extends BlockCipher(t"Blowfish", mode, padding, vector, cipher):
+  ( mode: BlockCipherMode, padding: BlockCipherPadding, cipher: Crypto.SymmetricCipher )
+extends BlockCipher(t"Blowfish", mode, padding, cipher):
   type Size = bits
   def keySize: bits = valueOf[bits]

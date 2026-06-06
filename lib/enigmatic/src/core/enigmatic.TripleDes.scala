@@ -43,15 +43,13 @@ object TripleDes:
   =>  ( blockMode: mode is BlockCipherMode )
   =>  ( blockPadding: padding is BlockCipherPadding )
   =>  ( mode Permits padding )
-  =>  ( vector: InitializationVector )
   =>  ( crypto: Crypto { def tripleDes: Crypto.SymmetricCipher } )
   =>  ( TripleDes[bits] over mode against padding ) =
-    TripleDes(blockMode, blockPadding, vector, crypto.tripleDes)
+    TripleDes(blockMode, blockPadding, crypto.tripleDes)
     . asInstanceOf[TripleDes[bits] over mode against padding]
 
 class TripleDes[bits <: 112 | 168: ValueOf]
-  ( mode: BlockCipherMode, padding: BlockCipherPadding, vector: InitializationVector,
-    cipher: Crypto.SymmetricCipher )
-extends BlockCipher(t"DESede", mode, padding, vector, cipher):
+  ( mode: BlockCipherMode, padding: BlockCipherPadding, cipher: Crypto.SymmetricCipher )
+extends BlockCipher(t"DESede", mode, padding, cipher):
   type Size = bits
   def keySize: bits = valueOf[bits]

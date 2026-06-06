@@ -33,11 +33,17 @@
 package enigmatic
 
 import anticipation.*
+import rudiments.*
+import vacuous.*
 
+// A strategy for producing an initialization vector of a given block size. It is
+// supplied *explicitly* at the encryption site (e.g. `data.encrypt(iv.random)`),
+// never resolved implicitly. `random` draws from the in-scope `Crypto` provider;
+// `fixed` reuses given bytes (deterministic); `zero` is an all-zero IV.
 object InitializationVector:
-  given random: (crypto: Crypto) => InitializationVector = size => crypto.random.bytes(size)
-
+  def random(using crypto: Crypto): InitializationVector = size => crypto.random.bytes(size)
   def fixed(iv: Data): InitializationVector = _ => iv
+  val zero: InitializationVector = size => Array.fill[Byte](size)(0).immutable(using Unsafe)
 
 trait InitializationVector:
   def apply(size: Int): Data
