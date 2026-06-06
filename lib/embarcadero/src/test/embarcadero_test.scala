@@ -35,6 +35,7 @@ package embarcadero
 import soundness.*
 import bitumen.fromGzip
 
+import hashProviders.javaStdlibHashing
 import alphabets.hex.lowerCase
 import charEncoders.utf8
 import jsonPrinters.minimal

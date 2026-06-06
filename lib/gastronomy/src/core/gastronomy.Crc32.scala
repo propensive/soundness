@@ -32,30 +32,15 @@
                                                                                                   */
 package gastronomy
 
-import java.util as ju, ju.zip as juz
-import javax.crypto as jc
-
 import anticipation.*
-import fulminate.*
 import gossamer.*
 import prepositional.*
-import rudiments.*
-import vacuous.*
+
+import scala.reflect.Selectable.reflectiveSelectable
 
 object Crc32:
-  given hash: Hash in Crc32:
-    def initialize(): Digestion = new Digestion:
-      private val state: juz.CRC32 = juz.CRC32()
-
-      def append(bytes: Data): Unit = state.update(bytes.mutable(using Unsafe))
-
-      def digest(): Data =
-        val int = state.getValue()
-        IArray[Byte]((int >> 24).toByte, (int >> 16).toByte, (int >> 8).toByte, int.toByte)
-
-    def name: Text = t"CRC32"
-    def hmacName: Text = t"HMAC-CRC32"
-    def hmac0: jc.Mac = panic(m"this has not been implemented")
+  given hash: (hashing: Hashing { def crc32: Hashing.Function }) => Hash in Crc32 =
+    Hash(t"CRC32", t"HMAC-CRC32", hashing.crc32)
 
 sealed trait Crc32 extends Algorithm:
   type Bits = 32

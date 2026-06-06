@@ -39,7 +39,8 @@ import rudiments.*
 import vacuous.*
 
 extension [encodable: Encodable in Data](value: encodable)
-  def hmac[algorithm <: Algorithm](key: Data)(using hash: Hash in algorithm, crypto: Crypto)
+  def hmac[algorithm <: Algorithm](key: Data)
+      (using hash: Hash in algorithm, crypto: Crypto, erased weakness: Permit[HashWeakness[algorithm]])
   :   Hmac in algorithm =
 
     Hmac(crypto.hmac(hash.hmacName).mac(key, encodable.encode(value)))
@@ -74,35 +75,6 @@ package initializationVector:
 package cryptoProviders:
   given javaStdlibCrypto: JavaStdlibCrypto.type = JavaStdlibCrypto
 
-// Opt-in permits for sub-optimal cryptography, named after NIST SP 800-131A's
-// algorithm statuses. Each is an (erased) intersection of fine-grained `Permit`s,
-// so the named levels and any future year-based levels compose from the same
-// primitives. The levels nest by inclusion: `permitDisallowedCrypto` contains
-// every other permit, and since `Permit <: ProcessingPermit` it also covers
-// "legacy use". Import the weakest level that covers what you need.
-package crypto:
-  // Unauthenticated (non-AEAD) encryption — currently every block-cipher mode.
-  erased given permitUnauthenticatedCrypto: Permit[Concession.Unauthenticated] =
-    caps.unsafe.unsafeErasedValue
-
-  // "Deprecated": usable but transitional (e.g. Triple-DES).
-  erased given permitDeprecatedCrypto: Permit[Concession.TripleDes] =
-    caps.unsafe.unsafeErasedValue
-
-  // "Legacy use": processing already-protected data only (decrypt/verify).
-  erased given permitLegacyCrypto
-      : ProcessingPermit[Concession.TripleDes] & ProcessingPermit[Concession.Dsa] =
-    caps.unsafe.unsafeErasedValue
-
-  // "Disallowed": broken or non-approved algorithms, key lengths and modes;
-  // subsumes every weaker permit above.
-  erased given permitDisallowedCrypto
-      : Permit[Concession.Des]
-      & Permit[Concession.Rc2]
-      & Permit[Concession.Blowfish]
-      & Permit[Concession.TripleDes]
-      & Permit[Concession.Dsa]
-      & Permit[Concession.SmallRsa]
-      & Permit[Concession.Ecb]
-      & Permit[Concession.Unauthenticated] =
-    caps.unsafe.unsafeErasedValue
+// The `Permit`/`Concession` machinery and the `crypto.permit…Crypto` aggregates
+// live in gastronomy (shared with hashing); the cipher concessions they cover are
+// mapped from cipher types by `Weakness`/`Authentication` in `enigmatic.Weakness`.

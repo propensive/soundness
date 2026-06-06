@@ -30,37 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package enigmatic
+package gastronomy
 
-// A "concession" is a specific cryptographic weakness a caller must explicitly
-// accept (via a `crypto.permit…Crypto` import) before the corresponding algorithm,
-// key length or mode can be used. `Acceptable` is the absence of any weakness.
-object Concession:
-  sealed trait Acceptable
-  sealed trait Des
-  sealed trait TripleDes
-  sealed trait Rc2
-  sealed trait Blowfish
-  sealed trait SmallRsa       // RSA with a key shorter than 2048 bits
-  sealed trait Dsa
-  sealed trait Ecb
-  sealed trait Unauthenticated
-
-// The algorithm/key-length concession of a cipher type, extracted by matching the
-// (possibly `over`/`against`-refined) cipher. Anything not named here — AES,
-// RSA-2048, HMAC — is `Acceptable` and needs no permission.
-type Weakness[cipher] = cipher match
-  case Des          => Concession.Des
-  case TripleDes[?] => Concession.TripleDes
-  case Rc2[?]       => Concession.Rc2
-  case Blowfish[?]  => Concession.Blowfish
-  case Rsa[1024]    => Concession.SmallRsa
-  case Dsa[?]       => Concession.Dsa
-  case _            => Concession.Acceptable
-
-// Every (non-AEAD) block cipher is unauthenticated; asymmetric ciphers are not
-// classified this way. When authenticated encryption is added, its ciphers will
-// fall through to `Acceptable` here.
-type Authentication[cipher] = cipher match
-  case BlockCipher => Concession.Unauthenticated
-  case _           => Concession.Acceptable
+// A pure-Scala hashing provider for algorithms with no JDK implementation. Today
+// that is just BLAKE3 (implemented in `Blake3`); other native-Scala hashes would
+// be added here. Select it with `import hashProviders.soundnessHashing`.
+object SoundnessHashing extends Hashing:
+  def blake3: Hashing.Function = new Hashing.Function:
+    def digestion(): Digestion = Blake3.digestion()

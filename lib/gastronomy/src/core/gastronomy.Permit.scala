@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package enigmatic
+package gastronomy
 
 import scala.annotation.implicitNotFound
 
@@ -38,8 +38,10 @@ import scala.annotation.implicitNotFound
 // is permitted. Following NIST SP 800-131A's apply-vs-process distinction:
 // `ProcessingPermit` allows *processing already-protected* data (decrypt/verify),
 // while `Permit` (a subtype) additionally allows *applying new protection*
-// (encrypt/sign). Both are erased — purely compile-time gates with no runtime cost.
-// Bring them into scope with a `crypto.permit…Crypto` import.
+// (encrypt/sign/hash). Both are erased — purely compile-time gates with no runtime
+// cost. Bring them into scope with a `crypto.permit…Crypto` import. Defined here in
+// gastronomy so both gastronomy (weak hashes) and enigmatic (weak ciphers) share
+// one permit vocabulary.
 
 @implicitNotFound("this operation uses an algorithm whose status is \"legacy use\" or worse; "+
     "import a permit (e.g. `crypto.permitLegacyCrypto` to process existing data, or "+

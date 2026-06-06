@@ -30,17 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package gastronomy
 
-export
-  gastronomy
-  . { Algorithm, Blake3, checksum, Concession, Crc32, Digest, digest, Digester, Digestible,
-      Digestion, Feistel, Hash, Hashing, Md5, Permit, ProcessingPermit, Sha1, Sha2, Sha384,
-      Sha512 }
+// A pluggable hashing provider: it supplies the implementation of each hash
+// function as a `Hashing.Function` (a factory for fresh `Digestion`s). Providers
+// are *disjoint* — the JDK provider handles MD5/SHA-1/SHA-2/CRC-32, while BLAKE3
+// (with no JDK implementation) is supplied by the pure-Scala Soundness provider —
+// so each algorithm is reached through a structural refinement rather than a
+// mandatory baseline. Select providers with explicit imports, e.g.
+// `import hashProviders.javaStdlibHashing, hashProviders.soundnessHashing`.
+trait Hashing
 
-package hashProviders:
-  export gastronomy.hashProviders.{javaStdlibHashing, soundnessHashing}
-
-package crypto:
-  export gastronomy.crypto.{permitUnauthenticatedCrypto, permitDeprecatedCrypto, permitLegacyCrypto,
-      permitDisallowedCrypto}
+object Hashing:
+  // One hash algorithm's implementation: a factory for a fresh incremental
+  // `Digestion`.
+  trait Function:
+    def digestion(): Digestion

@@ -30,17 +30,36 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package gastronomy
 
-export
-  gastronomy
-  . { Algorithm, Blake3, checksum, Concession, Crc32, Digest, digest, Digester, Digestible,
-      Digestion, Feistel, Hash, Hashing, Md5, Permit, ProcessingPermit, Sha1, Sha2, Sha384,
-      Sha512 }
+import java.security as js
+import java.util.zip as juz
 
-package hashProviders:
-  export gastronomy.hashProviders.{javaStdlibHashing, soundnessHashing}
+import anticipation.*
+import gossamer.*
+import rudiments.*
+import vacuous.*
 
-package crypto:
-  export gastronomy.crypto.{permitUnauthenticatedCrypto, permitDeprecatedCrypto, permitLegacyCrypto,
-      permitDisallowedCrypto}
+// The default hashing provider, backed by the JDK: `MessageDigest` for the
+// cryptographic hashes and `java.util.zip.CRC32` for the checksum. This is the
+// single home of `java.security`/`java.util.zip` usage in gastronomy. It does not
+// offer BLAKE3 (the JDK has no implementation) — use the Soundness provider.
+object JavaStdlibHashing extends Hashing:
+  def md5:  Hashing.Function = messageDigest(t"MD5")
+  def sha1: Hashing.Function = messageDigest(t"SHA1")
+  def sha2(bits: Int): Hashing.Function = messageDigest(t"SHA-$bits")
+
+  def crc32: Hashing.Function = new Hashing.Function:
+    def digestion(): Digestion = new Digestion:
+      private val state: juz.CRC32 = juz.CRC32()
+      def append(bytes: Data): Unit = state.update(bytes.mutable(using Unsafe))
+
+      def digest(): Data =
+        val value = state.getValue()
+        IArray[Byte]((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
+
+  private def messageDigest(name: Text): Hashing.Function = new Hashing.Function:
+    def digestion(): Digestion = new Digestion:
+      private val md: js.MessageDigest = js.MessageDigest.getInstance(name.s).nn
+      def append(bytes: Data): Unit = md.update(bytes.mutable(using Unsafe))
+      def digest(): Data = md.digest.nn.immutable(using Unsafe)
