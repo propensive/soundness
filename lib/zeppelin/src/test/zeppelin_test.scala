@@ -299,3 +299,48 @@ object Tests extends Suite(m"Zeppelin tests"):
       test(m"the native reader counts all entries in a ZIP64 archive"):
         Zipfile.read(path).entries.length
       . assert(_ == 66000)
+
+    suite(m"Binary prefix"):
+      val prefix: Data = IArray.tabulate(64)(i => (i*7).toByte)
+
+      test(m"a binary prefix round-trips"):
+        val path = workDir/t"prefixed.zip"
+        Zipfile.write(path, prefix)(List(entry(t"a.txt", t"alpha"), entry(t"b.txt", t"beta")))
+        Zipfile.read(path).prefix.lay(Nil)(_.to(List))
+      . assert(_ == prefix.to(List))
+
+      test(m"entries in a prefixed archive remain readable"):
+        val path = workDir/t"prefixed2.zip"
+        Zipfile.write(path, prefix)(List(entry(t"a.txt", t"alpha"), entry(t"b.txt", t"beta")))
+        Zipfile.read(path).entries.map(_.read[Text]).to(List)
+      . assert(_ == List(t"alpha", t"beta"))
+
+      test(m"the prefix precedes the first local header"):
+        val path = workDir/t"prefixed3.zip"
+        Zipfile.write(path, prefix)(List(entry(t"a.txt", t"alpha")))
+        bytesOf(path).slice(0, 64).to(List)
+      . assert(_ == prefix.to(List))
+
+      test(m"the JDK reader reads a prefixed archive"):
+        val path = workDir/t"prefixed4.zip"
+        Zipfile.write(path, prefix)(List(entry(t"a.txt", t"alpha")))
+        jdkContent(path, t"a.txt").to(List)
+      . assert(_ == t"alpha".data.to(List))
+
+      test(m"an archive with no prefix reports no prefix"):
+        Zipfile.read(writeZip(t"noprefix.zip", entry(t"a.txt", t"x"))).prefix
+      . assert(_ == Unset)
+
+      test(m"detects and reads a prefix prepended to a JDK-written archive"):
+        // The JDK writes offsets relative to the archive start; prepending data makes a
+        // self-extracting archive whose offsets must be shifted by the prefix length.
+        val inner = bytesOf(writeRawZip(t"inner.zip", t"one.txt", t"two.txt"))
+        val stub: Data = t"STUB-PREFIX-DATA".data
+        val sfx = workDir/t"sfx.zip"
+        val out = ji.FileOutputStream(ji.File(sfx.encode.s))
+        out.write(stub.mutable(using Unsafe))
+        out.write(inner.mutable(using Unsafe))
+        out.close()
+        val zip = Zipfile.read(sfx)
+        (zip.prefix.lay(Nil)(_.to(List)), zip.entries.map(_.read[Text]).to(List))
+      . assert(_ == (t"STUB-PREFIX-DATA".data.to(List), List(t"data", t"data")))

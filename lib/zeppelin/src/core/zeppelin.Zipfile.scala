@@ -60,11 +60,11 @@ object Zipfile:
   given streamable: Zipfile is Streamable by Data = _.serialize
 
   def write[path: Abstractable across Paths to Text]
-     (path: path)(entries: Iterable[Zip.Entry])
+     (path: path, prefix: Optional[Data] = Unset)(entries: Iterable[Zip.Entry])
   :   Unit raises ZipError =
     checkDuplicates(entries)
     val out = ji.FileOutputStream(ji.File(path.generic.s))
-    try Zipfile(entries.to(LazyList)).serialize.each: chunk =>
+    try Zipfile(entries.to(LazyList), Unset, prefix).serialize.each: chunk =>
       out.write(chunk.mutable(using Unsafe))
     finally out.close()
 
@@ -126,6 +126,7 @@ object Zipfile:
     var entryCount = Zip.u16(window, i + 10).toLong
     var cdSize = Zip.u32(window, i + 12)
     var cdOffset = Zip.u32(window, i + 16)
+    var cdEnd = eocdOffset // the central directory abuts the end-of-central-directory trailer
     val commentLength = Zip.u16(window, i + 20)
     val comment: Optional[Text] =
       if commentLength == 0 then Unset
@@ -136,18 +137,39 @@ object Zipfile:
       if eocdOffset >= 20 then
         val locator = source.read(eocdOffset - 20, 20)
         if Zip.u32(locator, 0) == (Zip.zip64LocatorSig.toLong & 0xffffffffL) then
-          val zip64Offset = Zip.u64(locator, 8)
-          val record = source.read(zip64Offset, 56)
+          val recorded = Zip.u64(locator, 8)
+
+          // The ZIP64 EOCD record abuts the locator; prefer the recorded offset, but if a
+          // prepended prefix has shifted it, fall back to its physical position.
+          val atRecorded =
+            if recorded >= 0 && recorded + 56 <= size then source.read(recorded, 56)
+            else IArray.empty[Byte]
+
+          val recordOffset =
+            if atRecorded.length == 56
+               && Zip.u32(atRecorded, 0) == (Zip.zip64EocdSig.toLong & 0xffffffffL)
+            then recorded else eocdOffset - 20 - 56
+
+          val record = source.read(recordOffset, 56)
           if Zip.u32(record, 0) == (Zip.zip64EocdSig.toLong & 0xffffffffL) then
             entryCount = Zip.u64(record, 32)
             cdSize = Zip.u64(record, 40)
             cdOffset = Zip.u64(record, 48)
+            cdEnd = recordOffset
           else raise(ZipError(ZipError.Reason.Zip64Error))
 
-    val central = source.read(cdOffset, cdSize.toInt)
+    // The central directory physically precedes the trailer; any gap between its actual start
+    // and the recorded offset is data prepended before the archive (a binary/self-extracting
+    // prefix), and every recorded offset must be shifted by that delta.
+    val cdActualStart = cdEnd - cdSize
+    if cdActualStart < 0 then raise(ZipError(ZipError.Reason.TruncatedArchive))
+    val prefixDelta = cdActualStart - cdOffset
+
+    val central = source.read(cdActualStart, cdSize.toInt)
     val builder = List.newBuilder[Zip.Entry]
     var p = 0
     var count = 0L
+    var earliestEntry = Long.MaxValue
 
     while count < entryCount && p + 46 <= central.length do
       if Zip.u32(central, p) != (Zip.centralHeaderSig.toLong & 0xffffffffL)
@@ -204,7 +226,8 @@ object Zipfile:
           case NameError(_, _, _) => ZipError(ZipError.Reason.InvalidName(cleanName))
         . mitigate(cleanName.decode[Path on Zip])
 
-      val payloadOffset = localOffset
+      val payloadOffset = localOffset + prefixDelta
+      if payloadOffset < earliestEntry then earliestEntry = payloadOffset
       val payloadSize = compressedSize
       val storedBytes: () => Stream[Data] = () =>
         val header = source.read(payloadOffset, 30)
@@ -219,7 +242,13 @@ object Zipfile:
       p = commentStart + entryCommentLength
       count += 1
 
-    Zipfile(builder.result().to(LazyList), comment)
+    // Anything before the earliest entry (or before the central directory, for an empty
+    // archive) is otherwise-unassigned data: a binary prefix.
+    val prefixSize = if count > 0 then earliestEntry else cdActualStart
+    val prefix: Optional[Data] =
+      if prefixSize > 0 then source.read(0, prefixSize.toInt) else Unset
+
+    Zipfile(builder.result().to(LazyList), comment, prefix)
 
   private def decodeText(bytes: Data): Text =
     String(bytes.mutable(using Unsafe), jncs.StandardCharsets.UTF_8).nn.tt
@@ -349,13 +378,17 @@ object Zipfile:
 
       List(record, locator, eocd)
 
-case class Zipfile(entries: LazyList[Zip.Entry], comment: Optional[Text] = Unset):
+case class Zipfile
+   (entries: LazyList[Zip.Entry], comment: Optional[Text] = Unset, prefix: Optional[Data] = Unset):
   def entry(ref: Path on Zip): Zip.Entry raises ZipError =
     entries.find(_.ref == ref).getOrElse(abort(ZipError(ZipError.Reason.NotFound(ref))))
 
   def serialize: Stream[Data] =
+    // Emit the prefix first; all subsequent offsets are absolute (they include the prefix), so
+    // any reader sees standard entries and the prefix as leading, otherwise-unassigned data.
+    val prefixBytes: Data = prefix.or(IArray.empty[Byte])
     val entryList = entries.to(List)
-    var offset = 0L
+    var offset = prefixBytes.length.toLong
     val builder = List.newBuilder[(Zip.Entry, Data, Data, Long)]
 
     entryList.foreach: entry =>
@@ -370,7 +403,10 @@ case class Zipfile(entries: LazyList[Zip.Entry], comment: Optional[Text] = Unset
     val cdSize = central.foldLeft(0L)(_ + _.length)
     val tail = Zipfile.endRecords(records.length.toLong, cdStart, cdSize, comment)
 
+    val prefixStream: Stream[Data] =
+      if prefixBytes.length == 0 then LazyList() else LazyList(prefixBytes)
+
     val local: Stream[Data] =
       records.to(LazyList).flatMap((entry, _, header, _) => header #:: entry.storedBytes())
 
-    local #::: central.to(LazyList) #::: tail.to(LazyList)
+    prefixStream #::: local #::: central.to(LazyList) #::: tail.to(LazyList)
