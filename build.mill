@@ -550,6 +550,31 @@ object colloquy extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     override def mainClass: Task.Simple[Option[String]] = Some("colloquy.repl")
 
+    def bin(): Command[PathRef] = Task.Command:
+      val jar = assembly().path
+      val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "colloquy"
+      os.makeDir.all(target / os.up)
+      os.remove.all(target)
+
+      val runnersBase = ethereal.core.rustRunners().path / "ethereal"
+      val staging = Task.dest / "staging"
+      os.makeDir.all(staging)
+
+      ethereal.core.rustTargets.foreach: (_, label, binary) =>
+        val ext = if binary.endsWith(".exe") then ".exe" else ""
+        os.copy.over(runnersBase / s"runner-$label$ext", staging / s"runner-$label$ext")
+
+      os.copy.over(jar, staging / "data")
+
+      val classpath =
+        ziggurat.core.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
+
+      os.proc("java", "-cp", classpath, "ziggurat.Xeq", "installer", target.toString, staging.toString)
+        .call(stdout = os.Inherit, stderr = os.Inherit)
+
+      new java.io.File(target.toString).setExecutable(true)
+      PathRef(target)
+
   object test extends Tests(core, spectacular.core)
 
 object contextual extends Library:
