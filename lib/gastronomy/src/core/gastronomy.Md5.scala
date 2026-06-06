@@ -36,8 +36,11 @@ import anticipation.*
 import gossamer.*
 import prepositional.*
 
+import scala.reflect.Selectable.reflectiveSelectable
+
 object Md5:
-  given hash: Hash in Md5 = Hash(t"MD5", t"HmacMD5")
+  given hash: (hashing: Hashing { def md5: Hashing.Function }) => Hash in Md5 =
+    Hash(t"MD5", t"HmacMD5", hashing.md5)
 
 sealed trait Md5 extends Algorithm:
   type Bits = 128

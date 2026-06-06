@@ -32,15 +32,17 @@
                                                                                                   */
 package gastronomy
 
-import anticipation.*
-import gossamer.*
-import prepositional.*
+// A pluggable hashing provider: it supplies the implementation of each hash
+// function as a `Hashing.Function` (a factory for fresh `Digestion`s). Providers
+// are *disjoint* — the JDK provider handles MD5/SHA-1/SHA-2/CRC-32, while BLAKE3
+// (with no JDK implementation) is supplied by the pure-Scala Soundness provider —
+// so each algorithm is reached through a structural refinement rather than a
+// mandatory baseline. Select providers with explicit imports, e.g.
+// `import hashProviders.javaStdlibHashing, hashProviders.soundnessHashing`.
+trait Hashing
 
-import scala.reflect.Selectable.reflectiveSelectable
-
-object Sha1:
-  given hash: (hashing: Hashing { def sha1: Hashing.Function }) => Hash in Sha1 =
-    Hash(t"SHA1", t"HmacSHA1", hashing.sha1)
-
-sealed trait Sha1 extends Algorithm:
-  type Bits = 160
+object Hashing:
+  // One hash algorithm's implementation: a factory for a fresh incremental
+  // `Digestion`.
+  trait Function:
+    def digestion(): Digestion

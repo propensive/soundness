@@ -32,15 +32,34 @@
                                                                                                   */
 package gastronomy
 
+import java.security as js
+import java.util.zip as juz
+
 import anticipation.*
 import gossamer.*
-import prepositional.*
+import rudiments.*
+import vacuous.*
 
-import scala.reflect.Selectable.reflectiveSelectable
+// The default hashing provider, backed by the JDK: `MessageDigest` for the
+// cryptographic hashes and `java.util.zip.CRC32` for the checksum. This is the
+// single home of `java.security`/`java.util.zip` usage in gastronomy. It does not
+// offer BLAKE3 (the JDK has no implementation) — use the Soundness provider.
+object JavaStdlibHashing extends Hashing:
+  def md5:  Hashing.Function = messageDigest(t"MD5")
+  def sha1: Hashing.Function = messageDigest(t"SHA1")
+  def sha2(bits: Int): Hashing.Function = messageDigest(t"SHA-$bits")
 
-object Sha1:
-  given hash: (hashing: Hashing { def sha1: Hashing.Function }) => Hash in Sha1 =
-    Hash(t"SHA1", t"HmacSHA1", hashing.sha1)
+  def crc32: Hashing.Function = new Hashing.Function:
+    def digestion(): Digestion = new Digestion:
+      private val state: juz.CRC32 = juz.CRC32()
+      def append(bytes: Data): Unit = state.update(bytes.mutable(using Unsafe))
 
-sealed trait Sha1 extends Algorithm:
-  type Bits = 160
+      def digest(): Data =
+        val value = state.getValue()
+        IArray[Byte]((value >> 24).toByte, (value >> 16).toByte, (value >> 8).toByte, value.toByte)
+
+  private def messageDigest(name: Text): Hashing.Function = new Hashing.Function:
+    def digestion(): Digestion = new Digestion:
+      private val md: js.MessageDigest = js.MessageDigest.getInstance(name.s).nn
+      def append(bytes: Data): Unit = md.update(bytes.mutable(using Unsafe))
+      def digest(): Data = md.digest.nn.immutable(using Unsafe)

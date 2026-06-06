@@ -33,7 +33,6 @@
 package gastronomy
 
 import java.nio.charset.StandardCharsets
-import javax.crypto as jc
 
 import anticipation.*
 import fulminate.*
@@ -41,6 +40,8 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+
+import scala.reflect.Selectable.reflectiveSelectable
 
 object Blake3:
   private final val OutLen   = 32
@@ -291,15 +292,14 @@ object Blake3:
 
       current.rootOutputBytes(outLen).immutable(using Unsafe)
 
-  given hash: Hash in Blake3:
-    def name:     Text = t"BLAKE3"
-    def hmacName: Text = t"HMAC-BLAKE3"
-    def hmac0:    jc.Mac = panic(m"BLAKE3 HMAC is not implemented")
+  given hash: (hashing: Hashing { def blake3: Hashing.Function }) => Hash in Blake3 =
+    Hash(t"BLAKE3", t"HMAC-BLAKE3", hashing.blake3)
 
-    def initialize(): Digestion = new Digestion:
-      private val hasher: Hasher = Hasher(Iv, 0)
-      def append(bytes: Data): Unit = hasher.update(bytes)
-      def digest(): Data = hasher.complete(OutLen)
+  // The pure-Scala BLAKE3 `Digestion`, used by the Soundness hashing provider.
+  def digestion(): Digestion = new Digestion:
+    private val hasher: Hasher = Hasher(Iv, 0)
+    def append(bytes: Data): Unit = hasher.update(bytes)
+    def digest(): Data = hasher.complete(OutLen)
 
   def hashOf(input: IArray[Byte], length: Int = OutLen): IArray[Byte] =
     val hasher = Hasher(Iv, 0)

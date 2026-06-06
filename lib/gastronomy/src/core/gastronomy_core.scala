@@ -36,14 +36,14 @@ import anticipation.*
 import prepositional.*
 import turbulence.*
 
-package hashFunctions:
-  given blake3: Hash in Blake3 = Blake3.hash
-  given crc32: Hash in Crc32 = Crc32.hash
-  given md5: Hash in Md5 = Md5.hash
-  given sha1: Hash in Sha1 = Sha1.hash
-
-  given sha2: [bits <: 224 | 256 | 384 | 512: ValueOf] => Hash in Sha2[bits] =
-    Sha2.hash[bits]
+// Hashing providers supply the per-algorithm implementations. Pick one (or both)
+// with an explicit import, e.g. `import hashProviders.javaStdlibHashing` for the
+// JDK hashes and `import hashProviders.soundnessHashing` for BLAKE3. The given's
+// type is the provider object's singleton type, so the structurally-typed
+// algorithms it offers stay visible to the per-algorithm `Hash` givens.
+package hashProviders:
+  given javaStdlibHashing: JavaStdlibHashing.type = JavaStdlibHashing
+  given soundnessHashing: SoundnessHashing.type = SoundnessHashing
 
 extension [digestible: Digestible](value: digestible)
   def digest[hash <: Algorithm](using Hash in hash): Digest in hash =

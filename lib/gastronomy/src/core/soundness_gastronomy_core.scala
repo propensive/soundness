@@ -35,7 +35,7 @@ package soundness
 export
   gastronomy
   . { Algorithm, Blake3, checksum, Crc32, Digest, digest, Digester, Digestible, Digestion, Feistel,
-      Hash, Md5, Sha1, Sha2, Sha384, Sha512 }
+      Hash, Hashing, Md5, Sha1, Sha2, Sha384, Sha512 }
 
-package hashFunctions:
-  export gastronomy.hashFunctions.{blake3, crc32, md5, sha1, sha2}
+package hashProviders:
+  export gastronomy.hashProviders.{javaStdlibHashing, soundnessHashing}

@@ -32,19 +32,10 @@
                                                                                                   */
 package gastronomy
 
-import java.security as js
-
 import anticipation.*
-import rudiments.*
-import vacuous.*
 
-object Digestion:
-  class Java(md: js.MessageDigest) extends Digestion:
-    private val messageDigest: js.MessageDigest = md
-
-    def append(bytes: Data): Unit = messageDigest.update(bytes.mutable(using Unsafe))
-    def digest(): Data = messageDigest.digest.nn.immutable(using Unsafe)
-
+// An incremental hash computation: feed bytes with `append`, then read the result
+// with `digest`. Implementations are supplied by `Hashing` providers.
 trait Digestion:
   def append(bytes: Data): Unit
   def digest(): Data

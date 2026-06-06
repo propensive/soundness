@@ -32,22 +32,23 @@
                                                                                                   */
 package gastronomy
 
-import java.security as js
-import javax.crypto as jc
-
 import anticipation.*
 import beneficence.*
 import prepositional.*
 
 object Hash:
-  def apply[algorithm <: Algorithm](name0: Text, hmacName0: Text): Hash in algorithm = new Hash:
-    type Form = algorithm
+  // Builds a `Hash` for `algorithm` from the `Hashing.Function` an in-scope
+  // provider supplies. `name`/`hmacName` are the algorithm's JCE-style descriptors
+  // (the latter used by enigmatic's HMAC); the byte-level digesting is delegated to
+  // the provider's `Function`.
+  def apply[algorithm <: Algorithm](name0: Text, hmacName0: Text, function: Hashing.Function)
+  :   Hash in algorithm =
 
-    val name: Text = name0
-    val hmacName: Text = hmacName0
-
-    def initialize(): Digestion = new Digestion.Java(js.MessageDigest.getInstance(name0.s).nn)
-    def hmac0: jc.Mac = jc.Mac.getInstance(hmacName0.s).nn
+    new Hash:
+      type Form = algorithm
+      val name: Text = name0
+      val hmacName: Text = hmacName0
+      def initialize(): Digestion = function.digestion()
 
 trait Hash extends Findable:
   type Form <: Algorithm
@@ -55,4 +56,3 @@ trait Hash extends Findable:
   def name: Text
   def hmacName: Text
   def initialize(): Digestion
-  def hmac0: jc.Mac

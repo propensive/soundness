@@ -32,15 +32,9 @@
                                                                                                   */
 package gastronomy
 
-import anticipation.*
-import gossamer.*
-import prepositional.*
-
-import scala.reflect.Selectable.reflectiveSelectable
-
-object Sha1:
-  given hash: (hashing: Hashing { def sha1: Hashing.Function }) => Hash in Sha1 =
-    Hash(t"SHA1", t"HmacSHA1", hashing.sha1)
-
-sealed trait Sha1 extends Algorithm:
-  type Bits = 160
+// A pure-Scala hashing provider for algorithms with no JDK implementation. Today
+// that is just BLAKE3 (implemented in `Blake3`); other native-Scala hashes would
+// be added here. Select it with `import hashProviders.soundnessHashing`.
+object SoundnessHashing extends Hashing:
+  def blake3: Hashing.Function = new Hashing.Function:
+    def digestion(): Digestion = Blake3.digestion()

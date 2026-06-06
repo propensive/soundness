@@ -34,6 +34,8 @@ package gastronomy
 
 import soundness.*
 
+import hashProviders.javaStdlibHashing, hashProviders.soundnessHashing
+
 import alphabets.hex.upperCase
 
 object Tests extends Suite(m"Gastronomy tests"):

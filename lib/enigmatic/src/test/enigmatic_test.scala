@@ -38,6 +38,7 @@ import strategies.throwUnsafely
 import charDecoders.utf8, charEncoders.utf8, textSanitizers.skip
 import errorDiagnostics.stackTraces
 import cryptoProviders.javaStdlibCrypto
+import hashProviders.javaStdlibHashing
 import crypto.permitDisallowedCrypto   // the suite deliberately exercises weak crypto
 
 import alphabets.hex.upperCase
