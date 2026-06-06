@@ -161,6 +161,13 @@ object Tests extends Suite(m"Xenophile tests"):
     suite(m"Native (C headers)"):
       val library: Foreign of "library" from Native = Foreign["library", Native]
 
+      test(m"FFM: call libc strlen through a parsed C header"):
+        val arena = java.lang.foreign.Arena.global().nn
+        val libc = ForeignLibrary.system(t"long strlen(const char* s);")
+        val text = arena.allocateFrom("hello, world").nn
+        libc.handle(t"strlen").invokeWithArguments(text).nn.asInstanceOf[Long]
+      . assert(_ == 12L)
+
       test(m"a C struct field has the field's foreign type"):
         val point: Foreign of "Point" from Native = Foreign["Point", Native]
         point.x.expr

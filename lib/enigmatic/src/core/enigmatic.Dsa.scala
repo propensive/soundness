@@ -32,56 +32,23 @@
                                                                                                   */
 package enigmatic
 
-import java.security as js, js.spec as jss, js.interfaces as jsi
-
 import anticipation.*
-import fulminate.*
-import rudiments.*
-import vacuous.*
+
+import scala.reflect.Selectable.reflectiveSelectable
 
 object Dsa:
-  given value: [bits <: 512 | 1024 | 2048 | 3072: ValueOf] => Dsa[bits] = Dsa()
+  given value: [bits <: 512 | 1024 | 2048 | 3072: ValueOf]
+  =>  ( crypto: Crypto { def dsa: Crypto.SignatureScheme } )
+  =>  Dsa[bits] = Dsa(crypto.dsa)
 
-class Dsa[bits <: 512 | 1024 | 2048 | 3072: ValueOf]() extends Cipher, Signing:
+class Dsa[bits <: 512 | 1024 | 2048 | 3072: ValueOf](scheme: Crypto.SignatureScheme)
+extends Cipher, Signing:
   type Size = bits
 
   def keySize: bits = valueOf[bits]
-
-  def genKey(): Data =
-    val generator = js.KeyPairGenerator.getInstance("DSA").nn
-    val random = js.SecureRandom()
-    generator.initialize(keySize, random)
-    val keyPair = generator.generateKeyPair().nn
-
-    val pubKey = keyPair.getPublic.nn match
-      case key: jsi.DSAPublicKey => key
-      case key: js.PublicKey     => panic(m"unexpected public key type")
-
-    keyPair.getPrivate.nn.getEncoded.nn.immutable(using Unsafe)
-
-  def sign(data: Data, keyData: Data): Data =
-    val sig = initialize()
-    val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(keyData.to(Array)))
-    sig.initSign(key)
-    sig.update(data.to(Array))
-    sig.sign().nn.immutable(using Unsafe)
+  def genKey(): Data = scheme.generateKeyPair(keySize)
+  def sign(data: Data, keyData: Data): Data = scheme.sign(data, keyData)
+  def privateToPublic(keyData: Data): Data = scheme.privateToPublic(keyData)
 
   def verify(data: Data, signature: Data, keyData: Data): Boolean =
-    val sig = initialize()
-    val key = keyFactory().generatePublic(jss.X509EncodedKeySpec(keyData.to(Array)))
-    sig.initVerify(key)
-    sig.update(data.to(Array))
-    sig.verify(signature.to(Array))
-
-  def privateToPublic(keyData: Data): Data =
-    val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(keyData.to(Array))).nn match
-      case key: jsi.DSAPrivateKey => key
-      case key: js.PrivateKey     => panic(m"unexpected private key type")
-
-    val params = key.getParams.nn
-    val y = params.getG.nn.modPow(key.getX, params.getP)
-    val spec = jss.DSAPublicKeySpec(y, params.getP, params.getQ, params.getG)
-    keyFactory().generatePublic(spec).nn.getEncoded.nn.immutable(using Unsafe)
-
-  private def initialize(): js.Signature = js.Signature.getInstance("DSA").nn
-  private def keyFactory(): js.KeyFactory = js.KeyFactory.getInstance("DSA").nn
+    scheme.verify(data, signature, keyData)

@@ -635,7 +635,12 @@ object enigmatic extends Library:
   object cose extends Component(core, breviloquence.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, cose)
+  object openssl extends Component(core, xenophile.native):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core, cose, openssl):
+    override def forkArgs: T[Seq[String]] = Task:
+      super.forkArgs() ++ Seq("--enable-native-access=ALL-UNNAMED")
 
 object escapade extends Library:
   object core extends Component(anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core, escritoire.core):

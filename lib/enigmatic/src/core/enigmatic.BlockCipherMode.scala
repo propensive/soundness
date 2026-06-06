@@ -61,7 +61,10 @@ object Cbc:
 sealed trait Cbc
 
 object Ecb:
-  given mode: Ecb is BlockCipherMode = BlockCipherMode(t"ECB", false, true)
+  // ECB reveals plaintext structure and is gated as a "disallowed" mode: summoning
+  // its mode evidence (for either direction, or even key generation) needs a permit.
+  given mode: (erased Permit[Concession.Ecb]) => (Ecb is BlockCipherMode) =
+    BlockCipherMode(t"ECB", false, true)
 
 sealed trait Ecb
 

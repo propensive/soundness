@@ -44,7 +44,7 @@ object SymmetricKey:
 class SymmetricKey[cipher <: Cipher](private[enigmatic] val bytes: Data)
 extends PrivateKey[cipher](bytes):
   def verify[value: Encodable in Data](value: value, signature: Signature[cipher])
-    ( using cipher & Signing )
+    ( using signing: cipher & Signing, erased weakness: ProcessingPermit[Weakness[cipher]] )
   :   Boolean =
 
     public.verify(value, signature)

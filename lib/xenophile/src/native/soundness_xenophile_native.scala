@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export xenophile.Native
+export xenophile.{Native, ForeignLibrary}

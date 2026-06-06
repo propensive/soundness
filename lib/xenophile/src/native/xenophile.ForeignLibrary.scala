@@ -30,91 +30,83 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package enigmatic
+package xenophile
 
-import java.security as js
-import javax.crypto as jc
+import java.lang.foreign.*
+import java.lang.invoke.MethodHandle
 
 import anticipation.*
-import contingency.*
-import distillate.*
+import fulminate.*
 import gossamer.*
-import prepositional.*
+import rudiments.*
 import vacuous.*
 
-// Encryption is total: a valid transformation is guaranteed by the static types
-// (see `Permits`), so `encrypt` cannot fail. Only `decrypt` can fail at runtime —
-// from a wrong key, corrupted ciphertext, or malformed input — and those JCE
-// failures are surfaced as a `CryptoError`.
+// A loaded native library, paired with the C signatures `CHeaderDialect` read from
+// a header. This is the runtime half of the `native` ecosystem — the Foreign /
+// Memory (FFM) "evaluator" that turns a navigated foreign function into an actual
+// downcall. The compile-time `Foreign` navigator type-checks calls against the same
+// header; this executes them.
+object ForeignLibrary:
+  private def linker: Linker = Linker.nativeLinker.nn
 
-extension [value: Encodable in Data](value: value)
-  def encrypt[cipher <: Cipher]
-    ( using encryptor: Encryptor[cipher],
-            algorithm: cipher & Encryption,
-            erased weakness: Permit[Weakness[cipher]],
-            erased authentication: Permit[Authentication[cipher]] )
-  :   Data =
+  // Maps a C type (as canonicalised by `CHeaderDialect`) to an FFM memory layout.
+  // Every pointer and string is an `ADDRESS`; the numeric primitives map to their
+  // same-width FFM value layout. Opaque/unknown named types are assumed to be
+  // passed by pointer (the `extern "C"` convention for handles like `EVP_PKEY*`).
+  def layout(tpe: Foreign.Type): MemoryLayout = tpe match
+    case Foreign.Type.Named(t"int")    => ValueLayout.JAVA_INT.nn
+    case Foreign.Type.Named(t"long")   => ValueLayout.JAVA_LONG.nn
+    case Foreign.Type.Named(t"short")  => ValueLayout.JAVA_SHORT.nn
+    case Foreign.Type.Named(t"char")   => ValueLayout.JAVA_BYTE.nn
+    case Foreign.Type.Named(t"double") => ValueLayout.JAVA_DOUBLE.nn
+    case Foreign.Type.Named(t"float")  => ValueLayout.JAVA_FLOAT.nn
+    case Foreign.Type.Named(t"bool")   => ValueLayout.JAVA_BOOLEAN.nn
+    case _                             => ValueLayout.ADDRESS.nn
 
-    algorithm.encrypt(value.bytestream, encryptor.bytes)
+  def descriptor(signature: Signature): FunctionDescriptor =
+    val parameters = signature.parameters.or(Nil).map(layout)
 
-// Streaming encryption (block ciphers only) lazily transforms a `Stream`, driving
-// the JCE cipher through update/doFinal. The IV is emitted as the leading chunk
-// and the `NoPadding` alignment check runs at end-of-stream. Drain it within the
-// `expose` block — only the fixed ciphertext of `stream` could otherwise leak.
+    signature.result match
+      case Foreign.Type.Named(t"void") => FunctionDescriptor.ofVoid(parameters*).nn
+      case result                      => FunctionDescriptor.of(layout(result), parameters*).nn
 
-extension (stream: Stream[Data])
-  def encrypt[cipher <: BlockCipher]
-    ( using encryptor: Encryptor[cipher],
-            algorithm: cipher & Encryption,
-            erased weakness: Permit[Weakness[cipher]],
-            erased authentication: Permit[Authentication[cipher]] )
-  :   Stream[Data] =
+  // Loads the first of `paths` that resolves as a symbol lookup bound to `arena`,
+  // pairing it with the function signatures parsed from `header`.
+  def apply(header: Text, paths: List[Text])(using arena: Arena): ForeignLibrary =
+    def attempt(remaining: List[Text]): SymbolLookup = remaining match
+      case path :: rest =>
+        try SymbolLookup.libraryLookup(path.s, arena).nn catch case _: Throwable => attempt(rest)
 
-    algorithm.encryptStream(stream, encryptor.bytes)
+      case Nil =>
+        throw IllegalArgumentException(t"no native library could be loaded from $paths".s)
 
-extension (data: Data)
-  def decrypt[decodable: Decodable in Data, cipher <: Cipher]
-    ( using decryptor: Decryptor[cipher],
-            algorithm: cipher & Encryption,
-            erased weakness: ProcessingPermit[Weakness[cipher]],
-            erased authentication: ProcessingPermit[Authentication[cipher]] )
-  :   decodable raises CryptoError =
+    val signatures = CHeaderDialect.parse(header).getOrElse(CHeaderDialect.library, Map())
+    new ForeignLibrary(attempt(paths), signatures)
 
-    def detail(error: Throwable): Optional[Text] = error.getMessage match
-      case null         => Unset
-      case text: String => text.tt
+  // The process-wide default lookup (the C standard library and already-loaded
+  // images); useful for `libc` symbols without naming a library file.
+  def system(header: Text): ForeignLibrary =
+    val signatures = CHeaderDialect.parse(header).getOrElse(CHeaderDialect.library, Map())
+    new ForeignLibrary(linker.defaultLookup.nn, signatures)
 
-    val plaintext =
-      try algorithm.decrypt(data, decryptor.bytes) catch
-        case error: jc.AEADBadTagException =>
-          abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
+  // Copies bytes into freshly-allocated native memory in `arena`.
+  def segment(bytes: Data)(using arena: Arena): MemorySegment =
+    val source = bytes.mutable(using Unsafe)
+    val target = arena.allocate(bytes.length.toLong).nn
+    MemorySegment.copy(source, 0, target, ValueLayout.JAVA_BYTE, 0L, bytes.length)
+    target
 
-        case error: jc.BadPaddingException =>
-          abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
+  // Reads `length` bytes back out of a native segment.
+  def bytes(segment: MemorySegment, length: Int): Data =
+    val array = new Array[Byte](length)
+    MemorySegment.copy(segment, ValueLayout.JAVA_BYTE, 0L, array, 0, length)
+    array.immutable(using Unsafe)
 
-        case error: jc.IllegalBlockSizeException =>
-          abort(CryptoError(CryptoError.Reason.IllegalBlockSize, detail(error)))
-
-        case error: js.InvalidKeyException =>
-          abort(CryptoError(CryptoError.Reason.InvalidKey, detail(error)))
-
-        case error: js.GeneralSecurityException =>
-          abort(CryptoError(CryptoError.Reason.IoFailure, detail(error)))
-
-    decodable.decoded(plaintext)
-
-// `expose` lends the key to the block as an `Encryptor`/`Decryptor` capability.
-// Capture checking (which would confine the capability to this scope) is not yet
-// enabled; the capability types are kept so it can be turned on as an enhancement.
-
-extension [cipher <: Cipher](key: PublicKey[cipher])
-  def expose[result](block: Encryptor[cipher] ?=> result): result =
-    block(using Encryptor(key.bytes))
-
-extension [cipher <: Cipher](key: PrivateKey[cipher])
-  def expose[result](block: Decryptor[cipher] ?=> result): result =
-    block(using Decryptor(key.privateData))
-
-extension [cipher <: Cipher](key: SymmetricKey[cipher])
-  def expose[result](block: (Encryptor[cipher], Decryptor[cipher]) ?=> result): result =
-    block(using Encryptor(key.bytes), Decryptor(key.bytes))
+class ForeignLibrary(lookup: SymbolLookup, signatures: Map[Text, Signature]):
+  // A bound `MethodHandle` for the named function, built from its parsed C
+  // signature. Invoke it with `invokeWithArguments`, passing `MemorySegment`s for
+  // pointer parameters and boxed primitives for the rest.
+  def handle(function: Text): MethodHandle =
+    val signature = signatures.getOrElse(function, panic(m"no such foreign function: $function"))
+    val symbol = lookup.find(function.s).nn.orElseThrow().nn
+    ForeignLibrary.linker.downcallHandle(symbol, ForeignLibrary.descriptor(signature)).nn

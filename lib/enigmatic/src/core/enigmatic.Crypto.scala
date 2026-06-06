@@ -32,89 +32,57 @@
                                                                                                   */
 package enigmatic
 
-import java.security as js
-import javax.crypto as jc
-
 import anticipation.*
-import contingency.*
-import distillate.*
-import gossamer.*
-import prepositional.*
 import vacuous.*
 
-// Encryption is total: a valid transformation is guaranteed by the static types
-// (see `Permits`), so `encrypt` cannot fail. Only `decrypt` can fail at runtime —
-// from a wrong key, corrupted ciphertext, or malformed input — and those JCE
-// failures are surfaced as a `CryptoError`.
+// A pluggable cryptographic provider: it supplies the raw algorithmic
+// implementations (the JDK's JCE, BouncyCastle, OpenSSL, …) that the typed
+// enigmatic API delegates to. Pick one with an explicit import, e.g.
+// `import cryptoProviders.javaStdlibCrypto`.
+//
+// Every provider must implement the mandatory baseline below — the modern,
+// universally-supported primitives. Legacy or provider-specific algorithms (DES,
+// Blowfish, RC2, DSA, …) are contributed as additional members and reached
+// through a structural refinement, so an algorithm a provider does not offer is a
+// compile error at the use site rather than a runtime failure.
+//
+// All inputs and outputs are byte arrays (`Data`) and string descriptors
+// (`Text`); no platform crypto types appear in this contract. Key material
+// follows JCE-compatible encodings: symmetric keys are raw bytes; asymmetric
+// private keys are PKCS#8, public keys X.509 (SubjectPublicKeyInfo); a symmetric
+// ciphertext is `iv ++ rawCiphertext` when the mode uses an IV.
 
-extension [value: Encodable in Data](value: value)
-  def encrypt[cipher <: Cipher]
-    ( using encryptor: Encryptor[cipher],
-            algorithm: cipher & Encryption,
-            erased weakness: Permit[Weakness[cipher]],
-            erased authentication: Permit[Authentication[cipher]] )
-  :   Data =
+trait Crypto:
+  def random: Crypto.Random
+  def aes: Crypto.SymmetricCipher
+  def rsa: Crypto.PublicKeyCipher
+  def hmac(algorithm: Text): Crypto.Mac
 
-    algorithm.encrypt(value.bytestream, encryptor.bytes)
+object Crypto:
+  // A symmetric block cipher. `transformation` is the full JCE-style spec
+  // (e.g. `t"AES/CBC/PKCS5Padding"`); `encrypt`/`decrypt` frame the IV as the
+  // leading block of the ciphertext when one is supplied.
+  trait SymmetricCipher:
+    def encrypt(transformation: Text, key: Data, iv: Optional[Data], data: Data): Data
+    def decrypt(transformation: Text, key: Data, ivSize: Optional[Int], data: Data): Data
+    def blockSize(transformation: Text): Int
+    def generateKey(bits: Int): Data
+    def stream(transformation: Text, key: Data, iv: Optional[Data]): CipherSession
 
-// Streaming encryption (block ciphers only) lazily transforms a `Stream`, driving
-// the JCE cipher through update/doFinal. The IV is emitted as the leading chunk
-// and the `NoPadding` alignment check runs at end-of-stream. Drain it within the
-// `expose` block — only the fixed ciphertext of `stream` could otherwise leak.
+  trait PublicKeyCipher:
+    def encrypt(input: Data, publicKey: Data): Data
+    def decrypt(input: Data, privateKey: Data): Data
+    def generateKeyPair(bits: Int): Data
+    def privateToPublic(privateKey: Data): Data
 
-extension (stream: Stream[Data])
-  def encrypt[cipher <: BlockCipher]
-    ( using encryptor: Encryptor[cipher],
-            algorithm: cipher & Encryption,
-            erased weakness: Permit[Weakness[cipher]],
-            erased authentication: Permit[Authentication[cipher]] )
-  :   Stream[Data] =
+  trait SignatureScheme:
+    def sign(data: Data, privateKey: Data): Data
+    def verify(data: Data, signature: Data, publicKey: Data): Boolean
+    def generateKeyPair(bits: Int): Data
+    def privateToPublic(privateKey: Data): Data
 
-    algorithm.encryptStream(stream, encryptor.bytes)
+  trait Mac:
+    def mac(key: Data, data: Data): Data
 
-extension (data: Data)
-  def decrypt[decodable: Decodable in Data, cipher <: Cipher]
-    ( using decryptor: Decryptor[cipher],
-            algorithm: cipher & Encryption,
-            erased weakness: ProcessingPermit[Weakness[cipher]],
-            erased authentication: ProcessingPermit[Authentication[cipher]] )
-  :   decodable raises CryptoError =
-
-    def detail(error: Throwable): Optional[Text] = error.getMessage match
-      case null         => Unset
-      case text: String => text.tt
-
-    val plaintext =
-      try algorithm.decrypt(data, decryptor.bytes) catch
-        case error: jc.AEADBadTagException =>
-          abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
-
-        case error: jc.BadPaddingException =>
-          abort(CryptoError(CryptoError.Reason.BadPadding, detail(error)))
-
-        case error: jc.IllegalBlockSizeException =>
-          abort(CryptoError(CryptoError.Reason.IllegalBlockSize, detail(error)))
-
-        case error: js.InvalidKeyException =>
-          abort(CryptoError(CryptoError.Reason.InvalidKey, detail(error)))
-
-        case error: js.GeneralSecurityException =>
-          abort(CryptoError(CryptoError.Reason.IoFailure, detail(error)))
-
-    decodable.decoded(plaintext)
-
-// `expose` lends the key to the block as an `Encryptor`/`Decryptor` capability.
-// Capture checking (which would confine the capability to this scope) is not yet
-// enabled; the capability types are kept so it can be turned on as an enhancement.
-
-extension [cipher <: Cipher](key: PublicKey[cipher])
-  def expose[result](block: Encryptor[cipher] ?=> result): result =
-    block(using Encryptor(key.bytes))
-
-extension [cipher <: Cipher](key: PrivateKey[cipher])
-  def expose[result](block: Decryptor[cipher] ?=> result): result =
-    block(using Decryptor(key.privateData))
-
-extension [cipher <: Cipher](key: SymmetricKey[cipher])
-  def expose[result](block: (Encryptor[cipher], Decryptor[cipher]) ?=> result): result =
-    block(using Encryptor(key.bytes), Decryptor(key.bytes))
+  trait Random:
+    def bytes(size: Int): Data

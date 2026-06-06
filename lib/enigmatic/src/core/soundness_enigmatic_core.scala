@@ -35,17 +35,26 @@ package soundness
 export
   enigmatic
   . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
-      CryptoError, Ctr, decrypt, Decryptor, Des, Divulgence, Dsa, Ecb, encrypt, Encryptor,
-      Encryption, expose,
-      Hmac, hmac, InitializationVector, Iso10126, NoPadding, Ofb, Pem, PemError, PemLabel, Permits,
-      Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing, Symmetric, SymmetricKey,
-      TripleDes }
+      CipherSession, Concession, Crypto, CryptoError, Ctr, decrypt, Decryptor, Des, Divulgence,
+      Dsa, Ecb, encrypt, Encryptor, Encryption, expose,
+      Hmac, hmac, InitializationVector, Iso10126, NoPadding, Ofb, Pem, PemError, PemLabel, Permit,
+      Permits, Pkcs7, PrivateKey, ProcessingPermit, PublicKey, Rc2, Rsa, Signature, Signing,
+      Symmetric, SymmetricKey, TripleDes }
 
 package blockCipherMode:
-  export enigmatic.blockCipherMode.{cbc, cfb, ctr, ecb, ofb}
+  export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
 
 package blockCipherPadding:
   export enigmatic.blockCipherPadding.{iso10126, pkcs7}
 
 package initializationVector:
-  export enigmatic.initializationVector.{random, zero}
+  // `random` (the default) lives in `InitializationVector`'s companion; it is a
+  // context-function given over `Crypto` and is deliberately not re-exported here.
+  export enigmatic.initializationVector.zero
+
+package cryptoProviders:
+  export enigmatic.cryptoProviders.javaStdlibCrypto
+
+package crypto:
+  export enigmatic.crypto.{permitUnauthenticatedCrypto, permitDeprecatedCrypto, permitLegacyCrypto,
+      permitDisallowedCrypto}
