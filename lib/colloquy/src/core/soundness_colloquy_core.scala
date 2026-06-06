@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export anthology.Repl
+export colloquy.Repl
