@@ -247,3 +247,26 @@ object Tests extends Suite(m"Anthology Tests"):
           repl.interpret(t"bump()")
           tally
       . assert(_ == 21)
+
+      test(m"a lifted import is in scope for a lifted def and for later lines"):
+        supervise:
+          val repl = Repl[3.8]:
+            import scala.collection.mutable.ListBuffer
+            def make: ListBuffer[Int] = ListBuffer(1, 2, 3)
+
+          repl.interpret(t"make.sum")               // lifted def uses the import
+          repl.interpret(t"ListBuffer(9, 9).sum")   // a later line uses it directly
+      . assert:
+          case Repl.Outcome.Ran(_, value) => value.let(_ == t"18").or(false)
+          case _                          => false
+
+      test(m"a block-local var can be reassigned from a REPL line"):
+        supervise:
+          val repl = Repl[3.8]:
+            var counter = 10
+
+          repl.interpret(t"counter = counter + 5")
+          repl.interpret(t"counter")
+      . assert:
+          case Repl.Outcome.Ran(_, value) => value.let(_ == t"15").or(false)
+          case _                          => false

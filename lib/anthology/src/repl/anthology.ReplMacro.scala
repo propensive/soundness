@@ -90,16 +90,18 @@ object ReplMacro:
     stats.foreach(definedSymbols.foldTree((), _)(owner))
 
     // A captured binding lifted into the seed object: `value` is the host-side
-    // expression supplying its value; `symbol` is what the block (and host) use
-    // to refer to it, used both to redirect lifted references to the accessor and
-    // — when `writeBack` is set (a free `var`) — to assign back to the host.
+    // expression supplying its value; `symbol` is what the block (and host) use to
+    // refer to it (used to redirect lifted references to the accessor, and — for a
+    // free `var` — to assign back to the host). `free` marks a reference captured
+    // from the enclosing scope (host-backed); a `var` declared in the block itself
+    // is instead backed by a REPL-local cell.
     case class Bind
-      ( name:      String,
-        tpe:       TypeRepr,
-        mutable:   Boolean,
-        value:     Term,
-        symbol:    Symbol,
-        writeBack: Boolean )
+      ( name:    String,
+        tpe:     TypeRepr,
+        mutable: Boolean,
+        value:   Term,
+        symbol:  Symbol,
+        free:    Boolean )
 
     val imports: scm.ListBuffer[String]    = scm.ListBuffer()
     val binds:   scm.ListBuffer[Bind]      = scm.ListBuffer()
@@ -152,7 +154,7 @@ object ReplMacro:
     lifted.foreach(freeReferences.foldTree((), _)(owner))
 
     free.foreach: (name, info) =>
-      binds += Bind(name, info(0), info(1), Ref(info(2)), info(2), info(1))
+      binds += Bind(name, info(0), info(1), Ref(info(2)), info(2), true)
 
     // Build accessors and the maps that redirect captured references to them.
     val getters: scm.Map[Symbol, Symbol] = scm.Map()
@@ -166,7 +168,7 @@ object ReplMacro:
         case '[t] =>
           DefDef(getterSymbol, _ => Some('{ReplBridge.fetchLive[t](${Expr(bind.name)})}.asTerm))
 
-      if !(bind.mutable && bind.writeBack) then List(getter) else
+      if !bind.mutable then List(getter) else
         val setterType =
           MethodType(List("value"))(_ => List(bind.tpe), _ => TypeRepr.of[Unit])
 
@@ -225,8 +227,19 @@ object ReplMacro:
           Repl.make[version]($preludeExpr)(using $scalac, $classloader, $temporary)
 
         $ {
-            // Each binding's value is registered live, keyed by session and name;
-            // a free `var` also registers a consumer that assigns back to the host.
+            // Wraps a `Object => Unit` assignment as a Java `Consumer`; `accept`'s
+            // parameter is typed `Object | Null` so the override matches under
+            // explicit-nulls (and collapses to `Object` without it).
+            def consumer(assign: Expr[Object => Unit]): Expr[ju.function.Consumer[Object]] =
+              ' { val function = $assign
+
+                  new ju.function.Consumer[Object]:
+                    def accept(value: Object | Null): Unit = function(value.asInstanceOf[Object]) }
+
+            // Each binding's value is registered live, keyed by session and name.
+            // A free `var` also registers a consumer that assigns back to the host;
+            // a block-local `var` is backed by a REPL-local cell that both the
+            // supplier and the consumer close over.
             val puts: List[Expr[Unit]] = binds.to(List).flatMap: bind =>
               val read: Expr[Object] = '{${bind.value.asExprOf[Any]}.asInstanceOf[Object]}
 
@@ -236,11 +249,12 @@ object ReplMacro:
               val put: Expr[Unit] =
                 '{ReplBridge.putSupplier(repl.session, ${Expr(bind.name)}, $supplier)}
 
-              if !(bind.mutable && bind.writeBack) then List(put) else
+              if !bind.mutable then List(put)
+              else if bind.free then
                 val methodType =
                   MethodType(List("value"))(_ => List(TypeRepr.of[Object]), _ => TypeRepr.of[Unit])
 
-                val setter: Expr[Object => Unit] =
+                val assign: Expr[Object => Unit] =
                   Lambda(Symbol.spliceOwner, methodType, (_, params) =>
                     val value: Term = params.head.asInstanceOf[Term]
 
@@ -250,19 +264,26 @@ object ReplMacro:
                         Assign(Ref(bind.symbol), cast)
                   ).asExprOf[Object => Unit]
 
-                // `accept`'s parameter is typed `Object | Null` so the override
-                // matches Java's `Consumer` under explicit-nulls.
-                val consumer: Expr[ju.function.Consumer[Object]] =
-                  ' { val function = $setter
-
-                      new ju.function.Consumer[Object]:
-                        def accept(value: Object | Null): Unit =
-                          function(value.asInstanceOf[Object]) }
-
                 val putSetter: Expr[Unit] =
-                  '{ReplBridge.putSetter(repl.session, ${Expr(bind.name)}, $consumer)}
+                  '{ReplBridge.putSetter(repl.session, ${Expr(bind.name)}, ${consumer(assign)})}
 
                 List(put, putSetter)
+              else
+                // A block-local `var`: REPL-local mutable storage shared by the
+                // supplier and the consumer.
+                val cellPut: Expr[Unit] =
+                  ' { val cell: Array[Object] = new Array[Object](1)
+                      cell(0) = $read
+
+                      val supply: ju.function.Supplier[Object] =
+                        new ju.function.Supplier[Object]:
+                          def get(): Object = cell(0)
+
+                      val assign: Object => Unit = cell(0) = _
+                      ReplBridge.putSupplier(repl.session, ${Expr(bind.name)}, supply)
+                      ReplBridge.putSetter(repl.session, ${Expr(bind.name)}, ${consumer('assign)}) }
+
+                List(cellPut)
 
             Expr.block(puts, 'repl)
           }
