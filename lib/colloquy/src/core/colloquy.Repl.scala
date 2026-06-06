@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package colloquy
 
 import java.io as ji
 import java.net as jn
@@ -39,6 +39,7 @@ import java.nio.file as jnf
 import scala.quoted.*
 
 import ambience.*
+import anthology.*
 import anticipation.*
 import coaxial.*
 import contingency.*
@@ -194,7 +195,7 @@ class Repl[version <: Scalac.Versions]
   // sits in an `@experimental` scope because `Inspectable` is `@experimental`, so
   // this compiles even when the contextual `Scalac` is not in experimental mode.
   private def expressionCode(name: Text, key: Text, line: Text): Text =
-    val put: Text = t"anthology.ReplBridge.put(${session.toString.tt}L, \"$key\", $name.inspect)"
+    val put: Text = t"colloquy.ReplBridge.put(${session.toString.tt}L, \"$key\", $name.inspect)"
 
     val lines: List[Text] =
       List
