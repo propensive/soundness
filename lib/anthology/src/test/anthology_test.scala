@@ -38,6 +38,7 @@ import _root_.java.net as jn
 import soundness.*
 
 import classloaders.threadContext
+import interfaces.paths.pathOnLinux
 import codicils.await
 import logging.silent
 import strategies.throwUnsafely
@@ -47,15 +48,19 @@ import threading.platform
 
 // Mimics a standard-REPL session: `size` references `greeting`, a field of the
 // enclosing object, by simple name (as `var name = …` would be in the Scala REPL).
+// `session` reads `size` once, mutates `greeting`, then reads it again — the
+// second read should track the change (a live binding), not the captured value.
 object ReplFixture:
   var greeting: String = "hello"
 
   def session(using Scalac[3.8], Classloader, TemporaryDirectory, Monitor, System, Codicil)
-  :   Repl.Outcome =
+  :   (Repl.Outcome, Repl.Outcome) =
     val repl = Repl[3.8]:
       def size: Int = greeting.length
 
-    repl.interpret(t"size")
+    val before: Repl.Outcome = repl.interpret(t"size")
+    greeting = "changed"
+    (before, repl.interpret(t"size"))
 
 object Tests extends Suite(m"Anthology Tests"):
   def run(): Unit =
@@ -222,10 +227,82 @@ object Tests extends Suite(m"Anthology Tests"):
           case Repl.Outcome.Ran(_, value) => value.let(_ == t"105").or(false)
           case _                          => false
 
-      test(m"a lifted def can reference a field of an enclosing object"):
+      test(m"a lifted def references a field of an enclosing object, tracking changes"):
         supervise:
-          ReplFixture.greeting = "world"
+          ReplFixture.greeting = "hi"     // length 2; then mutated to "changed" (7)
           ReplFixture.session
       . assert:
-          case Repl.Outcome.Ran(_, value) => value.let(_ == t"5").or(false)
-          case _                          => false
+          case (Repl.Outcome.Ran(_, before), Repl.Outcome.Ran(_, after)) =>
+            before.let(_ == t"2").or(false) && after.let(_ == t"7").or(false)
+          case _ =>
+            false
+
+      test(m"a lifted def can write back to a host var"):
+        supervise:
+          var tally = 1
+
+          val repl = Repl[3.8]:
+            def bump(): Unit = tally = tally + 10
+
+          repl.interpret(t"bump()")
+          repl.interpret(t"bump()")
+          tally
+      . assert(_ == 21)
+
+    suite(m"REPL module compiler (AST-in)"):
+      given Scalac[3.8] = Scalac(Nil)
+
+      test(m"emit a named object from a quote, then export it from a text unit"):
+        supervise:
+          val out: Path on Linux = unsafely(temporaryDirectory/Uuid())
+          ji.File(out.encode.s).mkdirs()
+
+          val classpath =
+            val base = summon[Classloader].classpath.match
+              case local: LocalClasspath => local.entries
+              case _ => unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries
+
+            LocalClasspath((Classpath.Directory(out) :: base)*)
+
+          // A closed block of member definitions pickled to TASTy at compile time
+          // and carried as data — no source text, full type fidelity. `add`
+          // references the sibling `base`, mirroring a lifted def that refers to a
+          // generated accessor.
+          val pickled: List[String] = ReplPickler.pickle:
+            def base: Int = 10
+            def greet: String = "hi there"
+            def add(n: Int): Int = n + base
+
+          val errors = ReplModuleCompiler.compile(classpath)(t"ReplSeed0", out.encode)(pickled)
+
+          // A separately-compiled text unit exports the emitted object and uses
+          // its members (the parameterised `add` proves signature fidelity).
+          val source =
+            t"object User:\n  export ReplSeed0.*\n  def result: Int = add(40) + greet.length"
+
+          val process = summon[Scalac[3.8]].apply(classpath)(Map(t"User.scala" -> source), out)
+          (errors, process.complete())
+      . assert: (errors, outcome) =>
+          errors.isEmpty && outcome == CompileResult.Success
+
+      test(m"a reflection-built accessor block emits a usable typed member"):
+        supervise:
+          val out: Path on Linux = unsafely(temporaryDirectory/Uuid())
+          ji.File(out.encode.s).mkdirs()
+
+          val classpath =
+            val base = summon[Classloader].classpath.match
+              case local: LocalClasspath => local.entries
+              case _ => unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries
+
+            LocalClasspath((Classpath.Directory(out) :: base)*)
+
+          val errors =
+            ReplModuleCompiler.compile(classpath)(t"ReplSeed0", out.encode)(AccessorProbe.pickle)
+
+          // The accessor `def x: Int` must be usable with its static type.
+          val source = t"object User:\n  export ReplSeed0.*\n  def y: Int = x + 1"
+          val process = summon[Scalac[3.8]].apply(classpath)(Map(t"User.scala" -> source), out)
+          (errors, process.complete())
+      . assert: (errors, outcome) =>
+          errors.isEmpty && outcome == CompileResult.Success
