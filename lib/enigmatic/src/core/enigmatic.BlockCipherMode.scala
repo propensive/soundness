@@ -33,6 +33,7 @@
 package enigmatic
 
 import anticipation.*
+import gastronomy.{Permit, Concession}
 import gossamer.*
 import prepositional.*
 

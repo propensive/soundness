@@ -30,13 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package enigmatic
+package gastronomy
 
 // A "concession" is a specific cryptographic weakness a caller must explicitly
 // accept (via a `crypto.permit…Crypto` import) before the corresponding algorithm,
 // key length or mode can be used. `Acceptable` is the absence of any weakness.
+//
+// All concession markers live here in gastronomy (the lowest crypto module) so the
+// permit vocabulary is shared: the hash concessions are used by gastronomy itself,
+// while the cipher/mode concessions are used by enigmatic downstream.
 object Concession:
   sealed trait Acceptable
+
+  // hashing concessions (gastronomy)
+  sealed trait Md5
+  sealed trait Sha1
+
+  // cipher concessions (enigmatic)
   sealed trait Des
   sealed trait TripleDes
   sealed trait Rc2
@@ -46,21 +56,9 @@ object Concession:
   sealed trait Ecb
   sealed trait Unauthenticated
 
-// The algorithm/key-length concession of a cipher type, extracted by matching the
-// (possibly `over`/`against`-refined) cipher. Anything not named here — AES,
-// RSA-2048, HMAC — is `Acceptable` and needs no permission.
-type Weakness[cipher] = cipher match
-  case Des          => Concession.Des
-  case TripleDes[?] => Concession.TripleDes
-  case Rc2[?]       => Concession.Rc2
-  case Blowfish[?]  => Concession.Blowfish
-  case Rsa[1024]    => Concession.SmallRsa
-  case Dsa[?]       => Concession.Dsa
-  case _            => Concession.Acceptable
-
-// Every (non-AEAD) block cipher is unauthenticated; asymmetric ciphers are not
-// classified this way. When authenticated encryption is added, its ciphers will
-// fall through to `Acceptable` here.
-type Authentication[cipher] = cipher match
-  case BlockCipher => Concession.Unauthenticated
-  case _           => Concession.Acceptable
+// The concession of a hash algorithm: MD5 and SHA-1 are weak; everything else
+// (SHA-2, BLAKE3, CRC-32) is `Acceptable` and needs no permission.
+type HashWeakness[algorithm] = algorithm match
+  case Md5  => Concession.Md5
+  case Sha1 => Concession.Sha1
+  case _    => Concession.Acceptable

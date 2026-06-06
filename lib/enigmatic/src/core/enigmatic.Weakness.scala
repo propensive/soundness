@@ -30,17 +30,29 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package enigmatic
 
-export
-  gastronomy
-  . { Algorithm, Blake3, checksum, Concession, Crc32, Digest, digest, Digester, Digestible,
-      Digestion, Feistel, Hash, Hashing, Md5, Permit, ProcessingPermit, Sha1, Sha2, Sha384,
-      Sha512 }
+import gastronomy.Concession
 
-package hashProviders:
-  export gastronomy.hashProviders.{javaStdlibHashing, soundnessHashing}
+// The cipher-side concession match types. The shared `Concession` markers, `Permit`
+// and the `crypto.permit…Crypto` aggregates live in gastronomy; these map a cipher
+// type to its concession.
 
-package crypto:
-  export gastronomy.crypto.{permitUnauthenticatedCrypto, permitDeprecatedCrypto, permitLegacyCrypto,
-      permitDisallowedCrypto}
+// The algorithm/key-length concession of a cipher type, extracted by matching the
+// (possibly `over`/`against`-refined) cipher. Anything not named here — AES,
+// RSA-2048, HMAC — is `Acceptable` and needs no permission.
+type Weakness[cipher] = cipher match
+  case Des          => Concession.Des
+  case TripleDes[?] => Concession.TripleDes
+  case Rc2[?]       => Concession.Rc2
+  case Blowfish[?]  => Concession.Blowfish
+  case Rsa[1024]    => Concession.SmallRsa
+  case Dsa[?]       => Concession.Dsa
+  case _            => Concession.Acceptable
+
+// Every (non-AEAD) block cipher is unauthenticated; asymmetric ciphers are not
+// classified this way. When authenticated encryption is added, its ciphers will
+// fall through to `Acceptable` here.
+type Authentication[cipher] = cipher match
+  case BlockCipher => Concession.Unauthenticated
+  case _           => Concession.Acceptable

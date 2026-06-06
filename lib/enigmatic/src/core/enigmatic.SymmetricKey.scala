@@ -33,6 +33,7 @@
 package enigmatic
 
 import anticipation.*
+import gastronomy.ProcessingPermit
 import prepositional.*
 
 object SymmetricKey:

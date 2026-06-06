@@ -41,7 +41,7 @@ import eucalyptus.*
 import exoskeleton.*
 import fulminate.*
 import galilei.*
-import gastronomy.*, hashProviders.javaStdlibHashing
+import gastronomy.*, hashProviders.javaStdlibHashing, crypto.permitDeprecatedCrypto
 import gossamer.*
 import hellenism.*
 import hieroglyph.*

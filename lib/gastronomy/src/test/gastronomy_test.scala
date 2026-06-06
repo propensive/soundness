@@ -35,6 +35,7 @@ package gastronomy
 import soundness.*
 
 import hashProviders.javaStdlibHashing, hashProviders.soundnessHashing
+import crypto.permitDisallowedCrypto   // the suite exercises MD5 and SHA-1
 
 import alphabets.hex.upperCase
 
