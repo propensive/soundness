@@ -32,6 +32,8 @@
                                                                                                   */
 package anthology
 
+import java.util as ju
+
 import scala.collection.mutable as scm
 import scala.quoted.*
 
@@ -78,11 +80,12 @@ object ReplMacro:
 
     stats.foreach(definedSymbols.foldTree((), _)(Symbol.spliceOwner))
 
-    val imports:     scm.ListBuffer[String]                    = scm.ListBuffer()
-    val definitions: scm.ListBuffer[String]                    = scm.ListBuffer()
-    val bindings:    scm.ListBuffer[(Boolean, String, String)] = scm.ListBuffer()
-    val captures:    scm.ListBuffer[(String, Term)]            = scm.ListBuffer()
-    val lifted:      scm.ListBuffer[Tree]                      = scm.ListBuffer()
+    val imports:      scm.ListBuffer[String]                              = scm.ListBuffer()
+    val definitions:  scm.ListBuffer[String]                              = scm.ListBuffer()
+    val bindings:     scm.ListBuffer[(Boolean, Boolean, String, String)]  = scm.ListBuffer()
+    val captures:     scm.ListBuffer[(String, Term)]                      = scm.ListBuffer()
+    val liveCaptures: scm.ListBuffer[(String, Boolean, Symbol)]           = scm.ListBuffer()
+    val lifted:       scm.ListBuffer[Tree]                                = scm.ListBuffer()
 
     stats.foreach:
       case statement: Import => imports += sourceText(statement)
@@ -90,7 +93,7 @@ object ReplMacro:
 
       case statement: ValDef if !statement.symbol.flags.is(Flags.Given) =>
         val mutable: Boolean = statement.symbol.flags.is(Flags.Mutable)
-        bindings += ((mutable, statement.name, statement.tpt.tpe.show))
+        bindings += ((mutable, false, statement.name, statement.tpt.tpe.show))
 
         statement.rhs.foreach: rhs =>
           captures += ((statement.name, rhs))
@@ -110,22 +113,23 @@ object ReplMacro:
     // name, so the lifted source resolves it in the REPL). This covers enclosing
     // method locals and parameters as well as fields of an enclosing object —
     // e.g. a value defined earlier in an enclosing REPL session.
-    val bound: scm.Set[String] = scm.Set.from(bindings.map(_._2))
-    val free:  scm.LinkedHashMap[String, (String, Term)] = scm.LinkedHashMap()
+    val bound: scm.Set[String] = scm.Set.from(bindings.map(_._3))
+    val free:  scm.LinkedHashMap[String, (String, Boolean, Symbol)] = scm.LinkedHashMap()
 
     val freeReferences = new TreeAccumulator[Unit]:
       def foldTree(unit: Unit, tree: Tree)(owner: Symbol): Unit =
         tree match
           case ident: Ident if ident.symbol.exists && ident.symbol.isValDef =>
-            val symbol:    Symbol = ident.symbol
-            val ownerName: String = symbol.maybeOwner.fullName
+            val symbol:    Symbol  = ident.symbol
+            val ownerName: String  = symbol.maybeOwner.fullName
+            val mutable:   Boolean = symbol.flags.is(Flags.Mutable)
 
             val predefined =
               ownerName == "scala" || ownerName.startsWith("scala.")
               || ownerName == "java" || ownerName.startsWith("java.")
 
             if !predefined && !blockSymbols.contains(symbol) && !bound.contains(ident.name)
-            then free.getOrElseUpdate(ident.name, (ident.tpe.widen.show, Ref(symbol)))
+            then free.getOrElseUpdate(ident.name, (ident.tpe.widen.show, mutable, symbol))
 
           case _ =>
             ()
@@ -135,15 +139,15 @@ object ReplMacro:
     lifted.foreach(freeReferences.foldTree((), _)(Symbol.spliceOwner))
 
     free.foreach: (name, info) =>
-      bindings += ((false, name, info(0)))
-      captures += ((name, info(1)))
+      bindings += ((info(1), true, name, info(0)))
+      liveCaptures += ((name, info(1), info(2)))
 
     val importsExpr: Expr[List[String]] = Expr(imports.to(List))
     val definitionsExpr: Expr[List[String]] = Expr(definitions.to(List))
 
     val bindingsExpr: Expr[List[Repl.Binding]] = Expr.ofList:
-      bindings.to(List).map: (mutable, name, typeName) =>
-        '{Repl.Binding(${Expr(mutable)}, ${Expr(name)}, ${Expr(typeName)})}
+      bindings.to(List).map: (mutable, dynamic, name, typeName) =>
+        '{Repl.Binding(${Expr(mutable)}, ${Expr(dynamic)}, ${Expr(name)}, ${Expr(typeName)})}
 
     val preludeExpr: Expr[Repl.Prelude] =
       '{Repl.Prelude($importsExpr, $definitionsExpr, $bindingsExpr)}
@@ -156,6 +160,47 @@ object ReplMacro:
             val puts: List[Expr[Unit]] = captures.to(List).map: (name, rhs) =>
               '{ReplBridge.put(repl.session, ${Expr(name)}, ${rhs.asExprOf[Any]})}
 
-            Expr.block(puts, 'repl)
+            // Dynamic bindings store a supplier, read live by the REPL's `def`
+            // accessor, so a captured reference tracks the host value. A mutable
+            // reference also stores a consumer that assigns back to the host
+            // `var`, so a lifted definition may write to it through the REPL.
+            val live: List[Expr[Unit]] = liveCaptures.to(List).flatMap: (name, mutable, symbol) =>
+              val read: Expr[Object] = '{${Ref(symbol).asExprOf[Any]}.asInstanceOf[Object]}
+
+              val supplier: Expr[ju.function.Supplier[Object]] =
+                '{new ju.function.Supplier[Object] { def get(): Object = $read }}
+
+              val put: Expr[Unit] =
+                '{ReplBridge.putSupplier(repl.session, ${Expr(name)}, $supplier)}
+
+              if !mutable then List(put) else
+                val methodType =
+                  MethodType(List("value"))(_ => List(TypeRepr.of[Object]), _ => TypeRepr.of[Unit])
+
+                val setter: Expr[Object => Unit] =
+                  Lambda(Symbol.spliceOwner, methodType, (_, params) =>
+                    val value: Term = params.head.asInstanceOf[Term]
+
+                    (symbol.info.widen.asType: @unchecked) match
+                      case '[t] =>
+                        Assign(Ref(symbol), '{${value.asExprOf[Object]}.asInstanceOf[t]}.asTerm)
+                  ).asExprOf[Object => Unit]
+
+                // `accept`'s parameter is typed `Object | Null` so the override
+                // matches Java's `Consumer` under explicit-nulls (and collapses to
+                // `Object` without it).
+                val consumer: Expr[ju.function.Consumer[Object]] =
+                  ' { val function = $setter
+
+                      new ju.function.Consumer[Object]:
+                        def accept(value: Object | Null): Unit =
+                          function(value.asInstanceOf[Object]) }
+
+                val putSetter: Expr[Unit] =
+                  '{ReplBridge.putSetter(repl.session, ${Expr(name)}, $consumer)}
+
+                List(put, putSetter)
+
+            Expr.block(puts ++ live, 'repl)
           }
       }

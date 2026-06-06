@@ -86,8 +86,11 @@ object Repl:
   case class Response(status: Text, value: Text, diagnostics: Text)
 
   // A value/variable lifted from an inline binding block: its REPL-visible name
-  // and the source rendering of its type, used to build a typed accessor.
-  case class Binding(mutable: Boolean, name: String, typeName: String)
+  // and the source rendering of its type, used to build a typed accessor. A
+  // `dynamic` binding is read live on each access (a `def` accessor), so a
+  // reference captured from a lifted definition tracks the host `var`; a static
+  // one is a snapshot (a `val`/`var` accessor).
+  case class Binding(mutable: Boolean, dynamic: Boolean, name: String, typeName: String)
 
   object Prelude:
     val empty: Prelude = Prelude(Nil, Nil, Nil)
@@ -233,13 +236,26 @@ class Repl[version <: Scalac.Versions]
   // first object (`rs$line$0`); later lines see them via the history import.
   // Imports create no members, so they are re-injected into every line instead.
   private def seedBody: Text =
-    val accessors = prelude.bindings.map: binding =>
-      val keyword:  Text = if binding.mutable then t"var" else t"val"
+    val accessors: List[Text] = prelude.bindings.flatMap: binding =>
       val name:     Text = binding.name.tt
       val typeName: Text = binding.typeName.tt
       val key:      Text = t"${session.toString.tt}L, \"$name\""
 
-      t"$keyword $name: $typeName = anthology.ReplBridge.fetch[$typeName]($key)"
+      if binding.dynamic then
+        val getter: Text = t"def $name: $typeName = anthology.ReplBridge.fetchLive[$typeName]($key)"
+
+        // A mutable dynamic binding gets a setter too, so a lifted definition may
+        // assign to it and the write flows back to the host `var`.
+        if binding.mutable then
+          val setter: Text =
+            t"def ${name}_=(value: $typeName): Unit = anthology.ReplBridge.updateLive($key, value)"
+
+          List(getter, setter)
+        else
+          List(getter)
+      else
+        val keyword: Text = if binding.mutable then t"var" else t"val"
+        List(t"$keyword $name: $typeName = anthology.ReplBridge.fetch[$typeName]($key)")
 
     (prelude.imports.map(_.tt) ::: prelude.definitions.map(_.tt) ::: accessors).join(t"\n")
 
@@ -297,7 +313,8 @@ class Repl[version <: Scalac.Versions]
             writer.write(response.s)
             writer.write("\n\n")
             writer.flush()
-        else buffer.append(line.nn).append("\n")
+        else
+          buffer.append(line.nn).append("\n")
 
         line = reader.readLine()
 
