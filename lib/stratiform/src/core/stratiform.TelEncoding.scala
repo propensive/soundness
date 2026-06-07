@@ -64,7 +64,7 @@ trait Tel2:
   // new one. Mirrors jacinta's lens given.
   given lens: [name <: Label: ValueOf] => (erased DynamicTelEnabler) => Tactic[TelError]
   =>  name is Lens from Tel onto Tel =
-    Lens(_.selectDynamic(valueOf[name]), _.modify(valueOf[name], _))
+    Lens(_.selectField(valueOf[name]), _.modify(valueOf[name], _))
 
   // Positional optics over a node's child compounds (TEL has no positional arrays,
   // but a compound's children are ordered — this mirrors the read-side

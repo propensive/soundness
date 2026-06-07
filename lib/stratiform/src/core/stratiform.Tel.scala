@@ -55,28 +55,35 @@ import vacuous.*
 // without case analysis.
 
 class Tel private[stratiform](private[stratiform] val subtree: Tel.Subtree)
-extends scala.Dynamic, Documentary:
+extends scala.Dynamic, Documentary, Topical, Original:
   type Self = Tel
   type Metadata = Tel.Metadata
 
   inline def as[value: Decodable in Tel]: value raises TelError = value.decoded(this)
 
-  // Dynamic field access: `tel.firstName` becomes a lookup for the kebab-
-  // case keyword "first-name". Gated by DynamicTelEnabler so opting in is
-  // explicit.
-  def selectDynamic(field: String)(using erased DynamicTelEnabler)
-  :     Tel raises TelError =
+  // Total field access used by the schema-typed navigation macros and by
+  // internal optics: an empty `Tel` for a missing field, never raising.
+  private[stratiform] def selectField(field: String): Tel =
     val match0 = childCompounds.find(_.keyword == Tel.camelToKebab(field))
     if match0.isEmpty then Tel.empty else Tel(match0.get)
 
-  // Chained access: `tel.contacts(0)` after the field lookup. Phase-2
-  // returns the n-th child compound (any keyword), matching list-style
-  // access.
-  def applyDynamic(field: String)(index: Int)(using erased DynamicTelEnabler)
-  :     Tel raises TelError =
-    val parent = selectDynamic(field)
-    val cs = parent.childCompounds
+  // Total child-by-index access under a field: an empty `Tel` when the index is
+  // out of range.
+  private[stratiform] def selectFieldIndex(field: String, index: Int): Tel =
+    val cs = selectField(field).childCompounds
     if index < 0 || index >= cs.length then Tel.empty else Tel(cs(index))
+
+  // Dynamic field access: `tel.firstName` looks up the kebab-case keyword
+  // "first-name". For a schema-typed `Tel of P from R` the macro checks `P` has
+  // the field and yields `Tel of <field-type> from R` (no `DynamicTelEnabler`
+  // import needed); for a plain `Tel` it requires the enabler, as before.
+  transparent inline def selectDynamic(field: String): Tel = ${Stratiform.select('this, 'field)}
+
+  // Chained access: `tel.contacts(0)`. For a schema-typed `Tel of P from R`
+  // where the field is a collection, the macro yields `Tel of <element> from R`;
+  // for a plain `Tel` it returns the n-th child compound, as before.
+  transparent inline def applyDynamic(field: String)(index: Int): Tel =
+    ${Stratiform.applied('this, 'field, 'index)}
 
   // Keyword of this node — empty for the document root, otherwise the
   // compound's keyword text.
