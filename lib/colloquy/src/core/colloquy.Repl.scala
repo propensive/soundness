@@ -35,6 +35,7 @@ package colloquy
 import java.io as ji
 import java.lang as jl
 import java.net as jn
+import java.nio.channels as jnc
 import java.nio.file as jnf
 
 import scala.quoted.*
@@ -349,13 +350,45 @@ class Repl[version <: Scalac.Versions]
   :   SocketService logs CompileEvent raises BindError raises StreamError =
 
     port.listen: socket =>
-      converse(socket)
+      converse(socket.getInputStream.nn, socket.getOutputStream.nn)
       Data()
 
-  private def converse(socket: jn.Socket)(using Monitor, System, Codicil)
+  // Serves the REPL over a UNIX domain socket at `socketPath` (used when no TCP
+  // port is given). Coaxial's domain-socket `Connection` does not expose its
+  // streams for the bidirectional, asynchronously-written protocol this server
+  // needs, so the accept loop runs directly over an NIO channel.
+  def serve(socketPath: Text)(using Monitor, System, Codicil): SocketService logs CompileEvent =
+    val address: jn.UnixDomainSocketAddress = jn.UnixDomainSocketAddress.of(socketPath.s).nn
+
+    val channel: jnc.ServerSocketChannel =
+      jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
+
+    channel.configureBlocking(true)
+    channel.bind(address)
+
+    @volatile var listening: Boolean = true
+
+    val task = async:
+      while listening do
+        safely:
+          val client: jnc.SocketChannel = channel.accept().nn
+          val input  = jnc.Channels.newInputStream(client).nn
+          val output = jnc.Channels.newOutputStream(client).nn
+
+          async:
+            try converse(input, output) finally safely(client.close())
+
+    new SocketService:
+      def stop(): Unit =
+        listening = false
+        safely(channel.close())
+        safely(task.await())
+
+  private def converse(input: ji.InputStream, output: ji.OutputStream)
+    ( using Monitor, System, Codicil )
   :   Unit logs CompileEvent =
 
-    // Coaxial's `listen` owns the accepted socket — it writes this lambda's
+    // The TCP caller's `listen` owns the accepted socket — it writes this lambda's
     // result to the socket after we return — so we must NOT close it here, or
     // that write fails. And any I/O error (typically the client disconnecting)
     // must not escape: it would propagate out of the accept loop and stop the
@@ -368,8 +401,8 @@ class Repl[version <: Scalac.Versions]
     val writes: Mutex = Mutex()
 
     try
-      val reader = ji.BufferedReader(ji.InputStreamReader(socket.getInputStream.nn, "UTF-8"))
-      val writer = ji.OutputStreamWriter(socket.getOutputStream.nn, "UTF-8")
+      val reader = ji.BufferedReader(ji.InputStreamReader(input, "UTF-8"))
+      val writer = ji.OutputStreamWriter(output, "UTF-8")
       val buffer: StringBuilder = StringBuilder()
       var line: String | Null = reader.readLine()
 
