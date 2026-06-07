@@ -86,9 +86,10 @@ private def serve(portNumber: Int)(using Stdio, Monitor, Codicil, System): Exit 
       case error: Error => Out.println(t"colloquy: ${error.message}"); Exit.Fail(6)
 
     . recover:
-        val service = Repl().serve(port)
-        Out.println(t"colloquy: serving a REPL on port $portNumber (Ctrl+C to stop)")
-        juc.CountDownLatch(1).await()
+        val repl    = Repl()
+        val service = repl.serve(port)
+        Out.println(t"colloquy: serving a REPL on port $portNumber (Ctrl+C or /quit to stop)")
+        repl.awaitQuit()
         service.stop()
         Exit.Ok
 
@@ -170,24 +171,34 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
 
           . recover:
               LineEditor().ask: line =>
-                // The editor already showed the (live-highlighted) line; submit it
-                // and print the awaited result value and any diagnostics.
-                duplex.send(Stream((encode(Repl.Request.Submit(0, line)) + t"\n\n").data))
+                // A line beginning with `/` is a client command, handled locally
+                // rather than submitted: `/disconnect` ends the session (like
+                // Ctrl+D); `/quit` also tells the server to shut down.
+                if line == t"/disconnect" then running = false
+                else if line == t"/quit" then
+                  duplex.send(Stream((encode(Repl.Request.Quit(0)) + t"\n\n").data))
+                  running = false
+                else if line.starts(t"/") then
+                  Out.println(t"colloquy: unknown command: $line")
+                else
+                  // The editor already showed the (live-highlighted) line; submit
+                  // it and print the awaited result value and any diagnostics.
+                  duplex.send(Stream((encode(Repl.Request.Submit(0, line)) + t"\n\n").data))
 
-                submits.take().nn match
-                  case Repl.Reply.Ran(_, value, output, diagnostics, _) =>
-                    if output != t"" then Out.print(output)
-                    value.let(Out.println(_))
-                    if diagnostics != t"" then Out.println(diagnostics)
+                  submits.take().nn match
+                    case Repl.Reply.Ran(_, value, output, diagnostics, _) =>
+                      if output != t"" then Out.print(output)
+                      value.let(Out.println(_))
+                      if diagnostics != t"" then Out.println(diagnostics)
 
-                  case Repl.Reply.Threw(_, output, diagnostics, _) =>
-                    if output != t"" then Out.print(output)
-                    Out.println(diagnostics)
+                    case Repl.Reply.Threw(_, output, diagnostics, _) =>
+                      if output != t"" then Out.print(output)
+                      Out.println(diagnostics)
 
-                  case Repl.Reply.Rejected(_, diagnostics, _) => Out.println(diagnostics)
-                  case Repl.Reply.Crashed(_, diagnostics, _)  => Out.println(diagnostics)
-                  case Repl.Reply.Failed(_, message)          => Out.println(message)
-                  case Repl.Reply.Tokenized(_, _)             => ()
+                    case Repl.Reply.Rejected(_, diagnostics, _) => Out.println(diagnostics)
+                    case Repl.Reply.Crashed(_, diagnostics, _)  => Out.println(diagnostics)
+                    case Repl.Reply.Failed(_, message)          => Out.println(message)
+                    case Repl.Reply.Tokenized(_, _)             => ()
 
         live = false
         Exit.Ok

@@ -193,6 +193,29 @@ object Tests extends Suite(m"Colloquy Tests"):
       . assert: reply =>
           reply.contains("Ran") && reply.contains("2")
 
+      test(m"a quit request fulfils the server's quit signal"):
+        supervise:
+          val tcpPort = Port[Tcp]()
+          val repl    = Repl()
+          val service = repl.serve(tcpPort)
+          val socket  = jn.Socket("localhost", tcpPort.number)
+
+          try
+            val output = socket.getOutputStream.nn
+            output.write("{\"id\":0,\"kind\":\"Quit\"}\n\n".getBytes("UTF-8").nn)
+            output.flush()
+
+            // Wait (bounded) for the quit signal rather than blocking forever.
+            val runnable: Runnable = () => repl.awaitQuit()
+            val waiter = Thread(runnable)
+            waiter.start()
+            waiter.join(5000L)
+            !waiter.isAlive
+          finally
+            socket.close()
+            service.stop()
+      . assert(_ == true)
+
     suite(m"REPL block captures outside references"):
       given Scalac[3.8] = Scalac(Nil)
 
