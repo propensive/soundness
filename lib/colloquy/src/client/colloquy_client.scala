@@ -175,12 +175,16 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
                 duplex.send(Stream((encode(Repl.Request.Submit(0, line)) + t"\n\n").data))
 
                 submits.take().nn match
-                  case Repl.Reply.Ran(_, value, diagnostics, _) =>
+                  case Repl.Reply.Ran(_, value, output, diagnostics, _) =>
+                    if output != t"" then Out.print(output)
                     value.let(Out.println(_))
                     if diagnostics != t"" then Out.println(diagnostics)
 
+                  case Repl.Reply.Threw(_, output, diagnostics, _) =>
+                    if output != t"" then Out.print(output)
+                    Out.println(diagnostics)
+
                   case Repl.Reply.Rejected(_, diagnostics, _) => Out.println(diagnostics)
-                  case Repl.Reply.Threw(_, diagnostics, _)    => Out.println(diagnostics)
                   case Repl.Reply.Crashed(_, diagnostics, _)  => Out.println(diagnostics)
                   case Repl.Reply.Failed(_, message)          => Out.println(message)
                   case Repl.Reply.Tokenized(_, _)             => ()

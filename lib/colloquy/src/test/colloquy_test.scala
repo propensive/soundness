@@ -72,8 +72,8 @@ object Tests extends Suite(m"Colloquy Tests"):
           repl.interpret(t"val x = 40")
           repl.interpret(t"println(x + 2)")
       . assert:
-          case Repl.Outcome.Ran(_, _) => true
-          case _                      => false
+          case Repl.Outcome.Ran(_, _, _) => true
+          case _                         => false
 
       test(m"a type error is reported as Rejected with notices"):
         supervise:
@@ -86,8 +86,8 @@ object Tests extends Suite(m"Colloquy Tests"):
         supervise:
           Repl().interpret(t"throw new RuntimeException(\"boom\")")
       . assert:
-          case Repl.Outcome.Threw(_, _) => true
-          case _                        => false
+          case Repl.Outcome.Threw(_, _, _) => true
+          case _                           => false
 
     suite(m"REPL binding tests"):
       given Scalac[3.8] = Scalac(Nil)
@@ -104,8 +104,8 @@ object Tests extends Suite(m"Colloquy Tests"):
 
           repl.interpret(t"println(total)")     // "hello".length + 5
       . assert:
-          case Repl.Outcome.Ran(_, _) => true
-          case _                      => false
+          case Repl.Outcome.Ran(_, _, _) => true
+          case _                         => false
 
       test(m"a lifted import is in scope for REPL lines"):
         supervise:
@@ -115,8 +115,8 @@ object Tests extends Suite(m"Colloquy Tests"):
 
           repl.interpret(t"println(ListBuffer(1, 2, 3).sum)")
       . assert:
-          case Repl.Outcome.Ran(_, _) => true
-          case _                      => false
+          case Repl.Outcome.Ran(_, _, _) => true
+          case _                         => false
 
       test(m"a captured value persists across several lines"):
         supervise:
@@ -128,8 +128,8 @@ object Tests extends Suite(m"Colloquy Tests"):
           repl.interpret(t"val doubled = seed*2")
           repl.interpret(t"println(doubled + seed)")
       . assert:
-          case Repl.Outcome.Ran(_, _) => true
-          case _                      => false
+          case Repl.Outcome.Ran(_, _, _) => true
+          case _                         => false
 
     suite(m"REPL result rendering"):
       given Scalac[3.8] = Scalac(Nil)
@@ -138,15 +138,15 @@ object Tests extends Suite(m"Colloquy Tests"):
         supervise:
           Repl().interpret(t"21 * 2")
       . assert:
-          case Repl.Outcome.Ran(_, value) => value.let(_ == t"42").or(false)
-          case _                          => false
+          case Repl.Outcome.Ran(_, value, _) => value.let(_ == t"42").or(false)
+          case _                             => false
 
       test(m"a definition renders no value"):
         supervise:
           Repl().interpret(t"val x = 5")
       . assert:
-          case Repl.Outcome.Ran(_, value) => value.absent
-          case _                          => false
+          case Repl.Outcome.Ran(_, value, _) => value.absent
+          case _                             => false
 
       test(m"a rendered result is bound to res0 for later lines"):
         supervise:
@@ -154,8 +154,15 @@ object Tests extends Suite(m"Colloquy Tests"):
           repl.interpret(t"40 + 2")
           repl.interpret(t"res0 + 1")
       . assert:
-          case Repl.Outcome.Ran(_, value) => value.let(_ == t"43").or(false)
-          case _                          => false
+          case Repl.Outcome.Ran(_, value, _) => value.let(_ == t"43").or(false)
+          case _                             => false
+
+      test(m"stdout printed while a line runs is captured"):
+        supervise:
+          Repl().interpret(t"println(7)")
+      . assert:
+          case Repl.Outcome.Ran(_, _, output) => output.contains(t"7")
+          case _                              => false
 
     suite(m"REPL TCP server"):
       given Scalac[3.8] = Scalac(Nil)
@@ -198,8 +205,8 @@ object Tests extends Suite(m"Colloquy Tests"):
 
           repl.interpret(t"shifted(5)")
       . assert:
-          case Repl.Outcome.Ran(_, value) => value.let(_ == t"105").or(false)
-          case _                          => false
+          case Repl.Outcome.Ran(_, value, _) => value.let(_ == t"105").or(false)
+          case _                             => false
 
       test(m"a lifted def captures an enclosing method parameter"):
         def session(base: Int): Repl.Outcome = supervise:
@@ -210,8 +217,8 @@ object Tests extends Suite(m"Colloquy Tests"):
 
         session(40)
       . assert:
-          case Repl.Outcome.Ran(_, value) => value.let(_ == t"42").or(false)
-          case _                          => false
+          case Repl.Outcome.Ran(_, value, _) => value.let(_ == t"42").or(false)
+          case _                             => false
 
       test(m"a lifted def can reference both a block binding and an outside value"):
         supervise:
@@ -223,15 +230,15 @@ object Tests extends Suite(m"Colloquy Tests"):
 
           repl.interpret(t"total")
       . assert:
-          case Repl.Outcome.Ran(_, value) => value.let(_ == t"105").or(false)
-          case _                          => false
+          case Repl.Outcome.Ran(_, value, _) => value.let(_ == t"105").or(false)
+          case _                             => false
 
       test(m"a lifted def references a field of an enclosing object, tracking changes"):
         supervise:
           ReplFixture.greeting = "hi"     // length 2; then mutated to "changed" (7)
           ReplFixture.session
       . assert:
-          case (Repl.Outcome.Ran(_, before), Repl.Outcome.Ran(_, after)) =>
+          case (Repl.Outcome.Ran(_, before, _), Repl.Outcome.Ran(_, after, _)) =>
             before.let(_ == t"2").or(false) && after.let(_ == t"7").or(false)
           case _ =>
             false
@@ -257,8 +264,8 @@ object Tests extends Suite(m"Colloquy Tests"):
           repl.interpret(t"make.sum")               // lifted def uses the import
           repl.interpret(t"ListBuffer(9, 9).sum")   // a later line uses it directly
       . assert:
-          case Repl.Outcome.Ran(_, value) => value.let(_ == t"18").or(false)
-          case _                          => false
+          case Repl.Outcome.Ran(_, value, _) => value.let(_ == t"18").or(false)
+          case _                             => false
 
       test(m"a block-local var can be reassigned from a REPL line"):
         supervise:
@@ -268,5 +275,5 @@ object Tests extends Suite(m"Colloquy Tests"):
           repl.interpret(t"counter = counter + 5")
           repl.interpret(t"counter")
       . assert:
-          case Repl.Outcome.Ran(_, value) => value.let(_ == t"15").or(false)
-          case _                          => false
+          case Repl.Outcome.Ran(_, value, _) => value.let(_ == t"15").or(false)
+          case _                             => false
