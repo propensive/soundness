@@ -55,6 +55,7 @@ case class Assignment(worker: Worker, office: Office) derives CanEqual
 case class Crew(lead: Text, members: List[Worker]) derives CanEqual
 case class TextAge(name: Text, age: Text) derives CanEqual
 case class Nicked(name: Text, nick: Optional[Text]) derives CanEqual
+case class Config(name: Text, prefs: Map[Text, Int]) derives CanEqual
 
 def keywords(struct: Tels.Struct): List[Text] = struct.members.to(List).collect:
   case field: Tels.Field => field.keyword
@@ -98,6 +99,10 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
         Crew(t"Z", List(Worker(t"A", 1), Worker(t"B", 2))).encode.as[Crew]
       . assert(_ == Crew(t"Z", List(Worker(t"A", 1), Worker(t"B", 2))))
 
+      test(m"A map field round-trips through TEL"):
+        Config(t"c", Map(t"a" -> 1, t"b" -> 2)).encode.as[Config]
+      . assert(_ == Config(t"c", Map(t"a" -> 1, t"b" -> 2)))
+
     suite(m"Schema derivation"):
       test(m"A product derives a Struct with kebab-cased field keywords"):
         keywords(Schematic.tels[Worker](t"worker").document)
@@ -119,6 +124,16 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
         . collect:
             case struct: Tels.Struct => keywords(struct)
       . assert(_ == List(List(t"item")))
+
+      test(m"A map field's type is a Struct of repeatable `entries` of key/value"):
+        Schematic.tels[Config](t"config").document.members.to(List).collect:
+          case field: Tels.Field if field.keyword == t"prefs" => field.fieldType
+        . collect:
+            case struct: Tels.Struct => struct.members.to(List).collect:
+              case field: Tels.Field if field.keyword == t"entries" => field.fieldType
+        . flatten.collect:
+            case struct: Tels.Struct => keywords(struct)
+      . assert(_ == List(List(t"key", t"value")))
 
     suite(m"Compile-time schema checks"):
       test(m"An unknown field is rejected"):

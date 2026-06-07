@@ -252,14 +252,15 @@ trait Tel2:
   // element. Decoding reads back all `item` children, building the target
   // collection via its `Factory`.
 
-  private def itemise(tel: Tel): Tel.Compound = tel.subtree match
-    case c: Tel.Compound => c.copy(keyword = t"item")
-    case d: Tel.Document => Tel.Compound(t"item", IArray.empty, Unset, d.children)
+  // Re-keys an encoded value's compound (or wraps a document) under `keyword`.
+  private def reKey(tel: Tel, keyword: Text): Tel.Compound = tel.subtree match
+    case c: Tel.Compound => c.copy(keyword = keyword)
+    case d: Tel.Document => Tel.Compound(keyword, IArray.empty, Unset, d.children)
 
   private def collectionTel[value]
       (values: Iterable[value])(using encodable: value is Encodable in Tel)
   :     Tel =
-    Tel.compound(t"", IArray.empty, IArray.from(values.map(v => itemise(encodable.encoded(v)))))
+    Tel.compound(t"", IArray.empty, IArray.from(values.map(v => reKey(encodable.encoded(v), t"item"))))
 
   given listEncodable: [list <: List, element] => (encodable: => element is Encodable in Tel)
   =>  list[element] is Encodable in Tel =
@@ -282,6 +283,33 @@ trait Tel2:
       val builder = factory.newBuilder
       for item <- telVal.fields(t"item") do builder += decodable.decoded(item)
       builder.result()
+
+  // A `Map` encodes as a series of `entries` compounds, each carrying a `key`
+  // and a `value` child field. As with other collections the product encoder
+  // re-keys the wrapping compound with the field's label.
+
+  given mapEncodable: [key: Encodable in Tel, value: Encodable in Tel]
+  =>  Map[key, value] is Encodable in Tel =
+    map =>
+      val entries = IArray.from:
+        map.map: (k, v) =>
+          val keyChild   = reKey(key.encoded(k), t"key")
+          val valueChild = reKey(value.encoded(v), t"value")
+          reKey(Tel.compound(t"", IArray.empty, IArray(keyChild, valueChild)), t"entries")
+
+      Tel.compound(t"", IArray.empty, entries)
+
+  given mapDecodable: [key: Decodable in Tel, value: Decodable in Tel] => Tactic[TelError]
+  =>  Map[key, value] is Decodable in Tel =
+    telVal =>
+      var accumulator = Map.empty[key, value]
+
+      for entry <- telVal.fields(t"entries") do
+        val k = key.decoded(entry.field(t"key").or(Tel.empty))
+        val v = value.decoded(entry.field(t"value").or(Tel.empty))
+        accumulator = accumulator.updated(k, v)
+
+      accumulator
 
   // Helpers used by encoders to construct Tel values.
 

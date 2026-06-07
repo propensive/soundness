@@ -70,6 +70,21 @@ object Schematic:
   given series: [value: Schematic] => Series[value] is Schematic =
     () => collectionType(value.schema())
 
+  // A `Map` is a series of repeatable `entries`, each a struct of a `key` and a
+  // `value` field — matching the `entries`/`key`/`value` encoding.
+  given map: [key: Schematic, value: Schematic] => Map[key, value] is Schematic =
+    () =>
+      val entry =
+        Tels.Struct
+          ( IArray
+              ( Tels.Field(Polarity.Tight, Polarity.Implicit, t"key", key.schema(), Unset),
+                Tels.Field(Polarity.Tight, Polarity.Implicit, t"value", value.schema(), Unset) ),
+            IArray.empty )
+
+      Tels.Struct
+        ( IArray(Tels.Field(Polarity.Implicit, Polarity.Loose, t"entries", entry, Unset)),
+          IArray.empty )
+
   // A collection encodes as a wrapping compound whose repeatable `item` children
   // are the elements, so its schema is a `Struct` with a single repeatable `item`
   // field of the element type.
