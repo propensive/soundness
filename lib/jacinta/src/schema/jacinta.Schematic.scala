@@ -38,19 +38,26 @@ import anticipation.*
 import prepositional.*
 import urticose.*
 import vacuous.*
+import wisteria.*
 
+// `Schematic` describes the schema of a value's encoding; `Transport` is the
+// schema's own representation (e.g. `JsonSchema`), so an instance reads `X is
+// Schematic over JsonSchema`. It carries no `Form` of its own: when fused with an
+// encoder as `Encodable & Schematic in Json over JsonSchema`, the wire format
+// (`Form = Json`) comes from `Encodable`.
 object Schematic:
-  given byte: Byte is Schematic in JsonSchema = () => JsonSchema.Integer()
-  given short: Short is Schematic in JsonSchema = () => JsonSchema.Integer()
-  given int: Int is Schematic in JsonSchema = () => JsonSchema.Integer()
-  given long: Long is Schematic in JsonSchema = () => JsonSchema.Integer()
-  given float: Float is Schematic in JsonSchema = () => JsonSchema.Number()
-  given double: Double is Schematic in JsonSchema = () => JsonSchema.Number()
-  given text: Text is Schematic in JsonSchema = () => JsonSchema.String()
-  given email: EmailAddress is Schematic in JsonSchema = () => JsonSchema.String()
-  given boolean: Boolean is Schematic in JsonSchema = () => JsonSchema.Boolean()
+  given byte: Byte is Schematic over JsonSchema = () => JsonSchema.Integer()
+  given short: Short is Schematic over JsonSchema = () => JsonSchema.Integer()
+  given int: Int is Schematic over JsonSchema = () => JsonSchema.Integer()
+  given long: Long is Schematic over JsonSchema = () => JsonSchema.Integer()
+  given float: Float is Schematic over JsonSchema = () => JsonSchema.Number()
+  given double: Double is Schematic over JsonSchema = () => JsonSchema.Number()
+  given text: Text is Schematic over JsonSchema = () => JsonSchema.String()
+  given email: EmailAddress is Schematic over JsonSchema = () => JsonSchema.String()
+  given boolean: Boolean is Schematic over JsonSchema = () => JsonSchema.Boolean()
 
-  given optional: [value: Schematic in JsonSchema] => Optional[value] is Schematic in JsonSchema =
+  given optional: [value: Schematic over JsonSchema]
+  =>  Optional[value] is Schematic over JsonSchema =
     () =>
       value.schema() match
         case entity: JsonSchema.Object  => entity.copy(optional = true)
@@ -61,18 +68,27 @@ object Schematic:
         case entity: JsonSchema.Boolean => entity.copy(optional = true)
         case entity: JsonSchema.Null    => entity.copy(optional = true)
 
-  given list: [value: Schematic in JsonSchema] => List[value] is Schematic in JsonSchema =
+  given list: [value: Schematic over JsonSchema]
+  =>  List[value] is Schematic over JsonSchema =
     () => JsonSchema.Array(items = value.schema())
 
-  given set: [value: Schematic in JsonSchema] => Set[value] is Schematic in JsonSchema =
+  given set: [value: Schematic over JsonSchema]
+  =>  Set[value] is Schematic over JsonSchema =
     () => JsonSchema.Array(items = value.schema())
 
-
-  given map: [key: Encodable in Text, value: Schematic in JsonSchema]
-  =>  Map[key, value] is Schematic in JsonSchema =
-
+  given map: [key: Encodable in Text, value: Schematic over JsonSchema]
+  =>  Map[key, value] is Schematic over JsonSchema =
     () => JsonSchema.Object(additionalProperties = true)
 
+  // Auto-derivation of a schema for any product or sum, mirroring the encoder /
+  // decoder auto-givens. Gated on `Reflection` so it never competes with the
+  // primitive givens above.
+  inline given derived: [value: Reflection] => value is Schematic over JsonSchema =
+    JsonSchema.derived
 
-trait Schematic extends Typeclass, Formal:
-  def schema(): Form
+// `Schematic` describes the schema of a value's encoding. `Transport` is the
+// schema's own representation (e.g. `JsonSchema`). The wire format the schema is
+// *for* is not recorded here — in the fused `Encodable & Schematic in Json over
+// JsonSchema` it comes from `Encodable`'s `Form`.
+trait Schematic extends Typeclass, Transportive:
+  def schema(): Transport

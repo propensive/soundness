@@ -362,7 +362,7 @@ object internal:
 
       val params = method.paramSymss.head.map: param =>
         param.info.asType.absolve match
-          case '[param] => Expr.summon[param is Schematic in JsonSchema] match
+          case '[param] => Expr.summon[param is Schematic over JsonSchema] match
             case Some(schematic) =>
               '{(${Expr(param.name)}.tt, $schematic.schema())}
 
@@ -376,7 +376,7 @@ object internal:
         case MethodType(_, _, result)                   => result
 
       result.asType.absolve match
-        case '[result] => Expr.summon[result is Schematic in JsonSchema] match
+        case '[result] => Expr.summon[result is Schematic over JsonSchema] match
           case Some(schematic) =>
             ' {
                 val inputSchema =
@@ -407,7 +407,7 @@ object internal:
 
           case None => halt:
             m"""
-              there was no contextual ${TypeRepr.of[result is Schematic in JsonSchema].show}
+              there was no contextual ${TypeRepr.of[result is Schematic over JsonSchema].show}
               instance for the return type of ${method.name}
             """
 

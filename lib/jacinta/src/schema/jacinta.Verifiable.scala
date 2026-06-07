@@ -50,7 +50,7 @@ extension (json: Json)
   // The conformance check walks `schematic.schema(): JsonSchema` against the
   // value, raising `JsonError` on the first structural mismatch (wrong type, or a
   // required field absent).
-  def verify[topic](using schematic: topic is Schematic in JsonSchema)
+  def verify[topic](using schematic: topic is Schematic over JsonSchema)
   :     (Json of topic from topic) raises JsonError =
 
     conform(schematic.schema(), json.root)

@@ -47,12 +47,6 @@ case class Posting(employee: Employee, workplace: Workplace) derives CanEqual
 case class Squad(lead: Text, members: List[Employee]) derives CanEqual
 
 object VerifyTests extends Suite(m"Jacinta verify tests"):
-
-  given employeeSchematic: Employee is Schematic in JsonSchema = JsonSchema.derived[Employee]
-  given workplaceSchematic: Workplace is Schematic in JsonSchema = JsonSchema.derived[Workplace]
-  given postingSchematic: Posting is Schematic in JsonSchema = JsonSchema.derived[Posting]
-  given squadSchematic: Squad is Schematic in JsonSchema = JsonSchema.derived[Squad]
-
   def run(): Unit =
     suite(m"Runtime verification"):
       test(m"A conformant object verifies and still decodes"):

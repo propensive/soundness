@@ -46,7 +46,7 @@ import vacuous.*
 import wisteria.*
 
 
-object JsonSchema extends Derivable[Schematic in JsonSchema]:
+object JsonSchema extends Derivable[Schematic over JsonSchema]:
   // `$ref` schemas have no `type` discriminator, so they are handled here
   // explicitly; every other variant is delegated to the `type`-discriminated
   // derivation. A `Ref` encodes to a bare `{"$ref": "…"}` object rather than
@@ -145,7 +145,7 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
 
 
   inline def conjunction[derivation <: Product: ProductReflection]
-  :   derivation is Schematic in JsonSchema =
+  :   derivation is Schematic over JsonSchema =
 
     () =>
       val descriptions = infer[derivation is Annotated by memo] match
@@ -172,7 +172,7 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
       Object(properties = map, required = required)
 
 
-  inline def disjunction[derivation: SumReflection]: derivation is Schematic in JsonSchema =
+  inline def disjunction[derivation: SumReflection]: derivation is Schematic over JsonSchema =
     () =>
       val descriptions = infer[Annotated by memo under derivation] match
         case annotated: Annotated.Subtypes => annotated.subtypes

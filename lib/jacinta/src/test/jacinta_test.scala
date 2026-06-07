@@ -872,45 +872,45 @@ object Tests extends Suite(m"Jacinta Tests"):
 
     suite(m"JsonSchema tests"):
       test(m"Schematic for Int yields an Integer schema"):
-        infer[Int is Schematic in JsonSchema].schema()
+        infer[Int is Schematic over JsonSchema].schema()
       . assert(_ == JsonSchema.Integer())
 
       test(m"Schematic for Long yields an Integer schema"):
-        infer[Long is Schematic in JsonSchema].schema()
+        infer[Long is Schematic over JsonSchema].schema()
       . assert(_ == JsonSchema.Integer())
 
       test(m"Schematic for Text yields a String schema"):
-        infer[Text is Schematic in JsonSchema].schema()
+        infer[Text is Schematic over JsonSchema].schema()
       . assert(_ == JsonSchema.String())
 
       test(m"Schematic for Double yields a Number schema"):
-        infer[Double is Schematic in JsonSchema].schema()
+        infer[Double is Schematic over JsonSchema].schema()
       . assert(_ == JsonSchema.Number())
 
       test(m"Schematic for Boolean yields a Boolean schema"):
-        infer[Boolean is Schematic in JsonSchema].schema()
+        infer[Boolean is Schematic over JsonSchema].schema()
       . assert(_ == JsonSchema.Boolean())
 
       test(m"Schematic for Optional[Int] is an optional Integer"):
-        infer[Optional[Int] is Schematic in JsonSchema].schema()
+        infer[Optional[Int] is Schematic over JsonSchema].schema()
       . assert:
           case s: JsonSchema.Integer => s.optional
           case _                     => false
 
       test(m"Schematic for List[Int] is an Array of Integers"):
-        infer[List[Int] is Schematic in JsonSchema].schema()
+        infer[List[Int] is Schematic over JsonSchema].schema()
       . assert:
           case JsonSchema.Array(_, JsonSchema.Integer(_, _, _, _, _, _), _, _, _, _, _) => true
           case _                                                                         => false
 
       test(m"Schematic for Set[Text] is an Array of Strings"):
-        infer[Set[Text] is Schematic in JsonSchema].schema()
+        infer[Set[Text] is Schematic over JsonSchema].schema()
       . assert:
           case JsonSchema.Array(_, JsonSchema.String(_, _, _, _, _, _), _, _, _, _, _) => true
           case _                                                                         => false
 
       test(m"Schematic for Map[Text, Int] is an object with additionalProperties"):
-        infer[Map[Text, Int] is Schematic in JsonSchema].schema()
+        infer[Map[Text, Int] is Schematic over JsonSchema].schema()
       . assert:
           case s: JsonSchema.Object => s.additionalProperties
           case _                    => false
