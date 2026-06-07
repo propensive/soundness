@@ -47,6 +47,7 @@ import threading.platform
 
 import strategies.throwUnsafely
 import backstops.silent
+import codicils.cancel
 
 import Shell.*
 
@@ -263,6 +264,18 @@ object Tests extends Suite(m"Profanity Tests"):
     def edited(events: TerminalEvent*): Optional[Text] =
       noopEditor(events.iterator, LineEditor())(_(_))
 
+    // A multi-line editor: Enter inserts a newline, Shift+Enter submits.
+    val multilineEditor = new Interaction[Text, LineEditor]:
+      def render(old: Optional[LineEditor], editor: LineEditor): Unit = ()
+      def result(editor: LineEditor): Text = editor.value
+
+      override def submits(event: TerminalEvent): Boolean = event match
+        case Keypress.Shift(Keypress.Enter) => true
+        case _                              => false
+
+    def multilineEdited(events: TerminalEvent*): Optional[Text] =
+      multilineEditor(events.iterator, LineEditor())(_(_))
+
     suite(m"SelectMenu state transitions"):
       test(m"Enter selects the current item"):
         selected(Keypress.Enter)
@@ -333,6 +346,27 @@ object Tests extends Suite(m"Profanity Tests"):
         edited
           ( Keypress.CharKey('h'), Keypress.CharKey('i'), Keypress.Ctrl('U'), Keypress.Enter )
       . assert(_ == t"")
+
+      test(m"Enter inserts a newline and Shift+Enter submits"):
+        multilineEdited
+          ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('b'),
+            profanity.Keypress.Shift(profanity.Keypress.Enter) )
+      . assert(_ == t"a\nb")
+
+    suite(m"Keyboard decoding"):
+      test(m"Shift+Enter is decoded from its CSI-u sequence"):
+        supervise:
+          Keyboard.Standard().process(Stream('', '[', '1', '3', ';', '2', 'u')).head
+      . assert:
+          case Keypress.Shift(Keypress.Enter) => true
+          case _                              => false
+
+      test(m"plain Enter is decoded from its CSI-u sequence"):
+        supervise:
+          Keyboard.Standard().process(Stream('', '[', '1', '3', 'u')).head
+      . assert:
+          case Keypress.Enter => true
+          case _              => false
 
     suite(m"Signal POSIX numbering"):
       test(m"SIGHUP is 1")  (Signal.Hup.id)   .assert(_ == 1)
