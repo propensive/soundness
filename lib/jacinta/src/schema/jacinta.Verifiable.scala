@@ -32,6 +32,7 @@
                                                                                                   */
 package jacinta
 
+import anticipation.*
 import contingency.*
 import prepositional.*
 import rudiments.*

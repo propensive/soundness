@@ -33,6 +33,7 @@
 package jacinta
 
 import scala.annotation.*
+import scala.compiletime.summonInline
 
 import adversaria.*
 import anticipation.*
@@ -42,11 +43,65 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
+import urticose.*
 import vacuous.*
 import wisteria.*
 
+// Low-priority home for the fused `Encodable & Schematic` derivation (kept below
+// the single-capability givens in `object JsonSchema`, so a bare `Schematic` or
+// `Encodable` summon is never upgraded to demand the other capability).
+trait JsonSchema2:
+  inline given encodableSchematic: [value: Reflection]
+  =>  value is Encodable & Schematic in Json over JsonSchema =
+    new Encodable with Schematic:
+      type Self = value
+      type Form = Json
+      type Transport = JsonSchema
+      def encoded(value: value): Json = summonInline[value is Encodable in Json].encoded(value)
+      def schema(): JsonSchema = JsonSchema.derived[value].schema()
 
-object JsonSchema extends Derivable[Schematic over JsonSchema]:
+
+object JsonSchema extends Derivable[Schematic over JsonSchema], JsonSchema2:
+  // Schema (`Schematic`) instances. Primitives and collections are single-capability
+  // (schema-only); products/sums auto-derive; the fused `Encodable & Schematic`
+  // lives at lower priority in `JsonSchema2`.
+  given byteSchematic: Byte is Schematic over JsonSchema = () => JsonSchema.Integer()
+  given shortSchematic: Short is Schematic over JsonSchema = () => JsonSchema.Integer()
+  given intSchematic: Int is Schematic over JsonSchema = () => JsonSchema.Integer()
+  given longSchematic: Long is Schematic over JsonSchema = () => JsonSchema.Integer()
+  given floatSchematic: Float is Schematic over JsonSchema = () => JsonSchema.Number()
+  given doubleSchematic: Double is Schematic over JsonSchema = () => JsonSchema.Number()
+  given textSchematic: Text is Schematic over JsonSchema = () => JsonSchema.String()
+  given emailSchematic: EmailAddress is Schematic over JsonSchema = () => JsonSchema.String()
+  given booleanSchematic: scala.Boolean is Schematic over JsonSchema = () => JsonSchema.Boolean()
+
+  given optionalSchematic: [value: Schematic over JsonSchema]
+  =>  Optional[value] is Schematic over JsonSchema =
+    () =>
+      value.schema() match
+        case entity: JsonSchema.Object  => entity.copy(optional = true)
+        case entity: JsonSchema.Integer => entity.copy(optional = true)
+        case entity: JsonSchema.Number  => entity.copy(optional = true)
+        case entity: JsonSchema.String  => entity.copy(optional = true)
+        case entity: JsonSchema.Array   => entity.copy(optional = true)
+        case entity: JsonSchema.Boolean => entity.copy(optional = true)
+        case entity: JsonSchema.Null    => entity.copy(optional = true)
+        case entity: JsonSchema.Ref     => entity.copy(optional = true)
+
+  given listSchematic: [value: Schematic over JsonSchema]
+  =>  List[value] is Schematic over JsonSchema =
+    () => JsonSchema.Array(items = value.schema())
+
+  given setSchematic: [value: Schematic over JsonSchema]
+  =>  Set[value] is Schematic over JsonSchema =
+    () => JsonSchema.Array(items = value.schema())
+
+  given mapSchematic: [key: Encodable in Text, value: Schematic over JsonSchema]
+  =>  Map[key, value] is Schematic over JsonSchema =
+    () => JsonSchema.Object(additionalProperties = true)
+
+  inline given schematic: [value: Reflection] => value is Schematic over JsonSchema = derived
+
   // `$ref` schemas have no `type` discriminator, so they are handled here
   // explicitly; every other variant is delegated to the `type`-discriminated
   // derivation. A `Ref` encodes to a bare `{"$ref": "…"}` object rather than
@@ -57,7 +112,8 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
 
   given encodable: JsonSchema is Encodable in Json = value => value match
     case JsonSchema.Ref(pointer, _, _) =>
-      Json.ast(Json.Ast.obj(IArray("$ref"), IArray(Json.Ast(pointer.encode.s))))
+      val ref = summon[JsonPointer is Encodable in Text].encoded(pointer).s
+      Json.ast(Json.Ast.obj(IArray("$ref"), IArray(Json.Ast(ref))))
 
     case other =>
       derivedEncodable.encoded(other)
