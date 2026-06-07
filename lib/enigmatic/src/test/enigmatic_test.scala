@@ -115,7 +115,7 @@ object Tests extends Suite(m"Gastronomy tests"):
     test(m"RSA roundtrip"):
       val privateKey: PrivateKey[Rsa[1024]] = PrivateKey.generate[Rsa[1024]]()
       val message: Data = privateKey.public.expose:
-        t"Hello world".encrypt
+        t"Hello world".encrypt(InitializationVector.random)
       privateKey.expose:
         message.decrypt.text
     . assert(_ == t"Hello world")
@@ -124,66 +124,69 @@ object Tests extends Suite(m"Gastronomy tests"):
       import blockCipherMode.cbc, blockCipherPadding.pkcs7
       val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
       key.expose:
-        t"Hello world".encrypt.decrypt.text
+        t"Hello world".encrypt(InitializationVector.random).decrypt.text
     . assert(_ == t"Hello world")
 
     test(m"AES/CBC/PKCS7 roundtrip (mode and padding fully specified)"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.expose:
-        t"Hello world".encrypt.decrypt.text
+        t"Hello world".encrypt(InitializationVector.random).decrypt.text
     . assert(_ == t"Hello world")
 
     test(m"AES/ECB/ISO10126 roundtrip (mode and padding fully specified)"):
       val key = SymmetricKey.generate[Aes[256] over Ecb against Iso10126]()
       key.expose:
-        t"Hello world".encrypt.decrypt.text
+        t"Hello world".encrypt(InitializationVector.random).decrypt.text
     . assert(_ == t"Hello world")
 
     test(m"AES/CTR/NoPadding roundtrip (mode and padding fully specified)"):
       val key = SymmetricKey.generate[Aes[128] over Ctr against NoPadding]()
       key.expose:
-        t"Hello world".encrypt.decrypt.text
+        t"Hello world".encrypt(InitializationVector.random).decrypt.text
     . assert(_ == t"Hello world")
 
     test(m"AES/CBC with padding inferred as PKCS7 from import"):
       import blockCipherPadding.pkcs7
       val key = SymmetricKey.generate[Aes[256] over Cbc]()
       key.expose:
-        t"Hello world".encrypt.decrypt.text
+        t"Hello world".encrypt(InitializationVector.random).decrypt.text
     . assert(_ == t"Hello world")
 
     test(m"AES with mode and padding inferred as CBC/PKCS7 from imports"):
       import blockCipherMode.cbc, blockCipherPadding.pkcs7
       val key = SymmetricKey.generate[Aes[256]]()
       key.expose:
-        t"Hello world".encrypt.decrypt.text
+        t"Hello world".encrypt(InitializationVector.random).decrypt.text
     . assert(_ == t"Hello world")
 
     test(m"CBC encryption of the same plaintext differs run-to-run (random IV)"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.expose:
-        t"Hello world".encrypt.serialize[Hex] == t"Hello world".encrypt.serialize[Hex]
+        val first = t"Hello world".encrypt(InitializationVector.random).serialize[Hex]
+        val second = t"Hello world".encrypt(InitializationVector.random).serialize[Hex]
+        first == second
     . assert(_ == false)
 
     test(m"A fixed IV makes CBC encryption deterministic"):
-      given InitializationVector = InitializationVector.fixed(t"0123456789abcdef".data)
+      val iv = InitializationVector.fixed(t"0123456789abcdef".data)
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.expose:
-        t"Hello world".encrypt.serialize[Hex] == t"Hello world".encrypt.serialize[Hex]
+        t"Hello world".encrypt(iv).serialize[Hex] == t"Hello world".encrypt(iv).serialize[Hex]
     . assert(_ == true)
 
     test(m"A fixed IV still round-trips"):
-      given InitializationVector = InitializationVector.fixed(t"0123456789abcdef".data)
+      val iv = InitializationVector.fixed(t"0123456789abcdef".data)
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.expose:
-        t"Hello world".encrypt.decrypt.text
+        t"Hello world".encrypt(iv).decrypt.text
     . assert(_ == t"Hello world")
 
-    test(m"An imported zero IV makes CBC encryption deterministic"):
-      import initializationVector.zero
+    test(m"A zero IV makes CBC encryption deterministic"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.expose:
-        t"Hello world".encrypt.serialize[Hex] == t"Hello world".encrypt.serialize[Hex]
+        val first = t"Hello world".encrypt(InitializationVector.zero).serialize[Hex]
+        val second = t"Hello world".encrypt(InitializationVector.zero).serialize[Hex]
+        first == second
     . assert(_ == true)
 
     test(m"A custom Crypto provider can supply deterministic randomness"):
@@ -198,78 +201,80 @@ object Tests extends Suite(m"Gastronomy tests"):
 
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.expose:
-        t"Hello world".encrypt.serialize[Hex] == t"Hello world".encrypt.serialize[Hex]
+        val first = t"Hello world".encrypt(InitializationVector.random).serialize[Hex]
+        val second = t"Hello world".encrypt(InitializationVector.random).serialize[Hex]
+        first == second
     . assert(_ == true)
 
     test(m"DES/CBC/PKCS7 roundtrip"):
       val key = SymmetricKey.generate[Des over Cbc against Pkcs7]()
       key.expose:
-        t"Hello world".encrypt.decrypt.text
+        t"Hello world".encrypt(InitializationVector.random).decrypt.text
     . assert(_ == t"Hello world")
 
     test(m"TripleDES/CBC/PKCS7 roundtrip"):
       val key = SymmetricKey.generate[TripleDes[168] over Cbc against Pkcs7]()
       key.expose:
-        t"Hello world".encrypt.decrypt.text
+        t"Hello world".encrypt(InitializationVector.random).decrypt.text
     . assert(_ == t"Hello world")
 
     test(m"Blowfish/CBC/PKCS7 roundtrip"):
       val key = SymmetricKey.generate[Blowfish[448] over Cbc against Pkcs7]()
       key.expose:
-        t"Hello world".encrypt.decrypt.text
+        t"Hello world".encrypt(InitializationVector.random).decrypt.text
     . assert(_ == t"Hello world")
 
     test(m"RC2/CFB/ISO10126 roundtrip"):
       val key = SymmetricKey.generate[Rc2[128] over Cfb against Iso10126]()
       key.expose:
-        t"Hello world".encrypt.decrypt.text
+        t"Hello world".encrypt(InitializationVector.random).decrypt.text
     . assert(_ == t"Hello world")
 
     test(m"DES/CTR/NoPadding roundtrip"):
       val key = SymmetricKey.generate[Des over Ctr against NoPadding]()
       key.expose:
-        t"Hello world".encrypt.decrypt.text
+        t"Hello world".encrypt(InitializationVector.random).decrypt.text
     . assert(_ == t"Hello world")
 
     test(m"Decryption with the wrong key fails with a CryptoError"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       val wrongKey = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
-      val ciphertext = key.expose(t"Hello world".encrypt)
+      val ciphertext = key.expose(t"Hello world".encrypt(InitializationVector.random))
       capture[CryptoError](wrongKey.expose(ciphertext.decrypt.text)).reason
     . assert(_ == CryptoError.Reason.BadPadding)
 
     test(m"AES/CBC/NoPadding round-trips block-aligned input"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
       key.expose:
-        t"0123456789abcdef".encrypt.decrypt.text
+        t"0123456789abcdef".encrypt(InitializationVector.random).decrypt.text
     . assert(_ == t"0123456789abcdef")
 
     test(m"AES/CBC/NoPadding rejects misaligned input with a CryptoError"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against NoPadding]()
-      capture[CryptoError](key.expose(t"Hello world".encrypt)).reason
+      capture[CryptoError](key.expose(t"Hello world".encrypt(InitializationVector.random))).reason
     . assert(_ == CryptoError.Reason.IllegalBlockSize)
 
     test(m"AES/CTR/NoPadding (stream mode) accepts any length"):
       val key = SymmetricKey.generate[Aes[256] over Ctr against NoPadding]()
       key.expose:
-        t"Hello world".encrypt.decrypt.text
+        t"Hello world".encrypt(InitializationVector.random).decrypt.text
     . assert(_ == t"Hello world")
 
     test(m"Streaming encryption round-trips via one-shot decryption"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.expose:
         val chunks = Stream(t"Hello, ".data, t"streaming ".data, t"world!".data)
-        chunks.encrypt.reduce(_ ++ _).decrypt.text
+        chunks.encrypt(InitializationVector.random).reduce(_ ++ _).decrypt.text
     . assert(_ == t"Hello, streaming world!")
 
     test(m"Streaming and one-shot encryption agree for a fixed IV"):
-      given InitializationVector = InitializationVector.fixed(t"0123456789abcdef".data)
+      val iv = InitializationVector.fixed(t"0123456789abcdef".data)
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.expose:
         val streamed =
-          Stream(t"Hello, ".data, t"streaming ".data, t"world!".data).encrypt.reduce(_ ++ _)
+          Stream(t"Hello, ".data, t"streaming ".data, t"world!".data).encrypt(iv).reduce(_ ++ _)
 
-        streamed.serialize[Hex] == t"Hello, streaming world!".data.encrypt.serialize[Hex]
+        streamed.serialize[Hex] == t"Hello, streaming world!".data.encrypt(iv).serialize[Hex]
     . assert(_ == true)
 
     test(m"Sign some data with DSA"):
@@ -361,23 +366,27 @@ object Tests extends Suite(m"Gastronomy tests"):
       . assert(_ == true)
 
       test(m"AES-256-CBC ciphertext agrees with the JDK provider (fixed IV)"):
-        given InitializationVector = InitializationVector.fixed(t"0123456789abcdef".data)
+        val iv = InitializationVector.fixed(t"0123456789abcdef".data)
         val key: SymmetricKey[Aes[256] over Cbc against Pkcs7] = SymmetricKey(key32)
-        val jdk = key.expose(t"Hello world".encrypt.serialize[Hex])
-        val openssl = { given Crypto = OpensslCrypto; key.expose(t"Hello world".encrypt.serialize[Hex]) }
+        val jdk = key.expose(t"Hello world".encrypt(iv).serialize[Hex])
+
+        val openssl =
+          given Crypto = OpensslCrypto
+          key.expose(t"Hello world".encrypt(iv).serialize[Hex])
+
         jdk == openssl
       . assert(_ == true)
 
       test(m"AES-256-CBC round-trips under the OpenSSL provider"):
         given Crypto = OpensslCrypto
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
-        key.expose(t"Hello world".encrypt.decrypt.text)
+        key.expose(t"Hello world".encrypt(InitializationVector.random).decrypt.text)
       . assert(_ == t"Hello world")
 
       test(m"OpenSSL decrypts what the JDK encrypted (CBC, fixed IV)"):
-        given InitializationVector = InitializationVector.fixed(t"0123456789abcdef".data)
+        val iv = InitializationVector.fixed(t"0123456789abcdef".data)
         val key: SymmetricKey[Aes[256] over Cbc against Pkcs7] = SymmetricKey(key32)
-        val ciphertext = key.expose(t"Interoperable!".encrypt)
+        val ciphertext = key.expose(t"Interoperable!".encrypt(iv))
         val plaintext = { given Crypto = OpensslCrypto; key.expose(ciphertext.decrypt.text) }
         plaintext
       . assert(_ == t"Interoperable!")
@@ -385,7 +394,7 @@ object Tests extends Suite(m"Gastronomy tests"):
       test(m"AES-128-CTR/NoPadding round-trips under the OpenSSL provider"):
         given Crypto = OpensslCrypto
         val key = SymmetricKey.generate[Aes[128] over Ctr against NoPadding]()
-        key.expose(t"Hello world".encrypt.decrypt.text)
+        key.expose(t"Hello world".encrypt(InitializationVector.random).decrypt.text)
       . assert(_ == t"Hello world")
 
       test(m"OpenSSL streaming encryption round-trips via one-shot decryption"):
@@ -393,5 +402,5 @@ object Tests extends Suite(m"Gastronomy tests"):
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         key.expose:
           val chunks = Stream(t"Hello, ".data, t"streaming ".data, t"world!".data)
-          chunks.encrypt.reduce(_ ++ _).decrypt.text
+          chunks.encrypt(InitializationVector.random).reduce(_ ++ _).decrypt.text
       . assert(_ == t"Hello, streaming world!")

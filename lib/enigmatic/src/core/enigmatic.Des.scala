@@ -43,14 +43,12 @@ object Des:
   =>  ( blockMode: mode is BlockCipherMode )
   =>  ( blockPadding: padding is BlockCipherPadding )
   =>  ( mode Permits padding )
-  =>  ( vector: InitializationVector )
   =>  ( crypto: Crypto { def des: Crypto.SymmetricCipher } )
   =>  ( Des over mode against padding ) =
-    Des(blockMode, blockPadding, vector, crypto.des).asInstanceOf[Des over mode against padding]
+    Des(blockMode, blockPadding, crypto.des).asInstanceOf[Des over mode against padding]
 
 class Des
-  ( mode: BlockCipherMode, padding: BlockCipherPadding, vector: InitializationVector,
-    cipher: Crypto.SymmetricCipher )
-extends BlockCipher(t"DES", mode, padding, vector, cipher):
+  ( mode: BlockCipherMode, padding: BlockCipherPadding, cipher: Crypto.SymmetricCipher )
+extends BlockCipher(t"DES", mode, padding, cipher):
   type Size = 56
   def keySize: 56 = 56

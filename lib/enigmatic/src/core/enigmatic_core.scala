@@ -61,12 +61,9 @@ package blockCipherPadding:
   // `Tactic[CryptoError]`, and re-exporting a context-function given trips a
   // compiler assertion ("bad adapt"). Use `against NoPadding` explicitly instead.
 
-package initializationVector:
-  // `random` is the default `InitializationVector` (in `InitializationVector`'s
-  // companion). It is not re-exported here: it is now a context-function given
-  // over `Crypto`, and re-exporting such a given trips a compiler assertion
-  // ("bad adapt") — see the note in `blockCipherPadding` above.
-  given zero: InitializationVector = size => Array.fill[Byte](size)(0).immutable(using Unsafe)
+// The initialization vector is now supplied explicitly at the encryption site —
+// `InitializationVector.random` / `.fixed(…)` / `.zero` — so there is no
+// `initializationVector` given namespace.
 
 // Crypto providers select the algorithmic backend. Pick one with an explicit
 // import, e.g. `import cryptoProviders.javaStdlibCrypto`. The given's type is the

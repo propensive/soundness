@@ -46,7 +46,7 @@ object CompileChecks:
   val key: SymmetricKey[Aes[256]] = SymmetricKey.generate[Aes[256]]()
 
   val ciphertext: Data = key.expose:
-    t"Hello world".encrypt
+    t"Hello world".encrypt(InitializationVector.random)
 
   // Validity regression: only cipher/mode/padding triples the JDK supports have a
   // `given`, so an invalid combination does not compile. CTR permits only
@@ -70,4 +70,4 @@ object CompileChecks:
   // that key generation is *not* gated; only the encryption operation is.
   //
   //   val desKey = SymmetricKey.generate[Des over Cbc against Pkcs7]()
-  //   val desText = desKey.expose(t"Hello world".encrypt)
+  //   val desText = desKey.expose(t"Hello world".encrypt(InitializationVector.random))

@@ -49,14 +49,14 @@ import vacuous.*
 // failures are surfaced as a `CryptoError`.
 
 extension [value: Encodable in Data](value: value)
-  def encrypt[cipher <: Cipher]
+  def encrypt[cipher <: Cipher](iv: InitializationVector)
     ( using encryptor: Encryptor[cipher],
             algorithm: cipher & Encryption,
             erased weakness: Permit[Weakness[cipher]],
             erased authentication: Permit[Authentication[cipher]] )
   :   Data =
 
-    algorithm.encrypt(value.bytestream, encryptor.bytes)
+    algorithm.encrypt(value.bytestream, encryptor.bytes, iv)
 
 // Streaming encryption (block ciphers only) lazily transforms a `Stream`, driving
 // the JCE cipher through update/doFinal. The IV is emitted as the leading chunk
@@ -64,14 +64,14 @@ extension [value: Encodable in Data](value: value)
 // `expose` block — only the fixed ciphertext of `stream` could otherwise leak.
 
 extension (stream: Stream[Data])
-  def encrypt[cipher <: BlockCipher]
+  def encrypt[cipher <: BlockCipher](iv: InitializationVector)
     ( using encryptor: Encryptor[cipher],
             algorithm: cipher & Encryption,
             erased weakness: Permit[Weakness[cipher]],
             erased authentication: Permit[Authentication[cipher]] )
   :   Stream[Data] =
 
-    algorithm.encryptStream(stream, encryptor.bytes)
+    algorithm.encryptStream(stream, encryptor.bytes, iv)
 
 extension (data: Data)
   def decrypt[decodable: Decodable in Data, cipher <: Cipher]

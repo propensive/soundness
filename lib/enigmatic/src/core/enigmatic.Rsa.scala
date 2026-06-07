@@ -43,5 +43,7 @@ class Rsa[bits <: 1024 | 2048: ValueOf](cipher: Crypto.PublicKeyCipher) extends 
   def keySize: bits = valueOf[bits]
   def privateToPublic(bytes: Data): Data = cipher.privateToPublic(bytes)
   def decrypt(bytes: Data, key: Data): Data = cipher.decrypt(bytes, key)
-  def encrypt(bytes: Data, key: Data): Data = cipher.encrypt(bytes, key)
+
+  // RSA uses no initialization vector; the explicit `iv` is ignored.
+  def encrypt(bytes: Data, key: Data, iv: InitializationVector): Data = cipher.encrypt(bytes, key)
   def genKey(): Data = cipher.generateKeyPair(keySize)

@@ -41,14 +41,12 @@ object Aes:
   =>  ( blockMode: mode is BlockCipherMode )
   =>  ( blockPadding: padding is BlockCipherPadding )
   =>  ( mode Permits padding )
-  =>  ( vector: InitializationVector )
   =>  ( crypto: Crypto )
   =>  ( Aes[bits] over mode against padding ) =
-    Aes(blockMode, blockPadding, vector, crypto.aes).asInstanceOf[Aes[bits] over mode against padding]
+    Aes(blockMode, blockPadding, crypto.aes).asInstanceOf[Aes[bits] over mode against padding]
 
 class Aes[bits <: 128 | 192 | 256: ValueOf]
-  ( mode: BlockCipherMode, padding: BlockCipherPadding, vector: InitializationVector,
-    cipher: Crypto.SymmetricCipher )
-extends BlockCipher(t"AES", mode, padding, vector, cipher):
+  ( mode: BlockCipherMode, padding: BlockCipherPadding, cipher: Crypto.SymmetricCipher )
+extends BlockCipher(t"AES", mode, padding, cipher):
   type Size = bits
   def keySize: bits = valueOf[bits]

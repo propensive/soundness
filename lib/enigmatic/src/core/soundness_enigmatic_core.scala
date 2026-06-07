@@ -49,10 +49,5 @@ package blockCipherMode:
 package blockCipherPadding:
   export enigmatic.blockCipherPadding.{iso10126, pkcs7}
 
-package initializationVector:
-  // `random` (the default) lives in `InitializationVector`'s companion; it is a
-  // context-function given over `Crypto` and is deliberately not re-exported here.
-  export enigmatic.initializationVector.zero
-
 package cryptoProviders:
   export enigmatic.cryptoProviders.javaStdlibCrypto

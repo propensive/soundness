@@ -35,5 +35,7 @@ package enigmatic
 import anticipation.*
 
 trait Encryption:
-  def encrypt(value: Data, privateKey: Data): Data
-  def decrypt(bytes: Data, publicKey: Data): Data
+  // `iv` is the explicitly-supplied initialization-vector strategy; ciphers and
+  // modes that don't use an IV (asymmetric, ECB) ignore it.
+  def encrypt(value: Data, key: Data, iv: InitializationVector): Data
+  def decrypt(bytes: Data, key: Data): Data

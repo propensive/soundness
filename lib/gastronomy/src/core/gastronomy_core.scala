@@ -80,6 +80,45 @@ package crypto:
       & Permit[Concession.Sha1] =
     caps.unsafe.unsafeErasedValue
 
+  // Year-based permits: an alternative to the named levels, composed from the same
+  // fine-grained `Permit`s. `permitCryptoThrough<year>` permits every algorithm
+  // NIST disallowed on or before that year, so a later year is strictly more
+  // permissive. (Unauthenticated/ECB are not date-based and are not included.)
+
+  // Through 2014: DES, the never-approved MD5/RC2/Blowfish, and RSA/DSA key
+  // lengths below 2048 bits (disallowed at the end of 2013).
+  erased given permitCryptoThrough2014
+      : Permit[Concession.Des]
+      & Permit[Concession.Md5]
+      & Permit[Concession.Rc2]
+      & Permit[Concession.Blowfish]
+      & Permit[Concession.SmallRsa] =
+    caps.unsafe.unsafeErasedValue
+
+  // Through 2024: also Triple-DES (encryption disallowed after 2023) and DSA
+  // signatures (removed in FIPS 186-5).
+  erased given permitCryptoThrough2024
+      : Permit[Concession.Des]
+      & Permit[Concession.Md5]
+      & Permit[Concession.Rc2]
+      & Permit[Concession.Blowfish]
+      & Permit[Concession.SmallRsa]
+      & Permit[Concession.TripleDes]
+      & Permit[Concession.Dsa] =
+    caps.unsafe.unsafeErasedValue
+
+  // Through 2030: also SHA-1 (NIST's planned phase-out by 2030).
+  erased given permitCryptoThrough2030
+      : Permit[Concession.Des]
+      & Permit[Concession.Md5]
+      & Permit[Concession.Rc2]
+      & Permit[Concession.Blowfish]
+      & Permit[Concession.SmallRsa]
+      & Permit[Concession.TripleDes]
+      & Permit[Concession.Dsa]
+      & Permit[Concession.Sha1] =
+    caps.unsafe.unsafeErasedValue
+
 extension [digestible: Digestible](value: digestible)
   def digest[hash <: Algorithm]
       (using hashed: Hash in hash, erased weakness: Permit[HashWeakness[hash]])
