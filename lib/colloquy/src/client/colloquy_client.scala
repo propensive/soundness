@@ -147,7 +147,12 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
           . recover:
               LineEditor().ask: line =>
                 duplex.send(Stream((line+t"\n\n").data))
-                Out.print(reply(chunks))
+                val payload = reply(chunks).trim
+                // Decode the JSON reply into the shared `Repl.Response` case
+                // class and print its `toString`; fall back to the raw payload
+                // if it can't be parsed.
+                val response = safely(Json.parseTracked(payload).as[Repl.Response])
+                Out.println(response.lay(payload)(_.toString.tt))
 
         Exit.Ok
 
