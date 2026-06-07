@@ -62,6 +62,7 @@ import vacuous.*
 import hieroglyph.charEncoders.utf8
 import interfaces.paths.pathOnLinux
 import jsonDiscriminables.discriminatedUnionByKind
+import stenography.Syntax
 
 object Repl:
   object Layout:
@@ -109,8 +110,8 @@ object Repl:
   enum Reply:
     case Tokenized(id: Int, highlight: List[Token])
 
-    case Ran(id: Int, value: Optional[Text], output: Text, diagnostics: Text,
-             highlight: List[Token])
+    case Ran(id: Int, value: Optional[Text], output: Text, tpe: Optional[Text],
+             diagnostics: Text, highlight: List[Token])
 
     case Rejected(id: Int, diagnostics: Text, highlight: List[Token])
     case Threw(id: Int, output: Text, diagnostics: Text, highlight: List[Token])
@@ -132,6 +133,17 @@ object Repl:
   private def project(source: SourceCode): List[Token] =
     source.lines.to(List).flatten.map: token =>
       Token(token.text, token.accent.toString.tt.lower, token.meta.let(_.tpe.qualified))
+
+  // The Scala type of an expression, read from a typechecked highlight of
+  // `val __result = <code>`: the binding's token carries the resolved type as a
+  // `Syntax`. Only meaningful for expression lines (statements have no value).
+  def resultType(code: Text)(using Scalac[?], LocalClasspath): Optional[Syntax] =
+    import highlighting.typecheckedScala
+    val tokens = Scala.highlight(t"val __result = $code").lines.to(List).flatten
+
+    tokens.find(_.text == t"__result") match
+      case Some(token) => token.meta.let(_.tpe)
+      case None        => Unset
 
   object Prelude:
     val empty: Prelude = Prelude(Nil, Nil)
@@ -417,7 +429,10 @@ class Repl[version <: Scalac.Versions]
 
       safely(interpret(code)).lay(unprocessed):
         case Outcome.Ran(notices, value, output) =>
-          Repl.Reply.Ran(id, value, output, notices.map(_.message).join(t"; "), tokens)
+          // The result type is rendered to text (`Syntax.qualified`) for the wire;
+          // sending the structured `Syntax` would need bespoke jacinta instances.
+          val tpe: Optional[Text] = value.lay(Unset)(_ => Repl.resultType(code).let(_.qualified))
+          Repl.Reply.Ran(id, value, output, tpe, notices.map(_.message).join(t"; "), tokens)
 
         case Outcome.Rejected(notices) =>
           Repl.Reply.Rejected(id, notices.map(_.message).join(t"; "), tokens)
