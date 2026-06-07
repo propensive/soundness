@@ -37,6 +37,7 @@ import java.net as jn
 import java.nio.file as jnf
 import java.util.concurrent as juc
 
+import scala.collection.concurrent.TrieMap
 import scala.collection.mutable as scm
 
 import soundness.*
@@ -129,6 +130,25 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
   // the editor starts (the server sends nothing until it receives a message).
   lazy val chunks: Iterator[Data] = duplex.stream.iterator
 
+  val state                 = LiveState()
+  val pending               = TrieMap[Int, Int]()                  // tokenize id → version
+  val submits               = juc.LinkedBlockingQueue[Repl.Response]()
+  val nextId                = juc.atomic.AtomicInteger(1)           // 0 is reserved for submit
+  @volatile var live        = true
+
+  // Background reader: replies may arrive in any order, so route each by kind —
+  // `tokenize` replies refine the live highlight (re-associated by id → version),
+  // everything else is a `submit` result the editor awaits.
+  async:
+    while live do
+      val raw = reply(chunks).trim
+
+      if raw.length == 0 then live = false
+      else safely(Json.parseTracked(raw).as[Repl.Response]).let: reply =>
+        if reply.status == t"tokenized"
+        then pending.remove(reply.id).foreach(state.reconcile(_, reply.highlight))
+        else submits.put(reply)
+
   whereas:
     case TerminalError() =>
       Out.println(t"colloquy: the terminal could not be initialised")
@@ -136,6 +156,7 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
 
   . recover:
       interactive: terminal ?=>
+        given Interaction[Text, LineEditor] = liveHighlighting(duplex, state, pending, nextId)
         var running = true
 
         while running do
@@ -146,15 +167,237 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
 
           . recover:
               LineEditor().ask: line =>
-                duplex.send(Stream((line+t"\n\n").data))
-                val payload = reply(chunks).trim
-                // Decode the JSON reply into the shared `Repl.Response` case
-                // class and print its `toString`; fall back to the raw payload
-                // if it can't be parsed.
-                val response = safely(Json.parseTracked(payload).as[Repl.Response])
-                Out.println(response.lay(payload)(_.toString.tt))
+                // The editor already showed the (live-highlighted) line; submit it
+                // and print the awaited result value and any diagnostics.
+                duplex.send(Stream((t"0\nsubmit\n"+line+t"\n\n").data))
+                val response = submits.take().nn
+                if response.value != t"" then Out.println(response.value)
+                if response.diagnostics != t"" then Out.println(response.diagnostics)
 
+        live = false
         Exit.Ok
+
+// Maps a Harlequin accent name to a display colour; `Unset` leaves the token
+// uncoloured (terms, comments, whitespace).
+private def accentColour(accent: Text): Optional[Color in Srgb] =
+  if accent == t"keyword" || accent == t"modifier" then WebColors.MediumPurple
+  else if accent == t"typed"                       then WebColors.SteelBlue
+  else if accent == t"ident"                       then WebColors.DodgerBlue
+  else if accent == t"string"                      then WebColors.ForestGreen
+  else if accent == t"number"                      then WebColors.Goldenrod
+  else if accent == t"symbol" || accent == t"parens" then WebColors.SlateGray
+  else if accent == t"error"                       then WebColors.Crimson
+  else Unset
+
+// Reconstructs the source line from the highlight tokens, colouring each by its
+// accent, as a single `Teletype` that prints as ANSI.
+private def colourful(tokens: List[Repl.Token]): Teletype =
+  tokens.map: token =>
+    accentColour(token.accent).lay(e"${token.text}"): colour =>
+      e"$colour(${token.text})"
+
+  . join
+
+// ── Live-highlight heuristic ────────────────────────────────────────────────
+// A single-character edit and the "kind" of a character, for guessing accents
+// before the server's tokenization arrives.
+private enum Edit:
+  case Insert(at: Int, char: Char)
+  case Delete(at: Int)
+
+private enum CharKind:
+  case Word, Symbol, Space
+
+private def charKind(c: Char): CharKind =
+  if c.isLetterOrDigit || c == '_' then CharKind.Word
+  else if c.isWhitespace then CharKind.Space
+  else CharKind.Symbol
+
+// The character kind a token's accent stands for, so an inserted character can be
+// matched against the token it touches.
+private def accentKind(accent: Text): CharKind =
+  if accent == t"symbol" || accent == t"parens" then CharKind.Symbol
+  else if accent == t"unparsed" then CharKind.Space
+  else CharKind.Word
+
+private def defaultAccent(kind: CharKind): Text = kind match
+  case CharKind.Word   => t"term"
+  case CharKind.Symbol => t"symbol"
+  case CharKind.Space  => t"unparsed"
+
+private def commonPrefix(a: Text, b: Text): Int =
+  val n = a.length.min(b.length)
+  var i = 0
+  while i < n && a.s.charAt(i) == b.s.charAt(i) do i += 1
+  i
+
+// Classifies `oldBuf -> newBuf` as a single-character insert or delete, or `None`.
+private def diff(oldBuf: Text, newBuf: Text): Option[Edit] =
+  val p = commonPrefix(oldBuf, newBuf)
+
+  if newBuf.length == oldBuf.length + 1 && newBuf.skip(p + 1) == oldBuf.skip(p)
+  then Some(Edit.Insert(p, newBuf.s.charAt(p)))
+  else if newBuf.length == oldBuf.length - 1 && oldBuf.skip(p + 1) == newBuf.skip(p)
+  then Some(Edit.Delete(p))
+  else None
+
+// Inserts `c` at offset `p`, giving it an accent from the touching token(s): join
+// the token it lands in/next to if their kinds match, otherwise split / start a
+// new token (anything joins a `string`). Preserves the text, so widths are exact.
+private def insertChar(tokens: List[Repl.Token], p: Int, c: Char): List[Repl.Token] =
+  val kind     = charKind(c)
+  val ch: Text = c.toString.tt
+  def tok(text: Text, accent: Text): Repl.Token = Repl.Token(text, accent, Unset)
+  val arr      = tokens.toVector
+  val offsets  = arr.scanLeft(0)(_ + _.text.length)
+  val total    = offsets(arr.length)
+
+  if arr.isEmpty then List(tok(ch, defaultAccent(kind)))
+  else arr.indices.find { i => p > offsets(i) && p < offsets(i + 1) } match
+    case Some(i) =>
+      val t  = arr(i)
+      val at = p - offsets(i)
+
+      val mid =
+        if kind == accentKind(t.accent) || t.accent == t"string"
+        then Vector(tok(t.text.keep(at) + ch + t.text.skip(at), t.accent))
+        else Vector(tok(t.text.keep(at), t.accent), tok(ch, defaultAccent(kind)),
+                    tok(t.text.skip(at), t.accent))
+
+      (arr.take(i) ++ mid ++ arr.drop(i + 1)).to(List)
+
+    case None =>
+      if p <= 0 then
+        val r = arr(0)
+
+        if kind == accentKind(r.accent) then (tok(ch + r.text, r.accent) +: arr.drop(1)).to(List)
+        else (tok(ch, defaultAccent(kind)) +: arr).to(List)
+      else if p >= total then
+        val l = arr(arr.length - 1)
+
+        if kind == accentKind(l.accent)
+        then (arr.dropRight(1) :+ tok(l.text + ch, l.accent)).to(List)
+        else (arr :+ tok(ch, defaultAccent(kind))).to(List)
+      else
+        val i  = arr.indices.find { j => offsets(j) == p }.getOrElse(arr.length)
+        val l  = arr(i - 1)
+        val r  = arr(i)
+        val lk = accentKind(l.accent)
+        val rk = accentKind(r.accent)
+
+        if kind == lk
+        then (arr.take(i - 1) ++ Vector(tok(l.text + ch, l.accent)) ++ arr.drop(i)).to(List)
+        else if kind == rk
+        then (arr.take(i) ++ Vector(tok(ch + r.text, r.accent)) ++ arr.drop(i + 1)).to(List)
+        else (arr.take(i) ++ Vector(tok(ch, defaultAccent(kind))) ++ arr.drop(i)).to(List)
+
+private def deleteChar(tokens: List[Repl.Token], p: Int): List[Repl.Token] =
+  var offset = 0
+
+  tokens.flatMap: t =>
+    val s = offset
+    offset += t.text.length
+
+    if p >= s && p < offset then
+      val text = t.text.keep(p - s) + t.text.skip(p - s + 1)
+      if text.length == 0 then Nil else List(Repl.Token(text, t.accent, t.tpe))
+    else
+      List(t)
+
+private def replay(base: List[Repl.Token], edits: List[Edit]): List[Repl.Token] =
+  edits.foldLeft(base): (tokens, edit) =>
+    edit match
+      case Edit.Insert(at, c) => insertChar(tokens, at, c)
+      case Edit.Delete(at)    => deleteChar(tokens, at)
+
+// Tracks the live highlight: an authoritative server checkpoint at some buffer
+// version, plus the log of edits made since, replayed through the heuristic so
+// the buffer stays coloured without waiting for the server. Thread-safe — the
+// editor records edits, the background reader adopts checkpoints.
+private class LiveState:
+  private var version: Int = 0
+  private var checkpointVersion: Int = 0
+  private var checkpointTokens: List[Repl.Token] = Nil
+  private var log: List[(Int, Edit)] = Nil
+
+  // Records the keystroke `oldBuf -> newBuf`, returning this buffer's version and
+  // the heuristic tokens to draw now.
+  def record(oldBuf: Text, newBuf: Text): (Int, List[Repl.Token]) = synchronized:
+    if newBuf.length == 0 then
+      checkpointTokens = Nil
+      log = Nil
+      checkpointVersion = version
+      (version, Nil)
+    else
+      if newBuf != oldBuf then diff(oldBuf, newBuf) match
+        case Some(edit) =>
+          version += 1
+          log = log :+ (version, edit)
+
+        case None =>   // not a single-char edit (paste, kill-line): plain fallback
+          checkpointTokens = List(Repl.Token(newBuf, t"term", Unset))
+          checkpointVersion = version
+          version += 1
+          log = Nil
+
+      (version, replay(checkpointTokens, log.map(_._2)))
+
+  // A `tokenize` reply for buffer version `v` arrived: if newer than our
+  // checkpoint, adopt it and drop the edits it already accounts for.
+  def reconcile(v: Int, tokens: List[Repl.Token]): Unit = synchronized:
+    if v > checkpointVersion then
+      checkpointVersion = v
+      checkpointTokens = tokens
+      log = log.filter(_._1 > v)
+
+// A line-editor interaction that highlights the buffer live: each keystroke is
+// applied to the live highlight via the heuristic and drawn immediately (never
+// waiting on the server), then an async `tokenize` is fired to refine it. Mirrors
+// Profanity's default cursor handling — colour codes are zero-width.
+private def liveHighlighting
+  ( duplex: Duplex, state: LiveState, pending: TrieMap[Int, Int],
+    nextId: juc.atomic.AtomicInteger )
+  ( using terminal: Terminal )
+:   Interaction[Text, LineEditor] =
+
+  new Interaction[Text, LineEditor]:
+    given Stdio = terminal.stdio
+    var lastVersion: Int = -1
+    override def after(): Unit = Out.println()
+
+    def result(editor: LineEditor): Text = editor.value
+
+    def render(old: Optional[LineEditor], editor: LineEditor): Unit =
+      val cols              = terminal.knownColumns.max(1)
+      val len               = editor.value.length
+      val curRow            = editor.position/cols
+      val curCol            = editor.position%cols
+      val (version, tokens) = state.record(old.lay(t"")(_.value), editor.value)
+      val coloured          = colourful(tokens).render(termcapDefinitions.xtermTrueColor)
+
+      Out.print:
+        Text.build:
+          old.let: o =>
+            val oldRow = o.position/cols
+            if oldRow > 0 then append(t"\e[${oldRow}F") else append(t"\r")
+
+          append(t"\e[J")
+          append(coloured)
+
+          if len > 0 then
+            val printedRows = (len - 1)/cols
+            if printedRows > 0 then append(t"\e[${printedRows}F") else append(t"\r")
+
+          if curRow > 0 then append(t"\e[${curRow}B")
+          if curCol > 0 then append(t"\e[${curCol + 1}G")
+
+      // Fire an async `tokenize` (correlated by id → version); the background
+      // reader reconciles the reply, refining the next render.
+      if len > 0 && version != lastVersion then
+        lastVersion = version
+        val id = nextId.getAndIncrement
+        pending(id) = version
+        duplex.send(Stream((id.toString.tt + t"\ntokenize\n" + editor.value + t"\n\n").data))
 
 // Pulls chunks from the (persistent) socket stream, buffering until the `"\n\n"`
 // message delimiter, and decodes the buffered bytes verbatim.
