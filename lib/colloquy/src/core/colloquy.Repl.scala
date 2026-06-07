@@ -101,6 +101,7 @@ object Repl:
   enum Request:
     case Submit(id: Int, code: Text)
     case Tokenize(id: Int, code: Text)
+    case Quit(id: Int)
 
   // A reply to a connected client, echoing the request's `id`. `highlight` is the
   // Harlequin tokenization of the submitted line. Serialized as JSON with a `kind`
@@ -163,6 +164,12 @@ class Repl[version <: Scalac.Versions]
   import Repl.Outcome
 
   val session: Long = ReplBridge.freshSession()
+
+  // Fulfilled when a connected client sends a `Quit` request; a server host can
+  // `attend` it to block until then and shut down cleanly.
+  private val quit: Promise[Unit] = Promise()
+
+  def awaitQuit(): Unit = quit.attend()
 
   // Serializes `interpret` across connections: the shared `Scalac` compiler is
   // not reentrant and the REPL's state is mutable.
@@ -362,18 +369,20 @@ class Repl[version <: Scalac.Versions]
 
             async:
               // A stray throwable in one message becomes an error reply, not a
-              // dropped connection, so the session survives.
-              val response: Text =
+              // dropped connection, so the session survives. `Unset` (a `quit`) is
+              // not answered.
+              val response: Optional[Text] =
                 try respond(message)
                 catch case error: Throwable =>
                   encode(Repl.Reply.Failed(0, error.toString.tt))
 
-              writes:
-                try
-                  writer.write(response.s)
-                  writer.write("\n\n")
-                  writer.flush()
-                catch case _: Throwable => ()
+              response.let: payload =>
+                writes:
+                  try
+                    writer.write(payload.s)
+                    writer.write("\n\n")
+                    writer.flush()
+                  catch case _: Throwable => ()
         else
           buffer.append(line.nn).append("\n")
 
@@ -382,15 +391,19 @@ class Repl[version <: Scalac.Versions]
     catch case _: Throwable => ()
 
   // Decodes one JSON `Request` and dispatches: a `tokenize` only highlights (cheap,
-  // for live editing); a `submit` compiles and runs. A malformed request becomes a
-  // `Failed` reply rather than a dropped connection.
-  private def respond(message: Text)(using Monitor, System, Codicil): Text logs CompileEvent =
+  // for live editing); a `submit` compiles and runs; a `quit` signals the server to
+  // shut down and is not answered. A malformed request becomes a `Failed` reply
+  // rather than a dropped connection. `Unset` means no reply is sent.
+  private def respond(message: Text)(using Monitor, System, Codicil)
+  :   Optional[Text] logs CompileEvent =
+
     val request: Optional[Repl.Request] =
       safely[Exception](Json.parseTracked(message).as[Repl.Request])
 
     request.lay(encode(Repl.Reply.Failed(0, t"the request could not be parsed"))):
       case Repl.Request.Tokenize(id, code) => encode(Repl.Reply.Tokenized(id, Repl.tokenize(code)))
       case Repl.Request.Submit(id, code)   => submit(id, code)
+      case Repl.Request.Quit(_)            => quit.offer(()) yet Unset
 
   // Typecheck-highlights, compiles, and runs `code`, replying (with `id`) with the
   // highlighting, the result value, and any diagnostics. The whole body holds
