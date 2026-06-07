@@ -1435,7 +1435,7 @@ object zeppelin extends Library:
   object test extends Tests(core, imperial.core, diuretic.core)
 
 object ziggurat extends Library:
-  object core extends Component(hellenism.core, monotonous.core, turbulence.core):
+  object core extends Component(hellenism.core, monotonous.core, turbulence.core, gastronomy.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
