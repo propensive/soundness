@@ -294,10 +294,14 @@ class Repl[version <: Scalac.Versions]
   private def converse(socket: jn.Socket)(using Monitor, System, Codicil)
   :   Unit logs CompileEvent =
 
-    val reader = ji.BufferedReader(ji.InputStreamReader(socket.getInputStream.nn, "UTF-8"))
-    val writer = ji.OutputStreamWriter(socket.getOutputStream.nn, "UTF-8")
-
+    // Coaxial's `listen` owns the accepted socket — it writes this lambda's
+    // result to the socket after we return — so we must NOT close it here, or
+    // that write fails. And any I/O error (typically the client disconnecting)
+    // must not escape: it would propagate out of the accept loop and stop the
+    // server from accepting any further connections.
     try
+      val reader = ji.BufferedReader(ji.InputStreamReader(socket.getInputStream.nn, "UTF-8"))
+      val writer = ji.OutputStreamWriter(socket.getOutputStream.nn, "UTF-8")
       val buffer: StringBuilder = StringBuilder()
       var line: String | Null = reader.readLine()
 
@@ -320,10 +324,7 @@ class Repl[version <: Scalac.Versions]
 
         line = reader.readLine()
 
-    finally
-      safely(reader.close())
-      safely(writer.close())
-      safely(socket.close())
+    catch case _: Throwable => ()
 
   private def respond(message: Text)(using Monitor, System, Codicil): Text logs CompileEvent =
     given LocalClasspath = classpath
