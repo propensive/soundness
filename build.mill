@@ -545,7 +545,8 @@ object colloquy extends Library:
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object client extends Component(core, ethereal.core, exoskeleton.completions, profanity.core,
-                                  coaxial.core, urticose.core, jacinta.core):
+                                  coaxial.core, urticose.core, jacinta.core, escapade.core,
+                                  iridescence.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     override def mainClass: Task.Simple[Option[String]] = Some("colloquy.repl")
