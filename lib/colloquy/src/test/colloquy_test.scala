@@ -168,7 +168,7 @@ object Tests extends Suite(m"Colloquy Tests"):
 
           try
             val output = socket.getOutputStream.nn
-            output.write("1 + 1\n\n".getBytes("UTF-8").nn)
+            output.write("1\nsubmit\n1 + 1\n\n".getBytes("UTF-8").nn)
             output.flush()
 
             val input   = ji.BufferedReader(ji.InputStreamReader(socket.getInputStream.nn, "UTF-8"))
