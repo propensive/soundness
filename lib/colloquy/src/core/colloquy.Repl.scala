@@ -94,9 +94,12 @@ object Repl:
   // tokens are the Harlequin tokenization of the submitted line.
   case class Response(status: Text, value: Text, diagnostics: Text, highlight: List[Token])
 
-  // Tokenizes a line of Scala with Harlequin's standalone lexer (no compiler) and
-  // projects each token to the minimal `(text, accent)` pair carried in the response.
-  def highlight(code: Text): List[Token] =
+  // Highlights a line of Scala with Harlequin's typechecked pipeline (the
+  // compiler resolves symbols, so accents are more accurate than the bare lexer)
+  // and projects each token to the minimal `(text, accent)` pair carried in the
+  // response. Needs the session's `Scalac` and compile classpath.
+  def highlight(code: Text)(using Scalac[?], LocalClasspath): List[Token] =
+    import highlighting.typecheckedScala
     Scala.highlight(code).lines.to(List).flatten.map: token =>
       Token(token.text, token.accent.toString.tt.lower)
 
@@ -321,6 +324,7 @@ class Repl[version <: Scalac.Versions]
       safely(socket.close())
 
   private def respond(message: Text)(using Monitor, System, Codicil): Text logs CompileEvent =
+    given LocalClasspath = classpath
     val tokens      = Repl.highlight(message)
     val unprocessed = Repl.Response(t"error", t"", t"the input could not be processed", tokens)
 
