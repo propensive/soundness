@@ -251,9 +251,13 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
   . recover:
       interactive: terminal ?=>
         given Interaction[Text, LineEditor] = liveHighlighting(duplex, state, pending, nextId)
+
+        // Enable the kitty keyboard protocol so the terminal reports Shift+Enter
+        // (as a CSI-u sequence) distinctly from plain Enter; pop it on the way out.
+        Out.print(t"\e[>1u")
         var running = true
 
-        while running do
+        try while running do
           Out.print(t"> ")
 
           whereas:
@@ -293,6 +297,8 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
                     case Repl.Reply.Crashed(_, diagnostics, _)  => Out.println(diagnostics)
                     case Repl.Reply.Failed(_, message)          => Out.println(message)
                     case Repl.Reply.Tokenized(_, _)             => ()
+
+        finally Out.print(t"\e[<u")
 
         live = false
         Exit.Ok
@@ -474,6 +480,26 @@ private class LiveState:
 // applied to the live highlight via the heuristic and drawn immediately (never
 // waiting on the server), then an async `tokenize` is fired to refine it. Mirrors
 // Profanity's default cursor handling — colour codes are zero-width.
+// The (row, column) of `position` when `text` is laid out in a terminal `cols`
+// wide, counting embedded newlines and wrapping long lines. Reduces to the
+// single-line `position/cols`, `position%cols` when there are no newlines.
+private def visualPosition(text: Text, position: Int, cols: Int): (Int, Int) =
+  val string: String = text.s
+  val limit:  Int    = position.min(string.length)
+  var rows:   Int    = 0
+  var lineStart: Int = 0
+  var index:  Int    = 0
+
+  while index < limit do
+    if string.charAt(index) == '\n' then
+      rows += (index - lineStart)/cols + 1
+      lineStart = index + 1
+
+    index += 1
+
+  val column = limit - lineStart
+  (rows + column/cols, column%cols)
+
 private def liveHighlighting
   ( duplex: Duplex, state: LiveState, pending: TrieMap[Int, Int],
     nextId: juc.atomic.AtomicInteger )
@@ -487,26 +513,32 @@ private def liveHighlighting
 
     def result(editor: LineEditor): Text = editor.value
 
+    // Plain Enter inserts a newline (handled by `LineEditor`); only Shift+Enter
+    // submits the buffer.
+    override def submits(event: TerminalEvent): Boolean = event match
+      case Keypress.Shift(Keypress.Enter) => true
+      case _                              => false
+
     def render(old: Optional[LineEditor], editor: LineEditor): Unit =
       val cols              = terminal.knownColumns.max(1)
       val len               = editor.value.length
-      val curRow            = editor.position/cols
-      val curCol            = editor.position%cols
+      val (curRow, curCol)  = visualPosition(editor.value, editor.position, cols)
+      val (endRow, _)       = visualPosition(editor.value, len, cols)
       val (version, tokens) = state.record(old.lay(t"")(_.value), editor.value)
       val coloured          = colourful(tokens).render(termcapDefinitions.xtermTrueColor)
 
       Out.print:
         Text.build:
           old.let: o =>
-            val oldRow = o.position/cols
+            val (oldRow, _) = visualPosition(o.value, o.position, cols)
             if oldRow > 0 then append(t"\e[${oldRow}F") else append(t"\r")
 
           append(t"\e[J")
-          append(coloured)
+          // In raw mode a bare newline only moves down, so emit CR+LF for each.
+          append(coloured.sub(t"\n", t"\r\n"))
 
           if len > 0 then
-            val printedRows = (len - 1)/cols
-            if printedRows > 0 then append(t"\e[${printedRows}F") else append(t"\r")
+            if endRow > 0 then append(t"\e[${endRow}F") else append(t"\r")
 
           if curRow > 0 then append(t"\e[${curRow}B")
           if curCol > 0 then append(t"\e[${curCol + 1}G")
