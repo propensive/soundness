@@ -84,11 +84,13 @@ object Repl:
     case Rejected(notices: List[Notice])
     case Crashed(notices: List[Notice], error: StackTrace)
 
-  // One syntax-highlighting token of the submitted line: its verbatim text and
-  // the lowercased name of its Harlequin accent (`keyword`, `ident`, `number`,
-  // …). Sent in the JSON response for the client to colourise; ANSI rendering of
-  // these tokens is the client's concern.
-  case class Token(text: Text, accent: Text)
+  // One syntax-highlighting token of the submitted line: its verbatim text, the
+  // lowercased name of its Harlequin accent (`keyword`, `ident`, `number`, …),
+  // and — where the typechecker resolved one — the fully-qualified Scala type of
+  // the token (`Unset` for keywords, punctuation, whitespace, …). Sent in the
+  // JSON response for the client to colourise; ANSI rendering is the client's
+  // concern.
+  case class Token(text: Text, accent: Text, tpe: Optional[Text])
 
   // The reply sent to a connected client, serialized as JSON. The `highlight`
   // tokens are the Harlequin tokenization of the submitted line.
@@ -101,7 +103,7 @@ object Repl:
   def highlight(code: Text)(using Scalac[?], LocalClasspath): List[Token] =
     import highlighting.typecheckedScala
     Scala.highlight(code).lines.to(List).flatten.map: token =>
-      Token(token.text, token.accent.toString.tt.lower)
+      Token(token.text, token.accent.toString.tt.lower, token.meta.let(_.tpe.qualified))
 
   object Prelude:
     val empty: Prelude = Prelude(Nil, Nil)
