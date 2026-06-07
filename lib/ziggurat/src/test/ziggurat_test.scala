@@ -44,6 +44,8 @@ import termcaps.environment
 
 import strategies.throwUnsafely
 import charEncoders.utf8
+import hashProviders.javaStdlibHashing
+import alphabets.hex.lowerCase
 
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled
@@ -110,6 +112,55 @@ object Tests extends Suite(m"Ziggurat tests"):
         val (_, script) = stage()
         sh"$script".exec[Text]().trim
       .assert(_ == t"hello from $hostLabel")
+
+    def stageDownloader(entries: List[(Text, Text, Text)]): Path on Linux =
+      val dir = tempDir()
+      val script = dir / t"fetch"
+      script.create[File]()
+      script.open: handle =>
+        Stream(Xeq.multiDownloader(entries)).writeTo(handle)
+      script.executable() = true
+      script
+
+    // Serve the binaries as `file://` URLs so the generated downloader's curl
+    // path is exercised without standing up an HTTP server.
+    def fileEntry(dir: Path on Linux, label: Text, body: Text, hash: Optional[Text] = Unset)
+    :   (Text, Text, Text) =
+      val bin = dir / t"bin-$label"
+      bin.create[File]()
+      val bytes = body.data
+      bin.open: handle =>
+        Stream(bytes).writeTo(handle)
+      (label, t"file://$bin", hash.or(bytes.digest[Sha2[256]].serialize[Hex]))
+
+    suite(m"multiDownloader()"):
+      val entries = labels.map(fileEntry(tempDir(), _, t"#!/bin/sh\n"))
+      val script: Data = Xeq.multiDownloader(entries)
+
+      test(m"output starts with bash shebang"):
+        script.utf8.starts(t"#!/usr/bin/env bash")
+      .assert(_ == true)
+
+      test(m"assets line contains every label"):
+        val text = script.utf8
+        labels.forall { label => text.contains(t"$label=") }
+      .assert(_ == true)
+
+    suite(m"native macOS download"):
+      test(m"downloads, verifies and runs host binary"):
+        val dir = tempDir()
+        val entries = labels.map: label =>
+          fileEntry(dir, label, t"#!/bin/sh\necho 'fetched $label'\n")
+        sh"${stageDownloader(entries)}".exec[Text]().trim
+      .assert(_ == t"fetched $hostLabel")
+
+      test(m"rejects a binary whose hash does not match"):
+        val dir = tempDir()
+        val badHash = t"0"*64
+        val entries = labels.map: label =>
+          fileEntry(dir, label, t"#!/bin/sh\necho oops\n", badHash)
+        sh"${stageDownloader(entries)}".exec[Exit]()
+      .assert(_ != Exit.Ok)
 
     // Docker on macOS cannot run macOS containers, so macOS coverage is host-native only.
     if !dockerOk then Out.println(t"Docker unavailable; skipping Linux container tests")
