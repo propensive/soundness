@@ -54,6 +54,10 @@ case class Office(street: Text, city: Text) derives CanEqual
 case class Assignment(worker: Worker, office: Office) derives CanEqual
 case class Crew(lead: Text, members: List[Worker]) derives CanEqual
 case class TextAge(name: Text, age: Text) derives CanEqual
+case class Nicked(name: Text, nick: Optional[Text]) derives CanEqual
+
+def keywords(struct: Tels.Struct): List[Text] = struct.members.to(List).collect:
+  case field: Tels.Field => field.keyword
 
 object VerifyTests extends Suite(m"Stratiform verify tests"):
   def run(): Unit =
@@ -93,6 +97,28 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
       test(m"A list field round-trips through TEL"):
         Crew(t"Z", List(Worker(t"A", 1), Worker(t"B", 2))).encode.as[Crew]
       . assert(_ == Crew(t"Z", List(Worker(t"A", 1), Worker(t"B", 2))))
+
+    suite(m"Schema derivation"):
+      test(m"A product derives a Struct with kebab-cased field keywords"):
+        keywords(Schematic.tels[Worker](t"worker").document)
+      . assert(_ == List(t"name", t"age"))
+
+      test(m"A required field has Tight polarity"):
+        Schematic.tels[Worker](t"worker").document.members.to(List).collect:
+          case field: Tels.Field if field.keyword == t"name" => field.required
+      . assert(_ == List(Tels.Polarity.Tight))
+
+      test(m"An Optional field loosens to Loose polarity"):
+        Schematic.tels[Nicked](t"nicked").document.members.to(List).collect:
+          case field: Tels.Field if field.keyword == t"nick" => field.required
+      . assert(_ == List(Tels.Polarity.Loose))
+
+      test(m"A collection field's type is a Struct with a repeatable `item`"):
+        Schematic.tels[Crew](t"crew").document.members.to(List).collect:
+          case field: Tels.Field if field.keyword == t"members" => field.fieldType
+        . collect:
+            case struct: Tels.Struct => keywords(struct)
+      . assert(_ == List(List(t"item")))
 
     suite(m"Compile-time schema checks"):
       test(m"An unknown field is rejected"):
