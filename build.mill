@@ -539,7 +539,7 @@ object coaxial extends Library:
 
 object colloquy extends Library:
   object core extends Component(anthology.`scala`, inimitable.core, coaxial.core, eucalyptus.core,
-                                stratiform.core):
+                                stratiform.core, harlequin.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
