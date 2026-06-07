@@ -33,6 +33,7 @@
 package jacinta
 
 import scala.annotation.*
+import scala.compiletime.summonInline
 
 import anticipation.*
 import prepositional.*
@@ -40,12 +41,29 @@ import urticose.*
 import vacuous.*
 import wisteria.*
 
+// The third of the three derivations (encoder-only / schema-only / both): the
+// fused `Encodable & Schematic in Json over JsonSchema` for any product or sum.
+// It is deliberately a single intersection given (not a universal `(Encodable,
+// Schematic) => …` combinator), built by deriving the encoder and the schema from
+// the same structure. Kept at low priority (a supertrait of `Schematic`) so a
+// bare `Schematic over JsonSchema` summon never gets upgraded to require an
+// encoder — the combined given is chosen only when the intersection is requested.
+trait SchematicLow:
+  inline given encodableSchematic: [value: Reflection]
+  =>  value is Encodable & Schematic in Json over JsonSchema =
+    new Encodable with Schematic:
+      type Self = value
+      type Form = Json
+      type Transport = JsonSchema
+      def encoded(value: value): Json = summonInline[value is Encodable in Json].encoded(value)
+      def schema(): JsonSchema = JsonSchema.derived[value].schema()
+
 // `Schematic` describes the schema of a value's encoding; `Transport` is the
 // schema's own representation (e.g. `JsonSchema`), so an instance reads `X is
 // Schematic over JsonSchema`. It carries no `Form` of its own: when fused with an
 // encoder as `Encodable & Schematic in Json over JsonSchema`, the wire format
 // (`Form = Json`) comes from `Encodable`.
-object Schematic:
+object Schematic extends SchematicLow:
   given byte: Byte is Schematic over JsonSchema = () => JsonSchema.Integer()
   given short: Short is Schematic over JsonSchema = () => JsonSchema.Integer()
   given int: Int is Schematic over JsonSchema = () => JsonSchema.Integer()

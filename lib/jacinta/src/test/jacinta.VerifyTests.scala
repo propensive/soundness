@@ -48,6 +48,29 @@ case class Squad(lead: Text, members: List[Employee]) derives CanEqual
 
 object VerifyTests extends Suite(m"Jacinta verify tests"):
   def run(): Unit =
+    suite(m"Encodable & Schematic fusion"):
+      val person = Employee(t"Alice", 30, t"a@b.c")
+
+      test(m"A fused instance encodes (and round-trips) as Json"):
+        infer[Employee is Encodable & Schematic in Json over JsonSchema].encoded(person).as[Employee]
+      . assert(_ == person)
+
+      test(m"A fused instance yields a schema"):
+        infer[Employee is Encodable & Schematic in Json over JsonSchema].schema()
+      . assert:
+          case _: JsonSchema.Object => true
+          case _                    => false
+
+      test(m"The encoder-only instance still resolves"):
+        infer[Employee is Encodable in Json].encoded(person).as[Employee]
+      . assert(_ == person)
+
+      test(m"The schema-only instance still resolves"):
+        infer[Employee is Schematic over JsonSchema].schema()
+      . assert:
+          case _: JsonSchema.Object => true
+          case _                    => false
+
     suite(m"Runtime verification"):
       test(m"A conformant object verifies and still decodes"):
         val json = t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json]
