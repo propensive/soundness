@@ -92,17 +92,26 @@ object Repl:
   // concern.
   case class Token(text: Text, accent: Text, tpe: Optional[Text])
 
-  // The reply sent to a connected client, serialized as JSON. The `highlight`
-  // tokens are the Harlequin tokenization of the submitted line.
-  case class Response(status: Text, value: Text, diagnostics: Text, highlight: List[Token])
+  // The reply sent to a connected client, serialized as JSON. `id` echoes the
+  // request's id so the client can re-associate replies that arrive out of order
+  // (a fast `tokenize` may overtake a slow `submit`). The `highlight` tokens are
+  // the Harlequin tokenization of the submitted line.
+  case class Response(id: Int, status: Text, value: Text, diagnostics: Text, highlight: List[Token])
 
-  // Highlights a line of Scala with Harlequin's typechecked pipeline (the
-  // compiler resolves symbols, so accents are more accurate than the bare lexer)
-  // and projects each token to the minimal `(text, accent)` pair carried in the
-  // response. Needs the session's `Scalac` and compile classpath.
+  // Highlights `code` with Harlequin's typechecked pipeline (the compiler
+  // resolves symbols, so accents are accurate and each token carries its type).
+  // Needs the session's `Scalac` and compile classpath; used for `submit`.
   def highlight(code: Text)(using Scalac[?], LocalClasspath): List[Token] =
     import highlighting.typecheckedScala
-    Scala.highlight(code).lines.to(List).flatten.map: token =>
+    project(Scala.highlight(code))
+
+  // Highlights `code` with Harlequin's standalone lexer — no compiler, so it is
+  // fast enough to run on every keystroke for live editing (no type information).
+  def tokenize(code: Text): List[Token] =
+    project(Scala.highlight(code))
+
+  private def project(source: SourceCode): List[Token] =
+    source.lines.to(List).flatten.map: token =>
       Token(token.text, token.accent.toString.tt.lower, token.meta.let(_.tpe.qualified))
 
   object Prelude:
@@ -299,6 +308,13 @@ class Repl[version <: Scalac.Versions]
     // that write fails. And any I/O error (typically the client disconnecting)
     // must not escape: it would propagate out of the accept loop and stop the
     // server from accepting any further connections.
+    //
+    // Each message is handled in its own task, so a slow `submit` doesn't hold up
+    // the `tokenize` replies a client fires while editing: `tokenize` is stateless
+    // (runs concurrently), `submit` is serialized by `mutex`, and replies may go
+    // back out of order. A write mutex stops concurrent replies interleaving.
+    val writes: Mutex = Mutex()
+
     try
       val reader = ji.BufferedReader(ji.InputStreamReader(socket.getInputStream.nn, "UTF-8"))
       val writer = ji.OutputStreamWriter(socket.getOutputStream.nn, "UTF-8")
@@ -311,14 +327,20 @@ class Repl[version <: Scalac.Versions]
             val message: Text = buffer.toString.tt.trim
             buffer.clear()
 
-            // A stray throwable in one message becomes an error reply, not a
-            // dropped connection, so the session survives.
-            val response: Text =
-              try respond(message) catch case error: Throwable => t"! error: ${error.toString.tt}"
+            async:
+              // A stray throwable in one message becomes an error reply, not a
+              // dropped connection, so the session survives.
+              val response: Text =
+                try respond(message)
+                catch case error: Throwable =>
+                  encode(Repl.Response(0, t"error", t"", error.toString.tt, Nil))
 
-            writer.write(response.s)
-            writer.write("\n\n")
-            writer.flush()
+              writes:
+                try
+                  writer.write(response.s)
+                  writer.write("\n\n")
+                  writer.flush()
+                catch case _: Throwable => ()
         else
           buffer.append(line.nn).append("\n")
 
@@ -326,25 +348,45 @@ class Repl[version <: Scalac.Versions]
 
     catch case _: Throwable => ()
 
+  // Each message is `<id>\n<kind>\n<code>`: the id is echoed back so replies can be
+  // re-associated out of order; a `tokenize` request only highlights (cheap, for
+  // live editing); anything else is treated as a `submit` (compile and run).
   private def respond(message: Text)(using Monitor, System, Codicil): Text logs CompileEvent =
-    given LocalClasspath = classpath
-    val tokens      = Repl.highlight(message)
-    val unprocessed = Repl.Response(t"error", t"", t"the input could not be processed", tokens)
+    val parts = message.cut(t"\n").to(List)
+    val id    = try Integer.parseInt(parts.head.trim.s) catch case _: Throwable => 0
+    val kind  = parts.drop(1).headOption.map(_.trim).getOrElse(t"")
+    val code  = parts.drop(2).join(t"\n")
 
-    val response: Repl.Response =
-      safely(mutex(interpret(message))).lay(unprocessed):
+    if kind == t"tokenize"
+    then encode(Repl.Response(id, t"tokenized", t"", t"", Repl.tokenize(code)))
+    else submit(id, code)
+
+  // Typecheck-highlights, compiles, and runs `code`, replying (with `id`) with the
+  // highlighting, the result value, and any diagnostics. The whole body holds
+  // `mutex`, so concurrent submits serialize and never drive the compiler at once.
+  private def submit(id: Int, code: Text)(using Monitor, System, Codicil): Text logs CompileEvent =
+    given LocalClasspath = classpath
+
+    val response: Repl.Response = mutex:
+      val tokens      = Repl.highlight(code)
+      val unprocessed = Repl.Response(id, t"error", t"", t"the input could not be processed", tokens)
+
+      safely(interpret(code)).lay(unprocessed):
         case Outcome.Ran(notices, value) =>
-          Repl.Response(t"ran", value.or(t""), notices.map(_.message).join(t"; "), tokens)
+          Repl.Response(id, t"ran", value.or(t""), notices.map(_.message).join(t"; "), tokens)
 
         case Outcome.Rejected(notices) =>
-          Repl.Response(t"rejected", t"", notices.map(_.message).join(t"; "), tokens)
+          Repl.Response(id, t"rejected", t"", notices.map(_.message).join(t"; "), tokens)
 
         case Outcome.Threw(_, error) =>
-          Repl.Response(t"threw", t"", error.toString.tt, tokens)
+          Repl.Response(id, t"threw", t"", error.toString.tt, tokens)
 
         case Outcome.Crashed(notices, _) =>
-          Repl.Response(t"crashed", t"", notices.map(_.message).join(t"; "), tokens)
+          Repl.Response(id, t"crashed", t"", notices.map(_.message).join(t"; "), tokens)
 
-    // `Json` is `Dynamic`, so `.show`/`.root` are intercepted; summon the
-    // `Encodable in Text` instance explicitly to render compact JSON.
+    encode(response)
+
+  // `Json` is `Dynamic`, so `.show`/`.root` are intercepted; summon the
+  // `Encodable in Text` instance explicitly to render compact JSON.
+  private def encode(response: Repl.Response): Text =
     summon[Json is Encodable in Text].encoded(response.json)
