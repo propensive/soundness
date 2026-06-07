@@ -186,9 +186,13 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
                   duplex.send(Stream((encode(Repl.Request.Submit(0, line)) + t"\n\n").data))
 
                   submits.take().nn match
-                    case Repl.Reply.Ran(_, value, output, diagnostics, _) =>
+                    case Repl.Reply.Ran(_, value, output, tpe, diagnostics, _) =>
                       if output != t"" then Out.print(output)
-                      value.let(Out.println(_))
+
+                      value.let: rendered =>
+                        tpe.lay(Out.println(rendered)): typeName =>
+                          Out.println(t"$rendered : $typeName")
+
                       if diagnostics != t"" then Out.println(diagnostics)
 
                     case Repl.Reply.Threw(_, output, diagnostics, _) =>

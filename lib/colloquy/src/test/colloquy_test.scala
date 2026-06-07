@@ -167,7 +167,7 @@ object Tests extends Suite(m"Colloquy Tests"):
     suite(m"REPL TCP server"):
       given Scalac[3.8] = Scalac(Nil)
 
-      test(m"a message sent over TCP is answered with a JSON reply"):
+      test(m"a JSON reply carries the value, type and highlighting"):
         supervise:
           val tcpPort = Port[Tcp]()
           val service = Repl().serve(tcpPort)
@@ -191,7 +191,7 @@ object Tests extends Suite(m"Colloquy Tests"):
             socket.close()
             service.stop()
       . assert: reply =>
-          reply.contains("Ran") && reply.contains("2")
+          reply.contains("Ran") && reply.contains("2") && reply.contains("Int")
 
       test(m"a quit request fulfils the server's quit signal"):
         supervise:
