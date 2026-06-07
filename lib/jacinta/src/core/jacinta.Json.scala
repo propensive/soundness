@@ -475,7 +475,7 @@ object Json extends Json2, Dynamic:
   given lens: [name <: Label: ValueOf] => (erased DynamicJsonEnabler) => Tactic[JsonError]
   =>  name is Lens from Json onto Json =
 
-    Lens(_.selectDynamic(valueOf[name]), _.modify(valueOf[name], _))
+    Lens(_.selectField(valueOf[name]), _.modify(valueOf[name], _))
 
 
   given ordinalOptical: [element] => Ordinal is Optical from Json onto Json =
@@ -714,23 +714,43 @@ object Json extends Json2, Dynamic:
     import dynamicJsonAccess.enabled
 
     def rewrite(kind: Text, json: Json): Json = unsafely(json.updateDynamic(key)(kind))
-    def discriminate(json: Json): Optional[Text] = safely(json.selectDynamic(key).as[Text])
+    def discriminate(json: Json): Optional[Text] = safely(json.selectField(key).as[Text])
     def variant(json: Json): Json = unsafely(json.updateDynamic(key)(Unset))
 
 class Json(rootValue: Any, positions: Optional[Json.PositionIndex] = Unset)
-extends Dynamic derives CanEqual:
+extends Dynamic, Topical, Original derives CanEqual:
   private[jacinta] def root: Json.Ast = rootValue.asInstanceOf[Json.Ast]
   def positionIndex: Optional[Json.PositionIndex] = positions
-  def apply(index: Int): Json raises JsonError = Json(root.array(index))
 
-  def selectDynamic(field: String)(using erased DynamicJsonEnabler): Json raises JsonError =
-    apply(field.tt)
+  // Total field access used by the schema-typed navigation macros and by
+  // internal optics: an absent `Json` for a missing key, never raising.
+  private[jacinta] def selectField(field: String): Json =
+    if root.isAbsent then Json.ast(Json.Ast(Unset))
+    else root.objectIndexOf(field) match
+      case -1    => Json.ast(Json.Ast(Unset))
+      case index => Json(root.objectValue(index))
 
+  // Total array access: an absent `Json` for an out-of-bounds index.
+  private[jacinta] def selectIndex(index: Int): Json =
+    if root.isArray && index >= 0 && index < root.arrayLength then Json(root.arrayElement(index))
+    else Json.ast(Json.Ast(Unset))
 
-  def applyDynamic(field: String)(index: Int)(using erased DynamicJsonEnabler)
-  :   Json raises JsonError =
+  // Raising array access, preserving the behaviour of plain `json(i)`.
+  private[jacinta] def indexValue(index: Int): Json raises JsonError = Json(root.array(index))
 
-    apply(field.tt)(index)
+  // Array indexing. For a schema-typed `Json of List[E] from R` the navigation
+  // macro yields `Json of E from R`; for a plain `Json` it indexes at runtime
+  // (raising on a non-array or out-of-bounds index), exactly as before.
+  transparent inline def apply(index: Int): Json = ${Jacinta.index('this, 'index)}
+
+  // Dynamic field selection. For a schema-typed `Json of P from R` the macro
+  // checks `P` has the field and yields `Json of <field-type> from R`; for a
+  // plain `Json` it requires a `DynamicJsonEnabler` (as before) and reads the
+  // field at runtime.
+  transparent inline def selectDynamic(field: String): Json = ${Jacinta.select('this, 'field)}
+
+  transparent inline def applyDynamic(field: String)(index: Int): Json =
+    ${Jacinta.applied('this, 'field, 'index)}
 
 
   def update[value: Encodable in Json](index: Int, value: value)(using erased DynamicJsonEnabler)

@@ -141,7 +141,7 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
     def variant(json: Json): Json = unsafely(json.updateDynamic("type")(Unset))
 
     def discriminate(json: Json): Optional[Text] =
-      safely(json.selectDynamic("type").as[Text]).let(_.capitalize)
+      safely(json.selectField("type").as[Text]).let(_.capitalize)
 
 
   inline def conjunction[derivation <: Product: ProductReflection]
