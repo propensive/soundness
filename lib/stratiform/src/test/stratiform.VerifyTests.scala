@@ -105,28 +105,28 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
 
     suite(m"Schema derivation"):
       test(m"A product derives a Struct with kebab-cased field keywords"):
-        keywords(Schematic.tels[Worker](t"worker").document)
+        keywords(Tels.tels[Worker](t"worker").document)
       . assert(_ == List(t"name", t"age"))
 
       test(m"A required field has Tight polarity"):
-        Schematic.tels[Worker](t"worker").document.members.to(List).collect:
+        Tels.tels[Worker](t"worker").document.members.to(List).collect:
           case field: Tels.Field if field.keyword == t"name" => field.required
       . assert(_ == List(Tels.Polarity.Tight))
 
       test(m"An Optional field loosens to Loose polarity"):
-        Schematic.tels[Nicked](t"nicked").document.members.to(List).collect:
+        Tels.tels[Nicked](t"nicked").document.members.to(List).collect:
           case field: Tels.Field if field.keyword == t"nick" => field.required
       . assert(_ == List(Tels.Polarity.Loose))
 
       test(m"A collection field's type is a Struct with a repeatable `item`"):
-        Schematic.tels[Crew](t"crew").document.members.to(List).collect:
+        Tels.tels[Crew](t"crew").document.members.to(List).collect:
           case field: Tels.Field if field.keyword == t"members" => field.fieldType
         . collect:
             case struct: Tels.Struct => keywords(struct)
       . assert(_ == List(List(t"item")))
 
       test(m"A map field's type is a Struct of repeatable `entries` of key/value"):
-        Schematic.tels[Config](t"config").document.members.to(List).collect:
+        Tels.tels[Config](t"config").document.members.to(List).collect:
           case field: Tels.Field if field.keyword == t"prefs" => field.fieldType
         . collect:
             case struct: Tels.Struct => struct.members.to(List).collect:

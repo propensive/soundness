@@ -41,38 +41,45 @@ import wisteria.*
 
 import Tels.Polarity
 
-// Derives a TEL schema (`Tels.Type`) from a Scala type, mirroring jacinta's
-// `Schematic`/`JsonSchema` derivation. A scalar maps to `Tels.Scalar`, a product
-// to a `Tels.Struct` of `Field`s (one per case-class field, keyed by the
-// camel→kebab field name and respecting `@name[Tel]` renames), a collection to a
-// `Struct` carrying a single repeatable `item` field — matching the `item`-keyword
-// collection encoding — and `Optional` loosens the enclosing field's `required`
-// polarity. A full schema document is assembled by `Schematic.tels`.
-object Schematic:
-  given text: Text is Schematic = () => Tels.Scalar(IArray.empty)
-  given string: String is Schematic = () => Tels.Scalar(IArray.empty)
-  given int: Int is Schematic = () => Tels.Scalar(IArray.empty)
-  given long: Long is Schematic = () => Tels.Scalar(IArray.empty)
-  given double: Double is Schematic = () => Tels.Scalar(IArray.empty)
-  given boolean: Boolean is Schematic = () => Tels.Scalar(IArray.empty)
+// TEL refinement of the shared `anticipation.Schematic`: it adds a field-level
+// `polarity` so the product derivation can mark `Optional` fields as `Loose` (TEL
+// records optionality on the field, not on the schema node). The schema
+// representation (`Transport`) is a `Tels.Type`. `verify` / `tels` still require
+// only the shared `Schematic over Tels.Type`, which these givens satisfy.
+trait TelSchematic extends Schematic:
+  def polarity: Tels.Polarity = Tels.Polarity.Tight
 
-  given optional: [value: Schematic] => Optional[value] is Schematic = new Schematic:
-    type Self = Optional[value]
-    def schema(): Tels.Type = value.schema()
-    override def required: Polarity = Polarity.Loose
+// Schema derivation for TEL: scalars map to `Tels.Scalar`, products to a
+// `Tels.Struct` of `Field`s, collections to a `Struct` with a repeatable `item`
+// field, and `Map` to repeatable `entries` of `key`/`value`. Mixed into `object
+// Tels` so the givens sit in the `Transport` companion's implicit scope.
+trait Tels2:
+  given text: Text is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
+  given string: String is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
+  given int: Int is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
+  given long: Long is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
+  given double: Double is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
+  given boolean: Boolean is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
 
-  given list: [value: Schematic] => List[value] is Schematic =
-    () => collectionType(value.schema())
+  given optional: [value: Schematic over Tels.Type]
+  =>  Optional[value] is TelSchematic over Tels.Type =
+    new TelSchematic:
+      type Self = Optional[value]
+      type Transport = Tels.Type
+      def schema(): Tels.Type = value.schema()
+      override def polarity: Tels.Polarity = Polarity.Loose
 
-  given set: [value: Schematic] => Set[value] is Schematic =
-    () => collectionType(value.schema())
+  given list: [value: Schematic over Tels.Type] => List[value] is TelSchematic over Tels.Type =
+    () => Tels2.itemType(value.schema())
 
-  given series: [value: Schematic] => Series[value] is Schematic =
-    () => collectionType(value.schema())
+  given set: [value: Schematic over Tels.Type] => Set[value] is TelSchematic over Tels.Type =
+    () => Tels2.itemType(value.schema())
 
-  // A `Map` is a series of repeatable `entries`, each a struct of a `key` and a
-  // `value` field — matching the `entries`/`key`/`value` encoding.
-  given map: [key: Schematic, value: Schematic] => Map[key, value] is Schematic =
+  given series: [value: Schematic over Tels.Type] => Series[value] is TelSchematic over Tels.Type =
+    () => Tels2.itemType(value.schema())
+
+  given map: [key: Schematic over Tels.Type, value: Schematic over Tels.Type]
+  =>  Map[key, value] is TelSchematic over Tels.Type =
     () =>
       val entry =
         Tels.Struct
@@ -85,24 +92,27 @@ object Schematic:
         ( IArray(Tels.Field(Polarity.Implicit, Polarity.Loose, t"entries", entry, Unset)),
           IArray.empty )
 
-  // A collection encodes as a wrapping compound whose repeatable `item` children
-  // are the elements, so its schema is a `Struct` with a single repeatable `item`
-  // field of the element type.
-  private def collectionType(element: Tels.Type): Tels.Type =
+  inline given schematic: [value: Reflection] => value is TelSchematic over Tels.Type =
+    TelsDerivation.derived
+
+  // Assembles a self-contained `Tels` document whose root struct is the schema of
+  // `value`.
+  def tels[value: Schematic over Tels.Type](name: Text): Tels = value.schema().absolve match
+    case struct: Tels.Struct =>
+      Tels(name, struct, IArray.empty, Unset, IArray.empty, IArray.empty, IArray.empty)
+
+object Tels2:
+  // A collection encodes as a wrapping compound with repeatable `item` children,
+  // so its schema is a `Struct` with a single repeatable `item` field.
+  private[stratiform] def itemType(element: Tels.Type): Tels.Type =
     Tels.Struct
       ( IArray(Tels.Field(Polarity.Implicit, Polarity.Loose, t"item", element, Unset)),
         IArray.empty )
 
-  inline given schematic: [value: Reflection] => value is Schematic = TelsDerivation.derived
+object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
+  inline def conjunction[derivation <: Product: ProductReflection]
+  :   derivation is TelSchematic over Tels.Type =
 
-  // Assembles a full, self-contained `Tels` document whose root struct is the
-  // schema of `value`.
-  def tels[value: Schematic](name: Text): Tels = value.schema().absolve match
-    case struct: Tels.Struct =>
-      Tels(name, struct, IArray.empty, Unset, IArray.empty, IArray.empty, IArray.empty)
-
-object TelsDerivation extends Derivable[Schematic]:
-  inline def conjunction[derivation <: Product: ProductReflection]: derivation is Schematic =
     () =>
       val renames: Map[Text, Text] = relabelling[derivation, Tel]
 
@@ -110,20 +120,13 @@ object TelsDerivation extends Derivable[Schematic]:
         contexts:
           [field] => schematic =>
             val keyword: Text = renames.getOrElse(label, Tel.camelToKebab(label.s))
-            Tels.Field(schematic.required, Polarity.Implicit, keyword, schematic.schema(), Unset)
+            Tels.Field(schematic.polarity, Polarity.Implicit, keyword, schematic.schema(), Unset)
 
         . to(List)
 
       Tels.Struct(IArray.from(members), IArray.empty)
 
   // TEL sums (selects) are not yet derived structurally; a permissive empty
-  // struct is produced so a containing type can still derive a schema.
-  inline def disjunction[derivation: SumReflection]: derivation is Schematic =
+  // struct lets a containing type still derive a schema.
+  inline def disjunction[derivation: SumReflection]: derivation is TelSchematic over Tels.Type =
     () => Tels.Struct(IArray.empty, IArray.empty)
-
-trait Schematic extends Typeclass:
-  def schema(): Tels.Type
-
-  // The field-level `required` polarity contributed by this type when it appears
-  // as a case-class field; `Optional` loosens it.
-  def required: Tels.Polarity = Tels.Polarity.Tight

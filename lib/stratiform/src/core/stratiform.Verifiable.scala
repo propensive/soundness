@@ -32,6 +32,7 @@
                                                                                                   */
 package stratiform
 
+import anticipation.*
 import contingency.*
 import distillate.*
 import prepositional.*
@@ -50,7 +51,7 @@ extension (tel: Tel)
   // raises `TelError`): TEL scalars are untyped text, so a structural walk over
   // the derived `Tels` cannot catch type mismatches (e.g. a non-numeric `Int`
   // field) that decoding does — hence decoding remains the strict check.
-  def verify[topic](using topic is Schematic)(using topic is Decodable in Tel)
+  def verify[topic](using topic is Schematic over Tels.Type)(using topic is Decodable in Tel)
   :     (Tel of topic from topic) raises TelError =
     tel.as[topic]
     tel.asInstanceOf[Tel of topic from topic]
