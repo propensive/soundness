@@ -46,6 +46,7 @@ import contingency.*
 import digression.*
 import distillate.*
 import gossamer.*
+import harlequin.*
 import hellenism.*
 import inimitable.*
 import parasite.*
@@ -83,8 +84,21 @@ object Repl:
     case Rejected(notices: List[Notice])
     case Crashed(notices: List[Notice], error: StackTrace)
 
-  // The reply sent to a connected client, serialized to the client as TEL.
-  case class Response(status: Text, value: Text, diagnostics: Text)
+  // One syntax-highlighting token of the submitted line: its verbatim text and
+  // the lowercased name of its Harlequin accent (`keyword`, `ident`, `number`,
+  // …). Sent in the TEL response for the client to colourise; ANSI rendering of
+  // these tokens is the client's concern.
+  case class Token(text: Text, accent: Text)
+
+  // The reply sent to a connected client, serialized to the client as TEL. The
+  // `highlight` tokens are the Harlequin tokenization of the submitted line.
+  case class Response(status: Text, value: Text, diagnostics: Text, highlight: List[Token])
+
+  // Tokenizes a line of Scala with Harlequin's standalone lexer (no compiler) and
+  // projects each token to the minimal `(text, accent)` pair carried over TEL.
+  def highlight(code: Text): List[Token] =
+    Scala.highlight(code).lines.to(List).flatten.map: token =>
+      Token(token.text, token.accent.toString.tt.lower)
 
   object Prelude:
     val empty: Prelude = Prelude(Nil, Nil)
@@ -307,20 +321,21 @@ class Repl[version <: Scalac.Versions]
       safely(socket.close())
 
   private def respond(message: Text)(using Monitor, System, Codicil): Text logs CompileEvent =
-    val unprocessed = Repl.Response(t"error", t"", t"the input could not be processed")
+    val tokens      = Repl.highlight(message)
+    val unprocessed = Repl.Response(t"error", t"", t"the input could not be processed", tokens)
 
     val response: Repl.Response =
       safely(mutex(interpret(message))).lay(unprocessed):
         case Outcome.Ran(notices, value) =>
-          Repl.Response(t"ran", value.or(t""), notices.map(_.message).join(t"; "))
+          Repl.Response(t"ran", value.or(t""), notices.map(_.message).join(t"; "), tokens)
 
         case Outcome.Rejected(notices) =>
-          Repl.Response(t"rejected", t"", notices.map(_.message).join(t"; "))
+          Repl.Response(t"rejected", t"", notices.map(_.message).join(t"; "), tokens)
 
         case Outcome.Threw(_, error) =>
-          Repl.Response(t"threw", t"", error.toString.tt)
+          Repl.Response(t"threw", t"", error.toString.tt, tokens)
 
         case Outcome.Crashed(notices, _) =>
-          Repl.Response(t"crashed", t"", notices.map(_.message).join(t"; "))
+          Repl.Response(t"crashed", t"", notices.map(_.message).join(t"; "), tokens)
 
     Tel.show(response.tel)
