@@ -33,6 +33,7 @@
 package colloquy
 
 import java.io as ji
+import java.lang as jl
 import java.net as jn
 import java.nio.file as jnf
 import java.util.concurrent as juc
@@ -56,21 +57,29 @@ import systems.java
 import temporaryDirectories.system
 import threading.platform
 
-// A front-end for a Colloquy REPL. `colloquy serve <port>` runs a REPL server on
-// that TCP port; `colloquy <port>` connects to a server on localhost and drives
-// an interactive session — read a line in a Profanity line editor, send it
-// (double-newline-terminated), print the verbatim reply — until Ctrl+D or Ctrl+C.
+// A front-end for a Colloquy REPL. With a TCP port, `colloquy serve <port>` runs a
+// server and `colloquy <port>` connects to one on localhost. With no port,
+// `colloquy serve` opens a per-process UNIX domain socket (named after the JVM's
+// PID, under the XDG runtime dir) and `colloquy` connects to it — picking the lone
+// running server, or listing them if there are several. Either way the client
+// drives an interactive, live-highlighted session until Ctrl+D, Ctrl+C or `/quit`.
 @main
 def repl(): Unit = cli:
   arguments match
     case Argument("serve") :: Argument(As[Int](portNumber)) :: Nil =>
       execute(serve(portNumber))
 
+    case Argument("serve") :: Nil =>
+      execute(serveSocket())
+
     case Argument(As[Int](portNumber)) :: Nil =>
       execute:
         safely(Port[Tcp](portNumber)).lay(invalidPort(portNumber)): port =>
           connect(port).lay(unreachable(portNumber)): duplex =>
             try converse(duplex) finally duplex.close()
+
+    case Nil =>
+      execute(connectSocket())
 
     case _ =>
       execute(Exit.Fail(1))
@@ -92,6 +101,39 @@ private def serve(portNumber: Int)(using Stdio, Monitor, Codicil, System): Exit 
         repl.awaitQuit()
         service.stop()
         Exit.Ok
+
+// The directory holding per-process REPL sockets, and this process's socket file.
+// UNIX domain sockets are a Unix-only feature, so the directory follows
+// `$XDG_RUNTIME_DIR` (then `$TMPDIR`, then `/tmp`) directly, as plain `Text`.
+private def envText(name: String): Optional[Text] = Optional(jl.System.getenv(name)).let(_.nn.tt)
+
+private def socketDirectory: Text =
+  t"${envText("XDG_RUNTIME_DIR").or(envText("TMPDIR")).or(t"/tmp")}/colloquy"
+
+private def socketFile: Text = t"$socketDirectory/${ProcessHandle.current.nn.pid}.sock"
+
+// Runs a REPL server on a per-process UNIX domain socket (used when no port is
+// given) and blocks until quit, unlinking the socket file on the way out.
+private def serveSocket()(using Stdio, Monitor, Codicil, System): Exit =
+  given Scalac[3.8] = Scalac(Nil)
+  given Classloader = serverClassloader
+
+  val socketPath: Text = socketFile
+
+  try
+    jnf.Files.createDirectories(jnf.Path.of(socketDirectory.s)).nn
+    jnf.Files.deleteIfExists(jnf.Path.of(socketPath.s))
+
+    val repl    = Repl()
+    val service = repl.serve(socketPath)
+    Out.println(t"colloquy: serving a REPL on $socketPath (Ctrl+C or /quit to stop)")
+    repl.awaitQuit()
+    service.stop()
+    safely(jnf.Files.deleteIfExists(jnf.Path.of(socketPath.s)))
+    Exit.Ok
+  catch case error: Throwable =>
+    Out.println(t"colloquy: could not serve on $socketPath: ${error.toString.tt}")
+    Exit.Fail(6)
 
 // Builds the classloader the REPL compiles against inside the Ethereal daemon.
 // The launch classloader is not a `URLClassLoader`, so it exposes no compile
@@ -123,6 +165,54 @@ private def unreachable(portNumber: Int)(using Stdio): Exit =
 // Opens a TCP connection to the server, or `Unset` if it is refused.
 private def connect(port: Port over Tcp): Optional[Duplex] =
   try (ip"127.0.0.1" via port).duplex() catch case _: Exception => Unset
+
+// Opens a UNIX domain socket connection, or `Unset` if it is refused.
+private def connectDomain(socket: DomainSocket): Optional[Duplex] =
+  try socket.duplex() catch case _: Exception => Unset
+
+private def unreachableSocket(path: Text)(using Stdio): Exit =
+  Out.println(t"colloquy: could not connect to $path")
+  Exit.Fail(3)
+
+// The full paths of the `.sock` files in the socket directory.
+private def socketPaths(directory: Text): List[Text] =
+  val listing: Array[ji.File | Null] | Null = ji.File(directory.s).listFiles()
+  val names: scm.ArrayBuffer[Text] = scm.ArrayBuffer()
+
+  if listing != null then
+    var index = 0
+
+    while index < listing.nn.length do
+      val file = listing.nn(index)
+
+      if file != null then
+        val name: Text = file.nn.getName.nn.tt
+        if name.ends(t".sock") then names += t"$directory/$name"
+
+      index += 1
+
+  names.to(List)
+
+// Connects to a per-process UNIX domain socket. With exactly one server running,
+// connects to it; with several, lists them and exits so the user can pick.
+private def connectSocket()(using Stdio, Monitor, Codicil, Console, Environment): Exit =
+  socketPaths(socketDirectory) match
+    case Nil =>
+      Out.println(t"colloquy: no running REPL server found (start one with 'colloquy serve')")
+      Exit.Fail(3)
+
+    case path :: Nil =>
+      connectDomain(DomainSocket(path)).lay(unreachableSocket(path)): duplex =>
+        try converse(duplex) finally duplex.close()
+
+    case paths =>
+      Out.println(t"colloquy: several REPL servers are running:")
+
+      paths.each: path =>
+        Out.println(t"  $path")
+
+      Out.println(t"colloquy: stop all but one, or use a TCP server with 'colloquy <port>'")
+      Exit.Fail(7)
 
 // The read/edit/print loop. The server's reply is printed verbatim. Ctrl+C/Ctrl+D
 // dismiss the line editor (`DismissError`) and end the session.

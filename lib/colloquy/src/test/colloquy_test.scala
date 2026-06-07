@@ -34,6 +34,8 @@ package colloquy
 
 import _root_.java.io as ji
 import _root_.java.net as jn
+import _root_.java.nio.channels as jnc
+import _root_.java.nio.file as jnf
 
 import soundness.*
 
@@ -215,6 +217,35 @@ object Tests extends Suite(m"Colloquy Tests"):
             socket.close()
             service.stop()
       . assert(_ == true)
+
+      test(m"a message sent over a UNIX domain socket is answered"):
+        supervise:
+          val directory    = jnf.Files.createTempDirectory("colloquy-test").nn
+          val socketPath   = directory.resolve("repl.sock").nn.toString.tt
+          val service      = Repl().serve(socketPath)
+          val address      = jn.UnixDomainSocketAddress.of(socketPath.s).nn
+          val channel      = jnc.SocketChannel.open(address).nn
+
+          try
+            val output = jnc.Channels.newOutputStream(channel).nn
+            output.write("{\"id\":3,\"code\":\"6 * 7\",\"kind\":\"Submit\"}\n\n".getBytes("UTF-8").nn)
+            output.flush()
+
+            val stream  = jnc.Channels.newInputStream(channel).nn
+            val input   = ji.BufferedReader(ji.InputStreamReader(stream, "UTF-8"))
+            val builder = StringBuilder()
+            var line: String | Null = input.readLine()
+
+            while line != null && !line.nn.isEmpty do
+              builder.append(line.nn).append("\n")
+              line = input.readLine()
+
+            builder.toString
+          finally
+            channel.close()
+            service.stop()
+      . assert: reply =>
+          reply.contains("Ran") && reply.contains("42")
 
     suite(m"REPL block captures outside references"):
       given Scalac[3.8] = Scalac(Nil)
