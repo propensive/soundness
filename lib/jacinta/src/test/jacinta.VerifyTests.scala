@@ -70,6 +70,17 @@ object VerifyTests extends Suite(m"Jacinta verify tests"):
         safely(json.verify[Employee]).present
       . assert(_ == true)
 
+      test(m"A wrong-typed field fails to verify"):
+        val json = t"""{"name": "Bob", "age": "old", "email": "b@c.d"}""".read[Json]
+        safely(json.verify[Employee]).absent
+      . assert(_ == true)
+
+      test(m"A wrong-typed nested array element fails to verify"):
+        val json = t"""{"lead": "Z", "members": [{"name": "A", "age": "x", "email": "a@a"}]}"""
+                     .read[Json]
+        safely(json.verify[Squad]).absent
+      . assert(_ == true)
+
     suite(m"Typed navigation (no enabler import)"):
       test(m"Access a verified field"):
         val json = t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json]
