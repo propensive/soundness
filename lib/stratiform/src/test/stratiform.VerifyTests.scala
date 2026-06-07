@@ -52,6 +52,7 @@ import Tel.given
 case class Worker(name: Text, age: Int) derives CanEqual
 case class Office(street: Text, city: Text) derives CanEqual
 case class Assignment(worker: Worker, office: Office) derives CanEqual
+case class Crew(lead: Text, members: List[Worker]) derives CanEqual
 case class TextAge(name: Text, age: Text) derives CanEqual
 
 object VerifyTests extends Suite(m"Stratiform verify tests"):
@@ -82,6 +83,16 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
         Assignment(Worker(t"Bob", 2), Office(t"Main", t"Town"))
           .encode.verify[Assignment].office.city.as[Text]
       . assert(_ == t"Town")
+
+      test(m"Index into a verified collection field"):
+        Crew(t"Z", List(Worker(t"A", 1), Worker(t"B", 2)))
+          .encode.verify[Crew].members(1).name.as[Text]
+      . assert(_ == t"B")
+
+    suite(m"Collection round-trip"):
+      test(m"A list field round-trips through TEL"):
+        Crew(t"Z", List(Worker(t"A", 1), Worker(t"B", 2))).encode.as[Crew]
+      . assert(_ == Crew(t"Z", List(Worker(t"A", 1), Worker(t"B", 2))))
 
     suite(m"Compile-time schema checks"):
       test(m"An unknown field is rejected"):

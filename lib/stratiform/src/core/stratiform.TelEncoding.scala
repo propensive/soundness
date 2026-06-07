@@ -33,6 +33,7 @@
 package stratiform
 
 import scala.compiletime.*
+import scala.collection.Factory
 
 import adversaria.*
 import anticipation.*
@@ -244,6 +245,43 @@ trait Tel2:
   given optionalDecodable: [value: Decodable in Tel] => Tactic[TelError]
   =>  Optional[value] is Decodable in Tel = telVal =>
     if telVal.childCompounds.isEmpty && telVal.atomTexts.isEmpty then Unset else value.decoded(telVal)
+
+  // Collection support — every element is encoded as an `item` compound, and the
+  // product encoder re-keys the wrapping compound with the field's label, so a
+  // `List[T]` field `xs` becomes an `xs` compound with one `item` child per
+  // element. Decoding reads back all `item` children, building the target
+  // collection via its `Factory`.
+
+  private def itemise(tel: Tel): Tel.Compound = tel.subtree match
+    case c: Tel.Compound => c.copy(keyword = t"item")
+    case d: Tel.Document => Tel.Compound(t"item", IArray.empty, Unset, d.children)
+
+  private def collectionTel[value]
+      (values: Iterable[value])(using encodable: value is Encodable in Tel)
+  :     Tel =
+    Tel.compound(t"", IArray.empty, IArray.from(values.map(v => itemise(encodable.encoded(v)))))
+
+  given listEncodable: [list <: List, element] => (encodable: => element is Encodable in Tel)
+  =>  list[element] is Encodable in Tel =
+    values => collectionTel(values)(using encodable)
+
+  given setEncodable: [set <: Set, element] => (encodable: => element is Encodable in Tel)
+  =>  set[element] is Encodable in Tel =
+    values => collectionTel(values)(using encodable)
+
+  given seriesEncodable: [series <: Series, element] => (encodable: => element is Encodable in Tel)
+  =>  series[element] is Encodable in Tel =
+    values => collectionTel(values)(using encodable)
+
+  given collectionDecodable: [collection <: Iterable, element]
+  =>  ( factory:   Factory[element, collection[element]],
+        decodable: => element is Decodable in Tel )
+  =>  Tactic[TelError]
+  =>  collection[element] is Decodable in Tel =
+    telVal =>
+      val builder = factory.newBuilder
+      for item <- telVal.fields(t"item") do builder += decodable.decoded(item)
+      builder.result()
 
   // Helpers used by encoders to construct Tel values.
 
