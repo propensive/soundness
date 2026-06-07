@@ -49,6 +49,7 @@ import codicils.cancel
 import executives.completions
 import internetAccess.enabled
 import interpreters.posix
+import jsonDiscriminables.discriminatedUnionByKind
 import logging.silent
 import supervisors.global
 import systems.java
@@ -132,7 +133,7 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
 
   val state                 = LiveState()
   val pending               = TrieMap[Int, Int]()                  // tokenize id → version
-  val submits               = juc.LinkedBlockingQueue[Repl.Response]()
+  val submits               = juc.LinkedBlockingQueue[Repl.Reply]()
   val nextId                = juc.atomic.AtomicInteger(1)           // 0 is reserved for submit
   @volatile var live        = true
 
@@ -144,10 +145,12 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
       val raw = reply(chunks).trim
 
       if raw.length == 0 then live = false
-      else safely(Json.parseTracked(raw).as[Repl.Response]).let: reply =>
-        if reply.status == t"tokenized"
-        then pending.remove(reply.id).foreach(state.reconcile(_, reply.highlight))
-        else submits.put(reply)
+      else safely[Exception](Json.parseTracked(raw).as[Repl.Reply]).let:
+        case Repl.Reply.Tokenized(id, highlight) =>
+          pending.remove(id).foreach(state.reconcile(_, highlight))
+
+        case reply =>
+          submits.put(reply)
 
   whereas:
     case TerminalError() =>
@@ -169,10 +172,18 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
               LineEditor().ask: line =>
                 // The editor already showed the (live-highlighted) line; submit it
                 // and print the awaited result value and any diagnostics.
-                duplex.send(Stream((t"0\nsubmit\n"+line+t"\n\n").data))
-                val response = submits.take().nn
-                if response.value != t"" then Out.println(response.value)
-                if response.diagnostics != t"" then Out.println(response.diagnostics)
+                duplex.send(Stream((encode(Repl.Request.Submit(0, line)) + t"\n\n").data))
+
+                submits.take().nn match
+                  case Repl.Reply.Ran(_, value, diagnostics, _) =>
+                    value.let(Out.println(_))
+                    if diagnostics != t"" then Out.println(diagnostics)
+
+                  case Repl.Reply.Rejected(_, diagnostics, _) => Out.println(diagnostics)
+                  case Repl.Reply.Threw(_, diagnostics, _)    => Out.println(diagnostics)
+                  case Repl.Reply.Crashed(_, diagnostics, _)  => Out.println(diagnostics)
+                  case Repl.Reply.Failed(_, message)          => Out.println(message)
+                  case Repl.Reply.Tokenized(_, _)             => ()
 
         live = false
         Exit.Ok
@@ -397,7 +408,12 @@ private def liveHighlighting
         lastVersion = version
         val id = nextId.getAndIncrement
         pending(id) = version
-        duplex.send(Stream((id.toString.tt + t"\ntokenize\n" + editor.value + t"\n\n").data))
+        duplex.send(Stream((encode(Repl.Request.Tokenize(id, editor.value)) + t"\n\n").data))
+
+// Serializes a `Request` as compact JSON for the wire. `Json` is `Dynamic`, so
+// `.show` is intercepted; summon the `Encodable in Text` instance explicitly.
+private def encode(request: Repl.Request): Text =
+  summon[Json is Encodable in Text].encoded(request.json)
 
 // Pulls chunks from the (persistent) socket stream, buffering until the `"\n\n"`
 // message delimiter, and decodes the buffered bytes verbatim.

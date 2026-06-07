@@ -160,7 +160,7 @@ object Tests extends Suite(m"Colloquy Tests"):
     suite(m"REPL TCP server"):
       given Scalac[3.8] = Scalac(Nil)
 
-      test(m"a message sent over TCP is answered with a TEL-encoded reply"):
+      test(m"a message sent over TCP is answered with a JSON reply"):
         supervise:
           val tcpPort = Port[Tcp]()
           val service = Repl().serve(tcpPort)
@@ -168,7 +168,7 @@ object Tests extends Suite(m"Colloquy Tests"):
 
           try
             val output = socket.getOutputStream.nn
-            output.write("1\nsubmit\n1 + 1\n\n".getBytes("UTF-8").nn)
+            output.write("{\"id\":1,\"code\":\"1 + 1\",\"kind\":\"Submit\"}\n\n".getBytes("UTF-8").nn)
             output.flush()
 
             val input   = ji.BufferedReader(ji.InputStreamReader(socket.getInputStream.nn, "UTF-8"))
@@ -184,7 +184,7 @@ object Tests extends Suite(m"Colloquy Tests"):
             socket.close()
             service.stop()
       . assert: reply =>
-          reply.contains("status") && reply.contains("ran") && reply.contains("2")
+          reply.contains("Ran") && reply.contains("2")
 
     suite(m"REPL block captures outside references"):
       given Scalac[3.8] = Scalac(Nil)
