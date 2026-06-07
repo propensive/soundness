@@ -58,7 +58,9 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 
+import hieroglyph.charEncoders.utf8
 import interfaces.paths.pathOnLinux
+import jsonDiscriminables.discriminatedUnionByKind
 
 object Repl:
   object Layout:
@@ -92,11 +94,23 @@ object Repl:
   // concern.
   case class Token(text: Text, accent: Text, tpe: Optional[Text])
 
-  // The reply sent to a connected client, serialized as JSON. `id` echoes the
-  // request's id so the client can re-associate replies that arrive out of order
-  // (a fast `tokenize` may overtake a slow `submit`). The `highlight` tokens are
-  // the Harlequin tokenization of the submitted line.
-  case class Response(id: Int, status: Text, value: Text, diagnostics: Text, highlight: List[Token])
+  // A request from a connected client. `id` is echoed in the reply so the client
+  // can re-associate replies that arrive out of order (a fast `tokenize` may
+  // overtake a slow `submit`). Serialized as JSON with a `kind` discriminator.
+  enum Request:
+    case Submit(id: Int, code: Text)
+    case Tokenize(id: Int, code: Text)
+
+  // A reply to a connected client, echoing the request's `id`. `highlight` is the
+  // Harlequin tokenization of the submitted line. Serialized as JSON with a `kind`
+  // discriminator.
+  enum Reply:
+    case Tokenized(id: Int, highlight: List[Token])
+    case Ran(id: Int, value: Optional[Text], diagnostics: Text, highlight: List[Token])
+    case Rejected(id: Int, diagnostics: Text, highlight: List[Token])
+    case Threw(id: Int, diagnostics: Text, highlight: List[Token])
+    case Crashed(id: Int, diagnostics: Text, highlight: List[Token])
+    case Failed(id: Int, message: Text)
 
   // Highlights `code` with Harlequin's typechecked pipeline (the compiler
   // resolves symbols, so accents are accurate and each token carries its type).
@@ -288,11 +302,10 @@ class Repl[version <: Scalac.Versions]
       case failure        => failure
 
   // Starts a TCP server on `port` and accepts connections. Each connection is an
-  // interactive session over the *same* REPL state, speaking a plain-text,
-  // double-newline-delimited protocol (a blank line ends a message), so it can
-  // be driven with `telnet`. Returns a handle whose `stop()` shuts the server
-  // down. A binary protocol and a dedicated client will replace the text framing
-  // later.
+  // interactive session over the *same* REPL state. Messages are JSON `Request`/
+  // `Reply` values, one per line, each terminated by a blank line (compact JSON
+  // has no embedded newline, so the delimiter is unambiguous). Returns a handle
+  // whose `stop()` shuts the server down.
   def serve(port: Port over Tcp)(using Monitor, System, Codicil)
   :   SocketService logs CompileEvent raises BindError raises StreamError =
 
@@ -333,7 +346,7 @@ class Repl[version <: Scalac.Versions]
               val response: Text =
                 try respond(message)
                 catch case error: Throwable =>
-                  encode(Repl.Response(0, t"error", t"", error.toString.tt, Nil))
+                  encode(Repl.Reply.Failed(0, error.toString.tt))
 
               writes:
                 try
@@ -348,18 +361,16 @@ class Repl[version <: Scalac.Versions]
 
     catch case _: Throwable => ()
 
-  // Each message is `<id>\n<kind>\n<code>`: the id is echoed back so replies can be
-  // re-associated out of order; a `tokenize` request only highlights (cheap, for
-  // live editing); anything else is treated as a `submit` (compile and run).
+  // Decodes one JSON `Request` and dispatches: a `tokenize` only highlights (cheap,
+  // for live editing); a `submit` compiles and runs. A malformed request becomes a
+  // `Failed` reply rather than a dropped connection.
   private def respond(message: Text)(using Monitor, System, Codicil): Text logs CompileEvent =
-    val parts = message.cut(t"\n").to(List)
-    val id    = try Integer.parseInt(parts.head.trim.s) catch case _: Throwable => 0
-    val kind  = parts.drop(1).headOption.map(_.trim).getOrElse(t"")
-    val code  = parts.drop(2).join(t"\n")
+    val request: Optional[Repl.Request] =
+      safely[Exception](Json.parseTracked(message).as[Repl.Request])
 
-    if kind == t"tokenize"
-    then encode(Repl.Response(id, t"tokenized", t"", t"", Repl.tokenize(code)))
-    else submit(id, code)
+    request.lay(encode(Repl.Reply.Failed(0, t"the request could not be parsed"))):
+      case Repl.Request.Tokenize(id, code) => encode(Repl.Reply.Tokenized(id, Repl.tokenize(code)))
+      case Repl.Request.Submit(id, code)   => submit(id, code)
 
   // Typecheck-highlights, compiles, and runs `code`, replying (with `id`) with the
   // highlighting, the result value, and any diagnostics. The whole body holds
@@ -367,26 +378,26 @@ class Repl[version <: Scalac.Versions]
   private def submit(id: Int, code: Text)(using Monitor, System, Codicil): Text logs CompileEvent =
     given LocalClasspath = classpath
 
-    val response: Repl.Response = mutex:
+    val reply: Repl.Reply = mutex:
       val tokens      = Repl.highlight(code)
-      val unprocessed = Repl.Response(id, t"error", t"", t"the input could not be processed", tokens)
+      val unprocessed = Repl.Reply.Failed(id, t"the input could not be processed")
 
       safely(interpret(code)).lay(unprocessed):
         case Outcome.Ran(notices, value) =>
-          Repl.Response(id, t"ran", value.or(t""), notices.map(_.message).join(t"; "), tokens)
+          Repl.Reply.Ran(id, value, notices.map(_.message).join(t"; "), tokens)
 
         case Outcome.Rejected(notices) =>
-          Repl.Response(id, t"rejected", t"", notices.map(_.message).join(t"; "), tokens)
+          Repl.Reply.Rejected(id, notices.map(_.message).join(t"; "), tokens)
 
         case Outcome.Threw(_, error) =>
-          Repl.Response(id, t"threw", t"", error.toString.tt, tokens)
+          Repl.Reply.Threw(id, error.toString.tt, tokens)
 
         case Outcome.Crashed(notices, _) =>
-          Repl.Response(id, t"crashed", t"", notices.map(_.message).join(t"; "), tokens)
+          Repl.Reply.Crashed(id, notices.map(_.message).join(t"; "), tokens)
 
-    encode(response)
+    encode(reply)
 
   // `Json` is `Dynamic`, so `.show`/`.root` are intercepted; summon the
   // `Encodable in Text` instance explicitly to render compact JSON.
-  private def encode(response: Repl.Response): Text =
-    summon[Json is Encodable in Text].encoded(response.json)
+  private def encode(reply: Repl.Reply): Text =
+    summon[Json is Encodable in Text].encoded(reply.json)
