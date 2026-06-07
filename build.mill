@@ -1027,6 +1027,8 @@ object locomotion extends Library:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
+  object bench extends Benchmarks(core, quantitative.units):
+    def mvnDeps = Seq(mvn"com.google.protobuf:protobuf-java:4.29.3")
 
 object mercator extends Library:
   object core extends Component(fulminate.core):
