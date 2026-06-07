@@ -135,6 +135,19 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
             case struct: Tels.Struct => keywords(struct)
       . assert(_ == List(List(t"key", t"value")))
 
+    suite(m"Encodable & Schematic fusion"):
+      val worker = Worker(t"Alice", 30)
+
+      test(m"A fused instance encodes (and round-trips) as Tel"):
+        summon[Worker is Encodable & Schematic in Tel over Tels.Type].encoded(worker).as[Worker]
+      . assert(_ == worker)
+
+      test(m"A fused instance yields a schema"):
+        summon[Worker is Encodable & Schematic in Tel over Tels.Type].schema()
+      . assert:
+          case _: Tels.Struct => true
+          case _              => false
+
     suite(m"Compile-time schema checks"):
       test(m"An unknown field is rejected"):
         demilitarize:

@@ -32,6 +32,8 @@
                                                                                                   */
 package stratiform
 
+import scala.compiletime.summonInline
+
 import adversaria.*
 import anticipation.*
 import gossamer.*
@@ -40,6 +42,19 @@ import vacuous.*
 import wisteria.*
 
 import Tels.Polarity
+
+// Low-priority home for the fused `Encodable & Schematic` derivation (below the
+// single-capability givens in `Tels2`/`object Tels`, so a bare `Schematic` or
+// `Encodable` summon is never upgraded to require the other capability).
+trait TelsLow:
+  inline given encodableSchematic: [value: Reflection]
+  =>  value is Encodable & Schematic in Tel over Tels.Type =
+    new Encodable with Schematic:
+      type Self = value
+      type Form = Tel
+      type Transport = Tels.Type
+      def encoded(value: value): Tel = summonInline[value is Encodable in Tel].encoded(value)
+      def schema(): Tels.Type = TelsDerivation.derived[value].schema()
 
 // TEL refinement of the shared `anticipation.Schematic`: it adds a field-level
 // `polarity` so the product derivation can mark `Optional` fields as `Loose` (TEL
@@ -53,7 +68,7 @@ trait TelSchematic extends Schematic:
 // `Tels.Struct` of `Field`s, collections to a `Struct` with a repeatable `item`
 // field, and `Map` to repeatable `entries` of `key`/`value`. Mixed into `object
 // Tels` so the givens sit in the `Transport` companion's implicit scope.
-trait Tels2:
+trait Tels2 extends TelsLow:
   given text: Text is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
   given string: String is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
   given int: Int is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
