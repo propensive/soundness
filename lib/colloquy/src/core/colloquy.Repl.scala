@@ -33,6 +33,7 @@
 package colloquy
 
 import java.io as ji
+import java.lang as jl
 import java.net as jn
 import java.nio.file as jnf
 
@@ -81,8 +82,8 @@ object Repl:
     def wrap(index: Int, history: List[Text], code: Text): Text
 
   enum Outcome:
-    case Ran(notices: List[Notice], value: Optional[Text])
-    case Threw(notices: List[Notice], error: Throwable)
+    case Ran(notices: List[Notice], value: Optional[Text], output: Text)
+    case Threw(notices: List[Notice], error: Throwable, output: Text)
     case Rejected(notices: List[Notice])
     case Crashed(notices: List[Notice], error: StackTrace)
 
@@ -106,9 +107,12 @@ object Repl:
   // discriminator.
   enum Reply:
     case Tokenized(id: Int, highlight: List[Token])
-    case Ran(id: Int, value: Optional[Text], diagnostics: Text, highlight: List[Token])
+
+    case Ran(id: Int, value: Optional[Text], output: Text, diagnostics: Text,
+             highlight: List[Token])
+
     case Rejected(id: Int, diagnostics: Text, highlight: List[Token])
-    case Threw(id: Int, diagnostics: Text, highlight: List[Token])
+    case Threw(id: Int, output: Text, diagnostics: Text, highlight: List[Token])
     case Crashed(id: Int, diagnostics: Text, highlight: List[Token])
     case Failed(id: Int, message: Text)
 
@@ -214,20 +218,36 @@ class Repl[version <: Scalac.Versions]
         index += 1
         history = history :+ name
 
+        // Capture whatever the user's code prints to stdout. Scala's `println`
+        // writes to `scala.Console.out` (a thread-local), while Java code writes
+        // to `System.out` (process-global), so redirect both. `System.out` is
+        // process-global, but this runs under `submit`'s `mutex`, so only one run
+        // ever redirects it at a time, and the window is just the run itself.
+        val captured: ji.ByteArrayOutputStream = ji.ByteArrayOutputStream()
+        val stream:   ji.PrintStream           = ji.PrintStream(captured, true, "UTF-8")
+        val previous: ji.PrintStream           = jl.System.out.nn
+        jl.System.setOut(stream)
+
+        def output: Text =
+          stream.flush()
+          captured.toString("UTF-8").nn.tt
+
         try
           // Seed accessors read their session from this thread-local.
           ReplBridge.setCurrentSession(session)
-          loader.on(t"$name$$")
-          Outcome.Ran(notices, rendered)
+          scala.Console.withOut(stream)(loader.on(t"$name$$"))
+          Outcome.Ran(notices, rendered, output)
         catch
           case error: ExceptionInInitializerError =>
-            Outcome.Threw(notices, Optional(error.getCause).or(error))
+            Outcome.Threw(notices, Optional(error.getCause).or(error), output)
 
           // Running arbitrary user code can throw anything, including `Error`s
           // (`LinkageError`, `StackOverflowError`, …), which must not escape and
           // kill the session.
           case error: Throwable =>
-            Outcome.Threw(notices, error)
+            Outcome.Threw(notices, error, output)
+        finally
+          jl.System.setOut(previous)
 
   private def statementCode(line: Text): Text =
     (prelude.imports.map(_.tt) :+ line).join(t"\n")
@@ -288,7 +308,7 @@ class Repl[version <: Scalac.Versions]
       if errors.isEmpty then
         index += 1
         history = history :+ name
-        Outcome.Ran(Nil, Unset)
+        Outcome.Ran(Nil, Unset, t"")
       else
         Outcome.Rejected(errors.map(Notice(Importance.Error, t"<seed>", _, Unset)))
 
@@ -383,14 +403,14 @@ class Repl[version <: Scalac.Versions]
       val unprocessed = Repl.Reply.Failed(id, t"the input could not be processed")
 
       safely(interpret(code)).lay(unprocessed):
-        case Outcome.Ran(notices, value) =>
-          Repl.Reply.Ran(id, value, notices.map(_.message).join(t"; "), tokens)
+        case Outcome.Ran(notices, value, output) =>
+          Repl.Reply.Ran(id, value, output, notices.map(_.message).join(t"; "), tokens)
 
         case Outcome.Rejected(notices) =>
           Repl.Reply.Rejected(id, notices.map(_.message).join(t"; "), tokens)
 
-        case Outcome.Threw(_, error) =>
-          Repl.Reply.Threw(id, error.toString.tt, tokens)
+        case Outcome.Threw(_, error, output) =>
+          Repl.Reply.Threw(id, output, error.toString.tt, tokens)
 
         case Outcome.Crashed(notices, _) =>
           Repl.Reply.Crashed(id, notices.map(_.message).join(t"; "), tokens)
