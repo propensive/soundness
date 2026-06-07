@@ -124,7 +124,10 @@ private def connect(port: Port over Tcp): Optional[Duplex] =
 // The read/edit/print loop. The server's reply is printed verbatim. Ctrl+C/Ctrl+D
 // dismiss the line editor (`DismissError`) and end the session.
 private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Environment): Exit =
-  val chunks: Iterator[Data] = duplex.stream.iterator
+  // `duplex.stream` blocks on its first socket read, so force the iterator lazily
+  // — only after a line has been sent — otherwise it would deadlock here before
+  // the editor starts (the server sends nothing until it receives a message).
+  lazy val chunks: Iterator[Data] = duplex.stream.iterator
 
   whereas:
     case TerminalError() =>
