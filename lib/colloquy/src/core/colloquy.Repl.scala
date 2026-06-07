@@ -49,11 +49,11 @@ import gossamer.*
 import harlequin.*
 import hellenism.*
 import inimitable.*
+import jacinta.*
 import parasite.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
-import stratiform.*
 import turbulence.*
 import urticose.*
 import vacuous.*
@@ -86,16 +86,16 @@ object Repl:
 
   // One syntax-highlighting token of the submitted line: its verbatim text and
   // the lowercased name of its Harlequin accent (`keyword`, `ident`, `number`,
-  // …). Sent in the TEL response for the client to colourise; ANSI rendering of
+  // …). Sent in the JSON response for the client to colourise; ANSI rendering of
   // these tokens is the client's concern.
   case class Token(text: Text, accent: Text)
 
-  // The reply sent to a connected client, serialized to the client as TEL. The
-  // `highlight` tokens are the Harlequin tokenization of the submitted line.
+  // The reply sent to a connected client, serialized as JSON. The `highlight`
+  // tokens are the Harlequin tokenization of the submitted line.
   case class Response(status: Text, value: Text, diagnostics: Text, highlight: List[Token])
 
   // Tokenizes a line of Scala with Harlequin's standalone lexer (no compiler) and
-  // projects each token to the minimal `(text, accent)` pair carried over TEL.
+  // projects each token to the minimal `(text, accent)` pair carried in the response.
   def highlight(code: Text): List[Token] =
     Scala.highlight(code).lines.to(List).flatten.map: token =>
       Token(token.text, token.accent.toString.tt.lower)
@@ -338,4 +338,6 @@ class Repl[version <: Scalac.Versions]
         case Outcome.Crashed(notices, _) =>
           Repl.Response(t"crashed", t"", notices.map(_.message).join(t"; "), tokens)
 
-    Tel.show(response.tel)
+    // `Json` is `Dynamic`, so `.show`/`.root` are intercepted; summon the
+    // `Encodable in Text` instance explicitly to render compact JSON.
+    summon[Json is Encodable in Text].encoded(response.json)

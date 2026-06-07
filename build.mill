@@ -539,13 +539,13 @@ object coaxial extends Library:
 
 object colloquy extends Library:
   object core extends Component(anthology.`scala`, inimitable.core, coaxial.core, eucalyptus.core,
-                                stratiform.core, harlequin.core):
+                                jacinta.core, harlequin.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object client extends Component(core, ethereal.core, exoskeleton.completions, profanity.core,
-                                  coaxial.core, urticose.core):
+                                  coaxial.core, urticose.core, jacinta.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     override def mainClass: Task.Simple[Option[String]] = Some("colloquy.repl")
