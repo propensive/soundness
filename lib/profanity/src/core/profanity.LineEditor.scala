@@ -50,6 +50,7 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
     try
       keypress match
         case CharKey(ch) => copy(t"${value.keep(position)}$ch${value.skip(position)}", position + 1)
+        case Enter       => copy(t"${value.keep(position)}\n${value.skip(position)}", position + 1)
         case Ctrl('U')   => copy(value.skip(position), 0)
         case Delete      => copy(t"${value.keep(position)}${value.skip(position + 1)}")
         case Home        => copy(position0 = 0)

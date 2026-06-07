@@ -108,6 +108,14 @@ object Keyboard:
                 val content = tail.take(size).map(_.show).join
                 TerminalInfo.Paste(content) #:: process(tail.drop(size + 6))
 
+              // CSI-u (kitty keyboard protocol) for Enter — codepoint 13 — so that
+              // Shift+Enter (`\e[13;2u`) is distinguishable from plain Enter.
+              case '1' #:: '3' #:: 'u' #:: rest =>
+                Keypress.Enter #:: process(rest)
+
+              case '1' #:: '3' #:: ';' #:: modifiers #:: 'u' #:: rest =>
+                Keyboard.modified(modifiers, Keypress.Enter) #:: process(rest)
+
               case other =>
                 val sequence = other.takeWhile(!_.isLetter)
 

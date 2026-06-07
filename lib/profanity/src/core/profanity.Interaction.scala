@@ -98,6 +98,12 @@ trait Interaction[result, question]:
   def after(): Unit = ()
   def result(state: question): result
 
+  // Which event submits the answer (default: Enter). A multi-line editor overrides
+  // this — e.g. to submit on Shift+Enter and let plain Enter insert a newline.
+  def submits(event: TerminalEvent): Boolean = event match
+    case Keypress.Enter => true
+    case _              => false
+
 
   @tailrec
   final def recur
@@ -109,9 +115,9 @@ trait Interaction[result, question]:
 
     if !events.hasNext then Unset
     else events.next() match
-      case Keypress.Enter           => result(state)
       case Keypress.Ctrl('C' | 'D') => Unset
       case Keypress.Escape          => Unset
+      case event if submits(event)  => result(state)
       case other                    => recur(events, key(state, other), state)(key)
 
 
