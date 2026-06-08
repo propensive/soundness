@@ -32,36 +32,35 @@
                                                                                                   */
 package ultimatum
 
-import java.io as ji
+import anticipation.*
+import denominative.*
+import escapade.*
 
-import soundness.*
+// The single abstraction every renderer draws through. All positioning happens
+// by calling `move` (never by printing escape codes inline), so the same widget
+// code can target the real terminal or a clipped sub-rectangle (an `Extent`)
+// without change. Coordinates are surface-local, top-origin `Ordinal`s: `column`
+// is the horizontal cell (x) and `row` the vertical cell (y), both zero-based.
+trait Surface:
+  def width: Int
+  def height: Int
 
-object Tests extends Suite(m"Ultimatum Tests"):
-  def run(): Unit =
-    suite(m"TerminalSurface"):
-      // Capture everything a surface writes into an in-memory buffer.
-      def captured(block: Stdio ?=> Unit): Text =
-        val bytes = ji.ByteArrayOutputStream()
-        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic)
-        block
-        String(bytes.toByteArray.nn, "UTF-8").tt
+  // Position the cursor at a surface-local cell.
+  def move(column: Ordinal, row: Ordinal): Unit
 
-      test(m"move emits an absolute CSI cursor-position sequence"):
-        captured: stdio ?=>
-          TerminalSurface(80, 24).move(10.z, 5.z)
-      . assert(_ == t"\e[6;11H")
+  // Write at the current cursor, advancing it.
+  def put(text: Text): Unit
+  def put(text: Teletype): Unit
 
-      test(m"move then put places text at the position"):
-        captured: stdio ?=>
-          val surface = TerminalSurface(80, 24)
-          surface.move(10.z, 5.z)
-          surface.put(t"X")
-      . assert(_ == t"\e[6;11HX")
+  // Erase the whole surface, or the current row from the cursor onwards.
+  def clear(): Unit
+  def clearLine(): Unit
 
-      test(m"clear erases the whole display"):
-        captured(TerminalSurface(80, 24).clear())
-      . assert(_ == t"\e[2J")
+  // Show or hide the hardware cursor.
+  def cursor(visible: Boolean): Unit
 
-      test(m"hiding the cursor emits the DECTCEM reset"):
-        captured(TerminalSurface(80, 24).cursor(false))
-      . assert(_ == t"\e[?25l")
+  // Leave the visible caret at a surface-local cell (after a frame is drawn).
+  def showCaret(column: Ordinal, row: Ordinal): Unit
+
+  // Commit a frame; a no-op on an unbuffered surface.
+  def flush(): Unit
