@@ -33,7 +33,7 @@
 package tarantula
 
 import anticipation.*
-import cataclysm.*
+import oldcataclysm.*
 import gossamer.*
 import honeycomb.*
 import prepositional.*

@@ -30,15 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cataclysm
+package oldcataclysm
 
-import anticipation.*
-import vacuous.*
-
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
-
-case class Css(rules: List[Css.Node]) derives CanEqual
+enum Display extends PropertyValue:
+  case Inline, Block, Contents, Flex, Grid, InlineBlock, InlineFlex, InlineGrid, InlineTable,
+    ListItem, RunIn, Table, TableCaption, TableColumnGroup, TableHeaderGroup, TableFooterGroup,
+    TableRowGroup, TableCell, TableColumn, TableRow, None

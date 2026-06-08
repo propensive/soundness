@@ -32,101 +32,60 @@
                                                                                                   */
 package cataclysm
 
-import language.dynamics
-
 import anticipation.*
-import gossamer.*
+import vacuous.*
 
-object Selector:
-  // given childSelector: [selector: Selectable, selector2: Selectable]
-  //     => CompareGreater[selector, selector2, Selector]:
+// The structural model of a CSS selector, following Selectors Level 4. The
+// three nesting levels are: a `SelectorList` (comma-separated, the loosest), a
+// `Selector` (a complex selector — compounds joined by combinators), and a
+// `Compound` (simple selectors with no whitespace between them, the tightest).
 
-  //   inline def greaterThan(inline left: selector, inline right: selector2): Selector =
-  //     Selector.Child(selector.selector(left), selector2.selector(right))
+case class SelectorList(selectors: List[Selector]) derives CanEqual
 
-  case class Element(element: Text) extends Selector(element):
-    def normalize: Selector = this
+// A complex selector: a head compound followed by combinator/compound steps.
+// `lead` is set only for a relative selector (e.g. the `>` in `:has(> img)`).
+case class Selector(lead: Optional[Combinator], head: Compound, rest: List[(Combinator, Compound)])
+derives CanEqual
 
-  case class Before(left: Selector, right: Selector)
-  extends Selector(t"${left.value}~${right.value}"):
-    def normalize: Selector = left.normalize match
-      case Or(a, b) => Or(Before(a, right).normalize, Before(b, right).normalize)
+// A compound selector: a run of simple selectors bound together with no
+// combinator (hence no whitespace) between them.
+case class Compound(parts: List[Simple]) derives CanEqual
 
-      case left =>
-        right.normalize match
-          case Or(a, b) => Or(Before(left, a).normalize, Before(left, b).normalize)
-          case right    => Before(left, right)
+// The right-hand side of an attribute selector, e.g. the `^= "x" i` part.
+case class AttributeTest(matcher: AttributeMatcher, value: Text, modifier: Optional[Char])
+derives CanEqual
 
-  case class After(left: Selector, right: Selector)
-  extends Selector(t"${left.value}+${right.value}"):
-    def normalize: Selector = left.normalize match
-      case Or(a, b) => Or(After(a, right).normalize, After(b, right).normalize)
+enum Combinator derives CanEqual:
+  case Descendant         //
+  case Child              // >
+  case NextSibling        // +
+  case SubsequentSibling  // ~
+  case Column             // ||
 
-      case left =>
-        right.normalize match
-          case Or(a, b) => Or(After(left, a).normalize, After(left, b).normalize)
-          case right    => After(left, right)
+enum AttributeMatcher derives CanEqual:
+  case Exact      // =
+  case Includes   // ~=
+  case DashMatch  // |=
+  case Prefix     // ^=
+  case Suffix     // $=
+  case Substring  // *=
 
-  case class Id(id: Text) extends Selector(t"#$id"):
-    def normalize: Selector = this
+enum Namespace derives CanEqual:
+  case Any                    // *|
+  case Default                // |
+  case Named(prefix: Text)    // ns|
 
-  case class Class(cls: Text) extends Selector(t".$cls"):
-    def normalize: Selector = this
+enum Simple derives CanEqual:
+  case Universal(namespace: Optional[Namespace])                                  // *
+  case Type(namespace: Optional[Namespace], name: Text)                           // div
+  case Id(name: Text)                                                             // #id
+  case Class(name: Text)                                                          // .cls
+  case Nesting                                                                    // &
+  case Attribute(namespace: Optional[Namespace], name: Text, test: Optional[AttributeTest])
+  case PseudoClass(name: Text, argument: Optional[PseudoArgument])                // :hover
+  case PseudoElement(name: Text, argument: Optional[PseudoArgument])              // ::before
 
-  case class PseudoClass(name: Text) extends Selector(t":$name"):
-    def normalize: Selector = this
-
-  case class And(left: Selector, right: Selector)
-  extends Selector(t"${left.value}${right.value}"):
-    def normalize: Selector = left.normalize match
-      case Or(a, b) => Or(And(a, right).normalize, And(b, right).normalize)
-
-      case left =>
-        right.normalize match
-          case Or(a, b) => Or(And(left, a).normalize, And(left, b).normalize)
-          case right    => And(left, right)
-
-  case class Or(left: Selector, right: Selector)
-  extends Selector(t"${left.value}, ${right.value}"):
-    def normalize: Selector = Or(left.normalize, right.normalize)
-
-  case class Descendant(left: Selector, right: Selector)
-  extends Selector(t"${left.value} ${right.value}"):
-    def normalize: Selector = left.normalize match
-      case Or(a, b) => Or(Descendant(a, right).normalize, Descendant(b, right).normalize)
-
-      case left =>
-        right.normalize match
-          case Or(a, b) => Or(Descendant(left, a).normalize, Descendant(left, b).normalize)
-          case right    => Descendant(left, right)
-
-  case class Child(left: Selector, right: Selector)
-  extends Selector(t"${left.value}>${right.value}"):
-    def normalize: Selector = left.normalize match
-      case Or(a, b) => Or(Child(a, right).normalize, Child(b, right).normalize)
-
-      case left =>
-        right.normalize match
-          case Or(a, b) => Or(Child(left, a).normalize, Child(left, b).normalize)
-          case right    => Child(left, right)
-
-sealed trait Selector(val value: Text):
-  inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): CssRule =
-    ${cataclysm.internal.rule('this, 'properties)}
-
-  def normalize: Selector
-
-  @targetName("or")
-  infix def | (that: Selector): Selector = Selector.Or(this, that)
-
-  @targetName("descendant")
-  infix def >> (that: Selector): Selector = Selector.Descendant(this, that)
-
-  @targetName("after")
-  infix def + (that: Selector): Selector = Selector.After(this, that)
-
-  @targetName("and")
-  infix def & (that: Selector): Selector = Selector.And(this, that)
-
-  @targetName("before")
-  infix def ~ (that: Selector): Selector = Selector.Before(this, that)
+enum PseudoArgument derives CanEqual:
+  case Selectors(list: SelectorList)                     // :is(…) :where(…) :not(…) :has(…)
+  case Nth(a: Int, b: Int, of: Optional[SelectorList])   // :nth-child(an+b [of S])
+  case Raw(text: Text)                                   // :lang(en), unrecognized functions

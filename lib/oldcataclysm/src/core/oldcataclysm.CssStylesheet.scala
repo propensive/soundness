@@ -30,15 +30,30 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cataclysm
+package oldcataclysm
+
+import language.dynamics
 
 import anticipation.*
-import vacuous.*
+import gossamer.*
+import hieroglyph.*
+import prepositional.*
 
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
+object CssStylesheet:
+  given abstractable: (charEncoder: CharEncoder)
+  =>  CssStylesheet is Abstractable across HttpStreams to HttpStreams.Content =
 
-case class Css(rules: List[Css.Node]) derives CanEqual
+    new Abstractable:
+      type Self = CssStylesheet
+      type Domain = HttpStreams
+      type Result = HttpStreams.Content
+
+      def genericize(stylesheet: CssStylesheet): HttpStreams.Content =
+        (t"text/css; charset=${charEncoder.encoding.name}", Stream(stylesheet.text.data))
+
+
+  trait Item:
+    def text: Text
+
+case class CssStylesheet(rules: CssStylesheet.Item*):
+  def text: Text = rules.map(_.text).join(t"\n")

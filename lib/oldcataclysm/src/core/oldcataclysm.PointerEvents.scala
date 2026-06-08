@@ -30,15 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cataclysm
+package oldcataclysm
 
-import anticipation.*
-import vacuous.*
-
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
-
-case class Css(rules: List[Css.Node]) derives CanEqual
+enum PointerEvents extends PropertyValue:
+  case Auto, None, VisiblePainted, VisibleFill, VisibleStroke, Visible, Painted, Fill, Stroke, All

@@ -30,15 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cataclysm
+package oldcataclysm
 
-import anticipation.*
-import vacuous.*
-
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
-
-case class Css(rules: List[Css.Node]) derives CanEqual
+enum Cursor extends PropertyValue:
+  case Auto, Default, None, ContextMenu, Help, Pointer, Progress, Wait, Cell, Crosshair, Text,
+    VerticalText, Alias, Copy, Move, NoDrop, NotAllowed, Grab, Grabbing, AllScroll, ColResize,
+    RowResize, NResize, EResize, SResize, WResize, NeResize, NwResize, SeResize, SwResize,
+    EwResize, NsResize, NeswResize, NwseResize, ZoomIn, ZoomOut

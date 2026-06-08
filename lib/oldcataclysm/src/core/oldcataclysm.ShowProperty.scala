@@ -30,15 +30,80 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cataclysm
+package oldcataclysm
 
 import anticipation.*
-import vacuous.*
+import gossamer.*
+import prepositional.*
+import quantitative.*
+import spectacular.*
 
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
+object ShowProperty:
+  given length: ShowProperty[Length] = _.show
+  given quantity: ShowProperty[Quantity[Seconds[1]]] = quantity => t"${quantity.value}s"
 
-case class Css(rules: List[Css.Node]) derives CanEqual
+  given lengthInt: ShowProperty[Int | Length] =
+    case length: Length => length.show
+    case int: Int       => int.show
+
+
+  given pair: [property: ShowProperty, property2: ShowProperty]
+  =>  ShowProperty[(property, property2)] =
+
+    tuple => t"${property.show(tuple(0))} ${property2.show(tuple(1))}"
+
+
+  given triple: [property: ShowProperty, property2: ShowProperty, property3: ShowProperty]
+  =>  ShowProperty[(property, property2, property3)] =
+
+    tuple =>
+      List
+        ( property.show(tuple(0)),
+          property2.show(tuple(1)),
+          property3.show(tuple(2)) )
+
+      . join(t" ")
+
+
+  given quad
+  :   [ property:  ShowProperty,
+        property2: ShowProperty,
+        property3: ShowProperty,
+        property4: ShowProperty ]
+  =>  ShowProperty[(property, property2, property3, property4)] =
+
+    tuple =>
+      List
+        ( property.show(tuple(0)),
+          property2.show(tuple(1)),
+          property3.show(tuple(2)),
+          property4.show(tuple(3)) )
+
+      . join(t" ")
+
+
+  given font: ShowProperty[Font] = _.names.map: f =>
+    if f.contains(t" ") then t"'$f'" else f
+
+  . join(t", ")
+
+  //given simplePath: ShowProperty[SimplePath] = path => t"url('${path}')"
+
+  given paths: [path: Abstractable across Paths to Text] => ShowProperty[path] =
+    path => t"url('${path.generic}')"
+
+  given text: ShowProperty[Text] = identity(_)
+  given int: ShowProperty[Int] = _.show
+
+  given chromatic: [chromatic: Chromatic] => ShowProperty[chromatic] = color =>
+    t"rgb(${chromatic.red(color)},${chromatic.green(color)},${chromatic.blue(color)})"
+
+  //given relative: ShowProperty[Relative] = rel => t"url('$rel')"
+  //given genericPath: ShowProperty[GenericPath] = rel => t"url('$rel')"
+  given propertyValue: ShowProperty[PropertyValue] = _.show
+  given inherity: ShowProperty[Inherit.type] = c => t"inherit"
+  given transparent: ShowProperty[Transparent.type] = c => t"transparent"
+  given initial: ShowProperty[Initial.type] = c => t"initial"
+
+trait ShowProperty[-property]:
+  def show(value: property): Text

@@ -32,13 +32,24 @@
                                                                                                   */
 package cataclysm
 
-import anticipation.*
-import vacuous.*
+import denominative.*
+import fulminate.*
 
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
+object CssError:
+  object Reason:
+    given communicable: Reason is Communicable =
+      case UnterminatedComment  => m"a comment was not terminated"
+      case UnterminatedString   => m"a string literal was not terminated"
+      case UnexpectedEnd        => m"the end of the input was reached before a rule was closed"
+      case UnexpectedChar(char) => m"the character $char was not expected here"
+      case EmptySelector        => m"a selector was expected but none was found"
 
-case class Css(rules: List[Css.Node]) derives CanEqual
+  enum Reason(val number: Int) extends Clarification:
+    case UnterminatedComment        extends Reason(1)
+    case UnterminatedString         extends Reason(2)
+    case UnexpectedEnd              extends Reason(3)
+    case UnexpectedChar(char: Char) extends Reason(4)
+    case EmptySelector              extends Reason(5)
+
+case class CssError(reason: CssError.Reason, line: Ordinal, column: Ordinal)(using Diagnostics)
+extends Error(251, reason.number)(m"invalid CSS at line ${line.n1} column ${column.n1}: $reason")

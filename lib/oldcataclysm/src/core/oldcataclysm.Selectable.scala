@@ -30,15 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cataclysm
+package oldcataclysm
 
 import anticipation.*
-import vacuous.*
+import prepositional.*
 
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
+object Selectable:
+  given ident: Selector is Selectable = identity(_)
 
-case class Css(rules: List[Css.Node]) derives CanEqual
+  given generic: [selectable: GenericCssSelection] => selectable is Selectable =
+    selectable.selection(_).s match
+      case s".$cls" => Selector.Class(cls.tt)
+      case s"#$id"  => Selector.Id(id.tt)
+      case element  => Selector.Element(element.tt)
+
+trait Selectable extends Typeclass:
+  def selector(value: Self): Selector

@@ -30,15 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cataclysm
+package oldcataclysm
 
 import anticipation.*
-import vacuous.*
+import gossamer.*
 
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
+object CssStyle:
+  given generic: ("style" is GenericHtmlAttribute[CssStyle]):
+    def serialize(value: CssStyle): Text = value.properties.map(_.text).join(t";")
+    def name: Text = t"style"
 
-case class Css(rules: List[Css.Node]) derives CanEqual
+case class CssStyle(properties: CssProperty*):
+  def text: Text = properties.map(_.text).join(t"\n")
+
+  def apply(nested: (Selector => CssRule)*): Selector => CssStylesheet = sel =>
+    CssStylesheet(nested.map(_(sel))*)

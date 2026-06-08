@@ -30,15 +30,73 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cataclysm
+package oldcataclysm
 
 import anticipation.*
-import vacuous.*
+import gossamer.*
+import spectacular.*
 
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
+object Length:
+  given showable: Length is Showable =
+    case Auto        => t"auto"
+    case Px(value)   => t"${value}px"
+    case Pt(value)   => t"${value}pt"
+    case In(value)   => t"${value}in"
+    case Pc(value)   => t"${value}%"
+    case Cm(value)   => t"${value}cm"
+    case Mm(value)   => t"${value}mm"
+    case Em(value)   => t"${value}em"
+    case Ex(value)   => t"${value}ex"
+    case Ch(value)   => t"${value}ch"
+    case Rem(value)  => t"${value}rem"
+    case Vw(value)   => t"${value}vw"
+    case Vh(value)   => t"${value}vh"
+    case Vmin(value) => t"${value}vmin"
+    case Vmax(value) => t"${value}vmax"
+    case Calc(calc)  => t"calc($calc)"
 
-case class Css(rules: List[Css.Node]) derives CanEqual
+enum Length:
+  case Px(value: Double)
+  case Pt(value: Double)
+  case In(value: Double)
+  case Auto
+  case Pc(value: Double)
+  case Cm(value: Double)
+  case Mm(value: Double)
+  case Em(value: Double)
+  case Ex(value: Double)
+  case Ch(value: Double)
+  case Rem(value: Double)
+  case Vw(value: Double)
+  case Vh(value: Double)
+  case Vmin(value: Double)
+  case Vmax(value: Double)
+  case Calc(value: Text)
+
+  @targetName("add")
+  infix def + (dim: Length): Length = infixOp(t" + ", dim)
+
+  @targetName("sub")
+  infix def - (dim: Length): Length = infixOp(t" - ", dim)
+
+  @targetName("mul")
+  infix def * (double: Double): Length = infixOp(t" * ", double)
+
+  @targetName("div")
+  infix def / (double: Double): Length = infixOp(t" / ", double)
+
+  private def infixOp(operator: Text, dim: Length | Double): Length.Calc = this match
+    case Calc(calc) =>
+      dim match
+        case double: Double => Calc(t"($calc)$operator${double}")
+        case Calc(calc2)    => Calc(t"($calc)$operator($calc2)")
+        case length: Length => Calc(t"($calc)$operator$length")
+
+    case other =>
+      dim match
+        case double: Double => Calc(t"${this.show}$operator$double")
+        case Calc(calc2)    => Calc(t"${this.show}$operator($calc2)")
+        case length: Length => Calc(t"${this.show}$operator$length")
+
+  def function(name: Text, right: Length | Double): Length =
+    Calc(t"$name(${infixOp(t", ", right).value})")

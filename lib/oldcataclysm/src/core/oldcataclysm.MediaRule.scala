@@ -30,15 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cataclysm
+package oldcataclysm
 
 import anticipation.*
-import vacuous.*
+import gossamer.*
+import symbolism.*
 
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
-
-case class Css(rules: List[Css.Node]) derives CanEqual
+case class MediaRule(query: Text)(rules: CssStylesheet.Item*) extends CssStylesheet.Item:
+  def text: Text = rules.map(t"  "+_.text).join(t"@media $query {\n", t"\n", t"\n}")

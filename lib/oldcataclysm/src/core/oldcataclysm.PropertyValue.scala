@@ -30,15 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cataclysm
+package oldcataclysm
 
-import anticipation.*
-import vacuous.*
+import gossamer.*
+import spectacular.*
 
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
+object PropertyValue:
+  given showable: PropertyValue is Showable = _.toString.show.uncamel.kebab
 
-case class Css(rules: List[Css.Node]) derives CanEqual
+trait PropertyValue

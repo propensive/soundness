@@ -35,7 +35,7 @@ package savagery
 import scala.collection.immutable.SeqMap
 
 import anticipation.*
-import cataclysm.{Float as _, *}
+import oldcataclysm.{Float as _, *}
 import geodesy.*
 import gossamer.*
 import spectacular.*

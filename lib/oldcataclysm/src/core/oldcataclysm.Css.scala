@@ -30,15 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cataclysm
+package oldcataclysm
 
-import anticipation.*
-import vacuous.*
+import language.dynamics
 
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
 
-case class Css(rules: List[Css.Node]) derives CanEqual
+object Css extends Dynamic:
+  def applyDynamic(method: "apply")(): CssStyle = CssStyle()
+
+  inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): CssStyle =
+    ${internal.read('properties)}

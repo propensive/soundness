@@ -30,15 +30,41 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cataclysm
+package oldcataclysm
 
 import anticipation.*
+import gossamer.*
 import vacuous.*
 
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
+case class FontFace
+  ( ascentOverride:        Optional[Text] = Unset,
+    descentOverride:       Optional[Text] = Unset,
+    fontDisplay:           Optional[Text] = Unset,
+    fontFamily:            Optional[Text] = Unset,
+    fontStretch:           Optional[Text] = Unset,
+    fontStyle:             Optional[Text] = Unset,
+    fontWeight:            Optional[Text] = Unset,
+    fontVariationSettings: Optional[Text] = Unset,
+    lineGapOverride:       Optional[Text] = Unset,
+    sizeAdjust:            Optional[Text] = Unset,
+    src:                   Optional[Text] = Unset,
+    unicodeRange:          Optional[Text] = Unset )
+extends CssStylesheet.Item:
+  def text: Text =
+    val params = List(
+      t"ascent-override"         -> ascentOverride,
+      t"descent-override"        -> descentOverride,
+      t"font-display"            -> fontDisplay,
+      t"font-family"             -> fontFamily,
+      t"font-weight"             -> fontWeight,
+      t"font-variation-settings" -> fontVariationSettings,
+      t"line-gap-override"       -> lineGapOverride,
+      t"size-adjust"             -> sizeAdjust,
+      t"src"                     -> src,
+      t"unicode-range"           -> unicodeRange
+    ).filter(!_(1).absent)
 
-case class Css(rules: List[Css.Node]) derives CanEqual
+    params.collect:
+      case (key: Text, value: Text) => t"$key: $value;"
+
+    . join(t"@font-face { ", t" ", t" }")

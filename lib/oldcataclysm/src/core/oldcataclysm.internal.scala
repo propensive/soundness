@@ -30,15 +30,39 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cataclysm
+package oldcataclysm
+
+import scala.quoted.*
 
 import anticipation.*
-import vacuous.*
+import fulminate.*
+import gigantism.*
+import gossamer.*
+import spectacular.*
 
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
+object internal:
+  def rule(selector: Expr[Selector], props: Expr[Seq[(Label, Any)]]): Macro[CssRule] =
+    '{CssRule($selector, ${read(props)})}
 
-case class Css(rules: List[Css.Node]) derives CanEqual
+  def keyframe(name: Expr[String], props: Expr[Seq[(Label, Any)]]): Macro[Keyframe] =
+    '{Keyframe(Text($name), ${read(props)})}
+
+  def read(properties: Expr[Seq[(Label, Any)]]): Macro[CssStyle] =
+    def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[CssProperty]] = exprs match
+      case '{type key <: Label; ($key: key, $value: value)} +: tail =>
+        val exp: Expr[key is PropertyDef[value]] =
+          Expr.summon[key is PropertyDef[value]].getOrElse:
+            val typeName = Type.of[value].show
+
+            halt
+              ( 413,
+                m"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists" )
+
+        '{CssProperty(Text($key).uncamel.kebab, infer[ShowProperty[value]].show($value))}
+        :: recur(tail)
+
+      case _ =>
+        Nil
+
+    properties.absolve match
+      case Varargs(exprs) => '{CssStyle(${Expr.ofSeq(recur(exprs))}*)}
