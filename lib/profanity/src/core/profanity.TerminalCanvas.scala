@@ -39,20 +39,23 @@ import turbulence.*
 
 object TerminalCanvas:
   def apply(width: Int, height: Int)(using Stdio): TerminalCanvas =
-    new TerminalCanvas(width, height)
+    new TerminalCanvas(() => width, () => height)
 
-  // Build a surface covering the whole terminal, taking its current size and
-  // writing through its `Stdio`.
+  // Build a surface covering the whole terminal, reading its size live (so a
+  // resize is reflected the next time the layout is solved) and writing through
+  // its `Stdio`.
   def apply(terminal: Terminal): TerminalCanvas =
-    new TerminalCanvas(terminal.knownColumns, terminal.knownRows)(using terminal.stdio)
+    new TerminalCanvas(() => terminal.knownColumns, () => terminal.knownRows)(using terminal.stdio)
 
 // A `Canvas` over a real terminal: every positioning operation maps to an
 // escapade `csi` sequence, written through the in-scope `Stdio`. It keeps no
 // cursor of its own — `put` lets the terminal advance the hardware cursor
 // naturally, while `move`/`showCaret` set absolute positions. `width`/`height`
-// are fixed at construction; resize is handled by building a fresh surface per
-// frame rather than mutating this one.
-class TerminalCanvas(val width: Int, val height: Int)(using Stdio) extends Canvas:
+// are read on demand, so a terminal-backed canvas tracks the live size.
+class TerminalCanvas(widthFn: () => Int, heightFn: () => Int)(using Stdio) extends Canvas:
+  def width: Int = widthFn()
+  def height: Int = heightFn()
+
   // `csi.cup` takes a 1-based (row, column); our coordinates are 0-based
   // `Ordinal`s, so `.n1` converts each.
   def move(column: Ordinal, row: Ordinal): Unit = Out.print(csi.cup(row.n1, column.n1))

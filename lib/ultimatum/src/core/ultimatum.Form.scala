@@ -41,7 +41,7 @@ import rudiments.*
 // terminal resize) the layout is re-solved using each widget's live intrinsic
 // size, and only the panels whose rectangle or content actually changed are
 // repainted.
-class Form(terminal: Terminal, fullScreen: Boolean, pane: Pane):
+class Form(root: Canvas, fullScreen: Boolean, pane: Pane):
   private val leaves: IndexedSeq[Pane] = pane.leaves.to(IndexedSeq)
   private val focuses: IndexedSeq[Focus] = leaves.collect { case Pane.Widget(_, focus) => focus }
 
@@ -52,14 +52,11 @@ class Form(terminal: Terminal, fullScreen: Boolean, pane: Pane):
   private var rects: IndexedSeq[Rect] = IndexedSeq()
   private var focus: Int = 0
 
-  private def canvas: Canvas = TerminalCanvas(terminal)
-
   // Project the panes to a frame, overriding each widget's minimum with the live
-  // size its content needs at the width it last occupied (the terminal width on
-  // the first solve).
+  // size its content needs at the width it last occupied (the root width on the
+  // first solve).
   private def liveFrame: Frame =
-    val width = terminal.knownColumns
-    val widths = if rects.isEmpty then leaves.map(_ => width) else rects.map(_.width)
+    val widths = if rects.isEmpty then leaves.map(_ => root.width) else rects.map(_.width)
     var index = -1
 
     def project(node: Pane): Frame = node match
@@ -83,11 +80,11 @@ class Form(terminal: Terminal, fullScreen: Boolean, pane: Pane):
 
   private def solve(): IndexedSeq[Rect] =
     val frame = liveFrame
-    val height = if fullScreen then terminal.knownRows else frame.measure(Axis.Rank).min
-    frame.arrange(Rect(0, 0, terminal.knownColumns, height)).cells.to(IndexedSeq)
+    val height = if fullScreen then root.height else frame.measure(Axis.Rank).min
+    frame.arrange(Rect(0, 0, root.width, height)).cells.to(IndexedSeq)
 
   private def paint(index: Int): Unit =
-    val extent = FlowExtent(canvas, rects(index))
+    val extent = FlowExtent(root, rects(index))
 
     leaves(index) match
       case Pane.Leaf(_, content) =>

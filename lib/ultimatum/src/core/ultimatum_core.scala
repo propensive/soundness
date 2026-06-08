@@ -87,7 +87,7 @@ def rank(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.Rank, panes.to(List))
 // Drive an interactive layout across the whole terminal, looping over terminal
 // events until the user exits. Used inside `interactive`.
 def form(fullScreen: Boolean = true)(pane: Pane)(using terminal: Terminal): Unit =
-  Form(terminal, fullScreen, pane).run(terminal.eventIterator())
+  Form(TerminalCanvas(terminal), fullScreen, pane).run(terminal.eventIterator())
 
 // The leaf indices that must be repainted: any whose rectangle moved or resized
 // since the last layout, plus any whose content changed this frame. A leaf whose
