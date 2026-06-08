@@ -64,8 +64,11 @@ object OpenApi:
 
     // Anchored (rather than derived inline at each use) so that `PathItem` and
     // `Operation`, which both embed `Parameter`, reference one cached instance.
+    // Typed as the carrier `Json.Decodable` (not the plain `Decodable in Json`):
+    // the schema-carrying product derivation summons each field as `Json.Decodable`,
+    // so a plain-typed anchor would be bypassed and the type re-derived inline.
     given decodableJson: (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApiError])
-    =>  Parameter is Decodable in Json = Json.DecodableDerivation.derived
+    =>  Parameter is Json.Decodable = Json.DecodableDerivation.derived
 
     given decodableYaml: (Tactic[YamlError], Tactic[JsonPointerError], Tactic[OpenApiError])
     =>  Parameter is Decodable in Yaml = Yaml.DecodableDerivation.derived
@@ -82,12 +85,24 @@ object OpenApi:
 
   // An OpenAPI "Media Type Object": the value of a `content` entry keyed by a
   // media-type string such as `application/json`.
+  object MediaTypeObject:
+    given (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApiError])
+    =>  MediaTypeObject is Json.Decodable = Json.DecodableDerivation.derived
+
   case class MediaTypeObject(schema: Optional[JsonSchema] = Unset)
+
+  object RequestBody:
+    given (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApiError])
+    =>  RequestBody is Json.Decodable = Json.DecodableDerivation.derived
 
   case class RequestBody
     ( description: Optional[Text]             = Unset,
       required:    Optional[Boolean]          = Unset,
       content:     Map[Text, MediaTypeObject] = Map() )
+
+  object Response:
+    given (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApiError])
+    =>  Response is Json.Decodable = Json.DecodableDerivation.derived
 
   case class Response
     ( description: Optional[Text]             = Unset,
@@ -100,7 +115,7 @@ object OpenApi:
     // instance). Anchoring `Operation` derives it once and lets `PathItem`
     // simply reference it.
     given decodableJson: (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApiError])
-    =>  Operation is Decodable in Json = Json.DecodableDerivation.derived
+    =>  Operation is Json.Decodable = Json.DecodableDerivation.derived
 
     given decodableYaml: (Tactic[YamlError], Tactic[JsonPointerError], Tactic[OpenApiError])
     =>  Operation is Decodable in Yaml = Yaml.DecodableDerivation.derived
@@ -112,6 +127,10 @@ object OpenApi:
       parameters:  List[Parameter]       = Nil,
       requestBody: Optional[RequestBody] = Unset,
       responses:   Map[Text, Response]   = Map() )
+
+  object PathItem:
+    given (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApiError])
+    =>  PathItem is Json.Decodable = Json.DecodableDerivation.derived
 
   // The path-item object mixes HTTP-method keys with non-method keys, so each
   // verb is a fixed optional field rather than a `Map[Http.Method, Operation]`;
@@ -139,6 +158,10 @@ object OpenApi:
       verbs
       . collect { case (method, operation) if operation.present => method -> operation.vouch }
       . to(Map)
+
+  object Components:
+    given (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApiError])
+    =>  Components is Json.Decodable = Json.DecodableDerivation.derived
 
   case class Components(schemas: Map[Text, JsonSchema] = Map())
 
@@ -248,6 +271,13 @@ object OpenApi:
             Unset,
             yaml(t"additionalProperties").as[Optional[scala.Boolean]].or(false),
             field[List[JsonSchema]](t"oneOf") )
+
+  // Anchor the top-level model so `as[OpenApi]` (below) materialises its decoder
+  // once — with each nested type resolving to its own anchor — rather than inlining
+  // the entire OpenAPI graph at the call site (which, with schema-carrying codecs,
+  // overflows `-Xmax-inlines` and the JVM class-size limit).
+  given decodable: (Tactic[JsonError], Tactic[JsonPointerError], Tactic[OpenApiError])
+  =>  OpenApi is Json.Decodable = Json.DecodableDerivation.derived
 
   // `source.read[OpenApi]`: aggregate the source text, auto-detect JSON vs YAML
   // from the first non-whitespace character, decode through the shared model,

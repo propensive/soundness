@@ -63,32 +63,32 @@ import JsonError.Reason
 
 // Base mixin for Jacinta's decoder instances. Fixes the focus type to
 // `Json.Focus` and provides the position-enrichment hook that `Json#as[T]` runs
-// over the accumulated `Foci[Json.Focus]` after decoding. It extends the
-// schema-carrying `Json.Decodable`, carrying `inner`'s shape.
-private[jacinta] trait JsonDecodable[T] extends Json.Decodable:
+// over the accumulated `Foci[Json.Focus]` after decoding.
+private[jacinta] trait JsonDecodable[T] extends Decodable:
   type Self = T
+  type Form = Json
   type Locus = Json.Focus
   override def position(value: Json, focus: Json.Focus): Json.Focus =
     focus.withPosition(value)
 
-// Lowest-priority layer (extended by `Json2`), holding only the focus adapter.
-// Keeping it below the carrying decoders matters: a plain `summon[T is Decodable
-// in Json]` — as obligatory's / synesthesia's JsonRpc macros do via `Expr.summon`
-// — must resolve to a single carrying decoder, but the focus adapter's result
+// Lowest-priority layer (extended by `Json2`), holding only the focus adapter,
+// which lifts any `Decodable in Json` into one carrying `type Locus = Json.Focus`
+// (used by `as[T]`). Keeping it below the carrying decoders matters: its result
 // (`… at Json.Focus`) is itself a subtype of a plain `Decodable in Json`, so at
-// equal priority it competes and (now that both it and the carriers add members)
-// is incomparable, yielding an ambiguity. At lower priority it is ignored for the
-// plain summon, yet `as[T]` still finds it because it is the *only* given that
-// produces the `at Json.Focus` form. The lower priority also stops it feeding
-// itself as its own `inner`.
+// equal priority it would compete with — and be incomparable to (`Locus` vs
+// `shape`) — the carrying decoders for a plain `summon[T is Decodable in Json]`,
+// yielding an ambiguity. At lower priority it is ignored for plain/carrier
+// summons, yet `as[T]` still finds it because it is the *only* given producing the
+// `at Json.Focus` form. Deliberately broad (`Decodable in Json`, not
+// `Json.Decodable`) so generic `as[T]` callers bounded on `Decodable in Json`
+// still resolve.
 trait Json3:
   inline given decodableAtFocus: [value]
-  =>  (inner: value is Json.Decodable)
-  =>  value is Json.Decodable at Json.Focus =
+  =>  (inner: value is Decodable in Json)
+  =>  value is Decodable in Json at Json.Focus =
 
     new JsonDecodable[value]:
       def decoded(json: Json): value = inner.decoded(json)
-      def shape(): Shape = inner.shape()
 
 trait Json2 extends Json3:
   given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
@@ -779,7 +779,7 @@ object Json extends Json2, Dynamic:
     bytes => Json(bytes.read[Json.Ast])
 
 
-  given aggregableDirect: [value: Json.Decodable] => Tactic[ParseError]
+  given aggregableDirect: [value: distillate.Decodable in Json] => Tactic[ParseError]
   =>  Tactic[JsonError]
   =>  (value over Json) is Aggregable by Data =
 
