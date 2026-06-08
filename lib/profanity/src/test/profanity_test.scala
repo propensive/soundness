@@ -368,6 +368,27 @@ object Tests extends Suite(m"Profanity Tests"):
           case Keypress.Enter => true
           case _              => false
 
+      test(m"Escape is decoded from its CSI-u sequence"):
+        supervise:
+          Keyboard.Standard().process(Stream('', '[', '2', '7', 'u')).head
+      . assert:
+          case Keypress.Escape => true
+          case _               => false
+
+      test(m"Ctrl+C is decoded from its CSI-u sequence"):
+        supervise:
+          Keyboard.Standard().process(Stream('', '[', '9', '9', ';', '5', 'u')).head
+      . assert:
+          case Keypress.Ctrl('C') => true
+          case _                  => false
+
+      test(m"a plain letter is decoded from its CSI-u sequence"):
+        supervise:
+          Keyboard.Standard().process(Stream('', '[', '9', '7', 'u')).head
+      . assert:
+          case Keypress.CharKey('a') => true
+          case _                     => false
+
     suite(m"Signal POSIX numbering"):
       test(m"SIGHUP is 1")  (Signal.Hup.id)   .assert(_ == 1)
       test(m"SIGINT is 2")  (Signal.Int.id)   .assert(_ == 2)
