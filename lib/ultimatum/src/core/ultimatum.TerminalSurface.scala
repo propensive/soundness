@@ -32,36 +32,36 @@
                                                                                                   */
 package ultimatum
 
-import java.io as ji
+import anticipation.*
+import denominative.*
+import escapade.*
+import profanity.*
+import turbulence.*
 
-import soundness.*
+object TerminalSurface:
+  def apply(width: Int, height: Int)(using Stdio): TerminalSurface =
+    new TerminalSurface(width, height)
 
-object Tests extends Suite(m"Ultimatum Tests"):
-  def run(): Unit =
-    suite(m"TerminalSurface"):
-      // Capture everything a surface writes into an in-memory buffer.
-      def captured(block: Stdio ?=> Unit): Text =
-        val bytes = ji.ByteArrayOutputStream()
-        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic)
-        block
-        String(bytes.toByteArray.nn, "UTF-8").tt
+  // Build a surface covering the whole terminal, taking its current size and
+  // writing through its `Stdio`.
+  def apply(terminal: Terminal): TerminalSurface =
+    new TerminalSurface(terminal.knownColumns, terminal.knownRows)(using terminal.stdio)
 
-      test(m"move emits an absolute CSI cursor-position sequence"):
-        captured: stdio ?=>
-          TerminalSurface(80, 24).move(10.z, 5.z)
-      . assert(_ == t"\e[6;11H")
+// A `Surface` over a real terminal: every positioning operation maps to an
+// escapade `csi` sequence, written through the in-scope `Stdio`. It keeps no
+// cursor of its own — `put` lets the terminal advance the hardware cursor
+// naturally, while `move`/`showCaret` set absolute positions. `width`/`height`
+// are fixed at construction; resize is handled by building a fresh surface per
+// frame rather than mutating this one.
+class TerminalSurface(val width: Int, val height: Int)(using Stdio) extends Surface:
+  // `csi.cup` takes a 1-based (row, column); our coordinates are 0-based
+  // `Ordinal`s, so `.n1` converts each.
+  def move(column: Ordinal, row: Ordinal): Unit = Out.print(csi.cup(row.n1, column.n1))
 
-      test(m"move then put places text at the position"):
-        captured: stdio ?=>
-          val surface = TerminalSurface(80, 24)
-          surface.move(10.z, 5.z)
-          surface.put(t"X")
-      . assert(_ == t"\e[6;11HX")
-
-      test(m"clear erases the whole display"):
-        captured(TerminalSurface(80, 24).clear())
-      . assert(_ == t"\e[2J")
-
-      test(m"hiding the cursor emits the DECTCEM reset"):
-        captured(TerminalSurface(80, 24).cursor(false))
-      . assert(_ == t"\e[?25l")
+  def put(text: Text): Unit = Out.print(text)
+  def put(text: Teletype): Unit = Out.print(text)
+  def clear(): Unit = Out.print(csi.ed(2))
+  def clearLine(): Unit = Out.print(csi.el(0))
+  def cursor(visible: Boolean): Unit = Out.print(csi.dectcem(visible))
+  def showCaret(column: Ordinal, row: Ordinal): Unit = move(column, row)
+  def flush(): Unit = ()

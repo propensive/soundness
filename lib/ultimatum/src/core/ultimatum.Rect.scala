@@ -32,36 +32,13 @@
                                                                                                   */
 package ultimatum
 
-import java.io as ji
+// A rectangular region within a surface, in top-origin coordinates. `left` and
+// `top` are zero-based offsets from the enclosing surface's top-left corner;
+// `width` and `height` are cell counts. These are internal layout numbers, so
+// plain `Int`s rather than `Ordinal`s.
+case class Rect(left: Int, top: Int, width: Int, height: Int):
+  def right: Int = left + width
+  def bottom: Int = top + height
 
-import soundness.*
-
-object Tests extends Suite(m"Ultimatum Tests"):
-  def run(): Unit =
-    suite(m"TerminalSurface"):
-      // Capture everything a surface writes into an in-memory buffer.
-      def captured(block: Stdio ?=> Unit): Text =
-        val bytes = ji.ByteArrayOutputStream()
-        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic)
-        block
-        String(bytes.toByteArray.nn, "UTF-8").tt
-
-      test(m"move emits an absolute CSI cursor-position sequence"):
-        captured: stdio ?=>
-          TerminalSurface(80, 24).move(10.z, 5.z)
-      . assert(_ == t"\e[6;11H")
-
-      test(m"move then put places text at the position"):
-        captured: stdio ?=>
-          val surface = TerminalSurface(80, 24)
-          surface.move(10.z, 5.z)
-          surface.put(t"X")
-      . assert(_ == t"\e[6;11HX")
-
-      test(m"clear erases the whole display"):
-        captured(TerminalSurface(80, 24).clear())
-      . assert(_ == t"\e[2J")
-
-      test(m"hiding the cursor emits the DECTCEM reset"):
-        captured(TerminalSurface(80, 24).cursor(false))
-      . assert(_ == t"\e[?25l")
+  def contains(column: Int, row: Int): Boolean =
+    left <= column && column < right && top <= row && row < bottom

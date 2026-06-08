@@ -30,38 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ultimatum
+package soundness
 
-import java.io as ji
-
-import soundness.*
-
-object Tests extends Suite(m"Ultimatum Tests"):
-  def run(): Unit =
-    suite(m"TerminalSurface"):
-      // Capture everything a surface writes into an in-memory buffer.
-      def captured(block: Stdio ?=> Unit): Text =
-        val bytes = ji.ByteArrayOutputStream()
-        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic)
-        block
-        String(bytes.toByteArray.nn, "UTF-8").tt
-
-      test(m"move emits an absolute CSI cursor-position sequence"):
-        captured: stdio ?=>
-          TerminalSurface(80, 24).move(10.z, 5.z)
-      . assert(_ == t"\e[6;11H")
-
-      test(m"move then put places text at the position"):
-        captured: stdio ?=>
-          val surface = TerminalSurface(80, 24)
-          surface.move(10.z, 5.z)
-          surface.put(t"X")
-      . assert(_ == t"\e[6;11HX")
-
-      test(m"clear erases the whole display"):
-        captured(TerminalSurface(80, 24).clear())
-      . assert(_ == t"\e[2J")
-
-      test(m"hiding the cursor emits the DECTCEM reset"):
-        captured(TerminalSurface(80, 24).cursor(false))
-      . assert(_ == t"\e[?25l")
+export ultimatum.{Rect, Surface, TerminalSurface}
