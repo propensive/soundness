@@ -30,12 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ultimatum
+package profanity
 
 import anticipation.*
 import denominative.*
 import escapade.*
-import profanity.*
 import turbulence.*
 
 object TerminalSurface:

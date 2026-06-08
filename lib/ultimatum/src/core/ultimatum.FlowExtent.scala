@@ -35,6 +35,7 @@ package ultimatum
 import anticipation.*
 import denominative.*
 import escapade.*
+import profanity.*
 import turbulence.*
 
 // A `Surface` confined to a `Rect` of a parent surface, backed by a
