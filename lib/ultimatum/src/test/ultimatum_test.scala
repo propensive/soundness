@@ -191,3 +191,40 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val frame = file(panel(minWidth = 8)(()), panel()(())).frame
         frame.arrange(Rect(0, 0, 10, 1)).cells.map(_.width)
       . assert(_ == List(8, 2))
+
+    suite(m"Focus and reactive layout"):
+      test(m"typing into an editor field updates its value"):
+        val field = EditorField()
+        field.handle(Keypress.CharKey('h'))
+        field.handle(Keypress.CharKey('i'))
+        field.value
+      . assert(_ == t"hi")
+
+      test(m"an editor field's intrinsic height grows when its text wraps"):
+        EditorField(LineEditor(t"aaaaa")).measure(3)
+      . assert(_ == (0, 2))
+
+      test(m"a single-line editor field needs one row"):
+        EditorField(LineEditor(t"hello")).measure(80)
+      . assert(_ == (0, 1))
+
+      test(m"a menu field moves its selection on Down"):
+        val field = MenuField(SelectMenu(List(t"a", t"b", t"c"), t"a"))
+        field.handle(Keypress.Down)
+        field.value
+      . assert(_ == t"b")
+
+      test(m"a moved or resized cell is dirty"):
+        val before = IndexedSeq(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
+        val after  = IndexedSeq(Rect(0, 0, 10, 2), Rect(0, 2, 10, 1))
+        dirtyCells(before, after, Set())
+      . assert(_ == Set(0, 1))
+
+      test(m"an unchanged cell is not dirty"):
+        dirtyCells(IndexedSeq(Rect(0, 0, 10, 1)), IndexedSeq(Rect(0, 0, 10, 1)), Set())
+      . assert(_ == Set())
+
+      test(m"a content-changed cell is dirty though its rectangle is unchanged"):
+        val rects = IndexedSeq(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
+        dirtyCells(rects, rects, Set(1))
+      . assert(_ == Set(1))

@@ -33,4 +33,4 @@
 package soundness
 
 export ultimatum.{Rect, Extent, FlowExtent, Axis, Sizing, Limits, Frame, Placement, Pane, panel,
-    file, rank, layout, paint}
+    file, rank, layout, paint, Focus, EditorField, MenuField, Form, dirtyCells, editor, menu, form}
