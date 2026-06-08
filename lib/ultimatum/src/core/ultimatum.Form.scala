@@ -117,9 +117,19 @@ class Form(root: Canvas, fullScreen: Boolean, pane: Pane):
       case Keypress.Escape | Keypress.Ctrl('C' | 'D') =>
         running = false
 
+      // The terminal reports its new size after a resize (the `Winch` signal,
+      // handled below, is what prompts the report). Clear the screen and re-tile
+      // against the now-current dimensions, repainting every panel.
       case _: TerminalInfo.WindowSize =>
+        root.clear()
         rects = solve()
         paintAll()
+
+      // A bare resize signal arrives before the new size is known, so there is
+      // nothing useful to do yet; the `WindowSize` event that follows re-tiles.
+      // Swallow all signals here — they are never widget input.
+      case _: Signal =>
+        ()
 
       case event =>
         if focuses.nonEmpty then
