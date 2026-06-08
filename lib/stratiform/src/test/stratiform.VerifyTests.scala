@@ -118,12 +118,13 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
           case field: Tels.Field if field.keyword == t"nick" => field.required
       . assert(_ == List(Tels.Polarity.Loose))
 
-      test(m"A collection field's type is a Struct with a repeatable `item`"):
+      test(m"A collection field is repeatable, typed as the element struct"):
         Tels.tels[Crew](t"crew").document.members.to(List).collect:
-          case field: Tels.Field if field.keyword == t"members" => field.fieldType
+          case field: Tels.Field if field.keyword == t"members" =>
+            field.repeatable -> field.fieldType
         . collect:
-            case struct: Tels.Struct => keywords(struct)
-      . assert(_ == List(List(t"item")))
+            case (repeatable, struct: Tels.Struct) => repeatable -> keywords(struct)
+      . assert(_ == List(Tels.Polarity.Loose -> List(t"name", t"age")))
 
       test(m"A map field's type is a Struct of repeatable `entries` of key/value"):
         Tels.tels[Config](t"config").document.members.to(List).collect:

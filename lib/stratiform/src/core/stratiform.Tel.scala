@@ -68,9 +68,18 @@ extends scala.Dynamic, Documentary, Topical, Original:
     if match0.isEmpty then Tel.empty else Tel(match0.get)
 
   // Total child-by-index access under a field: an empty `Tel` when the index is
-  // out of range.
+  // out of range. Used by the positional optics / plain dynamic access, where a
+  // field compound contains the indexed children.
   private[stratiform] def selectFieldIndex(field: String, index: Int): Tel =
     val cs = selectField(field).childCompounds
+    if index < 0 || index >= cs.length then Tel.empty else Tel(cs(index))
+
+  // Indexed access into a *repeated* (collection) field: a `List`/`Set` field is
+  // encoded as repeated keyword compounds (per `#1291`), so index the n-th sibling
+  // sharing the field's keyword. Used by schema-typed navigation for collection
+  // positions. An empty `Tel` when the index is out of range.
+  private[stratiform] def selectRepeatedField(field: String, index: Int): Tel =
+    val cs = childCompounds.filter(_.keyword == Tel.camelToKebab(field))
     if index < 0 || index >= cs.length then Tel.empty else Tel(cs(index))
 
   // Dynamic field access: `tel.firstName` looks up the kebab-case keyword
@@ -153,6 +162,39 @@ object Tel extends Tel2:
   // `object Tel` below as their canonical location).
   type Error = TelError
   val Error: TelError.type = TelError
+
+  // A TEL encoder/decoder that also carries the format-neutral `Shape` of exactly
+  // what it reads/writes, so a fused `Encodable & Schematic` / `Decodable &
+  // Schematic` (built by `telSchematics`) is coherent by construction — the shape
+  // travels with the codec rather than being resolved independently. The `Shape` is
+  // reified into a concrete `Tels.Type` downstream. Mirrors jacinta's
+  // `Json.Encodable`/`Json.Decodable`. Not itself `Schematic`.
+  trait Encodable extends anticipation.Encodable:
+    type Form = Tel
+    def shape(): Shape
+
+  object Encodable:
+    def apply[value](shape0: => Shape)(lambda: value => Tel): value is Tel.Encodable =
+      new Tel.Encodable:
+        type Self = value
+        def encoded(value: value): Tel = lambda(value)
+        def shape(): Shape = shape0
+
+  trait Decodable extends distillate.Decodable:
+    type Form = Tel
+    def shape(): Shape
+
+    // True for collection decoders (`List`/`Set`): a repeated field. The product
+    // decoder gathers all same-keyword sibling compounds for such a field and hands
+    // them here as a Document; other fields read a single matching compound.
+    def repeatable: Boolean = false
+
+  object Decodable:
+    def apply[value](shape0: => Shape)(lambda: Tel => value): value is Tel.Decodable =
+      new Tel.Decodable:
+        type Self = value
+        def decoded(tel: Tel): value = lambda(tel)
+        def shape(): Shape = shape0
 
   // Type assignment algorithm per §20.2 of the TEL specification.
   object Type:
@@ -749,7 +791,7 @@ object Tel extends Tel2:
   // for `value over Json`. The `Transport` type-tag is added by an
   // `asInstanceOf` cast — `value over Tel` is just
   // `value { type Transport = Tel }` so the cast is a no-op at runtime.
-  given aggregableOver: [value: Decodable in Tel] => Tactic[TelError]
+  given aggregableOver: [value: distillate.Decodable in Tel] => Tactic[TelError]
   =>  (value over Tel) is Aggregable by Data =
     source => parse(concatenate(source)).as[value].asInstanceOf[value over Tel]
 

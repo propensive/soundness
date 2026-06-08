@@ -146,7 +146,7 @@ object Stratiform:
 
             telType(element.vouch, root).asType.absolve match
               case '[type result <: Tel; result] =>
-                '{$self.selectFieldIndex(${Expr(name)}, $idx).asInstanceOf[result]}
+                '{$self.selectRepeatedField(${Expr(name)}, $idx).asInstanceOf[result]}
 
           case None =>
             halt(m"the schema position ${position.show} has no field $name")

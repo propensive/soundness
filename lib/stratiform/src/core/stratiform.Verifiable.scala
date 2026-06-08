@@ -45,13 +45,13 @@ extension (tel: Tel)
   // child indices against `topic` at compile time — with no `dynamicTelAccess`
   // import required.
   //
-  // `topic` must have a derivable TEL schema (`Schematic`) — mirroring jacinta's
-  // `verify`, which requires a `JsonSchema`. The runtime conformance check itself
-  // is a decode-and-discard against `topic`'s `Decodable` (a nonconformant value
-  // raises `TelError`): TEL scalars are untyped text, so a structural walk over
-  // the derived `Tels` cannot catch type mismatches (e.g. a non-numeric `Int`
-  // field) that decoding does — hence decoding remains the strict check.
-  def verify[topic](using topic is Schematic over Tels.Type)(using topic is Decodable in Tel)
+  // The runtime conformance check is a decode-and-discard against `topic`'s
+  // `Tel.Decodable` (a nonconformant value raises `TelError`): TEL scalars are
+  // untyped text, so a structural walk over the schema cannot catch type mismatches
+  // (e.g. a non-numeric `Int` field) that decoding does — hence decoding remains the
+  // strict check. The carrying `Tel.Decodable` also supplies the schema for the
+  // phantom anchor, so the schema is guaranteed coherent with the decoder used.
+  def verify[topic](using topic is Tel.Decodable)
   :     (Tel of topic from topic) raises TelError =
     tel.as[topic]
     tel.asInstanceOf[Tel of topic from topic]
