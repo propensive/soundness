@@ -33,65 +33,69 @@
 package profanity
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import spectacular.*
-import turbulence.*
 import vacuous.*
 
 object Interaction:
-  given selectMenu: [item: Showable] => (terminal: Terminal) => Interaction[item, SelectMenu[item]]:
-    given Stdio = terminal.stdio
-    override def before(): Unit = Out.print(t"\e[?25l")
-    override def after(): Unit = Out.print(t"\e[J\e[?25h")
+  // Both widgets render through a `Canvas`: positioning is `move`/`put`, width
+  // comes from `surface.width`, and the surface decides whether those map to
+  // relative motion at the prompt (a standalone `InlineCanvas`) or absolute
+  // placement within a panel (an `Extent`). The surface is summoned from scope,
+  // so a panel's `Extent` is used automatically when a widget runs inside one.
+  given selectMenu: [item: Showable] => (surface: Canvas) => Interaction[item, SelectMenu[item]]:
+    override def before(): Unit = surface.cursor(false)
+
+    override def after(): Unit =
+      surface.move(Prim, Prim)
+      surface.clear()
+      surface.cursor(true)
+      surface.flush()
 
     def render(old: Optional[SelectMenu[item]], menu: SelectMenu[item]) =
-      val cols = terminal.knownColumns.max(1)
+      val cols = surface.width.max(1)
+      surface.move(Prim, Prim)
+      surface.clear()
+      var row = 0
 
-      Out.print:
-        Text.build:
-          append(t"\e[J")
-          var totalRows = 0
+      menu.options.each: option =>
+        surface.move(Prim, row.z)
+        val full = if option == menu.current then t" > $option" else t"   $option"
+        surface.put(full)
+        row += (full.length - 1)/cols + 1
 
-          menu.options.each: option =>
-            val full = (if option == menu.current then t" > $option" else t"   $option")
-            append(full)
-            append(t"\e[E")
-            totalRows += (full.length - 1)/cols + 1
-
-          if totalRows > 0 then append(t"\e[${totalRows}F")
+      surface.flush()
 
     def result(state: SelectMenu[item]): item = state.current
 
-  given lineEditor: (terminal: Terminal) => Interaction[Text, LineEditor]:
-    given Stdio = terminal.stdio
-    override def after(): Unit = Out.println()
+  given lineEditor: (surface: Canvas) => Interaction[Text, LineEditor]:
+    // The last row the editor's content reached, so `after` can drop the cursor
+    // onto a fresh line below it.
+    private var endRow: Int = 0
+
+    override def after(): Unit =
+      surface.move(Prim, endRow.z)
+      surface.put(t"\n")
+      surface.flush()
 
     override def submits(event: TerminalEvent, editor: LineEditor): Boolean =
       editor.submitsOn(event)
 
-    // Handles both single-line and multi-line editors: `cursorPosition` counts
-    // embedded newlines and wrapping, and each newline is drawn as CR+LF.
+    // Redraws the whole editor from its top-left each frame: `cursorPosition`
+    // counts embedded newlines and wrapping (the surface draws each `\n` as a
+    // newline within its own coordinate space), then the caret is placed.
     def render(old: Optional[LineEditor], editor: LineEditor): Unit =
-      val cols             = terminal.knownColumns.max(1)
-      val len              = editor.value.length
+      val cols             = surface.width.max(1)
       val (curRow, curCol) = LineEditor.cursorPosition(editor.value, editor.position, cols)
-      val (endRow, _)      = LineEditor.cursorPosition(editor.value, len, cols)
+      endRow = LineEditor.cursorPosition(editor.value, editor.value.length, cols)._1
 
-      Out.print:
-        Text.build:
-          old.let: o =>
-            val (oldRow, _) = LineEditor.cursorPosition(o.value, o.position, cols)
-            if oldRow > 0 then append(t"\e[${oldRow}F") else append(t"\r")
-
-          append(t"\e[J")
-          append(editor.value.sub(t"\n", t"\r\n"))
-
-          if len > 0 then
-            if endRow > 0 then append(t"\e[${endRow}F") else append(t"\r")
-
-          if curRow > 0 then append(t"\e[${curRow}B")
-          if curCol > 0 then append(t"\e[${curCol + 1}G")
+      surface.move(Prim, Prim)
+      surface.clear()
+      surface.put(editor.value)
+      surface.showCaret(curCol.z, curRow.z)
+      surface.flush()
 
     def result(editor: LineEditor): Text = editor.value
 
