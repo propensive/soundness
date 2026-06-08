@@ -166,6 +166,10 @@ object Tests extends Suite(m"Colloquy Tests"):
           case Repl.Outcome.Ran(_, _, output) => output.contains(t"7")
           case _                              => false
 
+      test(m"multi-line code keeps its newlines when tokenized"):
+        Repl.tokenize(t"val x = 1\nval y = 2").map(_.text).join
+      . assert(_.contains(t"\n"))
+
     suite(m"REPL TCP server"):
       given Scalac[3.8] = Scalac(Nil)
 

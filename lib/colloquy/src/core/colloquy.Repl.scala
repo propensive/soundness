@@ -132,8 +132,16 @@ object Repl:
     project(Scala.highlight(code))
 
   private def project(source: SourceCode): List[Token] =
-    source.lines.to(List).flatten.map: token =>
-      Token(token.text, token.accent.toString.tt.lower, token.meta.let(_.tpe.qualified))
+    val lines: List[List[Token]] = source.lines.to(List).map: line =>
+      line.map: token =>
+        Token(token.text, token.accent.toString.tt.lower, token.meta.let(_.tpe.qualified))
+
+    // `SourceCode.lines` was split on (and dropped) the newlines, so re-insert a
+    // newline token between consecutive lines — otherwise multi-line code collapses
+    // to a single line on the client and its cursor maths drift apart.
+    lines match
+      case Nil          => Nil
+      case head :: rest => head ::: rest.flatMap(Token(t"\n", t"unparsed", Unset) :: _)
 
   // The Scala type of an expression, read from a typechecked highlight of
   // `val __result = <code>`: the binding's token carries the resolved type as a
