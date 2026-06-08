@@ -84,10 +84,21 @@ def file(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.File, panes.to(List))
 // A split whose children stack as rows (distributing height).
 def rank(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.Rank, panes.to(List))
 
-// Drive an interactive layout across the whole terminal, looping over terminal
-// events until the user exits. Used inside `interactive`.
-def form(fullScreen: Boolean = true)(pane: Pane)(using terminal: Terminal): Unit =
-  Form(TerminalCanvas(terminal), fullScreen, pane).run(terminal.eventIterator())
+// Drive an interactive layout, looping over terminal events until the user exits.
+// Used inside `interactive`. In `Fullscreen` mode the layout takes over the
+// terminal via the alternate screen buffer (restored on exit) and fills its
+// height; in `Inline` mode it renders a variable-height block at the cursor
+// without the alternate buffer, leaving scrollback intact.
+def form(mode: Mode = Mode.Fullscreen)(pane: Pane)(using terminal: Terminal): Unit =
+  mode match
+    case Mode.Fullscreen =>
+      profanity.terminalFeatures.alternateScreen:
+        val root = TerminalCanvas(terminal)
+        root.cursor(false)
+        try Form(root, mode, pane).run(terminal.eventIterator()) finally root.cursor(true)
+
+    case Mode.Inline =>
+      Form(InlineRoot(terminal), mode, pane).run(terminal.eventIterator())
 
 // The leaf indices that must be repainted: any whose rectangle moved or resized
 // since the last layout, plus any whose content changed this frame. A leaf whose
@@ -99,11 +110,18 @@ def dirtyCells(previous: IndexedSeq[Rect], current: IndexedSeq[Rect], changed: S
 
   moved.to(Set) ++ changed
 
-// Solve `pane` against `root` and paint each leaf's content into its rectangle.
-// In full-screen mode the layout fills the surface's height; otherwise it takes
-// only the height its content requires.
-def paint(root: Canvas, fullScreen: Boolean)(pane: Pane): Unit =
-  val height = if fullScreen then root.height else pane.frame.measure(Axis.Rank).min
+// Solve `pane` against `root` once and paint each leaf's content into its
+// rectangle (no event loop). An `InlineRoot` is sized to the height its content
+// needs and presented at the cursor; any other canvas fills its own height.
+def paint(root: Canvas, pane: Pane): Unit =
+  val height = root match
+    case _: InlineRoot => pane.frame.measure(Axis.Rank).min
+    case _             => root.height
+
+  root match
+    case inline: InlineRoot => inline.reframe(root.width, height)
+    case _                  => ()
+
   val placement = pane.frame.arrange(Rect(0, 0, root.width, height))
 
   pane.leaves.zip(placement.cells).each: pair =>
@@ -118,7 +136,9 @@ def paint(root: Canvas, fullScreen: Boolean)(pane: Pane): Unit =
 
   root.flush()
 
-// Solve and paint `pane` across the whole terminal (the common entry point,
-// used inside `interactive`).
-def layout(fullScreen: Boolean = true)(pane: Pane)(using terminal: Terminal): Unit =
-  paint(TerminalCanvas(terminal), fullScreen)(pane)
+// Present `pane` as a static, variable-height block inline at the cursor, leaving
+// the cursor on a fresh line below it.
+def layout(pane: Pane)(using terminal: Terminal): Unit =
+  val root = InlineRoot(terminal)
+  paint(root, pane)
+  root.finish()

@@ -34,44 +34,95 @@ package ultimatum
 
 import anticipation.*
 import denominative.*
+import escapade.*
 import profanity.*
-import turbulence.*
 
-// A `Canvas` confined to a `Rect` of a parent surface, backed by the shared
-// character grid (`GridSurface`). Writes flow and wrap within the rectangle;
-// `flush` paints the grid onto the parent surface, one row at a time, via the
-// parent's `move`/`put` (so positioning is always expressed through the `Canvas`
-// interface, never as inline escapes). It is also an `Stdio`, so bare
-// `Out.println` in a panel body flows into it.
-class FlowExtent(parent: Canvas, val rect: Rect)
-extends GridSurface(rect.width, rect.height), Extent:
-  def cursor(visible: Boolean): Unit = parent.cursor(visible)
+// The shared character-grid mechanics behind `FlowExtent` (a clipped sub-rectangle
+// that composites onto a parent) and `InlineRoot` (the inline-mode root that
+// presents its grid at the cursor). Writes flow within the grid: text wraps at
+// the grid width and, once the last row fills, the grid scrolls up — like a
+// miniature terminal. Subclasses supply `cursor`, `showCaret` and `flush`.
+private[ultimatum] abstract class GridSurface(initialWidth: Int, initialHeight: Int)
+extends Canvas:
+  protected var gridWidth: Int = initialWidth
+  protected var gridHeight: Int = initialHeight
+  protected var cells: Array[Char] = Array.fill(gridWidth*gridHeight)(' ')
+  protected var col: Int = 0
+  protected var row: Int = 0
 
-  def showCaret(column: Ordinal, row2: Ordinal): Unit =
-    parent.showCaret((rect.left + column.n0).z, (rect.top + row2.n0).z)
+  def width: Int = gridWidth
+  def height: Int = gridHeight
 
-  // Paint the whole grid onto the parent surface, one row at a time. The parent
-  // is not itself flushed here — the caller presents the root once after every
-  // panel has composited, so an inline root emits a complete frame rather than
-  // once per panel.
-  def flush(): Unit =
+  // Reallocate the grid to a new size, blanking it and homing the cursor. Used by
+  // `InlineRoot` to resize to the measured block height each frame.
+  protected def reshape(width2: Int, height2: Int): Unit =
+    gridWidth = width2
+    gridHeight = height2
+    cells = Array.fill(gridWidth*gridHeight)(' ')
+    col = 0
+    row = 0
+
+  protected def scrollUp(): Unit =
+    System.arraycopy(cells, gridWidth, cells, 0, gridWidth*(gridHeight - 1))
+    var i = gridWidth*(gridHeight - 1)
+
+    while i < gridWidth*gridHeight do
+      cells(i) = ' '
+      i += 1
+
+  protected def newline(): Unit =
+    col = 0
+    if row < gridHeight - 1 then row += 1 else scrollUp()
+
+  protected def putChar(char: Char): Unit =
+    if char == '\n' then newline()
+    else
+      if col >= gridWidth then newline()
+      cells(row*gridWidth + col) = char
+      col += 1
+
+  protected def rowText(r: Int): Text = String(cells, r*gridWidth, gridWidth).tt
+
+  def move(column: Ordinal, row2: Ordinal): Unit =
+    col = column.n0.min(gridWidth - 1).max(0)
+    row = row2.n0.min(gridHeight - 1).max(0)
+
+  def put(text: Text): Unit =
+    val string = text.s
+    var i = 0
+
+    while i < string.length do
+      putChar(string.charAt(i))
+      i += 1
+
+  def put(text: Teletype): Unit = put(text.plain)
+
+  def clear(): Unit =
+    var i = 0
+
+    while i < cells.length do
+      cells(i) = ' '
+      i += 1
+
+    col = 0
+    row = 0
+
+  def clearLine(): Unit =
+    var c = col
+
+    while c < gridWidth do
+      cells(row*gridWidth + c) = ' '
+      c += 1
+
+  // A plain-text snapshot of the grid (rows joined by newlines), for testing and
+  // for content-change detection.
+  def render: Text =
+    val builder = StringBuilder()
     var r = 0
 
-    while r < height do
-      parent.move(rect.left.z, (rect.top + r).z)
-      parent.put(rowText(r))
+    while r < gridHeight do
+      builder.append(String(cells, r*gridWidth, gridWidth))
+      if r < gridHeight - 1 then builder.append('\n')
       r += 1
 
-  // `Stdio` members: routing `Out` output (and other `Stdio` writes) into this
-  // extent. `print` lays text out through the same cursor model as `put`; the
-  // underlying streams are muted because all rendering goes via `flush`.
-  val termcap: Termcap = new Termcap:
-    def ansi: Boolean = true
-    def color: ColorDepth = ColorDepth.TrueColor
-    override def width: Int = rect.width
-
-  val out = Stdio.MutePrintStream
-  val err = Stdio.MutePrintStream
-  val in = Stdio.MuteInputStream
-
-  override def print(text: Text): Unit = put(text)
+    builder.toString.tt

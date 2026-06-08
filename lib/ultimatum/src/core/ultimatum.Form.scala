@@ -39,9 +39,11 @@ import rudiments.*
 // terminal events — TAB cycles focus between widgets, Escape/Ctrl-C exits, and
 // every other event is folded into the focused widget. After each edit (or a
 // terminal resize) the layout is re-solved using each widget's live intrinsic
-// size, and only the panels whose rectangle or content actually changed are
-// repainted.
-class Form(root: Canvas, fullScreen: Boolean, pane: Pane):
+// size and the root is presented. In `Fullscreen` mode only the panels whose
+// rectangle or content changed are repainted (the root composites straight to the
+// screen); in `Inline` mode the grid is re-sized to the measured block height each
+// frame and the whole block is re-presented at the cursor.
+class Form(root: Canvas, mode: Mode, pane: Pane):
   private val leaves: IndexedSeq[Pane] = pane.leaves.to(IndexedSeq)
   private val focuses: IndexedSeq[Focus] = leaves.collect { case Pane.Widget(_, focus) => focus }
 
@@ -78,9 +80,19 @@ class Form(root: Canvas, fullScreen: Boolean, pane: Pane):
 
     project(pane)
 
+  // Re-solve the layout; in inline mode also reframe the root grid to the measured
+  // block height (clamped to the terminal). Returns the new panel rectangles.
   private def solve(): IndexedSeq[Rect] =
     val frame = liveFrame
-    val height = if fullScreen then root.height else frame.measure(Axis.Rank).min
+
+    val height = mode match
+      case Mode.Fullscreen => root.height
+      case Mode.Inline     => frame.measure(Axis.Rank).min
+
+    root match
+      case inline: InlineRoot => inline.reframe(root.width, height)
+      case _                  => ()
+
     frame.arrange(Rect(0, 0, root.width, height)).cells.to(IndexedSeq)
 
   private def paint(index: Int): Unit =
@@ -97,45 +109,59 @@ class Form(root: Canvas, fullScreen: Boolean, pane: Pane):
       case _ =>
         ()
 
-  // Paint every panel, then repaint the focused widget last so the hardware
-  // caret is left in it.
-  private def paintAll(): Unit =
-    rects.indices.each(paint(_))
+  // Re-solve and repaint, then present the root. Inline always repaints every
+  // panel (its grid was just reframed and blanked); fullscreen repaints only the
+  // cells whose rectangle or content changed. The focused widget is painted last
+  // so the caret rests in it.
+  private def refresh(changed: Set[Int]): Unit =
+    val updated = solve()
+
+    mode match
+      case Mode.Inline =>
+        rects = updated
+        rects.indices.each(paint(_))
+
+      case Mode.Fullscreen =>
+        val dirty = dirtyCells(rects, updated, changed)
+        rects = updated
+        dirty.each(paint(_))
+
     if focuses.nonEmpty then paint(focusLeaf(focus))
+    root.flush()
 
   def run(events: Iterator[TerminalEvent]): Unit =
-    rects = solve()
-    paintAll()
+    refresh(Set())
     var running = true
 
     while running && events.hasNext do events.next() match
       case Keypress.Tab =>
         if focuses.nonEmpty then
           focus = (focus + 1)%focuses.length
-          paintAll()
+          refresh(Set())
 
       case Keypress.Escape | Keypress.Ctrl('C' | 'D') =>
         running = false
 
-      // The terminal reports its new size after a resize (the `Winch` signal,
-      // handled below, is what prompts the report). Clear the screen and re-tile
-      // against the now-current dimensions, repainting every panel.
+      // The terminal reports its new size after a resize. Fullscreen clears the
+      // whole screen and forces a full re-tile; inline must NOT clear the screen
+      // (that would wipe scrollback) — its reframe + present reconcile the change.
       case _: TerminalInfo.WindowSize =>
-        root.clear()
-        rects = solve()
-        paintAll()
+        mode match
+          case Mode.Fullscreen => root.clear()
+          case Mode.Inline     => ()
 
-      // A bare resize signal arrives before the new size is known, so there is
-      // nothing useful to do yet; the `WindowSize` event that follows re-tiles.
-      // Swallow all signals here — they are never widget input.
+        rects = IndexedSeq()
+        refresh(Set())
+
+      // Signals are never widget input; the WindowSize event above does the work.
       case _: Signal =>
         ()
 
       case event =>
         if focuses.nonEmpty then
           focuses(focus).handle(event)
-          val updated = solve()
-          val dirty = dirtyCells(rects, updated, Set(focusLeaf(focus)))
-          rects = updated
-          dirty.each(paint(_))
-          paint(focusLeaf(focus))
+          refresh(Set(focusLeaf(focus)))
+
+    root match
+      case inline: InlineRoot => inline.finish()
+      case _                  => ()

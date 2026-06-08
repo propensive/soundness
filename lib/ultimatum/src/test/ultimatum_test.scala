@@ -169,8 +169,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val bytes = ji.ByteArrayOutputStream()
         given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic)
 
-        paint(TerminalCanvas(4, 1), fullScreen = true):
-          file(panel()(Out.print(t"AA")), panel()(Out.print(t"BB")))
+        paint(TerminalCanvas(4, 1), file(panel()(Out.print(t"AA")), panel()(Out.print(t"BB"))))
 
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[1;1HAA\e[1;3HBB")
@@ -181,8 +180,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
         // "HELLO" in a 2x1 panel wraps and scrolls until only "O" remains; the
         // sibling panel's "X" is unaffected, so neither bleeds past column 2.
-        paint(TerminalCanvas(4, 1), fullScreen = true):
-          file(panel()(Out.print(t"HELLO")), panel()(Out.print(t"X")))
+        paint(TerminalCanvas(4, 1), file(panel()(Out.print(t"HELLO")), panel()(Out.print(t"X"))))
 
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[1;1HO \e[1;3HX ")
@@ -242,7 +240,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
            Keypress.CharKey('y'), Keypress.CharKey('o'),
            Keypress.Escape )
 
-        Form(root, fullScreen = true, rank(editor(), editor())).run(events.iterator)
+        Form(root, Mode.Fullscreen, rank(editor(), editor())).run(events.iterator)
         root.render
       . assert(_ == t"hi        \n          \nyo        \n          ")
 
@@ -253,7 +251,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
         val root = FlowExtent(TerminalCanvas(10, 4), Rect(0, 0, 10, 4))
         val events = List.fill(21)(Keypress.CharKey('a')) ++ List(Keypress.Escape)
-        Form(root, fullScreen = true, rank(editor(), editor())).run(events.iterator)
+        Form(root, Mode.Fullscreen, rank(editor(), editor())).run(events.iterator)
         root.render
       . assert(_ == t"aaaaaaaaaa\naaaaaaaaaa\na         \n          ")
 
@@ -274,9 +272,67 @@ object Tests extends Suite(m"Ultimatum Tests"):
             root.resize(10, 2)
             TerminalInfo.WindowSize(2, 10)
 
-        Form(root, fullScreen = true, rank(panel()(Out.print(t"A")), panel()(Out.print(t"B")))).run(resize)
+        Form(root, Mode.Fullscreen, rank(panel()(Out.print(t"A")), panel()(Out.print(t"B")))).run(resize)
         root.render
       . assert(_ == t"A         \nB         \n          \n          ")
+
+    suite(m"InlineRoot present (inline mode)"):
+      def capturing(): (ji.ByteArrayOutputStream, Stdio) =
+        val bytes = ji.ByteArrayOutputStream()
+        (bytes, Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic))
+
+      test(m"a first inline render draws each row with CR/LF and parks the caret"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = InlineRoot(3, 24)
+        root.reframe(3, 2)
+        root.move(Prim, Prim)
+        root.put(t"hi")
+        root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\r\e[2Khi \r\n\e[2K   \r\e[1A\e[1G\e[?25h")
+
+      test(m"a growing block scrolls a new row in with LF"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = InlineRoot(3, 24)
+        root.reframe(3, 1); root.move(Prim, Prim); root.put(t"a"); root.flush()
+        bytes.reset()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\r\e[2Kab \r\n\e[2Kcd \r\e[1A\e[1G\e[?25h")
+
+      test(m"a shrinking block clears the rows it no longer uses"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = InlineRoot(3, 24)
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        bytes.reset()
+        root.reframe(3, 1); root.move(Prim, Prim); root.put(t"ef"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\r\e[2Kef \r\n\e[2K\e[1A\e[1G\e[?25h")
+
+      test(m"the caret is parked at its block-local position"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = InlineRoot(3, 24)
+        root.reframe(3, 2)
+        root.move(Prim, Prim)
+        root.put(t"ab\ncd")
+        root.showCaret(Sec, Sec)
+        root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\r\e[2Kab \r\n\e[2Kcd \r\e[2G\e[?25h")
+
+      test(m"finish drops the cursor onto a fresh line below the block"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = InlineRoot(3, 24)
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        bytes.reset()
+        root.finish()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[1B\r\n\e[?25h")
 
 // A test-only root `Canvas` that paints into a fixed in-memory grid but reports a
 // settable size, so a layout can be re-tiled to a smaller `width`/`height` and
