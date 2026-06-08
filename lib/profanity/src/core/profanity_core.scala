@@ -35,6 +35,8 @@ package profanity
 import ambience.*
 import anticipation.*
 import contingency.*
+import frontier.*
+import gossamer.*
 import parasite.*
 import turbulence.*
 
@@ -46,35 +48,35 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
           monitor:     Monitor,
           codicil:     Codicil,
           environment: Environment )
-  ( using BracketedPasteMode,
-          LuminosityDetection,
-          TerminalFocusDetection,
-          TerminalSizeDetection )
+  ( using features: Every[TerminalFeature] )
 :   result raises TerminalError =
 
   given terminal: Terminal = Terminal()
 
-  if summon[LuminosityDetection]() then Out.print(Terminal.reportBackground)
-  if summon[TerminalFocusDetection]() then Out.print(Terminal.enableFocus)
-  if summon[BracketedPasteMode]() then Out.print(Terminal.enablePaste)
-  if summon[TerminalSizeDetection]() then Out.print(Terminal.reportSize)
+  // The core session: raw mode, the caller's block, then input/event teardown.
+  def session: result =
+    try
+      if console.stdio.platform then
+        val processBuilder =
+          ProcessBuilder("stty", "intr", "undef", "-echo", "icanon", "raw", "opost")
 
-  try
-    if console.stdio.platform then
-      val processBuilder =
-        ProcessBuilder("stty", "intr", "undef", "-echo", "icanon", "raw", "opost")
+        processBuilder.inheritIO()
+        if processBuilder.start().nn.waitFor() != 0 then abort(TerminalError())
 
-      processBuilder.inheritIO()
-      if processBuilder.start().nn.waitFor() != 0 then abort(TerminalError())
+      block(using terminal)
 
-    block(using terminal)
+    finally
+      terminal.stdio.in.close()
+      terminal.events.stop()
+      safely(terminal.pumpInput.await())
 
-  finally
-    terminal.stdio.in.close()
-    terminal.events.stop()
-    safely(terminal.pumpInput.await())
-    if summon[BracketedPasteMode]() then Out.print(Terminal.disablePaste)
-    if summon[TerminalFocusDetection]() then Out.print(Terminal.disableFocus)
+  // Apply every in-scope `TerminalFeature` around the session, nested so that each
+  // turns off (in its own try/finally) in the reverse of the order it turned on.
+  def applyFeatures(remaining: List[TerminalFeature]): result = remaining match
+    case Nil             => session
+    case feature :: rest => feature(applyFeatures(rest))
+
+  applyFeatures(features.values)
 
 
 package keyboards:
@@ -90,8 +92,18 @@ package keyboards:
 
   given standard: (monitor: Monitor, codicil: Codicil) => Keyboard.Standard = Keyboard.Standard()
 
-package terminalOptions:
-  given bracketedPasteMode: BracketedPasteMode = () => true
-  given luminanceDetection: LuminosityDetection = () => true
-  given terminalFocusDetection: TerminalFocusDetection = () => true
-  given terminalSizeDetection: TerminalSizeDetection = () => true
+// The standard terminal features, each a turn-on/turn-off escape-sequence pair.
+// Import the ones a session should enable (or `terminalFeatures.*` for all);
+// `interactive` applies every imported feature. The two queries (`backgroundColor`,
+// `terminalSize`) have no turn-off, so their `disable` sequence is empty.
+package terminalFeatures:
+  given bracketedPaste: TerminalFeature = TerminalFeature(t"\e[?2004h", t"\e[?2004l")
+  given focusReporting: TerminalFeature = TerminalFeature(t"\e[?1004h", t"\e[?1004l")
+
+  given mouseTracking: TerminalFeature =
+    TerminalFeature(t"\e[?1000h\e[?1006h", t"\e[?1006l\e[?1000l")
+
+  given alternateScreen: TerminalFeature = TerminalFeature(t"\e[?1049h", t"\e[?1049l")
+  given kittyKeyboard: TerminalFeature = TerminalFeature(t"\e[>1u", t"\e[<u")
+  given backgroundColor: TerminalFeature = TerminalFeature(t"\e]11;?\e\\", t"")
+  given terminalSize: TerminalFeature = TerminalFeature(Terminal.reportSize, t"")
