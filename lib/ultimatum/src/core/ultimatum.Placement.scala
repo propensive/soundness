@@ -30,7 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ultimatum
 
-export ultimatum.{Rect, Surface, TerminalSurface, Extent, FlowExtent, Axis, Sizing, Limits, Frame,
-    Placement}
+// The result of solving a layout: a tree of rectangles mirroring the `Frame`
+// tree that produced it. `cells` lists the leaf rectangles in frame order (left
+// to right for files, top to bottom for ranks).
+enum Placement:
+  def rect: Rect
+
+  case Cell(rect: Rect)
+  case Split(rect: Rect, children: List[Placement])
+
+  def cells: List[Rect] = this match
+    case Cell(rect)         => List(rect)
+    case Split(_, children) => children.flatMap(_.cells)

@@ -113,3 +113,53 @@ object Tests extends Suite(m"Ultimatum Tests"):
         flow.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[2;3Hxy ")
+
+    suite(m"Layout solver"):
+      def cell(sizing: Sizing): Frame = Frame.Cell(sizing)
+      def file(children: Frame*): Frame = Frame.Split(Sizing(), Axis.File, children.to(List))
+      def rank(children: Frame*): Frame = Frame.Split(Sizing(), Axis.Rank, children.to(List))
+
+      test(m"fractions divide the axis proportionally"):
+        val frame = file(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
+        frame.arrange(Rect(0, 0, 90, 10)).cells
+      . assert(_ == List(Rect(0, 0, 20, 10), Rect(20, 0, 30, 10), Rect(50, 0, 40, 10)))
+
+      test(m"largest-remainder rounding fills the axis exactly"):
+        val frame = file(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
+        frame.arrange(Rect(0, 0, 100, 1)).cells.map(_.width)
+      . assert(_ == List(22, 33, 45))
+
+      test(m"the rounded sizes always sum to the available space"):
+        val frame = file(cell(Sizing(2.0)), cell(Sizing(3.0)), cell(Sizing(4.0)))
+        frame.arrange(Rect(0, 0, 100, 1)).cells.map(_.width).foldLeft(0)(_ + _)
+      . assert(_ == 100)
+
+      test(m"a child whose minimum exceeds its share is fixed at the minimum"):
+        val frame = file(cell(Sizing(1.0, minWidth = 8)), cell(Sizing(1.0)))
+        frame.arrange(Rect(0, 0, 10, 1)).cells.map(_.width)
+      . assert(_ == List(8, 2))
+
+      test(m"a child whose maximum is below its share is capped at the maximum"):
+        val frame = file(cell(Sizing(1.0, maxWidth = 3)), cell(Sizing(1.0)))
+        frame.arrange(Rect(0, 0, 10, 1)).cells.map(_.width)
+      . assert(_ == List(3, 7))
+
+      test(m"a container's minimum is forced up to the sum of its children's"):
+        val frame = file(cell(Sizing(1.0, minWidth = 5)), cell(Sizing(1.0, minWidth = 5)))
+        frame.measure(Axis.File)
+      . assert(_ == Limits(10, Unset))
+
+      test(m"file children fill the cross axis (full height)"):
+        val frame = file(cell(Sizing(1.0)), cell(Sizing(1.0)))
+        frame.arrange(Rect(0, 0, 8, 4)).cells
+      . assert(_ == List(Rect(0, 0, 4, 4), Rect(4, 0, 4, 4)))
+
+      test(m"rank splits distribute height and fill width"):
+        val frame = rank(cell(Sizing(1.0)), cell(Sizing(1.0)))
+        frame.arrange(Rect(0, 0, 8, 4)).cells
+      . assert(_ == List(Rect(0, 0, 8, 2), Rect(0, 2, 8, 2)))
+
+      test(m"nested ranks within files place rectangles correctly"):
+        val frame = file(cell(Sizing(1.0)), rank(cell(Sizing(1.0)), cell(Sizing(1.0))))
+        frame.arrange(Rect(0, 0, 10, 4)).cells
+      . assert(_ == List(Rect(0, 0, 5, 4), Rect(5, 0, 5, 2), Rect(5, 2, 5, 2)))

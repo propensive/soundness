@@ -30,7 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ultimatum
 
-export ultimatum.{Rect, Surface, TerminalSurface, Extent, FlowExtent, Axis, Sizing, Limits, Frame,
-    Placement}
+// The direction in which a split divides its space. `File` places children side
+// by side as columns, distributing width; `Rank` stacks them as rows,
+// distributing height. (Chess terminology: files run vertically, ranks
+// horizontally.)
+enum Axis:
+  case Rank, File
