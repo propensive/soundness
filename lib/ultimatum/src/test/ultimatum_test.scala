@@ -256,3 +256,44 @@ object Tests extends Suite(m"Ultimatum Tests"):
         Form(root, fullScreen = true, rank(editor(), editor())).run(events.iterator)
         root.render
       . assert(_ == t"aaaaaaaaaa\naaaaaaaaaa\na         \n          ")
+
+      // A terminal resize surfaces as a WindowSize event (the SIGWINCH handler in
+      // profanity's Terminal queries the new size); the layout re-tiles to it and
+      // the rows freed by shrinking are cleared. The custom iterator shrinks the
+      // root just before yielding the event, mimicking the live size update.
+      test(m"a WindowSize event re-tiles to the new terminal size"):
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        val root = ResizableRoot(10, 4)
+
+        val resize = new Iterator[TerminalEvent]:
+          private var pending = true
+          def hasNext = pending
+
+          def next() =
+            pending = false
+            root.resize(10, 2)
+            TerminalInfo.WindowSize(2, 10)
+
+        Form(root, fullScreen = true, rank(panel()(Out.print(t"A")), panel()(Out.print(t"B")))).run(resize)
+        root.render
+      . assert(_ == t"A         \nB         \n          \n          ")
+
+// A test-only root `Canvas` that paints into a fixed in-memory grid but reports a
+// settable size, so a layout can be re-tiled to a smaller `width`/`height` and
+// the composed screen read back.
+class ResizableRoot(maxWidth: Int, maxHeight: Int)(using Stdio) extends Canvas:
+  private val flow = FlowExtent(TerminalCanvas(maxWidth, maxHeight), Rect(0, 0, maxWidth, maxHeight))
+  private var size: (Int, Int) = (maxWidth, maxHeight)
+
+  def resize(width: Int, height: Int): Unit = size = (width, height)
+  def width: Int = size._1
+  def height: Int = size._2
+  def move(column: Ordinal, row: Ordinal): Unit = flow.move(column, row)
+  def put(text: Text): Unit = flow.put(text)
+  def put(text: Teletype): Unit = flow.put(text)
+  def clear(): Unit = flow.clear()
+  def clearLine(): Unit = flow.clearLine()
+  def cursor(visible: Boolean): Unit = flow.cursor(visible)
+  def showCaret(column: Ordinal, row: Ordinal): Unit = flow.showCaret(column, row)
+  def flush(): Unit = flow.flush()
+  def render: Text = flow.render
