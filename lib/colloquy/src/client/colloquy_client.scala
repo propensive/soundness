@@ -82,6 +82,13 @@ def repl(): Unit = cli:
     case Nil =>
       execute(connectSocket())
 
+    // TEMPORARY keyboard-diagnostic mode: print each keypress instead of editing.
+    case Argument("keys") :: Argument("kitty") :: Nil =>
+      execute(keyTest(kitty = true))
+
+    case Argument("keys") :: Nil =>
+      execute(keyTest(kitty = false))
+
     case _ =>
       execute(Exit.Fail(1))
 
@@ -175,6 +182,42 @@ private def unreachableSocket(path: Text)(using Stdio): Exit =
   Out.println(t"colloquy: could not connect to $path")
   Exit.Fail(3)
 
+// TEMPORARY keyboard diagnostic. Instead of the editor, print each terminal event
+// as a Profanity `Keypress` (or other `TerminalEvent`), so we can see exactly how
+// keys — including Shift+Enter — are decoded. With `kitty = true` the kitty
+// keyboard protocol is enabled first. Ctrl+C or Ctrl+D stops it.
+private def keyTest(kitty: Boolean)(using Stdio, Monitor, Codicil, Console, Environment): Exit =
+  whereas:
+    case TerminalError() =>
+      Out.println(t"colloquy: the terminal could not be initialised")
+      Exit.Fail(4)
+
+  . recover:
+      interactive: terminal ?=>
+        given Stdio = terminal.stdio
+        if kitty then Out.print(t"\e[>1u")
+        Out.print(t"colloquy: press keys to see how they decode; Ctrl+C or Ctrl+D to stop\r\n")
+        val events = terminal.eventIterator()
+        var running = true
+
+        try
+          while running && events.hasNext do
+            val event = events.next()
+
+            val rendered = event match
+              case keypress: Keypress => keypress.show
+              case other              => other.toString.tt
+
+            Out.print(t"$rendered\r\n")
+
+            event match
+              case Keypress.Ctrl('C' | 'D') => running = false
+              case _                        => ()
+        finally
+          if kitty then Out.print(t"\e[<u")
+
+        Exit.Ok
+
 // The full paths of the `.sock` files in the socket directory.
 private def socketPaths(directory: Text): List[Text] =
   val listing: Array[ji.File | Null] | Null = ji.File(directory.s).listFiles()
@@ -218,6 +261,10 @@ private def connectSocket()(using Stdio, Monitor, Codicil, Console, Environment)
 // The read/edit/print loop. The server's reply is printed verbatim. Ctrl+C/Ctrl+D
 // dismiss the line editor (`DismissError`) and end the session.
 private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Environment): Exit =
+  // The kitty keyboard protocol (applied by `interactive`) makes the terminal report
+  // Shift+Enter distinctly, so the editor can submit on it.
+  import terminalFeatures.kittyKeyboard
+
   // `duplex.stream` blocks on its first socket read, so force the iterator lazily
   // — only after a line has been sent — otherwise it would deadlock here before
   // the editor starts (the server sends nothing until it receives a message).
@@ -252,20 +299,21 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
   . recover:
       interactive:
         given Interaction[Text, LineEditor] = liveHighlighting(duplex, state, pending, nextId)
-
-        // Enable the kitty keyboard protocol so the terminal reports Shift+Enter
-        // (as a CSI-u sequence) distinctly from plain Enter; pop it on the way out.
-        Out.print(t"\e[>1u")
         var running = true
 
-        try while running do
+        while running do
           Out.print(t"> ")
+
+          // Multi-line editing: Enter submits when brackets are balanced, and
+          // otherwise inserts a newline to continue the input; Shift+Enter always
+          // submits.
+          val editor = LineEditor(mode = LineEditor.Mode.Multiline(balanced))
 
           whereas:
             case DismissError() => running = false
 
           . recover:
-              LineEditor().ask: line =>
+              editor.ask: line =>
                 // A line beginning with `/` is a client command, handled locally
                 // rather than submitted: `/disconnect` ends the session (like
                 // Ctrl+D); `/quit` also tells the server to shut down.
@@ -298,8 +346,6 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
                     case Repl.Reply.Crashed(_, diagnostics, _)  => Out.println(diagnostics)
                     case Repl.Reply.Failed(_, message)          => Out.println(message)
                     case Repl.Reply.Tokenized(_, _)             => ()
-
-        finally Out.print(t"\e[<u")
 
         live = false
         Exit.Ok
@@ -504,30 +550,27 @@ private class LiveState:
       checkpointTokens = tokens
       log = log.filter(_._1 > v)
 
+// Whether the editor content is "complete" enough to submit on Enter: non-empty
+// with every bracket closed. Open brackets continue the input onto a new line.
+private def balanced(text: Text): Boolean =
+  val string: String = text.s
+  var depth:  Int    = 0
+  var index:  Int    = 0
+
+  while index < string.length do
+    string.charAt(index) match
+      case '(' | '[' | '{' => depth += 1
+      case ')' | ']' | '}' => depth -= 1
+      case _               => ()
+
+    index += 1
+
+  string.length > 0 && depth <= 0
+
 // A line-editor interaction that highlights the buffer live: each keystroke is
 // applied to the live highlight via the heuristic and drawn immediately (never
 // waiting on the server), then an async `tokenize` is fired to refine it. Mirrors
 // Profanity's default cursor handling — colour codes are zero-width.
-// The (row, column) of `position` when `text` is laid out in a terminal `cols`
-// wide, counting embedded newlines and wrapping long lines. Reduces to the
-// single-line `position/cols`, `position%cols` when there are no newlines.
-private def visualPosition(text: Text, position: Int, cols: Int): (Int, Int) =
-  val string: String = text.s
-  val limit:  Int    = position.min(string.length)
-  var rows:   Int    = 0
-  var lineStart: Int = 0
-  var index:  Int    = 0
-
-  while index < limit do
-    if string.charAt(index) == '\n' then
-      rows += (index - lineStart)/cols + 1
-      lineStart = index + 1
-
-    index += 1
-
-  val column = limit - lineStart
-  (rows + column/cols, column%cols)
-
 private def liveHighlighting
   ( duplex: Duplex, state: LiveState, pending: TrieMap[Int, Int], nextId: juc.atomic.AtomicInteger )
   ( using terminal: Terminal )
@@ -540,24 +583,23 @@ private def liveHighlighting
 
     def result(editor: LineEditor): Text = editor.value
 
-    // Plain Enter inserts a newline (handled by `LineEditor`); only Shift+Enter
-    // submits the buffer.
-    override def submits(event: TerminalEvent): Boolean = event match
-      case Keypress.Shift(Keypress.Enter) => true
-      case _                              => false
+    // The editor's mode (set when it is created) decides whether Enter submits or
+    // inserts a newline.
+    override def submits(event: TerminalEvent, editor: LineEditor): Boolean =
+      editor.submitsOn(event)
 
     def render(old: Optional[LineEditor], editor: LineEditor): Unit =
       val cols              = terminal.knownColumns.max(1)
       val len               = editor.value.length
-      val (curRow, curCol)  = visualPosition(editor.value, editor.position, cols)
-      val (endRow, _)       = visualPosition(editor.value, len, cols)
+      val (curRow, curCol)  = LineEditor.cursorPosition(editor.value, editor.position, cols)
+      val (endRow, _)       = LineEditor.cursorPosition(editor.value, len, cols)
       val (version, tokens) = state.record(old.lay(t"")(_.value), editor.value)
       val coloured          = colourful(tokens).render(terminal.stdio.termcap)
 
       Out.print:
         Text.build:
           old.let: o =>
-            val (oldRow, _) = visualPosition(o.value, o.position, cols)
+            val (oldRow, _) = LineEditor.cursorPosition(o.value, o.position, cols)
             if oldRow > 0 then append(t"\e[${oldRow}F") else append(t"\r")
 
           append(t"\e[J")

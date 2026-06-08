@@ -259,17 +259,18 @@ object Tests extends Suite(m"Profanity Tests"):
     def edited(events: TerminalEvent*): Optional[Text] =
       noopEditor(events.iterator, LineEditor())(_(_))
 
-    // A multi-line editor: Enter inserts a newline, Shift+Enter submits.
+    // A no-op interaction whose submit decision follows the editor's own mode.
     val multilineEditor = new Interaction[Text, LineEditor]:
       def render(old: Optional[LineEditor], editor: LineEditor): Unit = ()
       def result(editor: LineEditor): Text = editor.value
 
-      override def submits(event: TerminalEvent): Boolean = event match
-        case Keypress.Shift(Keypress.Enter) => true
-        case _                              => false
+      override def submits(event: TerminalEvent, editor: LineEditor): Boolean =
+        editor.submitsOn(event)
 
-    def multilineEdited(events: TerminalEvent*): Optional[Text] =
-      multilineEditor(events.iterator, LineEditor())(_(_))
+    def editedWith(editor: LineEditor)(events: TerminalEvent*): Optional[Text] =
+      multilineEditor(events.iterator, editor)(_(_))
+
+    val shiftSubmit: LineEditor = LineEditor(mode = LineEditor.Mode.Multiline(_ => false))
 
     suite(m"SelectMenu state transitions"):
       test(m"Enter selects the current item"):
@@ -343,10 +344,28 @@ object Tests extends Suite(m"Profanity Tests"):
       . assert(_ == t"")
 
       test(m"Enter inserts a newline and Shift+Enter submits"):
-        multilineEdited
+        editedWith(shiftSubmit)
           ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('b'),
             profanity.Keypress.Shift(profanity.Keypress.Enter) )
       . assert(_ == t"a\nb")
+
+      test(m"the up arrow moves the cursor to the previous line"):
+        editedWith(shiftSubmit)
+          ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('b'), Keypress.Up,
+            Keypress.CharKey('X'), profanity.Keypress.Shift(profanity.Keypress.Enter) )
+      . assert(_ == t"aX\nb")
+
+      test(m"the down arrow moves the cursor to the next line"):
+        editedWith(shiftSubmit)
+          ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('b'), Keypress.Home,
+            Keypress.Up, Keypress.Down, Keypress.CharKey('Y'),
+            profanity.Keypress.Shift(profanity.Keypress.Enter) )
+      . assert(_ == t"a\nYb")
+
+      test(m"a content predicate decides whether Enter submits or inserts a newline"):
+        editedWith(LineEditor(mode = LineEditor.Mode.Multiline(_.contains(t"!"))))
+          ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('!'), Keypress.Enter )
+      . assert(_ == t"a\n!")
 
     suite(m"Keyboard decoding"):
       test(m"Shift+Enter is decoded from its CSI-u sequence"):
