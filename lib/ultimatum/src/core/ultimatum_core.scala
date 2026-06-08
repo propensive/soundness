@@ -79,10 +79,16 @@ def menu[item: Showable]
   Pane.Widget(sizing, MenuField(SelectMenu(options, current)))
 
 // A split whose children sit side by side as columns (distributing width).
-def file(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.File, panes.to(List))
+def file(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.File, Panes(panes*))
+
+// A column split over a live container, whose children can change while running.
+def file(panes: Panes): Pane = Pane.Branch(Sizing(), Axis.File, panes)
 
 // A split whose children stack as rows (distributing height).
-def rank(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.Rank, panes.to(List))
+def rank(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.Rank, Panes(panes*))
+
+// A row split over a live container, whose children can change while running.
+def rank(panes: Panes): Pane = Pane.Branch(Sizing(), Axis.Rank, panes)
 
 // Drive an interactive layout, looping over terminal events until the user exits.
 // Used inside `interactive`. In `Fullscreen` mode the layout takes over the
@@ -90,15 +96,20 @@ def rank(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.Rank, panes.to(List))
 // height; in `Inline` mode it renders a variable-height block at the cursor
 // without the alternate buffer, leaving scrollback intact.
 def form(mode: Mode = Mode.Fullscreen)(pane: Pane)(using terminal: Terminal): Unit =
+  // A container mutation wakes the loop by putting a redraw event on the spool.
+  val wake = () => terminal.events.put(TerminalInfo.Redraw)
+
   mode match
     case Mode.Fullscreen =>
       profanity.terminalFeatures.alternateScreen:
         val root = TerminalCanvas(terminal)
         root.cursor(false)
-        try Form(root, mode, pane).run(terminal.eventIterator()) finally root.cursor(true)
+
+        try Form(root, mode, pane, wake).run(terminal.eventIterator())
+        finally root.cursor(true)
 
     case Mode.Inline =>
-      Form(InlineRoot(terminal), mode, pane).run(terminal.eventIterator())
+      Form(InlineRoot(terminal), mode, pane, wake).run(terminal.eventIterator())
 
 // The leaf indices that must be repainted: any whose rectangle moved or resized
 // since the last layout, plus any whose content changed this frame. A leaf whose

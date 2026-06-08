@@ -334,6 +334,71 @@ object Tests extends Suite(m"Ultimatum Tests"):
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[1B\r\n\e[?25h")
 
+    suite(m"Dynamic panes"):
+      def cell(): Pane = panel()(())
+
+      test(m"append adds a pane at the end"):
+        val a = cell()
+        val b = cell()
+        val panes = Panes(a)
+        panes.append(b)
+        panes.contents.to(List) == List(a, b)
+      . assert(_ == true)
+
+      test(m"prepend adds a pane at the start"):
+        val a = cell()
+        val b = cell()
+        val panes = Panes(a)
+        panes.prepend(b)
+        panes.contents.to(List) == List(b, a)
+      . assert(_ == true)
+
+      test(m"insertBefore places a pane immediately before the reference"):
+        val a = cell()
+        val b = cell()
+        val c = cell()
+        val panes = Panes(a, b)
+        panes.insertBefore(b, c)
+        panes.contents.to(List) == List(a, c, b)
+      . assert(_ == true)
+
+      test(m"insertAfter places a pane immediately after the reference"):
+        val a = cell()
+        val b = cell()
+        val c = cell()
+        val panes = Panes(a, b)
+        panes.insertAfter(a, c)
+        panes.contents.to(List) == List(a, c, b)
+      . assert(_ == true)
+
+      test(m"remove deletes a pane by identity"):
+        val a = cell()
+        val b = cell()
+        val panes = Panes(a, b)
+        panes.remove(a)
+        panes.contents.to(List) == List(b)
+      . assert(_ == true)
+
+      // Drive a running form, append a pane mid-loop (the synthetic iterator
+      // yields a Redraw to wake it), and confirm the layout re-tiles to include it.
+      test(m"a form picks up a pane appended while it runs"):
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        val root = FlowExtent(TerminalCanvas(10, 2), Rect(0, 0, 10, 2))
+        val panes = Panes(panel()(Out.print(t"A")))
+
+        val events = new Iterator[TerminalEvent]:
+          private var pending = true
+          def hasNext = pending
+
+          def next() =
+            pending = false
+            panes.append(panel()(Out.print(t"B")))
+            TerminalInfo.Redraw
+
+        Form(root, Mode.Fullscreen, rank(panes)).run(events)
+        root.render
+      . assert(_ == t"A         \nB         ")
+
 // A test-only root `Canvas` that paints into a fixed in-memory grid but reports a
 // settable size, so a layout can be re-tiled to a smaller `width`/`height` and
 // the composed screen read back.
