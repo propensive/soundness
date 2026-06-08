@@ -152,7 +152,7 @@ private[cataclysm] object CssParser:
           val (name, prelude) = atRule(text)
           Node.At(name, prelude, body)
         else
-          Node.Rule(text, body)
+          Node.Rule(SelectorParser.parse(text), body)
       else if text.starts(t"@") then
         val (name, prelude) = atRule(text)
         Node.At(name, prelude, Unset)
