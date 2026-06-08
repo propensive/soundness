@@ -114,11 +114,11 @@ object Keypress:
       case Meta(inner)  => t"${key(t"⌘")}+${render(inner)}"
 
       case Ctrl(inner) => inner match
-        case char: Char      => t"${key(t"⌃")}+${char.show}"
+        case char: Char      => t"${key(t"⌃")}+${key(char.show)}"
         case other: Keypress => t"${key(t"⌃")}+${render(other)}"
 
       case CharKey(' ')      => key(t"␣")
-      case CharKey(char)     => char.show
+      case CharKey(char)     => key(char.show)
       case FunctionKey(n)    => key(t"F${n.show}")
       case EscapeSeq(id, _*) => key(t"⎋${id.show}")
 

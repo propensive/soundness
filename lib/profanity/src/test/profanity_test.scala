@@ -405,13 +405,13 @@ object Tests extends Suite(m"Profanity Tests"):
         rendered(profanity.Keypress.Shift(profanity.Keypress.Enter))
       . assert(_ == t"[⇧]+[↵]")
 
-      test(m"a control-letter keeps the letter"):
+      test(m"a control-letter brackets the letter"):
         rendered(profanity.Keypress.Ctrl('C'))
-      . assert(_ == t"[⌃]+C")
+      . assert(_ == t"[⌃]+[C]")
 
-      test(m"an ordinary character renders as itself"):
+      test(m"an ordinary character is bracketed"):
         rendered(profanity.Keypress.CharKey('a'))
-      . assert(_ == t"a")
+      . assert(_ == t"[a]")
 
       test(m"nested modifiers are joined with plus"):
         rendered(profanity.Keypress.Ctrl(profanity.Keypress.Shift(profanity.Keypress.Enter)))
