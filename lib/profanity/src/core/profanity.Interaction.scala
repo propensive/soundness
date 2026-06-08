@@ -109,6 +109,10 @@ trait Interaction[result, question]:
     case Keypress.Enter => true
     case _              => false
 
+  // Reacts to an editing event (one that neither submits nor dismisses) for side
+  // effects only — e.g. requesting completions on Tab. A no-op by default.
+  def react(state: question, event: TerminalEvent): Unit = ()
+
 
   @tailrec
   final def recur
@@ -123,7 +127,10 @@ trait Interaction[result, question]:
       case Keypress.Ctrl('C' | 'D')       => Unset
       case Keypress.Escape                => Unset
       case event if submits(event, state) => result(state)
-      case other                          => recur(events, key(state, other), state)(key)
+
+      case other =>
+        react(state, other)
+        recur(events, key(state, other), state)(key)
 
 
   def apply(events: Iterator[TerminalEvent], state: question)

@@ -251,6 +251,33 @@ object Tests extends Suite(m"Colloquy Tests"):
       . assert: reply =>
           reply.contains("Ran") && reply.contains("42")
 
+      test(m"a completion request returns matching completions"):
+        supervise:
+          val tcpPort = Port[Tcp]()
+          val service = Repl().serve(tcpPort)
+          val socket  = jn.Socket("localhost", tcpPort.number)
+
+          try
+            val output = socket.getOutputStream.nn
+            val message = "{\"id\":1,\"code\":\"List(1, 2, 3).m\",\"offset\":15,\"kind\":\"Complete\"}\n\n"
+            output.write(message.getBytes("UTF-8").nn)
+            output.flush()
+
+            val input   = ji.BufferedReader(ji.InputStreamReader(socket.getInputStream.nn, "UTF-8"))
+            val builder = StringBuilder()
+            var line: String | Null = input.readLine()
+
+            while line != null && !line.nn.isEmpty do
+              builder.append(line.nn).append("\n")
+              line = input.readLine()
+
+            builder.toString
+          finally
+            socket.close()
+            service.stop()
+      . assert: reply =>
+          reply.contains("Completed") && reply.contains("map")
+
     suite(m"REPL block captures outside references"):
       given Scalac[3.8] = Scalac(Nil)
 

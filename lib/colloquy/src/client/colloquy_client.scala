@@ -288,6 +288,9 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
         case Repl.Reply.Tokenized(id, highlight) =>
           pending.remove(id).foreach(state.reconcile(_, highlight))
 
+        case Repl.Reply.Completed(_, completions) =>
+          logCompletions(completions)
+
         case reply =>
           submits.put(reply)
 
@@ -346,6 +349,7 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
                     case Repl.Reply.Crashed(_, diagnostics, _)  => Out.println(diagnostics)
                     case Repl.Reply.Failed(_, message)          => Out.println(message)
                     case Repl.Reply.Tokenized(_, _)             => ()
+                    case Repl.Reply.Completed(_, _)             => ()
 
         live = false
         Exit.Ok
@@ -550,6 +554,17 @@ private class LiveState:
       checkpointTokens = tokens
       log = log.filter(_._1 > v)
 
+// Logs tab completions to the screen. A simple first version: it prints below the
+// prompt and disrupts the editor until the next keystroke redraws it.
+private def logCompletions(completions: List[Repl.CompletionItem])(using Stdio): Unit =
+  Out.print(t"\r\n")
+
+  if completions.isEmpty then
+    Out.print(t"  (no completions)\r\n")
+  else
+    completions.take(20).each: completion =>
+      Out.print(t"  ${completion.name}  ${completion.signature}  (${completion.kind})\r\n")
+
 // Whether the editor content is "complete" enough to submit on Enter: non-empty
 // with every bracket closed. Open brackets continue the input onto a new line.
 private def balanced(text: Text): Boolean =
@@ -587,6 +602,16 @@ private def liveHighlighting
     // inserts a newline.
     override def submits(event: TerminalEvent, editor: LineEditor): Boolean =
       editor.submitsOn(event)
+
+    // On Tab, ask the server for completions at the cursor; the reply is logged by
+    // the background reader.
+    override def react(editor: LineEditor, event: TerminalEvent): Unit = event match
+      case Keypress.Tab =>
+        val request = encode(Repl.Request.Complete(0, editor.value, editor.position))
+        duplex.send(Stream((request + t"\n\n").data))
+
+      case _ =>
+        ()
 
     def render(old: Optional[LineEditor], editor: LineEditor): Unit =
       val cols              = terminal.knownColumns.max(1)
