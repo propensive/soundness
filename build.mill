@@ -1391,7 +1391,7 @@ object typonym extends Library:
   object test extends Tests(core)
 
 object ultimatum extends Library:
-  object core extends Component(profanity.core):
+  object core extends Component(profanity.core, escapade.csi):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)

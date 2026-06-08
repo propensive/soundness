@@ -32,46 +32,9 @@
                                                                                                   */
 package ultimatum
 
-import anticipation.*
-import denominative.*
-import profanity.*
-import turbulence.*
-
-// A `Canvas` confined to a `Rect` of a parent surface, backed by the shared
-// character grid (`GridSurface`). Writes flow and wrap within the rectangle;
-// `flush` paints the grid onto the parent surface, one row at a time, via the
-// parent's `move`/`put` (so positioning is always expressed through the `Canvas`
-// interface, never as inline escapes). It is also an `Stdio`, so bare
-// `Out.println` in a panel body flows into it.
-class FlowExtent(parent: Canvas, val rect: Rect)
-extends GridSurface(rect.width, rect.height), Extent:
-  def cursor(visible: Boolean): Unit = parent.cursor(visible)
-
-  def showCaret(column: Ordinal, row2: Ordinal): Unit =
-    parent.showCaret((rect.left + column.n0).z, (rect.top + row2.n0).z)
-
-  // Paint the whole grid onto the parent surface, one row at a time. The parent
-  // is not itself flushed here — the caller presents the root once after every
-  // panel has composited, so an inline root emits a complete frame rather than
-  // once per panel.
-  def flush(): Unit =
-    var r = 0
-
-    while r < height do
-      parent.move(rect.left.z, (rect.top + r).z)
-      parent.put(rowText(r))
-      r += 1
-
-  // `Stdio` members: routing `Out` output (and other `Stdio` writes) into this
-  // extent. `print` lays text out through the same cursor model as `put`; the
-  // underlying streams are muted because all rendering goes via `flush`.
-  val termcap: Termcap = new Termcap:
-    def ansi: Boolean = true
-    def color: ColorDepth = ColorDepth.TrueColor
-    override def width: Int = rect.width
-
-  val out = Stdio.MutePrintStream
-  val err = Stdio.MutePrintStream
-  val in = Stdio.MuteInputStream
-
-  override def print(text: Text): Unit = put(text)
+// The two rendering modes for an interactive layout. `Fullscreen` takes over the
+// terminal via the alternate screen buffer and fills its fixed height;
+// `Inline` renders a variable-height block at the cursor (sized to its content),
+// without the alternate buffer, leaving the terminal's scrollback intact.
+enum Mode:
+  case Inline, Fullscreen
