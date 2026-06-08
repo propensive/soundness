@@ -175,7 +175,7 @@ object soundness extends ScalaModule:
 
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi,
-    eucalyptus.syslog, guillotine.core, escapade.core, imperial.core, profanity.core,
+    eucalyptus.syslog, guillotine.core, escapade.csi, escapade.core, imperial.core, profanity.core,
     surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core)
 
   object data extends Bundle(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
@@ -640,7 +640,10 @@ object enigmatic extends Library:
       super.forkArgs() ++ Seq("--enable-native-access=ALL-UNNAMED")
 
 object escapade extends Library:
-  object core extends Component(anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core, escritoire.core):
+  object csi extends Component(gossamer.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object core extends Component(csi, anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core, escritoire.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, yossarian.core)
