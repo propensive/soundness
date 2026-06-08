@@ -600,6 +600,13 @@ private class LiveState:
       checkpointTokens = tokens
       log = log.filter(_._1 > v)
 
+// The client `/`-commands, with help text, offered as Tab completions when the line
+// starts with `/`. Keep in step with the dispatch in `converse`.
+private val slashCommands: List[(Text, Text)] =
+  List
+    ( t"/disconnect" -> t"leave the session, keeping the server running",
+      t"/quit"       -> t"stop the server and quit" )
+
 // Prints tab completions below the editor as a minimal Escritoire table of name and
 // signature, with no heading row (the header section is dropped from the grid). The
 // caller redraws the prompt afterwards so it reappears beneath the table.
@@ -699,12 +706,16 @@ private def liveHighlighting
     override def submits(event: TerminalEvent, editor: LineEditor): Boolean =
       editor.submitsOn(event)
 
-    // On Tab, ask the server for completions at the cursor and block for the reply
-    // (delivered by the background reader). A unique completion is inserted into the
-    // editor automatically; with several, the candidates are shown as a table and the
+    // On Tab, complete. A line beginning with `/` completes the client `/`-commands
+    // locally; otherwise the server is asked for completions at the cursor and we
+    // block for the reply (delivered by the background reader). Either way a unique
+    // candidate is inserted; with several, the candidates are shown as a table and the
     // editor is advanced by the longest prefix common to all their names — so a set of
     // overloads, which share a name, completes that whole name.
     override def react(editor: LineEditor, event: TerminalEvent): LineEditor = event match
+      case Keypress.Tab if editor.value.starts(t"/") =>
+        completeCommand(editor)
+
       case Keypress.Tab =>
         val request = encode(Repl.Request.Complete(0, editor.value, editor.position))
         duplex.send(Stream((request + t"\n\n").data))
@@ -724,6 +735,27 @@ private def liveHighlighting
 
       case _ =>
         editor
+
+    // Completes the `/`-commands against the whole line: a unique match fills in the
+    // command; otherwise the matches are listed and the longest common prefix added.
+    def completeCommand(editor: LineEditor): LineEditor =
+      val typed: Text = editor.value
+
+      slashCommands.filter { (name, _) => name.starts(typed) } match
+        case (name, _) :: Nil =>
+          LineEditor(name, name.length, editor.mode)
+
+        case matches =>
+          val items =
+            matches.map: (name, help) =>
+              Repl.CompletionItem(name, t"command", help)
+
+          showCompletions(items)
+          redrawFresh = true
+          val prefix = longestCommonPrefix(matches.map(_._1))
+
+          if prefix.length > typed.length then LineEditor(prefix, prefix.length, editor.mode)
+          else editor
 
     def render(old: Optional[LineEditor], editor: LineEditor): Unit =
       val cols              = terminal.knownColumns.max(1)
