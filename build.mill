@@ -235,6 +235,7 @@ object groupCheck extends Module:
     "dendrology.demo",
     "ethereal.example", "exegesis.demo", "exoskeleton.args", "exoskeleton.core",
     "exoskeleton.rig", "flux.client", "flux.core", "frontier.plugin", "probably.coverage",
+    "ultimatum.demo",
     "quantitative.units",
 
     "bitumen.core", "breviloquence.core", "cordillera.core", "distillate.core",
@@ -1402,6 +1403,10 @@ object ultimatum extends Library:
   object core extends Component(profanity.core, escapade.csi):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object demo extends Component(core, ethereal.core, exoskeleton.completions):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+    override def mainClass: Task.Simple[Option[String]] = Some("ultimatum.demo")
   object test extends Tests(core)
 
 object ulysses extends Library:
