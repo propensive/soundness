@@ -30,7 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ultimatum
 
-export ultimatum.{Rect, Surface, TerminalSurface, Extent, FlowExtent, Axis, Sizing, Limits, Frame,
-    Placement}
+import vacuous.*
+
+// How a frame is sized within its parent. `fraction` is its relative weight in
+// the parent's split direction — fractions 2, 3, 4 claim 2/9, 3/9, 4/9 of the
+// axis. The min/max values are content-driven bounds on each axis; a child whose
+// fair share would fall outside its bound on the split axis is fixed at that
+// bound and removed from the fractional pool. An `Unset` maximum is unbounded.
+case class Sizing
+  ( fraction:  Double        = 1.0,
+    minWidth:  Int           = 0,
+    maxWidth:  Optional[Int] = Unset,
+    minHeight: Int           = 0,
+    maxHeight: Optional[Int] = Unset )

@@ -30,7 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ultimatum
 
-export ultimatum.{Rect, Surface, TerminalSurface, Extent, FlowExtent, Axis, Sizing, Limits, Frame,
-    Placement}
+import vacuous.*
+
+// The resolved minimum and maximum size of a frame along one axis. An `Unset`
+// maximum is unbounded.
+case class Limits(min: Int, max: Optional[Int])
