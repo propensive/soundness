@@ -228,3 +228,31 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val rects = IndexedSeq(Rect(0, 0, 10, 1), Rect(0, 1, 10, 1))
         dirtyCells(rects, rects, Set(1))
       . assert(_ == Set(1))
+
+      // Drive the whole interactive loop into an in-memory grid: type into the
+      // first editor, TAB to the second, type into it, then exit, and read back
+      // the composed screen.
+      test(m"TAB moves focus so typing lands in the right panel"):
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        val root = FlowExtent(TerminalCanvas(10, 4), Rect(0, 0, 10, 4))
+
+        val events = List
+         ( Keypress.CharKey('h'), Keypress.CharKey('i'),
+           Keypress.Tab,
+           Keypress.CharKey('y'), Keypress.CharKey('o'),
+           Keypress.Escape )
+
+        Form(root, fullScreen = true, rank(editor(), editor())).run(events.iterator)
+        root.render
+      . assert(_ == t"hi        \n          \nyo        \n          ")
+
+      // Typing 21 characters into the top editor wraps it onto three rows, raising
+      // its panel's minimum height; the solver re-tiles and the bottom editor is
+      // pushed from row 2 down to row 3.
+      test(m"a growing editor re-tiles and pushes its sibling down"):
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        val root = FlowExtent(TerminalCanvas(10, 4), Rect(0, 0, 10, 4))
+        val events = List.fill(21)(Keypress.CharKey('a')) ++ List(Keypress.Escape)
+        Form(root, fullScreen = true, rank(editor(), editor())).run(events.iterator)
+        root.render
+      . assert(_ == t"aaaaaaaaaa\naaaaaaaaaa\na         \n          ")
