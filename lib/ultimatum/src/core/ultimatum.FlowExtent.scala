@@ -138,17 +138,16 @@ class FlowExtent(parent: Surface, val rect: Rect) extends Extent:
 
     builder.toString.tt
 
-  // Routes `Out` output (and other `Stdio` writes) into this extent. `print`
-  // lays text out through the same cursor model as `put`; the underlying streams
-  // are muted because all rendering goes via `flush`.
-  val stdio: Stdio = new Stdio:
-    val termcap: Termcap = new Termcap:
-      def ansi: Boolean = true
-      def color: ColorDepth = ColorDepth.TrueColor
-      override def width: Int = rect.width
+  // `Stdio` members: routing `Out` output (and other `Stdio` writes) into this
+  // extent. `print` lays text out through the same cursor model as `put`; the
+  // underlying streams are muted because all rendering goes via `flush`.
+  val termcap: Termcap = new Termcap:
+    def ansi: Boolean = true
+    def color: ColorDepth = ColorDepth.TrueColor
+    override def width: Int = rect.width
 
-    val out = Stdio.MutePrintStream
-    val err = Stdio.MutePrintStream
-    val in = Stdio.MuteInputStream
+  val out = Stdio.MutePrintStream
+  val err = Stdio.MutePrintStream
+  val in = Stdio.MuteInputStream
 
-    override def print(text: Text): Unit = put(text)
+  override def print(text: Text): Unit = put(text)
