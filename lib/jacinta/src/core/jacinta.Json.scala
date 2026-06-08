@@ -111,6 +111,13 @@ trait Json2 extends Json3:
     Json.Decodable(Shape.Whole)(json => json.root.long.b)
 
   inline given decodable: [value] => value is Json.Decodable = summonFrom:
+    // `Json` decodes to itself. Handled here (not as a separate carrier given) so it
+    // does not compete — as a `Json.Decodable` subtype — with the plain
+    // `jsonDecodable` for a `Json is Decodable in Json` summon (which must beat
+    // distillate's `generic`).
+    case _: (`value` =:= Json) =>
+      Json.Decodable[Json](Shape.Any)(identity(_)).asInstanceOf[value is Json.Decodable]
+
     case given (`value` is distillate.Decodable in Text) =>
       Json.Decodable(Shape.Str)(provide[Tactic[JsonError]](_.root.string.decode[value]))
 
@@ -608,8 +615,14 @@ object Json extends Json2, Dynamic:
           Json.Ast.arr(updated.asInstanceOf[IArray[Any]])
       else origin
 
-  given jsonDecodable: Json is Json.Decodable =
-    Json.Decodable(Shape.Any)(identity(_))
+  // A `Json` value decodes to itself. Typed as the plain `Decodable in Json` (not
+  // the `Json.Decodable` carrier) so it is *exactly* the queried type and strictly
+  // beats distillate's universal `value is Decodable in value` identity given for a
+  // `Json is Decodable in Json` summon (e.g. `someJson.as[Json]`); a carrier subtype
+  // would be incomparable to `generic` and therefore ambiguous. `Json is
+  // Json.Decodable` (needed when `Json` nests in a collection/`Optional`) comes from
+  // the `Json` case in the `decodable` summonFrom above.
+  given jsonDecodable: Json is distillate.Decodable in Json = identity(_)
 
   given boolean: Tactic[JsonError] => Boolean is Json.Decodable =
     Json.Decodable(Shape.Bool)(_.root.boolean)
