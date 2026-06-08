@@ -45,6 +45,7 @@ import anthology.*
 import anticipation.*
 import coaxial.*
 import contingency.*
+import denominative.*
 import digression.*
 import distillate.*
 import gossamer.*
@@ -97,12 +98,18 @@ object Repl:
   // concern.
   case class Token(text: Text, accent: Text, tpe: Optional[Text])
 
+  // One tab-completion candidate: the `name` to insert, its `kind` (term, method,
+  // type, …) and its rendered type `signature`. The Harlequin `Completion`'s
+  // `Syntax` signature is rendered to text here so the reply serializes simply.
+  case class CompletionItem(name: Text, kind: Text, signature: Text)
+
   // A request from a connected client. `id` is echoed in the reply so the client
   // can re-associate replies that arrive out of order (a fast `tokenize` may
   // overtake a slow `submit`). Serialized as JSON with a `kind` discriminator.
   enum Request:
     case Submit(id: Int, code: Text)
     case Tokenize(id: Int, code: Text)
+    case Complete(id: Int, code: Text, offset: Int)
     case Quit(id: Int)
 
   // A reply to a connected client, echoing the request's `id`. `highlight` is the
@@ -110,6 +117,7 @@ object Repl:
   // discriminator.
   enum Reply:
     case Tokenized(id: Int, highlight: List[Token])
+    case Completed(id: Int, completions: List[CompletionItem])
 
     case Ran(id: Int, value: Optional[Text], output: Text, tpe: Optional[Text],
              diagnostics: Text, highlight: List[Token])
@@ -142,6 +150,22 @@ object Repl:
     lines match
       case Nil          => Nil
       case head :: rest => head ::: rest.flatMap(Token(t"\n", t"unparsed", Unset) :: _)
+
+  // Tab completions at character `offset` in `code`, from Harlequin's typechecked
+  // pipeline (so it needs the session's `Scalac` and compile classpath). The line is
+  // wrapped as `val __completion = <code>` so a bare expression is valid top-level
+  // Scala to complete against; the caret is shifted past the wrapper. Each
+  // candidate's `Syntax` signature is rendered to text for the wire.
+  def complete(code: Text, offset: Int)(using Scalac[?], LocalClasspath): List[CompletionItem] =
+    import highlighting.typecheckedScala
+
+    val prefix:  Text = t"val __completion = "
+    val wrapped: Text = t"$prefix$code"
+    val caret:   Int  = prefix.length + offset
+
+    Scala.highlight(wrapped, caret = caret.z).completions.lay(Nil): completions =>
+      completions.items.map: item =>
+        CompletionItem(item.name, item.kind.toString.tt, item.signature.qualified)
 
   // The Scala type of an expression, read from a typechecked highlight of
   // `val __result = <code>`: the binding's token carries the resolved type as a
@@ -454,9 +478,24 @@ class Repl[version <: Scalac.Versions]
       safely[Exception](Json.parseTracked(message).as[Repl.Request])
 
     request.lay(encode(Repl.Reply.Failed(0, t"the request could not be parsed"))):
-      case Repl.Request.Tokenize(id, code) => encode(Repl.Reply.Tokenized(id, Repl.tokenize(code)))
-      case Repl.Request.Submit(id, code)   => submit(id, code)
-      case Repl.Request.Quit(_)            => quit.offer(()) yet Unset
+      case Repl.Request.Tokenize(id, code)         => tokenized(id, code)
+      case Repl.Request.Submit(id, code)           => submit(id, code)
+      case Repl.Request.Complete(id, code, offset) => complete(id, code, offset)
+      case Repl.Request.Quit(_)                    => quit.offer(()) yet Unset
+
+  private def tokenized(id: Int, code: Text): Text =
+    encode(Repl.Reply.Tokenized(id, Repl.tokenize(code)))
+
+  // Computes tab completions at `offset` in `code` and replies (with `id`). Holds
+  // `mutex` like `submit`, since the shared compiler is not reentrant.
+  private def complete(id: Int, code: Text, offset: Int)(using Monitor, System, Codicil)
+  :   Text logs CompileEvent =
+
+    given LocalClasspath = classpath
+
+    val items: List[Repl.CompletionItem] = mutex(safely(Repl.complete(code, offset)).or(Nil))
+
+    encode(Repl.Reply.Completed(id, items))
 
   // Typecheck-highlights, compiles, and runs `code`, replying (with `id`) with the
   // highlighting, the result value, and any diagnostics. The whole body holds
