@@ -59,11 +59,6 @@ object Tests extends Suite(m"Profanity Tests"):
           import interpreters.posix
           import codicils.cancel
 
-          given BracketedPasteMode      = () => false
-          given LuminosityDetection     = () => false
-          given TerminalFocusDetection  = () => false
-          given TerminalSizeDetection   = () => false
-
           cli:
             arguments match
               case Argument("echo") :: Nil =>
@@ -388,6 +383,20 @@ object Tests extends Suite(m"Profanity Tests"):
       . assert:
           case Keypress.CharKey('a') => true
           case _                     => false
+
+    suite(m"Terminal features"):
+      test(m"the kitty keyboard feature pushes the protocol on"):
+        terminalFeatures.kittyKeyboard.enable
+      . assert(_ == t"\e[>1u")
+
+      test(m"a query feature has an empty disable sequence"):
+        terminalFeatures.backgroundColor.disable
+      . assert(_ == t"")
+
+      test(m"a by-name imported feature is collected by Every"):
+        import terminalFeatures.kittyKeyboard
+        summon[Every[TerminalFeature]].values.map(_.enable)
+      . assert(_.contains(t"\e[>1u"))
 
     suite(m"Signal POSIX numbering"):
       test(m"SIGHUP is 1")  (Signal.Hup.id)   .assert(_ == 1)

@@ -1166,7 +1166,8 @@ object probably extends Library:
   object test extends Tests(cli)
 
 object profanity extends Library:
-  object core extends Component(ambience.core, eucalyptus.core, diuretic.core, iridescence.core, quantitative.units):
+  object core extends Component(ambience.core, eucalyptus.core, diuretic.core, iridescence.core,
+                                quantitative.units, frontier.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, exoskeleton.rig)
