@@ -35,8 +35,9 @@ package soundness
 export
   profanity
   . { Console, CtrlChar, DismissError, Interaction, interactive, Interactivity, Keyboard,
-      Keypress, LineEditor, Question, SelectMenu, Signal, SignalResponse, stdio, Terminal,
-      TerminalError, TerminalEvent, TerminalFeature, TerminalInfo, UnixSignal, WindowsSignal }
+      Keypress, LineEditor, Question, SelectMenu, Signal, SignalResponse, stdio, Surface,
+      Terminal, TerminalError, TerminalEvent, TerminalFeature, TerminalInfo, TerminalSurface,
+      UnixSignal, WindowsSignal }
 
 package keyboards:
   export profanity.keyboards.{numeric, raw, standard}

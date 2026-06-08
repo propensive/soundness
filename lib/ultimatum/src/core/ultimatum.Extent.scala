@@ -32,6 +32,7 @@
                                                                                                   */
 package ultimatum
 
+import profanity.*
 import turbulence.*
 
 // A virtual, embedded terminal confined to a `Rect` within a parent surface. An
