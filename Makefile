@@ -1,5 +1,15 @@
+# Where `make flux` installs the `flux` REPL binary. Override with `make flux PREFIX=…`
+# (the binary lands in `$(PREFIX)/bin`, which should be on your `PATH`).
+PREFIX ?= $(HOME)/.local
+
 publishLocal:
 	./mill __.publishLocal
+
+flux:
+	./mill flux.client.bin
+	mkdir -p $(PREFIX)/bin
+	install -m 755 bin/flux $(PREFIX)/bin/flux
+	@echo "flux installed to $(PREFIX)/bin/flux"
 
 test:
 	./mill test.assembly
@@ -63,4 +73,4 @@ matrix:
 	    $(foreach scala,3.6.1 3.6.2 3.6.3 3.6.4 3.7.0 3.7.1 3.7.1 main, \
 			    $(MAKE) bootstrap/$(scala):$(jdk);))
 
-.PHONY: publishLocal build dev ci test matrix attest verify-attest push release
+.PHONY: publishLocal flux build dev ci test matrix attest verify-attest push release

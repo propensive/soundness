@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export colloquy.Repl
+export flux.Repl

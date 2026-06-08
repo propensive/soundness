@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package colloquy
+package flux
 
 import java.io as ji
 import java.lang as jl
@@ -58,13 +58,13 @@ import systems.java
 import temporaryDirectories.system
 import threading.platform
 
-// A front-end for a Colloquy REPL. With a TCP port, `colloquy serve <port>` runs a
-// server and `colloquy <port>` connects to one on localhost. With no port,
-// `colloquy serve` opens a per-process UNIX domain socket (named after the JVM's
-// PID, under the XDG runtime dir) and `colloquy` connects to it — starting its own
-// background server first if none is running (so `colloquy` alone is a self-contained
+// A front-end for a Flux REPL. With a TCP port, `flux serve <port>` runs a
+// server and `flux <port>` connects to one on localhost. With no port,
+// `flux serve` opens a per-process UNIX domain socket (named after the JVM's
+// PID, under the XDG runtime dir) and `flux` connects to it — starting its own
+// background server first if none is running (so `flux` alone is a self-contained
 // REPL whose session, living in the separate server process, can be reconnected to by
-// running `colloquy` again), picking the lone running server, or listing them if there
+// running `flux` again), picking the lone running server, or listing them if there
 // are several. Either way the client drives an interactive, live-highlighted session
 // until Ctrl+D, Ctrl+C or `/quit`.
 @main
@@ -102,13 +102,13 @@ private def serve(portNumber: Int)(using Stdio, Monitor, Codicil, System): Exit 
 
   safely(Port[Tcp](portNumber)).lay(invalidPort(portNumber)): port =>
     whereas:
-      case BindError(_) => Out.println(t"colloquy: port $portNumber is unavailable"); Exit.Fail(5)
-      case error: Error => Out.println(t"colloquy: ${error.message}"); Exit.Fail(6)
+      case BindError(_) => Out.println(t"flux: port $portNumber is unavailable"); Exit.Fail(5)
+      case error: Error => Out.println(t"flux: ${error.message}"); Exit.Fail(6)
 
     . recover:
         val repl    = Repl()
         val service = repl.serve(port)
-        Out.println(t"colloquy: serving a REPL on port $portNumber (Ctrl+C or /quit to stop)")
+        Out.println(t"flux: serving a REPL on port $portNumber (Ctrl+C or /quit to stop)")
         repl.awaitQuit()
         service.stop()
         Exit.Ok
@@ -119,7 +119,7 @@ private def serve(portNumber: Int)(using Stdio, Monitor, Codicil, System): Exit 
 private def envText(name: String): Optional[Text] = Optional(jl.System.getenv(name)).let(_.nn.tt)
 
 private def socketDirectory: Text =
-  t"${envText("XDG_RUNTIME_DIR").or(envText("TMPDIR")).or(t"/tmp")}/colloquy"
+  t"${envText("XDG_RUNTIME_DIR").or(envText("TMPDIR")).or(t"/tmp")}/flux"
 
 private def socketFile: Text = t"$socketDirectory/${ProcessHandle.current.nn.pid}.sock"
 
@@ -137,13 +137,13 @@ private def serveSocket()(using Stdio, Monitor, Codicil, System): Exit =
 
     val repl    = Repl()
     val service = repl.serve(socketPath)
-    Out.println(t"colloquy: serving a REPL on $socketPath (Ctrl+C or /quit to stop)")
+    Out.println(t"flux: serving a REPL on $socketPath (Ctrl+C or /quit to stop)")
     repl.awaitQuit()
     service.stop()
     safely(jnf.Files.deleteIfExists(jnf.Path.of(socketPath.s)))
     Exit.Ok
   catch case error: Throwable =>
-    Out.println(t"colloquy: could not serve on $socketPath: ${error.toString.tt}")
+    Out.println(t"flux: could not serve on $socketPath: ${error.toString.tt}")
     Exit.Fail(6)
 
 // Builds the classloader the REPL compiles against inside the Ethereal daemon.
@@ -159,18 +159,18 @@ private def serveSocket()(using Stdio, Monitor, Codicil, System): Exit =
 private def serverClassloader(using System): Classloader =
   try
     val executable: Text = unsafely(System.properties.ethereal.script[Text]())
-    val link: jnf.Path = jnf.Files.createTempDirectory("colloquy").nn.resolve("colloquy.jar").nn
+    val link: jnf.Path = jnf.Files.createTempDirectory("flux").nn.resolve("flux.jar").nn
     jnf.Files.createSymbolicLink(link, jnf.Path.of(executable.s)).nn
     val url: jn.URL = ji.File(link.toString).toURI.nn.toURL.nn
     new Classloader(jn.URLClassLoader(Array(url), threadContext.java))
   catch case _: Throwable => threadContext
 
 private def invalidPort(portNumber: Int)(using Stdio): Exit =
-  Out.println(t"colloquy: $portNumber is not a valid TCP port")
+  Out.println(t"flux: $portNumber is not a valid TCP port")
   Exit.Fail(2)
 
 private def unreachable(portNumber: Int)(using Stdio): Exit =
-  Out.println(t"colloquy: could not connect to localhost:$portNumber")
+  Out.println(t"flux: could not connect to localhost:$portNumber")
   Exit.Fail(3)
 
 // Opens a TCP connection to the server, or `Unset` if it is refused.
@@ -182,7 +182,7 @@ private def connectDomain(socket: DomainSocket): Optional[Duplex] =
   try socket.duplex() catch case _: Exception => Unset
 
 private def unreachableSocket(path: Text)(using Stdio): Exit =
-  Out.println(t"colloquy: could not connect to $path")
+  Out.println(t"flux: could not connect to $path")
   Exit.Fail(3)
 
 // Drives an interactive session over a connection, closing it on the way out.
@@ -190,13 +190,13 @@ private def session(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Envi
   try converse(duplex) finally duplex.close()
 
 private def failedToLaunch(using Stdio): Exit =
-  Out.println(t"colloquy: could not start a REPL server")
+  Out.println(t"flux: could not start a REPL server")
   Exit.Fail(3)
 
-// Starts a REPL server in the background — a detached `colloquy serve` process on its
+// Starts a REPL server in the background — a detached `flux serve` process on its
 // own per-process domain socket — waits for it to bind, and connects to it. Because
 // the server is a separate process it outlives this client, so the same session can
-// be reconnected to later by running `colloquy` again. Returns the live connection,
+// be reconnected to later by running `flux` again. Returns the live connection,
 // or `Unset` if no server became reachable in time.
 private def launchServer()(using Stdio, System): Optional[Duplex] =
   safely(System.properties.ethereal.script[Text]()).lay(Unset): executable =>
@@ -230,14 +230,14 @@ private def launchServer()(using Stdio, System): Optional[Duplex] =
 private def keyTest(kitty: Boolean)(using Stdio, Monitor, Codicil, Console, Environment): Exit =
   whereas:
     case TerminalError() =>
-      Out.println(t"colloquy: the terminal could not be initialised")
+      Out.println(t"flux: the terminal could not be initialised")
       Exit.Fail(4)
 
   . recover:
       interactive: terminal ?=>
         given Stdio = terminal.stdio
         if kitty then Out.print(t"\e[>1u")
-        Out.print(t"colloquy: press keys to see how they decode; Ctrl+C or Ctrl+D to stop\r\n")
+        Out.print(t"flux: press keys to see how they decode; Ctrl+C or Ctrl+D to stop\r\n")
         val events = terminal.eventIterator()
         var running = true
 
@@ -279,24 +279,24 @@ private def socketPaths(directory: Text): List[Text] =
   names.to(List)
 
 // Connects to a per-process UNIX domain socket. With no server running, launches one
-// in the background and attaches to it (so `colloquy` alone is a self-contained REPL,
+// in the background and attaches to it (so `flux` alone is a self-contained REPL,
 // reconnectable later); with exactly one, connects to it; with several, lists them.
 private def connectSocket()(using Stdio, Monitor, Codicil, Console, Environment, System): Exit =
   socketPaths(socketDirectory) match
     case Nil =>
-      Out.println(t"colloquy: starting a REPL server…")
+      Out.println(t"flux: starting a REPL server…")
       launchServer().lay(failedToLaunch)(session(_))
 
     case path :: Nil =>
       connectDomain(DomainSocket(path)).lay(unreachableSocket(path))(session(_))
 
     case paths =>
-      Out.println(t"colloquy: several REPL servers are running:")
+      Out.println(t"flux: several REPL servers are running:")
 
       paths.each: path =>
         Out.println(t"  $path")
 
-      Out.println(t"colloquy: stop all but one, or use a TCP server with 'colloquy <port>'")
+      Out.println(t"flux: stop all but one, or use a TCP server with 'flux <port>'")
       Exit.Fail(7)
 
 // The read/edit/print loop. The server's reply is printed verbatim. Ctrl+C/Ctrl+D
@@ -340,7 +340,7 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
 
   whereas:
     case TerminalError() =>
-      Out.println(t"colloquy: the terminal could not be initialised")
+      Out.println(t"flux: the terminal could not be initialised")
       Exit.Fail(4)
 
   . recover:
@@ -371,7 +371,7 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
                   duplex.send(Stream((encode(Repl.Request.Quit(0)) + t"\n\n").data))
                   running = false
                 else if line.starts(t"/") then
-                  Out.println(t"colloquy: unknown command: $line")
+                  Out.println(t"flux: unknown command: $line")
                 else
                   // The editor already showed the (live-highlighted) line; submit
                   // it and print the awaited result value and any diagnostics.
