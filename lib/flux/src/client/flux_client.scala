@@ -625,21 +625,36 @@ private def showCompletions(completions: List[Repl.CompletionItem])(using Stdio)
       Out.print(t"$line\r\n")
 
 // Replaces the partial identifier ending at the cursor with the completion `name`,
-// returning the editor with the cursor just after the inserted text. Used to fill in
-// a unique completion automatically.
+// returning the editor with the cursor just after the inserted text.
 private def insertCompletion(editor: LineEditor, name: Text): LineEditor =
-  val before: String = editor.value.keep(editor.position).s
-  var start:  Int    = before.length
-
-  while start > 0 && isIdentifierChar(before.charAt(start - 1)) do start -= 1
-
+  val start:  Int  = identifierStart(editor)
   val prefix: Text = editor.value.keep(start)
   val suffix: Text = editor.value.skip(editor.position)
 
   LineEditor(t"$prefix$name$suffix", start + name.length, editor.mode)
 
+// The offset at which the identifier ending at the cursor begins.
+private def identifierStart(editor: LineEditor): Int =
+  val before: String = editor.value.keep(editor.position).s
+  var start:  Int    = before.length
+
+  while start > 0 && isIdentifierChar(before.charAt(start - 1)) do start -= 1
+
+  start
+
+// The length of the partial identifier the user has typed up to the cursor.
+private def partialLength(editor: LineEditor): Int = editor.position - identifierStart(editor)
+
 private def isIdentifierChar(char: Char): Boolean =
   jl.Character.isLetterOrDigit(char) || char == '_'
+
+// The longest prefix shared by every name (empty if there are none).
+private def longestCommonPrefix(names: List[Text]): Text = names match
+  case Nil => t""
+
+  case head :: tail =>
+    tail.foldLeft(head): (prefix, name) =>
+      prefix.keep(commonPrefix(prefix, name))
 
 // Whether the editor content is "complete" enough to submit on Enter: non-empty
 // with every bracket closed. Open brackets continue the input onto a new line.
@@ -686,8 +701,9 @@ private def liveHighlighting
 
     // On Tab, ask the server for completions at the cursor and block for the reply
     // (delivered by the background reader). A unique completion is inserted into the
-    // editor automatically; otherwise the candidates are shown as a table and the
-    // editor is flagged to redraw fresh beneath it.
+    // editor automatically; with several, the candidates are shown as a table and the
+    // editor is advanced by the longest prefix common to all their names — so a set of
+    // overloads, which share a name, completes that whole name.
     override def react(editor: LineEditor, event: TerminalEvent): LineEditor = event match
       case Keypress.Tab =>
         val request = encode(Repl.Request.Complete(0, editor.value, editor.position))
@@ -701,7 +717,10 @@ private def liveHighlighting
           case _ =>
             showCompletions(candidates)
             redrawFresh = true
-            editor
+            val prefix = longestCommonPrefix(candidates.map(_.name))
+
+            if prefix.length > partialLength(editor) then insertCompletion(editor, prefix)
+            else editor
 
       case _ =>
         editor
