@@ -47,15 +47,61 @@ object Keyboard:
   import Keypress.*
 
 
+  // A legacy modifier parameter is `1 + bitmask`, encoded as a single digit.
   def modified(code: Char, keypress: EditKey | FunctionKey)
   :   EditKey | FunctionKey | Shift | Alt | Ctrl | Meta =
 
-    val n = code - '1'
+    applyModifiers(code - '1', keypress)
+
+  // Wraps `keypress` in the modifier keys named by `bitmask` (shift=1, alt=2,
+  // ctrl=4, super/meta=8), the kitty-protocol modifier value minus one.
+  def applyModifiers(n: Int, keypress: EditKey | FunctionKey)
+  :   EditKey | FunctionKey | Shift | Alt | Ctrl | Meta =
+
     val shift: EditKey | FunctionKey | Shift = if (n&1) == 1 then Shift(keypress) else keypress
     val alt: EditKey | FunctionKey | Shift | Alt = if (n&2) == 2 then Alt(shift) else shift
     val ctrl: EditKey | FunctionKey | Shift | Alt | Ctrl = if (n&4) == 4 then Ctrl(alt) else alt
 
     if (n&8) == 8 then Meta(ctrl) else ctrl
+
+  // Decodes a kitty keyboard-protocol CSI-u parameter list — `<codepoint>[:<shifted>
+  // [:<base>]][;<modifiers>[:<event>]][;<text>]`, without the trailing `u` — into a
+  // keypress. The codepoint is a Unicode value, with the C0 codes 13/9/27/127 for
+  // Enter/Tab/Escape/Backspace; the modifier field is `1 + bitmask`.
+  def csiu(params: List[Char]): profanity.Keypress =
+    val fields: List[Text] = params.map(_.show).join.cut(t";").to(List)
+
+    def number(index: Int, default: Int): Int =
+      safely(Integer.parseInt(fields(index).cut(t":").head.s)).or(default)
+
+    val bitmask: Int = (number(1, 1) - 1).max(0)
+
+    def key(value: EditKey | FunctionKey): profanity.Keypress =
+      if bitmask == 0 then value else applyModifiers(bitmask, value)
+
+    number(0, 0) match
+      case 13      => key(Enter)
+      case 9       => key(Tab)
+      case 27      => key(Escape)
+      case 8 | 127 => key(Backspace)
+
+      case codepoint =>
+        val char = codepoint.toChar
+
+        if (bitmask&4) == 4 then ctrlChar(char)
+        else if (bitmask&1) == 1 then CharKey(char.toUpper)
+        else CharKey(char)
+
+  // The `Ctrl`-modified form of a character, or the plain character if it has no
+  // control form.
+  def ctrlChar(char: Char): profanity.Keypress = char.toUpper match
+    case c: ( '@' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M'
+              | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '['
+              | '\\' | ']' | '^' | '_' ) =>
+      Ctrl(c)
+
+    case _ =>
+      CharKey(char)
 
 
   def navigation(code: Char): Keypress.EditKey = code match
@@ -108,18 +154,15 @@ object Keyboard:
                 val content = tail.take(size).map(_.show).join
                 TerminalInfo.Paste(content) #:: process(tail.drop(size + 6))
 
-              // CSI-u (kitty keyboard protocol) for Enter — codepoint 13 — so that
-              // Shift+Enter (`\e[13;2u`) is distinguishable from plain Enter.
-              case '1' #:: '3' #:: 'u' #:: rest =>
-                Keypress.Enter #:: process(rest)
-
-              case '1' #:: '3' #:: ';' #:: modifiers #:: 'u' #:: rest =>
-                Keyboard.modified(modifiers, Keypress.Enter) #:: process(rest)
-
               case other =>
                 val sequence = other.takeWhile(!_.isLetter)
 
                 other.drop(sequence.length) match
+                  // CSI-u (kitty keyboard protocol): a key codepoint with optional
+                  // sub-keys and modifiers, terminated by `u`.
+                  case 'u' #:: tail =>
+                    Keyboard.csiu(sequence.to(List)) #:: process(tail)
+
                   case 'R' #:: tail => sequence.map(_.show).join.cut(';').to(List) match
                     case List(As[Int](rows), As[Int](cols)) =>
                       TerminalInfo.WindowSize(rows, cols) #:: process(tail)
