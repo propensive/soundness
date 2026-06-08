@@ -367,6 +367,23 @@ object Tests extends Suite(m"Profanity Tests"):
           ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('!'), Keypress.Enter )
       . assert(_ == t"a\n!")
 
+      test(m"react can transform the editor state (e.g. completing on Tab)"):
+        val completingEditor = new Interaction[Text, LineEditor]:
+          def render(old: Optional[LineEditor], editor: LineEditor): Unit = ()
+          def result(editor: LineEditor): Text = editor.value
+
+          override def react(editor: LineEditor, event: TerminalEvent): LineEditor =
+            event match
+              case Keypress.Tab => LineEditor(t"${editor.value}ography")
+              case _            => editor
+
+        completingEditor
+         ( Stream(Keypress.CharKey('g'), Keypress.CharKey('e'), Keypress.Tab,
+                  Keypress.Enter).iterator,
+           LineEditor() )
+         (_(_))
+      . assert(_ == t"geography")
+
     suite(m"Keyboard decoding"):
       test(m"Shift+Enter is decoded from its CSI-u sequence"):
         supervise:

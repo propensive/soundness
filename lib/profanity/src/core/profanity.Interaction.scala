@@ -109,9 +109,11 @@ trait Interaction[result, question]:
     case Keypress.Enter => true
     case _              => false
 
-  // Reacts to an editing event (one that neither submits nor dismisses) for side
-  // effects only — e.g. requesting completions on Tab. A no-op by default.
-  def react(state: question, event: TerminalEvent): Unit = ()
+  // Reacts to an editing event (one that neither submits nor dismisses), returning a
+  // possibly-updated state and performing any side effects — e.g. requesting
+  // completions on Tab and inserting a unique one. Returns the state unchanged by
+  // default.
+  def react(state: question, event: TerminalEvent): question = state
 
 
   @tailrec
@@ -129,8 +131,11 @@ trait Interaction[result, question]:
       case event if submits(event, state) => result(state)
 
       case other =>
-        react(state, other)
-        recur(events, key(state, other), state)(key)
+        // `react` may transform the state (e.g. inserting a completion); `oldState`
+        // stays the just-rendered `state`, so the next render's cursor maths match
+        // where the cursor actually is.
+        val reacted = react(state, other)
+        recur(events, key(reacted, other), state)(key)
 
 
   def apply(events: Iterator[TerminalEvent], state: question)
