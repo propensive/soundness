@@ -65,3 +65,51 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"hiding the cursor emits the DECTCEM reset"):
         captured(TerminalSurface(80, 24).cursor(false))
       . assert(_ == t"\e[?25l")
+
+    suite(m"FlowExtent"):
+      // A standalone extent over a muted parent; mutation tests never flush, so
+      // the parent surface is unused.
+      def extent(width: Int, height: Int): FlowExtent =
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        FlowExtent(TerminalSurface(width, height), Rect(0, 0, width, height))
+
+      test(m"text wraps at the rectangle's width"):
+        val flow = extent(3, 2)
+        flow.put(t"abcdef")
+        flow.render
+      . assert(_ == t"abc\ndef")
+
+      test(m"a newline moves to the start of the next row"):
+        val flow = extent(5, 3)
+        flow.put(t"ab\ncd")
+        flow.render
+      . assert(_ == t"ab   \ncd   \n     ")
+
+      test(m"the grid scrolls up when the last row overflows"):
+        val flow = extent(3, 2)
+        flow.put(t"abcdefghi")
+        flow.render
+      . assert(_ == t"def\nghi")
+
+      test(m"clear blanks the whole grid"):
+        val flow = extent(3, 2)
+        flow.put(t"abcdef")
+        flow.clear()
+        flow.render
+      . assert(_ == t"   \n   ")
+
+      test(m"Out output through the extent's Stdio flows into the grid"):
+        val flow = extent(5, 1)
+        given Stdio = flow.stdio
+        Out.print(t"hi")
+        flow.render
+      . assert(_ == t"hi   ")
+
+      test(m"flush paints the grid onto the parent at the rect's offset"):
+        val bytes = ji.ByteArrayOutputStream()
+        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic)
+        val flow = FlowExtent(TerminalSurface(80, 24), Rect(2, 1, 3, 1))
+        flow.put(t"xy")
+        flow.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[2;3Hxy ")

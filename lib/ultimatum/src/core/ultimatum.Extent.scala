@@ -30,6 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ultimatum
 
-export ultimatum.{Rect, Surface, TerminalSurface, Extent, FlowExtent}
+import turbulence.*
+
+// A virtual, embedded terminal: a `Surface` confined to a `Rect` within a parent
+// surface, together with an `Stdio` so that bare `Out.println` in a panel body
+// flows into the rectangle. The standard implementation, `FlowExtent`, keeps a
+// hand-rolled cursor model (wrap at width, scroll at height); the same interface
+// would also admit a heavier yossarian-backed implementation, but nothing here
+// requires one.
+trait Extent extends Surface:
+  def rect: Rect
+  def stdio: Stdio
