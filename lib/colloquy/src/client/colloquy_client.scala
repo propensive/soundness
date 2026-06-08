@@ -48,6 +48,7 @@ import charEncoders.utf8
 import classloaders.threadContext
 import codicils.cancel
 import executives.completions
+import harlequin.Accent
 import internetAccess.enabled
 import interpreters.posix
 import jsonDiscriminables.discriminatedUnionByKind
@@ -249,7 +250,7 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
       Exit.Fail(4)
 
   . recover:
-      interactive: terminal ?=>
+      interactive:
         given Interaction[Text, LineEditor] = liveHighlighting(duplex, state, pending, nextId)
 
         // Enable the kitty keyboard protocol so the terminal reports Shift+Enter
@@ -303,24 +304,51 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
         live = false
         Exit.Ok
 
-// Maps a Harlequin accent name to a display colour; `Unset` leaves the token
-// uncoloured (terms, comments, whitespace).
-private def accentColour(accent: Text): Optional[Color in Srgb] =
-  if accent == t"keyword" || accent == t"modifier" then WebColors.MediumPurple
-  else if accent == t"typed"                       then WebColors.SteelBlue
-  else if accent == t"ident"                       then WebColors.DodgerBlue
-  else if accent == t"string"                      then WebColors.ForestGreen
-  else if accent == t"number"                      then WebColors.Goldenrod
-  else if accent == t"symbol" || accent == t"parens" then WebColors.SlateGray
-  else if accent == t"error"                       then WebColors.Crimson
-  else Unset
+// The editor's syntax-highlighting colours, *specified* here as an iridescence
+// `Palette` rather than hardcoded per accent. Harlequin's `syntaxHighlighting`
+// renderer turns tokens into a `Teletype` using these colours, and the terminal's
+// colour depth is applied when the `Teletype` is rendered (see `render`). Swap this
+// given — or `import` a different `ScalaSyntaxPalette` — to retheme the REPL.
+private given palette: ScalaSyntaxPalette = new Palette:
+  type Form = Srgb
+  def background:       Color in Srgb = WebColors.Black
+  def foreground:       Color in Srgb = WebColors.Gainsboro
+  def scalaError:       Color in Srgb = WebColors.Crimson
+  def scalaNumber:      Color in Srgb = WebColors.Goldenrod
+  def scalaString:      Color in Srgb = WebColors.ForestGreen
+  def scalaIdentifier:  Color in Srgb = WebColors.DodgerBlue
+  def scalaTerm:        Color in Srgb = WebColors.Gainsboro
+  def scalaType:        Color in Srgb = WebColors.SteelBlue
+  def scalaKeyword:     Color in Srgb = WebColors.MediumPurple
+  def scalaSymbol:      Color in Srgb = WebColors.SlateGray
+  def scalaParenthesis: Color in Srgb = WebColors.SlateGray
+  def scalaModifier:    Color in Srgb = WebColors.MediumPurple
+  def scalaComment:     Color in Srgb = WebColors.Gray
+  def subdued:          Color in Srgb = WebColors.DimGray
+  def accented:         Color in Srgb = WebColors.White
+  def margin:           Color in Srgb = WebColors.Black
 
-// Reconstructs the source line from the highlight tokens, colouring each by its
-// accent, as a single `Teletype` that prints as ANSI.
+// Maps a Harlequin accent name (as carried on the wire) back to its `Accent`.
+private def accentOf(accent: Text): Accent =
+  if accent == t"keyword"       then Accent.Keyword
+  else if accent == t"modifier" then Accent.Modifier
+  else if accent == t"typed"    then Accent.Typed
+  else if accent == t"ident"    then Accent.Ident
+  else if accent == t"string"   then Accent.String
+  else if accent == t"number"   then Accent.Number
+  else if accent == t"symbol"   then Accent.Symbol
+  else if accent == t"parens"   then Accent.Parens
+  else if accent == t"error"    then Accent.Error
+  else if accent == t"unparsed" then Accent.Unparsed
+  else Accent.Term
+
+// Reconstructs the source line from the highlight tokens, colouring each through
+// the palette via Harlequin's syntax-highlighting renderer.
 private def colourful(tokens: List[Repl.Token]): Teletype =
+  import harlequin.syntaxHighlighting.teletypeable
+
   tokens.map: token =>
-    accentColour(token.accent).lay(e"${token.text}"): colour =>
-      e"$colour(${token.text})"
+    harlequin.Token(token.text, accentOf(token.accent)).teletype
 
   . join
 
@@ -501,8 +529,7 @@ private def visualPosition(text: Text, position: Int, cols: Int): (Int, Int) =
   (rows + column/cols, column%cols)
 
 private def liveHighlighting
-  ( duplex: Duplex, state: LiveState, pending: TrieMap[Int, Int],
-    nextId: juc.atomic.AtomicInteger )
+  ( duplex: Duplex, state: LiveState, pending: TrieMap[Int, Int], nextId: juc.atomic.AtomicInteger )
   ( using terminal: Terminal )
 :   Interaction[Text, LineEditor] =
 
@@ -525,7 +552,7 @@ private def liveHighlighting
       val (curRow, curCol)  = visualPosition(editor.value, editor.position, cols)
       val (endRow, _)       = visualPosition(editor.value, len, cols)
       val (version, tokens) = state.record(old.lay(t"")(_.value), editor.value)
-      val coloured          = colourful(tokens).render(termcapDefinitions.xtermTrueColor)
+      val coloured          = colourful(tokens).render(terminal.stdio.termcap)
 
       Out.print:
         Text.build:
