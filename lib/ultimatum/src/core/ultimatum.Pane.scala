@@ -43,24 +43,27 @@ enum Pane:
 
   case Leaf(sizing: Sizing, content: Extent => Unit)
   case Widget(sizing: Sizing, focus: Focus)
-  case Branch(sizing: Sizing, axis: Axis, children: List[Pane])
+  case Branch(sizing: Sizing, axis: Axis, panes: Panes)
 
   // The pure layout structure, with content discarded, for the solver. A widget
   // contributes only its declared `Sizing` here; the interactive driver injects
   // each widget's live intrinsic size (measured at its actual width) when it
-  // re-solves, so growing content can push the rest of the layout around.
+  // re-solves, so growing content can push the rest of the layout around. A
+  // branch reads its container's current contents, so a mutated layout re-solves.
   def frame: Frame = this match
-    case Leaf(sizing, _)            => Frame.Cell(sizing)
-    case Widget(sizing, _)          => Frame.Cell(sizing)
-    case Branch(sizing, axis, kids) => Frame.Split(sizing, axis, kids.map(_.frame))
+    case Leaf(sizing, _)   => Frame.Cell(sizing)
+    case Widget(sizing, _) => Frame.Cell(sizing)
+
+    case Branch(sizing, axis, panes) =>
+      Frame.Split(sizing, axis, panes.contents.map(_.frame).to(List))
 
   // The leaves in frame order (left to right for files, top to bottom for ranks).
   def leaves: List[Pane] = this match
-    case Branch(_, _, children) => children.flatMap(_.leaves)
-    case leaf                   => List(leaf)
+    case Branch(_, _, panes) => panes.contents.to(List).flatMap(_.leaves)
+    case leaf                => List(leaf)
 
   // A copy of this pane re-weighted for use as a child of a split.
   def weight(fraction: Double): Pane = this match
-    case Leaf(sizing, content)      => Leaf(sizing.copy(fraction = fraction), content)
-    case Widget(sizing, focus)      => Widget(sizing.copy(fraction = fraction), focus)
-    case Branch(sizing, axis, kids) => Branch(sizing.copy(fraction = fraction), axis, kids)
+    case Leaf(sizing, content)       => Leaf(sizing.copy(fraction = fraction), content)
+    case Widget(sizing, focus)       => Widget(sizing.copy(fraction = fraction), focus)
+    case Branch(sizing, axis, panes) => Branch(sizing.copy(fraction = fraction), axis, panes)

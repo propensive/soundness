@@ -34,25 +34,50 @@ package ultimatum
 
 import profanity.*
 import rudiments.*
+import vacuous.*
 
-// Drives an interactive layout: solves it, paints each panel, then loops over
-// terminal events — TAB cycles focus between widgets, Escape/Ctrl-C exits, and
-// every other event is folded into the focused widget. After each edit (or a
-// terminal resize) the layout is re-solved using each widget's live intrinsic
-// size and the root is presented. In `Fullscreen` mode only the panels whose
-// rectangle or content changed are repainted (the root composites straight to the
-// screen); in `Inline` mode the grid is re-sized to the measured block height each
-// frame and the whole block is re-presented at the cursor.
-class Form(root: Canvas, mode: Mode, pane: Pane):
-  private val leaves: IndexedSeq[Pane] = pane.leaves.to(IndexedSeq)
-  private val focuses: IndexedSeq[Focus] = leaves.collect { case Pane.Widget(_, focus) => focus }
-
-  // The leaf index hosting each focusable, in focus order.
-  private val focusLeaf: IndexedSeq[Int] = leaves.indices.collect:
-    case i if leaves(i).isInstanceOf[Pane.Widget] => i
-
+// Drives an interactive layout. The pane tree is re-derived from its live
+// containers on every frame, so panes appended or inserted while the form runs
+// are picked up and the layout re-tiles; a container mutation also wakes the
+// loop (via `wake`) so background changes appear immediately. TAB cycles focus
+// between widgets (tracked by identity, so it survives insertions), Escape/Ctrl-C
+// exits, and other events fold into the focused widget. Fullscreen repaints only
+// the changed cells; inline re-sizes the grid to the measured block height each
+// frame and re-presents the whole block at the cursor.
+class Form(root: Canvas, mode: Mode, pane: Pane, wake: () => Unit = () => ()):
+  private var leaves: IndexedSeq[Pane] = IndexedSeq()
+  private var focuses: IndexedSeq[Focus] = IndexedSeq()
+  private var focusLeaf: IndexedSeq[Int] = IndexedSeq()
+  private var focused: Optional[Focus] = Unset
   private var rects: IndexedSeq[Rect] = IndexedSeq()
-  private var focus: Int = 0
+
+  // Bind every container to the wake function so a mutation requests a repaint.
+  private def bind(node: Pane): Unit = node match
+    case Pane.Branch(_, _, panes) =>
+      panes.onChange = wake
+      panes.contents.each(bind(_))
+
+    case _ =>
+      ()
+
+  // Snapshot the live tree's leaves and focusables; keep focus on the same widget
+  // if it still exists, else fall back to the first.
+  private def rederive(): Unit =
+    bind(pane)
+    leaves = pane.leaves.to(IndexedSeq)
+    focuses = leaves.collect { case Pane.Widget(_, focus) => focus }
+
+    focusLeaf = leaves.indices.collect:
+      case i if leaves(i).isInstanceOf[Pane.Widget] => i
+
+    val stays = focused.lay(false): widget =>
+      focuses.indexWhere(_ eq widget) >= 0
+
+    if !stays then focused = if focuses.isEmpty then Unset else focuses(0)
+
+  private def focusIndex: Int = focused.lay(0): widget =>
+    val index = focuses.indexWhere(_ eq widget)
+    if index < 0 then 0 else index
 
   // Project the panes to a frame, overriding each widget's minimum with the live
   // size its content needs at the width it last occupied (the root width on the
@@ -62,8 +87,8 @@ class Form(root: Canvas, mode: Mode, pane: Pane):
     var index = -1
 
     def project(node: Pane): Frame = node match
-      case Pane.Branch(sizing, axis, children) =>
-        Frame.Split(sizing, axis, children.map(project))
+      case Pane.Branch(sizing, axis, panes) =>
+        Frame.Split(sizing, axis, panes.contents.map(project).to(List))
 
       case Pane.Leaf(sizing, _) =>
         index += 1
@@ -80,8 +105,6 @@ class Form(root: Canvas, mode: Mode, pane: Pane):
 
     project(pane)
 
-  // Re-solve the layout; in inline mode also reframe the root grid to the measured
-  // block height (clamped to the terminal). Returns the new panel rectangles.
   private def solve(): IndexedSeq[Rect] =
     val frame = liveFrame
 
@@ -104,16 +127,25 @@ class Form(root: Canvas, mode: Mode, pane: Pane):
         extent.flush()
 
       case Pane.Widget(_, widget) =>
-        widget.render(extent, focusLeaf.indexOf(index) == focus)
+        widget.render(extent, focusLeaf.indexOf(index) == focusIndex)
 
       case _ =>
         ()
 
-  // Re-solve and repaint, then present the root. Inline always repaints every
-  // panel (its grid was just reframed and blanked); fullscreen repaints only the
-  // cells whose rectangle or content changed. The focused widget is painted last
-  // so the caret rests in it.
+  // Re-derive, re-solve and repaint, then present. A change in the number of
+  // leaves (a pane was added or removed) forces a full repaint, clearing the
+  // screen in fullscreen so a removed panel leaves no residue; otherwise
+  // fullscreen repaints only the dirty cells and inline re-presents the block.
   private def refresh(changed: Set[Int]): Unit =
+    rederive()
+
+    if leaves.length != rects.length then
+      mode match
+        case Mode.Fullscreen => root.clear()
+        case Mode.Inline     => ()
+
+      rects = IndexedSeq()
+
     val updated = solve()
 
     mode match
@@ -126,7 +158,7 @@ class Form(root: Canvas, mode: Mode, pane: Pane):
         rects = updated
         dirty.each(paint(_))
 
-    if focuses.nonEmpty then paint(focusLeaf(focus))
+    if focuses.nonEmpty then paint(focusLeaf(focusIndex))
     root.flush()
 
   def run(events: Iterator[TerminalEvent]): Unit =
@@ -136,31 +168,30 @@ class Form(root: Canvas, mode: Mode, pane: Pane):
     while running && events.hasNext do events.next() match
       case Keypress.Tab =>
         if focuses.nonEmpty then
-          focus = (focus + 1)%focuses.length
+          focused = focuses((focusIndex + 1)%focuses.length)
           refresh(Set())
 
       case Keypress.Escape | Keypress.Ctrl('C' | 'D') =>
         running = false
 
-      // The terminal reports its new size after a resize. Fullscreen clears the
-      // whole screen and forces a full re-tile; inline must NOT clear the screen
-      // (that would wipe scrollback) — its reframe + present reconcile the change.
+      // A resize re-tiles to the new size; reset the rects so the whole layout is
+      // repainted against the live dimensions.
       case _: TerminalInfo.WindowSize =>
-        mode match
-          case Mode.Fullscreen => root.clear()
-          case Mode.Inline     => ()
-
         rects = IndexedSeq()
         refresh(Set())
 
-      // Signals are never widget input; the WindowSize event above does the work.
+      // An application redraw request (e.g. after a background layout change).
+      case TerminalInfo.Redraw =>
+        refresh(Set())
+
+      // Other signals are never widget input.
       case _: Signal =>
         ()
 
       case event =>
         if focuses.nonEmpty then
-          focuses(focus).handle(event)
-          refresh(Set(focusLeaf(focus)))
+          focuses(focusIndex).handle(event)
+          refresh(Set(focusLeaf(focusIndex)))
 
     root match
       case inline: InlineRoot => inline.finish()

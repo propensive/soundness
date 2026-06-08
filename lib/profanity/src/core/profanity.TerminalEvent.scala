@@ -47,6 +47,11 @@ enum TerminalInfo extends TerminalEvent:
   case GainFocus
   case Paste(text: Text)
 
+  // A synthetic event an application can put onto the terminal's event spool to
+  // wake the event loop and request a repaint — e.g. after a background task has
+  // changed the layout.
+  case Redraw
+
 object Signal:
   given decoder: Signal is Decodable in Text = text => Signal.valueOf(text.lower.capitalize.s)
   given encodable: Signal is Encodable in Text = _.shortName
