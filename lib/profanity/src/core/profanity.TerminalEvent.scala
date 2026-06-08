@@ -102,6 +102,43 @@ object Keypress:
     Delete.type | Enter.type | Backspace.type | Escape.type | Left.type | Right.type | Up.type |
     Down.type
 
+  // Renders a keypress with a Unicode symbol in square brackets for each special
+  // key (and modifier), joining a modifier to the key it modifies with `+`; an
+  // ordinary character is shown as itself. E.g. `[⇧]+[↵]`, `[⌃]+C`, `[⌥]+[→]`.
+  private def render(keypress: Keypress): Text =
+    def key(symbol: Text): Text = t"[$symbol]"
+
+    keypress match
+      case Shift(inner) => t"${key(t"⇧")}+${render(inner)}"
+      case Alt(inner)   => t"${key(t"⌥")}+${render(inner)}"
+      case Meta(inner)  => t"${key(t"⌘")}+${render(inner)}"
+
+      case Ctrl(inner) => inner match
+        case char: Char      => t"${key(t"⌃")}+${char.show}"
+        case other: Keypress => t"${key(t"⌃")}+${render(other)}"
+
+      case CharKey(' ')      => key(t"␣")
+      case CharKey(char)     => char.show
+      case FunctionKey(n)    => key(t"F${n.show}")
+      case EscapeSeq(id, _*) => key(t"⎋${id.show}")
+
+      case Tab       => key(t"⇥")
+      case Enter     => key(t"↵")
+      case Backspace => key(t"⌫")
+      case Delete    => key(t"⌦")
+      case Escape    => key(t"⎋")
+      case Up        => key(t"↑")
+      case Down      => key(t"↓")
+      case Left      => key(t"←")
+      case Right     => key(t"→")
+      case Home      => key(t"↖")
+      case End       => key(t"↘")
+      case PageUp    => key(t"⇞")
+      case PageDown  => key(t"⇟")
+      case Insert    => key(t"⎀")
+
+  given showable: Keypress is Showable = render(_)
+
 enum Keypress extends TerminalEvent:
   case Tab, Home, End, PageUp, PageDown, Insert, Delete, Enter, Backspace, Escape, Left, Right, Up,
     Down

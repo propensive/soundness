@@ -398,6 +398,25 @@ object Tests extends Suite(m"Profanity Tests"):
         summon[Every[TerminalFeature]].values.map(_.enable)
       . assert(_.contains(t"\e[>1u"))
 
+    suite(m"Keypress rendering"):
+      def rendered(keypress: profanity.Keypress): Text = keypress.show
+
+      test(m"a modifier and a special key render with bracketed symbols"):
+        rendered(profanity.Keypress.Shift(profanity.Keypress.Enter))
+      . assert(_ == t"[⇧]+[↵]")
+
+      test(m"a control-letter keeps the letter"):
+        rendered(profanity.Keypress.Ctrl('C'))
+      . assert(_ == t"[⌃]+C")
+
+      test(m"an ordinary character renders as itself"):
+        rendered(profanity.Keypress.CharKey('a'))
+      . assert(_ == t"a")
+
+      test(m"nested modifiers are joined with plus"):
+        rendered(profanity.Keypress.Ctrl(profanity.Keypress.Shift(profanity.Keypress.Enter)))
+      . assert(_ == t"[⌃]+[⇧]+[↵]")
+
     suite(m"Signal POSIX numbering"):
       test(m"SIGHUP is 1")  (Signal.Hup.id)   .assert(_ == 1)
       test(m"SIGINT is 2")  (Signal.Int.id)   .assert(_ == 2)
