@@ -41,10 +41,73 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) extends Question[Text]:
+object LineEditor:
+  // Whether the editor is a single line (Enter submits) or accepts multiple lines.
+  // In `Multiline` mode the arrow keys move the cursor between lines, and `submit`
+  // decides — from the current content — whether Enter submits or inserts a newline
+  // (Shift+Enter always submits).
+  enum Mode:
+    case SingleLine
+    case Multiline(submit: Text => Boolean)
+
+  // (row, column) of `position` in `text` laid out `cols` wide, counting embedded
+  // newlines and wrapping long lines; reduces to `position/cols`, `position%cols`
+  // when there are no newlines.
+  def cursorPosition(text: Text, position: Int, cols: Int): (Int, Int) =
+    val string:    String = text.s
+    val limit:     Int    = position.min(string.length)
+    var rows:      Int    = 0
+    var lineStart: Int    = 0
+    var index:     Int    = 0
+
+    while index < limit do
+      if string.charAt(index) == '\n' then
+        rows += (index - lineStart)/cols + 1
+        lineStart = index + 1
+
+      index += 1
+
+    val column = limit - lineStart
+    (rows + column/cols, column%cols)
+
+case class LineEditor
+  ( value:     Text            = t"",
+    position0: Optional[Int]   = Unset,
+    mode:      LineEditor.Mode = LineEditor.Mode.SingleLine )
+extends Question[Text]:
+
   val position = position0.or(value.length)
 
   import Keypress.*
+
+  // Whether (per `mode`) the given event submits the answer rather than editing it.
+  def submitsOn(event: TerminalEvent): Boolean = mode match
+    case LineEditor.Mode.SingleLine =>
+      event match
+        case Enter => true
+        case _     => false
+
+    case LineEditor.Mode.Multiline(submit) =>
+      event match
+        case Enter        => submit(value)
+        case Shift(Enter) => true
+        case _            => false
+
+  private def multiline: Boolean = mode match
+    case LineEditor.Mode.Multiline(_) => true
+    case _                            => false
+
+  // The logical lines, their start offsets, and the index of the cursor's line.
+  private def layout: (List[Text], List[Int], Int) =
+    val lines:  List[Text] = value.cut(t"\n").to(List)
+    val starts: List[Int]  = lines.scanLeft(0)(_ + _.length + 1).init
+    (lines, starts, starts.lastIndexWhere(_ <= position).max(0))
+
+  private def moveVertically(rows: Int): LineEditor =
+    val (lines, starts, current) = layout
+    val column = position - starts(current)
+    val target = (current + rows).max(0).min(lines.length - 1)
+    copy(position0 = starts(target) + column.min(lines(target).length))
 
   def apply(keypress: TerminalEvent): LineEditor =
     try
@@ -53,10 +116,22 @@ case class LineEditor(value: Text = t"", position0: Optional[Int] = Unset) exten
         case Enter       => copy(t"${value.keep(position)}\n${value.skip(position)}", position + 1)
         case Ctrl('U')   => copy(value.skip(position), 0)
         case Delete      => copy(t"${value.keep(position)}${value.skip(position + 1)}")
-        case Home        => copy(position0 = 0)
-        case End         => copy(position0 = value.length)
-        case Left        => copy(position0 = (position - 1) `max` 0)
-        case Right       => copy(position0 = (position + 1) `min` value.length)
+
+        case Up if multiline   => moveVertically(-1)
+        case Down if multiline => moveVertically(1)
+
+        case Home if multiline =>
+          val (_, starts, current) = layout
+          copy(position0 = starts(current))
+
+        case End if multiline =>
+          val (lines, starts, current) = layout
+          copy(position0 = starts(current) + lines(current).length)
+
+        case Home  => copy(position0 = 0)
+        case End   => copy(position0 = value.length)
+        case Left  => copy(position0 = (position - 1) `max` 0)
+        case Right => copy(position0 = (position + 1) `min` value.length)
 
         case Ctrl('W') =>
           val prefix = value.keep(0 max (position - 1)).skip(_ != ' ', Rtl)

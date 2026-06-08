@@ -67,24 +67,28 @@ object Interaction:
     given Stdio = terminal.stdio
     override def after(): Unit = Out.println()
 
+    override def submits(event: TerminalEvent, editor: LineEditor): Boolean =
+      editor.submitsOn(event)
+
+    // Handles both single-line and multi-line editors: `cursorPosition` counts
+    // embedded newlines and wrapping, and each newline is drawn as CR+LF.
     def render(old: Optional[LineEditor], editor: LineEditor): Unit =
-      val cols = terminal.knownColumns.max(1)
-      val len = editor.value.length
-      val curRow = editor.position/cols
-      val curCol = editor.position%cols
+      val cols             = terminal.knownColumns.max(1)
+      val len              = editor.value.length
+      val (curRow, curCol) = LineEditor.cursorPosition(editor.value, editor.position, cols)
+      val (endRow, _)      = LineEditor.cursorPosition(editor.value, len, cols)
 
       Out.print:
         Text.build:
           old.let: o =>
-            val oldRow = o.position/cols
+            val (oldRow, _) = LineEditor.cursorPosition(o.value, o.position, cols)
             if oldRow > 0 then append(t"\e[${oldRow}F") else append(t"\r")
 
           append(t"\e[J")
-          append(editor.value)
+          append(editor.value.sub(t"\n", t"\r\n"))
 
           if len > 0 then
-            val printedRows = (len - 1)/cols
-            if printedRows > 0 then append(t"\e[${printedRows}F") else append(t"\r")
+            if endRow > 0 then append(t"\e[${endRow}F") else append(t"\r")
 
           if curRow > 0 then append(t"\e[${curRow}B")
           if curCol > 0 then append(t"\e[${curCol + 1}G")
@@ -98,9 +102,10 @@ trait Interaction[result, question]:
   def after(): Unit = ()
   def result(state: question): result
 
-  // Which event submits the answer (default: Enter). A multi-line editor overrides
-  // this — e.g. to submit on Shift+Enter and let plain Enter insert a newline.
-  def submits(event: TerminalEvent): Boolean = event match
+  // Which event submits the answer, given the current state (default: Enter). A
+  // multi-line editor overrides this to consult the editor's mode — e.g. submitting
+  // on Shift+Enter, or on Enter only when the content is "complete".
+  def submits(event: TerminalEvent, state: question): Boolean = event match
     case Keypress.Enter => true
     case _              => false
 
@@ -115,10 +120,10 @@ trait Interaction[result, question]:
 
     if !events.hasNext then Unset
     else events.next() match
-      case Keypress.Ctrl('C' | 'D') => Unset
-      case Keypress.Escape          => Unset
-      case event if submits(event)  => result(state)
-      case other                    => recur(events, key(state, other), state)(key)
+      case Keypress.Ctrl('C' | 'D')       => Unset
+      case Keypress.Escape                => Unset
+      case event if submits(event, state) => result(state)
+      case other                          => recur(events, key(state, other), state)(key)
 
 
   def apply(events: Iterator[TerminalEvent], state: question)
