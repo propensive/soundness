@@ -61,9 +61,12 @@ import threading.platform
 // A front-end for a Colloquy REPL. With a TCP port, `colloquy serve <port>` runs a
 // server and `colloquy <port>` connects to one on localhost. With no port,
 // `colloquy serve` opens a per-process UNIX domain socket (named after the JVM's
-// PID, under the XDG runtime dir) and `colloquy` connects to it — picking the lone
-// running server, or listing them if there are several. Either way the client
-// drives an interactive, live-highlighted session until Ctrl+D, Ctrl+C or `/quit`.
+// PID, under the XDG runtime dir) and `colloquy` connects to it — starting its own
+// background server first if none is running (so `colloquy` alone is a self-contained
+// REPL whose session, living in the separate server process, can be reconnected to by
+// running `colloquy` again), picking the lone running server, or listing them if there
+// are several. Either way the client drives an interactive, live-highlighted session
+// until Ctrl+D, Ctrl+C or `/quit`.
 @main
 def repl(): Unit = cli:
   arguments match
@@ -182,6 +185,44 @@ private def unreachableSocket(path: Text)(using Stdio): Exit =
   Out.println(t"colloquy: could not connect to $path")
   Exit.Fail(3)
 
+// Drives an interactive session over a connection, closing it on the way out.
+private def session(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Environment): Exit =
+  try converse(duplex) finally duplex.close()
+
+private def failedToLaunch(using Stdio): Exit =
+  Out.println(t"colloquy: could not start a REPL server")
+  Exit.Fail(3)
+
+// Starts a REPL server in the background — a detached `colloquy serve` process on its
+// own per-process domain socket — waits for it to bind, and connects to it. Because
+// the server is a separate process it outlives this client, so the same session can
+// be reconnected to later by running `colloquy` again. Returns the live connection,
+// or `Unset` if no server became reachable in time.
+private def launchServer()(using Stdio, System): Optional[Duplex] =
+  safely(System.properties.ethereal.script[Text]()).lay(Unset): executable =>
+    val before: List[Text] = socketPaths(socketDirectory)
+
+    val builder = jl.ProcessBuilder(executable.s, "serve")
+    builder.redirectOutput(jl.ProcessBuilder.Redirect.DISCARD)
+    builder.redirectError(jl.ProcessBuilder.Redirect.DISCARD)
+    builder.redirectInput(ji.File("/dev/null"))
+    safely(builder.start())
+
+    var duplex: Optional[Duplex] = Unset
+    var waited: Int              = 0
+
+    // Poll for a new, connectable socket (the socket file appears once it binds).
+    while duplex.absent && waited < 10000 do
+      jl.Thread.sleep(100)
+      waited += 100
+
+      socketPaths(socketDirectory).each: candidate =>
+        if duplex.absent && !before.contains(candidate) then
+          connectDomain(DomainSocket(candidate)).let: connection =>
+            duplex = connection
+
+    duplex
+
 // TEMPORARY keyboard diagnostic. Instead of the editor, print each terminal event
 // as a Profanity `Keypress` (or other `TerminalEvent`), so we can see exactly how
 // keys — including Shift+Enter — are decoded. With `kitty = true` the kitty
@@ -237,17 +278,17 @@ private def socketPaths(directory: Text): List[Text] =
 
   names.to(List)
 
-// Connects to a per-process UNIX domain socket. With exactly one server running,
-// connects to it; with several, lists them and exits so the user can pick.
-private def connectSocket()(using Stdio, Monitor, Codicil, Console, Environment): Exit =
+// Connects to a per-process UNIX domain socket. With no server running, launches one
+// in the background and attaches to it (so `colloquy` alone is a self-contained REPL,
+// reconnectable later); with exactly one, connects to it; with several, lists them.
+private def connectSocket()(using Stdio, Monitor, Codicil, Console, Environment, System): Exit =
   socketPaths(socketDirectory) match
     case Nil =>
-      Out.println(t"colloquy: no running REPL server found (start one with 'colloquy serve')")
-      Exit.Fail(3)
+      Out.println(t"colloquy: starting a REPL server…")
+      launchServer().lay(failedToLaunch)(session(_))
 
     case path :: Nil =>
-      connectDomain(DomainSocket(path)).lay(unreachableSocket(path)): duplex =>
-        try converse(duplex) finally duplex.close()
+      connectDomain(DomainSocket(path)).lay(unreachableSocket(path))(session(_))
 
     case paths =>
       Out.println(t"colloquy: several REPL servers are running:")
