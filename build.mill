@@ -546,7 +546,7 @@ object colloquy extends Library:
 
   object client extends Component(core, ethereal.core, exoskeleton.completions, profanity.core,
                                   coaxial.core, urticose.core, jacinta.core, escapade.core,
-                                  iridescence.core, harlequin.ansi):
+                                  iridescence.core, harlequin.ansi, escritoire.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     override def mainClass: Task.Simple[Option[String]] = Some("colloquy.repl")

@@ -554,16 +554,26 @@ private class LiveState:
       checkpointTokens = tokens
       log = log.filter(_._1 > v)
 
-// Logs tab completions to the screen. A simple first version: it prints below the
-// prompt and disrupts the editor until the next keystroke redraws it.
+// Logs tab completions to the screen as a minimal-bordered Escritoire table. A
+// simple first version: it prints below the prompt and disrupts the editor until
+// the next keystroke redraws it.
 private def logCompletions(completions: List[Repl.CompletionItem])(using Stdio): Unit =
+  import tableStyles.minimal
+  import columnAttenuation.ignore
+  import textMetrics.uniform
+
   Out.print(t"\r\n")
 
-  if completions.isEmpty then
-    Out.print(t"  (no completions)\r\n")
+  if completions.isEmpty then Out.print(t"  (no completions)\r\n")
   else
-    completions.take(20).each: completion =>
-      Out.print(t"  ${completion.name}  ${completion.signature}  (${completion.kind})\r\n")
+    val table =
+      Scaffold[Repl.CompletionItem]
+        ( Column(t"Name")(_.name),
+          Column(t"Kind")(_.kind),
+          Column(t"Signature")(_.signature) )
+
+    table.tabulate(completions.take(20)).grid(80).render.each: line =>
+      Out.print(t"$line\r\n")
 
 // Whether the editor content is "complete" enough to submit on Enter: non-empty
 // with every bracket closed. Open brackets continue the input onto a new line.
