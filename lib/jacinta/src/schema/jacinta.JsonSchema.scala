@@ -33,7 +33,6 @@
 package jacinta
 
 import scala.annotation.*
-import scala.compiletime.summonInline
 
 import adversaria.*
 import anticipation.*
@@ -47,21 +46,37 @@ import urticose.*
 import vacuous.*
 import wisteria.*
 
-// Low-priority home for the fused `Encodable & Schematic` derivation (kept below
-// the single-capability givens in `object JsonSchema`, so a bare `Schematic` or
-// `Encodable` summon is never upgraded to demand the other capability).
-trait JsonSchema2:
-  inline given encodableSchematic: [value: Reflection]
-  =>  value is Encodable & Schematic in Json over JsonSchema =
+// Constructors for fused `Encodable & Schematic` / `Decodable & Schematic`
+// instances, built from a value's separate `Encodable`/`Decodable` and `Schematic`
+// instances. These are deliberately *methods*, not givens: a `Decodable &
+// Schematic` (or `Encodable & Schematic`) given is a subtype of both `Decodable`
+// (resp. `Encodable`) *and* `Schematic`, so as givens the two would be ambiguous
+// for any bare `Schematic` summon and would also be pulled into the recursive
+// `JsonSchema` codec. As methods they never enter implicit resolution; call them
+// where a fused instance is wanted (e.g. `given … = jsonSchematics.decodable[T]`).
+object jsonSchematics:
+  def encodable[value](using encoder: value is Encodable in Json)
+                      (using schema0: value is Schematic over JsonSchema)
+  :     value is Encodable & Schematic in Json over JsonSchema =
     new Encodable with Schematic:
       type Self = value
       type Form = Json
       type Transport = JsonSchema
-      def encoded(value: value): Json = summonInline[value is Encodable in Json].encoded(value)
-      def schema(): JsonSchema = JsonSchema.derived[value].schema()
+      def encoded(value: value): Json = encoder.encoded(value)
+      def schema(): JsonSchema = schema0.schema()
+
+  def decodable[value](using decoder: value is Decodable in Json)
+                      (using schema0: value is Schematic over JsonSchema)
+  :     value is Decodable & Schematic in Json over JsonSchema =
+    new Decodable with Schematic:
+      type Self = value
+      type Form = Json
+      type Transport = JsonSchema
+      def decoded(json: Json): value = decoder.decoded(json)
+      def schema(): JsonSchema = schema0.schema()
 
 
-object JsonSchema extends Derivable[Schematic over JsonSchema], JsonSchema2:
+object JsonSchema extends Derivable[Schematic over JsonSchema]:
   // Schema (`Schematic`) instances. Primitives and collections are single-capability
   // (schema-only); products/sums auto-derive; the fused `Encodable & Schematic`
   // lives at lower priority in `JsonSchema2`.
@@ -101,6 +116,11 @@ object JsonSchema extends Derivable[Schematic over JsonSchema], JsonSchema2:
     () => JsonSchema.Object(additionalProperties = true)
 
   inline given schematic: [value: Reflection] => value is Schematic over JsonSchema = derived
+
+  // A manual schema for `JsonSchema` itself (the recursive schema-of-schemas type),
+  // found in preference to the generic `schematic` derivation, so deriving a schema
+  // that nests `JsonSchema` terminates instead of recursing forever.
+  given jsonSchemaSchematic: JsonSchema is Schematic over JsonSchema = () => JsonSchema.Object()
 
   // `$ref` schemas have no `type` discriminator, so they are handled here
   // explicitly; every other variant is delegated to the `type`-discriminated

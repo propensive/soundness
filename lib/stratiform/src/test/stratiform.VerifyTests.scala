@@ -138,12 +138,22 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
     suite(m"Encodable & Schematic fusion"):
       val worker = Worker(t"Alice", 30)
 
-      test(m"A fused instance encodes (and round-trips) as Tel"):
-        summon[Worker is Encodable & Schematic in Tel over Tels.Type].encoded(worker).as[Worker]
+      test(m"A fused encoder encodes (and round-trips) as Tel"):
+        telSchematics.encodable[Worker].encoded(worker).as[Worker]
       . assert(_ == worker)
 
-      test(m"A fused instance yields a schema"):
-        summon[Worker is Encodable & Schematic in Tel over Tels.Type].schema()
+      test(m"A fused encoder yields a schema"):
+        telSchematics.encodable[Worker].schema()
+      . assert:
+          case _: Tels.Struct => true
+          case _              => false
+
+      test(m"A fused decoder decodes from Tel"):
+        telSchematics.decodable[Worker].decoded(worker.encode)
+      . assert(_ == worker)
+
+      test(m"A fused decoder yields a schema"):
+        telSchematics.decodable[Worker].schema()
       . assert:
           case _: Tels.Struct => true
           case _              => false

@@ -32,10 +32,9 @@
                                                                                                   */
 package stratiform
 
-import scala.compiletime.summonInline
-
 import adversaria.*
 import anticipation.*
+import distillate.*
 import gossamer.*
 import prepositional.*
 import vacuous.*
@@ -43,18 +42,32 @@ import wisteria.*
 
 import Tels.Polarity
 
-// Low-priority home for the fused `Encodable & Schematic` derivation (below the
-// single-capability givens in `Tels2`/`object Tels`, so a bare `Schematic` or
-// `Encodable` summon is never upgraded to require the other capability).
-trait TelsLow:
-  inline given encodableSchematic: [value: Reflection]
-  =>  value is Encodable & Schematic in Tel over Tels.Type =
+// Constructors for fused `Encodable & Schematic` / `Decodable & Schematic`
+// instances, built from a value's separate `Encodable`/`Decodable` and `Schematic`
+// instances. Deliberately *methods*, not givens: a fused given is a subtype of
+// both its codec typeclass and `Schematic`, so two such givens would be ambiguous
+// for any bare `Schematic` summon. Call them where a fused instance is wanted
+// (e.g. `given … = telSchematics.decodable[T]`). Mirrors jacinta's `jsonSchematics`.
+object telSchematics:
+  def encodable[value](using encoder: value is Encodable in Tel)
+                      (using schema0: value is Schematic over Tels.Type)
+  :     value is Encodable & Schematic in Tel over Tels.Type =
     new Encodable with Schematic:
       type Self = value
       type Form = Tel
       type Transport = Tels.Type
-      def encoded(value: value): Tel = summonInline[value is Encodable in Tel].encoded(value)
-      def schema(): Tels.Type = TelsDerivation.derived[value].schema()
+      def encoded(value: value): Tel = encoder.encoded(value)
+      def schema(): Tels.Type = schema0.schema()
+
+  def decodable[value](using decoder: value is Decodable in Tel)
+                      (using schema0: value is Schematic over Tels.Type)
+  :     value is Decodable & Schematic in Tel over Tels.Type =
+    new Decodable with Schematic:
+      type Self = value
+      type Form = Tel
+      type Transport = Tels.Type
+      def decoded(tel: Tel): value = decoder.decoded(tel)
+      def schema(): Tels.Type = schema0.schema()
 
 // TEL refinement of the shared `anticipation.Schematic`: it adds a field-level
 // `polarity` so the product derivation can mark `Optional` fields as `Loose` (TEL
@@ -68,7 +81,7 @@ trait TelSchematic extends Schematic:
 // `Tels.Struct` of `Field`s, collections to a `Struct` with a repeatable `item`
 // field, and `Map` to repeatable `entries` of `key`/`value`. Mixed into `object
 // Tels` so the givens sit in the `Transport` companion's implicit scope.
-trait Tels2 extends TelsLow:
+trait Tels2:
   given text: Text is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
   given string: String is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
   given int: Int is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)

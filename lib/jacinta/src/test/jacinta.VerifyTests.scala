@@ -51,12 +51,23 @@ object VerifyTests extends Suite(m"Jacinta verify tests"):
     suite(m"Encodable & Schematic fusion"):
       val person = Employee(t"Alice", 30, t"a@b.c")
 
-      test(m"A fused instance encodes (and round-trips) as Json"):
-        infer[Employee is Encodable & Schematic in Json over JsonSchema].encoded(person).as[Employee]
+      test(m"A fused encoder encodes (and round-trips) as Json"):
+        jsonSchematics.encodable[Employee].encoded(person).as[Employee]
       . assert(_ == person)
 
-      test(m"A fused instance yields a schema"):
-        infer[Employee is Encodable & Schematic in Json over JsonSchema].schema()
+      test(m"A fused encoder yields a schema"):
+        jsonSchematics.encodable[Employee].schema()
+      . assert:
+          case _: JsonSchema.Object => true
+          case _                    => false
+
+      test(m"A fused decoder decodes from Json"):
+        val json = t"""{"name": "Alice", "age": 30, "email": "a@b.c"}""".read[Json]
+        jsonSchematics.decodable[Employee].decoded(json)
+      . assert(_ == person)
+
+      test(m"A fused decoder yields a schema"):
+        jsonSchematics.decodable[Employee].schema()
       . assert:
           case _: JsonSchema.Object => true
           case _                    => false
@@ -67,6 +78,14 @@ object VerifyTests extends Suite(m"Jacinta verify tests"):
 
       test(m"The schema-only instance still resolves"):
         infer[Employee is Schematic over JsonSchema].schema()
+      . assert:
+          case _: JsonSchema.Object => true
+          case _                    => false
+
+      test(m"A fused instance can be promoted to a local given"):
+        given (Employee is Decodable & Schematic in Json over JsonSchema) =
+          jsonSchematics.decodable[Employee]
+        summon[Employee is Decodable & Schematic in Json over JsonSchema].schema()
       . assert:
           case _: JsonSchema.Object => true
           case _                    => false
