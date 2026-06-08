@@ -273,6 +273,7 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
   val state                 = LiveState()
   val pending               = TrieMap[Int, Int]()                  // tokenize id → version
   val submits               = juc.LinkedBlockingQueue[Repl.Reply]()
+  val completions           = juc.LinkedBlockingQueue[List[Repl.CompletionItem]]()
   val nextId                = juc.atomic.AtomicInteger(1)           // 0 is reserved for submit
   @volatile var live        = true
 
@@ -288,8 +289,10 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
         case Repl.Reply.Tokenized(id, highlight) =>
           pending.remove(id).foreach(state.reconcile(_, highlight))
 
-        case Repl.Reply.Completed(_, completions) =>
-          logCompletions(completions)
+        // Hand completions to the editor thread (which blocks on Tab) rather than
+        // printing them here, so it can redraw the prompt below them.
+        case Repl.Reply.Completed(_, items) =>
+          completions.put(items)
 
         case reply =>
           submits.put(reply)
@@ -301,7 +304,9 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Env
 
   . recover:
       interactive:
-        given Interaction[Text, LineEditor] = liveHighlighting(duplex, state, pending, nextId)
+        given Interaction[Text, LineEditor] =
+          liveHighlighting(duplex, state, pending, nextId, completions)
+
         var running = true
 
         while running do
@@ -554,26 +559,46 @@ private class LiveState:
       checkpointTokens = tokens
       log = log.filter(_._1 > v)
 
-// Logs tab completions to the screen as a minimal-bordered Escritoire table. A
-// simple first version: it prints below the prompt and disrupts the editor until
-// the next keystroke redraws it.
-private def logCompletions(completions: List[Repl.CompletionItem])(using Stdio): Unit =
+// Prints tab completions below the editor as a minimal Escritoire table of name and
+// signature, with no heading row (the header section is dropped from the grid). The
+// caller redraws the prompt afterwards so it reappears beneath the table.
+private def showCompletions(completions: List[Repl.CompletionItem])(using Stdio): Unit =
   import tableStyles.minimal
   import columnAttenuation.ignore
   import textMetrics.uniform
 
   Out.print(t"\r\n")
 
-  if completions.isEmpty then Out.print(t"  (no completions)\r\n")
+  if completions.isEmpty then Out.print(t"(no completions)\r\n")
   else
     val table =
       Scaffold[Repl.CompletionItem]
         ( Column(t"Name")(_.name),
-          Column(t"Kind")(_.kind),
           Column(t"Signature")(_.signature) )
 
-    table.tabulate(completions.take(20)).grid(80).render.each: line =>
+    // `tabulate(…).grid(…)` yields a header section then a body section; dropping the
+    // header (`sections.tail`) renders the rows alone, with no titles or rule.
+    val grid = table.tabulate(completions.take(20)).grid(80)
+
+    Grid(grid.sections.tail, grid.style).render.each: line =>
       Out.print(t"$line\r\n")
+
+// Replaces the partial identifier ending at the cursor with the completion `name`,
+// returning the editor with the cursor just after the inserted text. Used to fill in
+// a unique completion automatically.
+private def insertCompletion(editor: LineEditor, name: Text): LineEditor =
+  val before: String = editor.value.keep(editor.position).s
+  var start:  Int    = before.length
+
+  while start > 0 && isIdentifierChar(before.charAt(start - 1)) do start -= 1
+
+  val prefix: Text = editor.value.keep(start)
+  val suffix: Text = editor.value.skip(editor.position)
+
+  LineEditor(t"$prefix$name$suffix", start + name.length, editor.mode)
+
+private def isIdentifierChar(char: Char): Boolean =
+  jl.Character.isLetterOrDigit(char) || char == '_'
 
 // Whether the editor content is "complete" enough to submit on Enter: non-empty
 // with every bracket closed. Open brackets continue the input onto a new line.
@@ -597,13 +622,18 @@ private def balanced(text: Text): Boolean =
 // waiting on the server), then an async `tokenize` is fired to refine it. Mirrors
 // Profanity's default cursor handling — colour codes are zero-width.
 private def liveHighlighting
-  ( duplex: Duplex, state: LiveState, pending: TrieMap[Int, Int], nextId: juc.atomic.AtomicInteger )
+  ( duplex:      Duplex,
+    state:       LiveState,
+    pending:     TrieMap[Int, Int],
+    nextId:      juc.atomic.AtomicInteger,
+    completions: juc.LinkedBlockingQueue[List[Repl.CompletionItem]] )
   ( using terminal: Terminal )
 :   Interaction[Text, LineEditor] =
 
   new Interaction[Text, LineEditor]:
     given Stdio = terminal.stdio
-    var lastVersion: Int = -1
+    var lastVersion: Int     = -1
+    var redrawFresh: Boolean = false        // draw the next frame fresh, below a table
     override def after(): Unit = Out.println()
 
     def result(editor: LineEditor): Text = editor.value
@@ -613,15 +643,27 @@ private def liveHighlighting
     override def submits(event: TerminalEvent, editor: LineEditor): Boolean =
       editor.submitsOn(event)
 
-    // On Tab, ask the server for completions at the cursor; the reply is logged by
-    // the background reader.
-    override def react(editor: LineEditor, event: TerminalEvent): Unit = event match
+    // On Tab, ask the server for completions at the cursor and block for the reply
+    // (delivered by the background reader). A unique completion is inserted into the
+    // editor automatically; otherwise the candidates are shown as a table and the
+    // editor is flagged to redraw fresh beneath it.
+    override def react(editor: LineEditor, event: TerminalEvent): LineEditor = event match
       case Keypress.Tab =>
         val request = encode(Repl.Request.Complete(0, editor.value, editor.position))
         duplex.send(Stream((request + t"\n\n").data))
+        val candidates: List[Repl.CompletionItem] = completions.take().nn
+
+        candidates match
+          case single :: Nil =>
+            insertCompletion(editor, single.name)
+
+          case _ =>
+            showCompletions(candidates)
+            redrawFresh = true
+            editor
 
       case _ =>
-        ()
+        editor
 
     def render(old: Optional[LineEditor], editor: LineEditor): Unit =
       val cols              = terminal.knownColumns.max(1)
@@ -631,9 +673,14 @@ private def liveHighlighting
       val (version, tokens) = state.record(old.lay(t"")(_.value), editor.value)
       val coloured          = colourful(tokens).render(terminal.stdio.termcap)
 
+      // After a table the cursor sits below it, so ignore the previous frame's
+      // position and draw fresh where the cursor now is.
+      val anchor            = if redrawFresh then Unset else old
+      redrawFresh           = false
+
       Out.print:
         Text.build:
-          old.let: o =>
+          anchor.let: o =>
             val (oldRow, _) = LineEditor.cursorPosition(o.value, o.position, cols)
             if oldRow > 0 then append(t"\e[${oldRow}F") else append(t"\r")
 
