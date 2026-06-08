@@ -32,46 +32,29 @@
                                                                                                   */
 package ultimatum
 
-import profanity.*
-import rudiments.*
-import vacuous.*
+// The content-bearing layout tree built by the `file`/`rank`/`panel` DSL. A
+// `Leaf` pairs a `Sizing` with deferred content (run later, once its rectangle
+// is known, with its `Extent` in context); a `Branch` splits its space among
+// children along an `Axis`. A pane projects to a pure `Frame` for solving (via
+// `frame`) and yields its leaves in order (via `leaves`), so a solved
+// `Placement`'s cells line up one-to-one with the leaves.
+enum Pane:
+  def sizing: Sizing
 
-// Construct a leaf panel: a fractional weight and optional per-axis bounds,
-// plus deferred `content` that runs (with its `Extent` in context) once the
-// layout has been solved and the panel's rectangle is known.
-def panel
-  ( fraction:  Double        = 1.0,
-    minWidth:  Int           = 0,
-    maxWidth:  Optional[Int] = Unset,
-    minHeight: Int           = 0,
-    maxHeight: Optional[Int] = Unset )
-  ( content: Extent ?=> Unit )
-:   Pane =
+  case Leaf(sizing: Sizing, content: Extent => Unit)
+  case Branch(sizing: Sizing, axis: Axis, children: List[Pane])
 
-  val sizing = Sizing(fraction, minWidth, maxWidth, minHeight, maxHeight)
-  Pane.Leaf(sizing, extent => content(using extent))
+  // The pure layout structure, with content discarded, for the solver.
+  def frame: Frame = this match
+    case Leaf(sizing, _)            => Frame.Cell(sizing)
+    case Branch(sizing, axis, kids) => Frame.Split(sizing, axis, kids.map(_.frame))
 
-// A split whose children sit side by side as columns (distributing width).
-def file(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.File, panes.to(List))
+  // The leaves in frame order (left to right for files, top to bottom for ranks).
+  def leaves: List[Pane.Leaf] = this match
+    case leaf: Leaf                 => List(leaf)
+    case Branch(_, _, children)     => children.flatMap(_.leaves)
 
-// A split whose children stack as rows (distributing height).
-def rank(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.Rank, panes.to(List))
-
-// Solve `pane` against `root` and paint each leaf's content into its rectangle.
-// In full-screen mode the layout fills the surface's height; otherwise it takes
-// only the height its content requires.
-def paint(root: Surface, fullScreen: Boolean)(pane: Pane): Unit =
-  val height = if fullScreen then root.height else pane.frame.measure(Axis.Rank).min
-  val placement = pane.frame.arrange(Rect(0, 0, root.width, height))
-
-  pane.leaves.zip(placement.cells).each: pair =>
-    val extent = FlowExtent(root, pair._2)
-    pair._1.content(extent)
-    extent.flush()
-
-  root.flush()
-
-// Solve and paint `pane` across the whole terminal (the common entry point,
-// used inside `interactive`).
-def layout(fullScreen: Boolean = true)(pane: Pane)(using terminal: Terminal): Unit =
-  paint(TerminalSurface(terminal), fullScreen)(pane)
+  // A copy of this pane re-weighted for use as a child of a split.
+  def weight(fraction: Double): Pane = this match
+    case Leaf(sizing, content)      => Leaf(sizing.copy(fraction = fraction), content)
+    case Branch(sizing, axis, kids) => Branch(sizing.copy(fraction = fraction), axis, kids)

@@ -34,12 +34,14 @@ package ultimatum
 
 import turbulence.*
 
-// A virtual, embedded terminal: a `Surface` confined to a `Rect` within a parent
-// surface, together with an `Stdio` so that bare `Out.println` in a panel body
-// flows into the rectangle. The standard implementation, `FlowExtent`, keeps a
+// A virtual, embedded terminal confined to a `Rect` within a parent surface. An
+// `Extent` is both a `Surface` (so widgets position through `move`) and an
+// `Stdio` (so bare `Out.println` in a panel body flows into the rectangle).
+// Because it is an `Stdio`, the `Extent` made available in a panel body shadows
+// any terminal-wide `Stdio` in scope, so output is captured by the panel rather
+// than the whole screen. The standard implementation, `FlowExtent`, keeps a
 // hand-rolled cursor model (wrap at width, scroll at height); the same interface
 // would also admit a heavier yossarian-backed implementation, but nothing here
 // requires one.
-trait Extent extends Surface:
+trait Extent extends Surface, Stdio:
   def rect: Rect
-  def stdio: Stdio

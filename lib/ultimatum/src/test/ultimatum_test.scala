@@ -98,9 +98,9 @@ object Tests extends Suite(m"Ultimatum Tests"):
         flow.render
       . assert(_ == t"   \n   ")
 
-      test(m"Out output through the extent's Stdio flows into the grid"):
+      test(m"Out output through the extent (an Stdio) flows into the grid"):
         val flow = extent(5, 1)
-        given Stdio = flow.stdio
+        given Stdio = flow
         Out.print(t"hi")
         flow.render
       . assert(_ == t"hi   ")
@@ -163,3 +163,31 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val frame = file(cell(Sizing(1.0)), rank(cell(Sizing(1.0)), cell(Sizing(1.0))))
         frame.arrange(Rect(0, 0, 10, 4)).cells
       . assert(_ == List(Rect(0, 0, 5, 4), Rect(5, 0, 5, 2), Rect(5, 2, 5, 2)))
+
+    suite(m"layout / panel DSL"):
+      test(m"side-by-side panels paint at their own offsets, no bleed"):
+        val bytes = ji.ByteArrayOutputStream()
+        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic)
+
+        paint(TerminalSurface(4, 1), fullScreen = true):
+          file(panel()(Out.print(t"AA")), panel()(Out.print(t"BB")))
+
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[1;1HAA\e[1;3HBB")
+
+      test(m"a panel's output wraps and scrolls within its own rectangle, no bleed"):
+        val bytes = ji.ByteArrayOutputStream()
+        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic)
+
+        // "HELLO" in a 2x1 panel wraps and scrolls until only "O" remains; the
+        // sibling panel's "X" is unaffected, so neither bleeds past column 2.
+        paint(TerminalSurface(4, 1), fullScreen = true):
+          file(panel()(Out.print(t"HELLO")), panel()(Out.print(t"X")))
+
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[1;1HO \e[1;3HX ")
+
+      test(m"a fixed-minimum panel squeezes its fractional sibling"):
+        val frame = file(panel(minWidth = 8)(()), panel()(())).frame
+        frame.arrange(Rect(0, 0, 10, 1)).cells.map(_.width)
+      . assert(_ == List(8, 2))
