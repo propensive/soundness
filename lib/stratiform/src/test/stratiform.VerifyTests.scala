@@ -57,6 +57,15 @@ case class TextAge(name: Text, age: Text) derives CanEqual
 case class Nicked(name: Text, nick: Optional[Text]) derives CanEqual
 case class Config(name: Text, prefs: Map[Text, Int]) derives CanEqual
 
+// A type whose TEL codec routes through its `… in Text` codec (a scalar atom),
+// although structurally it would derive a `Struct`. Used to check the fused TEL
+// schema is coherent with the codec (a `Scalar`), not the derived structure.
+enum Tint derives CanEqual:
+  case Pale, Deep
+
+object Tint:
+  given encodable: Tint is Encodable in Text = _.toString.tt.lower
+
 def keywords(struct: Tels.Struct): List[Text] = struct.members.to(List).collect:
   case field: Tels.Field => field.keyword
 
@@ -135,6 +144,13 @@ object VerifyTests extends Suite(m"Stratiform verify tests"):
         . flatten.collect:
             case struct: Tels.Struct => keywords(struct)
       . assert(_ == List(List(t"key", t"value")))
+
+    suite(m"Schema coherence (the carried shape tracks the codec)"):
+      test(m"A Text-branch encoder's fused TEL schema is a Scalar, matching the codec"):
+        telSchematics.encodable[Tint].schema()
+      . assert:
+          case _: Tels.Scalar => true
+          case _              => false
 
     suite(m"Encodable & Schematic fusion"):
       val worker = Worker(t"Alice", 30)

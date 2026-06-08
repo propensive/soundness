@@ -46,6 +46,17 @@ case class Workplace(street: Text, city: Text) derives CanEqual
 case class Posting(employee: Employee, workplace: Workplace) derives CanEqual
 case class Squad(lead: Text, members: List[Employee]) derives CanEqual
 
+// A type whose JSON codec routes through its `… in Text` codec (it encodes as a
+// string), even though structurally it would derive an object/`oneOf` schema.
+// Used to demonstrate that the *fused* schema is coherent with the codec — a
+// string — rather than the independently-derived object that the old fusion
+// (which summoned `Schematic` separately) would have paired with it.
+enum Hue derives CanEqual:
+  case Crimson, Viridian
+
+object Hue:
+  given encodable: Hue is Encodable in Text = _.toString.tt.lower
+
 object VerifyTests extends Suite(m"Jacinta verify tests"):
   def run(): Unit =
     suite(m"Encodable & Schematic fusion"):
@@ -86,6 +97,19 @@ object VerifyTests extends Suite(m"Jacinta verify tests"):
         given (Employee is Decodable & Schematic in Json over JsonSchema) =
           jsonSchematics.decodable[Employee]
         summon[Employee is Decodable & Schematic in Json over JsonSchema].schema()
+      . assert:
+          case _: JsonSchema.Object => true
+          case _                    => false
+
+    suite(m"Schema coherence (the carried shape tracks the codec)"):
+      test(m"A Text-branch encoder's fused schema is a String, matching the codec"):
+        jsonSchematics.encodable[Hue].schema()
+      . assert:
+          case _: JsonSchema.String => true
+          case _                    => false
+
+      test(m"The standalone Schematic still derives the structural Object schema"):
+        infer[Hue is Schematic over JsonSchema].schema()
       . assert:
           case _: JsonSchema.Object => true
           case _                    => false
