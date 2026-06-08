@@ -64,7 +64,7 @@ case class Tels
      scalars:  IArray[Tels.ScalarDefinition],
      selects:  IArray[Tels.SelectDefinition] )
 
-object Tels:
+object Tels extends Tels2:
 
   // Per-axis polarity tristate from §20: "default" means no flag was
   // declared, "loose" means a loosening flag (optional / repeatable)

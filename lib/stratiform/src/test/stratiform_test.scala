@@ -1751,3 +1751,4 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == BintelError.Reason.EmbeddedSchemaUndecodable)
 
     RecordsTests()
+    VerifyTests()

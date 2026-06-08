@@ -161,38 +161,41 @@ object Lsp:
   // is numbered from 0, so its ordinal is used directly.
 
   object DiagnosticSeverity:
-    given encodable: DiagnosticSeverity is Encodable in Json =
-      severity => (severity.ordinal + 1).json
+    given encodable: DiagnosticSeverity is Json.Encodable =
+      Json.Encodable(Shape.Whole)(severity => (severity.ordinal + 1).json)
 
-    given decodable: Tactic[JsonError] => DiagnosticSeverity is Decodable in Json =
-      json => DiagnosticSeverity.fromOrdinal(json.as[Int] - 1)
+    given decodable: Tactic[JsonError] => DiagnosticSeverity is Json.Decodable =
+      Json.Decodable(Shape.Whole)(json => DiagnosticSeverity.fromOrdinal(json.as[Int] - 1))
 
   enum DiagnosticSeverity:
     case Error, Warning, Information, Hint
 
   object MessageType:
-    given encodable: MessageType is Encodable in Json = level => (level.ordinal + 1).json
+    given encodable: MessageType is Json.Encodable =
+      Json.Encodable(Shape.Whole)(level => (level.ordinal + 1).json)
 
-    given decodable: Tactic[JsonError] => MessageType is Decodable in Json =
-      json => MessageType.fromOrdinal(json.as[Int] - 1)
+    given decodable: Tactic[JsonError] => MessageType is Json.Decodable =
+      Json.Decodable(Shape.Whole)(json => MessageType.fromOrdinal(json.as[Int] - 1))
 
   enum MessageType:
     case Error, Warning, Info, Log
 
   object TextDocumentSyncKind:
-    given encodable: TextDocumentSyncKind is Encodable in Json = kind => kind.ordinal.json
+    given encodable: TextDocumentSyncKind is Json.Encodable =
+      Json.Encodable(Shape.Whole)(kind => kind.ordinal.json)
 
-    given decodable: Tactic[JsonError] => TextDocumentSyncKind is Decodable in Json =
-      json => TextDocumentSyncKind.fromOrdinal(json.as[Int])
+    given decodable: Tactic[JsonError] => TextDocumentSyncKind is Json.Decodable =
+      Json.Decodable(Shape.Whole)(json => TextDocumentSyncKind.fromOrdinal(json.as[Int]))
 
   enum TextDocumentSyncKind:
     case None, Full, Incremental
 
   object CompletionItemKind:
-    given encodable: CompletionItemKind is Encodable in Json = kind => (kind.ordinal + 1).json
+    given encodable: CompletionItemKind is Json.Encodable =
+      Json.Encodable(Shape.Whole)(kind => (kind.ordinal + 1).json)
 
-    given decodable: Tactic[JsonError] => CompletionItemKind is Decodable in Json =
-      json => CompletionItemKind.fromOrdinal(json.as[Int] - 1)
+    given decodable: Tactic[JsonError] => CompletionItemKind is Json.Decodable =
+      Json.Decodable(Shape.Whole)(json => CompletionItemKind.fromOrdinal(json.as[Int] - 1))
 
   enum CompletionItemKind:
     case Text, Method, Function, Constructor, Field, Variable, Class, Interface, Module, Property,
@@ -200,10 +203,11 @@ object Lsp:
       Struct, Event, Operator, TypeParameter
 
   object SymbolKind:
-    given encodable: SymbolKind is Encodable in Json = kind => (kind.ordinal + 1).json
+    given encodable: SymbolKind is Json.Encodable =
+      Json.Encodable(Shape.Whole)(kind => (kind.ordinal + 1).json)
 
-    given decodable: Tactic[JsonError] => SymbolKind is Decodable in Json =
-      json => SymbolKind.fromOrdinal(json.as[Int] - 1)
+    given decodable: Tactic[JsonError] => SymbolKind is Json.Decodable =
+      Json.Decodable(Shape.Whole)(json => SymbolKind.fromOrdinal(json.as[Int] - 1))
 
   enum SymbolKind:
     case File, Module, Namespace, Package, Class, Method, Property, Field, Constructor, Enum,

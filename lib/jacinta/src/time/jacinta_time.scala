@@ -39,17 +39,17 @@ import distillate.*
 import prepositional.*
 
 package jsonEncodables:
-  given encodeInstantsAsUnixEpochMilliseconds: Instant is Encodable in Json =
-    instant => Json(instant.long)
+  given encodeInstantsAsUnixEpochMilliseconds: Instant is Json.Encodable =
+    Json.Encodable(Shape.Whole)(instant => Json(instant.long))
 
-  given encodeDurationsAsMilliseconds: Duration is Encodable in Json =
-    duration => Json((duration.value*1000).toLong)
+  given encodeDurationsAsMilliseconds: Duration is Json.Encodable =
+    Json.Encodable(Shape.Whole)(duration => Json((duration.value*1000).toLong))
 
 package jsonDecodables:
-  given decodeInstantsAsUnixEpochMilliseconds: Tactic[JsonError] => Instant is Decodable in Json =
-    json =>
+  given decodeInstantsAsUnixEpochMilliseconds: Tactic[JsonError] => Instant is Json.Decodable =
+    Json.Decodable(Shape.Whole): json =>
       import abstractables.instantIsAbstractable
       Instant(json.as[Long])
 
-  given decodeDurationsAsMilliseconds: Tactic[JsonError] => Duration is Decodable in Json =
-    json => Duration(json.as[Long])
+  given decodeDurationsAsMilliseconds: Tactic[JsonError] => Duration is Json.Decodable =
+    Json.Decodable(Shape.Whole)(json => Duration(json.as[Long]))

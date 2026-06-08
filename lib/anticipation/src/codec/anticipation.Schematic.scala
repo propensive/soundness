@@ -30,6 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anticipation
 
-export anticipation.{bytestream, Data, Encodable, Schema, Schematic, Shape}
+import prepositional.*
+
+// The schema of a value's encoding. `Transport` is the schema's own representation
+// (e.g. `JsonSchema` or a TEL `Tels.Type`), so an instance reads `X is Schematic
+// over JsonSchema`. It is a sibling of `Encodable`; the two are commonly fused as
+// `Encodable & Schematic in Json over JsonSchema`, where the wire format (`Form`)
+// comes from `Encodable`. Format-specific given instances live with their format
+// (e.g. in jacinta / stratiform), not here.
+trait Schematic extends Typeclass, Transportive:
+  def schema(): Transport

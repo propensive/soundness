@@ -32,35 +32,127 @@
                                                                                                   */
 package stratiform
 
+import scala.quoted.*
+
 import anticipation.*
-import aviation.*
-import contingency.*
-import distillate.*
+import fulminate.*
+import gigantism.*
 import gossamer.*
 import prepositional.*
+import rudiments.*
+import vacuous.*
 
-// Aviation integration: encode TEL atom values to/from Aviation's
-// Instant and Duration types. Mirroring jacinta.time, the codecs are
-// scoped to package objects so they're imported explicitly and don't
-// clash with project-wide default encodings.
+// Compile-time navigation for schema-typed `Tel` values. A `Tel of P from R`
+// carries a phantom *position* (`Topic = P`, a Scala model type) within a *root
+// schema* (`Origin = R`). The `Dynamic` methods on `Tel` are `transparent inline`
+// and delegate here: when the receiver's position is bound and the field name is a
+// literal, the macro looks the field up in `P`'s structure and yields a `Tel of
+// <field-type> from R`; otherwise it falls back to the plain
+// (`DynamicTelEnabler`-gated) runtime access. Mirrors `jacinta.Jacinta`.
+object Stratiform:
 
-package telEncodables:
-  given encodeInstantsAsUnixEpochMilliseconds: Instant is Tel.Encodable =
-    Tel.Encodable(Shape.Whole)(instant => Tel.scalar(instant.long.toString.tt))
+  private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
+  :     Map[Text, quotes.reflect.TypeRepr] =
 
-  given encodeDurationsAsMilliseconds: Duration is Tel.Encodable =
-    Tel.Encodable(Shape.Whole)(duration => Tel.scalar((duration.value*1000).toLong.toString.tt))
+    import quotes.reflect.*
 
-package telDecodables:
-  given decodeInstantsAsUnixEpochMilliseconds: Tactic[TelError]
-  =>  Instant is Tel.Decodable =
-    Tel.Decodable(Shape.Whole): tel =>
-      import abstractables.instantIsAbstractable
-      try Instant(tel.primaryAtom.s.toLong)
-      catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
+    repr.dealias match
+      case Refinement(parent, name, TypeBounds(_, hi)) => refinements(parent).updated(name.tt, hi)
+      case Refinement(parent, name, info)              => refinements(parent).updated(name.tt, info)
+      case AndType(left, right)                        => refinements(left) ++ refinements(right)
+      case _                                           => Map()
 
-  given decodeDurationsAsMilliseconds: Tactic[TelError]
-  =>  Duration is Tel.Decodable =
-    Tel.Decodable(Shape.Whole): tel =>
-      try Duration(tel.primaryAtom.s.toLong)
-      catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
+  // Builds the refined type `Tel of <position> from <root>`.
+  private def telType(using quotes: Quotes)
+      ( position: quotes.reflect.TypeRepr, root: quotes.reflect.TypeRepr )
+  :     quotes.reflect.TypeRepr =
+
+    import quotes.reflect.*
+
+    Refinement
+      ( Refinement(TypeRepr.of[Tel], "Topic", TypeBounds(position, position)),
+        "Origin",
+        TypeBounds(root, root) )
+
+  // The single ordered-collection element type of `repr`, if it is one.
+  private def elementType(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
+  :     Optional[quotes.reflect.TypeRepr] =
+
+    import quotes.reflect.*
+
+    repr.dealias match
+      case AppliedType(constructor, List(element))
+      if repr <:< TypeRepr.of[Seq[Any]] || constructor.typeSymbol == defn.ArrayClass =>
+        element
+
+      case _ =>
+        Unset
+
+  // Reads `Topic` (position) and `Origin` (root) from a receiver, if present.
+  private def receiver(using quotes: Quotes)(self: Expr[Tel])
+  :     Optional[(quotes.reflect.TypeRepr, quotes.reflect.TypeRepr)] =
+
+    import quotes.reflect.*
+    val members = refinements(self.asTerm.tpe.widen)
+
+    members.at(t"Topic").let: position =>
+      (position, members.at(t"Origin").or(position))
+
+  def select(self: Expr[Tel], field: Expr[String]): Macro[Tel] =
+    import quotes.reflect.*
+
+    def plain: Expr[Tel] =
+      if Expr.summon[DynamicTelEnabler].isEmpty
+      then halt(m"""dynamic field access on an unverified `Tel` requires
+                    `import dynamicTelAccess.enabled` (or verify the value against a schema first)""")
+
+      '{$self.selectField($field)}
+
+    receiver(self) match
+      case (position, root) => field.value match
+        case Some(name) => position.typeSymbol.caseFields.find(_.name == name) match
+          case Some(member) =>
+            telType(position.memberType(member), root).asType.absolve match
+              case '[type result <: Tel; result] =>
+                '{$self.selectField(${Expr(name)}).asInstanceOf[result]}
+
+          case None =>
+            halt(m"the schema position ${position.show} has no field $name")
+
+        case None =>
+          plain
+
+      case _ =>
+        plain
+
+  def applied(self: Expr[Tel], field: Expr[String], idx: Expr[Int]): Macro[Tel] =
+    import quotes.reflect.*
+
+    def plain: Expr[Tel] =
+      if Expr.summon[DynamicTelEnabler].isEmpty
+      then halt(m"""dynamic field access on an unverified `Tel` requires
+                    `import dynamicTelAccess.enabled` (or verify the value against a schema first)""")
+
+      '{$self.selectFieldIndex($field, $idx)}
+
+    receiver(self) match
+      case (position, root) => field.value match
+        case Some(name) => position.typeSymbol.caseFields.find(_.name == name) match
+          case Some(member) =>
+            val element = elementType(position.memberType(member))
+
+            if element.absent
+            then halt(m"the field $name of ${position.show} is not an indexable collection")
+
+            telType(element.vouch, root).asType.absolve match
+              case '[type result <: Tel; result] =>
+                '{$self.selectRepeatedField(${Expr(name)}, $idx).asInstanceOf[result]}
+
+          case None =>
+            halt(m"the schema position ${position.show} has no field $name")
+
+        case None =>
+          plain
+
+      case _ =>
+        plain

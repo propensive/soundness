@@ -37,25 +37,33 @@ import soundness.*
 import charEncoders.utf8
 import strategies.throwUnsafely
 
+// Kept as a top-level object (its own class) rather than nested in `Tests` so the
+// LSP codecs it inlines do not add to the `Tests` class, which — now that each
+// derived JSON codec also carries its `Shape` — would otherwise exceed the JVM
+// per-class size limit.
+object TestServer extends LspServer():
+  def name: Text = t"Test"
+  override def version: Optional[Text] = t"1.0"
+  def capabilities: Lsp.ServerCapabilities = Lsp.ServerCapabilities(hoverProvider = true)
+
+  override def hover(uri: Text, position: Lsp.Position): Optional[Lsp.Hover] =
+    Lsp.Hover(Lsp.MarkupContent(value = t"hi"))
+
+  override def onOpen(document: Lsp.TextDocumentItem)(using LspClient): Unit =
+    summon[LspClient].publishDiagnostics
+      ( document.uri,
+        List
+          ( Lsp.Diagnostic
+              ( range    = Lsp.Range(Lsp.Position(0, 0), Lsp.Position(0, 1)),
+                severity = Lsp.DiagnosticSeverity.Error,
+                message  = t"oops" ) ) )
+
+  // Expand the `serve` dispatch macro once, here, rather than at each test call
+  // site: each expansion inlines a codec (now schema-carrying) for every LSP
+  // method, which repeated would exceed the JVM per-class size limit in `Tests`.
+  lazy val dispatch: Json => Optional[Json] = JsonRpc.serve[Lsp](this)
+
 object Tests extends Suite(m"Exegesis Tests"):
-
-  object TestServer extends LspServer():
-    def name: Text = t"Test"
-    override def version: Optional[Text] = t"1.0"
-    def capabilities: Lsp.ServerCapabilities = Lsp.ServerCapabilities(hoverProvider = true)
-
-    override def hover(uri: Text, position: Lsp.Position): Optional[Lsp.Hover] =
-      Lsp.Hover(Lsp.MarkupContent(value = t"hi"))
-
-    override def onOpen(document: Lsp.TextDocumentItem)(using LspClient): Unit =
-      summon[LspClient].publishDiagnostics
-        ( document.uri,
-          List
-            ( Lsp.Diagnostic
-                ( range    = Lsp.Range(Lsp.Position(0, 0), Lsp.Position(0, 1)),
-                  severity = Lsp.DiagnosticSeverity.Error,
-                  message  = t"oops" ) ) )
-
   def run(): Unit =
     suite(m"Integer enum codecs"):
       test(m"DiagnosticSeverity encodes to its protocol number"):
@@ -85,7 +93,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
     suite(m"Dispatch"):
       test(m"a hover request is answered with the hover result"):
-        val dispatch = JsonRpc.serve[Lsp](TestServer)
+        val dispatch = TestServer.dispatch
 
         val request: Json =
           t"""{"jsonrpc":"2.0","id":1,"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///x"},"position":{"line":0,"character":0}}}"""
@@ -95,7 +103,7 @@ object Tests extends Suite(m"Exegesis Tests"):
       . assert(_ == t"hi")
 
       test(m"opening a document publishes a diagnostic to the client"):
-        val dispatch = JsonRpc.serve[Lsp](TestServer)
+        val dispatch = TestServer.dispatch
 
         val request: Json =
           t"""{"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":"file:///x","languageId":"text","version":1,"text":"hello"}}}"""

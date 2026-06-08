@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export jacinta.{JsonPointerError, JsonSchema, memo, Schematic}
+export jacinta.{JsonPointerError, JsonSchema, memo}
 
 package jsonPointerRegistries:
   export jacinta.jsonPointerRegistries.{fetching, standalone}

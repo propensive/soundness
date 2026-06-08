@@ -42,11 +42,113 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
+import urticose.*
 import vacuous.*
 import wisteria.*
 
+// Constructors for fused `Encodable & Schematic` / `Decodable & Schematic`
+// instances. The schema is taken from the codec itself (`Json.Encodable` /
+// `Json.Decodable` *carry* a `schema()`), never resolved independently, so the
+// fused instance is coherent by construction: a gated or `… in Text`-branch codec
+// always pairs with the schema for exactly what it reads/writes.
+//
+// These are deliberately *methods*, not givens: a `Decodable & Schematic` (or
+// `Encodable & Schematic`) given is a subtype of both its codec typeclass *and*
+// `Schematic`, so as givens the two would be ambiguous for any bare `Schematic`
+// summon. As methods they never enter implicit resolution; call them where a fused
+// instance is wanted (e.g. `given … = jsonSchematics.decodable[T]`).
+object jsonSchematics:
+  def encodable[value](using encoder: value is Json.Encodable)
+  :     value is Encodable & Schematic in Json over JsonSchema =
+    new Encodable with Schematic:
+      type Self = value
+      type Form = Json
+      type Transport = JsonSchema
+      def encoded(value: value): Json = encoder.encoded(value)
+      def schema(): JsonSchema = JsonSchema.reify(encoder.shape())
 
-object JsonSchema extends Derivable[Schematic in JsonSchema]:
+  def decodable[value](using decoder: value is Json.Decodable)
+  :     value is Decodable & Schematic in Json over JsonSchema =
+    new Decodable with Schematic:
+      type Self = value
+      type Form = Json
+      type Transport = JsonSchema
+      def decoded(json: Json): value = decoder.decoded(json)
+      def schema(): JsonSchema = JsonSchema.reify(decoder.shape())
+
+
+object JsonSchema extends Derivable[Schematic over JsonSchema]:
+  // Schema (`Schematic`) instances. Primitives and collections are single-capability
+  // (schema-only); products/sums auto-derive; the fused `Encodable & Schematic`
+  // lives at lower priority in `JsonSchema2`.
+  given byteSchematic: Byte is Schematic over JsonSchema = () => JsonSchema.Integer()
+  given shortSchematic: Short is Schematic over JsonSchema = () => JsonSchema.Integer()
+  given intSchematic: Int is Schematic over JsonSchema = () => JsonSchema.Integer()
+  given longSchematic: Long is Schematic over JsonSchema = () => JsonSchema.Integer()
+  given floatSchematic: Float is Schematic over JsonSchema = () => JsonSchema.Number()
+  given doubleSchematic: Double is Schematic over JsonSchema = () => JsonSchema.Number()
+  given textSchematic: Text is Schematic over JsonSchema = () => JsonSchema.String()
+  given emailSchematic: EmailAddress is Schematic over JsonSchema = () => JsonSchema.String()
+  given booleanSchematic: scala.Boolean is Schematic over JsonSchema = () => JsonSchema.Boolean()
+
+  // Reifies a codec's format-neutral `Shape` (carried by `Json.Encodable` /
+  // `Json.Decodable`) into a concrete `JsonSchema`. This is the bridge that keeps
+  // `jacinta.core` free of any `JsonSchema` dependency while still letting a fused
+  // `Encodable & Schematic` / `Decodable & Schematic` expose a real schema that is
+  // coherent with the codec (since the `Shape` was produced by the codec itself).
+  def reify(shape: Shape): JsonSchema = shape match
+    case Shape.Str            => JsonSchema.String()
+    case Shape.Whole          => JsonSchema.Integer()
+    case Shape.Real           => JsonSchema.Number()
+    case Shape.Bool           => JsonSchema.Boolean()
+    case Shape.Empty          => JsonSchema.Null()
+    case Shape.Any            => JsonSchema.Object(additionalProperties = true)
+    case Shape.Opt(inner)     => JsonSchema.optional(reify(inner))
+    case Shape.Arr(items)     => JsonSchema.Array(items = reify(items))
+    case Shape.Dict(_, _)     => JsonSchema.Object(additionalProperties = true)
+    case Shape.OneOf(variants) =>
+      JsonSchema.Object(oneOf = variants.map(reify), required = List(t"kind"))
+
+    case Shape.Obj(fields, required) =>
+      JsonSchema.Object
+        ( properties = fields.map((label, shape) => (label, reify(shape))).to(Map),
+          required   = required )
+
+  // Marks a schema as optional (used both by the schema-only `Schematic` and by
+  // the schema-carrying `Json.Encodable`/`Json.Decodable` for `Optional`/`Option`).
+  def optional(schema: JsonSchema): JsonSchema = schema match
+    case entity: JsonSchema.Object  => entity.copy(optional = true)
+    case entity: JsonSchema.Integer => entity.copy(optional = true)
+    case entity: JsonSchema.Number  => entity.copy(optional = true)
+    case entity: JsonSchema.String  => entity.copy(optional = true)
+    case entity: JsonSchema.Array   => entity.copy(optional = true)
+    case entity: JsonSchema.Boolean => entity.copy(optional = true)
+    case entity: JsonSchema.Null    => entity.copy(optional = true)
+    case entity: JsonSchema.Ref     => entity.copy(optional = true)
+
+  given optionalSchematic: [value: Schematic over JsonSchema]
+  =>  Optional[value] is Schematic over JsonSchema =
+    () => JsonSchema.optional(value.schema())
+
+  given listSchematic: [value: Schematic over JsonSchema]
+  =>  List[value] is Schematic over JsonSchema =
+    () => JsonSchema.Array(items = value.schema())
+
+  given setSchematic: [value: Schematic over JsonSchema]
+  =>  Set[value] is Schematic over JsonSchema =
+    () => JsonSchema.Array(items = value.schema())
+
+  given mapSchematic: [key: Encodable in Text, value: Schematic over JsonSchema]
+  =>  Map[key, value] is Schematic over JsonSchema =
+    () => JsonSchema.Object(additionalProperties = true)
+
+  inline given schematic: [value: Reflection] => value is Schematic over JsonSchema = derived
+
+  // A manual schema for `JsonSchema` itself (the recursive schema-of-schemas type),
+  // found in preference to the generic `schematic` derivation, so deriving a schema
+  // that nests `JsonSchema` terminates instead of recursing forever.
+  given jsonSchemaSchematic: JsonSchema is Schematic over JsonSchema = () => JsonSchema.Object()
+
   // `$ref` schemas have no `type` discriminator, so they are handled here
   // explicitly; every other variant is delegated to the `type`-discriminated
   // derivation. A `Ref` encodes to a bare `{"$ref": "…"}` object rather than
@@ -55,20 +157,28 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
   private lazy val derivedEncodable: JsonSchema is Encodable in Json =
     Json.EncodableDerivation.derived
 
-  given encodable: JsonSchema is Encodable in Json = value => value match
-    case JsonSchema.Ref(pointer, _, _) =>
-      Json.ast(Json.Ast.obj(IArray("$ref"), IArray(Json.Ast(pointer.encode.s))))
+  // A `Json.Encodable`/`Json.Decodable` (schema-carrying) rather than a plain
+  // codec, so that the `map`/collection codecs — which now require their element
+  // to be a `Json.Encodable`/`Json.Decodable` — resolve `JsonSchema` to *this*
+  // hand-written instance instead of recursively deriving a schema-of-schemas
+  // (which would diverge). The carried `schema()` is a fixed permissive object.
+  given encodable: JsonSchema is Json.Encodable =
+    Json.Encodable(Shape.Any):
+      case JsonSchema.Ref(pointer, _, _) =>
+        val ref = summon[JsonPointer is Encodable in Text].encoded(pointer).s
+        Json.ast(Json.Ast.obj(IArray("$ref"), IArray(Json.Ast(ref))))
 
-    case other =>
-      derivedEncodable.encoded(other)
+      case other =>
+        derivedEncodable.encoded(other)
 
   // Hand-written rather than derived: a JSON-Schema object is discriminated by
   // the *value* of its `type` field (and may carry none, for `$ref`), which the
   // `type`-as-Scala-subtype derivation cannot model. Decoding by hand also
   // keeps the recursion on nested schemas pointed back at this same given.
   given decodable: (Tactic[JsonError], Tactic[JsonPointerError])
-  =>  JsonSchema is Decodable in Json = json =>
-    def field[value: Decodable in Json](name: Text): Optional[value] =
+  =>  JsonSchema is Json.Decodable =
+   Json.Decodable(Shape.Any): json =>
+    def field[value: Json.Decodable](name: Text): Optional[value] =
       json(name).as[Optional[value]]
 
     val reference = json("$ref".tt)
@@ -141,11 +251,11 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
     def variant(json: Json): Json = unsafely(json.updateDynamic("type")(Unset))
 
     def discriminate(json: Json): Optional[Text] =
-      safely(json.selectDynamic("type").as[Text]).let(_.capitalize)
+      safely(json.selectField("type").as[Text]).let(_.capitalize)
 
 
   inline def conjunction[derivation <: Product: ProductReflection]
-  :   derivation is Schematic in JsonSchema =
+  :   derivation is Schematic over JsonSchema =
 
     () =>
       val descriptions = infer[derivation is Annotated by memo] match
@@ -172,7 +282,7 @@ object JsonSchema extends Derivable[Schematic in JsonSchema]:
       Object(properties = map, required = required)
 
 
-  inline def disjunction[derivation: SumReflection]: derivation is Schematic in JsonSchema =
+  inline def disjunction[derivation: SumReflection]: derivation is Schematic over JsonSchema =
     () =>
       val descriptions = infer[Annotated by memo under derivation] match
         case annotated: Annotated.Subtypes => annotated.subtypes
