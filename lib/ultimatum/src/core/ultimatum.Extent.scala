@@ -36,7 +36,7 @@ import profanity.*
 import turbulence.*
 
 // A virtual, embedded terminal confined to a `Rect` within a parent surface. An
-// `Extent` is both a `Surface` (so widgets position through `move`) and an
+// `Extent` is both a `Canvas` (so widgets position through `move`) and an
 // `Stdio` (so bare `Out.println` in a panel body flows into the rectangle).
 // Because it is an `Stdio`, the `Extent` made available in a panel body shadows
 // any terminal-wide `Stdio` in scope, so output is captured by the panel rather
@@ -44,5 +44,5 @@ import turbulence.*
 // hand-rolled cursor model (wrap at width, scroll at height); the same interface
 // would also admit a heavier yossarian-backed implementation, but nothing here
 // requires one.
-trait Extent extends Surface, Stdio:
+trait Extent extends Canvas, Stdio:
   def rect: Rect

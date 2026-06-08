@@ -38,19 +38,19 @@ import escapade.*
 import profanity.*
 import turbulence.*
 
-// A `Surface` confined to a `Rect` of a parent surface, backed by a
+// A `Canvas` confined to a `Rect` of a parent surface, backed by a
 // hand-rolled character grid. Writes flow within the rectangle — text wraps at
 // the rectangle's width and, once the last row fills, the grid scrolls up —
 // exactly like a miniature terminal. Mutations (`put`, `move`, `clear`) update
 // the grid and the local cursor; `flush` paints the grid onto the parent
 // surface, one row at a time, via the parent's `move`/`put` (so positioning is
-// always expressed through the `Surface` interface, never as inline escapes).
+// always expressed through the `Canvas` interface, never as inline escapes).
 //
 // Input is assumed to be plain text: the routing `Stdio` and `put(Text)` lay out
 // characters cell-by-cell, so styled output should arrive through `put(Teletype)`
 // (whose styling is, for now, flattened to its plain text). Wide graphemes are
 // likewise treated as single cells for the moment.
-class FlowExtent(parent: Surface, val rect: Rect) extends Extent:
+class FlowExtent(parent: Canvas, val rect: Rect) extends Extent:
   def width: Int = rect.width
   def height: Int = rect.height
 

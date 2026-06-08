@@ -30,48 +30,43 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ultimatum
+package profanity
 
-import profanity.*
-import rudiments.*
-import vacuous.*
+import anticipation.*
+import denominative.*
+import escapade.*
 
-// Construct a leaf panel: a fractional weight and optional per-axis bounds,
-// plus deferred `content` that runs (with its `Extent` in context) once the
-// layout has been solved and the panel's rectangle is known.
-def panel
-  ( fraction:  Double        = 1.0,
-    minWidth:  Int           = 0,
-    maxWidth:  Optional[Int] = Unset,
-    minHeight: Int           = 0,
-    maxHeight: Optional[Int] = Unset )
-  ( content: Extent ?=> Unit )
-:   Pane =
+object Canvas:
+  // The default surface for a terminal is an inline one: widgets summoned with a
+  // `Terminal` in scope render in place at the cursor. A panel supplies its own
+  // `Extent` (a `Canvas`) in a nearer scope, which shadows this default.
+  given inlineCanvas: (terminal: Terminal) => Canvas = InlineCanvas(terminal)
 
-  val sizing = Sizing(fraction, minWidth, maxWidth, minHeight, maxHeight)
-  Pane.Leaf(sizing, extent => content(using extent))
+// The single abstraction every renderer draws through. All positioning happens
+// by calling `move` (never by printing escape codes inline), so the same widget
+// code can target the real terminal or a clipped sub-rectangle (an `Extent`)
+// without change. Coordinates are surface-local, top-origin `Ordinal`s: `column`
+// is the horizontal cell (x) and `row` the vertical cell (y), both zero-based.
+trait Canvas:
+  def width: Int
+  def height: Int
 
-// A split whose children sit side by side as columns (distributing width).
-def file(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.File, panes.to(List))
+  // Position the cursor at a surface-local cell.
+  def move(column: Ordinal, row: Ordinal): Unit
 
-// A split whose children stack as rows (distributing height).
-def rank(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.Rank, panes.to(List))
+  // Write at the current cursor, advancing it.
+  def put(text: Text): Unit
+  def put(text: Teletype): Unit
 
-// Solve `pane` against `root` and paint each leaf's content into its rectangle.
-// In full-screen mode the layout fills the surface's height; otherwise it takes
-// only the height its content requires.
-def paint(root: Canvas, fullScreen: Boolean)(pane: Pane): Unit =
-  val height = if fullScreen then root.height else pane.frame.measure(Axis.Rank).min
-  val placement = pane.frame.arrange(Rect(0, 0, root.width, height))
+  // Erase the whole surface, or the current row from the cursor onwards.
+  def clear(): Unit
+  def clearLine(): Unit
 
-  pane.leaves.zip(placement.cells).each: pair =>
-    val extent = FlowExtent(root, pair._2)
-    pair._1.content(extent)
-    extent.flush()
+  // Show or hide the hardware cursor.
+  def cursor(visible: Boolean): Unit
 
-  root.flush()
+  // Leave the visible caret at a surface-local cell (after a frame is drawn).
+  def showCaret(column: Ordinal, row: Ordinal): Unit
 
-// Solve and paint `pane` across the whole terminal (the common entry point,
-// used inside `interactive`).
-def layout(fullScreen: Boolean = true)(pane: Pane)(using terminal: Terminal): Unit =
-  paint(TerminalCanvas(terminal), fullScreen)(pane)
+  // Commit a frame; a no-op on an unbuffered surface.
+  def flush(): Unit

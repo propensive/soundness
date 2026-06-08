@@ -38,7 +38,7 @@ import soundness.*
 
 object Tests extends Suite(m"Ultimatum Tests"):
   def run(): Unit =
-    suite(m"TerminalSurface"):
+    suite(m"TerminalCanvas"):
       // Capture everything a surface writes into an in-memory buffer.
       def captured(block: Stdio ?=> Unit): Text =
         val bytes = ji.ByteArrayOutputStream()
@@ -48,22 +48,22 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"move emits an absolute CSI cursor-position sequence"):
         captured: stdio ?=>
-          TerminalSurface(80, 24).move(10.z, 5.z)
+          TerminalCanvas(80, 24).move(10.z, 5.z)
       . assert(_ == t"\e[6;11H")
 
       test(m"move then put places text at the position"):
         captured: stdio ?=>
-          val surface = TerminalSurface(80, 24)
+          val surface = TerminalCanvas(80, 24)
           surface.move(10.z, 5.z)
           surface.put(t"X")
       . assert(_ == t"\e[6;11HX")
 
       test(m"clear erases the whole display"):
-        captured(TerminalSurface(80, 24).clear())
+        captured(TerminalCanvas(80, 24).clear())
       . assert(_ == t"\e[2J")
 
       test(m"hiding the cursor emits the DECTCEM reset"):
-        captured(TerminalSurface(80, 24).cursor(false))
+        captured(TerminalCanvas(80, 24).cursor(false))
       . assert(_ == t"\e[?25l")
 
     suite(m"FlowExtent"):
@@ -71,7 +71,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // the parent surface is unused.
       def extent(width: Int, height: Int): FlowExtent =
         given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
-        FlowExtent(TerminalSurface(width, height), Rect(0, 0, width, height))
+        FlowExtent(TerminalCanvas(width, height), Rect(0, 0, width, height))
 
       test(m"text wraps at the rectangle's width"):
         val flow = extent(3, 2)
@@ -108,7 +108,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       test(m"flush paints the grid onto the parent at the rect's offset"):
         val bytes = ji.ByteArrayOutputStream()
         given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic)
-        val flow = FlowExtent(TerminalSurface(80, 24), Rect(2, 1, 3, 1))
+        val flow = FlowExtent(TerminalCanvas(80, 24), Rect(2, 1, 3, 1))
         flow.put(t"xy")
         flow.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
@@ -169,7 +169,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val bytes = ji.ByteArrayOutputStream()
         given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic)
 
-        paint(TerminalSurface(4, 1), fullScreen = true):
+        paint(TerminalCanvas(4, 1), fullScreen = true):
           file(panel()(Out.print(t"AA")), panel()(Out.print(t"BB")))
 
         String(bytes.toByteArray.nn, "UTF-8").tt
@@ -181,7 +181,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
         // "HELLO" in a 2x1 panel wraps and scrolls until only "O" remains; the
         // sibling panel's "X" is unaffected, so neither bleeds past column 2.
-        paint(TerminalSurface(4, 1), fullScreen = true):
+        paint(TerminalCanvas(4, 1), fullScreen = true):
           file(panel()(Out.print(t"HELLO")), panel()(Out.print(t"X")))
 
         String(bytes.toByteArray.nn, "UTF-8").tt

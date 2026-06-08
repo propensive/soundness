@@ -35,32 +35,32 @@ package profanity
 import anticipation.*
 import denominative.*
 import escapade.*
+import turbulence.*
 
-// The single abstraction every renderer draws through. All positioning happens
-// by calling `move` (never by printing escape codes inline), so the same widget
-// code can target the real terminal or a clipped sub-rectangle (an `Extent`)
-// without change. Coordinates are surface-local, top-origin `Ordinal`s: `column`
-// is the horizontal cell (x) and `row` the vertical cell (y), both zero-based.
-trait Surface:
-  def width: Int
-  def height: Int
+object TerminalCanvas:
+  def apply(width: Int, height: Int)(using Stdio): TerminalCanvas =
+    new TerminalCanvas(width, height)
 
-  // Position the cursor at a surface-local cell.
-  def move(column: Ordinal, row: Ordinal): Unit
+  // Build a surface covering the whole terminal, taking its current size and
+  // writing through its `Stdio`.
+  def apply(terminal: Terminal): TerminalCanvas =
+    new TerminalCanvas(terminal.knownColumns, terminal.knownRows)(using terminal.stdio)
 
-  // Write at the current cursor, advancing it.
-  def put(text: Text): Unit
-  def put(text: Teletype): Unit
+// A `Canvas` over a real terminal: every positioning operation maps to an
+// escapade `csi` sequence, written through the in-scope `Stdio`. It keeps no
+// cursor of its own — `put` lets the terminal advance the hardware cursor
+// naturally, while `move`/`showCaret` set absolute positions. `width`/`height`
+// are fixed at construction; resize is handled by building a fresh surface per
+// frame rather than mutating this one.
+class TerminalCanvas(val width: Int, val height: Int)(using Stdio) extends Canvas:
+  // `csi.cup` takes a 1-based (row, column); our coordinates are 0-based
+  // `Ordinal`s, so `.n1` converts each.
+  def move(column: Ordinal, row: Ordinal): Unit = Out.print(csi.cup(row.n1, column.n1))
 
-  // Erase the whole surface, or the current row from the cursor onwards.
-  def clear(): Unit
-  def clearLine(): Unit
-
-  // Show or hide the hardware cursor.
-  def cursor(visible: Boolean): Unit
-
-  // Leave the visible caret at a surface-local cell (after a frame is drawn).
-  def showCaret(column: Ordinal, row: Ordinal): Unit
-
-  // Commit a frame; a no-op on an unbuffered surface.
-  def flush(): Unit
+  def put(text: Text): Unit = Out.print(text)
+  def put(text: Teletype): Unit = Out.print(text)
+  def clear(): Unit = Out.print(csi.ed(2))
+  def clearLine(): Unit = Out.print(csi.el(0))
+  def cursor(visible: Boolean): Unit = Out.print(csi.dectcem(visible))
+  def showCaret(column: Ordinal, row: Ordinal): Unit = move(column, row)
+  def flush(): Unit = ()

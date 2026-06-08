@@ -35,32 +35,61 @@ package profanity
 import anticipation.*
 import denominative.*
 import escapade.*
+import gossamer.*
 import turbulence.*
 
-object TerminalSurface:
-  def apply(width: Int, height: Int)(using Stdio): TerminalSurface =
-    new TerminalSurface(width, height)
+object InlineCanvas:
+  def apply(terminal: Terminal): InlineCanvas =
+    new InlineCanvas(terminal.knownColumns, terminal.knownRows)(using terminal.stdio)
 
-  // Build a surface covering the whole terminal, taking its current size and
-  // writing through its `Stdio`.
-  def apply(terminal: Terminal): TerminalSurface =
-    new TerminalSurface(terminal.knownColumns, terminal.knownRows)(using terminal.stdio)
+// A `Canvas` that renders a widget "inline" at the terminal's current cursor
+// position, using relative cursor motion. Local coordinates are interpreted
+// relative to the line where rendering began (local row 0) and absolute column 0,
+// so a standalone widget redraws in place — exactly as profanity's widgets did
+// with hand-written escape codes — while being driven through the same move/put
+// `Canvas` API as a panel's `Extent`. The surface tracks its own cursor so that
+// each `move` can be expressed as relative vertical motion plus an absolute
+// column, which is what keeps the widget anchored to the prompt rather than the
+// top-left of the screen.
+class InlineCanvas(val width: Int, val height: Int)(using Stdio) extends Canvas:
+  private var row: Int = 0
+  private var column: Int = 0
 
-// A `Surface` over a real terminal: every positioning operation maps to an
-// escapade `csi` sequence, written through the in-scope `Stdio`. It keeps no
-// cursor of its own — `put` lets the terminal advance the hardware cursor
-// naturally, while `move`/`showCaret` set absolute positions. `width`/`height`
-// are fixed at construction; resize is handled by building a fresh surface per
-// frame rather than mutating this one.
-class TerminalSurface(val width: Int, val height: Int)(using Stdio) extends Surface:
-  // `csi.cup` takes a 1-based (row, column); our coordinates are 0-based
-  // `Ordinal`s, so `.n1` converts each.
-  def move(column: Ordinal, row: Ordinal): Unit = Out.print(csi.cup(row.n1, column.n1))
+  def move(column2: Ordinal, row2: Ordinal): Unit =
+    val targetRow = row2.n0
+    val targetColumn = column2.n0
 
-  def put(text: Text): Unit = Out.print(text)
-  def put(text: Teletype): Unit = Out.print(text)
-  def clear(): Unit = Out.print(csi.ed(2))
+    if targetRow < row then Out.print(csi.cuu(row - targetRow))
+    else if targetRow > row then Out.print(csi.cud(targetRow - row))
+
+    Out.print(csi.cha(targetColumn + 1))
+    row = targetRow
+    column = targetColumn
+
+  def put(text: Text): Unit =
+    val string = text.s
+    var i = 0
+
+    while i < string.length do
+      val char = string.charAt(i)
+
+      if char == '\n' then
+        Out.print(t"\r\n")
+        row += 1
+        column = 0
+      else
+        Out.print(t"$char")
+        column += 1
+
+        if column >= width then
+          column = 0
+          row += 1
+
+      i += 1
+
+  def put(text: Teletype): Unit = put(text.plain)
+  def clear(): Unit = Out.print(csi.ed(0))
   def clearLine(): Unit = Out.print(csi.el(0))
   def cursor(visible: Boolean): Unit = Out.print(csi.dectcem(visible))
-  def showCaret(column: Ordinal, row: Ordinal): Unit = move(column, row)
+  def showCaret(column2: Ordinal, row2: Ordinal): Unit = move(column2, row2)
   def flush(): Unit = ()
