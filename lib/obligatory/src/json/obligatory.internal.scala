@@ -82,7 +82,11 @@ object internal:
                   val cases = rpcMethods.map: method =>
                     val params = method.paramSymss.head.map: param =>
                       param.info.asType.absolve match
-                        case '[param] => Expr.summon[param is Decodable in Json] match
+                        // Summon the schema-carrying `Json.Decodable` rather than a
+                        // plain `Decodable in Json`: for a `Json`-typed parameter the
+                        // latter is ambiguous between jacinta's carrier and
+                        // distillate's universal `generic` identity decoder.
+                        case '[param] => Expr.summon[param is Json.Decodable] match
                           case Some(decoder) =>
                             '{$decoder.decoded(request.params(${Expr(param.name)}))}
                             . asTerm
@@ -232,7 +236,7 @@ object internal:
 
                     . asTerm
                   else result.asType.absolve match
-                    case '[result] => Expr.summon[result is Decodable in Json] match
+                    case '[result] => Expr.summon[result is Json.Decodable] match
                       case Some(decoder) =>
                         Some:
                           ' {
@@ -342,7 +346,7 @@ object internal:
 
             . asTerm
           else result.asType.absolve match
-            case '[result] => Expr.summon[result is Decodable in Json] match
+            case '[result] => Expr.summon[result is Json.Decodable] match
               case Some(decoder) =>
                 Some:
                   ' {

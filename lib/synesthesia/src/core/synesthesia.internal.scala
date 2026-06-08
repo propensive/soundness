@@ -124,10 +124,10 @@ object internal:
 
                       val params = method.paramSymss.head.map: param =>
                         param.info.asType.absolve match
-                          case '[param] => Expr.summon[param is Decodable in Json] match
+                          case '[param] => Expr.summon[param is Json.Decodable] match
                             case Some(decodable) =>
                               ' {
-                                  given param is Decodable in Json = $decodable
+                                  given param is Json.Decodable = $decodable
                                   request(${Expr(param.name)}).as[param]
                                 }
 
