@@ -195,7 +195,7 @@ object soundness extends ScalaModule:
     hyperbole.core, octogenarian.core, revolution.core, umbrageous.plugin, anthology.java,
     harlequin.md, harlequin.ansi, austronesian.core)
 
-  object web extends Bundle(cacophony.core, cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
+  object web extends Bundle(cacophony.core, oldcataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
     telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, /*perihelion.core,*/
@@ -508,6 +508,13 @@ object cardinality extends Library:
   object test extends Tests(core)
 
 object cataclysm extends Library:
+  object core extends Component(zephyrine.core, gossamer.core, turbulence.core,
+      contingency.core, vacuous.core, fulminate.core, denominative.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core)
+
+object oldcataclysm extends Library:
   object core extends Component(anticipation.html, serpentine.core, quantitative.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -1259,7 +1266,7 @@ object satirical extends Library:
   object test extends Tests(core)
 
 object savagery extends Library:
-  object core extends Component(cataclysm.core, xylophone.core, geodesy.core, iridescence.core,
+  object core extends Component(oldcataclysm.core, xylophone.core, geodesy.core, iridescence.core,
     mosquito.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -1367,7 +1374,7 @@ object synesthesia extends Library:
   object test extends Tests(core)
 
 object tarantula extends Library:
-  object core extends Component(jacinta.core, telekinesis.core, cataclysm.core, hallucination.core, diuretic.core, gastronomy.core):
+  object core extends Component(jacinta.core, telekinesis.core, oldcataclysm.core, hallucination.core, diuretic.core, gastronomy.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
@@ -1541,7 +1548,7 @@ val allLibraries: Seq[Library] = Seq(
   honeycomb, hyperbole, hypotenuse, imperial, inimitable, iridescence, jacinta,
   kaleidoscope, larceny, legerdemain, locomotion, mandible, mercator, metamorphose,
   monotonous,
-  mosquito, nomenclature, obligatory, octogenarian, orthodoxy, panopticon, parasite,
+  mosquito, nomenclature, obligatory, octogenarian, oldcataclysm, orthodoxy, panopticon, parasite,
   phoenicia, plutocrat, polaris, polysyllabic, polyvinyl, prepositional, probably, profanity,
   proscenium, punctuation, quantitative, querencia, revolution, rudiments, satirical, savagery,
   scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,

@@ -30,114 +30,80 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package savagery
-
-import scala.collection.immutable.SeqMap
+package oldcataclysm
 
 import anticipation.*
-import oldcataclysm.{Float as _, *}
-import geodesy.*
 import gossamer.*
+import prepositional.*
+import quantitative.*
 import spectacular.*
-import vacuous.*
-import xylophone.*
 
-sealed trait Figure:
-  def xml: Xml
+object ShowProperty:
+  given length: ShowProperty[Length] = _.show
+  given quantity: ShowProperty[Quantity[Seconds[1]]] = quantity => t"${quantity.value}s"
 
-case class Rectangle
-  ( position:   Point,
-    width:      Float,
-    height:     Float,
-    transforms: List[Transform] = Nil )
-extends Figure:
+  given lengthInt: ShowProperty[Int | Length] =
+    case length: Length => length.show
+    case int: Int       => int.show
 
-  def xml: Xml =
-    given showable: Float is Showable = _.toString.tt
-    val attrs = SeqMap.newBuilder[Text, Text]
-    attrs += t"x" -> position.x.show
-    attrs += t"y" -> position.y.show
-    attrs += t"width" -> width.show
-    attrs += t"height" -> height.show
 
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+  given pair: [property: ShowProperty, property2: ShowProperty]
+  =>  ShowProperty[(property, property2)] =
 
-    Element(t"rect", Attributes.from(attrs.result()), IArray())
+    tuple => t"${property.show(tuple(0))} ${property2.show(tuple(1))}"
 
-case class Outline
-  ( ops:        List[Stroke]       = Nil,
-    style:      Optional[CssStyle] = Unset,
-    id:         Optional[SvgId]    = Unset,
-    transforms: List[Transform]    = Nil )
-extends Figure:
 
-  import Stroke.*
+  given triple: [property: ShowProperty, property2: ShowProperty, property3: ShowProperty]
+  =>  ShowProperty[(property, property2, property3)] =
 
-  def xml: Xml =
-    val d: Text = ops.reverse.map(_.encode).join(t" ")
-    val attrs = SeqMap.newBuilder[Text, Text]
-    attrs += t"d" -> d
-    id.let: svgId => attrs += t"id" -> svgId.text
+    tuple =>
+      List
+        ( property.show(tuple(0)),
+          property2.show(tuple(1)),
+          property3.show(tuple(2)) )
 
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+      . join(t" ")
 
-    style.let: css => attrs += t"style" -> css.properties.map(_.text).join(t";")
-    Element(t"path", Attributes.from(attrs.result()), IArray())
 
-  def moveTo(point: Point): Outline = copy(ops = MoveTo(point) :: ops)
-  def lineTo(point: Point): Outline = copy(ops = DrawTo(point) :: ops)
-  def move(vector: Delta): Outline = copy(ops = Move(vector) :: ops)
-  def line(vector: Delta): Outline = copy(ops = Draw(vector) :: ops)
+  given quad
+  :   [ property:  ShowProperty,
+        property2: ShowProperty,
+        property3: ShowProperty,
+        property4: ShowProperty ]
+  =>  ShowProperty[(property, property2, property3, property4)] =
 
-  def curve(ctrl1: Delta, ctrl2: Delta, point: Delta): Outline =
-    copy(ops = Cubic(ctrl1, ctrl2, point) :: ops)
+    tuple =>
+      List
+        ( property.show(tuple(0)),
+          property2.show(tuple(1)),
+          property3.show(tuple(2)),
+          property4.show(tuple(3)) )
 
-  def curveTo(ctrl1: Point, ctrl2: Point, point: Point): Outline =
-    copy(ops = CubicTo(ctrl1, ctrl2, point) :: ops)
+      . join(t" ")
 
-  def curve(ctrl2: Delta, vector: Delta): Outline = copy(ops = Cubic(Unset, ctrl2, vector) :: ops)
-  def curveTo(ctrl2: Point, point: Point): Outline = copy(ops = CubicTo(Unset, ctrl2, point) :: ops)
-  def quadCurve(ctrl1: Delta, vector: Delta): Outline = copy(ops = Quadratic(ctrl1, vector) :: ops)
 
-  def quadCurveTo(ctrl1: Point, point: Point): Outline =
-    copy(ops = QuadraticTo(ctrl1, point) :: ops)
+  given font: ShowProperty[Font] = _.names.map: f =>
+    if f.contains(t" ") then t"'$f'" else f
 
-  def quadCurve(vector: Delta): Outline = copy(ops = Quadratic(Unset, vector) :: ops)
-  def quadCurveTo(point: Point): Outline = copy(ops = QuadraticTo(Unset, point) :: ops)
-  def moveUp(value: Float): Outline = copy(ops = Move(Delta(value, 0.0)) :: ops)
-  def moveDown(value: Float): Outline = copy(ops = Move(Delta(-value, 0.0)) :: ops)
-  def moveLeft(value: Float): Outline = copy(ops = Move(Delta(0.0, -value)) :: ops)
-  def moveRight(value: Float): Outline = copy(ops = Move(Delta(0.0, value)) :: ops)
-  def lineUp(value: Float): Outline = copy(ops = Draw(Delta(value, 0.0)) :: ops)
-  def lineDown(value: Float): Outline = copy(ops = Draw(Delta(-value, 0.0)) :: ops)
-  def lineLeft(value: Float): Outline = copy(ops = Draw(Delta(0.0, -value)) :: ops)
-  def lineRight(value: Float): Outline = copy(ops = Draw(Delta(0.0, value)) :: ops)
-  def closed: Outline = copy(ops = Close :: ops)
+  . join(t", ")
 
-case class Ellipse
-  ( center:     Point,
-    xRadius:    Float,
-    yRadius:    Float,
-    angle:      Angle,
-    transforms: List[Transform] = Nil )
-extends Figure:
+  //given simplePath: ShowProperty[SimplePath] = path => t"url('${path}')"
 
-  def circle: Boolean = xRadius == yRadius
+  given paths: [path: Abstractable across Paths to Text] => ShowProperty[path] =
+    path => t"url('${path.generic}')"
 
-  def xml: Xml =
-    given showable: Float is Showable = _.toString.tt
-    val attrs = SeqMap.newBuilder[Text, Text]
-    attrs += t"cx" -> center.x.show
-    attrs += t"cy" -> center.y.show
+  given text: ShowProperty[Text] = identity(_)
+  given int: ShowProperty[Int] = _.show
 
-    if circle then attrs += t"r" -> xRadius.show
-    else
-      attrs += t"rx" -> xRadius.show
-      attrs += t"ry" -> yRadius.show
+  given chromatic: [chromatic: Chromatic] => ShowProperty[chromatic] = color =>
+    t"rgb(${chromatic.red(color)},${chromatic.green(color)},${chromatic.blue(color)})"
 
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+  //given relative: ShowProperty[Relative] = rel => t"url('$rel')"
+  //given genericPath: ShowProperty[GenericPath] = rel => t"url('$rel')"
+  given propertyValue: ShowProperty[PropertyValue] = _.show
+  given inherity: ShowProperty[Inherit.type] = c => t"inherit"
+  given transparent: ShowProperty[Transparent.type] = c => t"transparent"
+  given initial: ShowProperty[Initial.type] = c => t"initial"
 
-    Element(if circle then t"circle" else t"ellipse", Attributes.from(attrs.result()), IArray())
+trait ShowProperty[-property]:
+  def show(value: property): Text

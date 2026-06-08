@@ -30,114 +30,25 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package savagery
+package cataclysm
 
-import scala.collection.immutable.SeqMap
+import denominative.*
+import fulminate.*
 
-import anticipation.*
-import oldcataclysm.{Float as _, *}
-import geodesy.*
-import gossamer.*
-import spectacular.*
-import vacuous.*
-import xylophone.*
+object CssError:
+  object Reason:
+    given communicable: Reason is Communicable =
+      case UnterminatedComment  => m"a comment was not terminated"
+      case UnterminatedString   => m"a string literal was not terminated"
+      case UnexpectedEnd        => m"the end of the input was reached before a rule was closed"
+      case UnexpectedChar(char) => m"the character $char was not expected here"
 
-sealed trait Figure:
-  def xml: Xml
+  enum Reason(val number: Int) extends Clarification:
+    case UnterminatedComment        extends Reason(1)
+    case UnterminatedString         extends Reason(2)
+    case UnexpectedEnd              extends Reason(3)
+    case UnexpectedChar(char: Char) extends Reason(4)
 
-case class Rectangle
-  ( position:   Point,
-    width:      Float,
-    height:     Float,
-    transforms: List[Transform] = Nil )
-extends Figure:
-
-  def xml: Xml =
-    given showable: Float is Showable = _.toString.tt
-    val attrs = SeqMap.newBuilder[Text, Text]
-    attrs += t"x" -> position.x.show
-    attrs += t"y" -> position.y.show
-    attrs += t"width" -> width.show
-    attrs += t"height" -> height.show
-
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
-
-    Element(t"rect", Attributes.from(attrs.result()), IArray())
-
-case class Outline
-  ( ops:        List[Stroke]       = Nil,
-    style:      Optional[CssStyle] = Unset,
-    id:         Optional[SvgId]    = Unset,
-    transforms: List[Transform]    = Nil )
-extends Figure:
-
-  import Stroke.*
-
-  def xml: Xml =
-    val d: Text = ops.reverse.map(_.encode).join(t" ")
-    val attrs = SeqMap.newBuilder[Text, Text]
-    attrs += t"d" -> d
-    id.let: svgId => attrs += t"id" -> svgId.text
-
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
-
-    style.let: css => attrs += t"style" -> css.properties.map(_.text).join(t";")
-    Element(t"path", Attributes.from(attrs.result()), IArray())
-
-  def moveTo(point: Point): Outline = copy(ops = MoveTo(point) :: ops)
-  def lineTo(point: Point): Outline = copy(ops = DrawTo(point) :: ops)
-  def move(vector: Delta): Outline = copy(ops = Move(vector) :: ops)
-  def line(vector: Delta): Outline = copy(ops = Draw(vector) :: ops)
-
-  def curve(ctrl1: Delta, ctrl2: Delta, point: Delta): Outline =
-    copy(ops = Cubic(ctrl1, ctrl2, point) :: ops)
-
-  def curveTo(ctrl1: Point, ctrl2: Point, point: Point): Outline =
-    copy(ops = CubicTo(ctrl1, ctrl2, point) :: ops)
-
-  def curve(ctrl2: Delta, vector: Delta): Outline = copy(ops = Cubic(Unset, ctrl2, vector) :: ops)
-  def curveTo(ctrl2: Point, point: Point): Outline = copy(ops = CubicTo(Unset, ctrl2, point) :: ops)
-  def quadCurve(ctrl1: Delta, vector: Delta): Outline = copy(ops = Quadratic(ctrl1, vector) :: ops)
-
-  def quadCurveTo(ctrl1: Point, point: Point): Outline =
-    copy(ops = QuadraticTo(ctrl1, point) :: ops)
-
-  def quadCurve(vector: Delta): Outline = copy(ops = Quadratic(Unset, vector) :: ops)
-  def quadCurveTo(point: Point): Outline = copy(ops = QuadraticTo(Unset, point) :: ops)
-  def moveUp(value: Float): Outline = copy(ops = Move(Delta(value, 0.0)) :: ops)
-  def moveDown(value: Float): Outline = copy(ops = Move(Delta(-value, 0.0)) :: ops)
-  def moveLeft(value: Float): Outline = copy(ops = Move(Delta(0.0, -value)) :: ops)
-  def moveRight(value: Float): Outline = copy(ops = Move(Delta(0.0, value)) :: ops)
-  def lineUp(value: Float): Outline = copy(ops = Draw(Delta(value, 0.0)) :: ops)
-  def lineDown(value: Float): Outline = copy(ops = Draw(Delta(-value, 0.0)) :: ops)
-  def lineLeft(value: Float): Outline = copy(ops = Draw(Delta(0.0, -value)) :: ops)
-  def lineRight(value: Float): Outline = copy(ops = Draw(Delta(0.0, value)) :: ops)
-  def closed: Outline = copy(ops = Close :: ops)
-
-case class Ellipse
-  ( center:     Point,
-    xRadius:    Float,
-    yRadius:    Float,
-    angle:      Angle,
-    transforms: List[Transform] = Nil )
-extends Figure:
-
-  def circle: Boolean = xRadius == yRadius
-
-  def xml: Xml =
-    given showable: Float is Showable = _.toString.tt
-    val attrs = SeqMap.newBuilder[Text, Text]
-    attrs += t"cx" -> center.x.show
-    attrs += t"cy" -> center.y.show
-
-    if circle then attrs += t"r" -> xRadius.show
-    else
-      attrs += t"rx" -> xRadius.show
-      attrs += t"ry" -> yRadius.show
-
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
-
-    Element(if circle then t"circle" else t"ellipse", Attributes.from(attrs.result()), IArray())
+case class CssError(reason: CssError.Reason, line: Ordinal, column: Ordinal)(using Diagnostics)
+extends Error(251, reason.number)
+    (m"the CSS could not be parsed at line ${line.n1}, column ${column.n1} because $reason")

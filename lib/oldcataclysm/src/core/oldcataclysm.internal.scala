@@ -30,114 +30,39 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package savagery
+package oldcataclysm
 
-import scala.collection.immutable.SeqMap
+import scala.quoted.*
 
 import anticipation.*
-import oldcataclysm.{Float as _, *}
-import geodesy.*
+import fulminate.*
+import gigantism.*
 import gossamer.*
 import spectacular.*
-import vacuous.*
-import xylophone.*
 
-sealed trait Figure:
-  def xml: Xml
+object internal:
+  def rule(selector: Expr[Selector], props: Expr[Seq[(Label, Any)]]): Macro[CssRule] =
+    '{CssRule($selector, ${read(props)})}
 
-case class Rectangle
-  ( position:   Point,
-    width:      Float,
-    height:     Float,
-    transforms: List[Transform] = Nil )
-extends Figure:
+  def keyframe(name: Expr[String], props: Expr[Seq[(Label, Any)]]): Macro[Keyframe] =
+    '{Keyframe(Text($name), ${read(props)})}
 
-  def xml: Xml =
-    given showable: Float is Showable = _.toString.tt
-    val attrs = SeqMap.newBuilder[Text, Text]
-    attrs += t"x" -> position.x.show
-    attrs += t"y" -> position.y.show
-    attrs += t"width" -> width.show
-    attrs += t"height" -> height.show
+  def read(properties: Expr[Seq[(Label, Any)]]): Macro[CssStyle] =
+    def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[CssProperty]] = exprs match
+      case '{type key <: Label; ($key: key, $value: value)} +: tail =>
+        val exp: Expr[key is PropertyDef[value]] =
+          Expr.summon[key is PropertyDef[value]].getOrElse:
+            val typeName = Type.of[value].show
 
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+            halt
+              ( 413,
+                m"no valid CSS element ${key.valueOrAbort} taking values of type $typeName exists" )
 
-    Element(t"rect", Attributes.from(attrs.result()), IArray())
+        '{CssProperty(Text($key).uncamel.kebab, infer[ShowProperty[value]].show($value))}
+        :: recur(tail)
 
-case class Outline
-  ( ops:        List[Stroke]       = Nil,
-    style:      Optional[CssStyle] = Unset,
-    id:         Optional[SvgId]    = Unset,
-    transforms: List[Transform]    = Nil )
-extends Figure:
+      case _ =>
+        Nil
 
-  import Stroke.*
-
-  def xml: Xml =
-    val d: Text = ops.reverse.map(_.encode).join(t" ")
-    val attrs = SeqMap.newBuilder[Text, Text]
-    attrs += t"d" -> d
-    id.let: svgId => attrs += t"id" -> svgId.text
-
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
-
-    style.let: css => attrs += t"style" -> css.properties.map(_.text).join(t";")
-    Element(t"path", Attributes.from(attrs.result()), IArray())
-
-  def moveTo(point: Point): Outline = copy(ops = MoveTo(point) :: ops)
-  def lineTo(point: Point): Outline = copy(ops = DrawTo(point) :: ops)
-  def move(vector: Delta): Outline = copy(ops = Move(vector) :: ops)
-  def line(vector: Delta): Outline = copy(ops = Draw(vector) :: ops)
-
-  def curve(ctrl1: Delta, ctrl2: Delta, point: Delta): Outline =
-    copy(ops = Cubic(ctrl1, ctrl2, point) :: ops)
-
-  def curveTo(ctrl1: Point, ctrl2: Point, point: Point): Outline =
-    copy(ops = CubicTo(ctrl1, ctrl2, point) :: ops)
-
-  def curve(ctrl2: Delta, vector: Delta): Outline = copy(ops = Cubic(Unset, ctrl2, vector) :: ops)
-  def curveTo(ctrl2: Point, point: Point): Outline = copy(ops = CubicTo(Unset, ctrl2, point) :: ops)
-  def quadCurve(ctrl1: Delta, vector: Delta): Outline = copy(ops = Quadratic(ctrl1, vector) :: ops)
-
-  def quadCurveTo(ctrl1: Point, point: Point): Outline =
-    copy(ops = QuadraticTo(ctrl1, point) :: ops)
-
-  def quadCurve(vector: Delta): Outline = copy(ops = Quadratic(Unset, vector) :: ops)
-  def quadCurveTo(point: Point): Outline = copy(ops = QuadraticTo(Unset, point) :: ops)
-  def moveUp(value: Float): Outline = copy(ops = Move(Delta(value, 0.0)) :: ops)
-  def moveDown(value: Float): Outline = copy(ops = Move(Delta(-value, 0.0)) :: ops)
-  def moveLeft(value: Float): Outline = copy(ops = Move(Delta(0.0, -value)) :: ops)
-  def moveRight(value: Float): Outline = copy(ops = Move(Delta(0.0, value)) :: ops)
-  def lineUp(value: Float): Outline = copy(ops = Draw(Delta(value, 0.0)) :: ops)
-  def lineDown(value: Float): Outline = copy(ops = Draw(Delta(-value, 0.0)) :: ops)
-  def lineLeft(value: Float): Outline = copy(ops = Draw(Delta(0.0, -value)) :: ops)
-  def lineRight(value: Float): Outline = copy(ops = Draw(Delta(0.0, value)) :: ops)
-  def closed: Outline = copy(ops = Close :: ops)
-
-case class Ellipse
-  ( center:     Point,
-    xRadius:    Float,
-    yRadius:    Float,
-    angle:      Angle,
-    transforms: List[Transform] = Nil )
-extends Figure:
-
-  def circle: Boolean = xRadius == yRadius
-
-  def xml: Xml =
-    given showable: Float is Showable = _.toString.tt
-    val attrs = SeqMap.newBuilder[Text, Text]
-    attrs += t"cx" -> center.x.show
-    attrs += t"cy" -> center.y.show
-
-    if circle then attrs += t"r" -> xRadius.show
-    else
-      attrs += t"rx" -> xRadius.show
-      attrs += t"ry" -> yRadius.show
-
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
-
-    Element(if circle then t"circle" else t"ellipse", Attributes.from(attrs.result()), IArray())
+    properties.absolve match
+      case Varargs(exprs) => '{CssStyle(${Expr.ofSeq(recur(exprs))}*)}

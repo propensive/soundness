@@ -30,114 +30,73 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package savagery
-
-import scala.collection.immutable.SeqMap
+package oldcataclysm
 
 import anticipation.*
-import oldcataclysm.{Float as _, *}
-import geodesy.*
 import gossamer.*
 import spectacular.*
-import vacuous.*
-import xylophone.*
 
-sealed trait Figure:
-  def xml: Xml
+object Length:
+  given showable: Length is Showable =
+    case Auto        => t"auto"
+    case Px(value)   => t"${value}px"
+    case Pt(value)   => t"${value}pt"
+    case In(value)   => t"${value}in"
+    case Pc(value)   => t"${value}%"
+    case Cm(value)   => t"${value}cm"
+    case Mm(value)   => t"${value}mm"
+    case Em(value)   => t"${value}em"
+    case Ex(value)   => t"${value}ex"
+    case Ch(value)   => t"${value}ch"
+    case Rem(value)  => t"${value}rem"
+    case Vw(value)   => t"${value}vw"
+    case Vh(value)   => t"${value}vh"
+    case Vmin(value) => t"${value}vmin"
+    case Vmax(value) => t"${value}vmax"
+    case Calc(calc)  => t"calc($calc)"
 
-case class Rectangle
-  ( position:   Point,
-    width:      Float,
-    height:     Float,
-    transforms: List[Transform] = Nil )
-extends Figure:
+enum Length:
+  case Px(value: Double)
+  case Pt(value: Double)
+  case In(value: Double)
+  case Auto
+  case Pc(value: Double)
+  case Cm(value: Double)
+  case Mm(value: Double)
+  case Em(value: Double)
+  case Ex(value: Double)
+  case Ch(value: Double)
+  case Rem(value: Double)
+  case Vw(value: Double)
+  case Vh(value: Double)
+  case Vmin(value: Double)
+  case Vmax(value: Double)
+  case Calc(value: Text)
 
-  def xml: Xml =
-    given showable: Float is Showable = _.toString.tt
-    val attrs = SeqMap.newBuilder[Text, Text]
-    attrs += t"x" -> position.x.show
-    attrs += t"y" -> position.y.show
-    attrs += t"width" -> width.show
-    attrs += t"height" -> height.show
+  @targetName("add")
+  infix def + (dim: Length): Length = infixOp(t" + ", dim)
 
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+  @targetName("sub")
+  infix def - (dim: Length): Length = infixOp(t" - ", dim)
 
-    Element(t"rect", Attributes.from(attrs.result()), IArray())
+  @targetName("mul")
+  infix def * (double: Double): Length = infixOp(t" * ", double)
 
-case class Outline
-  ( ops:        List[Stroke]       = Nil,
-    style:      Optional[CssStyle] = Unset,
-    id:         Optional[SvgId]    = Unset,
-    transforms: List[Transform]    = Nil )
-extends Figure:
+  @targetName("div")
+  infix def / (double: Double): Length = infixOp(t" / ", double)
 
-  import Stroke.*
+  private def infixOp(operator: Text, dim: Length | Double): Length.Calc = this match
+    case Calc(calc) =>
+      dim match
+        case double: Double => Calc(t"($calc)$operator${double}")
+        case Calc(calc2)    => Calc(t"($calc)$operator($calc2)")
+        case length: Length => Calc(t"($calc)$operator$length")
 
-  def xml: Xml =
-    val d: Text = ops.reverse.map(_.encode).join(t" ")
-    val attrs = SeqMap.newBuilder[Text, Text]
-    attrs += t"d" -> d
-    id.let: svgId => attrs += t"id" -> svgId.text
+    case other =>
+      dim match
+        case double: Double => Calc(t"${this.show}$operator$double")
+        case Calc(calc2)    => Calc(t"${this.show}$operator($calc2)")
+        case length: Length => Calc(t"${this.show}$operator$length")
 
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
-
-    style.let: css => attrs += t"style" -> css.properties.map(_.text).join(t";")
-    Element(t"path", Attributes.from(attrs.result()), IArray())
-
-  def moveTo(point: Point): Outline = copy(ops = MoveTo(point) :: ops)
-  def lineTo(point: Point): Outline = copy(ops = DrawTo(point) :: ops)
-  def move(vector: Delta): Outline = copy(ops = Move(vector) :: ops)
-  def line(vector: Delta): Outline = copy(ops = Draw(vector) :: ops)
-
-  def curve(ctrl1: Delta, ctrl2: Delta, point: Delta): Outline =
-    copy(ops = Cubic(ctrl1, ctrl2, point) :: ops)
-
-  def curveTo(ctrl1: Point, ctrl2: Point, point: Point): Outline =
-    copy(ops = CubicTo(ctrl1, ctrl2, point) :: ops)
-
-  def curve(ctrl2: Delta, vector: Delta): Outline = copy(ops = Cubic(Unset, ctrl2, vector) :: ops)
-  def curveTo(ctrl2: Point, point: Point): Outline = copy(ops = CubicTo(Unset, ctrl2, point) :: ops)
-  def quadCurve(ctrl1: Delta, vector: Delta): Outline = copy(ops = Quadratic(ctrl1, vector) :: ops)
-
-  def quadCurveTo(ctrl1: Point, point: Point): Outline =
-    copy(ops = QuadraticTo(ctrl1, point) :: ops)
-
-  def quadCurve(vector: Delta): Outline = copy(ops = Quadratic(Unset, vector) :: ops)
-  def quadCurveTo(point: Point): Outline = copy(ops = QuadraticTo(Unset, point) :: ops)
-  def moveUp(value: Float): Outline = copy(ops = Move(Delta(value, 0.0)) :: ops)
-  def moveDown(value: Float): Outline = copy(ops = Move(Delta(-value, 0.0)) :: ops)
-  def moveLeft(value: Float): Outline = copy(ops = Move(Delta(0.0, -value)) :: ops)
-  def moveRight(value: Float): Outline = copy(ops = Move(Delta(0.0, value)) :: ops)
-  def lineUp(value: Float): Outline = copy(ops = Draw(Delta(value, 0.0)) :: ops)
-  def lineDown(value: Float): Outline = copy(ops = Draw(Delta(-value, 0.0)) :: ops)
-  def lineLeft(value: Float): Outline = copy(ops = Draw(Delta(0.0, -value)) :: ops)
-  def lineRight(value: Float): Outline = copy(ops = Draw(Delta(0.0, value)) :: ops)
-  def closed: Outline = copy(ops = Close :: ops)
-
-case class Ellipse
-  ( center:     Point,
-    xRadius:    Float,
-    yRadius:    Float,
-    angle:      Angle,
-    transforms: List[Transform] = Nil )
-extends Figure:
-
-  def circle: Boolean = xRadius == yRadius
-
-  def xml: Xml =
-    given showable: Float is Showable = _.toString.tt
-    val attrs = SeqMap.newBuilder[Text, Text]
-    attrs += t"cx" -> center.x.show
-    attrs += t"cy" -> center.y.show
-
-    if circle then attrs += t"r" -> xRadius.show
-    else
-      attrs += t"rx" -> xRadius.show
-      attrs += t"ry" -> yRadius.show
-
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
-
-    Element(if circle then t"circle" else t"ellipse", Attributes.from(attrs.result()), IArray())
+  def function(name: Text, right: Length | Double): Length =
+    Calc(t"$name(${infixOp(t", ", right).value})")

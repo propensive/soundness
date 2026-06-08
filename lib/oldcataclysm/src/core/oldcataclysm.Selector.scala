@@ -30,114 +30,103 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package savagery
+package oldcataclysm
 
-import scala.collection.immutable.SeqMap
+import language.dynamics
 
 import anticipation.*
-import oldcataclysm.{Float as _, *}
-import geodesy.*
 import gossamer.*
-import spectacular.*
-import vacuous.*
-import xylophone.*
 
-sealed trait Figure:
-  def xml: Xml
+object Selector:
+  // given childSelector: [selector: Selectable, selector2: Selectable]
+  //     => CompareGreater[selector, selector2, Selector]:
 
-case class Rectangle
-  ( position:   Point,
-    width:      Float,
-    height:     Float,
-    transforms: List[Transform] = Nil )
-extends Figure:
+  //   inline def greaterThan(inline left: selector, inline right: selector2): Selector =
+  //     Selector.Child(selector.selector(left), selector2.selector(right))
 
-  def xml: Xml =
-    given showable: Float is Showable = _.toString.tt
-    val attrs = SeqMap.newBuilder[Text, Text]
-    attrs += t"x" -> position.x.show
-    attrs += t"y" -> position.y.show
-    attrs += t"width" -> width.show
-    attrs += t"height" -> height.show
+  case class Element(element: Text) extends Selector(element):
+    def normalize: Selector = this
 
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+  case class Before(left: Selector, right: Selector)
+  extends Selector(t"${left.value}~${right.value}"):
+    def normalize: Selector = left.normalize match
+      case Or(a, b) => Or(Before(a, right).normalize, Before(b, right).normalize)
 
-    Element(t"rect", Attributes.from(attrs.result()), IArray())
+      case left =>
+        right.normalize match
+          case Or(a, b) => Or(Before(left, a).normalize, Before(left, b).normalize)
+          case right    => Before(left, right)
 
-case class Outline
-  ( ops:        List[Stroke]       = Nil,
-    style:      Optional[CssStyle] = Unset,
-    id:         Optional[SvgId]    = Unset,
-    transforms: List[Transform]    = Nil )
-extends Figure:
+  case class After(left: Selector, right: Selector)
+  extends Selector(t"${left.value}+${right.value}"):
+    def normalize: Selector = left.normalize match
+      case Or(a, b) => Or(After(a, right).normalize, After(b, right).normalize)
 
-  import Stroke.*
+      case left =>
+        right.normalize match
+          case Or(a, b) => Or(After(left, a).normalize, After(left, b).normalize)
+          case right    => After(left, right)
 
-  def xml: Xml =
-    val d: Text = ops.reverse.map(_.encode).join(t" ")
-    val attrs = SeqMap.newBuilder[Text, Text]
-    attrs += t"d" -> d
-    id.let: svgId => attrs += t"id" -> svgId.text
+  case class Id(id: Text) extends Selector(t"#$id"):
+    def normalize: Selector = this
 
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+  case class Class(cls: Text) extends Selector(t".$cls"):
+    def normalize: Selector = this
 
-    style.let: css => attrs += t"style" -> css.properties.map(_.text).join(t";")
-    Element(t"path", Attributes.from(attrs.result()), IArray())
+  case class PseudoClass(name: Text) extends Selector(t":$name"):
+    def normalize: Selector = this
 
-  def moveTo(point: Point): Outline = copy(ops = MoveTo(point) :: ops)
-  def lineTo(point: Point): Outline = copy(ops = DrawTo(point) :: ops)
-  def move(vector: Delta): Outline = copy(ops = Move(vector) :: ops)
-  def line(vector: Delta): Outline = copy(ops = Draw(vector) :: ops)
+  case class And(left: Selector, right: Selector)
+  extends Selector(t"${left.value}${right.value}"):
+    def normalize: Selector = left.normalize match
+      case Or(a, b) => Or(And(a, right).normalize, And(b, right).normalize)
 
-  def curve(ctrl1: Delta, ctrl2: Delta, point: Delta): Outline =
-    copy(ops = Cubic(ctrl1, ctrl2, point) :: ops)
+      case left =>
+        right.normalize match
+          case Or(a, b) => Or(And(left, a).normalize, And(left, b).normalize)
+          case right    => And(left, right)
 
-  def curveTo(ctrl1: Point, ctrl2: Point, point: Point): Outline =
-    copy(ops = CubicTo(ctrl1, ctrl2, point) :: ops)
+  case class Or(left: Selector, right: Selector)
+  extends Selector(t"${left.value}, ${right.value}"):
+    def normalize: Selector = Or(left.normalize, right.normalize)
 
-  def curve(ctrl2: Delta, vector: Delta): Outline = copy(ops = Cubic(Unset, ctrl2, vector) :: ops)
-  def curveTo(ctrl2: Point, point: Point): Outline = copy(ops = CubicTo(Unset, ctrl2, point) :: ops)
-  def quadCurve(ctrl1: Delta, vector: Delta): Outline = copy(ops = Quadratic(ctrl1, vector) :: ops)
+  case class Descendant(left: Selector, right: Selector)
+  extends Selector(t"${left.value} ${right.value}"):
+    def normalize: Selector = left.normalize match
+      case Or(a, b) => Or(Descendant(a, right).normalize, Descendant(b, right).normalize)
 
-  def quadCurveTo(ctrl1: Point, point: Point): Outline =
-    copy(ops = QuadraticTo(ctrl1, point) :: ops)
+      case left =>
+        right.normalize match
+          case Or(a, b) => Or(Descendant(left, a).normalize, Descendant(left, b).normalize)
+          case right    => Descendant(left, right)
 
-  def quadCurve(vector: Delta): Outline = copy(ops = Quadratic(Unset, vector) :: ops)
-  def quadCurveTo(point: Point): Outline = copy(ops = QuadraticTo(Unset, point) :: ops)
-  def moveUp(value: Float): Outline = copy(ops = Move(Delta(value, 0.0)) :: ops)
-  def moveDown(value: Float): Outline = copy(ops = Move(Delta(-value, 0.0)) :: ops)
-  def moveLeft(value: Float): Outline = copy(ops = Move(Delta(0.0, -value)) :: ops)
-  def moveRight(value: Float): Outline = copy(ops = Move(Delta(0.0, value)) :: ops)
-  def lineUp(value: Float): Outline = copy(ops = Draw(Delta(value, 0.0)) :: ops)
-  def lineDown(value: Float): Outline = copy(ops = Draw(Delta(-value, 0.0)) :: ops)
-  def lineLeft(value: Float): Outline = copy(ops = Draw(Delta(0.0, -value)) :: ops)
-  def lineRight(value: Float): Outline = copy(ops = Draw(Delta(0.0, value)) :: ops)
-  def closed: Outline = copy(ops = Close :: ops)
+  case class Child(left: Selector, right: Selector)
+  extends Selector(t"${left.value}>${right.value}"):
+    def normalize: Selector = left.normalize match
+      case Or(a, b) => Or(Child(a, right).normalize, Child(b, right).normalize)
 
-case class Ellipse
-  ( center:     Point,
-    xRadius:    Float,
-    yRadius:    Float,
-    angle:      Angle,
-    transforms: List[Transform] = Nil )
-extends Figure:
+      case left =>
+        right.normalize match
+          case Or(a, b) => Or(Child(left, a).normalize, Child(left, b).normalize)
+          case right    => Child(left, right)
 
-  def circle: Boolean = xRadius == yRadius
+sealed trait Selector(val value: Text):
+  inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): CssRule =
+    ${oldcataclysm.internal.rule('this, 'properties)}
 
-  def xml: Xml =
-    given showable: Float is Showable = _.toString.tt
-    val attrs = SeqMap.newBuilder[Text, Text]
-    attrs += t"cx" -> center.x.show
-    attrs += t"cy" -> center.y.show
+  def normalize: Selector
 
-    if circle then attrs += t"r" -> xRadius.show
-    else
-      attrs += t"rx" -> xRadius.show
-      attrs += t"ry" -> yRadius.show
+  @targetName("or")
+  infix def | (that: Selector): Selector = Selector.Or(this, that)
 
-    if transforms.nonEmpty
-    then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
+  @targetName("descendant")
+  infix def >> (that: Selector): Selector = Selector.Descendant(this, that)
 
-    Element(if circle then t"circle" else t"ellipse", Attributes.from(attrs.result()), IArray())
+  @targetName("after")
+  infix def + (that: Selector): Selector = Selector.After(this, that)
+
+  @targetName("and")
+  infix def & (that: Selector): Selector = Selector.And(this, that)
+
+  @targetName("before")
+  infix def ~ (that: Selector): Selector = Selector.Before(this, that)
