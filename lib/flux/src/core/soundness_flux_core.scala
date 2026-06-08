@@ -32,18 +32,4 @@
                                                                                                   */
 package soundness
 
-export
-  profanity
-  . { Console, CtrlChar, DismissError, Interaction, interactive, Interactivity, Keyboard,
-      Keypress, LineEditor, Question, SelectMenu, Signal, SignalResponse, stdio, Canvas,
-      Terminal, TerminalError, TerminalEvent, TerminalFeature, TerminalInfo, TerminalCanvas,
-      UnixSignal, WindowsSignal }
-
-package keyboards:
-  export profanity.keyboards.{numeric, raw, standard}
-
-package terminalFeatures:
-  export
-    profanity.terminalFeatures
-    . { bracketedPaste, focusReporting, mouseTracking, alternateScreen, kittyKeyboard,
-        backgroundColor, terminalSize }
+export flux.Repl

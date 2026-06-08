@@ -175,7 +175,7 @@ object soundness extends ScalaModule:
 
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi,
-    eucalyptus.syslog, guillotine.core, escapade.core, imperial.core, profanity.core,
+    eucalyptus.syslog, guillotine.core, escapade.csi, escapade.core, imperial.core, profanity.core,
     surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core)
 
   object data extends Bundle(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
@@ -231,15 +231,16 @@ object groupCheck extends Module:
     "anticipation.http", "anticipation.log", "anticipation.opaque",
     "anticipation.path", "anticipation.print", "anticipation.text",
     "anticipation.time", "anticipation.url",
-    "beneficence.core", "beneficence.plugin", "dendrology.demo",
+    "beneficence.core", "beneficence.plugin",
+    "dendrology.demo",
     "ethereal.example", "exegesis.demo", "exoskeleton.args", "exoskeleton.core",
-    "exoskeleton.rig", "frontier.plugin", "probably.coverage",
+    "exoskeleton.rig", "flux.client", "flux.core", "frontier.plugin", "probably.coverage",
     "quantitative.units",
 
     "bitumen.core", "breviloquence.core", "cordillera.core", "distillate.core",
     "embarcadero.oci", "exegesis.core", "gigantism.core", "locomotion.core",
     "embarcadero.containerd", "obligatory.grpc", "proscenium.core", "satirical.core",
-    "stenography.core", "ypsiloid.core"
+    "stenography.core", "ultimatum.core", "ypsiloid.core"
   )
 
   def validate(): Command[Unit] = Task.Command:
@@ -356,11 +357,7 @@ object anthology extends Library:
   object bundle extends Component(core, zeppelin.core, revolution.core, eucalyptus.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object repl extends Component(`scala`, inimitable.core, coaxial.core, eucalyptus.core, stratiform.core):
-    override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-    def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
-  object test extends Tests(`scala`, `java`, core, repl, spectacular.core)
+  object test extends Tests(`scala`, `java`, core, spectacular.core)
 
 object anticipation extends Library:
   object generic extends Component(prepositional.core):
@@ -643,7 +640,10 @@ object enigmatic extends Library:
       super.forkArgs() ++ Seq("--enable-native-access=ALL-UNNAMED")
 
 object escapade extends Library:
-  object core extends Component(anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core, escritoire.core):
+  object csi extends Component(gossamer.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object core extends Component(csi, anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core, escritoire.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, yossarian.core)
@@ -822,6 +822,47 @@ object exoskeleton extends Library:
         mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
   object test extends Tests(rig)
+
+object flux extends Library:
+  object core extends Component(anthology.`scala`, inimitable.core, coaxial.core, eucalyptus.core,
+                                jacinta.core, harlequin.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+    def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
+
+  object client extends Component(core, ethereal.core, exoskeleton.completions, profanity.core,
+                                  coaxial.core, urticose.core, jacinta.core, escapade.core,
+                                  iridescence.core, harlequin.ansi, escritoire.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+    override def mainClass: Task.Simple[Option[String]] = Some("flux.repl")
+
+    def bin(): Command[PathRef] = Task.Command:
+      val jar = assembly().path
+      val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "flux"
+      os.makeDir.all(target / os.up)
+      os.remove.all(target)
+
+      val runnersBase = ethereal.core.rustRunners().path / "ethereal"
+      val staging = Task.dest / "staging"
+      os.makeDir.all(staging)
+
+      ethereal.core.rustTargets.foreach: (_, label, binary) =>
+        val ext = if binary.endsWith(".exe") then ".exe" else ""
+        os.copy.over(runnersBase / s"runner-$label$ext", staging / s"runner-$label$ext")
+
+      os.copy.over(jar, staging / "data")
+
+      val classpath =
+        ziggurat.core.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
+
+      os.proc("java", "-cp", classpath, "ziggurat.Xeq", "installer", target.toString, staging.toString)
+        .call(stdout = os.Inherit, stderr = os.Inherit)
+
+      new java.io.File(target.toString).setExecutable(true)
+      PathRef(target)
+
+  object test extends Tests(core, spectacular.core)
 
 object frontier extends Library:
   object plugin extends BareComponent():
@@ -1164,7 +1205,8 @@ object probably extends Library:
   object test extends Tests(cli)
 
 object profanity extends Library:
-  object core extends Component(ambience.core, eucalyptus.core, diuretic.core, iridescence.core, quantitative.units):
+  object core extends Component(ambience.core, eucalyptus.core, diuretic.core, iridescence.core,
+                                quantitative.units, frontier.core, escapade.csi):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, exoskeleton.rig)
@@ -1348,6 +1390,12 @@ object typonym extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
 
+object ultimatum extends Library:
+  object core extends Component(profanity.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core)
+
 object ulysses extends Library:
   object core extends Component(gastronomy.core):
     override def scalacOptions = Task:
@@ -1488,7 +1536,7 @@ val allLibraries: Seq[Library] = Seq(
   decorum, dendrology, denominative, digression, dissonance, distillate, diuretic,
   embarcadero, enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis,
   exoskeleton,
-  frontier, fulminate, galilei, gastronomy, geodesy, gesticulate, gigantism,
+  flux, frontier, fulminate, galilei, gastronomy, geodesy, gesticulate, gigantism,
   gnossienne, gossamer, guillotine, hallucination, harlequin, hellenism, hieroglyph,
   honeycomb, hyperbole, hypotenuse, imperial, inimitable, iridescence, jacinta,
   kaleidoscope, larceny, legerdemain, locomotion, mandible, mercator, metamorphose,
@@ -1498,6 +1546,6 @@ val allLibraries: Seq[Library] = Seq(
   proscenium, punctuation, quantitative, querencia, revolution, rudiments, satirical, savagery,
   scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,
   surveillance, symbolism, synesthesia, tarantula, telekinesis, turbulence, typonym,
-  ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, wisteria, xenophile, xylophone,
+  ultimatum, ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, wisteria, xenophile, xylophone,
   yossarian, ypsiloid, zephyrine, zeppelin, ziggurat
 )

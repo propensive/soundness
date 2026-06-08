@@ -30,20 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package profanity
 
-export
-  profanity
-  . { Console, CtrlChar, DismissError, Interaction, interactive, Interactivity, Keyboard,
-      Keypress, LineEditor, Question, SelectMenu, Signal, SignalResponse, stdio, Canvas,
-      Terminal, TerminalError, TerminalEvent, TerminalFeature, TerminalInfo, TerminalCanvas,
-      UnixSignal, WindowsSignal }
+import anticipation.*
+import turbulence.*
 
-package keyboards:
-  export profanity.keyboards.{numeric, raw, standard}
-
-package terminalFeatures:
-  export
-    profanity.terminalFeatures
-    . { bracketedPaste, focusReporting, mouseTracking, alternateScreen, kittyKeyboard,
-        backgroundColor, terminalSize }
+// A terminal mode that can be turned on and off with a pair of escape sequences —
+// for example bracketed paste, mouse tracking, the alternative screen buffer, or
+// the kitty keyboard protocol. Instances are summoned collectively (as an
+// `Every[TerminalFeature]`) and applied for the duration of an `interactive`
+// session; a feature can also be applied around a block in isolation with `apply`.
+// One-shot queries (a background-colour or size report) are modelled with an empty
+// `disable` sequence.
+case class TerminalFeature(enable: Text, disable: Text):
+  // Emits the turn-on sequence, runs `body`, and always emits the turn-off sequence
+  // afterwards. Requires a `Terminal`, so a feature can only be applied inside a
+  // terminal session; the `Stdio` for writing the sequences is taken from it.
+  def apply[result](body: => result)(using terminal: Terminal): result =
+    given Stdio = terminal.stdio
+    Out.print(enable)
+    try body finally Out.print(disable)

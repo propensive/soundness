@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package flux
 
 import language.adhocExtensions
 

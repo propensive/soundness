@@ -30,20 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ultimatum
 
-export
-  profanity
-  . { Console, CtrlChar, DismissError, Interaction, interactive, Interactivity, Keyboard,
-      Keypress, LineEditor, Question, SelectMenu, Signal, SignalResponse, stdio, Canvas,
-      Terminal, TerminalError, TerminalEvent, TerminalFeature, TerminalInfo, TerminalCanvas,
-      UnixSignal, WindowsSignal }
+import profanity.*
+import turbulence.*
 
-package keyboards:
-  export profanity.keyboards.{numeric, raw, standard}
-
-package terminalFeatures:
-  export
-    profanity.terminalFeatures
-    . { bracketedPaste, focusReporting, mouseTracking, alternateScreen, kittyKeyboard,
-        backgroundColor, terminalSize }
+// A virtual, embedded terminal confined to a `Rect` within a parent surface. An
+// `Extent` is both a `Canvas` (so widgets position through `move`) and an
+// `Stdio` (so bare `Out.println` in a panel body flows into the rectangle).
+// Because it is an `Stdio`, the `Extent` made available in a panel body shadows
+// any terminal-wide `Stdio` in scope, so output is captured by the panel rather
+// than the whole screen. The standard implementation, `FlowExtent`, keeps a
+// hand-rolled cursor model (wrap at width, scroll at height); the same interface
+// would also admit a heavier yossarian-backed implementation, but nothing here
+// requires one.
+trait Extent extends Canvas, Stdio:
+  def rect: Rect

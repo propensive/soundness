@@ -30,20 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ultimatum
 
-export
-  profanity
-  . { Console, CtrlChar, DismissError, Interaction, interactive, Interactivity, Keyboard,
-      Keypress, LineEditor, Question, SelectMenu, Signal, SignalResponse, stdio, Canvas,
-      Terminal, TerminalError, TerminalEvent, TerminalFeature, TerminalInfo, TerminalCanvas,
-      UnixSignal, WindowsSignal }
+// A rectangular region within a surface, in top-origin coordinates. `left` and
+// `top` are zero-based offsets from the enclosing surface's top-left corner;
+// `width` and `height` are cell counts. These are internal layout numbers, so
+// plain `Int`s rather than `Ordinal`s.
+case class Rect(left: Int, top: Int, width: Int, height: Int):
+  def right: Int = left + width
+  def bottom: Int = top + height
 
-package keyboards:
-  export profanity.keyboards.{numeric, raw, standard}
-
-package terminalFeatures:
-  export
-    profanity.terminalFeatures
-    . { bracketedPaste, focusReporting, mouseTracking, alternateScreen, kittyKeyboard,
-        backgroundColor, terminalSize }
+  def contains(column: Int, row: Int): Boolean =
+    left <= column && column < right && top <= row && row < bottom

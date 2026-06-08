@@ -30,20 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ultimatum
 
-export
-  profanity
-  . { Console, CtrlChar, DismissError, Interaction, interactive, Interactivity, Keyboard,
-      Keypress, LineEditor, Question, SelectMenu, Signal, SignalResponse, stdio, Canvas,
-      Terminal, TerminalError, TerminalEvent, TerminalFeature, TerminalInfo, TerminalCanvas,
-      UnixSignal, WindowsSignal }
+// The result of solving a layout: a tree of rectangles mirroring the `Frame`
+// tree that produced it. `cells` lists the leaf rectangles in frame order (left
+// to right for files, top to bottom for ranks).
+enum Placement:
+  def rect: Rect
 
-package keyboards:
-  export profanity.keyboards.{numeric, raw, standard}
+  case Cell(rect: Rect)
+  case Split(rect: Rect, children: List[Placement])
 
-package terminalFeatures:
-  export
-    profanity.terminalFeatures
-    . { bracketedPaste, focusReporting, mouseTracking, alternateScreen, kittyKeyboard,
-        backgroundColor, terminalSize }
+  def cells: List[Rect] = this match
+    case Cell(rect)         => List(rect)
+    case Split(_, children) => children.flatMap(_.cells)

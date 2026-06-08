@@ -30,10 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package profanity
+package soundness
 
-object LuminosityDetection:
-  given default: LuminosityDetection = () => false
-
-trait LuminosityDetection:
-  def apply(): Boolean
+export ultimatum.{Rect, Extent, FlowExtent, Axis, Sizing, Limits, Frame, Placement, Pane, panel,
+    file, rank, layout, paint, Focus, EditorField, MenuField, Form, dirtyCells, editor, menu, form}

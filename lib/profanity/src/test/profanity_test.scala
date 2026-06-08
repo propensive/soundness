@@ -47,6 +47,7 @@ import threading.platform
 
 import strategies.throwUnsafely
 import backstops.silent
+import codicils.cancel
 
 import Shell.*
 
@@ -57,11 +58,6 @@ object Tests extends Suite(m"Profanity Tests"):
           import executives.completions
           import interpreters.posix
           import codicils.cancel
-
-          given BracketedPasteMode      = () => false
-          given LuminosityDetection     = () => false
-          given TerminalFocusDetection  = () => false
-          given TerminalSizeDetection   = () => false
 
           cli:
             arguments match
@@ -263,6 +259,19 @@ object Tests extends Suite(m"Profanity Tests"):
     def edited(events: TerminalEvent*): Optional[Text] =
       noopEditor(events.iterator, LineEditor())(_(_))
 
+    // A no-op interaction whose submit decision follows the editor's own mode.
+    val multilineEditor = new Interaction[Text, LineEditor]:
+      def render(old: Optional[LineEditor], editor: LineEditor): Unit = ()
+      def result(editor: LineEditor): Text = editor.value
+
+      override def submits(event: TerminalEvent, editor: LineEditor): Boolean =
+        editor.submitsOn(event)
+
+    def editedWith(editor: LineEditor)(events: TerminalEvent*): Optional[Text] =
+      multilineEditor(events.iterator, editor)(_(_))
+
+    val shiftSubmit: LineEditor = LineEditor(mode = LineEditor.Mode.Multiline(_ => false))
+
     suite(m"SelectMenu state transitions"):
       test(m"Enter selects the current item"):
         selected(Keypress.Enter)
@@ -333,6 +342,116 @@ object Tests extends Suite(m"Profanity Tests"):
         edited
           ( Keypress.CharKey('h'), Keypress.CharKey('i'), Keypress.Ctrl('U'), Keypress.Enter )
       . assert(_ == t"")
+
+      test(m"Enter inserts a newline and Shift+Enter submits"):
+        editedWith(shiftSubmit)
+          ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('b'),
+            profanity.Keypress.Shift(profanity.Keypress.Enter) )
+      . assert(_ == t"a\nb")
+
+      test(m"the up arrow moves the cursor to the previous line"):
+        editedWith(shiftSubmit)
+          ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('b'), Keypress.Up,
+            Keypress.CharKey('X'), profanity.Keypress.Shift(profanity.Keypress.Enter) )
+      . assert(_ == t"aX\nb")
+
+      test(m"the down arrow moves the cursor to the next line"):
+        editedWith(shiftSubmit)
+          ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('b'), Keypress.Home,
+            Keypress.Up, Keypress.Down, Keypress.CharKey('Y'),
+            profanity.Keypress.Shift(profanity.Keypress.Enter) )
+      . assert(_ == t"a\nYb")
+
+      test(m"a content predicate decides whether Enter submits or inserts a newline"):
+        editedWith(LineEditor(mode = LineEditor.Mode.Multiline(_.contains(t"!"))))
+          ( Keypress.CharKey('a'), Keypress.Enter, Keypress.CharKey('!'), Keypress.Enter )
+      . assert(_ == t"a\n!")
+
+      test(m"react can transform the editor state (e.g. completing on Tab)"):
+        val completingEditor = new Interaction[Text, LineEditor]:
+          def render(old: Optional[LineEditor], editor: LineEditor): Unit = ()
+          def result(editor: LineEditor): Text = editor.value
+
+          override def react(editor: LineEditor, event: TerminalEvent): LineEditor =
+            event match
+              case Keypress.Tab => LineEditor(t"${editor.value}ography")
+              case _            => editor
+
+        completingEditor
+         ( Stream(Keypress.CharKey('g'), Keypress.CharKey('e'), Keypress.Tab,
+                  Keypress.Enter).iterator,
+           LineEditor() )
+         (_(_))
+      . assert(_ == t"geography")
+
+    suite(m"Keyboard decoding"):
+      test(m"Shift+Enter is decoded from its CSI-u sequence"):
+        supervise:
+          Keyboard.Standard().process(Stream('', '[', '1', '3', ';', '2', 'u')).head
+      . assert:
+          case Keypress.Shift(Keypress.Enter) => true
+          case _                              => false
+
+      test(m"plain Enter is decoded from its CSI-u sequence"):
+        supervise:
+          Keyboard.Standard().process(Stream('', '[', '1', '3', 'u')).head
+      . assert:
+          case Keypress.Enter => true
+          case _              => false
+
+      test(m"Escape is decoded from its CSI-u sequence"):
+        supervise:
+          Keyboard.Standard().process(Stream('', '[', '2', '7', 'u')).head
+      . assert:
+          case Keypress.Escape => true
+          case _               => false
+
+      test(m"Ctrl+C is decoded from its CSI-u sequence"):
+        supervise:
+          Keyboard.Standard().process(Stream('', '[', '9', '9', ';', '5', 'u')).head
+      . assert:
+          case Keypress.Ctrl('C') => true
+          case _                  => false
+
+      test(m"a plain letter is decoded from its CSI-u sequence"):
+        supervise:
+          Keyboard.Standard().process(Stream('', '[', '9', '7', 'u')).head
+      . assert:
+          case Keypress.CharKey('a') => true
+          case _                     => false
+
+    suite(m"Terminal features"):
+      test(m"the kitty keyboard feature pushes the protocol on"):
+        terminalFeatures.kittyKeyboard.enable
+      . assert(_ == t"\e[>1u")
+
+      test(m"a query feature has an empty disable sequence"):
+        terminalFeatures.backgroundColor.disable
+      . assert(_ == t"")
+
+      test(m"a by-name imported feature is collected by Every"):
+        import terminalFeatures.kittyKeyboard
+        summon[Every[TerminalFeature]].values.map(_.enable)
+      . assert(_.contains(t"\e[>1u"))
+
+    suite(m"Keypress rendering"):
+      def rendered(keypress: profanity.Keypress): Text = keypress.show
+
+      test(m"a modifier and a special key render with bracketed symbols"):
+        rendered(profanity.Keypress.Shift(profanity.Keypress.Enter))
+      . assert(_ == t"[⇧]+[↵]")
+
+      test(m"a control-letter brackets the letter"):
+        rendered(profanity.Keypress.Ctrl('C'))
+      . assert(_ == t"[⌃]+[C]")
+
+      test(m"an ordinary character is bracketed"):
+        rendered(profanity.Keypress.CharKey('a'))
+      . assert(_ == t"[a]")
+
+      test(m"nested modifiers are joined with plus"):
+        rendered(profanity.Keypress.Ctrl(profanity.Keypress.Shift(profanity.Keypress.Enter)))
+      . assert(_ == t"[⌃]+[⇧]+[↵]")
 
     suite(m"Signal POSIX numbering"):
       test(m"SIGHUP is 1")  (Signal.Hup.id)   .assert(_ == 1)

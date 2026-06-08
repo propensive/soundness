@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package flux
 
 import java.util as ju
 
@@ -42,6 +42,7 @@ import dotty.tools.dotc.ast.tpd
 import dotty.tools.dotc.quoted.PickledQuotes
 
 import ambience.*
+import anthology.*
 import hellenism.*
 
 // Macro support for `Repl.apply(inline body)`: it reads the inline binding

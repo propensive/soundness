@@ -30,10 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package profanity
+package ultimatum
 
-object TerminalFocusDetection:
-  given default: TerminalFocusDetection = () => false
+import vacuous.*
 
-trait TerminalFocusDetection:
-  def apply(): Boolean
+// The resolved minimum and maximum size of a frame along one axis. An `Unset`
+// maximum is unbounded.
+case class Limits(min: Int, max: Optional[Int])

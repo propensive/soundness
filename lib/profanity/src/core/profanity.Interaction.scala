@@ -33,61 +33,69 @@
 package profanity
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import spectacular.*
-import turbulence.*
 import vacuous.*
 
 object Interaction:
-  given selectMenu: [item: Showable] => (terminal: Terminal) => Interaction[item, SelectMenu[item]]:
-    given Stdio = terminal.stdio
-    override def before(): Unit = Out.print(t"\e[?25l")
-    override def after(): Unit = Out.print(t"\e[J\e[?25h")
+  // Both widgets render through a `Canvas`: positioning is `move`/`put`, width
+  // comes from `surface.width`, and the surface decides whether those map to
+  // relative motion at the prompt (a standalone `InlineCanvas`) or absolute
+  // placement within a panel (an `Extent`). The surface is summoned from scope,
+  // so a panel's `Extent` is used automatically when a widget runs inside one.
+  given selectMenu: [item: Showable] => (surface: Canvas) => Interaction[item, SelectMenu[item]]:
+    override def before(): Unit = surface.cursor(false)
+
+    override def after(): Unit =
+      surface.move(Prim, Prim)
+      surface.clear()
+      surface.cursor(true)
+      surface.flush()
 
     def render(old: Optional[SelectMenu[item]], menu: SelectMenu[item]) =
-      val cols = terminal.knownColumns.max(1)
+      val cols = surface.width.max(1)
+      surface.move(Prim, Prim)
+      surface.clear()
+      var row = 0
 
-      Out.print:
-        Text.build:
-          append(t"\e[J")
-          var totalRows = 0
+      menu.options.each: option =>
+        surface.move(Prim, row.z)
+        val full = if option == menu.current then t" > $option" else t"   $option"
+        surface.put(full)
+        row += (full.length - 1)/cols + 1
 
-          menu.options.each: option =>
-            val full = (if option == menu.current then t" > $option" else t"   $option")
-            append(full)
-            append(t"\e[E")
-            totalRows += (full.length - 1)/cols + 1
-
-          if totalRows > 0 then append(t"\e[${totalRows}F")
+      surface.flush()
 
     def result(state: SelectMenu[item]): item = state.current
 
-  given lineEditor: (terminal: Terminal) => Interaction[Text, LineEditor]:
-    given Stdio = terminal.stdio
-    override def after(): Unit = Out.println()
+  given lineEditor: (surface: Canvas) => Interaction[Text, LineEditor]:
+    // The last row the editor's content reached, so `after` can drop the cursor
+    // onto a fresh line below it.
+    private var endRow: Int = 0
 
+    override def after(): Unit =
+      surface.move(Prim, endRow.z)
+      surface.put(t"\n")
+      surface.flush()
+
+    override def submits(event: TerminalEvent, editor: LineEditor): Boolean =
+      editor.submitsOn(event)
+
+    // Redraws the whole editor from its top-left each frame: `cursorPosition`
+    // counts embedded newlines and wrapping (the surface draws each `\n` as a
+    // newline within its own coordinate space), then the caret is placed.
     def render(old: Optional[LineEditor], editor: LineEditor): Unit =
-      val cols = terminal.knownColumns.max(1)
-      val len = editor.value.length
-      val curRow = editor.position/cols
-      val curCol = editor.position%cols
+      val cols             = surface.width.max(1)
+      val (curRow, curCol) = LineEditor.cursorPosition(editor.value, editor.position, cols)
+      endRow = LineEditor.cursorPosition(editor.value, editor.value.length, cols)._1
 
-      Out.print:
-        Text.build:
-          old.let: o =>
-            val oldRow = o.position/cols
-            if oldRow > 0 then append(t"\e[${oldRow}F") else append(t"\r")
-
-          append(t"\e[J")
-          append(editor.value)
-
-          if len > 0 then
-            val printedRows = (len - 1)/cols
-            if printedRows > 0 then append(t"\e[${printedRows}F") else append(t"\r")
-
-          if curRow > 0 then append(t"\e[${curRow}B")
-          if curCol > 0 then append(t"\e[${curCol + 1}G")
+      surface.move(Prim, Prim)
+      surface.clear()
+      surface.put(editor.value)
+      surface.showCaret(curCol.z, curRow.z)
+      surface.flush()
 
     def result(editor: LineEditor): Text = editor.value
 
@@ -97,6 +105,19 @@ trait Interaction[result, question]:
   def render(state: Optional[question], menu: question): Unit
   def after(): Unit = ()
   def result(state: question): result
+
+  // Which event submits the answer, given the current state (default: Enter). A
+  // multi-line editor overrides this to consult the editor's mode — e.g. submitting
+  // on Shift+Enter, or on Enter only when the content is "complete".
+  def submits(event: TerminalEvent, state: question): Boolean = event match
+    case Keypress.Enter => true
+    case _              => false
+
+  // Reacts to an editing event (one that neither submits nor dismisses), returning a
+  // possibly-updated state and performing any side effects — e.g. requesting
+  // completions on Tab and inserting a unique one. Returns the state unchanged by
+  // default.
+  def react(state: question, event: TerminalEvent): question = state
 
 
   @tailrec
@@ -109,10 +130,16 @@ trait Interaction[result, question]:
 
     if !events.hasNext then Unset
     else events.next() match
-      case Keypress.Enter           => result(state)
-      case Keypress.Ctrl('C' | 'D') => Unset
-      case Keypress.Escape          => Unset
-      case other                    => recur(events, key(state, other), state)(key)
+      case Keypress.Ctrl('C' | 'D')       => Unset
+      case Keypress.Escape                => Unset
+      case event if submits(event, state) => result(state)
+
+      case other =>
+        // `react` may transform the state (e.g. inserting a completion); `oldState`
+        // stays the just-rendered `state`, so the next render's cursor maths match
+        // where the cursor actually is.
+        val reacted = react(state, other)
+        recur(events, key(reacted, other), state)(key)
 
 
   def apply(events: Iterator[TerminalEvent], state: question)

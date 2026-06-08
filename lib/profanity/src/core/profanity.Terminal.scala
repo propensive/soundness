@@ -45,12 +45,9 @@ import turbulence.*
 import vacuous.*
 
 object Terminal:
-  def reportBackground: Text = t"\e]11;?\e\\"
+  // The escape sequence to query the terminal size; also used by `terminalSize`
+  // (in `terminalFeatures`) and by the `Winch` (resize) signal handler below.
   def reportSize: Text = t"\e7\e[4095C\e[4095B\e[6n\e8"
-  def enableFocus: Text = t"\e[?1004h"
-  def disableFocus: Text = t"\e[?1004l"
-  def enablePaste: Text = t"\e[?2004h"
-  def disablePaste: Text = t"\e[?2004l"
 
 case class Terminal()
   ( using console: Console, monitor: Monitor, codicil: Codicil, environment: Environment )

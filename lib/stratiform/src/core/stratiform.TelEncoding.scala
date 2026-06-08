@@ -168,8 +168,10 @@ trait Tel2:
             case c: Tel.Compound =>
               compounds += c.copy(keyword = keyword)
 
+            // A list-valued field encodes to a Document of element compounds;
+            // flatten them as repeated fields, each re-keyed to the field label.
             case d: Tel.Document =>
-              compounds ++= d.children.flatMap(_.compounds)
+              compounds ++= d.children.flatMap(_.compounds).map(_.copy(keyword = keyword))
 
       Tel.compound(t"", IArray.empty, IArray.from(compounds))
 
@@ -222,6 +224,22 @@ trait Tel2:
 
   given optionalEncodable: [value: Encodable in Tel] => Optional[value] is Encodable in Tel =
     opt => opt.lay(Tel.empty)(v => v.encode)
+
+  // A `List` encodes to a Document-rooted Tel whose children are the elements'
+  // compounds; the product encoder recognises the Document and flattens those
+  // compounds into repeated fields keyed by the list's label — TEL's
+  // representation of a repeated field. `List[value]` is more specific than
+  // `value`, so this is preferred over the `encodable` derivation without
+  // ambiguity (exactly as `optionalEncodable` is for `Optional`).
+  given listEncodable: [value: Encodable in Tel] => List[value] is Encodable in Tel = list =>
+    val compounds: IArray[Tel.Compound] = IArray.from:
+      list.flatMap: element =>
+        element.encode.subtree match
+          case compound: Tel.Compound => List(compound)
+          case document: Tel.Document => document.children.flatMap(_.compounds).to(List)
+          case _                      => Nil
+
+    Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf, IArray(Tel.Block(IArray.empty, Unset, compounds, 0))))
 
   given optionalDecodable: [value: Decodable in Tel] => Tactic[TelError]
   =>  Optional[value] is Decodable in Tel = telVal =>

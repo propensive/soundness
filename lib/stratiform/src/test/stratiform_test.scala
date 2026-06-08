@@ -65,6 +65,7 @@ object Tests extends Suite(m"Stratiform Tests"):
   case class Renamed(@name[Tel](t"full_name") fullName: Text, @name(t"yob") year: Int)
   derives CanEqual
   case class PersonAge(name: Text, age: Int) derives CanEqual
+  case class Team(name: Text, members: List[Person]) derives CanEqual
 
 
   def run(): Unit =
@@ -210,6 +211,15 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"@name renames round-trip"):
         Tests.Renamed(t"Ann", 1984).encode.as[Tests.Renamed]
       . assert(_ == Tests.Renamed(t"Ann", 1984))
+
+      test(m"a List field encodes as one repeated compound per element"):
+        val team = Tests.Team(t"Reds", List(Tests.Person(t"Alice", 30), Tests.Person(t"Bob", 25)))
+        team.encode.childCompounds.filter(_.keyword == t"members").length
+      . assert(_ == 2)
+
+      test(m"an empty List field encodes as no compounds"):
+        Tests.Team(t"Reds", Nil).encode.childCompounds.filter(_.keyword == t"members").length
+      . assert(_ == 0)
 
     suite(m"`over Tel` decoder shorthand"):
       test(m"`read[T over Tel]` resolves a value directly from text"):
