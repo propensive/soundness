@@ -32,6 +32,7 @@
                                                                                                   */
 package surveillance
 
+import java.io as ji
 import java.nio.file as jnf, jnf.StandardWatchEventKinds.*
 
 import scala.collection.mutable as scm
@@ -50,39 +51,53 @@ object Watch:
   private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop):
     import codicils.await
 
-    def stop(): Unit = pollLoop.stop()
+    def stop(): Unit =
+      pollLoop.stop()
+      try watchService.close() catch case _: ji.IOException => ()
 
     val async: Optional[Task[Unit]] = safely(supervise(task("surveillance".tt)(pollLoop.run())))
 
   private val serviceMutex: Mutex = Mutex()
   private val watchesMutex: Mutex = Mutex()
-  private var serviceValue: Optional[WatchService] = Unset
+  @volatile private var serviceValue: Optional[WatchService] = Unset
 
   private def service: WatchService = serviceValue.or:
     serviceMutex:
-      jnf.FileSystems.getDefault.nn.newWatchService().nn.pipe: watchService =>
-        WatchService(watchService, pollLoop(watchService)).tap: service =>
-          serviceValue = service
+      serviceValue.or:
+        jnf.FileSystems.getDefault.nn.newWatchService().nn.pipe: watchService =>
+          WatchService(watchService, pollLoop(watchService)).tap: service =>
+            serviceValue = service
 
   private val watches: scm.HashMap[jnf.WatchKey, Set[Watch#PathWatch]] = scm.HashMap()
 
-  private def register(paths: Map[jnf.Path, Text => Boolean]): Watch =
+  private def register(paths: Map[jnf.Path, Text => Boolean]): Watch raises WatchError =
     new Watch().tap(_.watch(paths))
 
   private def pollLoop(service: jnf.WatchService): Loop = loop:
-    service.take().nn match
-      case key: jnf.WatchKey =>
-        key.pollEvents().nn.iterator.nn.asScala.each: event =>
-          watchesMutex(watches(key)).each(_.put(event))
+    try
+      service.take().nn match
+        case key: jnf.WatchKey =>
+          val pathWatches = watchesMutex(watches.at(key).or(Set()))
 
-        key.reset()
+          key.pollEvents().nn.iterator.nn.asScala.each: event =>
+            pathWatches.each(_.put(event))
 
-  def apply[path: Abstractable across Paths to Text](paths: Iterable[path]): Watch =
+          // `reset` returns `false` once the key is no longer valid (e.g. the watched
+          // directory was deleted); drop it so the map doesn't retain dead keys.
+          if !key.reset() then watchesMutex(watches.remove(key))
+
+    catch case _: jnf.ClosedWatchServiceException => ()
+
+  def apply[path: Abstractable across Paths to Text](paths: Iterable[path])
+  :   Watch raises WatchError =
+
     Watch.register:
       val pathGroups: Map[jnf.Path, Iterable[Text => Boolean]] =
         paths.map(_.generic.s).map(jnf.Paths.get(_).nn).map: javaPath =>
           if javaPath.toFile.nn.isDirectory then (javaPath, (_: Text) => true)
-          else (javaPath.getParent.nn, (_: Text) == javaPath.getFileName.nn.toString.tt)
+          else
+            val parent = Optional(javaPath.getParent).or(jnf.Paths.get("").nn)
+            (parent, (_: Text) == javaPath.getFileName.nn.toString.tt)
 
         . groupBy(_(0)).view.mapValues(_.map(_(1))).to(Map)
 
@@ -130,28 +145,44 @@ class Watch():
 
   def stream: Stream[WatchEvent] = spool.stream
 
-  def watch(paths: Map[jnf.Path, Text => Boolean]): Unit =
-    val watches2 = paths.map:
-      case (path, filter) =>
-        val key =
-          path.register(Watch.service.watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
+  private def registerKey(path: jnf.Path): jnf.WatchKey raises WatchError =
+    try path.register(Watch.service.watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE).nn
+    catch
+      case _: jnf.NoSuchFileException   => abort(WatchError(WatchError.Reason.Nonexistent))
+      case _: jnf.NotDirectoryException => abort(WatchError(WatchError.Reason.NotDirectory))
+      case _: jnf.AccessDeniedException => abort(WatchError(WatchError.Reason.PermissionDenied))
+      case _: SecurityException         => abort(WatchError(WatchError.Reason.PermissionDenied))
 
-        new PathWatch(key, path, spool, filter).tap: watch =>
-          Watch.watchesMutex:
+      // `register` on an existing, accessible directory has essentially one remaining
+      // failure mode: the operating system's watch limit (e.g. inotify `max_user_watches`).
+      case _: ji.IOException            => abort(WatchError(WatchError.Reason.LimitExceeded))
+
+  def watch(paths: Map[jnf.Path, Text => Boolean]): Unit raises WatchError =
+    val watches2 = Watch.watchesMutex:
+      paths.map:
+        case (path, filter) =>
+          val key = registerKey(path)
+
+          new PathWatch(key, path, spool, filter).tap: watch =>
             Watch.watches(key) = Watch.watches.at(key).or(Set()) + watch
 
     mutex(watches ++= watches2)
 
   def unregister(): Unit =
+    val localWatches = mutex(watches.to(Set))
+
     Watch.watchesMutex:
-      watches.each: watch =>
+      localWatches.each: watch =>
         Watch.watches(watch.key) = Watch.watches.at(watch.key).or(Set()) - watch
 
-        if Watch.watches(watch.key).nil then
+        if Watch.watches.at(watch.key).or(Set()).nil then
           watch.key.cancel()
           Watch.watches.remove(watch.key)
 
-        if Watch.watches.nil then mutex:
-          Watch.serviceValue.let: service =>
-            service.stop()
-            Watch.serviceValue = Unset
+      if Watch.watches.nil then Watch.serviceMutex:
+        Watch.serviceValue.let: service =>
+          service.stop()
+          Watch.serviceValue = Unset
+
+    mutex(watches.clear())
+    spool.stop()
