@@ -32,40 +32,66 @@
                                                                                                   */
 package cataclysm
 
-import anticipation.*
-import parasite.*
-import prepositional.*
-import spectacular.*
-import turbulence.*
-import vacuous.*
+import quantitative.*
+import rudiments.*
 
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
+// CSS's relative and viewport length units are modelled as fresh Quantitative
+// dimensions with no `Ratio` to anything else, so they are deliberately
+// inconvertible: `2.0.em + 1.0.vh` and `1.0.px.in[Centimetres]` are both compile
+// errors. The absolute units (cm, mm, in, pt, pc) live in Quantitative's existing
+// `Distance` dimension and interconvert with one another as usual.
+sealed trait CssPixel extends Dimension
+sealed trait CssFontSize extends Dimension
+sealed trait CssRootFontSize extends Dimension
+sealed trait CssXHeight extends Dimension
+sealed trait CssCharacterWidth extends Dimension
+sealed trait CssViewportWidth extends Dimension
+sealed trait CssViewportHeight extends Dimension
+sealed trait CssViewportMin extends Dimension
+sealed trait CssViewportMax extends Dimension
 
-  given streamable: (Monitor, Codicil, CssFormatter) => Css is Streamable by Text =
-    CssSerializer.emit(_).to(Stream)
+trait Pixels[Power <: Nat] extends Units[Power, CssPixel]
+trait Ems[Power <: Nat] extends Units[Power, CssFontSize]
+trait Rems[Power <: Nat] extends Units[Power, CssRootFontSize]
+trait Exs[Power <: Nat] extends Units[Power, CssXHeight]
+trait Chs[Power <: Nat] extends Units[Power, CssCharacterWidth]
+trait ViewportWidths[Power <: Nat] extends Units[Power, CssViewportWidth]
+trait ViewportHeights[Power <: Nat] extends Units[Power, CssViewportHeight]
+trait ViewportMins[Power <: Nat] extends Units[Power, CssViewportMin]
+trait ViewportMaxes[Power <: Nat] extends Units[Power, CssViewportMax]
 
-  given showable: CssFormatter => Css is Showable = CssSerializer.render(_)
+// CSS-named absolute units in Quantitative's `Distance` dimension, alongside the
+// existing `Inches`, `Points` and `Picas`.
+object Centimetres:
+  inline given ratio: Ratio[Centimetres[-1] & Metres[1], 0.01] = !!
 
-  // A typed CSS value tagged with its value-definition-syntax type (e.g.
-  // `Css.Value of "length"`). Native types convert in via `CssConvertible`; the
-  // type is `into`, so a colour or quantity is accepted wherever a value of the
-  // matching VDS type is expected.
-  object Value:
-    def apply(text: Text): Value =
-      val text0 = text
+trait Centimetres[Power <: Nat] extends Units[Power, Distance]
 
-      new Value:
-        def text: Text = text0
+object Millimetres:
+  inline given ratio: Ratio[Millimetres[-1] & Metres[1], 0.001] = !!
 
-    given converter: [value] => (convertible: value is CssConvertible)
-    =>  Conversion[value, Value of convertible.Topic] = instance =>
-      Value(convertible.value(instance)).asInstanceOf[Value of convertible.Topic]
+trait Millimetres[Power <: Nat] extends Units[Power, Distance]
 
-  into trait Value extends Topical:
-    def text: Text
+// A CSS percentage, e.g. `50.0.pct`.
+opaque type Percentage = Double
 
-case class Css(rules: List[Css.Node]) derives CanEqual
+object Percentage:
+  def apply(value: Double): Percentage = value
+  extension (percentage: Percentage) def value: Double = percentage
+
+extension (value: Double)
+  def px: Quantity[Pixels[1]] = Quantity(value)
+  def em: Quantity[Ems[1]] = Quantity(value)
+  def rem: Quantity[Rems[1]] = Quantity(value)
+  def ex: Quantity[Exs[1]] = Quantity(value)
+  def ch: Quantity[Chs[1]] = Quantity(value)
+  def vw: Quantity[ViewportWidths[1]] = Quantity(value)
+  def vh: Quantity[ViewportHeights[1]] = Quantity(value)
+  def vmin: Quantity[ViewportMins[1]] = Quantity(value)
+  def vmax: Quantity[ViewportMaxes[1]] = Quantity(value)
+  def cm: Quantity[Centimetres[1]] = Quantity(value)
+  def mm: Quantity[Millimetres[1]] = Quantity(value)
+  def inch: Quantity[Inches[1]] = Quantity(value)
+  def pt: Quantity[Points[1]] = Quantity(value)
+  def pc: Quantity[Picas[1]] = Quantity(value)
+  def pct: Percentage = Percentage(value)

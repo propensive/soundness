@@ -33,39 +33,61 @@
 package cataclysm
 
 import anticipation.*
-import parasite.*
+import gossamer.*
+import iridescence.*
 import prepositional.*
+import quantitative.*
 import spectacular.*
-import turbulence.*
-import vacuous.*
 
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
+// Records that a native Scala type renders to a CSS value of the value-definition
+// type `Topic` (e.g. `"length"`, `"color"`). A single generic `Conversion` (in
+// `Css.Value`) lifts any such type into a `Css.Value of Topic`, so a new
+// convertible type costs one instance here, not one given per CSS property.
+object CssConvertible:
+  given pixels: (Quantity[Pixels[1]] is CssConvertible of "length") = q => t"${number(q.value)}px"
+  given ems: (Quantity[Ems[1]] is CssConvertible of "length") = q => t"${number(q.value)}em"
+  given rems: (Quantity[Rems[1]] is CssConvertible of "length") = q => t"${number(q.value)}rem"
+  given exs: (Quantity[Exs[1]] is CssConvertible of "length") = q => t"${number(q.value)}ex"
+  given chs: (Quantity[Chs[1]] is CssConvertible of "length") = q => t"${number(q.value)}ch"
 
-  given streamable: (Monitor, Codicil, CssFormatter) => Css is Streamable by Text =
-    CssSerializer.emit(_).to(Stream)
+  given vws: (Quantity[ViewportWidths[1]] is CssConvertible of "length") =
+    q => t"${number(q.value)}vw"
 
-  given showable: CssFormatter => Css is Showable = CssSerializer.render(_)
+  given vhs: (Quantity[ViewportHeights[1]] is CssConvertible of "length") =
+    q => t"${number(q.value)}vh"
 
-  // A typed CSS value tagged with its value-definition-syntax type (e.g.
-  // `Css.Value of "length"`). Native types convert in via `CssConvertible`; the
-  // type is `into`, so a colour or quantity is accepted wherever a value of the
-  // matching VDS type is expected.
-  object Value:
-    def apply(text: Text): Value =
-      val text0 = text
+  given vmins: (Quantity[ViewportMins[1]] is CssConvertible of "length") =
+    q => t"${number(q.value)}vmin"
 
-      new Value:
-        def text: Text = text0
+  given vmaxes: (Quantity[ViewportMaxes[1]] is CssConvertible of "length") =
+    q => t"${number(q.value)}vmax"
 
-    given converter: [value] => (convertible: value is CssConvertible)
-    =>  Conversion[value, Value of convertible.Topic] = instance =>
-      Value(convertible.value(instance)).asInstanceOf[Value of convertible.Topic]
+  given centimetres: (Quantity[Centimetres[1]] is CssConvertible of "length") =
+    q => t"${number(q.value)}cm"
 
-  into trait Value extends Topical:
-    def text: Text
+  given millimetres: (Quantity[Millimetres[1]] is CssConvertible of "length") =
+    q => t"${number(q.value)}mm"
 
-case class Css(rules: List[Css.Node]) derives CanEqual
+  given inches: (Quantity[Inches[1]] is CssConvertible of "length") = q => t"${number(q.value)}in"
+  given points: (Quantity[Points[1]] is CssConvertible of "length") = q => t"${number(q.value)}pt"
+  given picas: (Quantity[Picas[1]] is CssConvertible of "length") = q => t"${number(q.value)}pc"
+
+  given srgb: (Srgb is CssConvertible of "color") = hex(_)
+  given integer: (Int is CssConvertible of "integer") = _.show
+  given decimal: (Double is CssConvertible of "number") = number(_)
+
+  given percentage: (Percentage is CssConvertible of "percentage") =
+    percentage => t"${number(percentage.value)}%"
+
+  // Drop a redundant `.0` so a whole number renders as `12px`, not `12.0px`.
+  private def number(value: Double): Text =
+    if value.isFinite && value == value.floor then value.toLong.show else value.toString.tt
+
+  private def hex(color: Srgb): Text =
+    def channel(component: Double): Text =
+      String.format("%02x", (component*255).toInt.max(0).min(255)).nn.tt
+
+    t"#${channel(color.red)}${channel(color.green)}${channel(color.blue)}"
+
+trait CssConvertible extends Typeclass, Topical:
+  def value(self: Self): Text

@@ -601,3 +601,40 @@ object Tests extends Suite(m"Cataclysm Tests"):
       test(m"a nested at-rule round-trips through serialization"):
         roundTrip(nestedAt)
       . assert(_ == nestedAt)
+
+    suite(m"Typed CSS values"):
+      def lengthText(value: Css.Value of "length"): Text = value.text
+      def colorText(value: Css.Value of "color"): Text = value.text
+      def percentageText(value: Css.Value of "percentage"): Text = value.text
+
+      test(m"pixels render with a px suffix"):
+        lengthText(2.0.px)
+      . assert(_ == t"2px")
+
+      test(m"a fractional em keeps its decimal"):
+        lengthText(1.5.em)
+      . assert(_ == t"1.5em")
+
+      test(m"a viewport-height value renders as vh"):
+        lengthText(100.0.vh)
+      . assert(_ == t"100vh")
+
+      test(m"a centimetre value renders as cm"):
+        lengthText(3.0.cm)
+      . assert(_ == t"3cm")
+
+      test(m"an Srgb colour renders as a hex triplet"):
+        colorText(iridescence.Srgb(1.0, 0.0, 0.0))
+      . assert(_ == t"#ff0000")
+
+      test(m"a percentage renders with a percent sign"):
+        percentageText(50.0.pct)
+      . assert(_ == t"50%")
+
+      test(m"adding two different relative units fails to compile"):
+        demilitarize(2.0.em + 1.0.vh).nonEmpty
+      . assert(_ == true)
+
+      test(m"adding a relative and an absolute length fails to compile"):
+        demilitarize(2.0.px + 3.0.cm).nonEmpty
+      . assert(_ == true)
