@@ -1407,6 +1407,33 @@ object ultimatum extends Library:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     override def mainClass: Task.Simple[Option[String]] = Some("ultimatum.demo")
+
+    // Build the demo as a self-contained Ethereal application: stage each
+    // platform's runner alongside the assembled JAR (as `data`) and let the
+    // ziggurat installer fuse the right runner with the JAR into `bin/demo`.
+    def bin(): Command[PathRef] = Task.Command:
+      val jar = assembly().path
+      val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "demo"
+      os.makeDir.all(target / os.up)
+
+      val runnersBase = ethereal.core.rustRunners().path / "ethereal"
+      val staging = Task.dest / "staging"
+      os.makeDir.all(staging)
+
+      ethereal.core.rustTargets.foreach: (_, label, binary) =>
+        val ext = if binary.endsWith(".exe") then ".exe" else ""
+        os.copy.over(runnersBase / s"runner-$label$ext", staging / s"runner-$label$ext")
+
+      os.copy.over(jar, staging / "data")
+
+      val classpath =
+        ziggurat.core.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
+
+      os.proc("java", "-cp", classpath, "ziggurat.Xeq", "installer", target.toString, staging.toString)
+        .call(stdout = os.Inherit, stderr = os.Inherit)
+
+      new java.io.File(target.toString).setExecutable(true)
+      PathRef(target)
   object test extends Tests(core)
 
 object ulysses extends Library:
