@@ -282,8 +282,15 @@ object Http:
 
       def readHeaders(headers: List[Http.Header]): List[Http.Header] =
         if cursor.peek == '\r' then
-          cursor.next()
-          cursor.expect('\n')(expected('\n'))
+          // Consume the final CRLF with `advance` rather than `next`/`expect`:
+          // `next` calls `more`, which forces a blocking refill of the underlying
+          // stream. That is fatal when a request has no body (e.g. a `GET`) and
+          // the client is already waiting for our response — there are no more
+          // bytes to read. `advance` steps past the terminator without reading
+          // ahead, leaving the cursor at the first byte of the body (if any).
+          cursor.advance()
+          if !(cursor.peek == '\n') then raise(expected('\n'))
+          cursor.advance()
           headers
 
         else

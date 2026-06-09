@@ -32,117 +32,93 @@
                                                                                                   */
 package scintillate
 
+import java.io as ji
+import java.net as jn
+
 import anticipation.*
 import contingency.*
-import digression.*
-import gesticulate.*
-import gossamer.*
-import hellenism.*
-import hieroglyph.*
 import parasite.*
-import prepositional.*
 import rudiments.*
-import serpentine.*
-import spectacular.*
 import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
+import zephyrine.*
 
-package httpServers:
-  given stdlib: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable )
-  =>  WebserverErrorPage
-  =>  Http is Protocolic:
+// A raw-TCP HTTP/1.1 server backend, built on a `java.net.ServerSocket` rather
+// than `com.sun.net.httpserver`. Each accepted socket is handled on its own
+// Loom virtual thread (`daemon`). The handler API is identical to `HttpServer`'s
+// — a `HttpConnection ?=> Http.Response` — so the two backends are
+// interchangeable. This first cut serves a single request per connection and
+// closes it; keep-alive, request-body framing and connection upgrades build on
+// top of this skeleton.
+case class SocketServer(port: Int, local: Boolean = true)(using errorPage: WebserverErrorPage)
+extends RequestServable:
+  def handle(handler: HttpConnection ?=> Http.Response)(using Monitor, Codicil)
+  :   Service logs HttpServerEvent raises ServerError =
 
-    type Transport = TcpPort of port
-    type Self = Http
-    type Server = Service
-    type Request = HttpConnection
-    type Response = Http.Response
+    def startServer(): jn.ServerSocket raises ServerError =
+      try
+        val host = if local then "localhost" else "0.0.0.0"
+        jn.ServerSocket(port, 0, jn.InetAddress.getByName(host).nn)
+      catch case error: jn.BindException => abort(ServerError(port))
 
-    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      HttpServer(port.number, true).handle(lambda)
+    def writeAll(out: ji.OutputStream, stream: Stream[Data]): Unit raises StreamError =
+      var count: Int = 0
 
+      stream.each: block =>
+        try
+          out.write(block.mutable(using Unsafe))
+          count += block.length
+        catch case _: ji.IOException => abort(StreamError(count.b))
 
-  given stdlibPublic: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable )
-  =>  WebserverErrorPage
-  =>  Http is Protocolic:
+      try out.flush() catch case _: ji.IOException => abort(StreamError(count.b))
 
-    type Transport = TcpPort of port
-    type Self = Http
-    type Server = Service
-    type Request = HttpConnection
-    type Response = Http.Response
+    def serve(socket: jn.Socket): Unit =
+      try
+        val in = socket.getInputStream.nn
+        val out = socket.getOutputStream.nn
 
-    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      HttpServer(port.number, false).handle(lambda)
+        whereas:
+          case StreamError(length) =>
+            Log.warn(HttpServerEvent.BrokenStream(length))
 
+          case error: HttpRequestError =>
+            safely(writeAll(out, Http.Response.serialize(Http.Response(Http.BadRequest)())))
 
-  given native: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable )
-  =>  WebserverErrorPage
-  =>  Http is Protocolic:
+        . recover:
+            val cursor = Cursor[Data](Streamable.inputStream.stream(in).filter(_.nonEmpty).iterator)
+            val head = Http.Request.parseHead(cursor)
 
-    type Transport = TcpPort of port
-    type Self = Http
-    type Server = Service
-    type Request = HttpConnection
-    type Response = Http.Response
+            val request =
+              Http.Request
+                ( head.method, head.version, head.host, head.target, head.headers,
+                  () => cursor.remainder )
 
-    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      SocketServer(port.number, true).handle(lambda)
+            def respond(response: Http.Response): Unit raises StreamError =
+              val includeBody = head.method != Http.Head
+              writeAll(out, Http.Response.serialize(response, includeBody))
 
+            val connection = new HttpConnection(request, false, port, respond)
+            Log.fine(HttpServerEvent.Received(request))
 
-  given nativePublic: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable )
-  =>  WebserverErrorPage
-  =>  Http is Protocolic:
+            connection.respond:
+              try handler(using connection)
+              catch case throwable: Throwable => errorPage.handle(throwable, connection)
 
-    type Transport = TcpPort of port
-    type Self = Http
-    type Server = Service
-    type Request = HttpConnection
-    type Response = Http.Response
+      catch case NonFatal(exception) => exception.printStackTrace()
+      finally safely(socket.close())
 
-    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      SocketServer(port.number, false).handle(lambda)
+    val serverSocket = startServer()
 
-def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies.at(key)
+    val acceptLoop = loop:
+      safely(serverSocket.accept().nn).let: socket =>
+        daemon(serve(socket))
 
-def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.Response)
-  ( using connection: HttpConnection )
-:   Http.Response raises AuthError =
+    val acceptTask = daemon(acceptLoop.run())
+    val cancel: Promise[Unit] = Promise[Unit]()
+    val stopTask = async(cancel.attend() yet { acceptLoop.stop(); safely(serverSocket.close()) })
 
-  connection.headers.authorization match
-    case List(Auth.Basic(username, password)) =>
-      if validate(username, password) then response else Http.Response(Http.Forbidden)()
+    Service: () =>
+      safely(cancel.fulfill(()))
 
-    case _ =>
-      val auth = t"""Basic realm="$realm", charset="UTF-8""""
-
-      Http.Response(Http.Unauthorized, wwwAuthenticate = auth)()
-
-
-inline def request: Http.Request = infer[Http.Request]
-
-extension (request: Http.Request)
-  def as[body: Acceptable]: body = body.accept(request)
-
-package webserverErrorPages:
-  given minimal: WebserverErrorPage = (request, throwable) =>
-    import hieroglyph.charEncoders.utf8
-    Http.Response(Unfulfilled(t"An error occurred which prevented the request from completing."))
-
-  private def prefix(using Classloader): Data = cp"/scintillate/error.pre.html".read[Data]
-  private def postfix(using Classloader): Data = cp"/scintillate/error.post.html".read[Data]
-
-  given standard: Classloader => WebserverErrorPage = (throwable, request) =>
-    Http.Response(Unfulfilled(Stream(prefix, postfix).ascribe(media"text/html")))
-
-  given stackTraces: Classloader => WebserverErrorPage = (throwable, request) =>
-    import charEncoders.utf8
-
-    val stack = t"<pre>${throwable.stackTrace}</pre>".read[Data]
-    Http.Response(Unfulfilled(Stream(prefix, stack, postfix).ascribe(media"text/html")))

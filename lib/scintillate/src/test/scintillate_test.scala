@@ -34,5 +34,58 @@ package scintillate
 
 import soundness.*
 
+import logging.silent
+import strategies.throwUnsafely
+import charEncoders.utf8
+import webserverErrorPages.minimal
+import threading.virtual
+import codicils.await
+
 object Tests extends Suite(m"Scintillate tests"):
-  def run(): Unit = ()
+  def run(): Unit =
+    def freePort(): Int =
+      val socket = java.net.ServerSocket(0)
+      val port = socket.getLocalPort
+      socket.close()
+      port
+
+    def rawRequest(port: Int, request: Text): Text =
+      val socket = java.net.Socket("localhost", port)
+      val out = socket.getOutputStream.nn
+      out.write(request.s.getBytes("US-ASCII").nn)
+      out.flush()
+      val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII")
+      socket.close()
+      response.tt
+
+    supervise:
+      suite(m"Native socket server"):
+        test(m"GET returns the handler's response body"):
+          val port = freePort()
+          val server = SocketServer(port).handle(Http.Response(Http.Ok)(t"hello from native"))
+          val response = rawRequest(port, t"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
+          server.cancel()
+          response
+
+        . assert(_.contains(t"hello from native"))
+
+        test(m"Status line carries the handler's status"):
+          val port = freePort()
+          val server = SocketServer(port).handle(Http.Response(Http.NotFound)(t"nope"))
+          val response = rawRequest(port, t"GET / HTTP/1.1\r\nHost: localhost\r\n\r\n")
+          server.cancel()
+          response.cut(t"\r\n").head
+
+        . assert(_ == t"HTTP/1.1 404 Not Found")
+
+        test(m"Request method and target reach the handler"):
+          val port = freePort()
+
+          val server = SocketServer(port).handle:
+            Http.Response(Http.Ok)(t"${request.method.show} ${request.target}")
+
+          val response = rawRequest(port, t"GET /foo/bar HTTP/1.1\r\nHost: localhost\r\n\r\n")
+          server.cancel()
+          response
+
+        . assert(_.contains(t"GET /foo/bar"))
