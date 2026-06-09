@@ -32,94 +32,49 @@
                                                                                                   */
 package ultimatum
 
-import anticipation.*
-import denominative.*
-import escapade.*
-import gossamer.*
-import profanity.*
-import turbulence.*
+import soundness.*
 
-object InlineRoot:
-  // The root for inline mode over a real terminal: width and the height clamp are
-  // read live, so a resize is reflected on the next frame.
-  def apply(terminal: Terminal): InlineRoot =
-    new InlineRoot(() => terminal.knownColumns, () => terminal.knownRows)(using terminal.stdio)
+import backstops.silent
+import codicils.cancel
+import executives.completions
+import interpreters.posix
+import strategies.throwUnsafely
+import supervisors.global
+import threading.platform
 
-  def apply(width: Int, height: Int)(using Stdio): InlineRoot =
-    new InlineRoot(() => width, () => height)
+// A medium-complexity fullscreen layout demonstrating the framework: a title bar
+// and a status bar each pinned to a single row; a fixed-width sidebar menu; and a
+// main column with a section heading, a line editor, and an activity panel. TAB
+// moves focus between the menu and the editor; Escape quits.
+//
+// Run with `mill ultimatum.demo.run` from a real terminal.
+@main
+def demo(): Unit = cli:
+  execute:
+    interactive: terminal ?=>
+      form(Mode.Fullscreen)(demoLayout)
+      Exit.Ok
 
-// The root `Canvas` for INLINE mode: panels composite into its character grid
-// (inherited from `GridSurface`), and `flush` presents the whole grid at the
-// terminal's current cursor using relative motion plus CR/LF. Because a `\n` on
-// the bottom line scrolls a fresh row in (whereas a relative `cud` clamps), the
-// block grows downward without needing the alternate screen buffer or any
-// pre-reserved space; on shrink the freed rows are cleared. The cursor is tracked
-// relative to its own resting row within the block, never an absolute screen row,
-// so the present stays correct after the terminal scrolls. `widthFn`/`heightFn`
-// supply the live terminal columns and the height clamp (an oversize block
-// degrades to a bottom-anchored window).
-class InlineRoot(widthFn: () => Int, heightFn: () => Int)(using Stdio)
-extends GridSurface(widthFn(), 0):
-  private var presentedRows: Int = 0
-  private var cursorRow: Int = 0
-  private var caretColumn: Int = 0
-  private var caretRow: Int = 0
-  private var caretVisible: Boolean = true
+// rank(title, file(sidebar, rank(heading, editor, activity)), status):
+//
+//   ┌──────────────────────── title ────────────────────────┐
+//   │ sidebar (menu) │ heading                               │
+//   │                │ editor                                │
+//   │                │ activity                              │
+//   └─────────────────────── status ────────────────────────┘
+private def demoLayout: Pane =
+  val sidebar = menu(List(t"Overview", t"Compose", t"Activity", t"Settings"), t"Overview",
+      minWidth = 22, maxWidth = 22)
 
-  override def width: Int = widthFn()
+  val activity = panel(minHeight = 6):
+    Out.println(t"Recent activity")
+    Out.println(t"")
+    Out.println(t"  • Demo started")
+    Out.println(t"  • Four panes tiled")
+    Out.println(t"  • Tab moves focus, Esc quits")
 
-  // Resize the grid to the measured block height, clamped to the live terminal
-  // height; called by the driver before compositing each frame.
-  def reframe(width: Int, height: Int): Unit = reshape(width, height.min(heightFn()))
+  val heading = panel(minHeight = 1, maxHeight = 1)(Out.print(t"  Compose"))
+  val title = panel(minHeight = 1, maxHeight = 1)(Out.print(t"  ULTIMATUM · fullscreen demo"))
+  val status = panel(minHeight = 1, maxHeight = 1)(Out.print(t"  [Tab] focus    [Esc] quit"))
 
-  // Cursor visibility is deferred like the caret: recorded now, applied by `flush`
-  // (which hides the cursor while it redraws), so a focused editor shows it and a
-  // focused menu keeps it hidden.
-  def cursor(visible: Boolean): Unit = caretVisible = visible
-
-  // Inline carets are deferred: record the block-local target and let `flush`
-  // position it relative to the block, since mid-composite the cursor is wherever
-  // the last panel left it.
-  override def showCaret(column: Ordinal, row2: Ordinal): Unit =
-    caretColumn = column.n0
-    caretRow = row2.n0
-
-  def flush(): Unit =
-    Out.print(csi.dectcem(false))
-    if cursorRow > 0 then Out.print(csi.cuu(cursorRow))
-    Out.print(t"\r")
-
-    var r = 0
-
-    while r < height do
-      Out.print(csi.el(2))
-      Out.print(rowText(r))
-      Out.print(t"\r")
-      if r < height - 1 then Out.print(t"\n")
-      r += 1
-
-    if presentedRows > height then
-      var k = height
-
-      while k < presentedRows do
-        Out.print(t"\n")
-        Out.print(csi.el(2))
-        k += 1
-
-      Out.print(csi.cuu(presentedRows - height))
-
-    val up = (height - 1) - caretRow
-    if up > 0 then Out.print(csi.cuu(up))
-    Out.print(csi.cha(caretColumn + 1))
-
-    presentedRows = height
-    cursorRow = caretRow
-    Out.print(csi.dectcem(caretVisible))
-
-  // On exit, drop the cursor onto a fresh line below the block and re-show it, so
-  // subsequent output continues after the rendered block (like a submitted prompt).
-  def finish(): Unit =
-    val down = (height - 1) - cursorRow
-    if down > 0 then Out.print(csi.cud(down))
-    Out.print(t"\r\n")
-    Out.print(csi.dectcem(true))
+  rank(title, file(sidebar, rank(heading, editor(), activity)), status)

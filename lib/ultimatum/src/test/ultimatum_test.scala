@@ -399,6 +399,49 @@ object Tests extends Suite(m"Ultimatum Tests"):
         root.render
       . assert(_ == t"A         \nB         ")
 
+    suite(m"Focus indication"):
+      def grid(): FlowExtent =
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        FlowExtent(TerminalCanvas(12, 2), Rect(0, 0, 12, 2))
+
+      def captured(block: Stdio ?=> Unit): Text =
+        val bytes = ji.ByteArrayOutputStream()
+        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic)
+        block
+        String(bytes.toByteArray.nn, "UTF-8").tt
+
+      test(m"a focused menu marks its selection with a pointer"):
+        val extent = grid()
+        MenuField(SelectMenu(List(t"alpha", t"beta"), t"alpha")).render(extent, true)
+        extent.render
+      . assert(_ == t" > alpha    \n   beta     ")
+
+      test(m"an unfocused menu marks its selection with a dot"):
+        val extent = grid()
+        MenuField(SelectMenu(List(t"alpha", t"beta"), t"alpha")).render(extent, false)
+        extent.render
+      . assert(_ == t" · alpha    \n   beta     ")
+
+      test(m"a focused editor shows the hardware cursor"):
+        captured: stdio ?=>
+          EditorField(LineEditor(t"hi")).render(TerminalCanvas(20, 1), true)
+      . assert(_.s.contains("[?25h"))
+
+      test(m"an unfocused editor hides the hardware cursor"):
+        captured: stdio ?=>
+          EditorField(LineEditor(t"hi")).render(TerminalCanvas(20, 1), false)
+      . assert(_.s.contains("[?25l"))
+
+      // Tabbing focus away from the menu must repaint it, so its marker updates
+      // from `>` to `·` (a regression: only the panel gaining focus was redrawn).
+      test(m"a panel that loses focus is repainted so its marker updates"):
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        val root = FlowExtent(TerminalCanvas(12, 3), Rect(0, 0, 12, 3))
+        val pane = rank(menu(List(t"alpha", t"beta"), t"alpha"), editor())
+        Form(root, Mode.Fullscreen, pane).run(List(Keypress.Tab, Keypress.Escape).iterator)
+        root.render
+      . assert(_ == t" · alpha    \n   beta     \n            ")
+
 // A test-only root `Canvas` that paints into a fixed in-memory grid but reports a
 // settable size, so a layout can be re-tiled to a smaller `width`/`height` and
 // the composed screen read back.

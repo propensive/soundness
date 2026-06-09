@@ -94,8 +94,10 @@ object Interaction:
       surface.move(Prim, Prim)
       surface.clear()
       surface.put(editor.value)
-      surface.showCaret(curCol.z, curRow.z)
+      // Place the caret after flushing: in a panel, `flush` blits the grid through
+      // the parent's cursor, so the caret must be positioned last to survive it.
       surface.flush()
+      surface.showCaret(curCol.z, curRow.z)
 
     def result(editor: LineEditor): Text = editor.value
 
