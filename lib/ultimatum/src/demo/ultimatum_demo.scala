@@ -55,30 +55,44 @@ def demo(): Unit = cli:
       form(Mode.Inline)(demoLayout)
       Exit.Ok
 
-// rank(title, file(sidebar, rank(heading, editor, activity)), status):
+// rank(title, file(sidebar, rank(heading, compose, activity)), status), with the
+// sidebar, compose box and activity panel each wrapped in a `border` and the
+// heading underlined by a bottom-only border:
 //
 //   ┌──────────────────────── title ────────────────────────┐
-//   │ sidebar (menu) │ heading                               │
-//   │                │ editor                                │
-//   │                │ activity                              │
+//   │ ╭ sidebar ╮ │ heading                                  │
+//   │ │  (menu) │ │ ─────────                                │
+//   │ ╰─────────╯ │ ┏━ compose ━┓                            │
+//   │             │ ┗━━━━━━━━━━━┛                            │
+//   │             │ ┌─ activity ┐                            │
+//   │             │ └───────────┘                            │
 //   └─────────────────────── status ────────────────────────┘
 private def demoLayout: Pane =
-  val sidebar = menu(List(t"Overview", t"Compose", t"Activity", t"Settings"), t"Overview",
-      minWidth = 22, maxWidth = 22)
+  // A rounded border around the menu; the menu itself is 20 wide, so the bordered
+  // sidebar is 22.
+  val sidebar = border(BorderStyle.rounded):
+    menu(List(t"Overview", t"Compose", t"Activity", t"Settings"), t"Overview",
+        minWidth = 20, maxWidth = 20)
 
-  val activity = panel(minHeight = 6):
-    Out.println(t"Recent activity")
-    Out.println(t"")
-    Out.println(t"  • Demo started")
-    Out.println(t"  • Four panes tiled")
-    Out.println(t"  • Tab moves focus, Esc quits")
+  val activity = border():
+    panel(minHeight = 6):
+      Out.println(t"Recent activity")
+      Out.println(t"")
+      Out.println(t"  • Demo started")
+      Out.println(t"  • Four panes tiled")
+      Out.println(t"  • Tab moves focus, Esc quits")
 
-  val heading = panel(minHeight = 1, maxHeight = 1)(Out.print(t"  Compose"))
+  // A bottom-only border draws a single rule under the heading, a separator with
+  // no corners or sides.
+  val heading = border(top = false, left = false, right = false):
+    panel(minHeight = 1, maxHeight = 1)(Out.print(t"  Compose"))
+
   val title = panel(minHeight = 1, maxHeight = 1)(Out.print(t"  ULTIMATUM · fullscreen demo"))
   val status = panel(minHeight = 1, maxHeight = 1)(Out.print(t"  [Tab] focus    [Esc] quit"))
 
   // A multiline compose box: Enter inserts a newline (it never submits, so the
   // arrow keys can move the cursor up and down between lines).
-  val compose = editor(LineEditor(mode = LineEditor.Mode.Multiline(_ => false)))
+  val compose = border(BorderStyle.heavy):
+    editor(LineEditor(mode = LineEditor.Mode.Multiline(_ => false)))
 
   rank(title, file(sidebar, rank(heading, compose, activity)), status)
