@@ -32,60 +32,71 @@
                                                                                                   */
 package cataclysm
 
+import scala.quoted.*
+
 import anticipation.*
+import contingency.*
+import fulminate.*
 import gossamer.*
-import iridescence.*
-import prepositional.*
-import quantitative.*
-import spectacular.*
+import vacuous.*
 
-// Records that a native Scala type renders to a CSS value of the value-definition
-// type `Topic` (e.g. `"length"`, `"color"`). A single generic `Conversion` (in
-// `Css.Value`) lifts any such type into a `Css.Value of Topic`, so a new
-// convertible type costs one instance here, not one given per CSS property.
-object CssConvertible:
-  given pixels: (Quantity[Pixels[1]] is CssConvertible of "length") = q => t"${number(q.value)}px"
-  given ems: (Quantity[Ems[1]] is CssConvertible of "length") = q => t"${number(q.value)}em"
-  given rems: (Quantity[Rems[1]] is CssConvertible of "length") = q => t"${number(q.value)}rem"
-  given exs: (Quantity[Exs[1]] is CssConvertible of "length") = q => t"${number(q.value)}ex"
-  given chs: (Quantity[Chs[1]] is CssConvertible of "length") = q => t"${number(q.value)}ch"
+// Compile-time machinery behind the `Css.Style(borderWidth = …, color = …)`
+// dynamic constructor. Each named parameter's camelCase label becomes a
+// kebab-case property name; the value's type must have a `CssConvertible`
+// instance (which both renders it and tags it with a value-definition-syntax
+// type); and that type is checked against the property's grammar, so e.g.
+// `Css.Style(color = 4.0*Px)` and `Css.Style(notAProperty = …)` fail to compile.
+object StyleMacros:
+  def style(properties: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Css.Style] =
+    import quotes.reflect.*
 
-  given vws: (Quantity[ViewportWidths[1]] is CssConvertible of "length") =
-    q => t"${number(q.value)}vw"
+    def refinements(repr: TypeRepr): Map[Text, TypeRepr] = repr.dealias match
+      case Refinement(parent, name, TypeBounds(_, hi)) => refinements(parent).updated(name.tt, hi)
+      case Refinement(parent, name, info)              => refinements(parent).updated(name.tt, info)
+      case AndType(left, right)                        => refinements(left) ++ refinements(right)
+      case _                                           => Map()
 
-  given vhs: (Quantity[ViewportHeights[1]] is CssConvertible of "length") =
-    q => t"${number(q.value)}vh"
+    // The value-definition-syntax type the convertible tags its values with.
+    def topicOf(convertible: Expr[Any]): Text =
+      val members = refinements(convertible.asTerm.tpe) ++ refinements(convertible.asTerm.tpe.widen)
 
-  given vmins: (Quantity[ViewportMins[1]] is CssConvertible of "length") =
-    q => t"${number(q.value)}vmin"
+      members.get(t"Topic") match
+        case Some(ConstantType(StringConstant(name))) => name.tt
+        case _                                        => t""
 
-  given vmaxes: (Quantity[ViewportMaxes[1]] is CssConvertible of "length") =
-    q => t"${number(q.value)}vmax"
+    // A canonical instance of a value type, used to probe the property's grammar.
+    def sample(topic: Text): Optional[Text] = topic match
+      case t"length"     => t"1px"
+      case t"color"      => t"#000000"
+      case t"percentage" => t"1%"
+      case t"number"     => t"1.5"
+      case t"integer"    => t"1"
+      case _             => Unset
 
-  given centimetres: (Quantity[Centimetres[1]] is CssConvertible of "length") =
-    q => t"${number(q.value)}cm"
+    def check(property: Text, topic: Text): Unit =
+      val propertyDef = PropertyDef.of(property).or:
+        halt(m"cataclysm: $property is not a known CSS property")
 
-  given millimetres: (Quantity[Millimetres[1]] is CssConvertible of "length") =
-    q => t"${number(q.value)}mm"
+      sample(topic).lay(()): sampleText =>
+        val outcome = safely(SyntaxMatcher.check(propertyDef, sampleText))
 
-  given inches: (Quantity[Inches[1]] is CssConvertible of "length") = q => t"${number(q.value)}in"
-  given points: (Quantity[Points[1]] is CssConvertible of "length") = q => t"${number(q.value)}pt"
-  given picas: (Quantity[Picas[1]] is CssConvertible of "length") = q => t"${number(q.value)}pc"
+        if outcome.or(Outcome.Unsupported(Nil)) == Outcome.Invalid
+        then halt(m"cataclysm: a $topic value is not valid for the $property property")
 
-  given percents: (Quantity[Percents[1]] is CssConvertible of "percentage") =
-    q => t"${number(q.value)}%"
+    def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[(Text, Text)]] = exprs match
+      case '{type key <: Label; ($key: key, $value: value)} +: tail =>
+        val convertible = Expr.summon[value is CssConvertible].getOrElse:
+          halt(m"cataclysm: no CSS value is available for this property's value")
 
-  given srgb: (Srgb is CssConvertible of "color") = hex(_)
-  given integer: (Int is CssConvertible of "integer") = _.show
-  given decimal: (Double is CssConvertible of "number") = Css.number(_)
+        val name = key.value.getOrElse(halt(m"cataclysm: the property name must be a literal"))
+        val property = name.tt.uncamel.kebab
+        check(property, topicOf(convertible))
 
-  private def number(value: Double): Text = Css.number(value)
+        '{(${Expr(property)}, $convertible.value($value))} :: recur(tail)
 
-  private def hex(color: Srgb): Text =
-    def channel(component: Double): Text =
-      String.format("%02x", (component*255).toInt.max(0).min(255)).nn.tt
+      case _ =>
+        Nil
 
-    t"#${channel(color.red)}${channel(color.green)}${channel(color.blue)}"
-
-trait CssConvertible extends Typeclass, Topical:
-  def value(self: Self): Text
+    properties match
+      case Varargs(exprs) => '{Css.Style.of(${Expr.ofList(recur(exprs))})}
+      case _              => '{Css.Style.of(Nil)}

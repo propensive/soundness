@@ -35,11 +35,11 @@ package cataclysm
 import quantitative.*
 import rudiments.*
 
-// CSS's relative and viewport length units are modelled as fresh Quantitative
-// dimensions with no `Ratio` to anything else, so they are deliberately
-// inconvertible: `2.0.em + 1.0.vh` and `1.0.px.in[Centimetres]` are both compile
-// errors. The absolute units (cm, mm, in, pt, pc) live in Quantitative's existing
-// `Distance` dimension and interconvert with one another as usual.
+// CSS's relative and viewport units are modelled as fresh Quantitative dimensions
+// with no `Ratio` to anything else, so they are deliberately inconvertible:
+// `2.0*Em + 1.0*Vh` and `(1.0*Px).in[Centimetres]` are compile errors. The
+// absolute units (cm, mm, in, pt, pc) live in Quantitative's existing `Distance`
+// dimension and interconvert with one another as usual.
 sealed trait CssPixel extends Dimension
 sealed trait CssFontSize extends Dimension
 sealed trait CssRootFontSize extends Dimension
@@ -49,6 +49,7 @@ sealed trait CssViewportWidth extends Dimension
 sealed trait CssViewportHeight extends Dimension
 sealed trait CssViewportMin extends Dimension
 sealed trait CssViewportMax extends Dimension
+sealed trait CssRatio extends Dimension
 
 trait Pixels[Power <: Nat] extends Units[Power, CssPixel]
 trait Ems[Power <: Nat] extends Units[Power, CssFontSize]
@@ -59,6 +60,7 @@ trait ViewportWidths[Power <: Nat] extends Units[Power, CssViewportWidth]
 trait ViewportHeights[Power <: Nat] extends Units[Power, CssViewportHeight]
 trait ViewportMins[Power <: Nat] extends Units[Power, CssViewportMin]
 trait ViewportMaxes[Power <: Nat] extends Units[Power, CssViewportMax]
+trait Percents[Power <: Nat] extends Units[Power, CssRatio]
 
 // CSS-named absolute units in Quantitative's `Distance` dimension, alongside the
 // existing `Inches`, `Points` and `Picas`.
@@ -72,26 +74,20 @@ object Millimetres:
 
 trait Millimetres[Power <: Nat] extends Units[Power, Distance]
 
-// A CSS percentage, e.g. `50.0.pct`.
-opaque type Percentage = Double
-
-object Percentage:
-  def apply(value: Double): Percentage = value
-  extension (percentage: Percentage) def value: Double = percentage
-
-extension (value: Double)
-  def px: Quantity[Pixels[1]] = Quantity(value)
-  def em: Quantity[Ems[1]] = Quantity(value)
-  def rem: Quantity[Rems[1]] = Quantity(value)
-  def ex: Quantity[Exs[1]] = Quantity(value)
-  def ch: Quantity[Chs[1]] = Quantity(value)
-  def vw: Quantity[ViewportWidths[1]] = Quantity(value)
-  def vh: Quantity[ViewportHeights[1]] = Quantity(value)
-  def vmin: Quantity[ViewportMins[1]] = Quantity(value)
-  def vmax: Quantity[ViewportMaxes[1]] = Quantity(value)
-  def cm: Quantity[Centimetres[1]] = Quantity(value)
-  def mm: Quantity[Millimetres[1]] = Quantity(value)
-  def inch: Quantity[Inches[1]] = Quantity(value)
-  def pt: Quantity[Points[1]] = Quantity(value)
-  def pc: Quantity[Picas[1]] = Quantity(value)
-  def pct: Percentage = Percentage(value)
+// One unit of each CSS dimension, to be multiplied by a number, e.g. `4.0*Px` or
+// `50.0*Pct`. Absolute lengths reuse Quantitative's `Inch`, with `Cm`/`Mm`/`Pt`/
+// `Pc` added here.
+val Px: Quantity[Pixels[1]] = Quantity(1.0)
+val Em: Quantity[Ems[1]] = Quantity(1.0)
+val Rem: Quantity[Rems[1]] = Quantity(1.0)
+val Ex: Quantity[Exs[1]] = Quantity(1.0)
+val Ch: Quantity[Chs[1]] = Quantity(1.0)
+val Vw: Quantity[ViewportWidths[1]] = Quantity(1.0)
+val Vh: Quantity[ViewportHeights[1]] = Quantity(1.0)
+val Vmin: Quantity[ViewportMins[1]] = Quantity(1.0)
+val Vmax: Quantity[ViewportMaxes[1]] = Quantity(1.0)
+val Cm: Quantity[Centimetres[1]] = Quantity(1.0)
+val Mm: Quantity[Millimetres[1]] = Quantity(1.0)
+val Pt: Quantity[Points[1]] = Quantity(1.0)
+val Pc: Quantity[Picas[1]] = Quantity(1.0)
+val Pct: Quantity[Percents[1]] = Quantity(1.0)

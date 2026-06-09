@@ -608,19 +608,19 @@ object Tests extends Suite(m"Cataclysm Tests"):
       def percentageText(value: Css.Value of "percentage"): Text = value.text
 
       test(m"pixels render with a px suffix"):
-        lengthText(2.0.px)
+        lengthText(2.0*Px)
       . assert(_ == t"2px")
 
       test(m"a fractional em keeps its decimal"):
-        lengthText(1.5.em)
+        lengthText(1.5*Em)
       . assert(_ == t"1.5em")
 
       test(m"a viewport-height value renders as vh"):
-        lengthText(100.0.vh)
+        lengthText(100.0*Vh)
       . assert(_ == t"100vh")
 
       test(m"a centimetre value renders as cm"):
-        lengthText(3.0.cm)
+        lengthText(3.0*Cm)
       . assert(_ == t"3cm")
 
       test(m"an Srgb colour renders as a hex triplet"):
@@ -628,13 +628,38 @@ object Tests extends Suite(m"Cataclysm Tests"):
       . assert(_ == t"#ff0000")
 
       test(m"a percentage renders with a percent sign"):
-        percentageText(50.0.pct)
+        percentageText(50.0*Pct)
       . assert(_ == t"50%")
 
       test(m"adding two different relative units fails to compile"):
-        demilitarize(2.0.em + 1.0.vh).nonEmpty
+        demilitarize(2.0*Em + 1.0*Vh).nonEmpty
       . assert(_ == true)
 
       test(m"adding a relative and an absolute length fails to compile"):
-        demilitarize(2.0.px + 3.0.cm).nonEmpty
+        demilitarize(2.0*Px + 3.0*Cm).nonEmpty
       . assert(_ == true)
+
+    suite(m"CSS output integrations"):
+      test(m"a stylesheet is served with the text/css media type"):
+        t"a { color: red }".read[Css].mediaType.show
+      . assert(_.starts(t"text/css"))
+
+      test(m"an inline style renders its declarations"):
+        Css.Style(color = iridescence.Srgb(1.0, 0.0, 0.0), width = 4.0*Px).text
+      . assert(_ == t"color: #ff0000; width: 4px")
+
+      test(m"a camelCase property name becomes kebab-case"):
+        Css.Style(borderWidth = 2.0*Px).text
+      . assert(_ == t"border-width: 2px")
+
+      test(m"a value of the wrong type fails to compile"):
+        demilitarize(Css.Style(color = 4.0*Px)).exists(_.message.contains("not valid for"))
+      . assert(_ == true)
+
+      test(m"an unknown property fails to compile"):
+        demilitarize(Css.Style(notARealProperty = 4.0*Px)).exists(_.message.contains("known CSS"))
+      . assert(_ == true)
+
+      test(m"a Css.Style is usable as a Honeycomb style attribute"):
+        summon[Css.Style is Attributive to Whatwg.Css]
+      . assert(_ != Unset)

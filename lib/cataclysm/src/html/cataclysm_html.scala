@@ -43,6 +43,10 @@ import prepositional.*
 // both).
 transparent inline def attributeFor[name <: Label]: Text = ${HtmlMacros.attributeFor[name]}
 
+// Lets a `Css.Style` be used as an inline `style="…"` attribute value in
+// Honeycomb, e.g. `Div(style = Css.Style(color = rgb, width = 4.0*Px))`.
+given inlineStyle: (Css.Style is Attributive to Whatwg.Css) = _ -> _.text
+
 // Import this to make `Tag.foo(…)` check `foo` against the in-scope `Styles`
 // stylesheet, attaching `class="foo"` or `id="foo"` accordingly.
 package cssBindings:

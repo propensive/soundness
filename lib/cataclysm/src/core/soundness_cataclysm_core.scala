@@ -34,9 +34,9 @@ package soundness
 
 export cataclysm.{Css, CssError, CssErrors, cssAggregable, SelectorList, Selector, Compound,
     Simple, Combinator, AttributeMatcher, AttributeTest, Namespace, PseudoArgument, CssFormatter,
-    CssSerializer, CssConvertible, Percentage, Pixels, Ems, Rems, Exs, Chs, ViewportWidths,
-    ViewportHeights, ViewportMins, ViewportMaxes, Centimetres, Millimetres, px, em, rem, ex, ch, vw,
-    vh, vmin, vmax, cm, mm, inch, pt, pc, pct}
+    CssSerializer, CssConvertible, Pixels, Ems, Rems, Exs, Chs, ViewportWidths,
+    ViewportHeights, ViewportMins, ViewportMaxes, Centimetres, Millimetres, Percents, Px, Em, Rem,
+    Ex, Ch, Vw, Vh, Vmin, Vmax, Cm, Mm, Pt, Pc, Pct}
 
 package cssFormatters:
   export cataclysm.cssFormatters.{standard, compact}
