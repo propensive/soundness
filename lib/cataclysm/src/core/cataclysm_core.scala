@@ -34,8 +34,17 @@ package cataclysm
 
 import anticipation.*
 import contingency.*
+import fulminate.*
 import prepositional.*
 import turbulence.*
 
-given cssAggregable: Tactic[CssError] => Css is Aggregable by Text =
-  source => CssParser.parse(source.iterator)
+// Reading a stylesheet accumulates every `CssError` (unknown property, invalid
+// or unsupported value, …) instead of stopping at the first: the parse runs
+// inside a `track`, and any errors are folded into a single `CssErrors` raised
+// at the end. A fully-valid stylesheet yields the `Css` with nothing raised.
+given cssAggregable: (Tactic[CssErrors], Diagnostics) => Css is Aggregable by Text = source =>
+  track[Text](CssErrors(Nil)):
+    case error: CssError => accrual + error
+
+  . within:
+      CssParser.parse(source.iterator)

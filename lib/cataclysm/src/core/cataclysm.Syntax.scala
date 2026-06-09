@@ -33,30 +33,22 @@
 package cataclysm
 
 import anticipation.*
-import denominative.*
-import fulminate.*
+import vacuous.*
 
-object CssError:
-  object Reason:
-    given communicable: Reason is Communicable =
-      case UnterminatedComment        => m"a comment was not terminated"
-      case UnterminatedString         => m"a string literal was not terminated"
-      case UnexpectedEnd              => m"the input ended before a rule was closed"
-      case UnexpectedChar(char)       => m"the character $char was not expected here"
-      case EmptySelector              => m"a selector was expected but none was found"
-      case UnknownProperty(name)      => m"$name is not a recognized CSS property"
-      case BadValue(property, value)  => m"$value is not a valid value for the $property property"
-      case UnsupportedValue(name, _)  => m"the value of $name uses an unsupported type"
-
-  enum Reason(val number: Int) extends Clarification:
-    case UnterminatedComment         extends Reason(1)
-    case UnterminatedString          extends Reason(2)
-    case UnexpectedEnd               extends Reason(3)
-    case UnexpectedChar(char: Char)  extends Reason(4)
-    case EmptySelector               extends Reason(5)
-    case UnknownProperty(name: Text) extends Reason(6)
-    case BadValue(property: Text, value: Text) extends Reason(7)
-    case UnsupportedValue(property: Text, types: List[Text]) extends Reason(8)
-
-case class CssError(reason: CssError.Reason, line: Ordinal, column: Ordinal)(using Diagnostics)
-extends Error(251, reason.number)(m"invalid CSS at line ${line.n1} column ${column.n1}: $reason")
+// The CSS Value Definition Syntax (VDS) — the grammar notation in which every
+// property's permitted values are described. A `Syntax` is the parsed form of a
+// grammar string such as `<line-width> || <line-style> || <color>`; it is what a
+// later step matches a concrete value against.
+enum Syntax derives CanEqual:
+  case Keyword(name: Text)                          // a literal identifier, e.g. `auto`
+  case Literal(token: Text)                         // a literal token, e.g. `/` `,` or quoted `'+'`
+  case Type(name: Text, bounds: Optional[Text])     // `<length>`, `<integer [1,4]>` (bounds raw)
+  case Property(name: Text)                         // `<'border-width'>` — another property
+  case Function(name: Text, body: Syntax)           // `rgb( <number>#{3} )`
+  case Sequence(terms: List[Syntax])               // juxtaposition: terms in order
+  case OneOf(options: List[Syntax])                // `|`  — exactly one
+  case AnyOf(terms: List[Syntax])                  // `||` — one or more, in any order
+  case AllOf(terms: List[Syntax])                  // `&&` — all, in any order
+  // a repeat multiplier: `?` `*` `+` `{m,n}` `#`
+  case Repeated(term: Syntax, min: Int, max: Optional[Int], separated: Boolean)
+  case Mandatory(term: Syntax)                     // `!` — the group must produce a value

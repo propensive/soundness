@@ -159,9 +159,32 @@ private[cataclysm] object CssParser:
       else if colonAt >= 0 then
         val property = buf.substring(0, colonAt).nn.tt.trim
         val value = buf.substring(colonAt + 1).nn.tt.trim
+        validate(property, value)
         Node.Declaration(property, value)
       else
+        validate(text, t"")
         Node.Declaration(text, t"")
+
+    // Check a declaration's property name and value, accumulating (via `raise`)
+    // any error rather than aborting, so the rest of the stylesheet is still
+    // read. Custom properties (`--…`) accept any value.
+    private def validate(property: Text, value: Text): Unit =
+      if property.starts(t"--") then ()
+      else PropertyDef.of(property) match
+        case definition: PropertyDef =>
+          SyntaxMatcher.check(definition, value) match
+            case Outcome.Valid =>
+              ()
+
+            case Outcome.Invalid =>
+              raise(CssError(CssError.Reason.BadValue(property, value), cursor.line, cursor.column))
+
+            case Outcome.Unsupported(types) =>
+              val reason = CssError.Reason.UnsupportedValue(property, types)
+              raise(CssError(reason, cursor.line, cursor.column))
+
+        case _ =>
+          raise(CssError(CssError.Reason.UnknownProperty(property), cursor.line, cursor.column))
 
     // Split an `@…` prelude into its identifier and the remaining prelude text.
     private def atRule(text: Text): (Text, Text) =

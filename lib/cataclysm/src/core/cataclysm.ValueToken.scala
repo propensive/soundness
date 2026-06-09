@@ -33,30 +33,21 @@
 package cataclysm
 
 import anticipation.*
-import denominative.*
-import fulminate.*
 
-object CssError:
-  object Reason:
-    given communicable: Reason is Communicable =
-      case UnterminatedComment        => m"a comment was not terminated"
-      case UnterminatedString         => m"a string literal was not terminated"
-      case UnexpectedEnd              => m"the input ended before a rule was closed"
-      case UnexpectedChar(char)       => m"the character $char was not expected here"
-      case EmptySelector              => m"a selector was expected but none was found"
-      case UnknownProperty(name)      => m"$name is not a recognized CSS property"
-      case BadValue(property, value)  => m"$value is not a valid value for the $property property"
-      case UnsupportedValue(name, _)  => m"the value of $name uses an unsupported type"
-
-  enum Reason(val number: Int) extends Clarification:
-    case UnterminatedComment         extends Reason(1)
-    case UnterminatedString          extends Reason(2)
-    case UnexpectedEnd               extends Reason(3)
-    case UnexpectedChar(char: Char)  extends Reason(4)
-    case EmptySelector               extends Reason(5)
-    case UnknownProperty(name: Text) extends Reason(6)
-    case BadValue(property: Text, value: Text) extends Reason(7)
-    case UnsupportedValue(property: Text, types: List[Text]) extends Reason(8)
-
-case class CssError(reason: CssError.Reason, line: Ordinal, column: Ordinal)(using Diagnostics)
-extends Error(251, reason.number)(m"invalid CSS at line ${line.n1} column ${column.n1}: $reason")
+// A CSS value token, the unit a property value is broken into before being
+// matched against a `Syntax` grammar. Follows the CSS Syntax Module Level 3
+// tokenizer, restricted to the tokens that appear in property values.
+enum ValueToken derives CanEqual:
+  case Whitespace
+  case Ident(value: Text)                               // auto, solid, --my-var
+  case Function(name: Text)                             // an ident directly followed by `(`
+  case Hash(value: Text)                                // `#ff0000` → value `ff0000`
+  case Quoted(value: Text)                              // a string's contents (without quotes)
+  case Url(value: Text)                                 // an unquoted `url(…)`
+  case Number(value: Double, integer: Boolean, raw: Text)
+  case Percentage(value: Double, raw: Text)
+  case Dimension(value: Double, unit: Text, raw: Text)  // `10px` → 10, `px`
+  case Comma
+  case Open                                             // (
+  case Close                                            // )
+  case Delim(char: Char)                                // any other single char, e.g. `/` `+`

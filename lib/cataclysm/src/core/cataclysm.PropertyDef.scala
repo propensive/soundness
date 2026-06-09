@@ -33,30 +33,50 @@
 package cataclysm
 
 import anticipation.*
-import denominative.*
-import fulminate.*
+import contingency.*
+import gossamer.*
+import hellenism.*
+import jacinta.*
+import turbulence.*
+import vacuous.*
 
-object CssError:
-  object Reason:
-    given communicable: Reason is Communicable =
-      case UnterminatedComment        => m"a comment was not terminated"
-      case UnterminatedString         => m"a string literal was not terminated"
-      case UnexpectedEnd              => m"the input ended before a rule was closed"
-      case UnexpectedChar(char)       => m"the character $char was not expected here"
-      case EmptySelector              => m"a selector was expected but none was found"
-      case UnknownProperty(name)      => m"$name is not a recognized CSS property"
-      case BadValue(property, value)  => m"$value is not a valid value for the $property property"
-      case UnsupportedValue(name, _)  => m"the value of $name uses an unsupported type"
+import hellenism.classloaders.threadContext
 
-  enum Reason(val number: Int) extends Clarification:
-    case UnterminatedComment         extends Reason(1)
-    case UnterminatedString          extends Reason(2)
-    case UnexpectedEnd               extends Reason(3)
-    case UnexpectedChar(char: Char)  extends Reason(4)
-    case EmptySelector               extends Reason(5)
-    case UnknownProperty(name: Text) extends Reason(6)
-    case BadValue(property: Text, value: Text) extends Reason(7)
-    case UnsupportedValue(property: Text, types: List[Text]) extends Reason(8)
+object PropertyDef:
+  // One entry of the bundled `properties.json`. Only `syntax` is read; jacinta
+  // ignores the dataset's other fields (initial, inherited, …).
+  private object Entry:
+    given decodable: Tactic[JsonError] => Entry is Json.Decodable = Json.DecodableDerivation.derived
 
-case class CssError(reason: CssError.Reason, line: Ordinal, column: Ordinal)(using Diagnostics)
-extends Error(251, reason.number)(m"invalid CSS at line ${line.n1} column ${column.n1}: $reason")
+  private case class Entry(syntax: Text)
+
+  // Every known CSS property. Read lazily from the classpath resource the first
+  // time a property is resolved; a malformed resource is a packaging error,
+  // hence `throwUnsafely`.
+  lazy val list: List[PropertyDef] =
+    import contingency.strategies.throwUnsafely
+
+    val entries = cp"/cataclysm/properties.json".read[Json].as[Map[Text, Entry]]
+
+    entries.to(List).map: (name, entry) =>
+      PropertyDef(name, entry.syntax)
+
+  // The same properties keyed by name in a `Dictionary` for fast lookup.
+  lazy val all: Dictionary[PropertyDef] =
+    val pairs = list.map: property =>
+      (property.name, property)
+
+    Dictionary(pairs*)
+
+  // The definition of the named property, or `Unset` if it is not a recognized
+  // CSS property. Custom properties (names beginning with `--`) are the caller's
+  // responsibility — they are valid but have no definition here.
+  def of(name: Text): Optional[PropertyDef] = all(name)
+
+// The definition of a single CSS property, taken from the bundled MDN `mdn/data`
+// dataset (`css/properties.json`, CC0). `syntax` is the raw value grammar (CSS
+// Value Definition Syntax); `grammar` is its parsed form, computed on demand.
+case class PropertyDef(name: Text, syntax: Text) derives CanEqual:
+  lazy val grammar: Syntax =
+    import contingency.strategies.throwUnsafely
+    SyntaxParser.parse(syntax)
