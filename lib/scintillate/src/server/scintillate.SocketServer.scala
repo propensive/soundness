@@ -50,69 +50,68 @@ import zephyrine.*
 // than `com.sun.net.httpserver`. Each accepted socket is handled on its own
 // Loom virtual thread (`daemon`). The handler API is identical to `HttpServer`'s
 // — a `HttpConnection ?=> Http.Response` — so the two backends are
-// interchangeable. This first cut serves a single request per connection and
-// closes it; keep-alive, request-body framing and connection upgrades build on
-// top of this skeleton.
+// interchangeable. The connection loop supports keep-alive and pipelining,
+// `Content-Length` and chunked request bodies, and `101` protocol upgrades.
 case class SocketServer(port: Int, local: Boolean = true)(using errorPage: WebserverErrorPage)
 extends RequestServable:
-  def handle(handler: HttpConnection ?=> Http.Response)(using Monitor, Codicil)
-  :   Service logs HttpServerEvent raises ServerError =
 
-    val idleTimeout: Int = 30000
+  private def writeAll(out: ji.OutputStream, stream: Stream[Data]): Unit raises StreamError =
+    var count: Int = 0
 
-    def startServer(): jn.ServerSocket raises ServerError =
+    stream.each: block =>
       try
-        val host = if local then "localhost" else "0.0.0.0"
-        jn.ServerSocket(port, 0, jn.InetAddress.getByName(host).nn)
-      catch case error: jn.BindException => abort(ServerError(port))
+        out.write(block.mutable(using Unsafe))
+        count += block.length
+      catch case _: ji.IOException => abort(StreamError(count.b))
 
-    def writeAll(out: ji.OutputStream, stream: Stream[Data]): Unit raises StreamError =
-      var count: Int = 0
+    try out.flush() catch case _: ji.IOException => abort(StreamError(count.b))
 
-      stream.each: block =>
-        try
-          out.write(block.mutable(using Unsafe))
-          count += block.length
-        catch case _: ji.IOException => abort(StreamError(count.b))
+  // Frame the request body off the shared connection cursor: chunked decoding
+  // for `Transfer-Encoding: chunked`, otherwise `Content-Length` bytes, or empty
+  // when neither is given. The framed stream stops exactly at the body's end so
+  // the cursor is left at the next pipelined request.
+  private def requestBody(cursor: Cursor[Data], head: Http.Request.Head): Stream[Data] =
+    val chunked: Boolean = head.headers.exists: header =>
+      header.key.lower == t"transfer-encoding" && header.value.lower.contains(t"chunked")
 
-      try out.flush() catch case _: ji.IOException => abort(StreamError(count.b))
+    if chunked then Http.Request.chunkedBody(cursor) else
+      val length: Optional[Int] =
+        head.headers.filter(_.key.lower == t"content-length").prim.let(_.value)
+        . lay(Unset: Optional[Int]): text =>
+            safely(Integer.parseInt(text.s.trim.nn))
 
-    // Frame the request body off the shared connection cursor: chunked decoding
-    // for `Transfer-Encoding: chunked`, otherwise `Content-Length` bytes, or
-    // empty when neither is given. The framed stream stops exactly at the body's
-    // end so the cursor is left at the next pipelined request.
-    def requestBody(cursor: Cursor[Data], head: Http.Request.Head): Stream[Data] =
-      val chunked: Boolean = head.headers.exists: header =>
-        header.key.lower == t"transfer-encoding" && header.value.lower.contains(t"chunked")
+      length.lay(Stream())(Http.Request.fixedBody(cursor, _))
 
-      if chunked then Http.Request.chunkedBody(cursor) else
-        val length: Optional[Int] =
-          head.headers.filter(_.key.lower == t"content-length").prim.let(_.value)
-          . lay(Unset: Optional[Int]): text =>
-              safely(Integer.parseInt(text.s.trim.nn))
+  // RFC 7230 §6.3: HTTP/1.1 keeps connections alive unless `Connection: close`;
+  // HTTP/1.0 closes unless `Connection: keep-alive`.
+  private def keepAlive(head: Http.Request.Head): Boolean =
+    val connection = head.headers.filter(_.key.lower == t"connection").map(_.value.lower)
 
-        length.lay(Stream())(Http.Request.fixedBody(cursor, _))
+    head.version match
+      case 1.1 => !connection.exists(_.contains(t"close"))
+      case _   => connection.exists(_.contains(t"keep-alive"))
 
-    // RFC 7230 §6.3: HTTP/1.1 keeps connections alive unless `Connection: close`;
-    // HTTP/1.0 closes unless `Connection: keep-alive`.
-    def keepAlive(head: Http.Request.Head): Boolean =
-      val connection = head.headers.filter(_.key.lower == t"connection").map(_.value.lower)
+  // A request asks to upgrade the protocol (e.g. to WebSocket) when it carries
+  // `Connection: Upgrade` together with an `Upgrade` header. Such a request's
+  // body is the unbounded remainder of the connection, so a frame reader can
+  // keep receiving bytes after the handshake.
+  private def isUpgrade(head: Http.Request.Head): Boolean =
+    head.headers.filter(_.key.lower == t"connection").exists(_.value.lower.contains(t"upgrade"))
+    && head.headers.exists(_.key.lower == t"upgrade")
 
-      head.version match
-        case 1.1 => !connection.exists(_.contains(t"close"))
-        case _   => connection.exists(_.contains(t"keep-alive"))
+  // Drive the HTTP/1.1 keep-alive loop over an arbitrary byte source and sink,
+  // independent of any socket. `handle` calls this once per accepted connection;
+  // it is also the in-process entry point for tests and benchmarks, which feed a
+  // `ByteArrayInputStream` of requests and capture the responses with no network
+  // involvement. The caller owns the streams (closing, read timeouts).
+  def serveConnection(handler: HttpConnection ?=> Http.Response)
+    ( in: ji.InputStream, out: ji.OutputStream )
+    ( using HttpServerEvent is Loggable )
+  :   Unit =
 
-    // A request asks to upgrade the protocol (e.g. to WebSocket) when it carries
-    // `Connection: Upgrade` together with an `Upgrade` header. Such a request's
-    // body is the unbounded remainder of the connection, so a frame reader can
-    // keep receiving bytes after the handshake.
-    def isUpgrade(head: Http.Request.Head): Boolean =
-      head.headers.filter(_.key.lower == t"connection").exists(_.value.lower.contains(t"upgrade"))
-      && head.headers.exists(_.key.lower == t"upgrade")
-
-    // Handle a single request off the cursor and return whether the connection
-    // should be kept alive for a further request.
-    def serveRequest(cursor: Cursor[Data], out: ji.OutputStream): Boolean raises StreamError =
+    // Handle one request off the cursor; return whether to keep the connection
+    // alive for a further request.
+    def serveRequest(cursor: Cursor[Data]): Boolean raises StreamError =
       whereas:
         case error: HttpRequestError =>
           val response = Http.Response(Http.BadRequest)() + Http.Header(t"connection", t"close")
@@ -157,30 +156,39 @@ extends RequestServable:
             body.each(_ => ())
             keep
 
-    def serve(socket: jn.Socket): Unit =
+    try
+      whereas:
+        case StreamError(length) =>
+          Log.warn(HttpServerEvent.BrokenStream(length))
+
+      . recover:
+          val cursor = Cursor[Data](Streamable.inputStream.stream(in).filter(_.nonEmpty).iterator)
+
+          var continue = true
+          while continue && !cursor.finished do continue = serveRequest(cursor)
+
+    catch case NonFatal(exception) => exception.printStackTrace()
+
+  def handle(handler: HttpConnection ?=> Http.Response)(using Monitor, Codicil)
+  :   Service logs HttpServerEvent raises ServerError =
+
+    val idleTimeout: Int = 30000
+
+    def startServer(): jn.ServerSocket raises ServerError =
       try
-        socket.setSoTimeout(idleTimeout)
-        val in = socket.getInputStream.nn
-        val out = socket.getOutputStream.nn
-
-        whereas:
-          case StreamError(length) =>
-            Log.warn(HttpServerEvent.BrokenStream(length))
-
-        . recover:
-            val cursor = Cursor[Data](Streamable.inputStream.stream(in).filter(_.nonEmpty).iterator)
-
-            var continue = true
-            while continue && !cursor.finished do continue = serveRequest(cursor, out)
-
-      catch case NonFatal(exception) => exception.printStackTrace()
-      finally safely(socket.close())
+        val host = if local then "localhost" else "0.0.0.0"
+        jn.ServerSocket(port, 0, jn.InetAddress.getByName(host).nn)
+      catch case error: jn.BindException => abort(ServerError(port))
 
     val serverSocket = startServer()
 
     val acceptLoop = loop:
       safely(serverSocket.accept().nn).let: socket =>
-        daemon(serve(socket))
+        daemon:
+          try
+            socket.setSoTimeout(idleTimeout)
+            serveConnection(handler)(socket.getInputStream.nn, socket.getOutputStream.nn)
+          finally safely(socket.close())
 
     val acceptTask = daemon(acceptLoop.run())
     val cancel: Promise[Unit] = Promise[Unit]()
