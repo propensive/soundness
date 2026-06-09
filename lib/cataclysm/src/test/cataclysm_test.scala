@@ -77,6 +77,12 @@ object Tests extends Suite(m"Cataclysm Tests"):
   def num(n: Int): ValueToken = ValueToken.Number(n, true, n.toString.tt)
   def dim(n: Int, unit: Text): ValueToken = ValueToken.Dimension(n, unit, (n.toString+unit.s).tt)
 
+  // ── value-matcher helpers ────────────────────────────────────────────────
+  def vm(property: Text, value: Text): Outcome =
+    SyntaxMatcher.check(PropertyDef.of(property).vouch, value)
+
+  def vmatch(grammar: Syntax, value: Text): Outcome = SyntaxMatcher.check(grammar, value)
+
   def run(): Unit =
     suite(m"CSS parsing"):
       test(m"a single flat rule with one declaration"):
@@ -457,6 +463,53 @@ object Tests extends Suite(m"Cataclysm Tests"):
       test(m"calc with spaced operators"):
         vt(t"calc(1px + 2px)")
       . assert(_ == calcTokens)
+
+    suite(m"Value matching"):
+      val numbers = Syntax.OneOf(List(kw(t"auto"), ty(t"length")))
+
+      test(m"a keyword value is valid"):
+        vm(t"color", t"red")
+      . assert(_ == Outcome.Valid)
+
+      test(m"a length value is valid"):
+        vm(t"width", t"10px")
+      . assert(_ == Outcome.Valid)
+
+      test(m"a unitless zero is a valid length"):
+        vm(t"margin", t"0")
+      . assert(_ == Outcome.Valid)
+
+      test(m"a var() value is always valid"):
+        vm(t"width", t"var(--w)")
+      . assert(_ == Outcome.Valid)
+
+      test(m"a calc() value is accepted where a length is expected"):
+        vm(t"width", t"calc(100% - 10px)")
+      . assert(_ == Outcome.Valid)
+
+      test(m"a matching keyword in a hand-built grammar"):
+        vmatch(numbers, t"auto")
+      . assert(_ == Outcome.Valid)
+
+      test(m"a non-matching value is invalid"):
+        vmatch(numbers, t"red")
+      . assert(_ == Outcome.Invalid)
+
+      test(m"an unimplemented type is unsupported"):
+        vmatch(Syntax.Type(t"frobnicate", Unset), t"anything")
+      . assert(_ == Outcome.Unsupported(List(t"frobnicate")))
+
+      test(m"a sequence of lengths"):
+        vmatch(Syntax.Sequence(List(ty(t"length"), ty(t"length"))), t"1px 2px")
+      . assert(_ == Outcome.Valid)
+
+      test(m"any-order matching with the double-ampersand"):
+        vmatch(Syntax.AnyOf(List(kw(t"a"), kw(t"b"))), t"b a")
+      . assert(_ == Outcome.Valid)
+
+      test(m"a comma-separated repeat"):
+        vmatch(Syntax.Repeated(ty(t"length"), 1, Unset, true), t"1px, 2px, 3px")
+      . assert(_ == Outcome.Valid)
 
     suite(m"CSS errors"):
       test(m"an unterminated comment is reported"):
