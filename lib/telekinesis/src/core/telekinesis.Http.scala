@@ -431,6 +431,65 @@ object Http:
     private[Http] def response(status: Status, headers: List[Header], body: Body): Response =
       new Response(1.1, status, headers, body)
 
+    // Serialise a response to HTTP/1.1 wire bytes: status line, headers (with an
+    // automatic `Content-Length` for fixed/empty bodies, or `Transfer-Encoding:
+    // chunked` framing for streaming bodies), the blank line, then the framed
+    // body. `includeBody` is `false` for responses to `HEAD` requests and for
+    // `101` upgrades (where the caller pipes the post-handshake stream raw). The
+    // inverse of `parse`.
+    def serialize(response: Response, includeBody: Boolean = true): Stream[Data] =
+      import charEncoders.ascii
+
+      val explicitChunked: Boolean = response.textHeaders.exists: header =>
+        header.key.lower == t"transfer-encoding" && header.value.lower == t"chunked"
+
+      val hasContentLength: Boolean = response.textHeaders.exists(_.key.lower == t"content-length")
+
+      val (extraHeaders, chunked): (List[Header], Boolean) = response.body match
+        case Body.Empty =>
+          (if hasContentLength then Nil else List(Header(t"content-length", t"0")), false)
+
+        case Body.Fixed(data) =>
+          val length = data.length.toString.tt
+          (if hasContentLength then Nil else List(Header(t"content-length", length)), false)
+
+        case Body.Streaming(_) =>
+          if explicitChunked then (Nil, true)
+          else if hasContentLength then (Nil, false)
+          else (List(Header(t"transfer-encoding", t"chunked")), true)
+
+      val head: Text = Text.build:
+        append(t"HTTP/1.1 ")
+        append(response.status.code.toString.tt)
+        append(t" ")
+        append(response.status.description)
+        append(t"\r\n")
+
+        (response.textHeaders ++ extraHeaders).each: header =>
+          append(header.key)
+          append(t": ")
+          append(header.value)
+          append(t"\r\n")
+
+        append(t"\r\n")
+
+      def chunkedFraming(stream: Stream[Data]): Stream[Data] = stream match
+        case block #:: tail =>
+          if block.length == 0 then chunkedFraming(tail) else
+            val size: Text = Integer.toHexString(block.length).nn.tt
+            t"$size\r\n".data #:: block #:: t"\r\n".data #:: chunkedFraming(tail)
+
+        case _ =>
+          Stream(t"0\r\n\r\n".data)
+
+      def bodyBytes: Stream[Data] =
+        if !includeBody then Stream() else response.body match
+          case Body.Empty             => Stream()
+          case Body.Fixed(data)       => Stream(data)
+          case Body.Streaming(stream) => if chunked then chunkedFraming(stream) else stream
+
+      head.data #:: bodyBytes
+
     def parse(stream: Stream[Data]): Response raises HttpResponseError =
       val cursor = Cursor[Data](stream.filter(_.nonEmpty).iterator)
 

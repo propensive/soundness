@@ -369,6 +369,68 @@ object Tests extends Suite(m"Telekinesis tests"):
         case HttpRequestError.Reason.Host(_) => true
         case _                               => false
 
+    suite(m"Response serialization"):
+      def chunks(text: Text, size: Int): Stream[Data] =
+        val data: Data = text.data
+        def go(offset: Int): Stream[Data] =
+          if offset >= data.length then Stream() else
+            val end = math.min(offset + size, data.length)
+            data.slice(offset, end) #:: go(end)
+        go(0)
+
+      def bodyText(response: Http.Response): Text = response.body.stream.read[Data].utf8
+
+      def wire(response: Http.Response, includeBody: Boolean = true): Text =
+        Http.Response.serialize(response, includeBody).read[Data].utf8
+
+      val blockSizes = List(1, 2, 3, 7, 13, 4096)
+
+      test(m"Status line carries code and reason phrase"):
+        wire(Http.Response(Http.NotFound)()).cut(t"\r\n").head
+
+      . assert(_ == t"HTTP/1.1 404 Not Found")
+
+      for blockSize <- blockSizes do
+        test(m"Round-trip a fixed body at block size $blockSize"):
+          val response = Http.Response(Http.Ok)(t"hello world")
+          val parsed = Http.Response.parse(chunks(wire(response), blockSize))
+          (parsed.status, bodyText(parsed))
+
+        . assert(_ == (Http.Ok, t"hello world"))
+
+      test(m"Fixed body sets a correct Content-Length"):
+        wire(Http.Response(Http.Ok)(t"hello")).contains(t"content-length: 5")
+
+      . assert(_ == true)
+
+      test(m"Empty body sets Content-Length 0"):
+        wire(Http.Response(Http.NoContent)()).contains(t"content-length: 0")
+
+      . assert(_ == true)
+
+      test(m"Streaming body is framed with chunked transfer-encoding"):
+        val body = Http.Body.Streaming(Stream(t"Hello".data, t"World".data))
+        wire(Http.Response(Http.Ok)(body))
+
+      . assert: text =>
+          text.contains(t"transfer-encoding: chunked")
+          && text.contains(t"5\r\nHello\r\n")
+          && text.contains(t"5\r\nWorld\r\n")
+          && text.ends(t"0\r\n\r\n")
+
+      test(m"Streaming body skips zero-length blocks"):
+        val body = Http.Body.Streaming(Stream(t"ab".data, t"".data, t"cd".data))
+        wire(Http.Response(Http.Ok)(body))
+
+      . assert(_.contains(t"2\r\nab\r\n2\r\ncd\r\n"))
+
+      test(m"HEAD response omits the body but keeps headers"):
+        val response = Http.Response(Http.Ok)(t"hello")
+        val text = wire(response, includeBody = false)
+        text.ends(t"\r\n\r\n") && !text.contains(t"hello") && text.contains(t"content-length: 5")
+
+      . assert(_ == true)
+
     suite(m"Redirect handling"):
       test(m"Follow a relative redirect chain by default"):
         url"https://httpbin.org/redirect/3".fetch().status
