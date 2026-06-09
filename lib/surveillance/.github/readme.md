@@ -58,6 +58,28 @@ as a nonexistent path or the operating system's watch limit being exceeded, are 
 The most important method of a `Watch` is its `stream` method, which returns a `Stream[WatchEvent]` that yields
 events as they occur and ends when the watch is unregistered.
 
+### Backends
+
+The mechanism that detects changes is chosen by a contextual `Watcher` instance. Without any import the default
+`Watcher` is used, which delegates to the operating system's native filewatching service (a shared
+`java.nio.file.WatchService` and a single background thread).
+
+Some filesystems and platforms offer no usable native filewatching. For those cases, Surveillance provides a
+polling backend that periodically snapshots each watched directory and compares successive snapshots. Select it by
+putting a polling `Watcher` in scope, specifying how often to poll:
+```scala
+import quantitative.*
+
+given Watcher = watchers.polling(0.5*Second)
+
+dir.watch: watcher =>
+  watcher.stream.each:
+    case WatchEvent.NewFile(dir, file) => // ...
+    case other                         => // ...
+```
+The polling backend needs no operating-system support, at the cost of latency bounded by the polling interval and
+an inability to detect changes that leave a file's size and modification time unchanged.
+
 
 
 

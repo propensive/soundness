@@ -64,3 +64,18 @@ object Tests extends Suite(m"Surveillance tests"):
       directory.watch(watcher => watcher).stream.to(List)
 
     . assert(_ == Nil)
+
+    test(m"The polling watcher reports a newly-created file"):
+      given Watcher = watchers.polling(0.05*Second)
+      val directory = temporaryDirectory[Path on Local]/Uuid().show
+      directory.create[Directory]()
+      val leaf: Text = Uuid().show
+
+      directory.watch: watcher =>
+        (directory/leaf).create[File]()
+
+        watcher.stream.head match
+          case NewFile(_, file) => file == leaf
+          case _                => false
+
+    . assert(_ == true)
