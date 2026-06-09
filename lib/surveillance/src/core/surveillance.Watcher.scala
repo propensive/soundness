@@ -30,9 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package surveillance
 
-export surveillance.{Watch, watch, Watcher, WatchError, WatchEvent}
+import java.nio.file as jnf
 
-package watchers:
-  export surveillance.watchers.{native, polling}
+import anticipation.*
+import contingency.*
+import turbulence.*
+
+// A `Watcher` is the backend that detects filesystem changes. The default (selected without any
+// import) is `NativeWatcher`, which delegates to the operating system's filewatching service. The
+// `watchers.polling` backend instead snapshots directories on a fixed interval, for filesystems or
+// platforms where native filewatching is unavailable or unreliable.
+
+object Watcher:
+  given default: Watcher = NativeWatcher
+
+  // A handle to a single backend registration; cancelling it stops delivery of further events for
+  // the directories registered in the corresponding `watch` call.
+  trait Registration:
+    def cancel(): Unit
+
+trait Watcher:
+  def watch(directories: Map[jnf.Path, Text => Boolean], spool: Spool[WatchEvent])
+  :   Watcher.Registration raises WatchError

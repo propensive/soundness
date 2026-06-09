@@ -38,18 +38,24 @@ import prepositional.*
 import rudiments.*
 
 extension [path: Abstractable across Paths to Text](path: path)
-  def watch[result](lambda: Watch => result): result raises WatchError =
+  def watch[result](lambda: Watch => result)(using Watcher): result raises WatchError =
     val watchSet = Watch(List(path))
 
     lambda(watchSet).also:
       watchSet.unregister()
 
 extension [path: Abstractable across Paths to Text](paths: Iterable[path])
-  def watch[result](lambda: Watch => result): result raises WatchError =
+  def watch[result](lambda: Watch => result)(using Watcher): result raises WatchError =
     val watchSet = Watch(paths)
 
     lambda(watchSet).also:
       watchSet.unregister()
 
 export WatchEvent.{NewFile, NewDirectory, Modify, Delete}
+
+package watchers:
+  given native: Watcher = NativeWatcher
+
+  def polling[duration: Abstractable across Durations to Long](interval: duration): Watcher =
+    PollingWatcher(interval)
 

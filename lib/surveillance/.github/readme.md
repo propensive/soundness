@@ -6,7 +6,7 @@
 
 __Representation-agnostic filewatching with streams in Scala__
 
-__Surveillance__ watches directories for changes, and provides a `LazyList` of streaming `WatchEvent`s. While it
+__Surveillance__ watches directories for changes, and provides a `Stream` of streaming `WatchEvent`s. While it
 works well with [Galilei](https://github.com/propensive/galilei/), it can work with any representation of
 paths.
 
@@ -43,13 +43,42 @@ import serpentine.*
 import surveillance.*
 
 val dir = (Unix / p"home" / p"work" / p"updates").directory()
-val watcher = dir.watch()
+
+dir.watch: watcher =>
+  watcher.stream.each:
+    case WatchEvent.NewFile(dir, file) => // ...
+    case other                         => // ...
 ```
 
-Constructing a new `Watcher` on a directory will register that directory with the filesystem's filewatching service
-and start a new thread to respond to updates.
+The `watch` extension method takes a lambda whose single parameter is a `Watch`. It registers the directory (or
+directories) with the filesystem's filewatching service — starting a shared background thread on first use — invokes
+the lambda, and unregisters the watch (terminating its stream) when the lambda returns. Registration failures, such
+as a nonexistent path or the operating system's watch limit being exceeded, are raised as a `WatchError`.
 
-The most important method of a `Watcher` is its `stream` method, which will return a `LazyList[WatchEvent]`
+The most important method of a `Watch` is its `stream` method, which returns a `Stream[WatchEvent]` that yields
+events as they occur and ends when the watch is unregistered.
+
+### Backends
+
+The mechanism that detects changes is chosen by a contextual `Watcher` instance. Without any import the default
+`Watcher` is used, which delegates to the operating system's native filewatching service (a shared
+`java.nio.file.WatchService` and a single background thread).
+
+Some filesystems and platforms offer no usable native filewatching. For those cases, Surveillance provides a
+polling backend that periodically snapshots each watched directory and compares successive snapshots. Select it by
+putting a polling `Watcher` in scope, specifying how often to poll:
+```scala
+import quantitative.*
+
+given Watcher = watchers.polling(0.5*Second)
+
+dir.watch: watcher =>
+  watcher.stream.each:
+    case WatchEvent.NewFile(dir, file) => // ...
+    case other                         => // ...
+```
+The polling backend needs no operating-system support, at the cost of latency bounded by the polling interval and
+an inability to detect changes that leave a file's size and modification time unchanged.
 
 
 
