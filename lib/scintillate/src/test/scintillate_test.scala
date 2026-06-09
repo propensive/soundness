@@ -167,3 +167,62 @@ object Tests extends Suite(m"Scintillate tests"):
           response
 
         . assert(r => r.contains(t"101 Switching Protocols") && r.ends(t"PING"))
+
+    // Drive the connection loop entirely in memory — no socket, no threads — by
+    // feeding request bytes through `serveConnection` and capturing the response.
+    def inProcess(handler: HttpConnection ?=> Http.Response, request: Text): Text =
+      val in = java.io.ByteArrayInputStream(request.s.getBytes("US-ASCII").nn)
+      val out = java.io.ByteArrayOutputStream()
+      SocketServer(0).serveConnection(handler)(in, out)
+      String(out.toByteArray.nn, "US-ASCII").tt
+
+    suite(m"In-process connection loop"):
+      test(m"A request is served entirely in-process with no socket"):
+        inProcess(Http.Response(Http.Ok)(t"in-process"), t"GET / HTTP/1.1\r\nHost: x\r\n\r\n")
+
+      . assert(_.contains(t"in-process"))
+
+      test(m"1000 pipelined requests produce 1000 responses"):
+        val many = t"GET / HTTP/1.1\r\nHost: x\r\n\r\n"*1000
+        inProcess(Http.Response(Http.Ok)(t"ok"), many).cut(t"HTTP/1.1 200 OK").length
+
+      . assert(_ == 1001)
+
+      test(m"Every truncation of a valid request is handled without hanging"):
+        val bytes = t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 5\r\n\r\nhello".s.getBytes("US-ASCII").nn
+        var n = 0
+
+        while n <= bytes.length do
+          val in = java.io.ByteArrayInputStream(bytes, 0, n)
+          SocketServer(0).serveConnection(Http.Response(Http.Ok)(t"ok"))(in, java.io.ByteArrayOutputStream())
+          n += 1
+
+        true
+
+      . assert(_ == true)
+
+      test(m"Random byte streams never crash or hang the loop"):
+        var seed: Long = 0x2545f4914f6cdd1dL
+
+        def next(): Int =
+          seed = seed*6364136223846793005L + 1442695040888963407L
+          ((seed >>> 56) & 0xff).toInt
+
+        var iteration = 0
+
+        while iteration < 1000 do
+          val length = next()%80
+          val bytes = new Array[Byte](length)
+          var i = 0
+
+          while i < length do
+            bytes(i) = next().toByte
+            i += 1
+
+          val in = java.io.ByteArrayInputStream(bytes)
+          SocketServer(0).serveConnection(Http.Response(Http.Ok)(t"ok"))(in, java.io.ByteArrayOutputStream())
+          iteration += 1
+
+        true
+
+      . assert(_ == true)
