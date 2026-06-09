@@ -432,6 +432,16 @@ object Tests extends Suite(m"Ultimatum Tests"):
           EditorField(LineEditor(t"hi")).render(TerminalCanvas(20, 1), false)
       . assert(_.s.contains("[?25l"))
 
+      // Tabbing focus away from the menu must repaint it, so its marker updates
+      // from `>` to `·` (a regression: only the panel gaining focus was redrawn).
+      test(m"a panel that loses focus is repainted so its marker updates"):
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        val root = FlowExtent(TerminalCanvas(12, 3), Rect(0, 0, 12, 3))
+        val pane = rank(menu(List(t"alpha", t"beta"), t"alpha"), editor())
+        Form(root, Mode.Fullscreen, pane).run(List(Keypress.Tab, Keypress.Escape).iterator)
+        root.render
+      . assert(_ == t" · alpha    \n   beta     \n            ")
+
 // A test-only root `Canvas` that paints into a fixed in-memory grid but reports a
 // settable size, so a layout can be re-tiled to a smaller `width`/`height` and
 // the composed screen read back.

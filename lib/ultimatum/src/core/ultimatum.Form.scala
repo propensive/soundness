@@ -168,8 +168,11 @@ class Form(root: Canvas, mode: Mode, pane: Pane, wake: () => Unit = () => ()):
     while running && events.hasNext do events.next() match
       case Keypress.Tab =>
         if focuses.nonEmpty then
+          // Repaint the panel losing focus too, so its focus indicator updates;
+          // the panel gaining focus is repainted by `refresh` (focused last).
+          val vacated = focusLeaf(focusIndex)
           focused = focuses((focusIndex + 1)%focuses.length)
-          refresh(Set())
+          refresh(Set(vacated))
 
       case Keypress.Escape | Keypress.Ctrl('C' | 'D') =>
         running = false
