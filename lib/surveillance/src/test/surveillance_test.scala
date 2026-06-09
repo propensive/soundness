@@ -34,5 +34,33 @@ package surveillance
 
 import soundness.*
 
+import errorDiagnostics.empty
+import filesystemOptions.createNonexistentParents.enabled
+import filesystemOptions.overwritePreexisting.disabled
+import strategies.throwUnsafely
+import systems.java
+import temporaryDirectories.system
+
 object Tests extends Suite(m"Surveillance tests"):
-  def run(): Unit = ()
+  def run(): Unit =
+    test(m"Watching a path beneath a nonexistent directory raises a WatchError"):
+      val target = t"/surveillance-nonexistent-parent-9d3f17/child".decode[Path on Local]
+      capture[WatchError](target.watch(watcher => watcher)).reason
+
+    . assert(_ == WatchError.Reason.Nonexistent)
+
+    test(m"Watching a path whose parent is a regular file raises a WatchError"):
+      val file = temporaryDirectory[Path on Local]/Uuid().show
+      file.create[File]()
+      capture[WatchError]((file/Uuid().show).watch(watcher => watcher)).reason
+
+    . assert(_ == WatchError.Reason.NotDirectory)
+
+    test(m"A scoped watch on an untouched directory yields a terminating, empty stream"):
+      val directory = temporaryDirectory[Path on Local]/Uuid().show
+      directory.create[Directory]()
+
+      // Before `unregister` stopped the spool this `to(List)` would block forever.
+      directory.watch(watcher => watcher).stream.to(List)
+
+    . assert(_ == Nil)
