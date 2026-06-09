@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export cataclysm.Styles
+export cataclysm.{Styles, inlineStyle}
 
 package cssBindings:
   export cataclysm.cssBindings.checked

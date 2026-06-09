@@ -32,23 +32,14 @@
                                                                                                   */
 package cataclysm
 
-import scala.util.NotGiven
+// Controls how a `Css` tree is serialized. `newlines` puts each rule and
+// declaration on its own indented line; `spaces` adds the cosmetic spaces (after
+// `:` and before `{`) that aid legibility. The two bundled formatters are
+// `cssFormatters.standard` (both on) and `cssFormatters.compact` (both off).
+object CssFormatter:
+  def apply(newlines: Boolean, spaces: Boolean): CssFormatter = Basic(newlines, spaces)
+  private case class Basic(newlines: Boolean, spaces: Boolean) extends CssFormatter
 
-import anticipation.*
-import honeycomb.*
-import prepositional.*
-
-// Expands to the attribute (`"class"` or `"id"`) that `name` denotes in the
-// in-scope `Styles` stylesheet, failing to compile if it denotes neither (or
-// both).
-transparent inline def attributeFor[name <: Label]: Text = ${HtmlMacros.attributeFor[name]}
-
-// Lets a `Css.Style` be used as an inline `style="…"` attribute value in
-// Honeycomb, e.g. `Div(style = Css.Style(color = rgb, width = 4.0*Px))`.
-given inlineStyle: (Css.Style is Attributive to Whatwg.Css) = _ -> _.text
-
-// Import this to make `Tag.foo(…)` check `foo` against the in-scope `Styles`
-// stylesheet, attaching `class="foo"` or `id="foo"` accordingly.
-package cssBindings:
-  inline given checked: [name <: Label] => NotGiven[name =:= "apply"] => Attribution of name =
-    Attribution(attributeFor[name]).asInstanceOf[Attribution of name]
+trait CssFormatter:
+  def newlines: Boolean
+  def spaces: Boolean

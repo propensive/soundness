@@ -32,23 +32,60 @@
                                                                                                   */
 package cataclysm
 
-import scala.util.NotGiven
-
 import anticipation.*
-import honeycomb.*
+import gossamer.*
+import iridescence.*
 import prepositional.*
+import quantitative.*
+import spectacular.*
 
-// Expands to the attribute (`"class"` or `"id"`) that `name` denotes in the
-// in-scope `Styles` stylesheet, failing to compile if it denotes neither (or
-// both).
-transparent inline def attributeFor[name <: Label]: Text = ${HtmlMacros.attributeFor[name]}
+// Records that a native Scala type renders to a CSS value of the value-definition
+// type `Topic` (e.g. `"length"`, `"color"`). A single generic `Conversion` (in
+// `Css.Value`) lifts any such type into a `Css.Value of Topic`, so a new
+// convertible type costs one instance here, not one given per CSS property.
+object CssConvertible:
+  given pixels: (Quantity[Pixels[1]] is CssConvertible of "length") = q => t"${number(q.value)}px"
+  given ems: (Quantity[Ems[1]] is CssConvertible of "length") = q => t"${number(q.value)}em"
+  given rems: (Quantity[Rems[1]] is CssConvertible of "length") = q => t"${number(q.value)}rem"
+  given exs: (Quantity[Exs[1]] is CssConvertible of "length") = q => t"${number(q.value)}ex"
+  given chs: (Quantity[Chs[1]] is CssConvertible of "length") = q => t"${number(q.value)}ch"
 
-// Lets a `Css.Style` be used as an inline `style="…"` attribute value in
-// Honeycomb, e.g. `Div(style = Css.Style(color = rgb, width = 4.0*Px))`.
-given inlineStyle: (Css.Style is Attributive to Whatwg.Css) = _ -> _.text
+  given vws: (Quantity[ViewportWidths[1]] is CssConvertible of "length") =
+    q => t"${number(q.value)}vw"
 
-// Import this to make `Tag.foo(…)` check `foo` against the in-scope `Styles`
-// stylesheet, attaching `class="foo"` or `id="foo"` accordingly.
-package cssBindings:
-  inline given checked: [name <: Label] => NotGiven[name =:= "apply"] => Attribution of name =
-    Attribution(attributeFor[name]).asInstanceOf[Attribution of name]
+  given vhs: (Quantity[ViewportHeights[1]] is CssConvertible of "length") =
+    q => t"${number(q.value)}vh"
+
+  given vmins: (Quantity[ViewportMins[1]] is CssConvertible of "length") =
+    q => t"${number(q.value)}vmin"
+
+  given vmaxes: (Quantity[ViewportMaxes[1]] is CssConvertible of "length") =
+    q => t"${number(q.value)}vmax"
+
+  given centimetres: (Quantity[Centimetres[1]] is CssConvertible of "length") =
+    q => t"${number(q.value)}cm"
+
+  given millimetres: (Quantity[Millimetres[1]] is CssConvertible of "length") =
+    q => t"${number(q.value)}mm"
+
+  given inches: (Quantity[Inches[1]] is CssConvertible of "length") = q => t"${number(q.value)}in"
+  given points: (Quantity[Points[1]] is CssConvertible of "length") = q => t"${number(q.value)}pt"
+  given picas: (Quantity[Picas[1]] is CssConvertible of "length") = q => t"${number(q.value)}pc"
+
+  given percents: (Quantity[Percents[1]] is CssConvertible of "percentage") =
+    q => t"${number(q.value)}%"
+
+  given srgb: (Srgb is CssConvertible of "color") = hex(_)
+  given integer: (Int is CssConvertible of "integer") = _.show
+  given decimal: (Double is CssConvertible of "number") = Css.number(_)
+
+  private def number(value: Double): Text = Css.number(value)
+
+  private def hex(color: Srgb): Text =
+    def channel(component: Double): Text =
+      String.format("%02x", (component*255).toInt.max(0).min(255)).nn.tt
+
+    t"#${channel(color.red)}${channel(color.green)}${channel(color.blue)}"
+
+trait CssConvertible extends Typeclass, Topical:
+  def value(self: Self): Text

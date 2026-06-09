@@ -77,3 +77,7 @@ private def argumentSimples(argument: Optional[PseudoArgument]): List[Simple] =
     case PseudoArgument.Selectors(list) => listSimples(list)
     case PseudoArgument.Nth(_, _, of)   => of.lay(Nil)(listSimples)
     case PseudoArgument.Raw(_)          => Nil
+
+package cssFormatters:
+  given standard: CssFormatter = CssFormatter(newlines = true, spaces = true)
+  given compact: CssFormatter = CssFormatter(newlines = false, spaces = false)

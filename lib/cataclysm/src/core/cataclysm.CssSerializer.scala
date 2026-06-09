@@ -32,23 +32,67 @@
                                                                                                   */
 package cataclysm
 
-import scala.util.NotGiven
-
 import anticipation.*
-import honeycomb.*
-import prepositional.*
+import gossamer.*
+import parasite.*
+import spectacular.*
+import vacuous.*
+import zephyrine.*
 
-// Expands to the attribute (`"class"` or `"id"`) that `name` denotes in the
-// in-scope `Styles` stylesheet, failing to compile if it denotes neither (or
-// both).
-transparent inline def attributeFor[name <: Label]: Text = ${HtmlMacros.attributeFor[name]}
+// Serializes a `Css` tree back to CSS text. Output is produced lazily through a
+// `zephyrine.Emitter` (the same streaming mechanism Honeycomb uses for HTML), so
+// a large stylesheet never needs to be held in memory at once. The output style
+// is chosen by a contextual `CssFormatter` (`cssFormatters.standard` or
+// `.compact`).
+object CssSerializer:
+  def emit(css: Css)(using CssFormatter, Monitor, Codicil): Iterator[Text] =
+    val emitter = Emitter[Text](4096)
 
-// Lets a `Css.Style` be used as an inline `style="…"` attribute value in
-// Honeycomb, e.g. `Div(style = Css.Style(color = rgb, width = 4.0*Px))`.
-given inlineStyle: (Css.Style is Attributive to Whatwg.Css) = _ -> _.text
+    async:
+      write(css)(emitter.put(_))
+      emitter.finish()
 
-// Import this to make `Tag.foo(…)` check `foo` against the in-scope `Styles`
-// stylesheet, attaching `class="foo"` or `id="foo"` accordingly.
-package cssBindings:
-  inline given checked: [name <: Label] => NotGiven[name =:= "apply"] => Attribution of name =
-    Attribution(attributeFor[name]).asInstanceOf[Attribution of name]
+    emitter.iterator
+
+  def render(css: Css)(using CssFormatter): Text = Text.build(write(css) { text => append(text) })
+
+  private def write(css: Css)(put: Text => Unit)(using formatter: CssFormatter): Unit =
+    def newline(indent: Int): Unit = if formatter.newlines then put(indentText(indent))
+
+    def block(body: List[Css.Node], indent: Int): Unit =
+      put(if formatter.spaces then t" {" else t"{")
+
+      body.foreach: child =>
+        newline(indent + 1)
+        emitNode(child, indent + 1)
+
+      newline(indent)
+      put(t"}")
+
+    def emitNode(node: Css.Node, indent: Int): Unit = node match
+      case Css.Node.Rule(selector, body) =>
+        put(selector.show)
+        block(body, indent)
+
+      case Css.Node.Declaration(property, value) =>
+        put(property)
+        put(if formatter.spaces then t": " else t":")
+        put(value)
+        put(t";")
+
+      case Css.Node.At(name, prelude, body) =>
+        put(t"@$name")
+        if prelude != t"" then put(t" $prelude")
+
+        body.lay(put(t";")): nodes =>
+          block(nodes, indent)
+
+    var first = true
+
+    css.rules.foreach: child =>
+      if first then first = false else newline(0)
+      emitNode(child, 0)
+
+    if formatter.newlines then put(t"\n")
+
+  private def indentText(indent: Int): Text = ("\n" + " "*(2*indent)).tt
