@@ -1288,6 +1288,7 @@ object scintillate extends Library:
     def mvnDeps = Seq(mvn"jakarta.servlet:jakarta.servlet-api:6.0.0")
 
   object test extends Tests(server, servlet)
+  object bench extends Benchmarks(server, eucalyptus.core, quantitative.units)
 
 object sedentary extends Library:
   object core extends Component(superlunary.jvm, anthology.bundle, diuretic.core, quantitative.units):
