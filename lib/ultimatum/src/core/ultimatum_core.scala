@@ -32,9 +32,12 @@
                                                                                                   */
 package ultimatum
 
+import anticipation.*
+import denominative.*
 import profanity.*
 import rudiments.*
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 // Construct a leaf panel: a fractional weight and optional per-axis bounds,
@@ -89,6 +92,57 @@ def rank(panes: Pane*): Pane = Pane.Branch(Sizing(), Axis.Rank, Panes(panes*))
 
 // A row split over a live container, whose children can change while running.
 def rank(panes: Panes): Pane = Pane.Branch(Sizing(), Axis.Rank, panes)
+
+// Wrap `child` in a box-drawing border. Each requested side becomes a thin leaf
+// panel whose content is regenerated from its solved size, so an edge always
+// spans the bordered region exactly and re-rules itself when the layout resizes.
+// A corner is drawn only where two requested sides meet, so a partial border
+// (e.g. only `top`) is a single rule with no corners. The border reserves one
+// extra row or column on each requested side, propagated by the solver (each
+// edge's fixed bound flows up as the cross-axis limit of its band).
+def border
+  ( style:  BorderStyle = BorderStyle.light,
+    top:    Boolean     = true,
+    right:  Boolean     = true,
+    bottom: Boolean     = true,
+    left:   Boolean     = true )
+  ( child: Pane )
+:   Pane =
+
+  // A horizontal rule filling its width: a single fixed-height row.
+  def horizontalRule: Pane = panel(minHeight = 1, maxHeight = 1):
+    val extent = summon[Extent]
+    extent.move(Prim, Prim)
+    extent.put(style.horizontal*extent.width)
+
+  // A vertical rule filling its height: a single fixed-width column.
+  def verticalRule: Pane = panel(minWidth = 1, maxWidth = 1):
+    val extent = summon[Extent]
+    var row = 0
+
+    while row < extent.height do
+      extent.move(Prim, row.z)
+      extent.put(style.vertical)
+      row += 1
+
+  // A single cell holding one corner glyph.
+  def corner(glyph: Text): Pane =
+    panel(minWidth = 1, maxWidth = 1, minHeight = 1, maxHeight = 1)(summon[Extent].put(glyph))
+
+  // The middle band: the child flanked by whichever vertical edges are requested.
+  val middle =
+    val edge = if left then List(verticalRule) else Nil
+    file((edge ++ List(child) ++ (if right then List(verticalRule) else Nil))*)
+
+  // A horizontal band (the top or bottom): a rule flanked by whichever corners
+  // are requested (a corner appears only where a vertical edge also meets it).
+  def band(leftCorner: Text, rightCorner: Text): Pane =
+    val start = if left then List(corner(leftCorner)) else Nil
+    file((start ++ List(horizontalRule) ++ (if right then List(corner(rightCorner)) else Nil))*)
+
+  val head = if top then List(band(style.topLeft, style.topRight)) else Nil
+  val foot = if bottom then List(band(style.bottomLeft, style.bottomRight)) else Nil
+  rank((head ++ List(middle) ++ foot)*)
 
 // Drive an interactive layout, looping over terminal events until the user exits.
 // Used inside `interactive`. In `Fullscreen` mode the layout takes over the

@@ -459,6 +459,39 @@ object Tests extends Suite(m"Ultimatum Tests"):
         root.render
       . assert(_ == t" · alpha    \n   beta     \n            ")
 
+    suite(m"Borders"):
+      def render(width: Int, height: Int)(pane: Pane): Text =
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        val root = FlowExtent(TerminalCanvas(width, height), Rect(0, 0, width, height))
+        paint(root, pane)
+        root.render
+
+      test(m"a full border frames the content with corners and rules"):
+        render(4, 3)(border()(panel()(Out.print(t"hi"))))
+      . assert(_ == t"┌──┐\n│hi│\n└──┘")
+
+      test(m"the border style selects the glyphs (rounded corners)"):
+        render(3, 3)(border(BorderStyle.rounded)(panel()(Out.print(t"x"))))
+      . assert(_ == t"╭─╮\n│x│\n╰─╯")
+
+      test(m"a rule re-fills to the content's width"):
+        render(6, 3)(border()(panel()(Out.print(t"wide"))))
+      . assert(_ == t"┌────┐\n│wide│\n└────┘")
+
+      test(m"a top-only border is a single rule with no corners"):
+        render(2, 2)(border(top = true, right = false, bottom = false, left = false)
+            (panel()(Out.print(t"ab"))))
+      . assert(_ == t"──\nab")
+
+      test(m"left-and-right-only borders omit every corner"):
+        render(4, 1)(border(top = false, bottom = false)(panel()(Out.print(t"ab"))))
+      . assert(_ == t"│ab│")
+
+      test(m"a full border adds one cell on every side to the minimum size"):
+        val bordered = border()(panel(minWidth = 3, minHeight = 2)(())).frame
+        (bordered.measure(Axis.File).min, bordered.measure(Axis.Rank).min)
+      . assert(_ == (5, 4))
+
 // A test-only root `Canvas` that paints into a fixed in-memory grid but reports a
 // settable size, so a layout can be re-tiled to a smaller `width`/`height` and
 // the composed screen read back.
