@@ -37,6 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
 
+import cataclysm.Syntax
 import Css.Node.*
 
 object Tests extends Suite(m"Cataclysm Tests"):
@@ -64,6 +65,11 @@ object Tests extends Suite(m"Cataclysm Tests"):
   val next: Combinator = Combinator.NextSibling
   val subseq: Combinator = Combinator.SubsequentSibling
   val col: Combinator = Combinator.Column
+
+  // ── value-definition-syntax helpers ──────────────────────────────────────
+  def vp(text: Text): Syntax = SyntaxParser.parse(text)
+  def kw(name: Text): Syntax = Syntax.Keyword(name)
+  def ty(name: Text): Syntax = Syntax.Type(name, Unset)
 
   def run(): Unit =
     suite(m"CSS parsing"):
@@ -298,6 +304,83 @@ object Tests extends Suite(m"Cataclysm Tests"):
       test(m"an unknown property has no definition"):
         PropertyDef.of(t"colour").absent
       . assert(_ == true)
+
+    suite(m"Value Definition Syntax"):
+      test(m"a primitive type"):
+        vp(t"<color>")
+      . assert(_ == ty(t"color"))
+
+      test(m"a keyword"):
+        vp(t"auto")
+      . assert(_ == kw(t"auto"))
+
+      test(m"alternatives with the bar combinator"):
+        vp(t"<length> | auto")
+      . assert(_ == Syntax.OneOf(List(ty(t"length"), kw(t"auto"))))
+
+      test(m"the any-order double-bar combinator"):
+        vp(t"<line-width> || <line-style> || <color>")
+      . assert(_ == Syntax.AnyOf(List(ty(t"line-width"), ty(t"line-style"), ty(t"color"))))
+
+      test(m"the all-of double-ampersand combinator"):
+        vp(t"<a> && <b>")
+      . assert(_ == Syntax.AllOf(List(ty(t"a"), ty(t"b"))))
+
+      test(m"juxtaposition is a sequence"):
+        vp(t"<a> <b>")
+      . assert(_ == Syntax.Sequence(List(ty(t"a"), ty(t"b"))))
+
+      test(m"the optional multiplier"):
+        vp(t"<a>?")
+      . assert(_ == Syntax.Repeated(ty(t"a"), 0, 1, false))
+
+      test(m"the star multiplier"):
+        vp(t"<a>*")
+      . assert(_ == Syntax.Repeated(ty(t"a"), 0, Unset, false))
+
+      test(m"the plus multiplier"):
+        vp(t"<a>+")
+      . assert(_ == Syntax.Repeated(ty(t"a"), 1, Unset, false))
+
+      test(m"a range multiplier"):
+        vp(t"<a>{1,4}")
+      . assert(_ == Syntax.Repeated(ty(t"a"), 1, 4, false))
+
+      test(m"the comma-separated-list multiplier"):
+        vp(t"<a>#")
+      . assert(_ == Syntax.Repeated(ty(t"a"), 1, Unset, true))
+
+      test(m"a bounded comma-separated list"):
+        vp(t"<a>#{1,4}")
+      . assert(_ == Syntax.Repeated(ty(t"a"), 1, 4, true))
+
+      test(m"a bracketed group with a multiplier"):
+        vp(t"[ <a> | <b> ]?")
+      . assert(_ == Syntax.Repeated(Syntax.OneOf(List(ty(t"a"), ty(t"b"))), 0, 1, false))
+
+      test(m"functional notation"):
+        vp(t"rgb( <number>#{3} )")
+      . assert(_ == Syntax.Function(t"rgb", Syntax.Repeated(ty(t"number"), 3, 3, true)))
+
+      test(m"a property reference"):
+        vp(t"<'border-width'>")
+      . assert(_ == Syntax.Property(t"border-width"))
+
+      test(m"a bounded type keeps its range as raw text"):
+        vp(t"<integer [1,4]>")
+      . assert(_ == Syntax.Type(t"integer", t"1,4"))
+
+      test(m"a literal slash in a sequence"):
+        vp(t"<a> / <b>")
+      . assert(_ == Syntax.Sequence(List(ty(t"a"), Syntax.Literal(t"/"), ty(t"b"))))
+
+      test(m"the bar combinator is looser than juxtaposition"):
+        vp(t"<a> <b> | <c>")
+      . assert(_ == Syntax.OneOf(List(Syntax.Sequence(List(ty(t"a"), ty(t"b"))), ty(t"c"))))
+
+      test(m"every property's value grammar parses"):
+        PropertyDef.list.map(_.grammar).length
+      . assert(_ == 663)
 
     suite(m"CSS errors"):
       test(m"an unterminated comment is reported"):
