@@ -292,6 +292,83 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       . assert()
 
+    suite(m"Request parsing"):
+      def chunks(text: Text, size: Int): Stream[Data] =
+        val data: Data = text.data
+        def go(offset: Int): Stream[Data] =
+          if offset >= data.length then Stream() else
+            val end = math.min(offset + size, data.length)
+            data.slice(offset, end) #:: go(end)
+        go(0)
+
+      def bodyText(request: Http.Request): Text = request.body().read[Data].utf8
+
+      val blockSizes = List(1, 2, 3, 7, 13, 4096)
+      val fixture = t"GET /path?q=1 HTTP/1.1\r\nHost: example.com\r\nX-Foo: bar\r\n\r\nbody"
+
+      for blockSize <- blockSizes do
+        test(m"Parse method at block size $blockSize"):
+          Http.Request.parse(chunks(fixture, blockSize)).method
+
+        . assert(_ == Http.Get)
+
+        test(m"Parse target at block size $blockSize"):
+          Http.Request.parse(chunks(fixture, blockSize)).target
+
+        . assert(_ == t"/path?q=1")
+
+        test(m"Parse version at block size $blockSize"):
+          Http.Request.parse(chunks(fixture, blockSize)).version
+
+        . assert(_ == 1.1)
+
+        test(m"Parse host at block size $blockSize"):
+          Http.Request.parse(chunks(fixture, blockSize)).host.show
+
+        . assert(_ == t"example.com")
+
+        test(m"Parse headers at block size $blockSize"):
+          Http.Request.parse(chunks(fixture, blockSize)).textHeaders
+
+        . assert(_ == List(Http.Header(t"Host", t"example.com"), Http.Header(t"X-Foo", t"bar")))
+
+        test(m"Parse body at block size $blockSize"):
+          bodyText(Http.Request.parse(chunks(fixture, blockSize)))
+
+        . assert(_ == t"body")
+
+      val methods: List[Http.Method] =
+        List(Http.Get, Http.Head, Http.Post, Http.Put, Http.Delete, Http.Patch, Http.Options,
+            Http.Trace, Http.Connect)
+
+      for method <- methods do
+        test(m"Parse method ${method.show}"):
+          val fixture = t"${method.show} / HTTP/1.1\r\nHost: example.com\r\n\r\n"
+          Http.Request.parse(chunks(fixture, 4096)).method
+
+        . assert(_ == method)
+
+      test(m"Parse HTTP/1.0 version"):
+        val fixture = t"GET / HTTP/1.0\r\nHost: example.com\r\n\r\n"
+        Http.Request.parse(chunks(fixture, 4096)).version
+
+      . assert(_ == 1.0)
+
+      test(m"Host header with port has the port stripped"):
+        val fixture = t"GET / HTTP/1.1\r\nHost: example.com:8080\r\n\r\n"
+        Http.Request.parse(chunks(fixture, 4096)).host.show
+
+      . assert(_ == t"example.com")
+
+      test(m"Missing Host header raises Host reason"):
+        capture[HttpRequestError]:
+          Http.Request.parse(chunks(t"GET / HTTP/1.1\r\n\r\n", 4096))
+        . reason
+
+      . assert:
+        case HttpRequestError.Reason.Host(_) => true
+        case _                               => false
+
     suite(m"Redirect handling"):
       test(m"Follow a relative redirect chain by default"):
         url"https://httpbin.org/redirect/3".fetch().status

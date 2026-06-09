@@ -250,6 +250,72 @@ object Http:
 
       text.data #:: request.body()
 
+    case class Head
+      ( method: Method, version: Version, host: Host, target: Text, headers: List[Header] )
+
+    // Parse a request-line (`METHOD SP target SP HTTP-version CRLF`) and the
+    // header block off `cursor`, leaving it positioned at the first byte of
+    // the message body. The symmetric twin of `Http.Response.parse`'s
+    // status-line + header parsing; factored out so a server driving a single
+    // cursor across a keep-alive connection can frame the body itself. Scans
+    // with `peek`/`next` rather than `seek` so it works on a bare `Cursor[Data]`
+    // parameter (which loses the `tracked` `Operand = Byte` refinement that
+    // `seek`'s signature relies on).
+    def parseHead(cursor: Cursor[Data]): Head raises HttpRequestError =
+      inline def expected(char: Char): Diagnostics ?=> HttpRequestError =
+        HttpRequestError(HttpRequestError.Reason.Expectation(char, cursor.peek.asInt.toChar))
+
+      def upTo(stop: Char): Text = cursor.hold:
+        val start = cursor.mark
+        while !cursor.finished && !(cursor.peek == stop) do cursor.next()
+        Ascii(cursor.grab(start, cursor.mark)).show
+
+      val method: Http.Method = upTo(' ').decode[Http.Method]
+      cursor.next()
+
+      val target: Text = upTo(' ')
+      cursor.next()
+
+      val version: Http.Version = Http.Version.parse(upTo('\r'))
+      cursor.next()
+      cursor.expect('\n')(expected('\n'))
+
+      def readHeaders(headers: List[Http.Header]): List[Http.Header] =
+        if cursor.peek == '\r' then
+          cursor.next()
+          cursor.expect('\n')(expected('\n'))
+          headers
+
+        else
+          val key: Text = upTo(':')
+          cursor.next()
+
+          while cursor.peek == ' ' || cursor.peek == '\t' do cursor.next()
+
+          val value: Text = upTo('\r')
+          cursor.next()
+          cursor.expect('\n')(expected('\n'))
+          readHeaders(Http.Header(key, value) :: headers)
+
+      val headers = readHeaders(Nil).reverse
+
+      val hostText: Optional[Text] = headers.filter(_.key.lower == t"host").prim.let(_.value)
+
+      val host: Host = hostText.lay(abort(HttpRequestError(HttpRequestError.Reason.Host(t"")))):
+        text =>
+          safely(text.decode[Host]).or:
+            safely(text.cut(t":").prim.or(text).decode[Host]).or:
+              abort(HttpRequestError(HttpRequestError.Reason.Host(text)))
+
+      Head(method, version, host, target, headers)
+
+    def parse(stream: Stream[Data]): Request raises HttpRequestError =
+      val cursor = Cursor[Data](stream.filter(_.nonEmpty).iterator)
+      val head = parseHead(cursor)
+
+      Request
+        ( head.method, head.version, head.host, head.target, head.headers, () => cursor.remainder )
+
   enum Body:
     case Streaming(data: Stream[Data])
     case Fixed(data: Data)
