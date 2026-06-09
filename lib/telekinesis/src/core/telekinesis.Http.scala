@@ -250,6 +250,165 @@ object Http:
 
       text.data #:: request.body()
 
+    case class Head
+      ( method: Method, version: Version, host: Host, target: Text, headers: List[Header] )
+
+    // Parse a request-line (`METHOD SP target SP HTTP-version CRLF`) and the
+    // header block off `cursor`, leaving it positioned at the first byte of
+    // the message body. The symmetric twin of `Http.Response.parse`'s
+    // status-line + header parsing; factored out so a server driving a single
+    // cursor across a keep-alive connection can frame the body itself. Scans
+    // with `peek`/`next` rather than `seek` so it works on a bare `Cursor[Data]`
+    // parameter (which loses the `tracked` `Operand = Byte` refinement that
+    // `seek`'s signature relies on).
+    def parseHead(cursor: Cursor[Data]): Head raises HttpRequestError =
+      inline def expected(char: Char): Diagnostics ?=> HttpRequestError =
+        HttpRequestError(HttpRequestError.Reason.Expectation(char, cursor.peek.asInt.toChar))
+
+      def upTo(stop: Char): Text = cursor.hold:
+        val start = cursor.mark
+        while !cursor.finished && !(cursor.peek == stop) do cursor.next()
+        Ascii(cursor.grab(start, cursor.mark)).show
+
+      val method: Http.Method = upTo(' ').decode[Http.Method]
+      cursor.next()
+
+      val target: Text = upTo(' ')
+      cursor.next()
+
+      val version: Http.Version = Http.Version.parse(upTo('\r'))
+      cursor.next()
+      cursor.expect('\n')(expected('\n'))
+
+      def readHeaders(headers: List[Http.Header]): List[Http.Header] =
+        if cursor.peek == '\r' then
+          // Consume the final CRLF with `advance` rather than `next`/`expect`:
+          // `next` calls `more`, which forces a blocking refill of the underlying
+          // stream. That is fatal when a request has no body (e.g. a `GET`) and
+          // the client is already waiting for our response — there are no more
+          // bytes to read. `advance` steps past the terminator without reading
+          // ahead, leaving the cursor at the first byte of the body (if any).
+          cursor.advance()
+          if !(cursor.peek == '\n') then raise(expected('\n'))
+          cursor.advance()
+          headers
+
+        else
+          val key: Text = upTo(':')
+          cursor.next()
+
+          while cursor.peek == ' ' || cursor.peek == '\t' do cursor.next()
+
+          val value: Text = upTo('\r')
+          cursor.next()
+          cursor.expect('\n')(expected('\n'))
+          readHeaders(Http.Header(key, value) :: headers)
+
+      val headers = readHeaders(Nil).reverse
+
+      val hostText: Optional[Text] = headers.filter(_.key.lower == t"host").prim.let(_.value)
+
+      val host: Host = hostText.lay(abort(HttpRequestError(HttpRequestError.Reason.Host(t"")))):
+        text =>
+          safely(text.decode[Host]).or:
+            safely(text.cut(t":").prim.or(text).decode[Host]).or:
+              abort(HttpRequestError(HttpRequestError.Reason.Host(text)))
+
+      Head(method, version, host, target, headers)
+
+    def parse(stream: Stream[Data]): Request raises HttpRequestError =
+      val cursor = Cursor[Data](stream.filter(_.nonEmpty).iterator)
+      val head = parseHead(cursor)
+
+      Request
+        ( head.method, head.version, head.host, head.target, head.headers, () => cursor.remainder )
+
+    // Stream exactly `length` bytes of body off `cursor`, in buffer-sized
+    // pieces, leaving it at the first byte after the body (the start of the next
+    // pipelined request on a kept-alive connection). Uses `advance` rather than
+    // `next`, so — like `parseHead` — it never reads past the body and so never
+    // blocks waiting for bytes that will not arrive until the client has our
+    // response.
+    def fixedBody(cursor: Cursor[Data], length: Int): Stream[Data] =
+      def recur(remaining: Int): Stream[Data] =
+        if remaining <= 0 || cursor.finished then Stream() else
+          val take = remaining.min(cursor.available)
+
+          val chunk = cursor.hold:
+            val start = cursor.mark
+            var index = 0
+
+            while index < take do
+              cursor.advance()
+              index += 1
+
+            cursor.grab(start, cursor.mark)
+
+          chunk #:: recur(remaining - take)
+
+      Stream.defer(recur(length))
+
+    // Decode a `Transfer-Encoding: chunked` request body off `cursor`, yielding
+    // each chunk's data and leaving the cursor after the terminating `0`-chunk
+    // and trailers — i.e. at the next request. Lenient: a malformed length or a
+    // truncated stream simply ends the body. Consumes CRLFs with `advance` (not
+    // `next`), so it never reads past the body's final `\r\n` (see `parseHead`).
+    def chunkedBody(cursor: Cursor[Data]): Stream[Data] =
+      def hex(digit: Int): Int =
+        if digit >= '0' && digit <= '9' then digit - '0'
+        else if digit >= 'a' && digit <= 'f' then digit - 'a' + 10
+        else if digit >= 'A' && digit <= 'F' then digit - 'A' + 10
+        else -1
+
+      def consumeCrlf(): Unit =
+        if cursor.peek == '\r' then cursor.advance()
+        if cursor.peek == '\n' then cursor.advance()
+
+      def skipToCrlf(): Unit = while !(cursor.peek == '\r') && !cursor.finished do cursor.advance()
+
+      def readSize(): Int =
+        var size = 0
+        var continue = true
+
+        while continue do
+          val value = hex(cursor.peek.asInt)
+
+          if value < 0 then continue = false else
+            size = size*16 + value
+            cursor.advance()
+
+        skipToCrlf() // discard any chunk extension
+        consumeCrlf()
+        size
+
+      def recur(): Stream[Data] = Stream.defer:
+        if cursor.finished then Stream() else
+          val size = readSize()
+
+          if size <= 0 then
+            while !(cursor.peek == '\r') && !cursor.finished do // trailer header lines
+              skipToCrlf()
+              consumeCrlf()
+
+            consumeCrlf() // final blank line
+            Stream()
+
+          else
+            val data = cursor.hold:
+              val start = cursor.mark
+              var index = 0
+
+              while index < size && !cursor.finished do
+                cursor.advance()
+                index += 1
+
+              cursor.grab(start, cursor.mark)
+
+            consumeCrlf()
+            data #:: recur()
+
+      recur()
+
   enum Body:
     case Streaming(data: Stream[Data])
     case Fixed(data: Data)
@@ -364,6 +523,78 @@ object Http:
 
     private[Http] def response(status: Status, headers: List[Header], body: Body): Response =
       new Response(1.1, status, headers, body)
+
+    // Serialise a response to HTTP/1.1 wire bytes: status line, headers (with an
+    // automatic `Content-Length` for fixed/empty bodies, or `Transfer-Encoding:
+    // chunked` framing for streaming bodies), the blank line, then the framed
+    // body. `includeBody` is `false` for responses to `HEAD` requests and for
+    // `101` upgrades (where the caller pipes the post-handshake stream raw). The
+    // inverse of `parse`.
+    def serialize(response: Response, includeBody: Boolean = true): Stream[Data] =
+      import charEncoders.ascii
+
+      // After `101 Switching Protocols` the bytes are no longer HTTP: the body is
+      // the upgraded protocol's raw stream (e.g. WebSocket frames), so suppress
+      // Content-Length / chunked framing and the headers that announce them.
+      val upgrade: Boolean = response.status == Http.SwitchingProtocols
+
+      val explicitChunked: Boolean = response.textHeaders.exists: header =>
+        header.key.lower == t"transfer-encoding" && header.value.lower == t"chunked"
+
+      val hasContentLength: Boolean = response.textHeaders.exists(_.key.lower == t"content-length")
+
+      val (extraHeaders, chunked): (List[Header], Boolean) =
+        if upgrade then (Nil, false) else response.body match
+          case Body.Empty =>
+            (if hasContentLength then Nil else List(Header(t"content-length", t"0")), false)
+
+          case Body.Fixed(data) =>
+            val length = data.length.toString.tt
+            (if hasContentLength then Nil else List(Header(t"content-length", length)), false)
+
+          case Body.Streaming(_) =>
+            if explicitChunked then (Nil, true)
+            else if hasContentLength then (Nil, false)
+            else (List(Header(t"transfer-encoding", t"chunked")), true)
+
+      val headers: List[Header] =
+        if !upgrade then response.textHeaders ++ extraHeaders else
+          response.textHeaders.filter: header =>
+            val key = header.key.lower
+            key != t"transfer-encoding" && key != t"content-length"
+
+      val head: Text = Text.build:
+        append(t"HTTP/1.1 ")
+        append(response.status.code.toString.tt)
+        append(t" ")
+        append(response.status.description)
+        append(t"\r\n")
+
+        headers.each: header =>
+          append(header.key)
+          append(t": ")
+          append(header.value)
+          append(t"\r\n")
+
+        append(t"\r\n")
+
+      def chunkedFraming(stream: Stream[Data]): Stream[Data] = stream match
+        case block #:: tail =>
+          if block.length == 0 then chunkedFraming(tail) else
+            val size: Text = Integer.toHexString(block.length).nn.tt
+            t"$size\r\n".data #:: block #:: t"\r\n".data #:: chunkedFraming(tail)
+
+        case _ =>
+          Stream(t"0\r\n\r\n".data)
+
+      def bodyBytes: Stream[Data] =
+        if !includeBody then Stream() else if upgrade then response.body.stream
+        else response.body match
+          case Body.Empty             => Stream()
+          case Body.Fixed(data)       => Stream(data)
+          case Body.Streaming(stream) => if chunked then chunkedFraming(stream) else stream
+
+      head.data #:: bodyBytes
 
     def parse(stream: Stream[Data]): Response raises HttpResponseError =
       val cursor = Cursor[Data](stream.filter(_.nonEmpty).iterator)

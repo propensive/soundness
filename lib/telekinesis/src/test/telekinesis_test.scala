@@ -292,6 +292,174 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       . assert()
 
+    suite(m"Request parsing"):
+      def chunks(text: Text, size: Int): Stream[Data] =
+        val data: Data = text.data
+        def go(offset: Int): Stream[Data] =
+          if offset >= data.length then Stream() else
+            val end = math.min(offset + size, data.length)
+            data.slice(offset, end) #:: go(end)
+        go(0)
+
+      def bodyText(request: Http.Request): Text = request.body().read[Data].utf8
+
+      val blockSizes = List(1, 2, 3, 7, 13, 4096)
+      val fixture = t"GET /path?q=1 HTTP/1.1\r\nHost: example.com\r\nX-Foo: bar\r\n\r\nbody"
+
+      for blockSize <- blockSizes do
+        test(m"Parse method at block size $blockSize"):
+          Http.Request.parse(chunks(fixture, blockSize)).method
+
+        . assert(_ == Http.Get)
+
+        test(m"Parse target at block size $blockSize"):
+          Http.Request.parse(chunks(fixture, blockSize)).target
+
+        . assert(_ == t"/path?q=1")
+
+        test(m"Parse version at block size $blockSize"):
+          Http.Request.parse(chunks(fixture, blockSize)).version
+
+        . assert(_ == 1.1)
+
+        test(m"Parse host at block size $blockSize"):
+          Http.Request.parse(chunks(fixture, blockSize)).host.show
+
+        . assert(_ == t"example.com")
+
+        test(m"Parse headers at block size $blockSize"):
+          Http.Request.parse(chunks(fixture, blockSize)).textHeaders
+
+        . assert(_ == List(Http.Header(t"Host", t"example.com"), Http.Header(t"X-Foo", t"bar")))
+
+        test(m"Parse body at block size $blockSize"):
+          bodyText(Http.Request.parse(chunks(fixture, blockSize)))
+
+        . assert(_ == t"body")
+
+      val methods: List[Http.Method] =
+        List(Http.Get, Http.Head, Http.Post, Http.Put, Http.Delete, Http.Patch, Http.Options,
+            Http.Trace, Http.Connect)
+
+      for method <- methods do
+        test(m"Parse method ${method.show}"):
+          val fixture = t"${method.show} / HTTP/1.1\r\nHost: example.com\r\n\r\n"
+          Http.Request.parse(chunks(fixture, 4096)).method
+
+        . assert(_ == method)
+
+      test(m"Parse HTTP/1.0 version"):
+        val fixture = t"GET / HTTP/1.0\r\nHost: example.com\r\n\r\n"
+        Http.Request.parse(chunks(fixture, 4096)).version
+
+      . assert(_ == 1.0)
+
+      test(m"Host header with port has the port stripped"):
+        val fixture = t"GET / HTTP/1.1\r\nHost: example.com:8080\r\n\r\n"
+        Http.Request.parse(chunks(fixture, 4096)).host.show
+
+      . assert(_ == t"example.com")
+
+      test(m"Missing Host header raises Host reason"):
+        capture[HttpRequestError]:
+          Http.Request.parse(chunks(t"GET / HTTP/1.1\r\n\r\n", 4096))
+        . reason
+
+      . assert:
+        case HttpRequestError.Reason.Host(_) => true
+        case _                               => false
+
+      for blockSize <- blockSizes do
+        test(m"fixedBody reads exactly N bytes at block size $blockSize"):
+          val cursor = Cursor[Data](chunks(t"hello world", blockSize).iterator)
+          Http.Request.fixedBody(cursor, 5).read[Data].utf8
+
+        . assert(_ == t"hello")
+
+        test(m"fixedBody leaves the cursor after the body at block size $blockSize"):
+          val cursor = Cursor[Data](chunks(t"hello world", blockSize).iterator)
+          Http.Request.fixedBody(cursor, 5).each(_ => ())
+          cursor.remainder.read[Data].utf8
+
+        . assert(_ == t" world")
+
+        test(m"chunkedBody decodes chunks at block size $blockSize"):
+          val fixture = t"5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n"
+          val cursor = Cursor[Data](chunks(fixture, blockSize).iterator)
+          Http.Request.chunkedBody(cursor).read[Data].utf8
+
+        . assert(_ == t"hello world")
+
+        test(m"chunkedBody leaves the cursor after the body at block size $blockSize"):
+          val fixture = t"3\r\nabc\r\n0\r\n\r\nNEXT"
+          val cursor = Cursor[Data](chunks(fixture, blockSize).iterator)
+          Http.Request.chunkedBody(cursor).each(_ => ())
+          cursor.remainder.read[Data].utf8
+
+        . assert(_ == t"NEXT")
+
+    suite(m"Response serialization"):
+      def chunks(text: Text, size: Int): Stream[Data] =
+        val data: Data = text.data
+        def go(offset: Int): Stream[Data] =
+          if offset >= data.length then Stream() else
+            val end = math.min(offset + size, data.length)
+            data.slice(offset, end) #:: go(end)
+        go(0)
+
+      def bodyText(response: Http.Response): Text = response.body.stream.read[Data].utf8
+
+      def wire(response: Http.Response, includeBody: Boolean = true): Text =
+        Http.Response.serialize(response, includeBody).read[Data].utf8
+
+      val blockSizes = List(1, 2, 3, 7, 13, 4096)
+
+      test(m"Status line carries code and reason phrase"):
+        wire(Http.Response(Http.NotFound)()).cut(t"\r\n").head
+
+      . assert(_ == t"HTTP/1.1 404 Not Found")
+
+      for blockSize <- blockSizes do
+        test(m"Round-trip a fixed body at block size $blockSize"):
+          val response = Http.Response(Http.Ok)(t"hello world")
+          val parsed = Http.Response.parse(chunks(wire(response), blockSize))
+          (parsed.status, bodyText(parsed))
+
+        . assert(_ == (Http.Ok, t"hello world"))
+
+      test(m"Fixed body sets a correct Content-Length"):
+        wire(Http.Response(Http.Ok)(t"hello")).contains(t"content-length: 5")
+
+      . assert(_ == true)
+
+      test(m"Empty body sets Content-Length 0"):
+        wire(Http.Response(Http.NoContent)()).contains(t"content-length: 0")
+
+      . assert(_ == true)
+
+      test(m"Streaming body is framed with chunked transfer-encoding"):
+        val body = Http.Body.Streaming(Stream(t"Hello".data, t"World".data))
+        wire(Http.Response(Http.Ok)(body))
+
+      . assert: text =>
+          text.contains(t"transfer-encoding: chunked")
+          && text.contains(t"5\r\nHello\r\n")
+          && text.contains(t"5\r\nWorld\r\n")
+          && text.ends(t"0\r\n\r\n")
+
+      test(m"Streaming body skips zero-length blocks"):
+        val body = Http.Body.Streaming(Stream(t"ab".data, t"".data, t"cd".data))
+        wire(Http.Response(Http.Ok)(body))
+
+      . assert(_.contains(t"2\r\nab\r\n2\r\ncd\r\n"))
+
+      test(m"HEAD response omits the body but keeps headers"):
+        val response = Http.Response(Http.Ok)(t"hello")
+        val text = wire(response, includeBody = false)
+        text.ends(t"\r\n\r\n") && !text.contains(t"hello") && text.contains(t"content-length: 5")
+
+      . assert(_ == true)
+
     suite(m"Redirect handling"):
       test(m"Follow a relative redirect chain by default"):
         url"https://httpbin.org/redirect/3".fetch().status

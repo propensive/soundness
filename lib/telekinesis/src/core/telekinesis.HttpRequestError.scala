@@ -30,119 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package scintillate
+package telekinesis
 
 import anticipation.*
-import contingency.*
-import digression.*
-import gesticulate.*
-import gossamer.*
-import hellenism.*
-import hieroglyph.*
-import parasite.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-import spectacular.*
-import telekinesis.*
-import turbulence.*
-import urticose.*
-import vacuous.*
+import fulminate.*
 
-package httpServers:
-  given stdlib: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable )
-  =>  WebserverErrorPage
-  =>  Http is Protocolic:
+object HttpRequestError:
+  enum Reason(val number: Int) extends Clarification:
+    case Expectation(expected: Char, found: Char) extends Reason(1)
+    case Version(value: Text)                     extends Reason(2)
+    case Host(value: Text)                        extends Reason(3)
 
-    type Transport = TcpPort of port
-    type Self = Http
-    type Server = Service
-    type Request = HttpConnection
-    type Response = Http.Response
+  given communicable: Reason is Communicable =
+    case Reason.Expectation(expected, found) => m"$found was found when $expected was expected"
+    case Reason.Version(value)               => m"the HTTP version $value was invalid"
+    case Reason.Host(value)                  => m"the host $value was missing or invalid"
 
-    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      HttpServer(port.number, true).handle(lambda)
-
-
-  given stdlibPublic: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable )
-  =>  WebserverErrorPage
-  =>  Http is Protocolic:
-
-    type Transport = TcpPort of port
-    type Self = Http
-    type Server = Service
-    type Request = HttpConnection
-    type Response = Http.Response
-
-    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      HttpServer(port.number, false).handle(lambda)
-
-
-  given native: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable )
-  =>  WebserverErrorPage
-  =>  Http is Protocolic:
-
-    type Transport = TcpPort of port
-    type Self = Http
-    type Server = Service
-    type Request = HttpConnection
-    type Response = Http.Response
-
-    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      SocketServer(port.number, true).handle(lambda)
-
-
-  given nativePublic: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable )
-  =>  WebserverErrorPage
-  =>  Http is Protocolic:
-
-    type Transport = TcpPort of port
-    type Self = Http
-    type Server = Service
-    type Request = HttpConnection
-    type Response = Http.Response
-
-    def server(port: TcpPort of port)(lambda: Request ?=> Response): Service =
-      SocketServer(port.number, false).handle(lambda)
-
-def cookie(using request: Http.Request)(key: Text): Optional[Text] = request.textCookies.at(key)
-
-def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.Response)
-  ( using connection: HttpConnection )
-:   Http.Response raises AuthError =
-
-  connection.headers.authorization match
-    case List(Auth.Basic(username, password)) =>
-      if validate(username, password) then response else Http.Response(Http.Forbidden)()
-
-    case _ =>
-      val auth = t"""Basic realm="$realm", charset="UTF-8""""
-
-      Http.Response(Http.Unauthorized, wwwAuthenticate = auth)()
-
-
-inline def request: Http.Request = infer[Http.Request]
-
-extension (request: Http.Request)
-  def as[body: Acceptable]: body = body.accept(request)
-
-package webserverErrorPages:
-  given minimal: WebserverErrorPage = (request, throwable) =>
-    import hieroglyph.charEncoders.utf8
-    Http.Response(Unfulfilled(t"An error occurred which prevented the request from completing."))
-
-  private def prefix(using Classloader): Data = cp"/scintillate/error.pre.html".read[Data]
-  private def postfix(using Classloader): Data = cp"/scintillate/error.post.html".read[Data]
-
-  given standard: Classloader => WebserverErrorPage = (throwable, request) =>
-    Http.Response(Unfulfilled(Stream(prefix, postfix).ascribe(media"text/html")))
-
-  given stackTraces: Classloader => WebserverErrorPage = (throwable, request) =>
-    import charEncoders.utf8
-
-    val stack = t"<pre>${throwable.stackTrace}</pre>".read[Data]
-    Http.Response(Unfulfilled(Stream(prefix, stack, postfix).ascribe(media"text/html")))
+case class HttpRequestError(reason: HttpRequestError.Reason)(using Diagnostics)
+extends Error(367, reason.number)(m"could not parse HTTP request because $reason")
