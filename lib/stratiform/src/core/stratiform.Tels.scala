@@ -187,9 +187,9 @@ object Tels extends Tels2:
       Variant(kebab(keyword), variantType)
 
     // A Definition's `description` mirrors a single-line source atom in
-    // the canonical document, so it carries the trailing LF the §14
-    // source-atom parser appends.
-    private inline def describe(text: String): Text = Text(s"$text\n")
+    // the canonical document. Under §14 "Convention A" a source atom's text
+    // carries no trailing LF, so the description is stored verbatim.
+    private inline def describe(text: String): Text = Text(text)
 
     private inline def record(name: String, description: String, members: Member*)
     :     RecordDefinition =
