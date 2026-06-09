@@ -35,7 +35,6 @@ package honeycomb
 import language.dynamics
 
 import anticipation.*
-import denominative.*
 import fulminate.*
 import gossamer.*
 import panopticon.*
@@ -138,15 +137,22 @@ object Tag:
 
     def applyDynamic[className <: Label: ValueOf](method: className)
       ( children: Optional[Html of (? <: Transport)]* )
-      ( using css: Stylesheet of (? >: className) )
+      ( using attribution: Attribution of (? >: className) )
     :   Element of Topic over Transport in Form =
 
       val nodes = children.compact.nodes
 
-      val presets2 = if css.classes.nil then presets else
-        val cls: Text = valueOf[className]
-        val value = presets.at("class").lay(cls): preset => t"$preset $cls"
-        presets.updated("class", value)
+      val presets2 =
+        if attribution.attribute == t"" then presets
+        else
+          val name: Text = valueOf[className]
+
+          val value =
+            if attribution.attribute == t"class"
+            then presets.at("class").lay(name): preset => t"$preset $name"
+            else name
+
+          presets.updated(attribution.attribute, value)
 
       Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].over[Transport].in[Form]
 
@@ -177,15 +183,22 @@ object Tag:
     type Result = Element & Html.Transparent of Topic over Transport in Form
 
 
-    def applyDynamic[className <: Label](method: className)
+    def applyDynamic[className <: Label: ValueOf](method: className)
       ( children: Optional[Html of (? <: Transport)]* )
-      ( using css: Stylesheet of (? >: className) )
+      ( using attribution: Attribution of (? >: className) )
     :   Element of Topic in Form =
 
-      val presets2 = if css.classes.nil then presets else
-        val cls = css.classes.join(t" ")
-        val value = presets.at("class").lay(cls): preset => t"$preset $cls"
-        presets.updated("class", value)
+      val presets2 =
+        if attribution.attribute == t"" then presets
+        else
+          val name: Text = valueOf[className]
+
+          val value =
+            if attribution.attribute == t"class"
+            then presets.at("class").lay(name): preset => t"$preset $name"
+            else name
+
+          presets.updated(attribution.attribute, value)
 
       val nodes: IArray[Node] = children.compact.nodes
       Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].in[Form]
@@ -238,13 +251,13 @@ extends Element(label, Attributes.from(presets), IArray(), foreign), Formal, Dyn
   val isTable: Boolean = label == t"table"
 
 
-  inline def applyDynamicNamed[label <: Label: Precise](inline method: label)
+  inline def applyDynamicNamed[label <: Label: Precise: ValueOf](inline method: label)
     ( inline attributes: (String, Any)* )
   :   Result =
 
     inline if method == "apply" then element(Map(), attributes*) else
-      val stylesheet = infer[Stylesheet of (? >: label)]
-      element(Map(t"class" -> stylesheet.classes.to(List).join(t" ")), attributes*)
+      val attribution = infer[Attribution of (? >: label)]
+      element(Map(attribution.attribute -> valueOf[label]), attributes*)
 
 
   inline def element(presets: Map[Text, Text], inline attributes: (String, Any)*): Result =

@@ -76,7 +76,7 @@ package formulations:
         required:   Boolean )
     :   Html of Flow =
 
-      given alertClass: (Stylesheet of "alert" | "required") = Stylesheet()
+      given alertClass: (Attribution of "alert" | "required") = Attribution.classes()
       Div(P.alert(validation.let(_.html)), Label(legend, widget), Span.required(t"*"))
 
       // Div

@@ -54,8 +54,8 @@ object Renderable:
         Fragment(elements*)
 
   given stackTrace: StackTrace is Renderable in Flow = stackTrace =>
-    given stylesheet: (Stylesheet of "at" | "class" | "stack" | "method" | "file" | "line") =
-      Stylesheet()
+    given attribution: (Attribution of "at" | "class" | "stack" | "method" | "file" | "line") =
+      Attribution.classes()
 
     val rows = stackTrace.frames.map: frame =>
       Tr

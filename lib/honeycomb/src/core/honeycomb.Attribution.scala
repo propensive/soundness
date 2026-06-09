@@ -32,35 +32,25 @@
                                                                                                   */
 package honeycomb
 
-import language.dynamics
-
-import scala.util.NotGiven
-
 import anticipation.*
-import contextual.*
+import beneficence.*
 import gossamer.*
 import prepositional.*
 
-extension [renderable: Renderable](value: renderable)
-  def html: Html of renderable.Form = renderable.render(value)
-
-package attributives:
-  given textAttributes: [target] => Text is Attributive to target =
-    (key, value) => (key, value)
-
-extension (inline context: StringContext)
-  transparent inline def h: Interpolation = interpolation[Html](context)
-
-package doms.html:
-  given whatwg: Whatwg = Whatwg()
-  given html4Transitional: Html4Transitional = Html4Transitional()
-
-package stylesheets:
-  given uncheckedClasses: [classname <: Label: ValueOf] => NotGiven[classname =:= "apply"]
-  =>  Attribution of classname =
-
+// Evidence that a name used dynamically on a `Tag` (e.g. `Div.foo(…)`) is a valid
+// id or class, and which attribute it populates. The name itself is the `Topic`
+// (a string-singleton type); `attribute` is `"class"` or `"id"`. A given of
+// `Attribution of name` brought into scope decides whether `Tag.name` is allowed
+// and what it produces.
+object Attribution:
+  // Evidence that one or more names are classes, carried as the `Topic` type.
+  def classes[topic <: Label](): Attribution of topic =
     new Attribution(t"class"):
-      type Topic = classname
+      type Topic = topic
 
-package recoveries:
-  given permissive: Html.Recovery.Permissive = new Html.Recovery.Permissive
+  // The no-op attribution for a plain `Tag(children)` call, which dispatches via
+  // `Dynamic` to `applyDynamic("apply")`. An empty `attribute` adds nothing.
+  given empty: Attribution(t""):
+    type Topic = "apply"
+
+case class Attribution(attribute: Text) extends Topical, Findable
