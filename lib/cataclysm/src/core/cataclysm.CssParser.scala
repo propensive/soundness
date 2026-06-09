@@ -159,9 +159,16 @@ private[cataclysm] object CssParser:
       else if colonAt >= 0 then
         val property = buf.substring(0, colonAt).nn.tt.trim
         val value = buf.substring(colonAt + 1).nn.tt.trim
+        checkProperty(property)
         Node.Declaration(property, value)
       else
+        checkProperty(text)
         Node.Declaration(text, t"")
+
+    // Reject any non-custom property that is not a recognized CSS property.
+    private def checkProperty(property: Text): Unit =
+      if !property.starts(t"--") && PropertyDef.of(property).absent then
+        fail(CssError.Reason.UnknownProperty(property))
 
     // Split an `@…` prelude into its identifier and the remaining prelude text.
     private def atRule(text: Text): (Text, Text) =

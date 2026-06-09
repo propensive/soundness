@@ -509,7 +509,8 @@ object cardinality extends Library:
 
 object cataclysm extends Library:
   object core extends Component(zephyrine.core, gossamer.core, turbulence.core,
-      contingency.core, vacuous.core, fulminate.core, denominative.core):
+      contingency.core, vacuous.core, fulminate.core, denominative.core, hellenism.core,
+      jacinta.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)

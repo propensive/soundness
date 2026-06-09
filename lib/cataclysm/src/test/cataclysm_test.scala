@@ -278,6 +278,27 @@ object Tests extends Suite(m"Cataclysm Tests"):
         capture[CssError](parse(t"a!")).reason
       . assert(_ == CssError.Reason.UnexpectedChar('!'))
 
+    suite(m"Property validation"):
+      test(m"a known property is accepted"):
+        t"a { color: red }".read[Css].rules
+      . assert(_ == List(rule(t"a", decl(t"color", t"red"))))
+
+      test(m"an unknown property is rejected"):
+        capture[CssError](t"a { colour: red }".read[Css]).reason
+      . assert(_ == CssError.Reason.UnknownProperty(t"colour"))
+
+      test(m"a custom property is accepted"):
+        t"a { --my-color: red }".read[Css].rules
+      . assert(_ == List(rule(t"a", decl(t"--my-color", t"red"))))
+
+      test(m"a known property's value grammar is loaded"):
+        PropertyDef.of(t"color").vouch.syntax
+      . assert(_ == t"<color>")
+
+      test(m"an unknown property has no definition"):
+        PropertyDef.of(t"colour").absent
+      . assert(_ == true)
+
     suite(m"CSS errors"):
       test(m"an unterminated comment is reported"):
         capture[CssError](t"a { /* unterminated }".read[Css]).reason
