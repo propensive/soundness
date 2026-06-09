@@ -33,4 +33,8 @@
 package soundness
 
 export cataclysm.{Css, CssError, CssErrors, cssAggregable, SelectorList, Selector, Compound,
-    Simple, Combinator, AttributeMatcher, AttributeTest, Namespace, PseudoArgument}
+    Simple, Combinator, AttributeMatcher, AttributeTest, Namespace, PseudoArgument, CssFormatter,
+    CssSerializer}
+
+package cssFormatters:
+  export cataclysm.cssFormatters.{standard, compact}

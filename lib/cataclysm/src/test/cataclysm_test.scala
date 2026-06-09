@@ -574,3 +574,30 @@ object Tests extends Suite(m"Cataclysm Tests"):
       test(m"a missing closing brace is reported"):
         capture[CssErrors](t"a { color: red;".read[Css]).errors.head.reason
       . assert(_ == CssError.Reason.UnexpectedEnd)
+
+    suite(m"CSS serialization"):
+      val complex = t"""ul > li.item:nth-child(2n+1) a[href^="http"] { color: red }""".read[Css]
+
+      val nestedAtText =
+        t"@media screen and (min-width: 700px) { a { color: red; & b { color: blue } } }"
+
+      val nestedAt = nestedAtText.read[Css]
+
+      def roundTrip(css: Css): Css =
+        CssSerializer.render(css)(using cssFormatters.compact).read[Css]
+
+      test(m"compact serialization has no spaces or newlines"):
+        CssSerializer.render(t"a { color: red }".read[Css])(using cssFormatters.compact)
+      . assert(_ == t"a{color:red;}")
+
+      test(m"standard serialization indents declarations"):
+        CssSerializer.render(t"a { color: red }".read[Css])(using cssFormatters.standard)
+      . assert(_ == t"a {\n  color: red;\n}\n")
+
+      test(m"a complex selector round-trips through serialization"):
+        roundTrip(complex)
+      . assert(_ == complex)
+
+      test(m"a nested at-rule round-trips through serialization"):
+        roundTrip(nestedAt)
+      . assert(_ == nestedAt)

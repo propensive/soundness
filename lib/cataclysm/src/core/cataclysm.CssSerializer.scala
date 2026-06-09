@@ -33,21 +33,66 @@
 package cataclysm
 
 import anticipation.*
+import gossamer.*
 import parasite.*
-import prepositional.*
 import spectacular.*
-import turbulence.*
 import vacuous.*
+import zephyrine.*
 
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
+// Serializes a `Css` tree back to CSS text. Output is produced lazily through a
+// `zephyrine.Emitter` (the same streaming mechanism Honeycomb uses for HTML), so
+// a large stylesheet never needs to be held in memory at once. The output style
+// is chosen by a contextual `CssFormatter` (`cssFormatters.standard` or
+// `.compact`).
+object CssSerializer:
+  def emit(css: Css)(using CssFormatter, Monitor, Codicil): Iterator[Text] =
+    val emitter = Emitter[Text](4096)
 
-  given streamable: (Monitor, Codicil, CssFormatter) => Css is Streamable by Text =
-    CssSerializer.emit(_).to(Stream)
+    async:
+      write(css)(emitter.put(_))
+      emitter.finish()
 
-  given showable: CssFormatter => Css is Showable = CssSerializer.render(_)
+    emitter.iterator
 
-case class Css(rules: List[Css.Node]) derives CanEqual
+  def render(css: Css)(using CssFormatter): Text = Text.build(write(css) { text => append(text) })
+
+  private def write(css: Css)(put: Text => Unit)(using formatter: CssFormatter): Unit =
+    def newline(indent: Int): Unit = if formatter.newlines then put(indentText(indent))
+
+    def block(body: List[Css.Node], indent: Int): Unit =
+      put(if formatter.spaces then t" {" else t"{")
+
+      body.foreach: child =>
+        newline(indent + 1)
+        emitNode(child, indent + 1)
+
+      newline(indent)
+      put(t"}")
+
+    def emitNode(node: Css.Node, indent: Int): Unit = node match
+      case Css.Node.Rule(selector, body) =>
+        put(selector.show)
+        block(body, indent)
+
+      case Css.Node.Declaration(property, value) =>
+        put(property)
+        put(if formatter.spaces then t": " else t":")
+        put(value)
+        put(t";")
+
+      case Css.Node.At(name, prelude, body) =>
+        put(t"@$name")
+        if prelude != t"" then put(t" $prelude")
+
+        body.lay(put(t";")): nodes =>
+          block(nodes, indent)
+
+    var first = true
+
+    css.rules.foreach: child =>
+      if first then first = false else newline(0)
+      emitNode(child, 0)
+
+    if formatter.newlines then put(t"\n")
+
+  private def indentText(indent: Int): Text = ("\n" + " "*(2*indent)).tt

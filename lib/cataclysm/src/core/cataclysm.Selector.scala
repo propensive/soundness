@@ -33,6 +33,8 @@
 package cataclysm
 
 import anticipation.*
+import gossamer.*
+import spectacular.*
 import vacuous.*
 
 // The structural model of a CSS selector, following Selectors Level 4. The
@@ -40,12 +42,31 @@ import vacuous.*
 // `Selector` (a complex selector — compounds joined by combinators), and a
 // `Compound` (simple selectors with no whitespace between them, the tightest).
 
+object SelectorList:
+  given showable: SelectorList is Showable = _.selectors.map(_.show).join(t", ")
+
 case class SelectorList(selectors: List[Selector]) derives CanEqual
+
+object Selector:
+  given showable: Selector is Showable = selector =>
+    val lead = selector.lead.lay(t""):
+      case Combinator.Descendant => t""
+      case other                 => t"${other.show} "
+
+    val rest = selector.rest.map: (combinator, compound) =>
+      combinator match
+        case Combinator.Descendant => t" ${compound.show}"
+        case other                 => t" ${other.show} ${compound.show}"
+
+    t"$lead${selector.head.show}${rest.join}"
 
 // A complex selector: a head compound followed by combinator/compound steps.
 // `lead` is set only for a relative selector (e.g. the `>` in `:has(> img)`).
 case class Selector(lead: Optional[Combinator], head: Compound, rest: List[(Combinator, Compound)])
 derives CanEqual
+
+object Compound:
+  given showable: Compound is Showable = _.parts.map(_.show).join
 
 // A compound selector: a run of simple selectors bound together with no
 // combinator (hence no whitespace) between them.
@@ -54,6 +75,14 @@ case class Compound(parts: List[Simple]) derives CanEqual
 // The right-hand side of an attribute selector, e.g. the `^= "x" i` part.
 case class AttributeTest(matcher: AttributeMatcher, value: Text, modifier: Optional[Char])
 derives CanEqual
+
+object Combinator:
+  given showable: Combinator is Showable =
+    case Descendant        => t" "
+    case Child             => t">"
+    case NextSibling       => t"+"
+    case SubsequentSibling => t"~"
+    case Column            => t"||"
 
 enum Combinator derives CanEqual:
   case Descendant         //
@@ -74,6 +103,58 @@ enum Namespace derives CanEqual:
   case Any                    // *|
   case Default                // |
   case Named(prefix: Text)    // ns|
+
+object Simple:
+  given showable: Simple is Showable =
+    case Universal(namespace)          => t"${prefix(namespace)}*"
+    case Type(namespace, name)         => t"${prefix(namespace)}$name"
+    case Id(name)                      => t"#$name"
+    case Class(name)                   => t".$name"
+    case Nesting                       => t"&"
+    case Attribute(namespace, name, t) => t"[${prefix(namespace)}$name${attributeTest(t)}]"
+    case PseudoClass(name, argument)   => t":$name${pseudoArgument(argument)}"
+    case PseudoElement(name, argument) => t"::$name${pseudoArgument(argument)}"
+
+  // Render the optional namespace prefix of a type, universal or attribute selector.
+  private def prefix(namespace: Optional[Namespace]): Text = namespace.lay(t""):
+    case Namespace.Any         => t"*|"
+    case Namespace.Default     => t"|"
+    case Namespace.Named(name) => t"$name|"
+
+  private def attributeTest(test: Optional[AttributeTest]): Text = test.lay(t""): test =>
+    val modifier = test.modifier.lay(t""): char => t" ${char.show}"
+    t"${matcherSymbol(test.matcher)}${test.value}$modifier"
+
+  private def matcherSymbol(matcher: AttributeMatcher): Text = matcher match
+    case AttributeMatcher.Exact     => t"="
+    case AttributeMatcher.Includes  => t"~="
+    case AttributeMatcher.DashMatch => t"|="
+    case AttributeMatcher.Prefix    => t"^="
+    case AttributeMatcher.Suffix    => t"$$="
+    case AttributeMatcher.Substring => t"*="
+
+  private def pseudoArgument(argument: Optional[PseudoArgument]): Text = argument.lay(t""):
+    case PseudoArgument.Selectors(list) => t"(${list.show})"
+    case PseudoArgument.Nth(a, b, of)   => t"(${nth(a, b)}${ofClause(of)})"
+    case PseudoArgument.Raw(text)       => t"($text)"
+
+  private def ofClause(of: Optional[SelectorList]): Text = of.lay(t""): list =>
+    t" of ${list.show}"
+
+  // Render an `An+B` micro-syntax, canonicalising `1n`→`n`, `-1n`→`-n` and `a==0`→`b`.
+  private def nth(a: Int, b: Int): Text =
+    if a == 0 then b.show else
+      val coefficient = a match
+        case 1  => t"n"
+        case -1 => t"-n"
+        case _  => t"${a}n"
+
+      val offset =
+        if b == 0 then t""
+        else if b > 0 then t"+$b"
+        else t"-${-b}"
+
+      t"$coefficient$offset"
 
 enum Simple derives CanEqual:
   case Universal(namespace: Optional[Namespace])                                  // *

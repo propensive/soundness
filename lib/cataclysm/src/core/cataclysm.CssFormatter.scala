@@ -32,22 +32,14 @@
                                                                                                   */
 package cataclysm
 
-import anticipation.*
-import parasite.*
-import prepositional.*
-import spectacular.*
-import turbulence.*
-import vacuous.*
+// Controls how a `Css` tree is serialized. `newlines` puts each rule and
+// declaration on its own indented line; `spaces` adds the cosmetic spaces (after
+// `:` and before `{`) that aid legibility. The two bundled formatters are
+// `cssFormatters.standard` (both on) and `cssFormatters.compact` (both off).
+object CssFormatter:
+  def apply(newlines: Boolean, spaces: Boolean): CssFormatter = Basic(newlines, spaces)
+  private case class Basic(newlines: Boolean, spaces: Boolean) extends CssFormatter
 
-object Css:
-  enum Node derives CanEqual:
-    case Rule(selector: SelectorList, body: List[Node])
-    case Declaration(property: Text, value: Text)
-    case At(name: Text, prelude: Text, body: Optional[List[Node]])
-
-  given streamable: (Monitor, Codicil, CssFormatter) => Css is Streamable by Text =
-    CssSerializer.emit(_).to(Stream)
-
-  given showable: CssFormatter => Css is Showable = CssSerializer.render(_)
-
-case class Css(rules: List[Css.Node]) derives CanEqual
+trait CssFormatter:
+  def newlines: Boolean
+  def spaces: Boolean
