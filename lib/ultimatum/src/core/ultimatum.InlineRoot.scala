@@ -64,6 +64,7 @@ extends GridSurface(widthFn(), 0):
   private var cursorRow: Int = 0
   private var caretColumn: Int = 0
   private var caretRow: Int = 0
+  private var caretVisible: Boolean = true
 
   override def width: Int = widthFn()
 
@@ -71,7 +72,10 @@ extends GridSurface(widthFn(), 0):
   // height; called by the driver before compositing each frame.
   def reframe(width: Int, height: Int): Unit = reshape(width, height.min(heightFn()))
 
-  def cursor(visible: Boolean): Unit = Out.print(csi.dectcem(visible))
+  // Cursor visibility is deferred like the caret: recorded now, applied by `flush`
+  // (which hides the cursor while it redraws), so a focused editor shows it and a
+  // focused menu keeps it hidden.
+  def cursor(visible: Boolean): Unit = caretVisible = visible
 
   // Inline carets are deferred: record the block-local target and let `flush`
   // position it relative to the block, since mid-composite the cursor is wherever
@@ -110,7 +114,7 @@ extends GridSurface(widthFn(), 0):
 
     presentedRows = height
     cursorRow = caretRow
-    Out.print(csi.dectcem(true))
+    Out.print(csi.dectcem(caretVisible))
 
   // On exit, drop the cursor onto a fresh line below the block and re-show it, so
   // subsequent output continues after the rendered block (like a submitted prompt).

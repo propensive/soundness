@@ -33,8 +33,10 @@
 package ultimatum
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 import profanity.*
+import rudiments.*
 import spectacular.*
 import vacuous.*
 
@@ -56,9 +58,13 @@ class EditorField(initial: LineEditor = LineEditor()) extends Focus:
 
   def value: Text = editor.value
 
+  // The shared `Interaction` draws the editor and positions the caret; the
+  // hardware cursor is then shown only when this field has focus, so the caret
+  // appears in the focused editor and is hidden elsewhere.
   def render(canvas: Canvas, focused: Boolean): Unit =
     given Canvas = canvas
     summon[Interaction[Text, LineEditor]].render(Unset, editor)
+    canvas.cursor(focused)
 
   def handle(event: TerminalEvent): Unit = editor = editor.apply(event)
 
@@ -73,9 +79,29 @@ class MenuField[item: Showable](initial: SelectMenu[item]) extends Focus:
 
   def value: item = menu.current
 
+  // Renders the options with a focus-aware marker on the current selection: a
+  // pointer (`>`) when this field has focus, a dot (`·`) when it does not, so the
+  // selection is always visible but the focused menu is distinguished. The
+  // hardware cursor is kept hidden — a menu has no text caret.
   def render(canvas: Canvas, focused: Boolean): Unit =
     given Canvas = canvas
-    summon[Interaction[item, SelectMenu[item]]].render(Unset, menu)
+    val cols = canvas.width.max(1)
+    canvas.move(Prim, Prim)
+    canvas.clear()
+    var row = 0
+
+    menu.options.each: option =>
+      canvas.move(Prim, row.z)
+
+      val marker =
+        if option != menu.current then t"   " else if focused then t" > " else t" · "
+
+      val line = t"$marker${option.show}"
+      canvas.put(line)
+      row += (line.length - 1)/cols + 1
+
+    canvas.flush()
+    canvas.cursor(false)
 
   def handle(event: TerminalEvent): Unit = menu = menu.apply(event)
 
