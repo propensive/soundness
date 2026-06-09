@@ -32,5 +32,5 @@
                                                                                                   */
 package soundness
 
-export cataclysm.{Css, CssError, cssAggregable, SelectorList, Selector, Compound, Simple,
-    Combinator, AttributeMatcher, AttributeTest, Namespace, PseudoArgument}
+export cataclysm.{Css, CssError, CssErrors, cssAggregable, SelectorList, Selector, Compound,
+    Simple, Combinator, AttributeMatcher, AttributeTest, Namespace, PseudoArgument}

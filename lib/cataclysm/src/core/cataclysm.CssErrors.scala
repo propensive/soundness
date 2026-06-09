@@ -32,31 +32,11 @@
                                                                                                   */
 package cataclysm
 
-import anticipation.*
-import denominative.*
 import fulminate.*
 
-object CssError:
-  object Reason:
-    given communicable: Reason is Communicable =
-      case UnterminatedComment        => m"a comment was not terminated"
-      case UnterminatedString         => m"a string literal was not terminated"
-      case UnexpectedEnd              => m"the input ended before a rule was closed"
-      case UnexpectedChar(char)       => m"the character $char was not expected here"
-      case EmptySelector              => m"a selector was expected but none was found"
-      case UnknownProperty(name)      => m"$name is not a recognized CSS property"
-      case BadValue(property, value)  => m"$value is not a valid value for the $property property"
-      case UnsupportedValue(name, _)  => m"the value of $name uses an unsupported type"
-
-  enum Reason(val number: Int) extends Clarification:
-    case UnterminatedComment         extends Reason(1)
-    case UnterminatedString          extends Reason(2)
-    case UnexpectedEnd               extends Reason(3)
-    case UnexpectedChar(char: Char)  extends Reason(4)
-    case EmptySelector               extends Reason(5)
-    case UnknownProperty(name: Text) extends Reason(6)
-    case BadValue(property: Text, value: Text) extends Reason(7)
-    case UnsupportedValue(property: Text, types: List[Text]) extends Reason(8)
-
-case class CssError(reason: CssError.Reason, line: Ordinal, column: Ordinal)(using Diagnostics)
-extends Error(251, reason.number)(m"invalid CSS at line ${line.n1} column ${column.n1}: $reason")
+// The aggregate of every `CssError` accumulated while reading a stylesheet.
+// `read[Css]` collects all errors rather than stopping at the first, raising
+// this once at the end (or returning the `Css` if there were none).
+case class CssErrors(errors: List[CssError])(using Diagnostics)
+extends Error(m"the CSS contained ${errors.length} errors"):
+  def + (error: CssError): CssErrors = CssErrors(errors :+ error)

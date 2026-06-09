@@ -116,8 +116,8 @@ object Tests extends Suite(m"Cataclysm Tests"):
       . assert(_ == List(rule(t"a", decl(t"color", t"red"))))
 
       test(m"a colon inside parentheses does not split a declaration"):
-        t"a { background: url(http://e.com/i.png) }".read[Css].rules
-      . assert(_ == List(rule(t"a", decl(t"background", t"url(http://e.com/i.png)"))))
+        t"a { background-image: url(http://e.com/i.png) }".read[Css].rules
+      . assert(_ == List(rule(t"a", decl(t"background-image", t"url(http://e.com/i.png)"))))
 
       test(m"a semicolon inside a string does not terminate the value"):
         t"""a { content: "a;b" }""".read[Css].rules
@@ -302,8 +302,20 @@ object Tests extends Suite(m"Cataclysm Tests"):
       . assert(_ == List(rule(t"a", decl(t"color", t"red"))))
 
       test(m"an unknown property is rejected"):
-        capture[CssError](t"a { colour: red }".read[Css]).reason
+        capture[CssErrors](t"a { colour: red }".read[Css]).errors.head.reason
       . assert(_ == CssError.Reason.UnknownProperty(t"colour"))
+
+      test(m"errors from several declarations accumulate"):
+        capture[CssErrors](t"a { colour: red; bogus: 1px }".read[Css]).errors.length
+      . assert(_ == 2)
+
+      test(m"an invalid value is reported"):
+        capture[CssErrors](t"a { width: notalength }".read[Css]).errors.length
+      . assert(_ == 1)
+
+      test(m"a var() value passes validation"):
+        t"a { width: var(--w) }".read[Css].rules.length
+      . assert(_ == 1)
 
       test(m"a custom property is accepted"):
         t"a { --my-color: red }".read[Css].rules
@@ -513,13 +525,13 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
     suite(m"CSS errors"):
       test(m"an unterminated comment is reported"):
-        capture[CssError](t"a { /* unterminated }".read[Css]).reason
+        capture[CssErrors](t"a { /* unterminated }".read[Css]).errors.head.reason
       . assert(_ == CssError.Reason.UnterminatedComment)
 
       test(m"an unterminated string is reported"):
-        capture[CssError](t"""a { content: "x }""".read[Css]).reason
+        capture[CssErrors](t"""a { content: "x }""".read[Css]).errors.head.reason
       . assert(_ == CssError.Reason.UnterminatedString)
 
       test(m"a missing closing brace is reported"):
-        capture[CssError](t"a { color: red;".read[Css]).reason
+        capture[CssErrors](t"a { color: red;".read[Css]).errors.head.reason
       . assert(_ == CssError.Reason.UnexpectedEnd)
