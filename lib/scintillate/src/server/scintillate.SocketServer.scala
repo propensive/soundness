@@ -98,6 +98,14 @@ extends RequestServable:
         case 1.1 => !connection.exists(_.contains(t"close"))
         case _   => connection.exists(_.contains(t"keep-alive"))
 
+    // A request asks to upgrade the protocol (e.g. to WebSocket) when it carries
+    // `Connection: Upgrade` together with an `Upgrade` header. Such a request's
+    // body is the unbounded remainder of the connection, so a frame reader can
+    // keep receiving bytes after the handshake.
+    def isUpgrade(head: Http.Request.Head): Boolean =
+      head.headers.filter(_.key.lower == t"connection").exists(_.value.lower.contains(t"upgrade"))
+      && head.headers.exists(_.key.lower == t"upgrade")
+
     // Handle a single request off the cursor and return whether the connection
     // should be kept alive for a further request.
     def serveRequest(cursor: Cursor[Data], out: ji.OutputStream): Boolean raises StreamError =
@@ -109,18 +117,28 @@ extends RequestServable:
 
       . recover:
           val head = Http.Request.parseHead(cursor)
-          val body = requestBody(cursor, head)
+          val upgrade = isUpgrade(head)
+          val body = if upgrade then cursor.remainder else requestBody(cursor, head)
           val keep = keepAlive(head)
 
           val request =
             Http.Request
               ( head.method, head.version, head.host, head.target, head.headers, () => body )
 
-          def respond(response: Http.Response): Unit raises StreamError =
-            val response2 =
-              if keep then response else response + Http.Header(t"connection", t"close")
+          var upgraded = false
 
-            writeAll(out, Http.Response.serialize(response2, head.method != Http.Head))
+          def respond(response: Http.Response): Unit raises StreamError =
+            if response.status == Http.SwitchingProtocols then
+              // Switch to the upgraded protocol: write the handshake headers, then
+              // pipe its raw stream until it ends. This blocks for the lifetime of
+              // the upgraded connection (e.g. a WebSocket session).
+              upgraded = true
+              writeAll(out, Http.Response.serialize(response))
+            else
+              val response2 =
+                if keep then response else response + Http.Header(t"connection", t"close")
+
+              writeAll(out, Http.Response.serialize(response2, head.method != Http.Head))
 
           val connection = new HttpConnection(request, false, port, respond)
           Log.fine(HttpServerEvent.Received(request))
@@ -129,10 +147,11 @@ extends RequestServable:
             try handler(using connection)
             catch case throwable: Throwable => errorPage.handle(throwable, connection)
 
-          // Drain any body the handler did not consume, so the cursor is left at
-          // the start of the next request.
-          body.each(_ => ())
-          keep
+          if upgraded then false else
+            // Drain any body the handler did not consume, so the cursor is left
+            // at the start of the next request.
+            body.each(_ => ())
+            keep
 
     def serve(socket: jn.Socket): Unit =
       try

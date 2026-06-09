@@ -132,3 +132,21 @@ object Tests extends Suite(m"Scintillate tests"):
           response
 
         . assert(_.contains(t"connection: close"))
+
+        test(m"A 101 response upgrades to a raw bidirectional stream"):
+          val port = freePort()
+
+          // Echo upgrade: the response body is the post-handshake request stream,
+          // piped straight back out with no HTTP framing.
+          val server = SocketServer(port).handle:
+            Http.Response(Http.SwitchingProtocols)(Http.Body.Streaming(request.body()))
+
+          val response =
+            rawRequest
+              ( port,
+                t"GET / HTTP/1.1\r\nHost: x\r\nConnection: Upgrade\r\nUpgrade: echo\r\n\r\nPING" )
+
+          server.cancel()
+          response
+
+        . assert(r => r.contains(t"101 Switching Protocols") && r.ends(t"PING"))

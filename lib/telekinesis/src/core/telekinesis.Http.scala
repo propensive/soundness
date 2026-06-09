@@ -471,23 +471,35 @@ object Http:
     def serialize(response: Response, includeBody: Boolean = true): Stream[Data] =
       import charEncoders.ascii
 
+      // After `101 Switching Protocols` the bytes are no longer HTTP: the body is
+      // the upgraded protocol's raw stream (e.g. WebSocket frames), so suppress
+      // Content-Length / chunked framing and the headers that announce them.
+      val upgrade: Boolean = response.status == Http.SwitchingProtocols
+
       val explicitChunked: Boolean = response.textHeaders.exists: header =>
         header.key.lower == t"transfer-encoding" && header.value.lower == t"chunked"
 
       val hasContentLength: Boolean = response.textHeaders.exists(_.key.lower == t"content-length")
 
-      val (extraHeaders, chunked): (List[Header], Boolean) = response.body match
-        case Body.Empty =>
-          (if hasContentLength then Nil else List(Header(t"content-length", t"0")), false)
+      val (extraHeaders, chunked): (List[Header], Boolean) =
+        if upgrade then (Nil, false) else response.body match
+          case Body.Empty =>
+            (if hasContentLength then Nil else List(Header(t"content-length", t"0")), false)
 
-        case Body.Fixed(data) =>
-          val length = data.length.toString.tt
-          (if hasContentLength then Nil else List(Header(t"content-length", length)), false)
+          case Body.Fixed(data) =>
+            val length = data.length.toString.tt
+            (if hasContentLength then Nil else List(Header(t"content-length", length)), false)
 
-        case Body.Streaming(_) =>
-          if explicitChunked then (Nil, true)
-          else if hasContentLength then (Nil, false)
-          else (List(Header(t"transfer-encoding", t"chunked")), true)
+          case Body.Streaming(_) =>
+            if explicitChunked then (Nil, true)
+            else if hasContentLength then (Nil, false)
+            else (List(Header(t"transfer-encoding", t"chunked")), true)
+
+      val headers: List[Header] =
+        if !upgrade then response.textHeaders ++ extraHeaders else
+          response.textHeaders.filter: header =>
+            val key = header.key.lower
+            key != t"transfer-encoding" && key != t"content-length"
 
       val head: Text = Text.build:
         append(t"HTTP/1.1 ")
@@ -496,7 +508,7 @@ object Http:
         append(response.status.description)
         append(t"\r\n")
 
-        (response.textHeaders ++ extraHeaders).each: header =>
+        headers.each: header =>
           append(header.key)
           append(t": ")
           append(header.value)
@@ -514,7 +526,8 @@ object Http:
           Stream(t"0\r\n\r\n".data)
 
       def bodyBytes: Stream[Data] =
-        if !includeBody then Stream() else response.body match
+        if !includeBody then Stream() else if upgrade then response.body.stream
+        else response.body match
           case Body.Empty             => Stream()
           case Body.Fixed(data)       => Stream(data)
           case Body.Streaming(stream) => if chunked then chunkedFraming(stream) else stream
