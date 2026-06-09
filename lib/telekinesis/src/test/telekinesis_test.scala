@@ -383,6 +383,21 @@ object Tests extends Suite(m"Telekinesis tests"):
 
         . assert(_ == t" world")
 
+        test(m"chunkedBody decodes chunks at block size $blockSize"):
+          val fixture = t"5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n"
+          val cursor = Cursor[Data](chunks(fixture, blockSize).iterator)
+          Http.Request.chunkedBody(cursor).read[Data].utf8
+
+        . assert(_ == t"hello world")
+
+        test(m"chunkedBody leaves the cursor after the body at block size $blockSize"):
+          val fixture = t"3\r\nabc\r\n0\r\n\r\nNEXT"
+          val cursor = Cursor[Data](chunks(fixture, blockSize).iterator)
+          Http.Request.chunkedBody(cursor).each(_ => ())
+          cursor.remainder.read[Data].utf8
+
+        . assert(_ == t"NEXT")
+
     suite(m"Response serialization"):
       def chunks(text: Text, size: Int): Stream[Data] =
         val data: Data = text.data

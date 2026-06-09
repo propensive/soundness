@@ -77,17 +77,21 @@ extends RequestServable:
 
       try out.flush() catch case _: ji.IOException => abort(StreamError(count.b))
 
-    // Frame the request body off the shared connection cursor: `Content-Length`
-    // bytes, or empty when no length is given. (Chunked request bodies are not
-    // yet decoded.) The framed stream stops exactly at the body's end so the
-    // cursor is left at the next pipelined request.
+    // Frame the request body off the shared connection cursor: chunked decoding
+    // for `Transfer-Encoding: chunked`, otherwise `Content-Length` bytes, or
+    // empty when neither is given. The framed stream stops exactly at the body's
+    // end so the cursor is left at the next pipelined request.
     def requestBody(cursor: Cursor[Data], head: Http.Request.Head): Stream[Data] =
-      val length: Optional[Int] =
-        head.headers.filter(_.key.lower == t"content-length").prim.let(_.value)
-        . lay(Unset: Optional[Int]): text =>
-            safely(Integer.parseInt(text.s.trim.nn))
+      val chunked: Boolean = head.headers.exists: header =>
+        header.key.lower == t"transfer-encoding" && header.value.lower.contains(t"chunked")
 
-      length.lay(Stream())(Http.Request.fixedBody(cursor, _))
+      if chunked then Http.Request.chunkedBody(cursor) else
+        val length: Optional[Int] =
+          head.headers.filter(_.key.lower == t"content-length").prim.let(_.value)
+          . lay(Unset: Optional[Int]): text =>
+              safely(Integer.parseInt(text.s.trim.nn))
+
+        length.lay(Stream())(Http.Request.fixedBody(cursor, _))
 
     // RFC 7230 §6.3: HTTP/1.1 keeps connections alive unless `Connection: close`;
     // HTTP/1.0 closes unless `Connection: keep-alive`.

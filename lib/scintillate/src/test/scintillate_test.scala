@@ -107,6 +107,23 @@ object Tests extends Suite(m"Scintillate tests"):
 
         . assert(_.contains(t"hello"))
 
+        test(m"A chunked request body is decoded for the handler"):
+          val port = freePort()
+
+          val server = SocketServer(port).handle:
+            Http.Response(Http.Ok)(request.body().read[Data].utf8)
+
+          val response =
+            rawRequest
+              ( port,
+                t"POST / HTTP/1.1\r\nHost: x\r\nTransfer-Encoding: chunked\r\n\r\n"
+                + t"5\r\nhello\r\n6\r\n world\r\n0\r\n\r\n" )
+
+          server.cancel()
+          response
+
+        . assert(_.contains(t"hello world"))
+
         test(m"Two pipelined requests get two responses on one connection"):
           val port = freePort()
           val server = SocketServer(port).handle(Http.Response(Http.Ok)(t"ok"))

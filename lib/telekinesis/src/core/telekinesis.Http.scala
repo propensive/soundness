@@ -337,6 +337,7 @@ object Http:
           val chunk = cursor.hold:
             val start = cursor.mark
             var index = 0
+
             while index < take do
               cursor.advance()
               index += 1
@@ -346,6 +347,67 @@ object Http:
           chunk #:: recur(remaining - take)
 
       Stream.defer(recur(length))
+
+    // Decode a `Transfer-Encoding: chunked` request body off `cursor`, yielding
+    // each chunk's data and leaving the cursor after the terminating `0`-chunk
+    // and trailers — i.e. at the next request. Lenient: a malformed length or a
+    // truncated stream simply ends the body. Consumes CRLFs with `advance` (not
+    // `next`), so it never reads past the body's final `\r\n` (see `parseHead`).
+    def chunkedBody(cursor: Cursor[Data]): Stream[Data] =
+      def hex(digit: Int): Int =
+        if digit >= '0' && digit <= '9' then digit - '0'
+        else if digit >= 'a' && digit <= 'f' then digit - 'a' + 10
+        else if digit >= 'A' && digit <= 'F' then digit - 'A' + 10
+        else -1
+
+      def consumeCrlf(): Unit =
+        if cursor.peek == '\r' then cursor.advance()
+        if cursor.peek == '\n' then cursor.advance()
+
+      def skipToCrlf(): Unit = while !(cursor.peek == '\r') && !cursor.finished do cursor.advance()
+
+      def readSize(): Int =
+        var size = 0
+        var continue = true
+
+        while continue do
+          val value = hex(cursor.peek.asInt)
+
+          if value < 0 then continue = false else
+            size = size*16 + value
+            cursor.advance()
+
+        skipToCrlf() // discard any chunk extension
+        consumeCrlf()
+        size
+
+      def recur(): Stream[Data] = Stream.defer:
+        if cursor.finished then Stream() else
+          val size = readSize()
+
+          if size <= 0 then
+            while !(cursor.peek == '\r') && !cursor.finished do // trailer header lines
+              skipToCrlf()
+              consumeCrlf()
+
+            consumeCrlf() // final blank line
+            Stream()
+
+          else
+            val data = cursor.hold:
+              val start = cursor.mark
+              var index = 0
+
+              while index < size && !cursor.finished do
+                cursor.advance()
+                index += 1
+
+              cursor.grab(start, cursor.mark)
+
+            consumeCrlf()
+            data #:: recur()
+
+      recur()
 
   enum Body:
     case Streaming(data: Stream[Data])
