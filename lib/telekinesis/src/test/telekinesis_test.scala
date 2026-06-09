@@ -369,6 +369,20 @@ object Tests extends Suite(m"Telekinesis tests"):
         case HttpRequestError.Reason.Host(_) => true
         case _                               => false
 
+      for blockSize <- blockSizes do
+        test(m"fixedBody reads exactly N bytes at block size $blockSize"):
+          val cursor = Cursor[Data](chunks(t"hello world", blockSize).iterator)
+          Http.Request.fixedBody(cursor, 5).read[Data].utf8
+
+        . assert(_ == t"hello")
+
+        test(m"fixedBody leaves the cursor after the body at block size $blockSize"):
+          val cursor = Cursor[Data](chunks(t"hello world", blockSize).iterator)
+          Http.Request.fixedBody(cursor, 5).each(_ => ())
+          cursor.remainder.read[Data].utf8
+
+        . assert(_ == t" world")
+
     suite(m"Response serialization"):
       def chunks(text: Text, size: Int): Stream[Data] =
         val data: Data = text.data

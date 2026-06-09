@@ -323,6 +323,30 @@ object Http:
       Request
         ( head.method, head.version, head.host, head.target, head.headers, () => cursor.remainder )
 
+    // Stream exactly `length` bytes of body off `cursor`, in buffer-sized
+    // pieces, leaving it at the first byte after the body (the start of the next
+    // pipelined request on a kept-alive connection). Uses `advance` rather than
+    // `next`, so — like `parseHead` — it never reads past the body and so never
+    // blocks waiting for bytes that will not arrive until the client has our
+    // response.
+    def fixedBody(cursor: Cursor[Data], length: Int): Stream[Data] =
+      def recur(remaining: Int): Stream[Data] =
+        if remaining <= 0 || cursor.finished then Stream() else
+          val take = remaining.min(cursor.available)
+
+          val chunk = cursor.hold:
+            val start = cursor.mark
+            var index = 0
+            while index < take do
+              cursor.advance()
+              index += 1
+
+            cursor.grab(start, cursor.mark)
+
+          chunk #:: recur(remaining - take)
+
+      Stream.defer(recur(length))
+
   enum Body:
     case Streaming(data: Stream[Data])
     case Fixed(data: Data)

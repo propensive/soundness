@@ -54,6 +54,9 @@ object Tests extends Suite(m"Scintillate tests"):
       val out = socket.getOutputStream.nn
       out.write(request.s.getBytes("US-ASCII").nn)
       out.flush()
+      // Half-close so a kept-alive server sees EOF once it has read our request(s)
+      // and stops waiting for more; we can still read the response.
+      socket.shutdownOutput()
       val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII")
       socket.close()
       response.tt
@@ -89,3 +92,43 @@ object Tests extends Suite(m"Scintillate tests"):
           response
 
         . assert(_.contains(t"GET /foo/bar"))
+
+        test(m"A POST body is available to the handler"):
+          val port = freePort()
+
+          val server = SocketServer(port).handle:
+            Http.Response(Http.Ok)(request.body().read[Data].utf8)
+
+          val response =
+            rawRequest(port, t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 5\r\n\r\nhello")
+
+          server.cancel()
+          response
+
+        . assert(_.contains(t"hello"))
+
+        test(m"Two pipelined requests get two responses on one connection"):
+          val port = freePort()
+          val server = SocketServer(port).handle(Http.Response(Http.Ok)(t"ok"))
+
+          val response =
+            rawRequest
+              ( port,
+                t"GET /a HTTP/1.1\r\nHost: x\r\n\r\nGET /b HTTP/1.1\r\nHost: x\r\n\r\n" )
+
+          server.cancel()
+          response.cut(t"HTTP/1.1 200 OK").length
+
+        . assert(_ == 3)
+
+        test(m"Connection: close stops after one response"):
+          val port = freePort()
+          val server = SocketServer(port).handle(Http.Response(Http.Ok)(t"bye"))
+
+          val response =
+            rawRequest(port, t"GET / HTTP/1.1\r\nHost: x\r\nConnection: close\r\n\r\n")
+
+          server.cancel()
+          response
+
+        . assert(_.contains(t"connection: close"))

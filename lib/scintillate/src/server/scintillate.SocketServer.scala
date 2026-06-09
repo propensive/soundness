@@ -37,6 +37,7 @@ import java.net as jn
 
 import anticipation.*
 import contingency.*
+import gossamer.*
 import parasite.*
 import rudiments.*
 import telekinesis.*
@@ -57,6 +58,8 @@ extends RequestServable:
   def handle(handler: HttpConnection ?=> Http.Response)(using Monitor, Codicil)
   :   Service logs HttpServerEvent raises ServerError =
 
+    val idleTimeout: Int = 30000
+
     def startServer(): jn.ServerSocket raises ServerError =
       try
         val host = if local then "localhost" else "0.0.0.0"
@@ -74,8 +77,66 @@ extends RequestServable:
 
       try out.flush() catch case _: ji.IOException => abort(StreamError(count.b))
 
+    // Frame the request body off the shared connection cursor: `Content-Length`
+    // bytes, or empty when no length is given. (Chunked request bodies are not
+    // yet decoded.) The framed stream stops exactly at the body's end so the
+    // cursor is left at the next pipelined request.
+    def requestBody(cursor: Cursor[Data], head: Http.Request.Head): Stream[Data] =
+      val length: Optional[Int] =
+        head.headers.filter(_.key.lower == t"content-length").prim.let(_.value)
+        . lay(Unset: Optional[Int]): text =>
+            safely(Integer.parseInt(text.s.trim.nn))
+
+      length.lay(Stream())(Http.Request.fixedBody(cursor, _))
+
+    // RFC 7230 §6.3: HTTP/1.1 keeps connections alive unless `Connection: close`;
+    // HTTP/1.0 closes unless `Connection: keep-alive`.
+    def keepAlive(head: Http.Request.Head): Boolean =
+      val connection = head.headers.filter(_.key.lower == t"connection").map(_.value.lower)
+
+      head.version match
+        case 1.1 => !connection.exists(_.contains(t"close"))
+        case _   => connection.exists(_.contains(t"keep-alive"))
+
+    // Handle a single request off the cursor and return whether the connection
+    // should be kept alive for a further request.
+    def serveRequest(cursor: Cursor[Data], out: ji.OutputStream): Boolean raises StreamError =
+      whereas:
+        case error: HttpRequestError =>
+          val response = Http.Response(Http.BadRequest)() + Http.Header(t"connection", t"close")
+          safely(writeAll(out, Http.Response.serialize(response)))
+          false
+
+      . recover:
+          val head = Http.Request.parseHead(cursor)
+          val body = requestBody(cursor, head)
+          val keep = keepAlive(head)
+
+          val request =
+            Http.Request
+              ( head.method, head.version, head.host, head.target, head.headers, () => body )
+
+          def respond(response: Http.Response): Unit raises StreamError =
+            val response2 =
+              if keep then response else response + Http.Header(t"connection", t"close")
+
+            writeAll(out, Http.Response.serialize(response2, head.method != Http.Head))
+
+          val connection = new HttpConnection(request, false, port, respond)
+          Log.fine(HttpServerEvent.Received(request))
+
+          connection.respond:
+            try handler(using connection)
+            catch case throwable: Throwable => errorPage.handle(throwable, connection)
+
+          // Drain any body the handler did not consume, so the cursor is left at
+          // the start of the next request.
+          body.each(_ => ())
+          keep
+
     def serve(socket: jn.Socket): Unit =
       try
+        socket.setSoTimeout(idleTimeout)
         val in = socket.getInputStream.nn
         val out = socket.getOutputStream.nn
 
@@ -83,28 +144,11 @@ extends RequestServable:
           case StreamError(length) =>
             Log.warn(HttpServerEvent.BrokenStream(length))
 
-          case error: HttpRequestError =>
-            safely(writeAll(out, Http.Response.serialize(Http.Response(Http.BadRequest)())))
-
         . recover:
             val cursor = Cursor[Data](Streamable.inputStream.stream(in).filter(_.nonEmpty).iterator)
-            val head = Http.Request.parseHead(cursor)
 
-            val request =
-              Http.Request
-                ( head.method, head.version, head.host, head.target, head.headers,
-                  () => cursor.remainder )
-
-            def respond(response: Http.Response): Unit raises StreamError =
-              val includeBody = head.method != Http.Head
-              writeAll(out, Http.Response.serialize(response, includeBody))
-
-            val connection = new HttpConnection(request, false, port, respond)
-            Log.fine(HttpServerEvent.Received(request))
-
-            connection.respond:
-              try handler(using connection)
-              catch case throwable: Throwable => errorPage.handle(throwable, connection)
+            var continue = true
+            while continue && !cursor.finished do continue = serveRequest(cursor, out)
 
       catch case NonFatal(exception) => exception.printStackTrace()
       finally safely(socket.close())
