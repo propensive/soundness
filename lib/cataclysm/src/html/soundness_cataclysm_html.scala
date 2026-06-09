@@ -30,50 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cataclysm
+package soundness
 
-import anticipation.*
-import contingency.*
-import fulminate.*
-import prepositional.*
-import turbulence.*
-import vacuous.*
+export cataclysm.Styles
 
-// Reading a stylesheet accumulates every `CssError` (unknown property, invalid
-// or unsupported value, …) instead of stopping at the first: the parse runs
-// inside a `track`, and any errors are folded into a single `CssErrors` raised
-// at the end. A fully-valid stylesheet yields the `Css` with nothing raised.
-given cssAggregable: (Tactic[CssErrors], Diagnostics) => Css is Aggregable by Text = source =>
-  track[Text](CssErrors(Nil)):
-    case error: CssError => accrual + error
-
-  . within:
-      CssParser.parse(source.iterator)
-
-// The class and id names referenced anywhere in a stylesheet, including inside
-// nested rules and the selector-list arguments of `:is()`/`:not()`/`:nth-…(of)`.
-extension (css: Css)
-  def classes: Set[Text] = simples(css.rules).collect { case Simple.Class(name) => name }.to(Set)
-  def ids: Set[Text] = simples(css.rules).collect { case Simple.Id(name) => name }.to(Set)
-
-private def simples(nodes: List[Css.Node]): List[Simple] =
-  nodes.flatMap:
-    case Css.Node.Rule(selector, body) => listSimples(selector) ++ simples(body)
-    case Css.Node.At(_, _, body)       => body.lay(Nil)(simples)
-    case Css.Node.Declaration(_, _)    => Nil
-
-private def listSimples(list: SelectorList): List[Simple] =
-  list.selectors.flatMap: selector =>
-    (selector.head :: selector.rest.map(_(1))).flatMap(compoundSimples)
-
-private def compoundSimples(compound: Compound): List[Simple] =
-  compound.parts.flatMap:
-    case simple@ Simple.PseudoClass(_, argument)   => simple :: argumentSimples(argument)
-    case simple@ Simple.PseudoElement(_, argument) => simple :: argumentSimples(argument)
-    case simple                                    => List(simple)
-
-private def argumentSimples(argument: Optional[PseudoArgument]): List[Simple] =
-  argument.lay(Nil):
-    case PseudoArgument.Selectors(list) => listSimples(list)
-    case PseudoArgument.Nth(_, _, of)   => of.lay(Nil)(listSimples)
-    case PseudoArgument.Raw(_)          => Nil
+package cssBindings:
+  export cataclysm.cssBindings.checked

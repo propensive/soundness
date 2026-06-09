@@ -32,48 +32,99 @@
                                                                                                   */
 package cataclysm
 
+import scala.quoted.*
+
 import anticipation.*
 import contingency.*
 import fulminate.*
-import prepositional.*
-import turbulence.*
+import gigantism.*
+import gossamer.*
+import hellenism.*
 import vacuous.*
 
-// Reading a stylesheet accumulates every `CssError` (unknown property, invalid
-// or unsupported value, …) instead of stopping at the first: the parse runs
-// inside a `track`, and any errors are folded into a single `CssErrors` raised
-// at the end. A fully-valid stylesheet yields the `Css` with nothing raised.
-given cssAggregable: (Tactic[CssErrors], Diagnostics) => Css is Aggregable by Text = source =>
-  track[Text](CssErrors(Nil)):
-    case error: CssError => accrual + error
+// Compile-time machinery behind `Styles` and the `cssBindings.checked` given. A
+// `Styles` marker carries a stylesheet's classpath path as its `Locus` type; the
+// resource is read and parsed during macro expansion (cached per path), and a
+// requested name is checked against the stylesheet's class and id names.
+private[cataclysm] object HtmlMacros:
+  private val cache: scala.collection.mutable.HashMap[Text, (Set[Text], Set[Text])] =
+    scala.collection.mutable.HashMap()
 
-  . within:
-      CssParser.parse(source.iterator)
+  // Every `type X = …` member of a (possibly nested) refinement type, as a map.
+  private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
+  :   Map[Text, quotes.reflect.TypeRepr] =
 
-// The class and id names referenced anywhere in a stylesheet, including inside
-// nested rules and the selector-list arguments of `:is()`/`:not()`/`:nth-…(of)`.
-extension (css: Css)
-  def classes: Set[Text] = simples(css.rules).collect { case Simple.Class(name) => name }.to(Set)
-  def ids: Set[Text] = simples(css.rules).collect { case Simple.Id(name) => name }.to(Set)
+    import quotes.reflect.*
 
-private def simples(nodes: List[Css.Node]): List[Simple] =
-  nodes.flatMap:
-    case Css.Node.Rule(selector, body) => listSimples(selector) ++ simples(body)
-    case Css.Node.At(_, _, body)       => body.lay(Nil)(simples)
-    case Css.Node.Declaration(_, _)    => Nil
+    repr.dealias match
+      case Refinement(parent, name, TypeBounds(_, hi)) => refinements(parent).updated(name.tt, hi)
+      case Refinement(parent, name, info)              => refinements(parent).updated(name.tt, info)
+      case AndType(left, right)                        => refinements(left) ++ refinements(right)
+      case _                                           => Map()
 
-private def listSimples(list: SelectorList): List[Simple] =
-  list.selectors.flatMap: selector =>
-    (selector.head :: selector.rest.map(_(1))).flatMap(compoundSimples)
+  // The path of the `Styles` stylesheet in scope, read from its `Locus` type.
+  private def stylesPath(using quotes: Quotes): Text =
+    import quotes.reflect.*
 
-private def compoundSimples(compound: Compound): List[Simple] =
-  compound.parts.flatMap:
-    case simple@ Simple.PseudoClass(_, argument)   => simple :: argumentSimples(argument)
-    case simple@ Simple.PseudoElement(_, argument) => simple :: argumentSimples(argument)
-    case simple                                    => List(simple)
+    val styles = Expr.summon[Styles].getOrElse:
+      halt(m"cataclysm: no stylesheet is in scope; add a `given Styles at \"/path\"`")
 
-private def argumentSimples(argument: Optional[PseudoArgument]): List[Simple] =
-  argument.lay(Nil):
-    case PseudoArgument.Selectors(list) => listSimples(list)
-    case PseudoArgument.Nth(_, _, of)   => of.lay(Nil)(listSimples)
-    case PseudoArgument.Raw(_)          => Nil
+    val members = refinements(styles.asTerm.tpe) ++ refinements(styles.asTerm.tpe.widen)
+
+    val locus = members.get(t"Locus").getOrElse:
+      halt(m"cataclysm: the stylesheet carries no path")
+
+    locus.absolve match
+      case ConstantType(StringConstant(path)) =>
+        path.tt
+
+      case _ =>
+        halt(m"cataclysm: the stylesheet path is not a string literal")
+
+  private def references(path: Text)(using Quotes): (Set[Text], Set[Text]) =
+    cache.getOrElseUpdate(path, parseResource(path))
+
+  private def parseResource(path: Text)(using Quotes): (Set[Text], Set[Text]) =
+    val stream = Optional(getClass.getResourceAsStream(path.s)).or:
+      halt(m"cataclysm: could not read the stylesheet at $path on the classpath")
+
+    val content = scala.io.Source.fromInputStream(stream).mkString.tt
+
+    val css = safely(CssParser.parse(Iterator(content))).or:
+      halt(m"cataclysm: could not parse the stylesheet at $path")
+
+    (css.classes, css.ids)
+
+  // Decide whether `name` is a class or an id in the in-scope stylesheet, or halt.
+  def attributeFor[name <: Label: Type]: Macro[Text] =
+    import quotes.reflect.*
+
+    val target = TypeRepr.of[name].absolve match
+      case ConstantType(StringConstant(value)) =>
+        value.tt
+
+      case _ =>
+        halt(m"cataclysm: the class or id name must be a string literal")
+
+    val (classes, ids) = references(stylesPath)
+
+    val attribute =
+      if classes.contains(target) && ids.contains(target)
+      then halt(m"cataclysm: $target is both a class and an id in the stylesheet; rename one")
+      else if classes.contains(target) then "class"
+      else if ids.contains(target) then "id"
+      else halt(m"cataclysm: $target is not a class or id in the stylesheet")
+
+    '{${Expr(attribute)}.tt}
+
+  // Lift a `cp"…"` resource's `Locus` path into a `Styles` marker carrying it.
+  def styles(resource: Expr[Resource]): Macro[Styles] =
+    import quotes.reflect.*
+
+    val members = refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)
+
+    val locus = members.get(t"Locus").getOrElse:
+      halt(m"cataclysm: the resource carries no path (it has no `Locus`)")
+
+    Refinement(TypeRepr.of[Styles], "Locus", TypeBounds(locus, locus)).asType.absolve match
+      case '[type result <: Styles; result] => '{(new Styles {}).asInstanceOf[result]}

@@ -1,0 +1,5 @@
+.button { color: red }
+#main { color: blue }
+.warning, .button:hover { color: orange }
+.dual { color: green }
+#dual { color: purple }
