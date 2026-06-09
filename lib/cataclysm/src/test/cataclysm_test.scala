@@ -71,6 +71,12 @@ object Tests extends Suite(m"Cataclysm Tests"):
   def kw(name: Text): Syntax = Syntax.Keyword(name)
   def ty(name: Text): Syntax = Syntax.Type(name, Unset)
 
+  // ── value-tokenizer helpers ──────────────────────────────────────────────
+  def vt(text: Text): List[ValueToken] = ValueTokenizer.tokens(text)
+  val ws: ValueToken = ValueToken.Whitespace
+  def num(n: Int): ValueToken = ValueToken.Number(n, true, n.toString.tt)
+  def dim(n: Int, unit: Text): ValueToken = ValueToken.Dimension(n, unit, (n.toString+unit.s).tt)
+
   def run(): Unit =
     suite(m"CSS parsing"):
       test(m"a single flat rule with one declaration"):
@@ -381,6 +387,76 @@ object Tests extends Suite(m"Cataclysm Tests"):
       test(m"every property's value grammar parses"):
         PropertyDef.list.map(_.grammar).length
       . assert(_ == 663)
+
+    suite(m"Value tokenizer"):
+      val rgbMid = List(num(1), ValueToken.Comma, ws, num(2), ValueToken.Comma, ws, num(3))
+      val rgbTokens = ValueToken.Function(t"rgb") :: rgbMid ::: List(ValueToken.Close)
+      val calcMid = List(dim(1, t"px"), ws, ValueToken.Delim('+'), ws, dim(2, t"px"))
+      val calcTokens = ValueToken.Function(t"calc") :: calcMid ::: List(ValueToken.Close)
+
+      test(m"an identifier"):
+        vt(t"auto")
+      . assert(_ == List(ValueToken.Ident(t"auto")))
+
+      test(m"a dimension"):
+        vt(t"10px")
+      . assert(_ == List(dim(10, t"px")))
+
+      test(m"a percentage"):
+        vt(t"50%")
+      . assert(_ == List(ValueToken.Percentage(50, t"50%")))
+
+      test(m"a signed integer"):
+        vt(t"-3")
+      . assert(_ == List(ValueToken.Number(-3, true, t"-3")))
+
+      test(m"a fractional number"):
+        vt(t"1.5")
+      . assert(_ == List(ValueToken.Number(1.5, false, t"1.5")))
+
+      test(m"a hash"):
+        vt(t"#ff0000")
+      . assert(_ == List(ValueToken.Hash(t"ff0000")))
+
+      test(m"a quoted string"):
+        vt(t""""hello"""")
+      . assert(_ == List(ValueToken.Quoted(t"hello")))
+
+      test(m"a space-separated sequence"):
+        vt(t"1px solid red")
+      . assert(_ == List(dim(1, t"px"), ws, ValueToken.Ident(t"solid"), ws, ValueToken.Ident(t"red")))
+
+      test(m"functional notation"):
+        vt(t"rgb(1, 2, 3)")
+      . assert(_ == rgbTokens)
+
+      test(m"em is a unit, not an exponent"):
+        vt(t"1em")
+      . assert(_ == List(dim(1, t"em")))
+
+      test(m"scientific notation is one number"):
+        vt(t"1e3")
+      . assert(_ == List(ValueToken.Number(1000, false, t"1e3")))
+
+      test(m"a slash is a delimiter"):
+        vt(t"12px/1.5")
+      . assert(_ == List(dim(12, t"px"), ValueToken.Delim('/'), ValueToken.Number(1.5, false, t"1.5")))
+
+      test(m"an unquoted url"):
+        vt(t"url(http://e.com/i.png)")
+      . assert(_ == List(ValueToken.Url(t"http://e.com/i.png")))
+
+      test(m"a quoted url is a function"):
+        vt(t"""url("x.png")""")
+      . assert(_ == List(ValueToken.Function(t"url"), ValueToken.Quoted(t"x.png"), ValueToken.Close))
+
+      test(m"a custom-property reference inside var()"):
+        vt(t"var(--my-color)")
+      . assert(_ == List(ValueToken.Function(t"var"), ValueToken.Ident(t"--my-color"), ValueToken.Close))
+
+      test(m"calc with spaced operators"):
+        vt(t"calc(1px + 2px)")
+      . assert(_ == calcTokens)
 
     suite(m"CSS errors"):
       test(m"an unterminated comment is reported"):
