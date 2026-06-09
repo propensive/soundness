@@ -52,7 +52,7 @@ import threading.platform
 def demo(): Unit = cli:
   execute:
     interactive: terminal ?=>
-      form(Mode.Fullscreen)(demoLayout)
+      form(Mode.Inline)(demoLayout)
       Exit.Ok
 
 // rank(title, file(sidebar, rank(heading, editor, activity)), status):
@@ -77,4 +77,8 @@ private def demoLayout: Pane =
   val title = panel(minHeight = 1, maxHeight = 1)(Out.print(t"  ULTIMATUM · fullscreen demo"))
   val status = panel(minHeight = 1, maxHeight = 1)(Out.print(t"  [Tab] focus    [Esc] quit"))
 
-  rank(title, file(sidebar, rank(heading, editor(), activity)), status)
+  // A multiline compose box: Enter inserts a newline (it never submits, so the
+  // arrow keys can move the cursor up and down between lines).
+  val compose = editor(LineEditor(mode = LineEditor.Mode.Multiline(_ => false)))
+
+  rank(title, file(sidebar, rank(heading, compose, activity)), status)

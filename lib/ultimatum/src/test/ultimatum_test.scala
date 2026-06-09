@@ -198,6 +198,23 @@ object Tests extends Suite(m"Ultimatum Tests"):
         field.value
       . assert(_ == t"hi")
 
+      // The demo's compose box is multiline; the Up/Down arrows must move the
+      // cursor between lines (in single-line mode they are inert).
+      test(m"a multiline editor field moves its cursor up a line on Up"):
+        val field = EditorField(LineEditor(t"ab\ncd", mode = LineEditor.Mode.Multiline(_ => false)))
+        field.handle(Keypress.Up)
+        field.handle(Keypress.CharKey('X'))
+        field.value
+      . assert(_ == t"abX\ncd")
+
+      test(m"a multiline editor field moves its cursor down a line on Down"):
+        val field = EditorField(LineEditor(t"ab\ncd", 0,
+            mode = LineEditor.Mode.Multiline(_ => false)))
+        field.handle(Keypress.Down)
+        field.handle(Keypress.CharKey('X'))
+        field.value
+      . assert(_ == t"ab\nXcd")
+
       test(m"an editor field's intrinsic height grows when its text wraps"):
         EditorField(LineEditor(t"aaaaa")).measure(3)
       . assert(_ == (0, 2))
