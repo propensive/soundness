@@ -30,50 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cataclysm
+package honeycomb
 
 import anticipation.*
-import contingency.*
-import fulminate.*
+import beneficence.*
+import gossamer.*
 import prepositional.*
-import turbulence.*
-import vacuous.*
 
-// Reading a stylesheet accumulates every `CssError` (unknown property, invalid
-// or unsupported value, …) instead of stopping at the first: the parse runs
-// inside a `track`, and any errors are folded into a single `CssErrors` raised
-// at the end. A fully-valid stylesheet yields the `Css` with nothing raised.
-given cssAggregable: (Tactic[CssErrors], Diagnostics) => Css is Aggregable by Text = source =>
-  track[Text](CssErrors(Nil)):
-    case error: CssError => accrual + error
+// Evidence that a name used dynamically on a `Tag` (e.g. `Div.foo(…)`) is a valid
+// id or class, and which attribute it populates. The name itself is the `Topic`
+// (a string-singleton type); `attribute` is `"class"` or `"id"`. A given of
+// `Attribution of name` brought into scope decides whether `Tag.name` is allowed
+// and what it produces.
+object Attribution:
+  // Evidence that one or more names are classes, carried as the `Topic` type.
+  def classes[topic <: Label](): Attribution of topic =
+    new Attribution(t"class"):
+      type Topic = topic
 
-  . within:
-      CssParser.parse(source.iterator)
+  // The no-op attribution for a plain `Tag(children)` call, which dispatches via
+  // `Dynamic` to `applyDynamic("apply")`. An empty `attribute` adds nothing.
+  given empty: Attribution(t""):
+    type Topic = "apply"
 
-// The class and id names referenced anywhere in a stylesheet, including inside
-// nested rules and the selector-list arguments of `:is()`/`:not()`/`:nth-…(of)`.
-extension (css: Css)
-  def classes: Set[Text] = simples(css.rules).collect { case Simple.Class(name) => name }.to(Set)
-  def ids: Set[Text] = simples(css.rules).collect { case Simple.Id(name) => name }.to(Set)
-
-private def simples(nodes: List[Css.Node]): List[Simple] =
-  nodes.flatMap:
-    case Css.Node.Rule(selector, body) => listSimples(selector) ++ simples(body)
-    case Css.Node.At(_, _, body)       => body.lay(Nil)(simples)
-    case Css.Node.Declaration(_, _)    => Nil
-
-private def listSimples(list: SelectorList): List[Simple] =
-  list.selectors.flatMap: selector =>
-    (selector.head :: selector.rest.map(_(1))).flatMap(compoundSimples)
-
-private def compoundSimples(compound: Compound): List[Simple] =
-  compound.parts.flatMap:
-    case simple@ Simple.PseudoClass(_, argument)   => simple :: argumentSimples(argument)
-    case simple@ Simple.PseudoElement(_, argument) => simple :: argumentSimples(argument)
-    case simple                                    => List(simple)
-
-private def argumentSimples(argument: Optional[PseudoArgument]): List[Simple] =
-  argument.lay(Nil):
-    case PseudoArgument.Selectors(list) => listSimples(list)
-    case PseudoArgument.Nth(_, _, of)   => of.lay(Nil)(listSimples)
-    case PseudoArgument.Raw(_)          => Nil
+case class Attribution(attribute: Text) extends Topical, Findable

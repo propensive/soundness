@@ -44,7 +44,7 @@ import vacuous.*
 import doms.html.whatwg, whatwg.*
 
 trait CommonFormattable extends Formattable:
-  given lineClass: (Stylesheet of "line" | "amok") = Stylesheet()
+  given lineClass: (Attribution of "line" | "amok") = Attribution.classes()
 
   def classes(accent: Accent): Stylesheet = Stylesheet(Set(accent.show.lower))
 

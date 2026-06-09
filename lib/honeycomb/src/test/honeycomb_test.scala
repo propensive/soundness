@@ -225,7 +225,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
         test(m"<thead> works like <tbody>"):
           t"""<table class="test"><thead><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]
         . assert: result =>
-            given (Stylesheet of "test" | "foo") = Stylesheet()
+            given (Attribution of "test" | "foo") = Attribution.classes()
             result == Table.test(Thead(Tr(Th("First"), Td("Second"), Td("Third"))))
 
         test(m"Generic stylesheet"):
@@ -1242,7 +1242,7 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
         test(m"<thead> works like <tbody>"):
           t"""<table class="test"><thead><tr><th>First<td>Second<td>Third</table>""".read[Html of Flow]
         . assert: result =>
-            given (Stylesheet of "test" | "foo") = Stylesheet()
+            given (Attribution of "test" | "foo") = Attribution.classes()
             result == Table.test(Thead(Tr(Th("First"), Td("Second"), Td("Third"))))
 
         test(m"<tfoot> closes inferred <tbody>"):

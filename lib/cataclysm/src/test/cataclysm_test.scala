@@ -523,6 +523,45 @@ object Tests extends Suite(m"Cataclysm Tests"):
         vmatch(Syntax.Repeated(ty(t"length"), 1, Unset, true), t"1px, 2px, 3px")
       . assert(_ == Outcome.Valid)
 
+    suite(m"Selector names"):
+      val css = t".a #b { color: red } @media screen { .c:not(.d) e#f { color: blue } }".read[Css]
+
+      test(m"class names are collected, including nested and inside :not()"):
+        css.classes
+      . assert(_ == Set(t"a", t"c", t"d"))
+
+      test(m"id names are collected, including nested"):
+        css.ids
+      . assert(_ == Set(t"b", t"f"))
+
+    suite(m"CSS-checked attributions"):
+      given (Styles at "/cataclysm/test.css") = Styles(cp"/cataclysm/test.css")
+      import cssBindings.checked
+
+      test(m"a class name resolves to the class attribute"):
+        summon[Attribution of "button"].attribute
+      . assert(_ == t"class")
+
+      test(m"an id name resolves to the id attribute"):
+        summon[Attribution of "main"].attribute
+      . assert(_ == t"id")
+
+      test(m"a class used only in a compound/pseudo selector is found"):
+        summon[Attribution of "warning"].attribute
+      . assert(_ == t"class")
+
+      test(m"an unknown name fails to compile"):
+        demilitarize:
+          summon[Attribution of "absent"].attribute
+        . map(_.message)
+      . assert(_.exists(_.contains("not a class or id")))
+
+      test(m"a name that is both a class and an id fails to compile"):
+        demilitarize:
+          summon[Attribution of "dual"].attribute
+        . map(_.message)
+      . assert(_.exists(_.contains("both a class and an id")))
+
     suite(m"CSS errors"):
       test(m"an unterminated comment is reported"):
         capture[CssErrors](t"a { /* unterminated }".read[Css]).errors.head.reason

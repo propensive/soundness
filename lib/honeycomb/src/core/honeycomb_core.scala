@@ -38,6 +38,7 @@ import scala.util.NotGiven
 
 import anticipation.*
 import contextual.*
+import gossamer.*
 import prepositional.*
 
 extension [renderable: Renderable](value: renderable)
@@ -56,9 +57,9 @@ package doms.html:
 
 package stylesheets:
   given uncheckedClasses: [classname <: Label: ValueOf] => NotGiven[classname =:= "apply"]
-  =>  Stylesheet of classname =
+  =>  Attribution of classname =
 
-    new Stylesheet(Set(valueOf[classname])):
+    new Attribution(t"class"):
       type Topic = classname
 
 package recoveries:

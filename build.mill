@@ -514,7 +514,10 @@ object cataclysm extends Library:
       jacinta.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+  object html extends Component(core, honeycomb.core, gigantism.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core, html)
 
 object oldcataclysm extends Library:
   object core extends Component(anticipation.html, serpentine.core, quantitative.core):
