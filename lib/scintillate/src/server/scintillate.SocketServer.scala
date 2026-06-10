@@ -34,10 +34,13 @@ package scintillate
 
 import java.io as ji
 import java.net as jn
+import javax.net.ssl as jns
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
+import hieroglyph.charEncoders.ascii
 import parasite.*
 import rudiments.*
 import telekinesis.*
@@ -51,9 +54,19 @@ import zephyrine.*
 // Loom virtual thread (`daemon`). The handler API is identical to `HttpServer`'s
 // — a `HttpConnection ?=> Http.Response` — so the two backends are
 // interchangeable. The connection loop supports keep-alive and pipelining,
-// `Content-Length` and chunked request bodies, and `101` protocol upgrades.
-case class SocketServer(port: Int, local: Boolean = true)(using errorPage: WebserverErrorPage)
+// `Content-Length` and chunked request bodies, `100-continue`, request-size
+// limits, and `101` protocol upgrades. Supplying an `SSLContext` as `ssl` serves
+// over TLS instead of cleartext.
+case class SocketServer
+  ( port: Int, local: Boolean = true, ssl: Optional[jns.SSLContext] = Unset )
+  ( using errorPage: WebserverErrorPage )
 extends RequestServable:
+
+  // Cap on the bytes an unconsumed request body will be drained before the
+  // connection is closed rather than read in full to reach the next request.
+  private val drainLimit: Int = 65536
+
+  private val continueResponse: Data = t"HTTP/1.1 100 Continue\r\n\r\n".data
 
   private def writeAll(out: ji.OutputStream, stream: Stream[Data]): Unit raises StreamError =
     var count: Int = 0
@@ -99,6 +112,25 @@ extends RequestServable:
     head.headers.filter(_.key.lower == t"connection").exists(_.value.lower.contains(t"upgrade"))
     && head.headers.exists(_.key.lower == t"upgrade")
 
+  // A client may withhold a request body until the server agrees to receive it
+  // with an interim `100 Continue` (RFC 7231 §5.1.1).
+  private def expectsContinue(head: Http.Request.Head): Boolean =
+    head.version == 1.1 && head.headers.exists: header =>
+      header.key.lower == t"expect" && header.value.lower.contains(t"100-continue")
+
+  private def streaming(response: Http.Response): Boolean = response.body match
+    case Http.Body.Streaming(_) => true
+    case _                      => false
+
+  // Map a request-parsing failure to the status the client should see.
+  private def errorStatus(reason: HttpRequestError.Reason): Http.Status =
+    import HttpRequestError.Reason
+
+    reason match
+      case Reason.UriTooLong      => Http.UriTooLong
+      case Reason.HeadersTooLarge => Http.RequestHeaderFieldsTooLarge
+      case _                      => Http.BadRequest
+
   // Drive the HTTP/1.1 keep-alive loop over an arbitrary byte source and sink,
   // independent of any socket. `handle` calls this once per accepted connection;
   // it is also the in-process entry point for tests and benchmarks, which feed a
@@ -109,26 +141,39 @@ extends RequestServable:
     ( using HttpServerEvent is Loggable )
   :   Unit =
 
+    val closeHeader: Http.Header = Http.Header(t"connection", t"close")
+
     // Handle one request off the cursor; return whether to keep the connection
     // alive for a further request.
-    def serveRequest(cursor: Cursor[Data]): Boolean raises StreamError =
+    def serveRequest(cursor: Cursor[Data]): Boolean =
       whereas:
         case error: HttpRequestError =>
-          val response = Http.Response(Http.BadRequest)() + Http.Header(t"connection", t"close")
+          val response = Http.Response(errorStatus(error.reason))() + closeHeader
+          safely(writeAll(out, Http.Response.serialize(response)))
+          false
+
+        case StreamError(_) =>
+          // A read error or timeout while a request is in flight: best-effort 408
+          // (the socket may still be writable on a read timeout), then close.
+          val response = Http.Response(Http.RequestTimeout)() + closeHeader
           safely(writeAll(out, Http.Response.serialize(response)))
           false
 
       . recover:
           val head = Http.Request.parseHead(cursor)
           val upgrade = isUpgrade(head)
+
+          // Tell a waiting client it may send the body before we read it.
+          if expectsContinue(head) then writeAll(out, Stream(continueResponse))
+
           val body = if upgrade then cursor.remainder else requestBody(cursor, head)
-          val keep = keepAlive(head)
 
           val request =
             Http.Request
               ( head.method, head.version, head.host, head.target, head.headers, () => body )
 
           var upgraded = false
+          var keep = keepAlive(head)
 
           def respond(response: Http.Response): Unit raises StreamError =
             if response.status == Http.SwitchingProtocols then
@@ -138,23 +183,33 @@ extends RequestServable:
               upgraded = true
               writeAll(out, Http.Response.serialize(response))
             else
-              val response2 =
-                if keep then response else response + Http.Header(t"connection", t"close")
+              // A streaming body to a pre-1.1 client can't be chunked, so it must
+              // be delimited by closing the connection.
+              if head.version != 1.1 && streaming(response) then keep = false
+              val response2 = if keep then response else response + closeHeader
+              val bytes = Http.Response.serialize(response2, head.method != Http.Head, head.version)
+              writeAll(out, bytes)
 
-              writeAll(out, Http.Response.serialize(response2, head.method != Http.Head))
-
-          val connection = new HttpConnection(request, false, port, respond)
+          val connection = new HttpConnection(request, ssl.present, port, respond)
           Log.fine(HttpServerEvent.Received(request))
 
           connection.respond:
             try handler(using connection)
             catch case throwable: Throwable => errorPage.handle(throwable, connection)
 
-          if upgraded then false else
-            // Drain any body the handler did not consume, so the cursor is left
-            // at the start of the next request.
-            body.each(_ => ())
-            keep
+          if upgraded || !keep then false else
+            // Drain any body the handler did not consume so the cursor reaches the
+            // next request — but bound it: past `drainLimit` unread bytes, close
+            // rather than read a large ignored upload. Walking already-consumed
+            // (memoised) blocks doesn't move the cursor, so the position delta
+            // measures only what the drain itself reads.
+            val drainStart = cursor.position.n0
+
+            def drained(stream: Stream[Data]): Boolean = stream match
+              case _ #:: tail => cursor.position.n0 - drainStart <= drainLimit && drained(tail)
+              case _          => true
+
+            drained(body)
 
     try
       whereas:
@@ -176,8 +231,10 @@ extends RequestServable:
 
     def startServer(): jn.ServerSocket raises ServerError =
       try
-        val host = if local then "localhost" else "0.0.0.0"
-        jn.ServerSocket(port, 0, jn.InetAddress.getByName(host).nn)
+        val address = jn.InetAddress.getByName(if local then "localhost" else "0.0.0.0").nn
+
+        ssl.lay(jn.ServerSocket(port, 0, address)): context =>
+          context.getServerSocketFactory.nn.createServerSocket(port, 0, address).nn
       catch case error: jn.BindException => abort(ServerError(port))
 
     val serverSocket = startServer()
