@@ -688,11 +688,30 @@ object Tests extends Suite(m"Cataclysm Tests"):
         css"@media screen { a { width: $width } }"
       . assert(_ == t"@media screen { a { width: 4px } }".read[Css])
 
+      val button = Name[CssClass](t"button")
+      val main = Name[DomId](t"main")
+
+      test(m"a CSS class substitution in selector position"):
+        css"$button { color: red }"
+      . assert(_ == t".button { color: red }".read[Css])
+
+      test(m"a DOM id substitution in selector position"):
+        css"$main { color: red }"
+      . assert(_ == t"#main { color: red }".read[Css])
+
+      test(m"a class substitution compounded with an element"):
+        css"div$button { color: red }"
+      . assert(_ == t"div.button { color: red }".read[Css])
+
+      test(m"a selector hole and a value hole in document order"):
+        css"$button { color: $red }"
+      . assert(_ == t".button { color: #ff0000 }".read[Css])
+
       test(m"a wrong-typed substitution fails to compile"):
         demilitarize(css"a { color: $width }").exists(_.message.contains("not valid for"))
       . assert(_ == true)
 
-      test(m"a substitution in selector position fails to compile"):
+      test(m"a non-name substitution in selector position fails to compile"):
         demilitarize(css"$width { color: red }").nonEmpty
       . assert(_ == true)
 

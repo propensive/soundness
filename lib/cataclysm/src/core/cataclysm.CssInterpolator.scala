@@ -37,17 +37,23 @@ import scala.quoted.*
 import anticipation.*
 import contingency.*
 import fulminate.*
+import gossamer.*
+import nomenclature.*
 import spectacular.*
 import vacuous.*
 
 // The macro behind the `css"…"` interpolator. The literal parts are joined with a
 // sentinel char at each `$substitution`, parsed at compile time, and the parsed
 // `Css` is rebuilt as an `Expr` — a declaration value that is a lone sentinel
-// becomes the (type-checked) substitution, everything else is literal. A
-// substitution is therefore only allowed as a whole property value; anywhere else
-// (a selector, a property name, an at-rule prelude, or mixed with literal text) is
-// a compile error. Each substitution's type must have a `CssConvertible` whose VDS
-// type is valid for that property, so `css"a { color: $length }"` does not compile.
+// becomes the (type-checked) substitution, everything else is literal. Each such
+// substitution's type must have a `CssConvertible` whose VDS type is valid for that
+// property, so `css"a { color: $length }"` does not compile.
+//
+// A substitution within a selector is also permitted, but only of a `Name[CssClass]`
+// or a `Name[DomId]`, which render as the simple selectors `.class` and `#id`
+// respectively; so `css"$button { … }"` is a rule for the class `button`. Anywhere
+// else (a property name, an at-rule prelude, or mixed with literal property text) is
+// a compile error.
 //
 // NB: `Optional`'s `let`/`lay`/… are inline and crash `pickleQuotes` when used
 // around the quotes below, so this file branches on `Optional` with plain `match`.
@@ -108,14 +114,44 @@ object CssInterpolator:
         case _ =>
           halt(m"cataclysm: the substitution could not be read")
 
+    // The selector fragment for the next substitution, which must be a name: a
+    // `Name[CssClass]` renders as `.class` and a `Name[DomId]` as `#id`.
+    def selectorFragment(): Expr[Text] =
+      val expr = insertions(holeIndex)
+      holeIndex += 1
+      val pos = expr.asTerm.underlyingArgument.pos
+
+      expr match
+        case '{$value: tpe} =>
+          if TypeRepr.of[tpe] <:< TypeRepr.of[Name[CssClass]]
+          then '{(${Expr(".")} + ${value.asExprOf[Text]}.s).tt}
+          else if TypeRepr.of[tpe] <:< TypeRepr.of[Name[DomId]]
+          then '{(${Expr("#")} + ${value.asExprOf[Text]}.s).tt}
+          else halt(m"cataclysm: only a CSS class or DOM id may be substituted in a selector", pos)
+
+        case _ =>
+          halt(m"cataclysm: the substitution could not be read")
+
+    // Rebuild a selector containing substitutions: split its rendered text at each
+    // sentinel and interleave the (name-typed) holes between the literal segments.
+    def assembleSelector(text: Text): Expr[SelectorList] =
+      val segments = text.cut(placeholder)
+      var acc: Expr[String] = Expr(segments.head.s)
+
+      for segment <- segments.tail do
+        acc = '{$acc + ${selectorFragment()}.s + ${Expr(segment.s)}}
+
+      '{SelectorList.read($acc.tt)}
+
     def listExpr(nodes: List[Css.Node]): Expr[List[Css.Node]] = Expr.ofList(nodes.map(nodeExpr))
 
     def nodeExpr(node: Css.Node): Expr[Css.Node] = node match
       case Css.Node.Rule(selector, body) =>
-        if has(selector.show) then
-          halt(m"cataclysm: a substitution may only be a property value, not a selector")
+        val selectorExpr =
+          if has(selector.show) then assembleSelector(selector.show)
+          else '{SelectorList.read(${lift(selector.show)})}
 
-        '{Css.Node.Rule(SelectorList.read(${lift(selector.show)}), ${listExpr(body)})}
+        '{Css.Node.Rule($selectorExpr, ${listExpr(body)})}
 
       case Css.Node.Declaration(property, value) =>
         if has(property) then
@@ -141,6 +177,6 @@ object CssInterpolator:
     val result = '{Css(${listExpr(css.rules)})}
 
     if holeIndex != insertions.length
-    then halt(m"cataclysm: a substitution is only allowed as a property value")
+    then halt(m"cataclysm: a substitution is only allowed as a property value or in a selector")
 
     result
