@@ -37,6 +37,7 @@ import language.dynamics
 import anticipation.*
 import coaxial.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import gesticulate.*
@@ -261,26 +262,44 @@ object Http:
     // with `peek`/`next` rather than `seek` so it works on a bare `Cursor[Data]`
     // parameter (which loses the `tracked` `Operand = Byte` refinement that
     // `seek`'s signature relies on).
-    def parseHead(cursor: Cursor[Data]): Head raises HttpRequestError =
-      inline def expected(char: Char): Diagnostics ?=> HttpRequestError =
-        HttpRequestError(HttpRequestError.Reason.Expectation(char, cursor.peek.asInt.toChar))
+    // `maxRequestLine` and `maxHeaders` bound how many bytes the request line and
+    // the header block may occupy, yielding `414`/`431` (rather than reading an
+    // unbounded amount) — the scan aborts mid-token once the cap is crossed.
+    def parseHead
+      ( cursor: Cursor[Data], maxRequestLine: Int = 8192, maxHeaders: Int = 65536 )
+    :   Head raises HttpRequestError =
 
-      def upTo(stop: Char): Text = cursor.hold:
+      import HttpRequestError.Reason
+
+      inline def expected(char: Char): Diagnostics ?=> HttpRequestError =
+        HttpRequestError(Reason.Expectation(char, cursor.peek.asInt.toChar))
+
+      def upTo(stop: Char, limit: Int, reason: Reason): Text = cursor.hold:
         val start = cursor.mark
-        while !cursor.finished && !(cursor.peek == stop) do cursor.next()
+
+        while !cursor.finished && !(cursor.peek == stop) do
+          if cursor.position.n0 > limit then abort(HttpRequestError(reason))
+          cursor.next()
+
         Ascii(cursor.grab(start, cursor.mark)).show
 
-      val method: Http.Method = upTo(' ').decode[Http.Method]
+      val lineLimit = cursor.position.n0 + maxRequestLine
+
+      val method: Http.Method = upTo(' ', lineLimit, Reason.UriTooLong).decode[Http.Method]
       cursor.next()
 
-      val target: Text = upTo(' ')
+      val target: Text = upTo(' ', lineLimit, Reason.UriTooLong)
       cursor.next()
 
-      val version: Http.Version = Http.Version.parse(upTo('\r'))
+      val version: Http.Version = Http.Version.parse(upTo('\r', lineLimit, Reason.UriTooLong))
       cursor.next()
       cursor.expect('\n')(expected('\n'))
 
+      val headerLimit = cursor.position.n0 + maxHeaders
+
       def readHeaders(headers: List[Http.Header]): List[Http.Header] =
+        if cursor.position.n0 > headerLimit then abort(HttpRequestError(Reason.HeadersTooLarge))
+
         if cursor.peek == '\r' then
           // Consume the final CRLF with `advance` rather than `next`/`expect`:
           // `next` calls `more`, which forces a blocking refill of the underlying
@@ -294,12 +313,12 @@ object Http:
           headers
 
         else
-          val key: Text = upTo(':')
+          val key: Text = upTo(':', headerLimit, Reason.HeadersTooLarge)
           cursor.next()
 
           while cursor.peek == ' ' || cursor.peek == '\t' do cursor.next()
 
-          val value: Text = upTo('\r')
+          val value: Text = upTo('\r', headerLimit, Reason.HeadersTooLarge)
           cursor.next()
           cursor.expect('\n')(expected('\n'))
           readHeaders(Http.Header(key, value) :: headers)
@@ -530,13 +549,20 @@ object Http:
     // body. `includeBody` is `false` for responses to `HEAD` requests and for
     // `101` upgrades (where the caller pipes the post-handshake stream raw). The
     // inverse of `parse`.
-    def serialize(response: Response, includeBody: Boolean = true): Stream[Data] =
+    def serialize(response: Response, includeBody: Boolean = true, version: Version = 1.1)
+    :   Stream[Data] =
+
       import charEncoders.ascii
 
       // After `101 Switching Protocols` the bytes are no longer HTTP: the body is
       // the upgraded protocol's raw stream (e.g. WebSocket frames), so suppress
       // Content-Length / chunked framing and the headers that announce them.
       val upgrade: Boolean = response.status == Http.SwitchingProtocols
+
+      // Chunked transfer-encoding is an HTTP/1.1 feature; a streaming body to an
+      // HTTP/1.0 client must instead be delimited by closing the connection (the
+      // server adds `Connection: close`), so its body is written raw.
+      val chunkable: Boolean = version != 1.0 && version != 0.9
 
       val explicitChunked: Boolean = response.textHeaders.exists: header =>
         header.key.lower == t"transfer-encoding" && header.value.lower == t"chunked"
@@ -553,9 +579,10 @@ object Http:
             (if hasContentLength then Nil else List(Header(t"content-length", length)), false)
 
           case Body.Streaming(_) =>
-            if explicitChunked then (Nil, true)
+            if explicitChunked && chunkable then (Nil, true)
             else if hasContentLength then (Nil, false)
-            else (List(Header(t"transfer-encoding", t"chunked")), true)
+            else if chunkable then (List(Header(t"transfer-encoding", t"chunked")), true)
+            else (Nil, false)
 
       val headers: List[Header] =
         if !upgrade then response.textHeaders ++ extraHeaders else

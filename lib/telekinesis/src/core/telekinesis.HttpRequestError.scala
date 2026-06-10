@@ -40,11 +40,15 @@ object HttpRequestError:
     case Expectation(expected: Char, found: Char) extends Reason(1)
     case Version(value: Text)                     extends Reason(2)
     case Host(value: Text)                        extends Reason(3)
+    case UriTooLong                               extends Reason(4)
+    case HeadersTooLarge                          extends Reason(5)
 
   given communicable: Reason is Communicable =
     case Reason.Expectation(expected, found) => m"$found was found when $expected was expected"
     case Reason.Version(value)               => m"the HTTP version $value was invalid"
     case Reason.Host(value)                  => m"the host $value was missing or invalid"
+    case Reason.UriTooLong                   => m"the request line exceeded the maximum length"
+    case Reason.HeadersTooLarge              => m"the request headers exceeded the maximum size"
 
 case class HttpRequestError(reason: HttpRequestError.Reason)(using Diagnostics)
 extends Error(367, reason.number)(m"could not parse HTTP request because $reason")
