@@ -168,6 +168,40 @@ object Tests extends Suite(m"Scintillate tests"):
 
         . assert(r => r.contains(t"101 Switching Protocols") && r.ends(t"PING"))
 
+      suite(m"Loopback load over real sockets"):
+        val clients = 32
+        val perClient = 300
+
+        test(m"Concurrent clients pipelining keep-alive requests all succeed"):
+          val port = freePort()
+          val server = SocketServer(port).handle(Http.Response(Http.Ok)(t"pong"))
+          val payload = (t"GET / HTTP/1.1\r\nHost: x\r\n\r\n"*perClient).s.getBytes("US-ASCII").nn
+
+          val start = java.lang.System.nanoTime()
+
+          val tasks = List.tabulate(clients): _ =>
+            async:
+              val socket = java.net.Socket("localhost", port)
+              val out = socket.getOutputStream.nn
+              out.write(payload)
+              out.flush()
+              socket.shutdownOutput()
+              val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII").tt
+              socket.close()
+              response.cut(t"HTTP/1.1 200 OK").length - 1
+
+          val total = tasks.map(_.await()).foldLeft(0)(_ + _)
+          val millis = (java.lang.System.nanoTime() - start)/1000000.0
+          server.cancel()
+
+          val rate = (total/millis*1000).toLong
+          java.lang.System.out.nn.println:
+            t"Loopback: $total requests across $clients clients in ${millis.toLong}ms ($rate req/s)".s
+
+          total
+
+        . assert(_ == clients*perClient)
+
     // Drive the connection loop entirely in memory — no socket, no threads — by
     // feeding request bytes through `serveConnection` and capturing the response.
     def inProcess(handler: HttpConnection ?=> Http.Response, request: Text): Text =
