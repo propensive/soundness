@@ -483,17 +483,20 @@ final class Cursor[data]
     hold:
       val start = mark
       var count = 0
+      var truncated = false
 
-      // Refill only *between* bytes, never after the last one. The old form
-      // (`next()` = advance-then-`more`, `length` times) forced a blocking
-      // refill once the final byte was consumed — harmless on a finite stream
-      // (it just hits EOF) but fatal on a live one whose following bytes arrive
-      // only after we act on what we already have, e.g. reading one WebSocket
-      // frame at a time. Skipping that trailing `more` leaves behaviour on
-      // finite streams unchanged while not over-reading a live source.
-      while count < length do
-        advance()
-        count += 1
-        if count < length then more
+      // Make each byte present *before* consuming it (refilling as needed), and
+      // never refill after the last. The old `next()` form (advance-then-`more`,
+      // `length` times) instead forced a blocking read for the byte *after* the
+      // region — fatal on a live stream that sends one frame at a time — and,
+      // checking availability only afterwards, it relied on the previous read
+      // having pre-loaded the first byte; back-to-back `take`s (a WebSocket
+      // frame's mask then payload, arriving a byte per chunk) would then park at
+      // end-of-buffer and skip a byte. If the stream ends early, yield `otherwise`.
+      while count < length && !truncated do
+        if more then
+          advance()
+          count += 1
+        else truncated = true
 
-      grab(start, mark)
+      if truncated then otherwise else grab(start, mark)
