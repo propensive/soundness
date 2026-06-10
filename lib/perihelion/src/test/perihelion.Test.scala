@@ -235,11 +235,12 @@ object Tests extends Suite(m"Perihelion tests"):
       . assert(_ == WebsocketError.Reason.InvalidText)
 
     suite(m"Typed messages"):
-      test(m"A typed reply encodes over Json to JSON text and parses back"):
+      test(m"A Ping round-trips through the composed over-Json codec"):
         val outgoing = infer[(Ping over Json) is Transmissible]
+        val incoming = infer[(Ping over Json) is Ingressive]
         val bytes = outgoing.serialize(Ping(7).over[Json]).foldLeft(Data())(_ ++ _)
 
-        String(bytes.mutable(using Unsafe), "UTF-8").tt.read[Json].as[Ping]
+        incoming.deserialize(bytes)
       . assert(_ == Ping(7))
 
     supervise:
@@ -248,7 +249,7 @@ object Tests extends Suite(m"Perihelion tests"):
           val port = freePort()
 
           val server = SocketServer(port).handle:
-            webSocket(()): message =>
+            webSocket(): (message: perihelion.Message) =>
               Reply(message, ())
 
           val socket = java.net.Socket("localhost", port)
@@ -285,7 +286,7 @@ object Tests extends Suite(m"Perihelion tests"):
           val port = freePort()
 
           val server = SocketServer(port).handle:
-            typedWebSocket[Json, Ping, Unit](()): ping =>
+            webSocket(): (ping: Ping over Json) =>
               Reply(Ping(ping.value + 1).over[Json], ())
 
           val socket = java.net.Socket("localhost", port)
