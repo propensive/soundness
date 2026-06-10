@@ -41,8 +41,14 @@ import errorDiagnostics.stackTraces
 import webserverErrorPages.minimal
 import threading.virtual
 import codicils.await
+import jsonPrinters.minimal
+import charEncoders.utf8
+import charDecoders.utf8
+import textSanitizers.skip
 
 import Control.*
+
+case class Ping(value: Int) derives CanEqual
 
 object Tests extends Suite(m"Perihelion tests"):
   def run(): Unit =
@@ -228,6 +234,14 @@ object Tests extends Suite(m"Perihelion tests"):
         capture[WebsocketError](readMessages(frame(0x1, scala.Array[Byte](0xc3.toByte, 0x28)))).reason
       . assert(_ == WebsocketError.Reason.InvalidText)
 
+    suite(m"Typed messages"):
+      test(m"A typed reply encodes over Json to JSON text and parses back"):
+        val outgoing = infer[(Ping over Json) is Transmissible]
+        val bytes = outgoing.serialize(Ping(7).over[Json]).foldLeft(Data())(_ ++ _)
+
+        String(bytes.mutable(using Unsafe), "UTF-8").tt.read[Json].as[Ping]
+      . assert(_ == Ping(7))
+
     supervise:
       suite(m"WebSocket echo"):
         test(m"A text message is echoed back, and the handshake is accepted"):
@@ -265,3 +279,39 @@ object Tests extends Suite(m"Perihelion tests"):
           (head.contains(t"101"), opcode, echoed)
 
         . assert(_ == (true, 0x1, t"hello"))
+
+      suite(m"Typed echo"):
+        test(m"A Ping message round-trips over the wire as JSON"):
+          val port = freePort()
+
+          val server = SocketServer(port).handle:
+            typedWebSocket[Json, Ping, Unit](()): ping =>
+              Reply(Ping(ping.value + 1).over[Json], ())
+
+          val socket = java.net.Socket("localhost", port)
+          socket.setSoTimeout(5000)
+          val out = socket.getOutputStream.nn
+          val in = socket.getInputStream.nn
+
+          val key = t"dGhlIHNhbXBsZSBub25jZQ=="
+
+          val upgrade =
+            t"GET / HTTP/1.1\r\nHost: x\r\nConnection: Upgrade\r\nUpgrade: websocket\r\n"
+            + t"Sec-WebSocket-Key: $key\r\nSec-WebSocket-Version: 13\r\n\r\n"
+
+          out.write(upgrade.s.getBytes("US-ASCII").nn)
+          out.flush()
+          val head = readHead(in)
+
+          out.write(clientFrame(0x1, Ping(7).json.show.s.getBytes("UTF-8").nn))
+          out.flush()
+
+          val (opcode, replyBytes) = serverFrame(in)
+          val reply = String(replyBytes, "UTF-8").tt.read[Json].as[Ping]
+
+          socket.close()
+          server.cancel()
+
+          (head.contains(t"101"), opcode, reply.value)
+
+        . assert(_ == (true, 0x1, 8))

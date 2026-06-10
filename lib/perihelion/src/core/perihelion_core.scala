@@ -32,8 +32,13 @@
                                                                                                   */
 package perihelion
 
+import anticipation.*
 import coaxial.*
+import distillate.*
+import gossamer.*
+import hieroglyph.*
 import parasite.*
+import prepositional.*
 import telekinesis.*
 
 // Handle an upgraded connection as a stateful WebSocket message loop, mirroring
@@ -44,6 +49,43 @@ import telekinesis.*
 def webSocket[state](initial: state)(handle: (state: state) ?=> Message => Control[state])
   ( using request: Http.Request )
   ( using Monitor, Codicil )
-:   Websocket[state] =
+:   Websocket[Message, state] =
 
-  Websocket(request, initial, handle)
+  Websocket(request, initial, message => message, data => data, handle)
+
+// A typed WebSocket loop over a serialisation `transport` (e.g. `Json`, `Tel`):
+// each incoming message is decoded `Text → transport → message`, and every reply
+// is written as a single Text frame. Tag the reply with the transport —
+// `Reply(response.over[Json], state)` — so it resolves the composed `Transmissible`
+// below; the loop frames the unframed text bytes that produces.
+def typedWebSocket[transport, message, state](initial: state)
+  ( handle: (state: state) ?=> message => Control[state] )
+  ( using fromText:      transport is Decodable in Text )
+  ( using fromTransport: message is Decodable in transport )
+  ( using CharDecoder )
+  ( using request: Http.Request )
+  ( using Monitor, Codicil )
+:   Websocket[message, state] =
+
+  Websocket
+    ( request,
+      initial,
+      incoming => fromTransport.decoded(fromText.decoded(incoming.bytes.text)),
+      bytes => Frame.Text(true, bytes).encode,
+      handle )
+
+// A reply value `MyAdt over Json`/`over Tel`: there is no automatic
+// `Encodable in Json` ⇒ `Encodable in Text` bridge, so compose the value↔transport
+// codec with the transport's own text codec. The result is UNFRAMED (raw text
+// bytes); `typedWebSocket`'s loop wraps it in a single Text frame.
+given transmissible: [transport, value]
+=>  ( format: transport is Encodable in Text, codec: value is Encodable in transport )
+=>  CharEncoder
+=>  (value over transport) is Transmissible =
+  payload => Stream(format.encoded(codec.encoded(payload)).data)
+
+// Tag a value with the transport format it should ride, so a reply resolves the
+// `over`-composed `Transmissible`. `over` is a phantom type member, so this is a
+// no-op cast: `Reply(response.over[Json], state)`.
+extension [self](value: self)
+  def over[transport]: self over transport = value.asInstanceOf[self over transport]

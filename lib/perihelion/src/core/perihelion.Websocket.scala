@@ -68,6 +68,12 @@ enum Message:
   case Text(text: anticipation.Text)
   case Binary(data: Data)
 
+  // The raw payload of a message: a Text message's UTF-8 bytes, or a Binary
+  // message's bytes verbatim. Used to decode an incoming message to a typed value.
+  private[perihelion] def bytes: Data = this match
+    case Text(text)   => text.data
+    case Binary(data) => data
+
 // The outgoing side of a connection: a thread-safe spool of encoded frames that
 // the server pumps to the socket as the `101` response body (mirroring Coaxial's
 // `Duplex.send`). The reader and the handler both enqueue here.
@@ -152,8 +158,8 @@ class Reader(body: () => Stream[Data], channel: Channel)(using Tactic[WebsocketE
 object Websocket:
   val magic: Text = t"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
-  given servable: [state] => Websocket[state] is Servable:
-    def serve(websocket: Websocket[state]): Http.Response =
+  given servable: [message, state] => Websocket[message, state] is Servable:
+    def serve(websocket: Websocket[message, state]): Http.Response =
       given accept: ("secWebsocketAccept" is Directive of Text) = identity(_)
       given version: ("secWebsocketVersion" is Directive of Int) = _.toString.tt
 
@@ -172,10 +178,12 @@ object Websocket:
 // handshake response whose body is the outgoing frame stream; the handler runs
 // concurrently on `task`, consuming reassembled messages and replying via
 // Coaxial's `Control` until the peer closes, the handler concludes, or it errors.
-class Websocket[state]
+class Websocket[message, state]
   ( request: Http.Request,
     initial: state,
-    handle:  (state: state) ?=> Message => Control[state] )
+    decode:  Message => message,
+    frame:   Data => Data,
+    handle:  (state: state) ?=> message => Control[state] )
   ( using Monitor, Codicil ):
 
   given key0: ("secWebsocketKey" is Directive of Text) = identity(_)
@@ -186,7 +194,7 @@ class Websocket[state]
   val channel: Channel = Channel()
 
   private def loop(messages: Stream[Message], state: state): state = messages.flow(close(state)):
-    handle(using state)(next) match
+    handle(using state)(decode(next)) match
       case Continue(state2) =>
         loop(more, state2.or(state))
 
@@ -194,12 +202,12 @@ class Websocket[state]
         channel.stop()
         state
 
-      case Reply(frame, state2) =>
-        channel.enqueue(frame)
+      case Reply(bytes, state2) =>
+        channel.enqueue(frame(bytes))
         loop(more, state2.or(state))
 
-      case Conclude(frame, state2) =>
-        channel.enqueue(frame)
+      case Conclude(bytes, state2) =>
+        channel.enqueue(frame(bytes))
         channel.stop()
         state2.or(state)
 

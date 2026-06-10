@@ -1165,7 +1165,7 @@ object perihelion extends Library:
       hypotenuse.core, contingency.core, parasite.core, eucalyptus.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+  object test extends Tests(core, jacinta.core)
 
 object phoenicia extends Library:
   object core extends Component(quantitative.core, polaris.core):
