@@ -78,7 +78,13 @@ object SyntaxMatcher:
   private val timeUnits: Set[String] = Set("s", "ms")
   private val resolutionUnits: Set[String] = Set("dpi", "dpcm", "dppx", "x")
   private val frequencyUnits: Set[String] = Set("hz", "khz")
+  private val flexUnits: Set[String] = Set("fr")
   private val substitutions: Set[String] = Set("var", "env")
+
+  // The CSS-wide keywords are valid as the sole value of every property, but appear
+  // in no property's grammar, so they are accepted before grammar matching.
+  private val globalKeywords: Set[String] = Set("inherit", "initial", "unset", "revert",
+      "revert-layer")
 
   private val mathFunctions: Set[String] =
     Set("calc", "min", "max", "clamp", "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "pow",
@@ -91,6 +97,10 @@ object SyntaxMatcher:
     case ValueToken.Function(name) => substitutions(lower(name))
     case _                         => false
 
+  private def globalKeyword(tokens: List[ValueToken]): Boolean = tokens match
+    case List(ValueToken.Ident(value)) => globalKeywords(lower(value))
+    case _                             => false
+
   def check(property: PropertyDef, value: Text)(using Tactic[CssError]): Outcome =
     check(property.grammar, value)
 
@@ -98,6 +108,7 @@ object SyntaxMatcher:
     val tokens = ValueTokenizer.tokens(value).filter(_ != ValueToken.Whitespace)
 
     if tokens.exists(substitution) then Outcome.Valid
+    else if globalKeyword(tokens) then Outcome.Valid
     else
       val matcher = Matcher()
 
@@ -296,6 +307,15 @@ object SyntaxMatcher:
         case "frequency" =>
           numeric(tokens)(frequencyLeaf)
 
+        case "flex" =>
+          flexLeaf(tokens)
+
+        case "ratio" =>
+          ratioLeaf(tokens)
+
+        case "declaration-value" | "any-value" =>
+          List(Nil)
+
         case "dimension" | "dimension-token" =>
           dimensionLeaf(tokens)
 
@@ -361,6 +381,17 @@ object SyntaxMatcher:
 
       case _ =>
         Nil
+
+    private def flexLeaf(tokens: List[ValueToken]): List[List[ValueToken]] = tokens match
+      case ValueToken.Dimension(_, unit, _) :: tail if flexUnits(lower(unit)) => List(tail)
+      case _                                                                  => Nil
+
+    // `<ratio> = <number> [ / <number> ]?`
+    private def ratioLeaf(tokens: List[ValueToken]): List[List[ValueToken]] =
+      numberLeaf(tokens).flatMap: rest =>
+        rest match
+          case ValueToken.Delim('/') :: tail => numberLeaf(tail)
+          case _                             => List(rest)
 
     private def dimensionLeaf(tokens: List[ValueToken]): List[List[ValueToken]] = tokens match
       case ValueToken.Dimension(_, _, _) :: tail => List(tail)

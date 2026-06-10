@@ -523,6 +523,26 @@ object Tests extends Suite(m"Cataclysm Tests"):
         vmatch(Syntax.Repeated(ty(t"length"), 1, Unset, true), t"1px, 2px, 3px")
       . assert(_ == Outcome.Valid)
 
+      test(m"the global keyword inherit is valid for any property"):
+        vm(t"color", t"inherit")
+      . assert(_ == Outcome.Valid)
+
+      test(m"the global keyword unset is valid for any property"):
+        vm(t"width", t"unset")
+      . assert(_ == Outcome.Valid)
+
+      test(m"a flex value is valid"):
+        vmatch(ty(t"flex"), t"1fr")
+      . assert(_ == Outcome.Valid)
+
+      test(m"a ratio value is valid"):
+        vmatch(ty(t"ratio"), t"16/9")
+      . assert(_ == Outcome.Valid)
+
+      test(m"a single-number ratio is valid"):
+        vmatch(ty(t"ratio"), t"1")
+      . assert(_ == Outcome.Valid)
+
     suite(m"Selector names"):
       val css = t".a #b { color: red } @media screen { .c:not(.d) e#f { color: blue } }".read[Css]
 
@@ -606,6 +626,9 @@ object Tests extends Suite(m"Cataclysm Tests"):
       def lengthText(value: Css.Value of "length"): Text = value.text
       def colorText(value: Css.Value of "color"): Text = value.text
       def percentageText(value: Css.Value of "percentage"): Text = value.text
+      def timeText(value: Css.Value of "time"): Text = value.text
+      def angleText(value: Css.Value of "angle"): Text = value.text
+      def flexText(value: Css.Value of "flex"): Text = value.text
 
       test(m"pixels render with a px suffix"):
         lengthText(2.0*Px)
@@ -619,9 +642,13 @@ object Tests extends Suite(m"Cataclysm Tests"):
         lengthText(100.0*Vh)
       . assert(_ == t"100vh")
 
-      test(m"a centimetre value renders as cm"):
+      test(m"a centimetre value renders in millimetres"):
         lengthText(3.0*Cm)
-      . assert(_ == t"3cm")
+      . assert(_ == t"30mm")
+
+      test(m"a metres-based length always renders in mm"):
+        lengthText(2.0*Mm)
+      . assert(_ == t"2mm")
 
       test(m"an Srgb colour renders as a hex triplet"):
         colorText(iridescence.Srgb(1.0, 0.0, 0.0))
@@ -630,6 +657,22 @@ object Tests extends Suite(m"Cataclysm Tests"):
       test(m"a percentage renders with a percent sign"):
         percentageText(50.0*Pct)
       . assert(_ == t"50%")
+
+      test(m"a millisecond value renders with an ms suffix"):
+        timeText(200.0*Ms)
+      . assert(_ == t"200ms")
+
+      test(m"a second value renders in milliseconds"):
+        timeText(1.5*S)
+      . assert(_ == t"1500ms")
+
+      test(m"a degree value renders with a deg suffix"):
+        angleText(90.0*Deg)
+      . assert(_ == t"90deg")
+
+      test(m"a flex value renders with an fr suffix"):
+        flexText(2.0*Fr)
+      . assert(_ == t"2fr")
 
       test(m"adding two different relative units fails to compile"):
         demilitarize(2.0*Em + 1.0*Vh).nonEmpty
@@ -658,6 +701,22 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
       test(m"an unknown property fails to compile"):
         demilitarize(Css.Style(notARealProperty = 4.0*Px)).exists(_.message.contains("known CSS"))
+      . assert(_ == true)
+
+      test(m"a global keyword is valid for any property"):
+        Css.Style(color = Css.inherit, width = Css.unset).text
+      . assert(_ == t"color: inherit; width: unset")
+
+      test(m"a transparent colour keyword renders"):
+        Css.Style(color = Css.transparent).text
+      . assert(_ == t"color: transparent")
+
+      test(m"a millisecond duration renders in a style"):
+        Css.Style(transitionDuration = 200.0*Ms).text
+      . assert(_ == t"transition-duration: 200ms")
+
+      test(m"an angle value for a colour property fails to compile"):
+        demilitarize(Css.Style(color = 5.0*Deg)).exists(_.message.contains("not valid for"))
       . assert(_ == true)
 
       test(m"a Css.Style is usable as a Honeycomb style attribute"):
@@ -706,6 +765,10 @@ object Tests extends Suite(m"Cataclysm Tests"):
       test(m"a selector hole and a value hole in document order"):
         css"$button { color: $red }"
       . assert(_ == t".button { color: #ff0000 }".read[Css])
+
+      test(m"a global keyword substitution in value position"):
+        css"a { color: ${Css.inherit} }"
+      . assert(_ == t"a { color: inherit }".read[Css])
 
       test(m"a wrong-typed substitution fails to compile"):
         demilitarize(css"a { color: $width }").exists(_.message.contains("not valid for"))
