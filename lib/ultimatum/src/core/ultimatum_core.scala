@@ -34,7 +34,9 @@ package ultimatum
 
 import anticipation.*
 import denominative.*
+import parasite.*
 import profanity.*
+import quantitative.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -149,7 +151,10 @@ def border
 // terminal via the alternate screen buffer (restored on exit) and fills its
 // height; in `Inline` mode it renders a variable-height block at the cursor
 // without the alternate buffer, leaving scrollback intact.
-def form(mode: Mode = Mode.Fullscreen)(pane: Pane)(using terminal: Terminal): Unit =
+def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
+  ( using terminal: Terminal, monitor: Monitor, codicil: Codicil )
+:   Unit =
+
   // A container mutation wakes the loop by putting a redraw event on the spool.
   val wake = () => terminal.events.put(TerminalInfo.Redraw)
 
@@ -163,7 +168,19 @@ def form(mode: Mode = Mode.Fullscreen)(pane: Pane)(using terminal: Terminal): Un
         finally root.cursor(true)
 
     case Mode.Inline =>
-      Form(InlineRoot(terminal), mode, pane, wake).run(terminal.eventIterator())
+      // A deferred resize repaint is woken by posting a `Redraw` after the remaining
+      // window (plus a small margin so it lands past it).
+      val scheduleWake = (delay: Long) =>
+        async:
+          snooze((delay + 16).toDouble*Milli(Second))
+          terminal.events.put(TerminalInfo.Redraw)
+
+        ()
+
+      // Resize repaints are throttled to ~10/second and debounced by 50 ms of quiet,
+      // so a drag must pause before the block is redrawn; typing stays immediate.
+      Form(InlineRoot(terminal), mode, pane, wake, 100, 50, scheduleWake)
+      . run(terminal.eventIterator())
 
 // The leaf indices that must be repainted: any whose rectangle moved or resized
 // since the last layout, plus any whose content changed this frame. A leaf whose

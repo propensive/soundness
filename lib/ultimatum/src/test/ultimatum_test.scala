@@ -298,58 +298,76 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val bytes = ji.ByteArrayOutputStream()
         (bytes, Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic))
 
-      test(m"a first inline render draws each row with CR/LF and parks the caret"):
+      // The block (2 rows) is docked to the bottom of the 4-row terminal: it scrolls
+      // 2 rows in (`\n\n`) to reserve space, then draws each row at an absolute screen
+      // position (rows 3 and 4) and parks the caret absolutely.
+      test(m"a first inline render docks the block to the bottom rows"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 24)
+        val root = InlineRoot(3, 4)
         root.reframe(3, 2)
         root.move(Prim, Prim)
         root.put(t"hi")
         root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\r\e[2Khi \r\n\e[2K   \r\e[1A\e[1G\e[?25h")
+      . assert(_ == t"\e[?25l\e[9999B\r\n\n\e[3;1H\e[2Khi \r\n\e[2K   \r\e[3;1H\e[?25h")
 
-      test(m"a growing block scrolls a new row in with LF"):
+      test(m"a growing block scrolls one more row into the dock"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 24)
+        val root = InlineRoot(3, 4)
         root.reframe(3, 1); root.move(Prim, Prim); root.put(t"a"); root.flush()
         bytes.reset()
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\r\e[2Kab \r\n\e[2Kcd \r\e[1A\e[1G\e[?25h")
+      . assert(_ == t"\e[?25l\e[9999B\r\n\e[3;1H\e[2Kab \r\n\e[2Kcd \r\e[3;1H\e[?25h")
 
-      test(m"a shrinking block clears the rows it no longer uses"):
+      // The block bottom-docks: shrinking moves it down (row 4) and clears the row it
+      // vacated above (row 3).
+      test(m"a shrinking block clears the row it vacated above"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 24)
+        val root = InlineRoot(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.reframe(3, 1); root.move(Prim, Prim); root.put(t"ef"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\r\e[2Kef \r\n\e[2K\e[1A\e[1G\e[?25h")
+      . assert(_ == t"\e[?25l\e[4;1H\e[2Kef \r\e[3;1H\e[2K\e[4;1H\e[?25h")
 
-      test(m"the caret is parked at its block-local position"):
+      test(m"the caret is placed at its absolute screen cell"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 24)
+        val root = InlineRoot(3, 4)
         root.reframe(3, 2)
         root.move(Prim, Prim)
         root.put(t"ab\ncd")
         root.showCaret(Sec, Sec)
         root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\r\e[2Kab \r\n\e[2Kcd \r\e[2G\e[?25h")
+      . assert(_ == t"\e[?25l\e[9999B\r\n\n\e[3;1H\e[2Kab \r\n\e[2Kcd \r\e[4;2H\e[?25h")
 
       test(m"finish drops the cursor onto a fresh line below the block"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 24)
+        val root = InlineRoot(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.finish()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[1B\r\n\e[?25h")
+      . assert(_ == t"\e[4;1H\r\n\e[?25h")
+
+      // After `invalidate` (a resize), the present clears the block's rows at the
+      // bottom (`\e[3;1H\e[0J`) before repainting there, preserving the content above.
+      test(m"an invalidated present clears the block's rows then repaints"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = InlineRoot(3, 4)
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        bytes.reset()
+        root.invalidate()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[3;1H\e[0J\e[3;1H\e[2Kab \r\n\e[2Kcd \r\e[3;1H\e[?25h")
 
     suite(m"Dynamic panes"):
       def cell(): Pane = panel()(())
