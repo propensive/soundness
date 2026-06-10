@@ -35,7 +35,7 @@ package savagery
 import scala.collection.immutable.SeqMap
 
 import anticipation.*
-import oldcataclysm.{Float as _, *}
+import cataclysm.Css
 import geodesy.*
 import gossamer.*
 import spectacular.*
@@ -67,7 +67,7 @@ extends Figure:
 
 case class Outline
   ( ops:        List[Stroke]       = Nil,
-    style:      Optional[CssStyle] = Unset,
+    style:      Optional[Css.Style] = Unset,
     id:         Optional[SvgId]    = Unset,
     transforms: List[Transform]    = Nil )
 extends Figure:
@@ -83,7 +83,7 @@ extends Figure:
     if transforms.nonEmpty
     then attrs += t"transform" -> transforms.map(_.encode).join(t" ")
 
-    style.let: css => attrs += t"style" -> css.properties.map(_.text).join(t";")
+    style.let: css => attrs += t"style" -> css.text
     Element(t"path", Attributes.from(attrs.result()), IArray())
 
   def moveTo(point: Point): Outline = copy(ops = MoveTo(point) :: ops)
