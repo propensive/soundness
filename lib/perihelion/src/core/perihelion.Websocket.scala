@@ -33,95 +33,161 @@
 package perihelion
 
 import anticipation.*
+import coaxial.*
+import contingency.*
 import fulminate.*
 import gastronomy.*
 import gossamer.*
-import hypotenuse.*
+import hieroglyph.*
 import monotonous.*
 import parasite.*
 import prepositional.*
 import rudiments.*
-import symbolism.*
 import telekinesis.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
 
+import Control.*
 import alphabets.base64.standard
+import charEncoders.utf8
+import crypto.permitDeprecatedCrypto
+import hashProviders.javaStdlibHashing
+
+object Message:
+  // A `Message` serialises to a complete (unmasked) WebSocket frame, so it can
+  // flow through Coaxial's `Control.Reply`/`Conclude` and be written verbatim.
+  given transmissible: Message is Transmissible =
+    case Text(text)   => Stream(Frame.Text(true, text.data).encode)
+    case Binary(data) => Stream(Frame.Binary(true, data).encode)
+
+// A complete WebSocket message: text frames are reassembled and UTF-8-decoded;
+// binary frames are reassembled as raw bytes. Control frames (Ping/Pong/Close)
+// and fragmentation are handled by the library and never surface here.
+enum Message:
+  case Text(text: anticipation.Text)
+  case Binary(data: Data)
+
+// The outgoing side of a connection: a thread-safe spool of encoded frames that
+// the server pumps to the socket as the `101` response body (mirroring Coaxial's
+// `Duplex.send`). The reader and the handler both enqueue here.
+class Channel():
+  private val spool: Spool[Data] = Spool()
+
+  private[perihelion] def enqueue(frame: Data): Unit = spool.put(frame)
+  private[perihelion] def stream: Stream[Data] = spool.stream
+
+  def send(message: Message): Unit = Message.transmissible.serialize(message).each(spool.put(_))
+  def stop(): Unit = spool.stop()
+
+  def close(code: Int = 1000): Unit =
+    spool.put(Frame.Close(code, Data()).encode)
+    spool.stop()
+
+// Reads client frames off the connection, reassembles fragmented messages,
+// answers Ping with Pong, and ends (stopping the outgoing side) when the peer
+// sends Close. Protocol violations raise `WebsocketError`.
+class Reader(body: () => Stream[Data], channel: Channel)(using Tactic[WebsocketError]):
+  def messages: Stream[Message] =
+    val cursor = Cursor(body().filter(_.nonEmpty).iterator)
+
+    def message(text: Boolean, data: Data): Message =
+      if text then Message.Text(data.utf8) else Message.Binary(data)
+
+    def recur(partial: Optional[(Boolean, Data)]): Stream[Message] =
+      Frame.parse(cursor) match
+        case Unset =>
+          Stream()
+
+        case Frame.Ping(data) =>
+          channel.enqueue(Frame.Pong(data).encode)
+          recur(partial)
+
+        case Frame.Pong(_) =>
+          recur(partial)
+
+        case Frame.Close(code, _) =>
+          channel.enqueue(Frame.Close(if code == 1005 then 1000 else code, Data()).encode)
+          channel.stop()
+          Stream()
+
+        case Frame.Text(fin, data) =>
+          if fin then message(true, data) #:: recur(Unset) else recur((true, data))
+
+        case Frame.Binary(fin, data) =>
+          if fin then message(false, data) #:: recur(Unset) else recur((false, data))
+
+        case Frame.Continuation(fin, data) =>
+          partial.lay(abort(WebsocketError(WebsocketError.Reason.BadFragmentation))):
+            (text, accumulated) =>
+              val joined = accumulated ++ data
+              if fin then message(text, joined) #:: recur(Unset) else recur((text, joined))
+
+    recur(Unset)
 
 object Websocket:
   val magic: Text = t"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
-  enum Opcode:
-    case
-      Continuation, Text, Binary, Reserved0, Reserved1, Reserved2, Reserved3, Reserved4, Close,
-      Ping, Pong
+  given servable: [state] => Websocket[state] is Servable:
+    def serve(websocket: Websocket[state]): Http.Response =
+      given accept: ("secWebsocketAccept" is Directive of Text) = identity(_)
+      given version: ("secWebsocketVersion" is Directive of Int) = _.toString.tt
 
-  given servable: [ResultType] => Websocket[ResultType] is Servable:
-    def serve(websocket: Websocket[ResultType]): Http.Response =
-      given prefix: ("secWebsocketAccept" is Directive of Text) = identity(_)
-      given prefix2: ("secWebsocketVersion" is Directive of Int) = _.toString.tt
+      val acceptKey: Text =
+        t"${websocket.key}${Websocket.magic}".digest[Sha1].serialize[Base64].keep(28)
 
       Http.Response
         ( Http.SwitchingProtocols,
-          secWebsocketAccept  = (websocket.key+Websocket.magic)
-                                . digest[Sha1]
-                                . serialize[Base64]
-                                . keep(28),
+          secWebsocketAccept  = acceptKey,
           secWebsocketVersion = 13,
-          transferEncoding    = TransferEncoding.Chunked,
           connection          = t"Upgrade",
           upgrade             = t"websocket" )
-            ( websocket.spool.stream.map(_.bytes) )
+        ( Http.Body.Streaming(websocket.channel.stream) )
 
-class Websocket[ResultType](request: Http.Request, handle: Stream[Frame] => ResultType)
+// The `Servable` carrier for a WebSocket handler. On serve it produces the `101`
+// handshake response whose body is the outgoing frame stream; the handler runs
+// concurrently on `task`, consuming reassembled messages and replying via
+// Coaxial's `Control` until the peer closes, the handler concludes, or it errors.
+class Websocket[state]
+  ( request: Http.Request,
+    initial: state,
+    handle:  (state: state) ?=> Message => Control[state] )
   ( using Monitor, Codicil ):
 
-  given prefix3: ("secWebsocketKey" is Directive of Text) = identity(_)
-  val key: Text = request.headers.secWebsocketKey.prim.or(panic(m"Missing header"))
-  private val spool: Spool[Frame] = Spool()
+  given key0: ("secWebsocketKey" is Directive of Text) = identity(_)
 
-  val task: Task[ResultType] = async(handle(events()))
+  val key: Text =
+    request.headers.secWebsocketKey.prim.or(panic(m"the Sec-WebSocket-Key was missing"))
 
-  def unmask(bytes: Data, mask: Data): Data = Data.fill(bytes.length): index =>
-    (bytes(index)^mask(index%4)).toByte
+  val channel: Channel = Channel()
 
-  def events(): Stream[Frame] =
-    lazy val cursor = Cursor(request.body().filter(_.nonEmpty).iterator)
+  private def loop(messages: Stream[Message], state: state): state = messages.flow(close(state)):
+    handle(using state)(next) match
+      case Continue(state2) =>
+        loop(more, state2.or(state))
 
-    def recur(): Stream[Frame] =
-      val head: Int = cursor.lay(0){ b => b & 0xff }
-      val fin = (head & 128) == 128
-      val opcode = Websocket.Opcode.fromOrdinal(head & 16)
-      cursor.next()
+      case Terminate =>
+        channel.stop()
+        state
 
-      val length = (cursor.lay(0){ b => (b & 0xff) & bin"01111111" }) match
-        case 127   => B64(cursor.take(Data())(8)).s64.long.toInt
-        case 126   => B16(cursor.take(Data())(2)).s16.int
-        case count => count
+      case Reply(frame, state2) =>
+        channel.enqueue(frame)
+        loop(more, state2.or(state))
 
-      val mask = cursor.take(Data())(4)
-      val payload = unmask(cursor.take(Data())(length), mask)
+      case Conclude(frame, state2) =>
+        channel.enqueue(frame)
+        channel.stop()
+        state2.or(state)
 
-      import Websocket.Opcode.*
-      opcode match
-        case Continuation => Frame.Continuation(fin, payload) #:: recur()
-        case Text         => Frame.Text(fin, payload) #:: recur()
-        case Binary       => Frame.Binary(fin, payload) #:: recur()
+  private def close(state: state): state =
+    channel.stop()
+    state
 
-        case Ping =>
-          spool.put(Frame.Pong(payload))
-          recur()
+  val task: Task[state] = async:
+    whereas:
+      case error: WebsocketError =>
+        safely(channel.close(error.reason.closeCode))
+        initial
 
-        case Pong =>
-          recur()
-
-        case Close =>
-          spool.put(Frame.Close(1000))
-          spool.stop()
-          Stream()
-
-        case Reserved0 | Reserved1 | Reserved2 | Reserved3 | Reserved4 =>
-          Stream()
-
-    recur()
+    . recover:
+        loop(Reader(() => request.body(), channel).messages, initial)

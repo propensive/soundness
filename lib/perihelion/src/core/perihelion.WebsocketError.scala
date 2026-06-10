@@ -32,96 +32,25 @@
                                                                                                   */
 package perihelion
 
-import anticipation.*
-import contingency.*
-import hypotenuse.*
-import vacuous.*
-import zephyrine.*
+import fulminate.*
 
-object Frame:
-  // A per-frame payload cap (16 MiB); larger frames close the connection (1009).
-  val maxPayload: Long = 1L << 24
-  val maxControlPayload: Int = 125
+object WebsocketError:
+  // Each reason carries the RFC 6455 close code the server sends before closing.
+  enum Reason(val number: Int, val closeCode: Int) extends Clarification:
+    case Unmasked               extends Reason(1, 1002)
+    case BadOpcode(code: Int)   extends Reason(2, 1002)
+    case BadControl             extends Reason(3, 1002)
+    case BadFragmentation       extends Reason(4, 1002)
+    case TooLarge(size: Long)   extends Reason(5, 1009)
+    case InvalidText            extends Reason(6, 1007)
 
-  def closeData(code: Int, reason: Data): Data =
-    Data((code >> 8).toByte, code.toByte) ++ reason
+  given communicable: Reason is Communicable =
+    case Reason.Unmasked        => m"the client sent an unmasked frame"
+    case Reason.BadOpcode(code) => m"the frame used the reserved opcode $code"
+    case Reason.BadControl      => m"a control frame was fragmented or exceeded 125 bytes"
+    case Reason.BadFragmentation => m"the message fragmentation was invalid"
+    case Reason.TooLarge(size)  => m"the frame payload of $size bytes exceeded the limit"
+    case Reason.InvalidText     => m"a text frame contained invalid UTF-8"
 
-  // Decode one client frame off `cursor` — consuming exactly its bytes and
-  // unmasking the payload — or `Unset` at a clean end of stream. The byte-level
-  // counterpart of `Frame.encode`. Uses `peek`/`next`/`take` (not `lay`/`seek`),
-  // which don't reference the cursor's erased `Operand` type, so it works on a
-  // bare `Cursor[Data]` parameter.
-  def parse(cursor: Cursor[Data]): Optional[Frame] raises WebsocketError =
-    if cursor.finished then Unset else
-      val byte0 = cursor.peek.asInt
-      cursor.next()
-      val fin = (byte0 & 0x80) != 0
-      val opcode = byte0 & 0x0f
-
-      val byte1 = cursor.peek.asInt
-      cursor.next()
-      val masked = (byte1 & 0x80) != 0
-
-      // RFC 6455 §5.1: the server must reject an unmasked client frame.
-      if !masked then abort(WebsocketError(WebsocketError.Reason.Unmasked))
-
-      val length: Long = (byte1 & 0x7f) match
-        case 126 => B16(cursor.take(Data())(2)).u16.long
-        case 127 => B64(cursor.take(Data())(8)).s64.long
-        case n   => n.toLong
-
-      if length > maxPayload then abort(WebsocketError(WebsocketError.Reason.TooLarge(length)))
-
-      // Control frames must not be fragmented and carry at most 125 bytes.
-      if opcode >= 0x8 && (!fin || length > maxControlPayload)
-      then abort(WebsocketError(WebsocketError.Reason.BadControl))
-
-      val mask = cursor.take(Data())(4)
-      val payload = unmask(cursor.take(Data())(length.toInt), mask)
-
-      opcode match
-        case 0x0 => Continuation(fin, payload)
-        case 0x1 => Text(fin, payload)
-        case 0x2 => Binary(fin, payload)
-        case 0x9 => Ping(payload)
-        case 0xa => Pong(payload)
-
-        case 0x8 =>
-          val code = if payload.length >= 2 then B16(payload.take(2)).u16.int else 1005
-          val reason = if payload.length > 2 then payload.drop(2) else Data()
-          Close(code, reason)
-
-        case other => abort(WebsocketError(WebsocketError.Reason.BadOpcode(other)))
-
-  def unmask(bytes: Data, mask: Data): Data =
-    if mask.length == 0 then bytes
-    else Data.fill(bytes.length): index => (bytes(index)^mask(index%4)).toByte
-
-enum Frame(val opcode: Int, val payload: Data):
-  case Continuation(last: Boolean, data: Data) extends Frame(0x0, data)
-  case Text(last: Boolean, data: Data)         extends Frame(0x1, data)
-  case Binary(last: Boolean, data: Data)       extends Frame(0x2, data)
-  case Close(code: Int, reason: Data)          extends Frame(0x8, Frame.closeData(code, reason))
-  case Ping(data: Data)                        extends Frame(0x9, data)
-  case Pong(data: Data)                        extends Frame(0xa, data)
-
-  def fin: Boolean = this match
-    case Continuation(last, _) => last
-    case Text(last, _)         => last
-    case Binary(last, _)       => last
-    case _                     => true
-
-  // Encode as a server-to-client (unmasked) frame.
-  def encode: Data =
-    val length = payload.length
-    val flags = ((if fin then 0x80 else 0x00) | opcode).toByte
-
-    val header: Data =
-      if length <= 125 then Data(flags, length.toByte)
-      else if length <= 0xffff then Data(flags, 126.toByte, (length >> 8).toByte, length.toByte)
-      else
-        Data
-          ( flags, 127.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, (length >> 24).toByte,
-            (length >> 16).toByte, (length >> 8).toByte, length.toByte )
-
-    header ++ payload
+case class WebsocketError(reason: WebsocketError.Reason)(using Diagnostics)
+extends Error(368, reason.number)(m"the WebSocket protocol was violated because $reason")

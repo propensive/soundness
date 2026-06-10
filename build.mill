@@ -198,7 +198,7 @@ object soundness extends ScalaModule:
   object web extends Bundle(cacophony.core, oldcataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
-    telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, /*perihelion.core,*/
+    telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
     legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http, jacinta.schema,
     stratiform.http, obligatory.core, obligatory.json, synesthesia.core)
 
@@ -217,7 +217,7 @@ object test extends ScalaModule:
 object groupCheck extends Module:
   // Library directories on disk that are deliberately not wired into the build
   // (work-in-progress modules with no compiling sources yet).
-  def disabledLibraries: Set[String] = Set("perihelion")
+  def disabledLibraries: Set[String] = Set()
 
   // Components deliberately not included in any soundness.{base,cli,data,sci,test,
   // tool,web} group bundle. Compiler plugins, internal subtypes, examples/demos,
@@ -1160,9 +1160,12 @@ object parasite extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, quantitative.units)
 
-// object perihelion extends Library:
-//   object core extends Component(scintillate.server, gastronomy.core, eucalyptus.core)
-//   object test extends Tests(core)
+object perihelion extends Library:
+  object core extends Component(scintillate.server, coaxial.core, gastronomy.core, monotonous.core,
+      hypotenuse.core, contingency.core, parasite.core, eucalyptus.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core)
 
 object phoenicia extends Library:
   object core extends Component(quantitative.core, polaris.core):
@@ -1585,7 +1588,8 @@ val allLibraries: Seq[Library] = Seq(
   kaleidoscope, larceny, legerdemain, locomotion, mandible, mercator, metamorphose,
   monotonous,
   mosquito, nomenclature, obligatory, octogenarian, oldcataclysm, orthodoxy, panopticon, parasite,
-  phoenicia, plutocrat, polaris, polysyllabic, polyvinyl, prepositional, probably, profanity,
+  perihelion, phoenicia, plutocrat, polaris, polysyllabic, polyvinyl, prepositional, probably,
+  profanity,
   proscenium, punctuation, quantitative, querencia, revolution, rudiments, satirical, savagery,
   scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,
   surveillance, symbolism, synesthesia, tarantula, telekinesis, turbulence, typonym,

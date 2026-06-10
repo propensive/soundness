@@ -32,13 +32,18 @@
                                                                                                   */
 package perihelion
 
+import coaxial.*
 import parasite.*
 import telekinesis.*
 
+// Handle an upgraded connection as a stateful WebSocket message loop, mirroring
+// Coaxial's `exchange`: each reassembled message is passed to `handle` with the
+// current `state`, returning a `Control` that continues, replies, concludes, or
+// terminates the connection. The result is `Servable`, so it doubles as the
+// handler's `Http.Response` (the `101` handshake).
+def webSocket[state](initial: state)(handle: (state: state) ?=> Message => Control[state])
+   (using request: Http.Request)
+   (using Monitor, Codicil)
+:   Websocket[state] =
 
-def websocket[ResultType](lambda: (frames: LazyList[Frame]) ?=> ResultType)
-  ( using request: Http.Request )
-  ( using Monitor, Codicil )
-:   Websocket[ResultType] =
-
-  Websocket(request, lambda(using _))
+  Websocket(request, initial, handle)
