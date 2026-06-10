@@ -220,7 +220,7 @@ object Whatwg:
     attribute()
 
   given `for`: ("for" is Attribute on "label" of Id) = attribute()
-  given for2: ("for" is Attribute on "output" of Tokens) = attribute()
+  given for2: ("for" is Attribute on "output" of Ids) = attribute()
   given form: ("form" is Attribute on FormTags of Id) = attribute()
   given formaction: ("formaction" is Attribute on "input" | "button" of Url) = attribute()
   given formenctype: ("formenctype" is Attribute on "input" | "button" of Enctype) = attribute()
@@ -230,7 +230,7 @@ object Whatwg:
     attribute()
 
   given formtarget: ("formtarget" is Attribute on "input" | "button" of Target) = attribute()
-  given headers: ("headers" is Attribute on "td" | "th" of Tokens) = attribute()
+  given headers: ("headers" is Attribute on "td" | "th" of Ids) = attribute()
   given headingoffset: ("headingoffset" is Attribute of Upto8) = globalAttribute()
   given headingreset: ("headingoffset" is Attribute of Presence) = globalAttribute()
   given height: ("height" is Attribute on HeightTags of PositiveInt) = attribute()

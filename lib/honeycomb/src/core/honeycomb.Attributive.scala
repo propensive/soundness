@@ -69,5 +69,8 @@ object Attributive:
   given cssClassList: List[Name[CssClass]] is Attributive to Whatwg.CssClassList =
     (key, value) => (key, value.join(t" "))
 
+  given domIds: List[Name[DomId]] is Attributive to Whatwg.Ids =
+    (key, value) => (key, value.join(t" "))
+
 trait Attributive extends Typeclass, Resultant:
   def attribute(key: Text, value: Self): Optional[(Text, Optional[Text])]
