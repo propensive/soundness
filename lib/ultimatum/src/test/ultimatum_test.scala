@@ -79,6 +79,18 @@ object Tests extends Suite(m"Ultimatum Tests"):
         flow.render
       . assert(_ == t"abc\ndef")
 
+      test(m"a wide (CJK) grapheme occupies two cells"):
+        val flow = extent(4, 1)
+        flow.put(t"a中b")
+        flow.render
+      . assert(_ == t"a中b")
+
+      test(m"a wide grapheme wraps when it would straddle the right edge"):
+        val flow = extent(3, 2)
+        flow.put(t"ab中")
+        flow.render
+      . assert(_ == t"ab \n中 ")
+
       test(m"a newline moves to the start of the next row"):
         val flow = extent(5, 3)
         flow.put(t"ab\ncd")

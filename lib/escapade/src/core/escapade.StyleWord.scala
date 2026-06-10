@@ -34,6 +34,8 @@ package escapade
 
 import language.experimental.pureFunctions
 
+import scala.reflect.*
+
 import anticipation.*
 import gossamer.*
 
@@ -62,6 +64,11 @@ object StyleWord:
     | Reverse | Conceal | Strike | Overline | HyperlinkChange
 
   val Default: StyleWord = 0L
+
+  // A `StyleWord` is a `Long`, so an `Array[StyleWord]` is an unboxed `long[]`; the
+  // opaque type hides that from callers, so expose the `ClassTag` (cells stored in a
+  // grid need it to allocate without boxing).
+  given classTag: ClassTag[StyleWord] = summon[ClassTag[Long]].asInstanceOf[ClassTag[StyleWord]]
 
   inline def apply(raw: Long): StyleWord = raw
 
