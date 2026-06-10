@@ -91,8 +91,35 @@ class Reader(body: () => Stream[Data], channel: Channel)(using Tactic[WebsocketE
   def messages: Stream[Message] =
     val cursor = Cursor(body().filter(_.nonEmpty).iterator)
 
-    def message(text: Boolean, data: Data): Message =
+    // Validate `data` as UTF-8. `whole` marks a complete message, where a
+    // trailing partial multi-byte sequence is an error; for a fragment prefix it
+    // is tolerated, since a code point may straddle a fragment boundary. Used
+    // incrementally so invalid bytes fail the connection at once (RFC 6455 §8.1),
+    // not only once the whole message is in.
+    def validUtf8(data: Data, whole: Boolean): Boolean =
+      val decoder = java.nio.charset.StandardCharsets.UTF_8.nn.newDecoder().nn
+      val in = java.nio.ByteBuffer.wrap(data.mutable(using Unsafe)).nn
+      val out = java.nio.CharBuffer.allocate(data.length + 1).nn
+      !decoder.decode(in, out, whole).nn.isError
+
+    def emit(text: Boolean, data: Data): Message =
       if text then Message.Text(data.utf8) else Message.Binary(data)
+
+    // Extend a (new or in-progress) message by `data`, validating a text message
+    // incrementally and emitting it once `fin` is seen.
+    def extend(text: Boolean, data: Data, fin: Boolean): Stream[Message] =
+      if text && !validUtf8(data, fin)
+      then abort(WebsocketError(WebsocketError.Reason.InvalidText))
+
+      if fin then emit(text, data) #:: recur(Unset) else recur((text, data))
+
+    // A data frame arriving mid-message (a fragmented message is still open) is a
+    // protocol violation, as is a continuation with nothing to continue.
+    def started(fin: Boolean, text: Boolean, data: Data, partial: Optional[(Boolean, Data)])
+    :   Stream[Message] =
+
+      if partial.present then abort(WebsocketError(WebsocketError.Reason.BadFragmentation))
+      else extend(text, data, fin)
 
     def recur(partial: Optional[(Boolean, Data)]): Stream[Message] =
       Frame.parse(cursor) match
@@ -106,22 +133,19 @@ class Reader(body: () => Stream[Data], channel: Channel)(using Tactic[WebsocketE
         case Frame.Pong(_) =>
           recur(partial)
 
-        case Frame.Close(code, _) =>
+        case Frame.Close(code, reason) =>
+          if !validUtf8(reason, true) then abort(WebsocketError(WebsocketError.Reason.InvalidText))
           channel.enqueue(Frame.Close(if code == 1005 then 1000 else code, Data()).encode)
           channel.stop()
           Stream()
 
-        case Frame.Text(fin, data) =>
-          if fin then message(true, data) #:: recur(Unset) else recur((true, data))
-
-        case Frame.Binary(fin, data) =>
-          if fin then message(false, data) #:: recur(Unset) else recur((false, data))
+        case Frame.Text(fin, data)   => started(fin, true, data, partial)
+        case Frame.Binary(fin, data) => started(fin, false, data, partial)
 
         case Frame.Continuation(fin, data) =>
           partial.lay(abort(WebsocketError(WebsocketError.Reason.BadFragmentation))):
             (text, accumulated) =>
-              val joined = accumulated ++ data
-              if fin then message(text, joined) #:: recur(Unset) else recur((text, joined))
+              extend(text, accumulated ++ data, fin)
 
     recur(Unset)
 

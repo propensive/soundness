@@ -37,6 +37,7 @@ import scintillate.SocketServer
 
 import logging.silent
 import strategies.throwUnsafely
+import errorDiagnostics.stackTraces
 import webserverErrorPages.minimal
 import threading.virtual
 import codicils.await
@@ -88,6 +89,144 @@ object Tests extends Suite(m"Perihelion tests"):
       val builder = StringBuilder()
       while !builder.toString.endsWith("\r\n\r\n") do builder.append(in.read.toChar)
       builder.toString.tt
+
+    def octets(text: String): Array[Byte] = text.getBytes("UTF-8").nn
+
+    // Build a frame (masked by default, as a client must); `fin` and `masked`
+    // are configurable for protocol tests, with a fixed mask key.
+    def frame(opcode: Int, payload: Array[Byte], fin: Boolean = true, masked: Boolean = true)
+    :   Array[Byte] =
+
+      val first = ((if fin then 0x80 else 0) | opcode).toByte
+      val length = payload.length
+      val maskBit = if masked then 0x80 else 0
+
+      val header =
+        if length <= 125 then scala.Array[Byte](first, (maskBit | length).toByte)
+        else if length <= 0xffff
+        then scala.Array[Byte](first, (maskBit | 126).toByte, (length >> 8).toByte, length.toByte)
+        else
+          scala.Array[Byte]
+           ( first, (maskBit | 127).toByte, 0, 0, 0, 0, (length >> 24).toByte,
+             (length >> 16).toByte, (length >> 8).toByte, length.toByte )
+
+      if !masked then header ++ payload else
+        val key = scala.Array[Byte](0x12, 0x34, 0x56, 0x78)
+        val coded = new scala.Array[Byte](length)
+        var i = 0
+
+        while i < length do
+          coded(i) = (payload(i)^key(i%4)).toByte
+          i += 1
+
+        header ++ key ++ coded
+
+    def closeBytes(code: Int, reason: String): Array[Byte] =
+      scala.Array[Byte]((code >> 8).toByte, code.toByte) ++ octets(reason)
+
+    def parseFrame(bytes: Array[Byte]): Optional[Frame] =
+      Frame.parse(Cursor[Data](Stream(bytes.immutable(using Unsafe)).iterator))
+
+    def readMessages(frames: Array[Byte]*): List[perihelion.Message] =
+      val stream = Stream(frames*).map(_.immutable(using Unsafe))
+      Reader(() => stream, Channel()).messages.toList
+
+    def texts(messages: List[perihelion.Message]): List[Text] = messages.map:
+      case perihelion.Message.Text(text) => text
+      case perihelion.Message.Binary(_)  => t"<binary>"
+
+    suite(m"Frame codec"):
+      test(m"A masked text frame decodes to its payload"):
+        parseFrame(frame(0x1, octets("hi"))) match
+          case Frame.Text(fin, data) => (fin, data.utf8)
+          case _                     => (false, t"")
+      . assert(_ == (true, t"hi"))
+
+      test(m"A masked binary frame decodes to Binary"):
+        parseFrame(frame(0x2, octets("xy"))) match
+          case Frame.Binary(fin, data) => (fin, data.utf8)
+          case _                       => (false, t"")
+      . assert(_ == (true, t"xy"))
+
+      test(m"An unmasked client frame is rejected"):
+        capture[WebsocketError](parseFrame(frame(0x1, octets("x"), masked = false))).reason
+      . assert(_ == WebsocketError.Reason.Unmasked)
+
+      test(m"A frame with a reserved bit set is rejected"):
+        val bytes = frame(0x1, octets("x"))
+        bytes(0) = (bytes(0) | 0x40).toByte
+
+        capture[WebsocketError](parseFrame(bytes)).reason
+      . assert(_ == WebsocketError.Reason.ReservedBits)
+
+      test(m"A reserved opcode is rejected"):
+        capture[WebsocketError](parseFrame(frame(0x3, octets("x")))).reason
+      . assert(_ == WebsocketError.Reason.BadOpcode(0x3))
+
+      test(m"A fragmented control frame is rejected"):
+        capture[WebsocketError](parseFrame(frame(0x9, octets("x"), fin = false))).reason
+      . assert(_ == WebsocketError.Reason.BadControl)
+
+      test(m"An over-long control frame is rejected"):
+        capture[WebsocketError](parseFrame(frame(0x9, scala.Array.fill(126)(0x61.toByte)))).reason
+      . assert(_ == WebsocketError.Reason.BadControl)
+
+      test(m"A 16-bit length frame parses fully"):
+        parseFrame(frame(0x1, scala.Array.fill(200)(0x61.toByte))) match
+          case Frame.Text(_, data) => data.length
+          case _                   => 0
+      . assert(_ == 200)
+
+      test(m"A close frame carries its code and reason"):
+        parseFrame(frame(0x8, closeBytes(1000, "bye"))) match
+          case Frame.Close(code, reason) => (code, reason.utf8)
+          case _                         => (0, t"")
+      . assert(_ == (1000, t"bye"))
+
+      test(m"A close frame with no payload yields the 1005 sentinel"):
+        parseFrame(frame(0x8, scala.Array[Byte]())) match
+          case Frame.Close(code, _) => code
+          case _                    => 0
+      . assert(_ == 1005)
+
+      test(m"A one-byte close payload is rejected"):
+        capture[WebsocketError](parseFrame(frame(0x8, scala.Array[Byte](0x03)))).reason
+      . assert(_ == WebsocketError.Reason.BadClose)
+
+      test(m"An invalid close code is rejected"):
+        capture[WebsocketError](parseFrame(frame(0x8, closeBytes(1004, "")))).reason
+      . assert(_ == WebsocketError.Reason.BadClose)
+
+    suite(m"Message reassembly"):
+      test(m"A single text frame yields one message"):
+        texts(readMessages(frame(0x1, octets("hello"))))
+      . assert(_ == List(t"hello"))
+
+      test(m"A fragmented text message is reassembled"):
+        texts(readMessages(frame(0x1, octets("he"), fin = false), frame(0x0, octets("llo"))))
+      . assert(_ == List(t"hello"))
+
+      test(m"A ping may interleave between fragments"):
+        val start = frame(0x1, octets("he"), fin = false)
+        val ping = frame(0x9, octets("p"))
+        val rest = frame(0x0, octets("llo"))
+
+        texts(readMessages(start, ping, rest))
+      . assert(_ == List(t"hello"))
+
+      test(m"A new data frame mid-message is rejected"):
+        capture[WebsocketError]:
+          readMessages(frame(0x1, octets("he"), fin = false), frame(0x1, octets("llo")))
+        . reason
+      . assert(_ == WebsocketError.Reason.BadFragmentation)
+
+      test(m"A continuation with nothing to continue is rejected"):
+        capture[WebsocketError](readMessages(frame(0x0, octets("x")))).reason
+      . assert(_ == WebsocketError.Reason.BadFragmentation)
+
+      test(m"A text frame with invalid UTF-8 is rejected"):
+        capture[WebsocketError](readMessages(frame(0x1, scala.Array[Byte](0xc3.toByte, 0x28)))).reason
+      . assert(_ == WebsocketError.Reason.InvalidText)
 
     supervise:
       suite(m"WebSocket echo"):

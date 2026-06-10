@@ -46,6 +46,14 @@ object Frame:
   def closeData(code: Int, reason: Data): Data =
     Data((code >> 8).toByte, code.toByte) ++ reason
 
+  // Close codes a client may legitimately send (RFC 6455 §7.4.1 plus the
+  // registered application range). Everything else — including 1004/1005/1006,
+  // which never appear on the wire, and the unassigned 1012–2999 band — is a
+  // protocol error.
+  def validCloseCode(code: Int): Boolean =
+    (code >= 1000 && code <= 1003) || (code >= 1007 && code <= 1011)
+    || (code >= 3000 && code <= 4999)
+
   // Decode one client frame off `cursor` — consuming exactly its bytes and
   // unmasking the payload — or `Unset` at a clean end of stream. The byte-level
   // counterpart of `Frame.encode`. Uses `peek`/`next`/`take` (not `lay`/`seek`),
@@ -56,6 +64,11 @@ object Frame:
       val byte0 = cursor.peek.asInt
       cursor.next()
       val fin = (byte0 & 0x80) != 0
+
+      // RFC 6455 §5.2: RSV1/2/3 must be zero unless an extension negotiated them,
+      // and we negotiate none.
+      if (byte0 & 0x70) != 0 then abort(WebsocketError(WebsocketError.Reason.ReservedBits))
+
       val opcode = byte0 & 0x0f
 
       val byte1 = cursor.peek.asInt
@@ -70,7 +83,10 @@ object Frame:
         case 127 => B64(cursor.take(Data())(8)).s64.long
         case n   => n.toLong
 
-      if length > maxPayload then abort(WebsocketError(WebsocketError.Reason.TooLarge(length)))
+      // A 64-bit length with the high bit set decodes negative; treat it, and any
+      // length past the cap, as too large to buffer.
+      if length < 0 || length > maxPayload
+      then abort(WebsocketError(WebsocketError.Reason.TooLarge(length)))
 
       // Control frames must not be fragmented and carry at most 125 bytes.
       if opcode >= 0x8 && (!fin || length > maxControlPayload)
@@ -87,7 +103,15 @@ object Frame:
         case 0xa => Pong(payload)
 
         case 0x8 =>
+          // A close payload is either empty or a 2-byte code plus an optional
+          // reason; a lone byte is malformed. `1005` is the internal "no code
+          // present" sentinel and must never travel on the wire.
+          if payload.length == 1 then abort(WebsocketError(WebsocketError.Reason.BadClose))
           val code = if payload.length >= 2 then B16(payload.take(2)).u16.int else 1005
+
+          if payload.length >= 2 && !validCloseCode(code)
+          then abort(WebsocketError(WebsocketError.Reason.BadClose))
+
           val reason = if payload.length > 2 then payload.drop(2) else Data()
           Close(code, reason)
 

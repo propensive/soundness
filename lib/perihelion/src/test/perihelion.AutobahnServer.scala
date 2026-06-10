@@ -32,18 +32,32 @@
                                                                                                   */
 package perihelion
 
-import coaxial.*
-import parasite.*
-import telekinesis.*
+import soundness.*
+import scintillate.SocketServer
 
-// Handle an upgraded connection as a stateful WebSocket message loop, mirroring
-// Coaxial's `exchange`: each reassembled message is passed to `handle` with the
-// current `state`, returning a `Control` that continues, replies, concludes, or
-// terminates the connection. The result is `Servable`, so it doubles as the
-// handler's `Http.Response` (the `101` handshake).
-def webSocket[state](initial: state)(handle: (state: state) ?=> Message => Control[state])
-  ( using request: Http.Request )
-  ( using Monitor, Codicil )
-:   Websocket[state] =
+import logging.silent
+import strategies.throwUnsafely
+import errorDiagnostics.stackTraces
+import webserverErrorPages.minimal
+import threading.virtual
+import codicils.await
 
-  Websocket(request, initial, handle)
+import Control.*
+
+// A bare echo server for driving the Autobahn|Testsuite `fuzzingclient` against
+// the WebSocket implementation: every text or binary message is replied
+// verbatim, while the reader handles ping/pong, close and fragmentation per the
+// RFC. Run with `java -cp <test-classpath> perihelion.AutobahnServer [port]`
+// (defaults to 9101) and point a fuzzingclient at `ws://<host>:<port>`. It is
+// not part of the test suite — it only runs when invoked directly.
+object AutobahnServer:
+  def main(args: Array[String]): Unit =
+    val port = if args.length > 0 then Integer.parseInt(args(0)) else 9101
+
+    supervise:
+      SocketServer(port).handle:
+        webSocket(()): message =>
+          Reply(message, ())
+
+      // Keep the JVM alive so the daemon accept loop keeps serving.
+      java.util.concurrent.CountDownLatch(1).await()

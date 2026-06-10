@@ -37,20 +37,24 @@ import fulminate.*
 object WebsocketError:
   // Each reason carries the RFC 6455 close code the server sends before closing.
   enum Reason(val number: Int, val closeCode: Int) extends Clarification:
-    case Unmasked               extends Reason(1, 1002)
-    case BadOpcode(code: Int)   extends Reason(2, 1002)
-    case BadControl             extends Reason(3, 1002)
-    case BadFragmentation       extends Reason(4, 1002)
-    case TooLarge(size: Long)   extends Reason(5, 1009)
-    case InvalidText            extends Reason(6, 1007)
+    case Unmasked                extends Reason(1, 1002)
+    case BadOpcode(code: Int)    extends Reason(2, 1002)
+    case BadControl              extends Reason(3, 1002)
+    case BadFragmentation        extends Reason(4, 1002)
+    case TooLarge(size: Long)    extends Reason(5, 1009)
+    case InvalidText             extends Reason(6, 1007)
+    case ReservedBits            extends Reason(7, 1002)
+    case BadClose                extends Reason(8, 1002)
 
   given communicable: Reason is Communicable =
-    case Reason.Unmasked        => m"the client sent an unmasked frame"
-    case Reason.BadOpcode(code) => m"the frame used the reserved opcode $code"
-    case Reason.BadControl      => m"a control frame was fragmented or exceeded 125 bytes"
+    case Reason.Unmasked         => m"the client sent an unmasked frame"
+    case Reason.BadOpcode(code)  => m"the frame used the reserved opcode $code"
+    case Reason.BadControl       => m"a control frame was fragmented or exceeded 125 bytes"
     case Reason.BadFragmentation => m"the message fragmentation was invalid"
-    case Reason.TooLarge(size)  => m"the frame payload of $size bytes exceeded the limit"
-    case Reason.InvalidText     => m"a text frame contained invalid UTF-8"
+    case Reason.TooLarge(size)   => m"the frame payload of $size bytes exceeded the limit"
+    case Reason.InvalidText      => m"a text frame contained invalid UTF-8"
+    case Reason.ReservedBits     => m"a reserved header bit (RSV1/2/3) was set"
+    case Reason.BadClose         => m"the close frame had a malformed payload or invalid code"
 
 case class WebsocketError(reason: WebsocketError.Reason)(using Diagnostics)
 extends Error(368, reason.number)(m"the WebSocket protocol was violated because $reason")
