@@ -50,24 +50,25 @@ object InlineRoot:
     new InlineRoot(() => width, () => height)
 
 // The root `Canvas` for INLINE mode: panels composite into its character grid
-// (inherited from `GridSurface`), and `flush` presents the grid in the BOTTOM
-// `height` rows of the terminal, addressed by ABSOLUTE screen row (`cup`). Pinning
-// the block to the bottom and drawing each row at an absolute position means a redraw
-// always lands in the same place and never drifts — the property a relative,
-// cursor-tracking present loses the moment a resize reflows the lines already on
-// screen. The block grows by scrolling content up into scrollback to free rows at
-// the bottom, and shrinks by clearing the rows it vacates above. A resize clears the
-// block's rows (sized for the terminal re-wrapping our wider lines) before redrawing,
-// keeping the content above. `widthFn`/`heightFn` supply the live terminal columns
-// and rows, re-read every frame, so the dock follows a resize; an oversize block is
-// clamped to the terminal height. (Because it is bottom-docked, a resize that makes
-// the terminal taller leaves a gap above the block — the cost of robust inline
-// positioning when the terminal can't report the cursor position.)
+// (inherited from `GridSurface`), and `flush` presents the grid with ABSOLUTE row
+// addressing (`cup`) so a redraw always lands in the same place and never drifts —
+// the property a relative, cursor-tracking present loses the moment a resize reflows
+// the lines already on screen. There are two anchorings: on launch the block is
+// BOTTOM-docked, so it appears inline immediately beneath the shell command (growing
+// by scrolling content into scrollback, shrinking by clearing the rows it vacates
+// above). On the first resize it switches to TOP-anchored — pinned to rows 1..height
+// — because a bottom-docked block leaves a gap (and strands a ghost) when the
+// terminal grows taller, whereas a top-anchored one is simply overdrawn in place. A
+// top-anchored resize clears the whole screen first (the block relocates here and the
+// terminal may have moved the old one); otherwise each row is cleared in place.
+// `widthFn`/`heightFn` supply the live terminal columns and rows, re-read every
+// frame; an oversize block is clamped to the terminal height.
 class InlineRoot(widthFn: () => Int, heightFn: () => Int)(using Stdio)
 extends GridSurface(widthFn(), 0):
   private var presentedRows: Int = 0
   private var presentedColumns: Int = 0
   private var invalidated: Boolean = false
+  private var topAnchored: Boolean = false
   private var caretColumn: Int = 0
   private var caretRow: Int = 0
   private var caretVisible: Boolean = true
@@ -82,10 +83,12 @@ extends GridSurface(widthFn(), 0):
   // so a focused editor shows it and a focused menu keeps it hidden.
   def cursor(visible: Boolean): Unit = caretVisible = visible
 
-  // Mark the next present as a resize repaint: it clears the old block's rows before
-  // redrawing, since a resize can move it. The driver calls this on every
-  // `WindowSize` event (a width-only resize counts too).
-  def invalidate(): Unit = invalidated = true
+  // Mark the next present as a resize repaint, and switch to top-anchoring (the first
+  // resize trips this). The driver calls it on every `WindowSize` event (a width-only
+  // resize counts too).
+  def invalidate(): Unit =
+    invalidated = true
+    topAnchored = true
 
   // Record the caret's block-local target; `flush` positions the hardware cursor at
   // the corresponding absolute screen cell.
@@ -108,28 +111,38 @@ extends GridSurface(widthFn(), 0):
 
     emit(csi.dectcem(false))
 
-    if resized then
-      // The terminal was resized. The block was docked to the bottom, so clear only
-      // its rows there (not the whole screen), preserving the content above. When the
-      // width shrank, the terminal re-wrapped our previous, wider lines, so the old
-      // block spans more physical rows; size the cleared region for that re-wrap.
-      val narrowed = presentedColumns > columns && columns > 0
-      val wrap = if narrowed then (presentedColumns + columns - 1)/columns else 1
-      val cleared = (presentedRows*wrap).max(h)
-      emit(csi.cup((rows - cleared + 1).max(1), 1))
-      emit(csi.ed(0))
-    else if h > presentedRows then
-      // Grow in place: scroll the screen up so the extra rows are free at the bottom,
-      // pushing the content above into scrollback rather than overwriting it. `cud` to
-      // the bottom first, since only a `\n` on the bottom line scrolls.
-      emit(csi.cud(9999))
-      emit(t"\r")
-      emit(t"\n"*(h - presentedRows))
+    // The block's absolute top row, and the resize/grow clearing for each anchoring.
+    val top =
+      if topAnchored then
+        // Pinned to the top. A resize relocates the block here (on the first one) and
+        // may have moved the old block, so clear the whole screen before redrawing.
+        if resized then
+          emit(csi.cup(1, 1))
+          emit(csi.ed(0))
 
-    // Draw the block into the bottom `h` rows from an ABSOLUTE top, clipping each row
-    // to the live width so it can never wrap (a wrapped row would scroll the screen
-    // and break the addressing).
-    emit(csi.cup((rows - h + 1).max(1), 1))
+        1
+      else
+        if resized then
+          // Clear the block's rows at the bottom dock, sized for the terminal
+          // re-wrapping our previous, wider lines.
+          val narrowed = presentedColumns > columns && columns > 0
+          val wrap = if narrowed then (presentedColumns + columns - 1)/columns else 1
+          val cleared = (presentedRows*wrap).max(h)
+          emit(csi.cup((rows - cleared + 1).max(1), 1))
+          emit(csi.ed(0))
+        else if h > presentedRows then
+          // Grow in place: scroll the screen up so the extra rows are free at the
+          // bottom, pushing the content above into scrollback. `cud` to the bottom
+          // first, since only a `\n` on the bottom line scrolls.
+          emit(csi.cud(9999))
+          emit(t"\r")
+          emit(t"\n"*(h - presentedRows))
+
+        (rows - h + 1).max(1)
+
+    // Draw the block from its absolute `top` down, clipping each row to the live width
+    // so it can never wrap (a wrapped row would scroll the screen and break addressing).
+    emit(csi.cup(top, 1))
 
     var r = 0
 
@@ -140,15 +153,23 @@ extends GridSurface(widthFn(), 0):
       if r < h - 1 then emit(t"\n")
       r += 1
 
-    // Shrink in place: clear the rows a taller previous block used above the new top
-    // (a resize already cleared the block's rows).
-    if !resized then
-      var j = 0
+    // Shrink: clear the rows a taller previous block vacated — below the block when
+    // top-anchored, above it when bottom-docked (a resize already cleared them).
+    if !resized && presentedRows > h then
+      if topAnchored then
+        var k = h
 
-      while j < presentedRows - h do
-        emit(csi.cup((rows - presentedRows + 1 + j).max(1), 1))
-        emit(csi.el(2))
-        j += 1
+        while k < presentedRows do
+          emit(t"\n")
+          emit(csi.el(2))
+          k += 1
+      else
+        var j = 0
+
+        while j < presentedRows - h do
+          emit(csi.cup((rows - presentedRows + 1 + j).max(1), 1))
+          emit(csi.el(2))
+          j += 1
 
     presentedRows = h
     presentedColumns = columns
@@ -156,8 +177,7 @@ extends GridSurface(widthFn(), 0):
     // The caret is the hardware cursor, placed at an absolute cell and shown only when
     // visible; otherwise the cursor is left hidden.
     if caretVisible then
-      val caretAbsRow = (rows - h + 1 + caretRow.min(h - 1)).max(1)
-      emit(csi.cup(caretAbsRow, caretColumn.min(columns - 1).max(0) + 1))
+      emit(csi.cup((top + caretRow.min(h - 1)).max(1), caretColumn.min(columns - 1).max(0) + 1))
       emit(csi.dectcem(true))
 
     Out.print(frame.toString.tt)
@@ -165,6 +185,7 @@ extends GridSurface(widthFn(), 0):
   // On exit, drop the cursor onto a fresh line below the block and re-show it, so
   // subsequent output continues after the rendered block (like a submitted prompt).
   def finish(): Unit =
-    Out.print(csi.cup(heightFn(), 1))
+    val below = if topAnchored then (presentedRows + 1).min(heightFn()) else heightFn()
+    Out.print(csi.cup(below.max(1), 1))
     Out.print(t"\r\n")
     Out.print(csi.dectcem(true))

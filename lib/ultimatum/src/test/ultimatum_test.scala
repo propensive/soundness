@@ -356,9 +356,10 @@ object Tests extends Suite(m"Ultimatum Tests"):
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[4;1H\r\n\e[?25h")
 
-      // After `invalidate` (a resize), the present clears the block's rows at the
-      // bottom (`\e[3;1H\e[0J`) before repainting there, preserving the content above.
-      test(m"an invalidated present clears the block's rows then repaints"):
+      // The first resize switches to top-anchoring: the present clears the whole
+      // screen (`\e[1;1H\e[0J`) and repaints the block pinned to rows 1..h, so a taller
+      // terminal can't strand a ghost above it.
+      test(m"the first resize top-anchors the block, clearing the screen"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
         val root = InlineRoot(3, 4)
@@ -367,7 +368,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
         root.invalidate()
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\e[3;1H\e[0J\e[3;1H\e[2Kab \r\n\e[2Kcd \r\e[3;1H\e[?25h")
+      . assert(_ == t"\e[?25l\e[1;1H\e[0J\e[1;1H\e[2Kab \r\n\e[2Kcd \r\e[1;1H\e[?25h")
 
     suite(m"Dynamic panes"):
       def cell(): Pane = panel()(())
