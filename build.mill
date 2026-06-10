@@ -226,7 +226,7 @@ object groupCheck extends Module:
   // into any group bundle; review whether each belongs in a bundle or stays here.
   def excluded: Set[String] = Set(
     "adversaria.examples", "anthology.bundle", "anthology.scala",
-    "anticipation.codec", "anticipation.color", "anticipation.css",
+    "anticipation.codec", "anticipation.color",
     "anticipation.generic", "anticipation.gfx", "anticipation.html",
     "anticipation.http", "anticipation.log", "anticipation.opaque",
     "anticipation.path", "anticipation.print", "anticipation.text",
@@ -373,9 +373,6 @@ object anticipation extends Library:
   object gfx extends Component(prepositional.core, color):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object css extends Component(text, generic):
-    override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object url extends Component(text, generic):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -512,7 +509,7 @@ object cataclysm extends Library:
   object core extends Component(zephyrine.core, gossamer.core, turbulence.core,
       contingency.core, vacuous.core, fulminate.core, denominative.core, hellenism.core,
       jacinta.core, quantitative.units, iridescence.core, gesticulate.core, rudiments.core,
-      contextual.core):
+      contextual.core, nomenclature.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object html extends Component(core, honeycomb.core, gigantism.core):
@@ -886,7 +883,7 @@ object frontier extends Library:
   object test extends Tests(core, scintillate.servlet, jacinta.schema)
 
 object fulminate extends Library:
-  object core extends Component(anticipation.css, anticipation.http, anticipation.print, anticipation.log, proscenium.core, gigantism.core):
+  object core extends Component(anticipation.http, anticipation.print, anticipation.log, proscenium.core, gigantism.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -974,7 +971,8 @@ object hellenism extends Library:
   object test extends Tests(core, turbulence.core)
 
 object honeycomb extends Library:
-  object core extends Component(panopticon.core, gesticulate.core, xylophone.core, urticose.url):
+  object core extends Component(panopticon.core, gesticulate.core, xylophone.core, urticose.url,
+      nomenclature.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)

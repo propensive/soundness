@@ -85,6 +85,26 @@ object Tests extends Suite(m"Nomenclature tests"):
       capture[NameError](Name[Required](t"")).message.show
     . assert(_ == t"""the name “” is not valid because it must not be empty""")
 
+    test(m"A valid CSS class name is accepted"):
+      Name[CssClass](t"main-nav")
+    . assert(_ == t"main-nav")
+
+    test(m"A CSS class name may not start with a digit"):
+      capture[NameError](Name[CssClass](t"1col")).message.show
+    . assert(_ == t"the name 1col is not valid because it must be a valid CSS identifier")
+
+    test(m"A CSS class name is constructed at compiletime"):
+      n"button": Name[CssClass]
+    . assert(_ == t"button")
+
+    test(m"A valid DOM id is accepted"):
+      Name[DomId](t"main-content")
+    . assert(_ == t"main-content")
+
+    test(m"A DOM id may not contain whitespace"):
+      capture[NameError](Name[DomId](t"a b")).message.show
+    . assert(_ == t"the name a b is not valid because it must be a valid DOM id")
+
     val adjectives = cp"/nomenclature/adjectives.txt"
     val animals = cp"/nomenclature/animals.txt"
 

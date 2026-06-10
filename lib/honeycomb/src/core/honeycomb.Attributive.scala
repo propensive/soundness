@@ -34,6 +34,7 @@ package honeycomb
 
 import anticipation.*
 import gossamer.*
+import nomenclature.*
 import prepositional.*
 import spectacular.*
 import urticose.*
@@ -55,8 +56,9 @@ object Attributive:
   given int: Int is Attributive to Whatwg.Integral = _ -> _.show
   given posInt: Int is Attributive to Whatwg.PositiveInt = _ -> _.show
   given double: Double is Attributive to Whatwg.Decimal = _ -> _.toString.tt
-  given domId: DomId is Attributive to Whatwg.Id = _ -> _.toString.tt
-  given stylesheet: Stylesheet is Attributive to Whatwg.CssClassList = _ -> _.classes.join(t" ")
+  given domId: (Name[DomId] is Attributive to Whatwg.Id) = _ -> _
+  given cssClass: (Name[CssClass] is Attributive to Whatwg.CssClassList) = _ -> _
+  given classList: ClassList is Attributive to Whatwg.CssClassList = _ -> _.classes.join(t" ")
 
   given url: [url: Abstractable across Urls to Text] => url is Attributive to Whatwg.Url =
     (key, value) => (key, value.generic)
@@ -64,7 +66,7 @@ object Attributive:
   given url: HttpUrl is Attributive to Whatwg.Url = (key, value) => (key, value.show)
   given style: Text is Attributive to Whatwg.Css = (key, value) => (key, value)
 
-  given cssClassList: List[Text] is Attributive to Whatwg.CssClassList =
+  given cssClassList: List[Name[CssClass]] is Attributive to Whatwg.CssClassList =
     (key, value) => (key, value.join(t" "))
 
 trait Attributive extends Typeclass, Resultant:

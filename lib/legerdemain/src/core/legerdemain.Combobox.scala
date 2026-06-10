@@ -33,8 +33,10 @@
 package legerdemain
 
 import anticipation.*
+import contingency.*
 import fulminate.*
 import honeycomb.*
+import nomenclature.*
 import prepositional.*
 import vacuous.*
 
@@ -46,8 +48,10 @@ object Combobox:
     val items = combobox.options.map: option =>
       whatwg.Option(value = option)
 
+    val id = unsafely(Name[DomId](combobox.name))
+
     Fragment
-      ( Input(name = combobox.name, list = DomId(combobox.name), value = combobox.value),
-        Datalist(id = DomId(combobox.name))(items*) )
+      ( Input(name = combobox.name, list = id, value = combobox.value),
+        Datalist(id = id)(items*) )
 
 case class Combobox(name: Text, options: List[Text], value: Text) extends Widget

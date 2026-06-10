@@ -30,12 +30,31 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anticipation
+package honeycomb
 
+import anticipation.*
+import beneficence.*
+import contingency.*
+import gossamer.*
+import nomenclature.*
 import prepositional.*
+import symbolism.*
+import typonym.*
 
-trait GenericCssSelection extends Typeclass:
-  def selection(value: Self): Text
+object ClassList:
+  def apply[name <: Label: Reifiable to List[String]](): ClassList of name =
+    val classes = name.reify.map { label => unsafely(Name[CssClass](label.tt)) }.to(Set)
+    new ClassList(classes) { type Topic = name }
 
-  def contramap[self2](lambda: self2 => Self): self2 is GenericCssSelection =
-    value => selection(lambda(value))
+  given addable: ClassList is Addable by ClassList to ClassList =
+    (classes, additions) => ClassList(classes.classes ++ additions.classes)
+
+  given subtractable: ClassList is Subtractable by ClassList to ClassList =
+    (classes, subtractions) => ClassList(classes.classes -- subtractions.classes)
+
+  given empty: ClassList(Set()):
+    type Topic = "apply"
+
+// A set of CSS class names, e.g. for an element's `class` attribute. Build one
+// from class-name literals with `ClassList["one" | "two"]()`.
+case class ClassList(classes: Set[Name[CssClass]]) extends Topical, Findable

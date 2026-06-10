@@ -28,8 +28,16 @@
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
 ┃                                                                                                  ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package nomenclature
 
-export anticipation.GenericCssSelection
+import prepositional.*
+import rudiments.*
+
+// The naming plane for a DOM element id: `Name[DomId]`. Names are constrained to
+// valid HTML ids (see `DomIdentifier`).
+object DomId:
+  inline given nominative: DomId is Nominative under DomIdentifier["a valid DOM id"] = !!
+
+sealed trait DomId

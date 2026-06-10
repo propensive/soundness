@@ -33,9 +33,11 @@
 package harlequin
 
 import anticipation.*
+import contingency.*
 import gossamer.*
 import harlequin.*
 import honeycomb.*
+import nomenclature.*
 import prepositional.*
 import punctuation.*
 import spectacular.*
@@ -46,7 +48,8 @@ import doms.html.whatwg, whatwg.*
 trait CommonFormattable extends Formattable:
   given lineClass: (Attribution of "line" | "amok") = Attribution.classes()
 
-  def classes(accent: Accent): Stylesheet = Stylesheet(Set(accent.show.lower))
+  def classes(accent: Accent): ClassList =
+    ClassList(Set(unsafely(Name[CssClass](accent.show.lower))))
 
   def element(accent: Accent, text: Text): Element of "code" =
     whatwg.Code(`class` = classes(accent))(text)

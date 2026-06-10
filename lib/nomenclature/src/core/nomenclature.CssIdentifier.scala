@@ -28,15 +28,18 @@
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
 ┃                                                                                                  ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package nomenclature
 
 import anticipation.*
-import gossamer.*
-import spectacular.*
+import fulminate.*
 
-object DomId:
-  given generic: DomId is GenericCssSelection = id => t"#${id.name}"
+// Requires that a name is a valid CSS `<ident-token>` (CSS Syntax Module Level 3),
+// the grammar shared by class selectors (`.name`) and the identifiers used by id
+// selectors. The `description` type parameter is the human-readable phrasing used
+// in error messages; the check itself is the exact (non-escaped) grammar.
+object CssIdentifier
+extends Rule({ description => m"must be $description" }, { (name, _) => identifierRules.css(name) })
 
-case class DomId(name: Text)
+sealed trait CssIdentifier[description <: Label] extends Check[description]

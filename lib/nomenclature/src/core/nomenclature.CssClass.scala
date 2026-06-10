@@ -28,30 +28,16 @@
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
 ┃                                                                                                  ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package honeycomb
+package nomenclature
 
-import anticipation.*
-import beneficence.*
-import gossamer.*
 import prepositional.*
-import symbolism.*
-import typonym.*
+import rudiments.*
 
-object Stylesheet:
-  given generic: Stylesheet is GenericCssSelection = _.classes.join(t".", t".", t"")
+// The naming plane for a CSS class: `Name[CssClass]`. Names are constrained to
+// valid CSS identifiers (see `CssIdentifier`).
+object CssClass:
+  inline given nominative: CssClass is Nominative under CssIdentifier["a valid CSS identifier"] = !!
 
-  def apply[name <: Label: Reifiable to List[String]](): Stylesheet of name =
-    new Stylesheet(name.reify.map(_.tt).to(Set)) { type Topic = name }
-
-  given addable: Stylesheet is Addable by Stylesheet to Stylesheet =
-    (classes, additions) => Stylesheet(classes.classes ++ additions.classes)
-
-  given subtractable: Stylesheet is Subtractable by Stylesheet to Stylesheet =
-    (classes, subtractions) => Stylesheet(classes.classes -- subtractions.classes)
-
-  given empty: Stylesheet(Set()):
-    type Topic = "apply"
-
-case class Stylesheet(classes: Set[Text]) extends Topical, Findable
+sealed trait CssClass

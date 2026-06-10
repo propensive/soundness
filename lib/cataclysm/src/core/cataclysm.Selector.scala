@@ -35,6 +35,7 @@ package cataclysm
 import anticipation.*
 import contingency.*
 import gossamer.*
+import nomenclature.*
 import spectacular.*
 import vacuous.*
 
@@ -164,8 +165,8 @@ object Simple:
 enum Simple derives CanEqual:
   case Universal(namespace: Optional[Namespace])                                  // *
   case Type(namespace: Optional[Namespace], name: Text)                           // div
-  case Id(name: Text)                                                             // #id
-  case Class(name: Text)                                                          // .cls
+  case Id(name: Name[DomId])                                                      // #id
+  case Class(name: Name[CssClass])                                                // .cls
   case Nesting                                                                    // &
   case Attribute(namespace: Optional[Namespace], name: Text, test: Optional[AttributeTest])
   case PseudoClass(name: Text, argument: Optional[PseudoArgument])                // :hover

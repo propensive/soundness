@@ -47,6 +47,7 @@ object CssError:
       case UnknownProperty(name)      => m"$name is not a recognized CSS property"
       case BadValue(property, value)  => m"$value is not a valid value for the $property property"
       case UnsupportedValue(name, _)  => m"the value of $name uses an unsupported type"
+      case InvalidName(name)          => m"$name is not a valid CSS identifier"
 
   enum Reason(val number: Int) extends Clarification:
     case UnterminatedComment         extends Reason(1)
@@ -57,6 +58,7 @@ object CssError:
     case UnknownProperty(name: Text) extends Reason(6)
     case BadValue(property: Text, value: Text) extends Reason(7)
     case UnsupportedValue(property: Text, types: List[Text]) extends Reason(8)
+    case InvalidName(name: Text) extends Reason(9)
 
 case class CssError(reason: CssError.Reason, line: Ordinal, column: Ordinal)(using Diagnostics)
 extends Error(251, reason.number)(m"invalid CSS at line ${line.n1} column ${column.n1}: $reason")

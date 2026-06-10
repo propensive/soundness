@@ -93,7 +93,8 @@ private[cataclysm] object HtmlMacros:
     val css = safely(CssParser.parse(Iterator(content))).or:
       halt(m"cataclysm: could not parse the stylesheet at $path")
 
-    (css.classes, css.ids)
+    // Upcast the typed names to `Text` for comparison against the requested name.
+    (css.classes.map(name => name: Text), css.ids.map(name => name: Text))
 
   // Decide whether `name` is a class or an id in the in-scope stylesheet, or halt.
   def attributeFor[name <: Label: Type]: Macro[Text] =
