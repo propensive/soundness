@@ -330,7 +330,16 @@ final class Cursor[data]
       else addressable.materialize(buffer, pos, tailLen)
 
     pos = writeEnd
-    if tailLen > 0 then tail #:: loaderStream else loaderStream
+
+    // Both branches must stay lazy. `loaderStream` performs a blocking `load()`
+    // on its first force, so calling it eagerly would read (and potentially
+    // block on) the underlying source before the caller has pulled a single
+    // byte — breaking the "pays nothing until it pulls" contract above and
+    // deadlocking protocols that withhold data until they get a reply (e.g. a
+    // WebSocket upgrade, whose body is the post-handshake frame stream the peer
+    // only sends after our `101`). `#::` keeps the non-empty branch lazy; the
+    // empty branch must defer the call explicitly.
+    if tailLen > 0 then tail #:: loaderStream else Stream.empty.lazyAppendedAll(loaderStream)
 
   private def loaderStream: Stream[data] =
     if ended then Stream.empty
@@ -471,13 +480,20 @@ final class Cursor[data]
     then addressable.cloneStorage(buffer, (start.absolute - basePos).toInt, len)(target)
 
   inline def take(inline otherwise: => data)(length: Int): data =
-    var count = 0
-
     hold:
       val start = mark
+      var count = 0
 
+      // Refill only *between* bytes, never after the last one. The old form
+      // (`next()` = advance-then-`more`, `length` times) forced a blocking
+      // refill once the final byte was consumed — harmless on a finite stream
+      // (it just hits EOF) but fatal on a live one whose following bytes arrive
+      // only after we act on what we already have, e.g. reading one WebSocket
+      // frame at a time. Skipping that trailing `more` leaves behaviour on
+      // finite streams unchanged while not over-reading a live source.
       while count < length do
-        next()
+        advance()
         count += 1
+        if count < length then more
 
       grab(start, mark)
