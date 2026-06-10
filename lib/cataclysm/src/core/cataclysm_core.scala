@@ -33,11 +33,17 @@
 package cataclysm
 
 import anticipation.*
+import contextual.*
 import contingency.*
 import fulminate.*
 import prepositional.*
 import turbulence.*
 import vacuous.*
+
+// The `css"…"` typed CSS interpolator, wired through `contextual` like xylophone's
+// `x"…"` and honeycomb's `h"…"`.
+extension (inline context: StringContext)
+  transparent inline def css: Interpolation = interpolation[Css](context)
 
 // Reading a stylesheet accumulates every `CssError` (unknown property, invalid
 // or unsupported value, …) instead of stopping at the first: the parse runs

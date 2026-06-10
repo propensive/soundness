@@ -33,6 +33,7 @@
 package cataclysm
 
 import anticipation.*
+import contingency.*
 import gossamer.*
 import spectacular.*
 import vacuous.*
@@ -44,6 +45,10 @@ import vacuous.*
 
 object SelectorList:
   given showable: SelectorList is Showable = _.selectors.map(_.show).join(t", ")
+
+  // A non-raising parse of already-validated selector text, used by the `css"…"`
+  // interpolator to rebuild a rule's selector at runtime.
+  def read(text: Text): SelectorList = unsafely(SelectorParser.parse(text))
 
 case class SelectorList(selectors: List[Selector]) derives CanEqual
 

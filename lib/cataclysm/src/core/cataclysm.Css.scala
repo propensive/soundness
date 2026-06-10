@@ -35,6 +35,7 @@ package cataclysm
 import language.dynamics
 
 import anticipation.*
+import contextual.*
 import gesticulate.*
 import gossamer.*
 import parasite.*
@@ -49,10 +50,22 @@ object Css:
     case Declaration(property: Text, value: Text)
     case At(name: Text, prelude: Text, body: Optional[List[Node]])
 
+
   given streamable: (Monitor, Codicil, CssFormatter) => Css is Streamable by Text =
     CssSerializer.emit(_).to(Stream)
 
   given showable: CssFormatter => Css is Showable = CssSerializer.render(_)
+
+  // The `css"…"` interpolator: substitutions are checked against the property they
+  // sit in (see `CssInterpolator`). Wired through `contextual` like `x"…"`/`h"…"`.
+  inline given interpolator: Css is Interpolable:
+    type Result = Css
+
+    transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+      ( inline insertions: Any* )
+    :   Css =
+
+      ${CssInterpolator.expand[parts, origins]('insertions)}
 
   // Serve a stylesheet as an HTTP `text/css` response body (paired with the
   // `Streamable` instance above).

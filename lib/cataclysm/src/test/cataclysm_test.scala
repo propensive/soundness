@@ -663,3 +663,39 @@ object Tests extends Suite(m"Cataclysm Tests"):
       test(m"a Css.Style is usable as a Honeycomb style attribute"):
         summon[Css.Style is Attributive to Whatwg.Css]
       . assert(_ != Unset)
+
+    suite(m"CSS interpolator"):
+      val red = iridescence.Srgb(1.0, 0.0, 0.0)
+      val width = 4.0*Px
+
+      test(m"a colour substitution in value position"):
+        css"a { color: $red }"
+      . assert(_ == t"a { color: #ff0000 }".read[Css])
+
+      test(m"an rgb colour literal substitution"):
+        css"a { color: ${rgb"#3344ff"} }"
+      . assert(_ == t"a { color: #3344ff }".read[Css])
+
+      test(m"a length substitution in value position"):
+        css"a { width: $width }"
+      . assert(_ == t"a { width: 4px }".read[Css])
+
+      test(m"multiple substitutions in one rule"):
+        css"a { color: $red; width: $width }"
+      . assert(_ == t"a { color: #ff0000; width: 4px }".read[Css])
+
+      test(m"a substitution inside an at-rule body"):
+        css"@media screen { a { width: $width } }"
+      . assert(_ == t"@media screen { a { width: 4px } }".read[Css])
+
+      test(m"a wrong-typed substitution fails to compile"):
+        demilitarize(css"a { color: $width }").exists(_.message.contains("not valid for"))
+      . assert(_ == true)
+
+      test(m"a substitution in selector position fails to compile"):
+        demilitarize(css"$width { color: red }").nonEmpty
+      . assert(_ == true)
+
+      test(m"a substitution mixed with literal text fails to compile"):
+        demilitarize(css"a { margin: $width 0 }").nonEmpty
+      . assert(_ == true)
