@@ -11,7 +11,7 @@ Document {
                     keyword: "code",
                     atoms: [
                         Source {
-                            text: "line with trailing\nline two\n\n",
+                            text: "line with trailing\nline two",
                         },
                     ],
                     remark: None,

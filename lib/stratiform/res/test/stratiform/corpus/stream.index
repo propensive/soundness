@@ -1,4 +1,5 @@
 empty-between
+errors-isolated
 literal-contains-separator
 non-default-sigil
 pragmaless-document

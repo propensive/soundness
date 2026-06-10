@@ -11,7 +11,7 @@ Document {
                     keyword: "code",
                     atoms: [
                         Source {
-                            text: "# not a comment\nhello\n\n",
+                            text: "# not a comment\nhello",
                         },
                     ],
                     remark: None,

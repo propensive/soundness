@@ -99,7 +99,12 @@ object Mutation:
     case Op.ResizeTabulation(p, _)         => p
 
   def apply(tel: Tel, op: Op): Tel raises MutationError =
-    Tel.make(transform(tel.subtree, pointerOf(op).steps, 0, op))
+    // The document's resolved sigil (§8.3) feeds the inline-safe predicate
+    // used by `update-value` form escalation; defaults to `#`.
+    val sigil = tel.subtree match
+      case d: Tel.Document => d.pragma.let(_.sigil.or('#')).or('#')
+      case _               => '#'
+    Tel.make(transform(tel.subtree, pointerOf(op).steps, 0, op, sigil))
 
   def apply(tel: Tel, ops: Seq[Op]): Tel raises MutationError =
     var current = tel
@@ -121,7 +126,8 @@ object Mutation:
        ( subtree:  Tel.Subtree,
          steps:    IArray[Tel.Pointer.Step],
          idx:      Int,
-         op:       Op )
+         op:       Op,
+         sigil:    Char )
   :     Tel.Subtree raises MutationError =
 
     if idx >= steps.length then op match
@@ -151,12 +157,12 @@ object Mutation:
         case _                        => true
 
       if isTargetOp && idx == steps.length - 1 then
-        val updatedBlock = applyToTarget(subtree.children(blockIdx), localIdx, op)
+        val updatedBlock = applyToTarget(subtree.children(blockIdx), localIdx, op, sigil)
         rewrap(subtree, subtree.children.updated(blockIdx, updatedBlock))
       else
         val targetBlock = subtree.children(blockIdx)
         val targetCompound = targetBlock.compounds(localIdx)
-        val updatedSubtree = transform(targetCompound, steps, idx + 1, op)
+        val updatedSubtree = transform(targetCompound, steps, idx + 1, op, sigil)
         val updatedCompound = updatedSubtree match
           case c: Tel.Compound => c
           case _: Tel.Document => targetCompound // unreachable: child of a compound is a compound
@@ -203,12 +209,12 @@ object Mutation:
   // `block`, returning the rewritten block. Ops may produce zero, one, or
   // two compounds in place of the target (e.g. Delete -> 0, InsertBefore
   // -> 2).
-  private def applyToTarget(block: Tel.Block, localIdx: Int, op: Op)
+  private def applyToTarget(block: Tel.Block, localIdx: Int, op: Op, sigil: Char)
   :     Tel.Block raises MutationError =
     val target = block.compounds(localIdx)
     val replacement: IArray[Tel.Compound] = op match
       case Op.UpdateAtom(_, atomIndex, text) =>
-        IArray(updateAtomAt(target, atomIndex, text))
+        IArray(updateAtomAt(target, atomIndex, text, sigil))
 
       case Op.Delete(_) =>
         IArray.empty
@@ -250,29 +256,37 @@ object Mutation:
     val after = block.compounds.drop(localIdx + 1)
     block.copy(compounds = before ++ replacement ++ after)
 
-  // Modify the n-th inline atom of a compound (counting only Inline
-  // atoms; Source and Literal atoms are skipped from the index, since
-  // those have a different mutation surface).
-  private def updateAtomAt(compound: Tel.Compound, atomIndex: Int, text: Text)
+  // §22.3 `update-value` — replace the atomIndex-th atom's text (counting
+  // every atom form). The atom's *form* is subject to the §22.2 Atom-form
+  // safety invariant: the current form is kept while the new value stays
+  // safe for it, otherwise the form escalates along inline -> source ->
+  // literal to the first later form whose predicate the value satisfies,
+  // never to an earlier one (so updating a literal atom to an inline-safe
+  // value leaves it a literal atom). Preceding spaces follow the §22.3
+  // hard-space rule; a kept literal atom reuses its delimiter when safe.
+  private def updateAtomAt(compound: Tel.Compound, atomIndex: Int, text: Text, sigil: Char)
   :     Tel.Compound raises MutationError =
-    var seen = 0
-    var found = -1
-    var i = 0
-    while i < compound.atoms.length && found < 0 do
-      compound.atoms(i) match
-        case _: Tel.Atom.Inline =>
-          if seen == atomIndex then found = i else seen += 1
+    if atomIndex < 0 || atomIndex >= compound.atoms.length
+    then abort(MutationError(Reason.AtomIndexOutOfRange))
+    val updated = escalateAtom(compound.atoms(atomIndex), text, sigil)
+    compound.copy(atoms = compound.atoms.updated(atomIndex, updated))
 
-        case _ => ()
+  // The §22.3 form-escalation step: keep the current form if the new value
+  // is still safe for it, else advance (never retreat) to the first later
+  // form whose §22.2 predicate holds.
+  private def escalateAtom(current: Tel.Atom, value: Text, sigil: Char): Tel.Atom =
+    current match
+      case Tel.Atom.Inline(_, _) =>
+        if inlineSafe(value, sigil) then Tel.Atom.Inline(value, inlinePrecedingSpaces(value))
+        else if sourceSafe(value) then Tel.Atom.Source(value)
+        else Tel.Atom.Literal(literalDelimiter(value, t"---"), value)
 
-      i += 1
+      case Tel.Atom.Source(_) =>
+        if sourceSafe(value) then Tel.Atom.Source(value)
+        else Tel.Atom.Literal(literalDelimiter(value, t"---"), value)
 
-    if found < 0 then abort(MutationError(Reason.AtomIndexOutOfRange))
-    compound.atoms(found) match
-      case Tel.Atom.Inline(_, sp) =>
-        compound.copy(atoms = compound.atoms.updated(found, Tel.Atom.Inline(text, sp)))
-
-      case _ => abort(MutationError(Reason.AtomIndexOutOfRange))
+      case Tel.Atom.Literal(delimiter, _) =>
+        Tel.Atom.Literal(literalDelimiter(value, delimiter), value)
 
   // Append `compound` to the last block of `blocks`. If `blocks` is empty
   // a fresh block is created. Trailing blank lines on the existing last
@@ -492,52 +506,85 @@ object Mutation:
            compounds  = newCompounds ))
     .or(blocks)
 
-  // §22.2 `construct` — produce a fresh compound from a keyword and a
-  // sequence of scalar atom texts, picking the appropriate atom form
-  // per §22.3:
-  //   - inline if the value has no LF, no `..` (2+ consecutive spaces),
-  //     no leading/trailing space, and no `space + sigil` introducer;
-  //   - source atom if the value is multi-line with no trailing-space
-  //     line and no blank line;
-  //   - literal atom otherwise.
-  // The result has no remark, no children, and uses a single preceding
-  // space (`precedingSpaces = 1`) on every inline atom — matching the
-  // canonical-form requirements of §22.3.
+  // §22.3 `construct` — produce a fresh compound from a keyword and a
+  // sequence of scalar atom texts, choosing each atom's form by the §22.2
+  // atom-form safety predicates: inline if inline-safe, else source if
+  // source-safe, else literal. An empty value yields *no atom* (a leading
+  // space would be an E108 trailing space on the keyword line, §22.3), so
+  // empty values are dropped. The canonical sigil is `#`.
   def construct(keyword: Text, atoms: Text*): Tel.Compound =
-    val sigil = '#'
-    val atomNodes = IArray.from(atoms.map(value => chooseAtomForm(value, sigil)))
+    val atomNodes =
+      IArray.from(atoms.collect { case value if value.s.nonEmpty => chooseAtomForm(value, '#') })
     Tel.Compound(keyword, atomNodes, Unset, IArray.empty)
 
+  // §22.3 atom-form escalation: the first form in inline -> source ->
+  // literal whose §22.2 safety predicate the value satisfies.
   private def chooseAtomForm(value: Text, sigil: Char): Tel.Atom =
+    if inlineSafe(value, sigil) then Tel.Atom.Inline(value, inlinePrecedingSpaces(value))
+    else if sourceSafe(value) then Tel.Atom.Source(value)
+    else Tel.Atom.Literal(literalDelimiter(value, t"---"), value)
+
+  // §22.3: an inline atom whose value contains a space uses a two-space
+  // (hard-space) separator so the parser keeps the soft spaces as content
+  // (§10.3); a space-free value uses a single space.
+  private def inlinePrecedingSpaces(value: Text): Int =
+    if value.s.indexOf(' ') >= 0 then 2 else 1
+
+  // §22.2 inline-safe: no LF; no leading/trailing space; no run of two or
+  // more spaces; and the value does not begin with the sigil immediately
+  // followed by a space (which would start a remark, §11.2). An internal
+  // space-then-sigil is safe — a spaced value is emitted in hard-space
+  // mode, so the sigil is not at a phrase boundary. An empty value is
+  // inline-safe (callers emit it as no atom, not an empty inline atom).
+  private def inlineSafe(value: Text, sigil: Char): Boolean =
     val s = value.s
-
-    def inlineOk: Boolean =
-      if s.isEmpty then true
-      else
-        if s.charAt(0) == ' ' || s.charAt(s.length - 1) == ' ' then false
-        else
-          var i = 0
-          var ok = true
-          while ok && i < s.length do
-            val c = s.charAt(i)
-            if c == '\n' then ok = false
-            else if c == ' ' && i + 1 < s.length && s.charAt(i + 1) == ' ' then ok = false
-            else if c == ' ' && i + 1 < s.length && s.charAt(i + 1) == sigil then ok = false
-            i += 1
-          ok
-
-    def sourceOk: Boolean =
-      // No trailing-space line, no blank line (two consecutive LFs).
+    if s.isEmpty then true
+    else if s.charAt(0) == ' ' || s.charAt(s.length - 1) == ' ' then false
+    else if s.length >= 2 && s.charAt(0) == sigil && s.charAt(1) == ' ' then false
+    else
       var i = 0
       var ok = true
       while ok && i < s.length do
         val c = s.charAt(i)
-        if c == '\n' then
-          if i > 0 && s.charAt(i - 1) == ' ' then ok = false
-          else if i + 1 < s.length && s.charAt(i + 1) == '\n' then ok = false
+        if c == '\n' then ok = false
+        else if c == ' ' && i + 1 < s.length && s.charAt(i + 1) == ' ' then ok = false
         i += 1
       ok
 
-    if inlineOk then Tel.Atom.Inline(value, 1)
-    else if sourceOk then Tel.Atom.Source(value)
-    else Tel.Atom.Literal(t"---", value)
+  // §22.2 source-safe: non-empty; no empty line (hence no leading/trailing
+  // LF and no run of two or more LFs); no line ending in a space (source
+  // atoms strip trailing spaces, §14); and the first line does not begin
+  // with a space (the first line's indentation is stripped, §14).
+  private def sourceSafe(value: Text): Boolean =
+    val s = value.s
+    if s.isEmpty then false
+    else if s.charAt(0) == '\n' || s.charAt(s.length - 1) == '\n' then false
+    else if s.charAt(0) == ' ' || s.charAt(s.length - 1) == ' ' then false
+    else
+      var i = 0
+      var ok = true
+      while ok && i < s.length do
+        if s.charAt(i) == '\n' then
+          if s.charAt(i - 1) == ' ' then ok = false        // trailing space on a line
+          else if s.charAt(i + 1) == '\n' then ok = false  // empty interior line
+        i += 1
+      ok
+
+  // §22.3 literal delimiter: the shortest run of `-`, starting from
+  // `initial`, that does not appear as a line of the value — so the value
+  // is literal-safe (§22.2) with respect to it.
+  private def literalDelimiter(value: Text, initial: Text): Text =
+    var delimiter = initial.s
+    while appearsAsLine(value.s, delimiter) do delimiter = delimiter+"-"
+    Text(delimiter)
+
+  // True if `line` occurs as a whole LF-delimited line of `s`.
+  private def appearsAsLine(s: String, line: String): Boolean =
+    var start = 0
+    var found = false
+    while !found && start <= s.length do
+      val nl = s.indexOf('\n', start)
+      val end = if nl < 0 then s.length else nl
+      if s.substring(start, end).nn == line then found = true
+      start = if nl < 0 then s.length + 1 else nl + 1
+    found

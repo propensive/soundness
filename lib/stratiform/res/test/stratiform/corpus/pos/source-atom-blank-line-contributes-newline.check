@@ -11,7 +11,7 @@ Document {
                     keyword: "code",
                     atoms: [
                         Source {
-                            text: "first\n\nsecond\n\n",
+                            text: "first\n\nsecond",
                         },
                     ],
                     remark: None,

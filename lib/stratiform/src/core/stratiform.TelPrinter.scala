@@ -140,16 +140,17 @@ object TelPrinter:
     trailingAtom match
       case Tel.Atom.Source(text) =>
         val sourcePad = "  " * (indent + 2)
+        // §14 "Convention A": `text` is LF-separated with no trailing LF, so
+        // each LF-delimited segment is one source line (an empty segment is a
+        // blank line emitted with no indentation).
         val sourceText = text.s
         var start = 0
-        val terminating = sourceText.endsWith("\n")
-        val capped = if terminating then sourceText.dropRight(1) else sourceText
-        while start <= capped.length do
-          val nl = capped.indexOf('\n', start)
-          val end = if nl < 0 then capped.length else nl
-          val seg = capped.substring(start, end)
+        while start <= sourceText.length do
+          val nl = sourceText.indexOf('\n', start)
+          val end = if nl < 0 then sourceText.length else nl
+          val seg = sourceText.substring(start, end)
           buffer += (if seg.isEmpty then "" else sourcePad + seg)
-          if nl < 0 then start = capped.length + 1 else start = nl + 1
+          if nl < 0 then start = sourceText.length + 1 else start = nl + 1
 
       case Tel.Atom.Literal(delimiter, text) =>
         buffer += "  " * (indent + 3) + delimiter.s

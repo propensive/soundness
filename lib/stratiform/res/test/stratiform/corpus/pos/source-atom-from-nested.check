@@ -20,7 +20,7 @@ Document {
                                     keyword: "child",
                                     atoms: [
                                         Source {
-                                            text: "source at indent 3\nmore source\n\n",
+                                            text: "source at indent 3\nmore source",
                                         },
                                     ],
                                     remark: None,

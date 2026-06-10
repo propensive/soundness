@@ -1681,23 +1681,29 @@ private final class TelParser():
 
   // Cursor is at the first content byte of a source line (past the
   // sourceIndent leading spaces). head reflects that. Reads lines while
-  // they have leadingSpaces >= sourceIndent (or are blanks followed by
-  // more source / EOF). Each captured line contributes its content (with
-  // first sourceIndent spaces stripped) plus a trailing "\n" to the
-  // payload.
+  // they have leadingSpaces >= sourceIndent (or are interior blanks
+  // followed by more source). Captured lines (first sourceIndent spaces
+  // stripped, trailing spaces removed) are joined with LF as a separator
+  // with no trailing LF; trailing blank lines are discarded (§14).
   private def parseSourceAtom(sourceIndent: Int): Tel.Atom.Source raises TelError =
     sb.setLength(0)
 
+    // §14 "Convention A": the captured lines are joined with LF as a
+    // separator with NO trailing LF, and trailing blank lines (those
+    // between the last non-blank line and the dedent/EOF that ends the
+    // atom) are discarded. `emitted` tracks whether a segment is already in
+    // `sb` (so the separator is prepended, not appended); `pendingBlanks`
+    // holds interior blank lines that only become LF separators once a
+    // following non-blank line confirms they are not trailing.
     var done = false
+    var emitted = false
+    var pendingBlanks = 0
     while !done do
       if head.eof then
-        // The virtual trailing blank at EOF (when the document ended with
-        // LF) is claimed by the source atom rather than the enclosing
-        // block — matches TelParser, where the source-atom loop's
-        // probe-past-EOF emits one extra empty line.
-        if documentEndsWithLf then
-          sb.append('\n')
-          documentEndsWithLf = false
+        // The final LF (if any) terminated this atom's last content line; it
+        // is the line separator, not a trailing blank, so it is neither
+        // captured here nor left for the enclosing block to claim (§14).
+        documentEndsWithLf = false
         done = true
       else if head.blank then
         // Probe across blanks to see if more source follows. The mark must
@@ -1713,11 +1719,11 @@ private final class TelParser():
           while !head.eof && head.blank do
             blanks += 1
             fillHead()
-          val keep = head.eof || head.leadingSpaces >= sourceIndent
+          val keep = !head.eof && head.leadingSpaces >= sourceIndent
           if keep then
-            // Emit `blanks` empty lines.
-            var i = 0
-            while i < blanks do { sb.append('\n'); i += 1 }
+            // Interior blanks: defer them until the following non-blank line
+            // confirms they are not trailing (§14). Each yields one LF.
+            pendingBlanks += blanks
             false
           else
             // Rewind.
@@ -1748,6 +1754,15 @@ private final class TelParser():
         // the excess is part of the content as leading spaces.
         // Since fillHead consumed ALL the leadingSpaces, we lost the
         // (leadingSpaces - sourceIndent) excess. Recompose it.
+        // Emit the LF separator before this segment: one LF per deferred
+        // interior blank, plus one to separate from the previous segment.
+        // The first segment is emitted bare (§14 join semantics, no leading
+        // or trailing LF).
+        if emitted then
+          while pendingBlanks > 0 do { sb.append('\n'); pendingBlanks -= 1 }
+          sb.append('\n')
+        else emitted = true
+
         val excess = head.leadingSpaces - sourceIndent
         var i = 0
         while i < excess do { sb.append(' '); i += 1 }
@@ -1766,7 +1781,6 @@ private final class TelParser():
           var endIdx = payload.length
           while endIdx > 0 && payload.charAt(endIdx - 1) == ' ' do endIdx -= 1
           sb.append(payload, 0, endIdx)
-          sb.append('\n')
 
           consumeLineEnding()
         fillHead()
