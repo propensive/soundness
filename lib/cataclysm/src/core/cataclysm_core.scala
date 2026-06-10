@@ -36,6 +36,7 @@ import anticipation.*
 import contextual.*
 import contingency.*
 import fulminate.*
+import nomenclature.*
 import prepositional.*
 import turbulence.*
 import vacuous.*
@@ -59,8 +60,10 @@ given cssAggregable: (Tactic[CssErrors], Diagnostics) => Css is Aggregable by Te
 // The class and id names referenced anywhere in a stylesheet, including inside
 // nested rules and the selector-list arguments of `:is()`/`:not()`/`:nth-…(of)`.
 extension (css: Css)
-  def classes: Set[Text] = simples(css.rules).collect { case Simple.Class(name) => name }.to(Set)
-  def ids: Set[Text] = simples(css.rules).collect { case Simple.Id(name) => name }.to(Set)
+  def classes: Set[Name[CssClass]] =
+    simples(css.rules).collect { case Simple.Class(name) => name }.to(Set)
+
+  def ids: Set[Name[DomId]] = simples(css.rules).collect { case Simple.Id(name) => name }.to(Set)
 
 private def simples(nodes: List[Css.Node]): List[Simple] =
   nodes.flatMap:

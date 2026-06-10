@@ -55,8 +55,8 @@ object Tests extends Suite(m"Cataclysm Tests"):
   def rel(lead: Combinator, head: Compound): Selector = Selector(lead, head, Nil)
   def cpd(parts: Simple*): Compound = Compound(parts.toList)
   def typ(name: Text): Simple = Simple.Type(Unset, name)
-  def cls(name: Text): Simple = Simple.Class(name)
-  def hid(name: Text): Simple = Simple.Id(name)
+  def cls(name: Text): Simple = Simple.Class(Name[CssClass](name))
+  def hid(name: Text): Simple = Simple.Id(Name[DomId](name))
   def uni: Simple = Simple.Universal(Unset)
   def pc(name: Text): Simple = Simple.PseudoClass(name, Unset)
 
@@ -527,11 +527,11 @@ object Tests extends Suite(m"Cataclysm Tests"):
       val css = t".a #b { color: red } @media screen { .c:not(.d) e#f { color: blue } }".read[Css]
 
       test(m"class names are collected, including nested and inside :not()"):
-        css.classes
+        css.classes.map(name => name: Text)
       . assert(_ == Set(t"a", t"c", t"d"))
 
       test(m"id names are collected, including nested"):
-        css.ids
+        css.ids.map(name => name: Text)
       . assert(_ == Set(t"b", t"f"))
 
     suite(m"CSS-checked attributions"):

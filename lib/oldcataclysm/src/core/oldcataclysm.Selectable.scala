@@ -32,17 +32,10 @@
                                                                                                   */
 package oldcataclysm
 
-import anticipation.*
 import prepositional.*
 
 object Selectable:
   given ident: Selector is Selectable = identity(_)
-
-  given generic: [selectable: GenericCssSelection] => selectable is Selectable =
-    selectable.selection(_).s match
-      case s".$cls" => Selector.Class(cls.tt)
-      case s"#$id"  => Selector.Id(id.tt)
-      case element  => Selector.Element(element.tt)
 
 trait Selectable extends Typeclass:
   def selector(value: Self): Selector

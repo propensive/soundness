@@ -35,6 +35,7 @@ package cataclysm
 import anticipation.*
 import contingency.*
 import gossamer.*
+import nomenclature.*
 import vacuous.*
 import zephyrine.*
 
@@ -243,11 +244,26 @@ private[cataclysm] object SelectorParser:
 
     private def id(): Simple =
       cursor.advance()
-      Simple.Id(readIdent())
+      val text = readIdent()
+
+      Simple.Id:
+        safely(Name[DomId](text)).or:
+          invalid(text)
+          text.asInstanceOf[Name[DomId]]
 
     private def cls(): Simple =
       cursor.advance()
-      Simple.Class(readIdent())
+      val text = readIdent()
+
+      Simple.Class:
+        safely(Name[CssClass](text)).or:
+          invalid(text)
+          text.asInstanceOf[Name[CssClass]]
+
+    // The parser is lenient: an invalid identifier (e.g. a class starting with a
+    // digit) raises a `CssError` but parsing continues with the name verbatim.
+    private def invalid(text: Text): Unit =
+      raise(CssError(CssError.Reason.InvalidName(text), cursor.line, cursor.column))
 
     private def attribute(): Simple =
       eat('[')

@@ -28,33 +28,17 @@
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
 ┃                                                                                                  ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package tarantula
+package nomenclature
 
 import anticipation.*
-import oldcataclysm.*
-import gossamer.*
-import honeycomb.*
-import nomenclature.*
-import prepositional.*
-import spectacular.*
+import fulminate.*
 
-object Focusable:
-  def apply[element](strategy0: Text, focus0: element => Text): element is Focusable =
-    new Focusable:
-      type Self = element
-      def strategy: Text = strategy0
-      def focus(value: Self): Text = focus0(value)
+// Requires that a name is a valid HTML element id: at least one character and no
+// ASCII whitespace (per the HTML Living Standard). The `description` type
+// parameter is the human-readable phrasing used in error messages.
+object DomIdentifier
+extends Rule({ description => m"must be $description" }, { (name, _) => identifierRules.dom(name) })
 
-  given text: Text is Focusable = Focusable(t"link text", identity(_))
-  given selector: Selector is Focusable = Focusable(t"css selector", _.normalize.value)
-  given tag: Tag is Focusable = Focusable(t"tag name", _.label)
-  given domId: Name[DomId] is Focusable = Focusable(t"css selector", v => t"#$v")
-
-  given cssClass: ClassList is Focusable =
-    Focusable(t"css selector", _.classes.join(t".", t".", t""))
-
-trait Focusable extends Typeclass:
-  def strategy: Text
-  def focus(value: Self): Text
+sealed trait DomIdentifier[description <: Label] extends Check[description]
