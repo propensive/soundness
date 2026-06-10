@@ -310,6 +310,17 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val bytes = ji.ByteArrayOutputStream()
         (bytes, Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic))
 
+      test(m"a styled cell emits its colour as SGR"):
+        val bytes = ji.ByteArrayOutputStream()
+        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.xtermTrueColor)
+        val root = InlineRoot(3, 4)
+        root.reframe(3, 1)
+        root.move(Prim, Prim)
+        root.put(e"$Bold(hi)")
+        root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_.contains(t"[1m"))
+
       // The block (2 rows) is docked to the bottom of the 4-row terminal: it scrolls
       // 2 rows in (`\n\n`) to reserve space, then draws each row at an absolute screen
       // position (rows 3 and 4) and parks the caret absolutely.

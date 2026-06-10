@@ -135,6 +135,25 @@ extends Canvas:
 
     builder.text
 
+  // A styled `Teletype` of row `r`, up to `columns` cells (wide-trailing sentinels
+  // skipped), so the row's colour can be composited onto a parent surface or rendered
+  // to SGR by the inline presenter.
+  protected def rowContent(r: Int, columns: Int): Teletype =
+    var content = Teletype.empty
+    val limit = columns.min(gridWidth)
+    var c = 0
+
+    while c < limit do
+      val grapheme = screen.grapheme(c.z, r.z).text
+      if !grapheme.nil then content = content.append(styledCell(grapheme, screen.style(c.z, r.z)))
+      c += 1
+
+    content
+
+  // A `Teletype` of `text` in one uniform style (sparse single-run form).
+  private def styledCell(text: Text, style: StyleWord): Teletype =
+    Teletype(text, IArray(style.raw, 0L), boundaries = IArray(0))
+
   // A plain-text snapshot of the grid (rows joined by newlines), for testing and for
   // content-change detection.
   def render: Text = screen.render
