@@ -35,8 +35,8 @@ package ethereal
 import language.experimental.pureFunctions
 
 import java.io as ji
-import java.nio.channels as jnc
 
+import coaxial.*
 import contingency.*
 import exoskeleton.*
 import guillotine.*
@@ -64,6 +64,6 @@ case class Client(pid: Pid) extends Topical:
 
   def receive(message: Topic): Unit = bus.put(message)
 
-  val socket: Promise[jnc.SocketChannel] = Promise()
+  val socket: Promise[Connection] = Promise()
 
   def close(): Unit = safely(socket.await(1.0*Second).close())

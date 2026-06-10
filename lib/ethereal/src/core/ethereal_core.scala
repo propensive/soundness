@@ -36,15 +36,14 @@ import language.experimental.pureFunctions
 
 import java.io as ji
 import java.lang as jl
-import java.net as jn
 import java.nio as jnio
-import java.nio.channels as jnc
 import java.util.concurrent.atomic as juca
 
 import scala.collection.concurrent as scc
 
 import ambience.*, systems.java
 import anticipation.*
+import coaxial.*
 import contingency.*
 import digression.*
 import distillate.*
@@ -278,199 +277,198 @@ def cli[bus <: Matchable](using executive: Executive)
     pid.let(terminatePid.fulfill(_)).or(termination)
 
 
-  def makeClient(channel: jnc.SocketChannel)(using Monitor, Stdio, Probate)
+  def makeClient(connection: Connection)(using Monitor, Stdio, Probate)
   :   Unit logs DaemonLogEvent raises StreamError raises CharDecodeError raises NumberError =
 
-    async:
-      val rawIn: ji.InputStream = jnc.Channels.newInputStream(channel).nn
-      val rawOut: ji.OutputStream = jnc.Channels.newOutputStream(channel).nn
-      val in: ji.BufferedInputStream = ji.BufferedInputStream(rawIn, 16384)
+    val rawIn: ji.InputStream = connection.reader
+    val rawOut: ji.OutputStream = connection.writer
+    val in: ji.BufferedInputStream = ji.BufferedInputStream(rawIn, 16384)
 
-      def line(): Text =
-        val sb = jl.StringBuilder()
-        var b = in.read()
+    def line(): Text =
+      val sb = jl.StringBuilder()
+      var b = in.read()
 
-        while b != '\n' && b != -1 do
-          sb.append(b.toChar)
-          b = in.read()
+      while b != '\n' && b != -1 do
+        sb.append(b.toChar)
+        b = in.read()
 
-        sb.toString.tt
+      sb.toString.tt
 
-      def chunk(): Text =
-        var buffer: Text = line()
-        var current: Text = t""
+    def chunk(): Text =
+      var buffer: Text = line()
+      var current: Text = t""
 
-        while
-          current = line()
-          current != t"##"
-        do buffer += t"\n$current"
+      while
+        current = line()
+        current != t"##"
+      do buffer += t"\n$current"
 
-        buffer
+      buffer
 
-      val message: Optional[DaemonEvent] = line() match
-        case t"e" =>
-          val pid: Pid = line().decode[Pid]
-          DaemonEvent.Stderr(pid)
+    val message: Optional[DaemonEvent] = line() match
+      case t"e" =>
+        val pid: Pid = line().decode[Pid]
+        DaemonEvent.Stderr(pid)
 
-        case t"s" =>
-          val pid: Pid = line().decode[Pid]
-          val name: Text = line()
+      case t"s" =>
+        val pid: Pid = line().decode[Pid]
+        val name: Text = line()
 
-          val signal: UnixSignal | WindowsSignal =
-            safely(name.decode[UnixSignal]).or(name.decode[WindowsSignal])
+        val signal: UnixSignal | WindowsSignal =
+          safely(name.decode[UnixSignal]).or(name.decode[WindowsSignal])
 
-          DaemonEvent.Trap(pid, signal)
+        DaemonEvent.Trap(pid, signal)
 
-        case t"x" =>
-          DaemonEvent.Exit(line().decode[Pid])
+      case t"x" =>
+        DaemonEvent.Exit(line().decode[Pid])
 
-        case t"i" =>
-          val stdin: Stdin = if line() == t"p" then Stdin.Pipe else Stdin.Terminal
-          val pid: Pid = Pid(line().decode[Int])
-          val userId: Int = line().decode[Int]
-          val username: Text = line()
-          val login = Login(username, userId)
-          val script: Text = line()
-          val pwd: Text = line()
-          val count: Int = line().decode[Int]
-          val textArguments: List[Text] = chunk().cut(t"\u0000").take(count).to(List)
-          val environment: List[Text] = chunk().cut(t"\u0000").init.to(List)
+      case t"i" =>
+        val stdin: Stdin = if line() == t"p" then Stdin.Pipe else Stdin.Terminal
+        val pid: Pid = Pid(line().decode[Int])
+        val userId: Int = line().decode[Int]
+        val username: Text = line()
+        val login = Login(username, userId)
+        val script: Text = line()
+        val pwd: Text = line()
+        val count: Int = line().decode[Int]
+        val textArguments: List[Text] = chunk().cut(t"\u0000").take(count).to(List)
+        val environment: List[Text] = chunk().cut(t"\u0000").init.to(List)
 
-          DaemonEvent.Init(pid, login, pwd, script, stdin, textArguments, environment)
+        DaemonEvent.Init(pid, login, pwd, script, stdin, textArguments, environment)
 
-        case _ =>
-          Unset
+      case _ =>
+        Unset
 
-      message match
-        case Unset =>
-          Log.warn(DaemonLogEvent.UnrecognizedMessage)
-          channel.close()
+    message match
+      case Unset =>
+        Log.warn(DaemonLogEvent.UnrecognizedMessage)
+        connection.close()
 
-        case DaemonEvent.Trap(pid, signal) =>
-          Log.info(DaemonLogEvent.ReceivedSignal(signal))
+      case DaemonEvent.Trap(pid, signal) =>
+        Log.info(DaemonLogEvent.ReceivedSignal(signal))
 
-          val response: SignalResponse =
-            safely:
-              val invocation = client(pid).invocation.await(250.0*Milli(Second))
-              invocation.dispatchSignal(signal)
+        val response: SignalResponse =
+          safely:
+            val invocation = client(pid).invocation.await(250.0*Milli(Second))
+            invocation.dispatchSignal(signal)
 
-            . or(SignalResponse.Reject)
+          . or(SignalResponse.Reject)
 
-          val ackByte: Byte = if response == SignalResponse.Accept then 'a' else 'r'
-          safely(rawOut.write(Array[Byte](ackByte, '\n'.toByte)))
-          safely(rawOut.flush())
-          channel.close()
+        val ackByte: Byte = if response == SignalResponse.Accept then 'a' else 'r'
+        safely(rawOut.write(Array[Byte](ackByte, '\n'.toByte)))
+        safely(rawOut.flush())
+        connection.close()
 
-        case DaemonEvent.Exit(pid) =>
-          Log.fine(DaemonLogEvent.ExitStatusRequest(pid))
-          val exitStatus: Exit = client(pid).exitPromise.await()
+      case DaemonEvent.Exit(pid) =>
+        Log.fine(DaemonLogEvent.ExitStatusRequest(pid))
+        val exitStatus: Exit = client(pid).exitPromise.await()
 
-          rawOut.write(exitStatus().show.data.mutable(using Unsafe))
-          channel.close()
-          clients.remove(pid)
-          if terminatePid() == pid then termination
+        rawOut.write(exitStatus().show.data.mutable(using Unsafe))
+        connection.close()
+        clients.remove(pid)
+        if terminatePid() == pid then termination
 
-        case DaemonEvent.Stderr(pid) =>
-          Log.fine(DaemonLogEvent.StderrRequest(pid))
-          val stderrClient = client(pid)
-          stderrClient.stderr.offer(rawOut)
-          safely(stderrClient.exitPromise.await())
-          safely(channel.close())
+      case DaemonEvent.Stderr(pid) =>
+        Log.fine(DaemonLogEvent.StderrRequest(pid))
+        val stderrClient = client(pid)
+        stderrClient.stderr.offer(rawOut)
+        safely(stderrClient.exitPromise.await())
+        safely(connection.close())
 
-        case DaemonEvent.Init(pid, login, directory, script, shellInput, textArguments, env) =>
-          Log.fine(DaemonLogEvent.Init(pid))
-          val connection = client(pid)
-          connection.socket.fulfill(channel)
+      case DaemonEvent.Init(pid, login, directory, script, shellInput, textArguments, env) =>
+        Log.fine(DaemonLogEvent.Init(pid))
+        val clientState = client(pid)
+        clientState.socket.fulfill(connection)
 
-          val lazyStderr: ji.OutputStream = new ji.OutputStream():
-            private val stderrOut: juca.AtomicReference[ji.OutputStream | Null] =
-              juca.AtomicReference(null)
+        val lazyStderr: ji.OutputStream = new ji.OutputStream():
+          private val stderrOut: juca.AtomicReference[ji.OutputStream | Null] =
+            juca.AtomicReference(null)
 
-            private def connected(): ji.OutputStream =
-              val s = stderrOut.get()
+          private def connected(): ji.OutputStream =
+            val s = stderrOut.get()
 
-              if s != null then s
-              else
-                val newS = connection.stderr.await()
-                stderrOut.set(newS)
-                newS
-
-            def write(i: Int): Unit = connected().write(i)
-            override def write(bytes: Array[Byte] | Null): Unit = connected().write(bytes)
-
-            override def write(bytes: Array[Byte] | Null, offset: Int, length: Int): Unit =
-              connected().write(bytes, offset, length)
-
-            override def close(): Unit =
-              val s = stderrOut.get()
-              if s != null then safely(s.close())
-
-          given environment: Environment = LazyEnvironment(env)
-
-          val termcap: Termcap = new Termcap:
-            def ansi: Boolean = true
-
-            lazy val color: ColorDepth =
-              import workingDirectories.system
-
-              if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
-              else
-                ColorDepth
-                  ( safely(mute[ExecEvent](sh"tput colors".exec[Text]().decode[Int])).or(-1) )
-
-          val stdio: Stdio =
-            Stdio
-              ( ji.PrintStream(rawOut, true),
-                ji.PrintStream(lazyStderr, true),
-                in,
-                termcap )
-
-          def deliver(sourcePid: Pid, message: bus): Unit =
-            clients.each: (pid, client) =>
-              if sourcePid != pid then client.receive(message)
-
-          val service: DaemonService[bus] =
-            DaemonService[bus]
-              ( pid,
-                () => shutdown(pid),
-                shellInput,
-                script.decode[Path on Local],
-                deliver(pid, _),
-                connection.bus.stream,
-                name,
-                startTime )
-
-          Log.fine(DaemonLogEvent.NewCli)
-
-          try
-            val cli: executive.Interface =
-              executive.invocation
-                ( textArguments,
-                  environment,
-                  () => directory,
-                  stdio,
-                  service,
-                  login )
-
-            connection.invocation.offer(cli)
-
-            if cli.proceed then
-              val result = block(using service, cli, environment)
-              val exitStatus: Exit = executive.process(cli)(result)
-
-              connection.exitPromise.fulfill(exitStatus)
+            if s != null then s
             else
-              connection.exitPromise.fulfill(Exit.Ok)
+              val newS = clientState.stderr.await()
+              stderrOut.set(newS)
+              newS
 
-          catch
-            case exception: Exception =>
-              Log.warn(DaemonLogEvent.Failure)
-              connection.exitPromise.fulfill(handler.handle(exception)(using stdio))
+          def write(i: Int): Unit = connected().write(i)
+          override def write(bytes: Array[Byte] | Null): Unit = connected().write(bytes)
 
-          finally
-            lazyStderr.close()
-            channel.close()
-            Log.info(DaemonLogEvent.CloseConnection(pid))
+          override def write(bytes: Array[Byte] | Null, offset: Int, length: Int): Unit =
+            connected().write(bytes, offset, length)
+
+          override def close(): Unit =
+            val s = stderrOut.get()
+            if s != null then safely(s.close())
+
+        given environment: Environment = LazyEnvironment(env)
+
+        val termcap: Termcap = new Termcap:
+          def ansi: Boolean = true
+
+          lazy val color: ColorDepth =
+            import workingDirectories.system
+
+            if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
+            else
+              ColorDepth
+                ( safely(mute[ExecEvent](sh"tput colors".exec[Text]().decode[Int])).or(-1) )
+
+        val stdio: Stdio =
+          Stdio
+            ( ji.PrintStream(rawOut, true),
+              ji.PrintStream(lazyStderr, true),
+              in,
+              termcap )
+
+        def deliver(sourcePid: Pid, message: bus): Unit =
+          clients.each: (pid, client) =>
+            if sourcePid != pid then client.receive(message)
+
+        val service: DaemonService[bus] =
+          DaemonService[bus]
+            ( pid,
+              () => shutdown(pid),
+              shellInput,
+              script.decode[Path on Local],
+              deliver(pid, _),
+              clientState.bus.stream,
+              name,
+              startTime )
+
+        Log.fine(DaemonLogEvent.NewCli)
+
+        try
+          val cli: executive.Interface =
+            executive.invocation
+              ( textArguments,
+                environment,
+                () => directory,
+                stdio,
+                service,
+                login )
+
+          clientState.invocation.offer(cli)
+
+          if cli.proceed then
+            val result = block(using service, cli, environment)
+            val exitStatus: Exit = executive.process(cli)(result)
+
+            clientState.exitPromise.fulfill(exitStatus)
+          else
+            clientState.exitPromise.fulfill(Exit.Ok)
+
+        catch
+          case exception: Exception =>
+            Log.warn(DaemonLogEvent.Failure)
+            clientState.exitPromise.fulfill(handler.handle(exception)(using stdio))
+
+        finally
+          lazyStderr.close()
+          connection.close()
+          Log.info(DaemonLogEvent.CloseConnection(pid))
 
   application(using executives.direct(using backstops.silent))(Nil):
     import environments.java
@@ -489,11 +487,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
       safely(socketFile.wipe())
 
-      val channel: jnc.ServerSocketChannel =
-        jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
-
-      channel.configureBlocking(true)
-      channel.bind(jn.UnixDomainSocketAddress.of(socketFile.encode.s))
+      val domainSocket: DomainSocket = DomainSocket(socketFile.encode)
 
       val buildId = safely(System.properties.build.id[Int]()).or:
         safely((Classpath/"build.id").read[Text].trim.decode[Int]).or(0)
@@ -517,12 +511,17 @@ def cli[bus <: Matchable](using executive: Executive)
         Log.warn(DaemonLogEvent.IdleTimeout)
         termination
 
-      loop:
-        val socket = channel.accept().nn
-        inactivityTimer.nudge()
-        safely(makeClient(socket))
+      safely:
+        domainSocket.listen: connection =>
+          inactivityTimer.nudge()
+          safely(makeClient(connection))
+          Data()
 
-      . run()
+      // The accept loop runs on its own daemon inside `listen`, so park the
+      // supervisor here to keep the daemon process alive until `termination`
+      // (an idle timeout, a watched-file change, or an explicit shutdown)
+      // calls `System.exit`.
+      Promise[Unit]().await()
 
     Exit.Ok
 
