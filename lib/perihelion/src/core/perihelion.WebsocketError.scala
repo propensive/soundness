@@ -32,81 +32,29 @@
                                                                                                   */
 package perihelion
 
-import anticipation.*
-import coaxial.*
-import contingency.*
-import distillate.*
-import gossamer.*
-import hieroglyph.*
-import parasite.*
-import prepositional.*
-import telekinesis.*
+import fulminate.*
 
-// A formal `Message is Ingressive`, so the raw `Message` type satisfies the
-// `Ingressive` requirement `webSocket` places on its message type. A `Message`
-// channel is decoded by identity — the reader already produced the `Message` — so
-// this is never actually applied; it could not recover the Text/Binary distinction
-// from raw bytes anyway.
-given messageIngressive: Message is Ingressive = Message.Binary(_)
+object WebsocketError:
+  // Each reason carries the RFC 6455 close code the server sends before closing.
+  enum Reason(val number: Int, val closeCode: Int) extends Clarification:
+    case Unmasked                extends Reason(1, 1002)
+    case BadOpcode(code: Int)    extends Reason(2, 1002)
+    case BadControl              extends Reason(3, 1002)
+    case BadFragmentation        extends Reason(4, 1002)
+    case TooLarge(size: Long)    extends Reason(5, 1009)
+    case InvalidText             extends Reason(6, 1007)
+    case ReservedBits            extends Reason(7, 1002)
+    case BadClose                extends Reason(8, 1002)
 
-// `true` exactly when the message type is the raw `Message`. A match type reduces
-// by subtyping — `Message` matches the first case, any other (e.g. `Ping over Json`)
-// falls through to `false` — and `constValue` reads it back as a literal at the
-// inline expansion of `webSocket`, where `message` is concrete.
-private type RawMessage[message] <: Boolean = message match
-  case Message => true
-  case _       => false
+  given communicable: Reason is Communicable =
+    case Reason.Unmasked         => m"the client sent an unmasked frame"
+    case Reason.BadOpcode(code)  => m"the frame used the reserved opcode $code"
+    case Reason.BadControl       => m"a control frame was fragmented or exceeded 125 bytes"
+    case Reason.BadFragmentation => m"the message fragmentation was invalid"
+    case Reason.TooLarge(size)   => m"the frame payload of $size bytes exceeded the limit"
+    case Reason.InvalidText      => m"a text frame contained invalid UTF-8"
+    case Reason.ReservedBits     => m"a reserved header bit (RSV1/2/3) was set"
+    case Reason.BadClose         => m"the close frame had a malformed payload or invalid code"
 
-// Handle an upgraded connection as a stateful WebSocket message loop, mirroring
-// Coaxial's `exchange`. Each reassembled message is decoded to the handler's
-// `message` type and passed to `handle` with the current `state`, returning a
-// `Control`. The message type is inferred from the handler's parameter, so it is
-// usually annotated there: the raw `Message` (text or binary) with `(message:
-// Message) => …`, or any `Ingressive` type — a `Text`, a `Json`/`Tel` value, or a
-// typed payload `(value: MyAdt over Json) => …`. A raw `Message` reply is written
-// verbatim (already framed); any other reply is written as one Text frame. The
-// result is `Servable` (the `101` handshake response).
-inline def webSocket[state](initial: state = ())[message]
-  ( handle: (state: state) ?=> message => Control[state] )
-  ( using ingressive: message is Ingressive )
-  ( using request: Http.Request )
-  ( using Monitor, Codicil )
-:   Websocket[message, state] =
-
-  val decode: Message => message =
-    inline if compiletime.constValue[RawMessage[message]]
-    then ((incoming: Message) => incoming).asInstanceOf[Message => message]
-    else (incoming: Message) => ingressive.deserialize(incoming.bytes)
-
-  val frame: Data => Data =
-    inline if compiletime.constValue[RawMessage[message]]
-    then (data: Data) => data
-    else (data: Data) => Frame.Text(true, data).encode
-
-  Websocket(request, initial, decode, frame, handle)
-
-// A reply value `MyAdt over Json`/`over Tel`: there is no automatic
-// `Encodable in Json` ⇒ `Encodable in Text` bridge, so compose the value↔transport
-// codec with the transport's own text codec. The result is UNFRAMED (raw text
-// bytes); `webSocket`'s loop wraps it in a single Text frame.
-given transmissible: [transport, value]
-=>  ( format: transport is Encodable in Text, codec: value is Encodable in transport )
-=>  CharEncoder
-=>  (value over transport) is Transmissible =
-  payload => Stream(format.encoded(codec.encoded(payload)).data)
-
-// The decode direction. The `Decodable in Text`/`in transport` instances are
-// `Tactic`-conditional and don't resolve as nested given constraints, so we
-// require a `Tactic[Exception]` directly (satisfied by `strategies.throwUnsafely`;
-// `Tactic` is contravariant) and summon them in the body, where it is in scope.
-given ingressive: [transport, value]
-=>  ( format: transport is Decodable in Text, codec: value is Decodable in transport )
-=>  ( CharDecoder, Tactic[Exception] )
-=>  (value over transport) is Ingressive =
-  bytes => codec.decoded(format.decoded(bytes.text)).over[transport]
-
-// Tag a value with the transport format it should ride, so a reply resolves the
-// `over`-composed `Transmissible`. `over` is a phantom type member, so this is a
-// no-op cast: `Reply(response.over[Json], state)`.
-extension [self](value: self)
-  def over[transport]: self over transport = value.asInstanceOf[self over transport]
+case class WebsocketError(reason: WebsocketError.Reason)(using Diagnostics)
+extends Error(368, reason.number)(m"the WebSocket protocol was violated because $reason")

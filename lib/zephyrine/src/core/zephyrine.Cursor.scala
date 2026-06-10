@@ -330,7 +330,16 @@ final class Cursor[data]
       else addressable.materialize(buffer, pos, tailLen)
 
     pos = writeEnd
-    if tailLen > 0 then tail #:: loaderStream else loaderStream
+
+    // Both branches must stay lazy. `loaderStream` performs a blocking `load()`
+    // on its first force, so calling it eagerly would read (and potentially
+    // block on) the underlying source before the caller has pulled a single
+    // byte — breaking the "pays nothing until it pulls" contract above and
+    // deadlocking protocols that withhold data until they get a reply (e.g. a
+    // WebSocket upgrade, whose body is the post-handshake frame stream the peer
+    // only sends after our `101`). `#::` keeps the non-empty branch lazy; the
+    // empty branch must defer the call explicitly.
+    if tailLen > 0 then tail #:: loaderStream else Stream.empty.lazyAppendedAll(loaderStream)
 
   private def loaderStream: Stream[data] =
     if ended then Stream.empty
@@ -471,13 +480,23 @@ final class Cursor[data]
     then addressable.cloneStorage(buffer, (start.absolute - basePos).toInt, len)(target)
 
   inline def take(inline otherwise: => data)(length: Int): data =
-    var count = 0
-
     hold:
       val start = mark
+      var count = 0
+      var truncated = false
 
-      while count < length do
-        next()
-        count += 1
+      // Make each byte present *before* consuming it (refilling as needed), and
+      // never refill after the last. The old `next()` form (advance-then-`more`,
+      // `length` times) instead forced a blocking read for the byte *after* the
+      // region — fatal on a live stream that sends one frame at a time — and,
+      // checking availability only afterwards, it relied on the previous read
+      // having pre-loaded the first byte; back-to-back `take`s (a WebSocket
+      // frame's mask then payload, arriving a byte per chunk) would then park at
+      // end-of-buffer and skip a byte. If the stream ends early, yield `otherwise`.
+      while count < length && !truncated do
+        if more then
+          advance()
+          count += 1
+        else truncated = true
 
-      grab(start, mark)
+      if truncated then otherwise else grab(start, mark)

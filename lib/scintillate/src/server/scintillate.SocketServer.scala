@@ -71,13 +71,20 @@ extends RequestServable:
   private def writeAll(out: ji.OutputStream, stream: Stream[Data]): Unit raises StreamError =
     var count: Int = 0
 
-    stream.each: block =>
+    // Consume the stream one block at a time and flush after each: a streaming
+    // body (chunked response, SSE, or an upgraded WebSocket) may never end, so
+    // its bytes must reach the client as they are produced rather than be forced
+    // into memory or sit unflushed in the buffer.
+    def recur(stream: Stream[Data]): Unit = stream.flow(()):
       try
-        out.write(block.mutable(using Unsafe))
-        count += block.length
+        out.write(next.mutable(using Unsafe))
+        out.flush()
+        count += next.length
       catch case _: ji.IOException => abort(StreamError(count.b))
 
-    try out.flush() catch case _: ji.IOException => abort(StreamError(count.b))
+      recur(more)
+
+    recur(stream)
 
   // Frame the request body off the shared connection cursor: chunked decoding
   // for `Transfer-Encoding: chunked`, otherwise `Content-Length` bytes, or empty
