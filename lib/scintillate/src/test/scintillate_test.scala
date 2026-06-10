@@ -202,6 +202,57 @@ object Tests extends Suite(m"Scintillate tests"):
 
         . assert(_ == clients*perClient)
 
+      suite(m"TLS"):
+        test(m"The server serves a request over TLS"):
+          // A throwaway self-signed certificate, generated with the JDK's keytool.
+          val dir = java.nio.file.Files.createTempDirectory("scintillate-tls").nn
+          val path = dir.resolve("test.p12").nn.toString.nn
+
+          val keytool = java.lang.ProcessBuilder("keytool", "-genkeypair", "-alias", "test",
+              "-keyalg", "RSA", "-keysize", "2048", "-validity", "1", "-storetype", "PKCS12",
+              "-keystore", path, "-storepass", "changeit", "-dname", "CN=localhost")
+
+          keytool.redirectErrorStream(true)
+          keytool.redirectOutput(java.lang.ProcessBuilder.Redirect.DISCARD)
+          keytool.start().nn.waitFor()
+
+          val password = "changeit".toCharArray.nn
+          val keystore = java.security.KeyStore.getInstance("PKCS12").nn
+          keystore.load(java.io.FileInputStream(path), password)
+          val keyManagers = javax.net.ssl.KeyManagerFactory.getInstance("SunX509").nn
+          keyManagers.init(keystore, password)
+          val serverContext = javax.net.ssl.SSLContext.getInstance("TLS").nn
+          serverContext.init(keyManagers.getKeyManagers, null, null)
+
+          val port = freePort()
+
+          val server =
+            SocketServer(port, ssl = serverContext).handle(Http.Response(Http.Ok)(t"secure"))
+
+          // A client that trusts any certificate, so the self-signed one is accepted.
+          val trustManager = new javax.net.ssl.X509TrustManager:
+            type Certs = Array[java.security.cert.X509Certificate | Null] | Null
+
+            def getAcceptedIssuers: Certs =
+              scala.Array.empty[java.security.cert.X509Certificate | Null]
+
+            def checkClientTrusted(chain: Certs, kind: String | Null): Unit = ()
+            def checkServerTrusted(chain: Certs, kind: String | Null): Unit = ()
+
+          val clientContext = javax.net.ssl.SSLContext.getInstance("TLS").nn
+          clientContext.init(null, scala.Array(trustManager), java.security.SecureRandom())
+          val socket = clientContext.getSocketFactory.nn.createSocket("localhost", port).nn
+          val out = socket.getOutputStream.nn
+          val request = t"GET / HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n"
+          out.write(request.s.getBytes("US-ASCII").nn)
+          out.flush()
+          val response = String(socket.getInputStream.nn.readAllBytes().nn, "US-ASCII").tt
+          socket.close()
+          server.cancel()
+          response
+
+        . assert(_.contains(t"secure"))
+
     // Drive the connection loop entirely in memory — no socket, no threads — by
     // feeding request bytes through `serveConnection` and capturing the response.
     def inProcess(handler: HttpConnection ?=> Http.Response, request: Text): Text =
@@ -260,3 +311,39 @@ object Tests extends Suite(m"Scintillate tests"):
         true
 
       . assert(_ == true)
+
+      test(m"Expect: 100-continue gets an interim 100 response"):
+        val request =
+          t"POST / HTTP/1.1\r\nHost: x\r\nExpect: 100-continue\r\nContent-Length: 5\r\n\r\nhello"
+
+        inProcess(Http.Response(Http.Ok)(t"done"), request)
+
+      . assert(r => r.contains(t"100 Continue") && r.contains(t"done"))
+
+      test(m"An over-long request line is rejected with 414"):
+        inProcess(Http.Response(Http.Ok)(t"ok"), t"GET /${t"a"*9000} HTTP/1.1\r\nHost: x\r\n\r\n")
+
+      . assert(_.contains(t"414"))
+
+      test(m"Over-large headers are rejected with 431"):
+        inProcess(Http.Response(Http.Ok)(t"ok"), t"GET / HTTP/1.1\r\nHost: x\r\nX-Big: ${t"a"*70000}\r\n\r\n")
+
+      . assert(_.contains(t"431"))
+
+      test(m"A streaming response to HTTP/1.0 is close-delimited, not chunked"):
+        val body = Http.Body.Streaming(Stream(t"Hello".data, t"World".data))
+        inProcess(Http.Response(Http.Ok)(body), t"GET / HTTP/1.0\r\nHost: x\r\n\r\n")
+
+      . assert: response =>
+          !response.contains(t"transfer-encoding: chunked")
+          && response.contains(t"connection: close")
+          && response.contains(t"HelloWorld")
+
+      test(m"A large unconsumed body closes the connection instead of draining"):
+        val request =
+          t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 70000\r\n\r\n${t"a"*70000}"
+          + t"GET /second HTTP/1.1\r\nHost: x\r\n\r\n"
+
+        inProcess(Http.Response(Http.Ok)(t"ok"), request).cut(t"HTTP/1.1 200 OK").length - 1
+
+      . assert(_ == 1)
