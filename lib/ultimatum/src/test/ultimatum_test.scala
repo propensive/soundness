@@ -198,6 +198,23 @@ object Tests extends Suite(m"Ultimatum Tests"):
         field.value
       . assert(_ == t"hi")
 
+      // The demo's compose box is multiline; the Up/Down arrows must move the
+      // cursor between lines (in single-line mode they are inert).
+      test(m"a multiline editor field moves its cursor up a line on Up"):
+        val field = EditorField(LineEditor(t"ab\ncd", mode = LineEditor.Mode.Multiline(_ => false)))
+        field.handle(Keypress.Up)
+        field.handle(Keypress.CharKey('X'))
+        field.value
+      . assert(_ == t"abX\ncd")
+
+      test(m"a multiline editor field moves its cursor down a line on Down"):
+        val field = EditorField(LineEditor(t"ab\ncd", 0,
+            mode = LineEditor.Mode.Multiline(_ => false)))
+        field.handle(Keypress.Down)
+        field.handle(Keypress.CharKey('X'))
+        field.value
+      . assert(_ == t"ab\nXcd")
+
       test(m"an editor field's intrinsic height grows when its text wraps"):
         EditorField(LineEditor(t"aaaaa")).measure(3)
       . assert(_ == (0, 2))
@@ -281,58 +298,77 @@ object Tests extends Suite(m"Ultimatum Tests"):
         val bytes = ji.ByteArrayOutputStream()
         (bytes, Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic))
 
-      test(m"a first inline render draws each row with CR/LF and parks the caret"):
+      // The block (2 rows) is docked to the bottom of the 4-row terminal: it scrolls
+      // 2 rows in (`\n\n`) to reserve space, then draws each row at an absolute screen
+      // position (rows 3 and 4) and parks the caret absolutely.
+      test(m"a first inline render docks the block to the bottom rows"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 24)
+        val root = InlineRoot(3, 4)
         root.reframe(3, 2)
         root.move(Prim, Prim)
         root.put(t"hi")
         root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\r\e[2Khi \r\n\e[2K   \r\e[1A\e[1G\e[?25h")
+      . assert(_ == t"\e[?25l\e[9999B\r\n\n\e[3;1H\e[2Khi \r\n\e[2K   \r\e[3;1H\e[?25h")
 
-      test(m"a growing block scrolls a new row in with LF"):
+      test(m"a growing block scrolls one more row into the dock"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 24)
+        val root = InlineRoot(3, 4)
         root.reframe(3, 1); root.move(Prim, Prim); root.put(t"a"); root.flush()
         bytes.reset()
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\r\e[2Kab \r\n\e[2Kcd \r\e[1A\e[1G\e[?25h")
+      . assert(_ == t"\e[?25l\e[9999B\r\n\e[3;1H\e[2Kab \r\n\e[2Kcd \r\e[3;1H\e[?25h")
 
-      test(m"a shrinking block clears the rows it no longer uses"):
+      // The block bottom-docks: shrinking moves it down (row 4) and clears the row it
+      // vacated above (row 3).
+      test(m"a shrinking block clears the row it vacated above"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 24)
+        val root = InlineRoot(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.reframe(3, 1); root.move(Prim, Prim); root.put(t"ef"); root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\r\e[2Kef \r\n\e[2K\e[1A\e[1G\e[?25h")
+      . assert(_ == t"\e[?25l\e[4;1H\e[2Kef \r\e[3;1H\e[2K\e[4;1H\e[?25h")
 
-      test(m"the caret is parked at its block-local position"):
+      test(m"the caret is placed at its absolute screen cell"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 24)
+        val root = InlineRoot(3, 4)
         root.reframe(3, 2)
         root.move(Prim, Prim)
         root.put(t"ab\ncd")
         root.showCaret(Sec, Sec)
         root.flush()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[?25l\r\e[2Kab \r\n\e[2Kcd \r\e[2G\e[?25h")
+      . assert(_ == t"\e[?25l\e[9999B\r\n\n\e[3;1H\e[2Kab \r\n\e[2Kcd \r\e[4;2H\e[?25h")
 
       test(m"finish drops the cursor onto a fresh line below the block"):
         val (bytes, stdio) = capturing()
         given Stdio = stdio
-        val root = InlineRoot(3, 24)
+        val root = InlineRoot(3, 4)
         root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
         bytes.reset()
         root.finish()
         String(bytes.toByteArray.nn, "UTF-8").tt
-      . assert(_ == t"\e[1B\r\n\e[?25h")
+      . assert(_ == t"\e[4;1H\r\n\e[?25h")
+
+      // The first resize switches to top-anchoring: the present clears the whole
+      // screen (`\e[1;1H\e[0J`) and repaints the block pinned to rows 1..h, so a taller
+      // terminal can't strand a ghost above it.
+      test(m"the first resize top-anchors the block, clearing the screen"):
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = InlineRoot(3, 4)
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        bytes.reset()
+        root.invalidate()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[1;1H\e[0J\e[1;1H\e[2Kab \r\n\e[2Kcd \r\e[1;1H\e[?25h")
 
     suite(m"Dynamic panes"):
       def cell(): Pane = panel()(())
@@ -441,6 +477,39 @@ object Tests extends Suite(m"Ultimatum Tests"):
         Form(root, Mode.Fullscreen, pane).run(List(Keypress.Tab, Keypress.Escape).iterator)
         root.render
       . assert(_ == t" · alpha    \n   beta     \n            ")
+
+    suite(m"Borders"):
+      def render(width: Int, height: Int)(pane: Pane): Text =
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        val root = FlowExtent(TerminalCanvas(width, height), Rect(0, 0, width, height))
+        paint(root, pane)
+        root.render
+
+      test(m"a full border frames the content with corners and rules"):
+        render(4, 3)(border()(panel()(Out.print(t"hi"))))
+      . assert(_ == t"┌──┐\n│hi│\n└──┘")
+
+      test(m"the border style selects the glyphs (rounded corners)"):
+        render(3, 3)(border(BorderStyle.rounded)(panel()(Out.print(t"x"))))
+      . assert(_ == t"╭─╮\n│x│\n╰─╯")
+
+      test(m"a rule re-fills to the content's width"):
+        render(6, 3)(border()(panel()(Out.print(t"wide"))))
+      . assert(_ == t"┌────┐\n│wide│\n└────┘")
+
+      test(m"a top-only border is a single rule with no corners"):
+        render(2, 2)(border(top = true, right = false, bottom = false, left = false)
+            (panel()(Out.print(t"ab"))))
+      . assert(_ == t"──\nab")
+
+      test(m"left-and-right-only borders omit every corner"):
+        render(4, 1)(border(top = false, bottom = false)(panel()(Out.print(t"ab"))))
+      . assert(_ == t"│ab│")
+
+      test(m"a full border adds one cell on every side to the minimum size"):
+        val bordered = border()(panel(minWidth = 3, minHeight = 2)(())).frame
+        (bordered.measure(Axis.File).min, bordered.measure(Axis.Rank).min)
+      . assert(_ == (5, 4))
 
 // A test-only root `Canvas` that paints into a fixed in-memory grid but reports a
 // settable size, so a layout can be re-tiled to a smaller `width`/`height` and

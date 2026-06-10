@@ -44,12 +44,24 @@ import vacuous.*
 // exits, and other events fold into the focused widget. Fullscreen repaints only
 // the changed cells; inline re-sizes the grid to the measured block height each
 // frame and re-presents the whole block at the cursor.
-class Form(root: Canvas, mode: Mode, pane: Pane, wake: () => Unit = () => ()):
+class Form
+  ( root:         Canvas,
+    mode:         Mode,
+    pane:         Pane,
+    wake:         () => Unit   = () => (),
+    throttle:     Long         = 0,
+    debounce:     Long         = 0,
+    scheduleWake: Long => Unit = _ => () ):
   private var leaves: IndexedSeq[Pane] = IndexedSeq()
   private var focuses: IndexedSeq[Focus] = IndexedSeq()
   private var focusLeaf: IndexedSeq[Int] = IndexedSeq()
   private var focused: Optional[Focus] = Unset
   private var rects: IndexedSeq[Rect] = IndexedSeq()
+  private var lastRedraw: Long = 0
+  private var lastWinch: Long = 0
+  private var deferred: Optional[Set[Int]] = Unset
+  private var wakePending: Boolean = false
+  private var resizePending: Boolean = false
 
   // Bind every container to the wake function so a mutation requests a repaint.
   private def bind(node: Pane): Unit = node match
@@ -161,8 +173,52 @@ class Form(root: Canvas, mode: Mode, pane: Pane, wake: () => Unit = () => ()):
     if focuses.nonEmpty then paint(focusLeaf(focusIndex))
     root.flush()
 
+  // Repaint immediately, folding in any coalesced or pending-resize work. Used for
+  // typing, focus changes and application redraws, which must stay responsive.
+  private def requestRefresh(changed: Set[Int]): Unit =
+    deferred = deferred.lay(changed)(_ ++ changed)
+    flushDeferred()
+
+  // Milliseconds until a coalesced resize may repaint: `debounce` ms after the last
+  // WINCH (so a drag must pause first) but never sooner than `throttle` ms after the
+  // last repaint. Zero means it may repaint now.
+  private def resizeDelay: Long =
+    ((lastWinch + debounce).max(lastRedraw + throttle) - System.currentTimeMillis).max(0)
+
+  // A resize coalesces until the drag pauses: each WINCH pushes the deadline back by
+  // `debounce` ms, and the single pending wake reschedules itself (in the `Redraw`
+  // handler) until the deadline is reached, so the block is repainted only after the
+  // drag is quiet — no mid-drag redraws to ghost or flicker. The (blocking) cursor
+  // query is deferred to that repaint, so a whole drag costs one query. Typing is
+  // unaffected and stays immediate.
+  private def requestResizeRefresh(): Unit =
+    deferred = deferred.or(Set())
+    lastWinch = System.currentTimeMillis
+
+    if resizeDelay <= 0 then flushDeferred()
+    else if !wakePending then
+      wakePending = true
+      scheduleWake(resizeDelay)
+
+  private def flushDeferred(): Unit = deferred.let: changed =>
+    deferred = Unset
+    wakePending = false
+    lastRedraw = System.currentTimeMillis
+
+    // A resize may have moved the old block; invalidate it (a width-only resize
+    // counts too) so the next present clears it. Done here, once, however many
+    // resizes were coalesced.
+    if resizePending then
+      resizePending = false
+
+      root match
+        case inline: InlineRoot => inline.invalidate()
+        case _                  => ()
+
+    refresh(changed)
+
   def run(events: Iterator[TerminalEvent]): Unit =
-    refresh(Set())
+    requestRefresh(Set())
     var running = true
 
     while running && events.hasNext do events.next() match
@@ -172,20 +228,27 @@ class Form(root: Canvas, mode: Mode, pane: Pane, wake: () => Unit = () => ()):
           // the panel gaining focus is repainted by `refresh` (focused last).
           val vacated = focusLeaf(focusIndex)
           focused = focuses((focusIndex + 1)%focuses.length)
-          refresh(Set(vacated))
+          requestRefresh(Set(vacated))
 
       case Keypress.Escape | Keypress.Ctrl('C' | 'D') =>
         running = false
 
       // A resize re-tiles to the new size; reset the rects so the whole layout is
-      // repainted against the live dimensions.
+      // repainted against the live dimensions, and mark the resize so the next
+      // repaint clears the moved block (with a cursor query). The repaint is debounced
+      // until the drag pauses; typing is unaffected.
       case _: TerminalInfo.WindowSize =>
         rects = IndexedSeq()
-        refresh(Set())
+        resizePending = true
+        requestResizeRefresh()
 
-      // An application redraw request (e.g. after a background layout change).
+      // An application redraw request (e.g. after a background layout change), or the
+      // scheduled wake for a debounced resize: repaint if the drag has gone quiet,
+      // else reschedule the wake for the rest of the debounce window.
       case TerminalInfo.Redraw =>
-        refresh(Set())
+        if !resizePending then requestRefresh(Set())
+        else if resizeDelay <= 0 then flushDeferred()
+        else scheduleWake(resizeDelay)
 
       // Other signals are never widget input.
       case _: Signal =>
@@ -194,7 +257,7 @@ class Form(root: Canvas, mode: Mode, pane: Pane, wake: () => Unit = () => ()):
       case event =>
         if focuses.nonEmpty then
           focuses(focusIndex).handle(event)
-          refresh(Set(focusLeaf(focusIndex)))
+          requestRefresh(Set(focusLeaf(focusIndex)))
 
     root match
       case inline: InlineRoot => inline.finish()

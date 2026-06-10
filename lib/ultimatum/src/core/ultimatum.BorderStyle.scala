@@ -32,67 +32,32 @@
                                                                                                   */
 package ultimatum
 
-import soundness.*
+import anticipation.*
+import gossamer.*
 
-import backstops.silent
-import codicils.cancel
-import executives.completions
-import interpreters.posix
-import strategies.throwUnsafely
-import supervisors.global
-import threading.platform
+object BorderStyle:
+  // Light single lines with square corners (the default).
+  val light: BorderStyle = BorderStyle(t"─", t"│", t"┌", t"┐", t"└", t"┘")
 
-// A medium-complexity fullscreen layout demonstrating the framework: a title bar
-// and a status bar each pinned to a single row; a fixed-width sidebar menu; and a
-// main column with a section heading, a line editor, and an activity panel. TAB
-// moves focus between the menu and the editor; Escape quits.
-//
-// Run with `mill ultimatum.demo.run` from a real terminal.
-@main
-def demo(): Unit = cli:
-  execute:
-    interactive: terminal ?=>
-      form(Mode.Inline)(demoLayout)
-      Exit.Ok
+  // Light single lines with rounded corners.
+  val rounded: BorderStyle = BorderStyle(t"─", t"│", t"╭", t"╮", t"╰", t"╯")
 
-// rank(title, file(sidebar, rank(heading, compose, activity)), status), with the
-// sidebar, compose box and activity panel each wrapped in a `border` and the
-// heading underlined by a bottom-only border:
-//
-//   ┌──────────────────────── title ────────────────────────┐
-//   │ ╭ sidebar ╮ │ heading                                  │
-//   │ │  (menu) │ │ ─────────                                │
-//   │ ╰─────────╯ │ ┏━ compose ━┓                            │
-//   │             │ ┗━━━━━━━━━━━┛                            │
-//   │             │ ┌─ activity ┐                            │
-//   │             │ └───────────┘                            │
-//   └─────────────────────── status ────────────────────────┘
-private def demoLayout: Pane =
-  // A rounded border around the menu; the menu itself is 20 wide, so the bordered
-  // sidebar is 22.
-  val sidebar = border(BorderStyle.rounded):
-    menu(List(t"Overview", t"Compose", t"Activity", t"Settings"), t"Overview",
-        minWidth = 20, maxWidth = 20)
+  // Heavy single lines with square corners.
+  val heavy: BorderStyle = BorderStyle(t"━", t"┃", t"┏", t"┓", t"┗", t"┛")
 
-  val activity = border():
-    panel(minHeight = 6):
-      Out.println(t"Recent activity")
-      Out.println(t"")
-      Out.println(t"  • Demo started")
-      Out.println(t"  • Four panes tiled")
-      Out.println(t"  • Tab moves focus, Esc quits")
+  // Double lines.
+  val double: BorderStyle = BorderStyle(t"═", t"║", t"╔", t"╗", t"╚", t"╝")
 
-  // A bottom-only border draws a single rule under the heading, a separator with
-  // no corners or sides.
-  val heading = border(top = false, left = false, right = false):
-    panel(minHeight = 1, maxHeight = 1)(Out.print(t"  Compose"))
+  // ASCII-only, for terminals without box-drawing glyphs.
+  val ascii: BorderStyle = BorderStyle(t"-", t"|", t"+", t"+", t"+", t"+")
 
-  val title = panel(minHeight = 1, maxHeight = 1)(Out.print(t"  ULTIMATUM · fullscreen demo"))
-  val status = panel(minHeight = 1, maxHeight = 1)(Out.print(t"  [Tab] focus    [Esc] quit"))
-
-  // A multiline compose box: Enter inserts a newline (it never submits, so the
-  // arrow keys can move the cursor up and down between lines).
-  val compose = border(BorderStyle.heavy):
-    editor(LineEditor(mode = LineEditor.Mode.Multiline(_ => false)))
-
-  rank(title, file(sidebar, rank(heading, compose, activity)), status)
+// The glyphs a `border` draws with: a horizontal rule, a vertical rule, and the
+// four corners. An edge fills its rectangle by repeating its rule, so a single
+// style serves any size; corners are drawn only where two requested sides meet.
+case class BorderStyle
+  ( horizontal:  Text,
+    vertical:    Text,
+    topLeft:     Text,
+    topRight:    Text,
+    bottomLeft:  Text,
+    bottomRight: Text )
