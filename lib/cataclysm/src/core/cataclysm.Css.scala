@@ -51,7 +51,7 @@ object Css:
     case At(name: Text, prelude: Text, body: Optional[List[Node]])
 
 
-  given streamable: (Monitor, Codicil, CssFormatter) => Css is Streamable by Text =
+  given streamable: (Monitor, Probate, CssFormatter) => Css is Streamable by Text =
     CssSerializer.emit(_).to(Stream)
 
   given showable: CssFormatter => Css is Showable = CssSerializer.render(_)

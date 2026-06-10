@@ -42,22 +42,30 @@ import vacuous.*
 import Control.*
 
 extension [bindable: Bindable](socket: bindable)
-  def listen[input](using Monitor, Codicil)[result](lambda: bindable.Input => bindable.Output)
+  def listen[input](using Monitor, Probate)[result](lambda: bindable.Input => bindable.Output)
   :   SocketService raises BindError =
 
     val binding = bindable.bind(socket)
 
-    val bindLoop = loop:
-      val connection = bindable.connect(binding)
-      bindable.transmit(binding, connection, lambda(connection))
+    // Each accepted connection is handled on its own daemon, so connections are served
+    // concurrently and a failure in one — a handler error or a dropped client — is
+    // isolated by the trap (it ends that connection's daemon and the loop keeps
+    // accepting) rather than tearing down the whole accept loop.
+    trap:
+      case _ => Remedy.Accept
 
-    val task = async(bindLoop.run())
+    . within:
+        val bindLoop = loop:
+          val connection = bindable.connect(binding)
+          daemon(bindable.transmit(binding, connection, lambda(connection)))
 
-    new SocketService:
-      def stop(): Unit =
-        bindLoop.stop()
-        bindable.stop(binding)
-        safely(task.await())
+        val task = async(bindLoop.run())
+
+        new SocketService:
+          def stop(): Unit =
+            bindLoop.stop()
+            bindable.stop(binding)
+            safely(task.await())
 
 
 extension [endpoint: Serviceable as serviceable](endpoint: endpoint)

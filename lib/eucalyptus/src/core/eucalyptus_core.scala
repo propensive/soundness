@@ -40,7 +40,7 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import gossamer.*
-import parasite.*, codicils.cancel
+import parasite.*, probates.cancel
 import prepositional.*
 import rudiments.*
 import spectacular.*

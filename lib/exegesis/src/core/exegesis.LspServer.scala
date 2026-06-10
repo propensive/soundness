@@ -183,7 +183,7 @@ trait LspServer() extends Lsp:
   // (both request responses, funnelled in via `put`, and server-initiated notifications such as
   // `publishDiagnostics`) and frames each message back onto standard output, so writes never
   // interleave.
-  def serve()(using Stdio, Monitor, Codicil): Unit =
+  def serve()(using Stdio, Monitor, Probate): Unit =
     import charEncoders.utf8
     import strategies.throwUnsafely
 

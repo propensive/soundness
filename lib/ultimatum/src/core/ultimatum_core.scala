@@ -152,7 +152,7 @@ def border
 // height; in `Inline` mode it renders a variable-height block at the cursor
 // without the alternate buffer, leaving scrollback intact.
 def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
-  ( using terminal: Terminal, monitor: Monitor, codicil: Codicil )
+  ( using terminal: Terminal, monitor: Monitor, probate: Probate )
 :   Unit =
 
   // A container mutation wakes the loop by putting a redraw event on the spool.

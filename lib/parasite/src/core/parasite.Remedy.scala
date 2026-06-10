@@ -32,8 +32,15 @@
                                                                                                   */
 package parasite
 
-import language.experimental.into
 import language.experimental.pureFunctions
 
-trait Codicil:
-  def cleanup(worker: Worker): Unit
+import fulminate.*
+
+// The disposition a trap chooses for an error that escaped a fire-and-forget worker (a `daemon`, or
+// a task abandoned by its `Probate`). `Accept` consumes it (handled as a side effect, e.g. logged)
+// and stops propagation; `Reject` passes the original error to the enclosing trap; `Escalate`
+// rejects but substitutes a different (pure, thread-safe) error to propagate in its place.
+enum Remedy:
+  case Accept
+  case Reject
+  case Escalate(error: Error)

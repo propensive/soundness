@@ -62,7 +62,7 @@ object Mcp:
   def send[interface <: McpServer](id: Text, server: interface, mcpInterface: Interface)
     ( dispatch: Json => Optional[Json] )
     ( using request: Http.Request )
-    ( using Monitor, Codicil, Online )
+    ( using Monitor, Probate, Online )
   :   Http.Response =
 
     import jsonPrinters.minimal

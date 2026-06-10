@@ -327,12 +327,12 @@ object Http2:
     def connect(): Duplex = connectable.connect(endpoint)
 
   // An `HttpClient` that speaks HTTP/2 (prior-knowledge h2c) to an `Http2.Endpoint`.
-  // It captures the ambient `Monitor`/`Codicil` from this given's context — the
+  // It captures the ambient `Monitor`/`Probate` from this given's context — the
   // `H2Connection`'s daemons need them — so it can only be summoned inside a
   // `supervise` scope. A fresh connection is opened per request for now; pooling
   // is a later refinement.
   object Client:
-    given http2: [endpoint] => (Monitor, Codicil, Tactic[Http2Error], Tactic[AsyncError])
+    given http2: [endpoint] => (Monitor, Probate, Tactic[Http2Error], Tactic[AsyncError])
     =>  HttpClient onto Endpoint[endpoint] =
 
       new HttpClient:

@@ -46,7 +46,7 @@ given stdio: (terminal: Terminal) => Stdio = terminal.stdio
 def interactive[result](block: (terminal: Terminal) ?=> result)
   ( using console:     Console,
           monitor:     Monitor,
-          codicil:     Codicil,
+          probate:     Probate,
           environment: Environment )
   ( using features: Every[TerminalFeature] )
 :   result raises TerminalError =
@@ -68,7 +68,7 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
     finally
       terminal.stdio.in.close()
       terminal.events.stop()
-      safely(terminal.pumpInput.await())
+      terminal.pumpInput.attend()
 
   // Apply every in-scope `TerminalFeature` around the session, nested so that each
   // turns off (in its own try/finally) in the reverse of the order it turned on.
@@ -90,7 +90,7 @@ package keyboards:
 
     def process(stream: Stream[Char]): Stream[Int] = stream.map(_.toInt)
 
-  given standard: (monitor: Monitor, codicil: Codicil) => Keyboard.Standard = Keyboard.Standard()
+  given standard: (monitor: Monitor, probate: Probate) => Keyboard.Standard = Keyboard.Standard()
 
 // The standard terminal features, each a turn-on/turn-off escape-sequence pair.
 // Import the ones a session should enable (or `terminalFeatures.*` for all);

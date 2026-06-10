@@ -50,7 +50,7 @@ import symbolism.*
 import vacuous.*
 
 import abstractables.instantIsAbstractable
-import codicils.await
+import probates.await
 
 inline def more[value](using value: value aka "more"): value = value()
 

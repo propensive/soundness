@@ -122,7 +122,7 @@ object Keyboard:
     case '6'       => Keypress.PageDown
     case _         => Keypress.Escape
 
-  class Standard()(using Monitor, Codicil) extends Keyboard:
+  class Standard()(using Monitor, Probate) extends Keyboard:
     type Keypress = profanity.Keypress | TerminalInfo
 
     def process(stream: Stream[Char]): Stream[Keypress] = stream match

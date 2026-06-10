@@ -48,11 +48,11 @@ import vacuous.*
 
 object GrpcChannel:
   // Open a channel to a cleartext-h2c endpoint, completing the HTTP/2 handshake. The
-  // connection's read/write daemons capture the ambient `Monitor`/`Codicil`, so this
+  // connection's read/write daemons capture the ambient `Monitor`/`Probate`, so this
   // must be called inside a `supervise` scope.
   def apply[endpoint]
     ( endpoint: Http2.Endpoint[endpoint], defaults: Grpc.Metadata = Grpc.Metadata() )
-    ( using Monitor, Codicil )
+    ( using Monitor, Probate )
   :   GrpcChannel raises AsyncError =
 
     val connection = H2Connection(endpoint.connect())

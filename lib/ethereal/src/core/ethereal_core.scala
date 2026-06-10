@@ -278,7 +278,7 @@ def cli[bus <: Matchable](using executive: Executive)
     pid.let(terminatePid.fulfill(_)).or(termination)
 
 
-  def makeClient(channel: jnc.SocketChannel)(using Monitor, Stdio, Codicil)
+  def makeClient(channel: jnc.SocketChannel)(using Monitor, Stdio, Probate)
   :   Unit logs DaemonLogEvent raises StreamError raises CharDecodeError raises NumberError =
 
     async:
@@ -476,7 +476,7 @@ def cli[bus <: Matchable](using executive: Executive)
     import environments.java
     import termcaps.environment
     import stdios.virtualMachine
-    import codicils.await
+    import probates.await
 
     Os.intercept[Shutdown]:
       safely(socketFile.wipe())

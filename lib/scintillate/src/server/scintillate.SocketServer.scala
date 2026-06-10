@@ -218,20 +218,20 @@ extends RequestServable:
 
             drained(body)
 
-    try
-      whereas:
-        case StreamError(length) =>
-          Log.warn(HttpServerEvent.BrokenStream(length))
+    // A stream error tearing down the connection is logged and ends it; any other
+    // unexpected failure is left to propagate out of the per-connection daemon, where
+    // the `trap` installed in `handle` logs it and isolates it to this connection.
+    whereas:
+      case StreamError(length) =>
+        Log.warn(HttpServerEvent.BrokenStream(length))
 
-      . recover:
-          val cursor = Cursor[Data](Streamable.inputStream.stream(in).filter(_.nonEmpty).iterator)
+    . recover:
+        val cursor = Cursor[Data](Streamable.inputStream.stream(in).filter(_.nonEmpty).iterator)
 
-          var continue = true
-          while continue && !cursor.finished do continue = serveRequest(cursor)
+        var continue = true
+        while continue && !cursor.finished do continue = serveRequest(cursor)
 
-    catch case NonFatal(exception) => exception.printStackTrace()
-
-  def handle(handler: HttpConnection ?=> Http.Response)(using Monitor, Codicil)
+  def handle(handler: HttpConnection ?=> Http.Response)(using Monitor, Probate)
   :   Service logs HttpServerEvent raises ServerError =
 
     val idleTimeout: Int = 30000
@@ -246,18 +246,29 @@ extends RequestServable:
 
     val serverSocket = startServer()
 
-    val acceptLoop = loop:
-      safely(serverSocket.accept().nn).let: socket =>
-        daemon:
-          try
-            socket.setSoTimeout(idleTimeout)
-            serveConnection(handler)(socket.getInputStream.nn, socket.getOutputStream.nn)
-          finally safely(socket.close())
+    // A failure in a per-connection daemon (anything not already turned into an HTTP
+    // response) is logged and accepted, isolating it to that connection: the server
+    // keeps accepting, and the error neither escalates nor is dumped to stderr.
+    trap:
+      case error => Log.warn(HttpServerEvent.ConnectionFailed(error)); Remedy.Accept
 
-    val acceptTask = daemon(acceptLoop.run())
-    val cancel: Promise[Unit] = Promise[Unit]()
-    val stopTask = async(cancel.attend() yet { acceptLoop.stop(); safely(serverSocket.close()) })
+    . within:
+        val acceptLoop = loop:
+          safely(serverSocket.accept().nn).let: socket =>
+            daemon:
+              try
+                socket.setSoTimeout(idleTimeout)
+                serveConnection(handler)(socket.getInputStream.nn, socket.getOutputStream.nn)
+              finally safely(socket.close())
 
-    Service: () =>
-      safely(cancel.fulfill(()))
+        val acceptTask = daemon(acceptLoop.run())
+        val cancel: Promise[Unit] = Promise[Unit]()
+
+        val stopTask = async:
+          cancel.attend()
+          acceptLoop.stop()
+          safely(serverSocket.close())
+
+        Service: () =>
+          safely(cancel.fulfill(()))
 

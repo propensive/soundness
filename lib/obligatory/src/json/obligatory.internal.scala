@@ -218,8 +218,8 @@ object internal:
           val methodName = Expr(method.name.tt)
 
           Expr.summon[Monitor] match
-            case Some(monitor) => Expr.summon[Codicil] match
-              case Some(codicil) => Expr.summon[Online] match
+            case Some(monitor) => Expr.summon[Probate] match
+              case Some(probate) => Expr.summon[Online] match
                 case Some(online) =>
                   if notification then Some:
                     ' {
@@ -227,7 +227,7 @@ object internal:
 
                         safely[AsyncError]:
                           JsonRpc.notification($url, $methodName, json)
-                            ( using $monitor, $codicil, $online )
+                            ( using $monitor, $probate, $online )
 
                           . await()
 
@@ -244,7 +244,7 @@ object internal:
 
                               unsafely:
                                 JsonRpc.request($url, $methodName, json)
-                                  ( using $monitor, $codicil, $online )
+                                  ( using $monitor, $probate, $online )
 
                                 . await()
                                 . decode[result](using $decoder)
@@ -261,7 +261,7 @@ object internal:
 
                 case _ => halt(593, m"a contextual `Online` instance is required")
 
-              case _ => halt(169, m"a contextual `Codicil` instance is required")
+              case _ => halt(169, m"a contextual `Probate` instance is required")
 
             case _ => halt(323, m"a contextual `Monitor` instance is required")
 

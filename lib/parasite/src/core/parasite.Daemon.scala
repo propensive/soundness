@@ -41,12 +41,12 @@ import vacuous.*
 
 object Daemon:
   def apply(evaluate: Worker => Unit)
-    ( using monitor: Monitor, codepoint: Codepoint, codicil: Codicil )
+    ( using monitor: Monitor, codepoint: Codepoint, probate: Probate )
   :   Daemon =
 
     inline def evaluate0: Worker => Unit = evaluate
 
-    new Worker(codepoint, monitor, codicil) with Daemon:
+    new Worker(codepoint, monitor, probate) with Daemon:
       type Result = Unit
       def name: Optional[Text] = Unset
       def daemon: Boolean = true

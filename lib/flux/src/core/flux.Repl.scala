@@ -250,7 +250,7 @@ class Repl[version <: Scalac.Versions]
   // runs its body). `rendered` is evaluated after a successful run to supply the
   // `Outcome.Ran` value — `Unset` for statements, or the inspected result for an
   // expression line.
-  private def compile(code: Text)(rendered: => Optional[Text])(using Monitor, System, Codicil)
+  private def compile(code: Text)(rendered: => Optional[Text])(using Monitor, System, Probate)
   :   Outcome logs CompileEvent raises CompilerError raises AsyncError =
 
     val name:    Text = layout.objectName(index)
@@ -319,7 +319,7 @@ class Repl[version <: Scalac.Versions]
 
     (prelude.imports.map(_.tt) ::: lines).join(t"\n")
 
-  private def evaluate(line: Text)(using Monitor, System, Codicil)
+  private def evaluate(line: Text)(using Monitor, System, Probate)
   :   Outcome logs CompileEvent raises CompilerError raises AsyncError =
 
     val name: Text = t"res${result.toString.tt}"
@@ -346,7 +346,7 @@ class Repl[version <: Scalac.Versions]
   // original types rather than re-rendering them as source. Later lines see its
   // members via the history import. Imports create no members, so they are
   // re-injected into every line instead.
-  private def ensureSeeded()(using Monitor, System, Codicil)
+  private def ensureSeeded()(using Monitor, System, Probate)
   :   Optional[Outcome] logs CompileEvent raises CompilerError raises AsyncError =
 
     if seeded || prelude.seedTasty.isEmpty then Unset
@@ -364,7 +364,7 @@ class Repl[version <: Scalac.Versions]
       else
         Outcome.Rejected(errors.map(Notice(Importance.Error, t"<seed>", _, Unset)))
 
-  def interpret(line: Text)(using Monitor, System, Codicil)
+  def interpret(line: Text)(using Monitor, System, Probate)
   :   Outcome logs CompileEvent raises CompilerError raises AsyncError =
 
     def lineOutcome: Outcome = evaluate(line)
@@ -378,7 +378,7 @@ class Repl[version <: Scalac.Versions]
   // `Reply` values, one per line, each terminated by a blank line (compact JSON
   // has no embedded newline, so the delimiter is unambiguous). Returns a handle
   // whose `stop()` shuts the server down.
-  def serve(port: Port over Tcp)(using Monitor, System, Codicil)
+  def serve(port: Port over Tcp)(using Monitor, System, Probate)
   :   SocketService logs CompileEvent raises BindError raises StreamError =
 
     port.listen: socket =>
@@ -389,7 +389,7 @@ class Repl[version <: Scalac.Versions]
   // port is given). Coaxial's domain-socket `Connection` does not expose its
   // streams for the bidirectional, asynchronously-written protocol this server
   // needs, so the accept loop runs directly over an NIO channel.
-  def serve(socketPath: Text)(using Monitor, System, Codicil): SocketService logs CompileEvent =
+  def serve(socketPath: Text)(using Monitor, System, Probate): SocketService logs CompileEvent =
     val address: jn.UnixDomainSocketAddress = jn.UnixDomainSocketAddress.of(socketPath.s).nn
 
     val channel: jnc.ServerSocketChannel =
@@ -417,7 +417,7 @@ class Repl[version <: Scalac.Versions]
         safely(task.await())
 
   private def converse(input: ji.InputStream, output: ji.OutputStream)
-    ( using Monitor, System, Codicil )
+    ( using Monitor, System, Probate )
   :   Unit logs CompileEvent =
 
     // The TCP caller's `listen` owns the accepted socket — it writes this lambda's
@@ -471,7 +471,7 @@ class Repl[version <: Scalac.Versions]
   // for live editing); a `submit` compiles and runs; a `quit` signals the server to
   // shut down and is not answered. A malformed request becomes a `Failed` reply
   // rather than a dropped connection. `Unset` means no reply is sent.
-  private def respond(message: Text)(using Monitor, System, Codicil)
+  private def respond(message: Text)(using Monitor, System, Probate)
   :   Optional[Text] logs CompileEvent =
 
     val request: Optional[Repl.Request] =
@@ -488,7 +488,7 @@ class Repl[version <: Scalac.Versions]
 
   // Computes tab completions at `offset` in `code` and replies (with `id`). Holds
   // `mutex` like `submit`, since the shared compiler is not reentrant.
-  private def complete(id: Int, code: Text, offset: Int)(using Monitor, System, Codicil)
+  private def complete(id: Int, code: Text, offset: Int)(using Monitor, System, Probate)
   :   Text logs CompileEvent =
 
     given LocalClasspath = classpath
@@ -500,7 +500,7 @@ class Repl[version <: Scalac.Versions]
   // Typecheck-highlights, compiles, and runs `code`, replying (with `id`) with the
   // highlighting, the result value, and any diagnostics. The whole body holds
   // `mutex`, so concurrent submits serialize and never drive the compiler at once.
-  private def submit(id: Int, code: Text)(using Monitor, System, Codicil): Text logs CompileEvent =
+  private def submit(id: Int, code: Text)(using Monitor, System, Probate): Text logs CompileEvent =
     given LocalClasspath = classpath
 
     val reply: Repl.Reply = mutex:

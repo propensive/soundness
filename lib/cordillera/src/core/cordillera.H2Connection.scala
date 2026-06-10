@@ -94,21 +94,13 @@ class H2Stream(val id: Int):
 // `Spool[Frame]` to the socket, serialising all writes (so no lock is needed); a
 // reader daemon parses inbound frames and dispatches them by stream id. Must be
 // created within a `supervise`-provided `Monitor`.
-class H2Connection(duplex: Duplex)(using Monitor, Codicil):
+class H2Connection(duplex: Duplex)(using Monitor, Probate):
   import H2Connection.*
 
   private val streams: scc.TrieMap[Int, H2Stream] = scc.TrieMap()
   private val nextId: juca.AtomicInteger = juca.AtomicInteger(1)
   private val outbound: Spool[Frame] = Spool()
   private val started: Promise[Unit] = Promise()
-
-  // All outbound frames go through this one spool/daemon, so writes are serialised
-  // and ordered without an explicit lock.
-  private val writer: Daemon = daemon:
-    duplex.send(Stream(connectionPreface))
-
-    outbound.stream.each: frame =>
-      duplex.send(Stream(frame.serialize))
 
   private def send(frame: Frame): Unit = outbound.put(frame)
 
@@ -164,18 +156,42 @@ class H2Connection(duplex: Duplex)(using Monitor, Codicil):
       case Frame.WindowUpdate(_, _) | Frame.Continuation(_, _, _) =>
         true
 
-  // The reader loop: decode frames and dispatch them until the socket ends, a
-  // GOAWAY arrives, or a protocol error occurs. Errors are contained here so the
-  // daemon exits cleanly rather than escaping.
-  private val reader: Daemon = daemon:
-    safely:
-      val frameReader = FrameReader(duplex.stream.iterator)
-      val decoder = Hpack()
-      var continue = true
+  // Tear the connection down after an unrecoverable reader/writer failure: unblock a
+  // pending handshake, end every open stream so awaiters of its headers/body/trailers
+  // don't hang on a connection that can no longer make progress, and stop the outbound
+  // spool so the writer exits.
+  private def tearDown(): Unit =
+    started.cancel()
+    streams.values.foreach(_.end())
+    outbound.stop()
 
-      while continue do frameReader.next() match
-        case Unset         => continue = false
-        case frame: Frame  => continue = dispatch(frame, decoder)
+  // The writer drains the outbound spool to the socket, serialising all writes (so no
+  // lock is needed); the reader decodes inbound frames and dispatches them until the
+  // socket ends, a GOAWAY arrives, or a protocol error occurs. Both run under a `trap`
+  // that tears the connection down on failure, so a write, parse or HPACK error is
+  // isolated to this connection — it neither escalates nor leaves a request awaiter
+  // hanging — rather than being swallowed or escaping the daemon.
+  private val (writer, reader): (Daemon, Daemon) =
+    trap:
+      case _ => tearDown(); Remedy.Accept
+
+    . within:
+        val writer = daemon:
+          duplex.send(Stream(connectionPreface))
+
+          outbound.stream.each: frame =>
+            duplex.send(Stream(frame.serialize))
+
+        val reader = daemon:
+          val frameReader = FrameReader(duplex.stream.iterator)
+          val decoder = Hpack()
+          var continue = true
+
+          while continue do frameReader.next() match
+            case Unset        => continue = false
+            case frame: Frame => continue = dispatch(frame, decoder)
+
+        (writer, reader)
 
   // Perform the connection handshake: emit our SETTINGS and await the peer's.
   def start(): Unit raises AsyncError =

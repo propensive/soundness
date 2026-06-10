@@ -67,7 +67,7 @@ trait McpServer():
   private given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
 
 
-  def serve(using this.type is McpSpecification, Monitor, Codicil, Online, Http.Request)
+  def serve(using this.type is McpSpecification, Monitor, Probate, Online, Http.Request)
   :   Http.Response =
 
     whereas:

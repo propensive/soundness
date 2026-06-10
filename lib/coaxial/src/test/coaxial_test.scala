@@ -43,7 +43,7 @@ import charDecoders.utf8
 import textSanitizers.skip
 import errorDiagnostics.stackTraces
 import threading.platform
-import codicils.await
+import probates.await
 
 import Control.*
 

@@ -51,7 +51,7 @@ import vacuous.*
 
 package httpServers:
   given stdlib: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable )
+  =>  ( Tactic[ServerError], Monitor, Probate, HttpServerEvent is Loggable )
   =>  WebserverErrorPage
   =>  Http is Protocolic:
 
@@ -66,7 +66,7 @@ package httpServers:
 
 
   given stdlibPublic: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable )
+  =>  ( Tactic[ServerError], Monitor, Probate, HttpServerEvent is Loggable )
   =>  WebserverErrorPage
   =>  Http is Protocolic:
 
@@ -81,7 +81,7 @@ package httpServers:
 
 
   given native: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable )
+  =>  ( Tactic[ServerError], Monitor, Probate, HttpServerEvent is Loggable )
   =>  WebserverErrorPage
   =>  Http is Protocolic:
 
@@ -96,7 +96,7 @@ package httpServers:
 
 
   given nativePublic: [port <: (80 | 443 | 8080 | 8000)]
-  =>  ( Tactic[ServerError], Monitor, Codicil, HttpServerEvent is Loggable )
+  =>  ( Tactic[ServerError], Monitor, Probate, HttpServerEvent is Loggable )
   =>  WebserverErrorPage
   =>  Http is Protocolic:
 

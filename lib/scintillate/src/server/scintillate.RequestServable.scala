@@ -39,5 +39,5 @@ import telekinesis.*
 import urticose.*
 
 trait RequestServable:
-  def handle(handle: HttpConnection ?=> Http.Response)(using Monitor, Codicil)
+  def handle(handle: HttpConnection ?=> Http.Response)(using Monitor, Probate)
   :   Service logs HttpServerEvent raises ServerError

@@ -47,7 +47,7 @@ import urticose.*
 
 case class HttpServer(port: Int, local: Boolean = true)(using errorPage: WebserverErrorPage)
 extends RequestServable:
-  def handle(handler: HttpConnection ?=> Http.Response)(using Monitor, Codicil)
+  def handle(handler: HttpConnection ?=> Http.Response)(using Monitor, Probate)
   :   Service logs HttpServerEvent raises ServerError =
 
     def handle(exchange: csnh.HttpExchange | Null): Unit =
@@ -57,7 +57,7 @@ extends RequestServable:
             Log.warn(HttpServerEvent.BrokenStream(length))
 
           case error @ HostnameError(_, _) =>
-            error.printStackTrace()
+            Log.warn(HttpServerEvent.ConnectionFailed(error))
 
             try
               exchange.nn.sendResponseHeaders(400, -1)
@@ -72,7 +72,8 @@ extends RequestServable:
                 errorPage.handle(throwable, connection)
 
 
-      catch case NonFatal(exception) => exception.printStackTrace()
+      catch case NonFatal(exception) =>
+        Log.warn(HttpServerEvent.ConnectionFailed(fulminate.Error(exception)))
 
     def startServer(): com.sun.net.httpserver.HttpServer raises ServerError =
       try

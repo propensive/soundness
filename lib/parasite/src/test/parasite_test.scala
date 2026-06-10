@@ -42,7 +42,10 @@ import strategies.throwUnsafely
 import errorDiagnostics.empty
 
 import threading.virtual
-import codicils.cancel
+import probates.cancel
+
+case class FooError(value: Int)(using Diagnostics) extends Error(m"foo failed with $value")
+case class BarError(label: Text)(using Diagnostics) extends Error(m"bar failed: $label")
 
 object Tests extends Suite(m"Parasite tests"):
 
@@ -350,7 +353,7 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == 11)
 
         test(m"Failure in task propagates"):
-          val task = async[Int]:
+          val task = async[Int, Nothing]:
             throw new RuntimeException("boom")
           val result = try task.await() catch case _: RuntimeException => -1
           result
@@ -414,9 +417,9 @@ object Tests extends Suite(m"Parasite tests"):
           safely(task.await())
         . assert(_ == Unset)
 
-      suite(m"Codicils"):
-        test(m"With await codicil parent waits for incomplete child"):
-          import codicils.await
+      suite(m"Probates"):
+        test(m"With await probate parent waits for incomplete child"):
+          import probates.await
           val parentReady = Promise[Unit]()
           val childDone = juca.AtomicBoolean(false)
           val task = async:
@@ -429,8 +432,8 @@ object Tests extends Suite(m"Parasite tests"):
           childDone.get()
         . assert(_ == true)
 
-        test(m"With cancel codicil parent cancels incomplete child"):
-          import codicils.cancel
+        test(m"With cancel probate parent cancels incomplete child"):
+          import probates.cancel
           val parentReady = Promise[Unit]()
           val childGate = Promise[Unit]()
           val childCompleted = juca.AtomicBoolean(false)
@@ -444,8 +447,8 @@ object Tests extends Suite(m"Parasite tests"):
           childCompleted.get()
         . assert(_ == false)
 
-        test(m"With fail codicil incomplete child raises"):
-          import codicils.fail
+        test(m"With fail probate incomplete child raises"):
+          import probates.fail
           val task = async:
             val child = async:
               snooze(10.0*Second)
@@ -453,8 +456,8 @@ object Tests extends Suite(m"Parasite tests"):
           capture(task.await())
         . assert(_ == AsyncError(AsyncError.Reason.Incomplete))
 
-        test(m"Codicils only affect non-daemon children for daemons"):
-          import codicils.cancel
+        test(m"Probates only affect non-daemon children for daemons"):
+          import probates.cancel
           val daemonRunning = Promise[Unit]()
           val daemonCompleted = juca.AtomicBoolean(false)
           val task = async:
@@ -719,8 +722,8 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ <= 20)
 
       suite(m"Race conditions in delegate"):
-        test(m"Codicil await with multiple children"):
-          import codicils.await
+        test(m"Probate await with multiple children"):
+          import probates.await
           val numChildren = 30
           val completed = juca.AtomicInteger(0)
           val task = async:
@@ -733,8 +736,8 @@ object Tests extends Suite(m"Parasite tests"):
           completed.get()
         . assert(_ == 30)
 
-        test(m"Codicil cancel cancels all incomplete children"):
-          import codicils.cancel
+        test(m"Probate cancel cancels all incomplete children"):
+          import probates.cancel
           val numChildren = 30
           val gate = Promise[Unit]()
           val completed = juca.AtomicInteger(0)
@@ -864,8 +867,8 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == AsyncError(AsyncError.Reason.Cancelled))
 
       suite(m"Children of children"):
-        test(m"Nested tasks with await codicil all complete"):
-          import codicils.await
+        test(m"Nested tasks with await probate all complete"):
+          import probates.await
           val counter = juca.AtomicInteger(0)
           val task = async:
             val a = async:
@@ -883,7 +886,7 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == 3)
 
         test(m"Cancelling outer cancels nested children"):
-          import codicils.cancel
+          import probates.cancel
           val gate = Promise[Unit]()
           val started = juc.CountDownLatch(3)
           val completed = juca.AtomicInteger(0)
@@ -1014,7 +1017,7 @@ object Tests extends Suite(m"Parasite tests"):
 
         test(m"Spawning tasks under load - no lost promises"):
           val n = 200
-          import codicils.await
+          import probates.await
           val sums = juca.AtomicInteger(0)
           val outer = async:
             (1 to n).foreach: i =>
@@ -1035,7 +1038,7 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == 42)
 
         test(m"Multiple daemons all started and cancelled"):
-          import codicils.cancel
+          import probates.cancel
           val started = juc.CountDownLatch(10)
           val gate = Promise[Unit]()
           val finished = juca.AtomicInteger(0)
@@ -1214,8 +1217,8 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == 1)
 
       suite(m"Bidirectional cancellation"):
-        test(m"Cancel propagates from parent to child via codicil"):
-          import codicils.cancel
+        test(m"Cancel propagates from parent to child via probate"):
+          import probates.cancel
           val childGate = Promise[Unit]()
           val childResult = juca.AtomicInteger(0)
           val task = async:
@@ -1223,13 +1226,13 @@ object Tests extends Suite(m"Parasite tests"):
               childGate.await()
               childResult.set(42)
             ()  // parent's body completes immediately
-          // child is incomplete; codicil.cancel cancels it
+          // child is incomplete; probate.cancel cancels it
           task.await()
           childResult.get()
         . assert(_ == 0)
 
-        test(m"Multiple sibling tasks all cancelled by codicil"):
-          import codicils.cancel
+        test(m"Multiple sibling tasks all cancelled by probate"):
+          import probates.cancel
           val gate = Promise[Unit]()
           val started = juc.CountDownLatch(5)
           val completed = juca.AtomicInteger(0)
@@ -1308,9 +1311,9 @@ object Tests extends Suite(m"Parasite tests"):
           allMonotonic
         . assert(_ == true)
 
-      suite(m"Panic codicil"):
-        test(m"Panic codicil with all children complete passes"):
-          import codicils.panic
+      suite(m"Panic probate"):
+        test(m"Panic probate with all children complete passes"):
+          import probates.panic
           val task = async:
             async(()).await()
           task.await()
@@ -1348,13 +1351,13 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == 10)
 
         test(m"Heavy parent-child cancellation cascade"):
-          import codicils.cancel
+          import probates.cancel
           val depth = 20
           val gate = Promise[Unit]()
           val completed = juca.AtomicInteger(0)
           val started = juc.CountDownLatch(1)
 
-          def make(d: Int)(using Monitor, Codicil): Task[Unit] = async:
+          def make(d: Int)(using Monitor, Probate): Task[Unit] = async:
             if d == 0 then
               started.countDown()
               gate.await()
@@ -1397,7 +1400,7 @@ object Tests extends Suite(m"Parasite tests"):
             2
           bad.cancel()
           val seq = Seq(good, bad).sequence
-          val result = capture(seq.await())
+          val result = capture[AsyncError](seq.await())
           result.reason
         . assert(_ == AsyncError.Reason.Cancelled)
 
@@ -1421,3 +1424,104 @@ object Tests extends Suite(m"Parasite tests"):
           (attempts.get(), elapsed >= 60L)
         . assert: (n, ok) =>
             n == 4 && ok
+
+      suite(m"Typed asynchronous errors"):
+        test(m"Awaiting a failed task delivers its body's typed error"):
+          capture[FooError](async(abort(FooError(7))).await()).value
+        . assert(_ == 7)
+
+        test(m"Awaiting a successful task delivers its value"):
+          async(2 + 3).await()
+        . assert(_ == 5)
+
+        test(m"A raised (non-aborting) error still fails the task"):
+          capture[FooError]:
+            async:
+              raise(FooError(4))
+              99
+            . await()
+          . value
+        . assert(_ == 4)
+
+        test(m"An error handled inside the task does not surface at await"):
+          async:
+            safely(abort(FooError(1))).or(99)
+          . await()
+        . assert(_ == 99)
+
+        test(m"Cancellation surfaces as AsyncError, not the body's error type"):
+          val task = async:
+            snooze(1.0*Second)
+            abort(FooError(1))
+          task.cancel()
+          capture[AsyncError](task.await()).reason
+        . assert(_ == AsyncError.Reason.Cancelled)
+
+        test(m"A task that raises one of two error types delivers the one that occurred"):
+          def make(flag: Boolean) = async:
+            if flag then abort(FooError(1)) else abort(BarError(t"b"))
+          capture[FooError](make(true).await()).value
+        . assert(_ == 1)
+
+      suite(m"Asynchronous error traps"):
+        test(m"A trap accepts a daemon's escaped error"):
+          val caught = juca.AtomicInteger(0)
+
+          trap:
+            case FooError(n) => caught.set(n); Remedy.Accept
+          . within:
+              daemon(abort(FooError(5))).attend()
+
+          caught.get()
+        . assert(_ == 5)
+
+        test(m"A successful daemon never invokes the trap"):
+          val trapped = juca.AtomicBoolean(false)
+          val ran = juca.AtomicBoolean(false)
+
+          trap:
+            case FooError(_) => trapped.set(true); Remedy.Accept
+          . within:
+              daemon(ran.set(true)).attend()
+
+          (ran.get(), trapped.get())
+        . assert(_ == (true, false))
+
+        test(m"An error unmatched by an inner trap bubbles to the outer trap"):
+          val caught = juca.AtomicReference[Text](t"none")
+
+          trap:
+            case BarError(s) => caught.set(s); Remedy.Accept
+          . within:
+              trap:
+                case FooError(_) => caught.set(t"foo"); Remedy.Accept
+              . within:
+                  daemon(abort(BarError(t"outer"))).attend()
+
+          caught.get()
+        . assert(_ == t"outer")
+
+        test(m"Escalate substitutes a different error for the enclosing trap"):
+          val caught = juca.AtomicReference[Text](t"none")
+
+          trap:
+            case BarError(s) => caught.set(s); Remedy.Accept
+          . within:
+              trap:
+                case FooError(_) => Remedy.Escalate(BarError(t"swapped"))
+              . within:
+                  daemon(abort(FooError(9))).attend()
+
+          caught.get()
+        . assert(_ == t"swapped")
+
+        test(m"An unhandled daemon error escalates rather than vanishing silently"):
+          val signal = Promise[Int]()
+          val hook = Os.intercept[Fault]:
+            signal.offer(1)
+
+          daemon(abort(FooError(42)))
+          val delivered = safely(signal.await(2.0*Second)).or(0)
+          hook.cancel()
+          delivered
+        . assert(_ == 1)

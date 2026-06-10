@@ -157,7 +157,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
     suite(m"containerd over a gRPC loopback"):
       import threading.virtual
-      import codicils.cancel
+      import probates.cancel
 
       def pair(): (Duplex, Duplex) =
         val clientToServer = Spool[Data]()
@@ -173,7 +173,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       // A fake containerd: completes the HTTP/2 handshake, records the namespace header
       // from the request, and replies to the `Version` call with a framed response.
       def runServer(serverSide: Duplex, namespace: Promise[Text], body: Data)
-          ( using Monitor, Codicil )
+          ( using Monitor, Probate )
       :   Daemon =
 
         daemon:
