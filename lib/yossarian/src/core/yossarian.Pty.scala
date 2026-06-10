@@ -60,7 +60,7 @@ object Pty:
     case _ =>
       Stream()
 
-case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
+case class Pty(buffer: Screen[Style], state: PtyState, output: Spool[Text]):
   def stream: Stream[Text] = output.stream
 
   def title: Text = state.title
@@ -69,7 +69,7 @@ case class Pty(buffer: Screen, state: PtyState, output: Spool[Text]):
 
   def consume(input: Text): Pty raises PtyEscapeError =
     val escBuffer = StringBuilder()
-    val buffer2: Screen = buffer.copy()
+    val buffer2: Screen[Style] = buffer.copy()
 
     // Pre-compute UAX #29 grapheme boundaries for the whole input. Normal-
     // state printable handling walks this array to find the smallest

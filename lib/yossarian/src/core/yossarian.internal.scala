@@ -32,6 +32,8 @@
                                                                                                   */
 package yossarian
 
+import scala.reflect.*
+
 import anticipation.*
 import denominative.*
 import gossamer.*
@@ -43,27 +45,35 @@ object internal:
   opaque type Style = Long
 
   object Screen:
-    def apply(width: Int, height: Int): Screen =
+    def apply[styling: ClassTag](width: Int, height: Int, blank: styling): Screen[styling] =
       val graphemes = Array.fill[Grapheme](width*height)(Grapheme(" "))
-      val styles = Array.fill[Style](width*height)(Style())
+      val styles = Array.fill[styling](width*height)(blank)
       val links = Array.fill[Text](width*height)(t"")
-      new Screen(width, styles, graphemes, links)
+      new Screen(width, blank, styles, graphemes, links)
+
+    // The terminal-emulator buffer: cells are `yossarian.Style` blanked to the
+    // default style.
+    def apply(width: Int, height: Int): Screen[Style] = apply(width, height, Style())
 
   // A cell-aligned screen buffer. Each cell holds one grapheme cluster (per
   // UAX #29) — an ASCII character, an East-Asian-Wide CJK glyph, an emoji, or
   // a base + combining marks. Wide graphemes occupy two adjacent cells: the
   // leading cell holds the grapheme; the trailing cell holds an empty
-  // Grapheme("") sentinel, distinguishable via isWideTrailing.
-  class Screen
+  // Grapheme("") sentinel, distinguishable via isWideTrailing. The per-cell style
+  // type is generic, so the same buffer backs both yossarian's terminal emulator
+  // (`Screen[Style]`) and a TUI surface (`Screen[escapade.StyleWord]`); `blank` is
+  // the style a vacated cell takes.
+  class Screen[styling]
     ( val width:      Int,
-      styleBuffer:    Array[Style],
+      blank:          styling,
+      styleBuffer:    Array[styling],
       graphemeBuffer: Array[Grapheme],
       linkBuffer:     Array[Text] ):
 
     def capacity: Int = graphemeBuffer.length
     def height: Int = capacity/width
     def offset(x: Ordinal, y: Ordinal): Int = y.n0*width + x.n0
-    def style(x: Ordinal, y: Ordinal): Style = styleBuffer(offset(x, y))
+    def style(x: Ordinal, y: Ordinal): styling = styleBuffer(offset(x, y))
     def link(x: Ordinal, y: Ordinal): Text = linkBuffer(offset(x, y))
 
     // The grapheme stored at this cell. An empty Grapheme("") value marks the
@@ -81,8 +91,8 @@ object internal:
     def isWideTrailing(x: Ordinal, y: Ordinal): Boolean =
       graphemeBuffer(offset(x, y)).text.nil
 
-    def line: Screen =
-      new Screen(graphemeBuffer.length, styleBuffer, graphemeBuffer, linkBuffer)
+    def line: Screen[styling] =
+      new Screen(graphemeBuffer.length, blank, styleBuffer, graphemeBuffer, linkBuffer)
 
     def render: Text =
       val sb = StringBuilder()
@@ -101,15 +111,15 @@ object internal:
 
       sb.text
 
-    def find(text: Text): Optional[Screen] = line.render.seek(text).let: ordinal =>
+    def find(text: Text): Optional[Screen[styling]] = line.render.seek(text).let: ordinal =>
       val index = ordinal.n0
 
       new Screen
-        ( text.length, styleBuffer.slice(index, index + text.length),
+        ( text.length, blank, styleBuffer.slice(index, index + text.length),
           graphemeBuffer.slice(index, index + text.length),
           linkBuffer.slice(index, index + text.length) )
 
-    def styles: IArray[Style] = styleBuffer.clone().immutable(using Unsafe)
+    def styles: IArray[styling] = styleBuffer.clone().immutable(using Unsafe)
 
     def scroll(n: Int): Unit = scroll(n, 0, height - 1)
 
@@ -130,28 +140,22 @@ object internal:
       val fillStart = if n < 0 then regionStart else regionStart + length
 
       for i <- 0 until offset do
-        styleBuffer(fillStart + i) = Style()
+        styleBuffer(fillStart + i) = blank
         graphemeBuffer(fillStart + i) = Grapheme(" ")
         linkBuffer(fillStart + i) = t""
 
-    def set(x: Ordinal, y: Ordinal, grapheme: Grapheme, style: Style, link: Text): Unit =
+    def set(x: Ordinal, y: Ordinal, grapheme: Grapheme, style: styling, link: Text): Unit =
       styleBuffer(offset(x, y)) = style
       graphemeBuffer(offset(x, y)) = grapheme
       linkBuffer(offset(x, y)) = link
 
-    def set(cursor: Ordinal, grapheme: Grapheme, style: Style, link: Text): Unit =
+    def set(cursor: Ordinal, grapheme: Grapheme, style: styling, link: Text): Unit =
       styleBuffer(cursor.n0) = style
       graphemeBuffer(cursor.n0) = grapheme
       linkBuffer(cursor.n0) = link
 
-    def copy(): Screen =
-      val styles = new Array[Style](capacity)
-      System.arraycopy(styleBuffer, 0, styles, 0, styles.length)
-      val graphemes = new Array[Grapheme](capacity)
-      System.arraycopy(graphemeBuffer, 0, graphemes, 0, graphemes.length)
-      val links = new Array[Text](capacity)
-      System.arraycopy(linkBuffer, 0, links, 0, links.length)
-      new Screen(width, styles, graphemes, links)
+    def copy(): Screen[styling] =
+      new Screen(width, blank, styleBuffer.clone(), graphemeBuffer.clone(), linkBuffer.clone())
 
 
   extension (style: Style)
