@@ -36,7 +36,7 @@ export cataclysm.{Css, CssError, CssErrors, cssAggregable, SelectorList, Selecto
     Simple, Combinator, AttributeMatcher, AttributeTest, Namespace, PseudoArgument, CssFormatter,
     CssSerializer, CssConvertible, Pixels, Ems, Rems, Exs, Chs, ViewportWidths,
     ViewportHeights, ViewportMins, ViewportMaxes, Centimetres, Millimetres, Percents, Px, Em, Rem,
-    Ex, Ch, Vw, Vh, Vmin, Vmax, Cm, Mm, Pt, Pc, Pct}
+    Ex, Ch, Vw, Vh, Vmin, Vmax, Cm, Mm, Pt, Pc, Pct, css}
 
 package cssFormatters:
   export cataclysm.cssFormatters.{standard, compact}

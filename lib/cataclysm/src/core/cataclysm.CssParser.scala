@@ -46,12 +46,12 @@ import Css.Node
 // single space, then the result is trimmed. Nested rules are supported: a rule
 // body is itself a list of nodes.
 private[cataclysm] object CssParser:
-  def parse(input: Iterator[Text])(using Tactic[CssError]): Css =
+  def parse(input: Iterator[Text], validating: Boolean = true)(using Tactic[CssError]): Css =
     import zephyrine.lineation.linefeedChars
 
-    Parser(Cursor[Text](input)).document()
+    Parser(Cursor[Text](input), validating).document()
 
-  private class Parser(cursor: Cursor[Text])(using Tactic[CssError]):
+  private class Parser(cursor: Cursor[Text], validating: Boolean)(using Tactic[CssError]):
     def document(): Css = Css(nodes())
 
     private def fail(reason: CssError.Reason): Nothing =
@@ -159,10 +159,10 @@ private[cataclysm] object CssParser:
       else if colonAt >= 0 then
         val property = buf.substring(0, colonAt).nn.tt.trim
         val value = buf.substring(colonAt + 1).nn.tt.trim
-        validate(property, value)
+        if validating then validate(property, value)
         Node.Declaration(property, value)
       else
-        validate(text, t"")
+        if validating then validate(text, t"")
         Node.Declaration(text, t"")
 
     // Check a declaration's property name and value, accumulating (via `raise`)

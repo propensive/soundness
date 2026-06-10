@@ -32,63 +32,51 @@
                                                                                                   */
 package cataclysm
 
+import scala.quoted.*
+
 import anticipation.*
+import contingency.*
+import fulminate.*
 import gossamer.*
-import iridescence.*
-import prepositional.*
-import quantitative.*
-import spectacular.*
+import vacuous.*
 
-// Records that a native Scala type renders to a CSS value of the value-definition
-// type `Topic` (e.g. `"length"`, `"color"`). A single generic `Conversion` (in
-// `Css.Value`) lifts any such type into a `Css.Value of Topic`, so a new
-// convertible type costs one instance here, not one given per CSS property.
-object CssConvertible:
-  given pixels: (Quantity[Pixels[1]] is CssConvertible of "length") = q => t"${number(q.value)}px"
-  given ems: (Quantity[Ems[1]] is CssConvertible of "length") = q => t"${number(q.value)}em"
-  given rems: (Quantity[Rems[1]] is CssConvertible of "length") = q => t"${number(q.value)}rem"
-  given exs: (Quantity[Exs[1]] is CssConvertible of "length") = q => t"${number(q.value)}ex"
-  given chs: (Quantity[Chs[1]] is CssConvertible of "length") = q => t"${number(q.value)}ch"
+// Compile-time helpers shared by the `Css.Style` dynamic constructor and the
+// `css"…"` interpolator: reading a `CssConvertible`'s value-definition-syntax
+// `Topic`, and checking a value of that type against a property's grammar.
+private[cataclysm] object CssMacros:
+  // The VDS type a `CssConvertible` instance tags its values with (or "" if none).
+  def topicOf(using quotes: Quotes)(convertible: Expr[Any]): Text =
+    import quotes.reflect.*
 
-  given vws: (Quantity[ViewportWidths[1]] is CssConvertible of "length") =
-    q => t"${number(q.value)}vw"
+    def refinements(repr: TypeRepr): Map[Text, TypeRepr] = repr.dealias match
+      case Refinement(parent, name, TypeBounds(_, hi)) => refinements(parent).updated(name.tt, hi)
+      case Refinement(parent, name, info)              => refinements(parent).updated(name.tt, info)
+      case AndType(left, right)                        => refinements(left) ++ refinements(right)
+      case _                                           => Map()
 
-  given vhs: (Quantity[ViewportHeights[1]] is CssConvertible of "length") =
-    q => t"${number(q.value)}vh"
+    val members = refinements(convertible.asTerm.tpe) ++ refinements(convertible.asTerm.tpe.widen)
 
-  given vmins: (Quantity[ViewportMins[1]] is CssConvertible of "length") =
-    q => t"${number(q.value)}vmin"
+    members.get(t"Topic") match
+      case Some(ConstantType(StringConstant(name))) => name.tt
+      case _                                        => t""
 
-  given vmaxes: (Quantity[ViewportMaxes[1]] is CssConvertible of "length") =
-    q => t"${number(q.value)}vmax"
+  // A canonical instance of a value type, used to probe a property's grammar.
+  private def sample(topic: Text): Optional[Text] = topic match
+    case t"length"     => t"1px"
+    case t"color"      => t"#000000"
+    case t"percentage" => t"1%"
+    case t"number"     => t"1.5"
+    case t"integer"    => t"1"
+    case _             => Unset
 
-  given centimetres: (Quantity[Centimetres[1]] is CssConvertible of "length") =
-    q => t"${number(q.value)}cm"
+  // `Unset` if a value of VDS type `topic` is acceptable for `property`; otherwise
+  // a `Message` describing why not (unknown property, or wrong value type).
+  def propertyIssue(property: Text, topic: Text): Optional[Message] =
+    PropertyDef.of(property).lay(m"cataclysm: $property is not a known CSS property"): definition =>
+      sample(topic).lay(Unset):
+        sampleText =>
+          val outcome = safely(SyntaxMatcher.check(definition, sampleText))
 
-  given millimetres: (Quantity[Millimetres[1]] is CssConvertible of "length") =
-    q => t"${number(q.value)}mm"
-
-  given inches: (Quantity[Inches[1]] is CssConvertible of "length") = q => t"${number(q.value)}in"
-  given points: (Quantity[Points[1]] is CssConvertible of "length") = q => t"${number(q.value)}pt"
-  given picas: (Quantity[Picas[1]] is CssConvertible of "length") = q => t"${number(q.value)}pc"
-
-  given percents: (Quantity[Percents[1]] is CssConvertible of "percentage") =
-    q => t"${number(q.value)}%"
-
-  given srgb: (Srgb is CssConvertible of "color") =
-    color => hex((color.red*255).toInt, (color.green*255).toInt, (color.blue*255).toInt)
-
-  given chroma: (Chroma is CssConvertible of "color") =
-    color => hex(color.red, color.green, color.blue)
-
-  given integer: (Int is CssConvertible of "integer") = _.show
-  given decimal: (Double is CssConvertible of "number") = Css.number(_)
-
-  private def number(value: Double): Text = Css.number(value)
-
-  private def hex(red: Int, green: Int, blue: Int): Text =
-    def channel(value: Int): Text = String.format("%02x", value.max(0).min(255)).nn.tt
-    t"#${channel(red)}${channel(green)}${channel(blue)}"
-
-trait CssConvertible extends Typeclass, Topical:
-  def value(self: Self): Text
+          if outcome.or(Outcome.Unsupported(Nil)) == Outcome.Invalid
+          then m"cataclysm: a $topic value is not valid for the $property property"
+          else Unset
