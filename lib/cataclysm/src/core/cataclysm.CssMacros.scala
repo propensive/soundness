@@ -67,13 +67,18 @@ private[cataclysm] object CssMacros:
     case t"percentage" => t"1%"
     case t"number"     => t"1.5"
     case t"integer"    => t"1"
+    case t"time"       => t"1s"
+    case t"angle"      => t"1deg"
+    case t"flex"       => t"1fr"
     case _             => Unset
 
   // `Unset` if a value of VDS type `topic` is acceptable for `property`; otherwise
   // a `Message` describing why not (unknown property, or wrong value type).
   def propertyIssue(property: Text, topic: Text): Optional[Message] =
     PropertyDef.of(property).lay(m"cataclysm: $property is not a known CSS property"): definition =>
-      sample(topic).lay(Unset):
+      // A wildcard topic (the CSS-wide keywords) is valid for any known property.
+      if topic == t"*" then Unset
+      else sample(topic).lay(Unset):
         sampleText =>
           val outcome = safely(SyntaxMatcher.check(definition, sampleText))
 

@@ -104,8 +104,32 @@ object Css:
       Value(convertible.value(instance)).asInstanceOf[Value of convertible.Topic]
 
   // Render a number for CSS, dropping a redundant `.0` (so `12px`, not `12.0px`).
+  // Values are rounded to six decimal places first, so unit conversions (e.g. a
+  // length in metres scaled to `mm`) don't leak binary floating-point noise like
+  // `30.000000000000004`.
   private[cataclysm] def number(value: Double): Text =
-    if value.isFinite && value == value.floor then value.toLong.show else value.toString.tt
+    if !value.isFinite then value.toString.tt
+    else
+      val rounded = Math.rint(value*1000000.0)/1000000.0
+      if rounded == rounded.floor then rounded.toLong.show else rounded.toString.tt
+
+  // The CSS-wide keywords (valid for every property) and the colour keywords, as
+  // typed values for `Css.Style(…)` and `css"…"`, e.g. `Css.Style(color = Css.inherit)`
+  // or `css"a { color: ${Css.transparent} }"`. The lowercase accessors avoid the
+  // clash a bare `Unset` would have with `vacuous.Unset`.
+  enum Keyword derives CanEqual:
+    case Inherit, Initial, Unset, Revert, RevertLayer
+
+  enum ColorKeyword derives CanEqual:
+    case Transparent, CurrentColor
+
+  val inherit: Keyword = Keyword.Inherit
+  val initial: Keyword = Keyword.Initial
+  val unset: Keyword = Keyword.Unset
+  val revert: Keyword = Keyword.Revert
+  val revertLayer: Keyword = Keyword.RevertLayer
+  val transparent: ColorKeyword = ColorKeyword.Transparent
+  val currentColor: ColorKeyword = ColorKeyword.CurrentColor
 
   into trait Value extends Topical:
     def text: Text

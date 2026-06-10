@@ -62,11 +62,11 @@ object CssConvertible:
   given vmaxes: (Quantity[ViewportMaxes[1]] is CssConvertible of "length") =
     q => t"${number(q.value)}vmax"
 
-  given centimetres: (Quantity[Centimetres[1]] is CssConvertible of "length") =
-    q => t"${number(q.value)}cm"
-
-  given millimetres: (Quantity[Millimetres[1]] is CssConvertible of "length") =
-    q => t"${number(q.value)}mm"
+  // Any physical length (Quantitative's `Distance` dimension) renders in `mm`; CSS
+  // reads `cm`/`mm`/etc. consistently, so the rendered unit need not match how the
+  // value was written. `q.value` is in metres, hence the factor of 1000.
+  given metres: (Quantity[Metres[1]] is CssConvertible of "length") =
+    q => t"${number(q.value*1000)}mm"
 
   given inches: (Quantity[Inches[1]] is CssConvertible of "length") = q => t"${number(q.value)}in"
   given points: (Quantity[Points[1]] is CssConvertible of "length") = q => t"${number(q.value)}pt"
@@ -81,8 +81,32 @@ object CssConvertible:
   given chroma: (Chroma is CssConvertible of "color") =
     color => hex(color.red, color.green, color.blue)
 
+  // Likewise any time (Quantitative's `Seconds`) renders in `ms`; `q.value` is in
+  // seconds, hence the factor of 1000.
+  given seconds: (Quantity[Seconds[1]] is CssConvertible of "time") =
+    q => t"${number(q.value*1000)}ms"
+
+  given degrees: (Quantity[Degrees[1]] is CssConvertible of "angle") = q => t"${number(q.value)}deg"
+  given radians: (Quantity[Radians[1]] is CssConvertible of "angle") = q => t"${number(q.value)}rad"
+
+  given turns: (Quantity[Turns[1]] is CssConvertible of "angle") =
+    q => t"${number(q.value)}turn"
+
+  given flexes: (Quantity[Flexes[1]] is CssConvertible of "flex") = q => t"${number(q.value)}fr"
+
   given integer: (Int is CssConvertible of "integer") = _.show
   given decimal: (Double is CssConvertible of "number") = Css.number(_)
+
+  given keyword: (Css.Keyword is CssConvertible of "*") = _ match
+    case Css.Keyword.Inherit     => t"inherit"
+    case Css.Keyword.Initial     => t"initial"
+    case Css.Keyword.Unset       => t"unset"
+    case Css.Keyword.Revert      => t"revert"
+    case Css.Keyword.RevertLayer => t"revert-layer"
+
+  given colorKeyword: (Css.ColorKeyword is CssConvertible of "color") = _ match
+    case Css.ColorKeyword.Transparent  => t"transparent"
+    case Css.ColorKeyword.CurrentColor => t"currentcolor"
 
   private def number(value: Double): Text = Css.number(value)
 
