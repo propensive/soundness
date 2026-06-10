@@ -64,7 +64,7 @@ case class Javac(options: List[JavacOption]):
 
   def apply(classpath: LocalClasspath)[path: Abstractable across Paths to Text]
     ( sources: Map[Text, Text], out: path )
-    ( using System, Monitor, Codicil )
+    ( using System, Monitor, Probate )
   :   CompileProcess logs CompileEvent raises CompilerError =
 
     Log.info(CompileEvent.Start)

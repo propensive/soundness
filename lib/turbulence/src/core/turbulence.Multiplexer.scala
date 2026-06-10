@@ -41,12 +41,12 @@ import denominative.*
 import parasite.*
 import rudiments.*
 
-import codicils.await
+import probates.await
 
 case class Multiplexer[key, element]()(using Monitor):
   private case class Removal(key: key)
 
-  private val active: TrieMap[key, Task[Unit]] = TrieMap()
+  private val active: TrieMap[key, Daemon] = TrieMap()
   private val queue: juc.LinkedBlockingQueue[element | Removal] = juc.LinkedBlockingQueue()
 
   def close(): Unit = active.keys.each(remove(_))
@@ -58,7 +58,17 @@ case class Multiplexer[key, element]()(using Monitor):
       queue.put(stream.head)
       pump(key, stream.tail)
 
-  def add(key: key, stream: Stream[element]): Unit = active(key) = async(pump(key, stream))
+  // Each source is drained by its own daemon. If one fails (the source stream throws),
+  // a trap removes its key — so the consumer sees that source end rather than blocking
+  // forever on a `Removal` the failed pump never enqueued — and isolates the failure to
+  // that source rather than letting it escape.
+  def add(key: key, stream: Stream[element]): Unit =
+    active(key) =
+      trap:
+        case _ => remove(key); Remedy.Accept
+
+      . within(daemon(pump(key, stream)))
+
   private def remove(key: key): Unit = if !active.nil then queue.put(Removal(key))
 
   def stream: Stream[element] = queue.take().nn.absolve match

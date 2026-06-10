@@ -147,7 +147,7 @@ object Tests extends Suite(m"Obligatory Tests"):
 
     suite(m"gRPC over HTTP/2 (loopback)"):
       import threading.virtual
-      import codicils.cancel
+      import probates.cancel
       import errorDiagnostics.stackTraces
 
       def pair(): (Duplex, Duplex) =
@@ -173,7 +173,7 @@ object Tests extends Suite(m"Obligatory Tests"):
       // A minimal in-process gRPC server: completes the HTTP/2 handshake, then on the
       // request HEADERS replies with whatever frames `responder` builds.
       def runServer(serverSide: Duplex, responder: (Hpack, Int) => List[Frame])
-          ( using Monitor, Codicil )
+          ( using Monitor, Probate )
       :   Daemon =
 
         daemon:

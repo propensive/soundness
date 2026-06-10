@@ -83,7 +83,7 @@ object JsonRpc:
   def receive(id: Text, result: Json): Unit = promises.at(id).let(_.offer(result))
 
 
-  def request(target: HttpUrl, method: Text, payload: Json)(using Monitor, Codicil, Online)
+  def request(target: HttpUrl, method: Text, payload: Json)(using Monitor, Probate, Online)
   :   Promise[Json] =
 
     val uuid = Uuid().text
@@ -110,7 +110,7 @@ object JsonRpc:
 
 
   def notification(target: HttpUrl, method: Text, payload: Json)
-    ( using Monitor, Codicil, Online )
+    ( using Monitor, Probate, Online )
   :   Promise[Unit] =
 
     import charEncoders.utf8

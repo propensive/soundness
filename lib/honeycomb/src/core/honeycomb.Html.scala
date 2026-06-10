@@ -227,10 +227,10 @@ object Html extends Tag.Container
   private val indentation: Text =
     "\n                                                                "
 
-  given streamable: (Monitor, Codicil) => Document[Html] is Streamable by Text =
+  given streamable: (Monitor, Probate) => Document[Html] is Streamable by Text =
     emit(_).to(Stream)
 
-  def emit(document: Document[Html], flat: Boolean = false)(using Monitor, Codicil)
+  def emit(document: Document[Html], flat: Boolean = false)(using Monitor, Probate)
   :   Iterator[Text] =
 
     val dom = document.metadata

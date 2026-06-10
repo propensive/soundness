@@ -47,7 +47,7 @@ import threading.platform
 
 import strategies.throwUnsafely
 import backstops.silent
-import codicils.cancel
+import probates.cancel
 
 import Shell.*
 
@@ -57,7 +57,7 @@ object Tests extends Suite(m"Profanity Tests"):
       ' {
           import executives.completions
           import interpreters.posix
-          import codicils.cancel
+          import probates.cancel
 
           cli:
             arguments match

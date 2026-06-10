@@ -45,7 +45,7 @@ import zephyrine.*
 // is chosen by a contextual `CssFormatter` (`cssFormatters.standard` or
 // `.compact`).
 object CssSerializer:
-  def emit(css: Css)(using CssFormatter, Monitor, Codicil): Iterator[Text] =
+  def emit(css: Css)(using CssFormatter, Monitor, Probate): Iterator[Text] =
     val emitter = Emitter[Text](4096)
 
     async:

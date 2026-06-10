@@ -215,7 +215,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
 
     suite(m"End-to-end over an in-memory Duplex (the whole stack)"):
       import threading.virtual
-      import codicils.cancel
+      import probates.cancel
 
       // An in-memory `Duplex` pair: bytes written to one side surface on the other's
       // stream. Backed by `Spool`s so reads block until data arrives, like a socket.
@@ -235,7 +235,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
       // frames, and on the request HEADERS replies with response HEADERS (200 +
       // content-type), a DATA frame, and trailing HEADERS carrying a grpc-status
       // trailer. Returned as a Daemon so the caller can cancel it.
-      def runServer(serverSide: Duplex)(using Monitor, Codicil): Daemon = daemon:
+      def runServer(serverSide: Duplex)(using Monitor, Probate): Daemon = daemon:
         safely:
           serverSide.send(Stream(Frame.Settings(Nil, ack = false).serialize))
 
@@ -303,7 +303,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
 
           // Summon the HTTP/2 client given exactly as telekinesis's fetch machinery
           // would, and invoke its `request` — verifying it captures the ambient
-          // Monitor/Codicil and produces a telekinesis `Http.Response`.
+          // Monitor/Probate and produces a telekinesis `Http.Response`.
           val client = summon[HttpClient onto Http2.Endpoint[Loopback]]
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"unix")
 

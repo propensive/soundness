@@ -46,7 +46,7 @@ import soundness.*
 import backstops.silent
 import charEncoders.utf8
 import classloaders.threadContext
-import codicils.cancel
+import probates.cancel
 import executives.completions
 import harlequin.Accent
 import internetAccess.enabled
@@ -96,7 +96,7 @@ def repl(): Unit = cli:
       execute(Exit.Fail(1))
 
 // Runs a REPL server on the given TCP port and blocks until interrupted.
-private def serve(portNumber: Int)(using Stdio, Monitor, Codicil, System): Exit =
+private def serve(portNumber: Int)(using Stdio, Monitor, Probate, System): Exit =
   given Scalac[3.8] = Scalac(Nil)
   given Classloader = serverClassloader
 
@@ -125,7 +125,7 @@ private def socketFile: Text = t"$socketDirectory/${ProcessHandle.current.nn.pid
 
 // Runs a REPL server on a per-process UNIX domain socket (used when no port is
 // given) and blocks until quit, unlinking the socket file on the way out.
-private def serveSocket()(using Stdio, Monitor, Codicil, System): Exit =
+private def serveSocket()(using Stdio, Monitor, Probate, System): Exit =
   given Scalac[3.8] = Scalac(Nil)
   given Classloader = serverClassloader
 
@@ -186,7 +186,7 @@ private def unreachableSocket(path: Text)(using Stdio): Exit =
   Exit.Fail(3)
 
 // Drives an interactive session over a connection, closing it on the way out.
-private def session(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Environment): Exit =
+private def session(duplex: Duplex)(using Stdio, Monitor, Probate, Console, Environment): Exit =
   try converse(duplex) finally duplex.close()
 
 private def failedToLaunch(using Stdio): Exit =
@@ -227,7 +227,7 @@ private def launchServer()(using Stdio, System): Optional[Duplex] =
 // as a Profanity `Keypress` (or other `TerminalEvent`), so we can see exactly how
 // keys — including Shift+Enter — are decoded. With `kitty = true` the kitty
 // keyboard protocol is enabled first. Ctrl+C or Ctrl+D stops it.
-private def keyTest(kitty: Boolean)(using Stdio, Monitor, Codicil, Console, Environment): Exit =
+private def keyTest(kitty: Boolean)(using Stdio, Monitor, Probate, Console, Environment): Exit =
   whereas:
     case TerminalError() =>
       Out.println(t"flux: the terminal could not be initialised")
@@ -281,7 +281,7 @@ private def socketPaths(directory: Text): List[Text] =
 // Connects to a per-process UNIX domain socket. With no server running, launches one
 // in the background and attaches to it (so `flux` alone is a self-contained REPL,
 // reconnectable later); with exactly one, connects to it; with several, lists them.
-private def connectSocket()(using Stdio, Monitor, Codicil, Console, Environment, System): Exit =
+private def connectSocket()(using Stdio, Monitor, Probate, Console, Environment, System): Exit =
   socketPaths(socketDirectory) match
     case Nil =>
       Out.println(t"flux: starting a REPL server…")
@@ -301,7 +301,7 @@ private def connectSocket()(using Stdio, Monitor, Codicil, Console, Environment,
 
 // The read/edit/print loop. The server's reply is printed verbatim. Ctrl+C/Ctrl+D
 // dismiss the line editor (`DismissError`) and end the session.
-private def converse(duplex: Duplex)(using Stdio, Monitor, Codicil, Console, Environment): Exit =
+private def converse(duplex: Duplex)(using Stdio, Monitor, Probate, Console, Environment): Exit =
   // The kitty keyboard protocol (applied by `interactive`) makes the terminal report
   // Shift+Enter distinctly, so the editor can submit on it.
   import terminalFeatures.kittyKeyboard

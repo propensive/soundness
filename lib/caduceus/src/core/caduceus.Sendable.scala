@@ -42,7 +42,7 @@ object Sendable:
   given text: Text is Sendable =
     text => Email(Map(), Email.Message(Email.Content(Email.Body(text))))
 
-  given htmlDoc: (Dom, Monitor, Codicil) => Document[Html] is Sendable =
+  given htmlDoc: (Dom, Monitor, Probate) => Document[Html] is Sendable =
     html =>
       Email(Map(), Email.Message(Email.Content(Email.Body.HtmlOnly(html.read[Text]))))
 

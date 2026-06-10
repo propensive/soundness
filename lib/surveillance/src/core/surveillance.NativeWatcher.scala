@@ -52,7 +52,7 @@ import vacuous.*
 // watched.
 object NativeWatcher extends Watcher:
   private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop):
-    import codicils.await
+    import probates.await
 
     def stop(): Unit =
       pollLoop.stop()

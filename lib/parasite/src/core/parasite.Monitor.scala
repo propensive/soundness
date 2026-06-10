@@ -116,7 +116,7 @@ object PlatformSupervisor extends Supervisor():
       name.let(_.s).let(thread.setName(_))
       thread.start()
 
-abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) extends Monitor:
+abstract class Worker(frame: Codepoint, parent: Monitor, probate: Probate) extends Monitor:
   self =>
   private val state: juca.AtomicReference[Fulfillment[Result]] =
     juca.AtomicReference(Fulfillment.Initializing)
@@ -163,16 +163,16 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
     if Thread.interrupted() || state.get() == Cancelled then throw new InterruptedException()
 
 
-  def map[result2](lambda: Result => result2)(using Monitor, Codicil)
-  :   Task[result2] raises AsyncError =
+  def map[result2](lambda: Result => result2)(using Monitor, Probate)
+  :   Task[result2] incurs AsyncError =
 
-    async(lambda(await()))
+    async(lambda(join()))
 
 
-  def bind[result2](lambda: Result => Task[result2])(using Monitor, Codicil)
-  :   Task[result2] raises AsyncError =
+  def bind[result2](lambda: Result => Task[result2])(using Monitor, Probate)
+  :   Task[result2] incurs AsyncError =
 
-    async(lambda(await()).await())
+    async(lambda(join()).join())
 
 
   def cancel(): Unit =
@@ -202,7 +202,11 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
       case other                => panic(m"impossible state")
 
 
-  def await[abstractable: Abstractable across Durations to Long](duration: abstractable)
+  // The raw, untyped join: the original exception of a `Failed` worker is rethrown verbatim (under
+  // `canThrowAny`), so the static error is only `AsyncError`. Used internally (`map`/`bind`/
+  // `sequence`/`race`) where the body's error type is not tracked. Public callers go via the typed
+  // `Task#await`, which routes through `deliver` instead.
+  def join[abstractable: Abstractable across Durations to Long](duration: abstractable)
   :   Result raises AsyncError =
 
     promise.attend(duration)
@@ -211,10 +215,48 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
     result()
 
 
-  def await(): Result raises AsyncError =
+  def join(): Result raises AsyncError =
     promise.attend()
     thread.join()
     result()
+
+
+  // The typed join. A `Failed` worker carries a pure exception; rather than rethrowing it raw
+  // (which would bypass a non-throwing `Tactic`), we `abort` it through the caller's in-scope
+  // `Tactic[error | AsyncError]`. `error` is reconstructed by an unchecked cast that is sound for
+  // any failure raised through the body's `AsyncTactic` (the only typed-error path); a genuinely
+  // unchecked throwable from the body flows through as the raw `join` would have rethrown it.
+  def deliver[error <: Exception]()(using Tactic[error | AsyncError]): Result =
+    promise.attend()
+    thread.join()
+    fulfilment()
+
+
+  def deliver[error <: Exception, abstractable: Abstractable across Durations to Long]
+    ( duration: abstractable )
+    ( using Tactic[error | AsyncError] )
+  :   Result =
+
+    promise.attend(duration)
+    if !promise.ready then abort(AsyncError(Reason.Timeout))
+    thread.join()
+    fulfilment()
+
+
+  private def fulfilment[error <: Exception]()(using Tactic[error | AsyncError]): Result =
+    state.updateAndGet:
+      case Completed(duration, result) => Delivered(duration, result)
+      case Delivered(duration, result) => Delivered(duration, result)
+      case other                       => other
+
+    . match
+      case Completed(_, result)        => result
+      case Delivered(_, result)        => result
+      case Failed(failure: AsyncError) => abort(failure)
+      case Failed(failure: Exception)  => abort(failure.asInstanceOf[error])
+      case Failed(failure)             => throw failure
+      case Cancelled                   => abort(AsyncError(Reason.Cancelled))
+      case _                           => abort(AsyncError(Reason.Incomplete))
 
   private lazy val thread: Thread = parent.supervisor.fork(stack):
     val started: Boolean = state.updateAndGet:
@@ -246,7 +288,26 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
         state.set(Failed(error))
 
     finally
-      try codicil.cleanup(this) catch case error: Throwable => state.set(Failed(error))
+      try probate.cleanup(this) catch case error: Throwable => state.set(Failed(error))
+
+      // A fire-and-forget worker has no join at which to deliver a failure, so route it to the trap
+      // installed nearby. This runs before the promise is settled below, so anything attending the
+      // worker observes completion only once the trap has run. An error no trap accepts becomes an
+      // `escalation`: rethrown after settling, reaching this thread's uncaught-exception handler
+      // (`Fault`, or the JVM default), so that it is never silently dropped.
+      def remedy(error: Error): Optional[Throwable] = probate.trap(this, error) match
+        case Remedy.Accept          => Unset
+        case Remedy.Reject          => error
+        case Remedy.Escalate(other) => other
+
+      val escalation: Optional[Throwable] = if !daemon then Unset else state.get().nn match
+        case Failed(error: Error) => remedy(error)
+        case Failed(error)        => error
+        case Initializing         => Unset
+        case Cancelled            => Unset
+        case Active(_)            => Unset
+        case Completed(_, _)      => Unset
+        case Delivered(_, _)      => Unset
 
       state.updateAndGet: state =>
         parent.remove(this)
@@ -259,5 +320,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, codicil: Codicil) exten
           case state@Delivered(duration, value) => state
           case state@Failed(_)                  => state.also(promise.cancel())
           case Cancelled                        => Cancelled
+
+      escalation.let(throw _)
 
   thread

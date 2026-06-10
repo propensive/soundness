@@ -70,7 +70,7 @@ inline def webSocket[state](initial: state = ())[message]
   ( handle: (state: state) ?=> message => Control[state] )
   ( using ingressive: message is Ingressive )
   ( using request: Http.Request )
-  ( using Monitor, Codicil )
+  ( using Monitor, Probate )
 :   Websocket[message, state] =
 
   val decode: Message => message =

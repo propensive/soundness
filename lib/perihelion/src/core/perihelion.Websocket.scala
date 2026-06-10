@@ -184,7 +184,7 @@ class Websocket[message, state]
     decode:  Message => message,
     frame:   Data => Data,
     handle:  (state: state) ?=> message => Control[state] )
-  ( using Monitor, Codicil ):
+  ( using Monitor, Probate ):
 
   given key0: ("secWebsocketKey" is Directive of Text) = identity(_)
 

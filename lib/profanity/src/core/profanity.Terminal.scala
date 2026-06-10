@@ -50,7 +50,7 @@ object Terminal:
   def reportSize: Text = t"\e7\e[4095C\e[4095B\e[6n\e8"
 
 case class Terminal()
-  ( using console: Console, monitor: Monitor, codicil: Codicil, environment: Environment )
+  ( using console: Console, monitor: Monitor, probate: Probate, environment: Environment )
 extends Interactivity[TerminalEvent]:
 
   export console.stdio.{in, out, err}
@@ -101,16 +101,24 @@ extends Interactivity[TerminalEvent]:
   private def dark(red: Int, green: Int, blue: Int): Boolean =
     (0.299*red + 0.587*green + 0.114*blue) < 32768
 
-  val pumpInput: Task[Unit] = task(t"stdin"):
-    keyboard.process(In.stream[Char]).each:
-      case resize@TerminalInfo.WindowSize(rows2, columns2) =>
-        rows = rows2
-        columns = columns2
-        events.put(resize)
+  // The keyboard pump runs as a daemon under a trap: if reading or decoding stdin fails,
+  // the event spool is stopped so the session consuming `events.stream` sees the input end
+  // and can exit cleanly, rather than blocking forever on a pump that has silently died.
+  val pumpInput: Daemon =
+    trap:
+      case _ => events.stop(); Remedy.Accept
 
-      case bgColor@TerminalInfo.BgColor(red, green, blue) =>
-        mode = if dark(red, green, blue) then Brightness.Dark else Brightness.Light
-        events.put(bgColor)
+    . within:
+        daemon:
+          keyboard.process(In.stream[Char]).each:
+            case resize@TerminalInfo.WindowSize(rows2, columns2) =>
+              rows = rows2
+              columns = columns2
+              events.put(resize)
 
-      case other =>
-        events.put(other)
+            case bgColor@TerminalInfo.BgColor(red, green, blue) =>
+              mode = if dark(red, green, blue) then Brightness.Dark else Brightness.Light
+              events.put(bgColor)
+
+            case other =>
+              events.put(other)

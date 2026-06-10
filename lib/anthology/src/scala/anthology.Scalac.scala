@@ -72,7 +72,7 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
     ( classpath: LocalClasspath )
     [ path: Abstractable across Paths to Text ]
     ( sources: Map[Text, Text], out: path )
-    ( using System, Monitor, Codicil )
+    ( using System, Monitor, Probate )
   :   CompileProcess logs CompileEvent raises CompilerError =
 
     val scalacProcess: CompileProcess = CompileProcess()

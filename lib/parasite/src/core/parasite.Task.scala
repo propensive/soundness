@@ -43,21 +43,29 @@ import prepositional.*
 import vacuous.*
 
 object Task:
-  def apply[result](evaluate: Worker => result, name: Optional[Text])
-    ( using monitor: Monitor, codepoint: Codepoint, codicil: Codicil )
-  :   Task[result] =
+  def apply[result, error <: Exception](evaluate: Worker => result, name: Optional[Text])
+    ( using monitor: Monitor, codepoint: Codepoint, probate: Probate )
+  :   Task[result] { type Error = error } =
 
     inline def evaluate0: Worker => result = evaluate
     inline def name0: Optional[Text] = name
 
-    new Worker(codepoint, monitor, codicil) with Task[result]:
+    new Worker(codepoint, monitor, probate) with Task[result]:
       type Result = result
+      type Error = error
       def name: Optional[Text] = name0
       def daemon: Boolean = false
       def evaluate(worker: Worker): Result = evaluate0(worker)
 
+      def await(): result raises (error | AsyncError) = deliver[error]()
 
-  given monad: (Monitor, Codicil, Tactic[AsyncError]) => Monad[Task]:
+      def await[duration: Abstractable across Durations to Long](duration: duration)
+      :   result raises (error | AsyncError) =
+
+        deliver[error, duration](duration)
+
+
+  given monad: (Monitor, Probate, Tactic[AsyncError]) => Monad[Task]:
     def bind[value, value2](value: Task[value])(lambda: value => Task[value2]): Task[value2] =
       value.bind(lambda)
 
@@ -67,27 +75,40 @@ object Task:
       value.map(lambda)
 
   extension [result](tasks: Seq[Task[result]])
-    def sequence(using Monitor, Codicil): Task[Seq[result]] raises AsyncError =
-      async(tasks.map(_.await()))
+    def sequence(using Monitor, Probate): Task[Seq[result]] incurs AsyncError =
+      async(tasks.map(_.join()))
 
   extension [result](tasks: Iterable[Task[result]])
-    def race()(using Monitor, Codicil): result raises AsyncError =
+    def race()(using Monitor, Probate): result raises AsyncError =
       val promise: Promise[result] = Promise()
       tasks.foreach(_.map(promise.offer(_)))
 
       try promise.await() finally tasks.foreach(_.cancel())
 
+// A task carries the error type its body may raise as the `Error` member, refined by the `incurs`
+// alias (`Task[result] incurs error` = `Task[result] { type Error <: error }`). It is preserved to
+// `await`, where it is delivered through the caller's in-scope `Tactic`. `AsyncError` (cancellation
+// or timeout) is always a possible outcome, so it is added at the `await` site, not the member.
 trait Task[+result]:
+  type Error <: Exception
+
   def ready: Boolean
-  def await(): result raises AsyncError
   def attend(): Unit
   def cancel(): Unit
 
+  def await(): result raises (Error | AsyncError)
+
   def await[duration: Abstractable across Durations to Long](duration: duration)
+  :   result raises (Error | AsyncError)
+
+  // The raw join, for parasite-internal combinators that do not track the error type.
+  protected[parasite] def join(): result raises AsyncError
+
+  protected[parasite] def join[duration: Abstractable across Durations to Long](duration: duration)
   :   result raises AsyncError
 
-  def bind[result2](lambda: result => Task[result2])(using Monitor, Codicil)
-  :   Task[result2] raises AsyncError
+  def bind[result2](lambda: result => Task[result2])(using Monitor, Probate)
+  :   Task[result2] incurs AsyncError
 
-  def map[result2](lambda: result => result2)(using Monitor, Codicil)
-  :   Task[result2] raises AsyncError
+  def map[result2](lambda: result => result2)(using Monitor, Probate)
+  :   Task[result2] incurs AsyncError

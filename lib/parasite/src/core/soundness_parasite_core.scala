@@ -34,7 +34,7 @@ package soundness
 
 export
   parasite
-  . { AdaptiveSupervisor, async, AsyncError, cancel, Chain, Codicil, Daemon, daemon, delay,
+  . { AdaptiveSupervisor, async, AsyncError, cancel, Chain, Probate, Daemon, daemon, delay,
       Destruction, Fault, Fulfillment, GarbageCollection, Heap, hibernate, Hook, intercept,
       Interceptable, Monitor, monitor, Observation, Os, Perseverance, PlatformSupervisor, Promise,
       relent, retry, RetryError, Shutdown, sleep, snooze, supervise, Supervisor, Task, task,
@@ -43,8 +43,8 @@ export
 package threading:
   export parasite.threading.{adaptive, platform, virtual}
 
-package codicils:
-  export parasite.codicils.{await, cancel, fail, panic}
+package probates:
+  export parasite.probates.{await, cancel, fail, panic}
 
 package supervisors:
   export parasite.supervisors.global

@@ -41,8 +41,10 @@ object HttpServerEvent:
     case Received(request)            => m"Received request $request"
     case Processed(request, duration) => m"Processed request $request in ${duration}ms"
     case BrokenStream(length)         => m"Sending response was aborted after $length"
+    case ConnectionFailed(error)      => m"The connection handler failed: ${error.message}"
 
 enum HttpServerEvent:
   case Received(request: Http.Request)
   case Processed(request: Http.Request, duration: Long)
   case BrokenStream(length: Bytes)
+  case ConnectionFailed(error: Error)

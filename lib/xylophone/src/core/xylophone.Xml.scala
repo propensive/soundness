@@ -513,7 +513,7 @@ object Xml extends Tag.Container
       case node: Node =>
         Document(node, Xml.header)
 
-  given streamable: (Monitor, Codicil) => Document[Xml] is Streamable by Text =
+  given streamable: (Monitor, Probate) => Document[Xml] is Streamable by Text =
     emit(_).to(Stream)
 
   // Tracking-mode parse entry points. Build the parser with a line-feed
@@ -534,7 +534,7 @@ object Xml extends Tag.Container
     val index = parser.rootIndex
     Tracked(xml, PositionIndex(if index == null then IArray.empty[Int] else index))
 
-  def emit(document: Document[Xml], flat: Boolean = false)(using Monitor, Codicil): Iterator[Text] =
+  def emit(document: Document[Xml], flat: Boolean = false)(using Monitor, Probate): Iterator[Text] =
 
     val emitter = Emitter[Text](4096)
 

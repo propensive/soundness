@@ -76,7 +76,7 @@ object Containerd:
   // Must be called inside a `supervise` scope (the connection runs background daemons).
   def apply[endpoint]
     ( endpoint: Http2.Endpoint[endpoint], namespace: Text )
-    ( using Monitor, Codicil )
+    ( using Monitor, Probate )
   :   Containerd raises AsyncError =
 
     val metadata = Grpc.Metadata(List(t"containerd-namespace" -> namespace))

@@ -40,7 +40,7 @@ import _root_.java.nio.file as jnf
 import soundness.*
 
 import classloaders.threadContext
-import codicils.await
+import probates.await
 import logging.silent
 import strategies.throwUnsafely
 import systems.java
@@ -54,7 +54,7 @@ import threading.platform
 object ReplFixture:
   var greeting: String = "hello"
 
-  def session(using Scalac[3.8], Classloader, TemporaryDirectory, Monitor, System, Codicil)
+  def session(using Scalac[3.8], Classloader, TemporaryDirectory, Monitor, System, Probate)
   :   (Repl.Outcome, Repl.Outcome) =
     val repl = Repl[3.8]:
       def size: Int = greeting.length

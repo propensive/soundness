@@ -45,7 +45,7 @@ object Tests extends Suite(m"Synesthesia Tests"):
     // test(m"Remote server"):
     //   import internetAccess.enabled
     //   import supervisors.global
-    //   import codicils.cancel
+    //   import probates.cancel
     //   import httpServers.stdlib
     //   import logging.silent
     //   import webserverErrorPages.stackTraces

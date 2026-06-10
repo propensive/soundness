@@ -54,14 +54,14 @@ package threading:
   given virtual: Threading = () => VirtualSupervisor
   given adaptive: Threading = () => AdaptiveSupervisor
 
-package codicils:
-  given await: Codicil = _.delegate(_.attend())
-  given cancel: Codicil = _.delegate(_.cancel())
+package probates:
+  given await: Probate = _.delegate(_.attend())
+  given cancel: Probate = _.delegate(_.cancel())
 
-  given panic: Codicil = _.delegate: child =>
+  given panic: Probate = _.delegate: child =>
     if !child.ready then fulminate.panic(m"asynchronous child task did not complete")
 
-  given fail: Tactic[AsyncError] => Codicil = _.delegate: child =>
+  given fail: Tactic[AsyncError] => Probate = _.delegate: child =>
     if !child.ready then raise(AsyncError(AsyncError.Reason.Incomplete))
 
 package supervisors:
@@ -77,20 +77,53 @@ package retryTenacities:
 
 transparent inline def monitor: Monitor = infer[Monitor]
 
-def daemon(using Codepoint)(evaluate: Worker ?=> Unit)(using Monitor, Codicil): Daemon =
-  Daemon(evaluate(using _))
+// Like `async`, but fire-and-forget: a daemon is never joined, so a raised error cannot surface at
+// a join. The body runs with an `AsyncTactic[error]`; a raised error fails the worker and is routed
+// to the nearest `trap` (and escalated if unhandled) rather than tracked in the return type.
+def daemon[error <: Exception](using Codepoint)
+  ( evaluate: (Worker, Tactic[error]) ?=> Unit )
+  ( using Monitor, Probate )
+:   Daemon =
 
-def async[result](using Codepoint)(evaluate: Worker ?=> result)(using Monitor, Codicil)
-:   Task[result] =
+  val tactic = AsyncTactic[error]()
 
-  Task(evaluate(using _), name = Unset)
+  Daemon: worker =>
+    evaluate(using worker, tactic)
 
 
-def task[result](using Codepoint)(name: Text)(evaluate: Worker ?=> result)
-  ( using Monitor, Codicil )
-:   Task[result] =
+// Establishes a trap over a region of asynchronous work: `trap { case … => … }.within { … }`. The
+// handler maps an escaped error to a `Remedy`; the enclosing `Probate` (the default for unmatched
+// or rejected errors) is captured so traps chain outwards to the supervision root.
+def trap(handler: PartialFunction[Error, Remedy])(using outer: Probate): Trap = Trap(handler, outer)
 
-  Task(evaluate(using _), name = name)
+
+// `Task[result] incurs error` = `Task[result] { type Error <: error }`. The bound (not an equality)
+// keeps the error covariant: a task that can fail only with `AsyncError` is usable where one that
+// `incurs FooError` is expected, and `await`'s `raises (Error | AsyncError)` is dischargeable by a
+// `Tactic` for the bound. `task <: Task[?]` keeps the refinement applicable only to actual tasks.
+infix type incurs[task <: Task[?], error <: Exception] = task { type Error <: error }
+
+
+// `error` is the union of error types the body may `raise`, inferred exactly as for synchronous
+// `raises`, and carried in the task's `Error` member so it can be delivered, still typed, at the
+// join. The body is evaluated with an `AsyncTactic[error]` that records a raised error as the
+// worker's `Failed` outcome instead of trying to break a stack-confined `boundary` across threads.
+def async[result, error <: Exception](using Codepoint)
+  ( evaluate: (Worker, Tactic[error]) ?=> result )
+  ( using Monitor, Probate )
+:   Task[result] incurs (error | AsyncError) =
+
+  val tactic = AsyncTactic[error]()
+  Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = Unset)
+
+
+def task[result, error <: Exception](using Codepoint)(name: Text)
+  ( evaluate: (Worker, Tactic[error]) ?=> result )
+  ( using Monitor, Probate )
+:   Task[result] incurs (error | AsyncError) =
+
+  val tactic = AsyncTactic[error]()
+  Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = name)
 
 
 def relent[result]()(using Worker): Unit = monitor.relent()
@@ -117,7 +150,7 @@ def hibernate[instant: Abstractable across Instants to Long](instant: instant)(u
 
 
 extension [result](stream: Stream[result])
-  def concurrent(using Monitor, Codicil): Stream[result] raises AsyncError =
+  def concurrent(using Monitor, Probate): Stream[result] raises AsyncError =
     if async(stream.nil).await() then Stream() else stream.head #:: stream.tail.concurrent
 
 
