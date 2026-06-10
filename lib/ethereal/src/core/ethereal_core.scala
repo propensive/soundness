@@ -489,6 +489,21 @@ def cli[bus <: Matchable](using executive: Executive)
 
       val domainSocket: DomainSocket = DomainSocket(socketFile.encode)
 
+      val inactivityTimer: Timeout = Timeout(idleTimeout):
+        Log.warn(DaemonLogEvent.IdleTimeout)
+        termination
+
+      // Bind and start accepting *before* the build- and pid-files are written:
+      // a launcher waits for those readiness files to appear and then connects,
+      // so the socket must already be listening by the time they exist. (`listen`
+      // binds synchronously and serves on its own daemon, so the bound socket
+      // queues connections immediately even before the files are created.)
+      safely:
+        domainSocket.listen: connection =>
+          inactivityTimer.nudge()
+          safely(makeClient(connection))
+          Data()
+
       val buildId = safely(System.properties.build.id[Int]()).or:
         safely((Classpath/"build.id").read[Text].trim.decode[Int]).or(0)
 
@@ -506,16 +521,6 @@ def cli[bus <: Matchable](using executive: Executive)
 
               case other =>
                 ()
-
-      val inactivityTimer: Timeout = Timeout(idleTimeout):
-        Log.warn(DaemonLogEvent.IdleTimeout)
-        termination
-
-      safely:
-        domainSocket.listen: connection =>
-          inactivityTimer.nudge()
-          safely(makeClient(connection))
-          Data()
 
       // The accept loop runs on its own daemon inside `listen`, so park the
       // supervisor here to keep the daemon process alive until `termination`
