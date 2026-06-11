@@ -35,18 +35,25 @@ package coaxial
 import java.net as jn
 
 import anticipation.*
+import frontier.*
 import prepositional.*
 import rudiments.*
 import urticose.*
 import vacuous.*
 
 object Routable:
-  given udpEndpoint: Endpoint[UdpPort] is Routable:
+  given udpEndpoint: Every[SocketOption.Udp] => Endpoint[UdpPort] is Routable:
     case class Connection(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
 
-    def connect(endpoint: Endpoint[UdpPort]): Connection =
+    def connect(endpoint: Endpoint[UdpPort], interface: Optional[MacAddress]): Connection =
       val address = jn.InetAddress.getByName(endpoint.remote.s).nn
-      Connection(address, endpoint.port.number, jn.DatagramSocket())
+      val socket = jn.DatagramSocket()
+      configure(socket, summon[Every[SocketOption.Udp]].values)
+
+      interface.let(interfaceFor(_)).let: nic =>
+        socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
+
+      Connection(address, endpoint.port.number, socket)
 
     def transmit(connection: Connection, input: Stream[Data]): Unit =
       input.each: bytes =>
@@ -56,11 +63,17 @@ object Routable:
 
         connection.socket.send(packet)
 
-  given udpPort: UdpPort is Routable:
+  given udpPort: Every[SocketOption.Udp] => UdpPort is Routable:
     case class Connection(port: Int, socket: jn.DatagramSocket)
 
-    def connect(port: UdpPort): Connection =
-      Connection(port.number, jn.DatagramSocket())
+    def connect(port: UdpPort, interface: Optional[MacAddress]): Connection =
+      val socket = jn.DatagramSocket()
+      configure(socket, summon[Every[SocketOption.Udp]].values)
+
+      interface.let(interfaceFor(_)).let: nic =>
+        socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
+
+      Connection(port.number, socket)
 
     def transmit(connection: Connection, input: Stream[Data]): Unit =
       input.each: bytes =>
@@ -76,5 +89,5 @@ object Routable:
 trait Routable extends Typeclass:
   type Connection
 
-  def connect(endpoint: Self): Connection
+  def connect(endpoint: Self, interface: Optional[MacAddress]): Connection
   def transmit(connection: Connection, input: Stream[Data]): Unit

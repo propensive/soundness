@@ -37,6 +37,7 @@ import java.nio.channels as jnc
 
 import anticipation.*
 import contingency.*
+import frontier.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
@@ -45,16 +46,19 @@ import urticose.*
 import vacuous.*
 
 object Bindable:
-  given domainSocket: Tactic[StreamError] => DomainSocket is Bindable:
+  given domainSocket: (Tactic[StreamError], Every[SocketOption.Domain])
+  =>  DomainSocket is Bindable:
     type Binding = jnc.ServerSocketChannel
     type Output = Data
     type Input = Connection
 
-    def bind(domainSocket: DomainSocket): jnc.ServerSocketChannel =
+    // A Unix-domain socket has no network interface, so `interface` is not applicable here.
+    def bind(domainSocket: DomainSocket, interface: Optional[MacAddress]): jnc.ServerSocketChannel =
       val address = jn.UnixDomainSocketAddress.of(domainSocket.address.s)
 
       jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn.tap: channel =>
         channel.configureBlocking(true)
+        configure(channel, summon[Every[SocketOption.Domain]].values)
         channel.bind(address)
 
     def connect(channel: jnc.ServerSocketChannel): Connection =
@@ -75,12 +79,20 @@ object Bindable:
       connection.in.close()
       connection.out.close()
 
-  given tcpPort: Tactic[StreamError] => TcpPort is Bindable:
+  given tcpPort: (Tactic[StreamError], Every[SocketOption.Tcp]) => TcpPort is Bindable:
     type Binding = jn.ServerSocket
     type Output = Data
     type Input = jn.Socket
 
-    def bind(port: TcpPort): Binding = jn.ServerSocket(port.number)
+    def bind(port: TcpPort, interface: Optional[MacAddress]): Binding =
+      val address: Optional[jn.InetAddress] = interface.let(interfaceFor(_)).let(bindAddress(_))
+
+      val socket =
+        address.let(jn.ServerSocket(port.number, 50, _)).or(jn.ServerSocket(port.number))
+
+      configure(socket, summon[Every[SocketOption.Tcp]].values)
+      socket
+
     def connect(binding: Binding): jn.Socket = binding.accept().nn
 
     def transmit(socket: jn.ServerSocket, input: Input, bytes: Data): Unit =
@@ -90,12 +102,19 @@ object Bindable:
     def close(socket: jn.Socket): Unit = socket.close()
     def stop(socket: jn.ServerSocket): Unit = socket.close()
 
-  given udpPort: UdpPort is Bindable:
+  given udpPort: Every[SocketOption.Udp] => UdpPort is Bindable:
     type Binding = jn.DatagramSocket
     type Output = UdpResponse
     type Input = Packet
 
-    def bind(port: UdpPort): Binding = jn.DatagramSocket(port.number)
+    def bind(port: UdpPort, interface: Optional[MacAddress]): Binding =
+      val socket = jn.DatagramSocket(port.number)
+      configure(socket, summon[Every[SocketOption.Udp]].values)
+
+      interface.let(interfaceFor(_)).let: nic =>
+        socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
+
+      socket
 
     def connect(binding: Binding): Packet =
       val array = new Array[Byte](1472)
@@ -153,7 +172,7 @@ trait Bindable extends Typeclass:
   type Input
   type Output
 
-  def bind(socket: Self): Binding
+  def bind(socket: Self, interface: Optional[MacAddress]): Binding
   def connect(binding: Binding): Input
   def transmit(binding: Binding, input: Input, output: Output): Unit
   def close(connection: Input): Unit

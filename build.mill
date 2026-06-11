@@ -536,7 +536,7 @@ object chiaroscuro extends Library:
   object test extends Tests(core)
 
 object coaxial extends Library:
-  object core extends Component(galilei.core, urticose.core):
+  object core extends Component(galilei.core, urticose.core, frontier.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)

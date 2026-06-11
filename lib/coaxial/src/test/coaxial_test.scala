@@ -190,7 +190,7 @@ object Tests extends Suite(m"Coaxial tests"):
           // makes any type conform to `Unit`, the `Routable` overload is not
           // reachable by ascription, so its given is exercised directly here.
           val routable = summon[UdpPort is Routable]
-          routable.transmit(routable.connect(port), Stream(ascii(t"ping")))
+          routable.transmit(routable.connect(port, Unset), Stream(ascii(t"ping")))
           received.await().also(server.stop())
         . assert(_ == t"ping")
 
@@ -241,3 +241,47 @@ object Tests extends Suite(m"Coaxial tests"):
           server.stop()
           reply
         . assert(_ == bytes(ascii(t"ping")))
+
+    suite(m"Socket options"):
+      test(m"reuseAddress sets SO_REUSEADDR on a bound TCP server socket"):
+        import socketOptions.reuseAddress
+        val server = summon[TcpPort is Bindable].bind(Port[Tcp](), Unset)
+        server.getOption(java.net.StandardSocketOptions.SO_REUSEADDR).nn.booleanValue
+          .also(server.close())
+      . assert(_ == true)
+
+      test(m"broadcast sets SO_BROADCAST on a bound UDP socket"):
+        import socketOptions.broadcast
+        val socket = summon[UdpPort is Bindable].bind(Port[Udp](), Unset)
+        socket.getOption(java.net.StandardSocketOptions.SO_BROADCAST).nn.booleanValue
+          .also(socket.close())
+      . assert(_ == true)
+
+      test(m"a UDP-only option is collected only for UDP connections"):
+        import socketOptions.broadcast
+        (summon[Every[SocketOption.Tcp]].values, summon[Every[SocketOption.Udp]].values)
+      . assert(_ == (Nil, List(SocketOption.Broadcast)))
+
+      test(m"a shared option is collected for every connection type"):
+        import socketOptions.reuseAddress
+        ( summon[Every[SocketOption.Tcp]].values,
+          summon[Every[SocketOption.Udp]].values,
+          summon[Every[SocketOption.Domain]].values )
+      . assert(_ == (List(SocketOption.ReuseAddress),
+                     List(SocketOption.ReuseAddress),
+                     List(SocketOption.ReuseAddress)))
+
+      test(m"interfaceFor resolves a local interface by its hardware address"):
+        var nic: java.net.NetworkInterface | Null = null
+        val interfaces = java.net.NetworkInterface.getNetworkInterfaces.nn
+
+        while nic == null && interfaces.hasMoreElements do
+          val candidate = interfaces.nextElement.nn
+          if candidate.getHardwareAddress != null then nic = candidate
+
+        // Skip on hosts where no interface exposes a hardware address.
+        if nic == null then true else
+          var value = 0L
+          nic.getHardwareAddress.nn.each: byte => value = (value << 8) | (byte & 0xFF)
+          interfaceFor(urticose.MacAddress(value)).let(_ => true).or(false)
+      . assert(_ == true)
