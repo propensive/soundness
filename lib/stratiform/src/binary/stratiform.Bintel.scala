@@ -431,6 +431,44 @@ object Bintel:
 
     IArray.from(buf)
 
+  // Reconstruct a presentation `Tel` from a schema-typed element tree — the inverse of
+  // `Tel.Type.assign`. Each element's keyword comes from its parent struct's flattened
+  // keyword sequence (looked up by the index BinTEL stored), so a decoded element can be
+  // re-decoded to a typed value through `Tel.Decodable`.
+  private def present(element: Tel.Element, schema: Tels): Tel = element match
+    case Tel.Element.Node(_, struct: Tels.Struct, children) =>
+      val flat = flattenKeywords(struct, schema)
+      Tel.make(Tel.Compound(Text(""), IArray.empty, Unset, blocks(children.map(presentCompound(_, flat, schema)))))
+
+    case _ =>
+      Tel.empty
+
+  private def presentCompound
+       (element: Tel.Element, flat: IArray[(Text, Tels.Type)], schema: Tels)
+  :     Tel.Compound =
+    element match
+      case Tel.Element.Value(kidx, _, text) =>
+        Tel.Compound(flat(kidx)._1, IArray(Tel.Atom.Inline(text, 1)), Unset, IArray.empty)
+
+      case Tel.Element.Node(kidx, struct: Tels.Struct, children) =>
+        val keyword   = kidx.let(flat(_)._1).or(Text(""))
+        val childFlat = flattenKeywords(struct, schema)
+        Tel.Compound(keyword, IArray.empty, Unset, blocks(children.map(presentCompound(_, childFlat, schema))))
+
+      case Tel.Element.Node(kidx, _, _) =>
+        Tel.Compound(kidx.let(flat(_)._1).or(Text("")), IArray.empty, Unset, IArray.empty)
+
+  private def blocks(compounds: IArray[Tel.Compound]): IArray[Tel.Block] =
+    if compounds.isEmpty then IArray.empty
+    else IArray(Tel.Block(IArray.empty, Unset, compounds, 0))
+
+  // Decode BinTEL body bytes to a typed value, deriving the schema from the value's type
+  // — the inverse of `value.bintel`.
+  def read[value: Tel.Decodable](data: Data)(using value is TelSchematic over Tels.Type)
+  :     value raises BintelError raises TelError =
+    val schema = Tels.tels[value](Text("root"))
+    present(decode(data, schema), schema).as[value]
+
   private def resolveType(t: Tels.Type, schema: Tels): Tels.Type = t match
     case Tels.Reference(name) =>
       schema.records.find(_.name == name) match

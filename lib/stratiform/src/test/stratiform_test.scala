@@ -1425,6 +1425,20 @@ object Tests extends Suite(m"Stratiform Tests"):
         values(Bintel.decode(shape.bintel, schema))
       . assert(_ == List(t"3", t"4"))
 
+      test(m"a sum round-trips bytes-to-typed-value through bintel/read"):
+        val shape: Tests.Shape2 = Tests.Shape2.Rectangle(3, 4)
+        Bintel.read[Tests.Shape2](shape.bintel)
+      . assert(_ == Tests.Shape2.Rectangle(3, 4))
+
+      test(m"a fieldless variant round-trips bytes-to-typed-value"):
+        val shape: Tests.Shape2 = Tests.Shape2.Dot
+        Bintel.read[Tests.Shape2](shape.bintel)
+      . assert(_ == Tests.Shape2.Dot)
+
+      test(m"a product round-trips bytes-to-typed-value through bintel/read"):
+        Bintel.read[Tests.Person](Tests.Person(t"Alice", 30).bintel)
+      . assert(_ == Tests.Person(t"Alice", 30))
+
       test(m"empty scalar value round-trips"):
         val scalar = Tels.Scalar(IArray.empty)
         val root = Tel.Element.Node
