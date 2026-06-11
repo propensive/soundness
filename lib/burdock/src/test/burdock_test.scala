@@ -37,16 +37,8 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
 import charEncoders.utf8
-import environments.java
 import systems.java
 import temporaryDirectories.system
-import workingDirectories.default
-import filesystemOptions.createNonexistent.enabled
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
 
 object Tests extends Suite(m"Burdock Tests"):
   def run(): Unit =

@@ -32,50 +32,37 @@
                                                                                                   */
 package burdock
 
+import java.net as jn
+import java.nio.file as jnf
+
 import ambience.*
 import anticipation.*
 import contingency.*
 import digression.*
 import distillate.*
-import eucalyptus.*
 import exoskeleton.*
 import fulminate.*
 import galilei.*
-import gastronomy.*, hashProviders.javaStdlibHashing, crypto.permitDeprecatedCrypto
 import gossamer.*
-import hellenism.*
-import hieroglyph.*
-import monotonous.*
-import parasite.*
+import hellenism.*, classloaders.threadContext
 import prepositional.*
 import revolution.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
-import symbolism.*
-import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
 import zeppelin.*
 
-import alphabets.hex.lowerCase
 import backstops.stackTrace
-import charDecoders.utf8
 import environments.java
 import executives.direct
-import filesystemOptions.createNonexistent.disabled
 import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.disabled
-import internetAccess.enabled
 import interpreters.posix
-import logging.silent
 import stdios.virtualMachine
 import systems.java
 import termcaps.environment
-import textSanitizers.skip
-import workingDirectories.system
 
 object Bootstrapper:
   object BurdockMain extends ManifestAttribute["Burdock-Main"]
@@ -102,103 +89,58 @@ object Bootstrapper:
         Exit.Fail(1)
 
     . recover:
-        val jarfile: Path on Local =
-          ClassRef(Class.forName("burdock.Bootstrap").nn).classpathEntry match
-            case ClasspathEntry.Jar(file) => file.decode[Path on Local]
+        val loader: ClassLoader = summon[Classloader].java
 
-            case other =>
-              abort(UserError(m"Could not determine location of bootstrap class"))
+        // Self-locate the application JAR: the classpath entry holding the
+        // `META-INF/burdock.deps` resource the build-time macro wrote. (Locating by
+        // the `burdock.Bootstrap` class would find burdock's own JAR, not the app's,
+        // once the app JAR is slim.)
+        val depsResource: jn.URL =
+          Optional(loader.getResource(Embed.ResourcePath)).lest:
+            UserError(m"this JAR was not built with Burdock (no ${Embed.ResourcePath.tt})")
 
-        Out.println(m"Bootstrapping JAR file $jarfile")
+        val connection: jn.URLConnection = depsResource.openConnection().nn
 
-        if !jarfile.exists() then abort(UserError(m"The file $jarfile does not exist"))
+        val inputJar: Path on Linux = connection match
+          case jar: jn.JarURLConnection =>
+            jnf.Paths.get(jar.getJarFileURL.nn.toURI.nn).nn.toString.nn.tt.decode[Path on Linux]
 
-        val classpath: List[Path on Local] =
-          arguments.map(_()).map(workingDirectory[Path on Local].resolve(_))
+          case _ =>
+            abort(UserError(m"Burdock can only repackage a JAR file, not a directory"))
 
-        val maven = url"https://repo1.maven.org/"
+        Out.println(m"Repackaging $inputJar")
 
-        val paths: List[Optional[(Path on Local, Relative on Local)]] =
-          classpath.map: entry =>
-            entry.ancestors.find(_.name == t"repo1.maven.org").optional.let: base =>
-              if base.parent.let(_.name) == t"https"
-              then (base, base.toward(entry))
-              else Out.println(m"Cannot resolve online location of $entry") yet Unset
+        // The bootstrap loader cannot be downloaded — it does the downloading — so
+        // its bytes are force-included from burdock's own (boot) JAR on the classpath.
+        val bootstrapClass: Data = (Classpath/"burdock"/"Bootstrap.class").read[Data]
 
-        val entries: Map[(Text, Text), Requirement] = paths.compact.flatMap: (base, relative0) =>
-          Out.println(m"Downloading $relative0 from $maven")
+        // Unpublished dependencies are reconstructed from the build-time hard-links in
+        // `~/.cache/burdock/<sha256>.jar` (see `Embed`); published ones resolve via
+        // deps.dev and are referenced by URL rather than inlined.
+        val home: Text = _root_.java.lang.System.getProperty("user.home").nn.tt
+        val cacheDir: Path on Linux = t"$home/.cache/burdock".decode[Path on Linux]
 
-          val name: Text = relative0.name.or(panic(m"path was unexpectedly the root"))
-          val relative = relative0.parent / (name+t".sha1")
+        def cached(hash: Text): Optional[List[Entry]] =
+          val cacheJar: Path on Linux = cacheDir/t"$hash.jar"
 
-          val url = (maven + relative).encode.decode[HttpUrl]
-          val url2 = (maven + relative0).encode.decode[HttpUrl]
-          val remoteSha1 = url.fetch().read[Text]
-          val data: Data = (base + relative0).open(_.read[Data])
-          val localSha1: Text = data.digest[Sha1].serialize[Hex]
-
-          if remoteSha1 != localSha1 then
-            Out.println:
-              m"SHA-1 checksum of local file ${base + relative0} did not match remote $url"
-
-            Nil
-
-          else
-            // The embedded integrity digest and the per-class match key are both
-            // SHA-256 (see `Bootstrap.java`); the remote SHA-1 above is only the
-            // build-time check that the local file is the published artifact.
-            val sha256: Text = data.digest[Sha2[256]].serialize[Hex]
-
-            Zipfile.read(data).entries.filter: entry =>
-              val name: Text = entry.ref.encode
-              !entry.directory && name != t"META-INF/MANIFEST.MF"
+          if !cacheJar.exists() then Unset else
+            Zipfile.read(cacheJar).entries.filter: entry =>
+              !entry.directory && entry.ref.show != t"META-INF/MANIFEST.MF"
 
             . map: entry =>
-                val checksum: Text = entry.checksum[Sha2[256]].serialize[Hex]
-                (entry.ref.show, checksum) -> Requirement(url2, sha256)
+                Entry(entry.ref.show, entry.read[Data])
 
-        . to(Map)
+            . to(List)
 
-        val manifest: Promise[Manifest] = Promise()
-
-        val todo: List[Requirement | Entry] =
-          Zipfile.read(jarfile).entries.map: entry =>
-            if entry.ref.show == t"META-INF/MANIFEST.MF"
-            then manifest.fulfill(entry.read[Data].read[Manifest]) yet Unset
-            else if entry.ref.show == t"burdock/Bootstrap.class"
-            then Entry(entry.ref.show, entry.read[Data])
-            else entries.at((entry.ref.show, entry.checksum[Sha2[256]].serialize[Hex])).or:
-              Entry(entry.ref.show, entry.read[Data])
-
-          . to(List).compact
-
-        val manifest2 = manifest().lest:
-          UserError(m"There is no META-INF/MANIFEST.MF entry in the JAR file")
-
-        val manifest3 =
-          import manifestAttributes.*
-          val require = BurdockRequire(todo.sift[Requirement].to(Set).to(List))
-
-          val burdockMain = manifest2(MainClass).let(BurdockMain(_)).lest:
-            UserError(m"Manifest file did not contain a Main-Class entry")
-
-          val verbosity = BurdockVerbosity(t"silent")
-
-          manifest2 - MainClass + require + burdockMain + verbosity
-          + MainClass(fqcn"burdock.Bootstrap")
-
-        val tmpFile = jarfile.parent.vouch / t"${jarfile.name}.tmp"
-
-        Zipfile.write(tmpFile):
-          Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest3.serialize)
-          #:: todo.sift[Entry].to(Stream).map: entry =>
-            Zip.Entry(entry.name.decode[Path on Zip], () => Stream(entry.data))
+        val tmpFile: Path on Linux = inputJar.parent.vouch/t"${inputJar.name}.tmp"
+        Repackage.repackage(inputJar, tmpFile, DepsDev.mavenUrl, cached, bootstrapClass)
 
         import filesystemOptions.overwritePreexisting.enabled
         import filesystemOptions.deleteRecursively.disabled
         import filesystemOptions.moveAtomically.enabled
         import filesystemOptions.createNonexistentParents.disabled
 
-        tmpFile.moveTo(jarfile)
+        tmpFile.moveTo(inputJar)
+        Out.println(m"Repackaged $inputJar")
 
         Exit.Ok
