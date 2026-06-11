@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package flux
+package flame
 
 import java.io as ji
 import java.lang as jl
@@ -57,13 +57,13 @@ import systems.java
 import temporaryDirectories.system
 import threading.platform
 
-// A front-end for a Flux REPL. With a TCP port, `flux serve <port>` runs a
-// server and `flux <port>` connects to one on localhost. With no port,
-// `flux serve` opens a per-process UNIX domain socket (named after the JVM's
-// PID, under the XDG runtime dir) and `flux` connects to it — starting its own
-// background server first if none is running (so `flux` alone is a self-contained
+// A front-end for a Flame REPL. With a TCP port, `flame serve <port>` runs a
+// server and `flame <port>` connects to one on localhost. With no port,
+// `flame serve` opens a per-process UNIX domain socket (named after the JVM's
+// PID, under the XDG runtime dir) and `flame` connects to it — starting its own
+// background server first if none is running (so `flame` alone is a self-contained
 // REPL whose session, living in the separate server process, can be reconnected to by
-// running `flux` again), picking the lone running server, or listing them if there
+// running `flame` again), picking the lone running server, or listing them if there
 // are several. Either way the client drives an interactive, live-highlighted session
 // until Ctrl+D, Ctrl+C or `/quit`.
 @main
@@ -100,13 +100,13 @@ private def serve(portNumber: Int)(using Stdio, Monitor, Probate, System): Exit 
 
   safely(Port[Tcp](portNumber)).lay(invalidPort(portNumber)): port =>
     whereas:
-      case BindError(_) => Out.println(t"flux: port $portNumber is unavailable"); Exit.Fail(5)
-      case error: Error => Out.println(t"flux: ${error.message}"); Exit.Fail(6)
+      case BindError(_) => Out.println(t"flame: port $portNumber is unavailable"); Exit.Fail(5)
+      case error: Error => Out.println(t"flame: ${error.message}"); Exit.Fail(6)
 
     . recover:
         val repl    = Repl()
         val service = repl.serve(port)
-        Out.println(t"flux: serving a REPL on port $portNumber (Ctrl+C or /quit to stop)")
+        Out.println(t"flame: serving a REPL on port $portNumber (Ctrl+C or /quit to stop)")
         repl.awaitQuit()
         service.stop()
         Exit.Ok
@@ -117,7 +117,7 @@ private def serve(portNumber: Int)(using Stdio, Monitor, Probate, System): Exit 
 private def envText(name: String): Optional[Text] = Optional(jl.System.getenv(name)).let(_.nn.tt)
 
 private def socketDirectory: Text =
-  t"${envText("XDG_RUNTIME_DIR").or(envText("TMPDIR")).or(t"/tmp")}/flux"
+  t"${envText("XDG_RUNTIME_DIR").or(envText("TMPDIR")).or(t"/tmp")}/flame"
 
 private def socketFile: Text = t"$socketDirectory/${ProcessHandle.current.nn.pid}.sock"
 
@@ -143,13 +143,13 @@ private def serveSocket()(using Stdio, Monitor, Probate, System): Exit =
 
     val repl    = Repl()
     val service = repl.serve(socketPath)
-    Out.println(t"flux: serving a REPL on $socketPath (Ctrl+C or /quit to stop)")
+    Out.println(t"flame: serving a REPL on $socketPath (Ctrl+C or /quit to stop)")
     repl.awaitQuit()
     service.stop()
     safely(jnf.Files.deleteIfExists(jnf.Path.of(socketPath.s)))
     Exit.Ok
   catch case error: Throwable =>
-    Out.println(t"flux: could not serve on $socketPath: ${error.toString.tt}")
+    Out.println(t"flame: could not serve on $socketPath: ${error.toString.tt}")
     Exit.Fail(6)
 
 // Builds the classloader the REPL compiles against inside the Ethereal daemon.
@@ -165,18 +165,18 @@ private def serveSocket()(using Stdio, Monitor, Probate, System): Exit =
 private def serverClassloader(using System): Classloader =
   try
     val executable: Text = unsafely(System.properties.ethereal.script[Text]())
-    val link: jnf.Path = jnf.Files.createTempDirectory("flux").nn.resolve("flux.jar").nn
+    val link: jnf.Path = jnf.Files.createTempDirectory("flame").nn.resolve("flame.jar").nn
     jnf.Files.createSymbolicLink(link, jnf.Path.of(executable.s)).nn
     val url: jn.URL = ji.File(link.toString).toURI.nn.toURL.nn
     new Classloader(jn.URLClassLoader(Array(url), threadContext.java))
   catch case _: Throwable => threadContext
 
 private def invalidPort(portNumber: Int)(using Stdio): Exit =
-  Out.println(t"flux: $portNumber is not a valid TCP port")
+  Out.println(t"flame: $portNumber is not a valid TCP port")
   Exit.Fail(2)
 
 private def unreachable(portNumber: Int)(using Stdio): Exit =
-  Out.println(t"flux: could not connect to localhost:$portNumber")
+  Out.println(t"flame: could not connect to localhost:$portNumber")
   Exit.Fail(3)
 
 // Runs `body` over a fresh TCP connection — always closing it afterwards — or returns
@@ -189,17 +189,17 @@ private def connectDomain[result](socket: DomainSocket)(body: Duplex => result):
   try socket.duplex(body) catch case _: ji.IOException => Unset
 
 private def unreachableSocket(path: Text)(using Stdio): Exit =
-  Out.println(t"flux: could not connect to $path")
+  Out.println(t"flame: could not connect to $path")
   Exit.Fail(3)
 
 private def failedToLaunch(using Stdio): Exit =
-  Out.println(t"flux: could not start a REPL server")
+  Out.println(t"flame: could not start a REPL server")
   Exit.Fail(3)
 
-// Starts a REPL server in the background — a detached `flux serve` process on its
+// Starts a REPL server in the background — a detached `flame serve` process on its
 // own per-process domain socket — waits for it to bind, and connects to it. Because
 // the server is a separate process it outlives this client, so the same session can
-// be reconnected to later by running `flux` again. Returns the live connection,
+// be reconnected to later by running `flame` again. Returns the live connection,
 // or `Unset` if no server became reachable in time.
 private def launchServer[result]()(using Stdio, System)(body: Duplex => result): Optional[result] =
   safely(System.properties.ethereal.script[Text]()).lay(Unset): executable =>
@@ -233,14 +233,14 @@ private def launchServer[result]()(using Stdio, System)(body: Duplex => result):
 private def keyTest(kitty: Boolean)(using Stdio, Monitor, Probate, Console, Environment): Exit =
   whereas:
     case TerminalError() =>
-      Out.println(t"flux: the terminal could not be initialised")
+      Out.println(t"flame: the terminal could not be initialised")
       Exit.Fail(4)
 
   . recover:
       interactive: terminal ?=>
         given Stdio = terminal.stdio
         if kitty then Out.print(t"\e[>1u")
-        Out.print(t"flux: press keys to see how they decode; Ctrl+C or Ctrl+D to stop\r\n")
+        Out.print(t"flame: press keys to see how they decode; Ctrl+C or Ctrl+D to stop\r\n")
         val events = terminal.eventIterator()
         var running = true
 
@@ -282,7 +282,7 @@ private def socketPaths(directory: Text): List[Text] =
   names.to(List)
 
 // Connects to a per-process UNIX domain socket. With no server running, launches one
-// in the background and attaches to it (so `flux` alone is a self-contained REPL,
+// in the background and attaches to it (so `flame` alone is a self-contained REPL,
 // reconnectable later); with exactly one, connects to it; with several, lists them.
 private def connectSocket()(using Stdio, Monitor, Probate, Console, Environment, System): Exit =
   // Probe every socket file: a connectable one is live; one that refuses (a crashed or
@@ -297,19 +297,19 @@ private def connectSocket()(using Stdio, Monitor, Probate, Console, Environment,
 
   live.to(List) match
     case Nil =>
-      Out.println(t"flux: starting a REPL server…")
+      Out.println(t"flame: starting a REPL server…")
       launchServer()(converse(_)).or(failedToLaunch)
 
     case path :: Nil =>
       connectDomain(DomainSocket(path))(converse(_)).or(unreachableSocket(path))
 
     case paths =>
-      Out.println(t"flux: several REPL servers are running:")
+      Out.println(t"flame: several REPL servers are running:")
 
       paths.each: path =>
         Out.println(t"  $path")
 
-      Out.println(t"flux: stop all but one, or use a TCP server with 'flux <port>'")
+      Out.println(t"flame: stop all but one, or use a TCP server with 'flame <port>'")
       Exit.Fail(7)
 
 // The read/edit/print loop. The server's reply is printed verbatim. Ctrl+C/Ctrl+D
@@ -327,7 +327,7 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Probate, Console, Env
 
   whereas:
     case TerminalError() =>
-      Out.println(t"flux: the terminal could not be initialised")
+      Out.println(t"flame: the terminal could not be initialised")
       Exit.Fail(4)
 
   . recover:
@@ -471,7 +471,7 @@ private def runRepl
         duplex.send(Stream(framed(encode(Repl.Request.Quit(0)))))
         running = false
       else if line.starts(t"/") then
-        Out.println(t"flux: unknown command: $line")
+        Out.println(t"flame: unknown command: $line")
       else
         duplex.send(Stream(framed(encode(Repl.Request.Submit(0, line)))))
 

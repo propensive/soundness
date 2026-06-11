@@ -234,7 +234,7 @@ object groupCheck extends Module:
     "beneficence.core", "beneficence.plugin",
     "dendrology.demo",
     "ethereal.example", "exegesis.demo", "exoskeleton.args", "exoskeleton.core",
-    "exoskeleton.rig", "flux.client", "flux.core", "frontier.plugin", "probably.coverage",
+    "exoskeleton.rig", "flame.client", "flame.core", "frontier.plugin", "probably.coverage",
     "ultimatum.demo",
     "quantitative.units",
 
@@ -830,7 +830,7 @@ object exoskeleton extends Library:
 
   object test extends Tests(rig)
 
-object flux extends Library:
+object flame extends Library:
   object core extends Component(anthology.`scala`, inimitable.core, coaxial.core, eucalyptus.core,
                                 stratiform.core, stratiform.binary, harlequin.core):
     override def scalacOptions = Task:
@@ -843,11 +843,11 @@ object flux extends Library:
                                   ultimatum.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-    override def mainClass: Task.Simple[Option[String]] = Some("flux.repl")
+    override def mainClass: Task.Simple[Option[String]] = Some("flame.repl")
 
     def bin(): Command[PathRef] = Task.Command:
       val jar = assembly().path
-      val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "flux"
+      val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "flame"
       os.makeDir.all(target / os.up)
       os.remove.all(target)
 
@@ -1585,7 +1585,7 @@ val allLibraries: Seq[Library] = Seq(
   decorum, dendrology, denominative, digression, dissonance, distillate, diuretic,
   embarcadero, enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis,
   exoskeleton,
-  flux, frontier, fulminate, galilei, gastronomy, geodesy, gesticulate, gigantism,
+  flame, frontier, fulminate, galilei, gastronomy, geodesy, gesticulate, gigantism,
   gnossienne, gossamer, guillotine, hallucination, harlequin, hellenism, hieroglyph,
   honeycomb, hyperbole, hypotenuse, imperial, inimitable, iridescence, jacinta,
   kaleidoscope, larceny, legerdemain, locomotion, mandible, mercator, metamorphose,
