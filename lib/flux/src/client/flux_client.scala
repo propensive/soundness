@@ -79,8 +79,7 @@ def repl(): Unit = cli:
     case Argument(As[Int](portNumber)) :: Nil =>
       execute:
         safely(Port[Tcp](portNumber)).lay(invalidPort(portNumber)): port =>
-          connect(port).lay(unreachable(portNumber)): duplex =>
-            try converse(duplex) finally duplex.close()
+          connect(port)(converse(_)).or(unreachable(portNumber))
 
     case Nil =>
       execute(connectSocket())
@@ -173,21 +172,18 @@ private def unreachable(portNumber: Int)(using Stdio): Exit =
   Out.println(t"flux: could not connect to localhost:$portNumber")
   Exit.Fail(3)
 
-// Opens a TCP connection to the server, or `Unset` if it is refused.
-private def connect(port: Port over Tcp): Optional[Duplex] =
-  try (ip"127.0.0.1" via port).duplex() catch case _: Exception => Unset
+// Runs `body` over a fresh TCP connection — always closing it afterwards — or returns
+// `Unset` if the connection is refused.
+private def connect[result](port: Port over Tcp)(body: Duplex => result): Optional[result] =
+  try (ip"127.0.0.1" via port).duplex(body) catch case _: ji.IOException => Unset
 
-// Opens a UNIX domain socket connection, or `Unset` if it is refused.
-private def connectDomain(socket: DomainSocket): Optional[Duplex] =
-  try socket.duplex() catch case _: Exception => Unset
+// As `connect`, but over a UNIX domain socket.
+private def connectDomain[result](socket: DomainSocket)(body: Duplex => result): Optional[result] =
+  try socket.duplex(body) catch case _: ji.IOException => Unset
 
 private def unreachableSocket(path: Text)(using Stdio): Exit =
   Out.println(t"flux: could not connect to $path")
   Exit.Fail(3)
-
-// Drives an interactive session over a connection, closing it on the way out.
-private def session(duplex: Duplex)(using Stdio, Monitor, Probate, Console, Environment): Exit =
-  try converse(duplex) finally duplex.close()
 
 private def failedToLaunch(using Stdio): Exit =
   Out.println(t"flux: could not start a REPL server")
@@ -198,7 +194,7 @@ private def failedToLaunch(using Stdio): Exit =
 // the server is a separate process it outlives this client, so the same session can
 // be reconnected to later by running `flux` again. Returns the live connection,
 // or `Unset` if no server became reachable in time.
-private def launchServer()(using Stdio, System): Optional[Duplex] =
+private def launchServer[result]()(using Stdio, System)(body: Duplex => result): Optional[result] =
   safely(System.properties.ethereal.script[Text]()).lay(Unset): executable =>
     val before: List[Text] = socketPaths(socketDirectory)
 
@@ -208,20 +204,20 @@ private def launchServer()(using Stdio, System): Optional[Duplex] =
     builder.redirectInput(ji.File("/dev/null"))
     safely(builder.start())
 
-    var duplex: Optional[Duplex] = Unset
+    var result: Optional[result] = Unset
     var waited: Int              = 0
 
-    // Poll for a new, connectable socket (the socket file appears once it binds).
-    while duplex.absent && waited < 10000 do
+    // Poll for a new, connectable socket (the socket file appears once it binds), then
+    // run `body` over the first one that connects.
+    while result.absent && waited < 10000 do
       jl.Thread.sleep(100)
       waited += 100
 
       socketPaths(socketDirectory).each: candidate =>
-        if duplex.absent && !before.contains(candidate) then
-          connectDomain(DomainSocket(candidate)).let: connection =>
-            duplex = connection
+        if result.absent && !before.contains(candidate) then
+          result = connectDomain(DomainSocket(candidate))(body)
 
-    duplex
+    result
 
 // TEMPORARY keyboard diagnostic. Instead of the editor, print each terminal event
 // as a Profanity `Keypress` (or other `TerminalEvent`), so we can see exactly how
@@ -285,10 +281,10 @@ private def connectSocket()(using Stdio, Monitor, Probate, Console, Environment,
   socketPaths(socketDirectory) match
     case Nil =>
       Out.println(t"flux: starting a REPL server…")
-      launchServer().lay(failedToLaunch)(session(_))
+      launchServer()(converse(_)).or(failedToLaunch)
 
     case path :: Nil =>
-      connectDomain(DomainSocket(path)).lay(unreachableSocket(path))(session(_))
+      connectDomain(DomainSocket(path))(converse(_)).or(unreachableSocket(path))
 
     case paths =>
       Out.println(t"flux: several REPL servers are running:")

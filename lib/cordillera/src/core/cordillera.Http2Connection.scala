@@ -50,7 +50,7 @@ import vacuous.*
 
 import Http2.*
 
-object H2Connection:
+object Http2Connection:
   // The client connection preface (RFC 7540 §3.5): a fixed octet sequence that
   // precedes the first SETTINGS frame in prior-knowledge h2c.
   private[cordillera] val connectionPreface: Bytes = t"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n".data
@@ -66,7 +66,7 @@ object H2Connection:
 // (fed by DATA frames), and a promise for trailers (resolved on a second, end-stream
 // HEADERS frame — gRPC's status). The reader daemon populates these; the caller
 // awaits `headers` and consumes `body.stream`.
-class H2Stream(val id: Int):
+class Http2Stream(val id: Int):
   val headers: Promise[List[HpackEntry]] = Promise()
   val trailers: Promise[List[HpackEntry]] = Promise()
   val body: Spool[Bytes] = Spool()
@@ -94,10 +94,10 @@ class H2Stream(val id: Int):
 // `Spool[Frame]` to the socket, serialising all writes (so no lock is needed); a
 // reader daemon parses inbound frames and dispatches them by stream id. Must be
 // created within a `supervise`-provided `Monitor`.
-class H2Connection(duplex: Duplex)(using Monitor, Probate):
-  import H2Connection.*
+class Http2Connection(duplex: Duplex)(using Monitor, Probate):
+  import Http2Connection.*
 
-  private val streams: scc.TrieMap[Int, H2Stream] = scc.TrieMap()
+  private val streams: scc.TrieMap[Int, Http2Stream] = scc.TrieMap()
   private val nextId: juca.AtomicInteger = juca.AtomicInteger(1)
   private val outbound: Spool[Frame] = Spool()
   private val started: Promise[Unit] = Promise()
@@ -200,9 +200,9 @@ class H2Connection(duplex: Duplex)(using Monitor, Probate):
 
   // Open a new client stream, send its header block (and optional body), and return
   // the stream handle whose promises/spool the reader will populate.
-  def request(headerBlock: List[HpackEntry], body: Optional[Bytes]): H2Stream =
+  def request(headerBlock: List[HpackEntry], body: Optional[Bytes]): Http2Stream =
     val id = nextId.getAndAdd(2)
-    val stream = H2Stream(id)
+    val stream = Http2Stream(id)
     streams(id) = stream
     val encoder = Hpack()
     val noBody = body.absent
@@ -220,7 +220,7 @@ class H2Connection(duplex: Duplex)(using Monitor, Probate):
   // pseudo-headers the request type doesn't carry. Trailers (e.g. gRPC status) are
   // available afterwards via `stream.trailers`.
   def fetch(request: Http.Request, scheme: Text, authority: Text)
-  :   (H2Stream, Http.Response) raises Http2Error raises AsyncError =
+  :   (Http2Stream, Http.Response) raises Http2Error raises AsyncError =
 
     val headerBlock = PseudoHeaders.request(request, scheme, authority)
     val chunks = request.body().to(List)

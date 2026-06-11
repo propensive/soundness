@@ -324,13 +324,32 @@ object Http2:
   // Used as the `Target` of the HTTP/2 `HttpClient` given, distinct from the
   // `DomainSocket` target telekinesis binds to its HTTP/1.1 client.
   case class Endpoint[endpoint: Connectable as connectable](endpoint: endpoint, authority: Text):
-    def connect(): Duplex = connectable.connect(endpoint, Unset)
+    // Establish a multiplexed connection whose underlying `Duplex` is closed when the
+    // enclosing `supervise` scope ends, rather than being leaked. The connection (and
+    // its reader/writer daemons) runs on a daemon that holds the `duplex` loan open —
+    // parked until the scope is torn down — so the response bodies it streams lazily
+    // stay readable for the scope's lifetime instead of being closed per request.
+    // Returns once the HTTP/2 handshake has completed.
+    def connect()(using Monitor, Probate): Http2Connection raises AsyncError =
+      val ready: Promise[Http2Connection] = Promise()
+
+      daemon:
+        try
+          endpoint.duplex: duplex =>
+            val connection = Http2Connection(duplex)
+            connection.start()
+            ready.offer(connection)
+            Promise[Unit]().await()
+
+        finally if !ready.ready then ready.cancel()
+
+      ready.await()
 
   // An `HttpClient` that speaks HTTP/2 (prior-knowledge h2c) to an `Http2.Endpoint`.
   // It captures the ambient `Monitor`/`Probate` from this given's context — the
-  // `H2Connection`'s daemons need them — so it can only be summoned inside a
-  // `supervise` scope. A fresh connection is opened per request for now; pooling
-  // is a later refinement.
+  // connection's daemons (and the scope-tied teardown) need them — so it can only be
+  // summoned inside a `supervise` scope. A fresh connection is opened per request for
+  // now; pooling is a later refinement.
   object Client:
     given http2: [endpoint] => (Monitor, Probate, Tactic[Http2Error], Tactic[AsyncError])
     =>  HttpClient onto Endpoint[endpoint] =
@@ -341,6 +360,4 @@ object Http2:
         def request(request: Http.Request, target: Endpoint[endpoint])
         :   Http.Response logs HttpEvent =
 
-          val connection = H2Connection(target.connect())
-          connection.start()
-          connection.fetch(request, t"http", target.authority)(1)
+          target.connect().fetch(request, t"http", target.authority)(1)

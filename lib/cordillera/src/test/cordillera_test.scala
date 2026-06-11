@@ -273,7 +273,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
         supervise:
           val (clientSide, serverSide) = pair()
           val server = runServer(serverSide)
-          val connection = H2Connection(clientSide)
+          val connection = Http2Connection(clientSide)
           connection.start()
 
           val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".decode[Host]),

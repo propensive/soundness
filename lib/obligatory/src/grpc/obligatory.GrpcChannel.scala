@@ -55,9 +55,7 @@ object GrpcChannel:
     ( using Monitor, Probate )
   :   GrpcChannel raises AsyncError =
 
-    val connection = H2Connection(endpoint.connect())
-    connection.start()
-    new GrpcChannel(connection, endpoint.authority, defaults)
+    new GrpcChannel(endpoint.connect(), endpoint.authority, defaults)
 
 // A gRPC channel over a single, persistent HTTP/2 connection (`cordillera`). Each
 // call opens one multiplexed stream: the request is one length-prefixed protobuf
@@ -66,7 +64,7 @@ object GrpcChannel:
 // is always a single message, so client-streaming and bidirectional streaming wait
 // on a `cordillera` enhancement.
 class GrpcChannel
-  ( connection: H2Connection, authority: Text, defaults: Grpc.Metadata = Grpc.Metadata() ):
+  ( connection: Http2Connection, authority: Text, defaults: Grpc.Metadata = Grpc.Metadata() ):
   // The `:authority` pseudo-header is supplied to `fetch` separately; the request's
   // `Host` is unused by the HTTP/2 transport, so the hostname is parsed leniently.
   private val host: Host = unsafely(authority.cut(t":").prim.or(authority).decode[Host])
@@ -98,7 +96,7 @@ class GrpcChannel
   // Read the canonical status from the `grpc-status`/`grpc-message` fields, looking
   // in the trailers first and then the initial headers (a Trailers-Only response
   // carries the status in the headers). Raise unless the status is `Ok`.
-  private def expectStatus(stream: H2Stream): Unit raises GrpcError raises AsyncError =
+  private def expectStatus(stream: Http2Stream): Unit raises GrpcError raises AsyncError =
     val fields = stream.trailers.await() ++ stream.headers.await()
     val codeText = fields.find(_.name == t"grpc-status").optional.let(_.value)
     val message = fields.find(_.name == t"grpc-message").optional.let(_.value).or(t"")
