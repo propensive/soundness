@@ -48,17 +48,32 @@ import gossamer.*
 // literals. The published-vs-unpublished decision is deferred to repackage (where
 // deps.dev is queried); the cache covers anything deps.dev cannot resolve.
 object Embed:
+  // Resource path (within the compiled JAR) holding the newline-separated
+  // dependency SHA-256 hashes; read by the repackager and, in turn, the runtime
+  // bootstrap. Keep in sync with the repackager.
+  final val ResourcePath: String = "META-INF/burdock.deps"
+
   inline def dependencyHashes: List[Text] = ${Embed.dependencyHashesMacro}
 
   def dependencyHashesMacro(using Quotes): Expr[List[Text]] =
-    val classpath: String = quotes.absolve match
+    val (classpath, outputDir) = quotes.absolve match
       case quotes: runtime.impl.QuotesImpl =>
         import dotty.tools.dotc.config.Settings.Setting.value
-        value(quotes.ctx.settings.classpath)(using quotes.ctx)
+        val ctx = quotes.ctx
+        (value(ctx.settings.classpath)(using ctx), value(ctx.settings.outputDir)(using ctx).jpath.nn)
 
     val hashes: List[String] = hashAndCache(classpath)
+    writeResource(outputDir, hashes)
 
     '{ ${Expr(hashes)}.map(_.tt) }
+
+  // Writes the hash list into the compile output as `META-INF/burdock.deps`, so
+  // it is packaged into the JAR as an ordinary resource.
+  private def writeResource(outputDir: jnf.Path, hashes: List[String]): Unit =
+    val metaInf: jnf.Path = outputDir.resolve("META-INF").nn
+    jnf.Files.createDirectories(metaInf)
+    val content: String = hashes.mkString("\n")
+    jnf.Files.write(metaInf.resolve("burdock.deps").nn, content.getBytes("UTF-8").nn)
 
   // Runs at compile time, in the compiler JVM: pure java.* so it needs nothing
   // from the soundness runtime. Hard-links fall back to a copy across filesystems.

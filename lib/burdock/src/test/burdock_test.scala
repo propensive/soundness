@@ -53,3 +53,9 @@ object Tests extends Suite(m"Burdock Tests"):
           val jar: Text = t"$home/.cache/burdock/$hash.jar"
           java.nio.file.Files.exists(java.nio.file.Paths.get(jar.s).nn)
       .assert(_ == true)
+
+      test(m"the hash list is written as a packaged resource"):
+        val stream = getClass.nn.getResourceAsStream("/META-INF/burdock.deps").nn
+        val content: Text = java.lang.String(stream.readAllBytes().nn, "UTF-8").tt
+        content.cut(t"\n").to(Set)
+      .assert(_ == hashes.to(Set))
