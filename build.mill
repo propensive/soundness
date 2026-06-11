@@ -1486,8 +1486,7 @@ object wisteria extends Library:
   object core extends Component(contingency.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core):
-    override def enabled = false
+  object test extends Tests(core)
 
 object xenophile extends Library:
   object core extends Component(gossamer.core, prepositional.core, gigantism.core, fulminate.core,
