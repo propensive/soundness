@@ -131,13 +131,28 @@ extends BaseScalaModule, SonatypeCentralPublishModule:
       :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
       :+ s"-Xplugin:${frontier.plugin.assembly().path}"
 
-trait Tests(dependencies: PublishModule*) extends BaseScalaModule:
+// Like `Component`, but not published to Maven Central. For demos, examples, the
+// `flame` REPL, and other modules that are built and tested but never released.
+trait Internal(dependencies: JavaModule*) extends BaseScalaModule:
+  def moduleId: String = moduleDir.last
+  def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
+  def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
+  def sources = Task.Sources(moduleDir)
+  override def moduleDeps: Seq[JavaModule] = beneficence.core +: proscenium.core +: dependencies
+
+  override def scalacOptions = Task:
+    settings.scalaOptions
+      :+ s"-Xplugin:${decorum.plugin.assembly().path}"
+      :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
+      :+ s"-Xplugin:${frontier.plugin.assembly().path}"
+
+trait Tests(dependencies: JavaModule*) extends BaseScalaModule:
   def enabled: Boolean = true
   def moduleId: String = moduleDir.last
   def finalMainClass = (moduleDir / ".." / "..").last + ".Tests"
   def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
-  def moduleDeps: Seq[PublishModule] = probably.cli +: proscenium.core +: dependencies
+  def moduleDeps: Seq[JavaModule] = probably.cli +: proscenium.core +: dependencies
   def sources = Task.Sources(moduleDir)
   def consoleScalacOptions = scalacOptions()
 
@@ -171,36 +186,43 @@ object soundness extends ScalaModule:
     inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
     parasite.core, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
     prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
-    typonym.core, zephyrine.core, frontier.core)
+    typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core)
 
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi,
     eucalyptus.syslog, guillotine.core, escapade.csi, escapade.core, imperial.core, profanity.core,
-    surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core, ziggurat.packager)
+    surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core, ziggurat.packager,
+    ultimatum.core, xenophile.native, exoskeleton.args, exoskeleton.core)
 
   object data extends Bundle(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
     gastronomy.core, chiaroscuro.core, jacinta.core, monotonous.core,
     panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
-    stratiform.core, stratiform.time, vexillology.core)
+    stratiform.core, stratiform.time, vexillology.core, enigmatic.cose, enigmatic.openssl,
+    stratiform.binary, stratiform.records, bitumen.core, breviloquence.core, distillate.core,
+    embarcadero.oci, locomotion.core, ypsiloid.core, stratiform.base256)
 
   object sci extends Bundle(abacist.core, acyclicity.core, baroque.core, cardinality.core,
     charisma.core, geodesy.core, hypotenuse.core, metamorphose.core, mosquito.core,
-    quantitative.core)
+    quantitative.core, quantitative.units)
 
   object test extends Bundle(capricious.core, larceny.plugin, sedentary.core, tarantula.core,
-    superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm, mandible.core)
+    superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm, mandible.core,
+    probably.coverage)
 
   object tool extends Bundle(anthology.core, decorum.plugin, harlequin.core, hellenism.core,
     hyperbole.core, octogenarian.core, revolution.core, umbrageous.plugin, anthology.java,
-    harlequin.md, harlequin.ansi, austronesian.core)
+    harlequin.md, harlequin.ansi, austronesian.core, anthology.bundle, anthology.`scala`,
+    exegesis.core)
 
   object web extends Bundle(cacophony.core, cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
     telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
     legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http, jacinta.schema,
-    stratiform.http, obligatory.core, obligatory.json, synesthesia.core)
+    stratiform.http, obligatory.core, obligatory.json, synesthesia.core, apoplexy.core,
+    cataclysm.html, querencia.core, cordillera.core, embarcadero.containerd, obligatory.grpc,
+    xenophile.core, xenophile.typescript, xenophile.webidl, xenophile.wit)
 
   object all extends Bundle(base, cli, data, sci, test, tool, web)
 
@@ -219,29 +241,19 @@ object groupCheck extends Module:
   // (work-in-progress modules with no compiling sources yet).
   def disabledLibraries: Set[String] = Set()
 
-  // Components deliberately not included in any soundness.{base,cli,data,sci,test,
-  // tool,web} group bundle. Compiler plugins, internal subtypes, examples/demos,
-  // and helper modules that aren't published as part of `soundness-all` go here.
-  // The second group (after the blank line) are full Library cores not yet wired
-  // into any group bundle; review whether each belongs in a bundle or stays here.
+  // Published `Component`s deliberately not included in any soundness.{base,cli,data,sci,
+  // test,tool,web} group bundle: the compiler plugins (published but used via `-Xplugin`),
+  // and the `anticipation.*` interface components plus `proscenium.core`, which reach
+  // `soundness-all` transitively as dependencies of bundled modules. Non-published modules
+  // (demos, examples, the `flame` REPL, `satirical`) use the `Internal` trait instead and
+  // are not subject to this check.
   def excluded: Set[String] = Set(
-    "adversaria.examples", "anthology.bundle", "anthology.scala",
-    "anticipation.codec", "anticipation.color",
-    "anticipation.generic", "anticipation.gfx", "anticipation.html",
-    "anticipation.http", "anticipation.log", "anticipation.opaque",
-    "anticipation.path", "anticipation.print", "anticipation.text",
-    "anticipation.time", "anticipation.url",
-    "beneficence.core", "beneficence.plugin",
-    "dendrology.demo",
-    "ethereal.example", "exegesis.demo", "exoskeleton.args", "exoskeleton.core",
-    "exoskeleton.rig", "flame.client", "flame.core", "frontier.plugin", "probably.coverage",
-    "ultimatum.demo",
-    "quantitative.units",
-
-    "bitumen.core", "breviloquence.core", "cordillera.core", "distillate.core",
-    "embarcadero.oci", "exegesis.core", "gigantism.core", "locomotion.core",
-    "embarcadero.containerd", "obligatory.grpc", "proscenium.core", "satirical.core",
-    "stenography.core", "ultimatum.core", "ypsiloid.core"
+    "anticipation.codec", "anticipation.color", "anticipation.generic", "anticipation.gfx",
+    "anticipation.html", "anticipation.http", "anticipation.log", "anticipation.opaque",
+    "anticipation.path", "anticipation.print", "anticipation.text", "anticipation.time",
+    "anticipation.url",
+    "beneficence.core", "beneficence.plugin", "frontier.plugin",
+    "proscenium.core"
   )
 
   def validate(): Command[Unit] = Task.Command:
@@ -325,7 +337,7 @@ object adversaria extends Library:
   object core extends Component(rudiments.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object examples extends Component(core):
+  object examples extends Internal(core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(examples)
@@ -578,7 +590,7 @@ object dendrology extends Library:
   object dag extends Component(acyclicity.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object demo extends Component(dag, turbulence.core, ambience.core):
+  object demo extends Internal(dag, turbulence.core, ambience.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(tree, dag)
@@ -709,7 +721,7 @@ object ethereal extends Library:
     override def resources: T[Seq[PathRef]] =
       Task(super.resources() ++ Seq(rustRunners()))
 
-  object example extends Component(core, exoskeleton.completions):
+  object example extends Internal(core, exoskeleton.completions):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     // `mainClass` (not `finalMainClass`) is what flows into the assembly
@@ -799,7 +811,7 @@ object exegesis extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium",
         "-Xmax-inlines", "48")
 
-  object demo extends Component(core, ethereal.core, exoskeleton.completions):
+  object demo extends Internal(core, ethereal.core, exoskeleton.completions):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium",
         "-Xmax-inlines", "48")
@@ -820,7 +832,7 @@ object exoskeleton extends Library:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
 
-  object rig extends Component(completions, superlunary.core, ethereal.core, anthology.bundle, quantitative.units):
+  object rig extends Internal(completions, superlunary.core, ethereal.core, anthology.bundle, quantitative.units):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def mvnDeps =
@@ -831,13 +843,13 @@ object exoskeleton extends Library:
   object test extends Tests(rig)
 
 object flame extends Library:
-  object core extends Component(anthology.`scala`, inimitable.core, coaxial.core, eucalyptus.core,
+  object core extends Internal(anthology.`scala`, inimitable.core, coaxial.core, eucalyptus.core,
                                 stratiform.core, stratiform.binary, harlequin.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object client extends Component(core, ethereal.core, exoskeleton.completions, profanity.core,
+  object client extends Internal(core, ethereal.core, exoskeleton.completions, profanity.core,
                                   coaxial.core, urticose.core, stratiform.core, stratiform.binary,
                                   escapade.core, iridescence.core, harlequin.ansi, escritoire.core,
                                   ultimatum.core):
@@ -1265,7 +1277,7 @@ object rudiments extends Library:
   object test extends Tests(core, abacist.core, quantitative.units)
 
 object satirical extends Library:
-  object core extends Component(gossamer.core, turbulence.core, zephyrine.core):
+  object core extends Internal(gossamer.core, turbulence.core, zephyrine.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
@@ -1407,7 +1419,7 @@ object ultimatum extends Library:
   object core extends Component(profanity.core, escapade.core, yossarian.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object demo extends Component(core, ethereal.core, exoskeleton.completions):
+  object demo extends Internal(core, ethereal.core, exoskeleton.completions):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     override def mainClass: Task.Simple[Option[String]] = Some("ultimatum.demo")
