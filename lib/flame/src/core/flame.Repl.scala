@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package flux
+package flame
 
 import java.io as ji
 import java.lang as jl
@@ -318,7 +318,7 @@ class Repl[version <: Scalac.Versions]
   // sits in an `@experimental` scope because `Inspectable` is `@experimental`, so
   // this compiles even when the contextual `Scalac` is not in experimental mode.
   private def expressionCode(name: Text, key: Text, line: Text): Text =
-    val put: Text = t"flux.ReplBridge.put(${session.toString.tt}L, \"$key\", $name.inspect)"
+    val put: Text = t"flame.ReplBridge.put(${session.toString.tt}L, \"$key\", $name.inspect)"
 
     val lines: List[Text] =
       List

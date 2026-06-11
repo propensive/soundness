@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export flux.Repl
+export flame.Repl
