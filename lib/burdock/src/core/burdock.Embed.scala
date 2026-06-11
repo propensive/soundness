@@ -32,24 +32,60 @@
                                                                                                   */
 package burdock
 
-import soundness.*
+import java.nio.file as jnf
+import java.security as js
+import java.util as ju
 
-object Tests extends Suite(m"Burdock Tests"):
-  def run(): Unit =
-    suite(m"Dependency-hashing macro"):
-      val hashes: List[Text] = Embed.dependencyHashes
-      val home: Text = java.lang.System.getProperty("user.home").nn.tt
+import scala.quoted.*
 
-      test(m"captures a non-empty set of dependency hashes"):
-        hashes.length
-      .assert(_ > 0)
+import anticipation.*
+import gossamer.*
 
-      test(m"every hash is 64-character SHA-256 hex"):
-        hashes.all { hash => hash.length == 64 && hash.lower == hash }
-      .assert(_ == true)
+// The compile-time half of the Burdock redesign. `dependencyHashes` captures the
+// build's classpath, computes each dependency JAR's SHA-256, hard-links it into
+// the Burdock cache (`~/.cache/burdock/<sha256>.jar`) so its bytes stay
+// retrievable by hash locally, and embeds the SHA-256 list as compiled-in
+// literals. The published-vs-unpublished decision is deferred to repackage (where
+// deps.dev is queried); the cache covers anything deps.dev cannot resolve.
+object Embed:
+  inline def dependencyHashes: List[Text] = ${Embed.dependencyHashesMacro}
 
-      test(m"every hash is hard-linked into the Burdock cache"):
-        hashes.all: hash =>
-          val jar: Text = t"$home/.cache/burdock/$hash.jar"
-          java.nio.file.Files.exists(java.nio.file.Paths.get(jar.s).nn)
-      .assert(_ == true)
+  def dependencyHashesMacro(using Quotes): Expr[List[Text]] =
+    val classpath: String = quotes.absolve match
+      case quotes: runtime.impl.QuotesImpl =>
+        import dotty.tools.dotc.config.Settings.Setting.value
+        value(quotes.ctx.settings.classpath)(using quotes.ctx)
+
+    val hashes: List[String] = hashAndCache(classpath)
+
+    '{ ${Expr(hashes)}.map(_.tt) }
+
+  // Runs at compile time, in the compiler JVM: pure java.* so it needs nothing
+  // from the soundness runtime. Hard-links fall back to a copy across filesystems.
+  private def hashAndCache(classpath: String): List[String] =
+    val home: String = System.getProperty("user.home").nn
+    val cacheDir: jnf.Path = jnf.Paths.get(home, ".cache", "burdock").nn
+    jnf.Files.createDirectories(cacheDir)
+
+    val entries: Array[String | Null] = classpath.split(java.io.File.pathSeparator).nn
+    val hashes = List.newBuilder[String]
+    var i = 0
+
+    while i < entries.length do
+      val entry: String = entries(i).nn
+      i += 1
+      val path: jnf.Path = jnf.Paths.get(entry).nn
+
+      if entry.endsWith(".jar") && jnf.Files.isRegularFile(path) then
+        val bytes: Array[Byte] = jnf.Files.readAllBytes(path).nn
+        val digest: Array[Byte] = js.MessageDigest.getInstance("SHA-256").nn.digest(bytes).nn
+        val hex: String = ju.HexFormat.of().nn.formatHex(digest).nn
+        val target: jnf.Path = cacheDir.resolve(hex+".jar").nn
+
+        if !jnf.Files.exists(target) then
+          try jnf.Files.createLink(target, path)
+          catch case _: Throwable => jnf.Files.copy(path, target)
+
+        hashes += hex
+
+    hashes.result()
