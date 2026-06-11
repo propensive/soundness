@@ -170,15 +170,24 @@ trait Tel2:
                   else ctx.decoded(match0.vouch)
 
     inline def disjunction[derivation: SumReflection]: derivation is Tel.Decodable =
-      // A sum's precise per-variant schema is available from the standalone
-      // `Schematic` / `Tels.tels`; the codec-carried shape stays permissive (`Any`)
-      // because walking the variants (`delegate`) is `fallible` and would leak a
-      // `Tactic[VariantError]` requirement onto every codec.
+      // A sum is a single compound whose keyword is the variant's (kebab-cased) name;
+      // dispatch on that keyword and decode the same compound as the chosen variant.
+      // This is the discriminated form `Tel.Type.assign` and BinTEL also key on. The
+      // codec-carried shape stays permissive (`Any`) — walking the variants
+      // (`delegate`) is `fallible` and would leak a `Tactic[VariantError]` requirement
+      // onto every codec; the precise select schema comes from the standalone
+      // `Schematic` / `Tels.tels`.
       Tel.Decodable(Shape.Any):
         telVal =>
           provide[Tactic[TelError]]:
             provide[Tactic[VariantError]]:
-              val variantKeyword = telVal.primaryAtom
+              // The compound's keyword is the variant's kebab-cased name; map it back
+              // to the variant label `delegate` dispatches on.
+              val labels: Map[Text, Text] =
+                variantLabels[derivation].map { label => Tel.camelToKebab(label.s) -> label }.to(Map)
+
+              val variantKeyword: Text = labels.getOrElse(telVal.keyword, telVal.keyword)
+
               delegate(variantKeyword): [variant <: derivation] =>
                 ctx => ctx.decoded(telVal)
 
@@ -216,10 +225,20 @@ trait Tel2:
           Tel.compound(t"", IArray.empty, IArray.from(compounds))
 
     inline def disjunction[derivation: SumReflection]: derivation is Tel.Encodable =
+      // A sum encodes as a single compound whose keyword is the variant's (kebab-cased)
+      // name, with the variant's fields as its children — the discriminated form the
+      // decoder, `Tel.Type.assign` and BinTEL all key on. The codec-carried shape stays
+      // permissive (`Any`); the precise select schema comes from the standalone
+      // `Schematic` / `Tels.tels`.
       Tel.Encodable(Shape.Any):
         value =>
           variant(value): [variant <: derivation] =>
-            v => contextual.encode(v)
+            v =>
+              val keyword: Text = Tel.camelToKebab(label.s)
+
+              contextual.encode(v).subtree match
+                case compound: Tel.Compound => Tel.make(compound.copy(keyword = keyword))
+                case other                  => Tel.make(other)
 
   // Primitive instances: Text/Int/Long/Double/Boolean as Compound + inline
   // atom. These mirror jacinta.Json's primitive decoders but go through

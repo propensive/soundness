@@ -67,6 +67,11 @@ object Tests extends Suite(m"Stratiform Tests"):
   case class PersonAge(name: Text, age: Int) derives CanEqual
   case class Team(name: Text, members: List[Person]) derives CanEqual
 
+  enum Shape2 derives CanEqual:
+    case Circle(radius: Int)
+    case Rectangle(width: Int, height: Int)
+    case Dot
+
 
   def run(): Unit =
     suite(m"Positive corpus"):
@@ -226,6 +231,26 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"an empty List field encodes as no compounds"):
         Tests.Team(t"Reds", Nil).encode.childCompounds.filter(_.keyword == t"members").length
       . assert(_ == 0)
+
+      test(m"a sum encodes with the variant name as the compound keyword"):
+        val shape: Tests.Shape2 = Tests.Shape2.Circle(7)
+        shape.encode.keyword
+      . assert(_ == t"circle")
+
+      test(m"a single-field sum variant round-trips"):
+        val shape: Tests.Shape2 = Tests.Shape2.Circle(7)
+        shape.encode.as[Tests.Shape2]
+      . assert(_ == Tests.Shape2.Circle(7))
+
+      test(m"a multi-field sum variant round-trips"):
+        val shape: Tests.Shape2 = Tests.Shape2.Rectangle(3, 4)
+        shape.encode.as[Tests.Shape2]
+      . assert(_ == Tests.Shape2.Rectangle(3, 4))
+
+      test(m"a fieldless sum variant round-trips"):
+        val shape: Tests.Shape2 = Tests.Shape2.Dot
+        shape.encode.as[Tests.Shape2]
+      . assert(_ == Tests.Shape2.Dot)
 
     suite(m"`over Tel` decoder shorthand"):
       test(m"`read[T over Tel]` resolves a value directly from text"):
