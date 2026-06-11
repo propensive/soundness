@@ -985,3 +985,31 @@ object Tests extends Suite(m"Escapade tests"):
       test(m"trailing style is reset after styled prefix"):
         e"$Bold(abc)def".trailingStyle
       . assert(_ == 0L)
+
+    // ─── Imprintable: grapheme-cell decomposition ──────────────────────────
+
+    suite(m"Imprintable"):
+      def cellList[content](value: content)(using imprintable: content is Imprintable)
+      :   List[(Grapheme, StyleWord)] =
+        var cells: List[(Grapheme, StyleWord)] = Nil
+
+        imprintable.cells(value): (grapheme, style) =>
+          cells = (grapheme, style) :: cells
+
+        cells.reverse
+
+      test(m"plain Text decomposes into one cell per grapheme"):
+        cellList(t"abc").map(_._1.text)
+      . assert(_ == List(t"a", t"b", t"c"))
+
+      test(m"plain Text cells carry the default style"):
+        cellList(t"abc").map(_._2 == StyleWord.Default)
+      . assert(_ == List(true, true, true))
+
+      test(m"an accented character is a single grapheme cell"):
+        cellList(t"é").length
+      . assert(_ == 1)
+
+      test(m"a styled Teletype carries its style per cell"):
+        cellList(e"a$Bold(b)c").map(_._2.isBold)
+      . assert(_ == List(false, true, false))

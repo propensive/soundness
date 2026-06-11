@@ -59,7 +59,7 @@ extends GridSurface(rect.width, rect.height), Extent:
 
     while r < height do
       parent.move(rect.left.z, (rect.top + r).z)
-      parent.put(rowText(r))
+      parent.put(rowContent(r, gridWidth))
       r += 1
 
   // `Stdio` members: routing `Out` output (and other `Stdio` writes) into this

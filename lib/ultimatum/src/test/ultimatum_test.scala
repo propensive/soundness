@@ -79,6 +79,18 @@ object Tests extends Suite(m"Ultimatum Tests"):
         flow.render
       . assert(_ == t"abc\ndef")
 
+      test(m"a wide (CJK) grapheme occupies two cells"):
+        val flow = extent(4, 1)
+        flow.put(t"a中b")
+        flow.render
+      . assert(_ == t"a中b")
+
+      test(m"a wide grapheme wraps when it would straddle the right edge"):
+        val flow = extent(3, 2)
+        flow.put(t"ab中")
+        flow.render
+      . assert(_ == t"ab \n中 ")
+
       test(m"a newline moves to the start of the next row"):
         val flow = extent(5, 3)
         flow.put(t"ab\ncd")
@@ -297,6 +309,17 @@ object Tests extends Suite(m"Ultimatum Tests"):
       def capturing(): (ji.ByteArrayOutputStream, Stdio) =
         val bytes = ji.ByteArrayOutputStream()
         (bytes, Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic))
+
+      test(m"a styled cell emits its colour as SGR"):
+        val bytes = ji.ByteArrayOutputStream()
+        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.xtermTrueColor)
+        val root = InlineRoot(3, 4)
+        root.reframe(3, 1)
+        root.move(Prim, Prim)
+        root.put(e"$Bold(hi)")
+        root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_.contains(t"[1m"))
 
       // The block (2 rows) is docked to the bottom of the 4-row terminal: it scrolls
       // 2 rows in (`\n\n`) to reserve space, then draws each row at an absolute screen

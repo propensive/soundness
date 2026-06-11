@@ -37,6 +37,7 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.{where as _, *}
+import hieroglyph.*, textMetrics.wideCharacterWidth
 import rudiments.*
 import spectacular.*
 import vacuous.*
@@ -50,25 +51,46 @@ object LineEditor:
     case SingleLine
     case Multiline(submit: Text => Boolean)
 
-  // (row, column) of `position` in `text` laid out `cols` wide, counting embedded
-  // newlines and wrapping long lines; reduces to `position/cols`, `position%cols`
-  // when there are no newlines.
+  // (row, column) of character offset `position` in `text` laid out `cols` wide,
+  // exactly as a cell grid does: it walks grapheme clusters (so a wide CJK glyph or an
+  // emoji is one cell of display-width 2, a combining mark 0), advancing by display
+  // width and wrapping a grapheme that would exceed `cols`, with an embedded newline
+  // moving to the start of the next row. Reduces to `position/cols`, `position%cols`
+  // for plain single-width text with no newlines.
   def cursorPosition(text: Text, position: Int, cols: Int): (Int, Int) =
-    val string:    String = text.s
-    val limit:     Int    = position.min(string.length)
-    var rows:      Int    = 0
-    var lineStart: Int    = 0
-    var index:     Int    = 0
+    val metric:     Grapheme is Measurable = summon[Grapheme is Measurable]
+    val string:     String                 = text.s
+    val limit:      Int                    = position.min(string.length)
+    val boundaries: IArray[Int]            = Writing(text).boundaries
+    var row:        Int                    = 0
+    var column:     Int                    = 0
+    var index:      Int                    = 0
 
-    while index < limit do
-      if string.charAt(index) == '\n' then
-        rows += (index - lineStart)/cols + 1
-        lineStart = index + 1
+    while index < boundaries.length - 1 && boundaries(index) < limit do
+      val start = boundaries(index)
+      val end   = boundaries(index + 1)
+
+      if end - start == 1 && string.charAt(start) == '\n' then
+        row += 1
+        column = 0
+      else
+        val cellWidth = metric.width(Grapheme(string.substring(start, end).nn))
+
+        if cols > 0 && column + cellWidth > cols then
+          row += 1
+          column = 0
+
+        column += cellWidth
 
       index += 1
 
-    val column = limit - lineStart
-    (rows + column/cols, column%cols)
+    // An exact-fill row leaves the caret at column `cols`; wrap it to the next row's
+    // start, matching the grid (where the next cell would wrap).
+    if cols > 0 && column >= cols then
+      row += column/cols
+      column = column%cols
+
+    (row, column)
 
 case class LineEditor
   ( value:     Text            = t"",

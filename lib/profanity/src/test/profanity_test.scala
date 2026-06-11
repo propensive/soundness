@@ -314,6 +314,14 @@ object Tests extends Suite(m"Profanity Tests"):
         edited(Keypress.CharKey('h'), Keypress.CharKey('i'), Keypress.Enter)
       . assert(_ == t"hi")
 
+      test(m"cursorPosition counts a wide grapheme as two columns"):
+        LineEditor.cursorPosition(t"中b", 2, 10)
+      . assert(_ == (0, 3))
+
+      test(m"cursorPosition wraps a wide grapheme that would straddle the edge"):
+        LineEditor.cursorPosition(t"ab中", 3, 3)
+      . assert(_ == (1, 2))
+
       test(m"Backspace removes the previous character"):
         edited
           ( Keypress.CharKey('h'), Keypress.CharKey('i'), Keypress.CharKey('x'),

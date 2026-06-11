@@ -169,9 +169,33 @@ object SourceCode:
             case -1    => xs :: acc
             case index => lines(xs.drop(index + 1), xs.take(index) :: acc)
 
+    def quoted(text: Text): Boolean =
+      text.length > 0
+      && { val first = text.s.charAt(0); first == '"' || first == '\'' || first == '`' }
+
+    // Recovering from an unterminated quoted literal at the end of the input, the
+    // Scala scanner spills the literal's final character into a separate token — so
+    // `"ab` lexes as an error token `"a` followed by an identifier `b`. Fold each
+    // such trailing run back into the error token, so an in-progress string (or char
+    // or backquoted identifier) highlights as one consistent unit rather than having
+    // its last character mis-coloured.
+    def coalesce(sequence: List[Token]): List[Token] = sequence match
+      case Nil => Nil
+
+      case head :: tail if head.accent == Accent.Error && quoted(head.text) =>
+        val (spill, rest) = tail.span(_.accent != Accent.Unparsed)
+
+        if spill.isEmpty then head :: coalesce(tail)
+        else head.copy(text = t"${head.text}${spill.map(_.text).join}") :: coalesce(rest)
+
+      case head :: tail =>
+        head :: coalesce(tail)
+
+    val tokens: List[Token] = coalesce(soften(stream()).to(List))
+
     // Give each token a `Line`-mode `Span` with its 0-based line and column,
     // accumulating token widths along each assembled line.
-    val positioned = lines(soften(stream()).to(List)).reverse.zipWithIndex.map: (tokens, index) =>
+    val positioned = lines(tokens).reverse.zipWithIndex.map: (tokens, index) =>
       tokens.zip(tokens.scanLeft(0)(_ + _.length)).map: (token, column) =>
         token.copy(span = Span.line(index.z, column.z, token.length))
 

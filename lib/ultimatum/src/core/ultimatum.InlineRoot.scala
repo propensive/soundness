@@ -144,11 +144,19 @@ extends GridSurface(widthFn(), 0):
     // so it can never wrap (a wrapped row would scroll the screen and break addressing).
     emit(csi.cup(top, 1))
 
+    // Each row is rendered to SGR from its styled cells, then reset (`sgr(0)`) so the
+    // next absolutely-addressed, `el(2)`-cleared row starts from a clean style and no
+    // colour bleeds across the frame.
+    val termcap = summon[Stdio].termcap
     var r = 0
 
     while r < h do
       emit(csi.el(2))
-      emit(rowText(r).keep(columns))
+      val rendered = rowContent(r, columns).render(termcap)
+      emit(rendered)
+      // Reset only after a row that actually emitted SGR, so a plain row is byte-for-
+      // byte as before and no colour bleeds into the next `el(2)`-cleared row.
+      if rendered.contains(t"\e") then emit(csi.sgr(0))
       emit(t"\r")
       if r < h - 1 then emit(t"\n")
       r += 1
