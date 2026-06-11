@@ -52,18 +52,17 @@ import gossamer.*
 import harlequin.*
 import hellenism.*
 import inimitable.*
-import jacinta.*
 import parasite.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
+import stratiform.*
 import turbulence.*
 import urticose.*
 import vacuous.*
 
 import hieroglyph.charEncoders.utf8
 import interfaces.paths.pathOnLinux
-import jsonDiscriminables.discriminatedUnionByKind
 import stenography.Syntax
 
 object Repl:
@@ -102,6 +101,16 @@ object Repl:
   // type, …) and its rendered type `signature`. The Harlequin `Completion`'s
   // `Syntax` signature is rendered to text here so the reply serializes simply.
   case class CompletionItem(name: Text, kind: Text, signature: Text)
+
+  // A `Reply` variant carries a `List` of these leaf products, so its Decodable
+  // derivation graph (sum → variant → `List` → product) overflows inline derivation
+  // under the REPL's minimal predef. Anchoring the leaves with explicit derived
+  // instances keeps the graph shallow enough to resolve.
+  given tokenDecodable: Tactic[TelError] => Token is Tel.Decodable =
+    Tel.DecodableDerivation.derived
+
+  given completionItemDecodable: Tactic[TelError] => CompletionItem is Tel.Decodable =
+    Tel.DecodableDerivation.derived
 
   // A request from a connected client. `id` is echoed in the reply so the client
   // can re-associate replies that arrive out of order (a fast `tokenize` may
@@ -432,38 +441,38 @@ class Repl[version <: Scalac.Versions]
     // back out of order. A write mutex stops concurrent replies interleaving.
     val writes: Mutex = Mutex()
 
+    // Each message is a 4-byte big-endian length prefix followed by that many BinTEL
+    // body bytes (binary, so no textual delimiter is safe). `readInt` raises at EOF.
     try
-      val reader = ji.BufferedReader(ji.InputStreamReader(input, "UTF-8"))
-      val writer = ji.OutputStreamWriter(output, "UTF-8")
-      val buffer: StringBuilder = StringBuilder()
-      var line: String | Null = reader.readLine()
+      val in: ji.DataInputStream  = ji.DataInputStream(ji.BufferedInputStream(input))
+      val out: ji.DataOutputStream = ji.DataOutputStream(ji.BufferedOutputStream(output))
+      var continue: Boolean = true
 
-      while line != null do
-        if line.nn.isEmpty then
-          if buffer.length > 0 then
-            val message: Text = buffer.toString.tt.trim
-            buffer.clear()
+      while continue do
+        val length: Int = try in.readInt() catch case _: ji.IOException => -1
 
-            async:
-              // A stray throwable in one message becomes an error reply, not a
-              // dropped connection, so the session survives. `Unset` (a `quit`) is
-              // not answered.
-              val response: Optional[Text] =
-                try respond(message)
-                catch case error: Throwable =>
-                  encode(Repl.Reply.Failed(0, error.toString.tt))
-
-              response.let: payload =>
-                writes:
-                  try
-                    writer.write(payload.s)
-                    writer.write("\n\n")
-                    writer.flush()
-                  catch case _: Throwable => ()
+        if length < 0 then continue = false
         else
-          buffer.append(line.nn).append("\n")
+          val bytes: Array[Byte] = new Array[Byte](length)
+          in.readFully(bytes)
+          val message: Data = bytes.immutable(using Unsafe)
 
-        line = reader.readLine()
+          async:
+            // A stray throwable in one message becomes an error reply, not a
+            // dropped connection, so the session survives. `Unset` (a `quit`) is
+            // not answered.
+            val response: Optional[Data] =
+              try respond(message)
+              catch case error: Throwable =>
+                encode(Repl.Reply.Failed(0, error.toString.tt))
+
+            response.let: payload =>
+              writes:
+                try
+                  out.writeInt(payload.length)
+                  out.write(payload.mutable(using Unsafe))
+                  out.flush()
+                catch case _: Throwable => ()
 
     catch case _: Throwable => ()
 
@@ -471,11 +480,11 @@ class Repl[version <: Scalac.Versions]
   // for live editing); a `submit` compiles and runs; a `quit` signals the server to
   // shut down and is not answered. A malformed request becomes a `Failed` reply
   // rather than a dropped connection. `Unset` means no reply is sent.
-  private def respond(message: Text)(using Monitor, System, Probate)
-  :   Optional[Text] logs CompileEvent =
+  private def respond(message: Data)(using Monitor, System, Probate)
+  :   Optional[Data] logs CompileEvent =
 
     val request: Optional[Repl.Request] =
-      safely[Exception](Json.parseTracked(message).as[Repl.Request])
+      safely[Exception](Bintel.read[Repl.Request](message))
 
     request.lay(encode(Repl.Reply.Failed(0, t"the request could not be parsed"))):
       case Repl.Request.Tokenize(id, code)         => tokenized(id, code)
@@ -483,13 +492,13 @@ class Repl[version <: Scalac.Versions]
       case Repl.Request.Complete(id, code, offset) => complete(id, code, offset)
       case Repl.Request.Quit(_)                    => quit.offer(()) yet Unset
 
-  private def tokenized(id: Int, code: Text): Text =
+  private def tokenized(id: Int, code: Text): Data =
     encode(Repl.Reply.Tokenized(id, Repl.tokenize(code)))
 
   // Computes tab completions at `offset` in `code` and replies (with `id`). Holds
   // `mutex` like `submit`, since the shared compiler is not reentrant.
   private def complete(id: Int, code: Text, offset: Int)(using Monitor, System, Probate)
-  :   Text logs CompileEvent =
+  :   Data logs CompileEvent =
 
     given LocalClasspath = classpath
 
@@ -500,7 +509,7 @@ class Repl[version <: Scalac.Versions]
   // Typecheck-highlights, compiles, and runs `code`, replying (with `id`) with the
   // highlighting, the result value, and any diagnostics. The whole body holds
   // `mutex`, so concurrent submits serialize and never drive the compiler at once.
-  private def submit(id: Int, code: Text)(using Monitor, System, Probate): Text logs CompileEvent =
+  private def submit(id: Int, code: Text)(using Monitor, System, Probate): Data logs CompileEvent =
     given LocalClasspath = classpath
 
     val reply: Repl.Reply = mutex:
@@ -525,7 +534,6 @@ class Repl[version <: Scalac.Versions]
 
     encode(reply)
 
-  // `Json` is `Dynamic`, so `.show`/`.root` are intercepted; summon the
-  // `Encodable in Text` instance explicitly to render compact JSON.
-  private def encode(reply: Repl.Reply): Text =
-    summon[Json is Encodable in Text].encoded(reply.json)
+  // Serializes a `Reply` to BinTEL body bytes, deriving the schema from the type
+  // (`value.bintel`). A valid reply always type-assigns, so the encode is total.
+  private def encode(reply: Repl.Reply): Data = unsafely(reply.bintel)
