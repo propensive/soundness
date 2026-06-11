@@ -39,7 +39,6 @@ import java.util as ju
 import scala.quoted.*
 
 import anticipation.*
-import gossamer.*
 
 // The compile-time half of the Burdock redesign. `dependencyHashes` captures the
 // build's classpath, computes each dependency JAR's SHA-256, hard-links it into
@@ -60,12 +59,14 @@ object Embed:
       case quotes: runtime.impl.QuotesImpl =>
         import dotty.tools.dotc.config.Settings.Setting.value
         val ctx = quotes.ctx
-        (value(ctx.settings.classpath)(using ctx), value(ctx.settings.outputDir)(using ctx).jpath.nn)
+        val classpath0: String = value(ctx.settings.classpath)(using ctx)
+        val outputDir0: jnf.Path = value(ctx.settings.outputDir)(using ctx).jpath.nn
+        (classpath0, outputDir0)
 
     val hashes: List[String] = hashAndCache(classpath)
     writeResource(outputDir, hashes)
 
-    '{ ${Expr(hashes)}.map(_.tt) }
+    '{${Expr(hashes)}.map(_.tt)}
 
   // Writes the hash list into the compile output as `META-INF/burdock.deps`, so
   // it is packaged into the JAR as an ordinary resource.

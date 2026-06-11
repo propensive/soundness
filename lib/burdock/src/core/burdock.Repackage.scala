@@ -34,16 +34,25 @@ package burdock
 
 import anticipation.*
 import contingency.*
+import digression.*
+import distillate.*
 import fulminate.*
+import galilei.*
 import gossamer.*
 import prepositional.*
+import revolution.*
 import rudiments.*
+import serpentine.*
+import spectacular.*
+import symbolism.*
+import turbulence.*
 import urticose.*
 import vacuous.*
+import zeppelin.*
 
+import Bootstrapper.given
+import Bootstrapper.{BurdockMain, BurdockRequire, BurdockVerbosity, Entry, Requirement}
 import errorDiagnostics.empty
-
-import Bootstrapper.{Requirement, Entry}
 
 // The repackager. Reads the dependency hashes embedded by the compile-time macro
 // and partitions them: a hash that resolves to a public URL is externalized (a
@@ -52,15 +61,17 @@ import Bootstrapper.{Requirement, Entry}
 // every dependency is either externalized or inlined — a hash that is neither is
 // an error.
 object Repackage:
-  case class RepackageError(hash: Text)(using Diagnostics)
-  extends Error(m"the dependency with hash $hash is neither publicly downloadable nor cached")
+  case class RepackageError(detail: Message)(using Diagnostics) extends Error(detail)
+
+  // Resolves a dependency hash to its public URL (deps.dev), or `Unset`.
+  type Resolver = Text => Optional[HttpUrl]
+
+  // Looks up a dependency hash's class entries in the local cache, or `Unset`.
+  type CacheReader = Text => Optional[List[Entry]]
 
   // Pure partition; `resolve` (deps.dev) and `cached` (cache lookup) are injected
   // so the logic is testable without the network or the filesystem.
-  def partition
-     (hashes:  List[Text],
-      resolve: Text => Optional[HttpUrl],
-      cached:  Text => Optional[List[Entry]])
+  def partition(hashes: List[Text], resolve: Resolver, cached: CacheReader)
   :   (List[Requirement], List[Entry]) raises RepackageError =
 
     val requirements = List.newBuilder[Requirement]
@@ -68,7 +79,70 @@ object Repackage:
 
     hashes.each: hash =>
       resolve(hash) match
-        case url: HttpUrl => requirements += Requirement(url, hash)
-        case Unset        => cached(hash).lay(abort(RepackageError(hash)))(inlined ++= _)
+        case url: HttpUrl =>
+          requirements += Requirement(url, hash)
+
+        case Unset =>
+          val error = RepackageError(m"dependency $hash is neither published nor cached")
+          cached(hash).lay(abort(error))(inlined ++= _)
 
     (requirements.result(), inlined.result())
+
+
+  // Rewrites `inputJar` into `outputJar`: keeps the application's own classes,
+  // externalizes published dependencies as `Burdock-Require` references, inlines
+  // the rest from the cache, and sets `Main-Class` to the runtime bootstrap.
+  // `resolve`/`cached` are injected; `bootstrapClass` is the `burdock.Bootstrap`
+  // class bytes (force-included since it can't itself be downloaded).
+  def repackage
+    ( inputJar: Path on Linux, outputJar: Path on Linux, resolve: Resolver, cached: CacheReader,
+      bootstrapClass: Data )
+  :   Unit raises RepackageError =
+
+    whereas:
+      case IoError(_, _, _, _)  => RepackageError(m"a filesystem error occurred while repackaging")
+      case StreamError(_)       => RepackageError(m"a stream error occurred while repackaging")
+      case ZipError(_)          => RepackageError(m"the JAR could not be read or written")
+      case PathError(_, _)      => RepackageError(m"a path could not be resolved while repackaging")
+      case NumberError(_, _, _) => RepackageError(m"the manifest contained malformed data")
+      case FqcnError(_, _)      => RepackageError(m"the Main-Class is not a valid class name")
+
+    . mitigate:
+        val resource: Text = Embed.ResourcePath.tt
+        var manifestData: Optional[Data] = Unset
+        var depsData: Optional[Data] = Unset
+        val ownBuilder = List.newBuilder[Entry]
+
+        Zipfile.read(inputJar).entries.each: entry =>
+          val name: Text = entry.ref.show
+
+          if name == t"META-INF/MANIFEST.MF" then manifestData = entry.read[Data]
+          else if name == resource then depsData = entry.read[Data]
+          else ownBuilder += Entry(name, entry.read[Data])
+
+        val manifest: Manifest =
+          manifestData.lest(RepackageError(m"the JAR has no manifest")).read[Manifest]
+
+        val hashes: List[Text] =
+          depsData.lest(RepackageError(m"the JAR has no $resource resource")).utf8
+          . cut(t"\n").filter(_ != t"")
+
+        val ownEntries: List[Entry] = ownBuilder.result()
+        val (requirements, inlined) = partition(hashes, resolve, cached)
+
+        import manifestAttributes.*
+
+        val originalMain =
+          manifest(MainClass).lest(RepackageError(m"the JAR manifest has no Main-Class"))
+
+        val manifest2: Manifest =
+          manifest - MainClass + BurdockRequire(requirements) + BurdockMain(originalMain)
+          + BurdockVerbosity(t"silent") + MainClass(fqcn"burdock.Bootstrap")
+
+        val bootstrap: Entry = Entry(t"burdock/Bootstrap.class", bootstrapClass)
+        val entries: List[Entry] = bootstrap :: ownEntries ++ inlined
+
+        Zipfile.write(outputJar):
+          Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest2.serialize)
+          #:: entries.to(Stream).map: entry =>
+            Zip.Entry(entry.name.decode[Path on Zip], () => Stream(entry.data))

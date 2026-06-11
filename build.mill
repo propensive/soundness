@@ -456,7 +456,7 @@ object burdock extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object core
       extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.core,
-                       gastronomy.core, jacinta.core):
+                       gastronomy.core, jacinta.core, boot):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
