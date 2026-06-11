@@ -170,17 +170,26 @@ trait Tel2:
                   else ctx.decoded(match0.vouch)
 
     inline def disjunction[derivation: SumReflection]: derivation is Tel.Decodable =
-      // A sum's precise per-variant schema is available from the standalone
-      // `Schematic` / `Tels.tels`; the codec-carried shape stays permissive (`Any`)
-      // because walking the variants (`delegate`) is `fallible` and would leak a
-      // `Tactic[VariantError]` requirement onto every codec.
+      // A sum is a document whose single child compound is the chosen variant, keyed by
+      // the variant's (kebab-cased) name. Dispatch on that child's keyword and decode it
+      // as the variant. This is the select-member form `Tel.Type.assign` and BinTEL key
+      // on. The codec-carried shape stays permissive (`Any`) — walking the variants
+      // (`delegate`) is `fallible` and would leak a `Tactic[VariantError]` requirement
+      // onto every codec; the precise select schema comes from the standalone
+      // `Schematic` / `Tels.tels`.
       Tel.Decodable(Shape.Any):
         telVal =>
           provide[Tactic[TelError]]:
             provide[Tactic[VariantError]]:
-              val variantKeyword = telVal.primaryAtom
+              // Map the variant's kebab keyword back to the label `delegate` dispatches on.
+              val labels: Map[Text, Text] =
+                variantLabels[derivation].map { label => Tel.camelToKebab(label.s) -> label }.to(Map)
+
+              val variant: Tel = Tel.make(telVal.childCompounds.head)
+              val variantKeyword: Text = labels.getOrElse(variant.keyword, variant.keyword)
+
               delegate(variantKeyword): [variant <: derivation] =>
-                ctx => ctx.decoded(telVal)
+                ctx => ctx.decoded(variant)
 
   object EncodableDerivation extends Derivable[Tel.Encodable]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -216,10 +225,25 @@ trait Tel2:
           Tel.compound(t"", IArray.empty, IArray.from(compounds))
 
     inline def disjunction[derivation: SumReflection]: derivation is Tel.Encodable =
+      // A sum encodes as a document whose single child compound is the chosen variant,
+      // keyed by the variant's (kebab-cased) name with the variant's fields as its own
+      // children. This is the select-member form `Tel.Type.assign` and BinTEL key on (the
+      // variant is a member of the document, matched by the schema's `SelectRef`), and it
+      // round-trips identically to the same document parsed from text. The codec-carried
+      // shape stays permissive (`Any`); the precise select schema comes from the standalone
+      // `Schematic` / `Tels.tels`.
       Tel.Encodable(Shape.Any):
         value =>
           variant(value): [variant <: derivation] =>
-            v => contextual.encode(v)
+            v =>
+              val keyword: Text = Tel.camelToKebab(label.s)
+
+              contextual.encode(v).subtree match
+                case compound: Tel.Compound =>
+                  Tel.compound(t"", IArray.empty, IArray(compound.copy(keyword = keyword)))
+
+                case other =>
+                  Tel.make(other)
 
   // Primitive instances: Text/Int/Long/Double/Boolean as Compound + inline
   // atom. These mirror jacinta.Json's primitive decoders but go through
