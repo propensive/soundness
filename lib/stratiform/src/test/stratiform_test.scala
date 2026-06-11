@@ -1414,16 +1414,15 @@ object Tests extends Suite(m"Stratiform Tests"):
           case _ => Nil
       . assert(_ == List(t"Alice"))
 
-      test(m"a derived sum schema round-trips a variant's fields through BinTEL"):
-        val schema = Tels.tels[Tests.Shape2](t"shape")
+      test(m"a value derives its own schema and round-trips through BinTEL"):
         val shape: Tests.Shape2 = Tests.Shape2.Rectangle(3, 4)
-        val bytes = shape.encode.bintel(schema)
+        val schema = Tels.tels[Tests.Shape2](t"shape")
 
         def values(element: Tel.Element): List[Text] = element match
           case Tel.Element.Node(_, _, children) => children.to(List).flatMap(values)
           case Tel.Element.Value(_, _, text)    => List(text)
 
-        values(Bintel.decode(bytes, schema))
+        values(Bintel.decode(shape.bintel, schema))
       . assert(_ == List(t"3", t"4"))
 
       test(m"empty scalar value round-trips"):

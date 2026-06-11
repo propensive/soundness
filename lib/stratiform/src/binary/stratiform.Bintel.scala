@@ -106,6 +106,14 @@ extension (element: Tel.Element)
   // BLAKE3 digest of this element's BinTEL body (§3 value hash).
   def valueHash(schema: Tels): Digest in Blake3 = element.bintel(schema).digest[Blake3]
 
+extension [value: Tel.Encodable](value: value)
+  // Encode any value to BinTEL body bytes, deriving the schema from its type:
+  // `value.bintel` is `value.encode.bintel(Tels.tels[value](…))`. The schema name is
+  // internal (a BinTEL body never embeds it), so a decoder that derives the schema from
+  // the same type agrees on the layout regardless of the chosen name.
+  def bintel(using value is TelSchematic over Tels.Type): Data raises TelError =
+    value.encode.bintel(Tels.tels[value](Text("root")))
+
 object Bintel:
 
   // §6 magic number: the 4 bytes that prefix every BinTEL document.
