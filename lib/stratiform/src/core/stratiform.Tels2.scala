@@ -32,6 +32,8 @@
                                                                                                   */
 package stratiform
 
+import scala.compiletime.*
+
 import adversaria.*
 import anticipation.*
 import distillate.*
@@ -78,6 +80,12 @@ object telSchematics:
 trait TelSchematic extends Schematic:
   def polarity: Tels.Polarity = Tels.Polarity.Tight
   def repeatable: Tels.Polarity = Tels.Polarity.Implicit
+
+  // Named `select` definitions a sum type contributes to the schema's namespace
+  // (a select is referenced by name, never inlined). Empty for scalars and
+  // products; a sum returns its own `SelectDefinition` here while `schema()`
+  // returns a `Reference` to it.
+  def selectDefinitions: List[Tels.SelectDefinition] = Nil
 
 // Schema derivation for TEL: scalars map to `Tels.Scalar`, products to a
 // `Tels.Struct` of `Field`s, collections to a `Struct` with a repeatable `item`
@@ -144,10 +152,20 @@ trait Tels2:
     TelsDerivation.derived
 
   // Assembles a self-contained `Tels` document whose root struct is the schema of
-  // `value`.
-  def tels[value: Schematic over Tels.Type](name: Text): Tels = value.schema().absolve match
-    case struct: Tels.Struct =>
-      Tels(name, struct, IArray.empty, Unset, IArray.empty, IArray.empty, IArray.empty)
+  // `value`, registering any `select` definitions the type contributes. A top-level
+  // sum's schema is a `Reference`, so its document root is a struct with a single
+  // select member referencing the registered `SelectDefinition`.
+  def tels[value](name: Text)(using schematic: value is TelSchematic over Tels.Type): Tels =
+    val selects: IArray[Tels.SelectDefinition] = IArray.from(schematic.selectDefinitions)
+
+    schematic.schema().absolve match
+      case struct: Tels.Struct =>
+        Tels(name, struct, IArray.empty, Unset, IArray.empty, IArray.empty, selects)
+
+      case Tels.Reference(reference) =>
+        val member = Tels.SelectRef(Polarity.Implicit, Polarity.Implicit, reference)
+        val root   = Tels.Struct(IArray(member), IArray.empty)
+        Tels(name, root, IArray.empty, Unset, IArray.empty, IArray.empty, selects)
 
 object Tels2:
   // Reifies a codec's format-neutral `Shape` (carried by `Tel.Encodable` /
@@ -210,7 +228,43 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
 
       Tels.Struct(IArray.from(members), IArray.empty)
 
-  // TEL sums (selects) are not yet derived structurally; a permissive empty
-  // struct lets a containing type still derive a schema.
-  inline def disjunction[derivation: SumReflection]: derivation is TelSchematic over Tels.Type =
-    () => Tels.Struct(IArray.empty, IArray.empty)
+  // The variants of a sum, as schema `Variant`s: each variant's keyword is its
+  // kebab-cased name (the discriminator the codec writes) and its type is the
+  // variant product's own derived struct. A value-less fold over the mirror's
+  // element types, so the whole select is available without an instance.
+  private transparent inline def variants[variants <: Tuple, labels <: Tuple]
+  :   List[Tels.Variant] =
+
+    inline erasedValue[variants] match
+      case _: (variant *: moreVariants) =>
+        inline erasedValue[labels] match
+          case _: (label *: moreLabels) =>
+            val keyword: Text = Tel.camelToKebab(constValue[label & String])
+            val variantType: Tels.Type = infer[variant is TelSchematic over Tels.Type].schema()
+            Tels.Variant(keyword, variantType) :: variants[moreVariants, moreLabels]
+
+      case _ =>
+        Nil
+
+  // The schematic for a sum: `schema()` indirects to the named select; the select
+  // itself is surfaced through `selectDefinitions` for registration. A plain `def`
+  // (not the inline body) so the anonymous class is compiled once, not per call site.
+  private def selectSchematic(select: Tels.SelectDefinition): TelSchematic over Tels.Type =
+    new TelSchematic:
+      type Transport = Tels.Type
+      def schema(): Tels.Type = Tels.Reference(select.name)
+      override def selectDefinitions: List[Tels.SelectDefinition] = List(select)
+
+  // A sum derives to a named `SelectDefinition` (its variants) registered in the
+  // namespace, with `schema()` returning a `Reference` to it — the indirected form
+  // `Tel.Type.assign` and BinTEL resolve. Mirrors the codec's discriminator.
+  inline def disjunction[derivation](using reflection: SumReflection[derivation])
+  :   derivation is TelSchematic over Tels.Type =
+
+    val name: Text = constValue[reflection.MirroredLabel].tt
+
+    val selectVariants: List[Tels.Variant] =
+      variants[reflection.MirroredElemTypes, reflection.MirroredElemLabels]
+
+    val select = Tels.SelectDefinition(name, IArray.from(selectVariants), IArray.empty)
+    selectSchematic(select).asInstanceOf[derivation is TelSchematic over Tels.Type]

@@ -232,9 +232,9 @@ object Tests extends Suite(m"Stratiform Tests"):
         Tests.Team(t"Reds", Nil).encode.childCompounds.filter(_.keyword == t"members").length
       . assert(_ == 0)
 
-      test(m"a sum encodes with the variant name as the compound keyword"):
+      test(m"a sum encodes its variant as a child keyed by the variant name"):
         val shape: Tests.Shape2 = Tests.Shape2.Circle(7)
-        shape.encode.keyword
+        shape.encode.childCompounds.head.keyword
       . assert(_ == t"circle")
 
       test(m"a single-field sum variant round-trips"):
@@ -251,6 +251,25 @@ object Tests extends Suite(m"Stratiform Tests"):
         val shape: Tests.Shape2 = Tests.Shape2.Dot
         shape.encode.as[Tests.Shape2]
       . assert(_ == Tests.Shape2.Dot)
+
+    suite(m"sum-type schema derivation"):
+      test(m"a sum derives a select with one variant per case"):
+        Tels.tels[Tests.Shape2](t"shape").selects.flatMap(_.variants).map(_.keyword).to(List)
+      . assert(_ == List(t"circle", t"rectangle", t"dot"))
+
+      test(m"each variant's fields are derived into its struct"):
+        val select = Tels.tels[Tests.Shape2](t"shape").selects.head
+        select.variants.find(_.keyword == t"rectangle").get.variantType match
+          case struct: Tels.Struct => struct.members.length
+          case _                   => -1
+      . assert(_ == 2)
+
+      test(m"the document root references the select"):
+        Tels.tels[Tests.Shape2](t"shape").document.members.map:
+          case ref: Tels.SelectRef => ref.reference
+          case _                   => t""
+        . to(List)
+      . assert(_ == List(t"Shape2"))
 
     suite(m"`over Tel` decoder shorthand"):
       test(m"`read[T over Tel]` resolves a value directly from text"):
@@ -1394,6 +1413,18 @@ object Tests extends Suite(m"Stratiform Tests"):
               case Tel.Element.Value(_, _, t) => t
           case _ => Nil
       . assert(_ == List(t"Alice"))
+
+      test(m"a derived sum schema round-trips a variant's fields through BinTEL"):
+        val schema = Tels.tels[Tests.Shape2](t"shape")
+        val shape: Tests.Shape2 = Tests.Shape2.Rectangle(3, 4)
+        val bytes = shape.encode.bintel(schema)
+
+        def values(element: Tel.Element): List[Text] = element match
+          case Tel.Element.Node(_, _, children) => children.to(List).flatMap(values)
+          case Tel.Element.Value(_, _, text)    => List(text)
+
+        values(Bintel.decode(bytes, schema))
+      . assert(_ == List(t"3", t"4"))
 
       test(m"empty scalar value round-trips"):
         val scalar = Tels.Scalar(IArray.empty)
