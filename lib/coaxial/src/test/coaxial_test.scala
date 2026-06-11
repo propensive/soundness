@@ -234,12 +234,11 @@ object Tests extends Suite(m"Coaxial tests"):
             val count = connection.in.read(buffer)
             IArray.from(buffer.take(count.max(0)).to(List))
 
-          val duplex = socket.duplex()
-          duplex.send(Stream(ascii(t"ping")))
-          val reply = bytes(duplex.stream.head)
-          duplex.close()
-          server.stop()
-          reply
+          val reply = socket.duplex: duplex =>
+            duplex.send(Stream(ascii(t"ping")))
+            bytes(duplex.stream.head)
+
+          reply.also(server.stop())
         . assert(_ == bytes(ascii(t"ping")))
 
     suite(m"Socket options"):

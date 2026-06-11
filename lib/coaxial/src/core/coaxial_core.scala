@@ -120,11 +120,18 @@ extension [endpoint: Routable as routable](endpoint: endpoint)
 
 
 extension [endpoint: Connectable as connectable](endpoint: endpoint)
-  // Open a persistent, bidirectional connection that stays open for concurrent
-  // reads and writes (e.g. for HTTP/2), rather than a single request/response
-  // exchange. The caller is responsible for closing the returned `Duplex`.
-  def duplex(interface: Optional[MacAddress] = Unset): Duplex =
-    connectable.connect(endpoint, interface)
+  // Open a persistent, bidirectional connection for the duration of `lambda` and
+  // always close it afterwards — whether `lambda` returns or throws. This is the
+  // shape a multiplexing protocol such as HTTP/2 needs (concurrent reads and writes
+  // over one open connection), but unlike the request/response `exchange` the
+  // connection is never half-closed. A long-lived connection that must outlive any
+  // single block keeps `lambda` running (e.g. parked on its supervisor) until the
+  // enclosing scope ends, at which point the loan closes the connection.
+  def duplex[result](lambda: Duplex => result): result = duplex(lambda)(Unset)
+
+  def duplex[result](lambda: Duplex => result)(interface: Optional[MacAddress]): result =
+    val connection = connectable.connect(endpoint, interface)
+    try lambda(connection) finally connection.close()
 
 
 // Applies `SocketOption`s to freshly-constructed sockets and resolves a `MacAddress` to a network
