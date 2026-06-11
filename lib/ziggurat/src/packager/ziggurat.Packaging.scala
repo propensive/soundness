@@ -52,8 +52,11 @@ object Packaging:
 
   // Where each platform's bare runner binary comes from.
   enum RunnerSource:
-    case LocalResource          // `Classpath/"ethereal"/runner-<label>` in the app jar
-    case Remote(baseUrl: Text)  // downloaded from `<baseUrl>/runner-<label>` (Stage B)
+    case LocalResource  // the app self-assembles using `Classpath/"ethereal"/runner-<label>`
+
+    // Each runner is downloaded from `<baseUrl>/runner-<label>[.exe]` and verified
+    // against `hashes(label)` (lowercase SHA-256 hex), then assembled in-process.
+    case Remote(baseUrl: Text, hashes: Map[Text, Text])
 
   // The bundled Java runtime *preference* recorded in the ETHRCFG block. Records
   // a preference only — the runner downloads a JRE/JDK at runtime; nothing is

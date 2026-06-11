@@ -188,10 +188,11 @@ object Tests extends Suite(m"Ziggurat tests"):
         capture[PackageError](Packager.pack(config(Packaging.Delivery.EmbedAll, dependencies)))
       .assert(_ => true)
 
-      test(m"remote runner source is rejected"):
-        val remote = Packaging.RunnerSource.Remote(t"https://example.com/")
+      test(m"remote runner with no hash for the target is rejected"):
+        // Fails on the missing-hash check before any download is attempted.
+        val remote = Packaging.RunnerSource.Remote(t"https://example.invalid/", Map())
         capture[PackageError]:
-          Packager.pack(config(Packaging.Delivery.EmbedAll, fatJar, remote))
+          Packager.pack(config(Packaging.Delivery.Native, fatJar, remote))
       .assert(_ => true)
 
       test(m"native delivery with multiple targets is rejected"):
