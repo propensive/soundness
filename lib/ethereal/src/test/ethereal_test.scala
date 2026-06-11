@@ -60,6 +60,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     // daemon handshake and makes these tests flaky under load.
     val name:        Text = t"e${Uuid().text.cut(t"-").head}"
     val upgradeName: Text = t"u${Uuid().text.cut(t"-").head}"
+    val selfuName:   Text = t"s${Uuid().text.cut(t"-").head}"
 
     safely(sh"pkill $name".exec[Exit]())
     snooze(0.1*Second)
@@ -572,13 +573,13 @@ object Tests extends Suite(m"Ethereal Tests"):
     sh"rm -rf $upgradeStateDir".exec[Unit]()
 
     val selfuStateDir: Path on Local =
-      Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / t"selfu"
-    val selfuDataDir: Path on Local = Xdg.dataHome[Path on Local] / t"selfu"
+      Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / selfuName
+    val selfuDataDir: Path on Local = Xdg.dataHome[Path on Local] / selfuName
     sh"rm -rf $selfuStateDir $selfuDataDir".exec[Unit]()
-    safely(sh"pkill selfu".exec[Exit]())
+    safely(sh"pkill $selfuName".exec[Exit]())
     snooze(0.1*Second)
 
-    val selfuV1 = Enclave("selfu", buildId = 1).dispatch:
+    val selfuV1 = Enclave(selfuName, buildId = 1).dispatch:
       ' {
           import executives.completions
           import interpreters.posix
@@ -594,7 +595,7 @@ object Tests extends Suite(m"Ethereal Tests"):
           t"finished"
         }
 
-    val selfuV2 = Enclave("selfu", buildId = 2).dispatch:
+    val selfuV2 = Enclave(selfuName, buildId = 2).dispatch:
       ' {
           import executives.completions
           import interpreters.posix
@@ -631,7 +632,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
       .assert(_ == Exit.Ok)
 
-    safely(sh"pkill selfu".exec[Exit]())
+    safely(sh"pkill $selfuName".exec[Exit]())
     sh"rm -rf $selfuStateDir $selfuDataDir".exec[Unit]()
 
     val brokenStateDir: Path on Local =

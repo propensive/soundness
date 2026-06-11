@@ -266,10 +266,26 @@ def cli[bus <: Matchable](using executive: Executive)
 
   def client(pid: Pid): Client of bus = clients.getOrElseUpdate(pid, Client[bus](pid))
 
+  def ownsState: Boolean =
+    val recorded: Optional[Text] =
+      if pidFile.exists() then safely(pidFile.open(_.stream[Data].read[Text]).trim)
+      else Unset
+
+    recorded.let(_ == Process().pid.value.show).or(false)
+
+  // Only clear the state files if this daemon still owns them. A successor
+  // daemon (e.g. after an upgrade) rebinds the socket at the same path and
+  // overwrites `pidFile` with its own pid before binding, so a dying daemon
+  // that no longer matches the recorded pid must not wipe the live successor's
+  // socket out from under it.
+  def wipeState(): Unit =
+    if ownsState then
+      safely(socketFile.wipe())
+      safely(buildFile.wipe())
+      safely(pidFile.wipe())
+
   lazy val termination: Unit =
-    safely(socketFile.wipe())
-    safely(buildFile.wipe())
-    safely(pidFile.wipe())
+    wipeState()
     jl.System.exit(0)
 
   def shutdown(pid: Optional[Pid])(using Stdio): Unit logs DaemonLogEvent =
@@ -477,9 +493,7 @@ def cli[bus <: Matchable](using executive: Executive)
     import probates.await
 
     Os.intercept[Shutdown]:
-      safely(socketFile.wipe())
-      safely(buildFile.wipe())
-      safely(pidFile.wipe())
+      wipeState()
 
     supervise:
       import logFormats.standard
