@@ -217,7 +217,7 @@ object Tests extends Suite(m"Obligatory Tests"):
                 trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = _.duplex
+          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
 
           val channel = GrpcChannel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
           channel.unary[Ping, Pong](method, Ping(t"ping")).message
@@ -232,7 +232,7 @@ object Tests extends Suite(m"Obligatory Tests"):
                 HpackEntry(t"grpc-status", t"5"), HpackEntry(t"grpc-message", t"absent")), true)))
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = _.duplex
+          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
 
           val channel = GrpcChannel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
           capture[GrpcError](channel.unary[Ping, Pong](method, Ping(t"ping"))).status
@@ -254,7 +254,7 @@ object Tests extends Suite(m"Obligatory Tests"):
                 trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = _.duplex
+          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
 
           val channel = GrpcChannel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
           channel.serverStreaming[Ping, Pong](method, Ping(t"ping")).map(_.message).to(List)
@@ -271,7 +271,7 @@ object Tests extends Suite(m"Obligatory Tests"):
                 trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = _.duplex
+          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
 
           val channel = GrpcChannel(Http2.Endpoint(Loopback(clientSide), t"localhost"))
           val echo = Grpc.remote[Echo](channel, t"echo.Echo")

@@ -299,7 +299,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           // lets the real `HttpClient` given (which calls `target.connect()`) run
           // against the loopback without a socket.
           case class Loopback(duplex: Duplex)
-          given (Loopback is Connectable) = _.duplex
+          given (Loopback is Connectable) = (loopback, _) => loopback.duplex
 
           // Summon the HTTP/2 client given exactly as telekinesis's fetch machinery
           // would, and invoke its `request` — verifying it captures the ambient
