@@ -133,22 +133,29 @@ object Bootstrapper:
 
           val url = (maven + relative).encode.decode[HttpUrl]
           val url2 = (maven + relative0).encode.decode[HttpUrl]
-          val digest = url.fetch().read[Text]
+          val remoteSha1 = url.fetch().read[Text]
           val data: Data = (base + relative0).open(_.read[Data])
-          val localDigest: Text = data.digest[Sha1].serialize[Hex]
+          val localSha1: Text = data.digest[Sha1].serialize[Hex]
 
-          if digest != localDigest then
+          if remoteSha1 != localSha1 then
             Out.println:
               m"SHA-1 checksum of local file ${base + relative0} did not match remote $url"
 
             Nil
 
           else
+            // The embedded integrity digest and the per-class match key are both
+            // SHA-256 (see `Bootstrap.java`); the remote SHA-1 above is only the
+            // build-time check that the local file is the published artifact.
+            val sha256: Text = data.digest[Sha2[256]].serialize[Hex]
+
             Zipfile.read(data).entries.filter: entry =>
               val name: Text = entry.ref.encode
               !entry.directory && name != t"META-INF/MANIFEST.MF"
+
             . map: entry =>
-              (entry.ref.show, entry.checksum[Sha1].serialize[Hex]) -> Requirement(url2, digest)
+                val checksum: Text = entry.checksum[Sha2[256]].serialize[Hex]
+                (entry.ref.show, checksum) -> Requirement(url2, sha256)
 
         . to(Map)
 
@@ -160,7 +167,7 @@ object Bootstrapper:
             then manifest.fulfill(entry.read[Data].read[Manifest]) yet Unset
             else if entry.ref.show == t"burdock/Bootstrap.class"
             then Entry(entry.ref.show, entry.read[Data])
-            else entries.at((entry.ref.show, entry.checksum[Sha1].serialize[Hex])).or:
+            else entries.at((entry.ref.show, entry.checksum[Sha2[256]].serialize[Hex])).or:
               Entry(entry.ref.show, entry.read[Data])
 
           . to(List).compact

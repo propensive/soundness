@@ -36,6 +36,7 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import distillate.*
+import ethereal.*
 import eucalyptus.*
 import fulminate.*
 import galilei.*
@@ -47,10 +48,13 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
+import telekinesis.*
 import turbulence.*
+import urticose.*
 import vacuous.*
 
 import errorDiagnostics.empty
+import internetAccess.enabled
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
@@ -59,10 +63,11 @@ import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
-// Turns a `Packaging` configuration into a distributable. Stage A handles the
-// `Dependencies.FatJar` + `RunnerSource.LocalResource` combination across all
-// three deliveries; other cases abort with a clear `PackageError` until later
-// stages implement them.
+// Turns a `Packaging` configuration into a distributable, across all three
+// deliveries. With `RunnerSource.LocalResource` the application self-assembles
+// each per-platform binary in a subprocess; with `RunnerSource.Remote` the
+// runners are downloaded, verified, and assembled in-process via
+// `ethereal.Assembler`. Burdock remote dependencies remain unimplemented.
 object Packager:
   def pack(config: Packaging)
      (using working: WorkingDirectory, environment: Environment)
@@ -74,13 +79,6 @@ object Packager:
 
       case Packaging.Dependencies.BurdockRemote(_) =>
         abort(PackageError(m"Burdock remote dependencies are not yet supported (Stage C)"))
-
-    config.runnerSource.absolve match
-      case Packaging.RunnerSource.LocalResource =>
-        ()
-
-      case Packaging.RunnerSource.Remote(_) =>
-        abort(PackageError(m"Downloading runners is not yet supported (Stage B)"))
 
     config.delivery match
       case Packaging.Delivery.Native if config.targets.length != 1 =>
@@ -98,7 +96,7 @@ object Packager:
     . mitigate:
         config.delivery match
           case Packaging.Delivery.Native =>
-            assemble(config, appJar, config.targets.head, config.output)
+            buildBinary(config, appJar, config.targets.head, config.output)
             config.output
 
           case Packaging.Delivery.EmbedAll =>
@@ -106,7 +104,7 @@ object Packager:
 
             val payloads: List[Payload] = config.targets.map: label =>
               val staged: Path on Linux = t"$dir/.xeq-$label".decode[Path on Linux]
-              assemble(config, appJar, label, staged)
+              buildBinary(config, appJar, label, staged)
               val bytes: Data = staged.open(_.read[Data])
               staged.delete()
               Payload(label, bytes, gzip = !label.starts(t"windows"))
@@ -121,7 +119,7 @@ object Packager:
             val entries: List[(Text, Text, Text)] = config.targets.map: label =>
               val asset: Text = t"xeq-$label-$version"
               val staged: Path on Linux = t"$dir/$asset".decode[Path on Linux]
-              assemble(config, appJar, label, staged)
+              buildBinary(config, appJar, label, staged)
               val hash: Text = staged.open(_.read[Data]).digest[Sha2[256]].serialize[Hex]
               (label, t"$base$asset", hash)
 
@@ -129,11 +127,27 @@ object Packager:
             config.output
 
 
+  // Produces one self-contained per-platform binary, dispatching on the runner
+  // source: the app self-assembles in a subprocess (LocalResource), or the
+  // runner is downloaded and assembled in-process (Remote).
+  private def buildBinary(config: Packaging, appJar: Path on Linux, label: Text, output: Path on Linux)
+     (using working: WorkingDirectory)
+  :   Unit raises ExecError raises PackageError =
+
+    config.runnerSource match
+      case Packaging.RunnerSource.LocalResource =>
+        assembleViaSubprocess(config, appJar, label, output)
+
+      case Packaging.RunnerSource.Remote(baseUrl, hashes) =>
+        assembleRemote(config, appJar, label, output, baseUrl, hashes)
+
+
   // Drives the application's own self-assembly (ethereal's `cli` build path) in a
   // subprocess: `java -Dbuild.executable=… -Dbuild.target=… … -jar <appJar>`
   // produces one self-contained per-platform binary and exits. `ethereal.name`
   // must be left unset or the build path is not taken.
-  private def assemble(config: Packaging, appJar: Path on Linux, label: Text, output: Path on Linux)
+  private def assembleViaSubprocess
+     (config: Packaging, appJar: Path on Linux, label: Text, output: Path on Linux)
      (using working: WorkingDirectory)
   :   Unit raises ExecError raises PackageError =
 
@@ -159,6 +173,61 @@ object Packager:
 
     if mute[ExecEvent](Command(arguments*).exec[Exit]()) != Exit.Ok
     then abort(PackageError(m"Assembling the executable for $label failed"))
+
+
+  // Downloads `<baseUrl>/runner-<label>[.exe]`, verifies its SHA-256 against
+  // `hashes(label)`, then patches the ETHRCFG block and appends the app JAR
+  // in-process via `ethereal.Assembler`. All lower-level failures are surfaced
+  // as `PackageError`.
+  private def assembleRemote
+     (config:  Packaging,
+      appJar:  Path on Linux,
+      label:   Text,
+      output:  Path on Linux,
+      baseUrl: Text,
+      hashes:  Map[Text, Text])
+     (using working: WorkingDirectory)
+  :   Unit raises PackageError =
+
+    whereas:
+      case HttpError(_, _)       => PackageError(m"Failed to download the runner for $label")
+      case ConnectError(_)       => PackageError(m"Could not connect to download the runner for $label")
+      case AssemblyError(detail) => PackageError(detail)
+      case IoError(_, _, _, _)   => PackageError(m"A filesystem error occurred assembling $label")
+      case StreamError(_)        => PackageError(m"A stream error occurred assembling $label")
+      case UrlError(_, _, _)     => PackageError(m"The runner URL for $label is invalid")
+
+    . mitigate:
+        val expected: Text = hashes.at(label).lest(PackageError(m"No runner hash given for $label"))
+
+        val runnerName: Text =
+          if label.starts(t"windows") then t"runner-$label.exe" else t"runner-$label"
+
+        val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
+
+        val runner: Data =
+          mute[HttpEvent](t"$base$runnerName".decode[HttpUrl].fetch().read[Data])
+        val actual: Text = runner.digest[Sha2[256]].serialize[Hex]
+
+        if actual != expected then
+          abort(PackageError(m"Downloaded runner for $label has SHA-256 $actual, expected $expected"))
+
+        val zeros: Data = IArray.fill(Assembler.PublicKeyLength)(0.toByte)
+
+        val publicKey: Data = config.signing.lay(zeros): signing =>
+          signing.publicKey.lay(zeros): key =>
+            val raw: Data = key.open(_.stream[Data].read[Data])
+
+            if raw.length != Assembler.PublicKeyLength
+            then abort(PackageError(m"The public key for $label is the wrong size"))
+
+            raw
+
+        val jdk: Boolean = config.java.bundle == Packaging.Bundle.Jdk
+
+        Assembler.assemble
+         (runner, appJar, output, label, config.buildId, config.java.minimum,
+          config.java.preferred, jdk, publicKey)
 
 
   private def write(output: Path on Linux, data: Data)

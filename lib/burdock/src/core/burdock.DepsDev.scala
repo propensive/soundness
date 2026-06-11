@@ -30,60 +30,50 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ziggurat
+package burdock
 
 import anticipation.*
-import galilei.*
+import contingency.*
+import distillate.*
+import eucalyptus.*
+import fulminate.*
 import gossamer.*
+import jacinta.*
+import monotonous.*, alphabets.base64.standard, alphabets.hex.lowerCase
 import prepositional.*
-import serpentine.*
+import telekinesis.*
+import urticose.*
 import vacuous.*
 
-// A complete, declarative description of how to turn an application into a
-// distributable. `Packager.pack` is a thin facade over the existing per-platform
-// assembly (ethereal) and script wrapping (`Xeq`); each field maps to one of
-// those existing mechanisms.
-object Packaging:
-  // How the per-platform binaries reach the user.
-  enum Delivery:
-    case EmbedAll                                // every runner embedded in one script (`Xeq.installer`)
-    case Download(baseUrl: Text, version: Text)  // downloaded per-platform (`Xeq.multiDownloader`)
-    case Native                                  // a single native binary, no wrapper (one target only)
+import internetAccess.enabled
 
-  // Where each platform's bare runner binary comes from.
-  enum RunnerSource:
-    case LocalResource  // the app self-assembles using `Classpath/"ethereal"/runner-<label>`
+// Resolves a dependency's content hash to its public download URL using Google's
+// deps.dev ("Open Source Insights") Query API. Returns `Unset` for anything
+// deps.dev does not know as a Maven artifact — the caller then inlines the
+// dependency's classes from the local Burdock cache instead.
+object DepsDev:
+  case class VersionKey(system: Text, name: Text, version: Text)
+  case class Version(versionKey: VersionKey)
+  case class Result(version: Version)
+  case class QueryResult(results: List[Result])
 
-    // Each runner is downloaded from `<baseUrl>/runner-<label>[.exe]` and verified
-    // against `hashes(label)` (lowercase SHA-256 hex), then assembled in-process.
-    case Remote(baseUrl: Text, hashes: Map[Text, Text])
+  case class Unresolved()(using Diagnostics) extends Error(m"not a known Maven artifact")
 
-  // The bundled Java runtime *preference* recorded in the ETHRCFG block. Records
-  // a preference only — the runner downloads a JRE/JDK at runtime; nothing is
-  // embedded in the artifact.
-  enum Bundle:
-    case Jre, Jdk
+  def mavenUrl(sha256Hex: Text): Optional[HttpUrl] = safely:
+    // deps.dev expects the hash base64-encoded (not hex).
+    val base64: Text = sha256Hex.deserialize[Hex].serialize[Base64]
+    val query: HttpUrl = url"https://api.deps.dev/v3/query?hash.type=SHA256&hash.value=$base64"
+    val result: QueryResult = mute[HttpEvent](query.fetch().receive[Json]).as[QueryResult]
 
-  // How the application's classes reach the runtime.
-  enum Dependencies:
-    case FatJar(jar: Path on Linux)         // the fat jar, appended to the runner as-is
-    case BurdockRemote(jar: Path on Linux)  // a macro-built thin jar that fetches deps (Stage C)
+    val key: VersionKey =
+      result.results.map(_.version.versionKey).find(_.system == t"MAVEN")
+      . getOrElse(abort(Unresolved()))
 
-  case class JavaPolicy(minimum: Int = 21, preferred: Int = 24, bundle: Bundle = Bundle.Jre)
+    // `name` is `group:artifact`; the Maven Central path uses `/` for the group.
+    val parts: List[Text] = key.name.cut(t":")
+    val group: Text = parts.head.cut(t".").join(t"/")
+    val artifact: Text = parts.last
+    val version: Text = key.version
+    val jar: Text = t"$artifact-$version.jar"
 
-  // Self-upgrade signing. `Unset` overall disables upgrades (the safe default).
-  case class Signing
-     (publicKey:      Optional[Path on Linux] = Unset,  // baked in via `-Dethereal.publicKey`
-      seed:           Optional[Path on Linux] = Unset,  // signs post-assembly via `ethereal-sign`
-      allowDowngrade: Boolean                 = false)
-
-case class Packaging
-   (name:         Text,
-    targets:      List[Text],
-    delivery:     Packaging.Delivery,
-    dependencies: Packaging.Dependencies,
-    output:       Path on Linux,
-    runnerSource: Packaging.RunnerSource      = Packaging.RunnerSource.LocalResource,
-    java:         Packaging.JavaPolicy        = Packaging.JavaPolicy(),
-    signing:      Optional[Packaging.Signing] = Unset,
-    buildId:      Long                        = 0L)
+    t"https://repo1.maven.org/maven2/$group/$artifact/$version/$jar".decode[HttpUrl]

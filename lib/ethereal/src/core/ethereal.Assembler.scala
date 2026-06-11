@@ -30,60 +30,109 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ziggurat
+package ethereal
 
+import java.lang as jl
+import java.nio as jnio
+
+import ambience.*
 import anticipation.*
+import contingency.*
+import eucalyptus.*
+import fulminate.*
 import galilei.*
 import gossamer.*
+import guillotine.*
 import prepositional.*
+import rudiments.*
 import serpentine.*
+import spectacular.*
+import turbulence.*
 import vacuous.*
 
-// A complete, declarative description of how to turn an application into a
-// distributable. `Packager.pack` is a thin facade over the existing per-platform
-// assembly (ethereal) and script wrapping (`Xeq`); each field maps to one of
-// those existing mechanisms.
-object Packaging:
-  // How the per-platform binaries reach the user.
-  enum Delivery:
-    case EmbedAll                                // every runner embedded in one script (`Xeq.installer`)
-    case Download(baseUrl: Text, version: Text)  // downloaded per-platform (`Xeq.multiDownloader`)
-    case Native                                  // a single native binary, no wrapper (one target only)
+import filesystemOptions.createNonexistent.enabled
+import filesystemOptions.createNonexistentParents.enabled
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.overwritePreexisting.enabled
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.enabled
 
-  // Where each platform's bare runner binary comes from.
-  enum RunnerSource:
-    case LocalResource  // the app self-assembles using `Classpath/"ethereal"/runner-<label>`
+case class AssemblyError(detail: Message)(using Diagnostics) extends Error(detail)
 
-    // Each runner is downloaded from `<baseUrl>/runner-<label>[.exe]` and verified
-    // against `hashes(label)` (lowercase SHA-256 hex), then assembled in-process.
-    case Remote(baseUrl: Text, hashes: Map[Text, Text])
+// Produces a self-contained per-platform executable by patching a bare ethereal
+// runner binary's ETHRCFG block (build id, Java version policy, ML-DSA-44 public
+// key) and appending the application JAR at EOF. Shared by the
+// `-Dbuild.executable` CLI build path and the ziggurat packager, which supplies
+// a runner downloaded from a URL rather than read from the classpath.
+object Assembler:
+  // v2 ETHRCFG layout — keep in sync with lib/ethereal/src/runner/src/config.rs.
+  val MagicMarker: Array[Byte] =
+    Array[Byte]('E'.toByte, 'T'.toByte, 'H'.toByte, 'R'.toByte,
+                'C'.toByte, 'F'.toByte, 'G'.toByte, 2.toByte)
 
-  // The bundled Java runtime *preference* recorded in the ETHRCFG block. Records
-  // a preference only — the runner downloads a JRE/JDK at runtime; nothing is
-  // embedded in the artifact.
-  enum Bundle:
-    case Jre, Jdk
+  val PublicKeyLength: Int = 1312   // ML-DSA-44 public key size
 
-  // How the application's classes reach the runtime.
-  enum Dependencies:
-    case FatJar(jar: Path on Linux)         // the fat jar, appended to the runner as-is
-    case BurdockRemote(jar: Path on Linux)  // a macro-built thin jar that fetches deps (Stage C)
+  def assemble
+     (runner:        Data,           // bare runner binary
+      jarFile:       Path on Linux,  // application JAR appended at EOF
+      output:        Path on Linux,
+      platformLabel: Text,
+      buildId:       Long,
+      javaMinimum:   Int,
+      javaPreferred: Int,
+      jdk:           Boolean,
+      publicKey:     Data)           // 1312 raw bytes (all-zero disables upgrades)
+     (using WorkingDirectory)
+  :   Unit raises AssemblyError raises IoError raises StreamError =
 
-  case class JavaPolicy(minimum: Int = 21, preferred: Int = 24, bundle: Bundle = Bundle.Jre)
+    val isWindows: Boolean = platformLabel.starts(t"windows")
+    val bytes: Array[Byte] = IArray.genericWrapArray(runner).toArray
 
-  // Self-upgrade signing. `Unset` overall disables upgrades (the safe default).
-  case class Signing
-     (publicKey:      Optional[Path on Linux] = Unset,  // baked in via `-Dethereal.publicKey`
-      seed:           Optional[Path on Linux] = Unset,  // signs post-assembly via `ethereal-sign`
-      allowDowngrade: Boolean                 = false)
+    val magicOffset: Int =
+      var found: Int = -1
+      var i = 0
 
-case class Packaging
-   (name:         Text,
-    targets:      List[Text],
-    delivery:     Packaging.Delivery,
-    dependencies: Packaging.Dependencies,
-    output:       Path on Linux,
-    runnerSource: Packaging.RunnerSource      = Packaging.RunnerSource.LocalResource,
-    java:         Packaging.JavaPolicy        = Packaging.JavaPolicy(),
-    signing:      Optional[Packaging.Signing] = Unset,
-    buildId:      Long                        = 0L)
+      while found < 0 && i <= bytes.length - MagicMarker.length do
+        var matches = true
+        var j = 0
+
+        while matches && j < MagicMarker.length do
+          if bytes(i + j) != MagicMarker(j) then matches = false
+          j += 1
+
+        if matches then found = i
+        i += 1
+
+      if found < 0
+      then abort(AssemblyError(m"The runner binary does not contain the ETHRCFG marker"))
+
+      found
+
+    val configOffset: Int = magicOffset + MagicMarker.length
+    val keyBytes: Array[Byte] = IArray.genericWrapArray(publicKey).toArray
+
+    // Write the 24-byte metadata region.
+    val metaBuf = jnio.ByteBuffer.wrap(bytes, configOffset, 24).nn
+    metaBuf.order(jnio.ByteOrder.LITTLE_ENDIAN).nn
+    metaBuf.putLong(buildId)
+    metaBuf.putShort(javaMinimum.toShort)
+    metaBuf.putShort(javaPreferred.toShort)
+    metaBuf.put((if jdk then 1 else 0).toByte)
+    while metaBuf.hasRemaining do metaBuf.put(0.toByte)
+
+    // Write the 1312-byte public-key region at offset 32 within the ETHRCFG
+    // block (8 magic + 24 metadata). The signature slot at offset 1344 stays
+    // zero — populated later by the signer when shipped as an upgrade.
+    jl.System.arraycopy(keyBytes, 0, bytes, configOffset + 24, PublicKeyLength)
+
+    output.open: file =>
+      Stream(IArray.from(bytes.iterator): IArray[Byte]).writeTo(file)
+
+    if platformLabel.starts(t"macos") then
+      if !isWindows then output.executable() = true
+      safely(mute[ExecEvent](sh"codesign --sign - --force $output".exec[Exit]()))
+
+    jarFile.open: jarFile =>
+      Eof(output).open(jarFile.stream[Data].writeTo(_))
+
+    if !isWindows then output.executable() = true

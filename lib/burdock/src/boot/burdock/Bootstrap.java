@@ -56,8 +56,8 @@ public class Bootstrap {
       String requirements = attributes.getValue("Burdock-Require");
       if (requirements != null) {
         for (String item : requirements.split(" ")) {
-          String requiredHash = item.substring(0, 40);
-          URL url = new URI(item.substring(41)).toURL();
+          String requiredHash = item.substring(0, 64);
+          URL url = new URI(item.substring(65)).toURL();
           info("Application requires "+url+".", 3);
           File dir = new File(cache, "burdock");
           dir.mkdirs();
@@ -66,7 +66,7 @@ public class Bootstrap {
 
           if (!file.exists()) {
             info("File does not exist locally.", 3);
-            MessageDigest digest = MessageDigest.getInstance("SHA-1");
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
             String calculatedHash = null;
 
             info("Downloading "+url, 2);
@@ -99,7 +99,7 @@ public class Bootstrap {
               quit("SHA-256 checksum of dependency "+url+" does not match expected value ("+
                   requiredHash+").", 1);
             }
-          } else if (verbosity >= 1) {
+          } else {
             info("JAR file exists locally at "+file+".", 3);
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             try (FileInputStream fis = new FileInputStream(file)) {

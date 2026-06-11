@@ -454,7 +454,9 @@ object burdock extends Library:
   object boot extends Component:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object core extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.core, gastronomy.core):
+  object core
+      extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.core,
+                       gastronomy.core, jacinta.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
@@ -1562,7 +1564,9 @@ object ziggurat extends Library:
   object core extends Component(hellenism.core, monotonous.core, turbulence.core, gastronomy.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object packager extends Component(core, guillotine.core, galilei.core, eucalyptus.core):
+  object packager
+      extends Component(core, guillotine.core, galilei.core, eucalyptus.core, ethereal.core,
+                       telekinesis.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, packager)
