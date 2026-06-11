@@ -130,6 +130,14 @@ private def serveSocket()(using Stdio, Monitor, Probate, System): Exit =
 
   val socketPath: Text = socketFile
 
+  // Delete the socket on any exit (a clean stop, a crash, or a kill signal), so it
+  // never lingers as a stale file a later client has to clean up.
+  val removeSocket: Runnable = () =>
+    safely(jnf.Files.deleteIfExists(jnf.Path.of(socketPath.s)))
+    ()
+
+  jl.Runtime.getRuntime.nn.addShutdownHook(jl.Thread(removeSocket))
+
   try
     jnf.Files.createDirectories(jnf.Path.of(socketDirectory.s)).nn
     jnf.Files.deleteIfExists(jnf.Path.of(socketPath.s))
@@ -278,7 +286,17 @@ private def socketPaths(directory: Text): List[Text] =
 // in the background and attaches to it (so `flux` alone is a self-contained REPL,
 // reconnectable later); with exactly one, connects to it; with several, lists them.
 private def connectSocket()(using Stdio, Monitor, Probate, Console, Environment, System): Exit =
-  socketPaths(socketDirectory) match
+  // Probe every socket file: a connectable one is live; one that refuses (a crashed or
+  // killed server that never cleaned up) is a stale leftover, so delete it. Then attach
+  // to the lone live server, list several, or — when none survive — start a fresh one.
+  val live: scm.ArrayBuffer[Text] = scm.ArrayBuffer()
+
+  socketPaths(socketDirectory).each: path =>
+    if connectDomain(DomainSocket(path)) { _ => () }.absent
+    then safely(jnf.Files.deleteIfExists(jnf.Path.of(path.s)))
+    else live += path
+
+  live.to(List) match
     case Nil =>
       Out.println(t"flux: starting a REPL server…")
       launchServer()(converse(_)).or(failedToLaunch)
@@ -302,37 +320,11 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Probate, Console, Env
   // Shift+Enter distinctly, so the editor can submit on it.
   import terminalFeatures.kittyKeyboard
 
-  // `duplex.stream` blocks on its first socket read, so force the iterator lazily
-  // — only after a line has been sent — otherwise it would deadlock here before
-  // the editor starts (the server sends nothing until it receives a message).
-  lazy val chunks: Iterator[Data] = duplex.stream.iterator
-
-  val state                 = LiveState()
-  val pending               = TrieMap[Int, Int]()                  // tokenize id → version
-  val submits               = juc.LinkedBlockingQueue[Repl.Reply]()
-  val completions           = juc.LinkedBlockingQueue[List[Repl.CompletionItem]]()
-  val nextId                = juc.atomic.AtomicInteger(1)           // 0 is reserved for submit
-  @volatile var live        = true
-
-  // Background reader: replies may arrive in any order, so route each by kind —
-  // `tokenize` replies refine the live highlight (re-associated by id → version),
-  // everything else is a `submit` result the editor awaits.
-  async:
-    while live do
-      val raw = reply(chunks).trim
-
-      if raw.length == 0 then live = false
-      else safely[Exception](Json.parseTracked(raw).as[Repl.Reply]).let:
-        case Repl.Reply.Tokenized(id, highlight) =>
-          pending.remove(id).foreach(state.reconcile(_, highlight))
-
-        // Hand completions to the editor thread (which blocks on Tab) rather than
-        // printing them here, so it can redraw the prompt below them.
-        case Repl.Reply.Completed(_, items) =>
-          completions.put(items)
-
-        case reply =>
-          submits.put(reply)
+  val state       = LiveState()
+  val pending     = TrieMap[Int, Int]()                  // tokenize id → version
+  val submits     = juc.LinkedBlockingQueue[Repl.Reply]()
+  val completions = juc.LinkedBlockingQueue[List[Repl.CompletionItem]]()
+  val nextId      = juc.atomic.AtomicInteger(1)          // 0 is reserved for submit
 
   whereas:
     case TerminalError() =>
@@ -342,7 +334,6 @@ private def converse(duplex: Duplex)(using Stdio, Monitor, Probate, Console, Env
   . recover:
       interactive: terminal ?=>
         runRepl(duplex, state, pending, nextId, submits, completions)
-        live = false
         Exit.Ok
 
 // One REPL input line is an inline block at the bottom of the console — a bordered,
@@ -363,6 +354,33 @@ private def runRepl
 :   Unit =
 
   given Stdio = terminal.stdio
+
+  // `duplex.stream` blocks on its first socket read, so force the iterator lazily —
+  // only once a request has been sent — otherwise it would deadlock before the editor
+  // even starts (the server sends nothing until it receives a message).
+  lazy val chunks: Iterator[Data] = duplex.stream.iterator
+  @volatile var live = true
+
+  // Background reader: route replies by kind. A `tokenize` reply refines the live
+  // highlight and posts a `Redraw`, so the refined colour appears as soon as the server
+  // answers — not one keypress later. Other replies are a `submit` result the loop
+  // awaits, or the `completions` the Tab handler blocks on.
+  async:
+    while live do
+      val raw = reply(chunks).trim
+
+      if raw.length == 0 then live = false
+      else safely[Exception](Json.parseTracked(raw).as[Repl.Reply]).let:
+        case Repl.Reply.Tokenized(id, highlight) =>
+          pending.remove(id).foreach(state.reconcile(_, highlight))
+          terminal.events.put(TerminalInfo.Redraw)
+
+        case Repl.Reply.Completed(_, items) =>
+          completions.put(items)
+
+        case reply =>
+          submits.put(reply)
+
   val events = terminal.eventIterator()
   var running = true
 
@@ -410,6 +428,12 @@ private def runRepl
 
           case _: TerminalInfo.WindowSize =>
             root.invalidate()
+            frame()
+
+          // A tokenize reply arrived (posted by the reader): re-derive the highlight
+          // from the reconciled checkpoint and repaint, with no edit and no new request.
+          case TerminalInfo.Redraw =>
+            tokens = state.record(editor.value, editor.value)._2
             frame()
 
           case Keypress.Tab =>
@@ -466,6 +490,9 @@ private def runRepl
           case Repl.Reply.Failed(_, message)          => Out.println(message)
           case Repl.Reply.Tokenized(_, _)             => ()
           case Repl.Reply.Completed(_, _)             => ()
+
+  // The loop has exited (Ctrl+D/C, Escape, /quit, or a closed stream): stop the reader.
+  live = false
 
 // The inline block: a bordered editor box showing the live-highlighted line with its
 // caret, and — when completions are active — a pane above it listing them, which
