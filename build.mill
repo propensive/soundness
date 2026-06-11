@@ -176,7 +176,7 @@ object soundness extends ScalaModule:
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
     exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, eucalyptus.ansi,
     eucalyptus.syslog, guillotine.core, escapade.csi, escapade.core, imperial.core, profanity.core,
-    surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core)
+    surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core, ziggurat.packager)
 
   object data extends Bundle(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
     gastronomy.core, chiaroscuro.core, jacinta.core, monotonous.core,
@@ -1562,7 +1562,10 @@ object ziggurat extends Library:
   object core extends Component(hellenism.core, monotonous.core, turbulence.core, gastronomy.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+  object packager extends Component(core, guillotine.core, galilei.core, eucalyptus.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core, packager)
 
 // Every top-level Library declared above must appear here exactly once. The
 // `groupCheck.validate` task verifies this list against the on-disk `lib/*/src`
