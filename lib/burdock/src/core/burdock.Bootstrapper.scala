@@ -152,8 +152,10 @@ object Bootstrapper:
             Zipfile.read(data).entries.filter: entry =>
               val name: Text = entry.ref.encode
               !entry.directory && name != t"META-INF/MANIFEST.MF"
+
             . map: entry =>
-              (entry.ref.show, entry.checksum[Sha2[256]].serialize[Hex]) -> Requirement(url2, sha256)
+                val checksum: Text = entry.checksum[Sha2[256]].serialize[Hex]
+                (entry.ref.show, checksum) -> Requirement(url2, sha256)
 
         . to(Map)
 
