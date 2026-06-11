@@ -46,6 +46,7 @@ import strategies.throwUnsafely
 import charEncoders.utf8
 import hashProviders.javaStdlibHashing
 import alphabets.hex.lowerCase
+import errorDiagnostics.stackTraces
 
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled
@@ -161,6 +162,42 @@ object Tests extends Suite(m"Ziggurat tests"):
           fileEntry(dir, label, t"#!/bin/sh\necho oops\n", badHash)
         sh"${stageDownloader(entries)}".exec[Exit]()
       .assert(_ != Exit.Ok)
+
+    suite(m"Packager validation"):
+      // These configurations are rejected before any assembly or I/O happens, so
+      // the (non-existent) jar paths are never touched.
+      def config
+         (delivery:     Packaging.Delivery,
+          dependencies: Packaging.Dependencies,
+          runnerSource: Packaging.RunnerSource = Packaging.RunnerSource.LocalResource,
+          targets:      List[Text]             = List(t"linux-x64"))
+      :   Packaging =
+        val dir = tempDir()
+        Packaging
+         (name         = t"hello",
+          targets      = targets,
+          delivery     = delivery,
+          dependencies = dependencies,
+          output       = dir/t"hello",
+          runnerSource = runnerSource)
+
+      val fatJar: Packaging.Dependencies = Packaging.Dependencies.FatJar(tempDir()/t"app.jar")
+
+      test(m"Burdock remote dependencies are rejected"):
+        val dependencies = Packaging.Dependencies.BurdockRemote(tempDir()/t"app.jar")
+        capture[PackageError](Packager.pack(config(Packaging.Delivery.EmbedAll, dependencies)))
+      .assert(_ => true)
+
+      test(m"remote runner source is rejected"):
+        val remote = Packaging.RunnerSource.Remote(t"https://example.com/")
+        capture[PackageError]:
+          Packager.pack(config(Packaging.Delivery.EmbedAll, fatJar, remote))
+      .assert(_ => true)
+
+      test(m"native delivery with multiple targets is rejected"):
+        capture[PackageError]:
+          Packager.pack(config(Packaging.Delivery.Native, fatJar, targets = labels))
+      .assert(_ => true)
 
     // Docker on macOS cannot run macOS containers, so macOS coverage is host-native only.
     if !dockerOk then Out.println(t"Docker unavailable; skipping Linux container tests")
