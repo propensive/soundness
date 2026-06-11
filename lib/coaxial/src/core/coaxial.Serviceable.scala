@@ -39,21 +39,25 @@ import java.nio.file as jnf
 
 import anticipation.*
 import contingency.*
+import frontier.*
 import rudiments.*
 import turbulence.*
 import urticose.*
 import vacuous.*
 
 object Serviceable:
-  given domainSocket: Tactic[StreamError] => DomainSocket is Serviceable:
+  given domainSocket: (Tactic[StreamError], Every[SocketOption.Domain])
+  =>  DomainSocket is Serviceable:
     type Output = Data
 
     case class Connection(channel: jnc.SocketChannel)
 
-    def connect(domainSocket: DomainSocket): Connection =
-      val path = jnf.Path.of(domainSocket.address.s)
-      val address = jn.UnixDomainSocketAddress.of(path)
-      val channel = jnc.SocketChannel.open(address).nn
+    // A Unix-domain socket has no network interface, so `interface` is not applicable here.
+    def connect(domainSocket: DomainSocket, interface: Optional[MacAddress]): Connection =
+      val address = jn.UnixDomainSocketAddress.of(jnf.Path.of(domainSocket.address.s))
+      val channel = jnc.SocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
+      configure(channel, summon[Every[SocketOption.Domain]].values)
+      channel.connect(address)
       channel.configureBlocking(false)
 
       Connection(channel)
@@ -84,12 +88,20 @@ object Serviceable:
 
     def close(connection: Connection): Unit = connection.channel.close()
 
-  given tcpEndpoint: (Online, Tactic[StreamError]) => Endpoint[TcpPort] is Serviceable:
+  given tcpEndpoint: (Online, Tactic[StreamError], Every[SocketOption.Tcp])
+  =>  Endpoint[TcpPort] is Serviceable:
     type Output = Data
     type Connection = jn.Socket
 
-    def connect(endpoint: Endpoint[TcpPort]): jn.Socket =
-      jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number)
+    def connect(endpoint: Endpoint[TcpPort], interface: Optional[MacAddress]): jn.Socket =
+      val socket =
+        interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
+          jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number, local, 0)
+
+        . or(jn.Socket(jn.InetAddress.getByName(endpoint.remote.s), endpoint.port.number))
+
+      configure(socket, summon[Every[SocketOption.Tcp]].values)
+      socket
 
     def transmit(socket: jn.Socket, input: Stream[Data]): Unit =
       val out = socket.getOutputStream.nn
@@ -101,11 +113,20 @@ object Serviceable:
     def close(socket: jn.Socket): Unit = socket.close()
     def receive(socket: jn.Socket): Stream[Data] = socket.getInputStream.nn.stream[Data]
 
-  given tcpPort: Tactic[StreamError] => TcpPort is Serviceable:
+  given tcpPort: (Tactic[StreamError], Every[SocketOption.Tcp]) => TcpPort is Serviceable:
     type Output = Data
     type Connection = jn.Socket
 
-    def connect(port: TcpPort): jn.Socket = jn.Socket(jn.InetAddress.getLocalHost.nn, port.number)
+    def connect(port: TcpPort, interface: Optional[MacAddress]): jn.Socket =
+      val socket =
+        interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
+          jn.Socket(jn.InetAddress.getLocalHost.nn, port.number, local, 0)
+
+        . or(jn.Socket(jn.InetAddress.getLocalHost.nn, port.number))
+
+      configure(socket, summon[Every[SocketOption.Tcp]].values)
+      socket
+
     def close(socket: jn.Socket): Unit = socket.close()
     def receive(socket: jn.Socket): Stream[Data] = socket.getInputStream.nn.stream[Data]
 
