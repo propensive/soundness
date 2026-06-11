@@ -46,13 +46,13 @@ import soundness.*
 import backstops.silent
 import charEncoders.utf8
 import classloaders.threadContext
-import probates.cancel
 import executives.completions
 import harlequin.Accent
 import internetAccess.enabled
 import interpreters.posix
 import jsonDiscriminables.discriminatedUnionByKind
 import logging.silent
+import probates.cancel
 import supervisors.global
 import systems.java
 import temporaryDirectories.system
@@ -366,7 +366,7 @@ private def runRepl
   val events = terminal.eventIterator()
   var running = true
 
-  while running && events.hasNext do
+  while running do
     val root = InlineRoot(terminal)
     var editor: LineEditor = LineEditor(mode = LineEditor.Mode.Multiline(balanced))
     var candidates: List[Repl.CompletionItem] = Nil
@@ -397,34 +397,40 @@ private def runRepl
     var editing = true
     var submitted: Optional[Text] = Unset
 
-    while editing && events.hasNext do
-      events.next() match
-        case Keypress.Ctrl('C' | 'D') => running = false; editing = false
-        case Keypress.Escape          => running = false; editing = false
+    // The block is already drawn; now wait for events. `hasNext` blocks until a
+    // keypress (or returns false when the input stream closes, ending the session).
+    while editing do
+      if !events.hasNext then
+        editing = false
+        running = false
+      else
+        events.next() match
+          case Keypress.Ctrl('C' | 'D') => running = false; editing = false
+          case Keypress.Escape          => running = false; editing = false
 
-        case _: TerminalInfo.WindowSize =>
-          root.invalidate()
-          frame()
+          case _: TerminalInfo.WindowSize =>
+            root.invalidate()
+            frame()
 
-        case Keypress.Tab =>
-          val (advanced, shown) = completeAt(editor, duplex, completions)
-          editor = advanced
-          candidates = shown
-          refresh()
-          frame()
+          case Keypress.Tab =>
+            val (advanced, shown) = completeAt(editor, duplex, completions)
+            editor = advanced
+            candidates = shown
+            refresh()
+            frame()
 
-        case event if editor.submitsOn(event) =>
-          submitted = editor.value
-          editing = false
+          case event if editor.submitsOn(event) =>
+            submitted = editor.value
+            editing = false
 
-        case keypress: Keypress =>
-          editor = editor(keypress)
-          candidates = Nil
-          refresh()
-          frame()
+          case keypress: Keypress =>
+            editor = editor(keypress)
+            candidates = Nil
+            refresh()
+            frame()
 
-        case _ =>
-          ()
+          case _ =>
+            ()
 
     // Freeze the block onto the screen (cursor drops below it) and print the result
     // there, so it scrolls above the next line's fresh block.
