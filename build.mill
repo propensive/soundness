@@ -832,14 +832,15 @@ object exoskeleton extends Library:
 
 object flux extends Library:
   object core extends Component(anthology.`scala`, inimitable.core, coaxial.core, eucalyptus.core,
-                                jacinta.core, harlequin.core):
+                                stratiform.core, stratiform.binary, harlequin.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object client extends Component(core, ethereal.core, exoskeleton.completions, profanity.core,
-                                  coaxial.core, urticose.core, jacinta.core, escapade.core,
-                                  iridescence.core, harlequin.ansi, escritoire.core, ultimatum.core):
+                                  coaxial.core, urticose.core, stratiform.core, stratiform.binary,
+                                  escapade.core, iridescence.core, harlequin.ansi, escritoire.core,
+                                  ultimatum.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     override def mainClass: Task.Simple[Option[String]] = Some("flux.repl")

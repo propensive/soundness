@@ -47,6 +47,31 @@ import systems.java
 import temporaryDirectories.system
 import threading.platform
 
+// Sends `request` to `output` as a length-prefixed BinTEL frame — the on-wire protocol
+// the server speaks (a 4-byte big-endian length, then that many BinTEL body bytes).
+private def send(output: ji.OutputStream, request: Repl.Request): Unit =
+  val body = request.bintel
+  val out  = ji.DataOutputStream(output)
+  out.writeInt(body.length)
+  out.write(body.mutable(using Unsafe))
+  out.flush()
+
+private def send(socket: jn.Socket, request: Repl.Request): Unit =
+  send(socket.getOutputStream.nn, request)
+
+// Sends `request` and reads the framed BinTEL reply, decoding it to a typed `Reply`.
+private def exchange(input: ji.InputStream, output: ji.OutputStream, request: Repl.Request)
+:   Repl.Reply =
+  send(output, request)
+  val in     = ji.DataInputStream(input)
+  val length = in.readInt()
+  val bytes  = new Array[Byte](length)
+  in.readFully(bytes)
+  Bintel.read[Repl.Reply](bytes.immutable(using Unsafe))
+
+private def exchange(socket: jn.Socket, request: Repl.Request): Repl.Reply =
+  exchange(socket.getInputStream.nn, socket.getOutputStream.nn, request)
+
 // Mimics a standard-REPL session: `size` references `greeting`, a field of the
 // enclosing object, by simple name (as `var name = …` would be in the Scala REPL).
 // `session` reads `size` once, mutates `greeting`, then reads it again — the
@@ -173,31 +198,22 @@ object Tests extends Suite(m"Flux Tests"):
     suite(m"REPL TCP server"):
       given Scalac[3.8] = Scalac(Nil)
 
-      test(m"a JSON reply carries the value, type and highlighting"):
+      test(m"a reply carries the value, type and highlighting"):
         supervise:
           val tcpPort = Port[Tcp]()
           val service = Repl().serve(tcpPort)
           val socket  = jn.Socket("localhost", tcpPort.number)
 
-          try
-            val output = socket.getOutputStream.nn
-            output.write("{\"id\":1,\"code\":\"1 + 1\",\"kind\":\"Submit\"}\n\n".getBytes("UTF-8").nn)
-            output.flush()
-
-            val input   = ji.BufferedReader(ji.InputStreamReader(socket.getInputStream.nn, "UTF-8"))
-            val builder = StringBuilder()
-            var line: String | Null = input.readLine()
-
-            while line != null && !line.nn.isEmpty do
-              builder.append(line.nn).append("\n")
-              line = input.readLine()
-
-            builder.toString
+          try exchange(socket, Repl.Request.Submit(1, t"1 + 1"))
           finally
             socket.close()
             service.stop()
-      . assert: reply =>
-          reply.contains("Ran") && reply.contains("2") && reply.contains("Int")
+      . assert:
+          case Repl.Reply.Ran(_, value, _, tpe, _, _) =>
+            value.let(_ == t"2").or(false) && tpe.let(_.contains(t"Int")).or(false)
+
+          case _ =>
+            false
 
       test(m"a quit request fulfils the server's quit signal"):
         supervise:
@@ -207,9 +223,7 @@ object Tests extends Suite(m"Flux Tests"):
           val socket  = jn.Socket("localhost", tcpPort.number)
 
           try
-            val output = socket.getOutputStream.nn
-            output.write("{\"id\":0,\"kind\":\"Quit\"}\n\n".getBytes("UTF-8").nn)
-            output.flush()
+            send(socket, Repl.Request.Quit(0))
 
             // Wait (bounded) for the quit signal rather than blocking forever.
             val runnable: Runnable = () => repl.awaitQuit()
@@ -231,25 +245,15 @@ object Tests extends Suite(m"Flux Tests"):
           val channel      = jnc.SocketChannel.open(address).nn
 
           try
-            val output = jnc.Channels.newOutputStream(channel).nn
-            output.write("{\"id\":3,\"code\":\"6 * 7\",\"kind\":\"Submit\"}\n\n".getBytes("UTF-8").nn)
-            output.flush()
-
-            val stream  = jnc.Channels.newInputStream(channel).nn
-            val input   = ji.BufferedReader(ji.InputStreamReader(stream, "UTF-8"))
-            val builder = StringBuilder()
-            var line: String | Null = input.readLine()
-
-            while line != null && !line.nn.isEmpty do
-              builder.append(line.nn).append("\n")
-              line = input.readLine()
-
-            builder.toString
+            exchange
+             (jnc.Channels.newInputStream(channel).nn, jnc.Channels.newOutputStream(channel).nn,
+              Repl.Request.Submit(3, t"6 * 7"))
           finally
             channel.close()
             service.stop()
-      . assert: reply =>
-          reply.contains("Ran") && reply.contains("42")
+      . assert:
+          case Repl.Reply.Ran(_, value, _, _, _, _) => value.let(_ == t"42").or(false)
+          case _                                    => false
 
       test(m"a completion request returns matching completions"):
         supervise:
@@ -257,26 +261,13 @@ object Tests extends Suite(m"Flux Tests"):
           val service = Repl().serve(tcpPort)
           val socket  = jn.Socket("localhost", tcpPort.number)
 
-          try
-            val output = socket.getOutputStream.nn
-            val message = "{\"id\":1,\"code\":\"List(1, 2, 3).m\",\"offset\":15,\"kind\":\"Complete\"}\n\n"
-            output.write(message.getBytes("UTF-8").nn)
-            output.flush()
-
-            val input   = ji.BufferedReader(ji.InputStreamReader(socket.getInputStream.nn, "UTF-8"))
-            val builder = StringBuilder()
-            var line: String | Null = input.readLine()
-
-            while line != null && !line.nn.isEmpty do
-              builder.append(line.nn).append("\n")
-              line = input.readLine()
-
-            builder.toString
+          try exchange(socket, Repl.Request.Complete(1, t"List(1, 2, 3).m", 15))
           finally
             socket.close()
             service.stop()
-      . assert: reply =>
-          reply.contains("Completed") && reply.contains("map")
+      . assert:
+          case Repl.Reply.Completed(_, items) => items.exists(_.name.contains(t"map"))
+          case _                              => false
 
     suite(m"REPL block captures outside references"):
       given Scalac[3.8] = Scalac(Nil)

@@ -50,7 +50,6 @@ import executives.completions
 import harlequin.Accent
 import internetAccess.enabled
 import interpreters.posix
-import jsonDiscriminables.discriminatedUnionByKind
 import logging.silent
 import probates.cancel
 import supervisors.global
@@ -366,11 +365,16 @@ private def runRepl
   // answers — not one keypress later. Other replies are a `submit` result the loop
   // awaits, or the `completions` the Tab handler blocks on.
   async:
-    while live do
-      val raw = reply(chunks).trim
+    // Construct the reader here, not on the main thread: forcing `chunks`
+    // (`duplex.stream.iterator`) blocks until the first byte arrives, and the main
+    // thread must stay free to render the editor and drive the event loop.
+    val frames: FrameReader = FrameReader(chunks)
 
-      if raw.length == 0 then live = false
-      else safely[Exception](Json.parseTracked(raw).as[Repl.Reply]).let:
+    while live do
+      val data: Optional[Data] = frames.next()
+
+      if data.absent then live = false
+      else safely[Exception](Bintel.read[Repl.Reply](data.vouch)).let:
         case Repl.Reply.Tokenized(id, highlight) =>
           pending.remove(id).foreach(state.reconcile(_, highlight))
           terminal.events.put(TerminalInfo.Redraw)
@@ -402,7 +406,7 @@ private def runRepl
         lastVersion = version
         val id = nextId.getAndIncrement
         pending(id) = version
-        duplex.send(Stream((encode(Repl.Request.Tokenize(id, editor.value)) + t"\n\n").data))
+        duplex.send(Stream(framed(encode(Repl.Request.Tokenize(id, editor.value)))))
 
     def frame(): Unit =
       val innerWidth = (terminal.knownColumns - 2).max(1)
@@ -464,12 +468,12 @@ private def runRepl
       if line == t"/disconnect" then
         running = false
       else if line == t"/quit" then
-        duplex.send(Stream((encode(Repl.Request.Quit(0)) + t"\n\n").data))
+        duplex.send(Stream(framed(encode(Repl.Request.Quit(0)))))
         running = false
       else if line.starts(t"/") then
         Out.println(t"flux: unknown command: $line")
       else
-        duplex.send(Stream((encode(Repl.Request.Submit(0, line)) + t"\n\n").data))
+        duplex.send(Stream(framed(encode(Repl.Request.Submit(0, line)))))
 
         submits.take().nn match
           case Repl.Reply.Ran(_, value, output, tpe, diagnostics, _) =>
@@ -551,7 +555,7 @@ private def completeAt
         (advanced, items)
   else
     val request = encode(Repl.Request.Complete(0, editor.value, editor.position))
-    duplex.send(Stream((request + t"\n\n").data))
+    duplex.send(Stream(framed(request)))
 
     val candidates: List[Repl.CompletionItem] = completions.take().nn
 
@@ -824,22 +828,44 @@ private def balanced(text: Text): Boolean =
   string.length > 0 && depth <= 0
 
 
-// Serializes a `Request` as compact JSON for the wire. `Json` is `Dynamic`, so
-// `.show` is intercepted; summon the `Encodable in Text` instance explicitly.
-private def encode(request: Repl.Request): Text =
-  summon[Json is Encodable in Text].encoded(request.json)
+// Serializes a `Request` to BinTEL body bytes, deriving the schema from the type
+// (`value.bintel`). A valid request always type-assigns, so the encode is total.
+private def encode(request: Repl.Request): Data = unsafely(request.bintel)
 
-// Pulls chunks from the (persistent) socket stream, buffering until the `"\n\n"`
-// message delimiter, and decodes the buffered bytes verbatim.
-private def reply(chunks: Iterator[Data]): Text =
-  val buffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
-  var done = false
+// Prefixes BinTEL body bytes with a 4-byte big-endian length, the on-wire frame the
+// server reads with `DataInputStream.readInt` + `readFully`.
+private def framed(data: Data): Data =
+  val length: Int      = data.length
+  val out:    Array[Byte] = new Array[Byte](4 + length)
+  out(0) = (length >>> 24).toByte
+  out(1) = (length >>> 16).toByte
+  out(2) = (length >>> 8).toByte
+  out(3) = length.toByte
+  var i = 0
 
-  while !done && chunks.hasNext do
-    chunks.next().each(buffer += _)
+  while i < length do
+    out(4 + i) = data(i)
+    i += 1
 
-    done =
-      buffer.length >= 2 && buffer(buffer.length - 1) == '\n'.toByte
-      && buffer(buffer.length - 2) == '\n'.toByte
+  out.immutable(using Unsafe)
 
-  IArray.from(buffer).utf8
+// Reassembles length-prefixed frames from the (chunk-at-a-time) socket stream, keeping
+// a buffer across calls so a frame split over chunks — or several frames in one chunk —
+// is handled. `next()` yields one frame's body, or `Unset` when the stream ends.
+private class FrameReader(chunks: Iterator[Data]):
+  private val buffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+
+  private def fill(count: Int): Boolean =
+    while buffer.length < count && chunks.hasNext do chunks.next().each(buffer += _)
+    buffer.length >= count
+
+  def next(): Optional[Data] =
+    if !fill(4) then Unset else
+      val length: Int =
+        ((buffer(0) & 0xff) << 24) | ((buffer(1) & 0xff) << 16)
+        | ((buffer(2) & 0xff) << 8) | (buffer(3) & 0xff)
+
+      if !fill(4 + length) then Unset else
+        val body: Data = IArray.from(buffer.slice(4, 4 + length))
+        buffer.remove(0, 4 + length)
+        body
