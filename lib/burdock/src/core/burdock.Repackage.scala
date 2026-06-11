@@ -1,5 +1,5 @@
                                                                                                   /*
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃                                                                                                  ┃
 ┃                                                   ╭───╮                                          ┃
 ┃                                                   │   │                                          ┃
@@ -32,55 +32,43 @@
                                                                                                   */
 package burdock
 
-import soundness.*
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gossamer.*
+import prepositional.*
+import rudiments.*
+import urticose.*
+import vacuous.*
 
-import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
-import charEncoders.utf8
+import errorDiagnostics.empty
 
-object Tests extends Suite(m"Burdock Tests"):
-  def run(): Unit =
-    suite(m"Dependency-hashing macro"):
-      val hashes: List[Text] = Embed.dependencyHashes
-      val home: Text = java.lang.System.getProperty("user.home").nn.tt
+import Bootstrapper.{Requirement, Entry}
 
-      test(m"captures a non-empty set of dependency hashes"):
-        hashes.length
-      .assert(_ > 0)
+// The repackager. Reads the dependency hashes embedded by the compile-time macro
+// and partitions them: a hash that resolves to a public URL is externalized (a
+// `Burdock-Require` reference, fetched at runtime); anything else is inlined by
+// copying the cached JAR's classes into the artifact. The completeness invariant:
+// every dependency is either externalized or inlined — a hash that is neither is
+// an error.
+object Repackage:
+  case class RepackageError(hash: Text)(using Diagnostics)
+  extends Error(m"the dependency with hash $hash is neither publicly downloadable nor cached")
 
-      test(m"every hash is 64-character SHA-256 hex"):
-        hashes.all { hash => hash.length == 64 && hash.lower == hash }
-      .assert(_ == true)
+  // Pure partition; `resolve` (deps.dev) and `cached` (cache lookup) are injected
+  // so the logic is testable without the network or the filesystem.
+  def partition
+     (hashes:  List[Text],
+      resolve: Text => Optional[HttpUrl],
+      cached:  Text => Optional[List[Entry]])
+  :   (List[Requirement], List[Entry]) raises RepackageError =
 
-      test(m"every hash is hard-linked into the Burdock cache"):
-        hashes.all: hash =>
-          val jar: Text = t"$home/.cache/burdock/$hash.jar"
-          java.nio.file.Files.exists(java.nio.file.Paths.get(jar.s).nn)
-      .assert(_ == true)
+    val requirements = List.newBuilder[Requirement]
+    val inlined = List.newBuilder[Entry]
 
-      test(m"the hash list is written as a packaged resource"):
-        val stream = getClass.nn.getResourceAsStream("/META-INF/burdock.deps").nn
-        val content: Text = java.lang.String(stream.readAllBytes().nn, "UTF-8").tt
-        content.cut(t"\n").to(Set)
-      .assert(_ == hashes.to(Set))
+    hashes.each: hash =>
+      resolve(hash) match
+        case url: HttpUrl => requirements += Requirement(url, hash)
+        case Unset        => cached(hash).lay(abort(RepackageError(hash)))(inlined ++= _)
 
-    suite(m"Repackager partition"):
-      val published = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"
-      val resolve: Text => Optional[HttpUrl] = h => if h == t"aaa" then published else Unset
-      val classEntry = Bootstrapper.Entry(t"pkg/X.class", t"bytes".data)
-      val cached: Text => Optional[List[Bootstrapper.Entry]] =
-        h => if h == t"bbb" then List(classEntry) else Unset
-
-      test(m"a published hash becomes a remote requirement"):
-        val (requirements, inlined) = Repackage.partition(List(t"aaa"), resolve, cached)
-        (requirements.length, inlined.length)
-      .assert(_ == (1, 0))
-
-      test(m"an unpublished but cached hash is inlined"):
-        val (requirements, inlined) = Repackage.partition(List(t"bbb"), resolve, cached)
-        (requirements.length, inlined.length)
-      .assert(_ == (0, 1))
-
-      test(m"a hash that is neither published nor cached is rejected"):
-        capture[Repackage.RepackageError](Repackage.partition(List(t"ccc"), resolve, cached))
-      .assert(_ => true)
+    (requirements.result(), inlined.result())
