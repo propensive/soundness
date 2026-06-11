@@ -154,36 +154,7 @@ def cli[bus <: Matchable](using executive: Executive)
               if isWindows then t"runner-$platformLabel.exe" else t"runner-$platformLabel"
 
             val runnerResource: Path on Classpath = Classpath/"ethereal"/runnerName
-            val runnerBytes: IArray[Byte] = runnerResource.read[Data]
-
-            val magic: Array[Byte] = Array[Byte](
-              'E'.toByte, 'T'.toByte, 'H'.toByte, 'R'.toByte,
-              'C'.toByte, 'F'.toByte, 'G'.toByte, 2.toByte)
-
-            // v2 ETHRCFG layout — keep in sync with lib/ethereal/src/runner/src/config.rs.
-            val pubkeyLen: Int = 1312                       // ML-DSA-44 public key size
-            val pubkeyOffsetInBlock: Int = 32 - magic.length  // after the 24-byte meta region
-
-            val magicOffset: Int =
-              var found: Int = -1
-              var i = 0
-
-              while found < 0 && i <= runnerBytes.length - magic.length do
-                var matches = true
-                var j = 0
-
-                while matches && j < magic.length do
-                  if runnerBytes(i + j) != magic(j) then matches = false
-                  j += 1
-
-                if matches then found = i
-                i += 1
-
-              if found < 0 then
-                Out.println(e"Runner binary does not contain the ETHRCFG\\x02 magic marker")
-                Exit.Fail(1).terminate()
-
-              found
+            val runnerBytes: Data = runnerResource.read[Data]
 
             // ML-DSA-44 public key used by the runner to verify upgrades.
             // When `ethereal.publicKey` is unset the slot stays zero and the
@@ -192,52 +163,33 @@ def cli[bus <: Matchable](using executive: Executive)
             // than the .pending path. Releases that need signed upgrades
             // pass `-Dethereal.publicKey=<path>` pointing at a 1312-byte raw
             // ML-DSA-44 public key file.
-            val publicKeyBytes: Array[Byte] =
+            val publicKey: Data =
               safely(System.properties.ethereal.publicKey[Text]()).absolve match
                 case Unset =>
-                  new Array[Byte](pubkeyLen)   // all zeros — upgrades blocked
+                  IArray.fill(Assembler.PublicKeyLength)(0.toByte)   // upgrades blocked
 
                 case keyPath: Text =>
                   val resolved: Path on Linux = safely(keyPath.decode[Path on Linux]).or:
                     val work: Path on Linux = workingDirectory
                     work + keyPath.decode[Relative on Linux]
-                  val raw = resolved.open(_.stream[Data].read[Data]).to(Array)
-                  if raw.length != pubkeyLen then
+
+                  val raw: Data = resolved.open(_.stream[Data].read[Data])
+
+                  if raw.length != Assembler.PublicKeyLength then
                     Out.println(e"Public key at $keyPath is the wrong size (expected 1312 bytes)")
                     Exit.Fail(1).terminate()
+
                   raw
 
-            val configOffset: Int = magicOffset + magic.length
-            val patched: Array[Byte] = IArray.genericWrapArray(runnerBytes).toArray
+            whereas:
+              case AssemblyError(_) =>
+                Out.println(e"Runner binary does not contain the ETHRCFG\\x02 magic marker")
+                Exit.Fail(1).terminate()
 
-            // Write the 24-byte metadata region.
-            val metaBuf = jnio.ByteBuffer.wrap(patched, configOffset, 24).nn
-            metaBuf.order(jnio.ByteOrder.LITTLE_ENDIAN).nn
-            metaBuf.putLong(buildId)
-            metaBuf.putShort(javaMinimum.toShort)
-            metaBuf.putShort(javaPreferred.toShort)
-            metaBuf.put((if jdk then 1 else 0).toByte)
-            while metaBuf.hasRemaining do metaBuf.put(0.toByte)
-
-            // Write the 1312-byte public-key region at offset 32 within the
-            // ETHRCFG block (8 magic + 24 metadata).
-            jl.System.arraycopy(publicKeyBytes, 0,
-                                patched, configOffset + 24,
-                                pubkeyLen)
-            // Signature slot at offset 1344 stays zero — populated later by
-            // the signer when this binary is itself shipped as an upgrade.
-
-            path.open: file =>
-              Stream(IArray.from(patched.iterator): IArray[Byte]).writeTo(file)
-
-            if platformLabel.starts(t"macos") then
-              if !isWindows then path.executable() = true
-              safely(mute[ExecEvent](sh"codesign --sign - --force $path".exec[Exit]()))
-
-            jarFile.open: jarFile =>
-              Eof(path).open(jarFile.stream[Data].writeTo(_))
-
-            if !isWindows then path.executable() = true
+            . mitigate:
+                Assembler.assemble
+                 (runnerBytes, jarFile, path, platformLabel, buildId, javaMinimum,
+                  javaPreferred, jdk, publicKey)
 
             Out.println(t"Built executable file $destination")
 
