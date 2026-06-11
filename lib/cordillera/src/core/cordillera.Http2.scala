@@ -324,7 +324,7 @@ object Http2:
   // Used as the `Target` of the HTTP/2 `HttpClient` given, distinct from the
   // `DomainSocket` target telekinesis binds to its HTTP/1.1 client.
   case class Endpoint[endpoint: Connectable as connectable](endpoint: endpoint, authority: Text):
-    def connect(): Duplex = connectable.connect(endpoint)
+    def connect(): Duplex = connectable.connect(endpoint, Unset)
 
   // An `HttpClient` that speaks HTTP/2 (prior-knowledge h2c) to an `Http2.Endpoint`.
   // It captures the ambient `Monitor`/`Probate` from this given's context — the
