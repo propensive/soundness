@@ -204,11 +204,14 @@ object Tar:
       case file: File      => file.data.chunked(512, zeroPadding = true)
       case pax: Pax        => LazyList(pax.records).chunked(512, zeroPadding = true)
 
-      case long: GnuLong   =>
+      case long: GnuLong =>
         LazyList(long.content.data ++ IArray.fill[Byte](1)(0)).chunked(512, zeroPadding = true)
 
-      case sparse: Sparse  => sparse.data.chunked(512, zeroPadding = true)
-      case _               => LazyList()
+      case sparse: Sparse =>
+        sparse.data.chunked(512, zeroPadding = true)
+
+      case _ =>
+        LazyList()
 
     def typeFlag: TypeFlag = this match
       case _: File         => TypeFlag.File

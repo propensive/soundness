@@ -32,11 +32,11 @@
                                                                                                   */
 package enigmatic
 
+import scala.reflect.Selectable.reflectiveSelectable
+
 import anticipation.*
 import gossamer.*
 import prepositional.*
-
-import scala.reflect.Selectable.reflectiveSelectable
 
 object TripleDes:
   given value: [bits <: 112 | 168: ValueOf, mode, padding]

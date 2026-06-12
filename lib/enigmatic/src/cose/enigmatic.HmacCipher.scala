@@ -44,7 +44,7 @@ import prepositional.*
 // secure-random work is delegated to the in-scope `Crypto` provider.
 object HmacCipher:
   given value: [algorithm <: Algorithm] => (hash: Hash in algorithm) => (crypto: Crypto)
-            =>  HmacCipher[algorithm] =
+  =>  HmacCipher[algorithm] =
     HmacCipher[algorithm]()
 
 class HmacCipher[algorithm <: Algorithm]()(using hash: Hash in algorithm, crypto: Crypto)

@@ -137,6 +137,7 @@ extension (shell: Shell)
             t"POWERSHELL_UPDATECHECK=Off pwsh -NoLogo -NoExit -File ${file.encode}"
 
         sh"tmux new-session -d -s ${tmux.id} -x $width -y $height '$shellInvocation'".exec[Unit]()
+
         Tmux.attend:
           ()
 

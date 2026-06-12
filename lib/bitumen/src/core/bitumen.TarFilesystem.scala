@@ -53,7 +53,7 @@ import vacuous.*
 private[bitumen] object TarFilesystem:
   def entryFor[plane <: Posix: Filesystem]
     ( root: Path on plane, path: Path on plane )
-              ( using DereferenceSymlinks, Tactic[IoError], Tactic[TarError] )
+    ( using DereferenceSymlinks, Tactic[IoError], Tactic[TarError] )
   :   Tar.Entry =
 
     val ref = relativize(root, path)
@@ -93,8 +93,8 @@ private[bitumen] object TarFilesystem:
         Tar.Entry.Fifo(ref, mode, user, group, mtime)
 
   def applyEntry[plane <: Posix: Filesystem]
-                ( root: Path on plane, entry: Tar.Entry )
-                ( using CreateNonexistentParents on plane,
+    ( root: Path on plane, entry: Tar.Entry )
+    ( using CreateNonexistentParents on plane,
                         OverwritePreexisting on plane,
                         Tactic[IoError],
                         Tactic[TarError] )
@@ -135,8 +135,8 @@ private[bitumen] object TarFilesystem:
       case _: Tar.Entry.Pax | _: Tar.Entry.GnuLong => ()
 
   private def relativize[plane <: Posix: Filesystem]
-                        ( root: Path on plane, child: Path on plane )
-                        ( using Tactic[TarError] )
+    ( root: Path on plane, child: Path on plane )
+    ( using Tactic[TarError] )
   :   TarRef =
 
     val rootText = root.encode.s
@@ -150,8 +150,8 @@ private[bitumen] object TarFilesystem:
     decodePath(relText)
 
   private def absolutize[plane <: Posix: Filesystem]
-                        ( root: Path on plane, ref: TarRef )
-                        ( using Tactic[TarError] )
+    ( root: Path on plane, ref: TarRef )
+    ( using Tactic[TarError] )
   :   Path on plane =
 
     decodeAbsolute(root.encode.s+"/"+ref.show.s, root)
@@ -166,7 +166,7 @@ private[bitumen] object TarFilesystem:
     base + rel
 
   private def relativeFromPath(rootText: String, fullText: String)
-                              ( using Tactic[TarError] )
+    ( using Tactic[TarError] )
   :   Relative on Posix =
 
     import errorDiagnostics.empty
@@ -194,7 +194,7 @@ private[bitumen] object TarFilesystem:
       case n: Int => UnixMode.from(n & 0xfff)
       case _      => UnixMode()
     catch
-      case _: UnsupportedOperationException => UnixMode()
+      case _: UnsupportedOperationException                => UnixMode()
       case _: jnf.attribute.UserPrincipalNotFoundException => UnixMode()
 
   private def readOwner(javaPath: jnf.Path)(using Tactic[IoError]): (Int, Int) =

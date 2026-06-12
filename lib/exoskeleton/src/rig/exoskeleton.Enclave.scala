@@ -53,9 +53,9 @@ import superlunary.*
 import symbolism.*
 import vacuous.*
 
-import probates.cancel
 import filesystemOptions.deleteRecursively.disabled
 import logging.silent
+import probates.cancel
 import workingDirectories.java
 
 

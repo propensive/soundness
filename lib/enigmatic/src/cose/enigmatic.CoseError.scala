@@ -39,13 +39,19 @@ object CoseError:
   object Reason:
     given communicable: Reason is Communicable =
       case MalformedStructure              => m"the COSE structure was not well-formed"
-      case UnknownTag(tag)                 => m"the CBOR tag ${tag.toString} is not a COSE message tag"
-      case UnsupportedAlgorithm(id)        => m"the COSE algorithm identifier ${id.toString} is not supported"
-      case AlgorithmMismatch(want, got)    => m"expected COSE algorithm ${want.toString} but found ${got.toString}"
       case VariantMismatch(want, got)      => m"expected a $want COSE message but found a $got"
       case VerificationFailed              => m"the COSE signature or MAC did not verify"
       case CborParseError                  => m"the COSE message contained malformed CBOR"
       case DetachedPayloadRequired         => m"the COSE message has a detached payload"
+
+      case UnknownTag(tag) =>
+        m"the CBOR tag ${tag.toString} is not a COSE message tag"
+
+      case UnsupportedAlgorithm(id) =>
+        m"the COSE algorithm identifier ${id.toString} is not supported"
+
+      case AlgorithmMismatch(want, got) =>
+        m"expected COSE algorithm ${want.toString} but found ${got.toString}"
 
   enum Reason(val number: Int) extends Clarification:
     case MalformedStructure                              extends Reason(1)

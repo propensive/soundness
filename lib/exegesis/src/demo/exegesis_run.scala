@@ -35,9 +35,9 @@ package exegesis
 import soundness.*
 
 import backstops.stackTrace
-import probates.await
 import executives.completions
 import interpreters.posix
+import probates.await
 import strategies.throwUnsafely
 import threading.virtual
 

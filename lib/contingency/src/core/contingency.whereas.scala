@@ -92,18 +92,18 @@ object Whereas:
   extension [lambda[_]](inline w: Whereas[lambda])
 
     inline def mitigate[result](inline body: lambda[result]): result =
-      ${ contingency.internal.mitigateBody[lambda, result]('w, 'body) }
+      ${contingency.internal.mitigateBody[lambda, result]('w, 'body)}
 
     inline def recover[result](inline body: lambda[result]): result =
-      ${ contingency.internal.recoverBody[lambda, result]('w, 'body) }
+      ${contingency.internal.recoverBody[lambda, result]('w, 'body)}
 
-    inline def accrue[accrual <: Exception, result]
-      (initial: accrual)(combine: (accrual, Exception) => accrual)
-      (inline body: lambda[result])
-      (using outer: Tactic[accrual], diagnostics: Diagnostics)
+    inline def accrue[accrual <: Exception, result](initial: accrual)
+      ( combine: (accrual, Exception) => accrual )
+      ( inline body: lambda[result] )
+      ( using outer: Tactic[accrual], diagnostics: Diagnostics )
     :   result =
 
       $ {
           contingency.internal.accrueBody[accrual, lambda, result]
-            ('w, 'initial, 'combine, 'body, 'outer, 'diagnostics)
+            ( 'w, 'initial, 'combine, 'body, 'outer, 'diagnostics )
         }

@@ -76,7 +76,10 @@ object JavaStdlibCrypto extends Crypto:
 
     def decrypt(input: Data, privateKey: Data): Data =
       val instance = cipher()
-      val key = keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.mutable(using Unsafe)))
+
+      val key =
+        keyFactory().generatePrivate(jss.PKCS8EncodedKeySpec(privateKey.mutable(using Unsafe)))
+
       instance.init(jc.Cipher.DECRYPT_MODE, key)
       instance.doFinal(input.mutable(using Unsafe)).nn.immutable(using Unsafe)
 
@@ -131,9 +134,11 @@ object JavaStdlibCrypto extends Crypto:
   // algorithm (e.g. `t"AES"`), used for `SecretKeySpec` and `KeyGenerator`, while
   // the full `transformation` (e.g. `t"AES/CBC/PKCS5Padding"`) drives the cipher.
   private def symmetric(algorithm: Text): Crypto.SymmetricCipher = new Crypto.SymmetricCipher:
-    private def makeKey(key: Data): SecretKeySpec = SecretKeySpec(key.mutable(using Unsafe), algorithm.s)
+    private def makeKey(key: Data): SecretKeySpec =
+      SecretKeySpec(key.mutable(using Unsafe), algorithm.s)
 
-    def blockSize(transformation: Text): Int = jc.Cipher.getInstance(transformation.s).nn.getBlockSize
+    def blockSize(transformation: Text): Int =
+      jc.Cipher.getInstance(transformation.s).nn.getBlockSize
 
     def generateKey(bits: Int): Data =
       val keyGen = jc.KeyGenerator.getInstance(algorithm.s).nn

@@ -87,4 +87,5 @@ given rowEach: Each.type is Optical from Sheet onto Dsv = _ =>
 
 given rowFilter: Filter[Dsv] is Optical from Sheet onto Dsv = filter =>
   Optic: (origin, lambda) =>
-    origin.copy(rows = origin.rows.map(row => if filter.predicate(row) then lambda(row) else row))
+    origin.copy
+      ( rows = origin.rows.map { row => if filter.predicate(row) then lambda(row) else row } )

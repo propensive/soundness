@@ -40,8 +40,8 @@ import prepositional.*
 // used to verify a COSE signature or MAC.
 object CoseVerifier:
   given asymmetric: [cipher <: Cipher & Signing]
-                =>  ( algorithm: cipher & Signing )
-                =>  PublicKey[cipher] is CoseVerifier in Sign1 by cipher =
+  =>  ( algorithm: cipher & Signing )
+  =>  PublicKey[cipher] is CoseVerifier in Sign1 by cipher =
     new CoseVerifier:
       type Self    = PublicKey[cipher]
       type Form    = Sign1

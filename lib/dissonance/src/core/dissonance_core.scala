@@ -40,6 +40,7 @@ import vacuous.*
 import contingency.*
 import rudiments.*
 import turbulence.*
+
 import RedraftError.Reason
 
 def evolve[element: ClassTag]

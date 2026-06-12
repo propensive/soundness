@@ -301,6 +301,7 @@ object internal:
         if (inner & BgSet) != 0 then inner & (BgMask | BgSet)
         else if (outer & BgSet) != 0 then outer & (BgMask | BgSet)
         else 0L
+
       combinedFlags | fgBits | bgBits
 
     def emitDiff(buffer: StringBuilder, prev: Long, next: Long, depth: ColorDepth): Unit =
@@ -318,6 +319,7 @@ object internal:
         val r = (rgb >> 16)&255
         val g = (rgb >> 8)&255
         val b = rgb&255
+
         depth match
           case ColorDepth.TrueColor =>
             sep()
@@ -351,6 +353,7 @@ object internal:
         else emitColor(48, ((next & BgMask) >>> 24).toInt)
 
       val flagDiff = diff & (FlagsMask & ~(FgSet | BgSet | HyperlinkChange))
+
       if flagDiff != 0 then
         toggle(Italic,          flagDiff, 3,  23)
         toggle(Bold,            flagDiff, 1,  22)

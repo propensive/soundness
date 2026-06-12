@@ -36,13 +36,15 @@ import language.experimental.pureFunctions
 
 import scala.quoted.*
 
+import java.util.concurrent.atomic as juca
+
+import scala.language.unsafeNulls
+import scala.util.boundary
+
 import denominative.*
 import fulminate.*
 import prepositional.*
 import vacuous.*
-import scala.language.unsafeNulls
-import java.util.concurrent.atomic as juca
-import scala.util.boundary
 
 package strategies:
   given throwUnsafely: [success] => ThrowTactic[Exception, success] =
@@ -234,12 +236,10 @@ extension [value](optional: Optional[value])
 
 
 
-def defer[result, error <: Exception]
-  (body: Tactic[error] ?=> result)
-:   Deferred[result, error] =
+def defer[result, error <: Exception](body: Tactic[error] ?=> result)
+: Deferred[result, error] =
 
   Deferred(body)
-
 
 
 transparent inline def whereas(inline handler: PartialFunction[Exception, Any]): Whereas[?] =

@@ -32,10 +32,11 @@
                                                                                                   */
 package bitumen
 
+import java.nio.file as jnf
+
 import anticipation.*
 import contingency.*
 import turbulence.*
-import java.nio.file as jnf
 import distillate.*
 import fulminate.*
 import galilei.*

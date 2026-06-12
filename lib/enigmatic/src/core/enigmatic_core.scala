@@ -39,7 +39,9 @@ import gastronomy.Concession
 
 extension [encodable: Encodable in Data](value: encodable)
   def hmac[algorithm <: Algorithm](key: Data)
-    ( using hash: Hash in algorithm, crypto: Crypto, erased weakness: Permit[HashWeakness[algorithm]] )
+    ( using hash:            Hash in algorithm,
+            crypto:          Crypto,
+            erased weakness: Permit[HashWeakness[algorithm]] )
   :   Hmac in algorithm =
 
     Hmac(crypto.hmac(hash.hmacName).mac(key, encodable.encode(value)))

@@ -53,8 +53,9 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
     val columns: IArray[Column[derivation, Text]] =
       contexts:
         [field] => tabulable =>
-          tabulable.table().columns.map(_.contramap(dereference).retitle:
-            labels.get(label).getOrElse(label.uncamel.join(t" ").capitalize))
+          tabulable.table().columns.map: element =>
+            element.contramap(dereference).retitle:
+              labels.get(label).getOrElse(label.uncamel.join(t" ").capitalize)
 
       . flatten
 

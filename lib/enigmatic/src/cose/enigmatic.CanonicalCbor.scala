@@ -54,7 +54,7 @@ object CanonicalCbor:
         builder += ((CborPrinter.encode(canonicalKey), canonicalKey, canonicalValue))
         index += 1
 
-      val sorted = builder.sortWith((a, b) => compareBytes(a._1, b._1) < 0)
+      val sorted = builder.sortWith: (a, b) => compareBytes(a._1, b._1) < 0
       val keys = new Array[Any](n)
       val values = new Array[Any](n)
       var write = 0

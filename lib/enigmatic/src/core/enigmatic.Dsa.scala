@@ -32,9 +32,9 @@
                                                                                                   */
 package enigmatic
 
-import anticipation.*
-
 import scala.reflect.Selectable.reflectiveSelectable
+
+import anticipation.*
 
 object Dsa:
   given value: [bits <: 512 | 1024 | 2048 | 3072: ValueOf]

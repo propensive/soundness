@@ -81,11 +81,11 @@ object OpensslCrypto extends Crypto:
 
   private val paths: List[Text] = List
     ( t"/opt/homebrew/opt/openssl@3/lib/libcrypto.dylib",
-     t"/opt/homebrew/lib/libcrypto.dylib",
-     t"/usr/local/opt/openssl@3/lib/libcrypto.dylib",
-     t"libcrypto.so.3",
-     t"libcrypto.so",
-     t"libcrypto.dylib" )
+      t"/opt/homebrew/lib/libcrypto.dylib",
+      t"/usr/local/opt/openssl@3/lib/libcrypto.dylib",
+      t"libcrypto.so.3",
+      t"libcrypto.so",
+      t"libcrypto.dylib" )
 
   // The library outlives every call, so it is bound to the global arena.
   private lazy val lib: ForeignLibrary = ForeignLibrary(header, paths)(using Arena.global().nn)
@@ -172,8 +172,8 @@ object OpensslCrypto extends Crypto:
       lib.handle(t"EVP_EncryptInit_ex").invokeWithArguments
         ( context, cipher0, MemorySegment.NULL, keySegment, ivSegment )
 
-      if parts(2) == t"NoPadding"
-      then lib.handle(t"EVP_CIPHER_CTX_set_padding").invokeWithArguments(context, Integer.valueOf(0))
+      if parts(2) == t"NoPadding" then
+        lib.handle(t"EVP_CIPHER_CTX_set_padding").invokeWithArguments(context, Integer.valueOf(0))
 
       val block = if parts(0) == t"AES" then 16 else 8
 
@@ -202,8 +202,9 @@ object OpensslCrypto extends Crypto:
 
   // One-shot EVP encrypt/decrypt (init → update → final), returning the raw output
   // without IV framing (the caller prepends/strips the IV).
-  private def oneShot(encrypting: Boolean, transformation: Text, key: Data, iv: Optional[Data],
-                      data: Data): Data =
+  private def oneShot
+    ( encrypting: Boolean, transformation: Text, key: Data, iv: Optional[Data], data: Data)
+  :   Data =
     val arena = Arena.ofConfined().nn
 
     try
@@ -235,7 +236,8 @@ object OpensslCrypto extends Crypto:
         val length2 = arena.allocate(int).nn
         val finalFunction = if encrypting then t"EVP_EncryptFinal_ex" else t"EVP_DecryptFinal_ex"
 
-        lib.handle(finalFunction).invokeWithArguments(context, output.asSlice(count1.toLong).nn, length2)
+        lib.handle(finalFunction)
+        . invokeWithArguments(context, output.asSlice(count1.toLong).nn, length2)
 
         ForeignLibrary.bytes(output, count1 + length2.get(int, 0L))
       finally lib.handle(t"EVP_CIPHER_CTX_free").invokeWithArguments(context)
