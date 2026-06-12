@@ -131,8 +131,8 @@ extends BaseScalaModule, SonatypeCentralPublishModule:
       :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
       :+ s"-Xplugin:${frontier.plugin.assembly().path}"
 
-// Like `Component`, but not published to Maven Central. For demos, examples, the
-// `flame` REPL, and other modules that are built and tested but never released.
+// Like `Component`, but not published to Maven Central. For demos, examples, and
+// other modules that are built and tested but never released.
 trait Internal(dependencies: JavaModule*) extends BaseScalaModule:
   def moduleId: String = moduleDir.last
   def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
@@ -245,7 +245,7 @@ object groupCheck extends Module:
   // test,tool,web} group bundle: the compiler plugins (published but used via `-Xplugin`),
   // and the `anticipation.*` interface components plus `proscenium.core`, which reach
   // `soundness-all` transitively as dependencies of bundled modules. Non-published modules
-  // (demos, examples, the `flame` REPL, `satirical`) use the `Internal` trait instead and
+  // (demos, examples, `satirical`) use the `Internal` trait instead and
   // are not subject to this check.
   def excluded: Set[String] = Set(
     "anticipation.codec", "anticipation.color", "anticipation.generic", "anticipation.gfx",
@@ -841,48 +841,6 @@ object exoskeleton extends Library:
         mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
   object test extends Tests(rig)
-
-object flame extends Library:
-  object core extends Internal(anthology.`scala`, inimitable.core, coaxial.core, eucalyptus.core,
-                                stratiform.core, stratiform.binary, harlequin.core):
-    override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-    def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
-
-  object client extends Internal(core, ethereal.core, exoskeleton.completions, profanity.core,
-                                  coaxial.core, urticose.core, stratiform.core, stratiform.binary,
-                                  escapade.core, iridescence.core, harlequin.ansi, escritoire.core,
-                                  ultimatum.core):
-    override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-    override def mainClass: Task.Simple[Option[String]] = Some("flame.repl")
-
-    def bin(): Command[PathRef] = Task.Command:
-      val jar = assembly().path
-      val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "flame"
-      os.makeDir.all(target / os.up)
-      os.remove.all(target)
-
-      val runnersBase = ethereal.core.rustRunners().path / "ethereal"
-      val staging = Task.dest / "staging"
-      os.makeDir.all(staging)
-
-      ethereal.core.rustTargets.foreach: (_, label, binary) =>
-        val ext = if binary.endsWith(".exe") then ".exe" else ""
-        os.copy.over(runnersBase / s"runner-$label$ext", staging / s"runner-$label$ext")
-
-      os.copy.over(jar, staging / "data")
-
-      val classpath =
-        ziggurat.core.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
-
-      os.proc("java", "-cp", classpath, "ziggurat.Xeq", "installer", target.toString, staging.toString)
-        .call(stdout = os.Inherit, stderr = os.Inherit)
-
-      new java.io.File(target.toString).setExecutable(true)
-      PathRef(target)
-
-  object test extends Tests(core, spectacular.core)
 
 object frontier extends Library:
   object plugin extends BareComponent():
@@ -1596,7 +1554,7 @@ val allLibraries: Seq[Library] = Seq(
   decorum, dendrology, denominative, digression, dissonance, distillate, diuretic,
   embarcadero, enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis,
   exoskeleton,
-  flame, frontier, fulminate, galilei, gastronomy, geodesy, gesticulate, gigantism,
+  frontier, fulminate, galilei, gastronomy, geodesy, gesticulate, gigantism,
   gnossienne, gossamer, guillotine, hallucination, harlequin, hellenism, hieroglyph,
   honeycomb, hyperbole, hypotenuse, imperial, inimitable, iridescence, jacinta,
   kaleidoscope, larceny, legerdemain, locomotion, mandible, mercator, metamorphose,
