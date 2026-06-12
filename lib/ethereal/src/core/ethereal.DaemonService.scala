@@ -41,6 +41,7 @@ import exoskeleton.*
 import guillotine.*
 import prepositional.*
 import serpentine.*
+import vacuous.*
 
 case class DaemonService[bus <: Matchable]
   ( pid:        Pid,
@@ -50,9 +51,14 @@ case class DaemonService[bus <: Matchable]
     deliver:    bus => Unit,
     bus:        Stream[bus],
     script:     Text,
-    startTime:  Long )
+    startTime:  Long,
+    helpThunk:  () => Optional[Help] )
 extends Entrypoint:
   def broadcast(message: bus): Unit = deliver(message)
+
+  // The structured help tree for this command, generated lazily by re-running the application
+  // in tab-completion mode. Falls back to a name-only root if the executive cannot generate it.
+  def help(): Help = helpThunk().or(Help(script, Unset, Nil, Nil))
 
   def started[instant: Instantiable across Instants from Long]: instant =
     instant(startTime)
