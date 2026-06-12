@@ -677,7 +677,8 @@ object Mcp:
     def `notifications/cancelled`
       ( requestId: Optional[TextInt],
         reason:    Optional[Text],
-        _meta:     Optional[Json] ): Unit
+        _meta:     Optional[Json] )
+    :   Unit
 
     @rpc
     def `notifications/progress`

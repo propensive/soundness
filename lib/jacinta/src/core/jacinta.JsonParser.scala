@@ -995,7 +995,9 @@ private[jacinta] final class JsonParser:
   // The flag has no effect on non-number values, so we don't need to
   // propagate it to `parseObject` / `parseArray` / `parseString`.
   private def parseValue(minus: Boolean = false, bcdOnly: Boolean = false)
-    ( using Tactic[ParseError] ): Raw =
+    ( using Tactic[ParseError] )
+  :   Raw =
+
     if !more then errorAt(Issue.PrematureEnd)
     val ch = peek
 
