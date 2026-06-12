@@ -71,8 +71,8 @@ object Tests extends Suite(m"Burdock Tests"):
     suite(m"Repackager partition"):
       val published = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"
       val resolve: Text => Optional[HttpUrl] = h => if h == t"aaa" then published else Unset
-      val classEntry = Bootstrapper.Entry(t"pkg/X.class", t"bytes".data)
-      val cached: Text => Optional[List[Bootstrapper.Entry]] =
+      val classEntry = Zip.Entry(t"pkg/X.class".decode[Path on Zip], t"bytes".data)
+      val cached: Repackage.CacheReader =
         h => if h == t"bbb" then List(classEntry) else Unset
 
       test(m"a published hash becomes a remote requirement"):
@@ -106,7 +106,8 @@ object Tests extends Suite(m"Burdock Tests"):
         h => if h == t"aaa" then url"https://repo1.maven.org/maven2/g/a/1/a-1.jar" else Unset
 
       val cached: Repackage.CacheReader =
-        h => if h == t"bbb" then List(Bootstrapper.Entry(t"dep/Lib.class", t"lib".data)) else Unset
+        h => if h == t"bbb" then List(Zip.Entry(t"dep/Lib.class".decode[Path on Zip], t"lib".data))
+             else Unset
 
       Repackage.repackage(inputJar, outputJar, resolve, cached, t"bootstrap-bytes".data)
 
@@ -161,7 +162,8 @@ object Tests extends Suite(m"Burdock Tests"):
       val resolve: Repackage.Resolver = _ => Unset
 
       val cached: Repackage.CacheReader =
-        h => if h == t"bbb" then List(Bootstrapper.Entry(t"dep/Lib.class", t"cached-lib".data))
+        h => if h == t"bbb"
+             then List(Zip.Entry(t"dep/Lib.class".decode[Path on Zip], t"cached-lib".data))
              else Unset
 
       Repackage.repackage(inputJar, outputJar, resolve, cached, t"real-bootstrap".data)
@@ -180,3 +182,59 @@ object Tests extends Suite(m"Burdock Tests"):
       test(m"a cached class already bundled is not duplicated"):
         names.count(_ == t"dep/Lib.class")
       .assert(_ == 1)
+
+    suite(m"Repackager (slimming)"):
+      // A fat assembly bundles its dependencies' classes. A published dependency is fetched
+      // at runtime (a `Burdock-Require` reference), so its bundled classes must be stripped
+      // from the repackaged JAR; the application's own classes (and an unpublished, cached
+      // dependency's classes) are kept.
+      val tmp: Path on Linux = temporaryDirectory[Path on Linux]
+      val inputJar: Path on Linux = tmp/t"burdock-slim-in-${Uuid().show}.jar"
+      val outputJar: Path on Linux = tmp/t"burdock-slim-out-${Uuid().show}.jar"
+
+      val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
+
+      Zipfile.write(inputJar):
+        Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifestText.data)
+        #:: Zip.Entry(t"META-INF/burdock.deps".decode[Path on Zip], t"pub\nunpub".data)
+        #:: Zip.Entry(t"com/example/Main.class".decode[Path on Zip], t"main".data)
+        #:: Zip.Entry(t"published/Lib.class".decode[Path on Zip], t"published-bytes".data)
+        #:: Zip.Entry(t"unpublished/Lib.class".decode[Path on Zip], t"unpublished-bytes".data)
+        #:: LazyList()
+
+      val published = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"
+      val resolve: Repackage.Resolver = h => if h == t"pub" then published else Unset
+
+      // The published dep's cached JAR lists the class bundled in the assembly (so it can be
+      // identified and stripped); the unpublished dep stays bundled.
+      val pubEntry = Zip.Entry(t"published/Lib.class".decode[Path on Zip], t"x".data)
+      val unpubEntry = Zip.Entry(t"unpublished/Lib.class".decode[Path on Zip], t"y".data)
+
+      val cached: Repackage.CacheReader = h =>
+        if h == t"pub" then List(pubEntry)
+        else if h == t"unpub" then List(unpubEntry)
+        else Unset
+
+      Repackage.repackage(inputJar, outputJar, resolve, cached, t"bootstrap".data)
+
+      val names: List[Text] = Zipfile.read(outputJar).entries.map(_.ref.show).to(List)
+
+      val manifest: Text =
+        Zipfile.read(outputJar).entries.find(_.ref.show == t"META-INF/MANIFEST.MF").get
+        . read[Data].utf8
+
+      test(m"strips a published dependency's bundled class"):
+        names.contains(t"published/Lib.class")
+      .assert(_ == false)
+
+      test(m"keeps the application's own class"):
+        names.contains(t"com/example/Main.class")
+      .assert(_ == true)
+
+      test(m"keeps an unpublished dependency's bundled class"):
+        names.contains(t"unpublished/Lib.class")
+      .assert(_ == true)
+
+      test(m"records the published dependency as a requirement"):
+        manifest.contains(t"pub")
+      .assert(_ == true)

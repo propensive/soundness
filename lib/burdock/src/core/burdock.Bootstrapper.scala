@@ -122,15 +122,12 @@ object Bootstrapper:
         val home: Text = _root_.java.lang.System.getProperty("user.home").nn.tt
         val cacheDir: Path on Linux = t"$home/.cache/burdock".decode[Path on Linux]
 
-        def cached(hash: Text): Optional[List[Entry]] =
+        def cached(hash: Text): Optional[List[Zip.Entry]] =
           val cacheJar: Path on Linux = cacheDir/t"$hash.jar"
 
           if !cacheJar.exists() then Unset else
             Zipfile.read(cacheJar).entries.filter: entry =>
               !entry.directory && entry.ref.show != t"META-INF/MANIFEST.MF"
-
-            . map: entry =>
-                Entry(entry.ref.show, entry.read[Data])
 
             . to(List)
 

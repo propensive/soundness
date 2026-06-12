@@ -66,8 +66,10 @@ object Repackage:
   // Resolves a dependency hash to its public URL (deps.dev), or `Unset`.
   type Resolver = Text => Optional[HttpUrl]
 
-  // Looks up a dependency hash's class entries in the local cache, or `Unset`.
-  type CacheReader = Text => Optional[List[Entry]]
+  // Looks up a dependency hash's entries (directories and the manifest excluded) in the
+  // local cache, or `Unset`. Payloads stay lazy, so identifying an externalized
+  // dependency's entry names (to strip them) does not read the cached JAR's contents.
+  type CacheReader = Text => Optional[List[Zip.Entry]]
 
   // Pure partition; `resolve` (deps.dev) and `cached` (cache lookup) are injected
   // so the logic is testable without the network or the filesystem.
@@ -83,17 +85,21 @@ object Repackage:
           requirements += Requirement(url, hash)
 
         case Unset =>
-          val error = RepackageError(m"dependency $hash is neither published nor cached")
-          cached(hash).lay(abort(error))(inlined ++= _)
+          val entries: List[Zip.Entry] = cached(hash).lest:
+            RepackageError(m"dependency $hash is neither published nor cached")
+
+          entries.each: entry =>
+            inlined += Entry(entry.ref.show, entry.read[Data])
 
     (requirements.result(), inlined.result())
 
 
   // Rewrites `inputJar` into `outputJar`: keeps the application's own classes,
-  // externalizes published dependencies as `Burdock-Require` references, inlines
-  // the rest from the cache, and sets `Main-Class` to the runtime bootstrap.
-  // `resolve`/`cached` are injected; `bootstrapClass` is the `burdock.Bootstrap`
-  // class bytes (force-included since it can't itself be downloaded).
+  // externalizes published dependencies as `Burdock-Require` references (stripping their
+  // bundled entries, since they are downloaded at runtime), inlines the rest from the
+  // cache, and sets `Main-Class` to the runtime bootstrap. `resolve`/`cached` are injected;
+  // `bootstrapClass` is the `burdock.Bootstrap` class bytes (force-included since it can't
+  // itself be downloaded).
   def repackage
     ( inputJar: Path on Linux, outputJar: Path on Linux, resolve: Resolver, cached: CacheReader,
       bootstrapClass: Data )
@@ -135,10 +141,24 @@ object Repackage:
         val ownEntries: List[Entry] = ownBuilder.result()
         val (requirements, inlined) = partition(hashes, resolve, cached)
 
-        // A cached entry may already be present among the application's own entries (e.g.
-        // when the input is a fat assembly); keep the bundled copy and inline only the gaps,
-        // so the output never carries two entries with the same name.
-        val ownNames: Set[Text] = ownEntries.map(_.name).to(Set)
+        // Published dependencies are downloaded and added to the classpath at runtime, so
+        // their bundled entries can be stripped from the repackaged JAR to slim it. Identify
+        // them by name from each published dependency's cached JAR (payloads are not read); a
+        // dependency absent from the cache can't be identified, so its entries stay bundled —
+        // still correct, just not slimmed.
+        val publishedEntries: List[Zip.Entry] = requirements.flatMap: requirement =>
+          cached(requirement.digest).or(Nil)
+
+        val stripped: Set[Text] = publishedEntries.map(_.ref.show).to(Set)
+
+        val keptEntries: List[Entry] = ownEntries.filter: entry =>
+          !stripped.contains(entry.name)
+
+        // A cached entry may still be present among the kept entries (e.g. an unpublished
+        // dependency bundled in a fat assembly); keep that copy and inline only the gaps, so
+        // the output never carries two entries with the same name.
+        val ownNames: Set[Text] = keptEntries.map(_.name).to(Set)
+
         val inlinedEntries: List[Entry] = inlined.filter: entry =>
           !ownNames.contains(entry.name)
 
@@ -152,7 +172,7 @@ object Repackage:
           + BurdockVerbosity(t"silent") + MainClass(fqcn"burdock.Bootstrap")
 
         val bootstrap: Entry = Entry(bootstrapName, bootstrapClass)
-        val entries: List[Entry] = bootstrap :: ownEntries ++ inlinedEntries
+        val entries: List[Entry] = bootstrap :: keptEntries ++ inlinedEntries
 
         Zipfile.write(outputJar):
           Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest2.serialize)
