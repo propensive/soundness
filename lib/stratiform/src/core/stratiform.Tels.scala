@@ -357,7 +357,7 @@ object Tels extends Tels2:
       (base, layer) match
         case (b, Polarity.Implicit)              => b
         case (_, Polarity.Tight)                 => Polarity.Tight
-        case (Polarity.Loose, Polarity.Loose) => Polarity.Loose
+        case (Polarity.Loose, Polarity.Loose)    => Polarity.Loose
 
         case (_, Polarity.Loose) => axis match
           case PolarityAxis.Required   => abort(TelError(Reason.LayerLoosenRequired))

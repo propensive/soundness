@@ -93,9 +93,9 @@ private[bitumen] object TarFilesystem:
   def applyEntry[plane <: Posix: Filesystem]
     ( root: Path on plane, entry: Tar.Entry )
     ( using CreateNonexistentParents on plane,
-                        OverwritePreexisting on plane,
-                        Tactic[IoError],
-                        Tactic[TarError] )
+            OverwritePreexisting on plane,
+            Tactic[IoError],
+            Tactic[TarError] )
   :   Unit =
 
     entry match

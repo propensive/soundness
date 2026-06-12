@@ -173,6 +173,7 @@ object Bintel:
   // raises `BadSignatureLength`.
   def frameSelfContained(signature: Data, schemaBody: Data, body: Data)
   :   Data raises BintelError =
+
     if !validSignatureLength(signature)
     then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
@@ -285,6 +286,7 @@ object Bintel:
     ( cursor: Cursor, struct: Tels.Struct, schema: Tels,
       keywordIndex: Optional[Int] )
   :   Tel.Element raises BintelError =
+
     val flat = flattenKeywords(struct, schema)
     val childCount = readVarint(cursor)
     val children = new Array[Tel.Element](childCount.toInt)
@@ -299,6 +301,7 @@ object Bintel:
   private def decodeElement
     ( cursor: Cursor, flat: IArray[(Text, Tels.Type)], schema: Tels )
   :   Tel.Element raises BintelError =
+
     val kidx = readVarint(cursor)
     if kidx < 0 || kidx >= flat.length then abort(BintelError(BintelError.Reason.BadKeywordIndex))
     val (_, memberType) = flat(kidx.toInt)
@@ -355,6 +358,7 @@ object Bintel:
   // contribute none.
   private def flattenKeywords(struct: Tels.Struct, schema: Tels)
   :   IArray[(Text, Tels.Type)] =
+
     val buf = scala.collection.mutable.ArrayBuffer.empty[(Text, Tels.Type)]
     var i = 0
 
@@ -394,6 +398,7 @@ object Bintel:
   private def presentCompound
     ( element: Tel.Element, flat: IArray[(Text, Tels.Type)], schema: Tels )
   :   Tel.Compound =
+
     element match
       case Tel.Element.Value(kidx, _, text) =>
         Tel.Compound(flat(kidx)._1, IArray(Tel.Atom.Inline(text, 1)), Unset, IArray.empty)
@@ -414,6 +419,7 @@ object Bintel:
   // — the inverse of `value.bintel`.
   def read[value: Tel.Decodable](data: Data)(using value is TelSchematic over Tels.Type)
   :   value raises BintelError raises TelError =
+
     val schema = Tels.tels[value](Text("root"))
     present(decode(data, schema), schema).as[value]
 
@@ -453,6 +459,7 @@ object Bintel:
 
   private def encodeElement(out: ByteArrayOutputStream, element: Tel.Element, schema: Tels)
   :   Unit =
+
     element match
       case node: Tel.Element.Node   => encodeNode(out, node, schema)
       case value: Tel.Element.Value => encodeValue(out, value)
@@ -509,6 +516,7 @@ object Bintel:
   // that order within a member.
   private def canonicalOrder(children: IArray[Tel.Element], parent: Tels.Struct, schema: Tels)
   :   IArray[Tel.Element] =
+
     if children.length <= 1 then children
     else
       val memberBase = memberBaseByFlatIndex(parent, schema)

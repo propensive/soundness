@@ -77,6 +77,7 @@ extension (tel: Tel)
   // otherwise raises `BintelError(BadSignatureLength)`.
   def bintelDocument(schema: Tels, signature: Data)
   :   Data raises TelError raises BintelError =
+
     Bintel.frame(tel.bintel(schema), signature)
 
   // Encode this document as a complete §6.2 self-contained BinTEL byte

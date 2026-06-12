@@ -53,8 +53,8 @@ object CoseVerifier:
         algorithm.verify(toBeSigned, authentication, key.bytes)
 
   given symmetric: [cipher <: Cipher & Symmetric & Signing]
-                =>  ( algorithm: cipher & Signing )
-                =>  SymmetricKey[cipher] is CoseVerifier in Mac0 by cipher =
+  =>  ( algorithm: cipher & Signing )
+  =>  SymmetricKey[cipher] is CoseVerifier in Mac0 by cipher =
     new CoseVerifier:
       type Self    = SymmetricKey[cipher]
       type Form    = Mac0

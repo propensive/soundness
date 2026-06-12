@@ -33,7 +33,5 @@
 package enigmatic
 
 
-
-
 package cryptoProviders:
   given opensslCrypto: OpensslCrypto.type = OpensslCrypto

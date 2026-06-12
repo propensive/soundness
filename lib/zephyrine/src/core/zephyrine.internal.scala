@@ -79,9 +79,9 @@ object internal:
     private[zephyrine] inline def fromRaw(int: Int): Datum = int
 
     inline given datumByte:  CanEqual[Datum, Byte]  = !!
-    inline given byteDatum:  CanEqual[Byte,  Datum] = !!
+    inline given byteDatum:  CanEqual[Byte, Datum] = !!
     inline given datumChar:  CanEqual[Datum, Char]  = !!
-    inline given charDatum:  CanEqual[Char,  Datum] = !!
+    inline given charDatum:  CanEqual[Char, Datum] = !!
     inline given datumDatum: CanEqual[Datum, Datum] = !!
 
 
