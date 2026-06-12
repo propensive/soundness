@@ -136,3 +136,45 @@ object Tests extends Suite(m"Burdock Tests"):
       test(m"records the published dependency as a requirement"):
         manifest.contains(t"aaa")
       .assert(_ == true)
+
+    suite(m"Repackager (duplicate-safety)"):
+      // A real assembly bundles burdock (its `Main-Class` is `burdock.Bootstrap`), so the
+      // input already contains `burdock/Bootstrap.class`; and a cached dependency may be a
+      // class already present among the application's own entries. Neither must produce a
+      // duplicate entry in the output (which would fail as a `ZipError`). See issue #1333.
+      val tmp: Path on Linux = temporaryDirectory[Path on Linux]
+      val inputJar: Path on Linux = tmp/t"burdock-dup-in-${Uuid().show}.jar"
+      val outputJar: Path on Linux = tmp/t"burdock-dup-out-${Uuid().show}.jar"
+
+      val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
+
+      Zipfile.write(inputJar):
+        Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifestText.data)
+        #:: Zip.Entry(t"META-INF/burdock.deps".decode[Path on Zip], t"bbb".data)
+        #:: Zip.Entry(t"com/example/Main.class".decode[Path on Zip], t"main".data)
+        #:: Zip.Entry(t"burdock/Bootstrap.class".decode[Path on Zip], t"stale-bootstrap".data)
+        #:: Zip.Entry(t"dep/Lib.class".decode[Path on Zip], t"bundled-lib".data)
+        #:: LazyList()
+
+      val resolve: Repackage.Resolver = _ => Unset
+
+      val cached: Repackage.CacheReader =
+        h => if h == t"bbb" then List(Bootstrapper.Entry(t"dep/Lib.class", t"cached-lib".data))
+             else Unset
+
+      Repackage.repackage(inputJar, outputJar, resolve, cached, t"real-bootstrap".data)
+
+      val names: List[Text] = Zipfile.read(outputJar).entries.map(_.ref.show).to(List)
+
+      test(m"a bundled bootstrap class is not duplicated"):
+        names.count(_ == t"burdock/Bootstrap.class")
+      .assert(_ == 1)
+
+      test(m"the force-included bootstrap bytes win over the bundled copy"):
+        Zipfile.read(outputJar).entries.find(_.ref.show == t"burdock/Bootstrap.class").get
+        . read[Data].utf8
+      .assert(_ == t"real-bootstrap")
+
+      test(m"a cached class already bundled is not duplicated"):
+        names.count(_ == t"dep/Lib.class")
+      .assert(_ == 1)
