@@ -71,8 +71,8 @@ object Packaging:
 
   // Self-upgrade signing. `Unset` overall disables upgrades (the safe default).
   case class Signing
-    ( publicKey:      Optional[Path on Linux] = Unset,  // baked in via `-Dethereal.publicKey`
-     seed:           Optional[Path on Linux] = Unset,  // signs post-assembly via `ethereal-sign`
+    ( publicKey:      Optional[Path on Linux] = Unset, // baked in via `-Dethereal.publicKey`
+     seed:           Optional[Path on Linux] = Unset, // signs post-assembly via `ethereal-sign`
      allowDowngrade: Boolean                 = false )
 
 case class Packaging

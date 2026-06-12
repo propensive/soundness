@@ -70,6 +70,6 @@ extension (tel: Tel)
   // strict check. The carrying `Tel.Decodable` also supplies the schema for the
   // phantom anchor, so the schema is guaranteed coherent with the decoder used.
   def verify[topic](using topic is Tel.Decodable)
-  :     (Tel of topic from topic) raises TelError =
+  :   (Tel of topic from topic) raises TelError =
     tel.as[topic]
     tel.asInstanceOf[Tel of topic from topic]

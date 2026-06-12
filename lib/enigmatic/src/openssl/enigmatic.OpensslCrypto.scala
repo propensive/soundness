@@ -203,8 +203,9 @@ object OpensslCrypto extends Crypto:
   // One-shot EVP encrypt/decrypt (init → update → final), returning the raw output
   // without IV framing (the caller prepends/strips the IV).
   private def oneShot
-    ( encrypting: Boolean, transformation: Text, key: Data, iv: Optional[Data], data: Data)
+    ( encrypting: Boolean, transformation: Text, key: Data, iv: Optional[Data], data: Data )
   :   Data =
+
     val arena = Arena.ofConfined().nn
 
     try

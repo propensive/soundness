@@ -61,7 +61,6 @@ object Transformable:
     Transformable(_.transforms, (figure, ts) => figure.copy(transforms = ts))
 
 
-
 trait Transformable extends Typeclass:
   def transforms(self: Self): List[Transform]
   def withTransforms(self: Self, transforms: List[Transform]): Self

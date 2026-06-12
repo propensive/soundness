@@ -69,6 +69,7 @@ object Redraft:
   def parse(lines: Stream[Text]): Redraft =
     val directives = lines.map: line =>
       val s = line.s
+
       if s == "+" || s.startsWith("+ ") then Directive.Mark(payload(line), insert = true)
       else if s == "-" || s.startsWith("- ") then Directive.Mark(payload(line), insert = false)
       else if s == ">" || s.startsWith("> ") then Directive.Add(payload(line))
@@ -88,9 +89,9 @@ object Redraft:
   private case class Matcher(text: Text, index: Int, line: Int)
 
   private def analyze
-              (directives: List[Directive],
+              ( directives: List[Directive],
                original:   IndexedSeq[Text],
-               compare:    (Text, Text) => Boolean)
+               compare:    (Text, Text) => Boolean )
   :   (List[Edit[Text]], List[Anomaly]) =
 
     val n = original.length
@@ -233,7 +234,7 @@ object Redraft:
       case (directive, index) if !directive.isInstanceOf[Directive.Keep] || near(index) => directive
 
   private def minimize
-              (directives: List[Directive], original: IndexedSeq[Text], target: List[Text])
+              ( directives: List[Directive], original: IndexedSeq[Text], target: List[Text] )
   :   List[Directive] =
 
     val array = directives.to(Array)

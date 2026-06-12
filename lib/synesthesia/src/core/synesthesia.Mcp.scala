@@ -503,7 +503,7 @@ object Mcp:
       case content: ImageContent     => typeTag.rewrite(t"image",         content.json)
       case content: AudioContent     => typeTag.rewrite(t"audio",         content.json)
       case content: ResourceLink     => typeTag.rewrite(t"resource_link", content.json)
-      case content: EmbeddedResource => typeTag.rewrite(t"resource",      content.json)
+      case content: EmbeddedResource => typeTag.rewrite(t"resource", content.json)
 
     given decodable: Tactic[JsonError] => ContentBlock is Json.Decodable =
       Json.Decodable(Shape.Any): json =>

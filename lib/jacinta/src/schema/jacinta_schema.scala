@@ -72,7 +72,7 @@ extension (json: Json)
   // value, raising `JsonError` on the first structural mismatch (wrong type, or a
   // required field absent).
   def verify[topic](using decodable: topic is Json.Decodable)
-  :     (Json of topic from topic) raises JsonError =
+  :   (Json of topic from topic) raises JsonError =
 
     conform(JsonSchema.reify(decodable.shape()), json.root)
     json.asInstanceOf[Json of topic from topic]

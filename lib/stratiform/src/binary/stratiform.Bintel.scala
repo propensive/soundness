@@ -136,6 +136,7 @@ object Bintel:
 
       whereas:
         case _: VarintError => BintelError(BintelError.Reason.VarintError)
+
       . mitigate(Varint.decode(data, magic.length))
 
     val sigLength = sigLenDecoded.value.toInt
@@ -171,7 +172,7 @@ object Bintel:
   // The signature length MUST be a valid palimpsest length; otherwise
   // raises `BadSignatureLength`.
   def frameSelfContained(signature: Data, schemaBody: Data, body: Data)
-  :     Data raises BintelError =
+  :   Data raises BintelError =
     if !validSignatureLength(signature)
     then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
@@ -207,6 +208,7 @@ object Bintel:
     def varint(at: Int) =
       whereas:
         case _: VarintError => BintelError(BintelError.Reason.VarintError)
+
       . mitigate(Varint.decode(data, at))
 
     val sigLenD   = varint(magicSelfContained.length)
@@ -233,6 +235,7 @@ object Bintel:
       whereas:
         case _: TelError    => BintelError(BintelError.Reason.EmbeddedSchemaUndecodable)
         case _: BintelError => BintelError(BintelError.Reason.EmbeddedSchemaUndecodable)
+
       . mitigate:
           val schemaRoot = decode(schemaBody, axiom).asInstanceOf[Tel.Element.Node]
           val baseTels   = Tels.SemanticReconstructor.fromElement(schemaRoot)
@@ -281,7 +284,7 @@ object Bintel:
   private def decodeStructBody
     ( cursor: Cursor, struct: Tels.Struct, schema: Tels,
       keywordIndex: Optional[Int] )
-  :     Tel.Element raises BintelError =
+  :   Tel.Element raises BintelError =
     val flat = flattenKeywords(struct, schema)
     val childCount = readVarint(cursor)
     val children = new Array[Tel.Element](childCount.toInt)
@@ -295,7 +298,7 @@ object Bintel:
 
   private def decodeElement
     ( cursor: Cursor, flat: IArray[(Text, Tels.Type)], schema: Tels )
-  :     Tel.Element raises BintelError =
+  :   Tel.Element raises BintelError =
     val kidx = readVarint(cursor)
     if kidx < 0 || kidx >= flat.length then abort(BintelError(BintelError.Reason.BadKeywordIndex))
     val (_, memberType) = flat(kidx.toInt)
@@ -340,6 +343,7 @@ object Bintel:
 
     whereas:
       case _: VarintError => BintelError(BintelError.Reason.VarintError)
+
     . mitigate:
         val decoded = Varint.decode(cursor.data, cursor.offset)
         cursor.offset = decoded.next
@@ -350,7 +354,7 @@ object Bintel:
   // entry per variant in the referenced SelectDefinition. Excludes
   // contribute none.
   private def flattenKeywords(struct: Tels.Struct, schema: Tels)
-  :     IArray[(Text, Tels.Type)] =
+  :   IArray[(Text, Tels.Type)] =
     val buf = scala.collection.mutable.ArrayBuffer.empty[(Text, Tels.Type)]
     var i = 0
 
@@ -389,7 +393,7 @@ object Bintel:
 
   private def presentCompound
     ( element: Tel.Element, flat: IArray[(Text, Tels.Type)], schema: Tels )
-  :     Tel.Compound =
+  :   Tel.Compound =
     element match
       case Tel.Element.Value(kidx, _, text) =>
         Tel.Compound(flat(kidx)._1, IArray(Tel.Atom.Inline(text, 1)), Unset, IArray.empty)
@@ -409,7 +413,7 @@ object Bintel:
   // Decode BinTEL body bytes to a typed value, deriving the schema from the value's type
   // — the inverse of `value.bintel`.
   def read[value: Tel.Decodable](data: Data)(using value is TelSchematic over Tels.Type)
-  :     value raises BintelError raises TelError =
+  :   value raises BintelError raises TelError =
     val schema = Tels.tels[value](Text("root"))
     present(decode(data, schema), schema).as[value]
 
@@ -448,7 +452,7 @@ object Bintel:
         encodeElement(out, element, schema)
 
   private def encodeElement(out: ByteArrayOutputStream, element: Tel.Element, schema: Tels)
-  :     Unit =
+  :   Unit =
     element match
       case node: Tel.Element.Node   => encodeNode(out, node, schema)
       case value: Tel.Element.Value => encodeValue(out, value)
@@ -504,7 +508,7 @@ object Bintel:
   // because type assignment inserts them first, and the stable sort keeps
   // that order within a member.
   private def canonicalOrder(children: IArray[Tel.Element], parent: Tels.Struct, schema: Tels)
-  :     IArray[Tel.Element] =
+  :   IArray[Tel.Element] =
     if children.length <= 1 then children
     else
       val memberBase = memberBaseByFlatIndex(parent, schema)

@@ -106,7 +106,6 @@ object CtrlChar:
           None
 
 
-
 object Keypress:
   type EditKey = Tab.type | Home.type | End.type | PageUp.type | PageDown.type | Insert.type |
     Delete.type | Enter.type | Backspace.type | Escape.type | Left.type | Right.type | Up.type |

@@ -235,9 +235,8 @@ extension [value](optional: Optional[value])
     catch case error: Exception => Unset
 
 
-
 def defer[result, error <: Exception](body: Tactic[error] ?=> result)
-: Deferred[result, error] =
+:   Deferred[result, error] =
 
   Deferred(body)
 

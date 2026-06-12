@@ -213,7 +213,7 @@ object Tels extends Tels2:
         field("scalar",   Reference(kebab("Scalar")), required = Loose, repeatable = Loose),
         field("select",   Reference(kebab("Select")), required = Loose, repeatable = Loose),
         field("document", Reference(kebab("Body"))),
-        field("layer",    Reference(kebab("Layer")),  required = Loose, repeatable = Loose)),
+        field("layer", Reference(kebab("Layer")), required = Loose, repeatable = Loose)),
       validators = IArray.empty)
 
     val tels: Tels = Tels(
@@ -275,7 +275,7 @@ object Tels extends Tels2:
           field("record",  Reference(kebab("Record")), required = Loose, repeatable = Loose),
           field("scalar",  Reference(kebab("Scalar")), required = Loose, repeatable = Loose),
           field("select",  Reference(kebab("Select")), required = Loose, repeatable = Loose),
-          field("overlay", Reference(kebab("Body")),   required = Loose))),
+          field("overlay", Reference(kebab("Body")), required = Loose))),
       scalars  = IArray(
         scalar("Identifier", "identifier"),
         scalar("TypeName",   "type-name"),
@@ -357,9 +357,9 @@ object Tels extends Tels2:
       (base, layer) match
         case (b, Polarity.Implicit)              => b
         case (_, Polarity.Tight)                 => Polarity.Tight
-        case (Polarity.Loose,    Polarity.Loose) => Polarity.Loose
+        case (Polarity.Loose, Polarity.Loose) => Polarity.Loose
 
-        case (_,                 Polarity.Loose) => axis match
+        case (_, Polarity.Loose) => axis match
           case PolarityAxis.Required   => abort(TelError(Reason.LayerLoosenRequired))
           case PolarityAxis.Repeatable => abort(TelError(Reason.LayerLoosenRepeatable))
 
@@ -547,7 +547,7 @@ object Tels extends Tels2:
         && seqEq(a.records, b.records, recordEq)
         && seqEq(a.scalars, b.scalars, scalarEq)
         && seqEq(a.selects, b.selects, selectEq)
-        && seqEq(a.layers,  b.layers,  layerEq)
+        && seqEq(a.layers, b.layers, layerEq)
 
     private def seqEq[T](a: IArray[T], b: IArray[T], eq: (T, T) => Boolean): Boolean =
       a.length == b.length && (0 until a.length).forall(i => eq(a(i), b(i)))

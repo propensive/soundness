@@ -70,11 +70,11 @@ object embeddings:
         }
 
 
-
 def deleteOnShutdown(directory: jnf.Path): Unit =
   val runnable: Runnable = () =>
     if jnf.Files.exists(directory) then
       val stream = jnf.Files.walk(directory).nn
+
       try
         stream.sorted(ju.Comparator.reverseOrder).nn.forEach: path =>
           try

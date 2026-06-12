@@ -80,7 +80,7 @@ extension (tel: Tel)
   // must be a valid palimpsest length under some `(H, k_i, k_r)`;
   // otherwise raises `BintelError(BadSignatureLength)`.
   def bintelDocument(schema: Tels, signature: Data)
-  :     Data raises TelError raises BintelError =
+  :   Data raises TelError raises BintelError =
     Bintel.frame(tel.bintel(schema), signature)
 
   // Encode this document as a complete §6.2 self-contained BinTEL byte

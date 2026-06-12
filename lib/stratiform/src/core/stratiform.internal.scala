@@ -266,7 +266,7 @@ object internal:
 
     val markerExpr: Expr[Char] = '{ ${Expr(Marker)} }
 
-    val matchResult: Expr[Option[List[Tel]]] = '{
+    val matchResult: Expr[Option[List[Tel]]] = ' {
       val pattern: Tel.Document =
         contingency.unsafely(TelParser.parse($patternBytesExpr))
 
@@ -284,7 +284,7 @@ object internal:
 
       tupleType.asType.absolve match
         case '[type result <: Tuple; result] =>
-          '{
+          ' {
             $matchResult.map: captures =>
               val arr: Array[Object] = captures.toArray.asInstanceOf[Array[Object]]
               scala.runtime.Tuples.fromArray(arr).asInstanceOf[result]

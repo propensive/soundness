@@ -41,14 +41,11 @@ import scala.util.boundary
 import fulminate.*
 
 
-
 final class Deferred[result, error <: Exception](body: Tactic[error] ?=> result):
   def apply()(using Tactic[error]): result = body
 
 
-
 class Whereas[lambda[_]](val handler: PartialFunction[Exception, Any])
-
 
 
 object Whereas:
@@ -57,8 +54,8 @@ object Whereas:
 
 
   class AccrueTactic[error <: Exception, accrual <: Exception]
-    (initial: accrual, combine: (accrual, Exception) => accrual)
-    (using val diagnostics: Diagnostics)
+    ( initial: accrual, combine: (accrual, Exception) => accrual )
+    ( using val diagnostics: Diagnostics )
   extends Tactic[error]:
 
     private val ref: juca.AtomicReference[accrual] = juca.AtomicReference(initial)
