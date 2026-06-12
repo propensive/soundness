@@ -31,7 +31,6 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package enigmatic
-package cose
 
 import anticipation.*
 import breviloquence.*
@@ -44,13 +43,13 @@ object Cose:
   private def emptyMapAst: Cbor.Ast =
     Cbor.Ast.map(IArray.empty[Any], IArray.empty[Any])
 
-  private[cose] def emptyMap: Cbor = Cbor.ast(emptyMapAst)
+  private[enigmatic] def emptyMap: Cbor = Cbor.ast(emptyMapAst)
 
-  private[cose] def unsealOrEmpty(cbor: Cbor): Cbor.Ast =
+  private[enigmatic] def unsealOrEmpty(cbor: Cbor): Cbor.Ast =
     val ast = Cbor.unseal(cbor)
     if ast.isMap then ast else emptyMapAst
 
-  private[cose] def toBeSigned
+  private[enigmatic] def toBeSigned
     ( context: String, bodyProtected: Data, externalAad: Data, payload: Data )
   :   Data =
 
@@ -59,7 +58,7 @@ object Cose:
 
     CanonicalCbor.encode(sigStruct)
 
-  private[cose] def readByteString(ast: Cbor.Ast)(using Tactic[CoseError]): Data =
+  private[enigmatic] def readByteString(ast: Cbor.Ast)(using Tactic[CoseError]): Data =
     if ast.isByteString then ast.asInstanceOf[Data]
     else abort(CoseError(CoseError.Reason.MalformedStructure))
 

@@ -31,9 +31,31 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package enigmatic
-package cose
 
 import anticipation.*
-import breviloquence.*
+import fulminate.*
 
-case class CoseRecipient(protectedHeader: Data, unprotectedHeader: Cbor, authentication: Data)
+object CoseError:
+  object Reason:
+    given communicable: Reason is Communicable =
+      case MalformedStructure              => m"the COSE structure was not well-formed"
+      case UnknownTag(tag)                 => m"the CBOR tag ${tag.toString} is not a COSE message tag"
+      case UnsupportedAlgorithm(id)        => m"the COSE algorithm identifier ${id.toString} is not supported"
+      case AlgorithmMismatch(want, got)    => m"expected COSE algorithm ${want.toString} but found ${got.toString}"
+      case VariantMismatch(want, got)      => m"expected a $want COSE message but found a $got"
+      case VerificationFailed              => m"the COSE signature or MAC did not verify"
+      case CborParseError                  => m"the COSE message contained malformed CBOR"
+      case DetachedPayloadRequired         => m"the COSE message has a detached payload"
+
+  enum Reason(val number: Int) extends Clarification:
+    case MalformedStructure                              extends Reason(1)
+    case UnknownTag(tag: Long)                           extends Reason(2)
+    case UnsupportedAlgorithm(id: Long)                  extends Reason(3)
+    case AlgorithmMismatch(expected: Long, actual: Long) extends Reason(4)
+    case VariantMismatch(expected: Text, actual: Text)   extends Reason(5)
+    case VerificationFailed                              extends Reason(6)
+    case CborParseError                                  extends Reason(7)
+    case DetachedPayloadRequired                         extends Reason(8)
+
+case class CoseError(reason: CoseError.Reason)(using Diagnostics)
+extends Error(596, reason.number)(m"could not process the COSE message because $reason")

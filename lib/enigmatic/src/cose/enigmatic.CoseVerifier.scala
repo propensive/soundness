@@ -31,25 +31,44 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package enigmatic
-package cose
 
-trait CoseStructure
-trait CoseSigned extends CoseStructure
-trait CoseMaced  extends CoseStructure
+import anticipation.*
+import enigmatic.*
+import prepositional.*
 
-trait Sign  extends CoseSigned   // multi-signer,        CBOR tag 98
-trait Sign1 extends CoseSigned   // single signer,       CBOR tag 18
-trait Mac   extends CoseMaced    // multi-recipient MAC, CBOR tag 97
-trait Mac0  extends CoseMaced    // single MAC,          CBOR tag 17
+// Counterpart to CoseAuthenticator. Selects how the public/symmetric key is
+// used to verify a COSE signature or MAC.
+object CoseVerifier:
+  given asymmetric: [cipher <: Cipher & Signing]
+                =>  ( algorithm: cipher & Signing )
+                =>  PublicKey[cipher] is CoseVerifier in Sign1 by cipher =
+    new CoseVerifier:
+      type Self    = PublicKey[cipher]
+      type Form    = Sign1
+      type Operand = cipher
+      def contextString: String = CoseContext.Signature1
+      def cborTag:       Long   = CoseTag.Sign1
 
-object CoseTag:
-  inline val Sign1 = 18L
-  inline val Mac0  = 17L
-  inline val Sign  = 98L
-  inline val Mac   = 97L
+      def check(toBeSigned: Data, authentication: Data, key: PublicKey[cipher]): Boolean =
+        algorithm.verify(toBeSigned, authentication, key.bytes)
 
-object CoseContext:
-  inline val Signature1 = "Signature1"
-  inline val Signature  = "Signature"
-  inline val Mac0       = "MAC0"
-  inline val Mac        = "MAC"
+  given symmetric: [cipher <: Cipher & Symmetric & Signing]
+                =>  ( algorithm: cipher & Signing )
+                =>  SymmetricKey[cipher] is CoseVerifier in Mac0 by cipher =
+    new CoseVerifier:
+      type Self    = SymmetricKey[cipher]
+      type Form    = Mac0
+      type Operand = cipher
+      def contextString: String = CoseContext.Mac0
+      def cborTag:       Long   = CoseTag.Mac0
+
+      def check(toBeSigned: Data, authentication: Data, key: SymmetricKey[cipher]): Boolean =
+        algorithm.verify(toBeSigned, authentication, key.bytes)
+
+trait CoseVerifier:
+  type Self
+  type Form    <: CoseStructure
+  type Operand <: Cipher
+  def contextString: String
+  def cborTag:       Long
+  def check(toBeSigned: Data, authentication: Data, key: Self): Boolean

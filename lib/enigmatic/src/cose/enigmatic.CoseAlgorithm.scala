@@ -31,51 +31,25 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package enigmatic
-package cose
 
-import anticipation.*
-import enigmatic.*
-import prepositional.*
+import gastronomy.*
 
-// Selects the COSE message variant from the key type:
-//   asymmetric (PrivateKey)        -> COSE_Sign1
-//   symmetric  (SymmetricKey)      -> COSE_Mac0
-// `SymmetricKey <: PrivateKey`, so resolution picks the more-specific
-// symmetric given for symmetric keys and falls back to asymmetric otherwise.
-object CoseAuthenticator:
-  given asymmetric: [cipher <: Cipher & Signing]
-                =>  ( algorithm: cipher & Signing, coseAlg: cipher is CoseAlgorithm )
-                =>  PrivateKey[cipher] is CoseAuthenticator in Sign1 by cipher =
-    new CoseAuthenticator:
-      type Self    = PrivateKey[cipher]
-      type Form    = Sign1
-      type Operand = cipher
-      def algId:         Long   = coseAlg.algId
-      def contextString: String = CoseContext.Signature1
-      def cborTag:       Long   = CoseTag.Sign1
+// Maps an enigmatic.Cipher to its COSE Algorithms registry identifier
+// (RFC 9053, https://www.iana.org/assignments/cose/cose.xhtml#algorithms).
+object CoseAlgorithm:
+  // HMAC 256/256 = 5, HMAC 384/384 = 6, HMAC 512/512 = 7
+  given hmacSha256: HmacCipher[Sha2[256]] is CoseAlgorithm = new CoseAlgorithm:
+    type Self = HmacCipher[Sha2[256]]
+    def algId: Long = 5L
 
-      def authenticate(toBeSigned: Data, key: PrivateKey[cipher]): Data =
-        algorithm.sign(toBeSigned, key.privateData)
+  given hmacSha384: HmacCipher[Sha2[384]] is CoseAlgorithm = new CoseAlgorithm:
+    type Self = HmacCipher[Sha2[384]]
+    def algId: Long = 6L
 
-  given symmetric: [cipher <: Cipher & Symmetric & Signing]
-                =>  ( algorithm: cipher & Signing, coseAlg: cipher is CoseAlgorithm )
-                =>  SymmetricKey[cipher] is CoseAuthenticator in Mac0 by cipher =
-    new CoseAuthenticator:
-      type Self    = SymmetricKey[cipher]
-      type Form    = Mac0
-      type Operand = cipher
-      def algId:         Long   = coseAlg.algId
-      def contextString: String = CoseContext.Mac0
-      def cborTag:       Long   = CoseTag.Mac0
+  given hmacSha512: HmacCipher[Sha2[512]] is CoseAlgorithm = new CoseAlgorithm:
+    type Self = HmacCipher[Sha2[512]]
+    def algId: Long = 7L
 
-      def authenticate(toBeSigned: Data, key: SymmetricKey[cipher]): Data =
-        algorithm.sign(toBeSigned, key.bytes)
-
-trait CoseAuthenticator:
+trait CoseAlgorithm:
   type Self
-  type Form    <: CoseStructure
-  type Operand <: Cipher
-  def algId:         Long
-  def contextString: String
-  def cborTag:       Long
-  def authenticate(toBeSigned: Data, key: Self): Data
+  def algId: Long

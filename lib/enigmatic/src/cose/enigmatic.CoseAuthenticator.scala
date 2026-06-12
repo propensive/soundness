@@ -31,32 +31,50 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package enigmatic
-package cose
 
 import anticipation.*
-import fulminate.*
+import enigmatic.*
+import prepositional.*
 
-object CoseError:
-  object Reason:
-    given communicable: Reason is Communicable =
-      case MalformedStructure              => m"the COSE structure was not well-formed"
-      case UnknownTag(tag)                 => m"the CBOR tag ${tag.toString} is not a COSE message tag"
-      case UnsupportedAlgorithm(id)        => m"the COSE algorithm identifier ${id.toString} is not supported"
-      case AlgorithmMismatch(want, got)    => m"expected COSE algorithm ${want.toString} but found ${got.toString}"
-      case VariantMismatch(want, got)      => m"expected a $want COSE message but found a $got"
-      case VerificationFailed              => m"the COSE signature or MAC did not verify"
-      case CborParseError                  => m"the COSE message contained malformed CBOR"
-      case DetachedPayloadRequired         => m"the COSE message has a detached payload"
+// Selects the COSE message variant from the key type:
+//   asymmetric (PrivateKey)        -> COSE_Sign1
+//   symmetric  (SymmetricKey)      -> COSE_Mac0
+// `SymmetricKey <: PrivateKey`, so resolution picks the more-specific
+// symmetric given for symmetric keys and falls back to asymmetric otherwise.
+object CoseAuthenticator:
+  given asymmetric: [cipher <: Cipher & Signing]
+                =>  ( algorithm: cipher & Signing, coseAlg: cipher is CoseAlgorithm )
+                =>  PrivateKey[cipher] is CoseAuthenticator in Sign1 by cipher =
+    new CoseAuthenticator:
+      type Self    = PrivateKey[cipher]
+      type Form    = Sign1
+      type Operand = cipher
+      def algId:         Long   = coseAlg.algId
+      def contextString: String = CoseContext.Signature1
+      def cborTag:       Long   = CoseTag.Sign1
 
-  enum Reason(val number: Int) extends Clarification:
-    case MalformedStructure                              extends Reason(1)
-    case UnknownTag(tag: Long)                           extends Reason(2)
-    case UnsupportedAlgorithm(id: Long)                  extends Reason(3)
-    case AlgorithmMismatch(expected: Long, actual: Long) extends Reason(4)
-    case VariantMismatch(expected: Text, actual: Text)   extends Reason(5)
-    case VerificationFailed                              extends Reason(6)
-    case CborParseError                                  extends Reason(7)
-    case DetachedPayloadRequired                         extends Reason(8)
+      def authenticate(toBeSigned: Data, key: PrivateKey[cipher]): Data =
+        algorithm.sign(toBeSigned, key.privateData)
 
-case class CoseError(reason: CoseError.Reason)(using Diagnostics)
-extends Error(596, reason.number)(m"could not process the COSE message because $reason")
+  given symmetric: [cipher <: Cipher & Symmetric & Signing]
+                =>  ( algorithm: cipher & Signing, coseAlg: cipher is CoseAlgorithm )
+                =>  SymmetricKey[cipher] is CoseAuthenticator in Mac0 by cipher =
+    new CoseAuthenticator:
+      type Self    = SymmetricKey[cipher]
+      type Form    = Mac0
+      type Operand = cipher
+      def algId:         Long   = coseAlg.algId
+      def contextString: String = CoseContext.Mac0
+      def cborTag:       Long   = CoseTag.Mac0
+
+      def authenticate(toBeSigned: Data, key: SymmetricKey[cipher]): Data =
+        algorithm.sign(toBeSigned, key.bytes)
+
+trait CoseAuthenticator:
+  type Self
+  type Form    <: CoseStructure
+  type Operand <: Cipher
+  def algId:         Long
+  def contextString: String
+  def cborTag:       Long
+  def authenticate(toBeSigned: Data, key: Self): Data

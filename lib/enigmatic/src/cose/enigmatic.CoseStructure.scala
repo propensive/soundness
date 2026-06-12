@@ -31,26 +31,24 @@
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package enigmatic
-package cose
 
-import gastronomy.*
+trait CoseStructure
+trait CoseSigned extends CoseStructure
+trait CoseMaced  extends CoseStructure
 
-// Maps an enigmatic.Cipher to its COSE Algorithms registry identifier
-// (RFC 9053, https://www.iana.org/assignments/cose/cose.xhtml#algorithms).
-object CoseAlgorithm:
-  // HMAC 256/256 = 5, HMAC 384/384 = 6, HMAC 512/512 = 7
-  given hmacSha256: HmacCipher[Sha2[256]] is CoseAlgorithm = new CoseAlgorithm:
-    type Self = HmacCipher[Sha2[256]]
-    def algId: Long = 5L
+trait Sign  extends CoseSigned   // multi-signer,        CBOR tag 98
+trait Sign1 extends CoseSigned   // single signer,       CBOR tag 18
+trait Mac   extends CoseMaced    // multi-recipient MAC, CBOR tag 97
+trait Mac0  extends CoseMaced    // single MAC,          CBOR tag 17
 
-  given hmacSha384: HmacCipher[Sha2[384]] is CoseAlgorithm = new CoseAlgorithm:
-    type Self = HmacCipher[Sha2[384]]
-    def algId: Long = 6L
+object CoseTag:
+  inline val Sign1 = 18L
+  inline val Mac0  = 17L
+  inline val Sign  = 98L
+  inline val Mac   = 97L
 
-  given hmacSha512: HmacCipher[Sha2[512]] is CoseAlgorithm = new CoseAlgorithm:
-    type Self = HmacCipher[Sha2[512]]
-    def algId: Long = 7L
-
-trait CoseAlgorithm:
-  type Self
-  def algId: Long
+object CoseContext:
+  inline val Signature1 = "Signature1"
+  inline val Signature  = "Signature"
+  inline val Mac0       = "MAC0"
+  inline val Mac        = "MAC"
