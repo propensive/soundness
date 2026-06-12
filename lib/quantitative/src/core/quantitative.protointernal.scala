@@ -270,7 +270,7 @@ trait protointernal:
               val quantityName = from.dimensionRef.dimensionality.quantityName
 
               val dimensionName = quantityName.map("the physical quantity "+_).getOrElse:
-                  "the same physical quantity"
+                "the same physical quantity"
 
               halt:
                 m"""

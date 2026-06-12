@@ -580,61 +580,51 @@ private[ypsiloid] final class YamlParser:
   // but also captures a per-document `PositionIndex` for the
   // tracking-aware `Yaml.parseAll` companion entry.
   def parseAllTracked()(using Tactic[ParseError])
-  :   List[(Yaml.Ast, IArray[Int])] = holding:
-    val docs = scala.collection.mutable.ArrayBuffer[(Yaml.Ast, IArray[Int])]()
-    skipBom()
+  :   List[(Yaml.Ast, IArray[Int])] =
 
-    var continue = true
-    var firstDoc = true
-    var lastDocEndedWithFooter = true
+    holding:
+      val docs = scala.collection.mutable.ArrayBuffer[(Yaml.Ast, IArray[Int])]()
+      skipBom()
 
-    while continue do
-      skipBlankAndCommentLines()
-      tagHandles.clear()
-      val sawDirectives = parseDirectivesIfAny()
+      var continue = true
+      var firstDoc = true
+      var lastDocEndedWithFooter = true
 
-      if sawDirectives && !firstDoc && !lastDocEndedWithFooter then
-        errorAt(Issue.DirectivesOutOfPlace)
-
-      val explicitStart = consumeOptionalDocumentStart()
-
-      if sawDirectives && !explicitStart then
-        errorAt(Issue.DirectiveWithoutDocumentStart)
-      if
-        !firstDoc && more && !explicitStart && !atDocumentBoundary
-        && !lastDocEndedWithFooter
-      then errorAt(Issue.MissingDocumentStart)
-
-      if explicitStart && more && peek == Hash then
-        while more && peek != Newline do advance()
-
-      val sameLineAsMarker = explicitStart && more && peek != Newline
-
-      if !explicitStart || (more && peek == Newline) then
-        if more && peek == Newline then advance()
+      while continue do
         skipBlankAndCommentLines()
+        tagHandles.clear()
+        val sawDirectives = parseDirectivesIfAny()
 
-      if !more then
-        if explicitStart then
-          val rootBuf = acquireIndexBuffer()
-          emitNullHere(rootBuf)
-          docs.append((Yaml.Ast.Null, IArray.unsafeFromArray(rootBuf.toArray)))
-          releaseIndexBuffer()
+        if sawDirectives && !firstDoc && !lastDocEndedWithFooter then
+          errorAt(Issue.DirectivesOutOfPlace)
 
-        continue = false
-      else if atDocumentBoundary then
-        if explicitStart then
-          val rootBuf = acquireIndexBuffer()
-          emitNullHere(rootBuf)
-          docs.append((Yaml.Ast.Null, IArray.unsafeFromArray(rootBuf.toArray)))
-          releaseIndexBuffer()
+        val explicitStart = consumeOptionalDocumentStart()
 
-        lastDocEndedWithFooter = consumeOptionalDocumentEnd()
-        if explicitStart then firstDoc = false
-      else
-        val indent = consumeLeadingSpaces()
+        if sawDirectives && !explicitStart then
+          errorAt(Issue.DirectiveWithoutDocumentStart)
+        if
+          !firstDoc && more && !explicitStart && !atDocumentBoundary
+          && !lastDocEndedWithFooter
+        then errorAt(Issue.MissingDocumentStart)
 
-        if !more || atDocumentBoundary then
+        if explicitStart && more && peek == Hash then
+          while more && peek != Newline do advance()
+
+        val sameLineAsMarker = explicitStart && more && peek != Newline
+
+        if !explicitStart || (more && peek == Newline) then
+          if more && peek == Newline then advance()
+          skipBlankAndCommentLines()
+
+        if !more then
+          if explicitStart then
+            val rootBuf = acquireIndexBuffer()
+            emitNullHere(rootBuf)
+            docs.append((Yaml.Ast.Null, IArray.unsafeFromArray(rootBuf.toArray)))
+            releaseIndexBuffer()
+
+          continue = false
+        else if atDocumentBoundary then
           if explicitStart then
             val rootBuf = acquireIndexBuffer()
             emitNullHere(rootBuf)
@@ -644,26 +634,38 @@ private[ypsiloid] final class YamlParser:
           lastDocEndedWithFooter = consumeOptionalDocumentEnd()
           if explicitStart then firstDoc = false
         else
-          val savedDocStart = docStartLineEnd
+          val indent = consumeLeadingSpaces()
 
-          if sameLineAsMarker then
-            var end = pos
-            while end < bufEnd && bytes(end) != Newline do end += 1
-            docStartLineEnd = end
+          if !more || atDocumentBoundary then
+            if explicitStart then
+              val rootBuf = acquireIndexBuffer()
+              emitNullHere(rootBuf)
+              docs.append((Yaml.Ast.Null, IArray.unsafeFromArray(rootBuf.toArray)))
+              releaseIndexBuffer()
+
+            lastDocEndedWithFooter = consumeOptionalDocumentEnd()
+            if explicitStart then firstDoc = false
           else
-            docStartLineEnd = -1
+            val savedDocStart = docStartLineEnd
 
-          val rootBuf = acquireIndexBuffer()
-          val node = parseNodeTracked(indent, rootBuf)
-          val ints = IArray.unsafeFromArray(rootBuf.toArray)
-          releaseIndexBuffer()
-          docStartLineEnd = savedDocStart
-          docs.append((node, ints))
-          skipBlankAndCommentLines()
-          lastDocEndedWithFooter = consumeOptionalDocumentEnd()
-          firstDoc = false
+            if sameLineAsMarker then
+              var end = pos
+              while end < bufEnd && bytes(end) != Newline do end += 1
+              docStartLineEnd = end
+            else
+              docStartLineEnd = -1
 
-    docs.toList
+            val rootBuf = acquireIndexBuffer()
+            val node = parseNodeTracked(indent, rootBuf)
+            val ints = IArray.unsafeFromArray(rootBuf.toArray)
+            releaseIndexBuffer()
+            docStartLineEnd = savedDocStart
+            docs.append((node, ints))
+            skipBlankAndCommentLines()
+            lastDocEndedWithFooter = consumeOptionalDocumentEnd()
+            firstDoc = false
+
+      docs.toList
 
   // Consume `---` if at the current position. Returns true if consumed.
   // Per spec the marker requires either a following line-boundary
@@ -2849,60 +2851,62 @@ private[ypsiloid] final class YamlParser:
           errorAt(Issue.UndefinedTagHandle(handle.tt))
 
   private def applyTag(tag: Text, value: Yaml.Ast)(using Tactic[ParseError])
-  :   Yaml.Ast = tag.s match
-    case "!" | "!!" =>
-      // Non-specific tags. `!` forces the string type for plain
-      // scalars (preventing implicit type resolution into int/bool/etc).
-      if value.asInstanceOf[AnyRef] == null then Yaml.Ast.Str(t"")
-      else value.asInstanceOf[Matchable] match
-        case _: String  => value
-        case n: Long    => Yaml.Ast.Str(n.toString.tt)
-        case d: Double  => Yaml.Ast.Str(d.toString.tt)
-        case b: Boolean => Yaml.Ast.Str(b.toString.tt)
-        case _          => value
+  :   Yaml.Ast =
 
-    case "!!str" =>
-      // A bare `!!str` with no scalar content is the empty string,
-      // not the literal text "null".
-      if value.asInstanceOf[AnyRef] == null then Yaml.Ast.Str(t"")
-      else value.asInstanceOf[Matchable] match
-        case _: String  => value
-        case n: Long    => Yaml.Ast.Str(n.toString.tt)
-        case d: Double  => Yaml.Ast.Str(d.toString.tt)
-        case b: Boolean => Yaml.Ast.Str(b.toString.tt)
-        case _          => value
+    tag.s match
+      case "!" | "!!" =>
+        // Non-specific tags. `!` forces the string type for plain
+        // scalars (preventing implicit type resolution into int/bool/etc).
+        if value.asInstanceOf[AnyRef] == null then Yaml.Ast.Str(t"")
+        else value.asInstanceOf[Matchable] match
+          case _: String  => value
+          case n: Long    => Yaml.Ast.Str(n.toString.tt)
+          case d: Double  => Yaml.Ast.Str(d.toString.tt)
+          case b: Boolean => Yaml.Ast.Str(b.toString.tt)
+          case _          => value
 
-    case "!!int" =>
-      value.asInstanceOf[Matchable] match
-        case _: Long   => value
-        case d: Double => Yaml.Ast.Integer(d.toLong)
+      case "!!str" =>
+        // A bare `!!str` with no scalar content is the empty string,
+        // not the literal text "null".
+        if value.asInstanceOf[AnyRef] == null then Yaml.Ast.Str(t"")
+        else value.asInstanceOf[Matchable] match
+          case _: String  => value
+          case n: Long    => Yaml.Ast.Str(n.toString.tt)
+          case d: Double  => Yaml.Ast.Str(d.toString.tt)
+          case b: Boolean => Yaml.Ast.Str(b.toString.tt)
+          case _          => value
 
-        case s: String =>
-          val r = parsePlainIntegerOrNull(s)
-          if r != null then r else value
+      case "!!int" =>
+        value.asInstanceOf[Matchable] match
+          case _: Long   => value
+          case d: Double => Yaml.Ast.Integer(d.toLong)
 
-        case _         => value
+          case s: String =>
+            val r = parsePlainIntegerOrNull(s)
+            if r != null then r else value
 
-    case "!!float" =>
-      value.asInstanceOf[Matchable] match
-        case _: Double => value
-        case n: Long   => Yaml.Ast.Decimal(n.toDouble)
+          case _         => value
 
-        case s: String =>
-          val r = parsePlainDecimalOrNull(s)
-          if r != null then r else value
+      case "!!float" =>
+        value.asInstanceOf[Matchable] match
+          case _: Double => value
+          case n: Long   => Yaml.Ast.Decimal(n.toDouble)
 
-        case _         => value
+          case s: String =>
+            val r = parsePlainDecimalOrNull(s)
+            if r != null then r else value
 
-    case "!!bool" =>
-      value.asInstanceOf[Matchable] match
-        case _: Boolean                  => value
-        case "true" | "True" | "TRUE"    => Yaml.Ast.Bool(true)
-        case "false" | "False" | "FALSE" => Yaml.Ast.Bool(false)
-        case _                           => value
+          case _         => value
 
-    case "!!null" => Yaml.Ast.Null
-    case _        => value
+      case "!!bool" =>
+        value.asInstanceOf[Matchable] match
+          case _: Boolean                  => value
+          case "true" | "True" | "TRUE"    => Yaml.Ast.Bool(true)
+          case "false" | "False" | "FALSE" => Yaml.Ast.Bool(false)
+          case _                           => value
+
+      case "!!null" => Yaml.Ast.Null
+      case _        => value
 
   // ── Tracking-mode parsers ───────────────────────────────────────────────
   //

@@ -179,69 +179,69 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
   // keeps the recursion on nested schemas pointed back at this same given.
   given decodable: (Tactic[JsonError], Tactic[JsonPointerError])
   =>  JsonSchema is Json.Decodable =
-   Json.Decodable(Shape.Any): json =>
-    def field[value: Json.Decodable](name: Text): Optional[value] =
-      json(name).as[Optional[value]]
+    Json.Decodable(Shape.Any): json =>
+      def field[value: Json.Decodable](name: Text): Optional[value] =
+        json(name).as[Optional[value]]
 
-    val reference = json("$ref".tt)
+      val reference = json("$ref".tt)
 
-    if !reference.root.isAbsent
-    then JsonSchema.Ref(reference.as[JsonPointer], field[Text](t"description"))
-    else field[Text](t"type") match
-      case t"array" =>
-        JsonSchema.Array
-          ( field[Text](t"description"),
-            field[JsonSchema](t"items"),
-            field[Int](t"minItems"),
-            field[Int](t"maxItems"),
-            false,
-            field[Int](t"maxContains"),
-            field[Int](t"minContains") )
+      if !reference.root.isAbsent
+      then JsonSchema.Ref(reference.as[JsonPointer], field[Text](t"description"))
+      else field[Text](t"type") match
+        case t"array" =>
+          JsonSchema.Array
+            ( field[Text](t"description"),
+              field[JsonSchema](t"items"),
+              field[Int](t"minItems"),
+              field[Int](t"maxItems"),
+              false,
+              field[Int](t"maxContains"),
+              field[Int](t"minContains") )
 
-      case t"string" =>
-        JsonSchema.String
-          ( field[Text](t"description"),
-            field[Int](t"minLength"),
-            field[Int](t"maxLength"),
-            field[Text](t"pattern"),
-            field[JsonSchema.Format](t"format"),
-            false )
+        case t"string" =>
+          JsonSchema.String
+            ( field[Text](t"description"),
+              field[Int](t"minLength"),
+              field[Int](t"maxLength"),
+              field[Text](t"pattern"),
+              field[JsonSchema.Format](t"format"),
+              false )
 
-      case t"number" =>
-        JsonSchema.Number
-          ( field[Text](t"description"),
-            field[Double](t"multipleOf"),
-            field[Double](t"maximum"),
-            field[Double](t"minimum"),
-            field[Double](t"exclusiveMinimum"),
-            field[Double](t"exclusiveMaximum"),
-            false )
+        case t"number" =>
+          JsonSchema.Number
+            ( field[Text](t"description"),
+              field[Double](t"multipleOf"),
+              field[Double](t"maximum"),
+              field[Double](t"minimum"),
+              field[Double](t"exclusiveMinimum"),
+              field[Double](t"exclusiveMaximum"),
+              false )
 
-      case t"integer" =>
-        JsonSchema.Integer
-          ( field[Text](t"description"),
-            field[Int](t"maximum"),
-            field[Int](t"minimum"),
-            field[Int](t"exclusiveMinimum"),
-            field[Int](t"exclusiveMaximum"),
-            false )
+        case t"integer" =>
+          JsonSchema.Integer
+            ( field[Text](t"description"),
+              field[Int](t"maximum"),
+              field[Int](t"minimum"),
+              field[Int](t"exclusiveMinimum"),
+              field[Int](t"exclusiveMaximum"),
+              false )
 
-      case t"boolean" =>
-        JsonSchema.Boolean(field[Text](t"description"), false)
+        case t"boolean" =>
+          JsonSchema.Boolean(field[Text](t"description"), false)
 
-      case t"null" =>
-        JsonSchema.Null(field[Text](t"description"), false)
+        case t"null" =>
+          JsonSchema.Null(field[Text](t"description"), false)
 
-      case _ =>
-        // `object`, or an untyped schema (treated as an object).
-        JsonSchema.Object
-          ( field[Text](t"description"),
-            field[Map[Text, JsonSchema]](t"properties").or(Map()),
-            false,
-            field[List[Text]](t"required"),
-            field[List[Json]](t"enum"),
-            json(t"additionalProperties").as[Optional[scala.Boolean]].or(false),
-            field[List[JsonSchema]](t"oneOf") )
+        case _ =>
+          // `object`, or an untyped schema (treated as an object).
+          JsonSchema.Object
+            ( field[Text](t"description"),
+              field[Map[Text, JsonSchema]](t"properties").or(Map()),
+              false,
+              field[List[Text]](t"required"),
+              field[List[Json]](t"enum"),
+              json(t"additionalProperties").as[Optional[scala.Boolean]].or(false),
+              field[List[JsonSchema]](t"oneOf") )
 
   given discriminatedUnion: JsonSchema is Discriminable:
     type Form = Json

@@ -97,43 +97,45 @@ trait Yaml2:
 
   object DecodableDerivation extends Derivable[Decodable in Yaml]:
     inline def conjunction[derivation <: Product: ProductReflection]
-    :   derivation is Decodable in Yaml = yaml =>
-      provide[Foci[Yaml.Focus]]:
-        provide[Tactic[YamlError]]:
-          val arr: IArray[Any] | Null = yaml.root.asMatchable match
-            case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
-              xs.asInstanceOf[IArray[Any]]
+    :   derivation is Decodable in Yaml =
 
-            case _ => null
+      yaml =>
+        provide[Foci[Yaml.Focus]]:
+          provide[Tactic[YamlError]]:
+            val arr: IArray[Any] | Null = yaml.root.asMatchable match
+              case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
+                xs.asInstanceOf[IArray[Any]]
 
-          if arr != null then buildWith(arr)
-          else
-            // Wrong-shape input (including the `Yaml.Ast(Unset)`
-            // sentinel an outer conjunction passes in for a missing
-            // nested case-class field). If the user supplied
-            // `Default[derivation]` we register one error at the
-            // current focus and continue with the sentinel — a
-            // missing nested case class lands as a single error
-            // rather than expanding per sub-field.
-            //
-            // Without a `Default`, we fall back to running `build`
-            // against a null mapping so each sub-field accrues its
-            // own missing-field error (the PR-3 behaviour).
-            //
-            // The `Default[derivation]` summon must reference the
-            // *outer* conjunction parameter `derivation` (concrete at
-            // the inlining site). Pushing it into Wisteria's per-
-            // field polymorphic lambda doesn't resolve reliably; see
-            // xylophone #1157.
-            summonFrom:
-              case derivationDefault: Default[`derivation`] =>
-                val reason =
-                  if yaml.root.isAbsent then Reason.Absent
-                  else Reason.NotType(primitive(yaml.root), YamlPrimitive.Mapping)
+              case _ => null
 
-                raise(YamlError(reason)) yet derivationDefault()
-              case _ =>
-                buildWith(null)
+            if arr != null then buildWith(arr)
+            else
+              // Wrong-shape input (including the `Yaml.Ast(Unset)`
+              // sentinel an outer conjunction passes in for a missing
+              // nested case-class field). If the user supplied
+              // `Default[derivation]` we register one error at the
+              // current focus and continue with the sentinel — a
+              // missing nested case class lands as a single error
+              // rather than expanding per sub-field.
+              //
+              // Without a `Default`, we fall back to running `build`
+              // against a null mapping so each sub-field accrues its
+              // own missing-field error (the PR-3 behaviour).
+              //
+              // The `Default[derivation]` summon must reference the
+              // *outer* conjunction parameter `derivation` (concrete at
+              // the inlining site). Pushing it into Wisteria's per-
+              // field polymorphic lambda doesn't resolve reliably; see
+              // xylophone #1157.
+              summonFrom:
+                case derivationDefault: Default[`derivation`] =>
+                  val reason =
+                    if yaml.root.isAbsent then Reason.Absent
+                    else Reason.NotType(primitive(yaml.root), YamlPrimitive.Mapping)
+
+                  raise(YamlError(reason)) yet derivationDefault()
+                case _ =>
+                  buildWith(null)
 
     private inline def buildWith[derivation <: Product: ProductReflection]
       ( arr: IArray[Any] | Null )
@@ -221,28 +223,30 @@ trait Yaml2:
 
   object EncodableDerivation extends Derivable[Encodable in Yaml]:
     inline def conjunction[derivation <: Product: ProductReflection]
-    :   derivation is Encodable in Yaml = value =>
-      provide[Foci[Yaml.Focus]]:
-        val entries = scm.ArrayBuffer.empty[Any]
+    :   derivation is Encodable in Yaml =
 
-        // `@name[Yaml]` / bare `@name` renames: field name -> mapping key.
-        val renames: Map[Text, Text] = relabelling[derivation, Yaml]
+      value =>
+        provide[Foci[Yaml.Focus]]:
+          val entries = scm.ArrayBuffer.empty[Any]
 
-        fields(value): [field] =>
-          field =>
-            val key: Text = renames.at(label).or(label)
+          // `@name[Yaml]` / bare `@name` renames: field name -> mapping key.
+          val renames: Map[Text, Text] = relabelling[derivation, Yaml]
 
-            focus({
-              val base = prior.let(_.pointer).or(YamlPath())
-              Yaml.Focus(base.prepend(key))
-            }):
-              val encoded = contextual.encode(field).root
+          fields(value): [field] =>
+            field =>
+              val key: Text = renames.at(label).or(label)
 
-              if !(encoded.asInstanceOf[AnyRef] eq Unset) then
-                entries += Yaml.Ast.Str(key).asInstanceOf[Any]
-                entries += encoded.asInstanceOf[Any]
+              focus({
+                val base = prior.let(_.pointer).or(YamlPath())
+                Yaml.Focus(base.prepend(key))
+              }):
+                val encoded = contextual.encode(field).root
 
-        Yaml.ast(Yaml.Ast.mapFromAnyArray(entries.toArray))
+                if !(encoded.asInstanceOf[AnyRef] eq Unset) then
+                  entries += Yaml.Ast.Str(key).asInstanceOf[Any]
+                  entries += encoded.asInstanceOf[Any]
+
+          Yaml.ast(Yaml.Ast.mapFromAnyArray(entries.toArray))
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Yaml = value =>
       val discriminable = infer[derivation is Discriminable in Yaml]

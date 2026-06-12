@@ -606,7 +606,9 @@ object Html extends Tag.Container
     protected def cloneTo
       ( start: Cursor.Mark, end: Cursor.Mark )
       ( target: jl.StringBuilder )
-    :   Unit = cursor.clone(start, end)(target.asInstanceOf[cursor.addressable.Target])
+    :   Unit =
+
+      cursor.clone(start, end)(target.asInstanceOf[cursor.addressable.Target])
 
     protected def computePosition
       ( start: Optional[Cursor.Mark] = Unset,

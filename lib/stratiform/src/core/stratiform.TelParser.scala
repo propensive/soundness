@@ -1421,35 +1421,37 @@ private final class TelParser():
   // the blanks for the enclosing block. Uses mark+cue. The hold spans the
   // entire probe so the mark survives every nested fillHead.
   private def skipInteriorBlanksIfFollowedByContentAtIndent(indent: Int)
-  : Unit raises TelError = inHold:
-    val mk = beginMark()
+  :   Unit raises TelError =
 
-    val savedHeadSnapshot = (head.leadingSpaces, head.indentLevels, head.blank,
-                             head.eof, head.startLine)
+    inHold:
+      val mk = beginMark()
 
-    val savedBoundary = prevLineWasBoundary
-    val savedLineNo = lineNo
-    while !head.eof && head.blank do fillHead()
-    val keep =
-      !head.eof && !head.separator && head.indentLevels == indent && !isCommentBody()
-    if !keep then
-      // Rewind.
-      syncTo()
-      cursor.cue(mk)
-      syncFrom()
-      head.leadingSpaces = savedHeadSnapshot._1
-      head.indentLevels  = savedHeadSnapshot._2
-      head.blank         = savedHeadSnapshot._3
-      head.eof           = savedHeadSnapshot._4
-      head.startLine     = savedHeadSnapshot._5
-      prevLineWasBoundary = savedBoundary
-      lineNo = savedLineNo
-      // Re-park: skip leading spaces of the line we just rewound to.
-      var i = 0
+      val savedHeadSnapshot = (head.leadingSpaces, head.indentLevels, head.blank,
+                               head.eof, head.startLine)
 
-      while i < savedHeadSnapshot._1 && more && peek == SP do
-        advance()
-        i += 1
+      val savedBoundary = prevLineWasBoundary
+      val savedLineNo = lineNo
+      while !head.eof && head.blank do fillHead()
+      val keep =
+        !head.eof && !head.separator && head.indentLevels == indent && !isCommentBody()
+      if !keep then
+        // Rewind.
+        syncTo()
+        cursor.cue(mk)
+        syncFrom()
+        head.leadingSpaces = savedHeadSnapshot._1
+        head.indentLevels  = savedHeadSnapshot._2
+        head.blank         = savedHeadSnapshot._3
+        head.eof           = savedHeadSnapshot._4
+        head.startLine     = savedHeadSnapshot._5
+        prevLineWasBoundary = savedBoundary
+        lineNo = savedLineNo
+        // Re-park: skip leading spaces of the line we just rewound to.
+        var i = 0
+
+        while i < savedHeadSnapshot._1 && more && peek == SP do
+          advance()
+          i += 1
 
   // ── Trailing blanks ──────────────────────────────────────────────────────
 
@@ -1691,64 +1693,66 @@ private final class TelParser():
   // parseCompoundLine call.
   private def validateTabulatedRowInline
     ( rowLeadingSpaces: Int, tabulation: Tel.Tabulation, lineNumber: Int )
-  : Unit raises TelError = inHold:
-    val markers = tabulation.markerOffsets
-    val mk = beginMark()
-    var col = rowLeadingSpaces
-    var columnIdx = 0
-    var phraseStart = rowLeadingSpaces
-    var stopped = false
+  :   Unit raises TelError =
 
-    while !stopped && more && peek != LF && peek != CR do
-      val b = peek
+    inHold:
+      val markers = tabulation.markerOffsets
+      val mk = beginMark()
+      var col = rowLeadingSpaces
+      var columnIdx = 0
+      var phraseStart = rowLeadingSpaces
+      var stopped = false
 
-      if b == SP then
-        val runStart = col
-        while more && peek == SP do { advance(); col += 1 }
-        val runLen = col - runStart
+      while !stopped && more && peek != LF && peek != CR do
+        val b = peek
 
-        if runLen >= 2 then
-          val sigilNext = more && peek == sigil
+        if b == SP then
+          val runStart = col
+          while more && peek == SP do { advance(); col += 1 }
+          val runLen = col - runStart
 
-          val isRemark =
-            if !sigilNext then false
+          if runLen >= 2 then
+            val sigilNext = more && peek == sigil
+
+            val isRemark =
+              if !sigilNext then false
+              else
+                ensureLookahead(3)
+                val afterSigil = if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
+                afterSigil == SP.toInt
+                && (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
+            if isRemark then
+              // Remark terminates column validation.
+              while more && peek != LF && peek != CR do { advance(); col += 1 }
+              stopped = true
             else
-              ensureLookahead(3)
-              val afterSigil = if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
-              afterSigil == SP.toInt
-              && (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
-          if isRemark then
-            // Remark terminates column validation.
-            while more && peek != LF && peek != CR do { advance(); col += 1 }
-            stopped = true
-          else
-            if columnIdx >= 1 && columnIdx < markers.length - 1 then
-              val phraseWidth = runStart - phraseStart
-              val colMax = markers(columnIdx + 1) - markers(columnIdx) - 2
+              if columnIdx >= 1 && columnIdx < markers.length - 1 then
+                val phraseWidth = runStart - phraseStart
+                val colMax = markers(columnIdx + 1) - markers(columnIdx) - 2
 
-              if phraseWidth > colMax then
-                errorAt(Reason.ColumnValueTooWide, lineNumber, phraseStart + 1)
+                if phraseWidth > colMax then
+                  errorAt(Reason.ColumnValueTooWide, lineNumber, phraseStart + 1)
 
-            var foundIdx = -1
-            var k = 1
+              var foundIdx = -1
+              var k = 1
 
-            while k < markers.length && foundIdx < 0 do
-              if markers(k) == col then foundIdx = k
-              k += 1
+              while k < markers.length && foundIdx < 0 do
+                if markers(k) == col then foundIdx = k
+                k += 1
 
-            if foundIdx < 0 then
-              errorAt(Reason.HardSpaceWrongPosition, lineNumber, col + 1)
+              if foundIdx < 0 then
+                errorAt(Reason.HardSpaceWrongPosition, lineNumber, col + 1)
 
-            columnIdx = foundIdx
-            phraseStart = col
-      else
-        advance()
-        col += 1
+              columnIdx = foundIdx
+              phraseStart = col
+        else
+          advance()
+          col += 1
 
-    // Cue back so parseCompoundLine reads the row from the start.
-    syncTo()
-    cursor.cue(mk)
-    syncFrom()
+      // Cue back so parseCompoundLine reads the row from the start.
+      syncTo()
+      cursor.cue(mk)
+      syncFrom()
 
   // ── Source / literal atom dispatch ───────────────────────────────────────
 

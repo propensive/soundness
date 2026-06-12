@@ -197,30 +197,32 @@ object Xeq:
 
 
   private def multiDownloaderMain(output: Text, stagingDir: Text, baseUrl: Text, version: Text)
-  :   Unit = unsafely:
-    val outputPath: Path on Linux = output.decode[Path on Linux]
-    val staging: Path on Linux = stagingDir.decode[Path on Linux]
+  :   Unit =
 
-    val children: List[Path on Linux] = staging.children.to(List)
+    unsafely:
+      val outputPath: Path on Linux = output.decode[Path on Linux]
+      val staging: Path on Linux = stagingDir.decode[Path on Linux]
 
-    val entries: List[(Text, Text, Text)] =
-      children
-      . filter(_.name.starts(RunnerPrefix))
-      . sortBy(_.name.s)
-      . map: path =>
-          val name = path.name
-          val withoutPrefix = name.skip(RunnerPrefix.length)
+      val children: List[Path on Linux] = staging.children.to(List)
 
-          val label =
-            if withoutPrefix.ends(ExeSuffix) then withoutPrefix.skip(ExeSuffix.length, Rtl)
-            else withoutPrefix
+      val entries: List[(Text, Text, Text)] =
+        children
+        . filter(_.name.starts(RunnerPrefix))
+        . sortBy(_.name.s)
+        . map: path =>
+            val name = path.name
+            val withoutPrefix = name.skip(RunnerPrefix.length)
 
-          val data: Data = path.open(_.read[Data])
-          val hash: Text = data.digest[Sha2[256]].serialize[Hex]
-          val url: Text = t"$baseUrl$AssetPrefix$label-$version"
-          (label, url, hash)
+            val label =
+              if withoutPrefix.ends(ExeSuffix) then withoutPrefix.skip(ExeSuffix.length, Rtl)
+              else withoutPrefix
 
-    write(outputPath, multiDownloader(entries))
+            val data: Data = path.open(_.read[Data])
+            val hash: Text = data.digest[Sha2[256]].serialize[Hex]
+            val url: Text = t"$baseUrl$AssetPrefix$label-$version"
+            (label, url, hash)
+
+      write(outputPath, multiDownloader(entries))
 
 
   def main(args: Array[String]): Unit =

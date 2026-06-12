@@ -91,7 +91,9 @@ object Addressable:
 
     inline def cloneStorage
       (storage: Array[Byte], off: Int, len: Int)(target: ji.ByteArrayOutputStream)
-    :   Unit = target.write(storage, off, len)
+    :   Unit =
+
+      target.write(storage, off, len)
 
 
   inline given text: Text is Addressable:
@@ -140,7 +142,9 @@ object Addressable:
 
     inline def cloneStorage
       (storage: Array[Char], off: Int, len: Int)(target: jl.StringBuilder)
-    :   Unit = target.append(storage, off, len)
+    :   Unit =
+
+      target.append(storage, off, len)
 
 
 trait Addressable extends Typeclass, Operable, Targetable:
