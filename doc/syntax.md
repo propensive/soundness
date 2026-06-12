@@ -15,6 +15,66 @@ continuation line.
 Scala 3's indented (colon) syntax is preferred everywhere. Braces are used only
 for short block lambdas, e.g. `{ key => (key, dependencies(key)) }`.
 
+### Indented scopes and their anchor
+
+An *indented scope* — the body of a colon-block (`recv:`), a `match`, a lambda
+or `case` arrow (`=>`), or a definition's `=` — must be indented exactly two
+columns beyond the scope's *anchor*. The anchor is the column of the construct
+that opens the scope, except it **extends leftwards** to the line's leading
+declaration keyword (`val`, `var`, `def`, `case`, `given`, after any modifiers)
+when that keyword shares the opener's line. The receiver's form is irrelevant:
+`bar:`, `bar():`, and `bar(baz): quux =>` anchor identically. So
+
+```scala
+val foo: Int = bar:
+  baz
+```
+
+is legal — the colon-block's anchor extends from `bar` to `val`, so `baz` sits
+at the `val` column + 2.
+
+A *parameter block* — a `(`/`[` argument or type-argument list following a
+receiver — is not an indented scope; it anchors to its receiver (§"Anchor of a
+heavy argument block"). So
+
+```scala
+val foo: Bar = Bar
+  ( baz, quux )
+```
+
+is rejected in favour of
+
+```scala
+val foo: Bar =
+  Bar
+    ( baz, quux )
+```
+
+A tuple (a parenthesised group with no receiver, e.g. an `=` right-hand side)
+is an indented value, not a parameter block.
+
+The extension does not apply to keyword sequences (`if`/`then`/`else`, etc.),
+which keep their own anchor (§"Anchor point"). So
+
+```scala
+val x = if pred
+then foo
+else bar
+```
+
+is rejected; the `if` sequence must be indented on its own lines:
+
+```scala
+val x =
+  if pred
+  then foo
+  else bar
+```
+
+When a `def` or `given` signature spans more than one line, the body-introducing
+`=` must be the last token on the final signature line, so the body begins on a
+fresh line.
+
 ### Line length
 
 Hard limit: 100 columns. Lines that would exceed this must be broken; refer to

@@ -744,3 +744,53 @@ object Tests extends Suite(m"Decorum Tests"):
       test(m"Multi-line quote opener is not flagged as inline"):
         rules("val q =\n  ' {\n    body\n  }\n")
       . assert(r => !r.contains("473.7"))
+
+    suite(m"Phase 6: Indented-scope body indent (Rule B)"):
+
+      test(m"Colon-block body at anchor+2 is accepted"):
+        rules("val foo: Int = bar:\n  baz\n")
+      . assert(r => !r.contains("473.8"))
+
+      test(m"Colon-lambda body at anchor+2 is accepted"):
+        rules("val xs = items.map: x =>\n  f(x)\n")
+      . assert(r => !r.contains("473.8"))
+
+      test(m"Nested match on a case line is accepted"):
+        rules("foo match\n  case Bar(b) => b match\n    case Q => q\n")
+      . assert(r => !r.contains("473.8"))
+
+      test(m"Tuple as = RHS is accepted"):
+        rules("val pair: (Int, Int) =\n  (a, b)\n")
+      . assert(r => !r.contains("473.8"))
+
+      test(m"= RHS receiver on its own line with arg block is accepted"):
+        rules("val foo: Bar =\n  Bar\n    ( baz, quux )\n")
+      . assert(r => !r.contains("473.8"))
+
+      test(m"Colon-block body too deep is rejected"):
+        rules("val foo: Int = bar:\n      baz\n")
+      . assert(_.contains("473.8"))
+
+      test(m"Multi-line signature with = not last is rejected"):
+        rules("def fn(a: A)\n: Quux = quux:\n  body\n")
+      . assert(_.contains("473.9"))
+
+      test(m"Multi-line signature with = last is accepted"):
+        rules("def fn(a: A)\n: Quux =\n  quux\n")
+      . assert(r => !r.contains("473.9"))
+
+      test(m"Param block under a val is owned by 833.4, not Rule B"):
+        rules("val foo: Bar = Bar\n  ( baz, quux )\n")
+      . assert(r => !r.contains("473.8"))
+
+      test(m"if-sequence as RHS keeps its own anchor (833.1), not Rule B"):
+        rules("val x = if pred\nthen y\nelse z\n")
+      . assert(r => r.contains("833.1") && !r.contains("473.8"))
+
+      test(m"Chain-method colon-lambda body (+4) is not flagged"):
+        rules("foo\n  .map: x =>\n    body\n")
+      . assert(r => !r.contains("473.8"))
+
+      test(m"String-interpolator first body line is handled"):
+        rules("val x = bar:\n  t\"a\"+b\n  more\n")
+      . assert(r => !r.contains("473.8"))
