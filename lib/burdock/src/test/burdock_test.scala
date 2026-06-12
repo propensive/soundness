@@ -42,11 +42,19 @@ import temporaryDirectories.system
 
 object Tests extends Suite(m"Burdock Tests"):
   def run(): Unit =
-    suite(m"Dependency-hashing macro"):
-      val hashes: List[Text] = Embed.dependencyHashes
+    suite(m"Externalizing macro"):
       val home: Text = _root_.java.lang.System.getProperty("user.home").nn.tt
 
-      test(m"captures a non-empty set of dependency hashes"):
+      // Invoking `externalize` embeds `META-INF/burdock.deps` into this module's compiled
+      // output and hard-links each dependency JAR into the Burdock cache.
+      externalize(())
+
+      val hashes: List[Text] =
+        val stream = getClass.nn.getResourceAsStream("/META-INF/burdock.deps").nn
+        val content: Text = _root_.java.lang.String(stream.readAllBytes().nn, "UTF-8").tt
+        content.cut(t"\n").filter(_ != t"")
+
+      test(m"embeds a non-empty set of dependency hashes as a resource"):
         hashes.length
       .assert(_ > 0)
 
@@ -59,12 +67,6 @@ object Tests extends Suite(m"Burdock Tests"):
           val jar: Text = t"$home/.cache/burdock/$hash.jar"
           _root_.java.nio.file.Files.exists(_root_.java.nio.file.Paths.get(jar.s).nn)
       .assert(_ == true)
-
-      test(m"the hash list is written as a packaged resource"):
-        val stream = getClass.nn.getResourceAsStream("/META-INF/burdock.deps").nn
-        val content: Text = _root_.java.lang.String(stream.readAllBytes().nn, "UTF-8").tt
-        content.cut(t"\n").to(Set)
-      .assert(_ == hashes.to(Set))
 
     suite(m"Repackager partition"):
       val published = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"
@@ -136,3 +138,45 @@ object Tests extends Suite(m"Burdock Tests"):
       test(m"records the published dependency as a requirement"):
         manifest.contains(t"aaa")
       .assert(_ == true)
+
+    suite(m"Repackager (duplicate-safety)"):
+      // A real assembly bundles burdock (its `Main-Class` is `burdock.Bootstrap`), so the
+      // input already contains `burdock/Bootstrap.class`; and a cached dependency may be a
+      // class already present among the application's own entries. Neither must produce a
+      // duplicate entry in the output (which would fail as a `ZipError`). See issue #1333.
+      val tmp: Path on Linux = temporaryDirectory[Path on Linux]
+      val inputJar: Path on Linux = tmp/t"burdock-dup-in-${Uuid().show}.jar"
+      val outputJar: Path on Linux = tmp/t"burdock-dup-out-${Uuid().show}.jar"
+
+      val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
+
+      Zipfile.write(inputJar):
+        Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifestText.data)
+        #:: Zip.Entry(t"META-INF/burdock.deps".decode[Path on Zip], t"bbb".data)
+        #:: Zip.Entry(t"com/example/Main.class".decode[Path on Zip], t"main".data)
+        #:: Zip.Entry(t"burdock/Bootstrap.class".decode[Path on Zip], t"stale-bootstrap".data)
+        #:: Zip.Entry(t"dep/Lib.class".decode[Path on Zip], t"bundled-lib".data)
+        #:: LazyList()
+
+      val resolve: Repackage.Resolver = _ => Unset
+
+      val cached: Repackage.CacheReader =
+        h => if h == t"bbb" then List(Bootstrapper.Entry(t"dep/Lib.class", t"cached-lib".data))
+             else Unset
+
+      Repackage.repackage(inputJar, outputJar, resolve, cached, t"real-bootstrap".data)
+
+      val names: List[Text] = Zipfile.read(outputJar).entries.map(_.ref.show).to(List)
+
+      test(m"a bundled bootstrap class is not duplicated"):
+        names.count(_ == t"burdock/Bootstrap.class")
+      .assert(_ == 1)
+
+      test(m"the force-included bootstrap bytes win over the bundled copy"):
+        Zipfile.read(outputJar).entries.find(_.ref.show == t"burdock/Bootstrap.class").get
+        . read[Data].utf8
+      .assert(_ == t"real-bootstrap")
+
+      test(m"a cached class already bundled is not duplicated"):
+        names.count(_ == t"dep/Lib.class")
+      .assert(_ == 1)

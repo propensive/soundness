@@ -40,21 +40,20 @@ import scala.quoted.*
 
 import anticipation.*
 
-// The compile-time half of the Burdock redesign. `dependencyHashes` captures the
-// build's classpath, computes each dependency JAR's SHA-256, hard-links it into
-// the Burdock cache (`~/.cache/burdock/<sha256>.jar`) so its bytes stay
-// retrievable by hash locally, and embeds the SHA-256 list as compiled-in
-// literals. The published-vs-unpublished decision is deferred to repackage (where
-// deps.dev is queried); the cache covers anything deps.dev cannot resolve.
-object Embed:
-  // Resource path (within the compiled JAR) holding the newline-separated
-  // dependency SHA-256 hashes; read by the repackager and, in turn, the runtime
-  // bootstrap. Keep in sync with the repackager.
+// The compile-time half of Burdock. The `externalize` macro captures the build's
+// classpath, computes each dependency JAR's SHA-256, hard-links it into the Burdock
+// cache (`~/.cache/burdock/<sha256>.jar`) so its bytes stay retrievable by hash
+// locally, and embeds the SHA-256 list as the `META-INF/burdock.deps` resource. The
+// published-vs-unpublished decision is deferred to repackage (where deps.dev is
+// queried); the cache covers anything deps.dev cannot resolve.
+object internal:
+  // Resource path (within the compiled JAR) holding the newline-separated dependency
+  // SHA-256 hashes; read by the repackager and, in turn, the runtime bootstrap.
   final val ResourcePath: String = "META-INF/burdock.deps"
 
-  inline def dependencyHashes: List[Text] = ${Embed.dependencyHashesMacro}
-
-  def dependencyHashesMacro(using Quotes): Expr[List[Text]] =
+  // Performs the compile-time side effects (hash + cache + embed the resource) and
+  // returns `block` unchanged, so `externalize` runs the application's body at runtime.
+  def externalize[result: Type](block: Expr[result])(using Quotes): Expr[result] =
     val (classpath, outputDir) = quotes.absolve match
       case quotes: runtime.impl.QuotesImpl =>
         import dotty.tools.dotc.config.Settings.Setting.value
@@ -66,18 +65,18 @@ object Embed:
     val hashes: List[String] = hashAndCache(classpath)
     writeResource(outputDir, hashes)
 
-    '{${Expr(hashes)}.map(_.tt)}
+    block
 
-  // Writes the hash list into the compile output as `META-INF/burdock.deps`, so
-  // it is packaged into the JAR as an ordinary resource.
+  // Writes the hash list into the compile output as `META-INF/burdock.deps`, so it is
+  // packaged into the JAR as an ordinary resource.
   private def writeResource(outputDir: jnf.Path, hashes: List[String]): Unit =
     val metaInf: jnf.Path = outputDir.resolve("META-INF").nn
     jnf.Files.createDirectories(metaInf)
     val content: String = hashes.mkString("\n")
     jnf.Files.write(metaInf.resolve("burdock.deps").nn, content.getBytes("UTF-8").nn)
 
-  // Runs at compile time, in the compiler JVM: pure java.* so it needs nothing
-  // from the soundness runtime. Hard-links fall back to a copy across filesystems.
+  // Runs at compile time, in the compiler JVM: pure java.* so it needs nothing from the
+  // soundness runtime. Hard-links fall back to a copy across filesystems.
   private def hashAndCache(classpath: String): List[String] =
     val home: String = System.getProperty("user.home").nn
     val cacheDir: jnf.Path = jnf.Paths.get(home, ".cache", "burdock").nn

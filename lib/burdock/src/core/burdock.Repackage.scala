@@ -102,13 +102,14 @@ object Repackage:
     whereas:
       case IoError(_, _, _, _)  => RepackageError(m"a filesystem error occurred while repackaging")
       case StreamError(_)       => RepackageError(m"a stream error occurred while repackaging")
-      case ZipError(_)          => RepackageError(m"the JAR could not be read or written")
+      case ZipError(reason)     => RepackageError(m"the JAR could not be read or written ($reason)")
       case PathError(_, _)      => RepackageError(m"a path could not be resolved while repackaging")
       case NumberError(_, _, _) => RepackageError(m"the manifest contained malformed data")
       case FqcnError(_, _)      => RepackageError(m"the Main-Class is not a valid class name")
 
     . mitigate:
-        val resource: Text = Embed.ResourcePath.tt
+        val resource: Text = burdock.internal.ResourcePath.tt
+        val bootstrapName: Text = t"burdock/Bootstrap.class"
         var manifestData: Optional[Data] = Unset
         var depsData: Optional[Data] = Unset
         val ownBuilder = List.newBuilder[Entry]
@@ -116,8 +117,12 @@ object Repackage:
         Zipfile.read(inputJar).entries.each: entry =>
           val name: Text = entry.ref.show
 
+          // The bootstrap class is force-included below, so drop any copy already bundled
+          // (an app whose `Main-Class` is `burdock.Bootstrap` bundles burdock) to avoid a
+          // duplicate entry.
           if name == t"META-INF/MANIFEST.MF" then manifestData = entry.read[Data]
           else if name == resource then depsData = entry.read[Data]
+          else if name == bootstrapName then ()
           else ownBuilder += Entry(name, entry.read[Data])
 
         val manifest: Manifest =
@@ -130,6 +135,13 @@ object Repackage:
         val ownEntries: List[Entry] = ownBuilder.result()
         val (requirements, inlined) = partition(hashes, resolve, cached)
 
+        // A cached entry may already be present among the application's own entries (e.g.
+        // when the input is a fat assembly); keep the bundled copy and inline only the gaps,
+        // so the output never carries two entries with the same name.
+        val ownNames: Set[Text] = ownEntries.map(_.name).to(Set)
+        val inlinedEntries: List[Entry] = inlined.filter: entry =>
+          !ownNames.contains(entry.name)
+
         import manifestAttributes.*
 
         val originalMain =
@@ -139,8 +151,8 @@ object Repackage:
           manifest - MainClass + BurdockRequire(requirements) + BurdockMain(originalMain)
           + BurdockVerbosity(t"silent") + MainClass(fqcn"burdock.Bootstrap")
 
-        val bootstrap: Entry = Entry(t"burdock/Bootstrap.class", bootstrapClass)
-        val entries: List[Entry] = bootstrap :: ownEntries ++ inlined
+        val bootstrap: Entry = Entry(bootstrapName, bootstrapClass)
+        val entries: List[Entry] = bootstrap :: ownEntries ++ inlinedEntries
 
         Zipfile.write(outputJar):
           Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest2.serialize)
