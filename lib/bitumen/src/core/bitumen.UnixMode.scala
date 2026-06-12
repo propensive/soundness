@@ -36,7 +36,6 @@ import anticipation.*
 import gossamer.*
 import hieroglyph.*, charEncoders.ascii, textMetrics.uniform
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
-import vacuous.*
 
 object UnixMode:
   def from(int: Int): UnixMode = UnixMode

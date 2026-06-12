@@ -35,7 +35,6 @@ package jacinta
 import anticipation.*
 import aviation.*
 import contingency.*
-import distillate.*
 import prepositional.*
 
 package jsonEncodables:

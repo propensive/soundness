@@ -38,7 +38,6 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import gossamer.*
-import hieroglyph.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
@@ -215,6 +214,7 @@ object Tel extends Tel2:
 
     def assign(tel: Tel, schema: Tels, validators: Tel.Validator.Registry)
     :   Tel.Element raises TelError =
+
       val element = assign(tel, schema)
       validateElement(element, validators)
       element
@@ -222,6 +222,7 @@ object Tel extends Tel2:
     private def validateElement
          ( element: Tel.Element, registry: Tel.Validator.Registry )
     :   Unit raises TelError =
+
       element match
         case Tel.Element.Value(_, scalarType, text) =>
           scalarType.validators.each: name =>
@@ -273,6 +274,7 @@ object Tel extends Tel2:
     // Tel.Element produced from this parent.
     private def keywordMap(parent: Struct, schema: Tels)
     :   Map[Text, KeywordEntry] raises TelError =
+
       val builder = scala.collection.mutable.LinkedHashMap.empty[Text, KeywordEntry]
       var idx = 0
       var flatIdx = 0
@@ -332,6 +334,7 @@ object Tel extends Tel2:
           parent: Struct,
           schema: Tels )
     :   IArray[Tel.Element] raises TelError =
+
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       var pos = 0
       var flatPos = 0
@@ -413,6 +416,7 @@ object Tel extends Tel2:
           parent:    Struct,
           schema:    Tels )
     :   IArray[Tel.Element] raises TelError =
+
       val km = keywordMap(parent, schema)
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       var i = 0
@@ -434,6 +438,7 @@ object Tel extends Tel2:
            childElements: IArray[Tel.Element],
            schema:        Tels )
     :   IArray[Tel.Element] raises TelError =
+
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       results ++= atomElements
       results ++= childElements
@@ -477,6 +482,7 @@ object Tel extends Tel2:
           entry:    KeywordEntry,
           schema:   Tels )
     :   Tel.Element raises TelError =
+
       val resolved = resolveType(entry.entryType, schema)
 
       resolved match
@@ -755,6 +761,7 @@ object Tel extends Tel2:
       private[stratiform] def fromArena
                     ( arena: Array[Byte], off: Int, len: Int, precedingSpaces: Int )
       :   Inline =
+
         new Inline(arena, off, len, null, precedingSpaces)
 
       def unapply(i: Inline): (Text, Int) = (i.text, i.precedingSpaces)
@@ -886,6 +893,7 @@ object Tel extends Tel2:
   private[stratiform] def replaceOrAppendCompound
        ( blocks: IArray[Block], keyword: Text, compound: Compound )
   :   IArray[Block] =
+
     var b = 0
     var found = false
     val out = scala.collection.mutable.ArrayBuffer.from(blocks.toList)
@@ -915,6 +923,7 @@ object Tel extends Tel2:
   private[stratiform] def withChildCompound
        ( blocks: IArray[Block], index: Int, transform: Compound => Compound )
   :   IArray[Block] =
+
     var offset = 0
 
     blocks.map: block =>
@@ -931,4 +940,5 @@ object Tel extends Tel2:
   private[stratiform] def mapChildCompounds
        ( blocks: IArray[Block], transform: Compound => Compound )
   :   IArray[Block] =
+
     blocks.map(block => block.copy(compounds = block.compounds.map(transform)))

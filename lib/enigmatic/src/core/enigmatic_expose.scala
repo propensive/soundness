@@ -39,7 +39,6 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import gastronomy.{Permit, ProcessingPermit}
-import gossamer.*
 import prepositional.*
 import vacuous.*
 

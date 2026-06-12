@@ -51,7 +51,6 @@ import jacinta.Bcd
 import panopticon.*
 import prepositional.*
 import rudiments.*
-import symbolism.*
 import turbulence.*
 import vacuous.*
 import wisteria.*

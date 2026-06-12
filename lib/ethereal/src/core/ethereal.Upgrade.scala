@@ -42,9 +42,7 @@ import galilei.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
-import rudiments.*
 import serpentine.*
-import spectacular.*
 import turbulence.*
 import vacuous.*
 

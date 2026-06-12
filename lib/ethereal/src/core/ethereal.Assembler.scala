@@ -46,9 +46,7 @@ import guillotine.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
-import spectacular.*
 import turbulence.*
-import vacuous.*
 
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled

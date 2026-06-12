@@ -39,7 +39,6 @@ import contingency.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
-import prepositional.*
 import rudiments.*
 import vacuous.*
 
@@ -103,7 +102,6 @@ object Jacinta:
       (position, members.at(t"Origin").or(position))
 
   def select(self: Expr[Json], field: Expr[String]): Macro[Json] =
-    import quotes.reflect.*
 
     // Plain (unverified) access: gate on the enabler (resolved at the call site),
     // then read the field totally.

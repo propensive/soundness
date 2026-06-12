@@ -32,7 +32,6 @@
                                                                                                   */
 package stratiform
 
-import scala.quoted.*
 
 import anticipation.*
 import contingency.*
@@ -121,6 +120,7 @@ object RecordSchema:
   // Helper constructor for `Intensional` instances that ignore params.
   def intensional[name <: Label, value](accessor: Tel => value)
   :   name is Intensional in RecordSchema from Tel to value =
+
     new Intensional:
       type Self = name
       type Origin = Tel

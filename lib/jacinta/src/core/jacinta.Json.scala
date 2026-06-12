@@ -53,7 +53,6 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
-import symbolism.*
 import turbulence.*
 import vacuous.*
 import wisteria.*

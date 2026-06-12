@@ -334,6 +334,7 @@ trait Tel2:
   private def collectionDocument[value]
       (values: Iterable[value])(using encodable: value is Encodable in Tel)
   :   Tel =
+
     val compounds: IArray[Tel.Compound] = IArray.from:
       values.flatMap: element =>
         encodable.encoded(element).subtree match
@@ -416,6 +417,7 @@ trait Tel2:
   def compound
        ( keyword: Text, atoms: IArray[Tel.Atom], compounds: IArray[Tel.Compound] )
   :   Tel =
+
     val children =
       if compounds.isEmpty then IArray.empty[Tel.Block]
       else IArray(Tel.Block(IArray.empty, Unset, compounds, 0))

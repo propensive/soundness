@@ -42,7 +42,6 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
 import vacuous.*
 import zephyrine.*
 
@@ -549,6 +548,7 @@ private final class TelParser():
                 ( a: Byte, b: Byte, c: Byte,
                   rA: Long, rB: Long, rC: Long )
   :   Unit =
+
     while pos + 8 <= bufEnd do
       val v = TelParser.longView.get(bytes, pos).asInstanceOf[Long]
 
@@ -569,6 +569,7 @@ private final class TelParser():
                 ( a: Byte, b: Byte, c: Byte, d: Byte,
                   rA: Long, rB: Long, rC: Long, rD: Long )
   :   Unit =
+
     while pos + 8 <= bufEnd do
       val v = TelParser.longView.get(bytes, pos).asInstanceOf[Long]
 
@@ -611,6 +612,7 @@ private final class TelParser():
   // the offending location and its column.
   private def errorAt(reason: Reason, line: Int, column: Int)
   :   Nothing raises TelError =
+
     abort(TelError(reason, TelError.Position(line, column)))
 
   // ── Mark / hold plumbing ──────────────────────────────────────────────────
@@ -1007,6 +1009,7 @@ private final class TelParser():
 
   private def parsePragmaContent(content: String, line: Int)
   :   Tel.Pragma raises TelError =
+
     val parts = splitPragmaPhrases(content)
     if parts.head != "tel" then errorAt(Reason.PragmaNotFirst, line, 1)
 
@@ -1048,6 +1051,7 @@ private final class TelParser():
 
   private def parseVersion(s: String, line: Int)
   :   (Int, Int) raises TelError =
+
     val dot = s.indexOf('.')
     if dot <= 0 || dot == s.length - 1 then errorAt(Reason.BadVersion, line, 1)
 
@@ -1127,6 +1131,7 @@ private final class TelParser():
   // type is a Struct, or Unset otherwise.
   private def resolveKeywordStruct(parent: Tels.Struct, keyword: Text, s: Tels)
   :   Optional[Tels.Struct] raises TelError =
+
     var found: Optional[Tels.Type] = Unset
     var i = 0
 
@@ -1171,6 +1176,7 @@ private final class TelParser():
 
       val resolved: Optional[Tels.Struct] =
         parent.let(p => resolveKeywordStruct(p, keyword, s))
+
       ancestors += resolved
 
     .or:
@@ -1204,6 +1210,7 @@ private final class TelParser():
 
       val deeperValid =
         deeperParent.let(p => keywordAdmissible(p, keyword, s)).or(false)
+
       if !shallowerValid && deeperValid then deeper else shallower
 
     .or:
@@ -1747,6 +1754,7 @@ private final class TelParser():
 
   private def parseSourceOrLiteralAtomIfPresent(compoundLeadingSpaces: Int)
   :   Optional[Tel.Atom] raises TelError =
+
     if head.eof || head.blank then Unset
     else
       val sourceIndent = compoundLeadingSpaces + 4

@@ -43,7 +43,6 @@ import guillotine.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
-import spectacular.*
 
 object Device:
   enum Kind:

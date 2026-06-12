@@ -33,8 +33,6 @@
 package ziggurat
 
 import anticipation.*
-import galilei.*
-import gossamer.*
 import prepositional.*
 import serpentine.*
 import vacuous.*

@@ -38,7 +38,6 @@ import anticipation.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
-import prepositional.*
 import rudiments.*
 import vacuous.*
 
@@ -99,7 +98,6 @@ object Stratiform:
       (position, members.at(t"Origin").or(position))
 
   def select(self: Expr[Tel], field: Expr[String]): Macro[Tel] =
-    import quotes.reflect.*
 
     def plain: Expr[Tel] =
       if Expr.summon[DynamicTelEnabler].isEmpty

@@ -35,9 +35,6 @@ package stratiform
 import anticipation.*
 import aviation.*
 import contingency.*
-import distillate.*
-import gossamer.*
-import prepositional.*
 
 // Aviation integration: encode TEL atom values to/from Aviation's
 // Instant and Duration types. Mirroring jacinta.time, the codecs are

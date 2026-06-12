@@ -174,6 +174,7 @@ object Tels extends Tels2:
            repeatable: Polarity = Implicit,
            default:    Optional[Text] = Unset )
     :   Field =
+
       Field(required, repeatable, kebab(keyword), fieldType, default)
 
     private inline def selectRef
@@ -181,6 +182,7 @@ object Tels extends Tels2:
            required:   Polarity = Implicit,
            repeatable: Polarity = Implicit )
     :   SelectRef =
+
       SelectRef(required, repeatable, kebab(reference))
 
     private inline def variant(keyword: String, variantType: Type): Variant =
@@ -193,6 +195,7 @@ object Tels extends Tels2:
 
     private inline def record(name: String, description: String, members: Member*)
     :   RecordDefinition =
+
       RecordDefinition(kebab(name), IArray.from(members), IArray.empty, describe(description))
 
     private inline def scalar(name: String, validators: String*): ScalarDefinition =
@@ -200,6 +203,7 @@ object Tels extends Tels2:
 
     private inline def select(name: String, description: String, variants: Variant*)
     :   SelectDefinition =
+
       SelectDefinition(kebab(name), IArray.from(variants), IArray.empty, describe(description))
 
     // Built-in scalar types referenced from member declarations.
@@ -312,12 +316,14 @@ object Tels extends Tels2:
       // Same as `validate` but also applies the registry's validators.
       def validate(using schema: Tels, validators: Tel.Validator.Registry)
       :   Tel raises TelError =
+
         Tel.Type.assign(tel, schema, validators)
         tel
 
       // Convenience: validate-then-decode in a single call.
       inline def asValidated[value: Decodable in Tel](using schema: Tels)
       :   value raises TelError =
+
         Tel.Type.assign(tel, schema)
         tel.as[value]
 
@@ -356,6 +362,7 @@ object Tels extends Tels2:
 
     private def mergePolarity(base: Polarity, layer: Polarity, axis: PolarityAxis)
     :   Polarity raises TelError =
+
       (base, layer) match
         case (b, Polarity.Implicit)              => b
         case (_, Polarity.Tight)                 => Polarity.Tight
@@ -433,6 +440,7 @@ object Tels extends Tels2:
           scalars:  IArray[ScalarDefinition],
           selects:  IArray[SelectDefinition] )
     :   IArray[RecordDefinition] raises TelError =
+
       val out = scala.collection.mutable.ArrayBuffer.from(base.toList)
       var i = 0
 
@@ -454,6 +462,7 @@ object Tels extends Tels2:
 
     private def mergeRecord(base: RecordDefinition, layer: RecordDefinition)
     :   RecordDefinition raises TelError =
+
       val baseStruct  = Struct(base.members, base.validators)
       val layerStruct = Struct(layer.members, layer.validators)
       val merged      = mergeStruct(baseStruct, layerStruct)
@@ -467,6 +476,7 @@ object Tels extends Tels2:
           records: IArray[RecordDefinition],
           selects: IArray[SelectDefinition] )
     :   IArray[ScalarDefinition] raises TelError =
+
       val out = scala.collection.mutable.ArrayBuffer.from(base.toList)
       var i = 0
 
@@ -495,6 +505,7 @@ object Tels extends Tels2:
           records: IArray[RecordDefinition],
           scalars: IArray[ScalarDefinition] )
     :   IArray[SelectDefinition] raises TelError =
+
       val out = scala.collection.mutable.ArrayBuffer.from(base.toList)
       var i = 0
 
@@ -516,6 +527,7 @@ object Tels extends Tels2:
 
     private def mergeSelect(base: SelectDefinition, layer: SelectDefinition)
     :   SelectDefinition raises TelError =
+
       val variants = scala.collection.mutable.ArrayBuffer.from(base.variants.toList)
       var i = 0
 
@@ -734,6 +746,7 @@ object Tels extends Tels2:
 
     private def parseMembersAndValidators(compounds: IArray[Tel.Compound])
     :   (IArray[Member], IArray[Text]) raises TelError =
+
       val members    = scala.collection.mutable.ArrayBuffer.empty[Member]
       val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
 
@@ -912,6 +925,7 @@ object Tels extends Tels2:
     private def membersFromBody
          ( children: IArray[Tel.Element], fieldIdx: Int, selectIdx: Int, validateIdx: Int )
     :   (IArray[Member], IArray[Text]) =
+
       val members    = scala.collection.mutable.ArrayBuffer.empty[Member]
       val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
       var i = 0

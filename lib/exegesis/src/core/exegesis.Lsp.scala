@@ -35,7 +35,6 @@ package exegesis
 import anticipation.*
 import contingency.*
 import denominative.*
-import distillate.*
 import gossamer.*
 import jacinta.*
 import obligatory.*

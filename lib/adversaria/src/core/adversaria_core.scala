@@ -36,7 +36,6 @@ import scala.compiletime.summonInline
 
 import anticipation.*
 import prepositional.*
-import vacuous.*
 
 extension [entity](entity: entity)
   def membersOfType[value](using deref: entity is Dereferenceable to value): Iterable[value] =

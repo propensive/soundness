@@ -40,7 +40,6 @@ import contextual.*
 import contingency.*
 import fulminate.*
 import gigantism.*
-import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*

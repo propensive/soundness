@@ -40,7 +40,6 @@ import gossamer.*
 import iridescence.*
 import parasite.*
 import rudiments.*
-import symbolism.*
 import turbulence.*
 import vacuous.*
 

@@ -63,6 +63,7 @@ package crypto:
   // "Legacy use": processing already-protected data only (decrypt/verify).
   erased given permitLegacyCrypto
       :   ProcessingPermit[Concession.TripleDes] & ProcessingPermit[Concession.Dsa] =
+
     caps.unsafe.unsafeErasedValue
 
   // "Disallowed": broken or non-approved algorithms, key lengths and modes (incl.

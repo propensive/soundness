@@ -37,7 +37,6 @@ import anticipation.*
 import breviloquence.*
 import contingency.*
 import enigmatic.*
-import gossamer.*
 import prepositional.*
 import turbulence.*
 

@@ -32,19 +32,8 @@
                                                                                                   */
 package bitumen
 
-import anticipation.*
-import contingency.*
-import denominative.*
-import gossamer.*
 import hieroglyph.*, charEncoders.ascii, textMetrics.uniform
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
-import nomenclature.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-import spectacular.*
-import turbulence.*
-import vacuous.*
 
 enum TypeFlag:
   case File

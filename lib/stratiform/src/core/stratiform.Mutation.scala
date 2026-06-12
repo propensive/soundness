@@ -186,6 +186,7 @@ object Mutation:
   // spread across multiple blocks remain addressable.
   private def findTarget(blocks: IArray[Tel.Block], step: Tel.Pointer.Step)
   :   (Int, Int) raises MutationError =
+
     val want = step.index.or(0)
     var seen = 0
     var b = 0
@@ -216,6 +217,7 @@ object Mutation:
   // -> 2).
   private def applyToTarget(block: Tel.Block, localIdx: Int, op: Op, sigil: Char)
   :   Tel.Block raises MutationError =
+
     val target = block.compounds(localIdx)
 
     val replacement: IArray[Tel.Compound] = op match
@@ -274,6 +276,7 @@ object Mutation:
   // hard-space rule; a kept literal atom reuses its delimiter when safe.
   private def updateAtomAt(compound: Tel.Compound, atomIndex: Int, text: Text, sigil: Char)
   :   Tel.Compound raises MutationError =
+
     if atomIndex < 0 || atomIndex >= compound.atoms.length
     then abort(MutationError(Reason.AtomIndexOutOfRange))
 
@@ -302,6 +305,7 @@ object Mutation:
   // block are preserved.
   private def appendCompound(blocks: IArray[Tel.Block], compound: Tel.Compound)
   :   IArray[Tel.Block] =
+
     if blocks.length == 0
     then IArray(Tel.Block(IArray.empty, Unset, IArray(compound), 0))
     else
@@ -317,6 +321,7 @@ object Mutation:
   private def reorderWithinGroup
        ( blocks: IArray[Tel.Block], keyword: Text, oldIndex: Int, newIndex: Int )
   :   IArray[Tel.Block] raises MutationError =
+
     val positions = scala.collection.mutable.ArrayBuffer.empty[(Int, Int)]
     var b = 0
 
@@ -371,6 +376,7 @@ object Mutation:
   private def reorderGroups
        ( blocks: IArray[Tel.Block], firstKeyword: Text, secondKeyword: Text )
   :   IArray[Tel.Block] raises MutationError =
+
     // A "group" here is the contiguous run of compounds with a given
     // keyword. We rebuild the children block list with the two groups
     // swapped in member position.
@@ -445,6 +451,7 @@ object Mutation:
   // positions align with the new column starts.
   private def resizeTabulation(blocks: IArray[Tel.Block], blockIndex: Int)
   :   IArray[Tel.Block] raises MutationError =
+
     if blockIndex < 0 || blockIndex >= blocks.length
     then abort(MutationError(Reason.PointerNotFound))
 

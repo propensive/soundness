@@ -35,8 +35,6 @@ package enigmatic
 import anticipation.*
 import gastronomy.*
 import prepositional.*
-import rudiments.*
-import vacuous.*
 
 extension [encodable: Encodable in Data](value: encodable)
   def hmac[algorithm <: Algorithm](key: Data)

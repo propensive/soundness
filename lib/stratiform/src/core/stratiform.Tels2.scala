@@ -55,6 +55,7 @@ import Tels.Polarity
 object telSchematics:
   def encodable[value](using encoder: value is Tel.Encodable)
   :   value is Encodable & Schematic in Tel over Tels.Type =
+
     new Encodable with Schematic:
       type Self = value
       type Form = Tel
@@ -64,6 +65,7 @@ object telSchematics:
 
   def decodable[value](using decoder: value is Tel.Decodable)
   :   value is Decodable & Schematic in Tel over Tels.Type =
+
     new Decodable with Schematic:
       type Self = value
       type Form = Tel

@@ -34,11 +34,9 @@ package distillate
 
 import anticipation.*
 import contingency.*
-import denominative.*
 import digression.*
 import inimitable.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 import wisteria.*
 

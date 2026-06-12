@@ -74,6 +74,7 @@ object internal:
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
        ( insertions0: Expr[Seq[Any]] )
   :   Macro[Tel] =
+
     import quotes.reflect.*
 
     // Tuple-type iteration: the contextual framework presents parts in
@@ -234,6 +235,7 @@ object internal:
   def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
        ( scrutinee: Expr[Tel] )
   :   Macro[Boolean | Option[Tuple | Tel]] =
+
     import quotes.reflect.*
 
     def collectParts[tuple: Type](acc: List[String]): List[String] = Type.of[tuple] match
@@ -294,6 +296,7 @@ object internal:
   def matchDocument
        ( pattern: Tel.Document, input: Tel, marker: Char )
   :   Option[List[Tel]] =
+
     val captures = scala.collection.mutable.ListBuffer.empty[Tel]
 
     if matchBlocks(pattern.children, input.subtree.children, marker, captures)
@@ -305,6 +308,7 @@ object internal:
         marker:  Char,
         out:     scala.collection.mutable.ListBuffer[Tel] )
   :   Boolean =
+
     if pattern.length != input.length then false
     else
       var i = 0
@@ -321,6 +325,7 @@ object internal:
         marker:  Char,
         out:     scala.collection.mutable.ListBuffer[Tel] )
   :   Boolean =
+
     if pattern.compounds.length != input.compounds.length then false
     else
       var i = 0
@@ -339,6 +344,7 @@ object internal:
         marker:  Char,
         out:     scala.collection.mutable.ListBuffer[Tel] )
   :   Boolean =
+
     if pattern.keyword != input.keyword then false
     else if pattern.atoms.length != input.atoms.length then false
     else
@@ -392,6 +398,7 @@ object internal:
         marker:  Char,
         out:     scala.collection.mutable.ListBuffer[Tel] )
   :   Boolean =
+
     import scala.language.unsafeNulls
     val p: String = pattern.s
     val s: String = input.s

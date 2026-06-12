@@ -35,7 +35,6 @@ package honeycomb
 import anticipation.*
 import beneficence.*
 import contingency.*
-import gossamer.*
 import nomenclature.*
 import prepositional.*
 import symbolism.*

@@ -40,10 +40,8 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contextual.*
 import denominative.*
-import gossamer.*
 import panopticon.*
 import prepositional.*
-import rudiments.*
 
 export Xml.attribute
 

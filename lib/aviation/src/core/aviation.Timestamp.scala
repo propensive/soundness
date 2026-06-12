@@ -40,9 +40,7 @@ import distillate.*
 import fulminate.*
 import kaleidoscope.*
 import prepositional.*
-import rudiments.*
 import spectacular.*
-import symbolism.*
 
 import abstractables.instantIsAbstractable
 import errorDiagnostics.stackTraces
