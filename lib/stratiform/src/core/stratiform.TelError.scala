@@ -141,6 +141,7 @@ object TelError:
       case UnresolvedReference      => m"a Reference or SelectRef names an undeclared TypeName"
       case DuplicateDefinition      => m"two or more Definitions share the same name"
       case ExcludeMissingVariant    => m"Exclude names a variant absent from the base"
+
       case ExcludeEmptiesRequired   => m"Exclude would empty a SelectDefinition that a "+
                                        m"required SelectRef references"
 
@@ -265,7 +266,7 @@ object TelError:
     case FlagWithContent         extends Reason(311)
 
 case class TelError(reason: TelError.Reason, position: Optional[TelError.Position] = Unset)
-                  ( using Diagnostics )
+  ( using Diagnostics )
 extends Error
   ( 605, reason.number )
   ( position.let: p =>

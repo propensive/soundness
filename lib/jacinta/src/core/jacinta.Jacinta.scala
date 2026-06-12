@@ -65,7 +65,7 @@ object Jacinta:
 
   // Builds the refined type `Json of <position> from <root>`.
   private def jsonType(using quotes: Quotes)
-      ( position: quotes.reflect.TypeRepr, root: quotes.reflect.TypeRepr )
+    ( position: quotes.reflect.TypeRepr, root: quotes.reflect.TypeRepr )
   :   quotes.reflect.TypeRepr =
 
     import quotes.reflect.*

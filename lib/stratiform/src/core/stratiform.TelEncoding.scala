@@ -77,6 +77,7 @@ trait Tel2:
     replacement.subtree match
       case compound: Tel.Compound =>
         compound.copy(keyword = original.keyword)
+
       case document: Tel.Document =>
         original.copy(atoms = IArray.empty[Tel.Atom], remark = Unset, children = document.children)
 
@@ -104,7 +105,7 @@ trait Tel2:
     type Result = Tel
 
     transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
-        ( inline insertions: Any* )
+      ( inline insertions: Any* )
     :   Tel =
 
       ${stratiform.internal.interpolator[parts, origins]('insertions)}
@@ -332,7 +333,7 @@ trait Tel2:
     case d: Tel.Document => Tel.Compound(keyword, IArray.empty, Unset, d.children)
 
   private def collectionDocument[value]
-      (values: Iterable[value])(using encodable: value is Encodable in Tel)
+    (values: Iterable[value])(using encodable: value is Encodable in Tel)
   :   Tel =
 
     val compounds: IArray[Tel.Compound] = IArray.from:
@@ -415,7 +416,7 @@ trait Tel2:
     Tel(Tel.Compound(t"", IArray(Tel.Atom.Inline(text, 1)), Unset, IArray.empty))
 
   def compound
-      ( keyword: Text, atoms: IArray[Tel.Atom], compounds: IArray[Tel.Compound] )
+    ( keyword: Text, atoms: IArray[Tel.Atom], compounds: IArray[Tel.Compound] )
   :   Tel =
 
     val children =

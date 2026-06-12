@@ -72,7 +72,7 @@ object internal:
     false
 
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
-      ( insertions0: Expr[Seq[Any]] )
+    ( insertions0: Expr[Seq[Any]] )
   :   Macro[Tel] =
 
     import quotes.reflect.*
@@ -233,7 +233,7 @@ object internal:
   //   - Option[Tel]    for 1 hole (the captured atom-as-scalar Tel)
   //   - Option[Tuple]  for 2+ holes (tuple of captured scalar Tels)
   def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
-      ( scrutinee: Expr[Tel] )
+    ( scrutinee: Expr[Tel] )
   :   Macro[Boolean | Option[Tuple | Tel]] =
 
     import quotes.reflect.*
@@ -294,7 +294,7 @@ object internal:
   // pattern (allowing marker characters in pattern atom-texts as capture
   // sites), None otherwise. Captures are emitted in document order.
   def matchDocument
-      ( pattern: Tel.Document, input: Tel, marker: Char )
+    ( pattern: Tel.Document, input: Tel, marker: Char )
   :   Option[List[Tel]] =
 
     val captures = scala.collection.mutable.ListBuffer.empty[Tel]
@@ -303,10 +303,10 @@ object internal:
     then Some(captures.toList) else None
 
   private def matchBlocks
-      ( pattern: IArray[Tel.Block],
-       input:   IArray[Tel.Block],
-       marker:  Char,
-       out:     scala.collection.mutable.ListBuffer[Tel] )
+    ( pattern: IArray[Tel.Block],
+     input:   IArray[Tel.Block],
+     marker:  Char,
+     out:     scala.collection.mutable.ListBuffer[Tel] )
   :   Boolean =
 
     if pattern.length != input.length then false
@@ -320,10 +320,10 @@ object internal:
       true
 
   private def matchBlock
-      ( pattern: Tel.Block,
-       input:   Tel.Block,
-       marker:  Char,
-       out:     scala.collection.mutable.ListBuffer[Tel] )
+    ( pattern: Tel.Block,
+     input:   Tel.Block,
+     marker:  Char,
+     out:     scala.collection.mutable.ListBuffer[Tel] )
   :   Boolean =
 
     if pattern.compounds.length != input.compounds.length then false
@@ -339,10 +339,10 @@ object internal:
       true
 
   private def matchCompound
-      ( pattern: Tel.Compound,
-       input:   Tel.Compound,
-       marker:  Char,
-       out:     scala.collection.mutable.ListBuffer[Tel] )
+    ( pattern: Tel.Compound,
+     input:   Tel.Compound,
+     marker:  Char,
+     out:     scala.collection.mutable.ListBuffer[Tel] )
   :   Boolean =
 
     if pattern.keyword != input.keyword then false
@@ -357,10 +357,10 @@ object internal:
       matchBlocks(pattern.children, input.children, marker, out)
 
   private def matchAtom
-      ( pattern: Tel.Atom,
-       input:   Tel.Atom,
-       marker:  Char,
-       out:     scala.collection.mutable.ListBuffer[Tel] )
+    ( pattern: Tel.Atom,
+     input:   Tel.Atom,
+     marker:  Char,
+     out:     scala.collection.mutable.ListBuffer[Tel] )
   :     Boolean = pattern match
     case Tel.Atom.Inline(patText, _) =>
       input match
@@ -393,10 +393,10 @@ object internal:
   // check. Captures are appended to `out` in left-to-right pattern
   // order.
   private def matchAtomText
-      ( pattern: Text,
-       input:   Text,
-       marker:  Char,
-       out:     scala.collection.mutable.ListBuffer[Tel] )
+    ( pattern: Text,
+     input:   Text,
+     marker:  Char,
+     out:     scala.collection.mutable.ListBuffer[Tel] )
   :   Boolean =
 
     import scala.language.unsafeNulls

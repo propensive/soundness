@@ -108,6 +108,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
     case Shape.Opt(inner)     => JsonSchema.optional(reify(inner))
     case Shape.Arr(items)     => JsonSchema.Array(items = reify(items))
     case Shape.Dict(_, _)     => JsonSchema.Object(additionalProperties = true)
+
     case Shape.OneOf(variants) =>
       JsonSchema.Object(oneOf = variants.map(reify), required = List(t"kind"))
 

@@ -994,7 +994,7 @@ private[jacinta] final class JsonParser:
   // The flag has no effect on non-number values, so we don't need to
   // propagate it to `parseObject` / `parseArray` / `parseString`.
   private def parseValue(minus: Boolean = false, bcdOnly: Boolean = false)
-                        ( using Tactic[ParseError] ): Raw =
+    ( using Tactic[ParseError] ): Raw =
     if !more then errorAt(Issue.PrematureEnd)
     val ch = peek
 
@@ -1053,15 +1053,19 @@ private[jacinta] final class JsonParser:
         (ch: @switch) match
           case Quote       => advance() yet parseString()
           case Minus       => advance() yet parseValue(true, bcdOnly)
+
           case OpenBracket =>
             advance()
             parseArrayTracked(indexOut, startLine, startColumn, startMark)
+
           case LowerF      => parseFalse()
           case LowerN      => parseNull()
           case LowerT      => parseTrue()
+
           case OpenBrace   =>
             advance()
             parseObjectTracked(indexOut, startLine, startColumn, startMark)
+
           case other       => errorAt(Issue.ExpectedSomeValue(other.toChar))
 
     if ch != OpenBracket && ch != OpenBrace then

@@ -2962,7 +2962,7 @@ private[ypsiloid] final class YamlParser:
     indexOut += 0
 
   private def parseNodeTracked(indent: Int, indexOut: ArrayBuffer[Int])
-                              ( using Tactic[ParseError] ): Yaml.Ast =
+    ( using Tactic[ParseError] ): Yaml.Ast =
     skipSpaces()
 
     if !more then
@@ -2971,7 +2971,7 @@ private[ypsiloid] final class YamlParser:
     else parseNodeHereTracked(indent, indexOut)
 
   private def parseNodeHereTracked(indent: Int, indexOut: ArrayBuffer[Int])
-                                  ( using Tactic[ParseError] ): Yaml.Ast =
+    ( using Tactic[ParseError] ): Yaml.Ast =
     val savedPrefixesConsumed = prefixesConsumed
     val savedLastNodeHadAnchor = lastNodeHadAnchor
     prefixesConsumed = false
@@ -3783,7 +3783,7 @@ private[ypsiloid] final class YamlParser:
   // composite descriptor (via the *Tracked composite variants) for
   // flow sequences/mappings.
   private def parseFlowNodeTracked(indexOut: ArrayBuffer[Int])
-                                  ( using Tactic[ParseError] ): Yaml.Ast =
+    ( using Tactic[ParseError] ): Yaml.Ast =
     skipFlowWhitespace()
 
     if !more then

@@ -122,7 +122,7 @@ package crypto:
 
 extension [digestible: Digestible](value: digestible)
   def digest[hash <: Algorithm]
-      ( using hashed: Hash in hash, erased weakness: Permit[HashWeakness[hash]] )
+    ( using hashed: Hash in hash, erased weakness: Permit[HashWeakness[hash]] )
   :   Digest in hash =
 
     val digester = Digester(digestible.digest(_, value))
@@ -130,7 +130,7 @@ extension [digestible: Digestible](value: digestible)
 
 extension [source: Streamable by Data](source: source)
   def checksum[hash <: Algorithm]
-      ( using hashed: Hash in hash, erased weakness: Permit[HashWeakness[hash]] )
+    ( using hashed: Hash in hash, erased weakness: Permit[HashWeakness[hash]] )
   :   Digest in hash =
 
     source.stream[Data].digest[hash]

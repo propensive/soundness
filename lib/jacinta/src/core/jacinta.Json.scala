@@ -327,8 +327,8 @@ object Json extends Json2, Dynamic:
   // path pays nothing for `locate` lookups. Constructed lazily inside
   // `Foci.supplement`, only for actually-registered errors.
   case class Focus
-                ( pointer:  JsonPointer,
-                  position: Optional[Json.Ast.Position] = Unset )
+    ( pointer:  JsonPointer,
+      position: Optional[Json.Ast.Position] = Unset )
   derives CanEqual:
 
     def withPosition(json: Json): Focus = copy(position = json.locate(pointer))

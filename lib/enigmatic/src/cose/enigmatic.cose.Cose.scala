@@ -162,18 +162,18 @@ object Cose:
         builder.result()
 
     new Cose
-        ( protectedHeader, Cbor.ast(unprotectedAst), payload, contextString, tagNumber, recipients ):
+      ( protectedHeader, Cbor.ast(unprotectedAst), payload, contextString, tagNumber, recipients ):
       type Form    = CoseStructure
       type Operand = Cipher
 
 
 class Cose
-    ( val protectedHeader:   Data,
-     val unprotectedHeader: Cbor,
-     val payload:           Data,
-     val contextString:     String,
-     val cborTag:           Long,
-     val recipients:        List[CoseRecipient] ):
+  ( val protectedHeader:   Data,
+   val unprotectedHeader: Cbor,
+   val payload:           Data,
+   val contextString:     String,
+   val cborTag:           Long,
+   val recipients:        List[CoseRecipient] ):
   type Form    <: CoseStructure
   type Operand <: Cipher
 

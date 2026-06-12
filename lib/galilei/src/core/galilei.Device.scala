@@ -54,7 +54,7 @@ object Device:
       case Char  => t"c"
 
   def create[plane <: Posix: Filesystem]
-            ( path: Path on plane, kind: Kind, major: Int, minor: Int )
+    ( path: Path on plane, kind: Kind, major: Int, minor: Int )
             ( using createNonexistentParents: CreateNonexistentParents on plane,
                     overwritePreexisting:     OverwritePreexisting on plane,
                     working:                  WorkingDirectory,

@@ -168,19 +168,19 @@ object Tels extends Tels2:
     private inline def kebab(s: String): Text = Text(s)
 
     private inline def field
-        ( keyword:    String,
-          fieldType:  Type,
-          required:   Polarity = Implicit,
-          repeatable: Polarity = Implicit,
-          default:    Optional[Text] = Unset )
+      ( keyword:    String,
+        fieldType:  Type,
+        required:   Polarity = Implicit,
+        repeatable: Polarity = Implicit,
+        default:    Optional[Text] = Unset )
     :   Field =
 
       Field(required, repeatable, kebab(keyword), fieldType, default)
 
     private inline def selectRef
-        ( reference:  String,
-          required:   Polarity = Implicit,
-          repeatable: Polarity = Implicit )
+      ( reference:  String,
+        required:   Polarity = Implicit,
+        repeatable: Polarity = Implicit )
     :   SelectRef =
 
       SelectRef(required, repeatable, kebab(reference))
@@ -367,6 +367,7 @@ object Tels extends Tels2:
         case (b, Polarity.Implicit)              => b
         case (_, Polarity.Tight)                 => Polarity.Tight
         case (Polarity.Loose,    Polarity.Loose) => Polarity.Loose
+
         case (_,                 Polarity.Loose) => axis match
           case PolarityAxis.Required   => abort(TelError(Reason.LayerLoosenRequired))
           case PolarityAxis.Repeatable => abort(TelError(Reason.LayerLoosenRepeatable))
@@ -435,10 +436,10 @@ object Tels extends Tels2:
       Struct(IArray.from(members), IArray.from(mergedValidators))
 
     private def mergeRecordList
-        ( base:     IArray[RecordDefinition],
-         layer:    IArray[RecordDefinition],
-         scalars:  IArray[ScalarDefinition],
-         selects:  IArray[SelectDefinition] )
+      ( base:     IArray[RecordDefinition],
+       layer:    IArray[RecordDefinition],
+       scalars:  IArray[ScalarDefinition],
+       selects:  IArray[SelectDefinition] )
     :   IArray[RecordDefinition] raises TelError =
 
       val out = scala.collection.mutable.ArrayBuffer.from(base.toList)
@@ -471,10 +472,10 @@ object Tels extends Tels2:
           layer.description.or(base.description))
 
     private def mergeScalarList
-        ( base:    IArray[ScalarDefinition],
-         layer:   IArray[ScalarDefinition],
-         records: IArray[RecordDefinition],
-         selects: IArray[SelectDefinition] )
+      ( base:    IArray[ScalarDefinition],
+       layer:   IArray[ScalarDefinition],
+       records: IArray[RecordDefinition],
+       selects: IArray[SelectDefinition] )
     :   IArray[ScalarDefinition] raises TelError =
 
       val out = scala.collection.mutable.ArrayBuffer.from(base.toList)
@@ -500,10 +501,10 @@ object Tels extends Tels2:
       IArray.from(out)
 
     private def mergeSelectList
-        ( base:    IArray[SelectDefinition],
-         layer:   IArray[SelectDefinition],
-         records: IArray[RecordDefinition],
-         scalars: IArray[ScalarDefinition] )
+      ( base:    IArray[SelectDefinition],
+       layer:   IArray[SelectDefinition],
+       records: IArray[RecordDefinition],
+       scalars: IArray[ScalarDefinition] )
     :   IArray[SelectDefinition] raises TelError =
 
       val out = scala.collection.mutable.ArrayBuffer.from(base.toList)
@@ -625,6 +626,7 @@ object Tels extends Tels2:
 
         c.keyword.s match
           case "name"     => name = firstAtomText(c)
+
           case "sigil"    =>
             val s = firstAtomText(c)
             sigil = if s.absent then Unset else Optional(s.vouch.s.charAt(0))
@@ -755,6 +757,7 @@ object Tels extends Tels2:
           case "field"    => members += parseField(cc)
           case "select"   => members += parseSelectRef(cc)
           case "validate" => validators ++= atomTexts(cc)
+
           case "exclude"  =>
             val ats = atomTexts(cc)
             if ats.length >= 1 then members += Exclude(ats(0))
@@ -784,6 +787,7 @@ object Tels extends Tels2:
           case "required"     => required   = Polarity.Tight
           case "repeatable"   => repeatable = Polarity.Loose
           case "irrepeatable" => repeatable = Polarity.Tight
+
           case "default"      =>
             if j + 1 < ats.length then
               default = ats(j + 1): Optional[Text]
@@ -923,7 +927,7 @@ object Tels extends Tels2:
     // Member group (field / select / validate at the given flat indices),
     // consumed in canonical order so members keep their source sequence.
     private def membersFromBody
-        ( children: IArray[Tel.Element], fieldIdx: Int, selectIdx: Int, validateIdx: Int )
+      ( children: IArray[Tel.Element], fieldIdx: Int, selectIdx: Int, validateIdx: Int )
     :   (IArray[Member], IArray[Text]) =
 
       val members    = scala.collection.mutable.ArrayBuffer.empty[Member]
@@ -936,9 +940,11 @@ object Tels extends Tels2:
         kidx(e) match
           case k if k == fieldIdx    => members += fieldFromElement(e)
           case k if k == selectIdx   => members += selectRefFromElement(e)
+
           case k if k == validateIdx => e match
             case Tel.Element.Value(_, _, t) => validators += t
             case _                          => ()
+
           case _ => ()
 
         i += 1
@@ -968,9 +974,11 @@ object Tels extends Tels2:
 
         kidx(e) match
           case 1 => variants += variantFromElement(e)
+
           case 3 => e match
             case Tel.Element.Value(_, _, t) => validators += t
             case _                          => ()
+
           case _ => ()
 
         i += 1

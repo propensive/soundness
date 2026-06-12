@@ -331,7 +331,7 @@ object Tarfile:
     case _: Tar.Entry.GnuLong      => Map.empty
 
 case class Tarfile
-    ( entries: LazyList[Tar.Entry], longNameFormat: LongNameFormat = LongNameFormat.Pax ):
+  ( entries: LazyList[Tar.Entry], longNameFormat: LongNameFormat = LongNameFormat.Pax ):
   // The raw 512-byte blocks of the archive, including the two trailing zero blocks.
   // Reach this externally through the `Streamable` given, i.e. `tarfile.stream[Data]`.
   private[bitumen] def blocks: LazyList[Data] =
@@ -340,6 +340,7 @@ case class Tarfile
   private def emitEntry(entry: Tar.Entry): LazyList[Data] =
     val longNamePart: LazyList[Data] = longNameFormat match
       case LongNameFormat.Pax => LazyList()
+
       case LongNameFormat.Gnu =>
         val nameBlocks =
           if entry.entryName.data.length > 100

@@ -63,7 +63,7 @@ object Stratiform:
 
   // Builds the refined type `Tel of <position> from <root>`.
   private def telType(using quotes: Quotes)
-      ( position: quotes.reflect.TypeRepr, root: quotes.reflect.TypeRepr )
+    ( position: quotes.reflect.TypeRepr, root: quotes.reflect.TypeRepr )
   :   quotes.reflect.TypeRepr =
 
     import quotes.reflect.*

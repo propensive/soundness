@@ -246,6 +246,7 @@ object Xml extends Tag.Container
                 summonFrom:
                   case derivationDefault: Default[`derivation`] =>
                     raise(XmlError()) yet derivationDefault()
+
                   case _                                        =>
                     raise(XmlError())
                     buildWith(Element(t"", Attributes.empty, IArray.empty))
@@ -273,6 +274,7 @@ object Xml extends Tag.Container
 
             if !children.contains(childLabel) then
               children.update(childLabel, child)
+
           case _ => ()
 
         i += 1
@@ -339,6 +341,7 @@ object Xml extends Tag.Container
                   summonFrom:
                     case derivationDefault: Default[`derivation`] =>
                       raise(XmlError()) yet derivationDefault()
+
                     case _ =>
                       abort(XmlError())
 
@@ -922,11 +925,11 @@ object Xml extends Tag.Container
     // first element step names the *root* element itself (no descent
     // into children) and subsequent steps descend.
     private def walk
-                 ( xml:      Xml,
-                   data:     IArray[Int],
-                   offset:   Int,
-                   segments: IndexedSeq[Text],
-                   i:        Int )
+      ( xml:      Xml,
+        data:     IArray[Int],
+        offset:   Int,
+        segments: IndexedSeq[Text],
+        i:        Int )
     :   Optional[Position] =
 
       if i >= segments.length then
@@ -962,10 +965,10 @@ object Xml extends Tag.Container
                 Unset
 
     private def attrPosition
-                 ( element:  Element,
-                   data:     IArray[Int],
-                   offset:   Int,
-                   attrName: Text )
+      ( element:  Element,
+        data:     IArray[Int],
+        offset:   Int,
+        attrName: Text )
     :   Optional[Position] =
 
       val keys: Vector[Text] = element.attributes.keys.toVector
@@ -1014,6 +1017,7 @@ object Xml extends Tag.Container
           case child: Element if child.label == name =>
             seen += 1
             if seen == ordinal then found = child
+
           case _ => ()
 
         i += 1
@@ -1078,8 +1082,8 @@ object Xml extends Tag.Container
       new XmlParser(Cursor[Text](input), tracking = true)
 
   private[xylophone] final class XmlParser
-                                  ( cursor:                   Cursor[Text],
-                                   protected[xylophone] val tracking: Boolean )
+    ( cursor:                   Cursor[Text],
+     protected[xylophone] val tracking: Boolean )
                                   ( using schema: XmlSchema ):
     type Region = Cursor.Mark
 
@@ -1101,7 +1105,7 @@ object Xml extends Tag.Container
     private var nodeBufferId: Int = -1
 
     private val nodeBuffers: scala.collection.mutable.ArrayBuffer
-                                [ scala.collection.mutable.ArrayBuffer[Node] ] =
+      [ scala.collection.mutable.ArrayBuffer[Node] ] =
       scala.collection.mutable.ArrayBuffer.empty
 
     // Small open-addressed cache for repeating tag names. Record-shape XML
@@ -1145,7 +1149,7 @@ object Xml extends Tag.Container
     private var indexBufferId: Int = -1
 
     private val indexBuffers: scala.collection.mutable.ArrayBuffer
-                                [ scala.collection.mutable.ArrayBuffer[Int] ] =
+      [ scala.collection.mutable.ArrayBuffer[Int] ] =
       scala.collection.mutable.ArrayBuffer.empty
 
     private inline def getIndexBuffer(): scala.collection.mutable.ArrayBuffer[Int] =
@@ -1203,14 +1207,14 @@ object Xml extends Tag.Container
     // descriptors / their end positions the same way. See the layout
     // comment on `Xml.Tracked`.
     private def emitElementDescriptor
-                 ( out:         scala.collection.mutable.ArrayBuffer[Int],
-                   attrDescs:   scala.collection.mutable.ArrayBuffer[Int],
-                   attrEnds:    scala.collection.mutable.ArrayBuffer[Int],
-                   childDescs:  scala.collection.mutable.ArrayBuffer[Int],
-                   childEnds:   scala.collection.mutable.ArrayBuffer[Int],
-                   startLine:   Int,
-                   startColumn: Int,
-                   startMark:   Long )
+      ( out:         scala.collection.mutable.ArrayBuffer[Int],
+        attrDescs:   scala.collection.mutable.ArrayBuffer[Int],
+        attrEnds:    scala.collection.mutable.ArrayBuffer[Int],
+        childDescs:  scala.collection.mutable.ArrayBuffer[Int],
+        childEnds:   scala.collection.mutable.ArrayBuffer[Int],
+        startLine:   Int,
+        startColumn: Int,
+        startMark:   Long )
     :   Unit =
 
       syncTo()
@@ -1430,7 +1434,7 @@ object Xml extends Tag.Container
         val cached = tagCache(idx)
 
         if cached != null && tagCacheLow(idx) == packedLow
-           && tagCacheHigh(idx) == packedHigh
+          && tagCacheHigh(idx) == packedHigh
         then cached.nn
         else
           val fresh = slice(start)
@@ -2029,10 +2033,10 @@ object Xml extends Tag.Container
     // `out` is the parent's index buffer; the element's descriptor is
     // appended to it.
     private def readElementTracked
-                 ( out:         scala.collection.mutable.ArrayBuffer[Int],
-                   startLine:   Int,
-                   startColumn: Int,
-                   startMark:   Long )
+      ( out:         scala.collection.mutable.ArrayBuffer[Int],
+        startLine:   Int,
+        startColumn: Int,
+        startMark:   Long )
                  ( using Tactic[ParseError] )
     :   Element =
 
@@ -2090,9 +2094,9 @@ object Xml extends Tag.Container
         result
 
     private def readAttributesTracked
-                 ( tag:       Text,
-                   attrDescs: scala.collection.mutable.ArrayBuffer[Int],
-                   attrEnds:  scala.collection.mutable.ArrayBuffer[Int] )
+      ( tag:       Text,
+        attrDescs: scala.collection.mutable.ArrayBuffer[Int],
+        attrEnds:  scala.collection.mutable.ArrayBuffer[Int] )
                  ( using Tactic[ParseError] )
     :   Attributes =
 
@@ -2180,9 +2184,9 @@ object Xml extends Tag.Container
         Attributes.fromInterleaved(arr.immutable(using Unsafe))
 
     private def readChildrenTracked
-                 ( parentName: Text,
-                   childDescs: scala.collection.mutable.ArrayBuffer[Int],
-                   childEnds:  scala.collection.mutable.ArrayBuffer[Int] )
+      ( parentName: Text,
+        childDescs: scala.collection.mutable.ArrayBuffer[Int],
+        childEnds:  scala.collection.mutable.ArrayBuffer[Int] )
                  ( using Tactic[ParseError] )
     :   IArray[Node] =
 

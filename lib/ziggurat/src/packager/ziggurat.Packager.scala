@@ -70,7 +70,7 @@ import filesystemOptions.writeAccess.enabled
 // `ethereal.Assembler`. Burdock remote dependencies remain unimplemented.
 object Packager:
   def pack(config: Packaging)
-     ( using working: WorkingDirectory, environment: Environment )
+    ( using working: WorkingDirectory, environment: Environment )
   :   Path on Linux raises PackageError =
 
     val appJar: Path on Linux = config.dependencies.absolve match
@@ -131,7 +131,7 @@ object Packager:
   // source: the app self-assembles in a subprocess (LocalResource), or the
   // runner is downloaded and assembled in-process (Remote).
   private def buildBinary(config: Packaging, appJar: Path on Linux, label: Text, output: Path on Linux)
-     ( using working: WorkingDirectory )
+    ( using working: WorkingDirectory )
   :   Unit raises ExecError raises PackageError =
 
     config.runnerSource match
@@ -147,7 +147,7 @@ object Packager:
   // produces one self-contained per-platform binary and exits. `ethereal.name`
   // must be left unset or the build path is not taken.
   private def assembleViaSubprocess
-     ( config: Packaging, appJar: Path on Linux, label: Text, output: Path on Linux )
+    ( config: Packaging, appJar: Path on Linux, label: Text, output: Path on Linux )
      ( using working: WorkingDirectory )
   :   Unit raises ExecError raises PackageError =
 
@@ -180,13 +180,13 @@ object Packager:
   // in-process via `ethereal.Assembler`. All lower-level failures are surfaced
   // as `PackageError`.
   private def assembleRemote
-     ( config:  Packaging,
-      appJar:  Path on Linux,
-      label:   Text,
-      output:  Path on Linux,
-      baseUrl: Text,
-      hashes:  Map[Text, Text] )
-     ( using working: WorkingDirectory )
+    ( config:  Packaging,
+     appJar:  Path on Linux,
+     label:   Text,
+     output:  Path on Linux,
+     baseUrl: Text,
+     hashes:  Map[Text, Text] )
+    ( using working: WorkingDirectory )
   :   Unit raises PackageError =
 
     whereas:

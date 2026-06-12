@@ -125,11 +125,11 @@ object Mutation:
   // sibling-targeted op (UpdateAtom, Delete, Replace, …) and apply the
   // op against the named child.
   private def transform
-      ( subtree:  Tel.Subtree,
-        steps:    IArray[Tel.Pointer.Step],
-        idx:      Int,
-        op:       Op,
-        sigil:    Char )
+    ( subtree:  Tel.Subtree,
+      steps:    IArray[Tel.Pointer.Step],
+      idx:      Int,
+      op:       Op,
+      sigil:    Char )
   :   Tel.Subtree raises MutationError =
 
     if idx >= steps.length then op match
@@ -319,7 +319,7 @@ object Mutation:
   // at occurrence `oldIndex` to occurrence `newIndex` and rewrite the
   // affected blocks. Compounds with other keywords stay in place.
   private def reorderWithinGroup
-      ( blocks: IArray[Tel.Block], keyword: Text, oldIndex: Int, newIndex: Int )
+    ( blocks: IArray[Tel.Block], keyword: Text, oldIndex: Int, newIndex: Int )
   :   IArray[Tel.Block] raises MutationError =
 
     val positions = scala.collection.mutable.ArrayBuffer.empty[(Int, Int)]
@@ -374,7 +374,7 @@ object Mutation:
   // order. Each group's compounds and surrounding block boundaries
   // are preserved.
   private def reorderGroups
-      ( blocks: IArray[Tel.Block], firstKeyword: Text, secondKeyword: Text )
+    ( blocks: IArray[Tel.Block], firstKeyword: Text, secondKeyword: Text )
   :   IArray[Tel.Block] raises MutationError =
 
     // A "group" here is the contiguous run of compounds with a given

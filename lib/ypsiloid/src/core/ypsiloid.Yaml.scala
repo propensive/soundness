@@ -134,6 +134,7 @@ trait Yaml2:
                     else Reason.NotType(primitive(yaml.root), YamlPrimitive.Mapping)
 
                   raise(YamlError(reason)) yet derivationDefault()
+
                 case _ =>
                   buildWith(null)
 
@@ -218,6 +219,7 @@ trait Yaml2:
                   summonFrom:
                     case derivationDefault: Default[`derivation`] =>
                       raise(YamlError(Reason.Absent)) yet derivationDefault()
+
                     case _ =>
                       abort(YamlError(Reason.Absent))
 
@@ -1267,6 +1269,7 @@ object Yaml extends Yaml2, Dynamic:
       case Yaml.Tracking.On =>
         val (ast, ints) = YamlParser.parseTracked(text)
         new Yaml(ast, Yaml.PositionIndex(ints))
+
       case Yaml.Tracking.Off =>
         Yaml(YamlParser.parse(text))
 
@@ -1275,6 +1278,7 @@ object Yaml extends Yaml2, Dynamic:
       case Yaml.Tracking.On =>
         YamlParser.parseAllTracked(input).map: (ast, ints) =>
           new Yaml(ast, Yaml.PositionIndex(ints))
+
       case Yaml.Tracking.Off =>
         YamlParser.parseAll(input).map(Yaml(_))
 
@@ -1284,6 +1288,7 @@ object Yaml extends Yaml2, Dynamic:
         case Yaml.Tracking.On =>
           val (ast, ints) = YamlParser.parseTracked(text)
           new Yaml(ast, Yaml.PositionIndex(ints))
+
         case Yaml.Tracking.Off =>
           Yaml(YamlParser.parse(text))
 
@@ -1323,6 +1328,7 @@ object Yaml extends Yaml2, Dynamic:
         case Yaml.Tracking.On =>
           val (ast, ints) = YamlParser.parseTracked(text)
           new Yaml(ast, Yaml.PositionIndex(ints))
+
         case Yaml.Tracking.Off =>
           Yaml(YamlParser.parse(text))
 

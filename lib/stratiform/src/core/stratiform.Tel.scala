@@ -145,6 +145,7 @@ extends scala.Dynamic, Documentary, Topical, Original:
 
     val newCompound = value.subtree match
       case c: Tel.Compound => c.copy(keyword = name)
+
       case d: Tel.Document =>
         Tel.Compound(name, IArray.empty[Tel.Atom], Unset, d.children)
 
@@ -220,7 +221,7 @@ object Tel extends Tel2:
       element
 
     private def validateElement
-        ( element: Tel.Element, registry: Tel.Validator.Registry )
+      ( element: Tel.Element, registry: Tel.Validator.Registry )
     :   Unit raises TelError =
 
       element match
@@ -228,6 +229,7 @@ object Tel extends Tel2:
           scalarType.validators.each: name =>
             registry(Tel.Validator.Request.Scalar(name, text)) match
               case Tel.Validator.Response.Valid      => ()
+
               case Tel.Validator.Response.Invalid(_) =>
                 abort(TelError(Reason.ValidatorRejected))
 
@@ -241,6 +243,7 @@ object Tel extends Tel2:
                          ( name, element.asInstanceOf[Tel.Element.Node] ))
                 match
                   case Tel.Validator.Response.Valid      => ()
+
                   case Tel.Validator.Response.Invalid(_) =>
                     abort(TelError(Reason.ValidatorRejected))
 
@@ -251,8 +254,10 @@ object Tel extends Tel2:
         case Reference(name) =>
           schema.records.find(_.name == name) match
             case Some(record) => Struct(record.members, record.validators)
+
             case None         => schema.scalars.find(_.name == name) match
               case Some(scalarDef) => Scalar(scalarDef.validators)
+
               case None            => schema.selects.find(_.name == name) match
                 case Some(_) => abort(TelError(Reason.ReferenceKindMismatch))
                 case None    => abort(TelError(Reason.UnresolvedReference))
@@ -330,9 +335,9 @@ object Tel extends Tel2:
     // running flat keyword index (`flatPos`) — Tel.Element.keywordIndex
     // uses flat positions per BinTEL §5.
     private def assignAtoms
-        ( atoms:  IArray[Tel.Atom],
-         parent: Struct,
-         schema: Tels )
+      ( atoms:  IArray[Tel.Atom],
+       parent: Struct,
+       schema: Tels )
     :   IArray[Tel.Element] raises TelError =
 
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
@@ -343,6 +348,7 @@ object Tel extends Tel2:
       def flatWidthOf(member: Member): Int = member match
         case _: Field    => 1
         case _: Exclude  => 0
+
         case s: SelectRef =>
           schema.selects.find(_.name == s.reference) match
             case Some(selectDef) => selectDef.variants.length
@@ -412,9 +418,9 @@ object Tel extends Tel2:
       IArray.from(results)
 
     private def assignChildren
-        ( compounds: IArray[Tel.Compound],
-         parent:    Struct,
-         schema:    Tels )
+      ( compounds: IArray[Tel.Compound],
+       parent:    Struct,
+       schema:    Tels )
     :   IArray[Tel.Element] raises TelError =
 
       val km = keywordMap(parent, schema)
@@ -433,10 +439,10 @@ object Tel extends Tel2:
       IArray.from(results)
 
     private def applyConstraints
-        ( parent:        Struct,
-          atomElements:  IArray[Tel.Element],
-          childElements: IArray[Tel.Element],
-          schema:        Tels )
+      ( parent:        Struct,
+        atomElements:  IArray[Tel.Element],
+        childElements: IArray[Tel.Element],
+        schema:        Tels )
     :   IArray[Tel.Element] raises TelError =
 
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
@@ -446,6 +452,7 @@ object Tel extends Tel2:
       def flatWidth(member: Member): Int = member match
         case _: Field   => 1
         case _: Exclude => 0
+
         case s: SelectRef =>
           schema.selects.find(_.name == s.reference) match
             case Some(sd) => sd.variants.length
@@ -478,9 +485,9 @@ object Tel extends Tel2:
       IArray.from(results)
 
     private def assignCompound
-        ( compound: Tel.Compound,
-         entry:    KeywordEntry,
-         schema:   Tels )
+      ( compound: Tel.Compound,
+       entry:    KeywordEntry,
+       schema:   Tels )
     :   Tel.Element raises TelError =
 
       val resolved = resolveType(entry.entryType, schema)
@@ -676,9 +683,9 @@ object Tel extends Tel2:
   // read the schema identifier, interpreter directive, and chosen line
   // endings without inspecting the presentation AST directly.
   case class Metadata
-      ( interpreterDirective: Optional[Text],
-        pragma:               Optional[Pragma],
-        lineEndings:          LineEndings )
+    ( interpreterDirective: Optional[Text],
+      pragma:               Optional[Pragma],
+      lineEndings:          LineEndings )
 
   sealed trait Subtree:
     def children: IArray[Block]
@@ -759,7 +766,7 @@ object Tel extends Tel2:
       // arena's next growth event. UTF-8 decode is deferred until
       // `.text` is first accessed.
       private[stratiform] def fromArena
-                    ( arena: Array[Byte], off: Int, len: Int, precedingSpaces: Int )
+        ( arena: Array[Byte], off: Int, len: Int, precedingSpaces: Int )
       :   Inline =
 
         new Inline(arena, off, len, null, precedingSpaces)
@@ -891,7 +898,7 @@ object Tel extends Tel2:
   // blocks; if no compound matches, append the new compound to the
   // last block (creating a fresh block if there are none).
   private[stratiform] def replaceOrAppendCompound
-      ( blocks: IArray[Block], keyword: Text, compound: Compound )
+    ( blocks: IArray[Block], keyword: Text, compound: Compound )
   :   IArray[Block] =
 
     var b = 0
@@ -921,7 +928,7 @@ object Tel extends Tel2:
   // out-of-range index leaves the children unchanged. Used by the panopticon
   // `Ordinal` optic.
   private[stratiform] def withChildCompound
-      ( blocks: IArray[Block], index: Int, transform: Compound => Compound )
+    ( blocks: IArray[Block], index: Int, transform: Compound => Compound )
   :   IArray[Block] =
 
     var offset = 0
@@ -938,7 +945,7 @@ object Tel extends Tel2:
   // Apply `transform` to every child compound (flattened across blocks),
   // preserving block structure. Used by the panopticon `Each` optic.
   private[stratiform] def mapChildCompounds
-      ( blocks: IArray[Block], transform: Compound => Compound )
+    ( blocks: IArray[Block], transform: Compound => Compound )
   :   IArray[Block] =
 
     blocks.map(block => block.copy(compounds = block.compounds.map(transform)))

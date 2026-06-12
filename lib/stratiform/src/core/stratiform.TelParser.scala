@@ -545,8 +545,8 @@ private final class TelParser():
 
   // Advance pos until bytes(pos) ∈ {a, b, c}, or pos == bufEnd.
   private def scanUntil3
-                ( a: Byte, b: Byte, c: Byte,
-                  rA: Long, rB: Long, rC: Long )
+    ( a: Byte, b: Byte, c: Byte,
+      rA: Long, rB: Long, rC: Long )
   :   Unit =
 
     while pos + 8 <= bufEnd do
@@ -566,8 +566,8 @@ private final class TelParser():
 
   // Advance pos until bytes(pos) ∈ {a, b, c, d}, or pos == bufEnd.
   private def scanUntil4
-                ( a: Byte, b: Byte, c: Byte, d: Byte,
-                  rA: Long, rB: Long, rC: Long, rD: Long )
+    ( a: Byte, b: Byte, c: Byte, d: Byte,
+      rA: Long, rB: Long, rC: Long, rD: Long )
   :   Unit =
 
     while pos + 8 <= bufEnd do
@@ -584,7 +584,7 @@ private final class TelParser():
 
       pos += 8
     while pos < bufEnd && bytes(pos) != a && bytes(pos) != b
-          && bytes(pos) != c && bytes(pos) != d
+      && bytes(pos) != c && bytes(pos) != d
     do pos += 1
 
   // ── Errors ────────────────────────────────────────────────────────────────
@@ -1120,10 +1120,12 @@ private final class TelParser():
   private def resolveTypeToStruct(t: Tels.Type, s: Tels): Optional[Tels.Struct] =
     t match
       case struct: Tels.Struct => struct
+
       case Tels.Reference(name) =>
         s.records.find(_.name == name) match
           case Some(rec) => Tels.Struct(rec.members, rec.validators)
           case None      => Unset
+
       case _ => Unset
 
   // Resolve `keyword` against `parent`'s direct Field / SelectRef members.
@@ -1139,10 +1141,12 @@ private final class TelParser():
       parent.members(i) match
         case f: Tels.Field =>
           if f.keyword == keyword then found = f.fieldType
+
         case sr: Tels.SelectRef =>
           s.selects.find(_.name == sr.reference).foreach: selectDef =>
             selectDef.variants.find(_.keyword == keyword).foreach: variant =>
               found = variant.variantType
+
         case _: Tels.Exclude => ()
 
       i += 1
@@ -1158,9 +1162,11 @@ private final class TelParser():
       parent.members(i) match
         case f: Tels.Field =>
           if f.keyword == keyword then hit = true
+
         case sr: Tels.SelectRef =>
           s.selects.find(_.name == sr.reference).foreach: selectDef =>
             if selectDef.variants.exists(_.keyword == keyword) then hit = true
+
         case _: Tels.Exclude => ()
 
       i += 1
@@ -1323,7 +1329,7 @@ private final class TelParser():
 
     // Leading comments at this indent.
     while !head.eof && !head.separator && !head.blank && head.indentLevels == indent
-          && isCommentBody()
+      && isCommentBody()
     do
       // §9 E109 check — fires only if the immediately preceding line was a
       // content line (compound / tabulation) at indent ≥ this comment's.
@@ -1362,7 +1368,7 @@ private final class TelParser():
     // Compound loop.
     var keepLoop = true
     while keepLoop && !head.eof && !head.separator && !head.blank
-          && head.indentLevels == indent
+      && head.indentLevels == indent
     do
       if isCommentBody() || isTabulationBody() then keepLoop = false
       else
@@ -2071,7 +2077,7 @@ private final class TelParser():
           // refill can fire.
           val runStart = pos
           while pos < bufEnd
-                && bytes(pos) != SP
+            && bytes(pos) != SP
                 && bytes(pos) != LF
                 && bytes(pos) != CR
                 && (atomOpen || bytes(pos) != sigil)

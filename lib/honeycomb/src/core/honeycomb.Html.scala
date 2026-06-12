@@ -834,6 +834,7 @@ object Html extends Tag.Container
         lay(Attribute(slice(mark, begin()), Set(), true)):
           case char if asciiLetter(char) || asciiDigit(char) || char == '-' =>
             advance() yet keyTail(mark)
+
           case _ =>
             Attribute(slice(mark, begin()), Set(), true)
 
@@ -911,6 +912,7 @@ object Html extends Tag.Container
       @tailrec
       def unquoted(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
         case '>' | ' ' | '\f' | '\n' | '\r' | '\t' => slice(mark, begin())
+
         case char@('"' | '\'' | '<' | '=' | '`')   =>
           if permissive then warn(ForbiddenUnquoted(char)) yet next() yet unquoted(mark)
           else fail(ForbiddenUnquoted(char), mark)

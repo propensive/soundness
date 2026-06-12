@@ -79,6 +79,7 @@ private def replaceNamedChild(xml: Xml, name: String, value: Xml): Xml = xml mat
         case element: Element if !done && element.label == name.tt =>
           buffer ++= replacement
           done = true
+
         case other =>
           buffer += other
 
@@ -103,6 +104,7 @@ private def updateChildElements(xml: Xml, select: Int => Boolean, lambda: Xml =>
           val here = index
           index += 1
           if select(here) then firstNode(lambda(element), element) else element
+
         case other =>
           other
 
