@@ -73,8 +73,11 @@ object internal:
             tree.tpe match
               case AppliedType(constructor, typeArguments) =>
                 val newTree = New(TypeTree.ref(constructor.typeSymbol))
-                val typeTrees = typeArguments.map { argument => TypeTree.of(using argument.asType) }
-                Apply(TypeApply(Select(newTree, tree.symbol), typeTrees), transformTerms(arguments)(sym))
+                val typeTrees = typeArguments.map: argument => TypeTree.of(using argument.asType)
+
+                Apply
+                  ( TypeApply(Select(newTree, tree.symbol), typeTrees),
+                    transformTerms(arguments)(sym) )
 
               case _ =>
                 throw jl.Error()
@@ -102,7 +105,8 @@ object internal:
 
     def matching(annotations: List[Term]): Expr[List[operand]] =
       Expr.ofList:
-        annotations.filter(_.tpe <:< operand).map(rebuild(_)).compact.map(_.asExprOf[operand]).reverse
+        annotations.filter(_.tpe <:< operand).map(rebuild(_)).compact.map(_.asExprOf[operand])
+        . reverse
 
     if limit =:= TypeRepr.of[Any] then
       val annotations = matching(self.typeSymbol.annotations)

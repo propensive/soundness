@@ -165,7 +165,8 @@ object Zipfile:
             cdSize = Zip.u64(record, 40)
             cdOffset = Zip.u64(record, 48)
             cdEnd = recordOffset
-          else raise(ZipError(ZipError.Reason.Zip64Error))
+          else
+            raise(ZipError(ZipError.Reason.Zip64Error))
 
     // The central directory physically precedes the trailer; any gap between its actual start
     // and the recorded offset is data prepended before the archive (a binary/self-extracting

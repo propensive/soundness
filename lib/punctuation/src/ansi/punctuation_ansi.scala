@@ -47,25 +47,25 @@ import vacuous.*
 // content through Harlequin's highlighter and out via the `unnumbered` token
 // stream. Callers supply a `ScalaSyntaxPalette` to colour the tokens.
 package teletypeFormattables:
-  given scala: (palette: ScalaSyntaxPalette)
-              =>  ( "scala" is TeletypeFormattable ) = new TeletypeFormattable:
-    type Self = "scala"
+  given scala: (palette: ScalaSyntaxPalette) => ("scala" is TeletypeFormattable) =
+    new TeletypeFormattable:
+      type Self = "scala"
 
-    def format(meta: List[Text], content: Text): Optional[Teletype] =
-      if meta.prim != t"scala" then Unset
-      else
-        import syntaxHighlighting.unnumbered
-        Scala.highlight(content).teletype
+      def format(meta: List[Text], content: Text): Optional[Teletype] =
+        if meta.prim != t"scala" then Unset
+        else
+          import syntaxHighlighting.unnumbered
+          Scala.highlight(content).teletype
 
-  given java: (palette: ScalaSyntaxPalette)
-            =>  ( "java" is TeletypeFormattable ) = new TeletypeFormattable:
-    type Self = "java"
+  given java: (palette: ScalaSyntaxPalette) => ("java" is TeletypeFormattable) =
+    new TeletypeFormattable:
+      type Self = "java"
 
-    def format(meta: List[Text], content: Text): Optional[Teletype] =
-      if meta.prim != t"java" then Unset
-      else
-        import syntaxHighlighting.unnumbered
-        Java.highlight(content).teletype
+      def format(meta: List[Text], content: Text): Optional[Teletype] =
+        if meta.prim != t"java" then Unset
+        else
+          import syntaxHighlighting.unnumbered
+          Java.highlight(content).teletype
 
 extension (markdown: Markdown of Layout)
   def terminal
@@ -83,7 +83,7 @@ extension (markdown: Markdown of Layout)
 // produce mile-wide thematic-break rules), renders to a `Teletype`, then
 // emits ANSI escapes through the existing `Teletype is Printable` given.
 given (Hyphenation, Every[TeletypeFormattable], MarkdownPalette)
-  =>  (Markdown of Layout) is Printable =
+=>  (Markdown of Layout) is Printable =
 
   (markdown, termcap) =>
     val width = if termcap.width >= Int.MaxValue then 80 else termcap.width

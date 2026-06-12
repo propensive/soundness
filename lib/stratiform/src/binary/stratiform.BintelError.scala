@@ -39,14 +39,6 @@ object BintelError:
 
   object Reason:
     given communicable: Reason is Communicable =
-      case BadMagic =>
-        m"the magic number is missing or matches neither B2 C4 B5 BB (external mode) nor B2 C4 B5 BC (self-contained mode)"
-
-      case VarintError         => m"a variable-length integer in the stream is invalid"
-
-      case BadSignatureLength =>
-        m"the schema signature length is not a valid palimpsest length under any (H, k_i, k_r)"
-
       case BadSignature        => m"the schema signature does not decode against the library"
       case BadKeywordIndex     => m"a keyword index exceeds the parent's flat-keyword count"
       case ValueTruncated      => m"a Scalar value's byte length extends beyond end of input"
@@ -54,9 +46,23 @@ object BintelError:
       case TrailingBytes       => m"the document root completed with input bytes remaining"
       case UnexpectedEoi       => m"the decoder requested bytes beyond end of input"
       case ReferenceUnresolved => m"a Reference type in the schema does not resolve"
+      case VarintError         => m"a variable-length integer in the stream is invalid"
+
+      case BadMagic =>
+        m"""
+          the magic number is missing or matches neither B2 C4 B5 BB (external mode) nor B2 C4 B5 BC
+          (self-contained mode)
+        """
+
+      case BadSignatureLength =>
+        m"the schema signature length is not a valid palimpsest length under any (H, k_i, k_r)"
+
 
       case EmbeddedSignatureMismatch =>
-        m"the signature recomputed from the embedded schema body does not equal the carried signature"
+        m"""
+          the signature recomputed from the embedded schema body does not equal the carried
+          signature
+        """
 
       case EmbeddedSchemaUndecodable =>
         m"the embedded schema body does not decode as a valid TEL document under tel-schema"

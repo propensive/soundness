@@ -57,8 +57,8 @@ object TelPrinter:
       val parts = scala.collection.mutable.ArrayBuffer.empty[String]
       parts += "tel"
       parts += s"${pragma.version._1}.${pragma.version._2}"
-      pragma.schema.let(s => parts += s.s)
-      pragma.sigil.let(c => parts += c.toString)
+      pragma.schema.let: s => parts += s.s
+      pragma.sigil.let: c => parts += c.toString
       buffer += parts.mkString(" ")
       buffer += ""
 
@@ -70,10 +70,13 @@ object TelPrinter:
 
     Text(buffer.mkString(newline))
 
-  private def emitBlock(buffer: scala.collection.mutable.ArrayBuffer[String],
-                        block: Tel.Block,
-                        indent: Int,
-                        sigil: Char): Unit =
+  private def emitBlock
+    ( buffer: scala.collection.mutable.ArrayBuffer[String],
+      block: Tel.Block,
+      indent: Int,
+      sigil: Char )
+  :   Unit =
+
     val pad = "  " * indent
 
     block.comments.each: comment =>
@@ -108,10 +111,13 @@ object TelPrinter:
       buffer += ""
       b += 1
 
-  private def emitCompound(buffer: scala.collection.mutable.ArrayBuffer[String],
-                           compound: Tel.Compound,
-                           indent: Int,
-                           sigil: Char): Unit =
+  private def emitCompound
+    ( buffer:   scala.collection.mutable.ArrayBuffer[String],
+      compound: Tel.Compound,
+      indent:   Int,
+      sigil:    Char )
+  :   Unit =
+
     val pad = "  " * indent
     val line = StringBuilder()
     line.append(pad)

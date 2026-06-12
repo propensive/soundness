@@ -124,7 +124,7 @@ trait Cbor2:
             // `@name[Cbor]` / bare `@name` variant renames: map the serialized
             // discriminator back to the variant name before delegating.
             val variantNames: Map[Text, Text] =
-              variantRelabelling[derivation, Cbor].map((variant, wire) => wire -> variant)
+              variantRelabelling[derivation, Cbor].map: (variant, wire) => wire -> variant
 
             val wire: Text =
               discriminable.discriminate(cbor).lest(CborError(Reason.Absent))
@@ -262,7 +262,8 @@ object Cbor extends Cbor2, Dynamic:
             i += 1
 
           Cbor.Ast.array(updated.asInstanceOf[IArray[Any]])
-      else origin
+      else
+        origin
 
   given eachOptical: Each.type is Optical from Cbor onto Cbor = _ =>
     Optic: (origin, lambda) =>
@@ -278,7 +279,8 @@ object Cbor extends Cbor2, Dynamic:
             i += 1
 
           Cbor.Ast.array(updated.asInstanceOf[IArray[Any]])
-      else origin
+      else
+        origin
 
   given filterOptical: Filter[Cbor] is Optical from Cbor onto Cbor = filter =>
     Optic: (origin, lambda) =>
@@ -295,7 +297,8 @@ object Cbor extends Cbor2, Dynamic:
             i += 1
 
           Cbor.Ast.array(updated.asInstanceOf[IArray[Any]])
-      else origin
+      else
+        origin
 
   given boolean: Tactic[CborError] => Boolean is Decodable in Cbor = _.root.boolean
   given double: Tactic[CborError] => Double is Decodable in Cbor = _.root.double

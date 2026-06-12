@@ -39,10 +39,10 @@ import prepositional.*
 
 package jsonEncodables:
   given encodeInstantsAsUnixEpochMilliseconds: Instant is Json.Encodable =
-    Json.Encodable(Shape.Whole)(instant => Json(instant.long))
+    Json.Encodable(Shape.Whole): instant => Json(instant.long)
 
   given encodeDurationsAsMilliseconds: Duration is Json.Encodable =
-    Json.Encodable(Shape.Whole)(duration => Json((duration.value*1000).toLong))
+    Json.Encodable(Shape.Whole): duration => Json((duration.value*1000).toLong)
 
 package jsonDecodables:
   given decodeInstantsAsUnixEpochMilliseconds: Tactic[JsonError] => Instant is Json.Decodable =
@@ -51,4 +51,4 @@ package jsonDecodables:
       Instant(json.as[Long])
 
   given decodeDurationsAsMilliseconds: Tactic[JsonError] => Duration is Json.Decodable =
-    Json.Decodable(Shape.Whole)(json => Duration(json.as[Long]))
+    Json.Decodable(Shape.Whole): json => Duration(json.as[Long])

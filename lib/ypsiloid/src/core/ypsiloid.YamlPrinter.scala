@@ -117,7 +117,8 @@ object YamlPrinter:
                   z += 1
 
                 append(hex.tt)
-              else append(c)
+              else
+                append(c)
 
           i += 1
 
@@ -188,7 +189,8 @@ object YamlPrinter:
     if inlineable(yaml) then
       scalar(yaml)
       append('\n')
-    else block(yaml, 0)
+    else
+      block(yaml, 0)
 
 trait YamlPrinter:
   def print(yaml: Yaml.Ast): Text

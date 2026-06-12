@@ -103,11 +103,10 @@ object Tel extends Tel2:
       val compounds: IArray[Tel.Compound] = tel.subtree.children.flatMap(_.compounds)
       val rootChildren = assignChildren(compounds, schema.document, schema)
 
-      val rootElements = applyConstraints
-                          ( schema.document, IArray.empty[Tel.Element], rootChildren, schema )
+      val rootElements =
+        applyConstraints(schema.document, IArray.empty[Tel.Element], rootChildren, schema)
 
-      Tel.Element.Node
-        ( keywordIndex = Unset, elementType = schema.document, children = rootElements )
+      Tel.Element.Node(keywordIndex = Unset, elementType = schema.document, children = rootElements)
 
     def assign(tel: Tel, schema: Tels, validators: Tel.Validator.Registry)
     :   Tel.Element raises TelError =
@@ -151,12 +150,14 @@ object Tel extends Tel2:
           schema.records.find(_.name == name) match
             case Some(record) => Struct(record.members, record.validators)
 
-            case None         => schema.scalars.find(_.name == name) match
-              case Some(scalarDef) => Scalar(scalarDef.validators)
+            case None =>
+              schema.scalars.find(_.name == name) match
+                case Some(scalarDef) => Scalar(scalarDef.validators)
 
-              case None            => schema.selects.find(_.name == name) match
-                case Some(_) => abort(TelError(Reason.ReferenceKindMismatch))
-                case None    => abort(TelError(Reason.UnresolvedReference))
+                case None =>
+                  schema.selects.find(_.name == name) match
+                    case Some(_) => abort(TelError(Reason.ReferenceKindMismatch))
+                    case None    => abort(TelError(Reason.UnresolvedReference))
 
         case other => other
 
@@ -262,51 +263,52 @@ object Tel extends Tel2:
           if !atomAssignable(parent.members(pos), schema) then
             flatPos += flatWidthOf(parent.members(pos))
             pos += 1
-          else parent.members(pos) match
-            case f: Field =>
-              resolveType(f.fieldType, schema) match
-                case s: Scalar =>
-                  results += Tel.Element.Value(flatPos, s, atomText)
+          else
+            parent.members(pos) match
+              case f: Field =>
+                resolveType(f.fieldType, schema) match
+                  case s: Scalar =>
+                    results += Tel.Element.Value(flatPos, s, atomText)
 
-                  if f.repeatable != Polarity.Loose then
-                    flatPos += 1
-                    pos += 1
+                    if f.repeatable != Polarity.Loose then
+                      flatPos += 1
+                      pos += 1
 
-                  consumed = true
-
-                case Flag =>
-                  if atomText == f.keyword then
-                    results += Tel.Element.Node(flatPos, Flag, IArray.empty)
-                    flatPos += 1
-                    pos += 1
                     consumed = true
-                  else
-                    flatPos += 1
-                    pos += 1
 
-                case _ => abort(TelError(Reason.AtomAtNonAssignablePos))
+                  case Flag =>
+                    if atomText == f.keyword then
+                      results += Tel.Element.Node(flatPos, Flag, IArray.empty)
+                      flatPos += 1
+                      pos += 1
+                      consumed = true
+                    else
+                      flatPos += 1
+                      pos += 1
 
-            case s: SelectRef =>
-              val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
-                abort(TelError(Reason.UnresolvedReference))
+                  case _ => abort(TelError(Reason.AtomAtNonAssignablePos))
 
-              selectDef.variants.zipWithIndex.find(_._1.keyword == atomText) match
-                case Some((_, variantOffset)) =>
-                  results += Tel.Element.Node(flatPos + variantOffset, Flag, IArray.empty)
+              case s: SelectRef =>
+                val selectDef = schema.selects.find(_.name == s.reference).getOrElse:
+                  abort(TelError(Reason.UnresolvedReference))
 
-                  if s.repeatable != Polarity.Loose then
+                selectDef.variants.zipWithIndex.find(_._1.keyword == atomText) match
+                  case Some((_, variantOffset)) =>
+                    results += Tel.Element.Node(flatPos + variantOffset, Flag, IArray.empty)
+
+                    if s.repeatable != Polarity.Loose then
+                      flatPos += selectDef.variants.length
+                      pos += 1
+
+                    consumed = true
+
+                  case None =>
                     flatPos += selectDef.variants.length
                     pos += 1
 
-                  consumed = true
-
-                case None =>
-                  flatPos += selectDef.variants.length
-                  pos += 1
-
-            case _ =>
-              flatPos += flatWidthOf(parent.members(pos))
-              pos += 1
+              case _ =>
+                flatPos += flatWidthOf(parent.members(pos))
+                pos += 1
 
         if !consumed then abort(TelError(Reason.AtomFlagKeywordMismatch))
         i += 1
@@ -518,7 +520,8 @@ object Tel extends Tel2:
             fail(t"the sigil must not be a letter or digit", (0, 1))
           else if "()[]{}<>".indexOf(c.toInt) >= 0 then
             fail(t"the sigil must not be a parenthetical symbol", (0, 1))
-          else Response.Valid
+          else
+            Response.Valid
 
       private def unknown(method: Text): Response =
         Response.Invalid(Diagnostic.Scalar(t"unknown validator '${method}'"))
@@ -659,7 +662,8 @@ object Tel extends Tel2:
           val s = new String(b, byteOff, byteLen, java.nio.charset.StandardCharsets.UTF_8)
           _text = s
           Text(s)
-        else Text(t)
+        else
+          Text(t)
 
       override def equals(other: Any): Boolean = other match
         case o: Inline => text == o.text && precedingSpaces == o.precedingSpaces
@@ -784,7 +788,8 @@ object Tel extends Tel2:
       if c >= 'A' && c <= 'Z' then
         if i > 0 then sb.append('-')
         sb.append((c - 'A' + 'a').toChar)
-      else sb.append(c)
+      else
+        sb.append(c)
 
       i += 1
 

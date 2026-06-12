@@ -296,15 +296,16 @@ object Xml extends Tag.Container
               // default, else the `Absent` sentinel (raise + continue).
               element.attributes.at(wireName).lay(default.or(context.decoded(Absent))): text =>
                 context.decoded(TextNode(text))
-            else children.get(wireName.s) match
-              case Some(child) => context.decoded(child)
-              // Missing field: fall back to the case-class declared
-              // default (Wisteria's `default`); if absent, hand the
-              // `Absent` sentinel to the field's decoder. Primitives
-              // detect it and `raise + continue`; nested conjunctions
-              // detect it and may further short-circuit via a
-              // user-supplied `Default[Nested]`.
-              case None        => default.or(context.decoded(Absent))
+            else
+              children.get(wireName.s) match
+                case Some(child) => context.decoded(child)
+                // Missing field: fall back to the case-class declared
+                // default (Wisteria's `default`); if absent, hand the
+                // `Absent` sentinel to the field's decoder. Primitives
+                // detect it and `raise + continue`; nested conjunctions
+                // detect it and may further short-circuit via a
+                // user-supplied `Default[Nested]`.
+                case None        => default.or(context.decoded(Absent))
 
     // Sealed-trait disjunction picks a variant by element label. We screen
     // the discriminator against `variantLabels` *before* `delegate`-ing so
@@ -916,7 +917,8 @@ object Xml extends Tag.Container
                 // First step names the document's root element.
                 if element.label == name && ordinal == 1 then
                   walk(element, data, offset, segments, i + 1)
-                else Unset
+                else
+                  Unset
 
               case element: Element =>
                 descend(element, name, ordinal).let: childElementIndex =>

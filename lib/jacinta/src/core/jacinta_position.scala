@@ -67,8 +67,7 @@ private def walkIndex
     if ast.isObject then
       val k = ast.objectIndexOf(seg)
 
-      if k < 0 then Unset
-      else
+      if k < 0 then Unset else
         val entryOff = data(offset + 5 + k)
         val isLast = i == segments.length - 1
 
@@ -91,4 +90,5 @@ private def walkIndex
           walkIndex
             ( ast.arrayElement(k), data, offset + childOff, segments, i + 1, keyMode )
       catch case _: NumberFormatException => Unset
-    else Unset
+    else
+      Unset

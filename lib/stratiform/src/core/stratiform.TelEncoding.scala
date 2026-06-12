@@ -126,7 +126,7 @@ trait Tel2:
 
   inline given encodable: [value] => value is Tel.Encodable = summonFrom:
     case given (`value` is Encodable in Text) =>
-      Tel.Encodable(Shape.Str)(v => Tel.scalar(v.encode))
+      Tel.Encodable(Shape.Str): v => Tel.scalar(v.encode)
 
     case given Reflection[`value`] => EncodableDerivation.derived
 
@@ -285,22 +285,22 @@ trait Tel2:
 
   given telDecodable: Tel is Tel.Decodable = Tel.Decodable(Shape.Any)(identity(_))
 
-  given textEncodable: Text is Tel.Encodable = Tel.Encodable(Shape.Str)(text => Tel.scalar(text))
+  given textEncodable: Text is Tel.Encodable = Tel.Encodable(Shape.Str): text => Tel.scalar(text)
 
   given stringEncodable: String is Tel.Encodable =
-    Tel.Encodable(Shape.Str)(s => Tel.scalar(Text(s)))
+    Tel.Encodable(Shape.Str): s => Tel.scalar(Text(s))
 
   given intEncodable: Int is Tel.Encodable =
-    Tel.Encodable(Shape.Whole)(i => Tel.scalar(Text(i.toString)))
+    Tel.Encodable(Shape.Whole): i => Tel.scalar(Text(i.toString))
 
   given longEncodable: Long is Tel.Encodable =
-    Tel.Encodable(Shape.Whole)(l => Tel.scalar(Text(l.toString)))
+    Tel.Encodable(Shape.Whole): l => Tel.scalar(Text(l.toString))
 
   given doubleEncodable: Double is Tel.Encodable =
-    Tel.Encodable(Shape.Real)(d => Tel.scalar(Text(d.toString)))
+    Tel.Encodable(Shape.Real): d => Tel.scalar(Text(d.toString))
 
   given booleanEncodable: Boolean is Tel.Encodable =
-    Tel.Encodable(Shape.Bool)(b => Tel.scalar(Text(b.toString)))
+    Tel.Encodable(Shape.Bool): b => Tel.scalar(Text(b.toString))
 
   given telEncodable: Tel is Tel.Encodable = Tel.Encodable(Shape.Any)(identity(_))
 
@@ -311,7 +311,7 @@ trait Tel2:
 
   given optionalEncodable: [value: Tel.Encodable] => Optional[value] is Tel.Encodable =
     Tel.Encodable(Shape.Opt(value.shape())): opt =>
-      opt.lay(Tel.empty)(v => v.encode)
+      opt.lay(Tel.empty)(_.encode)
 
   given optionalDecodable: [value: Tel.Decodable] => Tactic[TelError]
   =>  Optional[value] is Tel.Decodable =

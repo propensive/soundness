@@ -170,8 +170,8 @@ object Mutation:
           case c: Tel.Compound => c
           case _: Tel.Document => targetCompound // unreachable: child of a compound is a compound
 
-        val updatedBlock = targetBlock.copy
-                            ( compounds = targetBlock.compounds.updated(localIdx, updatedCompound) )
+        val updatedBlock =
+          targetBlock.copy(compounds = targetBlock.compounds.updated(localIdx, updatedCompound))
 
         rewrap(subtree, subtree.children.updated(blockIdx, updatedBlock))
 
@@ -202,7 +202,8 @@ object Mutation:
           if seen == want then
             foundBlock = b
             foundLocal = c
-          else seen += 1
+          else
+            seen += 1
 
         c += 1
 

@@ -119,7 +119,7 @@ object Renderer:
     case Prose.Strong(children*)              => children.map(plainTextOf(_)).to(Seq).join
     case Prose.Link(_, _, children*)          => children.map(plainTextOf(_)).to(Seq).join
 
-    case Prose.Image(_, title, children*)     =>
+    case Prose.Image(_, title, children*) =>
       val inner = children.map(plainTextOf(_)).to(Seq).join
       if inner.length == 0 then title.or(t"") else inner
 
@@ -237,7 +237,7 @@ object Renderer:
         joined match
           case Nil            => List(mk)
 
-          case head :: tail   =>
+          case head :: tail =>
             (mk + Space + head) :: tail.map(indent(_, hang))
 
       if tight then rendered.flatten

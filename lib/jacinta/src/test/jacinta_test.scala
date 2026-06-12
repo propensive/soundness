@@ -1104,6 +1104,7 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"Capture top-level Json"):
         val scrutinee: Json = t"""{"k": 1}""".read[Json]
+
         scrutinee match
           case j"$x" => x
       . assert(_ == t"""{"k": 1}""".read[Json])

@@ -487,7 +487,8 @@ private[ypsiloid] final class YamlParser:
             rootIndex = rootBuf.toArray
             releaseIndexBuffer()
             n
-          else parseNode(indent)
+          else
+            parseNode(indent)
 
         skipBlankAndCommentLines()
         consumeOptionalDocumentEnd()
@@ -2968,7 +2969,8 @@ private[ypsiloid] final class YamlParser:
     if !more then
       emitNullHere(indexOut)
       Yaml.Ast.Null
-    else parseNodeHereTracked(indent, indexOut)
+    else
+      parseNodeHereTracked(indent, indexOut)
 
   private def parseNodeHereTracked(indent: Int, indexOut: ArrayBuffer[Int])
     ( using Tactic[ParseError] ): Yaml.Ast =
@@ -3189,54 +3191,55 @@ private[ypsiloid] final class YamlParser:
     if !more then
       emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
       scalar
-    else peek match
-      case Newline =>
-        emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
-        scalar
+    else
+      peek match
+        case Newline =>
+          emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
+          scalar
 
-      case Hash if hadSpaceOrTab =>
-        while more && peek != Newline do advance()
-        emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
-        scalar
+        case Hash if hadSpaceOrTab =>
+          while more && peek != Newline do advance()
+          emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
+          scalar
 
-      case Colon =>
-        val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
+        case Colon =>
+          val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
 
-        if
-          nextByte == Space || nextByte == Tab || nextByte == Newline
-          || nextByte == Return || nextByte == -1
-        then
-          if onDocStartLine then
-            errorAt(Issue.BlockMappingOnDocumentStartLine)
+          if
+            nextByte == Space || nextByte == Tab || nextByte == Newline
+            || nextByte == Return || nextByte == -1
+          then
+            if onDocStartLine then
+              errorAt(Issue.BlockMappingOnDocumentStartLine)
 
-          if inInlineMappingValue then
-            errorAt(Issue.ChainedMappingValueOnSingleLine)
+            if inInlineMappingValue then
+              errorAt(Issue.ChainedMappingValueOnSingleLine)
 
-          if lastScalarSpannedLines then
-            errorAt(Issue.MultilineImplicitKey)
+            if lastScalarSpannedLines then
+              errorAt(Issue.MultilineImplicitKey)
 
-          val tagged = if headTag.nil then scalar else applyTag(headTag, scalar)
+            val tagged = if headTag.nil then scalar else applyTag(headTag, scalar)
 
-          val keyAst =
-            if headAnchor.nil then tagged
-            else
-              anchors.update(headAnchor.s, tagged)
-              tagged
+            val keyAst =
+              if headAnchor.nil then tagged
+              else
+                anchors.update(headAnchor.s, tagged)
+                tagged
 
-          if !headTag.nil || !headAnchor.nil then prefixesConsumed = true
+            if !headTag.nil || !headAnchor.nil then prefixesConsumed = true
 
-          parseBlockMappingFromFirstKeyTracked
-            ( keyAst, startLine, startColumn, keyLength, indent, indexOut,
-              startLine, startColumn, startMark )
-        else
+            parseBlockMappingFromFirstKeyTracked
+              ( keyAst, startLine, startColumn, keyLength, indent, indexOut,
+                startLine, startColumn, startMark )
+          else
+            errorAt(Issue.TrailingContentAfterQuotedScalar)
+
+        case Comma | CloseBracket | CloseBrace =>
+          emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
+          scalar
+
+        case _ =>
           errorAt(Issue.TrailingContentAfterQuotedScalar)
-
-      case Comma | CloseBracket | CloseBrace =>
-        emitPrimitiveDescriptor(indexOut, startLine, startColumn, startMark)
-        scalar
-
-      case _ =>
-        errorAt(Issue.TrailingContentAfterQuotedScalar)
 
   // Tracked variant of `parsePlainOrBlockMapping`. The scalar's start
   // position is `startLine`/`startColumn`/`startMark`. Either emits a
@@ -3318,8 +3321,10 @@ private[ypsiloid] final class YamlParser:
             if childIndent <= indent then
               emitNullHere(scratch)
               Yaml.Ast.Null
-            else parseNodeHereTracked(childIndent, scratch)
-          else parseNodeHereTracked(indent + 2, scratch)
+            else
+              parseNodeHereTracked(childIndent, scratch)
+          else
+            parseNodeHereTracked(indent + 2, scratch)
         else if next == Newline || next == -1 then
           if more then advance()
           skipBlankAndCommentLines()
@@ -3328,8 +3333,10 @@ private[ypsiloid] final class YamlParser:
           if childIndent <= indent then
             emitNullHere(scratch)
             Yaml.Ast.Null
-          else parseNodeHereTracked(childIndent, scratch)
-        else parseNodeHereTracked(indent + 2, scratch)
+          else
+            parseNodeHereTracked(childIndent, scratch)
+        else
+          parseNodeHereTracked(indent + 2, scratch)
 
       ends += scratch.length
       buf += item
@@ -3754,7 +3761,8 @@ private[ypsiloid] final class YamlParser:
             if !more || peek == Comma || peek == CloseBrace then
               emitNullHere(scratch)
               Yaml.Ast.Null
-            else parseFlowNodeTracked(scratch)
+            else
+              parseFlowNodeTracked(scratch)
           else
             emitNullHere(scratch)
             Yaml.Ast.Null
@@ -4060,7 +4068,8 @@ private[ypsiloid] final class YamlParser:
       // Use a defensive 4 — primitive descriptor — as the default size.
       val descSize = 4
       descSize
-    else 0
+    else
+      0
 
   // Peek the current line's leading-space count without changing pos.
   private inline def consumeLeadingSpacesPeek(): Int =

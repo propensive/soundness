@@ -100,8 +100,9 @@ private[jacinta] object JsonParser:
 
     while i < 256 do
       arr(i) =
-        if i >= 32 && i < 128 && i != 0x22 /* `"` */ && i != 0x5C /* `\` */
-        then 1.toByte else 0.toByte
+        if i >= 32 && i < 128 && i != 0x22 && i != 0x5C
+        then 1.toByte
+        else 0.toByte
 
       i += 1
 
@@ -626,7 +627,7 @@ private[jacinta] final class JsonParser:
         if len > KeyCacheMaxBytes then
           new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
         else
-          val packedLow  = packBytes(arr, off,     math.min(len, 8))
+          val packedLow  = packBytes(arr, off, math.min(len, 8))
           val packedHigh = if len > 8 then packBytes(arr, off + 8, len - 8) else 0L
 
           val idx        = ((packedLow.toInt ^ (packedLow >>> 32).toInt) ^
@@ -1741,7 +1742,8 @@ private[jacinta] final class JsonParser:
         rootIndex = IArray.from(rootBuf)
         relinquishIndexBuffer()
         r
-      else parseValue()
+      else
+        parseValue()
 
     while more do
       peek match

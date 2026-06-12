@@ -216,7 +216,10 @@ object Dictionary:
       i += 1
 
     val childrenArr = Array.fill[Int](nodeCount*alpha)(-1)
-    val valuesArr: Array[AnyRef | Null] = new Array[AnyRef](nodeCount).asInstanceOf[Array[AnyRef | Null]]
+
+    val valuesArr: Array[AnyRef | Null] =
+      new Array[AnyRef](nodeCount).asInstanceOf[Array[AnyRef | Null]]
+
     i = 0
 
     while i < nodeCount do

@@ -802,7 +802,8 @@ object Html extends Tag.Container
               val end = begin()
               val name = slice(mark, end)
               reset(mark) yet fail(InvalidTagStart(name.lower), mark, end)
-            else next() yet tagname(mark, step)
+            else
+              next() yet tagname(mark, step)
 
           case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' =>
             val tag = dom.elements.value(node)
@@ -912,12 +913,16 @@ object Html extends Tag.Container
       @tailrec
       def unquoted(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
         case '>' | ' ' | '\f' | '\n' | '\r' | '\t' => slice(mark, begin())
-
-        case char@('"' | '\'' | '<' | '=' | '`')   =>
-          if permissive then warn(ForbiddenUnquoted(char)) yet next() yet unquoted(mark)
-          else fail(ForbiddenUnquoted(char), mark)
-
         case '\u0000'                              => fail(BadInsertion, mark)
+
+        case char@('"' | '\'' | '<' | '=' | '`') =>
+          if permissive then
+            warn(ForbiddenUnquoted(char))
+            next()
+            unquoted(mark)
+          else
+            fail(ForbiddenUnquoted(char), mark)
+
         case char                                  => next() yet unquoted(mark)
 
       def equality(): Boolean = skip() yet lay(fail(ExpectedMore)):

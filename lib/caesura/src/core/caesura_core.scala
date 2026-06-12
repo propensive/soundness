@@ -66,7 +66,8 @@ extension [encodable: Encodable in Dsv](value: Seq[encodable])
 // row (`Each`), or rows matching a predicate (`Filter`). So
 // `sheet.lens(_(Sec).name = t"…")` updates the "name" column of the second row.
 private def cell(row: Dsv, name: String): Text =
-  row.columns.let(_.at(name.tt)).let(index => row.data.at(index.z)).or(t"")
+  row.columns.let(_.at(name.tt)).let: index => row.data.at(index.z)
+  . or(t"")
 
 private def withCell(row: Dsv, name: String, value: Text): Dsv =
   row.columns.let(_.at(name.tt)).lay(row): index =>

@@ -98,4 +98,5 @@ private def walkIndex
           walkIndex
             ( ast.arrayElement(k), data, offset + childOff, segments, i + 1, keyMode )
       catch case _: NumberFormatException => Unset
-    else Unset
+    else
+      Unset

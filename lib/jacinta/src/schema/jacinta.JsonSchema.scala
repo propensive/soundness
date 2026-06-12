@@ -114,7 +114,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
 
     case Shape.Obj(fields, required) =>
       JsonSchema.Object
-        ( properties = fields.map((label, shape) => (label, reify(shape))).to(Map),
+        ( properties = fields.map { (label, shape) => (label, reify(shape)) }.to(Map),
           required   = required )
 
   // Marks a schema as optional (used both by the schema-only `Schematic` and by

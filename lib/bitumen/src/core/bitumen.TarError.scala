@@ -57,7 +57,10 @@ object TarError:
       m"the USTAR magic bytes are not valid (got ${actual.length} bytes)"
 
     case Reason.BadChecksum(expected, actual) =>
-      m"the header checksum did not match (header recorded $expected but the recomputed value is $actual)"
+      m"""
+        the header checksum did not match (header recorded $expected but the recomputed value is
+        $actual)
+      """
 
     case Reason.UnknownTypeFlag(byte) =>
       val code: Int = byte.toInt & 0xff

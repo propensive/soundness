@@ -142,20 +142,22 @@ object TelError:
       case DuplicateDefinition      => m"two or more Definitions share the same name"
       case ExcludeMissingVariant    => m"Exclude names a variant absent from the base"
 
-      case ExcludeEmptiesRequired   => m"Exclude would empty a SelectDefinition that a "+
-                                       m"required SelectRef references"
+      case ExcludeEmptiesRequired =>
+        m"Exclude would empty a SelectDefinition that a required SelectRef references"
 
-      case LayerVariantAddition     =>
+      case LayerVariantAddition =>
         m"a layer SelectDefinition introduces a variant absent from the base"
 
-      case LayerLoosenRequired      => m"a layer cannot loosen the `required` axis"
+      case LayerLoosenRequired =>
+        m"a layer cannot loosen the `required` axis"
       case LayerLoosenRepeatable    => m"a layer cannot loosen the `repeatable` axis"
       case ExcludeOutsideSelect     => m"Exclude appears outside a SelectDefinition body"
 
-      case ReferenceKindMismatch    =>
+      case ReferenceKindMismatch =>
         m"a Reference / SelectRef resolves to a Definition of the wrong kind"
 
-      case NonStructCompound        => m"the compound's type is not a Struct"
+      case NonStructCompound =>
+        m"the compound's type is not a Struct"
       case TooManyAtoms             => m"more atoms than assignable member positions"
       case AtomAtNonAssignablePos   => m"the atom is at a non-atom-assignable member position"
       case AtomVariantUnmatched     => m"the atom text matches no variant keyword of the SelectRef"

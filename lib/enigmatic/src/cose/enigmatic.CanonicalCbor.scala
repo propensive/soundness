@@ -78,7 +78,8 @@ object CanonicalCbor:
     else if ast.isTag then
       val tag = ast.asInstanceOf[Cbor.Tag]
       Cbor.Ast(Cbor.Tag(tag.tag, canonicalise(tag.value.asInstanceOf[Cbor.Ast])))
-    else ast
+    else
+      ast
 
   private def compareBytes(a: Data, b: Data): Int =
     val n = math.min(a.length, b.length)

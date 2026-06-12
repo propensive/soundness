@@ -38,9 +38,13 @@ import soundness.*
 // `variantRelabelling`. `Accept` is renamed for one type argument, `Reject` by a
 // bare `@name` (i.e. `name[Any]`), and `Defer` is unannotated.
 sealed trait Decision
-@name[Person](t"yes") case object Accept extends Decision
-@name(t"no")          case object Reject extends Decision
-                      case object Defer  extends Decision
+@name[Person](t"yes")
+case object Accept extends Decision
+
+@name(t"no")
+case object Reject extends Decision
+
+case object Defer  extends Decision
 
 object Tests extends Suite(m"Adversaria tests"):
 

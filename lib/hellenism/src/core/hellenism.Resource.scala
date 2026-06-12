@@ -43,8 +43,8 @@ import vacuous.*
 
 object Resource:
   given streamable: [resource <: Resource]
-        =>  ( classloader: Classloader )
-        =>  resource is Streamable by Data =
+  =>  ( classloader: Classloader )
+  =>  resource is Streamable by Data =
     given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
 
     Streamable.inputStream.contramap: resource =>
