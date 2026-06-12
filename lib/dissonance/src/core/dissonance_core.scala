@@ -37,11 +37,7 @@ import denominative.*
 import fulminate.*
 import symbolism.*
 import vacuous.*
-import contingency.*
-import rudiments.*
-import turbulence.*
 
-import RedraftError.Reason
 
 def evolve[element: ClassTag]
   ( versions: List[List[element]], similar: Optional[(element, element) => Boolean] = Unset )
