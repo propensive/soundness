@@ -68,3 +68,11 @@ package logFormats:
           (first :: tail.map(indent+_)).join(e"\n").render(termcapDefinitions.xterm256)
           (first :: tail.map(indent+_)).join(e"\n")
       catch case error: Throwable => e"${error.stackTrace.show}"
+
+
+type LogPalette = Palette:
+  type Form = Srgb
+  def error: Color in Srgb
+  def informative: Color in Srgb
+  def warning: Color in Srgb
+  def subdued: Color in Srgb

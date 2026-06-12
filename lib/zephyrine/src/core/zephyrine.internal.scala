@@ -35,6 +35,7 @@ package zephyrine
 import scala.quoted.*
 
 import gigantism.*
+import rudiments.*
 
 object internal:
   def consume(cursor: Expr[Cursor[?]], text0: Expr[String], otherwise: Expr[Unit]): Macro[Unit] =
@@ -58,3 +59,37 @@ object internal:
         recur(index + 1, checks2)
 
     recur(0, '{()})
+
+  opaque type Datum = Int
+
+  object Datum:
+    // Sentinel for an exhausted cursor. The only `Datum` not derivable from a
+    // byte or char.
+    val End: Datum = -1
+
+    // Lift an unsigned byte (`0..255` after `& 0xff`) into a `Datum`.
+    inline def apply(byte: Byte): Datum = byte & 0xff
+
+    // Lift a char into a `Datum`.
+    inline def apply(char: Char): Datum = char.toInt
+
+    // Construct from a raw `Int`. Caller is responsible for the value being a
+    // valid byte/char or `-1` — used by `Cursor.peek` to wrap an `Int` it has
+    // already validated.
+    private[zephyrine] inline def fromRaw(int: Int): Datum = int
+
+    inline given datumByte:  CanEqual[Datum, Byte]  = !!
+    inline given byteDatum:  CanEqual[Byte,  Datum] = !!
+    inline given datumChar:  CanEqual[Datum, Char]  = !!
+    inline given charDatum:  CanEqual[Char,  Datum] = !!
+    inline given datumDatum: CanEqual[Datum, Datum] = !!
+
+
+    extension (datum: Datum)
+      // The underlying `Int` representation. Use sparingly — anywhere it
+      // leaks the `Datum` distinction is lost.
+      inline def asInt: Int = datum
+
+      // `true` if the cursor that produced this `Datum` was exhausted.
+      inline def isEnd: Boolean = datum == Datum.End
+

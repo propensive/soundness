@@ -40,6 +40,9 @@ import denominative.*
 import fulminate.*
 import prepositional.*
 import vacuous.*
+import scala.language.unsafeNulls
+import java.util.concurrent.atomic as juca
+import scala.util.boundary
 
 package strategies:
   given throwUnsafely: [success] => ThrowTactic[Exception, success] =
@@ -228,3 +231,16 @@ extension [value](optional: Optional[value])
     try boundary: label ?=>
       optional.let(block(using Diagnostics.omit, OptionalTactic(label)))
     catch case error: Exception => Unset
+
+
+
+def defer[result, error <: Exception]
+  (body: Tactic[error] ?=> result)
+:   Deferred[result, error] =
+
+  Deferred(body)
+
+
+
+transparent inline def whereas(inline handler: PartialFunction[Exception, Any]): Whereas[?] =
+  ${contingency.internal.whereas('handler)}

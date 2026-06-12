@@ -41,6 +41,8 @@ import contextual.*
 import gossamer.*
 import prepositional.*
 
+export honeycomb.internal.Attributes
+
 extension [renderable: Renderable](value: renderable)
   def html: Html of renderable.Form = renderable.render(value)
 

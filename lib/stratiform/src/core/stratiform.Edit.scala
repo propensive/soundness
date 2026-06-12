@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import vacuous.*
 
+
 // Composable edit DSL built atop the primitive Mutation.Op interpreter
 // (§22.5). An `Edit` is an ordered op-log; edits compose with `++` to
 // form longer sequences and apply to a `Tel` value with `edit(tel)` or
@@ -117,10 +118,8 @@ object Edit:
 
   private def single(op: Mutation.Op): Edit = new Edit(IArray(op))
 
+
 case class Edit private[stratiform] (ops: IArray[Mutation.Op]):
   def ++ (next: Edit): Edit = new Edit(ops ++ next.ops)
 
   def apply(tel: Tel): Tel raises MutationError = Mutation(tel, ops.toSeq)
-
-extension (tel: Tel)
-  def edited(edit: Edit): Tel raises MutationError = edit(tel)

@@ -32,3 +32,58 @@
                                                                                                   */
 package bitumen
 
+import anticipation.*
+import contingency.*
+import turbulence.*
+import java.nio.file as jnf
+import distillate.*
+import fulminate.*
+import galilei.*
+import gossamer.*
+import hieroglyph.*, charEncoders.ascii
+import hypotenuse.*, arithmeticOptions.overflow.unchecked
+import prepositional.*
+import rudiments.*
+import serpentine.*
+import spectacular.*
+import vacuous.*
+
+extension (tar: Tarfile)
+  def gzip: Stream[Data] = tar.stream[Data].compress[Gzip]
+  def zlib: Stream[Data] = tar.stream[Data].compress[Zlib]
+  def deflate: Stream[Data] = tar.stream[Data].compress[Deflate]
+
+extension (tarType: Tarfile.type)
+  def fromGzip(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
+    Tarfile.read(stream.decompress[Gzip])
+
+  def fromZlib(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
+    Tarfile.read(stream.decompress[Zlib])
+
+  def fromDeflate(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
+    Tarfile.read(stream.decompress[Deflate])
+
+
+extension (tarType: Tarfile.type)
+  def from[plane <: Posix: Filesystem](root: Path on plane)
+    ( using DereferenceSymlinks,
+            TraversalOrder,
+            plane is Explorable )
+  :   Tarfile raises IoError raises TarError =
+
+    val entries: LazyList[Tar.Entry] = root.descendants.to(LazyList).map: path =>
+      TarFilesystem.entryFor(root, path)
+
+    Tarfile(entries)
+
+
+extension (tar: Tarfile)
+  def extractTo[plane <: Posix: Filesystem](root: Path on plane)
+    ( using CreateNonexistentParents on plane, OverwritePreexisting on plane )
+  :   Unit raises IoError raises TarError =
+
+    tar.entries.foreach: entry =>
+      TarFilesystem.applyEntry(root, entry)
+
+
+type TarRef = Relative on Tar

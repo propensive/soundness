@@ -41,6 +41,7 @@ import fulminate.*
 type Escape = Ansi.Input.Escape
 
 export escapade.internal.CharSpan
+export escapade.internal.StyleWord
 
 object Bold
 object Italic

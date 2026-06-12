@@ -49,38 +49,10 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 
-extension (tarType: Tarfile.type)
-  def from
-              [plane <: Posix: Filesystem]
-              (root: Path on plane)
-              ( using DereferenceSymlinks,
-                      TraversalOrder,
-                      plane is Explorable,
-                      Tactic[IoError],
-                      Tactic[TarError] )
-  :   Tarfile =
-
-    val entries: LazyList[Tar.Entry] = root.descendants.to(LazyList).map: path =>
-      TarFilesystem.entryFor(root, path)
-
-    Tarfile(entries)
-
-extension (tar: Tarfile)
-  def extractTo
-              [plane <: Posix: Filesystem]
-              (root: Path on plane)
-              ( using CreateNonexistentParents on plane,
-                      OverwritePreexisting on plane,
-                      Tactic[IoError],
-                      Tactic[TarError] )
-  :   Unit =
-
-    tar.entries.foreach: entry =>
-      TarFilesystem.applyEntry(root, entry)
 
 private[bitumen] object TarFilesystem:
   def entryFor[plane <: Posix: Filesystem]
-              (root: Path on plane, path: Path on plane)
+    (root: Path on plane, path: Path on plane)
               ( using DereferenceSymlinks, Tactic[IoError], Tactic[TarError] )
   :   Tar.Entry =
 

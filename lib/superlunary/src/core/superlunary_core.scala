@@ -36,6 +36,20 @@ import scala.quoted.*
 
 import contingency.*
 import prepositional.*
+import java.lang as jl
+import java.nio.file as jnf
+import java.util as ju
+import java.util.function as juf
+import ambience.*
+import anthology.*
+import anticipation.*
+import digression.*
+import distillate.*
+import hellenism.*
+import inimitable.*
+import serpentine.*
+import interfaces.paths.pathOnLinux
+import systems.java
 
 object embeddings:
   inline given automatic: [value]
@@ -54,3 +68,18 @@ object embeddings:
           stageable.extract[value]
             ( ${refs.array}(${Expr(allocation)}).asInstanceOf[refs.Transport] )
         }
+
+
+
+def deleteOnShutdown(directory: jnf.Path): Unit =
+  val runnable: Runnable = () =>
+    if jnf.Files.exists(directory) then
+      val stream = jnf.Files.walk(directory).nn
+      try
+        stream.sorted(ju.Comparator.reverseOrder).nn.forEach: path =>
+          try
+            val _ = jnf.Files.deleteIfExists(path.nn)
+          catch case _: Throwable => ()
+      finally stream.close()
+
+  jl.Runtime.getRuntime.nn.addShutdownHook(jl.Thread(runnable))

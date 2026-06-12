@@ -36,6 +36,7 @@ import geodesy.*
 import prepositional.*
 import vacuous.*
 
+
 object Transformable:
   def apply[value]
     ( get: value => List[Transform], put: (value, List[Transform]) => value )
@@ -60,18 +61,7 @@ object Transformable:
     Transformable(_.transforms, (figure, ts) => figure.copy(transforms = ts))
 
 
+
 trait Transformable extends Typeclass:
   def transforms(self: Self): List[Transform]
   def withTransforms(self: Self, transforms: List[Transform]): Self
-
-extension [figure: Transformable as transformable](figure: figure)
-  private def appended(transform: Transform): figure =
-    transformable.withTransforms(figure, transformable.transforms(figure) :+ transform)
-
-  def transform(transform: Transform): figure = appended(transform)
-  def translate(delta: Delta): figure = appended(Transform.Translate(delta))
-  def scale(x: Float, y: Optional[Float] = Unset): figure = appended(Transform.Scale(x, y))
-  def rotate(angle: Angle): figure = appended(Transform.Rotate(angle))
-
-  def skew(angle: Angle, orientation: Orientation = Orientation.Horizontal): figure =
-    appended(Transform.Skew(angle, orientation))

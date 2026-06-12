@@ -41,6 +41,7 @@ import vacuous.*
 
 import RedraftError.Reason
 
+
 object Redraft:
 
   /* A single line of a `Redraft`. `Keep` is unambiguous context; `Add`/`Cut` are edits forced with
@@ -269,6 +270,7 @@ object Redraft:
 
     remaining
 
+
 case class Redraft(directives: Redraft.Directive*):
   def serialize: Stream[Text] = directives.map(Redraft.render1).to(Stream)
 
@@ -290,7 +292,3 @@ case class Redraft(directives: Redraft.Directive*):
   :   Stream[Text] raises RedraftError =
 
     resolve(original, compare).patch(original)
-
-extension (diff: Diff[Text])
-  def redraft(context: Redraft.Context = Redraft.Context.Minimal): Redraft =
-    Redraft.render(diff, context)

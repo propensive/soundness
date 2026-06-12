@@ -43,6 +43,8 @@ import denominative.*
 import panopticon.*
 import prepositional.*
 
+export xylophone.internal.Attributes
+
 export Xml.attribute
 
 extension [encodable: Encodable in Xml](value: encodable)

@@ -48,6 +48,8 @@ import wisteria.*
 
 import JsonError.Reason
 
+export jacinta.internal.Bcd
+
 given showable: (printer: JsonPrinter) => Json.Ast is Showable = printer.print(_)
 
 extension (json: Json.Ast)
@@ -174,8 +176,12 @@ extension (json: Json.Ast)
     case value: Array[Double] @unchecked => value.asInstanceOf[Bcd]
     case value: Long                     => Bcd(BigDecimal(value))
     case value: Double                   => Bcd(BigDecimal(value))
-    case value: Int                      => Bcd.fromString(Bcd.bcdIntText(value).stripPrefix("-"), value < 0)
-    case _                               => expected(JsonPrimitive.Number) yet Bcd(BigDecimal(0L))
+
+    case value: Int =>
+      Bcd.fromString(Bcd.bcdIntText(value).stripPrefix("-"), value < 0)
+
+    case _ =>
+      expected(JsonPrimitive.Number) yet Bcd(BigDecimal(0L))
 
   def long: Long raises JsonError = json.asMatchable match
     case value: Long                     => value
@@ -242,3 +248,9 @@ package jsonDiscriminables:
 
   given discriminatedUnionByKind: [value] => value is Discriminable in Json =
     Json.discriminatedUnion[value]("kind")
+
+
+package numberModes:
+  given full:   NumberMode = NumberMode.Full
+  given bcd:    NumberMode = NumberMode.Bcd
+  given double: NumberMode = NumberMode.Double

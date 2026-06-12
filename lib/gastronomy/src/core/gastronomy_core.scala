@@ -69,16 +69,17 @@ package crypto:
   // "Disallowed": broken or non-approved algorithms, key lengths and modes (incl.
   // MD5 and SHA-1); subsumes every weaker permit above.
   erased given permitDisallowedCrypto
-      : Permit[Concession.Des]
-      & Permit[Concession.Rc2]
-      & Permit[Concession.Blowfish]
-      & Permit[Concession.TripleDes]
-      & Permit[Concession.Dsa]
-      & Permit[Concession.SmallRsa]
-      & Permit[Concession.Ecb]
-      & Permit[Concession.Unauthenticated]
-      & Permit[Concession.Md5]
-      & Permit[Concession.Sha1] =
+  : Permit[Concession.Des]
+    & Permit[Concession.Rc2]
+    & Permit[Concession.Blowfish]
+    & Permit[Concession.TripleDes]
+    & Permit[Concession.Dsa]
+    & Permit[Concession.SmallRsa]
+    & Permit[Concession.Ecb]
+    & Permit[Concession.Unauthenticated]
+    & Permit[Concession.Md5]
+    & Permit[Concession.Sha1] =
+
     caps.unsafe.unsafeErasedValue
 
   // Year-based permits: an alternative to the named levels, composed from the same
@@ -134,3 +135,11 @@ extension [source: Streamable by Data](source: source)
   :   Digest in hash =
 
     source.stream[Data].digest[hash]
+
+
+// The concession of a hash algorithm: MD5 and SHA-1 are weak; everything else
+// (SHA-2, BLAKE3, CRC-32) is `Acceptable` and needs no permission.
+type HashWeakness[algorithm] = algorithm match
+  case Md5  => Concession.Md5
+  case Sha1 => Concession.Sha1
+  case _    => Concession.Acceptable

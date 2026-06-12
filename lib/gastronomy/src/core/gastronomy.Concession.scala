@@ -32,6 +32,7 @@
                                                                                                   */
 package gastronomy
 
+
 // A "concession" is a specific cryptographic weakness a caller must explicitly
 // accept (via a `crypto.permit…Crypto` import) before the corresponding algorithm,
 // key length or mode can be used. `Acceptable` is the absence of any weakness.
@@ -55,10 +56,3 @@ object Concession:
   sealed trait Dsa
   sealed trait Ecb
   sealed trait Unauthenticated
-
-// The concession of a hash algorithm: MD5 and SHA-1 are weak; everything else
-// (SHA-2, BLAKE3, CRC-32) is `Acceptable` and needs no permission.
-type HashWeakness[algorithm] = algorithm match
-  case Md5  => Concession.Md5
-  case Sha1 => Concession.Sha1
-  case _    => Concession.Acceptable

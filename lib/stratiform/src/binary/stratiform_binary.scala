@@ -30,74 +30,87 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package jacinta
+package stratiform
 
+import java.io.ByteArrayOutputStream
+import scala.language.unsafeNulls
 import anticipation.*
 import contingency.*
+import fulminate.*
+import gastronomy.*, hashProviders.soundnessHashing
 import prepositional.*
-import rudiments.*
+import ulysses.*
 import vacuous.*
 
-import JsonError.Reason
 
-extension (json: Json)
-  // Runtime-checks `json` against the schema for `topic`, then re-types it as a
-  // schema-typed `Json of topic from topic`. The phantom `Topic` records the
-  // current position within the schema (initially the root, `topic`) and `Origin`
-  // records the root schema itself, so that the `Dynamic` navigation macros can
-  // resolve fields and array indices against `topic` at compile time — with no
-  // `dynamicJsonAccess.enabled` import required.
-  //
-  // The conformance check walks `schematic.schema(): JsonSchema` against the
-  // value, raising `JsonError` on the first structural mismatch (wrong type, or a
-  // required field absent).
-  def verify[topic](using decodable: topic is Json.Decodable)
-  :     (Json of topic from topic) raises JsonError =
+// BinTEL §7 node encoding. Serialises a typed `Tel.Element` tree into
+// the binary form defined by `spec/bintel.md` — no magic number, no
+// schema signature; the output is exactly the document-root body
+// described in §7.1, suitable for §3 value-hashing.
+//
+// §7.1 forms:
+//   - Document root (Tel.Element.Node with keywordIndex = Unset):
+//       child-count : varint, then each child in canonical order.
+//   - Struct node (Node with elementType = Tels.Struct):
+//       keyword-index : varint, child-count : varint, recursive children.
+//   - Flag node (Node with elementType = Tels.Flag):
+//       keyword-index : varint.
+//   - Scalar node (Tel.Element.Value):
+//       keyword-index : varint, byte-length : varint, UTF-8 value bytes.
+//
+// Reference types do not appear: the type-assignment phase resolves
+// them to Struct / Scalar / Flag before producing Tel.Element.
 
-    conform(JsonSchema.reify(decodable.shape()), json.root)
-    json.asInstanceOf[Json of topic from topic]
+extension (tel: Tel)
+  // Encode this document's semantic model to BinTEL body bytes (no
+  // magic number, no schema signature). Type-assigns `tel` against
+  // `schema` first; raises `TelError` on type-assignment failures.
+  def bintel(schema: Tels): Data raises TelError =
+    Bintel.encode(Tel.Type.assign(tel, schema), schema)
 
-// Checks that a `Json.Ast` node conforms to a `JsonSchema`. An absent node is
-// permitted only where the schema is optional; otherwise each variant checks the
-// node's primitive type and recurses into object properties / array items.
-private def conform(schema: JsonSchema, ast: Json.Ast): Unit raises JsonError =
-  inline def mismatch(expected: JsonPrimitive): Unit =
-    raise(JsonError(Reason.NotType(ast.primitive, expected)))
+  // BLAKE3 digest of this document's BinTEL body (§3 value hash). The
+  // hash is taken over the body bytes only — no magic number, no
+  // schema signature — and is therefore a function of the semantic
+  // model and the schema alone, independent of presentation form.
+  def valueHash(schema: Tels): Digest in Blake3 raises TelError =
+    tel.bintel(schema).digest[Blake3]
 
-  if ast.isAbsent then (if !schema.optional then raise(JsonError(Reason.Absent)))
-  else schema match
-    case obj: JsonSchema.Object => obj.oneOf match
-      case variants: List[JsonSchema] =>
-        // A `oneOf` schema (e.g. a derived sum type) conforms if the node
-        // matches any one variant.
-        if !variants.exists { variant => safely(conform(variant, ast)).present }
-        then mismatch(JsonPrimitive.Object)
+  // Encode this document as a complete §6 BinTEL byte sequence —
+  // magic + signature length + signature + body. The signature length
+  // must be a valid palimpsest length under some `(H, k_i, k_r)`;
+  // otherwise raises `BintelError(BadSignatureLength)`.
+  def bintelDocument(schema: Tels, signature: Data)
+  :     Data raises TelError raises BintelError =
+    Bintel.frame(tel.bintel(schema), signature)
 
-      case _ =>
-        if !ast.isObject then mismatch(JsonPrimitive.Object) else
-          val absent = Json.Ast(Unset)
+  // Encode this document as a complete §6.2 self-contained BinTEL byte
+  // sequence — magic + signature + embedded schema body + document root.
+  // `schemaDoc` is the schema as a TEL document, parseable under the
+  // tel-schema axiom; its signature and bintel body are embedded so that a
+  // receiver holding only the axiom can decode the result with no external
+  // schema resolution.
+  def bintelSelfContained(schemaDoc: Tel): Data raises TelError raises BintelError =
+    val axiom      = Tels.Axiom.tels
+    val schema     = Tels.Layers.compose(Tels.Reconstructor.fromTel(schemaDoc))
+    val signature  = SchemaSignature.fromDocument(schemaDoc, axiom)
+    val schemaBody = schemaDoc.bintel(axiom)
+    Bintel.frameSelfContained(signature, schemaBody, tel.bintel(schema))
 
-          for (key, property) <- obj.properties do
-            val index = ast.objectIndexOf(key.s)
-            conform(property, if index < 0 then absent else ast.objectValue(index))
 
-    case array: JsonSchema.Array =>
-      if !ast.isArray then mismatch(JsonPrimitive.Array)
-      else if array.items.present then
-        val items = array.items.vouch
-        var index = 0
-        val length = ast.arrayLength
+extension (element: Tel.Element)
+  // Encode a pre-assigned semantic-model element to BinTEL body bytes.
+  // The schema supplies the member layout needed for §7.2 canonical
+  // child order (variant counts of `SelectRef` members).
+  def bintel(schema: Tels): Data = Bintel.encode(element, schema)
 
-        while index < length do
-          conform(items, ast.arrayElement(index))
-          index += 1
+  // BLAKE3 digest of this element's BinTEL body (§3 value hash).
+  def valueHash(schema: Tels): Digest in Blake3 = element.bintel(schema).digest[Blake3]
 
-    case _: JsonSchema.String  => if !ast.isString  then mismatch(JsonPrimitive.String)
-    case _: JsonSchema.Number  => if !ast.isNumber  then mismatch(JsonPrimitive.Number)
-    case _: JsonSchema.Integer => if !ast.isNumber  then mismatch(JsonPrimitive.Number)
-    case _: JsonSchema.Boolean => if !ast.isBoolean then mismatch(JsonPrimitive.Boolean)
-    case _: JsonSchema.Null    => if !ast.isNull    then mismatch(JsonPrimitive.Null)
 
-    // A `$ref` cannot be resolved without the root schema document, which is not
-    // yet threaded through; such nodes are left unchecked for now.
-    case _: JsonSchema.Ref => ()
+extension [value: Tel.Encodable](value: value)
+  // Encode any value to BinTEL body bytes, deriving the schema from its type:
+  // `value.bintel` is `value.encode.bintel(Tels.tels[value](…))`. The schema name is
+  // internal (a BinTEL body never embeds it), so a decoder that derives the schema from
+  // the same type agrees on the layout regardless of the chosen name.
+  def bintel(using value is TelSchematic over Tels.Type): Data raises TelError =
+    value.encode.bintel(Tels.tels[value](Text("root")))

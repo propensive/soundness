@@ -40,6 +40,8 @@ import contingency.*
 import fulminate.Diagnostics
 import vacuous.Unsafe
 
+export zephyrine.internal.Datum
+
 // Safe, allocation-free single-element peek. Returns `Datum.End` when the
 // cursor is finished; otherwise the current byte (unsigned, `0..255`) or
 // char wrapped as a `Datum`. The `Datum` opaque type (backed by `Int`)

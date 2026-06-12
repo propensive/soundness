@@ -40,6 +40,7 @@ import gossamer.*
 import vacuous.*
 import xenophile.*
 
+
 // A `Crypto` provider backed by OpenSSL's `libcrypto`, called through the
 // xenophile native FFM layer (`ForeignLibrary`): the C prototypes below are parsed
 // by `CHeaderDialect` and each call becomes a `java.lang.foreign` downcall.
@@ -239,6 +240,3 @@ object OpensslCrypto extends Crypto:
         ForeignLibrary.bytes(output, count1 + length2.get(int, 0L))
       finally lib.handle(t"EVP_CIPHER_CTX_free").invokeWithArguments(context)
     finally arena.close()
-
-package cryptoProviders:
-  given opensslCrypto: OpensslCrypto.type = OpensslCrypto

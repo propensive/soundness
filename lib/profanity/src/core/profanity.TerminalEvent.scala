@@ -38,7 +38,9 @@ import gossamer.*
 import prepositional.*
 import spectacular.*
 
+
 sealed trait TerminalEvent
+
 
 enum TerminalInfo extends TerminalEvent:
   case WindowSize(rows: Int, columns: Int)
@@ -52,10 +54,12 @@ enum TerminalInfo extends TerminalEvent:
   // changed the layout.
   case Redraw
 
+
 object Signal:
   given decoder: Signal is Decodable in Text = text => Signal.valueOf(text.lower.capitalize.s)
   given encodable: Signal is Encodable in Text = _.shortName
   given showable: Signal is Showable = _.shortName
+
 
 enum Signal extends TerminalEvent:
   case Hup, Int, Quit, Ill, Trap, Abrt, Bus, Fpe, Kill, Usr1, Segv, Usr2, Pipe, Alrm, Term, Chld,
@@ -65,8 +69,6 @@ enum Signal extends TerminalEvent:
   def name: Text = t"SIG${this.toString.show.upper}"
   def id: Int = if ordinal < 15 then ordinal + 1 else ordinal + 2
 
-type UnixSignal = Signal
-val UnixSignal = Signal
 
 object WindowsSignal:
   given decoder: WindowsSignal is Decodable in Text =
@@ -74,6 +76,7 @@ object WindowsSignal:
 
   given encodable: WindowsSignal is Encodable in Text = _.shortName
   given showable: WindowsSignal is Showable = _.shortName
+
 
 enum WindowsSignal extends TerminalEvent:
   case CtrlC, CtrlBreak, Close, Logoff, Shutdown
@@ -84,6 +87,7 @@ enum WindowsSignal extends TerminalEvent:
     case Close     => t"CLOSE"
     case Logoff    => t"LOGOFF"
     case Shutdown  => t"SHUTDOWN"
+
 
 object CtrlChar:
   def unapply(code: Char)
@@ -100,6 +104,7 @@ object CtrlChar:
 
         case _ =>
           None
+
 
 
 object Keypress:
@@ -143,6 +148,7 @@ object Keypress:
       case Insert    => key(t"⎀")
 
   given showable: Keypress is Showable = render(_)
+
 
 enum Keypress extends TerminalEvent:
   case Tab, Home, End, PageUp, PageDown, Insert, Delete, Enter, Backspace, Escape, Left, Right, Up,
