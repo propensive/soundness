@@ -33,9 +33,10 @@
 package contingency
 
 import language.experimental.pureFunctions
-import scala.language.unsafeNulls
 
 import java.util.concurrent.atomic as juca
+
+import scala.language.unsafeNulls
 import scala.util.boundary
 
 import fulminate.*

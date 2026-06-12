@@ -32,14 +32,15 @@
                                                                                                   */
 package superlunary
 
-import scala.quoted.*
-
-import contingency.*
-import prepositional.*
 import java.lang as jl
 import java.nio.file as jnf
 import java.util as ju
 import java.util.function as juf
+
+import scala.quoted.*
+
+import contingency.*
+import prepositional.*
 import ambience.*
 import anticipation.*
 import interfaces.paths.pathOnLinux

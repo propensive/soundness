@@ -33,6 +33,7 @@
 package savagery
 
 import scala.math.Numeric
+
 import prepositional.*
 import symbolism.*
 import geodesy.*

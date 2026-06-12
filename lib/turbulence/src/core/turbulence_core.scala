@@ -48,7 +48,6 @@ import prepositional.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
-
 import abstractables.instantIsAbstractable
 import probates.await
 

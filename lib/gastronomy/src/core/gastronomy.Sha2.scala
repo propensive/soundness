@@ -32,11 +32,11 @@
                                                                                                   */
 package gastronomy
 
+import scala.reflect.Selectable.reflectiveSelectable
+
 import anticipation.*
 import gossamer.*
 import prepositional.*
-
-import scala.reflect.Selectable.reflectiveSelectable
 
 object Sha2:
   given hash: [bits <: 224 | 256 | 384 | 512: ValueOf]

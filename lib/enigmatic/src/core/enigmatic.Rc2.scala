@@ -32,11 +32,11 @@
                                                                                                   */
 package enigmatic
 
+import scala.reflect.Selectable.reflectiveSelectable
+
 import anticipation.*
 import gossamer.*
 import prepositional.*
-
-import scala.reflect.Selectable.reflectiveSelectable
 
 object Rc2:
   given value: [bits <: 40 | 64 | 128: ValueOf, mode, padding]

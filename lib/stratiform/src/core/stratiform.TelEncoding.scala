@@ -32,8 +32,8 @@
                                                                                                   */
 package stratiform
 
-import scala.compiletime.*
 import scala.collection.Factory
+import scala.compiletime.*
 
 import adversaria.*
 import anticipation.*

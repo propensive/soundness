@@ -32,11 +32,11 @@
                                                                                                   */
 package gastronomy
 
+import scala.reflect.Selectable.reflectiveSelectable
+
 import anticipation.*
 import gossamer.*
 import prepositional.*
-
-import scala.reflect.Selectable.reflectiveSelectable
 
 object Md5:
   given hash: (hashing: Hashing { def md5: Hashing.Function }) => Hash in Md5 =

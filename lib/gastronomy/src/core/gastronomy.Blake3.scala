@@ -34,14 +34,14 @@ package gastronomy
 
 import java.nio.charset.StandardCharsets
 
+import scala.reflect.Selectable.reflectiveSelectable
+
 import anticipation.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-
-import scala.reflect.Selectable.reflectiveSelectable
 
 object Blake3:
   private final val OutLen   = 32

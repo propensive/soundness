@@ -32,10 +32,10 @@
                                                                                                   */
 package stratiform
 
-import scala.language.unsafeNulls
-
 import java.lang as jl
 import java.nio.charset.StandardCharsets
+
+import scala.language.unsafeNulls
 
 import anticipation.*
 import contingency.*
@@ -44,7 +44,6 @@ import fulminate.*
 import gossamer.*
 import vacuous.*
 import zephyrine.*
-
 import TelError.Reason
 
 // Streaming TEL parser. Consumes a `Cursor[Data]` on demand — no upfront

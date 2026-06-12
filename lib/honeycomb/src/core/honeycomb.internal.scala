@@ -34,6 +34,9 @@ package honeycomb
 
 import language.dynamics
 
+import java.lang as jl
+
+import scala.collection.immutable.ListMap
 import scala.quoted.*
 
 import anticipation.*
@@ -49,8 +52,6 @@ import spectacular.*
 import stenography.*
 import vacuous.*
 import zephyrine.*
-import java.lang as jl
-import scala.collection.immutable.ListMap
 
 object internal:
   def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
