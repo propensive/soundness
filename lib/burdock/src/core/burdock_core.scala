@@ -30,6 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package burdock
 
-export burdock.{externalize, Bootstrapper}
+// Wraps an application's main entry point to make its dependencies externalizable by
+// Burdock. At compile time, `externalize` captures the build's dependency JARs, hashes
+// each (SHA-256), hard-links them into the Burdock cache (`~/.cache/burdock/<sha256>.jar`)
+// so their bytes stay retrievable by hash, and embeds the hash list as the
+// `META-INF/burdock.deps` resource; at runtime it simply runs `block`. The
+// published-vs-unpublished decision is deferred to repackage (where deps.dev is queried).
+//
+//     @main def myApp(): Unit = externalize:
+//       // the application's body
+//
+inline def externalize[result](inline block: result): result =
+  ${internal.externalize('block)}

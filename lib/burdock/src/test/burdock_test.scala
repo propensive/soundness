@@ -42,11 +42,19 @@ import temporaryDirectories.system
 
 object Tests extends Suite(m"Burdock Tests"):
   def run(): Unit =
-    suite(m"Dependency-hashing macro"):
-      val hashes: List[Text] = Embed.dependencyHashes
+    suite(m"Externalizing macro"):
       val home: Text = _root_.java.lang.System.getProperty("user.home").nn.tt
 
-      test(m"captures a non-empty set of dependency hashes"):
+      // Invoking `externalize` embeds `META-INF/burdock.deps` into this module's compiled
+      // output and hard-links each dependency JAR into the Burdock cache.
+      externalize(())
+
+      val hashes: List[Text] =
+        val stream = getClass.nn.getResourceAsStream("/META-INF/burdock.deps").nn
+        val content: Text = _root_.java.lang.String(stream.readAllBytes().nn, "UTF-8").tt
+        content.cut(t"\n").filter(_ != t"")
+
+      test(m"embeds a non-empty set of dependency hashes as a resource"):
         hashes.length
       .assert(_ > 0)
 
@@ -59,12 +67,6 @@ object Tests extends Suite(m"Burdock Tests"):
           val jar: Text = t"$home/.cache/burdock/$hash.jar"
           _root_.java.nio.file.Files.exists(_root_.java.nio.file.Paths.get(jar.s).nn)
       .assert(_ == true)
-
-      test(m"the hash list is written as a packaged resource"):
-        val stream = getClass.nn.getResourceAsStream("/META-INF/burdock.deps").nn
-        val content: Text = _root_.java.lang.String(stream.readAllBytes().nn, "UTF-8").tt
-        content.cut(t"\n").to(Set)
-      .assert(_ == hashes.to(Set))
 
     suite(m"Repackager partition"):
       val published = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"

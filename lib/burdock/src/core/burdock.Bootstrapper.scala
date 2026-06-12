@@ -95,9 +95,11 @@ object Bootstrapper:
         // `META-INF/burdock.deps` resource the build-time macro wrote. (Locating by
         // the `burdock.Bootstrap` class would find burdock's own JAR, not the app's,
         // once the app JAR is slim.)
+        val resourcePath: String = burdock.internal.ResourcePath
+
         val depsResource: jn.URL =
-          Optional(loader.getResource(Embed.ResourcePath)).lest:
-            UserError(m"this JAR was not built with Burdock (no ${Embed.ResourcePath.tt})")
+          Optional(loader.getResource(resourcePath)).lest:
+            UserError(m"this JAR was not built with Burdock (no ${resourcePath.tt})")
 
         val connection: jn.URLConnection = depsResource.openConnection().nn
 
@@ -115,7 +117,7 @@ object Bootstrapper:
         val bootstrapClass: Data = (Classpath/"burdock"/"Bootstrap.class").read[Data]
 
         // Unpublished dependencies are reconstructed from the build-time hard-links in
-        // `~/.cache/burdock/<sha256>.jar` (see `Embed`); published ones resolve via
+        // `~/.cache/burdock/<sha256>.jar` (see `externalize`); published ones resolve via
         // deps.dev and are referenced by URL rather than inlined.
         val home: Text = _root_.java.lang.System.getProperty("user.home").nn.tt
         val cacheDir: Path on Linux = t"$home/.cache/burdock".decode[Path on Linux]

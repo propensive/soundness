@@ -108,7 +108,7 @@ object Repackage:
       case FqcnError(_, _)      => RepackageError(m"the Main-Class is not a valid class name")
 
     . mitigate:
-        val resource: Text = Embed.ResourcePath.tt
+        val resource: Text = burdock.internal.ResourcePath.tt
         val bootstrapName: Text = t"burdock/Bootstrap.class"
         var manifestData: Optional[Data] = Unset
         var depsData: Optional[Data] = Unset
