@@ -383,17 +383,18 @@ object Tels extends Tels2:
               case Some(idx) =>
                 members(idx) match
                   case existing: Field =>
-                    members(idx) = Field
-                      ( required   = mergePolarity(existing.required, f.required,
-                                      PolarityAxis.Required),
-                       repeatable = mergePolarity(existing.repeatable, f.repeatable,
-                                      PolarityAxis.Repeatable),
-                       keyword     = f.keyword,
-                       fieldType   = existing.fieldType,
-                       default     = existing.default,
-                       // §20.3: a layer's non-null description overrides
-                       // the base's; otherwise the base's is inherited.
-                       description = f.description.or(existing.description) )
+                    members(idx) =
+                      Field
+                        ( required   = mergePolarity(existing.required, f.required,
+                                        PolarityAxis.Required),
+                         repeatable = mergePolarity(existing.repeatable, f.repeatable,
+                                        PolarityAxis.Repeatable),
+                         keyword     = f.keyword,
+                         fieldType   = existing.fieldType,
+                         default     = existing.default,
+                         // §20.3: a layer's non-null description overrides
+                         // the base's; otherwise the base's is inherited.
+                         description = f.description.or(existing.description) )
 
                   case _ => abort(TelError(Reason.LayerFieldTypeMismatch))
 
@@ -406,12 +407,13 @@ object Tels extends Tels2:
               case Some(idx) =>
                 members(idx) match
                   case existing: SelectRef if existing.reference == s.reference =>
-                    members(idx) = SelectRef
-                      ( required   = mergePolarity(existing.required, s.required,
-                                       PolarityAxis.Required),
-                        repeatable = mergePolarity(existing.repeatable, s.repeatable,
-                                       PolarityAxis.Repeatable),
-                        reference  = s.reference )
+                    members(idx) =
+                      SelectRef
+                        ( required   = mergePolarity(existing.required, s.required,
+                                         PolarityAxis.Required),
+                          repeatable = mergePolarity(existing.repeatable, s.repeatable,
+                                         PolarityAxis.Repeatable),
+                          reference  = s.reference )
 
                   case _ => abort(TelError(Reason.LayerKeywordCollision))
 
@@ -631,11 +633,12 @@ object Tels extends Tels2:
 
         i += 1
 
-      val builtinScalars = IArray
-        ( ScalarDefinition(t"Identifier", IArray(t"identifier")),
-          ScalarDefinition(t"TypeName",   IArray(t"type-name")),
-          ScalarDefinition(t"Sigil",      IArray(t"sigil")),
-          ScalarDefinition(t"String",     IArray(t"string")) )
+      val builtinScalars =
+        IArray
+          ( ScalarDefinition(t"Identifier", IArray(t"identifier")),
+            ScalarDefinition(t"TypeName",   IArray(t"type-name")),
+            ScalarDefinition(t"Sigil",      IArray(t"sigil")),
+            ScalarDefinition(t"String",     IArray(t"string")) )
 
       Tels
         ( name     = name.or(abort(TelError(Reason.RequiredMemberAbsent))),
@@ -839,11 +842,12 @@ object Tels extends Tels2:
         .or(abort(TelError(Reason.RequiredMemberAbsent)))
       val layers   = nodesAt(ch, 6).map(layerFromElement)
 
-      val builtinScalars = IArray
-        ( ScalarDefinition(t"Identifier", IArray(t"identifier")),
-          ScalarDefinition(t"TypeName",   IArray(t"type-name")),
-          ScalarDefinition(t"Sigil",      IArray(t"sigil")),
-          ScalarDefinition(t"String",     IArray(t"string")) )
+      val builtinScalars =
+        IArray
+          ( ScalarDefinition(t"Identifier", IArray(t"identifier")),
+            ScalarDefinition(t"TypeName",   IArray(t"type-name")),
+            ScalarDefinition(t"Sigil",      IArray(t"sigil")),
+            ScalarDefinition(t"String",     IArray(t"string")) )
 
       Tels(name, document, layers, sigil, records, builtinScalars ++ scalars, selects)
 

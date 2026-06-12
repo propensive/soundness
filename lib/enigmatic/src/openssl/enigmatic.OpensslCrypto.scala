@@ -79,13 +79,14 @@ object OpensslCrypto extends Crypto:
     int EVP_DecryptFinal_ex(EVP_CIPHER_CTX* ctx, unsigned char* out, int* outl);
     """
 
-  private val paths: List[Text] = List
-    ( t"/opt/homebrew/opt/openssl@3/lib/libcrypto.dylib",
-      t"/opt/homebrew/lib/libcrypto.dylib",
-      t"/usr/local/opt/openssl@3/lib/libcrypto.dylib",
-      t"libcrypto.so.3",
-      t"libcrypto.so",
-      t"libcrypto.dylib" )
+  private val paths: List[Text] =
+    List
+      ( t"/opt/homebrew/opt/openssl@3/lib/libcrypto.dylib",
+        t"/opt/homebrew/lib/libcrypto.dylib",
+        t"/usr/local/opt/openssl@3/lib/libcrypto.dylib",
+        t"libcrypto.so.3",
+        t"libcrypto.so",
+        t"libcrypto.dylib" )
 
   // The library outlives every call, so it is bound to the global arena.
   private lazy val lib: ForeignLibrary = ForeignLibrary(header, paths)(using Arena.global().nn)
