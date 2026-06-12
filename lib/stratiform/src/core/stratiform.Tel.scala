@@ -143,12 +143,14 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // formatting.
   def modify(fieldName: String, value: Tel)(using erased DynamicTelEnabler): Tel =
     val name = Tel.camelToKebab(fieldName)
+
     val newCompound = value.subtree match
       case c: Tel.Compound => c.copy(keyword = name)
       case d: Tel.Document =>
         Tel.Compound(name, IArray.empty[Tel.Atom], Unset, d.children)
 
     val newChildren = Tel.replaceOrAppendCompound(subtree.children, name, newCompound)
+
     val newSubtree = subtree match
       case d: Tel.Document => d.copy(children = newChildren)
       case c: Tel.Compound => c.copy(children = newChildren)
@@ -204,21 +206,22 @@ object Tel extends Tel2:
     def assign(tel: Tel, schema: Tels): Tel.Element raises TelError =
       val compounds: IArray[Tel.Compound] = tel.subtree.children.flatMap(_.compounds)
       val rootChildren = assignChildren(compounds, schema.document, schema)
+
       val rootElements = applyConstraints
-                          (schema.document, IArray.empty[Tel.Element], rootChildren, schema)
+                          ( schema.document, IArray.empty[Tel.Element], rootChildren, schema )
 
       Tel.Element.Node
-       (keywordIndex = Unset, elementType = schema.document, children = rootElements)
+       ( keywordIndex = Unset, elementType = schema.document, children = rootElements )
 
     def assign(tel: Tel, schema: Tels, validators: Tel.Validator.Registry)
-    :     Tel.Element raises TelError =
+    :   Tel.Element raises TelError =
       val element = assign(tel, schema)
       validateElement(element, validators)
       element
 
     private def validateElement
-         (element: Tel.Element, registry: Tel.Validator.Registry)
-    :     Unit raises TelError =
+         ( element: Tel.Element, registry: Tel.Validator.Registry )
+    :   Unit raises TelError =
       element match
         case Tel.Element.Value(_, scalarType, text) =>
           scalarType.validators.each: name =>
@@ -229,11 +232,12 @@ object Tel extends Tel2:
 
         case Tel.Element.Node(_, elementType, children) =>
           children.each(validateElement(_, registry))
+
           elementType match
             case s: Struct =>
               s.validators.each: name =>
                 registry(Tel.Validator.Request.Struct
-                         (name, element.asInstanceOf[Tel.Element.Node]))
+                         ( name, element.asInstanceOf[Tel.Element.Node] ))
                 match
                   case Tel.Validator.Response.Valid      => ()
                   case Tel.Validator.Response.Invalid(_) =>
@@ -268,7 +272,7 @@ object Tel extends Tel2:
     // keyword sequence — used as the `keywordIndex` of every
     // Tel.Element produced from this parent.
     private def keywordMap(parent: Struct, schema: Tels)
-    :     Map[Text, KeywordEntry] raises TelError =
+    :   Map[Text, KeywordEntry] raises TelError =
       val builder = scala.collection.mutable.LinkedHashMap.empty[Text, KeywordEntry]
       var idx = 0
       var flatIdx = 0
@@ -287,6 +291,7 @@ object Tel extends Tel2:
 
             while v < selectDef.variants.length do
               val variant = selectDef.variants(v)
+
               builder(variant.keyword) =
                 KeywordEntry(flatIdx + v, variant.variantType, s, Optional(variant))
 
@@ -323,10 +328,10 @@ object Tel extends Tel2:
     // running flat keyword index (`flatPos`) — Tel.Element.keywordIndex
     // uses flat positions per BinTEL §5.
     private def assignAtoms
-         (atoms:  IArray[Tel.Atom],
+         ( atoms:  IArray[Tel.Atom],
           parent: Struct,
-          schema: Tels)
-    :     IArray[Tel.Element] raises TelError =
+          schema: Tels )
+    :   IArray[Tel.Element] raises TelError =
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       var pos = 0
       var flatPos = 0
@@ -357,9 +362,11 @@ object Tel extends Tel2:
               resolveType(f.fieldType, schema) match
                 case s: Scalar =>
                   results += Tel.Element.Value(flatPos, s, atomText)
+
                   if f.repeatable != Polarity.Loose then
                     flatPos += 1
                     pos += 1
+
                   consumed = true
 
                 case Flag =>
@@ -381,9 +388,11 @@ object Tel extends Tel2:
               selectDef.variants.zipWithIndex.find(_._1.keyword == atomText) match
                 case Some((_, variantOffset)) =>
                   results += Tel.Element.Node(flatPos + variantOffset, Flag, IArray.empty)
+
                   if s.repeatable != Polarity.Loose then
                     flatPos += selectDef.variants.length
                     pos += 1
+
                   consumed = true
 
                 case None =>
@@ -400,16 +409,17 @@ object Tel extends Tel2:
       IArray.from(results)
 
     private def assignChildren
-         (compounds: IArray[Tel.Compound],
+         ( compounds: IArray[Tel.Compound],
           parent:    Struct,
-          schema:    Tels)
-    :     IArray[Tel.Element] raises TelError =
+          schema:    Tels )
+    :   IArray[Tel.Element] raises TelError =
       val km = keywordMap(parent, schema)
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       var i = 0
 
       while i < compounds.length do
         val compound = compounds(i)
+
         val entry = km.get(compound.keyword).getOrElse:
           abort(TelError(Reason.UnknownKeyword))
 
@@ -423,7 +433,7 @@ object Tel extends Tel2:
            atomElements:  IArray[Tel.Element],
            childElements: IArray[Tel.Element],
            schema:        Tels )
-    :     IArray[Tel.Element] raises TelError =
+    :   IArray[Tel.Element] raises TelError =
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       results ++= atomElements
       results ++= childElements
@@ -463,10 +473,10 @@ object Tel extends Tel2:
       IArray.from(results)
 
     private def assignCompound
-         (compound: Tel.Compound,
+         ( compound: Tel.Compound,
           entry:    KeywordEntry,
-          schema:   Tels)
-    :     Tel.Element raises TelError =
+          schema:   Tels )
+    :   Tel.Element raises TelError =
       val resolved = resolveType(entry.entryType, schema)
 
       resolved match
@@ -546,6 +556,7 @@ object Tel extends Tel2:
 
       private def identifier(value: Text): Response =
         val s = value.s
+
         if s.isEmpty then fail(t"the identifier must not be empty", (0, 0))
         else if s.startsWith("-") then fail(t"the identifier must not begin with a hyphen", (0, 1))
         else if s.endsWith("-") then fail(t"the identifier must not end with a hyphen",
@@ -554,8 +565,10 @@ object Tel extends Tel2:
           (s.indexOf("--"), s.indexOf("--") + 2))
         else
           var i = 0
+
           while i < s.length do
             val c = s.charAt(i)
+
             if !(c == '-' || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) then
               return fail(t"identifier character '$c' must be lowercase ASCII letter, digit, or hyphen",
                 (i, i + 1))
@@ -566,15 +579,19 @@ object Tel extends Tel2:
 
       private def typeName(value: Text): Response =
         val s = value.s
+
         if s.isEmpty then fail(t"the type name must not be empty", (0, 0))
         else
           val first = s.charAt(0)
+
           if !(first >= 'A' && first <= 'Z') then
             fail(t"the type name must start with an uppercase ASCII letter", (0, 1))
           else
             var i = 1
+
             while i < s.length do
               val c = s.charAt(i)
+
               if !((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9')) then
                 return fail(t"type-name character '$c' must be ASCII alphanumeric", (i, i + 1))
 
@@ -584,9 +601,11 @@ object Tel extends Tel2:
 
       private def sigilCheck(value: Text): Response =
         val s = value.s
+
         if s.length != 1 then fail(t"the sigil must be a single character", (0, s.length))
         else
           val c = s.charAt(0)
+
           if c == ' ' || c == '\n' || c == '\r' || c == '\t' then
             fail(t"the sigil must not be whitespace", (0, 1))
           else if (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') then
@@ -624,10 +643,10 @@ object Tel extends Tel2:
   // the optional `index` disambiguates them — `Unset` means "the
   // first" (index 0).
   case class Pointer(steps: IArray[Pointer.Step]):
-    def /(keyword: Text): Pointer =
+    def / (keyword: Text): Pointer =
       Pointer(steps :+ Pointer.Step(keyword, Unset))
 
-    def /(keyword: Text, index: Int): Pointer =
+    def / (keyword: Text, index: Int): Pointer =
       Pointer(steps :+ Pointer.Step(keyword, index))
 
     def isEmpty: Boolean = steps.length == 0
@@ -709,6 +728,7 @@ object Tel extends Tel2:
 
       def text: Text =
         val t = _text
+
         if t == null then
           val b = bytes.nn
           val s = new String(b, byteOff, byteLen, java.nio.charset.StandardCharsets.UTF_8)
@@ -733,8 +753,8 @@ object Tel extends Tel2:
       // arena's next growth event. UTF-8 decode is deferred until
       // `.text` is first accessed.
       private[stratiform] def fromArena
-                    (arena: Array[Byte], off: Int, len: Int, precedingSpaces: Int)
-      :     Inline =
+                    ( arena: Array[Byte], off: Int, len: Int, precedingSpaces: Int )
+      :   Inline =
         new Inline(arena, off, len, null, precedingSpaces)
 
       def unapply(i: Inline): (Text, Int) = (i.text, i.precedingSpaces)
@@ -772,6 +792,7 @@ object Tel extends Tel2:
     import denominative.nil
     var acc    = IArray.empty[Byte]
     var stream = source
+
     while !stream.nil do
       acc = acc ++ stream.head
       stream = stream.tail
@@ -813,6 +834,7 @@ object Tel extends Tel2:
     import denominative.nil
     val builder = new StringBuilder()
     var s = stream
+
     while !s.nil do
       builder.append(s.head.s)
       s = s.tail
@@ -845,8 +867,10 @@ object Tel extends Tel2:
   private[stratiform] def camelToKebab(s: String): Text =
     val sb = StringBuilder()
     var i = 0
+
     while i < s.length do
       val c = s.charAt(i)
+
       if c >= 'A' && c <= 'Z' then
         if i > 0 then sb.append('-')
         sb.append((c - 'A' + 'a').toChar)
@@ -860,14 +884,16 @@ object Tel extends Tel2:
   // blocks; if no compound matches, append the new compound to the
   // last block (creating a fresh block if there are none).
   private[stratiform] def replaceOrAppendCompound
-       (blocks: IArray[Block], keyword: Text, compound: Compound)
-  :     IArray[Block] =
+       ( blocks: IArray[Block], keyword: Text, compound: Compound )
+  :   IArray[Block] =
     var b = 0
     var found = false
     val out = scala.collection.mutable.ArrayBuffer.from(blocks.toList)
+
     while b < out.length && !found do
       val cs = out(b).compounds
       val idx = cs.indexWhere(_.keyword == keyword)
+
       if idx >= 0 then
         out(b) = out(b).copy(compounds = cs.updated(idx, compound))
         found = true
@@ -887,13 +913,15 @@ object Tel extends Tel2:
   // out-of-range index leaves the children unchanged. Used by the panopticon
   // `Ordinal` optic.
   private[stratiform] def withChildCompound
-       (blocks: IArray[Block], index: Int, transform: Compound => Compound)
-  :     IArray[Block] =
+       ( blocks: IArray[Block], index: Int, transform: Compound => Compound )
+  :   IArray[Block] =
     var offset = 0
+
     blocks.map: block =>
       val compounds = block.compounds
       val base = offset
       offset += compounds.length
+
       if index >= base && index < base + compounds.length
       then block.copy(compounds = compounds.updated(index - base, transform(compounds(index - base))))
       else block
@@ -901,6 +929,6 @@ object Tel extends Tel2:
   // Apply `transform` to every child compound (flattened across blocks),
   // preserving block structure. Used by the panopticon `Each` optic.
   private[stratiform] def mapChildCompounds
-       (blocks: IArray[Block], transform: Compound => Compound)
-  :     IArray[Block] =
+       ( blocks: IArray[Block], transform: Compound => Compound )
+  :   IArray[Block] =
     blocks.map(block => block.copy(compounds = block.compounds.map(transform)))

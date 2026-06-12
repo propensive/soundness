@@ -45,7 +45,7 @@ import prepositional.*
 // secure-random work is delegated to the in-scope `Crypto` provider.
 object HmacCipher:
   given value: [algorithm <: Algorithm] => (hash: Hash in algorithm) => (crypto: Crypto)
-            => HmacCipher[algorithm] =
+            =>  HmacCipher[algorithm] =
     HmacCipher[algorithm]()
 
 class HmacCipher[algorithm <: Algorithm]()(using hash: Hash in algorithm, crypto: Crypto)
@@ -64,7 +64,9 @@ extends Cipher, Signing, Symmetric:
     if a.length != b.length then false else
       var diff = 0
       var index = 0
+
       while index < a.length do
         diff |= (a(index) ^ b(index)) & 0xFF
         index += 1
+
       diff == 0

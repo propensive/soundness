@@ -265,12 +265,13 @@ object TelError:
     case FlagWithContent         extends Reason(311)
 
 case class TelError(reason: TelError.Reason, position: Optional[TelError.Position] = Unset)
-                   (using Diagnostics)
+                   ( using Diagnostics )
 extends Error
   ( 605, reason.number )
   ( position.let: p =>
       m"the TEL document is invalid at $p because $reason"
-    . or(m"the TEL document is invalid because $reason")):
+
+    . or(m"the TEL document is invalid because $reason") ):
 
   // The internal 1-indexed position rendered as a uniform 0-based `Span`.
   def span: Span = position.lay(Span.empty): p =>

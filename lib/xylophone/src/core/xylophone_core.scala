@@ -75,6 +75,7 @@ private def replaceNamedChild(xml: Xml, name: String, value: Xml): Xml = xml mat
     var done = false
 
     var i = 0
+
     while i < children.length do
       children(i) match
         case element: Element if !done && element.label == name.tt =>
@@ -82,6 +83,7 @@ private def replaceNamedChild(xml: Xml, name: String, value: Xml): Xml = xml mat
           done = true
         case other =>
           buffer += other
+
       i += 1
 
     if !done then buffer ++= replacement
@@ -97,6 +99,7 @@ private def updateChildElements(xml: Xml, select: Int => Boolean, lambda: Xml =>
   xml match
     case Element(label, attributes, children) =>
       var index = 0
+
       val out = children.map:
         case element: Element =>
           val here = index

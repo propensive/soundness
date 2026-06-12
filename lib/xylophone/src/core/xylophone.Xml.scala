@@ -123,6 +123,7 @@ object Xml extends Tag.Container
     textOf(xml).let: text =>
       try Integer.parseInt(text.s).nn
       catch case _: NumberFormatException => raise(XmlError()) yet 0
+
     . or:
         raise(XmlError()) yet 0
 
@@ -130,6 +131,7 @@ object Xml extends Tag.Container
     textOf(xml).let: text =>
       try jl.Long.parseLong(text.s).nn
       catch case _: NumberFormatException => raise(XmlError()) yet 0L
+
     . or:
         raise(XmlError()) yet 0L
 
@@ -137,6 +139,7 @@ object Xml extends Tag.Container
     textOf(xml).let: text =>
       try jl.Short.parseShort(text.s).nn
       catch case _: NumberFormatException => raise(XmlError()) yet 0.toShort
+
     . or:
         raise(XmlError()) yet 0.toShort
 
@@ -144,6 +147,7 @@ object Xml extends Tag.Container
     textOf(xml).let: text =>
       try jl.Byte.parseByte(text.s).nn
       catch case _: NumberFormatException => raise(XmlError()) yet 0.toByte
+
     . or:
         raise(XmlError()) yet 0.toByte
 
@@ -151,6 +155,7 @@ object Xml extends Tag.Container
     textOf(xml).let: text =>
       try jl.Double.parseDouble(text.s).nn
       catch case _: NumberFormatException => raise(XmlError()) yet 0.0
+
     . or:
         raise(XmlError()) yet 0.0
 
@@ -158,6 +163,7 @@ object Xml extends Tag.Container
     textOf(xml).let: text =>
       try jl.Float.parseFloat(text.s).nn
       catch case _: NumberFormatException => raise(XmlError()) yet 0.0f
+
     . or:
         raise(XmlError()) yet 0.0f
 
@@ -167,6 +173,7 @@ object Xml extends Tag.Container
         case "true"  => true
         case "false" => false
         case _       => raise(XmlError()) yet false
+
     . or:
         raise(XmlError()) yet false
 
@@ -258,13 +265,16 @@ object Xml extends Tag.Container
 
       val children: scm.HashMap[String, Element] = scm.HashMap.empty
       var i = 0
+
       while i < element.children.length do
         element.children(i) match
           case child: Element =>
             val childLabel = child.label.s
+
             if !children.contains(childLabel) then
               children.update(childLabel, child)
           case _ => ()
+
         i += 1
 
       build: [field] =>
@@ -324,6 +334,7 @@ object Xml extends Tag.Container
               resolved.let: discriminant =>
                 delegate(discriminant): [variant <: derivation] =>
                   context => context.decoded(xml)
+
               . or:
                   summonFrom:
                     case derivationDefault: Default[`derivation`] =>
@@ -382,9 +393,9 @@ object Xml extends Tag.Container
             else children += wrap(wireName, encoded)
 
         Element
-         (typeName[derivation],
+         ( typeName[derivation],
           Attributes(attributes.toSeq*),
-          children.toArray.immutable(using Unsafe))
+          children.toArray.immutable(using Unsafe) )
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Xml =
       value =>
@@ -490,7 +501,7 @@ object Xml extends Tag.Container
   // `asInstanceOf` cast — `value over Xml` is just `value { type
   // Transport = Xml }` so the cast is a no-op at runtime.
   given aggregableOver: [value: Decodable in Xml] => (schema: XmlSchema)
-  =>  (Tactic[ParseError], Tactic[XmlError])
+  =>  ( Tactic[ParseError], Tactic[XmlError] )
   =>  (value over Xml) is Aggregable by Text =
 
     input =>
@@ -529,6 +540,7 @@ object Xml extends Tag.Container
   def parseTracked
     (input: Iterator[Text])(using schema: XmlSchema, tactic: Tactic[ParseError])
   :   Tracked =
+
     val parser = XmlParser.fromIteratorTracked(input)
     val xml = parser.parseXml(headers0 = false)
     val index = parser.rootIndex
@@ -897,6 +909,7 @@ object Xml extends Tag.Container
       val decoded = value match
         case Fragment(inner) => result.decoded(inner)
         case xml: Xml        => result.decoded(xml)
+
       val foci = summon[Foci[Xml.Focus]]
       val tracked = this
       foci.supplement(foci.length, _.let(_.withPosition(tracked)).vouch)
@@ -981,6 +994,7 @@ object Xml extends Tag.Container
             if child.label == name then
               seen += 1
               if seen == ordinal then found = elementIndex
+
             elementIndex += 1
 
           case _ => ()
@@ -1064,9 +1078,9 @@ object Xml extends Tag.Container
       new XmlParser(Cursor[Text](input), tracking = true)
 
   private[xylophone] final class XmlParser
-                                  (cursor:                   Cursor[Text],
-                                   protected[xylophone] val tracking: Boolean)
-                                  (using schema: XmlSchema):
+                                  ( cursor:                   Cursor[Text],
+                                   protected[xylophone] val tracking: Boolean )
+                                  ( using schema: XmlSchema ):
     type Region = Cursor.Mark
 
     private var heldToken: Cursor.Held | Null = null
@@ -1085,8 +1099,9 @@ object Xml extends Tag.Container
     // `ArrayBuffer[Node]` allocation per element (plus its backing array)
     // for repetitive record-shaped XML.
     private var nodeBufferId: Int = -1
+
     private val nodeBuffers: scala.collection.mutable.ArrayBuffer
-                                [scala.collection.mutable.ArrayBuffer[Node]] =
+                                [ scala.collection.mutable.ArrayBuffer[Node] ] =
       scala.collection.mutable.ArrayBuffer.empty
 
     // Small open-addressed cache for repeating tag names. Record-shape XML
@@ -1128,12 +1143,14 @@ object Xml extends Tag.Container
     // within the scratch. The buffer pool grows to the deepest nesting
     // depth seen and is reused across parses on the same `XmlParser`.
     private var indexBufferId: Int = -1
+
     private val indexBuffers: scala.collection.mutable.ArrayBuffer
-                                [scala.collection.mutable.ArrayBuffer[Int]] =
+                                [ scala.collection.mutable.ArrayBuffer[Int] ] =
       scala.collection.mutable.ArrayBuffer.empty
 
     private inline def getIndexBuffer(): scala.collection.mutable.ArrayBuffer[Int] =
       indexBufferId += 1
+
       if indexBuffers.length <= indexBufferId then
         val nu = scala.collection.mutable.ArrayBuffer.empty[Int]
         indexBuffers += nu
@@ -1159,14 +1176,17 @@ object Xml extends Tag.Container
 
     private def reconcileLineation(): Unit =
       val end = cursor.unsafePos(using Unsafe)
+
       if lineationPos < end then
         var i = lineationPos
         var newlines = 0
         var lastNewlineAt = -1
+
         while i < end do
           if bytes(i) == '\n' then
             newlines += 1
             lastNewlineAt = i
+
           i += 1
 
         if newlines > 0 then
@@ -1211,6 +1231,7 @@ object Xml extends Tag.Container
       // Attribute offsets first, then element offsets.
       var i = 0
       var prevEnd = 0
+
       while i < attrCount do
         out += headerSize + prevEnd
         prevEnd = attrEnds(i)
@@ -1219,6 +1240,7 @@ object Xml extends Tag.Container
       i = 0
       prevEnd = attrEnds.lastOption.getOrElse(0)
       val attrsTotal = attrEnds.lastOption.getOrElse(0)
+
       while i < elemCount do
         out += headerSize + attrsTotal + prevEnd
         prevEnd = childEnds(i)
@@ -1268,6 +1290,7 @@ object Xml extends Tag.Container
     private def moreSlow(): Boolean =
       syncTo()
       if tracking then reconcileLineation()
+
       if cursor.more then { syncFrom(); true }
       else
         if tracking then syncFrom()
@@ -1275,6 +1298,7 @@ object Xml extends Tag.Container
 
     protected inline def peek: Char = bytes(pos)
     protected inline def advance(): Unit = pos += 1
+
     protected inline def position: Int =
       syncTo()
       cursor.position.n0
@@ -1328,6 +1352,7 @@ object Xml extends Tag.Container
           col = 1
         else
           col += 1
+
         i += 1
 
       val end = cursor.position.n0
@@ -1387,10 +1412,12 @@ object Xml extends Tag.Container
       while more && isNameChar(peek) do
         val c = peek
         if c >= 128 then ascii = false
+
         if len < 8 then
           packedLow = packedLow | ((c.toLong & 0xFFL) << (len << 3))
         else if len < 16 then
           packedHigh = packedHigh | ((c.toLong & 0xFFL) << ((len - 8) << 3))
+
         len += 1
         advance()
 
@@ -1900,9 +1927,11 @@ object Xml extends Tag.Container
         else
           val arr = new Array[Node](children.length)
           var i = 0
+
           while i < children.length do
             arr(i) = children(i)
             i += 1
+
           arr.immutable(using Unsafe)
 
       relinquishNodeBuffer()
@@ -1922,6 +1951,7 @@ object Xml extends Tag.Container
     def parseXml(headers0: Boolean)(using Tactic[ParseError]): Xml =
       cursor.hold:
         heldToken = summon[Cursor.Held]
+
         try
           if tracking then parseXmlTracked0(headers0) else parseXml0(headers0)
         finally heldToken = null
@@ -2018,8 +2048,10 @@ object Xml extends Tag.Container
         val attrEnds  = getIndexBuffer()
         val childDescs = getIndexBuffer()
         val childEnds  = getIndexBuffer()
+
         emitElementDescriptor
-          (out, attrDescs, attrEnds, childDescs, childEnds, startLine, startColumn, startMark)
+          ( out, attrDescs, attrEnds, childDescs, childEnds, startLine, startColumn, startMark )
+
         relinquishIndexBuffer()
         relinquishIndexBuffer()
         relinquishIndexBuffer()
@@ -2049,7 +2081,8 @@ object Xml extends Tag.Container
             Element(name, attrs, children)
 
         emitElementDescriptor
-          (out, attrDescs, attrEnds, childDescs, childEnds, startLine, startColumn, startMark)
+          ( out, attrDescs, attrEnds, childDescs, childEnds, startLine, startColumn, startMark )
+
         relinquishIndexBuffer()
         relinquishIndexBuffer()
         relinquishIndexBuffer()
@@ -2102,6 +2135,7 @@ object Xml extends Tag.Container
 
           if (hashOr | h) == hashOr then
             var dup = 0
+
             while dup < 2*n do
               if attrBuf(dup) == keyStr then fail(Issue.DuplicateAttribute(key), keyStart)
               dup += 2
@@ -2214,9 +2248,11 @@ object Xml extends Tag.Container
         else
           val arr = new Array[Node](children.length)
           var i = 0
+
           while i < children.length do
             arr(i) = children(i)
             i += 1
+
           arr.immutable(using Unsafe)
 
       relinquishNodeBuffer()

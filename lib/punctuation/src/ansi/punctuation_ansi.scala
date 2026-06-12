@@ -48,7 +48,7 @@ import vacuous.*
 // stream. Callers supply a `ScalaSyntaxPalette` to colour the tokens.
 package teletypeFormattables:
   given scala: (palette: ScalaSyntaxPalette)
-              => ("scala" is TeletypeFormattable) = new TeletypeFormattable:
+              =>  ( "scala" is TeletypeFormattable ) = new TeletypeFormattable:
     type Self = "scala"
 
     def format(meta: List[Text], content: Text): Optional[Teletype] =
@@ -58,7 +58,7 @@ package teletypeFormattables:
         Scala.highlight(content).teletype
 
   given java: (palette: ScalaSyntaxPalette)
-            => ("java" is TeletypeFormattable) = new TeletypeFormattable:
+            =>  ( "java" is TeletypeFormattable ) = new TeletypeFormattable:
     type Self = "java"
 
     def format(meta: List[Text], content: Text): Optional[Teletype] =
@@ -83,7 +83,7 @@ extension (markdown: Markdown of Layout)
 // produce mile-wide thematic-break rules), renders to a `Teletype`, then
 // emits ANSI escapes through the existing `Teletype is Printable` given.
 given (Hyphenation, Every[TeletypeFormattable], MarkdownPalette)
-   => (Markdown of Layout) is Printable =
+   =>  (Markdown of Layout) is Printable =
 
   (markdown, termcap) =>
     val width = if termcap.width >= Int.MaxValue then 80 else termcap.width

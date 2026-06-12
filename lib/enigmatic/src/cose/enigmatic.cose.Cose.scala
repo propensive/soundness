@@ -52,7 +52,7 @@ object Cose:
     if ast.isMap then ast else emptyMapAst
 
   private[cose] def toBeSigned
-    (context: String, bodyProtected: Data, externalAad: Data, payload: Data)
+    ( context: String, bodyProtected: Data, externalAad: Data, payload: Data )
   :   Data =
 
     val sigStruct =
@@ -66,12 +66,12 @@ object Cose:
 
   // Internal constructor that refines the phantom `Form` and `Operand` types.
   def make[scheme <: CoseStructure, cipher <: Cipher]
-    (protectedHeader:   Data,
+    ( protectedHeader:   Data,
      unprotectedHeader: Cbor,
      payload:           Data,
      contextString:     String,
      cborTag:           Long,
-     recipients:        List[CoseRecipient])
+     recipients:        List[CoseRecipient] )
   :   Cose in scheme by cipher =
 
     new Cose(protectedHeader, unprotectedHeader, payload, contextString, cborTag, recipients):
@@ -84,8 +84,8 @@ object Cose:
   // `source.read[Data]` expands at the call site, picking up the caller's
   // readability and tactic instances.
   inline def apply[source, key]
-    (source: source, key: key)
-    (using auth: key is CoseAuthenticator, cborTactic: Tactic[CborError])
+    ( source: source, key: key )
+    ( using auth: key is CoseAuthenticator, cborTactic: Tactic[CborError] )
   :   Cose in auth.Form by auth.Operand raises CoseError =
 
     val payload: Data  = source.read[Data]
@@ -98,18 +98,18 @@ object Cose:
     val recipient      = CoseRecipient(IArray.empty[Byte], Cose.emptyMap, authentication)
 
     Cose.make[auth.Form, auth.Operand]
-     (protectedBstr,
+     ( protectedBstr,
       Cose.emptyMap,
       payload,
       auth.contextString,
       auth.cborTag,
-      List(recipient))
+      List(recipient) )
 
 
   // Parse a tagged COSE envelope. The variant is determined from the CBOR
   // tag; the returned phantom types are the most-general bounds.
   def parse(bytes: Data)
-    (using cborTactic: Tactic[CborError])
+    ( using cborTactic: Tactic[CborError] )
   :   Cose raises CoseError =
 
     val ast = Cbor.Ast.parse(bytes)
@@ -127,6 +127,7 @@ object Cose:
       case other         => abort(CoseError(CoseError.Reason.UnknownTag(other)))
 
     val body = tag.value.asInstanceOf[Cbor.Ast]
+
     if !body.isArray || body.elements != 4 then
       abort(CoseError(CoseError.Reason.MalformedStructure))
 
@@ -145,31 +146,35 @@ object Cose:
         if !recipArray.isArray then abort(CoseError(CoseError.Reason.MalformedStructure))
         val builder = List.newBuilder[CoseRecipient]
         var index = 0
+
         while index < recipArray.elements do
           val entry = recipArray.element(index)
+
           if !entry.isArray || entry.elements != 3 then
             abort(CoseError(CoseError.Reason.MalformedStructure))
+
           val rp = readByteString(entry.element(0))
           val ru = entry.element(1)
           if !ru.isMap then abort(CoseError(CoseError.Reason.MalformedStructure))
           val ra = readByteString(entry.element(2))
           builder += CoseRecipient(rp, Cbor.ast(ru), ra)
           index += 1
+
         builder.result()
 
     new Cose
-        (protectedHeader, Cbor.ast(unprotectedAst), payload, contextString, tagNumber, recipients):
+        ( protectedHeader, Cbor.ast(unprotectedAst), payload, contextString, tagNumber, recipients ):
       type Form    = CoseStructure
       type Operand = Cipher
 
 
 class Cose
-    (val protectedHeader:   Data,
+    ( val protectedHeader:   Data,
      val unprotectedHeader: Cbor,
      val payload:           Data,
      val contextString:     String,
      val cborTag:           Long,
-     val recipients:        List[CoseRecipient]):
+     val recipients:        List[CoseRecipient] ):
   type Form    <: CoseStructure
   type Operand <: Cipher
 
@@ -186,6 +191,7 @@ class Cose
         val recipAst: IArray[Any] = IArray.from(recipients.map: r =>
           Cbor.Ast.array(IArray[Any](r.protectedHeader, Cose.unsealOrEmpty(r.unprotectedHeader),
             r.authentication)))
+
         Cbor.Ast.array(IArray[Any](protectedHeader, unprotectedAst, payload,
           Cbor.Ast.array(recipAst)))
 
@@ -193,13 +199,13 @@ class Cose
 
 
   def verifyWith[key]
-    (key: key)
-    (using verifier: key is CoseVerifier)
+    ( key: key )
+    ( using verifier: key is CoseVerifier )
   :   Boolean raises CoseError =
 
     if verifier.contextString != contextString then
       abort(CoseError(CoseError.Reason.VariantMismatch
-       (expected = verifier.contextString.tt, actual = contextString.tt)))
+       ( expected = verifier.contextString.tt, actual = contextString.tt )))
 
     val externalAad = IArray.empty[Byte]
     val tbs = Cose.toBeSigned(contextString, protectedHeader, externalAad, payload)

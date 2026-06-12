@@ -73,7 +73,7 @@ import filesystemOptions.writeAccess.enabled
 // process is, by design, not the calling one.
 object Upgrade:
   inline def apply[source]
-    (source: source)
+    ( source: source )
     ( using environment: Environment,
             system:      System,
             diagnostics: Diagnostics )

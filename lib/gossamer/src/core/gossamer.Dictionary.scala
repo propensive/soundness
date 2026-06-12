@@ -107,8 +107,10 @@ object Dictionary:
   // `+`/`++` rebuild the trie with an alphabet derived from the keys.
   def empty[value: ClassTag]: Dictionary[value] =
     val emptyInts = new Array[Int](0)
+
     val emptyValues: Array[AnyRef | Null] =
       new Array[AnyRef](0).asInstanceOf[Array[AnyRef | Null]]
+
     new Dictionary[value]
       ( emptyInts, emptyValues, emptyInts, emptyInts, emptyInts, Alphabet.empty, summon )
 
@@ -224,6 +226,7 @@ object Dictionary:
 
       while sl < alpha do
         val c = alphabet.char(sl)
+
         n.children.get(c).foreach: child =>
           childrenArr(i*alpha + sl) = ids(child)
 

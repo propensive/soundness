@@ -72,7 +72,7 @@ extension (cursor: Cursor[Text])
 extension (cursor: Cursor[Data])
   @targetName("expectByte")
   inline def expect[error <: Exception](target: Char)
-    (inline failure: Diagnostics ?=> error)
+    ( inline failure: Diagnostics ?=> error )
     ( using Tactic[error] )
   :   Unit =
 
@@ -81,7 +81,7 @@ extension (cursor: Cursor[Data])
 extension (cursor: Cursor[Text])
   @targetName("expectChar")
   inline def expect[error <: Exception](target: Char)
-    (inline failure: Diagnostics ?=> error)
+    ( inline failure: Diagnostics ?=> error )
     ( using Tactic[error] )
   :   Unit =
 

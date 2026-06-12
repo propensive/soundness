@@ -88,8 +88,9 @@ object Zip:
 
   object Entry:
     def apply[content: Streamable by Data](ref: Path on Zip, content: content)
-       (using Compression)
+       ( using Compression )
     :   Entry =
+
       build(ref, gather(content.stream[Data]))
 
     def apply(ref: Path on Zip, content: () => Stream[Data])(using Compression): Entry =
@@ -97,16 +98,18 @@ object Zip:
 
     // Construct an entry from raw bytes, compressing once per the contextual policy.
     def at[content: Streamable by Data, instant: Abstractable across Instants to Long]
-       (ref: Path on Zip, content: content, modified: instant)
-       (using Compression)
+       ( ref: Path on Zip, content: content, modified: instant )
+       ( using Compression )
     :   Entry =
+
       val (time, date) = dosDateTime(modified.generic)
       build(ref, gather(content.stream[Data]), time, date)
 
     private def build
-       (ref: Path on Zip, raw: Data, time: Int = epochTime, date: Int = epochDate)
-       (using compression: Compression)
+       ( ref: Path on Zip, raw: Data, time: Int = epochTime, date: Int = epochDate )
+       ( using compression: Compression )
     :   Entry =
+
       val crc = crc32(raw)
       val uncompressed = raw.length.toLong
 
@@ -118,6 +121,7 @@ object Zip:
 
         case Compression.Deflate(level) =>
           val deflated = deflate(raw, level)
+
           if deflated.length >= raw.length then stored
           else Entry(ref, Method.Deflate, crc, uncompressed, deflated.length.toLong,
               () => Stream(deflated), time, date)
@@ -125,7 +129,7 @@ object Zip:
     // Used by the random-access reader to rebuild an entry from central-directory metadata
     // without recompressing; `storedBytes` reads the already-compressed payload lazily.
     private[zeppelin] def precompressed
-       (ref:              Path on Zip,
+       ( ref:              Path on Zip,
         method:           Method,
         crc32:            Int,
         uncompressedSize: Long,
@@ -134,15 +138,16 @@ object Zip:
         dosTime:          Int,
         dosDate:          Int,
         directory:        Boolean,
-        comment:          Optional[Text])
+        comment:          Optional[Text] )
     :   Entry =
+
       Entry(ref, method, crc32, uncompressedSize, compressedSize, storedBytes, dosTime, dosDate,
           directory, comment)
 
     given streamable: Entry is Streamable by Data = _.contents
 
   case class Entry
-     (ref:              Path on Zip,
+     ( ref:              Path on Zip,
       method:           Method,
       crc32:            Int,
       uncompressedSize: Long,
@@ -151,7 +156,7 @@ object Zip:
       dosTime:          Int               = Zip.epochTime,
       dosDate:          Int               = Zip.epochDate,
       directory:        Boolean           = false,
-      comment:          Optional[Text]    = Unset):
+      comment:          Optional[Text]    = Unset ):
 
     // The decompressed content of the entry.
     def contents: Stream[Data] = method match
@@ -182,6 +187,7 @@ object Zip:
 
   private[zeppelin] def putU64(array: Array[Byte], offset: Int, value: Long): Unit =
     var i = 0
+
     while i < 8 do
       array(offset + i) = ((value >> (i*8)) & 0xff).toByte
       i += 1
@@ -193,17 +199,21 @@ object Zip:
   private[zeppelin] def u32(data: Data, offset: Int): Long =
     var value = 0L
     var i = 0
+
     while i < 4 do
       value |= (data(offset + i) & 0xffL) << (i*8)
       i += 1
+
     value
 
   private[zeppelin] def u64(data: Data, offset: Int): Long =
     var value = 0L
     var i = 0
+
     while i < 8 do
       value |= (data(offset + i) & 0xffL) << (i*8)
       i += 1
+
     value
 
   private[zeppelin] def dosDateTime(epochMillis: Long): (Int, Int) =
@@ -235,8 +245,10 @@ object Zip:
     inflater.setInput(data.mutable(using Unsafe))
     val buffer = new Array[Byte](8192)
     val out = ji.ByteArrayOutputStream()
+
     while !inflater.finished() && !inflater.needsInput() do
       out.write(buffer, 0, inflater.inflate(buffer))
+
     inflater.end()
     out.toByteArray.nn.immutable(using Unsafe)
 

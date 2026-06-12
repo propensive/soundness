@@ -48,27 +48,33 @@ object CanonicalCbor:
       val n = ast.entries
       val builder = scala.collection.mutable.ArrayBuffer.empty[(Data, Cbor.Ast, Cbor.Ast)]
       var index = 0
+
       while index < n do
         val canonicalKey = canonicalise(ast.key(index))
         val canonicalValue = canonicalise(ast.value(index))
         builder += ((CborPrinter.encode(canonicalKey), canonicalKey, canonicalValue))
         index += 1
+
       val sorted = builder.sortWith((a, b) => compareBytes(a._1, b._1) < 0)
       val keys = new Array[Any](n)
       val values = new Array[Any](n)
       var write = 0
+
       while write < n do
         keys(write) = sorted(write)._2
         values(write) = sorted(write)._3
         write += 1
+
       Cbor.Ast.map(keys.asInstanceOf[IArray[Any]], values.asInstanceOf[IArray[Any]])
     else if ast.isArray then
       val n = ast.elements
       val out = new Array[Any](n)
       var index = 0
+
       while index < n do
         out(index) = canonicalise(ast.element(index))
         index += 1
+
       Cbor.Ast.array(out.asInstanceOf[IArray[Any]])
     else if ast.isTag then
       val tag = ast.asInstanceOf[Cbor.Tag]
@@ -78,8 +84,10 @@ object CanonicalCbor:
   private def compareBytes(a: Data, b: Data): Int =
     val n = math.min(a.length, b.length)
     var index = 0
+
     while index < n do
       val diff = (a(index) & 0xFF) - (b(index) & 0xFF)
       if diff != 0 then return diff
       index += 1
+
     a.length - b.length

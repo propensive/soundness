@@ -314,8 +314,10 @@ private final class TelParser():
     var newCap = (atomArena.length * 2).max(256)
     while newCap < needed do newCap *= 2
     val newArena = new Array[Byte](newCap)
+
     if inFlightLen > 0 then
       System.arraycopy(atomArena, inFlightStart, newArena, 0, inFlightLen)
+
     atomArena = newArena
     if inFlightStart >= 0 then inFlightStart = 0
     arenaPos = inFlightLen
@@ -470,6 +472,7 @@ private final class TelParser():
 
   private def moreSlow(): Boolean =
     syncTo()
+
     if cursor.more then { syncFrom(); true }
     else { syncFrom(); false }
 
@@ -493,9 +496,11 @@ private final class TelParser():
       syncTo()
       val mk = cursor.mark(using Cursor.shared)
       var steps = 0
+
       while steps < n && cursor.more do
         cursor.advance()
         steps += 1
+
       cursor.cue(mk)
       syncFrom()
 
@@ -516,10 +521,13 @@ private final class TelParser():
     while pos + 8 <= bufEnd do
       val v = TelParser.longView.get(bytes, pos).asInstanceOf[Long]
       val mask = TelParser.matchByte(v, repl1)
+
       if mask != 0L then
         pos += (java.lang.Long.numberOfTrailingZeros(mask) >>> 3)
         return
+
       pos += 8
+
     while pos < bufEnd && bytes(pos) != target1 do pos += 1
 
   // Advance pos until bytes(pos) ∈ {target1, target2}, or pos == bufEnd.
@@ -527,19 +535,23 @@ private final class TelParser():
     while pos + 8 <= bufEnd do
       val v = TelParser.longView.get(bytes, pos).asInstanceOf[Long]
       val combined = TelParser.matchByte(v, repl1) | TelParser.matchByte(v, repl2)
+
       if combined != 0L then
         pos += (java.lang.Long.numberOfTrailingZeros(combined) >>> 3)
         return
+
       pos += 8
+
     while pos < bufEnd && bytes(pos) != target1 && bytes(pos) != target2 do pos += 1
 
   // Advance pos until bytes(pos) ∈ {a, b, c}, or pos == bufEnd.
   private def scanUntil3
                 ( a: Byte, b: Byte, c: Byte,
                   rA: Long, rB: Long, rC: Long )
-  : Unit =
+  :   Unit =
     while pos + 8 <= bufEnd do
       val v = TelParser.longView.get(bytes, pos).asInstanceOf[Long]
+
       val combined =
         TelParser.matchByte(v, rA)
         | TelParser.matchByte(v, rB)
@@ -547,16 +559,19 @@ private final class TelParser():
       if combined != 0L then
         pos += (java.lang.Long.numberOfTrailingZeros(combined) >>> 3)
         return
+
       pos += 8
+
     while pos < bufEnd && bytes(pos) != a && bytes(pos) != b && bytes(pos) != c do pos += 1
 
   // Advance pos until bytes(pos) ∈ {a, b, c, d}, or pos == bufEnd.
   private def scanUntil4
                 ( a: Byte, b: Byte, c: Byte, d: Byte,
                   rA: Long, rB: Long, rC: Long, rD: Long )
-  : Unit =
+  :   Unit =
     while pos + 8 <= bufEnd do
       val v = TelParser.longView.get(bytes, pos).asInstanceOf[Long]
+
       val combined =
         TelParser.matchByte(v, rA)
         | TelParser.matchByte(v, rB)
@@ -565,6 +580,7 @@ private final class TelParser():
       if combined != 0L then
         pos += (java.lang.Long.numberOfTrailingZeros(combined) >>> 3)
         return
+
       pos += 8
     while pos < bufEnd && bytes(pos) != a && bytes(pos) != b
           && bytes(pos) != c && bytes(pos) != d
@@ -580,9 +596,11 @@ private final class TelParser():
   private def columnForCurrentBytePos(): Int =
     var i = pos - 1
     var col = 1
+
     while i >= 0 && bytes(i) != LF do
       col += 1
       i -= 1
+
     col
 
   private def errorHere(reason: Reason): Nothing raises TelError =
@@ -592,7 +610,7 @@ private final class TelParser():
   // Direct line-number variant: callers pass the 1-indexed source line of
   // the offending location and its column.
   private def errorAt(reason: Reason, line: Int, column: Int)
-  :     Nothing raises TelError =
+  :   Nothing raises TelError =
     abort(TelError(reason, TelError.Position(line, column)))
 
   // ── Mark / hold plumbing ──────────────────────────────────────────────────
@@ -616,6 +634,7 @@ private final class TelParser():
   // inside a hold.
   private inline def inHold[T](inline body: => T): T =
     syncTo()
+
     cursor.hold:
       try
         syncFrom()
@@ -633,6 +652,7 @@ private final class TelParser():
   private def sliceText(start: Cursor.Mark): String =
     syncTo()
     val endMk = cursor.mark(using Cursor.shared)
+
     cursor.slice(start, endMk): (storage, off, len) =>
       val arr = storage.asInstanceOf[Array[Byte]]
       if len <= 0 then "" else new String(arr, off, len, StandardCharsets.UTF_8)
@@ -745,6 +765,7 @@ private final class TelParser():
     val directive = parseInterpreterDirective()
     val pragma = parsePragma()
     fillHead()  // park head at the next line
+
     if directive.absent && pragma.absent then determineMargin()
     else
       // A directive or pragma may be followed by blank lines before the
@@ -769,6 +790,7 @@ private final class TelParser():
     val buffer = scala.collection.mutable.ListBuffer.empty[Tel.Document]
     var first = true
     var continue = true
+
     while continue do
       if !first then resetForNextDocument()
       first = false
@@ -797,6 +819,7 @@ private final class TelParser():
     else resetForNextDocument()
 
     val doc = parseOneDocument()
+
     if head.separator then
       consumeSeparatorLine()
       doc #:: documentStream(first = false)
@@ -848,6 +871,7 @@ private final class TelParser():
     else if peek != '#'.toByte then Unset
     else
       val second = peekNext()
+
       if second != '!'.toInt then Unset
       else
         // Consume "#!"
@@ -881,8 +905,10 @@ private final class TelParser():
     // Skip blank lines (consuming them; we may cue back).
     var foundPragma: Optional[Tel.Pragma] = Unset
     var done = false
+
     while !done do
       val spaceCount = countLeadingSpaces()
+
       if !more then done = true
       else if peek == LF || peek == CR then
         consumeLineEnding()
@@ -892,19 +918,24 @@ private final class TelParser():
           val pragmaLine = lineNo
           syncTo()
           val pragmaStartAbs = cursor.position.n0
+
           if pragmaStartAbs >= 4096 then
             errorAt(Reason.PragmaTooLong, pragmaLine, 1)
+
           val pragmaMk = beginMark()
           while more && peek != LF && peek != CR do advance()
           val payload = sliceText(pragmaMk)
           syncTo()
           val pragmaEndAbs = cursor.position.n0
+
           if pragmaEndAbs > 4096 then
             errorAt(Reason.PragmaTooLong, pragmaLine, 1)
+
           consumeLineEnding()
           prevLineWasBoundary = true
           hasConsumedNonBlankLine = true
           foundPragma = Optional(parsePragmaContent(payload, pragmaLine))
+
         done = true
 
     if foundPragma.present then foundPragma
@@ -922,9 +953,11 @@ private final class TelParser():
   // advance lineation across LF — caller must handle that.
   private inline def countLeadingSpaces(): Int =
     var count = 0
+
     while more && peek == SP do
       advance()
       count += 1
+
     count
 
   // Consume one line-ending sequence (LF or CR LF). Validates that bare CR
@@ -938,15 +971,18 @@ private final class TelParser():
     else if peek == LF then
       if !lineEndingsDetected then detectLineEndingMode(crBefore = false)
       else if crlfMode then errorHere(Reason.BadLineEnding)
+
       advance()
       lineNo += 1
       if !more then documentEndsWithLf = true
     else if peek == CR then
       val next = peekNext()
+
       if next != LF.toInt then errorHere(Reason.BadLineEnding)
       else
         if !lineEndingsDetected then detectLineEndingMode(crBefore = true)
         else if !crlfMode then errorHere(Reason.BadLineEnding)
+
         advance()  // CR
         advance()  // LF
         lineNo += 1
@@ -970,9 +1006,10 @@ private final class TelParser():
     else false
 
   private def parsePragmaContent(content: String, line: Int)
-  : Tel.Pragma raises TelError =
+  :   Tel.Pragma raises TelError =
     val parts = splitPragmaPhrases(content)
     if parts.head != "tel" then errorAt(Reason.PragmaNotFirst, line, 1)
+
     val version =
       if parts.length >= 2 then parseVersion(parts(1), line)
       else (1, 0)
@@ -989,10 +1026,13 @@ private final class TelParser():
         // whitespace or punctuation. Palimpsest length/decodability are
         // checked later, at signature resolution — not at pragma parse time.
         val isUrl = s.indexOf("://") >= 0
+
         val isBase256 = s.nonEmpty && s.forall: c =>
           Character.isLetter(c) || (c >= '0' && c <= '9')
+
         if !isUrl && !isBase256
         then errorAt(Reason.BadSchemaIdentifier, line, 1)
+
         Text(s): Optional[Text]
       else Unset
 
@@ -1007,9 +1047,10 @@ private final class TelParser():
     Tel.Pragma(version, schemaText, pragmaSigil)
 
   private def parseVersion(s: String, line: Int)
-  : (Int, Int) raises TelError =
+  :   (Int, Int) raises TelError =
     val dot = s.indexOf('.')
     if dot <= 0 || dot == s.length - 1 then errorAt(Reason.BadVersion, line, 1)
+
     try
       val major = s.substring(0, dot).toInt
       val minor = s.substring(dot + 1).toInt
@@ -1022,12 +1063,15 @@ private final class TelParser():
     val builder = new StringBuilder()
     var i = 0
     var hardSpaceMode = false
+
     while i < content.length do
       val ch = content.charAt(i)
+
       if ch == ' ' then
         var j = i
         while j < content.length && content.charAt(j) == ' ' do j += 1
         val runLength = j - i
+
         if !hardSpaceMode && runLength == 1 then
           if builder.nonEmpty then { parts += builder.toString; builder.clear() }
           i += 1
@@ -1049,6 +1093,7 @@ private final class TelParser():
   // we walk through blanks if needed.
   private def determineMargin(): Unit raises TelError =
     while head.blank && !head.eof do fillHead()
+
     if !head.eof then
       margin = head.leadingSpaces
       head.indentLevels = 0  // by definition of margin
@@ -1081,9 +1126,10 @@ private final class TelParser():
   // Returns the Struct type if the keyword names a child whose resolved
   // type is a Struct, or Unset otherwise.
   private def resolveKeywordStruct(parent: Tels.Struct, keyword: Text, s: Tels)
-  :     Optional[Tels.Struct] raises TelError =
+  :   Optional[Tels.Struct] raises TelError =
     var found: Optional[Tels.Type] = Unset
     var i = 0
+
     while i < parent.members.length && found.absent do
       parent.members(i) match
         case f: Tels.Field =>
@@ -1093,13 +1139,16 @@ private final class TelParser():
             selectDef.variants.find(_.keyword == keyword).foreach: variant =>
               found = variant.variantType
         case _: Tels.Exclude => ()
+
       i += 1
+
     found.let(t => resolveTypeToStruct(t, s)).or(Unset)
 
   // Does `parent` admit `keyword` in its direct Field / SelectRef set?
   private def keywordAdmissible(parent: Tels.Struct, keyword: Text, s: Tels): Boolean =
     var i = 0
     var hit = false
+
     while !hit && i < parent.members.length do
       parent.members(i) match
         case f: Tels.Field =>
@@ -1108,7 +1157,9 @@ private final class TelParser():
           s.selects.find(_.name == sr.reference).foreach: selectDef =>
             if selectDef.variants.exists(_.keyword == keyword) then hit = true
         case _: Tels.Exclude => ()
+
       i += 1
+
     hit
 
   // Push a child compound's resolved struct onto the ancestor stack. No-op
@@ -1117,9 +1168,11 @@ private final class TelParser():
     schema.let: s =>
       val parent: Optional[Tels.Struct] =
         if ancestors.isEmpty then s.document else ancestors(ancestors.length - 1)
+
       val resolved: Optional[Tels.Struct] =
         parent.let(p => resolveKeywordStruct(p, keyword, s))
       ancestors += resolved
+
     .or:
       ancestors += Unset
 
@@ -1132,21 +1185,27 @@ private final class TelParser():
   // valid; tie-break favours shallower.
   private def recoverOddIndent(spaces: Int, line: Int): Int raises TelError =
     val rel = spaces - margin
+
     schema.let: s =>
       val shallower = rel / 2
       val deeper    = shallower + 1
       val keyword   = peekKeyword()
+
       val shallowerParent: Optional[Tels.Struct] =
         if shallower == 0 then s.document
         else if shallower - 1 < ancestors.length then ancestors(shallower - 1)
         else Unset
+
       val deeperParent: Optional[Tels.Struct] =
         if shallower < ancestors.length then ancestors(shallower) else Unset
+
       val shallowerValid =
         shallowerParent.let(p => keywordAdmissible(p, keyword, s)).or(false)
+
       val deeperValid =
         deeperParent.let(p => keywordAdmissible(p, keyword, s)).or(false)
       if !shallowerValid && deeperValid then deeper else shallower
+
     .or:
       errorAt(Reason.OddIndentation, line, 1)
 
@@ -1191,6 +1250,7 @@ private final class TelParser():
       // the separator line, and the body-parsing loops treat it like EOF.
       head.separator = spaces == 0 && headLineIsSeparator()
       val rel = spaces - margin
+
       head.indentLevels =
         if rel < 0 then
           errorAt(Reason.LessThanMargin, head.startLine, 1)
@@ -1216,6 +1276,7 @@ private final class TelParser():
     then IArray.empty[Tel.Block]
     else
       val start = blockScratchIx
+
       while !head.eof && !head.separator && head.indentLevels == expected do
         parseBlock(expected)  // pushes one block onto scratchBlocks
 
@@ -1225,8 +1286,10 @@ private final class TelParser():
       if !head.eof && !head.separator && head.indentLevels > expected then
         val line = head.startLine
         val lastIx = blockScratchIx - 1
+
         if lastIx >= start then
           val last = scratchBlocks(lastIx)
+
           if last.tabulation.present && last.compounds.isEmpty then
             errorAt(Reason.RowWrongIndent, line, 1)
           else if last.tabulation.present then
@@ -1322,6 +1385,7 @@ private final class TelParser():
         // entirely so the hot path is unaffected.
         val pushed = schema.present
         if pushed then pushAncestor(compoundKeyword)
+
         try
           fillHead()
 
@@ -1352,8 +1416,10 @@ private final class TelParser():
   private def skipInteriorBlanksIfFollowedByContentAtIndent(indent: Int)
   : Unit raises TelError = inHold:
     val mk = beginMark()
+
     val savedHeadSnapshot = (head.leadingSpaces, head.indentLevels, head.blank,
                              head.eof, head.startLine)
+
     val savedBoundary = prevLineWasBoundary
     val savedLineNo = lineNo
     while !head.eof && head.blank do fillHead()
@@ -1373,6 +1439,7 @@ private final class TelParser():
       lineNo = savedLineNo
       // Re-park: skip leading spaces of the line we just rewound to.
       var i = 0
+
       while i < savedHeadSnapshot._1 && more && peek == SP do
         advance()
         i += 1
@@ -1394,11 +1461,14 @@ private final class TelParser():
     else if !head.blank then 0
     else inHold:
       val mk = beginMark()
+
       val firstBlankSnapshot = (head.leadingSpaces, head.indentLevels, head.blank,
                                 head.eof, head.startLine)
+
       val savedBoundary = prevLineWasBoundary
       val savedLineNo = lineNo
       var count = 0
+
       while !head.eof && head.blank do
         count += 1
         fillHead()
@@ -1420,9 +1490,11 @@ private final class TelParser():
         prevLineWasBoundary = savedBoundary
         lineNo = savedLineNo
         var i = 0
+
         while i < firstBlankSnapshot._1 && more && peek == SP do
           advance()
           i += 1
+
         0
 
   // ── Predicates over the parked head ──────────────────────────────────────
@@ -1438,6 +1510,7 @@ private final class TelParser():
       // lines have a hard space (2+) somewhere with another sigil.
       // Strategy: look one byte after the sigil.
       val nextByte = peekNext()
+
       if nextByte < 0 then true  // sigil at EOF — bare comment
       else if nextByte == LF.toInt || nextByte == CR.toInt then true
       else if nextByte != SP.toInt then false  // `#foo` — not a comment
@@ -1453,15 +1526,18 @@ private final class TelParser():
     val mk = beginMark()
     var found = false
     var done = false
+
     while !done do
       if !more then done = true
       else
         val b = peek
+
         if b == LF || b == CR then done = true
         else if b == SP then
           // Count run.
           var run = 0
           while more && peek == SP do { advance(); run += 1 }
+
           if run >= 2 && more && peek == sigil then
             found = true
             done = true
@@ -1483,6 +1559,7 @@ private final class TelParser():
   private def parseCommentLine(): Text raises TelError = inHold:
     // Consume the sigil.
     advance()
+
     if !more || peek == LF || peek == CR then
       consumeLineEnding()
       t""
@@ -1560,6 +1637,7 @@ private final class TelParser():
           val mk = beginMark()
           var headingEnd = -1
           var stop = false
+
           while !stop do
             if !more || peek == LF || peek == CR then
               headingEnd = lineCol
@@ -1569,6 +1647,7 @@ private final class TelParser():
             else if peek == SP then
               // Hard space check: two spaces in a row?
               val nb = peekNext()
+
               if nb == SP.toInt then
                 headingEnd = lineCol
                 stop = true
@@ -1584,6 +1663,7 @@ private final class TelParser():
           else
             // Consume hard spaces.
             while more && peek == SP do { advance(); lineCol += 1 }
+
             if more && peek == sigil then
               markers += lineCol
               advance(); lineCol += 1
@@ -1614,12 +1694,15 @@ private final class TelParser():
 
     while !stopped && more && peek != LF && peek != CR do
       val b = peek
+
       if b == SP then
         val runStart = col
         while more && peek == SP do { advance(); col += 1 }
         val runLen = col - runStart
+
         if runLen >= 2 then
           val sigilNext = more && peek == sigil
+
           val isRemark =
             if !sigilNext then false
             else
@@ -1635,15 +1718,20 @@ private final class TelParser():
             if columnIdx >= 1 && columnIdx < markers.length - 1 then
               val phraseWidth = runStart - phraseStart
               val colMax = markers(columnIdx + 1) - markers(columnIdx) - 2
+
               if phraseWidth > colMax then
                 errorAt(Reason.ColumnValueTooWide, lineNumber, phraseStart + 1)
+
             var foundIdx = -1
             var k = 1
+
             while k < markers.length && foundIdx < 0 do
               if markers(k) == col then foundIdx = k
               k += 1
+
             if foundIdx < 0 then
               errorAt(Reason.HardSpaceWrongPosition, lineNumber, col + 1)
+
             columnIdx = foundIdx
             phraseStart = col
       else
@@ -1658,11 +1746,12 @@ private final class TelParser():
   // ── Source / literal atom dispatch ───────────────────────────────────────
 
   private def parseSourceOrLiteralAtomIfPresent(compoundLeadingSpaces: Int)
-  : Optional[Tel.Atom] raises TelError =
+  :   Optional[Tel.Atom] raises TelError =
     if head.eof || head.blank then Unset
     else
       val sourceIndent = compoundLeadingSpaces + 4
       val literalIndent = compoundLeadingSpaces + 6
+
       val first =
         if head.leadingSpaces == literalIndent then Optional(parseLiteralAtom(literalIndent))
         else if head.leadingSpaces == sourceIndent then Optional(parseSourceAtom(sourceIndent))
@@ -1698,6 +1787,7 @@ private final class TelParser():
     var done = false
     var emitted = false
     var pendingBlanks = 0
+
     while !done do
       if head.eof then
         // The final LF (if any) terminated this atom's last content line; it
@@ -1711,14 +1801,18 @@ private final class TelParser():
         // own hold; the cursor is free to compact again once the probe ends.
         done = inHold:
           val mk = beginMark()
+
           val firstBlankSnapshot = (head.leadingSpaces, head.indentLevels, head.blank,
                                     head.eof, head.startLine)
+
           val savedBoundary = prevLineWasBoundary
           val savedLineNo = lineNo
           var blanks = 0
+
           while !head.eof && head.blank do
             blanks += 1
             fillHead()
+
           val keep = !head.eof && head.leadingSpaces >= sourceIndent
           if keep then
             // Interior blanks: defer them until the following non-blank line
@@ -1738,8 +1832,10 @@ private final class TelParser():
             prevLineWasBoundary = savedBoundary
             lineNo = savedLineNo
             var i = 0
+
             while i < firstBlankSnapshot._1 && more && peek == SP do
               advance(); i += 1
+
             true
       else if head.leadingSpaces >= sourceIndent then
         // Read content: skip the first sourceIndent spaces — but wait, the
@@ -1772,6 +1868,7 @@ private final class TelParser():
         // compact between lines.
         inHold:
           val mk = beginMark()
+
           while
             scanUntil2(LF, CR, TelParser.LfRepl, TelParser.CrRepl)
             pos == bufEnd && more
@@ -1783,6 +1880,7 @@ private final class TelParser():
           sb.append(payload, 0, endIdx)
 
           consumeLineEnding()
+
         fillHead()
       else done = true
 
@@ -1800,6 +1898,7 @@ private final class TelParser():
     // document's line-ending mode. One hold for the opening line.
     val delimiter: String = inHold:
       val delimMk = beginMark()
+
       while
         scanUntil2(LF, CR, TelParser.LfRepl, TelParser.CrRepl)
         pos == bufEnd && more
@@ -1811,6 +1910,7 @@ private final class TelParser():
 
     sb.setLength(0)
     var done = false
+
     while !done do
       if !more then errorAt(Reason.UnclosedLiteral, openingLine, 1)
       // Read a line. Inside the literal payload, line endings are not
@@ -1819,6 +1919,7 @@ private final class TelParser():
       // the cursor can compact between lines.
       done = inHold:
         val lineMk = beginMark()
+
         while
           scanUntil1(LF, TelParser.LfRepl)
           pos == bufEnd && more
@@ -1836,10 +1937,12 @@ private final class TelParser():
           // then consume the optional EOL after the delimiter.
           if sb.length > 0 && sb.charAt(sb.length - 1) == '\n' then
             sb.setLength(sb.length - 1)
+
           if more then
             advance()  // consume LF (may be absent at EOF)
             lineNo += 1
             if !more then documentEndsWithLf = true
+
           true
         else
           // Payload line — must have an LF terminator; EOF here is E115.
@@ -1876,6 +1979,7 @@ private final class TelParser():
     // earlier by parsePragma; anything matching here is a violation.
     if mayBeMisplacedPragma && keyword == t"tel" then
       errorAt(Reason.PragmaNotFirst, lineNumber, 1)
+
     hasConsumedNonBlankLine = true
 
     var remark: Optional[Text] = Unset
@@ -1897,13 +2001,16 @@ private final class TelParser():
         atomOpen = false
 
     var stopped = false
+
     while !stopped && remark.absent do
       if !more || peek == LF || peek == CR then stopped = true
       else
         val ch = peek
+
         if ch == SP then
           var run = 0
           while more && peek == SP do { advance(); run += 1 }
+
           if hardSpaceMode then
             if run >= 2 then
               commit()
@@ -1928,6 +2035,7 @@ private final class TelParser():
           // Could be remark introducer: sigil + soft space + non-space.
           ensureLookahead(3)
           val afterSigil = if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
+
           val softSpaceAfter =
             afterSigil == SP.toInt
             && (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
@@ -1956,7 +2064,9 @@ private final class TelParser():
                 && bytes(pos) != CR
                 && (atomOpen || bytes(pos) != sigil)
           do pos += 1
+
           val runLen = pos - runStart
+
           if runLen > 0 then
             if !atomOpen then beginInFlightAtom()
             appendToArenaRange(bytes, runStart, runLen)
@@ -1996,15 +2106,19 @@ private final class TelParser():
     var low:  Long = 0L
     var high: Long = 0L
     var len = 0
+
     while
       while pos < bufEnd && bytes(pos) != SP && bytes(pos) != LF && bytes(pos) != CR do
         val b = bytes(pos)
+
         if len < 4 then
           low |= (b & 0xff).toLong << (len * 8)
         else if len < 8 then
           high |= (b & 0xff).toLong << ((len - 4) * 8)
+
         len += 1
         pos += 1
+
       pos == bufEnd && more
     do ()
 
@@ -2016,8 +2130,10 @@ private final class TelParser():
       var slot = hash & 0x3F
       var probes = 0
       var result: String = null
+
       while result == null && probes < 4 do
         val existing = keyCache(slot)
+
         if existing == null then
           val s = sliceText(startMark)
           keyCache(slot) = s

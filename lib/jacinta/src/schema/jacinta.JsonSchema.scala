@@ -59,7 +59,7 @@ import wisteria.*
 // instance is wanted (e.g. `given … = jsonSchematics.decodable[T]`).
 object jsonSchematics:
   def encodable[value](using encoder: value is Json.Encodable)
-  :     value is Encodable & Schematic in Json over JsonSchema =
+  :   value is Encodable & Schematic in Json over JsonSchema =
     new Encodable with Schematic:
       type Self = value
       type Form = Json
@@ -68,7 +68,7 @@ object jsonSchematics:
       def schema(): JsonSchema = JsonSchema.reify(encoder.shape())
 
   def decodable[value](using decoder: value is Json.Decodable)
-  :     value is Decodable & Schematic in Json over JsonSchema =
+  :   value is Decodable & Schematic in Json over JsonSchema =
     new Decodable with Schematic:
       type Self = value
       type Form = Json

@@ -56,6 +56,7 @@ package telDecodables:
   =>  Instant is Tel.Decodable =
     Tel.Decodable(Shape.Whole): tel =>
       import abstractables.instantIsAbstractable
+
       try Instant(tel.primaryAtom.s.toLong)
       catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
 

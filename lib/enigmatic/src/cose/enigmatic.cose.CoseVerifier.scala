@@ -41,26 +41,28 @@ import prepositional.*
 // used to verify a COSE signature or MAC.
 object CoseVerifier:
   given asymmetric: [cipher <: Cipher & Signing]
-                 => (algorithm: cipher & Signing)
-                 => PublicKey[cipher] is CoseVerifier in Sign1 by cipher =
+                 =>  ( algorithm: cipher & Signing )
+                 =>  PublicKey[cipher] is CoseVerifier in Sign1 by cipher =
     new CoseVerifier:
       type Self    = PublicKey[cipher]
       type Form    = Sign1
       type Operand = cipher
       def contextString: String = CoseContext.Signature1
       def cborTag:       Long   = CoseTag.Sign1
+
       def check(toBeSigned: Data, authentication: Data, key: PublicKey[cipher]): Boolean =
         algorithm.verify(toBeSigned, authentication, key.bytes)
 
   given symmetric: [cipher <: Cipher & Symmetric & Signing]
-                => (algorithm: cipher & Signing)
-                => SymmetricKey[cipher] is CoseVerifier in Mac0 by cipher =
+                =>  ( algorithm: cipher & Signing )
+                =>  SymmetricKey[cipher] is CoseVerifier in Mac0 by cipher =
     new CoseVerifier:
       type Self    = SymmetricKey[cipher]
       type Form    = Mac0
       type Operand = cipher
       def contextString: String = CoseContext.Mac0
       def cborTag:       Long   = CoseTag.Mac0
+
       def check(toBeSigned: Data, authentication: Data, key: SymmetricKey[cipher]): Boolean =
         algorithm.verify(toBeSigned, authentication, key.bytes)
 

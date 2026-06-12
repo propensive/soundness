@@ -97,6 +97,7 @@ trait Cbor2:
           val count = if root.isMap then root.entries else 0
           val values = scala.collection.mutable.HashMap.empty[String, Ast]
           var index = 0
+
           while index < count do
             val key = root.key(index)
             if key.isTextString then values.update(key.string, root.value(index))
@@ -109,6 +110,7 @@ trait Cbor2:
           build: [field] =>
             context =>
               val key: Text = renames.at(label).or(label)
+
               values.get(key.s) match
                 case Some(value) => context.decoded(new Cbor(value))
                 case None        => default.or(context.decoded(new Cbor(Ast(Unset))))
@@ -146,6 +148,7 @@ trait Cbor2:
         fields(value): [field] =>
           field =>
             val encoded = contextual.encode(field).root
+
             if !encoded.unset then
               labels += mapping.at(label).or(label).s
               values += encoded

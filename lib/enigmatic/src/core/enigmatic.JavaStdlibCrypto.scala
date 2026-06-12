@@ -146,6 +146,7 @@ object JavaStdlibCrypto extends Crypto:
       iv.lay:
         cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key))
         cipher.doFinal(data.mutable(using Unsafe)).nn.immutable(using Unsafe)
+
       .apply: iv =>
         val ivBytes = iv.mutable(using Unsafe)
         cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key), IvParameterSpec(ivBytes))
@@ -158,6 +159,7 @@ object JavaStdlibCrypto extends Crypto:
       ivSize.lay:
         cipher.init(jc.Cipher.DECRYPT_MODE, makeKey(key))
         cipher.doFinal(input).nn.immutable(using Unsafe)
+
       .apply: size =>
         cipher.init(jc.Cipher.DECRYPT_MODE, makeKey(key), IvParameterSpec(input.take(size)))
         cipher.doFinal(input.drop(size)).nn.immutable(using Unsafe)

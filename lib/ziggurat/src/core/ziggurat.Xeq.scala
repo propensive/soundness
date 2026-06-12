@@ -237,6 +237,8 @@ object Xeq:
       case _ =>
         System.err.nn.println("usage: ziggurat.Xeq installer <output-file> <staging-dir>")
         System.err.nn.println("       ziggurat.Xeq downloader <output-file> <url> <sha256>")
+
         System.err.nn.println(
           "       ziggurat.Xeq multidownloader <output-file> <staging-dir> <base-url> <version>")
+
         System.exit(1)

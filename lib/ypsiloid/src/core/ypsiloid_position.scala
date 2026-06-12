@@ -90,9 +90,11 @@ private def walkIndex
     else if ast.isArray then
       try
         val k = Integer.parseInt(seg)
+
         if k < 0 || k >= ast.arrayLength then Unset
         else
           val childOff = data(offset + 5 + k)
+
           walkIndex
            ( ast.arrayElement(k), data, offset + childOff, segments, i + 1, keyMode )
       catch case _: NumberFormatException => Unset

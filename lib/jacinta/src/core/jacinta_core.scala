@@ -116,6 +116,7 @@ extension (json: Json.Ast)
     case bcds: Array[Long] @unchecked =>
       val v = bcds(index)
       val text = Bcd.bcdLongText(v)
+
       try Json.Ast(java.lang.Long.parseLong(text))
       catch case _: NumberFormatException => Json.Ast(java.lang.Double.parseDouble(text))
 
@@ -163,25 +164,25 @@ extension (json: Json.Ast)
         expected(JsonPrimitive.Array) yet IArray[Json.Ast]()
 
   def double: Double raises JsonError = json.asMatchable match
-    case value: Double                  => value
-    case value: Long                    => value.toDouble
-    case value: Int                     => Bcd.bcdIntToDouble(value)
+    case value: Double                   => value
+    case value: Long                     => value.toDouble
+    case value: Int                      => Bcd.bcdIntToDouble(value)
     case value: Array[Double] @unchecked => value.asInstanceOf[Bcd].toDouble
-    case _                              => expected(JsonPrimitive.Number) yet 0.0
+    case _                               => expected(JsonPrimitive.Number) yet 0.0
 
   def bcd: Bcd raises JsonError = json.asMatchable match
     case value: Array[Double] @unchecked => value.asInstanceOf[Bcd]
-    case value: Long                    => Bcd(BigDecimal(value))
-    case value: Double                  => Bcd(BigDecimal(value))
-    case value: Int                     => Bcd.fromString(Bcd.bcdIntText(value).stripPrefix("-"), value < 0)
-    case _                              => expected(JsonPrimitive.Number) yet Bcd(BigDecimal(0L))
+    case value: Long                     => Bcd(BigDecimal(value))
+    case value: Double                   => Bcd(BigDecimal(value))
+    case value: Int                      => Bcd.fromString(Bcd.bcdIntText(value).stripPrefix("-"), value < 0)
+    case _                               => expected(JsonPrimitive.Number) yet Bcd(BigDecimal(0L))
 
   def long: Long raises JsonError = json.asMatchable match
-    case value: Long                    => value
-    case value: Double                  => value.toLong
-    case value: Int                     => Bcd.bcdIntToDouble(value).toLong
+    case value: Long                     => value
+    case value: Double                   => value.toLong
+    case value: Int                      => Bcd.bcdIntToDouble(value).toLong
     case value: Array[Double] @unchecked => value.asInstanceOf[Bcd].toLong.or(0L)
-    case _                              => expected(JsonPrimitive.Number) yet 0L
+    case _                               => expected(JsonPrimitive.Number) yet 0L
 
   def primitive: JsonPrimitive =
     if isNumber then JsonPrimitive.Number

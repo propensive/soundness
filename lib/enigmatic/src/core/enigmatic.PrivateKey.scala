@@ -53,7 +53,7 @@ class PrivateKey[cipher <: Cipher](private[enigmatic] val privateData: Data):
 
 
   def sign[encodable: Encodable in Data](value: encodable)
-    (using cipher: cipher & Signing, erased weakness: Permit[Weakness[cipher]])
+    ( using cipher: cipher & Signing, erased weakness: Permit[Weakness[cipher]] )
   :   Signature[cipher] =
 
     Signature(cipher.sign(encodable.encode(value), privateData))

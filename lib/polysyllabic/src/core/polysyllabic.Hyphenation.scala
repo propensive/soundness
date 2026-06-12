@@ -177,6 +177,7 @@ object Hyphenation:
     // is built with — kept in sync with that constant.
     while j < paddedLength do
       val char = padded(j)
+
       val sl =
         if char >= 'a' && char <= 'z' then char - 'a'
         else if char == '.' then 26
@@ -194,10 +195,13 @@ object Hyphenation:
         // stored as `Array[AnyRef | Null]` and cast at access; the JIT
         // typically folds the checkcast away.
         var emit = node
+
         while emit > 0 do
           val v = values(emit)
+
           if v != null then
             mergePattern(scores, j - depth(emit) + 1, v.asInstanceOf[IArray[Byte]])
+
           emit = dictLink(emit)
 
       j += 1
@@ -243,9 +247,11 @@ object Hyphenation:
 
       while k < offsets.length do
         val p = offsets(k)
+
         if p >= leftMin && p <= length - rightMin then
           breaks(count) = p
           count += 1
+
         k += 1
 
       count
@@ -293,6 +299,7 @@ object Hyphenation:
       if (scores(p + 1) & 1) == 1 then
         breaks(count) = p
         count += 1
+
       p += 1
 
     count
@@ -314,6 +321,7 @@ trait Hyphenation:
 
     val newPatternPairs = patterns.map(TexPatterns.parsePattern).toSeq
     val newExceptionPairs = exceptions.map(TexPatterns.parseException).toSeq
+
     val newPatterns =
       Dictionary.aho(Hyphenation.alphabet, (this.patterns.entries.toSeq ++ newPatternPairs)*)
 

@@ -52,7 +52,7 @@ import vacuous.*
 object Stratiform:
 
   private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
-  :     Map[Text, quotes.reflect.TypeRepr] =
+  :   Map[Text, quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
 
@@ -65,7 +65,7 @@ object Stratiform:
   // Builds the refined type `Tel of <position> from <root>`.
   private def telType(using quotes: Quotes)
       ( position: quotes.reflect.TypeRepr, root: quotes.reflect.TypeRepr )
-  :     quotes.reflect.TypeRepr =
+  :   quotes.reflect.TypeRepr =
 
     import quotes.reflect.*
 
@@ -76,7 +76,7 @@ object Stratiform:
 
   // The single ordered-collection element type of `repr`, if it is one.
   private def elementType(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
-  :     Optional[quotes.reflect.TypeRepr] =
+  :   Optional[quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
 
@@ -90,7 +90,7 @@ object Stratiform:
 
   // Reads `Topic` (position) and `Origin` (root) from a receiver, if present.
   private def receiver(using quotes: Quotes)(self: Expr[Tel])
-  :     Optional[(quotes.reflect.TypeRepr, quotes.reflect.TypeRepr)] =
+  :   Optional[(quotes.reflect.TypeRepr, quotes.reflect.TypeRepr)] =
 
     import quotes.reflect.*
     val members = refinements(self.asTerm.tpe.widen)

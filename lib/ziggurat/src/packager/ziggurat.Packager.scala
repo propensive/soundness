@@ -70,7 +70,7 @@ import filesystemOptions.writeAccess.enabled
 // `ethereal.Assembler`. Burdock remote dependencies remain unimplemented.
 object Packager:
   def pack(config: Packaging)
-     (using working: WorkingDirectory, environment: Environment)
+     ( using working: WorkingDirectory, environment: Environment )
   :   Path on Linux raises PackageError =
 
     val appJar: Path on Linux = config.dependencies.absolve match
@@ -131,7 +131,7 @@ object Packager:
   // source: the app self-assembles in a subprocess (LocalResource), or the
   // runner is downloaded and assembled in-process (Remote).
   private def buildBinary(config: Packaging, appJar: Path on Linux, label: Text, output: Path on Linux)
-     (using working: WorkingDirectory)
+     ( using working: WorkingDirectory )
   :   Unit raises ExecError raises PackageError =
 
     config.runnerSource match
@@ -147,8 +147,8 @@ object Packager:
   // produces one self-contained per-platform binary and exits. `ethereal.name`
   // must be left unset or the build path is not taken.
   private def assembleViaSubprocess
-     (config: Packaging, appJar: Path on Linux, label: Text, output: Path on Linux)
-     (using working: WorkingDirectory)
+     ( config: Packaging, appJar: Path on Linux, label: Text, output: Path on Linux )
+     ( using working: WorkingDirectory )
   :   Unit raises ExecError raises PackageError =
 
     val bundle: Text = config.java.bundle match
@@ -161,13 +161,13 @@ object Packager:
 
     val arguments: List[Text] =
       List
-       (t"java",
+       ( t"java",
         t"-Dbuild.executable=$output",
         t"-Dbuild.target=$label",
         t"-Dbuild.java.minimum=${config.java.minimum}",
         t"-Dbuild.java.preferred=${config.java.preferred}",
         t"-Dbuild.java.bundle=$bundle",
-        t"-Dbuild.id=${config.buildId}")
+        t"-Dbuild.id=${config.buildId}" )
       ++ publicKey
       ++ List(t"-jar", appJar.show)
 
@@ -180,13 +180,13 @@ object Packager:
   // in-process via `ethereal.Assembler`. All lower-level failures are surfaced
   // as `PackageError`.
   private def assembleRemote
-     (config:  Packaging,
+     ( config:  Packaging,
       appJar:  Path on Linux,
       label:   Text,
       output:  Path on Linux,
       baseUrl: Text,
-      hashes:  Map[Text, Text])
-     (using working: WorkingDirectory)
+      hashes:  Map[Text, Text] )
+     ( using working: WorkingDirectory )
   :   Unit raises PackageError =
 
     whereas:
@@ -207,6 +207,7 @@ object Packager:
 
         val runner: Data =
           mute[HttpEvent](t"$base$runnerName".decode[HttpUrl].fetch().read[Data])
+
         val actual: Text = runner.digest[Sha2[256]].serialize[Hex]
 
         if actual != expected then
@@ -226,8 +227,8 @@ object Packager:
         val jdk: Boolean = config.java.bundle == Packaging.Bundle.Jdk
 
         Assembler.assemble
-         (runner, appJar, output, label, config.buildId, config.java.minimum,
-          config.java.preferred, jdk, publicKey)
+         ( runner, appJar, output, label, config.buildId, config.java.minimum,
+          config.java.preferred, jdk, publicKey )
 
 
   private def write(output: Path on Linux, data: Data)

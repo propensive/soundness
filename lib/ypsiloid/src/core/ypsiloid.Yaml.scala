@@ -131,6 +131,7 @@ trait Yaml2:
                 val reason =
                   if yaml.root.isAbsent then Reason.Absent
                   else Reason.NotType(primitive(yaml.root), YamlPrimitive.Mapping)
+
                 raise(YamlError(reason)) yet derivationDefault()
               case _ =>
                 buildWith(null)
@@ -149,11 +150,14 @@ trait Yaml2:
           val key: Text = renames.at(label).or(label)
           val target = key.s
           var found: Yaml.Ast | Null = null
+
           if arr != null then
             val n = arr.length
             var i = 0
+
             while i < n && found == null do
               val entryKey = arr(i).asInstanceOf[Yaml.Ast]
+
               entryKey.asMatchable match
                 case s: String if s == target => found = arr(i + 1).asInstanceOf[Yaml.Ast]
                 case _                        => ()
@@ -207,6 +211,7 @@ trait Yaml2:
             resolved.let: discriminant =>
               delegate(discriminant): [variant <: derivation] =>
                 context => context.decoded(discriminable.variant(yaml))
+
             . or:
                 focus(prior.or(Yaml.Focus(YamlPath()))):
                   summonFrom:
@@ -227,14 +232,17 @@ trait Yaml2:
         fields(value): [field] =>
           field =>
             val key: Text = renames.at(label).or(label)
+
             focus({
               val base = prior.let(_.pointer).or(YamlPath())
               Yaml.Focus(base.prepend(key))
             }):
               val encoded = contextual.encode(field).root
+
               if !(encoded.asInstanceOf[AnyRef] eq Unset) then
                 entries += Yaml.Ast.Str(key).asInstanceOf[Any]
                 entries += encoded.asInstanceOf[Any]
+
         Yaml.ast(Yaml.Ast.mapFromAnyArray(entries.toArray))
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Yaml = value =>
@@ -622,6 +630,7 @@ object Yaml extends Yaml2, Dynamic:
     // length.
     def Sequence(items: IArray[Yaml.Ast]): Yaml.Ast =
       val n = items.length
+
       if (n & 1) == 1 then items.asInstanceOf[IArray[Any]]
       else
         val padded = new Array[Any](n + 1)
@@ -635,11 +644,13 @@ object Yaml extends Yaml2, Dynamic:
       val n = entries.length
       val arr = new Array[Any](n*2)
       var i = 0
+
       while i < n do
         val (k, v) = entries(i)
         arr(i*2) = k.asInstanceOf[Any]
         arr(i*2 + 1) = v.asInstanceOf[Any]
         i += 1
+
       arr.asInstanceOf[IArray[Any]]
   
     // Build a sequence directly from a raw `Array[Any]` of items (no
@@ -647,6 +658,7 @@ object Yaml extends Yaml2, Dynamic:
     // uses this to avoid the `Array.map` step.
     private[ypsiloid] def seqFromAnyArray(items: Array[Any]): Yaml.Ast =
       val n = items.length
+
       if (n & 1) == 1 then items.asInstanceOf[IArray[Any]]
       else
         val padded = new Array[Any](n + 1)
@@ -674,6 +686,7 @@ object Yaml extends Yaml2, Dynamic:
     inline def foreachItem(arr: IArray[Any])(inline body: Yaml.Ast => Unit): Unit =
       val n = sequenceLength(arr)
       var i = 0
+
       while i < n do
         body(arr(i).asInstanceOf[Yaml.Ast])
         i += 1
@@ -683,6 +696,7 @@ object Yaml extends Yaml2, Dynamic:
     inline def foreachEntry(arr: IArray[Any])(inline body: (Yaml.Ast, Yaml.Ast) => Unit): Unit =
       val n = arr.length
       var i = 0
+
       while i < n do
         body(arr(i).asInstanceOf[Yaml.Ast], arr(i + 1).asInstanceOf[Yaml.Ast])
         i += 2
@@ -712,7 +726,7 @@ object Yaml extends Yaml2, Dynamic:
     object BcdValue:
       def unapply(ast: Yaml.Ast): Option[Bcd] = ast match
         case b: Array[Double] @unchecked => Some(b.asInstanceOf[Bcd])
-        case _                         => None
+        case _                           => None
   
     object Str:
       def unapply(ast: Yaml.Ast): Option[Text] = ast match
@@ -725,6 +739,7 @@ object Yaml extends Yaml2, Dynamic:
           if xs.isInstanceOf[Array[AnyRef]] && ((xs.length & 1) == 1 || xs.length == 1) =>
           // Strip the sentinel if present.
           val n = xs.length
+
           if n > 0 && (xs(n - 1).asInstanceOf[AnyRef] eq arrayPad) then
             val out = new Array[Any](n - 1)
             System.arraycopy(xs.asInstanceOf[Array[Any]], 0, out, 0, n - 1)
@@ -739,6 +754,7 @@ object Yaml extends Yaml2, Dynamic:
         case xs: IArray[?] @unchecked
           if xs.isInstanceOf[Array[AnyRef]] && (xs.length & 1) == 0 =>
           val n = xs.length / 2
+
           Some(IArray.tabulate(n): i =>
             (xs(i*2).asInstanceOf[Yaml.Ast], xs(i*2 + 1).asInstanceOf[Yaml.Ast]))
 
@@ -779,13 +795,17 @@ object Yaml extends Yaml2, Dynamic:
           a.length == b.length && {
             var i = 0
             var equal = true
+
             while i < a.length && equal do
               val ax = a(i).asInstanceOf[AnyRef]
               val bx = b(i).asInstanceOf[AnyRef]
+
               if (ax eq bx) || (ax eq arrayPad) && (bx eq arrayPad) then ()
               else
                 equal = deepEquals(a(i).asInstanceOf[Yaml.Ast], b(i).asInstanceOf[Yaml.Ast])
+
               i += 1
+
             equal
           }
   
@@ -806,11 +826,15 @@ object Yaml extends Yaml2, Dynamic:
       case xs: Array[AnyRef] @unchecked =>
         var h = xs.length
         var i = 0
+
         while i < xs.length do
           val item = xs(i).asInstanceOf[AnyRef]
+
           if !(item eq arrayPad) then
             h = h*31 + deepHash(xs(i).asInstanceOf[Yaml.Ast])
+
           i += 1
+
         h
 
       case _: Unset.type => 1
@@ -821,6 +845,7 @@ object Yaml extends Yaml2, Dynamic:
   // synthesis for `Yaml(...)` once the primary constructor takes more than
   // one parameter; these explicit overloads forward to the constructor.
   def apply(value: Any): Yaml = new Yaml(value)
+
   def apply(value: Any, positions: Optional[Yaml.PositionIndex]): Yaml =
     new Yaml(value, positions)
 
@@ -851,10 +876,12 @@ object Yaml extends Yaml2, Dynamic:
   def applyDynamicNamed(methodName: "make")(elements: (String, Yaml)*): Yaml =
     val arr = new Array[Any](elements.length*2)
     var i = 0
+
     while i < elements.length do
       arr(i*2)     = Yaml.Ast.Str(elements(i)(0).tt).asInstanceOf[Any]
       arr(i*2 + 1) = elements(i)(1).root.asInstanceOf[Any]
       i += 1
+
     Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
 
   given yaml: Yaml is Decodable in Yaml = identity(_)
@@ -870,15 +897,19 @@ object Yaml extends Yaml2, Dynamic:
     Optic: (origin, lambda) =>
       if origin.root.isArray then
         val n = origin.root.arrayLength
+
         if n <= ordinal.n0 then origin else Yaml.ast:
           val updated = new Array[Any](n)
           var i = 0
+
           while i < n do
             updated(i) =
               if i == ordinal.n0
               then lambda(Yaml.ast(origin.root.arrayElement(i))).root
               else origin.root.arrayElement(i)
+
             i += 1
+
           Yaml.Ast.seqFromAnyArray(updated)
       else
         origin
@@ -889,12 +920,15 @@ object Yaml extends Yaml2, Dynamic:
     Optic: (origin, lambda) =>
       if origin.root.isArray then
         val n = origin.root.arrayLength
+
         Yaml.ast:
           val updated = new Array[Any](n)
           var i = 0
+
           while i < n do
             updated(i) = lambda(Yaml.ast(origin.root.arrayElement(i))).root
             i += 1
+
           Yaml.Ast.seqFromAnyArray(updated)
       else
         origin
@@ -903,13 +937,16 @@ object Yaml extends Yaml2, Dynamic:
     Optic: (origin, lambda) =>
       if origin.root.isArray then
         val n = origin.root.arrayLength
+
         Yaml.ast:
           val updated = new Array[Any](n)
           var i = 0
+
           while i < n do
             val element = Yaml.ast(origin.root.arrayElement(i))
             updated(i) = (if filter.predicate(element) then lambda(element) else element).root
             i += 1
+
           Yaml.Ast.seqFromAnyArray(updated)
       else
         origin
@@ -1003,19 +1040,24 @@ object Yaml extends Yaml2, Dynamic:
 
         val builder = factory.newBuilder
         var i = 0
+
         while i < effective do
           val ordinal = denominative.Ordinal.zerary(i)
+
           focus({
             val base = prior.let(_.pointer).or(YamlPath())
             Yaml.Focus(base.prepend(ordinal))
           }):
             builder += decodable.decoded(new Yaml(xs(i).asInstanceOf[Yaml.Ast]))
+
           i += 1
+
         builder.result()
 
       case other =>
         raise(YamlError(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
                                        YamlPrimitive.Sequence)))
+
         factory.newBuilder.result()
 
   given map: [value: Decodable in Yaml] => Tactic[YamlError]
@@ -1026,6 +1068,7 @@ object Yaml extends Yaml2, Dynamic:
         val n = xs.length / 2
         var result = Map.empty[Text, value]
         var i = 0
+
         while i < n do
           val rawKey = xs(i*2).asInstanceOf[Yaml.Ast]
           val rawValue = xs(i*2 + 1).asInstanceOf[Yaml.Ast]
@@ -1044,11 +1087,13 @@ object Yaml extends Yaml2, Dynamic:
 
           result = result.updated(keyText, value.decoded(new Yaml(rawValue)))
           i += 1
+
         result
 
       case other =>
         raise(YamlError(Reason.NotType(primitive(other.asInstanceOf[Yaml.Ast]),
                                        YamlPrimitive.Mapping)))
+
         Map.empty
 
   given option: [value: Decodable in Yaml] => Option[value] is Decodable in Yaml = yaml =>
@@ -1095,10 +1140,12 @@ object Yaml extends Yaml2, Dynamic:
     val keys: List[key] = map.keys.to(List)
     val arr = new Array[Any](keys.size*2)
     var i = 0
+
     keys.foreach: k =>
       arr(i*2) = Yaml.Ast.Str(k.encode).asInstanceOf[Any]
       arr(i*2 + 1) = encodable.encode(map(k)).root.asInstanceOf[Any]
       i += 1
+
     Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
 
 
@@ -1118,6 +1165,7 @@ object Yaml extends Yaml2, Dynamic:
           case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
             var i = 0
             var result: Optional[Text] = Unset
+
             while i < xs.length && result.absent do
               xs(i).asMatchable match
                 case s: String if s == label.s =>
@@ -1126,7 +1174,9 @@ object Yaml extends Yaml2, Dynamic:
                     case _         => ()
 
                 case _ => ()
+
               i += 2
+
             result
 
           case _ => Unset
@@ -1137,11 +1187,14 @@ object Yaml extends Yaml2, Dynamic:
             // Replace existing entry if present, else append.
             var existing = -1
             var i = 0
+
             while i < xs.length && existing < 0 do
               xs(i).asMatchable match
                 case s: String if s == label.s => existing = i
                 case _                         => ()
+
               i += 2
+
             val out =
               if existing >= 0 then
                 val arr = new Array[Any](xs.length)
@@ -1154,6 +1207,7 @@ object Yaml extends Yaml2, Dynamic:
                 arr(xs.length)     = Yaml.Ast.Str(label).asInstanceOf[Any]
                 arr(xs.length + 1) = Yaml.Ast.Str(kind).asInstanceOf[Any]
                 arr
+
             Yaml.ast(Yaml.Ast.mapFromAnyArray(out))
 
           case _ =>
@@ -1162,6 +1216,7 @@ object Yaml extends Yaml2, Dynamic:
               Array[Any]
                 ( Yaml.Ast.Str(label).asInstanceOf[Any],
                   Yaml.Ast.Str(kind).asInstanceOf[Any] )
+
             Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
 
       def variant(yaml: Yaml): Yaml =
@@ -1169,21 +1224,26 @@ object Yaml extends Yaml2, Dynamic:
           case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
             var existing = -1
             var i = 0
+
             while i < xs.length && existing < 0 do
               xs(i).asMatchable match
                 case s: String if s == label.s => existing = i
                 case _                         => ()
+
               i += 2
+
             if existing < 0 then yaml
             else
               val arr = new Array[Any](xs.length - 2)
               System.arraycopy(xs.asInstanceOf[Array[Any]], 0, arr, 0, existing)
+
               System.arraycopy
                 ( xs.asInstanceOf[Array[Any]],
                   existing + 2,
                   arr,
                   existing,
                   xs.length - existing - 2 )
+
               Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
 
           case _ => yaml
@@ -1252,7 +1312,7 @@ object Yaml extends Yaml2, Dynamic:
   // `asInstanceOf` cast — `value over Yaml` is just `value { type
   // Transport = Yaml }` so the cast is a no-op at runtime.
   given aggregableOver: [value: Decodable in Yaml]
-  =>  (Tactic[ParseError], Tactic[YamlError], Yaml.Tracking)
+  =>  ( Tactic[ParseError], Tactic[YamlError], Yaml.Tracking )
   =>  (value over Yaml) is Aggregable by Text =
 
     summon[Text is Aggregable by Text].map: text =>
@@ -1262,18 +1322,19 @@ object Yaml extends Yaml2, Dynamic:
           new Yaml(ast, Yaml.PositionIndex(ints))
         case Yaml.Tracking.Off =>
           Yaml(YamlParser.parse(text))
+
       yaml.as[value].asInstanceOf[value over Yaml]
 
   def primitive(ast: Yaml.Ast): YamlPrimitive =
     if ast.asInstanceOf[AnyRef] == null then YamlPrimitive.Null
     else ast.asMatchable match
-      case _: Boolean                 => YamlPrimitive.Bool
-      case _: Long                    => YamlPrimitive.Integer
-      case _: Double                  => YamlPrimitive.Decimal
+      case _: Boolean                   => YamlPrimitive.Bool
+      case _: Long                      => YamlPrimitive.Integer
+      case _: Double                    => YamlPrimitive.Decimal
       // High-precision BCD numbers report as `Decimal`. The AST-level
       // distinction (`isBcd`) remains available for callers that care.
       case _: Array[Double] @unchecked  => YamlPrimitive.Decimal
-      case _: String                  => YamlPrimitive.Str
+      case _: String                    => YamlPrimitive.Str
 
       case xs: Array[AnyRef] @unchecked =>
         if (xs.length & 1) == 0 then YamlPrimitive.Mapping else YamlPrimitive.Sequence
@@ -1338,14 +1399,18 @@ extends Dynamic derives CanEqual:
 
     if !root.isArray then
       raise(YamlError(Reason.NotType(Yaml.primitive(root), YamlPrimitive.Sequence)))
+
     val n = root.arrayLength
     val updated = new Array[Any](n)
     var i = 0
+
     while i < n do
       updated(i) =
         if i == index then value.encode.root.asInstanceOf[Any]
         else root.arrayElement(i).asInstanceOf[Any]
+
       i += 1
+
     Yaml.ast(Yaml.Ast.seqFromAnyArray(updated))
 
   // `yaml.foo = newValue` — replaces `foo` if present, or appends a new
@@ -1370,6 +1435,7 @@ extends Dynamic derives CanEqual:
     else
       val arr = root.asInstanceOf[IArray[Any]]
       val len = arr.length
+
       root.objectIndexOf(field) match
         case -1 =>
           val out = new Array[Any](len + 2)
@@ -1391,18 +1457,21 @@ extends Dynamic derives CanEqual:
     else
       val arr = root.asInstanceOf[IArray[Any]]
       val len = arr.length
+
       root.objectIndexOf(field) match
         case -1 => this
 
         case index =>
           val out = new Array[Any](len - 2)
           System.arraycopy(arr.asInstanceOf[Array[Any]], 0, out, 0, index*2)
+
           System.arraycopy
             ( arr.asInstanceOf[Array[Any]],
               index*2 + 2,
               out,
               index*2,
               len - index*2 - 2 )
+
           Yaml.ast(Yaml.Ast.mapFromAnyArray(out))
 
   override def hashCode: Int = Yaml.Ast.deepHash(root)

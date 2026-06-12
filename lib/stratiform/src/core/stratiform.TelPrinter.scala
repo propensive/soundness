@@ -78,20 +78,24 @@ object TelPrinter:
 
     block.comments.each: comment =>
       val text = comment.text.s
+
       if text.isEmpty then buffer += s"$pad$sigil"
       else buffer += s"$pad$sigil $text"
 
     block.tabulation.let: tab =>
       val line = StringBuilder()
       var i = 0
+
       while i < tab.markerOffsets.length do
         val targetCol = tab.markerOffsets(i)
         while line.length < targetCol do line.append(' ')
         line.append(sigil)
         val heading = tab.headings(i).s
+
         if heading.nonEmpty then
           line.append(' ')
           line.append(heading)
+
         i += 1
 
       buffer += line.toString
@@ -99,6 +103,7 @@ object TelPrinter:
     block.compounds.each(emitCompound(buffer, _, indent, sigil))
 
     var b = 0
+
     while b < block.trailingBlankLines do
       buffer += ""
       b += 1
@@ -145,6 +150,7 @@ object TelPrinter:
         // blank line emitted with no indentation).
         val sourceText = text.s
         var start = 0
+
         while start <= sourceText.length do
           val nl = sourceText.indexOf('\n', start)
           val end = if nl < 0 then sourceText.length else nl
@@ -156,6 +162,7 @@ object TelPrinter:
         buffer += "  " * (indent + 3) + delimiter.s
         val payload = text.s
         var start = 0
+
         while start <= payload.length do
           val nl = payload.indexOf('\n', start)
           val end = if nl < 0 then payload.length else nl

@@ -113,8 +113,10 @@ object Mcp:
 
             case Http.Post =>
               val input = request.body().read[Json]
+
               dispatch(input).let: json =>
                 import jsonPrinters.indented
+
                 Http.Response
                   ( Http.Ok,
                     mcpProtocolVersion = version,

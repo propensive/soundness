@@ -82,6 +82,7 @@ object RecordSchema:
 
   given optionalIdentifier
   :   ("identifier?" is Intensional in RecordSchema from Tel to Optional[Text]) =
+
     RecordSchema.intensional: tel =>
       if absent(tel) then Unset else tel.primaryAtom
 
@@ -90,6 +91,7 @@ object RecordSchema:
 
   given optionalTypeName
   :   ("type-name?" is Intensional in RecordSchema from Tel to Optional[Text]) =
+
     RecordSchema.intensional: tel =>
       if absent(tel) then Unset else tel.primaryAtom
 
@@ -118,7 +120,7 @@ object RecordSchema:
 
   // Helper constructor for `Intensional` instances that ignore params.
   def intensional[name <: Label, value](accessor: Tel => value)
-  :     name is Intensional in RecordSchema from Tel to value =
+  :   name is Intensional in RecordSchema from Tel to value =
     new Intensional:
       type Self = name
       type Origin = Tel

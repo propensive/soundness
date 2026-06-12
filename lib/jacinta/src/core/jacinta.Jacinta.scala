@@ -54,7 +54,7 @@ object Jacinta:
 
   // Every `type X = …` member of a (possibly nested) refinement, by name.
   private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
-  :     Map[Text, quotes.reflect.TypeRepr] =
+  :   Map[Text, quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
 
@@ -67,7 +67,7 @@ object Jacinta:
   // Builds the refined type `Json of <position> from <root>`.
   private def jsonType(using quotes: Quotes)
       ( position: quotes.reflect.TypeRepr, root: quotes.reflect.TypeRepr )
-  :     quotes.reflect.TypeRepr =
+  :   quotes.reflect.TypeRepr =
 
     import quotes.reflect.*
 
@@ -80,7 +80,7 @@ object Jacinta:
   // `Vector`, `Seq`, `LazyList`, `Array`, `IArray`); `Set` is excluded as it has
   // no positional index.
   private def elementType(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
-  :     Optional[quotes.reflect.TypeRepr] =
+  :   Optional[quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
 
@@ -94,7 +94,7 @@ object Jacinta:
 
   // Reads `Topic` (position) and `Origin` (root) from a receiver, if present.
   private def receiver(using quotes: Quotes)(self: Expr[Json])
-  :     Optional[(quotes.reflect.TypeRepr, quotes.reflect.TypeRepr)] =
+  :   Optional[(quotes.reflect.TypeRepr, quotes.reflect.TypeRepr)] =
 
     import quotes.reflect.*
     val members = refinements(self.asTerm.tpe.widen)

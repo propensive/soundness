@@ -68,6 +68,7 @@ private[jacinta] trait JsonDecodable[T] extends Decodable:
   type Self = T
   type Form = Json
   type Locus = Json.Focus
+
   override def position(value: Json, focus: Json.Focus): Json.Focus =
     focus.withPosition(value)
 
@@ -84,7 +85,7 @@ private[jacinta] trait JsonDecodable[T] extends Decodable:
 // still resolve.
 trait Json3:
   inline given decodableAtFocus: [value]
-  =>  (inner: value is Decodable in Json)
+  =>  ( inner: value is Decodable in Json )
   =>  value is Decodable in Json at Json.Focus =
 
     new JsonDecodable[value]:
@@ -168,6 +169,7 @@ trait Json2 extends Json3:
               build: [field] =>
                 context =>
                   val key: Text = renames.at(label).or(label)
+
                   focus({
                     val base = prior.let(_.pointer).or(JsonPointer())
 
@@ -230,6 +232,7 @@ trait Json2 extends Json3:
             fields(value): [field] =>
               field =>
                 val key: Text = renames.at(label).or(label)
+
                 focus({
                   val base = prior.let(_.pointer).or(JsonPointer())
 
@@ -754,7 +757,7 @@ object Json extends Json2, Dynamic:
 
 
   given map: [key: distillate.Decodable in Text, element]
-  =>  (decodable: => element is Json.Decodable)
+  =>  ( decodable: => element is Json.Decodable )
   =>  Tactic[JsonError]
   =>  Map[key, element] is Json.Decodable =
 
@@ -874,7 +877,7 @@ extends Dynamic, Topical, Original derives CanEqual:
 
 
   def update[value: anticipation.Encodable in Json](index: Int, value: value)
-    (using erased DynamicJsonEnabler)
+    ( using erased DynamicJsonEnabler )
   :   Json raises JsonError =
 
     if !root.isArray then raise(JsonError(Reason.NotType(root.primitive, JsonPrimitive.Array)))

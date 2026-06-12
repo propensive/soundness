@@ -94,9 +94,11 @@ object internal:
           val regex = Regex(List(pattern))(using Unsafe)
           val matcher = regex.javaPattern.matcher(scrutinee.s).nn
           val found = matcher.find(index)
+
           if found then
             scanner.nextStart = matcher.start + 1
             scanner.matchEnd = matcher.end
+
           found
 
   class RExtractor[result](parts: Seq[String]):

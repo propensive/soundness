@@ -54,7 +54,7 @@ import Tels.Polarity
 // `Schematic` summon). Mirrors jacinta's `jsonSchematics`.
 object telSchematics:
   def encodable[value](using encoder: value is Tel.Encodable)
-  :     value is Encodable & Schematic in Tel over Tels.Type =
+  :   value is Encodable & Schematic in Tel over Tels.Type =
     new Encodable with Schematic:
       type Self = value
       type Form = Tel
@@ -63,7 +63,7 @@ object telSchematics:
       def schema(): Tels.Type = Tels2.reify(encoder.shape())
 
   def decodable[value](using decoder: value is Tel.Decodable)
-  :     value is Decodable & Schematic in Tel over Tels.Type =
+  :   value is Decodable & Schematic in Tel over Tels.Type =
     new Decodable with Schematic:
       type Self = value
       type Form = Tel
@@ -204,10 +204,10 @@ object Tels2:
 
         val polarity = fieldShape match
           case Shape.Arr(_) | Shape.Opt(_) => Polarity.Loose
-          case _ => if required.contains(label) then Polarity.Tight else Polarity.Loose
+          case _                           => if required.contains(label) then Polarity.Tight else Polarity.Loose
 
         Tels.Field
-          (polarity, repeatable, Tel.camelToKebab(label.s), reify(fieldShape), Unset)
+          ( polarity, repeatable, Tel.camelToKebab(label.s), reify(fieldShape), Unset )
 
       Tels.Struct(IArray.from(members), IArray.empty)
 

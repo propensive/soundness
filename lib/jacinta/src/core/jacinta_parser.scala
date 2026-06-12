@@ -50,15 +50,18 @@ extension (json: Json.Ast.type)
 
   def parse(input: Iterator[Data], holes: Boolean)(using mode: NumberMode)
   :   Json.Ast raises ParseError =
+
     Json.Ast(JsonParser.parse(input, holes, mode))
 
   def parseTracked(source: Data)(using mode: NumberMode)
   :   (Json.Ast, Json.PositionIndex) raises ParseError =
+
     val (raw, ints) = JsonParser.parseTracked(source, mode)
     (Json.Ast(raw), Json.PositionIndex(ints))
 
   def parseTracked(input: Iterator[Data])(using mode: NumberMode)
   :   (Json.Ast, Json.PositionIndex) raises ParseError =
+
     val (raw, ints) = JsonParser.parseTracked(input, mode)
     (Json.Ast(raw), Json.PositionIndex(ints))
 

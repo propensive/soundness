@@ -97,11 +97,14 @@ private[jacinta] object JsonParser:
   private val StringScanContinue: Array[Byte] =
     val arr = new Array[Byte](256)
     var i = 0
+
     while i < 256 do
       arr(i) =
         if i >= 32 && i < 128 && i != 0x22 /* `"` */ && i != 0x5C /* `\` */
         then 1.toByte else 0.toByte
+
       i += 1
+
     arr
 
   private val pool: ThreadLocal[JsonParser] =
@@ -141,6 +144,7 @@ private[jacinta] object JsonParser:
 
   def parseTracked(source: Data, mode: NumberMode = NumberMode.Full)
   :   (Raw, IArray[Int]) raises ParseError =
+
     val parser = pool.get.nn
     parser.tracking = true
     parser.resetData(source)
@@ -151,6 +155,7 @@ private[jacinta] object JsonParser:
 
   def parseTracked(input: Iterator[Data], mode: NumberMode)
   :   (Raw, IArray[Int]) raises ParseError =
+
     val parser = pool.get.nn
     parser.tracking = true
     parser.resetIterator(input)
@@ -298,14 +303,17 @@ private[jacinta] final class JsonParser:
   // consumed bytes are accounted for before they're discarded.
   private def reconcileLineation(): Unit =
     val end = cursor.unsafePos(using Unsafe)
+
     if lineationPos < end then
       var i = lineationPos
       var newlines = 0
       var lastNewlineAt = -1
+
       while i < end do
         if bytes(i) == Newline then
           newlines += 1
           lastNewlineAt = i
+
         i += 1
 
       if newlines > 0 then
@@ -344,6 +352,7 @@ private[jacinta] final class JsonParser:
   private def moreSlow(): Boolean =
     syncTo()
     if tracking then reconcileLineation()
+
     if cursor.more then { syncFrom(); true }
     else
       if tracking then syncFrom()
@@ -619,8 +628,10 @@ private[jacinta] final class JsonParser:
         else
           val packedLow  = packBytes(arr, off,     math.min(len, 8))
           val packedHigh = if len > 8 then packBytes(arr, off + 8, len - 8) else 0L
+
           val idx        = ((packedLow.toInt ^ (packedLow >>> 32).toInt) ^
                             (packedHigh.toInt ^ (packedHigh >>> 32).toInt)) & (KeyCacheSize - 1)
+
           val cached     = keyCache(idx)
 
           if cached != null && keyCacheLow(idx) == packedLow
@@ -644,9 +655,11 @@ private[jacinta] final class JsonParser:
   private inline def packBytes(arr: Array[Byte], off: Int, n: Int): Long =
     var out: Long = 0L
     var i = 0
+
     while i < n do
       out = out | ((arr(off + i) & 0xFFL) << (i << 3))
       i += 1
+
     out
 
   private def tail(start: Region): String raises ParseError =
@@ -981,7 +994,7 @@ private[jacinta] final class JsonParser:
   // The flag has no effect on non-number values, so we don't need to
   // propagate it to `parseObject` / `parseArray` / `parseString`.
   private def parseValue(minus: Boolean = false, bcdOnly: Boolean = false)
-                        (using Tactic[ParseError]): Raw =
+                        ( using Tactic[ParseError] ): Raw =
     if !more then errorAt(Issue.PrematureEnd)
     val ch = peek
 
@@ -1016,6 +1029,7 @@ private[jacinta] final class JsonParser:
       bcdOnly:  Boolean = false )
     ( using Tactic[ParseError] )
   :   Raw =
+
     if !more then errorAt(Issue.PrematureEnd)
 
     syncTo()
@@ -1124,6 +1138,7 @@ private[jacinta] final class JsonParser:
       while i < n do
         val v = src(i)
         val text = Bcd.bcdLongText(v)
+
         val ast: Any =
           try java.lang.Long.parseLong(text)
           catch case _: NumberFormatException => java.lang.Double.parseDouble(text)
@@ -1165,6 +1180,7 @@ private[jacinta] final class JsonParser:
 
               if first then
                 first = false
+
                 if nibbles <= Bcd.MaxBcdIntNibbles then
                   mode = ModeBcdInt
                   val buf = getBcdIntBuffer()
@@ -1274,6 +1290,7 @@ private[jacinta] final class JsonParser:
       startMark:   Long )
     ( using Tactic[ParseError] )
   :   Raw =
+
     var mode: Int = ModeUndecided
     var intItems:  ArrayBuffer[Int]  | Null = null
     var longItems: ArrayBuffer[Long] | Null = null
@@ -1323,6 +1340,7 @@ private[jacinta] final class JsonParser:
       while i < n do
         val v = src(i)
         val text = Bcd.bcdLongText(v)
+
         val ast: Any =
           try java.lang.Long.parseLong(text)
           catch case _: NumberFormatException => java.lang.Double.parseDouble(text)
@@ -1360,6 +1378,7 @@ private[jacinta] final class JsonParser:
 
               if first then
                 first = false
+
                 if nibbles <= Bcd.MaxBcdIntNibbles then
                   mode = ModeBcdInt
                   val buf = getBcdIntBuffer()
@@ -1453,6 +1472,7 @@ private[jacinta] final class JsonParser:
 
     emitCompositeDescriptor
      ( indexOut, indexScratch, indexEnds, startLine, startColumn, startMark )
+
     relinquishIndexBuffer()
     relinquishIndexBuffer()
 
@@ -1699,6 +1719,7 @@ private[jacinta] final class JsonParser:
 
     emitCompositeDescriptor
      ( indexOut, indexScratch, indexEnds, startLine, startColumn, startMark )
+
     relinquishIndexBuffer()
     relinquishIndexBuffer()
 

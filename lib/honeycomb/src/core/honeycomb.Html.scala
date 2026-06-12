@@ -147,7 +147,7 @@ object Html extends Tag.Container
 
 
   given strictAggregable: [content <: Label: Reifiable to List[String]]
-  =>  (dom: Dom)
+  =>  ( dom: Dom )
   =>  Tactic[ParseError]
   =>  NotGiven[Html.Recovery.Permissive]
   =>  (Html of content) is Aggregable by Text =
@@ -189,7 +189,7 @@ object Html extends Tag.Container
     try body catch case _: ParseError => fallback
 
   given permissiveAggregable: [content <: Label: Reifiable to List[String]]
-  =>  (dom: Dom)
+  =>  ( dom: Dom )
   =>  Html.Recovery.Permissive
   =>  (Html of content) is Aggregable by Text =
 
@@ -567,6 +567,7 @@ object Html extends Tag.Container
 
     protected inline def peek: Char = bytes(pos)
     protected inline def advance(): Unit = pos += 1
+
     protected inline def position: Int =
       syncTo()
       cursor.position.n0
@@ -633,6 +634,7 @@ object Html extends Tag.Container
           col = 0
         else
           col += 1
+
         i += 1
 
       // Match the previous behaviour's off-by-one: report the column of the
@@ -838,6 +840,7 @@ object Html extends Tag.Container
         lay(fail(ExpectedMore, mark)):
           case char if asciiLetter(char) || char == '-' =>
             val step = dom.attributes.step(node, asciiLower(char))
+
             if step < 0 then
               if permissive then
                 warn(UnknownAttributeStart(slice(mark, begin())))
@@ -849,9 +852,11 @@ object Html extends Tag.Container
 
           case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>
             val attr = dom.attributes.value(node)
+
             if attr != null then attr.nn else
               val end = begin()
               val name = slice(mark, end)
+
               if permissive then
                 warn(UnknownAttribute(name))
                 Attribute(name, Set(), true)
@@ -1058,12 +1063,14 @@ object Html extends Tag.Container
         lay(fail(ExpectedMore, mark)):
           case char if asciiLetter(char) || asciiDigit(char) =>
             val step = dom.entities.step(node, char)
+
             if step < 0 then Unset
             else advance() yet textEntity(mark, step)
 
           case ';' =>
             advance()
             val step = dom.entities.step(node, ';')
+
             if step < 0 then Unset else
               val v = dom.entities.value(step)
               if v == null then Unset else v.nn
@@ -1450,6 +1457,7 @@ object Html extends Tag.Container
                     else if permissive then
                       if parent == root then warn(UnopenedTag(content))
                       else warn(MismatchedTag(parent.label, content))
+
                       advance()
                       level = Level.Skip
                     else

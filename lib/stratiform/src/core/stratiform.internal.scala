@@ -64,6 +64,7 @@ object internal:
   private def hasMarker(text: Text): Boolean =
     var i = 0
     val s = text.s
+
     while i < s.length do
       if s.charAt(i) == Marker then return true
       i += 1
@@ -71,8 +72,8 @@ object internal:
     false
 
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
-       (insertions0: Expr[Seq[Any]])
-  :     Macro[Tel] =
+       ( insertions0: Expr[Seq[Any]] )
+  :   Macro[Tel] =
     import quotes.reflect.*
 
     // Tuple-type iteration: the contextual framework presents parts in
@@ -93,6 +94,7 @@ object internal:
     // parsing fails, halt the macro with the error code as the message.
     val document: Tel.Document =
       given Diagnostics = Diagnostics.omit
+
       given HaltTactic[TelError, Tel.Document] = new HaltTactic[TelError, Tel.Document]:
         override def abort(error: Diagnostics ?=> TelError): Nothing =
           halt(m"the tel\"…\" literal is invalid: ${error.message}")
@@ -108,10 +110,10 @@ object internal:
         expr
 
       def encodeAtomText(expr: Expr[Any]): Expr[Text] = expr.absolve match
-        case '{ $value: tpe } =>
+        case '{$value: tpe} =>
           Expr.summon[(? >: tpe) is Encodable in Tel] match
-            case Some('{ $enc: Encodable }) =>
-              '{ $enc.encode($value).primaryAtom }
+            case Some('{$enc: Encodable}) =>
+              '{$enc.encode($value).primaryAtom}
 
             case _ =>
               halt
@@ -122,99 +124,103 @@ object internal:
       // encoded value of the corresponding hole. The hole's encoded form
       // is the first inline atom's text of the produced Tel.
       def substituteMarker(text: Text): Expr[Text] =
-        if !hasMarker(text) then '{ ${Expr(text.s)}.tt }
+        if !hasMarker(text) then '{${Expr(text.s)}.tt}
         else
           val s = text.s
           val pieces = s.split(MarkerString, -1).nn
           var result: Expr[String] = Expr(pieces(0).nn)
           var i = 1
+
           while i < pieces.length do
             val fragment = encodeAtomText(consumeHole())
             val partExpr = Expr(pieces(i).nn)
-            result = '{ $result + $fragment.s + $partExpr }
+            result = '{$result + $fragment.s + $partExpr}
             i += 1
 
-          '{ $result.tt }
+          '{$result.tt}
 
       def emitAtom(atom: Tel.Atom): Expr[Tel.Atom] = atom match
         case Tel.Atom.Inline(text, precedingSpaces) =>
           val textExpr = substituteMarker(text)
           val psExpr = Expr(precedingSpaces)
-          '{ Tel.Atom.Inline($textExpr, $psExpr) }
+          '{Tel.Atom.Inline($textExpr, $psExpr)}
 
         case Tel.Atom.Source(text) =>
           val textExpr = substituteMarker(text)
-          '{ Tel.Atom.Source($textExpr) }
+          '{Tel.Atom.Source($textExpr)}
 
         case Tel.Atom.Literal(delimiter, text) =>
           val delimExpr = Expr(delimiter.s)
           val textExpr = substituteMarker(text)
-          '{ Tel.Atom.Literal($delimExpr.tt, $textExpr) }
+          '{Tel.Atom.Literal($delimExpr.tt, $textExpr)}
 
       def emitAtomsArray(atoms: IArray[Tel.Atom]): Expr[IArray[Tel.Atom]] =
         val list = atoms.toList.map(emitAtom)
-        '{ IArray.from(${Expr.ofList(list)}) }
+        '{IArray.from(${Expr.ofList(list)})}
 
       def emitComment(c: Tel.Comment): Expr[Tel.Comment] =
-        '{ Tel.Comment(${Expr(c.text.s)}.tt) }
+        '{Tel.Comment(${Expr(c.text.s)}.tt)}
 
       def emitTabulation(t: Tel.Tabulation): Expr[Tel.Tabulation] =
         val markers = Expr(t.markerOffsets.toList)
         val headings = Expr(t.headings.toList.map(_.s))
-        '{ Tel.Tabulation(IArray.from(${markers}), IArray.from(${headings}.map(_.tt))) }
+        '{Tel.Tabulation(IArray.from(${markers}), IArray.from(${headings}.map(_.tt)))}
 
       def emitCompound(c: Tel.Compound): Expr[Tel.Compound] =
         val keywordExpr = Expr(c.keyword.s)
         val atomsExpr = emitAtomsArray(c.atoms)
+
         val remarkExpr: Expr[Optional[Text]] = c.remark match
-          case unset: Unset.type => '{ Unset }
-          case text: Text        => '{ ${Expr(text.s)}.tt: Optional[Text] }
+          case unset: Unset.type => '{Unset}
+          case text: Text        => '{${Expr(text.s)}.tt: Optional[Text]}
 
         val childrenExpr = emitBlocks(c.children)
-        '{ Tel.Compound(${keywordExpr}.tt, $atomsExpr, $remarkExpr, $childrenExpr) }
+        '{Tel.Compound(${keywordExpr}.tt, $atomsExpr, $remarkExpr, $childrenExpr)}
 
       def emitBlock(b: Tel.Block): Expr[Tel.Block] =
-        val comments = '{ IArray.from(${Expr.ofList(b.comments.toList.map(emitComment))}) }
+        val comments = '{IArray.from(${Expr.ofList(b.comments.toList.map(emitComment))})}
+
         val tab: Expr[Optional[Tel.Tabulation]] = b.tabulation match
-          case unset: Unset.type   => '{ Unset }
-          case t: Tel.Tabulation   => '{ ${emitTabulation(t)}: Optional[Tel.Tabulation] }
+          case unset: Unset.type   => '{Unset}
+          case t: Tel.Tabulation   => '{${emitTabulation(t)}: Optional[Tel.Tabulation]}
 
         val compounds =
-          '{ IArray.from(${Expr.ofList(b.compounds.toList.map(emitCompound))}) }
+          '{IArray.from(${Expr.ofList(b.compounds.toList.map(emitCompound))})}
 
         val tbl = Expr(b.trailingBlankLines)
-        '{ Tel.Block($comments, $tab, $compounds, $tbl) }
+        '{Tel.Block($comments, $tab, $compounds, $tbl)}
 
       def emitBlocks(blocks: IArray[Tel.Block]): Expr[IArray[Tel.Block]] =
-        '{ IArray.from(${Expr.ofList(blocks.toList.map(emitBlock))}) }
+        '{IArray.from(${Expr.ofList(blocks.toList.map(emitBlock))})}
 
       val directiveExpr: Expr[Optional[Text]] = document.interpreterDirective match
-        case unset: Unset.type => '{ Unset }
-        case text: Text        => '{ ${Expr(text.s)}.tt: Optional[Text] }
+        case unset: Unset.type => '{Unset}
+        case text: Text        => '{${Expr(text.s)}.tt: Optional[Text]}
 
       val pragmaExpr: Expr[Optional[Tel.Pragma]] = document.pragma match
         case unset: Unset.type =>
-          '{ Unset }
+          '{Unset}
 
         case p: Tel.Pragma =>
-          val versionExpr = '{ (${Expr(p.version._1)}, ${Expr(p.version._2)}) }
+          val versionExpr = '{(${Expr(p.version._1)}, ${Expr(p.version._2)})}
+
           val schemaExpr: Expr[Optional[Text]] = p.schema match
-            case unset: Unset.type => '{ Unset }
-            case text: Text        => '{ ${Expr(text.s)}.tt: Optional[Text] }
+            case unset: Unset.type => '{Unset}
+            case text: Text        => '{${Expr(text.s)}.tt: Optional[Text]}
 
           val sigilExpr: Expr[Optional[Char]] = p.sigil match
-            case unset: Unset.type => '{ Unset }
-            case c: Char           => '{ ${Expr(c)}: Optional[Char] }
+            case unset: Unset.type => '{Unset}
+            case c: Char           => '{${Expr(c)}: Optional[Char]}
 
-          '{ Tel.Pragma($versionExpr, $schemaExpr, $sigilExpr): Optional[Tel.Pragma] }
+          '{Tel.Pragma($versionExpr, $schemaExpr, $sigilExpr): Optional[Tel.Pragma]}
 
       val lineEndingsExpr: Expr[Tel.LineEndings] = document.lineEndings match
-        case Tel.LineEndings.Lf   => '{ Tel.LineEndings.Lf }
-        case Tel.LineEndings.Crlf => '{ Tel.LineEndings.Crlf }
+        case Tel.LineEndings.Lf   => '{Tel.LineEndings.Lf}
+        case Tel.LineEndings.Crlf => '{Tel.LineEndings.Crlf}
 
       val childrenExpr = emitBlocks(document.children)
 
-      '{ Tel.make(Tel.Document($directiveExpr, $pragmaExpr, $lineEndingsExpr, $childrenExpr)) }
+      '{Tel.make(Tel.Document($directiveExpr, $pragmaExpr, $lineEndingsExpr, $childrenExpr))}
 
   // The extractor counterpart to `interpolator`. Parses the pattern at
   // compile time and produces a function that matches a runtime Tel
@@ -226,8 +232,8 @@ object internal:
   //   - Option[Tel]    for 1 hole (the captured atom-as-scalar Tel)
   //   - Option[Tuple]  for 2+ holes (tuple of captured scalar Tels)
   def extractor[parts <: Tuple: Type, origins <: Tuple: Type]
-       (scrutinee: Expr[Tel])
-  :     Macro[Boolean | Option[Tuple | Tel]] =
+       ( scrutinee: Expr[Tel] )
+  :   Macro[Boolean | Option[Tuple | Tel]] =
     import quotes.reflect.*
 
     def collectParts[tuple: Type](acc: List[String]): List[String] = Type.of[tuple] match
@@ -242,6 +248,7 @@ object internal:
     // the macro with a clean source-positioned error if it's malformed).
     locally:
       given Diagnostics = Diagnostics.omit
+
       given HaltTactic[TelError, Tel.Document] = new HaltTactic[TelError, Tel.Document]:
         override def abort(error: Diagnostics ?=> TelError): Nothing =
           halt(m"the tel\"…\" pattern is invalid: ${error.message}")
@@ -253,7 +260,7 @@ object internal:
     // Expr but that's a substantial amount of code; re-parsing once per
     // match-site invocation is cheap enough for the macro's purpose.
     val patternBytesExpr: Expr[Data] =
-      '{ ${Expr(source.getBytes("UTF-8").nn.toSeq)}.toArray.asInstanceOf[IArray[Byte]] }
+      '{${Expr(source.getBytes("UTF-8").nn.toSeq)}.toArray.asInstanceOf[IArray[Byte]]}
 
     val markerExpr: Expr[Char] = '{ ${Expr(Marker)} }
 
@@ -264,13 +271,14 @@ object internal:
       stratiform.internal.matchDocument(pattern, $scrutinee, $markerExpr)
     }
 
-    if holeCount == 0 then '{ $matchResult.isDefined: Boolean }
-    else if holeCount == 1 then '{ $matchResult.map(_.head): Option[Tel] }
+    if holeCount == 0 then '{$matchResult.isDefined: Boolean}
+    else if holeCount == 1 then '{$matchResult.map(_.head): Option[Tel]}
     else
       val telType = TypeRepr.of[Tel]
+
       val tupleType =
         AppliedType
-         (defn.TupleClass(holeCount).info.typeSymbol.typeRef, List.fill(holeCount)(telType))
+         ( defn.TupleClass(holeCount).info.typeSymbol.typeRef, List.fill(holeCount)(telType) )
 
       tupleType.asType.absolve match
         case '[type result <: Tuple; result] =>
@@ -284,21 +292,23 @@ object internal:
   // pattern (allowing marker characters in pattern atom-texts as capture
   // sites), None otherwise. Captures are emitted in document order.
   def matchDocument
-       (pattern: Tel.Document, input: Tel, marker: Char)
-  :     Option[List[Tel]] =
+       ( pattern: Tel.Document, input: Tel, marker: Char )
+  :   Option[List[Tel]] =
     val captures = scala.collection.mutable.ListBuffer.empty[Tel]
+
     if matchBlocks(pattern.children, input.subtree.children, marker, captures)
     then Some(captures.toList) else None
 
   private def matchBlocks
-       (pattern: IArray[Tel.Block],
+       ( pattern: IArray[Tel.Block],
         input:   IArray[Tel.Block],
         marker:  Char,
-        out:     scala.collection.mutable.ListBuffer[Tel])
-  :     Boolean =
+        out:     scala.collection.mutable.ListBuffer[Tel] )
+  :   Boolean =
     if pattern.length != input.length then false
     else
       var i = 0
+
       while i < pattern.length do
         if !matchBlock(pattern(i), input(i), marker, out) then return false
         i += 1
@@ -306,14 +316,15 @@ object internal:
       true
 
   private def matchBlock
-       (pattern: Tel.Block,
+       ( pattern: Tel.Block,
         input:   Tel.Block,
         marker:  Char,
-        out:     scala.collection.mutable.ListBuffer[Tel])
-  :     Boolean =
+        out:     scala.collection.mutable.ListBuffer[Tel] )
+  :   Boolean =
     if pattern.compounds.length != input.compounds.length then false
     else
       var i = 0
+
       while i < pattern.compounds.length do
         if !matchCompound(pattern.compounds(i), input.compounds(i), marker, out) then
           return false
@@ -323,15 +334,16 @@ object internal:
       true
 
   private def matchCompound
-       (pattern: Tel.Compound,
+       ( pattern: Tel.Compound,
         input:   Tel.Compound,
         marker:  Char,
-        out:     scala.collection.mutable.ListBuffer[Tel])
-  :     Boolean =
+        out:     scala.collection.mutable.ListBuffer[Tel] )
+  :   Boolean =
     if pattern.keyword != input.keyword then false
     else if pattern.atoms.length != input.atoms.length then false
     else
       var i = 0
+
       while i < pattern.atoms.length do
         if !matchAtom(pattern.atoms(i), input.atoms(i), marker, out) then return false
         i += 1
@@ -339,10 +351,10 @@ object internal:
       matchBlocks(pattern.children, input.children, marker, out)
 
   private def matchAtom
-       (pattern: Tel.Atom,
+       ( pattern: Tel.Atom,
         input:   Tel.Atom,
         marker:  Char,
-        out:     scala.collection.mutable.ListBuffer[Tel])
+        out:     scala.collection.mutable.ListBuffer[Tel] )
   :     Boolean = pattern match
     case Tel.Atom.Inline(patText, _) =>
       input match
@@ -375,11 +387,11 @@ object internal:
   // check. Captures are appended to `out` in left-to-right pattern
   // order.
   private def matchAtomText
-       (pattern: Text,
+       ( pattern: Text,
         input:   Text,
         marker:  Char,
-        out:     scala.collection.mutable.ListBuffer[Tel])
-  :     Boolean =
+        out:     scala.collection.mutable.ListBuffer[Tel] )
+  :   Boolean =
     import scala.language.unsafeNulls
     val p: String = pattern.s
     val s: String = input.s
@@ -388,6 +400,7 @@ object internal:
     val pieces = scala.collection.mutable.ArrayBuffer.empty[String]
     var start = 0
     var i = 0
+
     while i < p.length do
       if p.charAt(i) == marker then
         pieces += p.substring(start, i)
@@ -401,6 +414,7 @@ object internal:
     else
       val prefix = pieces(0)
       val suffix = pieces(pieces.length - 1)
+
       if !s.startsWith(prefix) then false
       else if !s.endsWith(suffix) then false
       else if s.length < prefix.length + suffix.length then false
@@ -414,10 +428,13 @@ object internal:
         val end = s.length - suffix.length
         var idx = 1
         var ok = true
+
         while ok && idx < pieces.length - 1 do
           val seg = pieces(idx)
+
           val found =
             if seg.isEmpty then pos else s.indexOf(seg, pos)
+
           if found < 0 || found > end then ok = false
           else
             local += Tel.scalar(Text(s.substring(pos, found)))

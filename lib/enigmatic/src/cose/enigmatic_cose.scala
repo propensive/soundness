@@ -43,9 +43,9 @@ import turbulence.*
 // allowing the key type to be inferred from the value argument.
 final class CoseVerify[source](val source: source):
   inline def apply[K]
-    (key: K)
-    (using verifier:  K is CoseVerifier,
-           cborTactic: Tactic[CborError])
+    ( key: K )
+    ( using verifier:  K is CoseVerifier,
+           cborTactic: Tactic[CborError] )
   :   Boolean raises CoseError =
 
     val bytes: Data = source.read[Data]

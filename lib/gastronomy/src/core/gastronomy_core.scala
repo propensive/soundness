@@ -62,7 +62,7 @@ package crypto:
 
   // "Legacy use": processing already-protected data only (decrypt/verify).
   erased given permitLegacyCrypto
-      : ProcessingPermit[Concession.TripleDes] & ProcessingPermit[Concession.Dsa] =
+      :   ProcessingPermit[Concession.TripleDes] & ProcessingPermit[Concession.Dsa] =
     caps.unsafe.unsafeErasedValue
 
   // "Disallowed": broken or non-approved algorithms, key lengths and modes (incl.
@@ -121,7 +121,7 @@ package crypto:
 
 extension [digestible: Digestible](value: digestible)
   def digest[hash <: Algorithm]
-      (using hashed: Hash in hash, erased weakness: Permit[HashWeakness[hash]])
+      ( using hashed: Hash in hash, erased weakness: Permit[HashWeakness[hash]] )
   :   Digest in hash =
 
     val digester = Digester(digestible.digest(_, value))
@@ -129,7 +129,7 @@ extension [digestible: Digestible](value: digestible)
 
 extension [source: Streamable by Data](source: source)
   def checksum[hash <: Algorithm]
-      (using hashed: Hash in hash, erased weakness: Permit[HashWeakness[hash]])
+      ( using hashed: Hash in hash, erased weakness: Permit[HashWeakness[hash]] )
   :   Digest in hash =
 
     source.stream[Data].digest[hash]

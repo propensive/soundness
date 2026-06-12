@@ -90,7 +90,7 @@ trait Tel2:
       else rebuild
        ( origin,
          Tel.withChildCompound
-          (origin.subtree.children, ordinal.n0, c => rewrap(c, lambda(Tel.make(c)))) )
+          ( origin.subtree.children, ordinal.n0, c => rewrap(c, lambda(Tel.make(c))) ) )
 
   given eachOptical: Each.type is Optical from Tel onto Tel = _ =>
     Optic: (origin, lambda) =>
@@ -104,8 +104,8 @@ trait Tel2:
     type Result = Tel
 
     transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
-         (inline insertions: Any*)
-    :     Tel =
+         ( inline insertions: Any* )
+    :   Tel =
 
       ${stratiform.internal.interpolator[parts, origins]('insertions)}
 
@@ -113,7 +113,7 @@ trait Tel2:
   // a structural matcher that binds atom-text captures.
   inline given extrapolator: Tel is Extrapolable:
     transparent inline def extrapolate[parts <: Tuple, origins <: Tuple](scrutinee: Tel)
-    :     Boolean | Option[Tuple | Tel] =
+    :   Boolean | Option[Tuple | Tel] =
 
       ${stratiform.internal.extractor[parts, origins]('scrutinee)}
 
@@ -132,6 +132,7 @@ trait Tel2:
   object DecodableDerivation extends Derivable[Tel.Decodable]:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Tel.Decodable =
+
       // The object `Shape` is built from the field decoders' own shapes (a single
       // inlined `contexts` traversal — kept here, not factored out, so it does not
       // perturb the `build` traversal), keeping a fused `Decodable & Schematic`
@@ -159,13 +160,15 @@ trait Tel2:
                 // `Optional`, `Map` (a single `entries` compound) — reads one match.
                 if ctx.repeatable then
                   val compounds = telVal.childCompounds.filter(_.keyword == keyword)
+
                   ctx.decoded:
                     Tel.make
-                     (Tel.Document
-                       (Unset, Unset, Tel.LineEndings.Lf,
-                        IArray(Tel.Block(IArray.empty, Unset, compounds, 0))))
+                     ( Tel.Document
+                       ( Unset, Unset, Tel.LineEndings.Lf,
+                        IArray(Tel.Block(IArray.empty, Unset, compounds, 0)) ) )
                 else
                   val match0 = telVal.field(keyword)
+
                   if match0.absent then default.or(ctx.decoded(Tel.empty))
                   else ctx.decoded(match0.vouch)
 
@@ -194,6 +197,7 @@ trait Tel2:
   object EncodableDerivation extends Derivable[Tel.Encodable]:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Tel.Encodable =
+
       Tel.Encodable({
         val fields: List[(Text, Shape)] =
           contexts: [field] => context => (label, context.shape())
@@ -212,6 +216,7 @@ trait Tel2:
             fieldValue =>
               val encoded = contextual.encode(fieldValue)
               val keyword = renames.getOrElse(label, Tel.camelToKebab(label.s))
+
               encoded.subtree match
                 case c: Tel.Compound =>
                   compounds += c.copy(keyword = keyword)
@@ -280,16 +285,22 @@ trait Tel2:
   given telDecodable: Tel is Tel.Decodable = Tel.Decodable(Shape.Any)(identity(_))
 
   given textEncodable: Text is Tel.Encodable = Tel.Encodable(Shape.Str)(text => Tel.scalar(text))
+
   given stringEncodable: String is Tel.Encodable =
     Tel.Encodable(Shape.Str)(s => Tel.scalar(Text(s)))
+
   given intEncodable: Int is Tel.Encodable =
     Tel.Encodable(Shape.Whole)(i => Tel.scalar(Text(i.toString)))
+
   given longEncodable: Long is Tel.Encodable =
     Tel.Encodable(Shape.Whole)(l => Tel.scalar(Text(l.toString)))
+
   given doubleEncodable: Double is Tel.Encodable =
     Tel.Encodable(Shape.Real)(d => Tel.scalar(Text(d.toString)))
+
   given booleanEncodable: Boolean is Tel.Encodable =
     Tel.Encodable(Shape.Bool)(b => Tel.scalar(Text(b.toString)))
+
   given telEncodable: Tel is Tel.Encodable = Tel.Encodable(Shape.Any)(identity(_))
 
   // Optional / List support — repeatable scalar fields produce multiple
@@ -322,7 +333,7 @@ trait Tel2:
 
   private def collectionDocument[value]
       (values: Iterable[value])(using encodable: value is Encodable in Tel)
-  :     Tel =
+  :   Tel =
     val compounds: IArray[Tel.Compound] = IArray.from:
       values.flatMap: element =>
         encodable.encoded(element).subtree match
@@ -403,8 +414,8 @@ trait Tel2:
     Tel(Tel.Compound(t"", IArray(Tel.Atom.Inline(text, 1)), Unset, IArray.empty))
 
   def compound
-       (keyword: Text, atoms: IArray[Tel.Atom], compounds: IArray[Tel.Compound])
-  :     Tel =
+       ( keyword: Text, atoms: IArray[Tel.Atom], compounds: IArray[Tel.Compound] )
+  :   Tel =
     val children =
       if compounds.isEmpty then IArray.empty[Tel.Block]
       else IArray(Tel.Block(IArray.empty, Unset, compounds, 0))
