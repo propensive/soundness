@@ -395,7 +395,14 @@ def cli[bus <: Matchable](using executive: Executive)
           clients.each: (pid, client) =>
             if sourcePid != pid then client.receive(message)
 
-        val service: DaemonService[bus] =
+        // Generated lazily and memoized: re-runs the application's pure portion in
+        // tab-completion mode to discover its subcommand/flag tree. Only the completions
+        // executive can produce a tree; others yield `Unset` and `service.help()` falls back.
+        lazy val helpValue: Optional[Help] =
+          executive.help(name, environment, () => directory, stdio, login):
+            (interface: executive.Interface) ?=> block(using service, interface, environment)
+
+        lazy val service: DaemonService[bus] =
           DaemonService[bus]
             ( pid,
               () => shutdown(pid),
@@ -404,7 +411,8 @@ def cli[bus <: Matchable](using executive: Executive)
               deliver(pid, _),
               clientState.bus.stream,
               name,
-              startTime )
+              startTime,
+              () => helpValue )
 
         Log.fine(DaemonLogEvent.NewCli)
 

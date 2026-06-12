@@ -32,39 +32,52 @@
                                                                                                   */
 package exoskeleton
 
-import ambience.*
+import language.experimental.pureFunctions
+
 import anticipation.*
-import beneficence.*
-import rudiments.*
-import turbulence.*
+import escapade.*
+import gossamer.*
+import hieroglyph.*, textMetrics.uniform
+import symbolism.*
 import vacuous.*
 
-trait Executive extends Findable:
-  type Return
-  type Interface <: Cli
+object Help:
+  case class Param
+    ( name:        Text,
+      aliases:     List[Text],
+      description: Optional[Text | Teletype],
+      repeatable:  Boolean )
 
-  def invocation
-    ( fullArguments:    Iterable[Text],
-      environment:      Environment,
-      workingDirectory: WorkingDirectory,
-      stdio:            Stdio,
-      entrypoint:       Entrypoint,
-      login:            Login )
-    ( using interpreter: Interpreter )
-  :   Interface
+  // Render the tree to a `Teletype`, then borrow escapade's `Teletype is Printable` so that a
+  // `Help` value can be passed straight to `Out.println` and print nicely on the terminal.
+  given printable: Help is Printable = summon[Teletype is Printable].contramap(_.teletype)
 
-  def process(cli: Interface)(result: Interface ?=> Return): Exit
+case class Help
+  ( command:     Text,
+    description: Optional[Text | Teletype],
+    parameters:  List[Help.Param],
+    subcommands: List[Help] ):
 
-  // Re-run the application's pure portion in tab-completion mode with synthesized argument
-  // prefixes to discover its subcommand/flag structure as a `Help` tree, rooted at `command`.
-  // Only the completions executive can do this (its `Interface` is `Cli`, so a `Completion` is
-  // a valid interface); every other executive returns `Unset`.
-  def help
-    ( command:          Text,
-      environment:      Environment,
-      workingDirectory: WorkingDirectory,
-      stdio:            Stdio,
-      login:            Login )
-    ( block: Interface ?=> Return )
-    ( using interpreter: Interpreter )
-  :   Optional[Help] = Unset
+  def teletype: Teletype = lines(0).join(e"\n")
+
+  private def label(param: Help.Param): Text = (param.name :: param.aliases).join(t", ")
+
+  private def lines(depth: Int): List[Teletype] =
+    val indent: Text = t"  "*depth
+
+    val title: Teletype = description.absolve match
+      case Unset              => e"$indent$Bold($command)"
+      case text: Text         => e"$indent$Bold($command)  $text"
+      case teletype: Teletype => e"$indent$Bold($command)  $teletype"
+
+    val width: Int = parameters.map(label(_).length).maxOption.getOrElse(0)
+
+    val paramLines: List[Teletype] = parameters.map: param =>
+      param.description.absolve match
+        case Unset              => e"$indent    ${label(param)}"
+        case text: Text         => e"$indent    ${label(param).fit(width)}  $text"
+        case teletype: Teletype => e"$indent    ${label(param).fit(width)}  $teletype"
+
+    val subLines: List[Teletype] = subcommands.flatMap(_.lines(depth + 1))
+
+    title :: paramLines ::: subLines

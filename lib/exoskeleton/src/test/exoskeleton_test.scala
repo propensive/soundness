@@ -410,3 +410,65 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           test(m"fish focus=0 exits cleanly"):
             sh"$tool '{completions}' fish 0 0 /dev/null -- abcd".exec[Exit]()
           .assert(_ == Exit.Ok)
+
+    object HelpApp:
+      import interpreters.posix
+      import stdios.mute
+
+      val Alpha = Subcommand(t"alpha", e"a command to run")
+      val Beta = Subcommand(t"beta", e"another command to run")
+      val Gamma = Subcommand(t"gamma", e"a hidden command", hidden = true)
+      val Distribution = Subcommand(t"distribution", e"a different command to run")
+      val Ubuntu = Subcommand(t"ubuntu", e"Ubuntu")
+      val RedHat = Subcommand(t"red hat", e"Red Hat Linux")
+
+      def app(using Cli): Execution = arguments match
+        case Alpha() :: _ => execute(Exit.Ok)
+        case Beta() :: _  => execute(Exit.Ok)
+        case Gamma() :: _ => execute(Exit.Ok)
+
+        case Distribution() :: rest => rest match
+          case Ubuntu() :: _ =>
+            Flag(t"one", description = t"the first one")()
+            Flag(t"two", description = t"the second one")()
+            execute(Exit.Ok)
+
+          case RedHat() :: _ =>
+            Flag(t"only", description = t"there is only one")()
+            execute(Exit.Ok)
+
+          case _ => execute(Exit.Ok)
+
+        case _ => execute(Exit.Fail(1))
+
+      lazy val tree: Help =
+        helpTree
+         (t"mytool",
+          summon[Environment],
+          summon[WorkingDirectory],
+          summon[Stdio],
+          Login(t"tester", Unset))
+         (app)
+
+    test(m"Help root lists visible subcommands"):
+      HelpApp.tree.subcommands.map(_.command)
+    .assert(_ == List(t"alpha", t"beta", t"distribution"))
+
+    test(m"Help excludes hidden subcommands"):
+      HelpApp.tree.subcommands.map(_.command).contains(t"gamma")
+    .assert(_ == false)
+
+    test(m"Help descends into nested subcommands"):
+      HelpApp.tree.subcommands.filter(_.command == t"distribution").flatMap: distribution =>
+        distribution.subcommands.map(_.command)
+    .assert(_ == List(t"red hat", t"ubuntu"))
+
+    test(m"Help captures a leaf subcommand's flags"):
+      HelpApp.tree.subcommands
+       .filter(_.command == t"distribution").flatMap(_.subcommands)
+       .filter(_.command == t"ubuntu").flatMap(_.parameters.map(_.name))
+    .assert(_ == List(t"--one", t"--two"))
+
+    test(m"Help renders as Printable text mentioning a subcommand"):
+      summon[Help is Printable].print(HelpApp.tree, stdios.mute.termcap)
+    .assert(_.contains(t"alpha"))

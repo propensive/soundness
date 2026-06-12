@@ -37,6 +37,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
+import escapade.*
 import eucalyptus.*
 import fulminate.*
 import gossamer.*
@@ -53,6 +54,70 @@ def execute(block: (erased Effectful) ?=> Invocation ?=> Exit)(using cli: Cli): 
 
 def explain(explanation: (Optional[Text] aka "prior") ?=> Optional[Text])(using cli: Cli): Unit =
   cli.explain(explanation(using Unset.aka["prior"]))
+
+// Build a structured `Help` tree for an application by re-running its pure portion in
+// tab-completion mode with synthesized argument prefixes. In completion mode `execute` does no
+// IO, so the block runs harmlessly; each run discovers the subcommands and flags reachable at
+// one prefix, and the driver descends into every non-hidden subcommand to build the tree.
+def helpTree
+  ( command:          Text,
+    environment:      Environment,
+    workingDirectory: WorkingDirectory,
+    stdio:            Stdio,
+    login:            Login )
+  ( block: Cli ?=> Execution )
+  ( using interpreter: Interpreter )
+:   Help =
+
+  def probe(prefix: List[Text]): (List[Suggestion], List[Flag]) =
+    val focus = prefix.length
+    val textArguments = prefix :+ t""
+    val synthesized = Cli.arguments(textArguments, focus, Unset, Prim)
+
+    val completion =
+      Completion
+        ( synthesized,
+          synthesized,
+          environment,
+          workingDirectory,
+          Shell.Zsh,
+          focus,
+          Unset,
+          stdio,
+          t"",
+          Prim,
+          login )
+
+    block(using completion)
+    (completion.cursorSuggestions, completion.flags.keySet.to(List))
+
+  def build
+    ( prefix:      List[Text],
+      command:     Text,
+      description: Optional[Text | Teletype],
+      seen:        Set[List[Text]] )
+  :   Help =
+
+    if seen.contains(prefix) then Help(command, description, Nil, Nil) else
+      val (suggestions, flags) = probe(prefix)
+
+      val parameters = flags.to(List).map: flag =>
+        Help.Param
+          ( Flag.serialize(flag.name),
+            flag.aliases.map(Flag.serialize(_)),
+            flag.description,
+            flag.repeatable )
+
+      val children =
+        suggestions.distinctBy(_.core).flatMap: suggestion =>
+          val childPrefix = prefix :+ suggestion.core
+
+          if suggestion.hidden || suggestion.incomplete then Nil
+          else List(build(childPrefix, suggestion.core, suggestion.description, seen + prefix))
+
+      Help(command, description, parameters, children.sortBy(_.command))
+
+  build(Nil, command, Unset, Set())
 
 package executives:
   given completions: (backstop: Backstop) => Executive:
@@ -197,3 +262,16 @@ package executives:
 
         try execution(using invocation).exitStatus
         catch case error: Throwable => backstop.handle(error)(using invocation.stdio)
+
+
+    override def help
+      ( command:          Text,
+        environment:      Environment,
+        workingDirectory: WorkingDirectory,
+        stdio:            Stdio,
+        login:            Login )
+      ( block: Cli ?=> Execution )
+      ( using interpreter: Interpreter )
+    :   Optional[Help] =
+
+      helpTree(command, environment, workingDirectory, stdio, login)(block)
