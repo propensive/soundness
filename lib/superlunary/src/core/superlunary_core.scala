@@ -41,13 +41,7 @@ import java.nio.file as jnf
 import java.util as ju
 import java.util.function as juf
 import ambience.*
-import anthology.*
 import anticipation.*
-import digression.*
-import distillate.*
-import hellenism.*
-import inimitable.*
-import serpentine.*
 import interfaces.paths.pathOnLinux
 import systems.java
 

@@ -39,14 +39,12 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import galilei.*
-import gossamer.*
 import hieroglyph.*, charEncoders.ascii
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
 import prepositional.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
-import turbulence.*
 import vacuous.*
 
 

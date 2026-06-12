@@ -33,11 +33,7 @@
 package savagery
 
 import scala.math.Numeric
-import anticipation.*
-import gossamer.*
-import mosquito.*
 import prepositional.*
-import spectacular.*
 import symbolism.*
 import geodesy.*
 import vacuous.*

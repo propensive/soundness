@@ -39,9 +39,6 @@ import frontier.*
 import gossamer.*
 import parasite.*
 import turbulence.*
-import distillate.*
-import prepositional.*
-import spectacular.*
 
 given stdio: (terminal: Terminal) => Stdio = terminal.stdio
 

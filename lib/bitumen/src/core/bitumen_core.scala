@@ -37,17 +37,11 @@ import java.nio.file as jnf
 import anticipation.*
 import contingency.*
 import turbulence.*
-import distillate.*
-import fulminate.*
 import galilei.*
-import gossamer.*
 import hieroglyph.*, charEncoders.ascii
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
 import prepositional.*
-import rudiments.*
 import serpentine.*
-import spectacular.*
-import vacuous.*
 
 extension (tar: Tarfile)
   def gzip: Stream[Data] = tar.stream[Data].compress[Gzip]

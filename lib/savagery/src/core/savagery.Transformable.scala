@@ -32,9 +32,7 @@
                                                                                                   */
 package savagery
 
-import geodesy.*
 import prepositional.*
-import vacuous.*
 
 
 object Transformable:

@@ -32,15 +32,11 @@
                                                                                                   */
 package stratiform
 
-import java.io.ByteArrayOutputStream
 import scala.language.unsafeNulls
 import anticipation.*
 import contingency.*
-import fulminate.*
 import gastronomy.*, hashProviders.soundnessHashing
 import prepositional.*
-import ulysses.*
-import vacuous.*
 
 
 // BinTEL §7 node encoding. Serialises a typed `Tel.Element` tree into

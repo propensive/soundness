@@ -32,7 +32,6 @@
                                                                                                   */
 package savagery
 
-import scala.math.Numeric
 
 import anticipation.*
 import gossamer.*
