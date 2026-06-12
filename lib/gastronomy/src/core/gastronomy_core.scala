@@ -90,8 +90,8 @@ package crypto:
   // lengths below 2048 bits (disallowed at the end of 2013).
   erased given permitCryptoThrough2014
   : Permit[Concession.Des] & Permit[Concession.Md5] & Permit[Concession.Rc2]
-      & Permit[Concession.Blowfish]
-      & Permit[Concession.SmallRsa] =
+    & Permit[Concession.Blowfish]
+    & Permit[Concession.SmallRsa] =
     caps.unsafe.unsafeErasedValue
 
   // Through 2024: also Triple-DES (encryption disallowed after 2023) and DSA

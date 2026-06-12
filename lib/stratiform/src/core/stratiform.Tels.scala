@@ -836,7 +836,7 @@ object Tels extends Tels2:
       val scalars  = nodesAt(ch, 3).map(scalarFromElement)
       val selects  = nodesAt(ch, 4).map(selectFromElement)
       val document = nodeAt(ch, 5).let(bodyFromElement)
-                      .or(abort(TelError(Reason.RequiredMemberAbsent)))
+        .or(abort(TelError(Reason.RequiredMemberAbsent)))
       val layers   = nodesAt(ch, 6).map(layerFromElement)
 
       val builtinScalars = IArray

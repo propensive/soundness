@@ -88,9 +88,9 @@ object Redraft:
   private case class Matcher(text: Text, index: Int, line: Int)
 
   private def analyze
-              ( directives: List[Directive],
-               original:   IndexedSeq[Text],
-               compare:    (Text, Text) => Boolean )
+    ( directives: List[Directive],
+      original:   IndexedSeq[Text],
+      compare:    (Text, Text) => Boolean )
   :   (List[Edit[Text]], List[Anomaly]) =
 
     val n = original.length
@@ -233,7 +233,7 @@ object Redraft:
       case (directive, index) if !directive.isInstanceOf[Directive.Keep] || near(index) => directive
 
   private def minimize
-              ( directives: List[Directive], original: IndexedSeq[Text], target: List[Text] )
+    ( directives: List[Directive], original: IndexedSeq[Text], target: List[Text] )
   :   List[Directive] =
 
     val array = directives.to(Array)

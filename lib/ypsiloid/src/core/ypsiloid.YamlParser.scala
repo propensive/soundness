@@ -3025,8 +3025,8 @@ private[ypsiloid] final class YamlParser:
         val a = parseAlias()
         // For aliases, the descriptor spans `*name` from the `*` mark.
         val r = maybeBlockMappingFromQuotedKeyTracked
-                  ( a, indent, tagText, anchorName, indexOut,
-                    startLine, startColumn, startMark )
+          ( a, indent, tagText, anchorName, indexOut,
+            startLine, startColumn, startMark )
 
         return finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
                               anchorName, tagText, r, prefixesConsumed)
@@ -3037,8 +3037,8 @@ private[ypsiloid] final class YamlParser:
             val s = parseDoubleQuoted()
 
             val r = maybeBlockMappingFromQuotedKeyTracked
-                      ( s, indent, tagText, anchorName, indexOut,
-                        startLine, startColumn, startMark )
+              ( s, indent, tagText, anchorName, indexOut,
+                startLine, startColumn, startMark )
 
             return finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
                                   anchorName, tagText, r, prefixesConsumed)
@@ -3048,8 +3048,8 @@ private[ypsiloid] final class YamlParser:
             val s = parseSingleQuoted()
 
             val r = maybeBlockMappingFromQuotedKeyTracked
-                      ( s, indent, tagText, anchorName, indexOut,
-                        startLine, startColumn, startMark )
+              ( s, indent, tagText, anchorName, indexOut,
+                startLine, startColumn, startMark )
 
             return finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
                                   anchorName, tagText, r, prefixesConsumed)
@@ -3065,7 +3065,7 @@ private[ypsiloid] final class YamlParser:
             // the untracked code, but only to flag trailing-content errors
             // — emission is the composite descriptor already produced).
             val r = maybeBlockMappingFromQuotedKeyAfterComposite
-                      ( s, indent, tagText, anchorName )
+              ( s, indent, tagText, anchorName )
 
             return finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
                                   anchorName, tagText, r, prefixesConsumed)
@@ -3078,7 +3078,7 @@ private[ypsiloid] final class YamlParser:
             flowParentIndent = savedFlowParent
 
             val r = maybeBlockMappingFromQuotedKeyAfterComposite
-                      ( m, indent, tagText, anchorName )
+              ( m, indent, tagText, anchorName )
 
             return finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
                                   anchorName, tagText, r, prefixesConsumed)
@@ -3112,8 +3112,8 @@ private[ypsiloid] final class YamlParser:
             prefixesConsumed = false
 
             val r = parsePlainOrBlockMappingTracked
-                      ( indent, tagText, anchorName, indexOut,
-                        startLine, startColumn, startMark )
+              ( indent, tagText, anchorName, indexOut,
+                startLine, startColumn, startMark )
 
             return finishNodeHere(savedPrefixesConsumed, savedLastNodeHadAnchor,
                                   anchorName, tagText, r, prefixesConsumed)

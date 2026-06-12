@@ -2090,9 +2090,9 @@ private final class TelParser():
           val runStart = pos
           while pos < bufEnd
             && bytes(pos) != SP
-                && bytes(pos) != LF
-                && bytes(pos) != CR
-                && (atomOpen || bytes(pos) != sigil)
+            && bytes(pos) != LF
+            && bytes(pos) != CR
+            && (atomOpen || bytes(pos) != sigil)
           do pos += 1
 
           val runLen = pos - runStart

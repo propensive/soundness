@@ -155,8 +155,8 @@ private[bitumen] object TarFilesystem:
     decodeAbsolute(root.encode.s+"/"+ref.show.s, root)
 
   private def decodeAbsolute[plane <: Posix: Filesystem]
-                            ( text: String, base: Path on plane )
-                            ( using Tactic[TarError] )
+    ( text: String, base: Path on plane )
+    ( using Tactic[TarError] )
   :   Path on plane =
 
     import errorDiagnostics.empty

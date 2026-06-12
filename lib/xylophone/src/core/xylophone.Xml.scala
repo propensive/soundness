@@ -1086,7 +1086,7 @@ object Xml extends Tag.Container
   private[xylophone] final class XmlParser
     ( cursor:                   Cursor[Text],
      protected[xylophone] val tracking: Boolean )
-                                  ( using schema: XmlSchema ):
+    ( using schema: XmlSchema ):
     type Region = Cursor.Mark
 
     private var heldToken: Cursor.Held | Null = null
