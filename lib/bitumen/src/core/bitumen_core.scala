@@ -36,12 +36,12 @@ import java.nio.file as jnf
 
 import anticipation.*
 import contingency.*
-import turbulence.*
 import galilei.*
-import hieroglyph.*, charEncoders.ascii
-import hypotenuse.*, arithmeticOptions.overflow.unchecked
 import prepositional.*
 import serpentine.*
+import turbulence.*
+import hieroglyph.*, charEncoders.ascii
+import hypotenuse.*, arithmeticOptions.overflow.unchecked
 
 extension (tar: Tarfile)
   def gzip: Stream[Data] = tar.stream[Data].compress[Gzip]

@@ -34,9 +34,9 @@ package savagery
 
 import scala.math.Numeric
 
+import geodesy.*
 import prepositional.*
 import symbolism.*
-import geodesy.*
 import vacuous.*
 
 export savagery.internal.Affine

@@ -32,8 +32,8 @@
                                                                                                   */
 package jacinta
 
-import vacuous.*
 import anticipation.*
+import vacuous.*
 
 extension (json: Json)
   def locate(pointer: JsonPointer): Optional[Json.Ast.Position] =

@@ -34,8 +34,8 @@ package stratiform
 
 import anticipation.*
 import contextual.*
-import prepositional.*
 import contingency.*
+import prepositional.*
 
 // Encodes any value with an `Encodable in Tel` instance to its `Tel` form.
 // Mirrors jacinta's `.json`, xylophone's `.xml`, ypsiloid's `.yaml`, etc.

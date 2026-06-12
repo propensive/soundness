@@ -39,10 +39,10 @@ import java.util.function as juf
 
 import scala.quoted.*
 
-import contingency.*
-import prepositional.*
 import ambience.*
 import anticipation.*
+import contingency.*
+import prepositional.*
 import interfaces.paths.pathOnLinux
 import systems.java
 

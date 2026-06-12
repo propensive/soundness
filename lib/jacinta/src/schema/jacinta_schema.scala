@@ -36,12 +36,12 @@ import scala.annotation.*
 
 import anticipation.*
 import contingency.*
+import prepositional.*
 import telekinesis.*
 import urticose.*
 import vacuous.*
 import wisteria.*
 import zephyrine.*
-import prepositional.*
 import JsonError.Reason
 
 package jsonPointerRegistries:

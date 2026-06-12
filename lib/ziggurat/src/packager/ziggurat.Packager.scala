@@ -40,10 +40,8 @@ import ethereal.*
 import eucalyptus.*
 import fulminate.*
 import galilei.*
-import gastronomy.*, hashProviders.javaStdlibHashing
 import gossamer.*
 import guillotine.*
-import monotonous.*, alphabets.hex.lowerCase
 import prepositional.*
 import rudiments.*
 import serpentine.*
@@ -53,7 +51,6 @@ import turbulence.*
 import urticose.*
 import vacuous.*
 import errorDiagnostics.empty
-import internetAccess.enabled
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
@@ -61,6 +58,9 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
+import gastronomy.*, hashProviders.javaStdlibHashing
+import internetAccess.enabled
+import monotonous.*, alphabets.hex.lowerCase
 
 // Turns a `Packaging` configuration into a distributable, across all three
 // deliveries. With `RunnerSource.LocalResource` the application self-assembles
