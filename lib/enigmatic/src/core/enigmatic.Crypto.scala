@@ -52,12 +52,6 @@ import vacuous.*
 // private keys are PKCS#8, public keys X.509 (SubjectPublicKeyInfo); a symmetric
 // ciphertext is `iv ++ rawCiphertext` when the mode uses an IV.
 
-trait Crypto:
-  def random: Crypto.Random
-  def aes: Crypto.SymmetricCipher
-  def rsa: Crypto.PublicKeyCipher
-  def hmac(algorithm: Text): Crypto.Mac
-
 object Crypto:
   // A symmetric block cipher. `transformation` is the full JCE-style spec
   // (e.g. `t"AES/CBC/PKCS5Padding"`); `encrypt`/`decrypt` frame the IV as the
@@ -86,3 +80,9 @@ object Crypto:
 
   trait Random:
     def bytes(size: Int): Data
+
+trait Crypto:
+  def random: Crypto.Random
+  def aes: Crypto.SymmetricCipher
+  def rsa: Crypto.PublicKeyCipher
+  def hmac(algorithm: Text): Crypto.Mac

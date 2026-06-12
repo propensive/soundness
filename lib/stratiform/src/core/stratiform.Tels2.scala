@@ -89,6 +89,50 @@ trait TelSchematic extends Schematic:
   // returns a `Reference` to it.
   def selectDefinitions: List[Tels.SelectDefinition] = Nil
 
+object Tels2:
+  // Reifies a codec's format-neutral `Shape` (carried by `Tel.Encodable` /
+  // `Tel.Decodable`) into a concrete `Tels.Type`. TEL records optionality and
+  // repeatability on the *field*, so an `Opt` field becomes a `Loose` member and an
+  // `Arr` (list/set) field a `Loose`/repeatable member whose type is the element's
+  // schema (collections are repeated fields, per `#1291`, not wrapper structs).
+  // Field keywords are camel→kebab-cased to match the encoding. A sum carries a
+  // permissive `Any` shape; precise schemas come from the standalone `Schematic`.
+  private[stratiform] def reify(shape: Shape): Tels.Type = shape match
+    case Shape.Str | Shape.Whole | Shape.Real | Shape.Bool | Shape.Empty =>
+      Tels.Scalar(IArray.empty)
+
+    case Shape.Any        => Tels.Struct(IArray.empty, IArray.empty)
+    case Shape.OneOf(_)   => Tels.Struct(IArray.empty, IArray.empty)
+    case Shape.Opt(inner) => reify(inner)
+    case Shape.Arr(items) => reify(items)
+
+    case Shape.Dict(key, value) =>
+      val entry =
+        Tels.Struct
+          ( IArray
+              ( Tels.Field(Polarity.Tight, Polarity.Implicit, t"key", reify(key), Unset),
+                Tels.Field(Polarity.Tight, Polarity.Implicit, t"value", reify(value), Unset) ),
+            IArray.empty )
+
+      Tels.Struct
+        ( IArray(Tels.Field(Polarity.Implicit, Polarity.Loose, t"entries", entry, Unset)),
+          IArray.empty )
+
+    case Shape.Obj(fields, required) =>
+      val members = fields.map: (label, fieldShape) =>
+        val repeatable = fieldShape match
+          case Shape.Arr(_) => Polarity.Loose
+          case _            => Polarity.Implicit
+
+        val polarity = fieldShape match
+          case Shape.Arr(_) | Shape.Opt(_) => Polarity.Loose
+          case _                           => if required.contains(label) then Polarity.Tight else Polarity.Loose
+
+        Tels.Field
+          ( polarity, repeatable, Tel.camelToKebab(label.s), reify(fieldShape), Unset )
+
+      Tels.Struct(IArray.from(members), IArray.empty)
+
 // Schema derivation for TEL: scalars map to `Tels.Scalar`, products to a
 // `Tels.Struct` of `Field`s, collections to a `Struct` with a repeatable `item`
 // field, and `Map` to repeatable `entries` of `key`/`value`. Mixed into `object
@@ -168,50 +212,6 @@ trait Tels2:
         val member = Tels.SelectRef(Polarity.Implicit, Polarity.Implicit, reference)
         val root   = Tels.Struct(IArray(member), IArray.empty)
         Tels(name, root, IArray.empty, Unset, IArray.empty, IArray.empty, selects)
-
-object Tels2:
-  // Reifies a codec's format-neutral `Shape` (carried by `Tel.Encodable` /
-  // `Tel.Decodable`) into a concrete `Tels.Type`. TEL records optionality and
-  // repeatability on the *field*, so an `Opt` field becomes a `Loose` member and an
-  // `Arr` (list/set) field a `Loose`/repeatable member whose type is the element's
-  // schema (collections are repeated fields, per `#1291`, not wrapper structs).
-  // Field keywords are camel→kebab-cased to match the encoding. A sum carries a
-  // permissive `Any` shape; precise schemas come from the standalone `Schematic`.
-  private[stratiform] def reify(shape: Shape): Tels.Type = shape match
-    case Shape.Str | Shape.Whole | Shape.Real | Shape.Bool | Shape.Empty =>
-      Tels.Scalar(IArray.empty)
-
-    case Shape.Any        => Tels.Struct(IArray.empty, IArray.empty)
-    case Shape.OneOf(_)   => Tels.Struct(IArray.empty, IArray.empty)
-    case Shape.Opt(inner) => reify(inner)
-    case Shape.Arr(items) => reify(items)
-
-    case Shape.Dict(key, value) =>
-      val entry =
-        Tels.Struct
-          ( IArray
-              ( Tels.Field(Polarity.Tight, Polarity.Implicit, t"key", reify(key), Unset),
-                Tels.Field(Polarity.Tight, Polarity.Implicit, t"value", reify(value), Unset) ),
-            IArray.empty )
-
-      Tels.Struct
-        ( IArray(Tels.Field(Polarity.Implicit, Polarity.Loose, t"entries", entry, Unset)),
-          IArray.empty )
-
-    case Shape.Obj(fields, required) =>
-      val members = fields.map: (label, fieldShape) =>
-        val repeatable = fieldShape match
-          case Shape.Arr(_) => Polarity.Loose
-          case _            => Polarity.Implicit
-
-        val polarity = fieldShape match
-          case Shape.Arr(_) | Shape.Opt(_) => Polarity.Loose
-          case _                           => if required.contains(label) then Polarity.Tight else Polarity.Loose
-
-        Tels.Field
-          ( polarity, repeatable, Tel.camelToKebab(label.s), reify(fieldShape), Unset )
-
-      Tels.Struct(IArray.from(members), IArray.empty)
 
 object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
   inline def conjunction[derivation <: Product: ProductReflection]

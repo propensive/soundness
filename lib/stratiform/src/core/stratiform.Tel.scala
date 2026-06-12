@@ -53,110 +53,6 @@ import vacuous.*
 // IArray[Block]` field, so flat traversal logic can address either form
 // without case analysis.
 
-class Tel private[stratiform](private[stratiform] val subtree: Tel.Subtree)
-extends scala.Dynamic, Documentary, Topical, Original:
-  type Self = Tel
-  type Metadata = Tel.Metadata
-
-  inline def as[value: Decodable in Tel]: value raises TelError = value.decoded(this)
-
-  // Total field access used by the schema-typed navigation macros and by
-  // internal optics: an empty `Tel` for a missing field, never raising.
-  private[stratiform] def selectField(field: String): Tel =
-    val match0 = childCompounds.find(_.keyword == Tel.camelToKebab(field))
-    if match0.isEmpty then Tel.empty else Tel(match0.get)
-
-  // Total child-by-index access under a field: an empty `Tel` when the index is
-  // out of range. Used by the positional optics / plain dynamic access, where a
-  // field compound contains the indexed children.
-  private[stratiform] def selectFieldIndex(field: String, index: Int): Tel =
-    val cs = selectField(field).childCompounds
-    if index < 0 || index >= cs.length then Tel.empty else Tel(cs(index))
-
-  // Indexed access into a *repeated* (collection) field: a `List`/`Set` field is
-  // encoded as repeated keyword compounds (per `#1291`), so index the n-th sibling
-  // sharing the field's keyword. Used by schema-typed navigation for collection
-  // positions. An empty `Tel` when the index is out of range.
-  private[stratiform] def selectRepeatedField(field: String, index: Int): Tel =
-    val cs = childCompounds.filter(_.keyword == Tel.camelToKebab(field))
-    if index < 0 || index >= cs.length then Tel.empty else Tel(cs(index))
-
-  // Dynamic field access: `tel.firstName` looks up the kebab-case keyword
-  // "first-name". For a schema-typed `Tel of P from R` the macro checks `P` has
-  // the field and yields `Tel of <field-type> from R` (no `DynamicTelEnabler`
-  // import needed); for a plain `Tel` it requires the enabler, as before.
-  transparent inline def selectDynamic(field: String): Tel = ${Stratiform.select('this, 'field)}
-
-  // Chained access: `tel.contacts(0)`. For a schema-typed `Tel of P from R`
-  // where the field is a collection, the macro yields `Tel of <element> from R`;
-  // for a plain `Tel` it returns the n-th child compound, as before.
-  transparent inline def applyDynamic(field: String)(index: Int): Tel =
-    ${Stratiform.applied('this, 'field, 'index)}
-
-  // Keyword of this node — empty for the document root, otherwise the
-  // compound's keyword text.
-  def keyword: Text = subtree match
-    case c: Tel.Compound  => c.keyword
-    case _: Tel.Document  => t""
-
-  // Flat list of inline atom texts attached to this node. For the document
-  // root this is always empty since the root has no atoms.
-  def atomTexts: IArray[Text] = subtree match
-    case c: Tel.Compound => c.atoms.collect { case Tel.Atom.Inline(text, _) => text }
-    case _: Tel.Document => IArray.empty
-
-  // First inline atom text or empty string if none. Used by primitive
-  // Decodable instances which interpret a compound's first atom as its
-  // scalar value.
-  def primaryAtom: Text =
-    if atomTexts.isEmpty then t"" else atomTexts(0)
-
-  // All child compounds, flattened across the node's blocks (presentation-
-  // level comments and tabulations are dropped from this view).
-  def childCompounds: IArray[Tel.Compound] =
-    subtree.children.flatMap(_.compounds)
-
-  // First child compound whose keyword matches `target`, if any.
-  def field(target: Text): Optional[Tel] =
-    val matched = childCompounds.find(_.keyword == target)
-    if matched.isEmpty then Unset else Tel(matched.get)
-
-  // All child compounds whose keyword matches `target`. Useful for
-  // schema-repeatable fields that produce multiple compounds with the
-  // same keyword in the presentation tree.
-  def fields(target: Text): IArray[Tel] =
-    childCompounds.filter(_.keyword == target).map(c => Tel(c))
-
-  // Document accessor for downstream operations (printing, mutation). Only
-  // meaningful when this Tel wraps a Document.
-  private[stratiform] def document: Optional[Tel.Document] = subtree match
-    case d: Tel.Document => d
-    case _               => Unset
-
-  // Replace (or insert) the child compound with the given field name.
-  // Used by the §22 `modify` mutation primitive and the Panopticon Lens
-  // given. The new compound carries `value`'s atoms, remark, and
-  // children; its keyword is taken from `fieldName` (translated to
-  // kebab-case). When the field is missing it is appended to the last
-  // block; when present it is replaced in place, preserving surrounding
-  // formatting.
-  def modify(fieldName: String, value: Tel)(using erased DynamicTelEnabler): Tel =
-    val name = Tel.camelToKebab(fieldName)
-
-    val newCompound = value.subtree match
-      case c: Tel.Compound => c.copy(keyword = name)
-
-      case d: Tel.Document =>
-        Tel.Compound(name, IArray.empty[Tel.Atom], Unset, d.children)
-
-    val newChildren = Tel.replaceOrAppendCompound(subtree.children, name, newCompound)
-
-    val newSubtree = subtree match
-      case d: Tel.Document => d.copy(children = newChildren)
-      case c: Tel.Compound => c.copy(children = newChildren)
-
-    Tel.make(newSubtree)
-
 object Tel extends Tel2:
 
   // Consolidated names for the schema-related types. `TelError` lives
@@ -164,6 +60,13 @@ object Tel extends Tel2:
   // `object Tel` below as their canonical location).
   type Error = TelError
   val Error: TelError.type = TelError
+
+  object Encodable:
+    def apply[value](shape0: => Shape)(lambda: value => Tel): value is Tel.Encodable =
+      new Tel.Encodable:
+        type Self = value
+        def encoded(value: value): Tel = lambda(value)
+        def shape(): Shape = shape0
 
   // A TEL encoder/decoder that also carries the format-neutral `Shape` of exactly
   // what it reads/writes, so a fused `Encodable & Schematic` / `Decodable &
@@ -175,11 +78,11 @@ object Tel extends Tel2:
     type Form = Tel
     def shape(): Shape
 
-  object Encodable:
-    def apply[value](shape0: => Shape)(lambda: value => Tel): value is Tel.Encodable =
-      new Tel.Encodable:
+  object Decodable:
+    def apply[value](shape0: => Shape)(lambda: Tel => value): value is Tel.Decodable =
+      new Tel.Decodable:
         type Self = value
-        def encoded(value: value): Tel = lambda(value)
+        def decoded(tel: Tel): value = lambda(tel)
         def shape(): Shape = shape0
 
   trait Decodable extends distillate.Decodable:
@@ -190,13 +93,6 @@ object Tel extends Tel2:
     // decoder gathers all same-keyword sibling compounds for such a field and hands
     // them here as a Document; other fields read a single matching compound.
     def repeatable: Boolean = false
-
-  object Decodable:
-    def apply[value](shape0: => Shape)(lambda: Tel => value): value is Tel.Decodable =
-      new Tel.Decodable:
-        type Self = value
-        def decoded(tel: Tel): value = lambda(tel)
-        def shape(): Shape = shape0
 
   // Type assignment algorithm per §20.2 of the TEL specification.
   object Type:
@@ -539,9 +435,6 @@ object Tel extends Tel2:
       case Valid
       case Invalid(diagnostic: Diagnostic)
 
-    trait Registry:
-      def apply(request: Request): Response
-
     object Registry:
       val builtins: Registry = new Registry:
         override def apply(request: Request): Response = request match
@@ -633,9 +526,8 @@ object Tel extends Tel2:
       private def fail(message: Text, span: (Int, Int)): Response =
         Response.Invalid(Diagnostic.Scalar(message, span))
 
-  // Semantic model from §18.2 of the TEL specification — the result
-  // of applying type assignment (§20.2) to the presentation model.
-  sealed trait Element
+    trait Registry:
+      def apply(request: Request): Response
 
   object Element:
     case class Node
@@ -650,6 +542,18 @@ object Tel extends Tel2:
         text:         Text )
     extends Element
 
+  // Semantic model from §18.2 of the TEL specification — the result
+  // of applying type assignment (§20.2) to the presentation model.
+  sealed trait Element
+
+  object Pointer:
+    case class Step(keyword: Text, index: Optional[Int])
+
+    val Empty: Pointer = Pointer(IArray.empty)
+
+    def of(keywords: Text*): Pointer =
+      Pointer(IArray.from(keywords.map(Step(_, Unset))))
+
   // Logical address into a Tel document. A pointer is an ordered
   // sequence of `Step`s; each step selects a child compound from the
   // current node by keyword. When several siblings share a keyword
@@ -663,14 +567,6 @@ object Tel extends Tel2:
       Pointer(steps :+ Pointer.Step(keyword, index))
 
     def isEmpty: Boolean = steps.length == 0
-
-  object Pointer:
-    case class Step(keyword: Text, index: Optional[Int])
-
-    val Empty: Pointer = Pointer(IArray.empty)
-
-    def of(keywords: Text*): Pointer =
-      Pointer(IArray.from(keywords.map(Step(_, Unset))))
 
   enum LineEndings:
     case Lf, Crlf
@@ -715,6 +611,22 @@ object Tel extends Tel2:
   extends Subtree
 
   object Atom:
+    object Inline:
+      def apply(text: Text, precedingSpaces: Int): Inline =
+        new Inline(null, 0, 0, text.s, precedingSpaces)
+
+      // Parser entry: references a slice of the per-parse atom arena. The
+      // arena array is shared with sibling atoms committed before the
+      // arena's next growth event. UTF-8 decode is deferred until
+      // `.text` is first accessed.
+      private[stratiform] def fromArena
+        ( arena: Array[Byte], off: Int, len: Int, precedingSpaces: Int )
+      :   Inline =
+
+        new Inline(arena, off, len, null, precedingSpaces)
+
+      def unapply(i: Inline): (Text, Int) = (i.text, i.precedingSpaces)
+
     // Inline is a regular class (not a case class) so its `text` can be
     // materialised lazily. The parser writes each atom's UTF-8 bytes into
     // a shared per-parse "arena" (a growing byte buffer); each Inline
@@ -756,22 +668,6 @@ object Tel extends Tel2:
       override def hashCode: Int = text.hashCode * 31 + precedingSpaces
 
       override def toString: String = s"Inline($text,$precedingSpaces)"
-
-    object Inline:
-      def apply(text: Text, precedingSpaces: Int): Inline =
-        new Inline(null, 0, 0, text.s, precedingSpaces)
-
-      // Parser entry: references a slice of the per-parse atom arena. The
-      // arena array is shared with sibling atoms committed before the
-      // arena's next growth event. UTF-8 decode is deferred until
-      // `.text` is first accessed.
-      private[stratiform] def fromArena
-        ( arena: Array[Byte], off: Int, len: Int, precedingSpaces: Int )
-      :   Inline =
-
-        new Inline(arena, off, len, null, precedingSpaces)
-
-      def unapply(i: Inline): (Text, Int) = (i.text, i.precedingSpaces)
 
     case class Source(text: Text)                       extends Atom
     case class Literal(delimiter: Text, text: Text)     extends Atom
@@ -949,3 +845,107 @@ object Tel extends Tel2:
   :   IArray[Block] =
 
     blocks.map(block => block.copy(compounds = block.compounds.map(transform)))
+
+class Tel private[stratiform](private[stratiform] val subtree: Tel.Subtree)
+extends scala.Dynamic, Documentary, Topical, Original:
+  type Self = Tel
+  type Metadata = Tel.Metadata
+
+  inline def as[value: Decodable in Tel]: value raises TelError = value.decoded(this)
+
+  // Total field access used by the schema-typed navigation macros and by
+  // internal optics: an empty `Tel` for a missing field, never raising.
+  private[stratiform] def selectField(field: String): Tel =
+    val match0 = childCompounds.find(_.keyword == Tel.camelToKebab(field))
+    if match0.isEmpty then Tel.empty else Tel(match0.get)
+
+  // Total child-by-index access under a field: an empty `Tel` when the index is
+  // out of range. Used by the positional optics / plain dynamic access, where a
+  // field compound contains the indexed children.
+  private[stratiform] def selectFieldIndex(field: String, index: Int): Tel =
+    val cs = selectField(field).childCompounds
+    if index < 0 || index >= cs.length then Tel.empty else Tel(cs(index))
+
+  // Indexed access into a *repeated* (collection) field: a `List`/`Set` field is
+  // encoded as repeated keyword compounds (per `#1291`), so index the n-th sibling
+  // sharing the field's keyword. Used by schema-typed navigation for collection
+  // positions. An empty `Tel` when the index is out of range.
+  private[stratiform] def selectRepeatedField(field: String, index: Int): Tel =
+    val cs = childCompounds.filter(_.keyword == Tel.camelToKebab(field))
+    if index < 0 || index >= cs.length then Tel.empty else Tel(cs(index))
+
+  // Dynamic field access: `tel.firstName` looks up the kebab-case keyword
+  // "first-name". For a schema-typed `Tel of P from R` the macro checks `P` has
+  // the field and yields `Tel of <field-type> from R` (no `DynamicTelEnabler`
+  // import needed); for a plain `Tel` it requires the enabler, as before.
+  transparent inline def selectDynamic(field: String): Tel = ${Stratiform.select('this, 'field)}
+
+  // Chained access: `tel.contacts(0)`. For a schema-typed `Tel of P from R`
+  // where the field is a collection, the macro yields `Tel of <element> from R`;
+  // for a plain `Tel` it returns the n-th child compound, as before.
+  transparent inline def applyDynamic(field: String)(index: Int): Tel =
+    ${Stratiform.applied('this, 'field, 'index)}
+
+  // Keyword of this node — empty for the document root, otherwise the
+  // compound's keyword text.
+  def keyword: Text = subtree match
+    case c: Tel.Compound  => c.keyword
+    case _: Tel.Document  => t""
+
+  // Flat list of inline atom texts attached to this node. For the document
+  // root this is always empty since the root has no atoms.
+  def atomTexts: IArray[Text] = subtree match
+    case c: Tel.Compound => c.atoms.collect { case Tel.Atom.Inline(text, _) => text }
+    case _: Tel.Document => IArray.empty
+
+  // First inline atom text or empty string if none. Used by primitive
+  // Decodable instances which interpret a compound's first atom as its
+  // scalar value.
+  def primaryAtom: Text =
+    if atomTexts.isEmpty then t"" else atomTexts(0)
+
+  // All child compounds, flattened across the node's blocks (presentation-
+  // level comments and tabulations are dropped from this view).
+  def childCompounds: IArray[Tel.Compound] =
+    subtree.children.flatMap(_.compounds)
+
+  // First child compound whose keyword matches `target`, if any.
+  def field(target: Text): Optional[Tel] =
+    val matched = childCompounds.find(_.keyword == target)
+    if matched.isEmpty then Unset else Tel(matched.get)
+
+  // All child compounds whose keyword matches `target`. Useful for
+  // schema-repeatable fields that produce multiple compounds with the
+  // same keyword in the presentation tree.
+  def fields(target: Text): IArray[Tel] =
+    childCompounds.filter(_.keyword == target).map(c => Tel(c))
+
+  // Document accessor for downstream operations (printing, mutation). Only
+  // meaningful when this Tel wraps a Document.
+  private[stratiform] def document: Optional[Tel.Document] = subtree match
+    case d: Tel.Document => d
+    case _               => Unset
+
+  // Replace (or insert) the child compound with the given field name.
+  // Used by the §22 `modify` mutation primitive and the Panopticon Lens
+  // given. The new compound carries `value`'s atoms, remark, and
+  // children; its keyword is taken from `fieldName` (translated to
+  // kebab-case). When the field is missing it is appended to the last
+  // block; when present it is replaced in place, preserving surrounding
+  // formatting.
+  def modify(fieldName: String, value: Tel)(using erased DynamicTelEnabler): Tel =
+    val name = Tel.camelToKebab(fieldName)
+
+    val newCompound = value.subtree match
+      case c: Tel.Compound => c.copy(keyword = name)
+
+      case d: Tel.Document =>
+        Tel.Compound(name, IArray.empty[Tel.Atom], Unset, d.children)
+
+    val newChildren = Tel.replaceOrAppendCompound(subtree.children, name, newCompound)
+
+    val newSubtree = subtree match
+      case d: Tel.Document => d.copy(children = newChildren)
+      case c: Tel.Compound => c.copy(children = newChildren)
+
+    Tel.make(newSubtree)

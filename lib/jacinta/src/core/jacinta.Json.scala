@@ -275,6 +275,13 @@ object Json extends Json2, Dynamic:
   type JsonObject  = IArray[Any]
   type JsonArray   = IArray[Any] | Array[Long] | Array[Int]
 
+  object Encodable:
+    def apply[value](shape0: => Shape)(lambda: value => Json): value is Json.Encodable =
+      new Json.Encodable:
+        type Self = value
+        def encoded(value: value): Json = lambda(value)
+        def shape(): Shape = shape0
+
   // A JSON encoder that also carries the format-neutral `Shape` describing exactly
   // what it produces. Making the shape travel *with* the codec is what lets a fused
   // `Encodable & Schematic` (built by `jsonSchematics.encodable`) be coherent by
@@ -288,11 +295,11 @@ object Json extends Json2, Dynamic:
     type Form = Json
     def shape(): Shape
 
-  object Encodable:
-    def apply[value](shape0: => Shape)(lambda: value => Json): value is Json.Encodable =
-      new Json.Encodable:
+  object Decodable:
+    def apply[value](shape0: => Shape)(lambda: Json => value): value is Json.Decodable =
+      new Json.Decodable:
         type Self = value
-        def encoded(value: value): Json = lambda(value)
+        def decoded(json: Json): value = lambda(json)
         def shape(): Shape = shape0
 
   // The decoding counterpart of `Json.Encodable`: a `Decodable in Json` that also
@@ -301,13 +308,6 @@ object Json extends Json2, Dynamic:
   trait Decodable extends distillate.Decodable:
     type Form = Json
     def shape(): Shape
-
-  object Decodable:
-    def apply[value](shape0: => Shape)(lambda: Json => value): value is Json.Decodable =
-      new Json.Decodable:
-        type Self = value
-        def decoded(json: Json): value = lambda(json)
-        def shape(): Shape = shape0
 
   // All internal references in a `PositionIndex` are stored as offsets
   // relative to the start of the containing node descriptor, so any slice

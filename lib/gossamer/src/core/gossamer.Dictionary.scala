@@ -58,18 +58,6 @@ import vacuous.*
 // Aho-Corasick walk; the default builders leave them empty so callers
 // that only do exact-key lookups don't pay the BFS build cost.
 object Dictionary:
-  // A small alphabet for `Dictionary`: a fixed mapping from char to a
-  // dense slot index in `[0, size)`. Chars not in the alphabet return
-  // `-1`. Callers supply different alphabets for different uses (a-z + `.`
-  // for hyphenation, a-z + 0-9 + `-` for HTML attributes, etc.). The
-  // default builders (`Dictionary(pairs*)`, `Dictionary.empty`,
-  // `Dictionary.aho(pairs*)`) auto-derive an alphabet from the keys'
-  // distinct characters, so most callers never construct one explicitly.
-  trait Alphabet:
-    def slot(char: Char): Int
-    def char(slot: Int): Char
-    def size: Int
-
   object Alphabet:
     // Build an Alphabet from a string of supported chars. Slot index of
     // each char is its position in the string. Unsupported chars return
@@ -102,6 +90,18 @@ object Dictionary:
       def size = 0
       def slot(char: Char): Int = -1
       def char(slot: Int): Char = throw IndexOutOfBoundsException(slot.toString)
+
+  // A small alphabet for `Dictionary`: a fixed mapping from char to a
+  // dense slot index in `[0, size)`. Chars not in the alphabet return
+  // `-1`. Callers supply different alphabets for different uses (a-z + `.`
+  // for hyphenation, a-z + 0-9 + `-` for HTML attributes, etc.). The
+  // default builders (`Dictionary(pairs*)`, `Dictionary.empty`,
+  // `Dictionary.aho(pairs*)`) auto-derive an alphabet from the keys'
+  // distinct characters, so most callers never construct one explicitly.
+  trait Alphabet:
+    def slot(char: Char): Int
+    def char(slot: Int): Char
+    def size: Int
 
   // An empty Dictionary with no entries and an empty alphabet. Adds via
   // `+`/`++` rebuild the trie with an alphabet derived from the keys.

@@ -78,13 +78,13 @@ object Zip:
     case Stored  extends Method(0)
     case Deflate extends Method(8)
 
+  object Compression:
+    given default: Compression = Compression.Deflate(-1)
+
   // The contextual policy consulted when an `Entry` is created from raw content.
   enum Compression:
     case Stored
     case Deflate(level: Int)
-
-  object Compression:
-    given default: Compression = Compression.Deflate(-1)
 
   object Entry:
     def apply[content: Streamable by Data](ref: Path on Zip, content: content)

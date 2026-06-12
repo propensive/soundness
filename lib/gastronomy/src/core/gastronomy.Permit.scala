@@ -46,16 +46,16 @@ import scala.annotation.implicitNotFound
 @implicitNotFound("this operation uses an algorithm whose status is \"legacy use\" or worse; "+
     "import a permit (e.g. `crypto.permitLegacyCrypto` to process existing data, or "+
     "`crypto.permitDisallowedCrypto`) to allow it")
+object ProcessingPermit:
+  erased given acceptable: ProcessingPermit[Concession.Acceptable] = caps.unsafe.unsafeErasedValue
+
 trait ProcessingPermit[concession]
 
 @implicitNotFound("this operation uses a sub-optimal algorithm, key length or mode; import the "+
     "matching permit (`crypto.permitUnauthenticatedCrypto`, `crypto.permitDeprecatedCrypto` or "+
     "`crypto.permitDisallowedCrypto`) to allow it")
-trait Permit[concession] extends ProcessingPermit[concession]
-
 object Permit:
   // `Acceptable` crypto needs no permission, so this permit is always available.
   erased given acceptable: Permit[Concession.Acceptable] = caps.unsafe.unsafeErasedValue
 
-object ProcessingPermit:
-  erased given acceptable: ProcessingPermit[Concession.Acceptable] = caps.unsafe.unsafeErasedValue
+trait Permit[concession] extends ProcessingPermit[concession]

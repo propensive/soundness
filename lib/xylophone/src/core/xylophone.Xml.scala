@@ -883,41 +883,6 @@ object Xml extends Tag.Container
     def withPosition(tracked: Tracked): Focus =
       copy(position = tracked.locate(path))
 
-  // Wraps a parsed `Xml` with a parallel position index produced by
-  // `parseTracked`. Untracked parses keep returning bare `Xml`.
-  //
-  // Element descriptor layout:
-  //
-  //   [ size, line, column, sourceLength,
-  //     attrCount, elemCount,
-  //     attrOff_0, …, attrOff_{a-1},
-  //     elemOff_0, …, elemOff_{e-1},
-  //     <attribute descriptors>,
-  //     <child element descriptors> ]
-  //
-  // Attribute descriptor layout: [ size=4, line, column, length ].
-  // All offsets are relative to the start of the containing element
-  // descriptor; any slice at a descriptor boundary is itself a valid
-  // `PositionIndex`.
-  case class Tracked(value: Xml, positionIndex: PositionIndex):
-    def locate(path: XPath): Optional[Xml.Position] =
-      Tracked.walk(value, positionIndex.ints, 0, path.path.descent.toIndexedSeq, 0)
-
-    // Decode like `Xml#as` but also populate `position` on every
-    // accumulated `Xml.Focus` by looking up its XPath against this
-    // tracked root's position index. Outside `validate[Xml.Focus]` the
-    // ambient `Foci` is a no-op and `supplement` does nothing, so this
-    // call stays cost-free.
-    def as[result: Decodable in Xml]: result tracks Xml.Focus =
-      val decoded = value match
-        case Fragment(inner) => result.decoded(inner)
-        case xml: Xml        => result.decoded(xml)
-
-      val foci = summon[Foci[Xml.Focus]]
-      val tracked = this
-      foci.supplement(foci.length, _.let(_.withPosition(tracked)).vouch)
-      decoded
-
   object Tracked:
     // `XPath.path.descent` is stored leaf-first (Serpentine's `/`
     // prepends), so the walker iterates it in reverse to descend
@@ -1023,6 +988,41 @@ object Xml extends Tag.Container
         i += 1
 
       found
+
+  // Wraps a parsed `Xml` with a parallel position index produced by
+  // `parseTracked`. Untracked parses keep returning bare `Xml`.
+  //
+  // Element descriptor layout:
+  //
+  //   [ size, line, column, sourceLength,
+  //     attrCount, elemCount,
+  //     attrOff_0, …, attrOff_{a-1},
+  //     elemOff_0, …, elemOff_{e-1},
+  //     <attribute descriptors>,
+  //     <child element descriptors> ]
+  //
+  // Attribute descriptor layout: [ size=4, line, column, length ].
+  // All offsets are relative to the start of the containing element
+  // descriptor; any slice at a descriptor boundary is itself a valid
+  // `PositionIndex`.
+  case class Tracked(value: Xml, positionIndex: PositionIndex):
+    def locate(path: XPath): Optional[Xml.Position] =
+      Tracked.walk(value, positionIndex.ints, 0, path.path.descent.toIndexedSeq, 0)
+
+    // Decode like `Xml#as` but also populate `position` on every
+    // accumulated `Xml.Focus` by looking up its XPath against this
+    // tracked root's position index. Outside `validate[Xml.Focus]` the
+    // ambient `Foci` is a no-op and `supplement` does nothing, so this
+    // call stays cost-free.
+    def as[result: Decodable in Xml]: result tracks Xml.Focus =
+      val decoded = value match
+        case Fragment(inner) => result.decoded(inner)
+        case xml: Xml        => result.decoded(xml)
+
+      val foci = summon[Foci[Xml.Focus]]
+      val tracked = this
+      foci.supplement(foci.length, _.let(_.withPosition(tracked)).vouch)
+      decoded
 
   enum Hole:
     case Text, Tagbody, Comment

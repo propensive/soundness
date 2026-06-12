@@ -39,6 +39,10 @@ import vacuous.*
 
 object TelError:
 
+  object Position:
+    given communicable: Position is Communicable =
+      position => m"line ${position.line}, column ${position.column}"
+
   // 1-indexed source position attached to a `TelError` raised by the
   // TEL parser, so a caller capturing the error can point at the
   // offending line in the source. `column = 1` refers to the first
@@ -47,10 +51,6 @@ object TelError:
   // report `(1, 1)`. Post-parse / validation errors leave `position`
   // `Unset` because they apply to AST nodes rather than source bytes.
   case class Position(line: Int, column: Int) derives CanEqual
-
-  object Position:
-    given communicable: Position is Communicable =
-      position => m"line ${position.line}, column ${position.column}"
 
   // Recovery strategies prescribed by §19.5 of the TEL specification. Each
   // reason carries the recovery strategy declared for its E-code.

@@ -55,15 +55,6 @@ import TelError.Reason
 // - Definition names (record / scalar / select) are PascalCase
 //   TypeName identifiers, also Text at the data level.
 
-case class Tels
-  ( name:     Text,
-    document: Tels.Struct,
-    layers:   IArray[Tels.Layer],
-    sigil:    Optional[Char],
-    records:  IArray[Tels.RecordDefinition],
-    scalars:  IArray[Tels.ScalarDefinition],
-    selects:  IArray[Tels.SelectDefinition] )
-
 object Tels extends Tels2:
 
   // Per-axis polarity tristate from §20: "default" means no flag was
@@ -1001,3 +992,12 @@ object Tels extends Tels2:
           records = nodesAt(ch, 1).map(recordFromElement),
           scalars = nodesAt(ch, 2).map(scalarFromElement),
           selects = nodesAt(ch, 3).map(selectFromElement) )
+
+case class Tels
+  ( name:     Text,
+    document: Tels.Struct,
+    layers:   IArray[Tels.Layer],
+    sigil:    Optional[Char],
+    records:  IArray[Tels.RecordDefinition],
+    scalars:  IArray[Tels.ScalarDefinition],
+    selects:  IArray[Tels.SelectDefinition] )
