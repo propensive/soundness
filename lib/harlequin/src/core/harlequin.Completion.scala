@@ -46,10 +46,10 @@ object Completion:
 // the member's type rendered as a Stenography `Syntax` (a method's full
 // parameter/result signature, a value's type, …).
 case class Completion
-   ( name:          Text,
-     kind:          Completion.Kind,
-     signature:     Syntax,
-     documentation: Optional[Text] = Unset )
+  ( name:          Text,
+    kind:          Completion.Kind,
+    signature:     Syntax,
+    documentation: Optional[Text] = Unset )
 
 // The result of a completion request: `replace` is the source region the chosen
 // completion replaces (an `Offset`-mode `Span`), and `items` the candidates.

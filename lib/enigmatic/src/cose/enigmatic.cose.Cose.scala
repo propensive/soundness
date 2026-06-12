@@ -97,12 +97,12 @@ object Cose:
     val recipient      = CoseRecipient(IArray.empty[Byte], Cose.emptyMap, authentication)
 
     Cose.make[auth.Form, auth.Operand]
-     ( protectedBstr,
-      Cose.emptyMap,
-      payload,
-      auth.contextString,
-      auth.cborTag,
-      List(recipient) )
+      ( protectedBstr,
+       Cose.emptyMap,
+       payload,
+       auth.contextString,
+       auth.cborTag,
+       List(recipient) )
 
 
   // Parse a tagged COSE envelope. The variant is determined from the CBOR

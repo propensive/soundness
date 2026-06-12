@@ -195,15 +195,15 @@ object TelError:
       // continue validation; the document is reported as invalid but
       // remaining nodes are still inspected.
       case DuplicateKeywordInStruct | EmptySelectVariants | RootRequiredAtom
-         | DefaultOnOptional | DuplicateLayerName | LayerKeywordCollision
-         | LayerFieldTypeMismatch | BadSchemaSigil | TelKeywordReserved
-         | UnresolvedReference | DuplicateDefinition | ExcludeMissingVariant
-         | ExcludeEmptiesRequired | LayerVariantAddition | LayerLoosenRequired
-         | LayerLoosenRepeatable | ExcludeOutsideSelect | ReferenceKindMismatch
-         | NonStructCompound | TooManyAtoms | AtomAtNonAssignablePos
-         | AtomVariantUnmatched | AtomFlagKeywordMismatch | UnknownKeyword
-         | RequiredMemberAbsent | NonRepeatableTooMany | MembersNonContiguous
-         | ValidatorRejected | FlagWithContent =>
+        | DefaultOnOptional | DuplicateLayerName | LayerKeywordCollision
+        | LayerFieldTypeMismatch | BadSchemaSigil | TelKeywordReserved
+        | UnresolvedReference | DuplicateDefinition | ExcludeMissingVariant
+        | ExcludeEmptiesRequired | LayerVariantAddition | LayerLoosenRequired
+        | LayerLoosenRepeatable | ExcludeOutsideSelect | ReferenceKindMismatch
+        | NonStructCompound | TooManyAtoms | AtomAtNonAssignablePos
+        | AtomVariantUnmatched | AtomFlagKeywordMismatch | UnknownKeyword
+        | RequiredMemberAbsent | NonRepeatableTooMany | MembersNonContiguous
+        | ValidatorRejected | FlagWithContent =>
         Recovery.IgnoreErroneousNode
 
   enum Reason(val number: Int) extends Clarification:
@@ -265,7 +265,7 @@ object TelError:
     case FlagWithContent         extends Reason(311)
 
 case class TelError(reason: TelError.Reason, position: Optional[TelError.Position] = Unset)
-                   ( using Diagnostics )
+                  ( using Diagnostics )
 extends Error
   ( 605, reason.number )
   ( position.let: p =>

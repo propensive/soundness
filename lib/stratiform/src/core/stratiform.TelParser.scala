@@ -143,7 +143,7 @@ object TelParser:
   // a runtime instance instead.
   private val longView: java.lang.invoke.VarHandle =
     java.lang.invoke.MethodHandles.byteArrayViewVarHandle
-     ( (new Array[Long](0)).getClass.nn, java.nio.ByteOrder.LITTLE_ENDIAN )
+      ( (new Array[Long](0)).getClass.nn, java.nio.ByteOrder.LITTLE_ENDIAN )
 
   private final val OnesMask:     Long = 0x0101010101010101L
   private final val HighBitsMask: Long = 0x8080808080808080L
@@ -999,8 +999,8 @@ private final class TelParser():
   private def startsWithPragma(): Boolean =
     ensureLookahead(4)
     if pos + 2 < bufEnd
-       && bytes(pos) == 't'.toByte && bytes(pos + 1) == 'e'.toByte
-       && bytes(pos + 2) == 'l'.toByte
+      && bytes(pos) == 't'.toByte && bytes(pos + 1) == 'e'.toByte
+      && bytes(pos + 2) == 'l'.toByte
     then
       if pos + 3 < bufEnd
       then bytes(pos + 3) == SP || bytes(pos + 3) == LF || bytes(pos + 3) == CR
@@ -1328,7 +1328,7 @@ private final class TelParser():
       // §9 E109 check — fires only if the immediately preceding line was a
       // content line (compound / tabulation) at indent ≥ this comment's.
       if !prevLineWasBoundary && prevContentLeadingSpaces >= 0
-         && prevContentLeadingSpaces >= margin + indent * 2
+        && prevContentLeadingSpaces >= margin + indent * 2
       then errorAt(Reason.CommentNotPreceded, head.startLine, 1)
 
       val text = parseCommentLine()
@@ -1348,7 +1348,7 @@ private final class TelParser():
     // Optional tabulation header.
     val tabulation: Optional[Tel.Tabulation] =
       if !head.eof && !head.separator && !head.blank && head.indentLevels == indent
-         && isTabulationBody()
+        && isTabulationBody()
       then
         val ls = head.leadingSpaces
         val tab = parseTabulationLine()
@@ -2094,7 +2094,7 @@ private final class TelParser():
     // is still resident — peek it directly. (`pos > 0` because we have
     // consumed at least the keyword.)
     if remark.absent && more && (peek == LF || peek == CR)
-       && pos > 0 && bytes(pos - 1) == SP
+      && pos > 0 && bytes(pos - 1) == SP
     then errorAt(Reason.TrailingSpaces, lineNumber, head.leadingSpaces + 1)
 
     consumeLineEnding()

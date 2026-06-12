@@ -70,7 +70,7 @@ object Mutation:
     // group). The reorder preserves block boundaries and surrounding
     // comments.
     case ReorderWithinGroup
-       ( parentPointer: Tel.Pointer, keyword: Text, oldIndex: Int, newIndex: Int )
+      ( parentPointer: Tel.Pointer, keyword: Text, oldIndex: Int, newIndex: Int )
 
     // §22.2 `reorder-groups` — within the parent at `parentPointer`,
     // swap the relative order of all compounds with `firstKeyword`
@@ -125,11 +125,11 @@ object Mutation:
   // sibling-targeted op (UpdateAtom, Delete, Replace, …) and apply the
   // op against the named child.
   private def transform
-       ( subtree:  Tel.Subtree,
-         steps:    IArray[Tel.Pointer.Step],
-         idx:      Int,
-         op:       Op,
-         sigil:    Char )
+      ( subtree:  Tel.Subtree,
+        steps:    IArray[Tel.Pointer.Step],
+        idx:      Int,
+        op:       Op,
+        sigil:    Char )
   :   Tel.Subtree raises MutationError =
 
     if idx >= steps.length then op match
@@ -319,7 +319,7 @@ object Mutation:
   // at occurrence `oldIndex` to occurrence `newIndex` and rewrite the
   // affected blocks. Compounds with other keywords stay in place.
   private def reorderWithinGroup
-       ( blocks: IArray[Tel.Block], keyword: Text, oldIndex: Int, newIndex: Int )
+      ( blocks: IArray[Tel.Block], keyword: Text, oldIndex: Int, newIndex: Int )
   :   IArray[Tel.Block] raises MutationError =
 
     val positions = scala.collection.mutable.ArrayBuffer.empty[(Int, Int)]
@@ -336,7 +336,7 @@ object Mutation:
       b += 1
 
     if oldIndex < 0 || oldIndex >= positions.length
-       || newIndex < 0 || newIndex >= positions.length
+      || newIndex < 0 || newIndex >= positions.length
     then abort(MutationError(Reason.PointerNotFound))
 
     if oldIndex == newIndex then blocks
@@ -374,7 +374,7 @@ object Mutation:
   // order. Each group's compounds and surrounding block boundaries
   // are preserved.
   private def reorderGroups
-       ( blocks: IArray[Tel.Block], firstKeyword: Text, secondKeyword: Text )
+      ( blocks: IArray[Tel.Block], firstKeyword: Text, secondKeyword: Text )
   :   IArray[Tel.Block] raises MutationError =
 
     // A "group" here is the contiguous run of compounds with a given

@@ -49,7 +49,7 @@ object Token:
 // token's 0-based line and column and its length. It is `Span.empty` until the
 // token is placed into a `SourceCode`'s line grid.
 case class Token
-   ( text: Text, accent: Accent, meta: Optional[Token.Meta] = Unset, span: Span = Span.empty ):
+  ( text: Text, accent: Accent, meta: Optional[Token.Meta] = Unset, span: Span = Span.empty ):
   def length: Int = text.length
 
   def snip(point: Int): (Token, Token) =

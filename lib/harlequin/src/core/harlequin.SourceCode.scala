@@ -66,7 +66,7 @@ object SourceCode:
     Set(t"inline", t"opaque", t"open", t"transparent", t"infix", t"update", t"erased", t"tracked")
 
   def apply(language: ProgrammingLanguage, text: Text, caret: Optional[Ordinal])
-     ( using highlighting: Highlight )
+    ( using highlighting: Highlight )
   :   SourceCode =
 
     // For the typechecked/compiled pipelines, run the compiler frontend (and, for
@@ -80,7 +80,7 @@ object SourceCode:
         (highlighting.scalac, highlighting.classpath) match
           case (scalac: Scalac[?], classpath: LocalClasspath) =>
             resolveTypes
-             ( text, scalac, classpath, highlighting.pipeline == Pipeline.Compiled, caret )
+              ( text, scalac, classpath, highlighting.pipeline == Pipeline.Compiled, caret )
 
           case _ =>
             Unset
@@ -201,7 +201,7 @@ object SourceCode:
         token.copy(span = Span.line(index.z, column.z, token.length))
 
     SourceCode
-     ( language, 1, IArray(positioned*), diagnostics = diagnostics, completions = completions )
+      ( language, 1, IArray(positioned*), diagnostics = diagnostics, completions = completions )
 
   private class Trees() extends ast.untpd.UntypedTreeTraverser:
     import ast.*, untpd.*
@@ -347,7 +347,7 @@ object SourceCode:
     val items = raw.flatMap: completion =>
       completion.symbols.map: symbol =>
         Completion
-         ( completion.label.tt, completionKind(symbol), syntaxOf(symbol.info.widenTermRefExpr) )
+          ( completion.label.tt, completionKind(symbol), syntaxOf(symbol.info.widenTermRefExpr) )
 
     Completions(Span.offset(offset.z, 0), items)
 

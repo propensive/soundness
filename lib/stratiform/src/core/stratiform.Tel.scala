@@ -210,7 +210,7 @@ object Tel extends Tel2:
                           ( schema.document, IArray.empty[Tel.Element], rootChildren, schema )
 
       Tel.Element.Node
-       ( keywordIndex = Unset, elementType = schema.document, children = rootElements )
+        ( keywordIndex = Unset, elementType = schema.document, children = rootElements )
 
     def assign(tel: Tel, schema: Tels, validators: Tel.Validator.Registry)
     :   Tel.Element raises TelError =
@@ -220,7 +220,7 @@ object Tel extends Tel2:
       element
 
     private def validateElement
-         ( element: Tel.Element, registry: Tel.Validator.Registry )
+        ( element: Tel.Element, registry: Tel.Validator.Registry )
     :   Unit raises TelError =
 
       element match
@@ -260,10 +260,10 @@ object Tel extends Tel2:
         case other => other
 
     private case class KeywordEntry
-       ( memberIndex: Int,
-         entryType:   Type,
-         member:      Member,
-         variant:     Optional[Variant] = Unset )
+      ( memberIndex: Int,
+        entryType:   Type,
+        member:      Member,
+        variant:     Optional[Variant] = Unset )
 
     // Builds a map from keyword Text → KeywordEntry where `memberIndex`
     // is the **flat keyword index** per BinTEL §5: each Field
@@ -330,9 +330,9 @@ object Tel extends Tel2:
     // running flat keyword index (`flatPos`) — Tel.Element.keywordIndex
     // uses flat positions per BinTEL §5.
     private def assignAtoms
-         ( atoms:  IArray[Tel.Atom],
-          parent: Struct,
-          schema: Tels )
+        ( atoms:  IArray[Tel.Atom],
+         parent: Struct,
+         schema: Tels )
     :   IArray[Tel.Element] raises TelError =
 
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
@@ -412,9 +412,9 @@ object Tel extends Tel2:
       IArray.from(results)
 
     private def assignChildren
-         ( compounds: IArray[Tel.Compound],
-          parent:    Struct,
-          schema:    Tels )
+        ( compounds: IArray[Tel.Compound],
+         parent:    Struct,
+         schema:    Tels )
     :   IArray[Tel.Element] raises TelError =
 
       val km = keywordMap(parent, schema)
@@ -433,10 +433,10 @@ object Tel extends Tel2:
       IArray.from(results)
 
     private def applyConstraints
-         ( parent:        Struct,
-           atomElements:  IArray[Tel.Element],
-           childElements: IArray[Tel.Element],
-           schema:        Tels )
+        ( parent:        Struct,
+          atomElements:  IArray[Tel.Element],
+          childElements: IArray[Tel.Element],
+          schema:        Tels )
     :   IArray[Tel.Element] raises TelError =
 
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
@@ -478,9 +478,9 @@ object Tel extends Tel2:
       IArray.from(results)
 
     private def assignCompound
-         ( compound: Tel.Compound,
-          entry:    KeywordEntry,
-          schema:   Tels )
+        ( compound: Tel.Compound,
+         entry:    KeywordEntry,
+         schema:   Tels )
     :   Tel.Element raises TelError =
 
       val resolved = resolveType(entry.entryType, schema)
@@ -521,12 +521,12 @@ object Tel extends Tel2:
 
     enum Diagnostic:
       case Scalar
-         ( message: Text,
-           span:    Optional[(Int, Int)] = Unset )
+        ( message: Text,
+          span:    Optional[(Int, Int)] = Unset )
 
       case Struct
-         ( message: Text,
-           fields:  Map[Text, Diagnostic] = Map.empty )
+        ( message: Text,
+          fields:  Map[Text, Diagnostic] = Map.empty )
 
     enum Response:
       case Valid
@@ -632,15 +632,15 @@ object Tel extends Tel2:
 
   object Element:
     case class Node
-       ( keywordIndex: Optional[Int],
-         elementType:  Tels.Type,
-         children:     IArray[Element] )
+      ( keywordIndex: Optional[Int],
+        elementType:  Tels.Type,
+        children:     IArray[Element] )
     extends Element
 
     case class Value
-       ( keywordIndex: Int,
-         scalarType:   Tels.Scalar,
-         text:         Text )
+      ( keywordIndex: Int,
+        scalarType:   Tels.Scalar,
+        text:         Text )
     extends Element
 
   // Logical address into a Tel document. A pointer is an ordered
@@ -676,9 +676,9 @@ object Tel extends Tel2:
   // read the schema identifier, interpreter directive, and chosen line
   // endings without inspecting the presentation AST directly.
   case class Metadata
-       ( interpreterDirective: Optional[Text],
-         pragma:               Optional[Pragma],
-         lineEndings:          LineEndings )
+      ( interpreterDirective: Optional[Text],
+        pragma:               Optional[Pragma],
+        lineEndings:          LineEndings )
 
   sealed trait Subtree:
     def children: IArray[Block]
@@ -891,7 +891,7 @@ object Tel extends Tel2:
   // blocks; if no compound matches, append the new compound to the
   // last block (creating a fresh block if there are none).
   private[stratiform] def replaceOrAppendCompound
-       ( blocks: IArray[Block], keyword: Text, compound: Compound )
+      ( blocks: IArray[Block], keyword: Text, compound: Compound )
   :   IArray[Block] =
 
     var b = 0
@@ -921,7 +921,7 @@ object Tel extends Tel2:
   // out-of-range index leaves the children unchanged. Used by the panopticon
   // `Ordinal` optic.
   private[stratiform] def withChildCompound
-       ( blocks: IArray[Block], index: Int, transform: Compound => Compound )
+      ( blocks: IArray[Block], index: Int, transform: Compound => Compound )
   :   IArray[Block] =
 
     var offset = 0
@@ -938,7 +938,7 @@ object Tel extends Tel2:
   // Apply `transform` to every child compound (flattened across blocks),
   // preserving block structure. Used by the panopticon `Each` optic.
   private[stratiform] def mapChildCompounds
-       ( blocks: IArray[Block], transform: Compound => Compound )
+      ( blocks: IArray[Block], transform: Compound => Compound )
   :   IArray[Block] =
 
     blocks.map(block => block.copy(compounds = block.compounds.map(transform)))

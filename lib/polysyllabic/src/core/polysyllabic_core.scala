@@ -86,8 +86,8 @@ extension (text: Text)
           breaks = new Array[Int](newSize)
 
         val nBreaks = Hyphenation.breakPointsInto
-                       ( source, wordOffset, wordLength, hyphenation, effectiveLeft,
-                         effectiveRight, padded, scores, breaks )
+                      ( source, wordOffset, wordLength, hyphenation, effectiveLeft,
+                        effectiveRight, padded, scores, breaks )
 
         var prev = 0
         var k = 0

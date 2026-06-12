@@ -44,8 +44,8 @@ import prepositional.*
 // symmetric given for symmetric keys and falls back to asymmetric otherwise.
 object CoseAuthenticator:
   given asymmetric: [cipher <: Cipher & Signing]
-                 =>  ( algorithm: cipher & Signing, coseAlg: cipher is CoseAlgorithm )
-                 =>  PrivateKey[cipher] is CoseAuthenticator in Sign1 by cipher =
+                =>  ( algorithm: cipher & Signing, coseAlg: cipher is CoseAlgorithm )
+                =>  PrivateKey[cipher] is CoseAuthenticator in Sign1 by cipher =
     new CoseAuthenticator:
       type Self    = PrivateKey[cipher]
       type Form    = Sign1

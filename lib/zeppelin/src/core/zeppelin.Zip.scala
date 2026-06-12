@@ -88,7 +88,7 @@ object Zip:
 
   object Entry:
     def apply[content: Streamable by Data](ref: Path on Zip, content: content)
-       ( using Compression )
+      ( using Compression )
     :   Entry =
 
       build(ref, gather(content.stream[Data]))
@@ -98,16 +98,16 @@ object Zip:
 
     // Construct an entry from raw bytes, compressing once per the contextual policy.
     def at[content: Streamable by Data, instant: Abstractable across Instants to Long]
-       ( ref: Path on Zip, content: content, modified: instant )
-       ( using Compression )
+      ( ref: Path on Zip, content: content, modified: instant )
+        ( using Compression )
     :   Entry =
 
       val (time, date) = dosDateTime(modified.generic)
       build(ref, gather(content.stream[Data]), time, date)
 
     private def build
-       ( ref: Path on Zip, raw: Data, time: Int = epochTime, date: Int = epochDate )
-       ( using compression: Compression )
+      ( ref: Path on Zip, raw: Data, time: Int = epochTime, date: Int = epochDate )
+        ( using compression: Compression )
     :   Entry =
 
       val crc = crc32(raw)
@@ -129,16 +129,16 @@ object Zip:
     // Used by the random-access reader to rebuild an entry from central-directory metadata
     // without recompressing; `storedBytes` reads the already-compressed payload lazily.
     private[zeppelin] def precompressed
-       ( ref:              Path on Zip,
-        method:           Method,
-        crc32:            Int,
-        uncompressedSize: Long,
-        compressedSize:   Long,
-        storedBytes:      () => Stream[Data],
-        dosTime:          Int,
-        dosDate:          Int,
-        directory:        Boolean,
-        comment:          Optional[Text] )
+      ( ref:              Path on Zip,
+       method:           Method,
+       crc32:            Int,
+       uncompressedSize: Long,
+       compressedSize:   Long,
+       storedBytes:      () => Stream[Data],
+       dosTime:          Int,
+       dosDate:          Int,
+       directory:        Boolean,
+       comment:          Optional[Text] )
     :   Entry =
 
       Entry(ref, method, crc32, uncompressedSize, compressedSize, storedBytes, dosTime, dosDate,
@@ -147,16 +147,16 @@ object Zip:
     given streamable: Entry is Streamable by Data = _.contents
 
   case class Entry
-     ( ref:              Path on Zip,
-      method:           Method,
-      crc32:            Int,
-      uncompressedSize: Long,
-      compressedSize:   Long,
-      storedBytes:      () => Stream[Data],
-      dosTime:          Int               = Zip.epochTime,
-      dosDate:          Int               = Zip.epochDate,
-      directory:        Boolean           = false,
-      comment:          Optional[Text]    = Unset ):
+    ( ref:              Path on Zip,
+     method:           Method,
+     crc32:            Int,
+     uncompressedSize: Long,
+     compressedSize:   Long,
+     storedBytes:      () => Stream[Data],
+     dosTime:          Int               = Zip.epochTime,
+     dosDate:          Int               = Zip.epochDate,
+     directory:        Boolean           = false,
+     comment:          Optional[Text]    = Unset ):
 
     // The decompressed content of the entry.
     def contents: Stream[Data] = method match

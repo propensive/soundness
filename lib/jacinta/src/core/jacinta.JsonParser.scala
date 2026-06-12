@@ -635,7 +635,7 @@ private[jacinta] final class JsonParser:
           val cached     = keyCache(idx)
 
           if cached != null && keyCacheLow(idx) == packedLow
-             && keyCacheHigh(idx) == packedHigh
+            && keyCacheHigh(idx) == packedHigh
           then cached
           else
             val fresh = new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
@@ -1471,7 +1471,7 @@ private[jacinta] final class JsonParser:
             out.asInstanceOf[IArray[Any]]
 
     emitCompositeDescriptor
-     ( indexOut, indexScratch, indexEnds, startLine, startColumn, startMark )
+      ( indexOut, indexScratch, indexEnds, startLine, startColumn, startMark )
 
     relinquishIndexBuffer()
     relinquishIndexBuffer()
@@ -1718,7 +1718,7 @@ private[jacinta] final class JsonParser:
     relinquishArrayBuffer()
 
     emitCompositeDescriptor
-     ( indexOut, indexScratch, indexEnds, startLine, startColumn, startMark )
+      ( indexOut, indexScratch, indexEnds, startLine, startColumn, startMark )
 
     relinquishIndexBuffer()
     relinquishIndexBuffer()

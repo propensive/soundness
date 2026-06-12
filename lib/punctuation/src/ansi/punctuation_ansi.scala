@@ -83,7 +83,7 @@ extension (markdown: Markdown of Layout)
 // produce mile-wide thematic-break rules), renders to a `Teletype`, then
 // emits ANSI escapes through the existing `Teletype is Printable` given.
 given (Hyphenation, Every[TeletypeFormattable], MarkdownPalette)
-   =>  (Markdown of Layout) is Printable =
+  =>  (Markdown of Layout) is Printable =
 
   (markdown, termcap) =>
     val width = if termcap.width >= Int.MaxValue then 80 else termcap.width

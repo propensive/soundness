@@ -88,15 +88,15 @@ trait Tel2:
     Optic: (origin, lambda) =>
       if ordinal.n0 < 0 || ordinal.n0 >= origin.childCompounds.length then origin
       else rebuild
-       ( origin,
-         Tel.withChildCompound
-          ( origin.subtree.children, ordinal.n0, c => rewrap(c, lambda(Tel.make(c))) ) )
+        ( origin,
+          Tel.withChildCompound
+           ( origin.subtree.children, ordinal.n0, c => rewrap(c, lambda(Tel.make(c))) ) )
 
   given eachOptical: Each.type is Optical from Tel onto Tel = _ =>
     Optic: (origin, lambda) =>
       rebuild
-       ( origin,
-         Tel.mapChildCompounds(origin.subtree.children, c => rewrap(c, lambda(Tel.make(c)))) )
+        ( origin,
+          Tel.mapChildCompounds(origin.subtree.children, c => rewrap(c, lambda(Tel.make(c)))) )
 
   // `tel"…"` interpolator: parses at compile time and substitutes typed
   // holes via Encodable in Tel.
@@ -104,7 +104,7 @@ trait Tel2:
     type Result = Tel
 
     transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
-         ( inline insertions: Any* )
+        ( inline insertions: Any* )
     :   Tel =
 
       ${stratiform.internal.interpolator[parts, origins]('insertions)}
@@ -163,9 +163,9 @@ trait Tel2:
 
                   ctx.decoded:
                     Tel.make
-                     ( Tel.Document
-                       ( Unset, Unset, Tel.LineEndings.Lf,
-                        IArray(Tel.Block(IArray.empty, Unset, compounds, 0)) ) )
+                      ( Tel.Document
+                        ( Unset, Unset, Tel.LineEndings.Lf,
+                         IArray(Tel.Block(IArray.empty, Unset, compounds, 0)) ) )
                 else
                   val match0 = telVal.field(keyword)
 
@@ -415,7 +415,7 @@ trait Tel2:
     Tel(Tel.Compound(t"", IArray(Tel.Atom.Inline(text, 1)), Unset, IArray.empty))
 
   def compound
-       ( keyword: Text, atoms: IArray[Tel.Atom], compounds: IArray[Tel.Compound] )
+      ( keyword: Text, atoms: IArray[Tel.Atom], compounds: IArray[Tel.Compound] )
   :   Tel =
 
     val children =

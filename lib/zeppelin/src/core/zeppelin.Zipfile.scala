@@ -60,7 +60,7 @@ object Zipfile:
   given streamable: Zipfile is Streamable by Data = _.serialize
 
   def write[path: Abstractable across Paths to Text]
-     (path: path, prefix: Optional[Data] = Unset)(entries: Iterable[Zip.Entry])
+    (path: path, prefix: Optional[Data] = Unset)(entries: Iterable[Zip.Entry])
   :   Unit raises ZipError =
 
     checkDuplicates(entries)
@@ -155,7 +155,7 @@ object Zipfile:
 
           val recordOffset =
             if atRecorded.length == 56
-               && Zip.u32(atRecorded, 0) == (Zip.zip64EocdSig.toLong & 0xffffffffL)
+              && Zip.u32(atRecorded, 0) == (Zip.zip64EocdSig.toLong & 0xffffffffL)
             then recorded else eocdOffset - 20 - 56
 
           val record = source.read(recordOffset, 56)
@@ -363,7 +363,7 @@ object Zipfile:
       if commentBytes.length > 0 then array.place(commentBytes, pos.z)
 
   private def endRecords
-     ( entryCount: Long, cdStart: Long, cdSize: Long, comment: Optional[Text] )
+    ( entryCount: Long, cdStart: Long, cdSize: Long, comment: Optional[Text] )
   :   List[Data] =
 
     val zip64 = entryCount > u16Max.toLong || cdSize > u32Max || cdStart > u32Max
@@ -404,7 +404,7 @@ object Zipfile:
       List(record, locator, eocd)
 
 case class Zipfile
-   ( entries: LazyList[Zip.Entry], comment: Optional[Text] = Unset, prefix: Optional[Data] = Unset ):
+  ( entries: LazyList[Zip.Entry], comment: Optional[Text] = Unset, prefix: Optional[Data] = Unset ):
   def entry(ref: Path on Zip): Zip.Entry raises ZipError =
     entries.find(_.ref == ref).getOrElse(abort(ZipError(ZipError.Reason.NotFound(ref))))
 
