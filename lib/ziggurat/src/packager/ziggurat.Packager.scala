@@ -148,7 +148,7 @@ object Packager:
   // must be left unset or the build path is not taken.
   private def assembleViaSubprocess
     ( config: Packaging, appJar: Path on Linux, label: Text, output: Path on Linux )
-     ( using working: WorkingDirectory )
+    ( using working: WorkingDirectory )
   :   Unit raises ExecError raises PackageError =
 
     val bundle: Text = config.java.bundle match
@@ -161,13 +161,13 @@ object Packager:
 
     val arguments: List[Text] =
       List
-       ( t"java",
-        t"-Dbuild.executable=$output",
-        t"-Dbuild.target=$label",
-        t"-Dbuild.java.minimum=${config.java.minimum}",
-        t"-Dbuild.java.preferred=${config.java.preferred}",
-        t"-Dbuild.java.bundle=$bundle",
-        t"-Dbuild.id=${config.buildId}" )
+        ( t"java",
+          t"-Dbuild.executable=$output",
+          t"-Dbuild.target=$label",
+          t"-Dbuild.java.minimum=${config.java.minimum}",
+          t"-Dbuild.java.preferred=${config.java.preferred}",
+          t"-Dbuild.java.bundle=$bundle",
+          t"-Dbuild.id=${config.buildId}" )
       ++ publicKey
       ++ List(t"-jar", appJar.show)
 
@@ -227,8 +227,8 @@ object Packager:
         val jdk: Boolean = config.java.bundle == Packaging.Bundle.Jdk
 
         Assembler.assemble
-         ( runner, appJar, output, label, config.buildId, config.java.minimum,
-          config.java.preferred, jdk, publicKey )
+          ( runner, appJar, output, label, config.buildId, config.java.minimum,
+            config.java.preferred, jdk, publicKey )
 
 
   private def write(output: Path on Linux, data: Data)

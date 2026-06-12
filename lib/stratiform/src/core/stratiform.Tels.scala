@@ -384,7 +384,7 @@ object Tels extends Tels2:
                 members(idx) match
                   case existing: Field =>
                     members(idx) = Field
-                     ( required   = mergePolarity(existing.required, f.required,
+                      ( required   = mergePolarity(existing.required, f.required,
                                       PolarityAxis.Required),
                        repeatable = mergePolarity(existing.repeatable, f.repeatable,
                                       PolarityAxis.Repeatable),

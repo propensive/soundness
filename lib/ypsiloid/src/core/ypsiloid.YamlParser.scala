@@ -4010,8 +4010,9 @@ private[ypsiloid] final class YamlParser:
     // appended to scratch by parseNodeHereTracked above; we need to
     // remove it and replace with just the 3-int header.
     // Capture the descriptor's slot 3 (sourceLength) as keyLength.
-    val keyDescStart = if scratch.length >= 4 then scratch.length - keyDescriptorSize(scratch)
-                       else 0
+    val keyDescStart =
+      if scratch.length >= 4 then scratch.length - keyDescriptorSize(scratch)
+      else 0
 
     val keyLengthForHeader =
       if scratch.length > keyDescStart + 3 then scratch(keyDescStart + 3) else 0

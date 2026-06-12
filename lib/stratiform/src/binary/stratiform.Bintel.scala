@@ -279,8 +279,8 @@ object Bintel:
     root
 
   private def decodeStructBody
-       (cursor: Cursor, struct: Tels.Struct, schema: Tels,
-        keywordIndex: Optional[Int])
+    ( cursor: Cursor, struct: Tels.Struct, schema: Tels,
+      keywordIndex: Optional[Int] )
   :     Tel.Element raises BintelError =
     val flat = flattenKeywords(struct, schema)
     val childCount = readVarint(cursor)
@@ -294,7 +294,7 @@ object Bintel:
     Tel.Element.Node(keywordIndex, struct, children.asInstanceOf[IArray[Tel.Element]])
 
   private def decodeElement
-       (cursor: Cursor, flat: IArray[(Text, Tels.Type)], schema: Tels)
+    ( cursor: Cursor, flat: IArray[(Text, Tels.Type)], schema: Tels )
   :     Tel.Element raises BintelError =
     val kidx = readVarint(cursor)
     if kidx < 0 || kidx >= flat.length then abort(BintelError(BintelError.Reason.BadKeywordIndex))
@@ -388,7 +388,7 @@ object Bintel:
       Tel.empty
 
   private def presentCompound
-       (element: Tel.Element, flat: IArray[(Text, Tels.Type)], schema: Tels)
+    ( element: Tel.Element, flat: IArray[(Text, Tels.Type)], schema: Tels )
   :     Tel.Compound =
     element match
       case Tel.Element.Value(kidx, _, text) =>
@@ -523,7 +523,7 @@ object Bintel:
       // java.util.Arrays.sort with a Comparator is stable — preserves
       // source order within equal-key groups.
       java.util.Arrays.sort
-       ( arr.asInstanceOf[Array[AnyRef]],
+        ( arr.asInstanceOf[Array[AnyRef]],
          (a: AnyRef, b: AnyRef) => Integer.compare(keyOf(a.asInstanceOf[Tel.Element]),
                                                     keyOf(b.asInstanceOf[Tel.Element])) )
 

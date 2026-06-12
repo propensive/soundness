@@ -397,9 +397,9 @@ object Xml extends Tag.Container
             else children += wrap(wireName, encoded)
 
         Element
-         ( typeName[derivation],
-          Attributes(attributes.toSeq*),
-          children.toArray.immutable(using Unsafe) )
+          ( typeName[derivation],
+            Attributes(attributes.toSeq*),
+            children.toArray.immutable(using Unsafe) )
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Xml =
       value =>
@@ -2039,7 +2039,7 @@ object Xml extends Tag.Container
         startLine:   Int,
         startColumn: Int,
         startMark:   Long )
-                 ( using Tactic[ParseError] )
+      ( using Tactic[ParseError] )
     :   Element =
 
       // Macro element holes can't carry meaningful positions; emit an empty
@@ -2099,7 +2099,7 @@ object Xml extends Tag.Container
       ( tag:       Text,
         attrDescs: scala.collection.mutable.ArrayBuffer[Int],
         attrEnds:  scala.collection.mutable.ArrayBuffer[Int] )
-                 ( using Tactic[ParseError] )
+      ( using Tactic[ParseError] )
     :   Attributes =
 
       var n = 0
@@ -2189,7 +2189,7 @@ object Xml extends Tag.Container
       ( parentName: Text,
         childDescs: scala.collection.mutable.ArrayBuffer[Int],
         childEnds:  scala.collection.mutable.ArrayBuffer[Int] )
-                 ( using Tactic[ParseError] )
+      ( using Tactic[ParseError] )
     :   IArray[Node] =
 
       val children = getNodeBuffer()

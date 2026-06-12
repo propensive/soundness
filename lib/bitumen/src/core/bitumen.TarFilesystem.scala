@@ -52,7 +52,7 @@ import vacuous.*
 
 private[bitumen] object TarFilesystem:
   def entryFor[plane <: Posix: Filesystem]
-    (root: Path on plane, path: Path on plane)
+    ( root: Path on plane, path: Path on plane )
               ( using DereferenceSymlinks, Tactic[IoError], Tactic[TarError] )
   :   Tar.Entry =
 
@@ -93,7 +93,7 @@ private[bitumen] object TarFilesystem:
         Tar.Entry.Fifo(ref, mode, user, group, mtime)
 
   def applyEntry[plane <: Posix: Filesystem]
-                (root: Path on plane, entry: Tar.Entry)
+                ( root: Path on plane, entry: Tar.Entry )
                 ( using CreateNonexistentParents on plane,
                         OverwritePreexisting on plane,
                         Tactic[IoError],
@@ -135,7 +135,7 @@ private[bitumen] object TarFilesystem:
       case _: Tar.Entry.Pax | _: Tar.Entry.GnuLong => ()
 
   private def relativize[plane <: Posix: Filesystem]
-                        (root: Path on plane, child: Path on plane)
+                        ( root: Path on plane, child: Path on plane )
                         ( using Tactic[TarError] )
   :   TarRef =
 
@@ -150,14 +150,14 @@ private[bitumen] object TarFilesystem:
     decodePath(relText)
 
   private def absolutize[plane <: Posix: Filesystem]
-                        (root: Path on plane, ref: TarRef)
+                        ( root: Path on plane, ref: TarRef )
                         ( using Tactic[TarError] )
   :   Path on plane =
 
     decodeAbsolute(root.encode.s+"/"+ref.show.s, root)
 
   private def decodeAbsolute[plane <: Posix: Filesystem]
-                            (text: String, base: Path on plane)
+                            ( text: String, base: Path on plane )
                             ( using Tactic[TarError] )
   :   Path on plane =
 
