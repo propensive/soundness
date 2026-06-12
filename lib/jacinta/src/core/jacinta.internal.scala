@@ -112,6 +112,7 @@ object internal:
     // output a valid JSON number.
     def bcdLongText(value: Long): String =
       val count = bcdLongNibbleCount(value)
+
       if count == 0 then "0"
       else
         val sb = new java.lang.StringBuilder(count + 2)
@@ -124,10 +125,12 @@ object internal:
 
         while j >= 0 do
           val n = ((value >>> (j*4)) & 0xFL).toInt
+
           if      n <= 9     then sb.append(('0' + n).toChar)
           else if n == 0xA   then sb.append('.')
           else if n == 0xB   then sb.append('e')
           else if n == 0xC   then sb.append("e-")
+
           j -= 1
 
         sb.toString
@@ -163,6 +166,7 @@ object internal:
 
     def bcdIntText(value: Int): String =
       val count = bcdIntNibbleCount(value)
+
       if count == 0 then "0"
       else
         val sb = new java.lang.StringBuilder(count + 2)
@@ -175,10 +179,12 @@ object internal:
 
         while j >= 0 do
           val n = (value >>> (j*4)) & 0xF
+
           if      n <= 9     then sb.append(('0' + n).toChar)
           else if n == 0xA   then sb.append('.')
           else if n == 0xB   then sb.append('e')
           else if n == 0xC   then sb.append("e-")
+
           j -= 1
 
         sb.toString

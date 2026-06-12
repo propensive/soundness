@@ -133,6 +133,7 @@ object Bintel:
 
     val sigLenDecoded =
       import errorDiagnostics.empty
+
       whereas:
         case _: VarintError => BintelError(BintelError.Reason.VarintError)
       . mitigate(Varint.decode(data, magic.length))
@@ -150,6 +151,7 @@ object Bintel:
     System.arraycopy(data.asInstanceOf[Array[Byte]], sigEnd, bodyBytes, 0, bodyBytes.length)
 
     val sig = sigBytes.asInstanceOf[IArray[Byte]]
+
     if !validSignatureLength(sig)
     then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
@@ -175,6 +177,7 @@ object Bintel:
 
     val out = new ByteArrayOutputStream(
         magicSelfContained.length + 20 + signature.length + schemaBody.length + body.length)
+
     out.write(magicSelfContained.asInstanceOf[Array[Byte]])
     writeVarint(out, signature.length.toLong)
     out.write(signature.asInstanceOf[Array[Byte]])
@@ -196,6 +199,7 @@ object Bintel:
     then abort(BintelError(BintelError.Reason.BadMagic))
 
     var i = 0
+
     while i < magicSelfContained.length do
       if data(i) != magicSelfContained(i) then abort(BintelError(BintelError.Reason.BadMagic))
       i += 1
@@ -210,6 +214,7 @@ object Bintel:
     val sigEnd    = sigStart + sigLenD.value.toInt
     if sigEnd > data.length then abort(BintelError(BintelError.Reason.UnexpectedEoi))
     val signature = data.slice(sigStart, sigEnd)
+
     if !validSignatureLength(signature)
     then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
@@ -243,9 +248,11 @@ object Bintel:
     a.length == b.length && {
       var i = 0
       var equal = true
+
       while i < a.length && equal do
         if a(i) != b(i) then equal = false
         i += 1
+
       equal
     }
 
@@ -300,8 +307,10 @@ object Bintel:
 
       case s: Tels.Scalar =>
         val len = readVarint(cursor)
+
         if cursor.offset + len > cursor.data.length
         then abort(BintelError(BintelError.Reason.ValueTruncated))
+
         val bytes = new Array[Byte](len.toInt)
         var j = 0
 
@@ -310,9 +319,11 @@ object Bintel:
           j += 1
 
         cursor.offset += len.toInt
+
         val text =
           try Text(new String(bytes, "UTF-8"))
           catch case _: Exception => abort(BintelError(BintelError.Reason.BadUtf8))
+
         Tel.Element.Value(kidx.toInt, s, text)
 
       case Tels.Flag =>
@@ -323,6 +334,7 @@ object Bintel:
 
   private def readVarint(cursor: Cursor): Long raises BintelError =
     import errorDiagnostics.empty
+
     if cursor.offset >= cursor.data.length
     then abort(BintelError(BintelError.Reason.UnexpectedEoi))
 
@@ -350,6 +362,7 @@ object Bintel:
         case s: Tels.SelectRef =>
           schema.selects.find(_.name == s.reference).foreach: selectDef =>
             var v = 0
+
             while v < selectDef.variants.length do
               val variant = selectDef.variants(v)
               buf += ((variant.keyword, variant.variantType))
@@ -404,6 +417,7 @@ object Bintel:
     case Tels.Reference(name) =>
       schema.records.find(_.name == name) match
         case Some(rec) => Tels.Struct(rec.members, rec.validators)
+
         case None =>
           schema.scalars.find(_.name == name) match
             case Some(sc) => Tels.Scalar(sc.validators)
@@ -494,12 +508,14 @@ object Bintel:
     if children.length <= 1 then children
     else
       val memberBase = memberBaseByFlatIndex(parent, schema)
+
       def keyOf(e: Tel.Element): Int =
         val flat = kidxOf(e)
         if flat >= 0 && flat < memberBase.length then memberBase(flat) else flat
 
       val arr = new Array[Tel.Element](children.length)
       var i = 0
+
       while i < children.length do
         arr(i) = children(i)
         i += 1
@@ -510,6 +526,7 @@ object Bintel:
        ( arr.asInstanceOf[Array[AnyRef]],
          (a: AnyRef, b: AnyRef) => Integer.compare(keyOf(a.asInstanceOf[Tel.Element]),
                                                     keyOf(b.asInstanceOf[Tel.Element])) )
+
       arr.asInstanceOf[IArray[Tel.Element]]
 
   // Maps each flat keyword index in `parent` to the flat index at which
@@ -521,6 +538,7 @@ object Bintel:
     val bases = scala.collection.mutable.ArrayBuffer.empty[Int]
     var flat = 0
     var i = 0
+
     while i < parent.members.length do
       parent.members(i) match
         case _: Tels.Field =>
@@ -531,6 +549,7 @@ object Bintel:
           val width = schema.selects.find(_.name == s.reference) match
             case Some(sd) => sd.variants.length
             case None     => 0
+
           var j = 0
           while j < width do { bases += flat; j += 1 }
           flat += width

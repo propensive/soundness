@@ -65,6 +65,7 @@ object Edit:
   // with further edits.
   case class Cursor(pointer: Tel.Pointer):
     def update(text: Text): Edit = update(0, text)
+
     def update(atomIndex: Int, text: Text): Edit =
       Edit.single(Mutation.Op.UpdateAtom(pointer, atomIndex, text))
 

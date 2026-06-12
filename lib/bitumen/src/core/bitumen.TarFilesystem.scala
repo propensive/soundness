@@ -117,8 +117,10 @@ private[bitumen] object TarFilesystem:
       case s: Tar.Entry.Symlink =>
         val path = absolutize(root, s.path)
         jnf.Files.createDirectories(path.javaPath.getParent)
+
         if jnf.Files.exists(path.javaPath, jnf.LinkOption.NOFOLLOW_LINKS) then
           jnf.Files.delete(path.javaPath)
+
         jnf.Files.createSymbolicLink(path.javaPath, jnf.Path.of(s.target.s))
 
       case l: Tar.Entry.Link =>
@@ -169,6 +171,7 @@ private[bitumen] object TarFilesystem:
 
     import errorDiagnostics.empty
     val prefix = if rootText.endsWith("/") then rootText else rootText+"/"
+
     val relText: Text =
       if fullText.startsWith(prefix) then fullText.substring(prefix.length).nn.tt
       else fullText.tt

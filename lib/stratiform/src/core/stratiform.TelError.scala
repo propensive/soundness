@@ -150,6 +150,7 @@ object TelError:
 
       case LayerLoosenRequired =>
         m"a layer cannot loosen the `required` axis"
+
       case LayerLoosenRepeatable    => m"a layer cannot loosen the `repeatable` axis"
       case ExcludeOutsideSelect     => m"Exclude appears outside a SelectDefinition body"
 
@@ -158,6 +159,7 @@ object TelError:
 
       case NonStructCompound =>
         m"the compound's type is not a Struct"
+
       case TooManyAtoms             => m"more atoms than assignable member positions"
       case AtomAtNonAssignablePos   => m"the atom is at a non-atom-assignable member position"
       case AtomVariantUnmatched     => m"the atom text matches no variant keyword of the SelectRef"
