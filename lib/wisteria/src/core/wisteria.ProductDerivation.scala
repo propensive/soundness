@@ -94,20 +94,7 @@ object ProductDerivation:
                               Int & FieldIndex[field] aka "index" ) ?=> result )
     :   IArray[result] =
 
-      type Fields = reflection.MirroredElemTypes
-      type Labels = reflection.MirroredElemLabels
-
-      provide[ClassTag[result]]:
-        val array = new Array[result](valueOf[Tuple.Size[Fields]])
-
-          fold[derivation, Fields, Labels, Unit]((), 0): accumulator =>
-            [field] => context ?=>
-              given (requirement.Optionality[typeclass[field]] aka "contextual") =
-                context.aka["contextual"]
-
-              array(index) = lambda[field](context)
-
-        array.immutable(using Unsafe)
+      ${wisteria.internal.contextsProduct[typeclass, derivation, result]('lambda, 'requirement)}
 
 
     inline def typeName[derivation](using reflection: Reflection[derivation]): Text =
@@ -154,22 +141,8 @@ object ProductDerivation:
                               (Int & FieldIndex[field]) aka "index" ) ?=> result )
     :   IArray[result] =
 
-      provide[ClassTag[result]]:
-        type Labels = reflection.MirroredElemLabels
-        type Fields = reflection.MirroredElemTypes
-
-        val tuple: Fields = Tuple.fromProductTyped(product)
-
-        val array = new Array[result](tuple.size)
-
-          fold[derivation, Fields, Labels, Unit](tuple, (), 0): unit =>
-            [field] => field =>
-              given typeclass: (requirement.Optionality[typeclass[field]] aka "contextual") =
-                requirement.wrap(contextual).aka["contextual"]
-
-              array(index) = lambda[field](field)
-
-        array.immutable(using Unsafe)
+      ${wisteria.internal.fieldsProduct[typeclass, derivation, result]('product, 'lambda,
+          'requirement)}
 
 
     // The two implementations of `fold` are very similar. We would prefer to have a single

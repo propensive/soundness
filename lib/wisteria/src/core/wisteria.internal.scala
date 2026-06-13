@@ -33,15 +33,57 @@
 package wisteria
 
 import scala.quoted.*
+import scala.reflect.ClassTag
 
 import anticipation.*
 import denominative.*
 import gigantism.*
+import rudiments.*
 import vacuous.*
 
 object internal:
   inline def default[product, field](index: Int): Optional[field] =
     ${getDefault[product, field]('index)}
+
+  // Wraps a homogeneous list of field results into an `IArray`, summoning the `ClassTag` at the
+  // expansion site (where `result` is concrete).
+  private def immutableArray[result: Type](results: List[Expr[result]])(using Quotes)
+  :   Expr[IArray[result]] =
+
+    import quotes.reflect.*
+
+    val classTag = Expr.summon[ClassTag[result]].getOrElse:
+      report.errorAndAbort("wisteria: no ClassTag available for the result type")
+
+    '{Array[result](${Varargs(results)}*)(using $classTag).immutable(using Unsafe)}
+
+  // The derivation type may be an intersection `Variant & Parent` (when deriving a sum's product
+  // variant); resolve to the concrete product whose constructor and fields we want to inspect.
+  private def productType(using Quotes)(repr: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+
+    repr.dealias match
+      case AndType(left, right) =>
+        if left.typeSymbol.caseFields.nonEmpty then productType(left) else productType(right)
+
+      case other =>
+        other
+
+  // Applies the polymorphic-function `lambda` at type `field`, passing `value` as the value
+  // argument and `contextArgs` as the trailing context-function arguments.
+  private def applyLambda[field: Type]
+    ( using Quotes )
+    ( lambda: quotes.reflect.Term, value: Expr[Any], contextArgs: List[Expr[Any]] )
+  :   quotes.reflect.Term =
+
+    import quotes.reflect.*
+
+    val applied =
+      Apply
+        ( TypeApply(Select.unique(lambda, "apply"), List(TypeTree.of[field])),
+          List(value.asTerm) )
+
+    Apply(Select.unique(applied, "apply"), contextArgs.map(_.asTerm))
 
   def buildProduct[typeclass[_]: Type, derivation: Type]
     ( lambda: Expr[Any], requirement: Expr[ContextRequirement] )
@@ -49,16 +91,7 @@ object internal:
 
     import quotes.reflect.*
 
-    // The derivation type may be an intersection `Variant & Parent` (when deriving a sum's
-    // product variant); resolve to the concrete product whose constructor and fields we want.
-    def resolve(repr: TypeRepr): TypeRepr = repr.dealias match
-      case AndType(left, right) =>
-        if left.typeSymbol.caseFields.nonEmpty then resolve(left) else resolve(right)
-
-      case other =>
-        other
-
-    val tpe = resolve(TypeRepr.of[derivation])
+    val tpe = productType(TypeRepr.of[derivation])
     val symbol = tpe.typeSymbol
     val lambdaTerm = lambda.asTerm
 
@@ -76,14 +109,7 @@ object internal:
           val label = '{$nameExpr.tt.aka["label"]}
           val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
 
-          val applied =
-            Apply
-              ( TypeApply(Select.unique(lambdaTerm, "apply"), List(TypeTree.of[field])),
-                List(contextValue.asTerm) )
-
-          Apply
-            ( Select.unique(applied, "apply"),
-              List(contextual.asTerm, default.asTerm, label.asTerm, fieldIndex.asTerm) )
+          applyLambda[field](lambdaTerm, contextValue, List(contextual, default, label, fieldIndex))
 
     val constructor = Select(New(TypeTree.of(using tpe.asType)), symbol.primaryConstructor)
 
@@ -95,6 +121,65 @@ object internal:
         constructor
 
     Apply(construction, arguments).asExprOf[derivation]
+
+  def contextsProduct[typeclass[_]: Type, derivation: Type, result: Type]
+    ( lambda: Expr[Any], requirement: Expr[ContextRequirement] )
+  :   Macro[IArray[result]] =
+
+    import quotes.reflect.*
+
+    val tpe = productType(TypeRepr.of[derivation])
+    val lambdaTerm = lambda.asTerm
+
+    val results: List[Expr[result]] = tpe.typeSymbol.caseFields.zipWithIndex.map: (field, index) =>
+      tpe.memberType(field).asType.absolve match
+        case '[field] =>
+          val indexExpr = Expr(index)
+          val nameExpr = Expr(field.name)
+
+          val contextValue: Expr[Any] = '{$requirement.summon[typeclass[field]]}
+          val contextual = '{$requirement.summon[typeclass[field]].aka["contextual"]}
+          val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
+          val label = '{$nameExpr.tt.aka["label"]}
+
+          val accessor: Expr[derivation => field] =
+            '{value => value.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[field]}
+
+          val dereference = '{$accessor.aka["dereference"]}
+          val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
+          val arguments = List(contextual, default, label, dereference, fieldIndex)
+
+          applyLambda[field](lambdaTerm, contextValue, arguments).asExprOf[result]
+
+    immutableArray[result](results)
+
+  def fieldsProduct[typeclass[_]: Type, derivation: Type, result: Type]
+    ( product: Expr[derivation], lambda: Expr[Any], requirement: Expr[ContextRequirement] )
+  :   Macro[IArray[result]] =
+
+    import quotes.reflect.*
+
+    val tpe = productType(TypeRepr.of[derivation])
+    val lambdaTerm = lambda.asTerm
+
+    val results: List[Expr[result]] = tpe.typeSymbol.caseFields.zipWithIndex.map: (field, index) =>
+      tpe.memberType(field).asType.absolve match
+        case '[field] =>
+          val indexExpr = Expr(index)
+          val nameExpr = Expr(field.name)
+
+          val fieldValue: Expr[Any] =
+            '{$product.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[field]}
+
+          val contextual = '{$requirement.summon[typeclass[field]].aka["contextual"]}
+          val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
+          val label = '{$nameExpr.tt.aka["label"]}
+          val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
+          val arguments = List(contextual, default, label, fieldIndex)
+
+          applyLambda[field](lambdaTerm, fieldValue, arguments).asExprOf[result]
+
+    immutableArray[result](results)
 
   def getDefault[product: Type, field: Type](index: Expr[Int]): Macro[Optional[field]] =
     import quotes.reflect.*
