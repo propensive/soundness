@@ -168,14 +168,6 @@ object Repackager:
         val keptEntries: List[Entry] = ownEntries.filter: entry =>
           !stripped.contains(entry.name)
 
-        // A cached entry may still be present among the kept entries (e.g. an unpublished
-        // dependency bundled in a fat assembly); keep that copy and inline only the gaps, so
-        // the output never carries two entries with the same name.
-        val ownNames: Set[Text] = keptEntries.map(_.name).to(Set)
-
-        val inlinedEntries: List[Entry] = inlined.filter: entry =>
-          !ownNames.contains(entry.name)
-
         import manifestAttributes.*
 
         val originalMain =
@@ -186,7 +178,12 @@ object Repackager:
           + BurdockVerbosity(t"silent") + MainClass(fqcn"burdock.Bootstrap")
 
         val bootstrap: Entry = Entry(bootstrapName, bootstrapClass)
-        val entries: List[Entry] = bootstrap :: keptEntries ++ inlinedEntries
+
+        // Keep the first occurrence of each entry name: the force-included bootstrap over any
+        // bundled or inlined copy (an unpublished `burdock` dependency's cached JAR also
+        // carries `burdock/Bootstrap.class`), and a bundled class over an inlined cache copy.
+        // Without this, `Zipfile.write` rejects the duplicate entry.
+        val entries: List[Entry] = (bootstrap :: keptEntries ++ inlined).distinctBy(_.name)
 
         Zipfile.write(outputJar):
           Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest2.serialize)

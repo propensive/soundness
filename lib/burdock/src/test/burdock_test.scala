@@ -142,9 +142,11 @@ object Tests extends Suite(m"Burdock Tests"):
 
     suite(m"Repackager (duplicate-safety)"):
       // A real assembly bundles burdock (its `Main-Class` is `burdock.Bootstrap`), so the
-      // input already contains `burdock/Bootstrap.class`; and a cached dependency may be a
-      // class already present among the application's own entries. Neither must produce a
-      // duplicate entry in the output (which would fail as a `ZipError`). See issue #1333.
+      // input already contains `burdock/Bootstrap.class`; a cached dependency may be a class
+      // already present among the application's own entries; and an inlined (unpublished, e.g.
+      // locally-published) burdock dependency's cached JAR also carries `burdock/Bootstrap.class`.
+      // None of these must produce a duplicate entry in the output (which fails as a
+      // `ZipError`). See issue #1333.
       val tmp: Path on Linux = temporaryDirectory[Path on Linux]
       val inputJar: Path on Linux = tmp/t"burdock-dup-in-${Uuid().show}.jar"
       val outputJar: Path on Linux = tmp/t"burdock-dup-out-${Uuid().show}.jar"
@@ -161,10 +163,12 @@ object Tests extends Suite(m"Burdock Tests"):
 
       val resolve: Repackager.Resolver = _ => Unset
 
-      val cached: Repackager.CacheReader =
-        h => if h == t"bbb"
-             then List(Zip.Entry(t"dep/Lib.class".decode[Path on Zip], t"cached-lib".data))
-             else Unset
+      val cached: Repackager.CacheReader = h =>
+        if h == t"bbb"
+        then Zip.Entry(t"dep/Lib.class".decode[Path on Zip], t"cached-lib".data)
+             :: Zip.Entry(t"burdock/Bootstrap.class".decode[Path on Zip], t"cached-bootstrap".data)
+             :: Nil
+        else Unset
 
       Repackager.repackage(inputJar, outputJar, resolve, cached, t"real-bootstrap".data)
 
