@@ -48,11 +48,10 @@ import prepositional.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
+
+import LineSeparation.*
 import abstractables.instantIsAbstractable
 import probates.await
-
-import LineSeparation.Action.*
-import LineSeparation.NewlineSeq
 
 inline def more[value](using value: value aka "more"): value = value()
 
@@ -194,12 +193,20 @@ extension [element](stream: Stream[element])
     out.stream
 
 package lineSeparation:
-  given carriageReturn: LineSeparation(NewlineSeq.Cr, Nl, Skip, Nl, Nl)
-  given strictCarriageReturn: LineSeparation(NewlineSeq.Cr, Nl, Lf, NlLf, LfNl)
-  given linefeed: LineSeparation(NewlineSeq.Lf, Skip, Nl, Nl, Nl)
-  given strictLinefeeds: LineSeparation(NewlineSeq.Lf, Nl, Lf, NlLf, LfNl)
-  given carriageReturnLinefeed: LineSeparation(NewlineSeq.CrLf, Skip, Lf, Nl, LfNl)
-  given adaptiveLinefeed: LineSeparation(NewlineSeq.Lf, Nl, Nl, Nl, Nl)
+  given carriageReturn: LineSeparation(NewlineSeq.Cr, Action.Nl, Action.Skip, Action.Nl, Action.Nl)
+
+  given strictCarriageReturn
+  :   LineSeparation(NewlineSeq.Cr, Action.Nl, Action.Lf, Action.NlLf, Action.LfNl)
+
+  given linefeed: LineSeparation(NewlineSeq.Lf, Action.Skip, Action.Nl, Action.Nl, Action.Nl)
+
+  given strictLinefeeds
+  :   LineSeparation(NewlineSeq.Lf, Action.Nl, Action.Lf, Action.NlLf, Action.LfNl)
+
+  given carriageReturnLinefeed
+  :   LineSeparation(NewlineSeq.CrLf, Action.Skip, Action.Lf, Action.Nl, Action.LfNl)
+
+  given adaptiveLinefeed: LineSeparation(NewlineSeq.Lf, Action.Nl, Action.Nl, Action.Nl, Action.Nl)
 
   given virtualMachine: LineSeparation = jl.System.lineSeparator.nn match
     case "\r\n"    => carriageReturnLinefeed
