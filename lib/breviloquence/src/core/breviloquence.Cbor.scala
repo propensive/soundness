@@ -163,7 +163,8 @@ trait Cbor2:
       val variantNames: Map[Text, Text] = variantRelabelling[derivation, Cbor]
 
       variant(value): [variant <: derivation] =>
-        value => discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
+        value =>
+          discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
 
 object Cbor extends Cbor2, Dynamic:
   // CBOR major-type representation in storage. Arrays are stored as an

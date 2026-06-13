@@ -36,7 +36,7 @@ import java.lang as jl
 
 import distillate.*
 
-object Vexillology:
+object internal:
   opaque type Flags[enumeration] = Long
 
   object Flags:

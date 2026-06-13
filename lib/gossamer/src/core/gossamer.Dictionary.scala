@@ -302,7 +302,7 @@ final class Dictionary[+value]
     val fail:     Array[Int],
     val dictLink: Array[Int],
     val alphabet: Dictionary.Alphabet,
-    classTag$:    ClassTag[value @uncheckedVariance] ):
+    classTag:     ClassTag[value @uncheckedVariance] ):
 
   // The exposed `values` array is `Array[AnyRef | Null]` rather than
   // `Array[value | Null]` because Array is invariant and the JVM checks
@@ -313,7 +313,7 @@ final class Dictionary[+value]
 
   // Re-expose the `ClassTag` to the rebuild path so `+`/`++` can allocate
   // their fresh values array without the caller having to summon one.
-  private[gossamer] given valueTag: ClassTag[value @uncheckedVariance] = classTag$
+  private[gossamer] given valueTag: ClassTag[value @uncheckedVariance] = classTag
 
   inline def root: Int = 0
 

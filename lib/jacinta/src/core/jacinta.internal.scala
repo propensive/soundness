@@ -257,11 +257,11 @@ object internal:
             builder.add(0xB)
             prevWasE = true
 
-          case '+' if prevWasE =>
+          case '+' =>
             prevWasE = false
 
-          case '-' if prevWasE =>
-            builder.overwriteLast(0xC)
+          case '-' =>
+            if prevWasE then builder.overwriteLast(0xC)
             prevWasE = false
 
           case _ => ()
@@ -490,7 +490,7 @@ object internal:
         val srcSkip = origPart.length - parserPart.length // 1 for `*`-prefixed spread
         val effectiveStart = srcStart + srcSkip
 
-        val mapping: Int => Int = sourceContent.lay((i: Int) => i): content =>
+        val mapping: Int => Int = sourceContent.lay[Int => Int](identity): content =>
           if effectiveStart > 0 && effectiveStart < content.length then
             val upper = (effectiveStart + parserPart.length * 6 + 16).min(content.length)
             val sourceText = content.substring(effectiveStart, upper).nn
@@ -990,7 +990,7 @@ object internal:
               node(i*2).asInstanceOf[String]
 
         val hasRest: Boolean =
-          (0 until pairs).exists(i => node(i*2).asInstanceOf[String] == MarkerString)
+          (0 until pairs).exists: i => node(i*2).asInstanceOf[String] == MarkerString
 
         // Initial: object-shape and key cardinality.
         val cardinality: Expr[Boolean] =

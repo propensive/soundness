@@ -961,7 +961,7 @@ extends Dynamic, Topical, Original derives CanEqual:
       case value: String     => value.hashCode
       case value: Boolean    => value.hashCode
 
-      case value: Int        =>
+      case value: Int =>
         // Small-BCD number — hash through the BigDecimal projection so
         // it stays consistent with the `Bcd` / `Long` / `Double` paths.
         BigDecimal(Bcd.bcdIntText(value)).hashCode

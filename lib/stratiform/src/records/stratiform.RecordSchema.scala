@@ -112,7 +112,7 @@ object RecordSchema:
   // `Tel.empty` for an absent field; the Intensional below maps an
   // absent Tel to `false` and a present one to `true`.
   given flag: ("flag" is Intensional in RecordSchema from Tel to Boolean) =
-    RecordSchema.intensional(tel => !absent(tel))
+    RecordSchema.intensional(!absent(_))
 
   given tel: ("tel" is Intensional in RecordSchema from Tel to Tel) =
     RecordSchema.intensional(identity)

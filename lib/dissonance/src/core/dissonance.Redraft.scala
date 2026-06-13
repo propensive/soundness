@@ -246,10 +246,10 @@ object Redraft:
       val (edits, anomalies) = analyze(candidate, original, _ == _)
       anomalies.isEmpty && Diff(edits*).patch(original).to(List) == target
 
-    val changes = array.indices.filter(i => !array(i).isInstanceOf[Directive.Keep])
+    val changes = array.indices.filter(!array(_).isInstanceOf[Directive.Keep])
 
     def distance(index: Int): Int =
-      if changes.isEmpty then 0 else changes.map(c => (c - index).abs).min
+      if changes.isEmpty then 0 else changes.map { c => (c - index).abs }.min
 
     val order =
       array.indices

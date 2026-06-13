@@ -425,7 +425,7 @@ case class Zipfile
 
     val records = builder.result()
     val cdStart = offset
-    val central = records.map((entry, name, _, off) => Zipfile.centralHeader(entry, name, off))
+    val central = records.map: (entry, name, _, off) => Zipfile.centralHeader(entry, name, off)
     val cdSize = central.foldLeft(0L)(_ + _.length)
     val tail = Zipfile.endRecords(records.length.toLong, cdStart, cdSize, comment)
 
@@ -433,6 +433,6 @@ case class Zipfile
       if prefixBytes.length == 0 then LazyList() else LazyList(prefixBytes)
 
     val local: Stream[Data] =
-      records.to(LazyList).flatMap((entry, _, header, _) => header #:: entry.storedBytes())
+      records.to(LazyList).flatMap: (entry, _, header, _) => header #:: entry.storedBytes()
 
     prefixStream #::: local #::: central.to(LazyList) #::: tail.to(LazyList)

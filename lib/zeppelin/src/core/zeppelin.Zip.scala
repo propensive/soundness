@@ -218,10 +218,13 @@ object Zip:
 
   private[zeppelin] def dosDateTime(epochMillis: Long): (Int, Int) =
     import java.time as jt
-    val ldt = jt.LocalDateTime.ofInstant(jt.Instant.ofEpochMilli(epochMillis), jt.ZoneId.systemDefault()).nn
+
+    val instant = jt.Instant.ofEpochMilli(epochMillis)
+    val ldt = jt.LocalDateTime.ofInstant(instant, jt.ZoneId.systemDefault()).nn
     val year = (ldt.getYear - 1980).max(0)
     val date = (year << 9) | (ldt.getMonthValue << 5) | ldt.getDayOfMonth
     val time = (ldt.getHour << 11) | (ldt.getMinute << 5) | (ldt.getSecond/2)
+
     (time, date)
 
   private[zeppelin] def crc32(data: Data): Int =
@@ -254,7 +257,7 @@ object Zip:
 
   private[zeppelin] def gather(stream: Stream[Data]): Data =
     val out = ji.ByteArrayOutputStream()
-    stream.each { chunk => out.write(chunk.mutable(using Unsafe)) }
+    stream.each: chunk => out.write(chunk.mutable(using Unsafe))
     out.toByteArray.nn.immutable(using Unsafe)
 
 sealed trait Zip

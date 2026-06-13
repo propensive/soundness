@@ -478,8 +478,9 @@ object Tel extends Tel2:
             val c = s.charAt(i)
 
             if !(c == '-' || (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9')) then
-              return fail(t"identifier character '$c' must be lowercase ASCII letter, digit, or hyphen",
-                (i, i + 1))
+              return fail
+                ( t"identifier character '$c' must be lowercase ASCII letter, digit, or hyphen",
+                  (i, i + 1) )
 
             i += 1
 
@@ -840,16 +841,17 @@ object Tel extends Tel2:
       offset += compounds.length
 
       if index >= base && index < base + compounds.length
-      then block.copy(compounds = compounds.updated(index - base, transform(compounds(index - base))))
-      else block
+      then
+        block.copy(compounds = compounds.updated(index - base, transform(compounds(index - base))))
+      else
+        block
 
   // Apply `transform` to every child compound (flattened across blocks),
   // preserving block structure. Used by the panopticon `Each` optic.
-  private[stratiform] def mapChildCompounds
-    ( blocks: IArray[Block], transform: Compound => Compound )
+  private[stratiform] def mapChildCompounds(blocks: IArray[Block], transform: Compound => Compound)
   :   IArray[Block] =
 
-    blocks.map(block => block.copy(compounds = block.compounds.map(transform)))
+    blocks.map: block => block.copy(compounds = block.compounds.map(transform))
 
 class Tel private[stratiform](private[stratiform] val subtree: Tel.Subtree)
 extends scala.Dynamic, Documentary, Topical, Original:
@@ -923,7 +925,7 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // schema-repeatable fields that produce multiple compounds with the
   // same keyword in the presentation tree.
   def fields(target: Text): IArray[Tel] =
-    childCompounds.filter(_.keyword == target).map(c => Tel(c))
+    childCompounds.filter(_.keyword == target).map(Tel(_))
 
   // Document accessor for downstream operations (printing, mutation). Only
   // meaningful when this Tel wraps a Document.

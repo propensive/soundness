@@ -335,6 +335,9 @@ private[polysyllabic] object Unhyphenated extends Hyphenation:
   // algorithm's hardcoded slot indexing finds a 27-wide children array
   // (all `-1`) instead of an empty one.
   val patterns: Dictionary[IArray[Byte]] = Dictionary.aho[IArray[Byte]](Hyphenation.alphabet)
-  val exceptions: Dictionary[IArray[Int]] = Dictionary.withAlphabet[IArray[Int]](Hyphenation.alphabet)
+
+  val exceptions: Dictionary[IArray[Int]] =
+    Dictionary.withAlphabet[IArray[Int]](Hyphenation.alphabet)
+
   val leftMin: Int = Int.MaxValue
   val rightMin: Int = Int.MaxValue

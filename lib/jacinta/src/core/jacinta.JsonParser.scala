@@ -1065,7 +1065,7 @@ private[jacinta] final class JsonParser:
           case LowerN      => parseNull()
           case LowerT      => parseTrue()
 
-          case OpenBrace   =>
+          case OpenBrace =>
             advance()
             parseObjectTracked(indexOut, startLine, startColumn, startMark)
 

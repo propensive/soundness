@@ -106,9 +106,11 @@ object Jacinta:
     // Plain (unverified) access: gate on the enabler (resolved at the call site),
     // then read the field totally.
     def plain: Expr[Json] =
-      if Expr.summon[DynamicJsonEnabler].isEmpty
-      then halt(m"""dynamic field access on an unverified `Json` requires
-                    `import dynamicJsonAccess.enabled` (or verify the value against a schema first)""")
+      if Expr.summon[DynamicJsonEnabler].isEmpty then halt:
+        m"""
+          dynamic field access on an unverified `Json` requires `import dynamicJsonAccess.enabled`
+          (or verify the value against a schema first)
+        """
 
       '{$self.selectField($field)}
 
@@ -155,16 +157,21 @@ object Jacinta:
     import quotes.reflect.*
 
     def plain: Expr[Json] =
-      if Expr.summon[DynamicJsonEnabler].isEmpty
-      then halt(m"""dynamic field access on an unverified `Json` requires
-                    `import dynamicJsonAccess.enabled` (or verify the value against a schema first)""")
+      if Expr.summon[DynamicJsonEnabler].isEmpty then halt:
+        m"""
+          dynamic field access on an unverified `Json` requires `import dynamicJsonAccess.enabled`
+          (or verify the value against a schema first)
+        """
 
       Expr.summon[Tactic[JsonError]] match
         case Some(tactic) => '{$self.selectField($field).indexValue($idx)(using $tactic)}
 
         case None =>
-          halt(m"""indexing a `Json` array may raise `JsonError`; a `Tactic[JsonError]`
-                   must be in scope (e.g. via `raises JsonError`)""")
+          halt:
+            m"""
+              indexing a `Json` array may raise `JsonError`; a `Tactic[JsonError]` must be in scope
+              (e.g. via `raises JsonError`)
+            """
 
     receiver(self) match
       case (position, root) => field.value match

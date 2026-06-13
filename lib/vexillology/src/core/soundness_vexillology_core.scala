@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export vexillology.{Vexillology}
+export vexillology.Flags

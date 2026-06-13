@@ -57,7 +57,7 @@ object Edit:
   // atom texts. Convenience for assembling Insert / Replace payloads
   // without explicit `Tel.Compound(...)` boilerplate.
   def compound(keyword: Text, atomTexts: Text*): Tel.Compound =
-    val atoms = IArray.from(atomTexts.map(t => Tel.Atom.Inline(t, 1)))
+    val atoms = IArray.from(atomTexts.map(Tel.Atom.Inline(_, 1)))
     Tel.Compound(keyword, atoms, Unset, IArray.empty)
 
   // A cursor binds a pointer to the upcoming operation. Each operation

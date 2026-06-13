@@ -67,7 +67,7 @@ object internal:
           panic(m"could not read /urticose/service-names-port-numbers.csv from classpath")
 
     val lines: Iterator[List[Text]] =
-      scala.io.Source.fromInputStream(stream).getLines.map(_.tt).map(_.cut(t","))
+      scala.io.Source.fromInputStream(stream).getLines().map(_.tt).map(_.cut(t","))
 
     lines.flatMap: list =>
       safely:

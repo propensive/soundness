@@ -412,14 +412,16 @@ object internal:
           Whereas.AccrueTactic[Exception, accrual]($initial, $combine)(using $diagnostics)
 
         val outcome: Either[accrual, result] =
-          try Right($ {
-            val tactics = cases.map: (_, _) =>
-              '{acc}.asTerm
+          try Right:
+            $ {
+                val tactics =
+                  cases.map: (_, _) =>
+                    '{acc}.asTerm
 
-            val contextTypeRepr = TypeRepr.of[context[result]]
-            val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
-            body.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
-          })
+                val contextTypeRepr = TypeRepr.of[context[result]]
+                val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
+                body.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
+              }
           catch case _: Exception => Left(acc.accumulated)
 
         outcome match

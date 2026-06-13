@@ -552,7 +552,7 @@ object Tels extends Tels2:
         && seqEq(a.layers, b.layers, layerEq)
 
     private def seqEq[T](a: IArray[T], b: IArray[T], eq: (T, T) => Boolean): Boolean =
-      a.length == b.length && (0 until a.length).forall(i => eq(a(i), b(i)))
+      a.length == b.length && (0 until a.length).forall: i => eq(a(i), b(i))
 
     private def structEq(a: Struct, b: Struct): Boolean =
       seqEq(a.members, b.members, memberEq)
@@ -701,18 +701,20 @@ object Tels extends Tels2:
 
       children.each: cc =>
         cc.keyword.s match
-          case "variant"  =>
+          case "validate"    => validators ++= atomTexts(cc)
+          case "exclude"     => ()
+          case "description" => ()
+
+          case "variant" =>
             val ats = atomTexts(cc)
             if ats.length < 2 then abort(TelError(Reason.RequiredMemberAbsent))
             variants += Variant(ats(0), parseType(ats(1)), descriptionOf(childCompounds(cc)))
 
-          case "validate"    => validators ++= atomTexts(cc)
-          case "exclude"     => ()
-          case "description" => ()
-          case _             => abort(TelError(Reason.UnknownKeyword))
+          case _ =>
+            abort(TelError(Reason.UnknownKeyword))
 
-      SelectDefinition(seName, IArray.from(variants), IArray.from(validators),
-          descriptionOf(children))
+      SelectDefinition
+        ( seName, IArray.from(variants), IArray.from(validators), descriptionOf(children) )
 
     private def parseBody(c: Tel.Compound): Optional[Struct] raises TelError =
       val (members, validators) = parseMembersAndValidators(childCompounds(c))

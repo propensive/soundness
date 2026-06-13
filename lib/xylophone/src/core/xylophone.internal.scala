@@ -629,7 +629,7 @@ object internal:
         case _                  => Set()
 
       resultType(xml)
-      . map { label => ConstantType(StringConstant(label)) }
+      . map: label => ConstantType(StringConstant(label))
       . foldLeft(TypeRepr.of[Nothing]) { (left, right) => OrType(left, right) }
       . asType
       . absolve match
@@ -1010,4 +1010,3 @@ object internal:
           i += 2
 
         h
-

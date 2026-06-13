@@ -390,7 +390,9 @@ object Bintel:
   private def present(element: Tel.Element, schema: Tels): Tel = element match
     case Tel.Element.Node(_, struct: Tels.Struct, children) =>
       val flat = flattenKeywords(struct, schema)
-      Tel.make(Tel.Compound(Text(""), IArray.empty, Unset, blocks(children.map(presentCompound(_, flat, schema)))))
+      val blk = blocks(children.map(presentCompound(_, flat, schema)))
+
+      Tel.make(Tel.Compound("", IArray.empty, Unset, blk))
 
     case _ =>
       Tel.empty

@@ -236,7 +236,9 @@ object Bytecode:
           New(classname)
 
         case newRefArray: jlci.NewReferenceArrayInstruction =>
-          val classname = newRefArray.componentType.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+          val classname =
+            newRefArray.componentType.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+
           Anewarray(classname)
 
         case newMultiArray: jlci.NewMultiArrayInstruction =>

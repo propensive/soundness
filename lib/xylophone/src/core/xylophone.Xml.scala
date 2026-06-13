@@ -233,7 +233,8 @@ object Xml extends Tag.Container
             xml match
               case e: Element           => buildWith(e)
               case Fragment(e: Element) => buildWith(e)
-              case _                    =>
+
+              case _ =>
                 // Wrong-shape input (including the `Absent` sentinel an
                 // outer conjunction passes in for a missing nested case-
                 // class field). If the user supplied `Default[derivation]`
@@ -247,7 +248,7 @@ object Xml extends Tag.Container
                   case derivationDefault: Default[`derivation`] =>
                     raise(XmlError()) yet derivationDefault()
 
-                  case _                                        =>
+                  case _ =>
                     raise(XmlError())
                     buildWith(Element(t"", Attributes.empty, IArray.empty))
 
@@ -327,7 +328,7 @@ object Xml extends Tag.Container
               // `@name[Xml]` / bare `@name` variant renames: map the serialized
               // element label back to the variant name before delegating.
               val variantNames: Map[Text, Text] =
-                variantRelabelling[derivation, Xml].map((variant, wire) => wire -> variant)
+                variantRelabelling[derivation, Xml].map: (variant, wire) => wire -> variant
 
               val resolved: Optional[Text] =
                 discriminable.discriminate(xml).let: wire =>
@@ -368,8 +369,12 @@ object Xml extends Tag.Container
     private def wrap(fieldName: Text, encoded: Xml): Node = encoded match
       case Element(_, attributes, children)           => Element(fieldName, attributes, children)
       case Fragment(Element(_, attributes, children)) => Element(fieldName, attributes, children)
-      case Fragment(nodes*)                           => Element(fieldName, Attributes.empty, nodes.toArray.immutable(using Unsafe))
-      case node: Node                                 => Element(fieldName, Attributes.empty, IArray(node))
+
+      case Fragment(nodes*) =>
+        Element(fieldName, Attributes.empty, nodes.toArray.immutable(using Unsafe))
+
+      case node: Node =>
+        Element(fieldName, Attributes.empty, IArray(node))
 
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Xml =

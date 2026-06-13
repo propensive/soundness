@@ -43,7 +43,7 @@ import contingency.*
 
 package telEncodables:
   given encodeInstantsAsUnixEpochMilliseconds: Instant is Tel.Encodable =
-    Tel.Encodable(Shape.Whole)(instant => Tel.scalar(instant.long.toString.tt))
+    Tel.Encodable(Shape.Whole): instant => Tel.scalar(instant.long.toString.tt)
 
   given encodeDurationsAsMilliseconds: Duration is Tel.Encodable =
     Tel.Encodable(Shape.Whole)(duration => Tel.scalar((duration.value*1000).toLong.toString.tt))

@@ -264,14 +264,15 @@ object internal:
     val patternBytesExpr: Expr[Data] =
       '{${Expr(source.getBytes("UTF-8").nn.toSeq)}.toArray.asInstanceOf[IArray[Byte]]}
 
-    val markerExpr: Expr[Char] = '{ ${Expr(Marker)} }
+    val markerExpr: Expr[Char] = Expr(Marker)
 
-    val matchResult: Expr[Option[List[Tel]]] = ' {
-      val pattern: Tel.Document =
-        contingency.unsafely(TelParser.parse($patternBytesExpr))
+    val matchResult: Expr[Option[List[Tel]]] =
+      ' {
+          val pattern: Tel.Document =
+            contingency.unsafely(TelParser.parse($patternBytesExpr))
 
-      stratiform.internal.matchDocument(pattern, $scrutinee, $markerExpr)
-    }
+          stratiform.internal.matchDocument(pattern, $scrutinee, $markerExpr)
+        }
 
     if holeCount == 0 then '{$matchResult.isDefined: Boolean}
     else if holeCount == 1 then '{$matchResult.map(_.head): Option[Tel]}
@@ -285,10 +286,10 @@ object internal:
       tupleType.asType.absolve match
         case '[type result <: Tuple; result] =>
           ' {
-            $matchResult.map: captures =>
-              val arr: Array[Object] = captures.toArray.asInstanceOf[Array[Object]]
-              scala.runtime.Tuples.fromArray(arr).asInstanceOf[result]
-          }
+              $matchResult.map: captures =>
+                val arr: Array[Object] = captures.toArray.asInstanceOf[Array[Object]]
+                scala.runtime.Tuples.fromArray(arr).asInstanceOf[result]
+            }
 
   // Runtime matcher: returns Some(captures) if input structurally matches
   // pattern (allowing marker characters in pattern atom-texts as capture

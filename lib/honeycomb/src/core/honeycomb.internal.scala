@@ -309,7 +309,7 @@ object internal:
       parts.zip(partOrigins).map: (part, origin) =>
         val (srcStart, _) = origin
 
-        val mapping: Int => Int = sourceContent.lay((i: Int) => i): content =>
+        val mapping: Int => Int = sourceContent.lay[Int => Int](identity(_)): content =>
           if srcStart > 0 && srcStart < content.length then
             val upper = (srcStart + part.length * 6 + 16).min(content.length)
             val sourceText = content.substring(srcStart, upper).nn
@@ -793,7 +793,10 @@ object internal:
       def `--`(others: Iterable[Text]): Attributes =
         if isEmpty then attrs else
           var result: Attributes = attrs
-          others.foreach { k => result = result.removed(k) }
+
+          others.foreach: k =>
+            result = result.removed(k)
+
           result
 
       // Updates an existing key in place (preserving order) or appends a new pair
@@ -942,4 +945,3 @@ object internal:
           i += 2
 
         sb.append(")").toString
-

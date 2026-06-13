@@ -85,14 +85,14 @@ private def conform(schema: JsonSchema, ast: Json.Ast): Unit raises JsonError =
   inline def mismatch(expected: JsonPrimitive): Unit =
     raise(JsonError(Reason.NotType(ast.primitive, expected)))
 
-  if ast.isAbsent then (if !schema.optional then raise(JsonError(Reason.Absent)))
-  else schema match
+  if ast.isAbsent then (if !schema.optional then raise(JsonError(Reason.Absent))) else schema match
     case obj: JsonSchema.Object => obj.oneOf match
       case variants: List[JsonSchema] =>
-        // A `oneOf` schema (e.g. a derived sum type) conforms if the node
-        // matches any one variant.
-        if !variants.exists { variant => safely(conform(variant, ast)).present }
-        then mismatch(JsonPrimitive.Object)
+        if
+          !variants.exists: variant =>
+            safely(conform(variant, ast)).present
+        then
+          mismatch(JsonPrimitive.Object)
 
       case _ =>
         if !ast.isObject then mismatch(JsonPrimitive.Object) else

@@ -45,10 +45,6 @@ import fulminate.*
 final class Deferred[result, error <: Exception](body: Tactic[error] ?=> result):
   def apply()(using Tactic[error]): result = body
 
-
-class Whereas[lambda[_]](val handler: PartialFunction[Exception, Any])
-
-
 object Whereas:
   final case class Escape[+result](value: result) extends Exception:
     override def fillInStackTrace(): Throwable = this
@@ -62,7 +58,7 @@ object Whereas:
     private val ref: juca.AtomicReference[accrual] = juca.AtomicReference(initial)
 
     def record(error: Diagnostics ?=> error): Unit =
-      ref.updateAndGet(curr => combine(curr.nn, error(using diagnostics)))
+      ref.updateAndGet: curr => combine(curr.nn, error(using diagnostics))
 
     def abort(error: Diagnostics ?=> error): Nothing =
       import scala.unsafeExceptions.canThrowAny
@@ -105,3 +101,6 @@ object Whereas:
           contingency.internal.accrueBody[accrual, lambda, result]
             ( 'w, 'initial, 'combine, 'body, 'outer, 'diagnostics )
         }
+
+
+class Whereas[lambda[_]](val handler: PartialFunction[Exception, Any])
