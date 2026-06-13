@@ -57,17 +57,25 @@ object internal:
 
     '{Array[result](${Varargs(results)}*)(using $classTag).immutable(using Unsafe)}
 
-  // The derivation type may be an intersection `Variant & Parent` (when deriving a sum's product
-  // variant); resolve to the concrete product whose constructor and fields we want to inspect.
+  // The derivation type may be an intersection `Variant & Parent` (when deriving a sum's
+  // variant); resolve to the variant side. The parent of `Variant & Parent` is the sum, which has
+  // no term symbol and does have `children`; everything else is the variant. (A parameterless enum
+  // case is a `TermRef` whose *type* symbol widens to the sum, so the term test comes first.)
   private def productType(using Quotes)(repr: quotes.reflect.TypeRepr): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 
-    repr.dealias match
-      case AndType(left, right) =>
-        if left.typeSymbol.caseFields.nonEmpty then productType(left) else productType(right)
+    def parent(repr: TypeRepr): Boolean =
+      repr.termSymbol.isNoSymbol && repr.typeSymbol.children.nonEmpty
 
-      case other =>
-        other
+    repr.dealias match
+      case AndType(left, right) => if parent(left) then productType(right) else productType(left)
+      case other                => other
+
+  // The declared name of the resolved variant/product — the term symbol for a singleton case
+  // object or parameterless enum case, otherwise the type symbol.
+  private def caseName(using Quotes)(repr: quotes.reflect.TypeRepr): String =
+    val resolved = productType(repr)
+    if resolved.termSymbol.isNoSymbol then resolved.typeSymbol.name else resolved.termSymbol.name
 
   // Applies the polymorphic-function `lambda` at type `field`, passing `value` as the value
   // argument and `contextArgs` as the trailing context-function arguments.
@@ -180,6 +188,19 @@ object internal:
           applyLambda[field](lambdaTerm, fieldValue, arguments).asExprOf[result]
 
     immutableArray[result](results)
+
+  def isTuple[derivation: Type]: Macro[Boolean] =
+    import quotes.reflect.*
+    Expr(productType(TypeRepr.of[derivation]) <:< TypeRepr.of[Tuple])
+
+  def isSingleton[derivation: Type]: Macro[Boolean] =
+    import quotes.reflect.*
+    Expr(productType(TypeRepr.of[derivation]) <:< TypeRepr.of[scala.Singleton])
+
+  def typeName[derivation: Type]: Macro[Text] =
+    import quotes.reflect.*
+    val name: String = caseName(TypeRepr.of[derivation])
+    '{${Expr(name)}.tt}
 
   def getDefault[product: Type, field: Type](index: Expr[Int]): Macro[Optional[field]] =
     import quotes.reflect.*

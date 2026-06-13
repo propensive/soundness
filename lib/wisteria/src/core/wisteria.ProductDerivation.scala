@@ -98,17 +98,13 @@ object ProductDerivation:
 
 
     inline def typeName[derivation](using reflection: Reflection[derivation]): Text =
-      valueOf[reflection.MirroredLabel].tt
+      ${wisteria.internal.typeName[derivation]}
 
     inline def tuple[derivation](using reflection: Reflection[derivation]): Boolean =
-      compiletime.summonFrom:
-        case given (reflection.MirroredMonoType <:< Tuple) => true
-        case _                                             => false
+      ${wisteria.internal.isTuple[derivation]}
 
     inline def singleton[derivation](using reflection: Reflection[derivation]): Boolean =
-      compiletime.summonFrom:
-        case given (reflection.MirroredMonoType <:< Singleton) => true
-        case _                                                 => false
+      ${wisteria.internal.isSingleton[derivation]}
 
 
     protected transparent inline def complement[derivation <: Product, field]
@@ -118,16 +114,7 @@ object ProductDerivation:
               requirement: ContextRequirement )
     :   field =
 
-      type Labels = reflection.MirroredElemLabels
-      type Fields = reflection.MirroredElemTypes
-
-      val tuple: Fields = Tuple.fromProductTyped(product)
-
-      fold[derivation, Fields, Labels, Optional[field]](tuple, Unset, 0):
-        accumulator => [field2] => field =>
-          if index == fieldIndex() then field.asInstanceOf[field] else accumulator
-
-      . vouch
+      product.productElement(fieldIndex.asInstanceOf[Int]).asInstanceOf[field]
 
 
     protected transparent inline def fields[derivation <: Product](inline product: derivation)
