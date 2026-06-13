@@ -32,8 +32,6 @@
                                                                                                   */
 package contingency
 
-import java.util.concurrent.atomic as juca
-
 import scala.compiletime.*
 import scala.quoted.*
 
@@ -298,8 +296,6 @@ object internal:
       }
 
 
-  /** Macro for `whereas { case … }` — analyses the handler and emits a
-   *  `Whereas[lambda]` wrapping the partial function. */
   def whereas(handler: Expr[PartialFunction[Exception, Any]])
     ( using Quotes )
   :   Expr[Whereas[?]] =
@@ -321,10 +317,6 @@ object internal:
         '{Whereas[typeLambda]($handler)}
 
 
-  /** Macro for `whereas { … }.mitigate { body }`. Supplies a contramap'd
-   *  `Tactic[E_i]` for each error type the handler covers, explicitly
-   *  binding the body's per-error context parameters rather than relying on
-   *  implicit search. */
   def mitigateBody[context[_]: Type, result: Type]
     ( w: Expr[Whereas[context]], body: Expr[context[result]] )
     ( using Quotes )
@@ -355,11 +347,6 @@ object internal:
     body.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
 
 
-  /** Macro for `whereas { … }.recover { body }`. Wraps `body` in a
-   *  `boundary` of the result type. Each per-error tactic supplied to body
-   *  is a `Whereas.EscapeTactic` that, on record, contramaps the raised error
-   *  through the handler to obtain the recovered result, then breaks the
-   *  boundary with it. */
   def recoverBody[context[_]: Type, result: Type]
     ( w: Expr[Whereas[context]], body: Expr[context[result]] )
     ( using Quotes )
@@ -401,11 +388,6 @@ object internal:
       }
 
 
-  /** Macro for `whereas { … }.accrue(initial)(combine) { body }`. Each
-   *  per-error tactic supplied to body is the same Whereas.AccrueTactic; it
-   *  records raised errors via `combine`. When the body completes (or throws
-   *  after accumulation), accumulated errors are forwarded to the outer
-   *  tactic via `record`. */
   def accrueBody[accrual <: Exception: Type, context[_]: Type, result: Type]
     ( w:           Expr[Whereas[context]],
       initial:     Expr[accrual],
@@ -430,14 +412,16 @@ object internal:
           Whereas.AccrueTactic[Exception, accrual]($initial, $combine)(using $diagnostics)
 
         val outcome: Either[accrual, result] =
-          try Right($ {
-            val tactics = cases.map: (_, _) =>
-              '{acc}.asTerm
+          try Right:
+            $ {
+                val tactics =
+                  cases.map: (_, _) =>
+                    '{acc}.asTerm
 
-            val contextTypeRepr = TypeRepr.of[context[result]]
-            val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
-            body.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
-          })
+                val contextTypeRepr = TypeRepr.of[context[result]]
+                val method = contextTypeRepr.typeSymbol.declaredMethod("apply").head
+                body.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
+              }
           catch case _: Exception => Left(acc.accumulated)
 
         outcome match

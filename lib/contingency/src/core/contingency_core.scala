@@ -34,7 +34,11 @@ package contingency
 
 import language.experimental.pureFunctions
 
+import java.util.concurrent.atomic as juca
+
+import scala.language.unsafeNulls
 import scala.quoted.*
+import scala.util.boundary
 
 import denominative.*
 import fulminate.*
@@ -228,3 +232,13 @@ extension [value](optional: Optional[value])
     try boundary: label ?=>
       optional.let(block(using Diagnostics.omit, OptionalTactic(label)))
     catch case error: Exception => Unset
+
+
+def defer[result, error <: Exception](body: Tactic[error] ?=> result)
+:   Deferred[result, error] =
+
+  Deferred(body)
+
+
+transparent inline def whereas(inline handler: PartialFunction[Exception, Any]): Whereas[?] =
+  ${contingency.internal.whereas('handler)}

@@ -139,8 +139,10 @@ object Protobuf extends Protobuf2:
 
       safely:
         val fields = ProtobufParser(origin.payload).fields()
+
         if !fields.contains(number) then origin else
           val printer = ProtobufPrinter()
+
           fields.each: (key, values) =>
             val value = Protobuf.Repeated(values)
             printer.field(key, if key == number then lambda(value) else value)

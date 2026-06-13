@@ -82,7 +82,8 @@ object Classpath extends Root(t""):
     path => classloader.java.getResourceAsStream(path.encode.s) != null
 
   def apply(classloader: jn.URLClassLoader): Classpath =
-    val entries = classloader.getURLs.nn.iterator.to(List).map(_.nn).flatMap(ClasspathEntry(_).option)
+    val entries =
+      classloader.getURLs.nn.iterator.to(List).map(_.nn).flatMap(ClasspathEntry(_).option)
 
     if entries.exists:
       case _: ClasspathEntry.Url => true

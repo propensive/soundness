@@ -65,10 +65,12 @@ object Serializer:
         builder.add(escapeLinkLabel(ref.label))
         builder.add(t"]: ")
         builder.add(linkDestination(ref.destination))
+
         ref.title.let: title =>
           builder.add(t" \"")
           builder.add(title.sub(t"\"", t"\\\""))
           builder.add('"')
+
         builder.add('\n')
 
   // Characters that, if unescaped in a `Textual` node, could start a new
@@ -121,10 +123,13 @@ object Serializer:
     var needsAngles = s.isEmpty
 
     var i = 0
+
     while i < s.length && !needsAngles do
       val c = s.charAt(i)
+
       if c == ' ' || c == '\t' || c == '(' || c == ')' || c == '<' || c == '>' || c <= 0x20
       then needsAngles = true
+
       i += 1
 
     if !needsAngles then dest else
@@ -132,6 +137,7 @@ object Serializer:
       buf.add('<')
 
       var j = 0
+
       while j < s.length do
         val c = s.charAt(j)
         if c == '<' || c == '>' || c == '\\' then buf.add('\\')
@@ -171,10 +177,12 @@ object Serializer:
     else
       var blank = true
       var i = 0
+
       while i < s.length && blank do
         val c = s.charAt(i)
         if c != ' ' && c != '\n' then blank = false
         i += 1
+
       blank
 
   private def codeBlockFence(code: Text): Text =
@@ -185,6 +193,7 @@ object Serializer:
 
     while i < s.length do
       val c = s.charAt(i)
+
       if c == '`' then
         current += 1
         if current > longestRun then longestRun = current
@@ -228,10 +237,12 @@ object Serializer:
       children.each(prose(builder, _))
       builder.add(t"](")
       builder.add(linkDestination(destination))
+
       title.let: t =>
         builder.add(t" \"")
         builder.add(t.sub(t"\"", t"\\\""))
         builder.add(t"\"")
+
       builder.add(')')
 
     case Prose.Image(destination, title, children*) =>
@@ -239,10 +250,12 @@ object Serializer:
       children.each(prose(builder, _))
       builder.add(t"](")
       builder.add(linkDestination(destination))
+
       title.let: t =>
         builder.add(t" \"")
         builder.add(t.sub(t"\"", t"\\\""))
         builder.add(t"\"")
+
       builder.add(')')
 
     case Prose.HtmlInline(html) =>
@@ -326,10 +339,12 @@ object Serializer:
 
       body.cut(t"\n").each: line =>
         builder.add(indent)
+
         if line.length == 0 then builder.add('>')
         else
           builder.add(t"> ")
           builder.add(line)
+
         builder.add('\n')
 
     case Layout.HtmlBlock(_, html) =>

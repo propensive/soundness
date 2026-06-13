@@ -53,7 +53,6 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
-import symbolism.*
 import turbulence.*
 import vacuous.*
 import wisteria.*
@@ -68,6 +67,7 @@ private[jacinta] trait JsonDecodable[T] extends Decodable:
   type Self = T
   type Form = Json
   type Locus = Json.Focus
+
   override def position(value: Json, focus: Json.Focus): Json.Focus =
     focus.withPosition(value)
 
@@ -84,7 +84,7 @@ private[jacinta] trait JsonDecodable[T] extends Decodable:
 // still resolve.
 trait Json3:
   inline given decodableAtFocus: [value]
-  =>  (inner: value is Decodable in Json)
+  =>  ( inner: value is Decodable in Json )
   =>  value is Decodable in Json at Json.Focus =
 
     new JsonDecodable[value]:
@@ -108,7 +108,7 @@ trait Json2 extends Json3:
 
 
   given bytes: Tactic[JsonError] => Bytes is Json.Decodable =
-    Json.Decodable(Shape.Whole)(json => json.root.long.b)
+    Json.Decodable(Shape.Whole)(_.root.long.b)
 
   inline given decodable: [value] => value is Json.Decodable = summonFrom:
     // `Json` decodes to itself. Handled here (not as a separate carrier given) so it
@@ -126,7 +126,7 @@ trait Json2 extends Json3:
 
   inline given encodable: [value] => value is Json.Encodable = summonFrom:
     case given (`value` is anticipation.Encodable in Text) =>
-      Json.Encodable(Shape.Str)(value => Json.ast(Json.Ast(value.encode.s)))
+      Json.Encodable(Shape.Str): value => Json.ast(Json.Ast(value.encode.s))
 
     case given Reflection[`value`] =>
       EncodableDerivation.derived
@@ -168,6 +168,7 @@ trait Json2 extends Json3:
               build: [field] =>
                 context =>
                   val key: Text = renames.at(label).or(label)
+
                   focus({
                     val base = prior.let(_.pointer).or(JsonPointer())
 
@@ -198,7 +199,7 @@ trait Json2 extends Json3:
               // `@name[Json]` / bare `@name` variant renames: map the serialized
               // discriminator back to the variant name before delegating.
               val variantNames: Map[Text, Text] =
-                variantRelabelling[derivation, Json].map((variant, wire) => wire -> variant)
+                variantRelabelling[derivation, Json].map: (variant, wire) => wire -> variant
 
               val wire: Text = discriminable.discriminate(json).or:
                 focus(prior.or(Json.Focus(JsonPointer())))(abort(JsonError(Reason.Absent)))
@@ -230,6 +231,7 @@ trait Json2 extends Json3:
             fields(value): [field] =>
               field =>
                 val key: Text = renames.at(label).or(label)
+
                 focus({
                   val base = prior.let(_.pointer).or(JsonPointer())
 
@@ -273,6 +275,13 @@ object Json extends Json2, Dynamic:
   type JsonObject  = IArray[Any]
   type JsonArray   = IArray[Any] | Array[Long] | Array[Int]
 
+  object Encodable:
+    def apply[value](shape0: => Shape)(lambda: value => Json): value is Json.Encodable =
+      new Json.Encodable:
+        type Self = value
+        def encoded(value: value): Json = lambda(value)
+        def shape(): Shape = shape0
+
   // A JSON encoder that also carries the format-neutral `Shape` describing exactly
   // what it produces. Making the shape travel *with* the codec is what lets a fused
   // `Encodable & Schematic` (built by `jsonSchematics.encodable`) be coherent by
@@ -286,11 +295,11 @@ object Json extends Json2, Dynamic:
     type Form = Json
     def shape(): Shape
 
-  object Encodable:
-    def apply[value](shape0: => Shape)(lambda: value => Json): value is Json.Encodable =
-      new Json.Encodable:
+  object Decodable:
+    def apply[value](shape0: => Shape)(lambda: Json => value): value is Json.Decodable =
+      new Json.Decodable:
         type Self = value
-        def encoded(value: value): Json = lambda(value)
+        def decoded(json: Json): value = lambda(json)
         def shape(): Shape = shape0
 
   // The decoding counterpart of `Json.Encodable`: a `Decodable in Json` that also
@@ -299,13 +308,6 @@ object Json extends Json2, Dynamic:
   trait Decodable extends distillate.Decodable:
     type Form = Json
     def shape(): Shape
-
-  object Decodable:
-    def apply[value](shape0: => Shape)(lambda: Json => value): value is Json.Decodable =
-      new Json.Decodable:
-        type Self = value
-        def decoded(json: Json): value = lambda(json)
-        def shape(): Shape = shape0
 
   // All internal references in a `PositionIndex` are stored as offsets
   // relative to the start of the containing node descriptor, so any slice
@@ -325,8 +327,8 @@ object Json extends Json2, Dynamic:
   // path pays nothing for `locate` lookups. Constructed lazily inside
   // `Foci.supplement`, only for actually-registered errors.
   case class Focus
-                ( pointer:  JsonPointer,
-                  position: Optional[Json.Ast.Position] = Unset )
+    ( pointer:  JsonPointer,
+      position: Optional[Json.Ast.Position] = Unset )
   derives CanEqual:
 
     def withPosition(json: Json): Focus = copy(position = json.locate(pointer))
@@ -596,7 +598,8 @@ object Json extends Json2, Dynamic:
             i += 1
 
           Json.Ast.arr(updated.asInstanceOf[IArray[Any]])
-      else origin
+      else
+        origin
 
   given filterOptical: Filter[Json] is Optical from Json onto Json = filter =>
     Optic: (origin, lambda) =>
@@ -613,7 +616,8 @@ object Json extends Json2, Dynamic:
             i += 1
 
           Json.Ast.arr(updated.asInstanceOf[IArray[Any]])
-      else origin
+      else
+        origin
 
   // A `Json` value decodes to itself. Typed as the plain `Decodable in Json` (not
   // the `Json.Decodable` carrier) so it is *exactly* the queried type and strictly
@@ -675,34 +679,33 @@ object Json extends Json2, Dynamic:
 
 
   given integralEncodable: [integral: Integral] => integral is Json.Encodable =
-    Json.Encodable(Shape.Whole)(int => Json.ast(Json.Ast(integral.toLong(int))))
+    Json.Encodable(Shape.Whole): int => Json.ast(Json.Ast(integral.toLong(int)))
 
   given textEncodableInJson: Text is Json.Encodable =
-    Json.Encodable(Shape.Str)(text => Json.ast(Json.Ast(text.s)))
+    Json.Encodable(Shape.Str): text => Json.ast(Json.Ast(text.s))
 
   given stringEncodable: String is Json.Encodable =
-    Json.Encodable(Shape.Str)(string => Json.ast(Json.Ast(string)))
+    Json.Encodable(Shape.Str): string => Json.ast(Json.Ast(string))
 
   given doubleEncodable: Double is Json.Encodable =
-    Json.Encodable(Shape.Real)(double => Json.ast(Json.Ast(double)))
+    Json.Encodable(Shape.Real): double => Json.ast(Json.Ast(double))
 
   given intEncodable: Int is Json.Encodable =
-    Json.Encodable(Shape.Whole)(int => Json.ast(Json.Ast(int.toLong)))
+    Json.Encodable(Shape.Whole): int => Json.ast(Json.Ast(int.toLong))
 
   given unitEncodable: Unit is Json.Encodable =
-    Json.Encodable(Shape.Empty)(unit => Json.ast(Json.Ast(null)))
+    Json.Encodable(Shape.Empty): unit => Json.ast(Json.Ast(null))
 
   given ordinalEncodable: Ordinal is Json.Encodable =
-    Json.Encodable(Shape.Whole)(ordinal => Json.ast(Json.Ast(ordinal.n0.toLong)))
+    Json.Encodable(Shape.Whole): ordinal => Json.ast(Json.Ast(ordinal.n0.toLong))
 
   given longEncodable: Long is Json.Encodable =
-    Json.Encodable(Shape.Whole)(long => Json.ast(Json.Ast(long)))
+    Json.Encodable(Shape.Whole): long => Json.ast(Json.Ast(long))
 
   given booleanEncodable: Boolean is Json.Encodable =
-    Json.Encodable(Shape.Bool)(boolean => Json.ast(Json.Ast(boolean)))
+    Json.Encodable(Shape.Bool): boolean => Json.ast(Json.Ast(boolean))
 
-  given jsonEncodable: Json is Json.Encodable =
-    Json.Encodable(Shape.Any)(identity(_))
+  given jsonEncodable: Json is Json.Encodable = Json.Encodable(Shape.Any)(identity(_))
 
 
   given listEncodable: [list <: List, element] => (encodable: => element is Json.Encodable)
@@ -754,7 +757,7 @@ object Json extends Json2, Dynamic:
 
 
   given map: [key: distillate.Decodable in Text, element]
-  =>  (decodable: => element is Json.Decodable)
+  =>  ( decodable: => element is Json.Decodable )
   =>  Tactic[JsonError]
   =>  Map[key, element] is Json.Decodable =
 
@@ -874,7 +877,7 @@ extends Dynamic, Topical, Original derives CanEqual:
 
 
   def update[value: anticipation.Encodable in Json](index: Int, value: value)
-    (using erased DynamicJsonEnabler)
+    ( using erased DynamicJsonEnabler )
   :   Json raises JsonError =
 
     if !root.isArray then raise(JsonError(Reason.NotType(root.primitive, JsonPrimitive.Array)))
@@ -958,7 +961,7 @@ extends Dynamic, Topical, Original derives CanEqual:
       case value: String     => value.hashCode
       case value: Boolean    => value.hashCode
 
-      case value: Int        =>
+      case value: Int =>
         // Small-BCD number — hash through the BigDecimal projection so
         // it stays consistent with the `Bcd` / `Long` / `Double` paths.
         BigDecimal(Bcd.bcdIntText(value)).hashCode
@@ -1079,9 +1082,9 @@ extends Dynamic, Topical, Original derives CanEqual:
           case _                             => false
 
         case right: Int => left.asMatchable match
-          case left: Int                     => left == right
-          case left: Long                    => BigDecimal(Bcd.bcdIntText(right)) == BigDecimal(left)
-          case left: Double                  => BigDecimal(Bcd.bcdIntText(right)) == BigDecimal(left)
+          case left: Int    => left == right
+          case left: Long   => BigDecimal(Bcd.bcdIntText(right)) == BigDecimal(left)
+          case left: Double => BigDecimal(Bcd.bcdIntText(right)) == BigDecimal(left)
 
           case left: Array[Double] @unchecked =>
             left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(Bcd.bcdIntText(right))
@@ -1089,9 +1092,9 @@ extends Dynamic, Topical, Original derives CanEqual:
           case _                             => false
 
         case right: Double => left.asMatchable match
-          case left: Long                    => left == right
-          case left: Int                     => BigDecimal(Bcd.bcdIntText(left)) == BigDecimal(right)
-          case left: Double                  => left == right
+          case left: Long   => left == right
+          case left: Int    => BigDecimal(Bcd.bcdIntText(left)) == BigDecimal(right)
+          case left: Double => left == right
 
           case left: Array[Double] @unchecked =>
             left.asInstanceOf[Bcd].toBigDecimal == BigDecimal(right)
@@ -1124,9 +1127,9 @@ extends Dynamic, Topical, Original derives CanEqual:
           val rb = right.asInstanceOf[Bcd]
 
           left.asMatchable match
-            case left: Long                    => BigDecimal(left) == rb.toBigDecimal
-            case left: Int                     => BigDecimal(Bcd.bcdIntText(left)) == rb.toBigDecimal
-            case left: Double                  => BigDecimal(left) == rb.toBigDecimal
+            case left: Long   => BigDecimal(left) == rb.toBigDecimal
+            case left: Int    => BigDecimal(Bcd.bcdIntText(left)) == rb.toBigDecimal
+            case left: Double => BigDecimal(left) == rb.toBigDecimal
 
             case left: Array[Double] @unchecked =>
               left.asInstanceOf[Bcd].toBigDecimal == rb.toBigDecimal

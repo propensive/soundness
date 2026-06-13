@@ -36,21 +36,21 @@ import anticipation.*
 import gossamer.*
 import hieroglyph.*, charEncoders.ascii, textMetrics.uniform
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
-import vacuous.*
 
 object UnixMode:
-  def from(int: Int): UnixMode = UnixMode
-                                  ( setUid     = (int & 2048) != 0,
-                                    setGid     = (int & 1024) != 0,
-                                    ownerRead  = (int &  256) != 0,
-                                    ownerWrite = (int &  128) != 0,
-                                    ownerExec  = (int &   64) != 0,
-                                    groupRead  = (int &   32) != 0,
-                                    groupWrite = (int &   16) != 0,
-                                    groupExec  = (int &    8) != 0,
-                                    otherRead  = (int &    4) != 0,
-                                    otherWrite = (int &    2) != 0,
-                                    otherExec  = (int &    1) != 0 )
+  def from(int: Int): UnixMode =
+    UnixMode
+      ( setUid     = (int & 2048) != 0,
+        setGid     = (int & 1024) != 0,
+        ownerRead  = (int &  256) != 0,
+        ownerWrite = (int &  128) != 0,
+        ownerExec  = (int &   64) != 0,
+        groupRead  = (int &   32) != 0,
+        groupWrite = (int &   16) != 0,
+        groupExec  = (int &    8) != 0,
+        otherRead  = (int &    4) != 0,
+        otherWrite = (int &    2) != 0,
+        otherExec  = (int &    1) != 0 )
 
 case class UnixMode
   ( setUid:     Boolean = false,

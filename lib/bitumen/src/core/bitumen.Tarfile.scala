@@ -77,10 +77,15 @@ object Tarfile:
           val mode = UnixMode.from(TarHeader.decodeOctal(header.mode, t"mode").long.toInt)
           val uid = TarHeader.decodeOctal(header.uid, t"uid").long.toInt
           val gid = TarHeader.decodeOctal(header.gid, t"gid").long.toInt
-          val unameText = paxOverlay.get("uname".tt).orElse(globalOverlay.get("uname".tt))
-                            .getOrElse(TarHeader.decodeNulText(header.uname))
-          val gnameText = paxOverlay.get("gname".tt).orElse(globalOverlay.get("gname".tt))
-                            .getOrElse(TarHeader.decodeNulText(header.gname))
+
+          val unameText =
+            paxOverlay.get("uname".tt).orElse(globalOverlay.get("uname".tt))
+            . getOrElse(TarHeader.decodeNulText(header.uname))
+
+          val gnameText =
+            paxOverlay.get("gname".tt).orElse(globalOverlay.get("gname".tt))
+            . getOrElse(TarHeader.decodeNulText(header.gname))
+
           val user = UnixUser(uid, if unameText.s.isEmpty then Unset else unameText)
           val group = UnixGroup(gid, if gnameText.s.isEmpty then Unset else gnameText)
 
@@ -118,11 +123,11 @@ object Tarfile:
               val allSegments = (inlineSegments ++ extSegments).filter(_.length > 0)
 
               val extras: Map[Text, Text] =
-                (globalOverlay ++ paxOverlay).filter((k, _) => !structuralPaxKeys.contains(k))
+                (globalOverlay ++ paxOverlay).filter: (k, _) => !structuralPaxKeys.contains(k)
 
-              val entry = Tar.Entry.Sparse
-                            ( path, mode, user, group, mtime, realSize, allSegments,
-                              Stream(data), extras )
+              val entry =
+                Tar.Entry.Sparse
+                  ( path, mode, user, group, mtime, realSize, allSegments, Stream(data), extras )
 
               entry #:: readEntries(rest, Map.empty, globalOverlay, Unset, Unset)
 
@@ -132,7 +137,7 @@ object Tarfile:
               val path = decodePath(nameText)
 
               val extras: Map[Text, Text] =
-                (globalOverlay ++ paxOverlay).filter((k, _) => !structuralPaxKeys.contains(k))
+                (globalOverlay ++ paxOverlay).filter: (k, _) => !structuralPaxKeys.contains(k)
 
               val (entry, rest) =
                 buildEntry(flag, path, mode, user, group, mtime, size, linkText, extras, header,
@@ -331,7 +336,7 @@ object Tarfile:
     case _: Tar.Entry.GnuLong      => Map.empty
 
 case class Tarfile
-    (entries: LazyList[Tar.Entry], longNameFormat: LongNameFormat = LongNameFormat.Pax):
+  ( entries: LazyList[Tar.Entry], longNameFormat: LongNameFormat = LongNameFormat.Pax ):
   // The raw 512-byte blocks of the archive, including the two trailing zero blocks.
   // Reach this externally through the `Streamable` given, i.e. `tarfile.stream[Data]`.
   private[bitumen] def blocks: LazyList[Data] =
@@ -340,6 +345,7 @@ case class Tarfile
   private def emitEntry(entry: Tar.Entry): LazyList[Data] =
     val longNamePart: LazyList[Data] = longNameFormat match
       case LongNameFormat.Pax => LazyList()
+
       case LongNameFormat.Gnu =>
         val nameBlocks =
           if entry.entryName.data.length > 100

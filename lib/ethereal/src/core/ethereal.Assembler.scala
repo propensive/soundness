@@ -46,9 +46,7 @@ import guillotine.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
-import spectacular.*
 import turbulence.*
-import vacuous.*
 
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
@@ -73,7 +71,7 @@ object Assembler:
   val PublicKeyLength: Int = 1312   // ML-DSA-44 public key size
 
   def assemble
-     (runner:        Data,           // bare runner binary
+    ( runner:        Data,           // bare runner binary
       jarFile:       Path on Linux,  // application JAR appended at EOF
       output:        Path on Linux,
       platformLabel: Text,
@@ -81,8 +79,8 @@ object Assembler:
       javaMinimum:   Int,
       javaPreferred: Int,
       jdk:           Boolean,
-      publicKey:     Data)           // 1312 raw bytes (all-zero disables upgrades)
-     (using WorkingDirectory)
+      publicKey:     Data )           // 1312 raw bytes (all-zero disables upgrades)
+    ( using WorkingDirectory )
   :   Unit raises AssemblyError raises IoError raises StreamError =
 
     val isWindows: Boolean = platformLabel.starts(t"windows")

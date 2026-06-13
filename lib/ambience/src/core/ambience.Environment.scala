@@ -37,7 +37,6 @@ import language.dynamics
 import anticipation.*
 import beneficence.*
 import contingency.*
-import rudiments.*
 import vacuous.*
 
 object Environment extends Dynamic:

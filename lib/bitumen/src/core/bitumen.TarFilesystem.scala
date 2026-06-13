@@ -39,49 +39,19 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import galilei.*
-import gossamer.*
 import hieroglyph.*, charEncoders.ascii
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
 import prepositional.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
-import turbulence.*
 import vacuous.*
 
-extension (tarType: Tarfile.type)
-  def from
-              [plane <: Posix: Filesystem]
-              (root: Path on plane)
-              ( using DereferenceSymlinks,
-                      TraversalOrder,
-                      plane is Explorable,
-                      Tactic[IoError],
-                      Tactic[TarError] )
-  :   Tarfile =
-
-    val entries: LazyList[Tar.Entry] = root.descendants.to(LazyList).map: path =>
-      TarFilesystem.entryFor(root, path)
-
-    Tarfile(entries)
-
-extension (tar: Tarfile)
-  def extractTo
-              [plane <: Posix: Filesystem]
-              (root: Path on plane)
-              ( using CreateNonexistentParents on plane,
-                      OverwritePreexisting on plane,
-                      Tactic[IoError],
-                      Tactic[TarError] )
-  :   Unit =
-
-    tar.entries.foreach: entry =>
-      TarFilesystem.applyEntry(root, entry)
 
 private[bitumen] object TarFilesystem:
   def entryFor[plane <: Posix: Filesystem]
-              (root: Path on plane, path: Path on plane)
-              ( using DereferenceSymlinks, Tactic[IoError], Tactic[TarError] )
+    ( root: Path on plane, path: Path on plane )
+    ( using DereferenceSymlinks, Tactic[IoError], Tactic[TarError] )
   :   Tar.Entry =
 
     val ref = relativize(root, path)
@@ -121,11 +91,11 @@ private[bitumen] object TarFilesystem:
         Tar.Entry.Fifo(ref, mode, user, group, mtime)
 
   def applyEntry[plane <: Posix: Filesystem]
-                (root: Path on plane, entry: Tar.Entry)
-                ( using CreateNonexistentParents on plane,
-                        OverwritePreexisting on plane,
-                        Tactic[IoError],
-                        Tactic[TarError] )
+    ( root: Path on plane, entry: Tar.Entry )
+    ( using CreateNonexistentParents on plane,
+            OverwritePreexisting on plane,
+            Tactic[IoError],
+            Tactic[TarError] )
   :   Unit =
 
     entry match
@@ -145,8 +115,10 @@ private[bitumen] object TarFilesystem:
       case s: Tar.Entry.Symlink =>
         val path = absolutize(root, s.path)
         jnf.Files.createDirectories(path.javaPath.getParent)
+
         if jnf.Files.exists(path.javaPath, jnf.LinkOption.NOFOLLOW_LINKS) then
           jnf.Files.delete(path.javaPath)
+
         jnf.Files.createSymbolicLink(path.javaPath, jnf.Path.of(s.target.s))
 
       case l: Tar.Entry.Link =>
@@ -161,8 +133,8 @@ private[bitumen] object TarFilesystem:
       case _: Tar.Entry.Pax | _: Tar.Entry.GnuLong => ()
 
   private def relativize[plane <: Posix: Filesystem]
-                        (root: Path on plane, child: Path on plane)
-                        ( using Tactic[TarError] )
+    ( root: Path on plane, child: Path on plane )
+    ( using Tactic[TarError] )
   :   TarRef =
 
     val rootText = root.encode.s
@@ -176,15 +148,15 @@ private[bitumen] object TarFilesystem:
     decodePath(relText)
 
   private def absolutize[plane <: Posix: Filesystem]
-                        (root: Path on plane, ref: TarRef)
-                        ( using Tactic[TarError] )
+    ( root: Path on plane, ref: TarRef )
+    ( using Tactic[TarError] )
   :   Path on plane =
 
     decodeAbsolute(root.encode.s+"/"+ref.show.s, root)
 
   private def decodeAbsolute[plane <: Posix: Filesystem]
-                            (text: String, base: Path on plane)
-                            ( using Tactic[TarError] )
+    ( text: String, base: Path on plane )
+    ( using Tactic[TarError] )
   :   Path on plane =
 
     import errorDiagnostics.empty
@@ -192,11 +164,12 @@ private[bitumen] object TarFilesystem:
     base + rel
 
   private def relativeFromPath(rootText: String, fullText: String)
-                              ( using Tactic[TarError] )
+    ( using Tactic[TarError] )
   :   Relative on Posix =
 
     import errorDiagnostics.empty
     val prefix = if rootText.endsWith("/") then rootText else rootText+"/"
+
     val relText: Text =
       if fullText.startsWith(prefix) then fullText.substring(prefix.length).nn.tt
       else fullText.tt
@@ -219,7 +192,7 @@ private[bitumen] object TarFilesystem:
       case n: Int => UnixMode.from(n & 0xfff)
       case _      => UnixMode()
     catch
-      case _: UnsupportedOperationException => UnixMode()
+      case _: UnsupportedOperationException                => UnixMode()
       case _: jnf.attribute.UserPrincipalNotFoundException => UnixMode()
 
   private def readOwner(javaPath: jnf.Path)(using Tactic[IoError]): (Int, Int) =

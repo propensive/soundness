@@ -203,10 +203,15 @@ object Tar:
     def dataBlocks: LazyList[Data] = this match
       case file: File      => file.data.chunked(512, zeroPadding = true)
       case pax: Pax        => LazyList(pax.records).chunked(512, zeroPadding = true)
-      case long: GnuLong   =>
+
+      case long: GnuLong =>
         LazyList(long.content.data ++ IArray.fill[Byte](1)(0)).chunked(512, zeroPadding = true)
-      case sparse: Sparse  => sparse.data.chunked(512, zeroPadding = true)
-      case _               => LazyList()
+
+      case sparse: Sparse =>
+        sparse.data.chunked(512, zeroPadding = true)
+
+      case _ =>
+        LazyList()
 
     def typeFlag: TypeFlag = this match
       case _: File         => TypeFlag.File
@@ -292,6 +297,7 @@ object Tar:
     def serialize: LazyList[Data] = this match
       case sparse: Sparse if sparse.segments.length > 4 =>
         header #:: Entry.sparseExtensionBlocks(sparse.segments.drop(4)) #::: dataBlocks
+
       case _ =>
         header #:: dataBlocks
 

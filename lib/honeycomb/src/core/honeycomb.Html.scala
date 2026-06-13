@@ -147,7 +147,7 @@ object Html extends Tag.Container
 
 
   given strictAggregable: [content <: Label: Reifiable to List[String]]
-  =>  (dom: Dom)
+  =>  ( dom: Dom )
   =>  Tactic[ParseError]
   =>  NotGiven[Html.Recovery.Permissive]
   =>  (Html of content) is Aggregable by Text =
@@ -189,7 +189,7 @@ object Html extends Tag.Container
     try body catch case _: ParseError => fallback
 
   given permissiveAggregable: [content <: Label: Reifiable to List[String]]
-  =>  (dom: Dom)
+  =>  ( dom: Dom )
   =>  Html.Recovery.Permissive
   =>  (Html of content) is Aggregable by Text =
 
@@ -567,6 +567,7 @@ object Html extends Tag.Container
 
     protected inline def peek: Char = bytes(pos)
     protected inline def advance(): Unit = pos += 1
+
     protected inline def position: Int =
       syncTo()
       cursor.position.n0
@@ -605,7 +606,9 @@ object Html extends Tag.Container
     protected def cloneTo
       ( start: Cursor.Mark, end: Cursor.Mark )
       ( target: jl.StringBuilder )
-    :   Unit = cursor.clone(start, end)(target.asInstanceOf[cursor.addressable.Target])
+    :   Unit =
+
+      cursor.clone(start, end)(target.asInstanceOf[cursor.addressable.Target])
 
     protected def computePosition
       ( start: Optional[Cursor.Mark] = Unset,
@@ -633,6 +636,7 @@ object Html extends Tag.Container
           col = 0
         else
           col += 1
+
         i += 1
 
       // Match the previous behaviour's off-by-one: report the column of the
@@ -651,8 +655,11 @@ object Html extends Tag.Container
 
     // Cursor-compat helpers so the algorithm body stays close to the
     // original cursor-based code.
-    protected inline def lay[R](inline otherwise: => R)(inline body: Char => R): R =
+    protected inline def lay[result](inline otherwise: => result)(inline body: Char => result)
+    :   result =
+
       if more then body(peek) else otherwise
+
 
     protected inline def let(inline body: Char => Unit): Unit =
       if more then body(peek)
@@ -798,7 +805,8 @@ object Html extends Tag.Container
               val end = begin()
               val name = slice(mark, end)
               reset(mark) yet fail(InvalidTagStart(name.lower), mark, end)
-            else next() yet tagname(mark, step)
+            else
+              next() yet tagname(mark, step)
 
           case ' ' | '\f' | '\n' | '\r' | '\t' | '/' | '>' =>
             val tag = dom.elements.value(node)
@@ -830,6 +838,7 @@ object Html extends Tag.Container
         lay(Attribute(slice(mark, begin()), Set(), true)):
           case char if asciiLetter(char) || asciiDigit(char) || char == '-' =>
             advance() yet keyTail(mark)
+
           case _ =>
             Attribute(slice(mark, begin()), Set(), true)
 
@@ -838,6 +847,7 @@ object Html extends Tag.Container
         lay(fail(ExpectedMore, mark)):
           case char if asciiLetter(char) || char == '-' =>
             val step = dom.attributes.step(node, asciiLower(char))
+
             if step < 0 then
               if permissive then
                 warn(UnknownAttributeStart(slice(mark, begin())))
@@ -849,9 +859,11 @@ object Html extends Tag.Container
 
           case ' ' | '\f' | '\n' | '\r' | '\t' | '=' | '>' =>
             val attr = dom.attributes.value(node)
+
             if attr != null then attr.nn else
               val end = begin()
               val name = slice(mark, end)
+
               if permissive then
                 warn(UnknownAttribute(name))
                 Attribute(name, Set(), true)
@@ -904,11 +916,16 @@ object Html extends Tag.Container
       @tailrec
       def unquoted(mark: Mark): Text = lay(fail(ExpectedMore, mark)):
         case '>' | ' ' | '\f' | '\n' | '\r' | '\t' => slice(mark, begin())
-        case char@('"' | '\'' | '<' | '=' | '`')   =>
-          if permissive then warn(ForbiddenUnquoted(char)) yet next() yet unquoted(mark)
-          else fail(ForbiddenUnquoted(char), mark)
-
         case '\u0000'                              => fail(BadInsertion, mark)
+
+        case char@('"' | '\'' | '<' | '=' | '`') =>
+          if permissive then
+            warn(ForbiddenUnquoted(char))
+            next()
+            unquoted(mark)
+          else
+            fail(ForbiddenUnquoted(char), mark)
+
         case char                                  => next() yet unquoted(mark)
 
       def equality(): Boolean = skip() yet lay(fail(ExpectedMore)):
@@ -1058,12 +1075,14 @@ object Html extends Tag.Container
         lay(fail(ExpectedMore, mark)):
           case char if asciiLetter(char) || asciiDigit(char) =>
             val step = dom.entities.step(node, char)
+
             if step < 0 then Unset
             else advance() yet textEntity(mark, step)
 
           case ';' =>
             advance()
             val step = dom.entities.step(node, ';')
+
             if step < 0 then Unset else
               val v = dom.entities.value(step)
               if v == null then Unset else v.nn
@@ -1450,6 +1469,7 @@ object Html extends Tag.Container
                     else if permissive then
                       if parent == root then warn(UnopenedTag(content))
                       else warn(MismatchedTag(parent.label, content))
+
                       advance()
                       level = Level.Skip
                     else

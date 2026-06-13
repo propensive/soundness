@@ -32,5 +32,46 @@
                                                                                                   */
 package savagery
 
+import scala.math.Numeric
 
-export internal.SvgId
+import geodesy.*
+import prepositional.*
+import symbolism.*
+import vacuous.*
+
+export savagery.internal.Affine
+
+
+export savagery.internal.SvgId
+
+
+val Up:    Delta = Delta(0.0f, -1.0f)
+
+val Down:  Delta = Delta(0.0f, 1.0f)
+
+val Left:  Delta = Delta(-1.0f, 0.0f)
+
+val Right: Delta = Delta(1.0f, 0.0f)
+
+
+extension [numeric: Numeric, numeric2: Numeric](tuple: (numeric, numeric2))
+  def `unary_+`: Delta = Delta(numeric.toFloat(tuple(0)), numeric2.toFloat(tuple(1)))
+
+
+given negatableTuple: [numeric: Numeric, numeric2: Numeric]
+=>  (numeric, numeric2) is Negatable to Delta =
+  Negatable: tuple =>
+    Delta(-numeric.toFloat(tuple(0)), -numeric2.toFloat(tuple(1)))
+
+
+extension [figure: Transformable as transformable](figure: figure)
+  private def appended(transform: Transform): figure =
+    transformable.withTransforms(figure, transformable.transforms(figure) :+ transform)
+
+  def transform(transform: Transform): figure = appended(transform)
+  def translate(delta: Delta): figure = appended(Transform.Translate(delta))
+  def scale(x: Float, y: Optional[Float] = Unset): figure = appended(Transform.Scale(x, y))
+  def rotate(angle: Angle): figure = appended(Transform.Rotate(angle))
+
+  def skew(angle: Angle, orientation: Orientation = Orientation.Horizontal): figure =
+    appended(Transform.Skew(angle, orientation))

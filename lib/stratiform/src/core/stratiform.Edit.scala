@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import vacuous.*
 
+
 // Composable edit DSL built atop the primitive Mutation.Op interpreter
 // (§22.5). An `Edit` is an ordered op-log; edits compose with `++` to
 // form longer sequences and apply to a `Tel` value with `edit(tel)` or
@@ -56,7 +57,7 @@ object Edit:
   // atom texts. Convenience for assembling Insert / Replace payloads
   // without explicit `Tel.Compound(...)` boilerplate.
   def compound(keyword: Text, atomTexts: Text*): Tel.Compound =
-    val atoms = IArray.from(atomTexts.map(t => Tel.Atom.Inline(t, 1)))
+    val atoms = IArray.from(atomTexts.map(Tel.Atom.Inline(_, 1)))
     Tel.Compound(keyword, atoms, Unset, IArray.empty)
 
   // A cursor binds a pointer to the upcoming operation. Each operation
@@ -64,6 +65,7 @@ object Edit:
   // with further edits.
   case class Cursor(pointer: Tel.Pointer):
     def update(text: Text): Edit = update(0, text)
+
     def update(atomIndex: Int, text: Text): Edit =
       Edit.single(Mutation.Op.UpdateAtom(pointer, atomIndex, text))
 
@@ -117,10 +119,8 @@ object Edit:
 
   private def single(op: Mutation.Op): Edit = new Edit(IArray(op))
 
+
 case class Edit private[stratiform] (ops: IArray[Mutation.Op]):
   def ++ (next: Edit): Edit = new Edit(ops ++ next.ops)
 
   def apply(tel: Tel): Tel raises MutationError = Mutation(tel, ops.toSeq)
-
-extension (tel: Tel)
-  def edited(edit: Edit): Tel raises MutationError = edit(tel)

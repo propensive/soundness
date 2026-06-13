@@ -113,8 +113,10 @@ object Mcp:
 
             case Http.Post =>
               val input = request.body().read[Json]
+
               dispatch(input).let: json =>
                 import jsonPrinters.indented
+
                 Http.Response
                   ( Http.Ok,
                     mcpProtocolVersion = version,
@@ -146,7 +148,7 @@ object Mcp:
         case int: Int   => int.json
 
     given decodable: Tactic[JsonError] => TextInt is Json.Decodable =
-      Json.Decodable(Shape.Any)(json => TextInt(safely(json.as[Int]).or(json.as[Text])))
+      Json.Decodable(Shape.Any): json => TextInt(safely(json.as[Int]).or(json.as[Text]))
 
   case class TextInt(id: Text | Int)
 
@@ -501,7 +503,7 @@ object Mcp:
       case content: ImageContent     => typeTag.rewrite(t"image",         content.json)
       case content: AudioContent     => typeTag.rewrite(t"audio",         content.json)
       case content: ResourceLink     => typeTag.rewrite(t"resource_link", content.json)
-      case content: EmbeddedResource => typeTag.rewrite(t"resource",      content.json)
+      case content: EmbeddedResource => typeTag.rewrite(t"resource", content.json)
 
     given decodable: Tactic[JsonError] => ContentBlock is Json.Decodable =
       Json.Decodable(Shape.Any): json =>
@@ -675,7 +677,8 @@ object Mcp:
     def `notifications/cancelled`
       ( requestId: Optional[TextInt],
         reason:    Optional[Text],
-        _meta:     Optional[Json] ): Unit
+        _meta:     Optional[Json] )
+    :   Unit
 
     @rpc
     def `notifications/progress`

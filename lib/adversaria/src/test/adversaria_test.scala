@@ -38,9 +38,13 @@ import soundness.*
 // `variantRelabelling`. `Accept` is renamed for one type argument, `Reject` by a
 // bare `@name` (i.e. `name[Any]`), and `Defer` is unannotated.
 sealed trait Decision
-@name[Person](t"yes") case object Accept extends Decision
-@name(t"no")          case object Reject extends Decision
-                      case object Defer  extends Decision
+@name[Person](t"yes")
+case object Accept extends Decision
+
+@name(t"no")
+case object Reject extends Decision
+
+case object Defer  extends Decision
 
 object Tests extends Suite(m"Adversaria tests"):
 
@@ -67,7 +71,9 @@ object Tests extends Suite(m"Adversaria tests"):
 
     test(m"unique annotation"):
       summon[Letters is Annotated].fields
-    . assert(_ == Map("alpha" -> Set(ref(1)), "beta" -> Set(ref(2), ref(3)), "delta" -> Set(ref(4))))
+    . assert: result =>
+        result ==
+          Map("alpha" -> Set(ref(1)), "beta" -> Set(ref(2), ref(3)), "delta" -> Set(ref(4)))
 
     test(m"unique annotation 2"):
       summon[adversaria.Hsv is Annotated by ident].field

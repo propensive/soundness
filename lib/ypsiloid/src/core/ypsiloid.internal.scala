@@ -40,7 +40,6 @@ import contextual.*
 import contingency.*
 import fulminate.*
 import gigantism.*
-import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -70,11 +69,13 @@ object internal:
 
   private def stripPad(arr: IArray[Any]): IArray[Any] =
     val n = arr.length
+
     if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Yaml.Ast.arrayPad) then arr.take(n - 1)
     else arr
 
   private def preprocess(parts: List[String]): (List[String], Set[Int]) =
     var spreads: Set[Int] = Set()
+
     val cleaned: List[String] = parts.zipWithIndex.map: (part, idx) =>
       if idx > 0 && part.startsWith("*") then
         spreads = spreads + (idx - 1)
@@ -106,6 +107,7 @@ object internal:
 
             case _ =>
               (0, 0)
+
           recurOrigins[tail](pair :: acc)
 
         case _ =>
@@ -121,6 +123,7 @@ object internal:
 
     val sourceFile = Position.ofMacroExpansion.sourceFile
     val macroPos = Position.ofMacroExpansion
+
     val sourceContent: Optional[String] = sourceFile.content match
       case Some(s: String) => s
       case _               => Unset
@@ -130,13 +133,15 @@ object internal:
         val ((origPart, parserPart), (srcStart, _)) = pair
         val srcSkip = origPart.length - parserPart.length
         val effectiveStart = srcStart + srcSkip
-        val mapping: Int => Int = sourceContent.lay((i: Int) => i): content =>
+
+        val mapping: Int => Int = sourceContent.lay(identity[Int]): content =>
           if effectiveStart > 0 && effectiveStart < content.length then
             val upper = (effectiveStart + parserPart.length * 6 + 16).min(content.length)
             val sourceText = content.substring(effectiveStart, upper).nn
             Interpolation.buildMapping(sourceText, parserPart)
           else
             (i: Int) => i
+
         ((parserPart, effectiveStart, srcSkip), mapping)
 
       . toIndexedSeq
@@ -270,6 +275,7 @@ object internal:
                 if spreads.has(holeIndex) then
                   if idx != n - 1 then halt:
                     m"a `*`-spread is only allowed as the last element of a sequence"
+
                   encodeArraySpread(consumeHole())
                 else
                   val v = encodeValue(consumeHole())
@@ -291,6 +297,7 @@ object internal:
           (0 until n).toList.map: i =>
             val k = node(i*2).asInstanceOf[String]
             val v = node(i*2 + 1)
+
             if k == MarkerString then
               v.asMatchable match
                 case s: String if s == MarkerString =>
@@ -314,10 +321,12 @@ object internal:
 
             val arr = new Array[Any](all.length*2)
             var k = 0
+
             all.foreach: pair =>
               arr(k*2)     = Yaml.Ast.Str(pair(0).tt).asInstanceOf[Any]
               arr(k*2 + 1) = pair(1).asInstanceOf[Any]
               k += 1
+
             Yaml.Ast.mapFromAnyArray(arr)
           }
 
@@ -325,6 +334,7 @@ object internal:
         case s: String if s == MarkerString =>
           if spreads.has(holeIndex) then halt:
             m"a `*`-spread is only allowed as the last element of a sequence"
+
           encodeValue(consumeHole())
 
         case s: String =>
@@ -387,8 +397,10 @@ object internal:
         pattern.asMatchable match
           case s: String if s == MarkerString =>
             val idx = nextHole
+
             if spreads.has(idx) then halt:
               m"a `*`-spread is only allowed as the last element of a sequence"
+
             nextHole += 1
             types ::= TypeRepr.of[Yaml]
             '{$accept && {$array(${Expr(idx)}) = Yaml.ast($scrutinee); true}}
@@ -460,6 +472,7 @@ object internal:
 
         var combined: Expr[Boolean] = lengthCheck
         var i = 0
+
         while i < prefixLen do
           val el = elements(i)
           val itemExpr = '{$scrutinee.arrayElement(${Expr(i)})}
@@ -470,6 +483,7 @@ object internal:
           val idx = nextHole
           nextHole += 1
           types ::= TypeRepr.of[Yaml]
+
           combined =
             ' {
                 $combined && {
@@ -477,9 +491,11 @@ object internal:
                   val tailLen = total - ${Expr(prefixLen)}
                   val tail = new Array[Any](tailLen)
                   var k = 0
+
                   while k < tailLen do
                     tail(k) = $scrutinee.arrayElement(${Expr(prefixLen)} + k).asInstanceOf[Any]
                     k += 1
+
                   $array(${Expr(idx)}) = Yaml.ast(Yaml.Ast.seqFromAnyArray(tail))
                   true
                 }
@@ -490,9 +506,11 @@ object internal:
       def countHolesInPrefix(elements: IArray[Any], upTo: Int): Int =
         var count = 0
         var i = 0
+
         while i < upTo do
           count += countHolesIn(elements(i))
           i += 1
+
         count
 
       def countHolesIn(node: Any): Int = node.asMatchable match
@@ -502,12 +520,14 @@ object internal:
           var c = 0
           var idx = 0
           val mlen = MarkerString.length
+
           while idx + mlen <= s.length do
             if s.regionMatches(idx, MarkerString, 0, mlen) then
               c += 1
               idx += mlen
             else
               idx += 1
+
           c
 
         case arr: IArray[Any] @unchecked =>
@@ -515,18 +535,23 @@ object internal:
             val pairs = arr.length/2
             var c = 0
             var k = 0
+
             while k < pairs do
               if arr(k*2) == MarkerString then c += 1
               else c += countHolesIn(arr(k*2 + 1))
+
               k += 1
+
             c
           else
             val elems = stripPad(arr)
             var c = 0
             var k = 0
+
             while k < elems.length do
               c += countHolesIn(elems(k))
               k += 1
+
             c
 
         case _ => 0
@@ -546,7 +571,7 @@ object internal:
               node(i*2).asInstanceOf[String]
 
         val hasRest: Boolean =
-          (0 until pairs).exists(i => node(i*2).asInstanceOf[String] == MarkerString)
+          (0 until pairs).exists: i => node(i*2).asInstanceOf[String] == MarkerString
 
         val cardinality: Expr[Boolean] =
           if hasRest then
@@ -556,9 +581,11 @@ object internal:
                   val n = $scrutinee.objectSize
                   var keysSet = Set.empty[String]
                   var k = 0
+
                   while k < n do
                     keysSet += $scrutinee.objectKey(k)
                     k += 1
+
                   ${Expr(literalKeys)}.forall(keysSet.contains)
                 }
               }
@@ -567,12 +594,15 @@ object internal:
                 $accept && $scrutinee.isObject
                 && {
                   val n = $scrutinee.objectSize
+
                   n == ${Expr(literalKeys.length)} && {
                     var keysSet = Set.empty[String]
                     var k = 0
+
                     while k < n do
                       keysSet += $scrutinee.objectKey(k)
                       k += 1
+
                     ${Expr(literalKeys)}.forall(keysSet.contains)
                   }
                 }
@@ -580,14 +610,17 @@ object internal:
 
         var combined: Expr[Boolean] = cardinality
         var i = 0
+
         while i < pairs do
           val k = node(i*2).asInstanceOf[String]
           val v = node(i*2 + 1)
+
           if k == MarkerString then
             val idx = nextHole
             nextHole += 1
             types ::= TypeRepr.of[Yaml]
             val literalKeysExpr = Expr(literalKeys)
+
             combined =
               ' {
                   $combined && {
@@ -596,18 +629,24 @@ object internal:
                     val keysBuf = scala.collection.mutable.ArrayBuffer.empty[String]
                     val valsBuf = scala.collection.mutable.ArrayBuffer.empty[Any]
                     var j = 0
+
                     while j < n do
                       val key = $scrutinee.objectKey(j)
+
                       if !keep.has(key) then
                         keysBuf += key
                         valsBuf += $scrutinee.objectValue(j)
+
                       j += 1
+
                     val arr = new Array[Any](keysBuf.length*2)
                     var m = 0
+
                     while m < keysBuf.length do
                       arr(m*2)     = Yaml.Ast.Str(keysBuf(m).tt).asInstanceOf[Any]
                       arr(m*2 + 1) = valsBuf(m)
                       m += 1
+
                     $array(${Expr(idx)}) = Yaml.ast(Yaml.Ast.mapFromAnyArray(arr))
                     true
                   }
@@ -620,7 +659,9 @@ object internal:
                   val idx2 = $scrutinee.objectIndexOf($keyLiteral)
                   if idx2 < 0 then null.asInstanceOf[Yaml.Ast] else $scrutinee.objectValue(idx2)
                 }
+
             combined = descend(array, v, valueExpr, combined)
+
           i += 1
 
         combined
@@ -628,9 +669,11 @@ object internal:
       val numberOfHoles =
         var c = 0
         var k = 0
+
         while k < parts2.length - 1 do
           c += 1
           k += 1
+
         c
 
       val result: Expr[Extrapolation[Yaml]] =
@@ -639,6 +682,7 @@ object internal:
 
             val matches: Boolean =
               ${descend('extracts, ast, '{Yaml.unseal($scrutinee)}, '{true})}
+
             $ {
                 if numberOfHoles == 0 then '{matches}
                 else if numberOfHoles == 1 then

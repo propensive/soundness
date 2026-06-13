@@ -34,16 +34,9 @@ package stratiform
 
 import anticipation.*
 import gesticulate.*
+import gossamer.*
 import hieroglyph.*
 import telekinesis.*
-
-// Telekinesis integration: send / serve Tel values over HTTP using
-// the application/vnd.tel media type (TEL has no IANA-registered type
-// yet; the vendor-tree placeholder is conventional). Package-scoped
-// givens that consumers import explicitly when they want HTTP
-// transport for TEL documents.
-
-import gossamer.*
 
 private val telMediaType: MediaType =
   MediaType(Media.Group.Application, Media.Subtype.Vendor(t"tel"))

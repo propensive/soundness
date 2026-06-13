@@ -39,7 +39,6 @@ import contingency.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
-import prepositional.*
 import rudiments.*
 import vacuous.*
 
@@ -54,7 +53,7 @@ object Jacinta:
 
   // Every `type X = …` member of a (possibly nested) refinement, by name.
   private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
-  :     Map[Text, quotes.reflect.TypeRepr] =
+  :   Map[Text, quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
 
@@ -66,8 +65,8 @@ object Jacinta:
 
   // Builds the refined type `Json of <position> from <root>`.
   private def jsonType(using quotes: Quotes)
-      ( position: quotes.reflect.TypeRepr, root: quotes.reflect.TypeRepr )
-  :     quotes.reflect.TypeRepr =
+    ( position: quotes.reflect.TypeRepr, root: quotes.reflect.TypeRepr )
+  :   quotes.reflect.TypeRepr =
 
     import quotes.reflect.*
 
@@ -80,7 +79,7 @@ object Jacinta:
   // `Vector`, `Seq`, `LazyList`, `Array`, `IArray`); `Set` is excluded as it has
   // no positional index.
   private def elementType(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
-  :     Optional[quotes.reflect.TypeRepr] =
+  :   Optional[quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
 
@@ -94,7 +93,7 @@ object Jacinta:
 
   // Reads `Topic` (position) and `Origin` (root) from a receiver, if present.
   private def receiver(using quotes: Quotes)(self: Expr[Json])
-  :     Optional[(quotes.reflect.TypeRepr, quotes.reflect.TypeRepr)] =
+  :   Optional[(quotes.reflect.TypeRepr, quotes.reflect.TypeRepr)] =
 
     import quotes.reflect.*
     val members = refinements(self.asTerm.tpe.widen)
@@ -103,14 +102,15 @@ object Jacinta:
       (position, members.at(t"Origin").or(position))
 
   def select(self: Expr[Json], field: Expr[String]): Macro[Json] =
-    import quotes.reflect.*
 
     // Plain (unverified) access: gate on the enabler (resolved at the call site),
     // then read the field totally.
     def plain: Expr[Json] =
-      if Expr.summon[DynamicJsonEnabler].isEmpty
-      then halt(m"""dynamic field access on an unverified `Json` requires
-                    `import dynamicJsonAccess.enabled` (or verify the value against a schema first)""")
+      if Expr.summon[DynamicJsonEnabler].isEmpty then halt:
+        m"""
+          dynamic field access on an unverified `Json` requires `import dynamicJsonAccess.enabled`
+          (or verify the value against a schema first)
+        """
 
       '{$self.selectField($field)}
 
@@ -157,16 +157,21 @@ object Jacinta:
     import quotes.reflect.*
 
     def plain: Expr[Json] =
-      if Expr.summon[DynamicJsonEnabler].isEmpty
-      then halt(m"""dynamic field access on an unverified `Json` requires
-                    `import dynamicJsonAccess.enabled` (or verify the value against a schema first)""")
+      if Expr.summon[DynamicJsonEnabler].isEmpty then halt:
+        m"""
+          dynamic field access on an unverified `Json` requires `import dynamicJsonAccess.enabled`
+          (or verify the value against a schema first)
+        """
 
       Expr.summon[Tactic[JsonError]] match
         case Some(tactic) => '{$self.selectField($field).indexValue($idx)(using $tactic)}
 
         case None =>
-          halt(m"""indexing a `Json` array may raise `JsonError`; a `Tactic[JsonError]`
-                   must be in scope (e.g. via `raises JsonError`)""")
+          halt:
+            m"""
+              indexing a `Json` array may raise `JsonError`; a `Tactic[JsonError]` must be in scope
+              (e.g. via `raises JsonError`)
+            """
 
     receiver(self) match
       case (position, root) => field.value match

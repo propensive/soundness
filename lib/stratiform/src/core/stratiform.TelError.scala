@@ -39,6 +39,10 @@ import vacuous.*
 
 object TelError:
 
+  object Position:
+    given communicable: Position is Communicable =
+      position => m"line ${position.line}, column ${position.column}"
+
   // 1-indexed source position attached to a `TelError` raised by the
   // TEL parser, so a caller capturing the error can point at the
   // offending line in the source. `column = 1` refers to the first
@@ -47,10 +51,6 @@ object TelError:
   // report `(1, 1)`. Post-parse / validation errors leave `position`
   // `Unset` because they apply to AST nodes rather than source bytes.
   case class Position(line: Int, column: Int) derives CanEqual
-
-  object Position:
-    given communicable: Position is Communicable =
-      position => m"line ${position.line}, column ${position.column}"
 
   // Recovery strategies prescribed by §19.5 of the TEL specification. Each
   // reason carries the recovery strategy declared for its E-code.
@@ -141,20 +141,25 @@ object TelError:
       case UnresolvedReference      => m"a Reference or SelectRef names an undeclared TypeName"
       case DuplicateDefinition      => m"two or more Definitions share the same name"
       case ExcludeMissingVariant    => m"Exclude names a variant absent from the base"
-      case ExcludeEmptiesRequired   => m"Exclude would empty a SelectDefinition that a "+
-                                       m"required SelectRef references"
 
-      case LayerVariantAddition     =>
+      case ExcludeEmptiesRequired =>
+        m"Exclude would empty a SelectDefinition that a required SelectRef references"
+
+      case LayerVariantAddition =>
         m"a layer SelectDefinition introduces a variant absent from the base"
 
-      case LayerLoosenRequired      => m"a layer cannot loosen the `required` axis"
+      case LayerLoosenRequired =>
+        m"a layer cannot loosen the `required` axis"
+
       case LayerLoosenRepeatable    => m"a layer cannot loosen the `repeatable` axis"
       case ExcludeOutsideSelect     => m"Exclude appears outside a SelectDefinition body"
 
-      case ReferenceKindMismatch    =>
+      case ReferenceKindMismatch =>
         m"a Reference / SelectRef resolves to a Definition of the wrong kind"
 
-      case NonStructCompound        => m"the compound's type is not a Struct"
+      case NonStructCompound =>
+        m"the compound's type is not a Struct"
+
       case TooManyAtoms             => m"more atoms than assignable member positions"
       case AtomAtNonAssignablePos   => m"the atom is at a non-atom-assignable member position"
       case AtomVariantUnmatched     => m"the atom text matches no variant keyword of the SelectRef"
@@ -195,15 +200,15 @@ object TelError:
       // continue validation; the document is reported as invalid but
       // remaining nodes are still inspected.
       case DuplicateKeywordInStruct | EmptySelectVariants | RootRequiredAtom
-         | DefaultOnOptional | DuplicateLayerName | LayerKeywordCollision
-         | LayerFieldTypeMismatch | BadSchemaSigil | TelKeywordReserved
-         | UnresolvedReference | DuplicateDefinition | ExcludeMissingVariant
-         | ExcludeEmptiesRequired | LayerVariantAddition | LayerLoosenRequired
-         | LayerLoosenRepeatable | ExcludeOutsideSelect | ReferenceKindMismatch
-         | NonStructCompound | TooManyAtoms | AtomAtNonAssignablePos
-         | AtomVariantUnmatched | AtomFlagKeywordMismatch | UnknownKeyword
-         | RequiredMemberAbsent | NonRepeatableTooMany | MembersNonContiguous
-         | ValidatorRejected | FlagWithContent =>
+        | DefaultOnOptional | DuplicateLayerName | LayerKeywordCollision
+        | LayerFieldTypeMismatch | BadSchemaSigil | TelKeywordReserved
+        | UnresolvedReference | DuplicateDefinition | ExcludeMissingVariant
+        | ExcludeEmptiesRequired | LayerVariantAddition | LayerLoosenRequired
+        | LayerLoosenRepeatable | ExcludeOutsideSelect | ReferenceKindMismatch
+        | NonStructCompound | TooManyAtoms | AtomAtNonAssignablePos
+        | AtomVariantUnmatched | AtomFlagKeywordMismatch | UnknownKeyword
+        | RequiredMemberAbsent | NonRepeatableTooMany | MembersNonContiguous
+        | ValidatorRejected | FlagWithContent =>
         Recovery.IgnoreErroneousNode
 
   enum Reason(val number: Int) extends Clarification:
@@ -265,12 +270,13 @@ object TelError:
     case FlagWithContent         extends Reason(311)
 
 case class TelError(reason: TelError.Reason, position: Optional[TelError.Position] = Unset)
-                   (using Diagnostics)
+  ( using Diagnostics )
 extends Error
   ( 605, reason.number )
   ( position.let: p =>
       m"the TEL document is invalid at $p because $reason"
-    . or(m"the TEL document is invalid because $reason")):
+
+    . or(m"the TEL document is invalid because $reason") ):
 
   // The internal 1-indexed position rendered as a uniform 0-based `Span`.
   def span: Span = position.lay(Span.empty): p =>

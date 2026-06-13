@@ -32,7 +32,8 @@
                                                                                                   */
 package scintillate
 
+import rudiments.*
 import telekinesis.*
 
 open class JavaServletFn(handle: HttpConnection => Http.Response)
-extends JavaServlet({ request ?=> handle(request) })
+extends JavaServlet(handle.context)

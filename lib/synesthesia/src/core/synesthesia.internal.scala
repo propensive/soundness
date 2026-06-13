@@ -214,6 +214,7 @@ object internal:
                                 ' {
                                     given param is Decodable in Text = $decodable
                                     val key = ${Expr(param.name)}.tt
+
                                     if input.has(key) then input(key).decode[param]
                                     else
                                       provide[Tactic[McpError]]:
@@ -255,6 +256,7 @@ object internal:
                     val wildcard =
                       val rhs =
                         '{provide[Tactic[McpError]](abort(McpError(McpError.Reason.UnknownMethod)))}
+
                       CaseDef(Wildcard(), None, rhs.asTerm)
 
                     Match('method.asTerm, cases :+ wildcard).asExprOf[List[Discourse]]
@@ -305,6 +307,7 @@ object internal:
                                 ' {
                                     import alphabets.base64.standard
                                     given result is Streamable by Data = $streamable
+
                                     Mcp.Contents:
                                       Mcp.BlobResourceContents
                                         ( $uri, Unset, blob = $value.read[Data].serialize[Base64] )

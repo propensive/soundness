@@ -61,6 +61,7 @@ object YamlPrinter:
   def print(yaml: Yaml.Ast): Text = Text.build:
     def spaces(n: Int): Unit =
       var i = 0
+
       while i < n do
         append(' ')
         i += 1
@@ -70,17 +71,21 @@ object YamlPrinter:
     // empty) that the parser would not resolve as a boolean or null.
     def plainSafe(string: String): Boolean =
       val length = string.length
+
       if length == 0 then false else
         val head = string.charAt(0)
+
         if !((head >= 'A' && head <= 'Z') || (head >= 'a' && head <= 'z')) then false
         else
           var ok = true
           var i = 0
+
           while i < length && ok do
             val c = string.charAt(i)
             if !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
                 || (c >= '0' && c <= '9') || c == '_' || c == '-')
             then ok = false
+
             i += 1
 
           ok && (string match
@@ -92,6 +97,7 @@ object YamlPrinter:
       if plainSafe(string) then append(string) else
         append('"')
         var i = 0
+
         while i < string.length do
           string.charAt(i) match
             case '"'  => append(t"\\\"")
@@ -105,11 +111,14 @@ object YamlPrinter:
                 val hex = Integer.toHexString(c.toInt).nn
                 append(t"\\u")
                 var z = hex.length
+
                 while z < 4 do
                   append('0')
                   z += 1
+
                 append(hex.tt)
-              else append(c)
+              else
+                append(c)
 
           i += 1
 
@@ -158,6 +167,7 @@ object YamlPrinter:
         if (xs.length & 1) == 0 then
           val n = xs.length/2
           var i = 0
+
           while i < n do
             spaces(indent)
             scalar(xs(i*2).asInstanceOf[Yaml.Ast])
@@ -167,6 +177,7 @@ object YamlPrinter:
         else
           val n = Yaml.Ast.sequenceLength(xs)
           var i = 0
+
           while i < n do
             spaces(indent)
             append('-')
@@ -178,7 +189,8 @@ object YamlPrinter:
     if inlineable(yaml) then
       scalar(yaml)
       append('\n')
-    else block(yaml, 0)
+    else
+      block(yaml, 0)
 
 trait YamlPrinter:
   def print(yaml: Yaml.Ast): Text

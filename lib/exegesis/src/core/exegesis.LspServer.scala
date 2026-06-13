@@ -198,9 +198,6 @@ trait LspServer() extends Lsp:
         summon[Stdio].write(payload)
         summon[Stdio].out.flush()
 
-    // The reader frames each inbound message off standard input as raw bytes (so the byte-denominated
-    // `Content-Length` is honoured for non-ASCII bodies), decodes it as UTF-8 JSON, and dispatches
-    // it; responses are funnelled back through the same channel that the writer drains, by `put`.
     summon[Stdio].in.stream[Data].iterator.frames[ContentLength].each: frame =>
       try dispatch(frame.utf8.decode[Json]).let(put)
       catch case error: Exception => put(JsonRpc.error(-32603, t"Internal error").json)

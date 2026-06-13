@@ -113,22 +113,7 @@ object internal:
 
           case _ =>
             ' {
-                ( assertion[test, test, report, result]
-                    ( $runner,
-                      $test,
-                      $predicate,
-                      $action,
-                      Contrastable.nothing[test],
-                      None,
-                      $inclusion,
-                      $inclusion2,
-                      Decomposable.any[test],
-                      $aspirationalExpr ) )
-              }
-
-        else
-          ' {
-              ( assertion[test, test, report, result]
+                assertion[test, test, report, result]
                   ( $runner,
                     $test,
                     $predicate,
@@ -138,7 +123,22 @@ object internal:
                     $inclusion,
                     $inclusion2,
                     Decomposable.any[test],
-                    $aspirationalExpr ) )
+                    $aspirationalExpr )
+              }
+
+        else
+          ' {
+              assertion[test, test, report, result]
+                ( $runner,
+                  $test,
+                  $predicate,
+                  $action,
+                  Contrastable.nothing[test],
+                  None,
+                  $inclusion,
+                  $inclusion2,
+                  Decomposable.any[test],
+                  $aspirationalExpr )
             }
 
 

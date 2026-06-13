@@ -251,6 +251,7 @@ object Tests extends Suite(m"Contingency"):
 
       test(m"throwErrors runs the body under CanThrow scope"):
         import unsafeExceptions.canThrowAny
+
         try
           throwErrors[ErrorA](unsafely(failA(8)))
           "no-throw"

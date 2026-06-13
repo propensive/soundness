@@ -33,75 +33,32 @@
 package contingency
 
 import language.experimental.pureFunctions
-import scala.language.unsafeNulls
 
 import java.util.concurrent.atomic as juca
+
+import scala.language.unsafeNulls
 import scala.util.boundary
 
 import fulminate.*
 
 
-/** Capture an `X raises Y` expression without applying it. The body is held
- *  as an unevaluated context function and re-evaluated on every `apply()`
- *  with whatever `Tactic[error]` is in scope at the call site. Useful for
- *  building up several `raises`-typed operations to run later under a
- *  single accumulating tactic. */
-def defer[result, error <: Exception]
-  (body: Tactic[error] ?=> result)
-:   Deferred[result, error] =
-
-  Deferred(body)
-
-
 final class Deferred[result, error <: Exception](body: Tactic[error] ?=> result):
   def apply()(using Tactic[error]): result = body
 
-
-/** Captured partial function and the type lambda encoding the per-error
- *  `Tactic` parameters required by an `.mitigate`/`.recover`/`.accrue`
- *  body. Constructed only by the `whereas` macro. */
-class Whereas[lambda[_]](val handler: PartialFunction[Exception, Any])
-
-
-/** Capture a partial function describing how to handle errors. Returns a
- *  `Whereas` whose type lambda encodes the per-error `Tactic` parameters the
- *  body of a subsequent `.mitigate`/`.recover`/`.accrue` must accept.
- *
- *  Note: this is a `transparent inline` whose declared return type
- *  `Whereas[?]` is refined to a precise `Whereas[lambda]` by the macro, and
- *  the `.mitigate`/`.recover`/`.accrue` extension methods depend on that
- *  refinement to bind `lambda`. An enclosing `inline def` is expanded before
- *  this refinement happens, so `whereas { … }.mitigate { … }` (and the
- *  `.recover` / `.accrue` siblings) cannot appear directly in the body of an
- *  `inline def`. Extract the call into a regular (non-inline) helper method.
- *  See issue propensive/soundness#534. */
-transparent inline def whereas(inline handler: PartialFunction[Exception, Any])
-:   Whereas[?] =
-  ${ contingency.internal.whereas('handler) }
-
-
 object Whereas:
-  /** Carries a recovered value out of a `Whereas.recover` block through a
-   *  `boundary.break`. The `EscapeTactic` records `Escape[T]`s; raising any
-   *  error subclass in a `recover` body is `contramap`-translated to an
-   *  `Escape[T]` carrying the handler's result. */
   final case class Escape[+result](value: result) extends Exception:
     override def fillInStackTrace(): Throwable = this
 
 
-  /** Whereas-internal accumulator tactic. Records errors with a `combine`
-   *  function over an `accrual`. The macro-generated `accrue` body
-   *  inspects `accumulated` / `changed` directly after the body completes,
-   *  so this Tactic neither commits nor throws on record. */
   class AccrueTactic[error <: Exception, accrual <: Exception]
-    (initial: accrual, combine: (accrual, Exception) => accrual)
-    (using val diagnostics: Diagnostics)
+    ( initial: accrual, combine: (accrual, Exception) => accrual )
+    ( using val diagnostics: Diagnostics )
   extends Tactic[error]:
 
     private val ref: juca.AtomicReference[accrual] = juca.AtomicReference(initial)
 
     def record(error: Diagnostics ?=> error): Unit =
-      ref.updateAndGet(curr => combine(curr.nn, error(using diagnostics)))
+      ref.updateAndGet: curr => combine(curr.nn, error(using diagnostics))
 
     def abort(error: Diagnostics ?=> error): Nothing =
       import scala.unsafeExceptions.canThrowAny
@@ -114,9 +71,6 @@ object Whereas:
     def changed: Boolean = ref.get().nn != initial
 
 
-  /** Whereas-internal escape tactic. Records `Escape[T]`s as
-   *  `boundary.break`s on the supplied label, carrying the value through
-   *  to the `recover` boundary. */
   class EscapeTactic[result](label: boundary.Label[result]) extends Tactic[Escape[result]]:
     def diagnostics: Diagnostics = Diagnostics.omit
 
@@ -132,17 +86,21 @@ object Whereas:
   extension [lambda[_]](inline w: Whereas[lambda])
 
     inline def mitigate[result](inline body: lambda[result]): result =
-      ${ contingency.internal.mitigateBody[lambda, result]('w, 'body) }
+      ${contingency.internal.mitigateBody[lambda, result]('w, 'body)}
 
     inline def recover[result](inline body: lambda[result]): result =
-      ${ contingency.internal.recoverBody[lambda, result]('w, 'body) }
+      ${contingency.internal.recoverBody[lambda, result]('w, 'body)}
 
-    inline def accrue[accrual <: Exception, result]
-      (initial: accrual)(combine: (accrual, Exception) => accrual)
-      (inline body: lambda[result])
-      (using outer: Tactic[accrual], diagnostics: Diagnostics)
+    inline def accrue[accrual <: Exception, result](initial: accrual)
+      ( combine: (accrual, Exception) => accrual )
+      ( inline body: lambda[result] )
+      ( using outer: Tactic[accrual], diagnostics: Diagnostics )
     :   result =
-      ${
-        contingency.internal.accrueBody[accrual, lambda, result]
-          ('w, 'initial, 'combine, 'body, 'outer, 'diagnostics)
-      }
+
+      $ {
+          contingency.internal.accrueBody[accrual, lambda, result]
+            ( 'w, 'initial, 'combine, 'body, 'outer, 'diagnostics )
+        }
+
+
+class Whereas[lambda[_]](val handler: PartialFunction[Exception, Any])

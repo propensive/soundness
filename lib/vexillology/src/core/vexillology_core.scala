@@ -32,4 +32,4 @@
                                                                                                   */
 package vexillology
 
-export Vexillology.Flags
+export vexillology.internal.Flags

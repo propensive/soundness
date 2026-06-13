@@ -70,7 +70,7 @@ object Mutation:
     // group). The reorder preserves block boundaries and surrounding
     // comments.
     case ReorderWithinGroup
-       (parentPointer: Tel.Pointer, keyword: Text, oldIndex: Int, newIndex: Int)
+      ( parentPointer: Tel.Pointer, keyword: Text, oldIndex: Int, newIndex: Int )
 
     // §22.2 `reorder-groups` — within the parent at `parentPointer`,
     // swap the relative order of all compounds with `firstKeyword`
@@ -84,16 +84,16 @@ object Mutation:
     case ResizeTabulation(parentPointer: Tel.Pointer, blockIndex: Int)
 
   private def pointerOf(op: Op): Tel.Pointer = op match
-    case Op.UpdateAtom(p, _, _)        => p
-    case Op.Insert(p, _)               => p
-    case Op.InsertBefore(p, _)         => p
-    case Op.InsertAfter(p, _)          => p
-    case Op.Delete(p)                  => p
-    case Op.Replace(p, _)              => p
-    case Op.AttachRemark(p, _)         => p
-    case Op.RemoveRemark(p)            => p
-    case Op.SetFlag(p, _)              => p
-    case Op.UnsetFlag(p, _)            => p
+    case Op.UpdateAtom(p, _, _)            => p
+    case Op.Insert(p, _)                   => p
+    case Op.InsertBefore(p, _)             => p
+    case Op.InsertAfter(p, _)              => p
+    case Op.Delete(p)                      => p
+    case Op.Replace(p, _)                  => p
+    case Op.AttachRemark(p, _)             => p
+    case Op.RemoveRemark(p)                => p
+    case Op.SetFlag(p, _)                  => p
+    case Op.UnsetFlag(p, _)                => p
     case Op.ReorderWithinGroup(p, _, _, _) => p
     case Op.ReorderGroups(p, _, _)         => p
     case Op.ResizeTabulation(p, _)         => p
@@ -104,11 +104,13 @@ object Mutation:
     val sigil = tel.subtree match
       case d: Tel.Document => d.pragma.let(_.sigil.or('#')).or('#')
       case _               => '#'
+
     Tel.make(transform(tel.subtree, pointerOf(op).steps, 0, op, sigil))
 
   def apply(tel: Tel, ops: Seq[Op]): Tel raises MutationError =
     var current = tel
     var i = 0
+
     while i < ops.length do
       current = apply(current, ops(i))
       i += 1
@@ -123,12 +125,12 @@ object Mutation:
   // sibling-targeted op (UpdateAtom, Delete, Replace, …) and apply the
   // op against the named child.
   private def transform
-       ( subtree:  Tel.Subtree,
-         steps:    IArray[Tel.Pointer.Step],
-         idx:      Int,
-         op:       Op,
-         sigil:    Char )
-  :     Tel.Subtree raises MutationError =
+    ( subtree:  Tel.Subtree,
+      steps:    IArray[Tel.Pointer.Step],
+      idx:      Int,
+      op:       Op,
+      sigil:    Char )
+  :   Tel.Subtree raises MutationError =
 
     if idx >= steps.length then op match
       case Op.Insert(_, compound) =>
@@ -163,12 +165,13 @@ object Mutation:
         val targetBlock = subtree.children(blockIdx)
         val targetCompound = targetBlock.compounds(localIdx)
         val updatedSubtree = transform(targetCompound, steps, idx + 1, op, sigil)
+
         val updatedCompound = updatedSubtree match
           case c: Tel.Compound => c
           case _: Tel.Document => targetCompound // unreachable: child of a compound is a compound
 
-        val updatedBlock = targetBlock.copy
-                            (compounds = targetBlock.compounds.updated(localIdx, updatedCompound))
+        val updatedBlock =
+          targetBlock.copy(compounds = targetBlock.compounds.updated(localIdx, updatedCompound))
 
         rewrap(subtree, subtree.children.updated(blockIdx, updatedBlock))
 
@@ -182,21 +185,25 @@ object Mutation:
   // Counting walks all blocks in order so siblings with the same keyword
   // spread across multiple blocks remain addressable.
   private def findTarget(blocks: IArray[Tel.Block], step: Tel.Pointer.Step)
-  :     (Int, Int) raises MutationError =
+  :   (Int, Int) raises MutationError =
+
     val want = step.index.or(0)
     var seen = 0
     var b = 0
     var foundBlock = -1
     var foundLocal = -1
+
     while b < blocks.length && foundBlock < 0 do
       val cs = blocks(b).compounds
       var c = 0
+
       while c < cs.length && foundBlock < 0 do
         if cs(c).keyword == step.keyword then
           if seen == want then
             foundBlock = b
             foundLocal = c
-          else seen += 1
+          else
+            seen += 1
 
         c += 1
 
@@ -210,8 +217,10 @@ object Mutation:
   // two compounds in place of the target (e.g. Delete -> 0, InsertBefore
   // -> 2).
   private def applyToTarget(block: Tel.Block, localIdx: Int, op: Op, sigil: Char)
-  :     Tel.Block raises MutationError =
+  :   Tel.Block raises MutationError =
+
     val target = block.compounds(localIdx)
+
     val replacement: IArray[Tel.Compound] = op match
       case Op.UpdateAtom(_, atomIndex, text) =>
         IArray(updateAtomAt(target, atomIndex, text, sigil))
@@ -244,8 +253,10 @@ object Mutation:
       case Op.UnsetFlag(_, keyword) =>
         val present = target.children.flatMap(_.compounds).exists(_.keyword == keyword)
         if !present then abort(MutationError(Reason.FlagNotSet))
+
         val updated = target.children.map: b =>
           b.copy(compounds = b.compounds.filterNot(_.keyword == keyword))
+
         IArray(target.copy(children = updated))
 
       case Op.Insert(_, _) =>
@@ -265,9 +276,11 @@ object Mutation:
   // value leaves it a literal atom). Preceding spaces follow the §22.3
   // hard-space rule; a kept literal atom reuses its delimiter when safe.
   private def updateAtomAt(compound: Tel.Compound, atomIndex: Int, text: Text, sigil: Char)
-  :     Tel.Compound raises MutationError =
+  :   Tel.Compound raises MutationError =
+
     if atomIndex < 0 || atomIndex >= compound.atoms.length
     then abort(MutationError(Reason.AtomIndexOutOfRange))
+
     val updated = escalateAtom(compound.atoms(atomIndex), text, sigil)
     compound.copy(atoms = compound.atoms.updated(atomIndex, updated))
 
@@ -292,7 +305,8 @@ object Mutation:
   // a fresh block is created. Trailing blank lines on the existing last
   // block are preserved.
   private def appendCompound(blocks: IArray[Tel.Block], compound: Tel.Compound)
-  :     IArray[Tel.Block] =
+  :   IArray[Tel.Block] =
+
     if blocks.length == 0
     then IArray(Tel.Block(IArray.empty, Unset, IArray(compound), 0))
     else
@@ -306,14 +320,16 @@ object Mutation:
   // at occurrence `oldIndex` to occurrence `newIndex` and rewrite the
   // affected blocks. Compounds with other keywords stay in place.
   private def reorderWithinGroup
-       (blocks: IArray[Tel.Block], keyword: Text, oldIndex: Int, newIndex: Int)
-  :     IArray[Tel.Block] raises MutationError =
+    ( blocks: IArray[Tel.Block], keyword: Text, oldIndex: Int, newIndex: Int )
+  :   IArray[Tel.Block] raises MutationError =
+
     val positions = scala.collection.mutable.ArrayBuffer.empty[(Int, Int)]
     var b = 0
 
     while b < blocks.length do
       val cs = blocks(b).compounds
       var c = 0
+
       while c < cs.length do
         if cs(c).keyword == keyword then positions += ((b, c))
         c += 1
@@ -321,7 +337,7 @@ object Mutation:
       b += 1
 
     if oldIndex < 0 || oldIndex >= positions.length
-       || newIndex < 0 || newIndex >= positions.length
+      || newIndex < 0 || newIndex >= positions.length
     then abort(MutationError(Reason.PointerNotFound))
 
     if oldIndex == newIndex then blocks
@@ -334,6 +350,7 @@ object Mutation:
 
       val newGroup = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
       var i = 0
+
       while i < positions.length do
         val (bIdx, cIdx) = positions(i)
         if i != oldIndex then newGroup += blocks(bIdx).compounds(cIdx)
@@ -344,6 +361,7 @@ object Mutation:
       // Write the reordered group back into the original slots.
       val out = scala.collection.mutable.ArrayBuffer.from(blocks.toList)
       var j = 0
+
       while j < positions.length do
         val (bIdx, cIdx) = positions(j)
         val block = out(bIdx)
@@ -357,8 +375,9 @@ object Mutation:
   // order. Each group's compounds and surrounding block boundaries
   // are preserved.
   private def reorderGroups
-       (blocks: IArray[Tel.Block], firstKeyword: Text, secondKeyword: Text)
-  :     IArray[Tel.Block] raises MutationError =
+    ( blocks: IArray[Tel.Block], firstKeyword: Text, secondKeyword: Text )
+  :   IArray[Tel.Block] raises MutationError =
+
     // A "group" here is the contiguous run of compounds with a given
     // keyword. We rebuild the children block list with the two groups
     // swapped in member position.
@@ -372,6 +391,7 @@ object Mutation:
     while b < blocks.length do
       val cs = compoundsByBlock(b)
       var c = 0
+
       while c < cs.length do
         flat += ((b, c, cs(c)))
         c += 1
@@ -431,7 +451,8 @@ object Mutation:
   // All existing row content is re-padded with spaces so atom
   // positions align with the new column starts.
   private def resizeTabulation(blocks: IArray[Tel.Block], blockIndex: Int)
-  :     IArray[Tel.Block] raises MutationError =
+  :   IArray[Tel.Block] raises MutationError =
+
     if blockIndex < 0 || blockIndex >= blocks.length
     then abort(MutationError(Reason.PointerNotFound))
 
@@ -448,6 +469,7 @@ object Mutation:
 
       val widths = new Array[Int](n)
       var col = 0
+
       while col < n do
         widths(col) = textWidth(tab.headings(col))
         col += 1
@@ -458,6 +480,7 @@ object Mutation:
         if kwWidth > widths(0) then widths(0) = kwWidth
         var ai = 0
         var colIdx = 1
+
         while ai < c.atoms.length && colIdx < n do
           c.atoms(ai) match
             case Tel.Atom.Inline(text, _) =>
@@ -475,6 +498,7 @@ object Mutation:
       val newOffsets = new Array[Int](n)
       newOffsets(0) = widths(0) + 2
       var i = 1
+
       while i < n do
         newOffsets(i) = newOffsets(i - 1) + 1 + widths(i) + 2
         i += 1
@@ -486,6 +510,7 @@ object Mutation:
       val newCompounds = block.compounds.map: c =>
         var cursor = textWidth(c.keyword)
         var colIdx = 1
+
         val newAtoms = c.atoms.map: a =>
           a match
             case Tel.Atom.Inline(text, _) if colIdx < n =>
@@ -504,6 +529,7 @@ object Mutation:
         block.copy
          ( tabulation = Tel.Tabulation(newOffsets.asInstanceOf[IArray[Int]], tab.headings),
            compounds  = newCompounds ))
+
     .or(blocks)
 
   // §22.3 `construct` — produce a fresh compound from a keyword and a
@@ -515,6 +541,7 @@ object Mutation:
   def construct(keyword: Text, atoms: Text*): Tel.Compound =
     val atomNodes =
       IArray.from(atoms.collect { case value if value.s.nonEmpty => chooseAtomForm(value, '#') })
+
     Tel.Compound(keyword, atomNodes, Unset, IArray.empty)
 
   // §22.3 atom-form escalation: the first form in inline -> source ->
@@ -538,17 +565,22 @@ object Mutation:
   // inline-safe (callers emit it as no atom, not an empty inline atom).
   private def inlineSafe(value: Text, sigil: Char): Boolean =
     val s = value.s
+
     if s.isEmpty then true
     else if s.charAt(0) == ' ' || s.charAt(s.length - 1) == ' ' then false
     else if s.length >= 2 && s.charAt(0) == sigil && s.charAt(1) == ' ' then false
     else
       var i = 0
       var ok = true
+
       while ok && i < s.length do
         val c = s.charAt(i)
+
         if c == '\n' then ok = false
         else if c == ' ' && i + 1 < s.length && s.charAt(i + 1) == ' ' then ok = false
+
         i += 1
+
       ok
 
   // §22.2 source-safe: non-empty; no empty line (hence no leading/trailing
@@ -557,17 +589,21 @@ object Mutation:
   // with a space (the first line's indentation is stripped, §14).
   private def sourceSafe(value: Text): Boolean =
     val s = value.s
+
     if s.isEmpty then false
     else if s.charAt(0) == '\n' || s.charAt(s.length - 1) == '\n' then false
     else if s.charAt(0) == ' ' || s.charAt(s.length - 1) == ' ' then false
     else
       var i = 0
       var ok = true
+
       while ok && i < s.length do
         if s.charAt(i) == '\n' then
           if s.charAt(i - 1) == ' ' then ok = false        // trailing space on a line
           else if s.charAt(i + 1) == '\n' then ok = false  // empty interior line
+
         i += 1
+
       ok
 
   // §22.3 literal delimiter: the shortest run of `-`, starting from
@@ -582,9 +618,11 @@ object Mutation:
   private def appearsAsLine(s: String, line: String): Boolean =
     var start = 0
     var found = false
+
     while !found && start <= s.length do
       val nl = s.indexOf('\n', start)
       val end = if nl < 0 then s.length else nl
       if s.substring(start, end).nn == line then found = true
       start = if nl < 0 then s.length + 1 else nl + 1
+
     found

@@ -32,16 +32,16 @@
                                                                                                   */
 package gastronomy
 
+import scala.reflect.Selectable.reflectiveSelectable
+
 import anticipation.*
 import gossamer.*
 import prepositional.*
 
-import scala.reflect.Selectable.reflectiveSelectable
-
 object Sha2:
   given hash: [bits <: 224 | 256 | 384 | 512: ValueOf]
-            => (hashing: Hashing { def sha2(bits: Int): Hashing.Function })
-            => Hash in Sha2[bits] =
+  =>  ( hashing: Hashing { def sha2(bits: Int): Hashing.Function } )
+  =>  Hash in Sha2[bits] =
     Hash(t"SHA-${valueOf[bits]}", t"HmacSHA${valueOf[bits]}", hashing.sha2(valueOf[bits]))
 
 sealed trait Sha2[bits <: 224 | 256 | 384 | 512] extends Algorithm:

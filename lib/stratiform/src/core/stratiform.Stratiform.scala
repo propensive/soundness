@@ -38,7 +38,6 @@ import anticipation.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
-import prepositional.*
 import rudiments.*
 import vacuous.*
 
@@ -52,7 +51,7 @@ import vacuous.*
 object Stratiform:
 
   private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
-  :     Map[Text, quotes.reflect.TypeRepr] =
+  :   Map[Text, quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
 
@@ -64,8 +63,8 @@ object Stratiform:
 
   // Builds the refined type `Tel of <position> from <root>`.
   private def telType(using quotes: Quotes)
-      ( position: quotes.reflect.TypeRepr, root: quotes.reflect.TypeRepr )
-  :     quotes.reflect.TypeRepr =
+    ( position: quotes.reflect.TypeRepr, root: quotes.reflect.TypeRepr )
+  :   quotes.reflect.TypeRepr =
 
     import quotes.reflect.*
 
@@ -76,7 +75,7 @@ object Stratiform:
 
   // The single ordered-collection element type of `repr`, if it is one.
   private def elementType(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
-  :     Optional[quotes.reflect.TypeRepr] =
+  :   Optional[quotes.reflect.TypeRepr] =
 
     import quotes.reflect.*
 
@@ -90,7 +89,7 @@ object Stratiform:
 
   // Reads `Topic` (position) and `Origin` (root) from a receiver, if present.
   private def receiver(using quotes: Quotes)(self: Expr[Tel])
-  :     Optional[(quotes.reflect.TypeRepr, quotes.reflect.TypeRepr)] =
+  :   Optional[(quotes.reflect.TypeRepr, quotes.reflect.TypeRepr)] =
 
     import quotes.reflect.*
     val members = refinements(self.asTerm.tpe.widen)
@@ -99,12 +98,15 @@ object Stratiform:
       (position, members.at(t"Origin").or(position))
 
   def select(self: Expr[Tel], field: Expr[String]): Macro[Tel] =
-    import quotes.reflect.*
 
     def plain: Expr[Tel] =
       if Expr.summon[DynamicTelEnabler].isEmpty
-      then halt(m"""dynamic field access on an unverified `Tel` requires
-                    `import dynamicTelAccess.enabled` (or verify the value against a schema first)""")
+      then
+        halt:
+          m"""
+            dynamic field access on an unverified `Tel` requires `import dynamicTelAccess.enabled`
+            (or verify the value against a schema first)
+          """
 
       '{$self.selectField($field)}
 
@@ -129,9 +131,11 @@ object Stratiform:
     import quotes.reflect.*
 
     def plain: Expr[Tel] =
-      if Expr.summon[DynamicTelEnabler].isEmpty
-      then halt(m"""dynamic field access on an unverified `Tel` requires
-                    `import dynamicTelAccess.enabled` (or verify the value against a schema first)""")
+      if Expr.summon[DynamicTelEnabler].isEmpty then halt:
+        m"""
+          dynamic field access on an unverified `Tel` requires `import dynamicTelAccess.enabled`
+          (or verify the value against a schema first)
+        """
 
       '{$self.selectFieldIndex($field, $idx)}
 

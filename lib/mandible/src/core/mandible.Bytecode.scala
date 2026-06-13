@@ -194,289 +194,293 @@ object Bytecode:
       case jlc.TypeKind.VOID      => panic(m"void TypeKind has no Frame representation")
 
     def apply(source: jlc.Instruction, labels: Map[jlc.Label, Int] = Map.empty)
-    :   Opcode = source match
-      case invocation: jlci.InvokeInstruction =>
-        val classname = invocation.owner.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
-        val method = invocation.name.nn.stringValue.nn.tt
-        val descriptor = invocation.`type`.nn.stringValue.nn.tt
+    :   Opcode =
 
-        source.opcode.nn.bytecode.absolve match
-          case 182 => Invokevirtual(classname, method, descriptor)
-          case 183 => Invokespecial(classname, method, descriptor)
-          case 184 => Invokestatic(classname, method, descriptor)
-          case 185 => Invokeinterface(classname, method, descriptor, invocation.count.toByte)
+      source match
+        case invocation: jlci.InvokeInstruction =>
+          val classname = invocation.owner.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+          val method = invocation.name.nn.stringValue.nn.tt
+          val descriptor = invocation.`type`.nn.stringValue.nn.tt
 
-      case invocation: jlci.InvokeDynamicInstruction =>
-        val method = StackTrace.rewrite(invocation.name.nn.stringValue.nn, true)
-        val descriptor = invocation.`type`.nn.stringValue.nn.tt
-        Invokedynamic(method, descriptor)
+          source.opcode.nn.bytecode.absolve match
+            case 182 => Invokevirtual(classname, method, descriptor)
+            case 183 => Invokespecial(classname, method, descriptor)
+            case 184 => Invokestatic(classname, method, descriptor)
+            case 185 => Invokeinterface(classname, method, descriptor, invocation.count.toByte)
 
-      case field: jlci.FieldInstruction =>
-        val classname = field.owner.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
-        val name = field.name.nn.stringValue.nn.tt
-        val descriptor = field.`type`.nn.stringValue.nn.tt
+        case invocation: jlci.InvokeDynamicInstruction =>
+          val method = StackTrace.rewrite(invocation.name.nn.stringValue.nn, true)
+          val descriptor = invocation.`type`.nn.stringValue.nn.tt
+          Invokedynamic(method, descriptor)
 
-        source.opcode.nn.bytecode.absolve match
-          case 178 => Getstatic(classname, name, descriptor)
-          case 179 => Putstatic(classname, name, descriptor)
-          case 180 => Getfield(classname, name, descriptor)
-          case 181 => Putfield(classname, name, descriptor)
+        case field: jlci.FieldInstruction =>
+          val classname = field.owner.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+          val name = field.name.nn.stringValue.nn.tt
+          val descriptor = field.`type`.nn.stringValue.nn.tt
 
-      case typeCheck: jlci.TypeCheckInstruction =>
-        val classname = typeCheck.`type`.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+          source.opcode.nn.bytecode.absolve match
+            case 178 => Getstatic(classname, name, descriptor)
+            case 179 => Putstatic(classname, name, descriptor)
+            case 180 => Getfield(classname, name, descriptor)
+            case 181 => Putfield(classname, name, descriptor)
 
-        source.opcode.nn.bytecode.absolve match
-          case 192 => Checkcast(classname)
-          case 193 => Instanceof(classname)
+        case typeCheck: jlci.TypeCheckInstruction =>
+          val classname = typeCheck.`type`.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
 
-      case newObject: jlci.NewObjectInstruction =>
-        val classname = newObject.className.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
-        New(classname)
+          source.opcode.nn.bytecode.absolve match
+            case 192 => Checkcast(classname)
+            case 193 => Instanceof(classname)
 
-      case newRefArray: jlci.NewReferenceArrayInstruction =>
-        val classname = newRefArray.componentType.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
-        Anewarray(classname)
+        case newObject: jlci.NewObjectInstruction =>
+          val classname = newObject.className.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+          New(classname)
 
-      case newMultiArray: jlci.NewMultiArrayInstruction =>
-        val classname = newMultiArray.arrayType.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
-        Multianewarray(classname, newMultiArray.dimensions)
+        case newRefArray: jlci.NewReferenceArrayInstruction =>
+          val classname =
+            newRefArray.componentType.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
 
-      case newPrimArray: jlci.NewPrimitiveArrayInstruction =>
-        Newarray(typeKindToFrame(newPrimArray.typeKind.nn))
+          Anewarray(classname)
 
-      case load: jlci.LoadInstruction =>
-        val slot = load.slot
+        case newMultiArray: jlci.NewMultiArrayInstruction =>
+          val classname = newMultiArray.arrayType.nn.name.nn.stringValue.nn.replace("/", ".").nn.tt
+          Multianewarray(classname, newMultiArray.dimensions)
 
-        source.opcode.nn.bytecode.absolve match
-          case 21 => Iload(slot)
-          case 22 => Lload(slot)
-          case 23 => Fload(slot)
-          case 24 => Dload(slot)
-          case 25 => Aload(slot)
-          case 26 => Iload0
-          case 27 => Iload1
-          case 28 => Iload2
-          case 29 => Iload3
-          case 30 => Lload0
-          case 31 => Lload1
-          case 32 => Lload2
-          case 33 => Lload3
-          case 34 => Fload0
-          case 35 => Fload1
-          case 36 => Fload2
-          case 37 => Fload3
-          case 38 => Dload0
-          case 39 => Dload1
-          case 40 => Dload2
-          case 41 => Dload3
-          case 42 => Aload0
-          case 43 => Aload1
-          case 44 => Aload2
-          case 45 => Aload3
+        case newPrimArray: jlci.NewPrimitiveArrayInstruction =>
+          Newarray(typeKindToFrame(newPrimArray.typeKind.nn))
 
-      case store: jlci.StoreInstruction =>
-        val slot = store.slot
+        case load: jlci.LoadInstruction =>
+          val slot = load.slot
 
-        source.opcode.nn.bytecode.absolve match
-          case 54 => Istore(slot)
-          case 55 => Lstore(slot)
-          case 56 => Fstore(slot)
-          case 57 => Dstore(slot)
-          case 58 => Astore(slot)
-          case 59 => Istore0
-          case 60 => Istore1
-          case 61 => Istore2
-          case 62 => Istore3
-          case 63 => Lstore0
-          case 64 => Lstore1
-          case 65 => Lstore2
-          case 66 => Lstore3
-          case 67 => Fstore0
-          case 68 => Fstore1
-          case 69 => Fstore2
-          case 70 => Fstore3
-          case 71 => Dstore0
-          case 72 => Dstore1
-          case 73 => Dstore2
-          case 74 => Dstore3
-          case 75 => Astore0
-          case 76 => Astore1
-          case 77 => Astore2
-          case 78 => Astore3
+          source.opcode.nn.bytecode.absolve match
+            case 21 => Iload(slot)
+            case 22 => Lload(slot)
+            case 23 => Fload(slot)
+            case 24 => Dload(slot)
+            case 25 => Aload(slot)
+            case 26 => Iload0
+            case 27 => Iload1
+            case 28 => Iload2
+            case 29 => Iload3
+            case 30 => Lload0
+            case 31 => Lload1
+            case 32 => Lload2
+            case 33 => Lload3
+            case 34 => Fload0
+            case 35 => Fload1
+            case 36 => Fload2
+            case 37 => Fload3
+            case 38 => Dload0
+            case 39 => Dload1
+            case 40 => Dload2
+            case 41 => Dload3
+            case 42 => Aload0
+            case 43 => Aload1
+            case 44 => Aload2
+            case 45 => Aload3
 
-      case inc: jlci.IncrementInstruction =>
-        Iinc(inc.slot, inc.constant)
+        case store: jlci.StoreInstruction =>
+          val slot = store.slot
 
-      case arg: jlci.ConstantInstruction.ArgumentConstantInstruction =>
-        val intValue = arg.constantValue.nn.toString.toInt
+          source.opcode.nn.bytecode.absolve match
+            case 54 => Istore(slot)
+            case 55 => Lstore(slot)
+            case 56 => Fstore(slot)
+            case 57 => Dstore(slot)
+            case 58 => Astore(slot)
+            case 59 => Istore0
+            case 60 => Istore1
+            case 61 => Istore2
+            case 62 => Istore3
+            case 63 => Lstore0
+            case 64 => Lstore1
+            case 65 => Lstore2
+            case 66 => Lstore3
+            case 67 => Fstore0
+            case 68 => Fstore1
+            case 69 => Fstore2
+            case 70 => Fstore3
+            case 71 => Dstore0
+            case 72 => Dstore1
+            case 73 => Dstore2
+            case 74 => Dstore3
+            case 75 => Astore0
+            case 76 => Astore1
+            case 77 => Astore2
+            case 78 => Astore3
 
-        source.opcode.nn.bytecode.absolve match
-          case 16 => Bipush(intValue.toByte)
-          case 17 => Sipush(intValue.toShort)
+        case inc: jlci.IncrementInstruction =>
+          Iinc(inc.slot, inc.constant)
 
-      case ldc: jlci.ConstantInstruction.LoadConstantInstruction =>
-        val text = ldc.constantValue.nn.toString.tt
+        case arg: jlci.ConstantInstruction.ArgumentConstantInstruction =>
+          val intValue = arg.constantValue.nn.toString.toInt
 
-        source.opcode.nn.bytecode.absolve match
-          case 18 => Ldc(text)
-          case 19 => LdcW(text)
-          case 20 => Ldc2W(text)
+          source.opcode.nn.bytecode.absolve match
+            case 16 => Bipush(intValue.toByte)
+            case 17 => Sipush(intValue.toShort)
 
-      case tswitch: jlci.TableSwitchInstruction =>
-        val default = labels.getOrElse(tswitch.defaultTarget.nn, 0)
+        case ldc: jlci.ConstantInstruction.LoadConstantInstruction =>
+          val text = ldc.constantValue.nn.toString.tt
 
-        val targets = tswitch.cases.nn.asScala.toList.map: c =>
-          labels.getOrElse(c.nn.target.nn, 0)
+          source.opcode.nn.bytecode.absolve match
+            case 18 => Ldc(text)
+            case 19 => LdcW(text)
+            case 20 => Ldc2W(text)
 
-        Tableswitch(default, tswitch.lowValue, tswitch.highValue, targets)
+        case tswitch: jlci.TableSwitchInstruction =>
+          val default = labels.getOrElse(tswitch.defaultTarget.nn, 0)
 
-      case lswitch: jlci.LookupSwitchInstruction =>
-        val default = labels.getOrElse(lswitch.defaultTarget.nn, 0)
+          val targets = tswitch.cases.nn.asScala.toList.map: c =>
+            labels.getOrElse(c.nn.target.nn, 0)
 
-        val cases = lswitch.cases.nn.asScala.toList.map: c =>
-          (c.nn.caseValue, labels.getOrElse(c.nn.target.nn, 0))
+          Tableswitch(default, tswitch.lowValue, tswitch.highValue, targets)
 
-        Lookupswitch(default, cases)
+        case lswitch: jlci.LookupSwitchInstruction =>
+          val default = labels.getOrElse(lswitch.defaultTarget.nn, 0)
 
-      case branch: jlci.BranchInstruction =>
-        val target = labels.getOrElse(branch.target.nn, 0)
+          val cases = lswitch.cases.nn.asScala.toList.map: c =>
+            (c.nn.caseValue, labels.getOrElse(c.nn.target.nn, 0))
 
-        source.opcode.nn.bytecode.absolve match
-          case 153 => Ifeq(target)
-          case 154 => Ifne(target)
-          case 155 => Iflt(target)
-          case 156 => Ifge(target)
-          case 157 => Ifgt(target)
-          case 158 => Ifle(target)
-          case 159 => IfIcmpeq(target)
-          case 160 => IfIcmpne(target)
-          case 161 => IfIcmplt(target)
-          case 162 => IfIcmpge(target)
-          case 163 => IfIcmpgt(target)
-          case 164 => IfIcmple(target)
-          case 165 => IfAcmpeq(target)
-          case 166 => IfAcmpne(target)
-          case 167 => Goto(target)
-          case 168 => Jsr(target)
-          case 198 => Ifnull(target)
-          case 199 => Ifnonnull(target)
-          case 200 => GotoW(target)
-          case 201 => JsrW(target)
+          Lookupswitch(default, cases)
 
-      case other =>
-        source.opcode.nn.bytecode match
-          case 0   => Nop
-          case 1   => AconstNull
-          case 2   => IconstM1
-          case 3   => Iconst0
-          case 4   => Iconst1
-          case 5   => Iconst2
-          case 6   => Iconst3
-          case 7   => Iconst4
-          case 8   => Iconst5
-          case 9   => Lconst0
-          case 10  => Lconst1
-          case 11  => Fconst0
-          case 12  => Fconst1
-          case 13  => Fconst2
-          case 14  => Dconst0
-          case 15  => Dconst1
-          case 46  => Iaload
-          case 47  => Laload
-          case 48  => Faload
-          case 49  => Daload
-          case 50  => Aaload
-          case 51  => Baload
-          case 52  => Caload
-          case 53  => Saload
-          case 79  => Iastore
-          case 80  => Lastore
-          case 81  => Fastore
-          case 82  => Dastore
-          case 83  => Aastore
-          case 84  => Bastore
-          case 85  => Castore
-          case 86  => Sastore
-          case 87  => Pop
-          case 88  => Pop2
-          case 89  => Dup
-          case 90  => DupX1
-          case 91  => DupX2
-          case 92  => Dup2
-          case 93  => Dup2X1
-          case 94  => Dup2X2
-          case 95  => Swap
-          case 96  => Iadd
-          case 97  => Ladd
-          case 98  => Fadd
-          case 99  => Dadd
-          case 100 => Isub
-          case 101 => Lsub
-          case 102 => Fsub
-          case 103 => Dsub
-          case 104 => Imul
-          case 105 => Lmul
-          case 106 => Fmul
-          case 107 => Dmul
-          case 108 => Idiv
-          case 109 => Ldiv
-          case 110 => Fdiv
-          case 111 => Ddiv
-          case 112 => Irem
-          case 113 => Lrem
-          case 114 => Frem
-          case 115 => Drem
-          case 116 => Ineg
-          case 117 => Lneg
-          case 118 => Fneg
-          case 119 => Dneg
-          case 120 => Ishl
-          case 121 => Lshl
-          case 122 => Ishr
-          case 123 => Lshr
-          case 124 => Iushr
-          case 125 => Lushr
-          case 126 => Iand
-          case 127 => Land
-          case 128 => Ior
-          case 129 => Lor
-          case 130 => Ixor
-          case 131 => Lxor
-          case 133 => I2l
-          case 134 => I2f
-          case 135 => I2d
-          case 136 => L2i
-          case 137 => L2f
-          case 138 => L2d
-          case 139 => F2i
-          case 140 => F2l
-          case 141 => F2d
-          case 142 => D2i
-          case 143 => D2l
-          case 144 => D2f
-          case 145 => I2b
-          case 146 => I2c
-          case 147 => I2s
-          case 148 => Lcmp
-          case 149 => Fcmpl
-          case 150 => Fcmpg
-          case 151 => Dcmpl
-          case 152 => Dcmpg
-          case 169 => Ret(0)
-          case 172 => Ireturn
-          case 173 => Lreturn
-          case 174 => Freturn
-          case 175 => Dreturn
-          case 176 => Areturn
-          case 177 => Return
-          case 190 => Arraylength
-          case 191 => Athrow
-          case 194 => Monitorenter
-          case 195 => Monitorexit
-          case 196 => Wide()
+        case branch: jlci.BranchInstruction =>
+          val target = labels.getOrElse(branch.target.nn, 0)
 
-          case opcode =>
-            panic(m"unrecognized opcode $opcode")
+          source.opcode.nn.bytecode.absolve match
+            case 153 => Ifeq(target)
+            case 154 => Ifne(target)
+            case 155 => Iflt(target)
+            case 156 => Ifge(target)
+            case 157 => Ifgt(target)
+            case 158 => Ifle(target)
+            case 159 => IfIcmpeq(target)
+            case 160 => IfIcmpne(target)
+            case 161 => IfIcmplt(target)
+            case 162 => IfIcmpge(target)
+            case 163 => IfIcmpgt(target)
+            case 164 => IfIcmple(target)
+            case 165 => IfAcmpeq(target)
+            case 166 => IfAcmpne(target)
+            case 167 => Goto(target)
+            case 168 => Jsr(target)
+            case 198 => Ifnull(target)
+            case 199 => Ifnonnull(target)
+            case 200 => GotoW(target)
+            case 201 => JsrW(target)
+
+        case other =>
+          source.opcode.nn.bytecode match
+            case 0   => Nop
+            case 1   => AconstNull
+            case 2   => IconstM1
+            case 3   => Iconst0
+            case 4   => Iconst1
+            case 5   => Iconst2
+            case 6   => Iconst3
+            case 7   => Iconst4
+            case 8   => Iconst5
+            case 9   => Lconst0
+            case 10  => Lconst1
+            case 11  => Fconst0
+            case 12  => Fconst1
+            case 13  => Fconst2
+            case 14  => Dconst0
+            case 15  => Dconst1
+            case 46  => Iaload
+            case 47  => Laload
+            case 48  => Faload
+            case 49  => Daload
+            case 50  => Aaload
+            case 51  => Baload
+            case 52  => Caload
+            case 53  => Saload
+            case 79  => Iastore
+            case 80  => Lastore
+            case 81  => Fastore
+            case 82  => Dastore
+            case 83  => Aastore
+            case 84  => Bastore
+            case 85  => Castore
+            case 86  => Sastore
+            case 87  => Pop
+            case 88  => Pop2
+            case 89  => Dup
+            case 90  => DupX1
+            case 91  => DupX2
+            case 92  => Dup2
+            case 93  => Dup2X1
+            case 94  => Dup2X2
+            case 95  => Swap
+            case 96  => Iadd
+            case 97  => Ladd
+            case 98  => Fadd
+            case 99  => Dadd
+            case 100 => Isub
+            case 101 => Lsub
+            case 102 => Fsub
+            case 103 => Dsub
+            case 104 => Imul
+            case 105 => Lmul
+            case 106 => Fmul
+            case 107 => Dmul
+            case 108 => Idiv
+            case 109 => Ldiv
+            case 110 => Fdiv
+            case 111 => Ddiv
+            case 112 => Irem
+            case 113 => Lrem
+            case 114 => Frem
+            case 115 => Drem
+            case 116 => Ineg
+            case 117 => Lneg
+            case 118 => Fneg
+            case 119 => Dneg
+            case 120 => Ishl
+            case 121 => Lshl
+            case 122 => Ishr
+            case 123 => Lshr
+            case 124 => Iushr
+            case 125 => Lushr
+            case 126 => Iand
+            case 127 => Land
+            case 128 => Ior
+            case 129 => Lor
+            case 130 => Ixor
+            case 131 => Lxor
+            case 133 => I2l
+            case 134 => I2f
+            case 135 => I2d
+            case 136 => L2i
+            case 137 => L2f
+            case 138 => L2d
+            case 139 => F2i
+            case 140 => F2l
+            case 141 => F2d
+            case 142 => D2i
+            case 143 => D2l
+            case 144 => D2f
+            case 145 => I2b
+            case 146 => I2c
+            case 147 => I2s
+            case 148 => Lcmp
+            case 149 => Fcmpl
+            case 150 => Fcmpg
+            case 151 => Dcmpl
+            case 152 => Dcmpg
+            case 169 => Ret(0)
+            case 172 => Ireturn
+            case 173 => Lreturn
+            case 174 => Freturn
+            case 175 => Dreturn
+            case 176 => Areturn
+            case 177 => Return
+            case 190 => Arraylength
+            case 191 => Athrow
+            case 194 => Monitorenter
+            case 195 => Monitorexit
+            case 196 => Wide()
+
+            case opcode =>
+              panic(m"unrecognized opcode $opcode")
 
     given Opcode is Teletypeable = opcode =>
       opcode.show.cut(t" ") match

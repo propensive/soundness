@@ -32,6 +32,7 @@
                                                                                                   */
 package gossamer
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.{ArrayBuffer, HashMap as MutMap, LinkedHashSet}
 
 import anticipation.*
@@ -58,18 +59,6 @@ import vacuous.*
 // Aho-Corasick walk; the default builders leave them empty so callers
 // that only do exact-key lookups don't pay the BFS build cost.
 object Dictionary:
-  // A small alphabet for `Dictionary`: a fixed mapping from char to a
-  // dense slot index in `[0, size)`. Chars not in the alphabet return
-  // `-1`. Callers supply different alphabets for different uses (a-z + `.`
-  // for hyphenation, a-z + 0-9 + `-` for HTML attributes, etc.). The
-  // default builders (`Dictionary(pairs*)`, `Dictionary.empty`,
-  // `Dictionary.aho(pairs*)`) auto-derive an alphabet from the keys'
-  // distinct characters, so most callers never construct one explicitly.
-  trait Alphabet:
-    def slot(char: Char): Int
-    def char(slot: Int): Char
-    def size: Int
-
   object Alphabet:
     // Build an Alphabet from a string of supported chars. Slot index of
     // each char is its position in the string. Unsupported chars return
@@ -103,12 +92,26 @@ object Dictionary:
       def slot(char: Char): Int = -1
       def char(slot: Int): Char = throw IndexOutOfBoundsException(slot.toString)
 
+  // A small alphabet for `Dictionary`: a fixed mapping from char to a
+  // dense slot index in `[0, size)`. Chars not in the alphabet return
+  // `-1`. Callers supply different alphabets for different uses (a-z + `.`
+  // for hyphenation, a-z + 0-9 + `-` for HTML attributes, etc.). The
+  // default builders (`Dictionary(pairs*)`, `Dictionary.empty`,
+  // `Dictionary.aho(pairs*)`) auto-derive an alphabet from the keys'
+  // distinct characters, so most callers never construct one explicitly.
+  trait Alphabet:
+    def slot(char: Char): Int
+    def char(slot: Int): Char
+    def size: Int
+
   // An empty Dictionary with no entries and an empty alphabet. Adds via
   // `+`/`++` rebuild the trie with an alphabet derived from the keys.
   def empty[value: ClassTag]: Dictionary[value] =
     val emptyInts = new Array[Int](0)
+
     val emptyValues: Array[AnyRef | Null] =
       new Array[AnyRef](0).asInstanceOf[Array[AnyRef | Null]]
+
     new Dictionary[value]
       ( emptyInts, emptyValues, emptyInts, emptyInts, emptyInts, Alphabet.empty, summon )
 
@@ -214,7 +217,10 @@ object Dictionary:
       i += 1
 
     val childrenArr = Array.fill[Int](nodeCount*alpha)(-1)
-    val valuesArr: Array[AnyRef | Null] = new Array[AnyRef](nodeCount).asInstanceOf[Array[AnyRef | Null]]
+
+    val valuesArr: Array[AnyRef | Null] =
+      new Array[AnyRef](nodeCount).asInstanceOf[Array[AnyRef | Null]]
+
     i = 0
 
     while i < nodeCount do
@@ -224,6 +230,7 @@ object Dictionary:
 
       while sl < alpha do
         val c = alphabet.char(sl)
+
         n.children.get(c).foreach: child =>
           childrenArr(i*alpha + sl) = ids(child)
 
@@ -287,8 +294,6 @@ object Dictionary:
       new Dictionary[value]
         ( childrenArr, valuesArr, depthArr, failArr, dictLinkArr, alphabet, summon )
 
-import scala.annotation.unchecked.uncheckedVariance
-
 final class Dictionary[+value]
   ( val children: Array[Int],
     val values:   Array[AnyRef | Null],
@@ -296,7 +301,7 @@ final class Dictionary[+value]
     val fail:     Array[Int],
     val dictLink: Array[Int],
     val alphabet: Dictionary.Alphabet,
-    classTag$:    ClassTag[value @uncheckedVariance] ):
+    classTag:     ClassTag[value @uncheckedVariance] ):
 
   // The exposed `values` array is `Array[AnyRef | Null]` rather than
   // `Array[value | Null]` because Array is invariant and the JVM checks
@@ -307,7 +312,7 @@ final class Dictionary[+value]
 
   // Re-expose the `ClassTag` to the rebuild path so `+`/`++` can allocate
   // their fresh values array without the caller having to summon one.
-  private[gossamer] given valueTag: ClassTag[value @uncheckedVariance] = classTag$
+  private[gossamer] given valueTag: ClassTag[value @uncheckedVariance] = classTag
 
   inline def root: Int = 0
 

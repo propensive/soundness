@@ -40,10 +40,8 @@ import ethereal.*
 import eucalyptus.*
 import fulminate.*
 import galilei.*
-import gastronomy.*, hashProviders.javaStdlibHashing
 import gossamer.*
 import guillotine.*
-import monotonous.*, alphabets.hex.lowerCase
 import prepositional.*
 import rudiments.*
 import serpentine.*
@@ -52,9 +50,7 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-
 import errorDiagnostics.empty
-import internetAccess.enabled
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
@@ -62,6 +58,9 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
+import gastronomy.*, hashProviders.javaStdlibHashing
+import internetAccess.enabled
+import monotonous.*, alphabets.hex.lowerCase
 
 // Turns a `Packaging` configuration into a distributable, across all three
 // deliveries. With `RunnerSource.LocalResource` the application self-assembles
@@ -70,7 +69,7 @@ import filesystemOptions.writeAccess.enabled
 // `ethereal.Assembler`. Burdock remote dependencies remain unimplemented.
 object Packager:
   def pack(config: Packaging)
-     (using working: WorkingDirectory, environment: Environment)
+    ( using working: WorkingDirectory, environment: Environment )
   :   Path on Linux raises PackageError =
 
     val appJar: Path on Linux = config.dependencies.absolve match
@@ -82,7 +81,8 @@ object Packager:
 
     config.delivery match
       case Packaging.Delivery.Native if config.targets.length != 1 =>
-        abort(PackageError(m"Native delivery requires exactly one target, but ${config.targets.length} were given"))
+        val length = config.targets.length
+        abort(PackageError(m"Native delivery requires exactly one target, but $length were given"))
 
       case _ =>
         ()
@@ -130,8 +130,9 @@ object Packager:
   // Produces one self-contained per-platform binary, dispatching on the runner
   // source: the app self-assembles in a subprocess (LocalResource), or the
   // runner is downloaded and assembled in-process (Remote).
-  private def buildBinary(config: Packaging, appJar: Path on Linux, label: Text, output: Path on Linux)
-     (using working: WorkingDirectory)
+  private def buildBinary
+    ( config: Packaging, appJar: Path on Linux, label: Text, output: Path on Linux )
+    ( using working: WorkingDirectory )
   :   Unit raises ExecError raises PackageError =
 
     config.runnerSource match
@@ -147,8 +148,8 @@ object Packager:
   // produces one self-contained per-platform binary and exits. `ethereal.name`
   // must be left unset or the build path is not taken.
   private def assembleViaSubprocess
-     (config: Packaging, appJar: Path on Linux, label: Text, output: Path on Linux)
-     (using working: WorkingDirectory)
+    ( config: Packaging, appJar: Path on Linux, label: Text, output: Path on Linux )
+    ( using working: WorkingDirectory )
   :   Unit raises ExecError raises PackageError =
 
     val bundle: Text = config.java.bundle match
@@ -161,13 +162,13 @@ object Packager:
 
     val arguments: List[Text] =
       List
-       (t"java",
-        t"-Dbuild.executable=$output",
-        t"-Dbuild.target=$label",
-        t"-Dbuild.java.minimum=${config.java.minimum}",
-        t"-Dbuild.java.preferred=${config.java.preferred}",
-        t"-Dbuild.java.bundle=$bundle",
-        t"-Dbuild.id=${config.buildId}")
+        ( t"java",
+          t"-Dbuild.executable=$output",
+          t"-Dbuild.target=$label",
+          t"-Dbuild.java.minimum=${config.java.minimum}",
+          t"-Dbuild.java.preferred=${config.java.preferred}",
+          t"-Dbuild.java.bundle=$bundle",
+          t"-Dbuild.id=${config.buildId}" )
       ++ publicKey
       ++ List(t"-jar", appJar.show)
 
@@ -180,22 +181,24 @@ object Packager:
   // in-process via `ethereal.Assembler`. All lower-level failures are surfaced
   // as `PackageError`.
   private def assembleRemote
-     (config:  Packaging,
-      appJar:  Path on Linux,
-      label:   Text,
-      output:  Path on Linux,
-      baseUrl: Text,
-      hashes:  Map[Text, Text])
-     (using working: WorkingDirectory)
+    ( config:  Packaging,
+     appJar:  Path on Linux,
+     label:   Text,
+     output:  Path on Linux,
+     baseUrl: Text,
+     hashes:  Map[Text, Text] )
+    ( using working: WorkingDirectory )
   :   Unit raises PackageError =
 
     whereas:
       case HttpError(_, _)       => PackageError(m"Failed to download the runner for $label")
-      case ConnectError(_)       => PackageError(m"Could not connect to download the runner for $label")
       case AssemblyError(detail) => PackageError(detail)
       case IoError(_, _, _, _)   => PackageError(m"A filesystem error occurred assembling $label")
       case StreamError(_)        => PackageError(m"A stream error occurred assembling $label")
       case UrlError(_, _, _)     => PackageError(m"The runner URL for $label is invalid")
+
+      case ConnectError(_) =>
+        PackageError(m"Could not connect to download the runner for $label")
 
     . mitigate:
         val expected: Text = hashes.at(label).lest(PackageError(m"No runner hash given for $label"))
@@ -207,10 +210,11 @@ object Packager:
 
         val runner: Data =
           mute[HttpEvent](t"$base$runnerName".decode[HttpUrl].fetch().read[Data])
+
         val actual: Text = runner.digest[Sha2[256]].serialize[Hex]
 
-        if actual != expected then
-          abort(PackageError(m"Downloaded runner for $label has SHA-256 $actual, expected $expected"))
+        if actual != expected then abort:
+          PackageError(m"Downloaded runner for $label has SHA-256 $actual, expected $expected")
 
         val zeros: Data = IArray.fill(Assembler.PublicKeyLength)(0.toByte)
 
@@ -226,8 +230,8 @@ object Packager:
         val jdk: Boolean = config.java.bundle == Packaging.Bundle.Jdk
 
         Assembler.assemble
-         (runner, appJar, output, label, config.buildId, config.java.minimum,
-          config.java.preferred, jdk, publicKey)
+          ( runner, appJar, output, label, config.buildId, config.java.minimum,
+            config.java.preferred, jdk, publicKey )
 
 
   private def write(output: Path on Linux, data: Data)

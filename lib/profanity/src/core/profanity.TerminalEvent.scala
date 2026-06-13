@@ -38,7 +38,9 @@ import gossamer.*
 import prepositional.*
 import spectacular.*
 
+
 sealed trait TerminalEvent
+
 
 enum TerminalInfo extends TerminalEvent:
   case WindowSize(rows: Int, columns: Int)
@@ -52,10 +54,12 @@ enum TerminalInfo extends TerminalEvent:
   // changed the layout.
   case Redraw
 
+
 object Signal:
   given decoder: Signal is Decodable in Text = text => Signal.valueOf(text.lower.capitalize.s)
   given encodable: Signal is Encodable in Text = _.shortName
   given showable: Signal is Showable = _.shortName
+
 
 enum Signal extends TerminalEvent:
   case Hup, Int, Quit, Ill, Trap, Abrt, Bus, Fpe, Kill, Usr1, Segv, Usr2, Pipe, Alrm, Term, Chld,
@@ -65,8 +69,6 @@ enum Signal extends TerminalEvent:
   def name: Text = t"SIG${this.toString.show.upper}"
   def id: Int = if ordinal < 15 then ordinal + 1 else ordinal + 2
 
-type UnixSignal = Signal
-val UnixSignal = Signal
 
 object WindowsSignal:
   given decoder: WindowsSignal is Decodable in Text =
@@ -74,6 +76,7 @@ object WindowsSignal:
 
   given encodable: WindowsSignal is Encodable in Text = _.shortName
   given showable: WindowsSignal is Showable = _.shortName
+
 
 enum WindowsSignal extends TerminalEvent:
   case CtrlC, CtrlBreak, Close, Logoff, Shutdown
@@ -85,12 +88,14 @@ enum WindowsSignal extends TerminalEvent:
     case Logoff    => t"LOGOFF"
     case Shutdown  => t"SHUTDOWN"
 
+
 object CtrlChar:
   def unapply(code: Char)
   :   ( Option
-        [ 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O'
-          | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '[' | '\\' | ']' | '^'
-          | '_' | '@' ] ) =
+          [ 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O'
+            | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '[' | '\\' | ']'
+            | '^'
+            | '_' | '@' ] ) =
 
       (code + 64).toChar match
         case char: ('@' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L'
@@ -144,6 +149,7 @@ object Keypress:
 
   given showable: Keypress is Showable = render(_)
 
+
 enum Keypress extends TerminalEvent:
   case Tab, Home, End, PageUp, PageDown, Insert, Delete, Enter, Backspace, Escape, Left, Right, Up,
     Down
@@ -154,10 +160,10 @@ enum Keypress extends TerminalEvent:
   case Shift(keypress: Keypress.EditKey | FunctionKey)
   case Alt(keypress: Shift | Keypress.EditKey | FunctionKey)
 
-  case Ctrl
-    ( keypress
-      :   Alt | Shift | Keypress.EditKey | FunctionKey | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G'
-          | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V'
-          | 'W' | 'X' | 'Y' | 'Z' | '[' | '\\' | ']' | '^' | '_' | '@' )
+  case
+    Ctrl
+      ( keypress: Alt | Shift | Keypress.EditKey | FunctionKey | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' |
+          'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' |
+          'V' | 'W' | 'X' | 'Y' | 'Z' | '[' | '\\' | ']' | '^' | '_' | '@' )
 
   case Meta(keypress: Ctrl | Alt | Shift | Keypress.EditKey | FunctionKey)

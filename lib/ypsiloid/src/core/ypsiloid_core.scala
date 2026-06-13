@@ -108,38 +108,42 @@ extension (yaml: Yaml.Ast)
       val len = arr.length
       var i = 0
       var hit = -1
+
       while i < len && hit < 0 do
         arr(i) match
           case s: String if s == key => hit = i/2
           case _                     => ()
+
         i += 2
+
       hit
 
   def array(using Tactic[YamlError]): IArray[Yaml.Ast] =
     if isArray then
       val full = yaml.asInstanceOf[IArray[Yaml.Ast]]
       val n = arrayLength
+
       if n == full.length then full
       else IArray.tabulate(n)(full(_))
     else
       expected(YamlPrimitive.Sequence) yet IArray[Yaml.Ast]()
 
   def double(using Tactic[YamlError]): Double = yaml.asInstanceOf[Matchable] match
-    case value: Double                 => value
-    case value: Long                   => value.toDouble
+    case value: Double                   => value
+    case value: Long                     => value.toDouble
     case value: Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd].toDouble
-    case _                             => expected(YamlPrimitive.Decimal) yet 0.0
+    case _                               => expected(YamlPrimitive.Decimal) yet 0.0
 
   def long(using Tactic[YamlError]): Long = yaml.asInstanceOf[Matchable] match
-    case value: Long                   => value
-    case value: Double                 => value.toLong
+    case value: Long                     => value
+    case value: Double                   => value.toLong
     case value: Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd].toLong.or(0L)
-    case _                             => expected(YamlPrimitive.Integer) yet 0L
+    case _                               => expected(YamlPrimitive.Integer) yet 0L
 
   def bcd(using Tactic[YamlError]): jacinta.Bcd = yaml.asInstanceOf[Matchable] match
     case value: Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd]
-    case value: Long                   => jacinta.Bcd(BigDecimal(value))
-    case value: Double                 => jacinta.Bcd(BigDecimal(value))
+    case value: Long                     => jacinta.Bcd(BigDecimal(value))
+    case value: Double                   => jacinta.Bcd(BigDecimal(value))
 
     case _ =>
       expected(YamlPrimitive.Decimal) yet jacinta.Bcd(BigDecimal(0))

@@ -33,6 +33,7 @@
 package savagery
 
 import anticipation.*
+import mosquito.*
 
 object internal:
   opaque type SvgId = Text
@@ -41,3 +42,22 @@ object internal:
     def apply(id: Text): SvgId = id
 
     extension (id: SvgId) def text: Text = id
+
+  object Affine:
+    // SVG matrix(a, b, c, d, e, f) corresponds to the 3x3 homogeneous matrix
+    //   | a c e |
+    //   | b d f |
+    //   | 0 0 1 |
+    def apply(a: Float, b: Float, c: Float, d: Float, e: Float, f: Float): Affine =
+      Matrix[3, 3]((a, c, e), (b, d, f), (0.0f, 0.0f, 1.0f))
+
+    extension (affine: Affine)
+      def a: Float = affine(0, 0)
+      def c: Float = affine(0, 1)
+      def e: Float = affine(0, 2)
+      def b: Float = affine(1, 0)
+      def d: Float = affine(1, 1)
+      def f: Float = affine(1, 2)
+
+  opaque type Affine <: Matrix[Float, 3, 3] = Matrix[Float, 3, 3]
+

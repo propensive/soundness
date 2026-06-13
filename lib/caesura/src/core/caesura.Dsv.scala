@@ -104,14 +104,15 @@ object Dsv:
       var count = 0
 
       provide[Foci[CellRef]]:
-        DsvProductDecoder[derivation]((row: Dsv) => build:
-          [field] => context =>
-            val i = row.columns.let(_.at(label)).or(count)
-            count += spans(index)
-            val row2 = Dsv(row.data.drop(i))
+        DsvProductDecoder[derivation]:
+          (row: Dsv) => build:
+            [field] => context =>
+              val i = row.columns.let(_.at(label)).or(count)
+              count += spans(index)
+              val row2 = Dsv(row.data.drop(i))
 
-            focus(CellRef(rowNumber, label)):
-              contextual.decoded(row2))
+              focus(CellRef(rowNumber, label)):
+                contextual.decoded(row2)
 
   object EncodableDerivation extends ProductDerivable[Encodable in Dsv]:
     inline def conjunction[derivation <: Product: ProductReflection]

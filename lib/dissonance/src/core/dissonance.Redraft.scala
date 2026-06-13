@@ -36,27 +36,21 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import rudiments.*
-import turbulence.*
 import vacuous.*
 
 import RedraftError.Reason
 
+
 object Redraft:
 
-  /* A single line of a `Redraft`. `Keep` is unambiguous context; `Add`/`Cut` are edits forced with
-     the alternate `>`/`<` markers; `Mark` is a primary `+`/`-` line, whose meaning (an edit of its
-     payload, or context matching the literal marker line) is resolved against the original. */
   enum Directive:
     case Keep(line: Text)
     case Add(line: Text)
     case Cut(line: Text)
     case Mark(line: Text, insert: Boolean)
 
-  /* A place where a `Redraft` cannot be unambiguously applied to a particular original; `line` is
-     the zero-based directive index in the redraft. */
   case class Anomaly(line: Int, text: Text, reason: Reason)
 
-  /* How much unchanged context to include when rendering a `Diff` as a `Redraft`. */
   enum Context:
     case Minimal, Full
     case Fixed(lines: Int)
@@ -74,6 +68,7 @@ object Redraft:
   def parse(lines: Stream[Text]): Redraft =
     val directives = lines.map: line =>
       val s = line.s
+
       if s == "+" || s.startsWith("+ ") then Directive.Mark(payload(line), insert = true)
       else if s == "-" || s.startsWith("- ") then Directive.Mark(payload(line), insert = false)
       else if s == ">" || s.startsWith("> ") then Directive.Add(payload(line))
@@ -90,18 +85,12 @@ object Redraft:
     case Directive.Mark(line, true)  => ("+ "+line.s).tt
     case Directive.Mark(line, false) => ("- "+line.s).tt
 
-  /* The result of aligning the matcher lines (`Keep`/`Cut` and resolved `Mark`s) against the
-     original, recording for each matcher its text, the leftmost index it matched, and the directive
-     index that produced it. */
   private case class Matcher(text: Text, index: Int, line: Int)
 
-  /* Apply a redraft's directives to an original by leftmost subsequence matching, producing the full
-     `Edit` list together with any anomalies (no-match, ambiguity, or insufficient anchoring). This
-     never raises; `resolve` and `verify` interpret the anomalies. */
   private def analyze
-              (directives: List[Directive],
-               original:   IndexedSeq[Text],
-               compare:    (Text, Text) => Boolean)
+    ( directives: List[Directive],
+      original:   IndexedSeq[Text],
+      compare:    (Text, Text) => Boolean )
   :   (List[Edit[Text]], List[Anomaly]) =
 
     val n = original.length
@@ -119,10 +108,12 @@ object Redraft:
 
     def keepUpTo(target: Int): Unit =
       var k = cursor
+
       while k < target do
         edits = Par(k, right, original(k)) :: edits
         right += 1
         k += 1
+
       cursor = target
 
     def keep(index: Int, text: Text, line: Int): Unit =
@@ -146,6 +137,7 @@ object Redraft:
       directive match
         case Directive.Keep(text) =>
           val index = seek(cursor, text)
+
           if index < 0 then anomalies = Anomaly(line, text, Reason.NoMatch) :: anomalies
           else keep(index, text, line)
 
@@ -154,6 +146,7 @@ object Redraft:
 
         case Directive.Cut(text) =>
           val index = seek(cursor, text)
+
           if index < 0 then anomalies = Anomaly(line, text, Reason.NoMatch) :: anomalies
           else cut(index, text, line)
 
@@ -180,6 +173,7 @@ object Redraft:
     def alignRight(todo: List[Matcher], limit: Int, acc: List[Int]): Optional[List[Int]] =
       todo match
         case Nil => acc
+
         case matcher :: rest =>
           var j = limit
           while j >= 0 && !compare(original(j), matcher.text) do j -= 1
@@ -196,6 +190,7 @@ object Redraft:
     val original: IndexedSeq[Text] = diff.edits.collect:
       case Par(_, _, value) => value.vouch
       case Del(_, value)    => value.vouch
+
     . to(IndexedSeq)
 
     val full: List[Directive] = diff.edits.to(List).flatMap:
@@ -226,7 +221,6 @@ object Redraft:
       case Context.Fixed(k) => Redraft(trim(resolved, k)*)
       case Context.Minimal  => Redraft(minimize(resolved, original, diff.patch(original).to(List))*)
 
-  /* Keep only unchanged lines within `k` directives of a change. */
   private def trim(directives: List[Directive], k: Int): List[Directive] =
     val keep = directives.map { case Directive.Keep(_) => false; case _ => true }.to(Array)
     val n = keep.length
@@ -238,10 +232,8 @@ object Redraft:
     directives.zipWithIndex.collect:
       case (directive, index) if !directive.isInstanceOf[Directive.Keep] || near(index) => directive
 
-  /* Greedily drop unchanged context, preferring lines furthest from any change, retaining a drop
-     only while the redraft still reproduces the target and stays unambiguous. */
   private def minimize
-              (directives: List[Directive], original: IndexedSeq[Text], target: List[Text])
+    ( directives: List[Directive], original: IndexedSeq[Text], target: List[Text] )
   :   List[Directive] =
 
     val array = directives.to(Array)
@@ -254,20 +246,22 @@ object Redraft:
       val (edits, anomalies) = analyze(candidate, original, _ == _)
       anomalies.isEmpty && Diff(edits*).patch(original).to(List) == target
 
-    val changes = array.indices.filter(i => !array(i).isInstanceOf[Directive.Keep])
+    val changes = array.indices.filter(!array(_).isInstanceOf[Directive.Keep])
 
     def distance(index: Int): Int =
-      if changes.isEmpty then 0 else changes.map(c => (c - index).abs).min
+      if changes.isEmpty then 0 else changes.map { c => (c - index).abs }.min
 
-    val order = array.indices
-                . filter(array(_).isInstanceOf[Directive.Keep])
-                . sortBy(index => -distance(index))
+    val order =
+      array.indices
+      . filter(array(_).isInstanceOf[Directive.Keep])
+      . sortBy: index => -distance(index)
 
     order.each: index =>
       dropped += index
       if !valid(remaining) then dropped -= index
 
     remaining
+
 
 case class Redraft(directives: Redraft.Directive*):
   def serialize: Stream[Text] = directives.map(Redraft.render1).to(Stream)
@@ -290,7 +284,3 @@ case class Redraft(directives: Redraft.Directive*):
   :   Stream[Text] raises RedraftError =
 
     resolve(original, compare).patch(original)
-
-extension (diff: Diff[Text])
-  def redraft(context: Redraft.Context = Redraft.Context.Minimal): Redraft =
-    Redraft.render(diff, context)

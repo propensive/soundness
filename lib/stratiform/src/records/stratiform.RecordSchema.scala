@@ -32,7 +32,6 @@
                                                                                                   */
 package stratiform
 
-import scala.quoted.*
 
 import anticipation.*
 import contingency.*
@@ -82,6 +81,7 @@ object RecordSchema:
 
   given optionalIdentifier
   :   ("identifier?" is Intensional in RecordSchema from Tel to Optional[Text]) =
+
     RecordSchema.intensional: tel =>
       if absent(tel) then Unset else tel.primaryAtom
 
@@ -90,6 +90,7 @@ object RecordSchema:
 
   given optionalTypeName
   :   ("type-name?" is Intensional in RecordSchema from Tel to Optional[Text]) =
+
     RecordSchema.intensional: tel =>
       if absent(tel) then Unset else tel.primaryAtom
 
@@ -111,14 +112,15 @@ object RecordSchema:
   // `Tel.empty` for an absent field; the Intensional below maps an
   // absent Tel to `false` and a present one to `true`.
   given flag: ("flag" is Intensional in RecordSchema from Tel to Boolean) =
-    RecordSchema.intensional(tel => !absent(tel))
+    RecordSchema.intensional(!absent(_))
 
   given tel: ("tel" is Intensional in RecordSchema from Tel to Tel) =
     RecordSchema.intensional(identity)
 
   // Helper constructor for `Intensional` instances that ignore params.
   def intensional[name <: Label, value](accessor: Tel => value)
-  :     name is Intensional in RecordSchema from Tel to value =
+  :   name is Intensional in RecordSchema from Tel to value =
+
     new Intensional:
       type Self = name
       type Origin = Tel

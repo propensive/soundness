@@ -32,11 +32,11 @@
                                                                                                   */
 package enigmatic
 
+import scala.reflect.Selectable.reflectiveSelectable
+
 import anticipation.*
 import gossamer.*
 import prepositional.*
-
-import scala.reflect.Selectable.reflectiveSelectable
 
 object Des:
   given value: [mode, padding]

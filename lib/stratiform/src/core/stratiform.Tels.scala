@@ -55,15 +55,6 @@ import TelError.Reason
 // - Definition names (record / scalar / select) are PascalCase
 //   TypeName identifiers, also Text at the data level.
 
-case class Tels
-   ( name:     Text,
-     document: Tels.Struct,
-     layers:   IArray[Tels.Layer],
-     sigil:    Optional[Char],
-     records:  IArray[Tels.RecordDefinition],
-     scalars:  IArray[Tels.ScalarDefinition],
-     selects:  IArray[Tels.SelectDefinition] )
-
 object Tels extends Tels2:
 
   // Per-axis polarity tristate from §20: "default" means no flag was
@@ -82,18 +73,18 @@ object Tels extends Tels2:
   sealed trait Member
 
   case class Field
-     ( required:    Polarity,
-       repeatable:  Polarity,
-       keyword:     Text,
-       fieldType:   Type,
-       default:     Optional[Text],
-       description: Optional[Text] = Unset )
+    ( required:    Polarity,
+      repeatable:  Polarity,
+      keyword:     Text,
+      fieldType:   Type,
+      default:     Optional[Text],
+      description: Optional[Text] = Unset )
   extends Member
 
   case class SelectRef
-     ( required:   Polarity,
-       repeatable: Polarity,
-       reference:  Text )
+    ( required:   Polarity,
+      repeatable: Polarity,
+      reference:  Text )
   extends Member
 
   case class Exclude(keyword: Text) extends Member
@@ -123,31 +114,31 @@ object Tels extends Tels2:
   // free-text `description` (§20): semantic, survives BinTEL round-trips,
   // never validated.
   case class RecordDefinition
-     ( name:        Text,
-       members:     IArray[Member],
-       validators:  IArray[Text],
-       description: Optional[Text] = Unset )
+    ( name:        Text,
+      members:     IArray[Member],
+      validators:  IArray[Text],
+      description: Optional[Text] = Unset )
 
   case class ScalarDefinition
-     ( name:        Text,
-       validators:  IArray[Text],
-       description: Optional[Text] = Unset )
+    ( name:        Text,
+      validators:  IArray[Text],
+      description: Optional[Text] = Unset )
 
   case class SelectDefinition
-     ( name:        Text,
-       variants:    IArray[Variant],
-       validators:  IArray[Text],
-       description: Optional[Text] = Unset )
+    ( name:        Text,
+      variants:    IArray[Variant],
+      validators:  IArray[Text],
+      description: Optional[Text] = Unset )
 
   // A Layer applies incremental refinements per §20.3. `overlay` is the
   // (possibly empty) Struct merged into the document root; the three
   // Definition lists are merged into the composed namespace.
   case class Layer
-     ( name:    Text,
-       overlay: Struct,
-       records: IArray[RecordDefinition],
-       scalars: IArray[ScalarDefinition],
-       selects: IArray[SelectDefinition] )
+    ( name:    Text,
+      overlay: Struct,
+      records: IArray[RecordDefinition],
+      scalars: IArray[ScalarDefinition],
+      selects: IArray[SelectDefinition] )
 
   // Predefined built-in type names per §20.5 / §21.5. Used by the
   // schema-of-schemas and any user schema that references them via
@@ -168,19 +159,21 @@ object Tels extends Tels2:
     private inline def kebab(s: String): Text = Text(s)
 
     private inline def field
-         ( keyword:    String,
-           fieldType:  Type,
-           required:   Polarity = Implicit,
-           repeatable: Polarity = Implicit,
-           default:    Optional[Text] = Unset )
-    :     Field =
+      ( keyword:    String,
+        fieldType:  Type,
+        required:   Polarity = Implicit,
+        repeatable: Polarity = Implicit,
+        default:    Optional[Text] = Unset )
+    :   Field =
+
       Field(required, repeatable, kebab(keyword), fieldType, default)
 
     private inline def selectRef
-         ( reference:  String,
-           required:   Polarity = Implicit,
-           repeatable: Polarity = Implicit )
-    :     SelectRef =
+      ( reference:  String,
+        required:   Polarity = Implicit,
+        repeatable: Polarity = Implicit )
+    :   SelectRef =
+
       SelectRef(required, repeatable, kebab(reference))
 
     private inline def variant(keyword: String, variantType: Type): Variant =
@@ -192,14 +185,16 @@ object Tels extends Tels2:
     private inline def describe(text: String): Text = Text(text)
 
     private inline def record(name: String, description: String, members: Member*)
-    :     RecordDefinition =
+    :   RecordDefinition =
+
       RecordDefinition(kebab(name), IArray.from(members), IArray.empty, describe(description))
 
     private inline def scalar(name: String, validators: String*): ScalarDefinition =
       ScalarDefinition(kebab(name), IArray.from(validators.map(kebab)))
 
     private inline def select(name: String, description: String, variants: Variant*)
-    :     SelectDefinition =
+    :   SelectDefinition =
+
       SelectDefinition(kebab(name), IArray.from(variants), IArray.empty, describe(description))
 
     // Built-in scalar types referenced from member declarations.
@@ -218,7 +213,7 @@ object Tels extends Tels2:
         field("scalar",   Reference(kebab("Scalar")), required = Loose, repeatable = Loose),
         field("select",   Reference(kebab("Select")), required = Loose, repeatable = Loose),
         field("document", Reference(kebab("Body"))),
-        field("layer",    Reference(kebab("Layer")),  required = Loose, repeatable = Loose)),
+        field("layer", Reference(kebab("Layer")), required = Loose, repeatable = Loose)),
       validators = IArray.empty)
 
     val tels: Tels = Tels(
@@ -280,7 +275,7 @@ object Tels extends Tels2:
           field("record",  Reference(kebab("Record")), required = Loose, repeatable = Loose),
           field("scalar",  Reference(kebab("Scalar")), required = Loose, repeatable = Loose),
           field("select",  Reference(kebab("Select")), required = Loose, repeatable = Loose),
-          field("overlay", Reference(kebab("Body")),   required = Loose))),
+          field("overlay", Reference(kebab("Body")), required = Loose))),
       scalars  = IArray(
         scalar("Identifier", "identifier"),
         scalar("TypeName",   "type-name"),
@@ -311,13 +306,15 @@ object Tels extends Tels2:
 
       // Same as `validate` but also applies the registry's validators.
       def validate(using schema: Tels, validators: Tel.Validator.Registry)
-      :     Tel raises TelError =
+      :   Tel raises TelError =
+
         Tel.Type.assign(tel, schema, validators)
         tel
 
       // Convenience: validate-then-decode in a single call.
       inline def asValidated[value: Decodable in Tel](using schema: Tels)
-      :     value raises TelError =
+      :   value raises TelError =
+
         Tel.Type.assign(tel, schema)
         tel.as[value]
 
@@ -333,6 +330,7 @@ object Tels extends Tels2:
         val seenLayerNames = scala.collection.mutable.HashSet.empty[Text]
         var composed = schema.copy(layers = IArray.empty)
         var i = 0
+
         while i < schema.layers.length do
           val layer = schema.layers(i)
           if !seenLayerNames.add(layer.name) then abort(TelError(Reason.DuplicateLayerName))
@@ -348,18 +346,20 @@ object Tels extends Tels2:
       val mergedDocument = mergeStruct(base.document, layer.overlay)
 
       base.copy
-       ( document = mergedDocument,
-         records  = mergedRecords,
-         scalars  = mergedScalars,
-         selects  = mergedSelects )
+        ( document = mergedDocument,
+          records  = mergedRecords,
+          scalars  = mergedScalars,
+          selects  = mergedSelects )
 
     private def mergePolarity(base: Polarity, layer: Polarity, axis: PolarityAxis)
-    :     Polarity raises TelError =
+    :   Polarity raises TelError =
+
       (base, layer) match
         case (b, Polarity.Implicit)              => b
         case (_, Polarity.Tight)                 => Polarity.Tight
-        case (Polarity.Loose,    Polarity.Loose) => Polarity.Loose
-        case (_,                 Polarity.Loose) => axis match
+        case (Polarity.Loose, Polarity.Loose)    => Polarity.Loose
+
+        case (_, Polarity.Loose) => axis match
           case PolarityAxis.Required   => abort(TelError(Reason.LayerLoosenRequired))
           case PolarityAxis.Repeatable => abort(TelError(Reason.LayerLoosenRepeatable))
 
@@ -368,12 +368,14 @@ object Tels extends Tels2:
 
     private def mergeStruct(base: Struct, layer: Struct): Struct raises TelError =
       val members = scala.collection.mutable.ArrayBuffer.from(base.members.toList)
+
       val keywordToIndex = scala.collection.mutable.HashMap.from(
         members.zipWithIndex.collect:
           case (f: Field, idx)     => f.keyword -> idx
           case (s: SelectRef, idx) => s.reference -> idx)
 
       var i = 0
+
       while i < layer.members.length do
         layer.members(i) match
           case f: Field =>
@@ -381,17 +383,18 @@ object Tels extends Tels2:
               case Some(idx) =>
                 members(idx) match
                   case existing: Field =>
-                    members(idx) = Field
-                     ( required   = mergePolarity(existing.required, f.required,
-                                      PolarityAxis.Required),
-                       repeatable = mergePolarity(existing.repeatable, f.repeatable,
-                                      PolarityAxis.Repeatable),
-                       keyword     = f.keyword,
-                       fieldType   = existing.fieldType,
-                       default     = existing.default,
-                       // §20.3: a layer's non-null description overrides
-                       // the base's; otherwise the base's is inherited.
-                       description = f.description.or(existing.description) )
+                    members(idx) =
+                      Field
+                        ( required   = mergePolarity(existing.required, f.required,
+                                        PolarityAxis.Required),
+                         repeatable = mergePolarity(existing.repeatable, f.repeatable,
+                                        PolarityAxis.Repeatable),
+                         keyword     = f.keyword,
+                         fieldType   = existing.fieldType,
+                         default     = existing.default,
+                         // §20.3: a layer's non-null description overrides
+                         // the base's; otherwise the base's is inherited.
+                         description = f.description.or(existing.description) )
 
                   case _ => abort(TelError(Reason.LayerFieldTypeMismatch))
 
@@ -404,12 +407,13 @@ object Tels extends Tels2:
               case Some(idx) =>
                 members(idx) match
                   case existing: SelectRef if existing.reference == s.reference =>
-                    members(idx) = SelectRef
-                     ( required   = mergePolarity(existing.required, s.required,
-                                      PolarityAxis.Required),
-                       repeatable = mergePolarity(existing.repeatable, s.repeatable,
-                                      PolarityAxis.Repeatable),
-                       reference  = s.reference )
+                    members(idx) =
+                      SelectRef
+                        ( required   = mergePolarity(existing.required, s.required,
+                                         PolarityAxis.Required),
+                          repeatable = mergePolarity(existing.repeatable, s.repeatable,
+                                         PolarityAxis.Repeatable),
+                          reference  = s.reference )
 
                   case _ => abort(TelError(Reason.LayerKeywordCollision))
 
@@ -425,21 +429,25 @@ object Tels extends Tels2:
       Struct(IArray.from(members), IArray.from(mergedValidators))
 
     private def mergeRecordList
-         (base:     IArray[RecordDefinition],
-          layer:    IArray[RecordDefinition],
-          scalars:  IArray[ScalarDefinition],
-          selects:  IArray[SelectDefinition])
-    :     IArray[RecordDefinition] raises TelError =
+      ( base:     IArray[RecordDefinition],
+       layer:    IArray[RecordDefinition],
+       scalars:  IArray[ScalarDefinition],
+       selects:  IArray[SelectDefinition] )
+    :   IArray[RecordDefinition] raises TelError =
+
       val out = scala.collection.mutable.ArrayBuffer.from(base.toList)
       var i = 0
+
       while i < layer.length do
         val newDef = layer(i)
         val existing = out.indexWhere(_.name == newDef.name)
+
         if existing >= 0 then
           out(existing) = mergeRecord(out(existing), newDef)
         else
           if scalars.exists(_.name == newDef.name) || selects.exists(_.name == newDef.name)
           then abort(TelError(Reason.DuplicateDefinition))
+
           out += newDef
 
         i += 1
@@ -447,31 +455,38 @@ object Tels extends Tels2:
       IArray.from(out)
 
     private def mergeRecord(base: RecordDefinition, layer: RecordDefinition)
-    :     RecordDefinition raises TelError =
+    :   RecordDefinition raises TelError =
+
       val baseStruct  = Struct(base.members, base.validators)
       val layerStruct = Struct(layer.members, layer.validators)
       val merged      = mergeStruct(baseStruct, layerStruct)
+
       RecordDefinition(base.name, merged.members, merged.validators,
           layer.description.or(base.description))
 
     private def mergeScalarList
-         (base:    IArray[ScalarDefinition],
-          layer:   IArray[ScalarDefinition],
-          records: IArray[RecordDefinition],
-          selects: IArray[SelectDefinition])
-    :     IArray[ScalarDefinition] raises TelError =
+      ( base:    IArray[ScalarDefinition],
+       layer:   IArray[ScalarDefinition],
+       records: IArray[RecordDefinition],
+       selects: IArray[SelectDefinition] )
+    :   IArray[ScalarDefinition] raises TelError =
+
       val out = scala.collection.mutable.ArrayBuffer.from(base.toList)
       var i = 0
+
       while i < layer.length do
         val newDef = layer(i)
         val existing = out.indexWhere(_.name == newDef.name)
+
         if existing >= 0 then
           val mergedValidators = (out(existing).validators ++ newDef.validators).distinct
+
           out(existing) = ScalarDefinition(newDef.name, IArray.from(mergedValidators),
               newDef.description.or(out(existing).description))
         else
           if records.exists(_.name == newDef.name) || selects.exists(_.name == newDef.name)
           then abort(TelError(Reason.DuplicateDefinition))
+
           out += newDef
 
         i += 1
@@ -479,21 +494,25 @@ object Tels extends Tels2:
       IArray.from(out)
 
     private def mergeSelectList
-         (base:    IArray[SelectDefinition],
-          layer:   IArray[SelectDefinition],
-          records: IArray[RecordDefinition],
-          scalars: IArray[ScalarDefinition])
-    :     IArray[SelectDefinition] raises TelError =
+      ( base:    IArray[SelectDefinition],
+       layer:   IArray[SelectDefinition],
+       records: IArray[RecordDefinition],
+       scalars: IArray[ScalarDefinition] )
+    :   IArray[SelectDefinition] raises TelError =
+
       val out = scala.collection.mutable.ArrayBuffer.from(base.toList)
       var i = 0
+
       while i < layer.length do
         val newDef = layer(i)
         val existing = out.indexWhere(_.name == newDef.name)
+
         if existing >= 0 then
           out(existing) = mergeSelect(out(existing), newDef)
         else
           if records.exists(_.name == newDef.name) || scalars.exists(_.name == newDef.name)
           then abort(TelError(Reason.DuplicateDefinition))
+
           out += newDef
 
         i += 1
@@ -501,9 +520,11 @@ object Tels extends Tels2:
       IArray.from(out)
 
     private def mergeSelect(base: SelectDefinition, layer: SelectDefinition)
-    :     SelectDefinition raises TelError =
+    :   SelectDefinition raises TelError =
+
       val variants = scala.collection.mutable.ArrayBuffer.from(base.variants.toList)
       var i = 0
+
       while i < layer.variants.length do
         val v = layer.variants(i)
         val existingIdx = variants.indexWhere(_.keyword == v.keyword)
@@ -511,6 +532,7 @@ object Tels extends Tels2:
         i += 1
 
       val mergedValidators = (base.validators ++ layer.validators).distinct
+
       SelectDefinition(base.name, IArray.from(variants), IArray.from(mergedValidators),
           layer.description.or(base.description))
 
@@ -527,10 +549,10 @@ object Tels extends Tels2:
         && seqEq(a.records, b.records, recordEq)
         && seqEq(a.scalars, b.scalars, scalarEq)
         && seqEq(a.selects, b.selects, selectEq)
-        && seqEq(a.layers,  b.layers,  layerEq)
+        && seqEq(a.layers, b.layers, layerEq)
 
     private def seqEq[T](a: IArray[T], b: IArray[T], eq: (T, T) => Boolean): Boolean =
-      a.length == b.length && (0 until a.length).forall(i => eq(a(i), b(i)))
+      a.length == b.length && (0 until a.length).forall: i => eq(a(i), b(i))
 
     private def structEq(a: Struct, b: Struct): Boolean =
       seqEq(a.members, b.members, memberEq)
@@ -551,9 +573,9 @@ object Tels extends Tels2:
       case _                        => false
 
     private def typeEq(a: Type, b: Type): Boolean = (a, b) match
-      case (a: Struct, b: Struct)        => structEq(a, b)
-      case (a: Scalar, b: Scalar)        => seqEq(a.validators, b.validators, textEq)
-      case (Flag, Flag)                  => true
+      case (a: Struct, b: Struct)         => structEq(a, b)
+      case (a: Scalar, b: Scalar)         => seqEq(a.validators, b.validators, textEq)
+      case (Flag, Flag)                   => true
       case (Reference(n1), Reference(n2)) => n1 == n2
       case _                              => false
 
@@ -591,10 +613,13 @@ object Tels extends Tels2:
       val layers   = scala.collection.mutable.ArrayBuffer.empty[Layer]
 
       var i = 0
+
       while i < compounds.length do
         val c = compounds(i)
+
         c.keyword.s match
           case "name"     => name = firstAtomText(c)
+
           case "sigil"    =>
             val s = firstAtomText(c)
             sigil = if s.absent then Unset else Optional(s.vouch.s.charAt(0))
@@ -608,20 +633,21 @@ object Tels extends Tels2:
 
         i += 1
 
-      val builtinScalars = IArray
-       ( ScalarDefinition(t"Identifier", IArray(t"identifier")),
-         ScalarDefinition(t"TypeName",   IArray(t"type-name")),
-         ScalarDefinition(t"Sigil",      IArray(t"sigil")),
-         ScalarDefinition(t"String",     IArray(t"string")) )
+      val builtinScalars =
+        IArray
+          ( ScalarDefinition(t"Identifier", IArray(t"identifier")),
+            ScalarDefinition(t"TypeName",   IArray(t"type-name")),
+            ScalarDefinition(t"Sigil",      IArray(t"sigil")),
+            ScalarDefinition(t"String",     IArray(t"string")) )
 
       Tels
-       ( name     = name.or(abort(TelError(Reason.RequiredMemberAbsent))),
-         document = documentStruct.or(abort(TelError(Reason.RequiredMemberAbsent))),
-         layers   = IArray.from(layers),
-         sigil    = sigil,
-         records  = IArray.from(records),
-         scalars  = builtinScalars ++ IArray.from(scalars),
-         selects  = IArray.from(selects) )
+        ( name     = name.or(abort(TelError(Reason.RequiredMemberAbsent))),
+          document = documentStruct.or(abort(TelError(Reason.RequiredMemberAbsent))),
+          layers   = IArray.from(layers),
+          sigil    = sigil,
+          records  = IArray.from(records),
+          scalars  = builtinScalars ++ IArray.from(scalars),
+          selects  = IArray.from(selects) )
 
     private def firstAtomText(c: Tel.Compound): Optional[Text] =
       val texts = c.atoms.collect { case Tel.Atom.Inline(t, _) => t }
@@ -661,6 +687,7 @@ object Tels extends Tels2:
     private def parseScalar(c: Tel.Compound): ScalarDefinition raises TelError =
       val scName = firstAtomText(c).or(abort(TelError(Reason.RequiredMemberAbsent)))
       val children = childCompounds(c)
+
       val validators = children.flatMap: cc =>
         if cc.keyword == t"validate" then atomTexts(cc) else IArray.empty[Text]
 
@@ -671,20 +698,23 @@ object Tels extends Tels2:
       val children   = childCompounds(c)
       val variants   = scala.collection.mutable.ArrayBuffer.empty[Variant]
       val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
+
       children.each: cc =>
         cc.keyword.s match
-          case "variant"  =>
+          case "validate"    => validators ++= atomTexts(cc)
+          case "exclude"     => ()
+          case "description" => ()
+
+          case "variant" =>
             val ats = atomTexts(cc)
             if ats.length < 2 then abort(TelError(Reason.RequiredMemberAbsent))
             variants += Variant(ats(0), parseType(ats(1)), descriptionOf(childCompounds(cc)))
 
-          case "validate"    => validators ++= atomTexts(cc)
-          case "exclude"     => ()
-          case "description" => ()
-          case _             => abort(TelError(Reason.UnknownKeyword))
+          case _ =>
+            abort(TelError(Reason.UnknownKeyword))
 
-      SelectDefinition(seName, IArray.from(variants), IArray.from(validators),
-          descriptionOf(children))
+      SelectDefinition
+        ( seName, IArray.from(variants), IArray.from(validators), descriptionOf(children) )
 
     private def parseBody(c: Tel.Compound): Optional[Struct] raises TelError =
       val (members, validators) = parseMembersAndValidators(childCompounds(c))
@@ -706,14 +736,15 @@ object Tels extends Tels2:
           case _         => abort(TelError(Reason.UnknownKeyword))
 
       Layer
-       ( name    = lyName,
-         overlay = overlay.or(Struct(IArray.empty, IArray.empty)),
-         records = IArray.from(recs),
-         scalars = IArray.from(scs),
-         selects = IArray.from(sels) )
+        ( name    = lyName,
+          overlay = overlay.or(Struct(IArray.empty, IArray.empty)),
+          records = IArray.from(recs),
+          scalars = IArray.from(scs),
+          selects = IArray.from(sels) )
 
     private def parseMembersAndValidators(compounds: IArray[Tel.Compound])
-    :     (IArray[Member], IArray[Text]) raises TelError =
+    :   (IArray[Member], IArray[Text]) raises TelError =
+
       val members    = scala.collection.mutable.ArrayBuffer.empty[Member]
       val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
 
@@ -722,6 +753,7 @@ object Tels extends Tels2:
           case "field"    => members += parseField(cc)
           case "select"   => members += parseSelectRef(cc)
           case "validate" => validators ++= atomTexts(cc)
+
           case "exclude"  =>
             val ats = atomTexts(cc)
             if ats.length >= 1 then members += Exclude(ats(0))
@@ -744,12 +776,14 @@ object Tels extends Tels2:
       var default:    Optional[Text] = Unset
 
       var j = 2
+
       while j < ats.length do
         ats(j).s match
           case "optional"     => required   = Polarity.Loose
           case "required"     => required   = Polarity.Tight
           case "repeatable"   => repeatable = Polarity.Loose
           case "irrepeatable" => repeatable = Polarity.Tight
+
           case "default"      =>
             if j + 1 < ats.length then
               default = ats(j + 1): Optional[Text]
@@ -771,6 +805,7 @@ object Tels extends Tels2:
       var repeatable: Polarity = Polarity.Implicit
 
       var j = 1
+
       while j < ats.length do
         ats(j).s match
           case "optional"     => required   = Polarity.Loose
@@ -797,6 +832,7 @@ object Tels extends Tels2:
       // Document struct: name=0, sigil=1, record=2, scalar=3, select=4,
       // document=5, layer=6.
       val name = textAt(ch, 0).or(abort(TelError(Reason.RequiredMemberAbsent)))
+
       val sigil: Optional[Char] = textAt(ch, 1) match
         case t: Text => if t.s.isEmpty then Unset else Optional(t.s.charAt(0))
         case _       => Unset
@@ -805,14 +841,15 @@ object Tels extends Tels2:
       val scalars  = nodesAt(ch, 3).map(scalarFromElement)
       val selects  = nodesAt(ch, 4).map(selectFromElement)
       val document = nodeAt(ch, 5).let(bodyFromElement)
-                       .or(abort(TelError(Reason.RequiredMemberAbsent)))
+        .or(abort(TelError(Reason.RequiredMemberAbsent)))
       val layers   = nodesAt(ch, 6).map(layerFromElement)
 
-      val builtinScalars = IArray
-       ( ScalarDefinition(t"Identifier", IArray(t"identifier")),
-         ScalarDefinition(t"TypeName",   IArray(t"type-name")),
-         ScalarDefinition(t"Sigil",      IArray(t"sigil")),
-         ScalarDefinition(t"String",     IArray(t"string")) )
+      val builtinScalars =
+        IArray
+          ( ScalarDefinition(t"Identifier", IArray(t"identifier")),
+            ScalarDefinition(t"TypeName",   IArray(t"type-name")),
+            ScalarDefinition(t"Sigil",      IArray(t"sigil")),
+            ScalarDefinition(t"String",     IArray(t"string")) )
 
       Tels(name, document, layers, sigil, records, builtinScalars ++ scalars, selects)
 
@@ -830,11 +867,14 @@ object Tels extends Tels2:
     private def textAt(children: IArray[Tel.Element], idx: Int): Optional[Text] =
       var i = 0
       var result: Optional[Text] = Unset
+
       while i < children.length do
         children(i) match
           case Tel.Element.Value(j, _, t) if j == idx => result = t
           case _                                      => ()
+
         i += 1
+
       result
 
     private def nodesAt(children: IArray[Tel.Element], idx: Int): IArray[Tel.Element] =
@@ -861,13 +901,14 @@ object Tels extends Tels2:
     // irrepeatable=5, default=6, description=7.
     private def fieldFromElement(element: Tel.Element): Field =
       val ch = childrenOf(element)
+
       Field
-       ( required    = polarity(ch, 2, 3),
-         repeatable  = polarity(ch, 4, 5),
-         keyword     = textAt(ch, 0).or(t""),
-         fieldType   = typeFromText(textAt(ch, 1).or(t"")),
-         default     = textAt(ch, 6),
-         description = textAt(ch, 7) )
+        ( required    = polarity(ch, 2, 3),
+          repeatable  = polarity(ch, 4, 5),
+          keyword     = textAt(ch, 0).or(t""),
+          fieldType   = typeFromText(textAt(ch, 1).or(t"")),
+          default     = textAt(ch, 6),
+          description = textAt(ch, 7) )
 
     // SelectRef meta: reference=0, optional=1, required=2, repeatable=3,
     // irrepeatable=4.
@@ -883,21 +924,28 @@ object Tels extends Tels2:
     // Member group (field / select / validate at the given flat indices),
     // consumed in canonical order so members keep their source sequence.
     private def membersFromBody
-         (children: IArray[Tel.Element], fieldIdx: Int, selectIdx: Int, validateIdx: Int)
-    :     (IArray[Member], IArray[Text]) =
+      ( children: IArray[Tel.Element], fieldIdx: Int, selectIdx: Int, validateIdx: Int )
+    :   (IArray[Member], IArray[Text]) =
+
       val members    = scala.collection.mutable.ArrayBuffer.empty[Member]
       val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
       var i = 0
+
       while i < children.length do
         val e = children(i)
+
         kidx(e) match
           case k if k == fieldIdx    => members += fieldFromElement(e)
           case k if k == selectIdx   => members += selectRefFromElement(e)
+
           case k if k == validateIdx => e match
             case Tel.Element.Value(_, _, t) => validators += t
             case _                          => ()
+
           case _ => ()
+
         i += 1
+
       (IArray.from(members), IArray.from(validators))
 
     // Record meta: name=0, Member{field=1, select=2, validate=3}, description=4.
@@ -917,15 +965,21 @@ object Tels extends Tels2:
       val variants   = scala.collection.mutable.ArrayBuffer.empty[Variant]
       val validators = scala.collection.mutable.ArrayBuffer.empty[Text]
       var i = 0
+
       while i < ch.length do
         val e = ch(i)
+
         kidx(e) match
           case 1 => variants += variantFromElement(e)
+
           case 3 => e match
             case Tel.Element.Value(_, _, t) => validators += t
             case _                          => ()
+
           case _ => ()
+
         i += 1
+
       SelectDefinition(textAt(ch, 0).or(t""), IArray.from(variants), IArray.from(validators),
           textAt(ch, 4))
 
@@ -937,9 +991,19 @@ object Tels extends Tels2:
     // Layer meta: name=0, record=1, scalar=2, select=3, overlay=4.
     private def layerFromElement(element: Tel.Element): Layer =
       val ch = childrenOf(element)
+
       Layer
-       ( name    = textAt(ch, 0).or(t""),
-         overlay = nodeAt(ch, 4).let(bodyFromElement).or(Struct(IArray.empty, IArray.empty)),
-         records = nodesAt(ch, 1).map(recordFromElement),
-         scalars = nodesAt(ch, 2).map(scalarFromElement),
-         selects = nodesAt(ch, 3).map(selectFromElement) )
+        ( name    = textAt(ch, 0).or(t""),
+          overlay = nodeAt(ch, 4).let(bodyFromElement).or(Struct(IArray.empty, IArray.empty)),
+          records = nodesAt(ch, 1).map(recordFromElement),
+          scalars = nodesAt(ch, 2).map(scalarFromElement),
+          selects = nodesAt(ch, 3).map(selectFromElement) )
+
+case class Tels
+  ( name:     Text,
+    document: Tels.Struct,
+    layers:   IArray[Tels.Layer],
+    sigil:    Optional[Char],
+    records:  IArray[Tels.RecordDefinition],
+    scalars:  IArray[Tels.ScalarDefinition],
+    selects:  IArray[Tels.SelectDefinition] )

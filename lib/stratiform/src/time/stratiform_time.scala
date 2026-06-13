@@ -35,9 +35,6 @@ package stratiform
 import anticipation.*
 import aviation.*
 import contingency.*
-import distillate.*
-import gossamer.*
-import prepositional.*
 
 // Aviation integration: encode TEL atom values to/from Aviation's
 // Instant and Duration types. Mirroring jacinta.time, the codecs are
@@ -46,16 +43,17 @@ import prepositional.*
 
 package telEncodables:
   given encodeInstantsAsUnixEpochMilliseconds: Instant is Tel.Encodable =
-    Tel.Encodable(Shape.Whole)(instant => Tel.scalar(instant.long.toString.tt))
+    Tel.Encodable(Shape.Whole): instant => Tel.scalar(instant.long.toString.tt)
 
   given encodeDurationsAsMilliseconds: Duration is Tel.Encodable =
-    Tel.Encodable(Shape.Whole)(duration => Tel.scalar((duration.value*1000).toLong.toString.tt))
+    Tel.Encodable(Shape.Whole): duration => Tel.scalar((duration.value*1000).toLong.toString.tt)
 
 package telDecodables:
   given decodeInstantsAsUnixEpochMilliseconds: Tactic[TelError]
   =>  Instant is Tel.Decodable =
     Tel.Decodable(Shape.Whole): tel =>
       import abstractables.instantIsAbstractable
+
       try Instant(tel.primaryAtom.s.toLong)
       catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
 

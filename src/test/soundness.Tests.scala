@@ -56,7 +56,6 @@ object Tests extends Suite(m"Soundness tests"):
     capricious.Tests()
     cardinality.Tests()
     cataclysm.Tests()
-    cellulose.Tests()
     charisma.Tests()
     chiaroscuro.Tests()
     coaxial.Tests()

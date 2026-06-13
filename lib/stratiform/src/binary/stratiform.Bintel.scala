@@ -44,75 +44,6 @@ import prepositional.*
 import ulysses.*
 import vacuous.*
 
-// BinTEL §7 node encoding. Serialises a typed `Tel.Element` tree into
-// the binary form defined by `spec/bintel.md` — no magic number, no
-// schema signature; the output is exactly the document-root body
-// described in §7.1, suitable for §3 value-hashing.
-//
-// §7.1 forms:
-//   - Document root (Tel.Element.Node with keywordIndex = Unset):
-//       child-count : varint, then each child in canonical order.
-//   - Struct node (Node with elementType = Tels.Struct):
-//       keyword-index : varint, child-count : varint, recursive children.
-//   - Flag node (Node with elementType = Tels.Flag):
-//       keyword-index : varint.
-//   - Scalar node (Tel.Element.Value):
-//       keyword-index : varint, byte-length : varint, UTF-8 value bytes.
-//
-// Reference types do not appear: the type-assignment phase resolves
-// them to Struct / Scalar / Flag before producing Tel.Element.
-
-extension (tel: Tel)
-  // Encode this document's semantic model to BinTEL body bytes (no
-  // magic number, no schema signature). Type-assigns `tel` against
-  // `schema` first; raises `TelError` on type-assignment failures.
-  def bintel(schema: Tels): Data raises TelError =
-    Bintel.encode(Tel.Type.assign(tel, schema), schema)
-
-  // BLAKE3 digest of this document's BinTEL body (§3 value hash). The
-  // hash is taken over the body bytes only — no magic number, no
-  // schema signature — and is therefore a function of the semantic
-  // model and the schema alone, independent of presentation form.
-  def valueHash(schema: Tels): Digest in Blake3 raises TelError =
-    tel.bintel(schema).digest[Blake3]
-
-  // Encode this document as a complete §6 BinTEL byte sequence —
-  // magic + signature length + signature + body. The signature length
-  // must be a valid palimpsest length under some `(H, k_i, k_r)`;
-  // otherwise raises `BintelError(BadSignatureLength)`.
-  def bintelDocument(schema: Tels, signature: Data)
-  :     Data raises TelError raises BintelError =
-    Bintel.frame(tel.bintel(schema), signature)
-
-  // Encode this document as a complete §6.2 self-contained BinTEL byte
-  // sequence — magic + signature + embedded schema body + document root.
-  // `schemaDoc` is the schema as a TEL document, parseable under the
-  // tel-schema axiom; its signature and bintel body are embedded so that a
-  // receiver holding only the axiom can decode the result with no external
-  // schema resolution.
-  def bintelSelfContained(schemaDoc: Tel): Data raises TelError raises BintelError =
-    val axiom      = Tels.Axiom.tels
-    val schema     = Tels.Layers.compose(Tels.Reconstructor.fromTel(schemaDoc))
-    val signature  = SchemaSignature.fromDocument(schemaDoc, axiom)
-    val schemaBody = schemaDoc.bintel(axiom)
-    Bintel.frameSelfContained(signature, schemaBody, tel.bintel(schema))
-
-extension (element: Tel.Element)
-  // Encode a pre-assigned semantic-model element to BinTEL body bytes.
-  // The schema supplies the member layout needed for §7.2 canonical
-  // child order (variant counts of `SelectRef` members).
-  def bintel(schema: Tels): Data = Bintel.encode(element, schema)
-
-  // BLAKE3 digest of this element's BinTEL body (§3 value hash).
-  def valueHash(schema: Tels): Digest in Blake3 = element.bintel(schema).digest[Blake3]
-
-extension [value: Tel.Encodable](value: value)
-  // Encode any value to BinTEL body bytes, deriving the schema from its type:
-  // `value.bintel` is `value.encode.bintel(Tels.tels[value](…))`. The schema name is
-  // internal (a BinTEL body never embeds it), so a decoder that derives the schema from
-  // the same type agrees on the layout regardless of the chosen name.
-  def bintel(using value is TelSchematic over Tels.Type): Data raises TelError =
-    value.encode.bintel(Tels.tels[value](Text("root")))
 
 object Bintel:
 
@@ -202,8 +133,10 @@ object Bintel:
 
     val sigLenDecoded =
       import errorDiagnostics.empty
+
       whereas:
         case _: VarintError => BintelError(BintelError.Reason.VarintError)
+
       . mitigate(Varint.decode(data, magic.length))
 
     val sigLength = sigLenDecoded.value.toInt
@@ -219,6 +152,7 @@ object Bintel:
     System.arraycopy(data.asInstanceOf[Array[Byte]], sigEnd, bodyBytes, 0, bodyBytes.length)
 
     val sig = sigBytes.asInstanceOf[IArray[Byte]]
+
     if !validSignatureLength(sig)
     then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
@@ -238,12 +172,14 @@ object Bintel:
   // The signature length MUST be a valid palimpsest length; otherwise
   // raises `BadSignatureLength`.
   def frameSelfContained(signature: Data, schemaBody: Data, body: Data)
-  :     Data raises BintelError =
+  :   Data raises BintelError =
+
     if !validSignatureLength(signature)
     then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
     val out = new ByteArrayOutputStream(
         magicSelfContained.length + 20 + signature.length + schemaBody.length + body.length)
+
     out.write(magicSelfContained.asInstanceOf[Array[Byte]])
     writeVarint(out, signature.length.toLong)
     out.write(signature.asInstanceOf[Array[Byte]])
@@ -265,6 +201,7 @@ object Bintel:
     then abort(BintelError(BintelError.Reason.BadMagic))
 
     var i = 0
+
     while i < magicSelfContained.length do
       if data(i) != magicSelfContained(i) then abort(BintelError(BintelError.Reason.BadMagic))
       i += 1
@@ -272,6 +209,7 @@ object Bintel:
     def varint(at: Int) =
       whereas:
         case _: VarintError => BintelError(BintelError.Reason.VarintError)
+
       . mitigate(Varint.decode(data, at))
 
     val sigLenD   = varint(magicSelfContained.length)
@@ -279,6 +217,7 @@ object Bintel:
     val sigEnd    = sigStart + sigLenD.value.toInt
     if sigEnd > data.length then abort(BintelError(BintelError.Reason.UnexpectedEoi))
     val signature = data.slice(sigStart, sigEnd)
+
     if !validSignatureLength(signature)
     then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
@@ -297,6 +236,7 @@ object Bintel:
       whereas:
         case _: TelError    => BintelError(BintelError.Reason.EmbeddedSchemaUndecodable)
         case _: BintelError => BintelError(BintelError.Reason.EmbeddedSchemaUndecodable)
+
       . mitigate:
           val schemaRoot = decode(schemaBody, axiom).asInstanceOf[Tel.Element.Node]
           val baseTels   = Tels.SemanticReconstructor.fromElement(schemaRoot)
@@ -312,9 +252,11 @@ object Bintel:
     a.length == b.length && {
       var i = 0
       var equal = true
+
       while i < a.length && equal do
         if a(i) != b(i) then equal = false
         i += 1
+
       equal
     }
 
@@ -341,9 +283,10 @@ object Bintel:
     root
 
   private def decodeStructBody
-       (cursor: Cursor, struct: Tels.Struct, schema: Tels,
-        keywordIndex: Optional[Int])
-  :     Tel.Element raises BintelError =
+    ( cursor: Cursor, struct: Tels.Struct, schema: Tels,
+      keywordIndex: Optional[Int] )
+  :   Tel.Element raises BintelError =
+
     val flat = flattenKeywords(struct, schema)
     val childCount = readVarint(cursor)
     val children = new Array[Tel.Element](childCount.toInt)
@@ -356,8 +299,9 @@ object Bintel:
     Tel.Element.Node(keywordIndex, struct, children.asInstanceOf[IArray[Tel.Element]])
 
   private def decodeElement
-       (cursor: Cursor, flat: IArray[(Text, Tels.Type)], schema: Tels)
-  :     Tel.Element raises BintelError =
+    ( cursor: Cursor, flat: IArray[(Text, Tels.Type)], schema: Tels )
+  :   Tel.Element raises BintelError =
+
     val kidx = readVarint(cursor)
     if kidx < 0 || kidx >= flat.length then abort(BintelError(BintelError.Reason.BadKeywordIndex))
     val (_, memberType) = flat(kidx.toInt)
@@ -369,8 +313,10 @@ object Bintel:
 
       case s: Tels.Scalar =>
         val len = readVarint(cursor)
+
         if cursor.offset + len > cursor.data.length
         then abort(BintelError(BintelError.Reason.ValueTruncated))
+
         val bytes = new Array[Byte](len.toInt)
         var j = 0
 
@@ -379,9 +325,11 @@ object Bintel:
           j += 1
 
         cursor.offset += len.toInt
+
         val text =
           try Text(new String(bytes, "UTF-8"))
           catch case _: Exception => abort(BintelError(BintelError.Reason.BadUtf8))
+
         Tel.Element.Value(kidx.toInt, s, text)
 
       case Tels.Flag =>
@@ -392,11 +340,13 @@ object Bintel:
 
   private def readVarint(cursor: Cursor): Long raises BintelError =
     import errorDiagnostics.empty
+
     if cursor.offset >= cursor.data.length
     then abort(BintelError(BintelError.Reason.UnexpectedEoi))
 
     whereas:
       case _: VarintError => BintelError(BintelError.Reason.VarintError)
+
     . mitigate:
         val decoded = Varint.decode(cursor.data, cursor.offset)
         cursor.offset = decoded.next
@@ -407,7 +357,8 @@ object Bintel:
   // entry per variant in the referenced SelectDefinition. Excludes
   // contribute none.
   private def flattenKeywords(struct: Tels.Struct, schema: Tels)
-  :     IArray[(Text, Tels.Type)] =
+  :   IArray[(Text, Tels.Type)] =
+
     val buf = scala.collection.mutable.ArrayBuffer.empty[(Text, Tels.Type)]
     var i = 0
 
@@ -419,6 +370,7 @@ object Bintel:
         case s: Tels.SelectRef =>
           schema.selects.find(_.name == s.reference).foreach: selectDef =>
             var v = 0
+
             while v < selectDef.variants.length do
               val variant = selectDef.variants(v)
               buf += ((variant.keyword, variant.variantType))
@@ -438,14 +390,17 @@ object Bintel:
   private def present(element: Tel.Element, schema: Tels): Tel = element match
     case Tel.Element.Node(_, struct: Tels.Struct, children) =>
       val flat = flattenKeywords(struct, schema)
-      Tel.make(Tel.Compound(Text(""), IArray.empty, Unset, blocks(children.map(presentCompound(_, flat, schema)))))
+      val blk = blocks(children.map(presentCompound(_, flat, schema)))
+
+      Tel.make(Tel.Compound("", IArray.empty, Unset, blk))
 
     case _ =>
       Tel.empty
 
   private def presentCompound
-       (element: Tel.Element, flat: IArray[(Text, Tels.Type)], schema: Tels)
-  :     Tel.Compound =
+    ( element: Tel.Element, flat: IArray[(Text, Tels.Type)], schema: Tels )
+  :   Tel.Compound =
+
     element match
       case Tel.Element.Value(kidx, _, text) =>
         Tel.Compound(flat(kidx)._1, IArray(Tel.Atom.Inline(text, 1)), Unset, IArray.empty)
@@ -453,7 +408,12 @@ object Bintel:
       case Tel.Element.Node(kidx, struct: Tels.Struct, children) =>
         val keyword   = kidx.let(flat(_)._1).or(Text(""))
         val childFlat = flattenKeywords(struct, schema)
-        Tel.Compound(keyword, IArray.empty, Unset, blocks(children.map(presentCompound(_, childFlat, schema))))
+
+        Tel.Compound
+          ( keyword,
+            IArray.empty,
+            Unset,
+            blocks(children.map(presentCompound(_, childFlat, schema))) )
 
       case Tel.Element.Node(kidx, _, _) =>
         Tel.Compound(kidx.let(flat(_)._1).or(Text("")), IArray.empty, Unset, IArray.empty)
@@ -465,7 +425,8 @@ object Bintel:
   // Decode BinTEL body bytes to a typed value, deriving the schema from the value's type
   // — the inverse of `value.bintel`.
   def read[value: Tel.Decodable](data: Data)(using value is TelSchematic over Tels.Type)
-  :     value raises BintelError raises TelError =
+  :   value raises BintelError raises TelError =
+
     val schema = Tels.tels[value](Text("root"))
     present(decode(data, schema), schema).as[value]
 
@@ -473,6 +434,7 @@ object Bintel:
     case Tels.Reference(name) =>
       schema.records.find(_.name == name) match
         case Some(rec) => Tels.Struct(rec.members, rec.validators)
+
         case None =>
           schema.scalars.find(_.name == name) match
             case Some(sc) => Tels.Scalar(sc.validators)
@@ -503,7 +465,8 @@ object Bintel:
         encodeElement(out, element, schema)
 
   private def encodeElement(out: ByteArrayOutputStream, element: Tel.Element, schema: Tels)
-  :     Unit =
+  :   Unit =
+
     element match
       case node: Tel.Element.Node   => encodeNode(out, node, schema)
       case value: Tel.Element.Value => encodeValue(out, value)
@@ -559,16 +522,19 @@ object Bintel:
   // because type assignment inserts them first, and the stable sort keeps
   // that order within a member.
   private def canonicalOrder(children: IArray[Tel.Element], parent: Tels.Struct, schema: Tels)
-  :     IArray[Tel.Element] =
+  :   IArray[Tel.Element] =
+
     if children.length <= 1 then children
     else
       val memberBase = memberBaseByFlatIndex(parent, schema)
+
       def keyOf(e: Tel.Element): Int =
         val flat = kidxOf(e)
         if flat >= 0 && flat < memberBase.length then memberBase(flat) else flat
 
       val arr = new Array[Tel.Element](children.length)
       var i = 0
+
       while i < children.length do
         arr(i) = children(i)
         i += 1
@@ -576,9 +542,10 @@ object Bintel:
       // java.util.Arrays.sort with a Comparator is stable — preserves
       // source order within equal-key groups.
       java.util.Arrays.sort
-       ( arr.asInstanceOf[Array[AnyRef]],
+        ( arr.asInstanceOf[Array[AnyRef]],
          (a: AnyRef, b: AnyRef) => Integer.compare(keyOf(a.asInstanceOf[Tel.Element]),
                                                     keyOf(b.asInstanceOf[Tel.Element])) )
+
       arr.asInstanceOf[IArray[Tel.Element]]
 
   // Maps each flat keyword index in `parent` to the flat index at which
@@ -590,6 +557,7 @@ object Bintel:
     val bases = scala.collection.mutable.ArrayBuffer.empty[Int]
     var flat = 0
     var i = 0
+
     while i < parent.members.length do
       parent.members(i) match
         case _: Tels.Field =>
@@ -600,6 +568,7 @@ object Bintel:
           val width = schema.selects.find(_.name == s.reference) match
             case Some(sd) => sd.variants.length
             case None     => 0
+
           var j = 0
           while j < width do { bases += flat; j += 1 }
           flat += width

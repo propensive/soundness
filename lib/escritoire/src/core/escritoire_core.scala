@@ -229,7 +229,9 @@ package columnar:
   case class Fixed(fixedWidth: Int, ellipsis: Text = t"…") extends Columnar:
     def width[text: Textual](lines: IArray[text], maxWidth: Int, slack: Double)
       ( using Text is Measurable )
-    :   Optional[Int] = fixedWidth
+    :   Optional[Int] =
+
+      fixedWidth
 
 
     def fit[text: Textual](lines: IArray[text], width: Int, textAlign: TextAlignment)

@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export enigmatic.cose
+export enigmatic
   . { Cose, CoseStructure, CoseSigned, CoseMaced, Sign, Sign1, Mac, Mac0, CoseRecipient,
       CoseAuthenticator, CoseVerifier, CoseAlgorithm, CoseError, HmacCipher, CoseTag, CoseContext,
       verify }

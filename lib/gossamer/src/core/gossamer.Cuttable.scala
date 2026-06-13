@@ -37,7 +37,6 @@ import language.experimental.pureFunctions
 
 import java.util.regex.*
 
-import scala.reflect.*
 
 import anticipation.*
 import denominative.*

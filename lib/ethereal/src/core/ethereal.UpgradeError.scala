@@ -38,8 +38,8 @@ import fulminate.*
 object UpgradeError:
   object Reason:
     given communicable: Reason is Communicable =
-      case CannotReadSource     => m"the upgrade source could not be read"
-      case CannotWritePending   => m"the .pending file could not be written"
+      case CannotReadSource      => m"the upgrade source could not be read"
+      case CannotWritePending    => m"the .pending file could not be written"
       case CannotResolveLauncher => m"the running launcher's path is not available"
       case CannotRespawnLauncher => m"the launcher could not be relaunched"
 

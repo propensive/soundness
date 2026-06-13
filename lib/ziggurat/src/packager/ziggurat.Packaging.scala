@@ -33,8 +33,6 @@
 package ziggurat
 
 import anticipation.*
-import galilei.*
-import gossamer.*
 import prepositional.*
 import serpentine.*
 import vacuous.*
@@ -46,9 +44,9 @@ import vacuous.*
 object Packaging:
   // How the per-platform binaries reach the user.
   enum Delivery:
-    case EmbedAll                                // every runner embedded in one script (`Xeq.installer`)
-    case Download(baseUrl: Text, version: Text)  // downloaded per-platform (`Xeq.multiDownloader`)
-    case Native                                  // a single native binary, no wrapper (one target only)
+    case EmbedAll
+    case Download(baseUrl: Text, version: Text)
+    case Native
 
   // Where each platform's bare runner binary comes from.
   enum RunnerSource:
@@ -73,17 +71,17 @@ object Packaging:
 
   // Self-upgrade signing. `Unset` overall disables upgrades (the safe default).
   case class Signing
-     (publicKey:      Optional[Path on Linux] = Unset,  // baked in via `-Dethereal.publicKey`
-      seed:           Optional[Path on Linux] = Unset,  // signs post-assembly via `ethereal-sign`
-      allowDowngrade: Boolean                 = false)
+    ( publicKey:      Optional[Path on Linux] = Unset, // baked in via `-Dethereal.publicKey`
+     seed:           Optional[Path on Linux] = Unset, // signs post-assembly via `ethereal-sign`
+     allowDowngrade: Boolean                 = false )
 
 case class Packaging
-   (name:         Text,
-    targets:      List[Text],
-    delivery:     Packaging.Delivery,
-    dependencies: Packaging.Dependencies,
-    output:       Path on Linux,
-    runnerSource: Packaging.RunnerSource      = Packaging.RunnerSource.LocalResource,
-    java:         Packaging.JavaPolicy        = Packaging.JavaPolicy(),
-    signing:      Optional[Packaging.Signing] = Unset,
-    buildId:      Long                        = 0L)
+  ( name:         Text,
+   targets:      List[Text],
+   delivery:     Packaging.Delivery,
+   dependencies: Packaging.Dependencies,
+   output:       Path on Linux,
+   runnerSource: Packaging.RunnerSource      = Packaging.RunnerSource.LocalResource,
+   java:         Packaging.JavaPolicy        = Packaging.JavaPolicy(),
+   signing:      Optional[Packaging.Signing] = Unset,
+   buildId:      Long                        = 0L )

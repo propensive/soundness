@@ -36,7 +36,6 @@ import scala.compiletime.summonInline
 
 import anticipation.*
 import prepositional.*
-import vacuous.*
 
 extension [entity](entity: entity)
   def membersOfType[value](using deref: entity is Dereferenceable to value): Iterable[value] =
@@ -61,10 +60,10 @@ inline def fieldAnnotations[self, annotation <: StaticAnnotation]
 // derivation to honour `@name[Xml](t"…")` / `@name(t"…")` in encode and decode.
 inline def relabelling[self, format]: Map[Text, Text] =
   val general:  Map[Text, Text] =
-    fieldAnnotations[self, name[Any]].map((field, set) => field -> set.head.name)
+    fieldAnnotations[self, name[Any]].map: (field, set) => field -> set.head.name
 
   val specific: Map[Text, Text] =
-    fieldAnnotations[self, name[format]].map((field, set) => field -> set.head.name)
+    fieldAnnotations[self, name[format]].map: (field, set) => field -> set.head.name
 
   general ++ specific
 
@@ -83,9 +82,9 @@ inline def subtypeAnnotations[self, annotation <: StaticAnnotation]
 // renamed variant's name to its serialized discriminator.
 inline def variantRelabelling[self, format]: Map[Text, Text] =
   val general:  Map[Text, Text] =
-    subtypeAnnotations[self, name[Any]].map((variant, set) => variant -> set.head.name)
+    subtypeAnnotations[self, name[Any]].map: (variant, set) => variant -> set.head.name
 
   val specific: Map[Text, Text] =
-    subtypeAnnotations[self, name[format]].map((variant, set) => variant -> set.head.name)
+    subtypeAnnotations[self, name[format]].map: (variant, set) => variant -> set.head.name
 
   general ++ specific

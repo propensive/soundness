@@ -71,6 +71,7 @@ object SchemaSignature:
   // BASE-256 encoding.
   def fromDocument(doc: Tel, axiom: Tels)
   :   Data raises BintelError raises TelError =
+
     fromElement(Tel.Type.assign(doc, axiom).asInstanceOf[Tel.Element.Node], axiom)
 
   // As `fromDocument`, but starting from an already type-assigned schema

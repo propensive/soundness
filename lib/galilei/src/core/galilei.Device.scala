@@ -43,7 +43,6 @@ import guillotine.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
-import spectacular.*
 
 object Device:
   enum Kind:
@@ -55,11 +54,11 @@ object Device:
       case Char  => t"c"
 
   def create[plane <: Posix: Filesystem]
-            ( path: Path on plane, kind: Kind, major: Int, minor: Int )
-            ( using createNonexistentParents: CreateNonexistentParents on plane,
-                    overwritePreexisting:     OverwritePreexisting on plane,
-                    working:                  WorkingDirectory,
-                    loggable:                 ExecEvent is Loggable )
+    ( path: Path on plane, kind: Kind, major: Int, minor: Int )
+    ( using createNonexistentParents: CreateNonexistentParents on plane,
+            overwritePreexisting:     OverwritePreexisting on plane,
+            working:                  WorkingDirectory,
+            loggable:                 ExecEvent is Loggable )
   :   Path on plane raises IoError =
 
     createNonexistentParents(path):
@@ -74,7 +73,6 @@ object Device:
               case Exit.Ok => ()
 
               case _ =>
-                raise
-                  ( IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied) )
+                raise(IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied))
 
     path

@@ -54,20 +54,6 @@ import interfaces.paths.pathOnLinux
 import systems.java
 
 
-def deleteOnShutdown(directory: jnf.Path): Unit =
-  val runnable: Runnable = () =>
-    if jnf.Files.exists(directory) then
-      val stream = jnf.Files.walk(directory).nn
-      try
-        stream.sorted(ju.Comparator.reverseOrder).nn.forEach: path =>
-          try
-            val _ = jnf.Files.deleteIfExists(path.nn)
-          catch case _: Throwable => ()
-      finally stream.close()
-
-  jl.Runtime.getRuntime.nn.addShutdownHook(jl.Thread(runnable))
-
-
 trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transportive:
   type Result[output]
   type Transport <: Object

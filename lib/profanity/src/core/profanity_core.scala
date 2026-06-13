@@ -107,3 +107,8 @@ package terminalFeatures:
   given kittyKeyboard: TerminalFeature = TerminalFeature(t"\e[>1u", t"\e[<u")
   given backgroundColor: TerminalFeature = TerminalFeature(t"\e]11;?\e\\", t"")
   given terminalSize: TerminalFeature = TerminalFeature(Terminal.reportSize, t"")
+
+
+type UnixSignal = Signal
+
+val UnixSignal = Signal

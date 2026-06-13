@@ -473,6 +473,7 @@ object internal:
       case Some(exprs) =>
         if exprs.isEmpty then valueExpr else
           val parsed = exprs.toList.map(parseLambda)
+
           if parsed.exists(_.isEmpty) then
             if exprs.length == 1 then
               val lambda = exprs.head.asExprOf[(Optic from value onto value) => value => value]

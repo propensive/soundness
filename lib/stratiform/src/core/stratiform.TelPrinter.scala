@@ -57,8 +57,8 @@ object TelPrinter:
       val parts = scala.collection.mutable.ArrayBuffer.empty[String]
       parts += "tel"
       parts += s"${pragma.version._1}.${pragma.version._2}"
-      pragma.schema.let(s => parts += s.s)
-      pragma.sigil.let(c => parts += c.toString)
+      pragma.schema.let: s => parts += s.s
+      pragma.sigil.let: c => parts += c.toString
       buffer += parts.mkString(" ")
       buffer += ""
 
@@ -70,28 +70,35 @@ object TelPrinter:
 
     Text(buffer.mkString(newline))
 
-  private def emitBlock(buffer: scala.collection.mutable.ArrayBuffer[String],
-                        block: Tel.Block,
-                        indent: Int,
-                        sigil: Char): Unit =
+  private def emitBlock
+    ( buffer: scala.collection.mutable.ArrayBuffer[String],
+      block: Tel.Block,
+      indent: Int,
+      sigil: Char )
+  :   Unit =
+
     val pad = "  " * indent
 
     block.comments.each: comment =>
       val text = comment.text.s
+
       if text.isEmpty then buffer += s"$pad$sigil"
       else buffer += s"$pad$sigil $text"
 
     block.tabulation.let: tab =>
       val line = StringBuilder()
       var i = 0
+
       while i < tab.markerOffsets.length do
         val targetCol = tab.markerOffsets(i)
         while line.length < targetCol do line.append(' ')
         line.append(sigil)
         val heading = tab.headings(i).s
+
         if heading.nonEmpty then
           line.append(' ')
           line.append(heading)
+
         i += 1
 
       buffer += line.toString
@@ -99,14 +106,18 @@ object TelPrinter:
     block.compounds.each(emitCompound(buffer, _, indent, sigil))
 
     var b = 0
+
     while b < block.trailingBlankLines do
       buffer += ""
       b += 1
 
-  private def emitCompound(buffer: scala.collection.mutable.ArrayBuffer[String],
-                           compound: Tel.Compound,
-                           indent: Int,
-                           sigil: Char): Unit =
+  private def emitCompound
+    ( buffer:   scala.collection.mutable.ArrayBuffer[String],
+      compound: Tel.Compound,
+      indent:   Int,
+      sigil:    Char )
+  :   Unit =
+
     val pad = "  " * indent
     val line = StringBuilder()
     line.append(pad)
@@ -145,6 +156,7 @@ object TelPrinter:
         // blank line emitted with no indentation).
         val sourceText = text.s
         var start = 0
+
         while start <= sourceText.length do
           val nl = sourceText.indexOf('\n', start)
           val end = if nl < 0 then sourceText.length else nl
@@ -156,6 +168,7 @@ object TelPrinter:
         buffer += "  " * (indent + 3) + delimiter.s
         val payload = text.s
         var start = 0
+
         while start <= payload.length do
           val nl = payload.indexOf('\n', start)
           val end = if nl < 0 then payload.length else nl

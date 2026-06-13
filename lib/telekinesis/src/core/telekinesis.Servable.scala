@@ -42,10 +42,12 @@ import turbulence.*
 
 object Servable:
   def apply[response](mediaType: response => MediaType)(lambda: response => Http.Body)
-  :   response is Servable = response =>
+  :   response is Servable =
 
-    val headers = List(Http.Header(t"content-type", mediaType(response).show))
-    Http.Ok(headers, lambda(response))
+    response =>
+
+      val headers = List(Http.Header(t"content-type", mediaType(response).show))
+      Http.Ok(headers, lambda(response))
 
 
   given content: Content is Servable:
@@ -58,8 +60,9 @@ object Servable:
   given bytes: [response: Abstractable across HttpStreams to HttpStreams.Content]
   =>  response is Servable =
 
-    Servable[response](value => unsafely(Media.parse(response.generic(value)(0)))): value =>
-      Http.Body.Streaming(response.generic(value)(1))
+    def mediaType(value: response): MediaType = unsafely(Media.parse(response.generic(value)(0)))
+
+    Servable[response](mediaType): value => Http.Body.Streaming(response.generic(value)(1))
 
 
   given data: Data is Servable =

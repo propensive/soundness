@@ -34,6 +34,7 @@ package stratiform
 
 import anticipation.*
 import contextual.*
+import contingency.*
 import prepositional.*
 
 // Encodes any value with an `Encodable in Tel` instance to its `Tel` form.
@@ -46,3 +47,28 @@ extension [entity: Encodable in Tel](value: entity) def tel: Tel = value.encode
 // `lib/jacinta/src/core/jacinta_core.scala:230`.
 extension (inline context: StringContext)
   transparent inline def tel: Interpolation = interpolation[Tel](context)
+
+
+extension (tel: Tel)
+  def edited(edit: Edit): Tel raises MutationError = edit(tel)
+
+
+extension (tel: Tel)
+  // Runtime-checks `tel` against `topic`, then re-types it as a schema-typed
+  // `Tel of topic from topic`. The phantom `Topic` records the current position
+  // within the schema (initially the root, `topic`) and `Origin` records the
+  // root schema, so the `Dynamic` navigation macros can resolve fields and
+  // child indices against `topic` at compile time — with no `dynamicTelAccess`
+  // import required.
+  //
+  // The runtime conformance check is a decode-and-discard against `topic`'s
+  // `Tel.Decodable` (a nonconformant value raises `TelError`): TEL scalars are
+  // untyped text, so a structural walk over the schema cannot catch type mismatches
+  // (e.g. a non-numeric `Int` field) that decoding does — hence decoding remains the
+  // strict check. The carrying `Tel.Decodable` also supplies the schema for the
+  // phantom anchor, so the schema is guaranteed coherent with the decoder used.
+  def verify[topic](using topic is Tel.Decodable)
+  :   (Tel of topic from topic) raises TelError =
+
+    tel.as[topic]
+    tel.asInstanceOf[Tel of topic from topic]

@@ -97,6 +97,7 @@ trait Cbor2:
           val count = if root.isMap then root.entries else 0
           val values = scala.collection.mutable.HashMap.empty[String, Ast]
           var index = 0
+
           while index < count do
             val key = root.key(index)
             if key.isTextString then values.update(key.string, root.value(index))
@@ -109,6 +110,7 @@ trait Cbor2:
           build: [field] =>
             context =>
               val key: Text = renames.at(label).or(label)
+
               values.get(key.s) match
                 case Some(value) => context.decoded(new Cbor(value))
                 case None        => default.or(context.decoded(new Cbor(Ast(Unset))))
@@ -122,7 +124,7 @@ trait Cbor2:
             // `@name[Cbor]` / bare `@name` variant renames: map the serialized
             // discriminator back to the variant name before delegating.
             val variantNames: Map[Text, Text] =
-              variantRelabelling[derivation, Cbor].map((variant, wire) => wire -> variant)
+              variantRelabelling[derivation, Cbor].map: (variant, wire) => wire -> variant
 
             val wire: Text =
               discriminable.discriminate(cbor).lest(CborError(Reason.Absent))
@@ -146,6 +148,7 @@ trait Cbor2:
         fields(value): [field] =>
           field =>
             val encoded = contextual.encode(field).root
+
             if !encoded.unset then
               labels += mapping.at(label).or(label).s
               values += encoded
@@ -160,7 +163,8 @@ trait Cbor2:
       val variantNames: Map[Text, Text] = variantRelabelling[derivation, Cbor]
 
       variant(value): [variant <: derivation] =>
-        value => discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
+        value =>
+          discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
 
 object Cbor extends Cbor2, Dynamic:
   // CBOR major-type representation in storage. Arrays are stored as an
@@ -259,7 +263,8 @@ object Cbor extends Cbor2, Dynamic:
             i += 1
 
           Cbor.Ast.array(updated.asInstanceOf[IArray[Any]])
-      else origin
+      else
+        origin
 
   given eachOptical: Each.type is Optical from Cbor onto Cbor = _ =>
     Optic: (origin, lambda) =>
@@ -275,7 +280,8 @@ object Cbor extends Cbor2, Dynamic:
             i += 1
 
           Cbor.Ast.array(updated.asInstanceOf[IArray[Any]])
-      else origin
+      else
+        origin
 
   given filterOptical: Filter[Cbor] is Optical from Cbor onto Cbor = filter =>
     Optic: (origin, lambda) =>
@@ -292,7 +298,8 @@ object Cbor extends Cbor2, Dynamic:
             i += 1
 
           Cbor.Ast.array(updated.asInstanceOf[IArray[Any]])
-      else origin
+      else
+        origin
 
   given boolean: Tactic[CborError] => Boolean is Decodable in Cbor = _.root.boolean
   given double: Tactic[CborError] => Double is Decodable in Cbor = _.root.double

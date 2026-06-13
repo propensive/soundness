@@ -45,7 +45,7 @@ sealed trait ProgrammingLanguage:
   def postprocess(code: SourceCode, context: Optional[Context]): SourceCode = code
 
   def highlight(text: Text, context: Optional[Context] = Unset, caret: Optional[Ordinal] = Unset)
-     (using Highlight)
+    ( using Highlight )
   :   SourceCode =
 
     postprocess(SourceCode(this, preprocess(text, context), caret), context)

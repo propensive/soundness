@@ -123,6 +123,7 @@ object Xml extends Tag.Container
     textOf(xml).let: text =>
       try Integer.parseInt(text.s).nn
       catch case _: NumberFormatException => raise(XmlError()) yet 0
+
     . or:
         raise(XmlError()) yet 0
 
@@ -130,6 +131,7 @@ object Xml extends Tag.Container
     textOf(xml).let: text =>
       try jl.Long.parseLong(text.s).nn
       catch case _: NumberFormatException => raise(XmlError()) yet 0L
+
     . or:
         raise(XmlError()) yet 0L
 
@@ -137,6 +139,7 @@ object Xml extends Tag.Container
     textOf(xml).let: text =>
       try jl.Short.parseShort(text.s).nn
       catch case _: NumberFormatException => raise(XmlError()) yet 0.toShort
+
     . or:
         raise(XmlError()) yet 0.toShort
 
@@ -144,6 +147,7 @@ object Xml extends Tag.Container
     textOf(xml).let: text =>
       try jl.Byte.parseByte(text.s).nn
       catch case _: NumberFormatException => raise(XmlError()) yet 0.toByte
+
     . or:
         raise(XmlError()) yet 0.toByte
 
@@ -151,6 +155,7 @@ object Xml extends Tag.Container
     textOf(xml).let: text =>
       try jl.Double.parseDouble(text.s).nn
       catch case _: NumberFormatException => raise(XmlError()) yet 0.0
+
     . or:
         raise(XmlError()) yet 0.0
 
@@ -158,6 +163,7 @@ object Xml extends Tag.Container
     textOf(xml).let: text =>
       try jl.Float.parseFloat(text.s).nn
       catch case _: NumberFormatException => raise(XmlError()) yet 0.0f
+
     . or:
         raise(XmlError()) yet 0.0f
 
@@ -167,6 +173,7 @@ object Xml extends Tag.Container
         case "true"  => true
         case "false" => false
         case _       => raise(XmlError()) yet false
+
     . or:
         raise(XmlError()) yet false
 
@@ -226,7 +233,8 @@ object Xml extends Tag.Container
             xml match
               case e: Element           => buildWith(e)
               case Fragment(e: Element) => buildWith(e)
-              case _                    =>
+
+              case _ =>
                 // Wrong-shape input (including the `Absent` sentinel an
                 // outer conjunction passes in for a missing nested case-
                 // class field). If the user supplied `Default[derivation]`
@@ -239,7 +247,8 @@ object Xml extends Tag.Container
                 summonFrom:
                   case derivationDefault: Default[`derivation`] =>
                     raise(XmlError()) yet derivationDefault()
-                  case _                                        =>
+
+                  case _ =>
                     raise(XmlError())
                     buildWith(Element(t"", Attributes.empty, IArray.empty))
 
@@ -258,13 +267,17 @@ object Xml extends Tag.Container
 
       val children: scm.HashMap[String, Element] = scm.HashMap.empty
       var i = 0
+
       while i < element.children.length do
         element.children(i) match
           case child: Element =>
             val childLabel = child.label.s
+
             if !children.contains(childLabel) then
               children.update(childLabel, child)
+
           case _ => ()
+
         i += 1
 
       build: [field] =>
@@ -284,15 +297,16 @@ object Xml extends Tag.Container
               // default, else the `Absent` sentinel (raise + continue).
               element.attributes.at(wireName).lay(default.or(context.decoded(Absent))): text =>
                 context.decoded(TextNode(text))
-            else children.get(wireName.s) match
-              case Some(child) => context.decoded(child)
-              // Missing field: fall back to the case-class declared
-              // default (Wisteria's `default`); if absent, hand the
-              // `Absent` sentinel to the field's decoder. Primitives
-              // detect it and `raise + continue`; nested conjunctions
-              // detect it and may further short-circuit via a
-              // user-supplied `Default[Nested]`.
-              case None        => default.or(context.decoded(Absent))
+            else
+              children.get(wireName.s) match
+                case Some(child) => context.decoded(child)
+                // Missing field: fall back to the case-class declared
+                // default (Wisteria's `default`); if absent, hand the
+                // `Absent` sentinel to the field's decoder. Primitives
+                // detect it and `raise + continue`; nested conjunctions
+                // detect it and may further short-circuit via a
+                // user-supplied `Default[Nested]`.
+                case None        => default.or(context.decoded(Absent))
 
     // Sealed-trait disjunction picks a variant by element label. We screen
     // the discriminator against `variantLabels` *before* `delegate`-ing so
@@ -314,7 +328,7 @@ object Xml extends Tag.Container
               // `@name[Xml]` / bare `@name` variant renames: map the serialized
               // element label back to the variant name before delegating.
               val variantNames: Map[Text, Text] =
-                variantRelabelling[derivation, Xml].map((variant, wire) => wire -> variant)
+                variantRelabelling[derivation, Xml].map: (variant, wire) => wire -> variant
 
               val resolved: Optional[Text] =
                 discriminable.discriminate(xml).let: wire =>
@@ -324,10 +338,12 @@ object Xml extends Tag.Container
               resolved.let: discriminant =>
                 delegate(discriminant): [variant <: derivation] =>
                   context => context.decoded(xml)
+
               . or:
                   summonFrom:
                     case derivationDefault: Default[`derivation`] =>
                       raise(XmlError()) yet derivationDefault()
+
                     case _ =>
                       abort(XmlError())
 
@@ -353,8 +369,12 @@ object Xml extends Tag.Container
     private def wrap(fieldName: Text, encoded: Xml): Node = encoded match
       case Element(_, attributes, children)           => Element(fieldName, attributes, children)
       case Fragment(Element(_, attributes, children)) => Element(fieldName, attributes, children)
-      case Fragment(nodes*)                           => Element(fieldName, Attributes.empty, nodes.toArray.immutable(using Unsafe))
-      case node: Node                                 => Element(fieldName, Attributes.empty, IArray(node))
+
+      case Fragment(nodes*) =>
+        Element(fieldName, Attributes.empty, nodes.toArray.immutable(using Unsafe))
+
+      case node: Node =>
+        Element(fieldName, Attributes.empty, IArray(node))
 
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Encodable in Xml =
@@ -382,9 +402,9 @@ object Xml extends Tag.Container
             else children += wrap(wireName, encoded)
 
         Element
-         (typeName[derivation],
-          Attributes(attributes.toSeq*),
-          children.toArray.immutable(using Unsafe))
+          ( typeName[derivation],
+            Attributes(attributes.toSeq*),
+            children.toArray.immutable(using Unsafe) )
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Xml =
       value =>
@@ -490,7 +510,7 @@ object Xml extends Tag.Container
   // `asInstanceOf` cast — `value over Xml` is just `value { type
   // Transport = Xml }` so the cast is a no-op at runtime.
   given aggregableOver: [value: Decodable in Xml] => (schema: XmlSchema)
-  =>  (Tactic[ParseError], Tactic[XmlError])
+  =>  ( Tactic[ParseError], Tactic[XmlError] )
   =>  (value over Xml) is Aggregable by Text =
 
     input =>
@@ -529,6 +549,7 @@ object Xml extends Tag.Container
   def parseTracked
     (input: Iterator[Text])(using schema: XmlSchema, tactic: Tactic[ParseError])
   :   Tracked =
+
     val parser = XmlParser.fromIteratorTracked(input)
     val xml = parser.parseXml(headers0 = false)
     val index = parser.rootIndex
@@ -868,6 +889,113 @@ object Xml extends Tag.Container
     def withPosition(tracked: Tracked): Focus =
       copy(position = tracked.locate(path))
 
+  object Tracked:
+    // `XPath.path.descent` is stored leaf-first (Serpentine's `/`
+    // prepends), so the walker iterates it in reverse to descend
+    // root-to-leaf. The XPath convention is `/foo/bar/@attr`, so the
+    // first element step names the *root* element itself (no descent
+    // into children) and subsequent steps descend.
+    private def walk
+      ( xml:      Xml,
+        data:     IArray[Int],
+        offset:   Int,
+        segments: IndexedSeq[Text],
+        i:        Int )
+    :   Optional[Position] =
+
+      if i >= segments.length then
+        Position(data(offset + 1).z, data(offset + 2).z, length = data(offset + 3))
+      else
+        val segment = segments(segments.length - 1 - i)
+
+        XPath.parseStep(segment) match
+          case Unset => Unset
+
+          case Left(attrName) =>
+            xml match
+              case element: Element => attrPosition(element, data, offset, attrName)
+              case _                => Unset
+
+          case Right((name, ordinal)) =>
+            xml match
+              case element: Element if i == 0 =>
+                // First step names the document's root element.
+                if element.label == name && ordinal == 1 then
+                  walk(element, data, offset, segments, i + 1)
+                else
+                  Unset
+
+              case element: Element =>
+                descend(element, name, ordinal).let: childElementIndex =>
+                  val attrCount = data(offset + 4)
+                  val offSlot = offset + 6 + attrCount + childElementIndex
+                  val childOff = data(offSlot)
+                  val child = descendAst(element, name, ordinal).vouch
+                  walk(child, data, offset + childOff, segments, i + 1)
+
+              case _ =>
+                Unset
+
+    private def attrPosition
+      ( element:  Element,
+        data:     IArray[Int],
+        offset:   Int,
+        attrName: Text )
+    :   Optional[Position] =
+
+      val keys: Vector[Text] = element.attributes.keys.toVector
+      val i = keys.indexOf(attrName)
+
+      if i < 0 then Unset
+      else
+        val attrOff = data(offset + 6 + i)
+        val base = offset + attrOff
+        Position(data(base + 1).z, data(base + 2).z, length = data(base + 3))
+
+    // Find the position of the n-th (1-indexed) child element with the
+    // given name among the child *elements only* (ignoring text, comment,
+    // CDATA, PI and Doctype children). Returns the element-index used to
+    // look up the offset in the element descriptor's offset table.
+    private def descend(element: Element, name: Text, ordinal: Int): Optional[Int] =
+      val children = element.children
+      var i = 0
+      var elementIndex = 0
+      var seen = 0
+      var found: Optional[Int] = Unset
+
+      while i < children.length && found == Unset do
+        children(i) match
+          case child: Element =>
+            if child.label == name then
+              seen += 1
+              if seen == ordinal then found = elementIndex
+
+            elementIndex += 1
+
+          case _ => ()
+
+        i += 1
+
+      found
+
+    private def descendAst(element: Element, name: Text, ordinal: Int): Optional[Element] =
+      val children = element.children
+      var i = 0
+      var seen = 0
+      var found: Optional[Element] = Unset
+
+      while i < children.length && found == Unset do
+        children(i) match
+          case child: Element if child.label == name =>
+            seen += 1
+            if seen == ordinal then found = child
+
+          case _ => ()
+
+        i += 1
+
+      found
+
   // Wraps a parsed `Xml` with a parallel position index produced by
   // `parseTracked`. Untracked parses keep returning bare `Xml`.
   //
@@ -897,114 +1025,11 @@ object Xml extends Tag.Container
       val decoded = value match
         case Fragment(inner) => result.decoded(inner)
         case xml: Xml        => result.decoded(xml)
+
       val foci = summon[Foci[Xml.Focus]]
       val tracked = this
       foci.supplement(foci.length, _.let(_.withPosition(tracked)).vouch)
       decoded
-
-  object Tracked:
-    // `XPath.path.descent` is stored leaf-first (Serpentine's `/`
-    // prepends), so the walker iterates it in reverse to descend
-    // root-to-leaf. The XPath convention is `/foo/bar/@attr`, so the
-    // first element step names the *root* element itself (no descent
-    // into children) and subsequent steps descend.
-    private def walk
-                 ( xml:      Xml,
-                   data:     IArray[Int],
-                   offset:   Int,
-                   segments: IndexedSeq[Text],
-                   i:        Int )
-    :   Optional[Position] =
-
-      if i >= segments.length then
-        Position(data(offset + 1).z, data(offset + 2).z, length = data(offset + 3))
-      else
-        val segment = segments(segments.length - 1 - i)
-
-        XPath.parseStep(segment) match
-          case Unset => Unset
-
-          case Left(attrName) =>
-            xml match
-              case element: Element => attrPosition(element, data, offset, attrName)
-              case _                => Unset
-
-          case Right((name, ordinal)) =>
-            xml match
-              case element: Element if i == 0 =>
-                // First step names the document's root element.
-                if element.label == name && ordinal == 1 then
-                  walk(element, data, offset, segments, i + 1)
-                else Unset
-
-              case element: Element =>
-                descend(element, name, ordinal).let: childElementIndex =>
-                  val attrCount = data(offset + 4)
-                  val offSlot = offset + 6 + attrCount + childElementIndex
-                  val childOff = data(offSlot)
-                  val child = descendAst(element, name, ordinal).vouch
-                  walk(child, data, offset + childOff, segments, i + 1)
-
-              case _ =>
-                Unset
-
-    private def attrPosition
-                 ( element:  Element,
-                   data:     IArray[Int],
-                   offset:   Int,
-                   attrName: Text )
-    :   Optional[Position] =
-
-      val keys: Vector[Text] = element.attributes.keys.toVector
-      val i = keys.indexOf(attrName)
-
-      if i < 0 then Unset
-      else
-        val attrOff = data(offset + 6 + i)
-        val base = offset + attrOff
-        Position(data(base + 1).z, data(base + 2).z, length = data(base + 3))
-
-    // Find the position of the n-th (1-indexed) child element with the
-    // given name among the child *elements only* (ignoring text, comment,
-    // CDATA, PI and Doctype children). Returns the element-index used to
-    // look up the offset in the element descriptor's offset table.
-    private def descend(element: Element, name: Text, ordinal: Int): Optional[Int] =
-      val children = element.children
-      var i = 0
-      var elementIndex = 0
-      var seen = 0
-      var found: Optional[Int] = Unset
-
-      while i < children.length && found == Unset do
-        children(i) match
-          case child: Element =>
-            if child.label == name then
-              seen += 1
-              if seen == ordinal then found = elementIndex
-            elementIndex += 1
-
-          case _ => ()
-
-        i += 1
-
-      found
-
-    private def descendAst(element: Element, name: Text, ordinal: Int): Optional[Element] =
-      val children = element.children
-      var i = 0
-      var seen = 0
-      var found: Optional[Element] = Unset
-
-      while i < children.length && found == Unset do
-        children(i) match
-          case child: Element if child.label == name =>
-            seen += 1
-            if seen == ordinal then found = child
-          case _ => ()
-
-        i += 1
-
-      found
 
   enum Hole:
     case Text, Tagbody, Comment
@@ -1064,9 +1089,9 @@ object Xml extends Tag.Container
       new XmlParser(Cursor[Text](input), tracking = true)
 
   private[xylophone] final class XmlParser
-                                  (cursor:                   Cursor[Text],
-                                   protected[xylophone] val tracking: Boolean)
-                                  (using schema: XmlSchema):
+    ( cursor:                   Cursor[Text],
+     protected[xylophone] val tracking: Boolean )
+    ( using schema: XmlSchema ):
     type Region = Cursor.Mark
 
     private var heldToken: Cursor.Held | Null = null
@@ -1085,8 +1110,9 @@ object Xml extends Tag.Container
     // `ArrayBuffer[Node]` allocation per element (plus its backing array)
     // for repetitive record-shaped XML.
     private var nodeBufferId: Int = -1
+
     private val nodeBuffers: scala.collection.mutable.ArrayBuffer
-                                [scala.collection.mutable.ArrayBuffer[Node]] =
+      [ scala.collection.mutable.ArrayBuffer[Node] ] =
       scala.collection.mutable.ArrayBuffer.empty
 
     // Small open-addressed cache for repeating tag names. Record-shape XML
@@ -1128,12 +1154,14 @@ object Xml extends Tag.Container
     // within the scratch. The buffer pool grows to the deepest nesting
     // depth seen and is reused across parses on the same `XmlParser`.
     private var indexBufferId: Int = -1
+
     private val indexBuffers: scala.collection.mutable.ArrayBuffer
-                                [scala.collection.mutable.ArrayBuffer[Int]] =
+      [ scala.collection.mutable.ArrayBuffer[Int] ] =
       scala.collection.mutable.ArrayBuffer.empty
 
     private inline def getIndexBuffer(): scala.collection.mutable.ArrayBuffer[Int] =
       indexBufferId += 1
+
       if indexBuffers.length <= indexBufferId then
         val nu = scala.collection.mutable.ArrayBuffer.empty[Int]
         indexBuffers += nu
@@ -1159,14 +1187,17 @@ object Xml extends Tag.Container
 
     private def reconcileLineation(): Unit =
       val end = cursor.unsafePos(using Unsafe)
+
       if lineationPos < end then
         var i = lineationPos
         var newlines = 0
         var lastNewlineAt = -1
+
         while i < end do
           if bytes(i) == '\n' then
             newlines += 1
             lastNewlineAt = i
+
           i += 1
 
         if newlines > 0 then
@@ -1183,14 +1214,14 @@ object Xml extends Tag.Container
     // descriptors / their end positions the same way. See the layout
     // comment on `Xml.Tracked`.
     private def emitElementDescriptor
-                 ( out:         scala.collection.mutable.ArrayBuffer[Int],
-                   attrDescs:   scala.collection.mutable.ArrayBuffer[Int],
-                   attrEnds:    scala.collection.mutable.ArrayBuffer[Int],
-                   childDescs:  scala.collection.mutable.ArrayBuffer[Int],
-                   childEnds:   scala.collection.mutable.ArrayBuffer[Int],
-                   startLine:   Int,
-                   startColumn: Int,
-                   startMark:   Long )
+      ( out:         scala.collection.mutable.ArrayBuffer[Int],
+        attrDescs:   scala.collection.mutable.ArrayBuffer[Int],
+        attrEnds:    scala.collection.mutable.ArrayBuffer[Int],
+        childDescs:  scala.collection.mutable.ArrayBuffer[Int],
+        childEnds:   scala.collection.mutable.ArrayBuffer[Int],
+        startLine:   Int,
+        startColumn: Int,
+        startMark:   Long )
     :   Unit =
 
       syncTo()
@@ -1211,6 +1242,7 @@ object Xml extends Tag.Container
       // Attribute offsets first, then element offsets.
       var i = 0
       var prevEnd = 0
+
       while i < attrCount do
         out += headerSize + prevEnd
         prevEnd = attrEnds(i)
@@ -1219,6 +1251,7 @@ object Xml extends Tag.Container
       i = 0
       prevEnd = attrEnds.lastOption.getOrElse(0)
       val attrsTotal = attrEnds.lastOption.getOrElse(0)
+
       while i < elemCount do
         out += headerSize + attrsTotal + prevEnd
         prevEnd = childEnds(i)
@@ -1268,6 +1301,7 @@ object Xml extends Tag.Container
     private def moreSlow(): Boolean =
       syncTo()
       if tracking then reconcileLineation()
+
       if cursor.more then { syncFrom(); true }
       else
         if tracking then syncFrom()
@@ -1275,6 +1309,7 @@ object Xml extends Tag.Container
 
     protected inline def peek: Char = bytes(pos)
     protected inline def advance(): Unit = pos += 1
+
     protected inline def position: Int =
       syncTo()
       cursor.position.n0
@@ -1328,6 +1363,7 @@ object Xml extends Tag.Container
           col = 1
         else
           col += 1
+
         i += 1
 
       val end = cursor.position.n0
@@ -1387,10 +1423,12 @@ object Xml extends Tag.Container
       while more && isNameChar(peek) do
         val c = peek
         if c >= 128 then ascii = false
+
         if len < 8 then
           packedLow = packedLow | ((c.toLong & 0xFFL) << (len << 3))
         else if len < 16 then
           packedHigh = packedHigh | ((c.toLong & 0xFFL) << ((len - 8) << 3))
+
         len += 1
         advance()
 
@@ -1403,7 +1441,7 @@ object Xml extends Tag.Container
         val cached = tagCache(idx)
 
         if cached != null && tagCacheLow(idx) == packedLow
-           && tagCacheHigh(idx) == packedHigh
+          && tagCacheHigh(idx) == packedHigh
         then cached.nn
         else
           val fresh = slice(start)
@@ -1900,9 +1938,11 @@ object Xml extends Tag.Container
         else
           val arr = new Array[Node](children.length)
           var i = 0
+
           while i < children.length do
             arr(i) = children(i)
             i += 1
+
           arr.immutable(using Unsafe)
 
       relinquishNodeBuffer()
@@ -1922,6 +1962,7 @@ object Xml extends Tag.Container
     def parseXml(headers0: Boolean)(using Tactic[ParseError]): Xml =
       cursor.hold:
         heldToken = summon[Cursor.Held]
+
         try
           if tracking then parseXmlTracked0(headers0) else parseXml0(headers0)
         finally heldToken = null
@@ -1999,11 +2040,11 @@ object Xml extends Tag.Container
     // `out` is the parent's index buffer; the element's descriptor is
     // appended to it.
     private def readElementTracked
-                 ( out:         scala.collection.mutable.ArrayBuffer[Int],
-                   startLine:   Int,
-                   startColumn: Int,
-                   startMark:   Long )
-                 ( using Tactic[ParseError] )
+      ( out:         scala.collection.mutable.ArrayBuffer[Int],
+        startLine:   Int,
+        startColumn: Int,
+        startMark:   Long )
+      ( using Tactic[ParseError] )
     :   Element =
 
       // Macro element holes can't carry meaningful positions; emit an empty
@@ -2018,8 +2059,10 @@ object Xml extends Tag.Container
         val attrEnds  = getIndexBuffer()
         val childDescs = getIndexBuffer()
         val childEnds  = getIndexBuffer()
+
         emitElementDescriptor
-          (out, attrDescs, attrEnds, childDescs, childEnds, startLine, startColumn, startMark)
+          ( out, attrDescs, attrEnds, childDescs, childEnds, startLine, startColumn, startMark )
+
         relinquishIndexBuffer()
         relinquishIndexBuffer()
         relinquishIndexBuffer()
@@ -2049,7 +2092,8 @@ object Xml extends Tag.Container
             Element(name, attrs, children)
 
         emitElementDescriptor
-          (out, attrDescs, attrEnds, childDescs, childEnds, startLine, startColumn, startMark)
+          ( out, attrDescs, attrEnds, childDescs, childEnds, startLine, startColumn, startMark )
+
         relinquishIndexBuffer()
         relinquishIndexBuffer()
         relinquishIndexBuffer()
@@ -2057,10 +2101,10 @@ object Xml extends Tag.Container
         result
 
     private def readAttributesTracked
-                 ( tag:       Text,
-                   attrDescs: scala.collection.mutable.ArrayBuffer[Int],
-                   attrEnds:  scala.collection.mutable.ArrayBuffer[Int] )
-                 ( using Tactic[ParseError] )
+      ( tag:       Text,
+        attrDescs: scala.collection.mutable.ArrayBuffer[Int],
+        attrEnds:  scala.collection.mutable.ArrayBuffer[Int] )
+      ( using Tactic[ParseError] )
     :   Attributes =
 
       var n = 0
@@ -2102,6 +2146,7 @@ object Xml extends Tag.Container
 
           if (hashOr | h) == hashOr then
             var dup = 0
+
             while dup < 2*n do
               if attrBuf(dup) == keyStr then fail(Issue.DuplicateAttribute(key), keyStart)
               dup += 2
@@ -2146,10 +2191,10 @@ object Xml extends Tag.Container
         Attributes.fromInterleaved(arr.immutable(using Unsafe))
 
     private def readChildrenTracked
-                 ( parentName: Text,
-                   childDescs: scala.collection.mutable.ArrayBuffer[Int],
-                   childEnds:  scala.collection.mutable.ArrayBuffer[Int] )
-                 ( using Tactic[ParseError] )
+      ( parentName: Text,
+        childDescs: scala.collection.mutable.ArrayBuffer[Int],
+        childEnds:  scala.collection.mutable.ArrayBuffer[Int] )
+      ( using Tactic[ParseError] )
     :   IArray[Node] =
 
       val children = getNodeBuffer()
@@ -2214,9 +2259,11 @@ object Xml extends Tag.Container
         else
           val arr = new Array[Node](children.length)
           var i = 0
+
           while i < children.length do
             arr(i) = children(i)
             i += 1
+
           arr.immutable(using Unsafe)
 
       relinquishNodeBuffer()

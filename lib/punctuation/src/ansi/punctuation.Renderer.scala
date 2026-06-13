@@ -118,7 +118,8 @@ object Renderer:
     case Prose.Emphasis(children*)            => children.map(plainTextOf(_)).to(Seq).join
     case Prose.Strong(children*)              => children.map(plainTextOf(_)).to(Seq).join
     case Prose.Link(_, _, children*)          => children.map(plainTextOf(_)).to(Seq).join
-    case Prose.Image(_, title, children*)     =>
+
+    case Prose.Image(_, title, children*) =>
       val inner = children.map(plainTextOf(_)).to(Seq).join
       if inner.length == 0 then title.or(t"") else inner
 
@@ -150,6 +151,7 @@ object Renderer:
 
         case _ =>
           val prefix = e"${Fg(palette.subdued)}(${t"#"*level} )"
+
           wrapped match
             case Nil =>
               List(prefix)
@@ -183,6 +185,7 @@ object Renderer:
 
     case Layout.CodeBlock(_, info, code) =>
       val available = summon[Every[TeletypeFormattable]].values
+
       val formatted = available.foldLeft(Unset: Optional[Teletype]):
         (acc, fmt) => acc.or(fmt.format(info, code))
 
@@ -233,7 +236,8 @@ object Renderer:
 
         joined match
           case Nil            => List(mk)
-          case head :: tail   =>
+
+          case head :: tail =>
             (mk + Space + head) :: tail.map(indent(_, hang))
 
       if tight then rendered.flatten
@@ -250,8 +254,8 @@ object Renderer:
   // Concatenate per-block line lists with a single blank line between blocks.
   private def interleaveBlanks(blocks: List[List[Teletype]]): List[Teletype] =
     blocks match
-      case Nil        => Nil
-      case head :: Nil => head
+      case Nil          => Nil
+      case head :: Nil  => head
       case head :: tail => head ::: Teletype.empty :: interleaveBlanks(tail)
 
 
@@ -298,6 +302,7 @@ object Renderer:
 
     def placeWord(word: Teletype): Unit =
       val wlen = word.plain.length
+
       if wlen == 0 then ()
       else
         val needsSpace = col > 0

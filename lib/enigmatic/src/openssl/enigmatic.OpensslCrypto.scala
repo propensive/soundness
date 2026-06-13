@@ -37,9 +37,9 @@ import java.lang.foreign.*
 import anticipation.*
 import fulminate.*
 import gossamer.*
-import rudiments.*
 import vacuous.*
 import xenophile.*
+
 
 // A `Crypto` provider backed by OpenSSL's `libcrypto`, called through the
 // xenophile native FFM layer (`ForeignLibrary`): the C prototypes below are parsed
@@ -79,13 +79,14 @@ object OpensslCrypto extends Crypto:
     int EVP_DecryptFinal_ex(EVP_CIPHER_CTX* ctx, unsigned char* out, int* outl);
     """
 
-  private val paths: List[Text] = List
-   (t"/opt/homebrew/opt/openssl@3/lib/libcrypto.dylib",
-    t"/opt/homebrew/lib/libcrypto.dylib",
-    t"/usr/local/opt/openssl@3/lib/libcrypto.dylib",
-    t"libcrypto.so.3",
-    t"libcrypto.so",
-    t"libcrypto.dylib")
+  private val paths: List[Text] =
+    List
+      ( t"/opt/homebrew/opt/openssl@3/lib/libcrypto.dylib",
+        t"/opt/homebrew/lib/libcrypto.dylib",
+        t"/usr/local/opt/openssl@3/lib/libcrypto.dylib",
+        t"libcrypto.so.3",
+        t"libcrypto.so",
+        t"libcrypto.dylib" )
 
   // The library outlives every call, so it is bound to the global arena.
   private lazy val lib: ForeignLibrary = ForeignLibrary(header, paths)(using Arena.global().nn)
@@ -168,11 +169,12 @@ object OpensslCrypto extends Crypto:
       val cipher0 = cipher(opensslCipher(parts(0), parts(1), key.length))(using arena)
       val keySegment = ForeignLibrary.segment(key)(using arena)
       val ivSegment = iv.lay(MemorySegment.NULL)(ForeignLibrary.segment(_)(using arena))
-      lib.handle(t"EVP_EncryptInit_ex").invokeWithArguments
-       (context, cipher0, MemorySegment.NULL, keySegment, ivSegment)
 
-      if parts(2) == t"NoPadding"
-      then lib.handle(t"EVP_CIPHER_CTX_set_padding").invokeWithArguments(context, Integer.valueOf(0))
+      lib.handle(t"EVP_EncryptInit_ex").invokeWithArguments
+        ( context, cipher0, MemorySegment.NULL, keySegment, ivSegment )
+
+      if parts(2) == t"NoPadding" then
+        lib.handle(t"EVP_CIPHER_CTX_set_padding").invokeWithArguments(context, Integer.valueOf(0))
 
       val block = if parts(0) == t"AES" then 16 else 8
 
@@ -181,8 +183,9 @@ object OpensslCrypto extends Crypto:
           val output = arena.allocate((chunk.length + block).toLong).nn
           val length = arena.allocate(int).nn
           val input = ForeignLibrary.segment(chunk)(using arena)
+
           lib.handle(t"EVP_EncryptUpdate").invokeWithArguments
-           (context, output, length, input, Integer.valueOf(chunk.length))
+            ( context, output, length, input, Integer.valueOf(chunk.length) )
 
           ForeignLibrary.bytes(output, length.get(int, 0L))
 
@@ -200,8 +203,10 @@ object OpensslCrypto extends Crypto:
 
   // One-shot EVP encrypt/decrypt (init → update → final), returning the raw output
   // without IV framing (the caller prepends/strips the IV).
-  private def oneShot(encrypting: Boolean, transformation: Text, key: Data, iv: Optional[Data],
-                      data: Data): Data =
+  private def oneShot
+    ( encrypting: Boolean, transformation: Text, key: Data, iv: Optional[Data], data: Data )
+  :   Data =
+
     val arena = Arena.ofConfined().nn
 
     try
@@ -215,7 +220,7 @@ object OpensslCrypto extends Crypto:
         val initFunction = if encrypting then t"EVP_EncryptInit_ex" else t"EVP_DecryptInit_ex"
 
         lib.handle(initFunction).invokeWithArguments
-         (context, cipher0, MemorySegment.NULL, keySegment, ivSegment)
+          ( context, cipher0, MemorySegment.NULL, keySegment, ivSegment )
 
         if parts(2) == t"NoPadding" then
           lib.handle(t"EVP_CIPHER_CTX_set_padding").invokeWithArguments(context, Integer.valueOf(0))
@@ -227,17 +232,15 @@ object OpensslCrypto extends Crypto:
         val updateFunction = if encrypting then t"EVP_EncryptUpdate" else t"EVP_DecryptUpdate"
 
         lib.handle(updateFunction).invokeWithArguments
-         (context, output, length1, input, Integer.valueOf(data.length))
+          ( context, output, length1, input, Integer.valueOf(data.length) )
 
         val count1 = length1.get(int, 0L)
         val length2 = arena.allocate(int).nn
         val finalFunction = if encrypting then t"EVP_EncryptFinal_ex" else t"EVP_DecryptFinal_ex"
 
-        lib.handle(finalFunction).invokeWithArguments(context, output.asSlice(count1.toLong).nn, length2)
+        lib.handle(finalFunction)
+        . invokeWithArguments(context, output.asSlice(count1.toLong).nn, length2)
 
         ForeignLibrary.bytes(output, count1 + length2.get(int, 0L))
       finally lib.handle(t"EVP_CIPHER_CTX_free").invokeWithArguments(context)
     finally arena.close()
-
-package cryptoProviders:
-  given opensslCrypto: OpensslCrypto.type = OpensslCrypto

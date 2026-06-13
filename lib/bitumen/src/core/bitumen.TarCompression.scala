@@ -32,23 +32,4 @@
                                                                                                   */
 package bitumen
 
-import anticipation.*
-import contingency.*
-import turbulence.*
-
 object TarCompression
-
-extension (tar: Tarfile)
-  def gzip: Stream[Data] = tar.stream[Data].compress[Gzip]
-  def zlib: Stream[Data] = tar.stream[Data].compress[Zlib]
-  def deflate: Stream[Data] = tar.stream[Data].compress[Deflate]
-
-extension (tarType: Tarfile.type)
-  def fromGzip(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
-    Tarfile.read(stream.decompress[Gzip])
-
-  def fromZlib(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
-    Tarfile.read(stream.decompress[Zlib])
-
-  def fromDeflate(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
-    Tarfile.read(stream.decompress[Deflate])

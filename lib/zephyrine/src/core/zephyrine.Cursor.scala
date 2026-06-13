@@ -497,6 +497,7 @@ final class Cursor[data]
         if more then
           advance()
           count += 1
-        else truncated = true
+        else
+          truncated = true
 
       if truncated then otherwise else grab(start, mark)

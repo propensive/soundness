@@ -188,8 +188,8 @@ def cli[bus <: Matchable](using executive: Executive)
 
             . mitigate:
                 Assembler.assemble
-                 (runnerBytes, jarFile, path, platformLabel, buildId, javaMinimum,
-                  javaPreferred, jdk, publicKey)
+                  ( runnerBytes, jarFile, path, platformLabel, buildId, javaMinimum,
+                   javaPreferred, jdk, publicKey )
 
             Out.println(t"Built executable file $destination")
 

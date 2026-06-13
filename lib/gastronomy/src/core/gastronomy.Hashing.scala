@@ -32,6 +32,12 @@
                                                                                                   */
 package gastronomy
 
+object Hashing:
+  // One hash algorithm's implementation: a factory for a fresh incremental
+  // `Digestion`.
+  trait Function:
+    def digestion(): Digestion
+
 // A pluggable hashing provider: it supplies the implementation of each hash
 // function as a `Hashing.Function` (a factory for fresh `Digestion`s). Providers
 // are *disjoint* — the JDK provider handles MD5/SHA-1/SHA-2/CRC-32, while BLAKE3
@@ -40,9 +46,3 @@ package gastronomy
 // mandatory baseline. Select providers with explicit imports, e.g.
 // `import hashProviders.javaStdlibHashing, hashProviders.soundnessHashing`.
 trait Hashing
-
-object Hashing:
-  // One hash algorithm's implementation: a factory for a fresh incremental
-  // `Digestion`.
-  trait Function:
-    def digestion(): Digestion

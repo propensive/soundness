@@ -32,8 +32,8 @@
                                                                                                   */
 package jacinta
 
-import vacuous.*
 import anticipation.*
+import vacuous.*
 
 extension (json: Json)
   def locate(pointer: JsonPointer): Optional[Json.Ast.Position] =
@@ -56,9 +56,9 @@ private def walkIndex
   if i >= segments.length then
     if keyMode then Unset
     else Json.Ast.Position
-     ( line   = data(offset + 1),
-       column = data(offset + 2),
-       length = data(offset + 3) )
+      ( line   = data(offset + 1),
+        column = data(offset + 2),
+        length = data(offset + 3) )
   else
     // `JsonPointer.path.descent` is stored leaf-first (Serpentine's `/`
     // prepends), so iterate it in reverse to walk root-to-leaf.
@@ -67,26 +67,28 @@ private def walkIndex
     if ast.isObject then
       val k = ast.objectIndexOf(seg)
 
-      if k < 0 then Unset
-      else
+      if k < 0 then Unset else
         val entryOff = data(offset + 5 + k)
         val isLast = i == segments.length - 1
 
         if isLast && keyMode then
           Json.Ast.Position
-           ( line   = data(offset + entryOff),
-             column = data(offset + entryOff + 1),
-             length = data(offset + entryOff + 2) )
+            ( line   = data(offset + entryOff),
+              column = data(offset + entryOff + 1),
+              length = data(offset + entryOff + 2) )
         else
           walkIndex
-           ( ast.objectValue(k), data, offset + entryOff + 3, segments, i + 1, keyMode )
+            ( ast.objectValue(k), data, offset + entryOff + 3, segments, i + 1, keyMode )
     else if ast.isArray then
       try
         val k = Integer.parseInt(seg)
+
         if k < 0 || k >= ast.arrayLength then Unset
         else
           val childOff = data(offset + 5 + k)
+
           walkIndex
-           ( ast.arrayElement(k), data, offset + childOff, segments, i + 1, keyMode )
+            ( ast.arrayElement(k), data, offset + childOff, segments, i + 1, keyMode )
       catch case _: NumberFormatException => Unset
-    else Unset
+    else
+      Unset

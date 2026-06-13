@@ -65,10 +65,10 @@ object LayeredDagDiagram:
       if verticalPassThrough && horizontalPassThrough then Crossing
       else (top, down, left, right) match
         case (false, false, false, false) => Space
-        case (true,  true,  false, false) => Vertical
-        case (false, false, true,  true)  => Horizontal
-        case (true,  false, false, true)  => CornerNe
-        case (true,  false, true,  false) => CornerNw
+        case (true, true, false, false)   => Vertical
+        case (false, false, true, true)   => Horizontal
+        case (true, false, false, true)   => CornerNe
+        case (true, false, true, false)   => CornerNw
         case (false, true,  false, true)  => CornerSe
         case (false, true,  true,  false) => CornerSw
         case (true,  true,  false, true)  => TeeE

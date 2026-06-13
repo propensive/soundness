@@ -194,7 +194,7 @@ object soundness extends ScalaModule:
     surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core, ziggurat.packager,
     ultimatum.core, xenophile.native, exoskeleton.args, exoskeleton.core)
 
-  object data extends Bundle(caesura.core, cellulose.core, dissonance.core, enigmatic.core,
+  object data extends Bundle(caesura.core, dissonance.core, enigmatic.core,
     gastronomy.core, chiaroscuro.core, jacinta.core, monotonous.core,
     panopticon.core, camouflage.core, ulysses.core, polyvinyl.core, polaris.core, zeppelin.core,
     xylophone.core, anamnesis.core, jacinta.time, jacinta.schema, gnossienne.core, jacinta.records,
@@ -531,12 +531,6 @@ object cataclysm extends Library:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, html)
-
-object cellulose extends Library:
-  object core extends Component(eucalyptus.core, chiaroscuro.core, polyvinyl.core, zephyrine.core):
-    override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
 
 object charisma extends Library:
   object core extends Component(gossamer.core):
@@ -1549,8 +1543,7 @@ val allLibraries: Seq[Library] = Seq(
   abacist, acyclicity, adversaria, ambience, anamnesis, anthology, anticipation,
   apoplexy, austronesian, aviation, baroque, beneficence, bitumen, breviloquence, burdock,
   cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm,
-  cellulose, charisma, chiaroscuro, coaxial, contextual, contingency, cordillera,
-  cosmopolite,
+  charisma, chiaroscuro, coaxial, contextual, contingency, cordillera, cosmopolite,
   decorum, dendrology, denominative, digression, dissonance, distillate, diuretic,
   embarcadero, enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis,
   exoskeleton,

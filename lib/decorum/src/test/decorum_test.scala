@@ -305,6 +305,10 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("object Foo:\n  val y = 2\n\nclass Foo:\n  val x = 1\n")
       . assert(!_.contains("398"))
 
+      test(m"Same-named decl in a different scope is not a companion (398)"):
+        rules("enum Hole:\n  case Foo(x: Int)\n\nobject Foo:\n  val y = 2\n")
+      . assert(!_.contains("398"))
+
     suite(m"Phase 3: Match-case rules"):
 
       test(m"Misaligned `=>` in case run is rejected"):
@@ -744,3 +748,69 @@ object Tests extends Suite(m"Decorum Tests"):
       test(m"Multi-line quote opener is not flagged as inline"):
         rules("val q =\n  ' {\n    body\n  }\n")
       . assert(r => !r.contains("473.7"))
+
+    suite(m"Phase 6: Indented-scope body indent (Rule B)"):
+
+      test(m"Colon-block body at anchor+2 is accepted"):
+        rules("val foo: Int = bar:\n  baz\n")
+      . assert(r => !r.contains("473.8"))
+
+      test(m"Colon-lambda body at anchor+2 is accepted"):
+        rules("val xs = items.map: x =>\n  f(x)\n")
+      . assert(r => !r.contains("473.8"))
+
+      test(m"Nested match on a case line is accepted"):
+        rules("foo match\n  case Bar(b) => b match\n    case Q => q\n")
+      . assert(r => !r.contains("473.8"))
+
+      test(m"Tuple as = RHS is accepted"):
+        rules("val pair: (Int, Int) =\n  (a, b)\n")
+      . assert(r => !r.contains("473.8"))
+
+      test(m"= RHS receiver on its own line with arg block is accepted"):
+        rules("val foo: Bar =\n  Bar\n    ( baz, quux )\n")
+      . assert(r => !r.contains("473.8"))
+
+      test(m"Colon-block body too deep is rejected"):
+        rules("val foo: Int = bar:\n      baz\n")
+      . assert(_.contains("473.8"))
+
+      test(m"Multi-line signature with = not last is rejected"):
+        rules("def fn(a: A)\n: Quux = quux:\n  body\n")
+      . assert(_.contains("473.9"))
+
+      test(m"Multi-line signature with = last is accepted"):
+        rules("def fn(a: A)\n: Quux =\n  quux\n")
+      . assert(r => !r.contains("473.9"))
+
+      test(m"Param block under a val is owned by 833.4, not Rule B"):
+        rules("val foo: Bar = Bar\n  ( baz, quux )\n")
+      . assert(r => !r.contains("473.8"))
+
+      test(m"Lambda parameter list is not a heavy continuation (833.4)"):
+        rules("foo +\n  (data: Origin) =>\n    body\n")
+      . assert(r => !r.contains("833.4"))
+
+      test(m"Genuine heavy bracket continuation is still rejected (833.4)"):
+        rules("foo +\n  ( baz, quux )\n")
+      . assert(r => r.contains("833.4"))
+
+      test(m"Tuple as the first line inside a quote/block is not 833.4"):
+        rules("' {\n  ( baz, quux )\n")
+      . assert(r => !r.contains("833.4"))
+
+      test(m"Constructor params after an `into` class are not 833.4"):
+        rules("into case class Response private\n  ( a: A, b: B )\n")
+      . assert(r => !r.contains("833.4"))
+
+      test(m"if-sequence as RHS keeps its own anchor (833.1), not Rule B"):
+        rules("val x = if pred\nthen y\nelse z\n")
+      . assert(r => r.contains("833.1") && !r.contains("473.8"))
+
+      test(m"Chain-method colon-lambda body (+4) is not flagged"):
+        rules("foo\n  .map: x =>\n    body\n")
+      . assert(r => !r.contains("473.8"))
+
+      test(m"String-interpolator first body line is handled"):
+        rules("val x = bar:\n  t\"a\"+b\n  more\n")
+      . assert(r => !r.contains("473.8"))

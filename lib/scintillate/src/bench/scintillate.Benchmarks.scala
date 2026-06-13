@@ -70,7 +70,14 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
 
   // A representative GET request with a handful of headers.
   lazy val getRequest: Data =
-    t"GET /path/to/resource HTTP/1.1\r\nHost: example.com\r\nAccept: text/html\r\nUser-Agent: bench\r\n\r\n".data
+    List
+      ( t"GET /path/to/resource HTTP/1.1",
+        t"Host: example.com",
+        t"Accept: text/html",
+        t"User-Agent: bench" )
+
+    . join(t"", t"\r\n", t"\r\n\r\n)
+    . data
 
   lazy val getRequestBytes: Array[Byte] = getRequest.mutable(using Unsafe)
 

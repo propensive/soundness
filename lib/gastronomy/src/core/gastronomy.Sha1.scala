@@ -32,11 +32,11 @@
                                                                                                   */
 package gastronomy
 
+import scala.reflect.Selectable.reflectiveSelectable
+
 import anticipation.*
 import gossamer.*
 import prepositional.*
-
-import scala.reflect.Selectable.reflectiveSelectable
 
 object Sha1:
   given hash: (hashing: Hashing { def sha1: Hashing.Function }) => Hash in Sha1 =

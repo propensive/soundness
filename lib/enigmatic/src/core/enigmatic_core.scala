@@ -35,12 +35,13 @@ package enigmatic
 import anticipation.*
 import gastronomy.*
 import prepositional.*
-import rudiments.*
-import vacuous.*
+import gastronomy.Concession
 
 extension [encodable: Encodable in Data](value: encodable)
   def hmac[algorithm <: Algorithm](key: Data)
-      (using hash: Hash in algorithm, crypto: Crypto, erased weakness: Permit[HashWeakness[algorithm]])
+    ( using hash:            Hash in algorithm,
+            crypto:          Crypto,
+            erased weakness: Permit[HashWeakness[algorithm]] )
   :   Hmac in algorithm =
 
     Hmac(crypto.hmac(hash.hmacName).mac(key, encodable.encode(value)))
@@ -75,3 +76,28 @@ package cryptoProviders:
 // The `Permit`/`Concession` machinery and the `crypto.permit…Crypto` aggregates
 // live in gastronomy (shared with hashing); the cipher concessions they cover are
 // mapped from cipher types by `Weakness`/`Authentication` in `enigmatic.Weakness`.
+
+
+// The cipher-side concession match types. The shared `Concession` markers, `Permit`
+// and the `crypto.permit…Crypto` aggregates live in gastronomy; these map a cipher
+// type to its concession.
+
+// The algorithm/key-length concession of a cipher type, extracted by matching the
+// (possibly `over`/`against`-refined) cipher. Anything not named here — AES,
+// RSA-2048, HMAC — is `Acceptable` and needs no permission.
+type Weakness[cipher] = cipher match
+  case Des          => Concession.Des
+  case TripleDes[?] => Concession.TripleDes
+  case Rc2[?]       => Concession.Rc2
+  case Blowfish[?]  => Concession.Blowfish
+  case Rsa[1024]    => Concession.SmallRsa
+  case Dsa[?]       => Concession.Dsa
+  case _            => Concession.Acceptable
+
+
+// Every (non-AEAD) block cipher is unauthenticated; asymmetric ciphers are not
+// classified this way. When authenticated encryption is added, its ciphers will
+// fall through to `Acceptable` here.
+type Authentication[cipher] = cipher match
+  case BlockCipher => Concession.Unauthenticated
+  case _           => Concession.Acceptable

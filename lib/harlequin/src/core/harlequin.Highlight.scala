@@ -39,13 +39,13 @@ import vacuous.*
 enum Pipeline:
   case Tokenized, Typechecked, Compiled
 
+object Highlight:
+  given default: Highlight = highlighting.tokenizedScala
+
 trait Highlight:
   def pipeline: Pipeline
   def scalac: Optional[Scalac[?]]
   def classpath: Optional[LocalClasspath]
-
-object Highlight:
-  given default: Highlight = highlighting.tokenizedScala
 
 object highlighting:
   given tokenizedScala: Highlight = new Highlight:
