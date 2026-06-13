@@ -1,5 +1,5 @@
                                                                                                   /*
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃                                                                                                  ┃
 ┃                                                   ╭───╮                                          ┃
 ┃                                                   │   │                                          ┃
@@ -50,8 +50,6 @@ import urticose.*
 import vacuous.*
 import zeppelin.*
 
-import Bootstrapper.given
-import Bootstrapper.{BurdockMain, BurdockRequire, BurdockVerbosity, Entry, Requirement}
 import errorDiagnostics.empty
 
 // The repackager. Reads the dependency hashes embedded by the compile-time macro
@@ -60,7 +58,23 @@ import errorDiagnostics.empty
 // copying the cached JAR's classes into the artifact. The completeness invariant:
 // every dependency is either externalized or inlined — a hash that is neither is
 // an error.
-object Repackage:
+object Repackager:
+  object BurdockMain extends ManifestAttribute["Burdock-Main"]
+  object BurdockVerbosity extends ManifestAttribute["Burdock-Verbosity"]
+  object BurdockRequire extends ManifestAttribute["Burdock-Require"]
+
+  given burdockMain: ("Burdock-Main" is EncodableManifest of Fqcn) = _.text
+
+  given burdockRequire: ("Burdock-Require" is EncodableManifest of List[Requirement]) =
+    _.map(_.text).join(t" ")
+
+  given burdockVerbosity: ("Burdock-Verbosity" is EncodableManifest of Text) = identity(_)
+
+  case class Requirement(url: into[HttpUrl], digest: Text):
+    def text = t"$digest:$url"
+
+  case class Entry(name: Text, data: Data)
+  case class UserError(detail: Message)(using Diagnostics) extends Error(detail)
   case class RepackageError(detail: Message)(using Diagnostics) extends Error(detail)
 
   // Resolves a dependency hash to its public URL (deps.dev), or `Unset`.
