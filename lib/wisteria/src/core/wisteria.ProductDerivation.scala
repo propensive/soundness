@@ -50,18 +50,7 @@ object ProductDerivation:
                               Int & FieldIndex[field] aka "index" ) ?=> field )
     :   derivation =
 
-      type Fields = reflection.MirroredElemTypes
-      type Labels = reflection.MirroredElemLabels
-
-      reflection.fromProduct:
-        fold[derivation, Fields, Labels, Tuple](Zero, 0): accumulator =>
-          [field] => context ?=>
-            given (requirement.Optionality[typeclass[field]] aka "contextual") =
-              context.aka["contextual"]
-
-            lambda[field](context) *: accumulator
-
-        . reverse
+      ${wisteria.internal.buildProduct[typeclass, derivation]('lambda, 'requirement)}
 
 
     protected transparent inline def construct[constructor[_]]
