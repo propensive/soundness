@@ -101,7 +101,10 @@ object internal:
     Apply(construction, arguments)
 
   // Applies the polymorphic-function `lambda` at type `field`, passing `value` as the value
-  // argument and `contextArgs` as the trailing context-function arguments.
+  // argument and `contextArgs` as the trailing context-function arguments. The applications are
+  // beta-reduced — substituting `field` and inlining the body with concrete types, exactly as the
+  // inliner does for an `inline` lambda parameter — so no residual abstract `apply` call survives
+  // (whose path-dependent `#Self` parameter types would otherwise fail to reduce).
   private def applyLambda[field: Type]
     ( using Quotes )
     ( lambda: quotes.reflect.Term, value: Expr[Any], contextArgs: List[Expr[Any]] )
@@ -109,12 +112,15 @@ object internal:
 
     import quotes.reflect.*
 
-    val applied =
-      Apply
-        ( TypeApply(Select.unique(lambda, "apply"), List(TypeTree.of[field])),
-          List(value.asTerm) )
+    def reduce(term: Term): Term = Term.betaReduce(term).getOrElse(term)
 
-    Apply(Select.unique(applied, "apply"), contextArgs.map(_.asTerm))
+    val applied =
+      reduce
+       ( Apply
+          ( TypeApply(Select.unique(lambda, "apply"), List(TypeTree.of[field])),
+            List(value.asTerm) ) )
+
+    reduce(Apply(Select.unique(applied, "apply"), contextArgs.map(_.asTerm)))
 
   def buildProduct[typeclass[_]: Type, derivation: Type]
     ( lambda: Expr[Any], requirement: Expr[ContextRequirement] )
