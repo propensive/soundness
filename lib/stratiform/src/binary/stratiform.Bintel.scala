@@ -408,7 +408,12 @@ object Bintel:
       case Tel.Element.Node(kidx, struct: Tels.Struct, children) =>
         val keyword   = kidx.let(flat(_)._1).or(Text(""))
         val childFlat = flattenKeywords(struct, schema)
-        Tel.Compound(keyword, IArray.empty, Unset, blocks(children.map(presentCompound(_, childFlat, schema))))
+
+        Tel.Compound
+          ( keyword,
+            IArray.empty,
+            Unset,
+            blocks(children.map(presentCompound(_, childFlat, schema))) )
 
       case Tel.Element.Node(kidx, _, _) =>
         Tel.Compound(kidx.let(flat(_)._1).or(Text("")), IArray.empty, Unset, IArray.empty)

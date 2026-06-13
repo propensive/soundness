@@ -187,7 +187,8 @@ trait Tel2:
             provide[Tactic[VariantError]]:
               // Map the variant's kebab keyword back to the label `delegate` dispatches on.
               val labels: Map[Text, Text] =
-                variantLabels[derivation].map { label => Tel.camelToKebab(label.s) -> label }.to(Map)
+                variantLabels[derivation].map: label => Tel.camelToKebab(label.s) -> label
+                . to(Map)
 
               val variant: Tel = Tel.make(telVal.childCompounds.head)
               val variantKeyword: Text = labels.getOrElse(variant.keyword, variant.keyword)

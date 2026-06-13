@@ -258,7 +258,8 @@ trait Yaml2:
       val variantNames: Map[Text, Text] = variantRelabelling[derivation, Yaml]
 
       variant(value): [variant <: derivation] =>
-        value => discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
+        value =>
+          discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
 
 object Yaml extends Yaml2, Dynamic:
   type YamlString    = String
@@ -328,7 +329,7 @@ object Yaml extends Yaml2, Dynamic:
 
   object Ast extends Format:
     def name: Text = "YAML"
-  
+
     case class Position
       ( line:                Int,
         column:              Int,
@@ -340,7 +341,7 @@ object Yaml extends Yaml2, Dynamic:
       // `line`/`column` are 1-based here; the public span is 0-based.
       override def span: Span =
         Span.line((line - 1).max(0).z, (column - 1).max(0).z, length.or(0))
-  
+
     enum Issue extends Format.Issue:
       case DirectiveWithoutDocumentStart
       case DirectivesOutOfPlace
@@ -393,7 +394,7 @@ object Yaml extends Yaml2, Dynamic:
       case BlockScalarLeadingBlanksOverIndented
       case UndefinedTagHandle(handle: Text)
       case UnknownAlias(name: Text)
-  
+
       def describe: Message = this match
         case DirectiveWithoutDocumentStart =>
           m"a directive must be followed by a `---` document-start marker"
@@ -547,7 +548,7 @@ object Yaml extends Yaml2, Dynamic:
 
         case UnknownAlias(name) =>
           m"the alias *$name does not refer to a known anchor"
-  
+
     // Byte constants used by the parser (mirrors `Json.Ast.AsciiByte` from
     // Jacinta).
     object Byte:
@@ -607,29 +608,29 @@ object Yaml extends Yaml2, Dynamic:
       inline final val CloseBrace:    125 = 125
       inline final val Tilde:         126 = 126
       inline final val Greater:       62  = 62
-  
+
     // Sentinel object used to pad an array whose user-visible length is
     // even so the underlying `IArray[Any]` is always odd-length and can be
     // distinguished from a mapping (always even-length).
     private[ypsiloid] val arrayPad: AnyRef = new Object
-  
+
     // ── Constructors ────────────────────────────────────────────────────────
-  
+
     inline def apply
       ( value:
         Long | Double | Bcd | Boolean | String | IArray[Any] | Null | Unset.type )
     :   Yaml.Ast =
 
       value
-  
+
     val Null: Yaml.Ast = null
-  
+
     inline def Bool(value: Boolean): Yaml.Ast = value
     inline def Integer(value: Long): Yaml.Ast = value
     inline def Decimal(value: Double): Yaml.Ast = value
     inline def BcdValue(value: Bcd): Yaml.Ast = value
     inline def Str(value: Text): Yaml.Ast = value.s
-  
+
     // Wrap an `IArray[Yaml.Ast]` of items as a sequence node. If the count
     // is even, append the `arrayPad` sentinel so the final node has odd
     // length.
@@ -642,7 +643,7 @@ object Yaml extends Yaml2, Dynamic:
         System.arraycopy(items.asInstanceOf[Array[Any]], 0, padded, 0, n)
         padded(n) = arrayPad
         padded.asInstanceOf[IArray[Any]]
-  
+
     // Wrap parallel keys/values as a mapping node, flattened to alternating
     // `[k0, v0, k1, v1, ...]`. The result has even length.
     def Mapping(entries: IArray[(Yaml.Ast, Yaml.Ast)]): Yaml.Ast =
@@ -657,7 +658,7 @@ object Yaml extends Yaml2, Dynamic:
         i += 1
 
       arr.asInstanceOf[IArray[Any]]
-  
+
     // Build a sequence directly from a raw `Array[Any]` of items (no
     // copy if the length is already odd; pad once otherwise). The parser
     // uses this to avoid the `Array.map` step.
@@ -670,22 +671,22 @@ object Yaml extends Yaml2, Dynamic:
         System.arraycopy(items, 0, padded, 0, n)
         padded(n) = arrayPad
         padded.asInstanceOf[IArray[Any]]
-  
+
     // Build a mapping directly from a flat `Array[Any]` of alternating
     // key/value entries. Length must be even.
     private[ypsiloid] def mapFromAnyArray(entries: Array[Any]): Yaml.Ast =
       entries.asInstanceOf[IArray[Any]]
-  
+
     // ── Inspection ──────────────────────────────────────────────────────────
-  
+
     // The user-visible length of a sequence (excludes the pad sentinel).
     def sequenceLength(arr: IArray[Any]): Int =
       val n = arr.length
       if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq arrayPad) then n - 1 else n
-  
+
     // The number of (key, value) pairs in a mapping.
     def mappingSize(arr: IArray[Any]): Int = arr.length / 2
-  
+
     // Apply `body(item)` to each user-visible item of a sequence, skipping
     // the pad sentinel. Hot-path iterator used by collection decoders.
     inline def foreachItem(arr: IArray[Any])(inline body: Yaml.Ast => Unit): Unit =
@@ -695,7 +696,7 @@ object Yaml extends Yaml2, Dynamic:
       while i < n do
         body(arr(i).asInstanceOf[Yaml.Ast])
         i += 1
-  
+
     // Apply `body(key, value)` to each entry of a mapping. Used by Map/case-
     // class decoders.
     inline def foreachEntry(arr: IArray[Any])(inline body: (Yaml.Ast, Yaml.Ast) => Unit): Unit =
@@ -705,39 +706,39 @@ object Yaml extends Yaml2, Dynamic:
       while i < n do
         body(arr(i).asInstanceOf[Yaml.Ast], arr(i + 1).asInstanceOf[Yaml.Ast])
         i += 2
-  
+
     // ── Pattern-match extractors ────────────────────────────────────────────
     // These let existing `case Yaml.Ast.Bool(b) => ...` patterns keep working
     // after the case-class hierarchy is removed. Each unapply allocates an
     // `Option`, which is fine for non-hot-path code (tests, decoders).
-  
+
     object Bool:
       def unapply(ast: Yaml.Ast): Option[Boolean] = ast match
         case b: Boolean => Some(b)
         case _          => None
-  
+
     object Integer:
       def unapply(ast: Yaml.Ast): Option[Long] = ast match
         case n: Long => Some(n)
         case _       => None
-  
+
     object Decimal:
       def unapply(ast: Yaml.Ast): Option[Double] = ast match
         case d: Double => Some(d)
         case _         => None
-  
+
     // Pattern extractor for high-precision BCD numbers. Matches a number
     // value that overflowed `Long`/`Double` precision during parsing.
     object BcdValue:
       def unapply(ast: Yaml.Ast): Option[Bcd] = ast match
         case b: Array[Double] @unchecked => Some(b.asInstanceOf[Bcd])
         case _                           => None
-  
+
     object Str:
       def unapply(ast: Yaml.Ast): Option[Text] = ast match
         case s: String => Some(s.tt)
         case _         => None
-  
+
     object Sequence:
       def unapply(ast: Yaml.Ast): Option[IArray[Yaml.Ast]] = ast match
         case xs: IArray[?] @unchecked
@@ -753,7 +754,7 @@ object Yaml extends Yaml2, Dynamic:
             Some(xs.asInstanceOf[IArray[Yaml.Ast]])
 
         case _ => None
-  
+
     object Mapping:
       def unapply(ast: Yaml.Ast): Option[IArray[(Yaml.Ast, Yaml.Ast)]] = ast match
         case xs: IArray[?] @unchecked
@@ -764,12 +765,12 @@ object Yaml extends Yaml2, Dynamic:
             (xs(i*2).asInstanceOf[Yaml.Ast], xs(i*2 + 1).asInstanceOf[Yaml.Ast]))
 
         case _ => None
-  
+
     // ── Deep equality ───────────────────────────────────────────────────────
     // Used by `Yaml.equals`/`hashCode` and by tests that compare two parsed
     // ASTs structurally. Walks `IArray[Any]` recursively so different array
     // instances with the same content compare equal.
-  
+
     def deepEquals(left: Yaml.Ast, right: Yaml.Ast): Boolean =
       if left.asInstanceOf[AnyRef] eq right.asInstanceOf[AnyRef] then true
       else (left, right) match
@@ -777,7 +778,7 @@ object Yaml extends Yaml2, Dynamic:
         case (a: Double, b: Double)     => a == b
         case (a: Boolean, b: Boolean)   => a == b
         case (a: String, b: String)     => a == b
-  
+
         // Cross-shape numeric comparisons: a `Bcd` may be equal in value
         // to a `Long`, `Double`, or another `Bcd`, when their canonical
         // BigDecimal projections compare equal.
@@ -795,7 +796,7 @@ object Yaml extends Yaml2, Dynamic:
 
         case (a: Double, b: Array[Double] @unchecked) =>
           BigDecimal(a) == b.asInstanceOf[Bcd].toBigDecimal
-  
+
         case (a: Array[AnyRef] @unchecked, b: Array[AnyRef] @unchecked) =>
           a.length == b.length && {
             var i = 0
@@ -813,21 +814,21 @@ object Yaml extends Yaml2, Dynamic:
 
             equal
           }
-  
+
         case _ => false
-  
+
     def deepHash(ast: Yaml.Ast): Int = ast match
       case null         => 0
       case b: Boolean   => b.hashCode
       case n: Long      => n.hashCode
       case d: Double    => d.hashCode
       case s: String    => s.hashCode
-  
+
       case b: Array[Double] @unchecked =>
         // Hash via the BigDecimal projection so a `Bcd` whose value equals
         // a numeric `Long`/`Double` literal has a consistent hash.
         b.asInstanceOf[Bcd].toBigDecimal.hashCode
-  
+
       case xs: Array[AnyRef] @unchecked =>
         var h = xs.length
         var i = 0
@@ -1488,4 +1489,3 @@ extends Dynamic derives CanEqual:
   override def equals(right: Any): Boolean = right match
     case right: Yaml => Yaml.Ast.deepEquals(root, right.root)
     case _           => false
-

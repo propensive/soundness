@@ -71,7 +71,9 @@ object Tests extends Suite(m"Adversaria tests"):
 
     test(m"unique annotation"):
       summon[Letters is Annotated].fields
-    . assert(_ == Map("alpha" -> Set(ref(1)), "beta" -> Set(ref(2), ref(3)), "delta" -> Set(ref(4))))
+    . assert: result =>
+        result ==
+          Map("alpha" -> Set(ref(1)), "beta" -> Set(ref(2), ref(3)), "delta" -> Set(ref(4)))
 
     test(m"unique annotation 2"):
       summon[adversaria.Hsv is Annotated by ident].field

@@ -303,7 +303,7 @@ object Checker:
         found
 
       val startsWithDecl =
-        sem.headOption.exists{ t => DeclKeywords.contains(t.text) || ModifierWords.contains(t.text) }
+        sem.headOption.exists: t => DeclKeywords.contains(t.text) || ModifierWords.contains(t.text)
 
       val wasDeclInProgress = s.prevLineStartedDecl
       val isContinuationOfDecl =
@@ -331,10 +331,13 @@ object Checker:
       // fixed anchor + 2.
       val isSequenceLine =
         SequenceStarters.contains(headTok) || (s.givenSignatureIndent >= 0 && headTok == "=>")
+
       val opensScope =
-        sem.lastOption.exists{ t => t.text == ":" || t.text == "match" || t.text == "=>" || t.text == "=" }
-      if opensScope && !isSequenceLine && !lineIsChainOpener(sem) then
-        s.indentScopes.push(IndentScope(leadingCols, leadingCols + 2, lineNum))
+        sem.lastOption.exists: t =>
+          t.text == ":" || t.text == "match" || t.text == "=>" || t.text == "="
+
+      if opensScope && !isSequenceLine && !lineIsChainOpener(sem)
+      then s.indentScopes.push(IndentScope(leadingCols, leadingCols + 2, lineNum))
 
       // R31 exceptions: detect quote/splice opener and chain opener on this
       // line so the next line gets a +4 (rather than +2) allowance. Also
@@ -348,9 +351,11 @@ object Checker:
       val inlineCols = scala.Array.ofDim[Int](inlineArr.length + 1)
       inlineCols(0) = 1
       var qi = 0
+
       while qi < inlineArr.length do
         inlineCols(qi + 1) = inlineCols(qi) + inlineArr(qi).text.length
         qi += 1
+
       checkInlineQuoteSplice(s.file, inlineArr, inlineCols, lineNum, out)
 
       // R32 anchor: a line that begins a `given` declaration (after any
@@ -361,6 +366,7 @@ object Checker:
 
       val startsGiven =
         kwIdx < sem.length && sem(kwIdx).kind == Kind.Code && sem(kwIdx).text == "given"
+
       if startsGiven then s.givenSignatureIndent = leadingCols
       else if s.givenSignatureIndent >= 0 && hasTopLevelEq then s.givenSignatureIndent = -1
 
@@ -893,7 +899,8 @@ object Checker:
     if isBlank then ()
     else if s.openParens > 0 then ()
     else if s.prevLineWasBlank then ()
-    else if !firstReal.exists{ t => t.kind == Kind.Code && (t.text == "(" || t.text == "[") } then ()
+    else if !firstReal.exists { t => t.kind == Kind.Code && (t.text == "(" || t.text == "[") }
+    then ()
     // A heavy continuation is indented *more* than its anchor. If the
     // current line's indent is ≤ the previous code line's indent, the
     // `(`/`[` is a sibling statement (a tuple, parenthesised expression

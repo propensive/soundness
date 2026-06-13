@@ -126,7 +126,9 @@ object Tels2:
 
         val polarity = fieldShape match
           case Shape.Arr(_) | Shape.Opt(_) => Polarity.Loose
-          case _                           => if required.contains(label) then Polarity.Tight else Polarity.Loose
+
+          case _ =>
+            if required.contains(label) then Polarity.Tight else Polarity.Loose
 
         Tels.Field
           ( polarity, repeatable, Tel.camelToKebab(label.s), reify(fieldShape), Unset )

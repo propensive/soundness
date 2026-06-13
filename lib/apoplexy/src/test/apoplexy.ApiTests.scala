@@ -107,11 +107,16 @@ object ApiTests extends Suite(m"Api client tests"):
 
       test(m"POST sole method with a positional body"):
         api.login(Credentials(t"jon", t"pw")).request
-      . assert(request => request.method == Http.Post && request.path == t"/login" && (request.body != Api.Body.Empty))
+
+      . assert: request =>
+          request.method == Http.Post && request.path == t"/login" && request.body != Api.Body.Empty
 
       test(m"PUT sole method with a positional body (verb omitted)"):
         api.profile(NewPet(t"Rex")).request
-      . assert(request => request.method == Http.Put && request.path == t"/profile" && (request.body != Api.Body.Empty))
+
+      . assert: request =>
+          request.method == Http.Put && request.path == t"/profile" &&
+            request.body != Api.Body.Empty
 
       test(m"the verb is still explicitly usable on a sole-method endpoint"):
         api.profile.put(NewPet(t"Rex")).request.method
@@ -145,7 +150,9 @@ object ApiTests extends Suite(m"Api client tests"):
 
       test(m"a DELETE-only endpoint with a path parameter"):
         api.sessions(t"abc").delete.request
-      . assert(request => request.method == Http.Delete && request.substitutions == Map(t"token" -> t"abc"))
+
+      . assert: request =>
+          request.method == Http.Delete && request.substitutions == Map(t"token" -> t"abc")
 
       test(m"a DELETE-only endpoint reached by a bare segment"):
         api.logout.delete.request.method

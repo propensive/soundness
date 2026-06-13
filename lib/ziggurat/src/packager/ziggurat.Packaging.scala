@@ -44,9 +44,9 @@ import vacuous.*
 object Packaging:
   // How the per-platform binaries reach the user.
   enum Delivery:
-    case EmbedAll                                // every runner embedded in one script (`Xeq.installer`)
-    case Download(baseUrl: Text, version: Text)  // downloaded per-platform (`Xeq.multiDownloader`)
-    case Native                                  // a single native binary, no wrapper (one target only)
+    case EmbedAll
+    case Download(baseUrl: Text, version: Text)
+    case Native
 
   // Where each platform's bare runner binary comes from.
   enum RunnerSource:

@@ -81,7 +81,8 @@ object Packager:
 
     config.delivery match
       case Packaging.Delivery.Native if config.targets.length != 1 =>
-        abort(PackageError(m"Native delivery requires exactly one target, but ${config.targets.length} were given"))
+        val length = config.targets.length
+        abort(PackageError(m"Native delivery requires exactly one target, but $length were given"))
 
       case _ =>
         ()
@@ -129,7 +130,8 @@ object Packager:
   // Produces one self-contained per-platform binary, dispatching on the runner
   // source: the app self-assembles in a subprocess (LocalResource), or the
   // runner is downloaded and assembled in-process (Remote).
-  private def buildBinary(config: Packaging, appJar: Path on Linux, label: Text, output: Path on Linux)
+  private def buildBinary
+    ( config: Packaging, appJar: Path on Linux, label: Text, output: Path on Linux )
     ( using working: WorkingDirectory )
   :   Unit raises ExecError raises PackageError =
 
@@ -190,9 +192,11 @@ object Packager:
 
     whereas:
       case HttpError(_, _)       => PackageError(m"Failed to download the runner for $label")
-      case ConnectError(_)       => PackageError(m"Could not connect to download the runner for $label")
       case AssemblyError(detail) => PackageError(detail)
       case IoError(_, _, _, _)   => PackageError(m"A filesystem error occurred assembling $label")
+
+      case ConnectError(_) =>
+        PackageError(m"Could not connect to download the runner for $label")
       case StreamError(_)        => PackageError(m"A stream error occurred assembling $label")
       case UrlError(_, _, _)     => PackageError(m"The runner URL for $label is invalid")
 
@@ -209,8 +213,8 @@ object Packager:
 
         val actual: Text = runner.digest[Sha2[256]].serialize[Hex]
 
-        if actual != expected then
-          abort(PackageError(m"Downloaded runner for $label has SHA-256 $actual, expected $expected"))
+        if actual != expected then abort:
+          PackageError(m"Downloaded runner for $label has SHA-256 $actual, expected $expected")
 
         val zeros: Data = IArray.fill(Assembler.PublicKeyLength)(0.toByte)
 
