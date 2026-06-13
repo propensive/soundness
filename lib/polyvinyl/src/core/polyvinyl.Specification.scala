@@ -82,7 +82,7 @@ trait Specification extends Original:
                   Some('{$accessor: label `is` Intensional `in` Form `from` Origin `to` result}) =>
                     val rhs: Expr[Origin => Any] =
                       ' {
-                          (data: Origin) =>
+                          data =>
                             $accessor.transform
                               ( $target.access(${Expr(name)}, data), ${Expr(params.to(List))} )
                         }
@@ -114,7 +114,7 @@ trait Specification extends Original:
 
                   val matchFn: Expr[Text => Origin => Any] =
                     ' {
-                        (name: Text) =>
+                        name =>
                           ${Match('name.asTerm, nestedCaseDefs).asExprOf[Origin => Any]}
                       }
 

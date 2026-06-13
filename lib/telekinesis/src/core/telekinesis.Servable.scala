@@ -60,8 +60,9 @@ object Servable:
   given bytes: [response: Abstractable across HttpStreams to HttpStreams.Content]
   =>  response is Servable =
 
-    Servable[response](value => unsafely(Media.parse(response.generic(value)(0)))): value =>
-      Http.Body.Streaming(response.generic(value)(1))
+    def mediaType(value: response): MediaType = unsafely(Media.parse(response.generic(value)(0)))
+
+    Servable[response](mediaType): value => Http.Body.Streaming(response.generic(value)(1))
 
 
   given data: Data is Servable =

@@ -32,6 +32,7 @@
                                                                                                   */
 package gossamer
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.mutable.{ArrayBuffer, HashMap as MutMap, LinkedHashSet}
 
 import anticipation.*
@@ -292,8 +293,6 @@ object Dictionary:
 
       new Dictionary[value]
         ( childrenArr, valuesArr, depthArr, failArr, dictLinkArr, alphabet, summon )
-
-import scala.annotation.unchecked.uncheckedVariance
 
 final class Dictionary[+value]
   ( val children: Array[Int],

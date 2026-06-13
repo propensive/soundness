@@ -148,7 +148,7 @@ object Mcp:
         case int: Int   => int.json
 
     given decodable: Tactic[JsonError] => TextInt is Json.Decodable =
-      Json.Decodable(Shape.Any)(json => TextInt(safely(json.as[Int]).or(json.as[Text])))
+      Json.Decodable(Shape.Any): json => TextInt(safely(json.as[Int]).or(json.as[Text]))
 
   case class TextInt(id: Text | Int)
 

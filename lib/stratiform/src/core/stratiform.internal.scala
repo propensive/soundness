@@ -301,7 +301,8 @@ object internal:
     val captures = scala.collection.mutable.ListBuffer.empty[Tel]
 
     if matchBlocks(pattern.children, input.subtree.children, marker, captures)
-    then Some(captures.toList) else None
+    then Some(captures.toList)
+    else None
 
   private def matchBlocks
     ( pattern: IArray[Tel.Block],

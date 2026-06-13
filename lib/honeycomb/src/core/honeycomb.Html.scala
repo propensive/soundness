@@ -656,7 +656,7 @@ object Html extends Tag.Container
     // Cursor-compat helpers so the algorithm body stays close to the
     // original cursor-based code.
     protected inline def lay[result](inline otherwise: => result)(inline body: Char => result)
-    : result =
+    :   result =
 
       if more then body(peek) else otherwise
 

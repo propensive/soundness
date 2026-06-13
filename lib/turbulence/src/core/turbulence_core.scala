@@ -51,6 +51,9 @@ import vacuous.*
 import abstractables.instantIsAbstractable
 import probates.await
 
+import LineSeparation.Action.*
+import LineSeparation.NewlineSeq
+
 inline def more[value](using value: value aka "more"): value = value()
 
 extension [value](value: value)
@@ -191,9 +194,6 @@ extension [element](stream: Stream[element])
     out.stream
 
 package lineSeparation:
-  import LineSeparation.Action.*
-  import LineSeparation.NewlineSeq
-
   given carriageReturn: LineSeparation(NewlineSeq.Cr, Nl, Skip, Nl, Nl)
   given strictCarriageReturn: LineSeparation(NewlineSeq.Cr, Nl, Lf, NlLf, LfNl)
   given linefeed: LineSeparation(NewlineSeq.Lf, Skip, Nl, Nl, Nl)

@@ -376,7 +376,7 @@ object internal:
       parts.zip(partOrigins).map: (part, origin) =>
         val (srcStart, _) = origin
 
-        val mapping: Int => Int = sourceContent.lay((i: Int) => i): content =>
+        val mapping: Int => Int = sourceContent.lay[Int => Int](identity): content =>
           if srcStart > 0 && srcStart < content.length then
             // Generous upper bound: each value char is at most 6 source chars
             // (\u####), plus a small buffer.
@@ -630,7 +630,7 @@ object internal:
 
       resultType(xml)
       . map: label => ConstantType(StringConstant(label))
-      . foldLeft(TypeRepr.of[Nothing]) { (left, right) => OrType(left, right) }
+      . foldLeft(TypeRepr.of[Nothing]): (left, right) => OrType(left, right)
       . asType
       . absolve match
         case '[type topic <: Label; topic] =>
@@ -892,7 +892,7 @@ object internal:
       def `--`(others: Iterable[Text]): Attributes =
         if isEmpty then attrs else
           var result: Attributes = attrs
-          others.foreach { k => result = result.removed(k) }
+          others.foreach: k => result = result.removed(k)
           result
 
       def updated(key: Text, value: Text): Attributes =

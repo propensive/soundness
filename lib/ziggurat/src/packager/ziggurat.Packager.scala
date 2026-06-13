@@ -194,11 +194,11 @@ object Packager:
       case HttpError(_, _)       => PackageError(m"Failed to download the runner for $label")
       case AssemblyError(detail) => PackageError(detail)
       case IoError(_, _, _, _)   => PackageError(m"A filesystem error occurred assembling $label")
+      case StreamError(_)        => PackageError(m"A stream error occurred assembling $label")
+      case UrlError(_, _, _)     => PackageError(m"The runner URL for $label is invalid")
 
       case ConnectError(_) =>
         PackageError(m"Could not connect to download the runner for $label")
-      case StreamError(_)        => PackageError(m"A stream error occurred assembling $label")
-      case UrlError(_, _, _)     => PackageError(m"The runner URL for $label is invalid")
 
     . mitigate:
         val expected: Text = hashes.at(label).lest(PackageError(m"No runner hash given for $label"))

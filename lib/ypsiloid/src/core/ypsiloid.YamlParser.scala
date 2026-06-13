@@ -1686,7 +1686,7 @@ private[ypsiloid] final class YamlParser:
         val n = readHex(4)
         appendChar(n.toChar)
 
-      case 0x55 /* 'U' */ =>
+      case 0x55 =>
         val n = readHex(8)
 
         if n >= 0x10000 then
@@ -3998,16 +3998,16 @@ private[ypsiloid] final class YamlParser:
         val savedPos = pos
 
         val nodeAttempt =
-          if peek == Minus && {
+          if peek == Minus &&
+            {
               val nb = if pos + 1 < bufEnd then bytes(pos + 1) else -1
               nb == Space || nb == Tab || nb == Newline || nb == Return || nb == -1
-            } then
+            }
+          then
             parseNodeHereTracked(currentColumn(), scratch)
-          else if pos > 0 && bytes(pos - 1) != Newline then
-            // We're on the same line as `?`
-            parseNodeHereTracked(indent + 2, scratch)
           else
-            parseNodeHereTracked(consumeLeadingSpacesPeek(), scratch)
+            if pos > 0 && bytes(pos - 1) != Newline then parseNodeHereTracked(indent + 2, scratch)
+            else parseNodeHereTracked(consumeLeadingSpacesPeek(), scratch)
 
         nodeAttempt
 

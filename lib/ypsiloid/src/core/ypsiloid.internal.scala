@@ -134,7 +134,7 @@ object internal:
         val srcSkip = origPart.length - parserPart.length
         val effectiveStart = srcStart + srcSkip
 
-        val mapping: Int => Int = sourceContent.lay((i: Int) => i): content =>
+        val mapping: Int => Int = sourceContent.lay(identity[Int]): content =>
           if effectiveStart > 0 && effectiveStart < content.length then
             val upper = (effectiveStart + parserPart.length * 6 + 16).min(content.length)
             val sourceText = content.substring(effectiveStart, upper).nn
@@ -571,7 +571,7 @@ object internal:
               node(i*2).asInstanceOf[String]
 
         val hasRest: Boolean =
-          (0 until pairs).exists(i => node(i*2).asInstanceOf[String] == MarkerString)
+          (0 until pairs).exists: i => node(i*2).asInstanceOf[String] == MarkerString
 
         val cardinality: Expr[Boolean] =
           if hasRest then

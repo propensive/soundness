@@ -156,7 +156,8 @@ object Zipfile:
           val recordOffset =
             if atRecorded.length == 56
               && Zip.u32(atRecorded, 0) == (Zip.zip64EocdSig.toLong & 0xffffffffL)
-            then recorded else eocdOffset - 20 - 56
+            then recorded
+            else eocdOffset - 20 - 56
 
           val record = source.read(recordOffset, 56)
 
