@@ -32,4 +32,10 @@
                                                                                                   */
 package soundness
 
-export burdock.{externalize, Bootstrapper}
+export burdock.{externalize, Repackager}
+
+// The repackager's command-line entry point, in the `soundness` package so it can be
+// launched as `java -cp app.jar soundness.repackage` (house style requires every file to
+// declare a package, so it cannot live in the default package).
+@main
+def repackage(): Unit = burdock.repackage()

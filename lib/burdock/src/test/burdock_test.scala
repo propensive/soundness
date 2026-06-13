@@ -72,21 +72,21 @@ object Tests extends Suite(m"Burdock Tests"):
       val published = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"
       val resolve: Text => Optional[HttpUrl] = h => if h == t"aaa" then published else Unset
       val classEntry = Zip.Entry(t"pkg/X.class".decode[Path on Zip], t"bytes".data)
-      val cached: Repackage.CacheReader =
+      val cached: Repackager.CacheReader =
         h => if h == t"bbb" then List(classEntry) else Unset
 
       test(m"a published hash becomes a remote requirement"):
-        val (requirements, inlined) = Repackage.partition(List(t"aaa"), resolve, cached)
+        val (requirements, inlined) = Repackager.partition(List(t"aaa"), resolve, cached)
         (requirements.length, inlined.length)
       .assert(_ == (1, 0))
 
       test(m"an unpublished but cached hash is inlined"):
-        val (requirements, inlined) = Repackage.partition(List(t"bbb"), resolve, cached)
+        val (requirements, inlined) = Repackager.partition(List(t"bbb"), resolve, cached)
         (requirements.length, inlined.length)
       .assert(_ == (0, 1))
 
       test(m"a hash that is neither published nor cached is rejected"):
-        capture[Repackage.RepackageError](Repackage.partition(List(t"ccc"), resolve, cached))
+        capture[Repackager.RepackageError](Repackager.partition(List(t"ccc"), resolve, cached))
       .assert(_ => true)
 
     suite(m"Repackager (end-to-end)"):
@@ -102,14 +102,14 @@ object Tests extends Suite(m"Burdock Tests"):
         #:: Zip.Entry(t"com/example/Main.class".decode[Path on Zip], t"main".data)
         #:: LazyList()
 
-      val resolve: Repackage.Resolver =
+      val resolve: Repackager.Resolver =
         h => if h == t"aaa" then url"https://repo1.maven.org/maven2/g/a/1/a-1.jar" else Unset
 
-      val cached: Repackage.CacheReader =
+      val cached: Repackager.CacheReader =
         h => if h == t"bbb" then List(Zip.Entry(t"dep/Lib.class".decode[Path on Zip], t"lib".data))
              else Unset
 
-      Repackage.repackage(inputJar, outputJar, resolve, cached, t"bootstrap-bytes".data)
+      Repackager.repackage(inputJar, outputJar, resolve, cached, t"bootstrap-bytes".data)
 
       val names: List[Text] = Zipfile.read(outputJar).entries.map(_.ref.show).to(List)
 
@@ -159,14 +159,14 @@ object Tests extends Suite(m"Burdock Tests"):
         #:: Zip.Entry(t"dep/Lib.class".decode[Path on Zip], t"bundled-lib".data)
         #:: LazyList()
 
-      val resolve: Repackage.Resolver = _ => Unset
+      val resolve: Repackager.Resolver = _ => Unset
 
-      val cached: Repackage.CacheReader =
+      val cached: Repackager.CacheReader =
         h => if h == t"bbb"
              then List(Zip.Entry(t"dep/Lib.class".decode[Path on Zip], t"cached-lib".data))
              else Unset
 
-      Repackage.repackage(inputJar, outputJar, resolve, cached, t"real-bootstrap".data)
+      Repackager.repackage(inputJar, outputJar, resolve, cached, t"real-bootstrap".data)
 
       val names: List[Text] = Zipfile.read(outputJar).entries.map(_.ref.show).to(List)
 
@@ -203,19 +203,19 @@ object Tests extends Suite(m"Burdock Tests"):
         #:: LazyList()
 
       val published = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"
-      val resolve: Repackage.Resolver = h => if h == t"pub" then published else Unset
+      val resolve: Repackager.Resolver = h => if h == t"pub" then published else Unset
 
       // The published dep's cached JAR lists the class bundled in the assembly (so it can be
       // identified and stripped); the unpublished dep stays bundled.
       val pubEntry = Zip.Entry(t"published/Lib.class".decode[Path on Zip], t"x".data)
       val unpubEntry = Zip.Entry(t"unpublished/Lib.class".decode[Path on Zip], t"y".data)
 
-      val cached: Repackage.CacheReader = h =>
+      val cached: Repackager.CacheReader = h =>
         if h == t"pub" then List(pubEntry)
         else if h == t"unpub" then List(unpubEntry)
         else Unset
 
-      Repackage.repackage(inputJar, outputJar, resolve, cached, t"bootstrap".data)
+      Repackager.repackage(inputJar, outputJar, resolve, cached, t"bootstrap".data)
 
       val names: List[Text] = Zipfile.read(outputJar).entries.map(_.ref.show).to(List)
 

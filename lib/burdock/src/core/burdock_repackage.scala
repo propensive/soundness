@@ -55,6 +55,7 @@ import urticose.*
 import vacuous.*
 import zeppelin.*
 
+import Repackager.UserError
 import backstops.stackTrace
 import environments.java
 import executives.direct
@@ -64,82 +65,67 @@ import stdios.virtualMachine
 import systems.java
 import termcaps.environment
 
-object Bootstrapper:
-  object BurdockMain extends ManifestAttribute["Burdock-Main"]
-  object BurdockVerbosity extends ManifestAttribute["Burdock-Verbosity"]
-  object BurdockRequire extends ManifestAttribute["Burdock-Require"]
+// The repackager's command-line logic, launched by the `soundness.repackage` entry point.
+// It takes no arguments — it self-locates the application JAR it is running from and
+// rewrites it in place (see `Repackager.repackage`).
+def repackage(): Unit = application(Nil):
+  whereas:
+    case error: Error =>
+      Err.println(error.message)
+      Exit.Fail(1)
 
-  given burdockMain: ("Burdock-Main" is EncodableManifest of Fqcn) = _.text
+  . recover:
+      val loader: ClassLoader = summon[Classloader].java
 
-  given burdockRequire: ("Burdock-Require" is EncodableManifest of List[Requirement]) =
-    _.map(_.text).join(t" ")
+      // Self-locate the application JAR: the classpath entry holding the
+      // `META-INF/burdock.deps` resource the build-time macro wrote. (Locating by
+      // the `burdock.Bootstrap` class would find burdock's own JAR, not the app's,
+      // once the app JAR is slim.)
+      val resourcePath: String = burdock.internal.ResourcePath
 
-  given burdockVerbosity: ("Burdock-Verbosity" is EncodableManifest of Text) = identity(_)
+      val depsResource: jn.URL =
+        Optional(loader.getResource(resourcePath)).lest:
+          UserError(m"this JAR was not built with Burdock (no ${resourcePath.tt})")
 
-  case class Requirement(url: into[HttpUrl], digest: Text):
-    def text = t"$digest:$url"
+      val connection: jn.URLConnection = depsResource.openConnection().nn
 
-  case class Entry(name: Text, data: Data)
-  case class UserError(detail: Message)(using Diagnostics) extends Error(detail)
+      val inputJar: Path on Linux = connection match
+        case jar: jn.JarURLConnection =>
+          jnf.Paths.get(jar.getJarFileURL.nn.toURI.nn).nn.toString.nn.tt.decode[Path on Linux]
 
-  def main(input: IArray[Text]): Unit = application(input):
-    whereas:
-      case error: Error =>
-        Err.println(error.message)
-        Exit.Fail(1)
+        case _ =>
+          abort(UserError(m"Burdock can only repackage a JAR file, not a directory"))
 
-    . recover:
-        val loader: ClassLoader = summon[Classloader].java
+      Out.println(m"Repackaging $inputJar")
 
-        // Self-locate the application JAR: the classpath entry holding the
-        // `META-INF/burdock.deps` resource the build-time macro wrote. (Locating by
-        // the `burdock.Bootstrap` class would find burdock's own JAR, not the app's,
-        // once the app JAR is slim.)
-        val resourcePath: String = burdock.internal.ResourcePath
+      // The bootstrap loader cannot be downloaded — it does the downloading — so
+      // its bytes are force-included from burdock's own (boot) JAR on the classpath.
+      val bootstrapClass: Data = (Classpath/"burdock"/"Bootstrap.class").read[Data]
 
-        val depsResource: jn.URL =
-          Optional(loader.getResource(resourcePath)).lest:
-            UserError(m"this JAR was not built with Burdock (no ${resourcePath.tt})")
+      // Unpublished dependencies are reconstructed from the build-time hard-links in
+      // `~/.cache/burdock/<sha256>.jar` (see `externalize`); published ones resolve via
+      // deps.dev and are referenced by URL rather than inlined.
+      val home: Text = _root_.java.lang.System.getProperty("user.home").nn.tt
+      val cacheDir: Path on Linux = t"$home/.cache/burdock".decode[Path on Linux]
 
-        val connection: jn.URLConnection = depsResource.openConnection().nn
+      def cached(hash: Text): Optional[List[Zip.Entry]] =
+        val cacheJar: Path on Linux = cacheDir/t"$hash.jar"
 
-        val inputJar: Path on Linux = connection match
-          case jar: jn.JarURLConnection =>
-            jnf.Paths.get(jar.getJarFileURL.nn.toURI.nn).nn.toString.nn.tt.decode[Path on Linux]
+        if !cacheJar.exists() then Unset else
+          Zipfile.read(cacheJar).entries.filter: entry =>
+            !entry.directory && entry.ref.show != t"META-INF/MANIFEST.MF"
 
-          case _ =>
-            abort(UserError(m"Burdock can only repackage a JAR file, not a directory"))
+          . to(List)
 
-        Out.println(m"Repackaging $inputJar")
+      val tmpFile: Path on Linux = inputJar.parent.vouch/t"${inputJar.name}.tmp"
+      Repackager.repackage(inputJar, tmpFile, DepsDev.mavenUrl, cached, bootstrapClass)
 
-        // The bootstrap loader cannot be downloaded — it does the downloading — so
-        // its bytes are force-included from burdock's own (boot) JAR on the classpath.
-        val bootstrapClass: Data = (Classpath/"burdock"/"Bootstrap.class").read[Data]
+      import filesystemOptions.overwritePreexisting.enabled
+      import filesystemOptions.deleteRecursively.disabled
+      import filesystemOptions.moveAtomically.enabled
+      import filesystemOptions.createNonexistentParents.disabled
 
-        // Unpublished dependencies are reconstructed from the build-time hard-links in
-        // `~/.cache/burdock/<sha256>.jar` (see `externalize`); published ones resolve via
-        // deps.dev and are referenced by URL rather than inlined.
-        val home: Text = _root_.java.lang.System.getProperty("user.home").nn.tt
-        val cacheDir: Path on Linux = t"$home/.cache/burdock".decode[Path on Linux]
+      tmpFile.moveTo(inputJar)
+      Out.println(m"Repackaged $inputJar")
 
-        def cached(hash: Text): Optional[List[Zip.Entry]] =
-          val cacheJar: Path on Linux = cacheDir/t"$hash.jar"
-
-          if !cacheJar.exists() then Unset else
-            Zipfile.read(cacheJar).entries.filter: entry =>
-              !entry.directory && entry.ref.show != t"META-INF/MANIFEST.MF"
-
-            . to(List)
-
-        val tmpFile: Path on Linux = inputJar.parent.vouch/t"${inputJar.name}.tmp"
-        Repackage.repackage(inputJar, tmpFile, DepsDev.mavenUrl, cached, bootstrapClass)
-
-        import filesystemOptions.overwritePreexisting.enabled
-        import filesystemOptions.deleteRecursively.disabled
-        import filesystemOptions.moveAtomically.enabled
-        import filesystemOptions.createNonexistentParents.disabled
-
-        tmpFile.moveTo(inputJar)
-        Out.println(m"Repackaged $inputJar")
-
-        Exit.Ok
+      Exit.Ok
