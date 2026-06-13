@@ -1953,9 +1953,10 @@ object Checker:
     ( file: String, s: State, out: mutable.ListBuffer[Violation] )
   :   Unit =
 
-    s.companions.objectLines.foreach: (name, objLine) =>
-      s.companions.typeLines.get(name).foreach: typeLine =>
+    s.companions.objectLines.foreach: (key, objLine) =>
+      s.companions.typeLines.get(key).foreach: typeLine =>
         if objLine > typeLine then
+          val name = key._2
           out +=
             Violation
               ( file, objLine, 1, "398",

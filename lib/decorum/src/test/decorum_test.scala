@@ -305,6 +305,10 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("object Foo:\n  val y = 2\n\nclass Foo:\n  val x = 1\n")
       . assert(!_.contains("398"))
 
+      test(m"Same-named decl in a different scope is not a companion (398)"):
+        rules("enum Hole:\n  case Foo(x: Int)\n\nobject Foo:\n  val y = 2\n")
+      . assert(!_.contains("398"))
+
     suite(m"Phase 3: Match-case rules"):
 
       test(m"Misaligned `=>` in case run is rejected"):
