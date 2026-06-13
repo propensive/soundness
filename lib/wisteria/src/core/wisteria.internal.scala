@@ -77,6 +77,24 @@ object internal:
     val resolved = productType(repr)
     if resolved.termSymbol.isNoSymbol then resolved.typeSymbol.name else resolved.termSymbol.name
 
+  // Builds `new Product(arguments*)` for the resolved product `tpe`.
+  private def constructProduct(using Quotes)
+    ( tpe: quotes.reflect.TypeRepr, arguments: List[quotes.reflect.Term] )
+  :   quotes.reflect.Term =
+
+    import quotes.reflect.*
+
+    val constructor = Select(New(TypeTree.of(using tpe.asType)), tpe.typeSymbol.primaryConstructor)
+
+    val construction = tpe.widen.dealias match
+      case AppliedType(_, typeArguments) =>
+        TypeApply(constructor, typeArguments.map { argument => TypeTree.of(using argument.asType) })
+
+      case _ =>
+        constructor
+
+    Apply(construction, arguments)
+
   // Applies the polymorphic-function `lambda` at type `field`, passing `value` as the value
   // argument and `contextArgs` as the trailing context-function arguments.
   private def applyLambda[field: Type]
@@ -119,16 +137,7 @@ object internal:
 
           applyLambda[field](lambdaTerm, contextValue, List(contextual, default, label, fieldIndex))
 
-    val constructor = Select(New(TypeTree.of(using tpe.asType)), symbol.primaryConstructor)
-
-    val construction = tpe.widen.dealias match
-      case AppliedType(_, typeArguments) =>
-        TypeApply(constructor, typeArguments.map { argument => TypeTree.of(using argument.asType) })
-
-      case _ =>
-        constructor
-
-    Apply(construction, arguments).asExprOf[derivation]
+    constructProduct(tpe, arguments).asExprOf[derivation]
 
   def contextsProduct[typeclass[_]: Type, derivation: Type, result: Type]
     ( lambda: Expr[Any], requirement: Expr[ContextRequirement] )
@@ -188,6 +197,88 @@ object internal:
           applyLambda[field](lambdaTerm, fieldValue, arguments).asExprOf[result]
 
     immutableArray[result](results)
+
+  def constructMonadic[typeclass[_]: Type, constructor[_]: Type, derivation: Type]
+    ( bind: Expr[Any], pure: Expr[Any], lambda: Expr[Any], requirement: Expr[ContextRequirement] )
+  :   Macro[constructor[derivation]] =
+
+    import quotes.reflect.*
+
+    val tpe = productType(TypeRepr.of[derivation])
+    val symbol = tpe.typeSymbol
+    val bindTerm = bind.asTerm
+    val pureTerm = pure.asTerm
+    val lambdaTerm = lambda.asTerm
+    val tupleType = TypeRepr.of[Tuple]
+    val constructorTuple = TypeRepr.of[constructor[Tuple]]
+    val derivationType = TypeRepr.of[derivation]
+
+    // `pure.apply[monadic](value)`
+    def applyPure(monadic: TypeRepr, value: Term): Term =
+      Apply
+        ( TypeApply(Select.unique(pureTerm, "apply"), List(TypeTree.of(using monadic.asType))),
+          List(value) )
+
+    // `bind.apply[input, output](monad)(function)` — the poly `apply` is curried, so the function
+    // argument is applied to the returned `Function1` via its own `apply`.
+    def applyBind(input: TypeRepr, output: TypeRepr, monad: Term, function: Term): Term =
+      val typed =
+        TypeApply
+          ( Select.unique(bindTerm, "apply"),
+            List(TypeTree.of(using input.asType), TypeTree.of(using output.asType)) )
+
+      Apply(Select.unique(Apply(typed, List(monad)), "apply"), List(function))
+
+    // Accumulate each field monadically into a (reversed) tuple, threading through `bind`:
+    //   bind(acc) { tuple => bind(lambda[field](ctx)) { value => pure(value *: tuple) } }
+    var accumulator: Term = applyPure(tupleType, '{EmptyTuple}.asTerm)
+
+    val tupleFunction = MethodType(List("tuple"))(_ => List(tupleType), _ => constructorTuple)
+
+    symbol.caseFields.zipWithIndex.foreach: (field, index) =>
+      tpe.memberType(field).asType.absolve match
+        case '[field] =>
+          val indexExpr = Expr(index)
+          val nameExpr = Expr(field.name)
+          val fieldType = TypeRepr.of[field]
+          val valueFunction = MethodType(List("value"))(_ => List(fieldType), _ => constructorTuple)
+
+          val outer = Lambda(Symbol.spliceOwner, tupleFunction, { (owner, parameters) =>
+            val tupleRef = parameters.head.asInstanceOf[Term]
+            val contextValue: Expr[Any] = '{$requirement.summon[typeclass[field]]}
+            val contextual = '{$requirement.summon[typeclass[field]].aka["contextual"]}
+            val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
+            val label = '{$nameExpr.tt.aka["label"]}
+            val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
+            val arguments = List(contextual, default, label, fieldIndex)
+            val monad = applyLambda[field](lambdaTerm, contextValue, arguments)
+
+            val inner = Lambda(owner, valueFunction, { (innerOwner, innerParameters) =>
+              val valueRef = innerParameters.head.asInstanceOf[Term]
+              val prepended = '{${valueRef.asExprOf[field]} *: ${tupleRef.asExprOf[Tuple]}}.asTerm
+              applyPure(tupleType, prepended).changeOwner(innerOwner)
+            })
+
+            applyBind(fieldType, tupleType, monad, inner).changeOwner(owner)
+          })
+
+          accumulator = applyBind(tupleType, tupleType, accumulator, outer)
+
+    // Finally reverse the accumulated tuple and construct the product from its elements.
+    val derivationFunction =
+      MethodType(List("tuple"))(_ => List(tupleType), _ => TypeRepr.of[constructor[derivation]])
+
+    val finalize = Lambda(Symbol.spliceOwner, derivationFunction, { (finalOwner, parameters) =>
+      val reversed = '{${parameters.head.asInstanceOf[Term].asExprOf[Tuple]}.reverse}
+
+      val arguments = symbol.caseFields.zipWithIndex.map: (field, index) =>
+        tpe.memberType(field).asType.absolve match
+          case '[field] => '{$reversed.productElement(${Expr(index)}).asInstanceOf[field]}.asTerm
+
+      applyPure(derivationType, constructProduct(tpe, arguments)).changeOwner(finalOwner)
+    })
+
+    applyBind(tupleType, derivationType, accumulator, finalize).asExprOf[constructor[derivation]]
 
   def isTuple[derivation: Type]: Macro[Boolean] =
     import quotes.reflect.*
