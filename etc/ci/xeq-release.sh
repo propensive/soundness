@@ -38,7 +38,7 @@ BASE="https://github.com/$REPO/releases/download/$TAG/"
 
 # Build the per-platform binaries and the launcher into ./dist. The base URL
 # baked into the launcher must match where we upload to below.
-./mill ethereal.example.distributable "$VERSION" "$BASE"
+./mill ethereal.example.distributable --version "$VERSION" --baseUrl "$BASE"
 
 # Create the release if it doesn't exist yet, then upload (clobber on re-run so
 # the script is idempotent).
