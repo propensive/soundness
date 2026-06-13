@@ -244,7 +244,12 @@ object Zipfile:
           case PathError(_, _)    => ZipError(ZipError.Reason.InvalidName(cleanName))
           case NameError(_, _, _) => ZipError(ZipError.Reason.InvalidName(cleanName))
 
-        . mitigate(cleanName.decode[Path on Zip])
+        . mitigate:
+          // `decode` performs no per-segment validation, so check each name component
+          // against `Zip.Rules` (which also forbids the `.`/`..` traversal segments) to
+          // make `InvalidName` reachable and reject Zip-Slip / path-traversing entry names.
+          cleanName.cut(t"/").each(Name[Zip](_))
+          cleanName.decode[Path on Zip]
 
       val payloadOffset = localOffset + prefixDelta
       if payloadOffset < earliestEntry then earliestEntry = payloadOffset
