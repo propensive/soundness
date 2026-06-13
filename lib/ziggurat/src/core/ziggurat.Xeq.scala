@@ -36,11 +36,10 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import galilei.*
-import gastronomy.*, hashProviders.javaStdlibHashing
 import gossamer.*
 import hellenism.*
 import hieroglyph.*
-import monotonous.*, alphabets.base64.standard, alphabets.hex.lowerCase
+import monotonous.*, alphabets.base64.standard
 import prepositional.*
 import serpentine.*
 import turbulence.*
@@ -61,7 +60,6 @@ import textSanitizers.skip
 object Xeq:
   private val ChunkSize: Int = 8000
   private val RunnerPrefix = t"runner-"
-  private val AssetPrefix = t"xeq-"
   private val ExeSuffix = t".exe"
   private val DataName = t"data"
 
@@ -127,14 +125,23 @@ object Xeq:
     builder.text.data(using charEncoders.utf8)
 
 
-  def multiDownloader(entries: List[(Text, Text, Text)]): Data =
+  // The polyglot online launcher. Unlike `installer` (which embeds every bare stub), this
+  // embeds only the application JAR — once, as the `data` payload, exactly as `installer`
+  // does — plus an `assets:` table of `label=url|hash`. At runtime the launcher downloads
+  // the one bare runner stub it needs, verifies its SHA-256, appends the embedded JAR, then
+  // replaces itself and execs. `entries` are `(label, stub-url, stub-sha256)`.
+  def onlineLauncher(jar: Data, entries: List[(Text, Text, Text)]): Data =
     val template = cp"/ziggurat/xeq.tmpl".read[Text]
-    val bat      = cp"/ziggurat/xeq-multidownloader.bat".read[Text]
-    val ps1      = cp"/ziggurat/xeq-multidownloader.ps1".read[Text]
-    val sh       = cp"/ziggurat/xeq-multidownloader.sh".read[Text]
+    val bat      = cp"/ziggurat/xeq-onlinelauncher.bat".read[Text]
+    val ps1      = cp"/ziggurat/xeq-onlinelauncher.ps1".read[Text]
+    val sh       = cp"/ziggurat/xeq-onlinelauncher.sh".read[Text]
 
     val prefix: Text =
       template.cut(t"@@BAT@@").join(bat).cut(t"@@PS1@@").join(ps1).cut(t"@@SH@@").join(sh)
+
+    // The JAR is embedded uncompressed, mirroring the installer's `data` payload, so the
+    // same `index:`/`-----BEGIN CERTIFICATE-----` extraction logic decodes it.
+    val content: Text = jar.serialize[Base64].slices(ChunkSize).join(t"", t"\n", t"\n")
 
     val rows: List[Text] = entries.map: (label, url, hash) =>
       t"$label=$url|$hash"
@@ -142,6 +149,10 @@ object Xeq:
     val builder = StringBuilder()
     builder.add(prefix)
     if !prefix.ends(t"\n") then builder.add('\n')
+    builder.add(t"index:$DataName=1\n")
+    builder.add(t"-----BEGIN CERTIFICATE-----\n")
+    builder.add(content)
+    builder.add(t"-----END CERTIFICATE-----\n")
     builder.add(t"assets:")
     builder.add(rows.join(t","))
     builder.add('\n')
@@ -196,33 +207,29 @@ object Xeq:
     write(output.decode[Path on Linux], downloader(url, hash))
 
 
-  private def multiDownloaderMain(output: Text, stagingDir: Text, baseUrl: Text, version: Text)
-  :   Unit =
-
+  // Builds an online launcher from a JAR plus a runner manifest (`label<TAB>sha256` per
+  // line, e.g. `etc/runners/<version>.tsv`). Each stub's download URL is `<baseUrl>/runner-
+  // <label>[.exe]`, where `baseUrl` is the published `runners-<version>` release.
+  private def onlineLauncherMain(output: Text, jar: Text, manifest: Text, baseUrl: Text): Unit =
     unsafely:
       val outputPath: Path on Linux = output.decode[Path on Linux]
-      val staging: Path on Linux = stagingDir.decode[Path on Linux]
-
-      val children: List[Path on Linux] = staging.children.to(List)
+      val jarData: Data = jar.decode[Path on Linux].open(_.stream[Data].read[Data])
+      val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
 
       val entries: List[(Text, Text, Text)] =
-        children
-        . filter(_.name.starts(RunnerPrefix))
-        . sortBy(_.name.s)
-        . map: path =>
-            val name = path.name
-            val withoutPrefix = name.skip(RunnerPrefix.length)
+        manifest.decode[Path on Linux].open(_.read[Text]).cut(t"\n").map(_.trim)
+        . filter(_ != t"")
+        . map: line =>
+            val fields: List[Text] = line.cut(t"\t").to(List)
+            val label: Text = fields.head
+            val hash: Text = fields.last
 
-            val label =
-              if withoutPrefix.ends(ExeSuffix) then withoutPrefix.skip(ExeSuffix.length, Rtl)
-              else withoutPrefix
+            val name: Text =
+              if label.starts(t"windows") then t"runner-$label.exe" else t"runner-$label"
 
-            val data: Data = path.open(_.read[Data])
-            val hash: Text = data.digest[Sha2[256]].serialize[Hex]
-            val url: Text = t"$baseUrl$AssetPrefix$label-$version"
-            (label, url, hash)
+            (label, t"$base$name", hash)
 
-      write(outputPath, multiDownloader(entries))
+      write(outputPath, onlineLauncher(jarData, entries))
 
 
   def main(args: Array[String]): Unit =
@@ -233,14 +240,14 @@ object Xeq:
       case "downloader" :: output :: url :: hash :: Nil =>
         downloaderMain(output.tt, url.tt, hash.tt)
 
-      case "multidownloader" :: output :: staging :: base :: version :: Nil =>
-        multiDownloaderMain(output.tt, staging.tt, base.tt, version.tt)
+      case "onlinelauncher" :: output :: jar :: manifest :: base :: Nil =>
+        onlineLauncherMain(output.tt, jar.tt, manifest.tt, base.tt)
 
       case _ =>
         System.err.nn.println("usage: ziggurat.Xeq installer <output-file> <staging-dir>")
         System.err.nn.println("       ziggurat.Xeq downloader <output-file> <url> <sha256>")
 
         System.err.nn.println(
-          "       ziggurat.Xeq multidownloader <output-file> <staging-dir> <base-url> <version>")
+          "       ziggurat.Xeq onlinelauncher <output-file> <jar> <manifest.tsv> <base-url>")
 
         System.exit(1)

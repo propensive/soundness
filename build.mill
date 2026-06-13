@@ -730,41 +730,36 @@ object ethereal extends Library:
       new java.io.File(target.toString).setExecutable(true)
       PathRef(target)
 
-    // The download-on-demand counterpart of `bin()`. Instead of embedding every
-    // platform's binary, this stages one self-contained executable per platform
-    // (the runner with the JAR appended — exactly the runner+data concatenation
-    // the installer performs at unpack time) and emits a small launcher that
-    // downloads the right one from `baseUrl` on first run. Outputs go to
-    // `./dist`: the `xeq-<label>-<version>` binaries to upload, plus the `hello`
-    // launcher whose embedded SHA-256s are computed from those same bytes.
-    def distributable(version: String, baseUrl: String): Command[PathRef] = Task.Command:
+    // The download-on-demand counterpart of `bin()`. Nothing app-specific is published:
+    // the bare reusable stubs are already released as `runners-<runnersVersion>` (see
+    // `make runners-release`). This embeds the application JAR once and emits a launcher
+    // that, on first run, downloads the one stub it needs from that release, verifies it
+    // against the committed `etc/runners/<runnersVersion>.tsv` manifest, appends the
+    // embedded JAR, and execs. Output: `./dist/hello`.
+    def distributable(runnersVersion: String): Command[PathRef] = Task.Command:
       val jar = assembly().path
-      val runnersBase = runnersDir
-      if !os.exists(runnersBase)
-      then throw new Exception(s"$runnersBase not found — run `make runners-build` first")
+
+      val manifest =
+        moduleDir / ".." / ".." / ".." / ".." / "etc" / "runners" / s"$runnersVersion.tsv"
+
+      if !os.exists(manifest) then throw new Exception(
+        s"$manifest not found — run `make runners-release RUNNERS_VERSION=$runnersVersion` first")
 
       val dist = moduleDir / ".." / ".." / ".." / ".." / "dist"
       os.makeDir.all(dist)
-      val staging = Task.dest / "staging"
-      os.makeDir.all(staging)
+      os.remove.all(dist / "hello")
 
-      core.runnerTargets.foreach: (label, binary) =>
-        val ext = if binary.endsWith(".exe") then ".exe" else ""
-        val runner = runnersBase / s"runner-$label$ext"
-        val complete = staging / s"runner-$label$ext"
-        os.write.over(complete, os.read.bytes(runner) ++ os.read.bytes(jar))
-        os.perms.set(complete, "rwxr-xr-x")
-        os.copy.over(complete, dist / s"xeq-$label-$version")
+      val base =
+        s"https://github.com/propensive/soundness/releases/download/runners-$runnersVersion"
 
-      val base = if baseUrl.endsWith("/") then baseUrl else s"$baseUrl/"
       val classpath =
         ziggurat.core.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
 
-      os.proc("java", "-cp", classpath, "ziggurat.Xeq", "multidownloader",
-          (dist / "hello").toString, staging.toString, base, version)
+      os.proc("java", "-cp", classpath, "ziggurat.Xeq", "onlinelauncher",
+          (dist / "hello").toString, jar.toString, manifest.toString, base)
         .call(stdout = os.Inherit, stderr = os.Inherit)
 
-      PathRef(dist)
+      PathRef(dist / "hello")
 
   object test extends Tests(core, exoskeleton.rig, quantitative.units)
 

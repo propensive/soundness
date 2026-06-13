@@ -114,12 +114,12 @@ object Tests extends Suite(m"Ziggurat tests"):
         sh"$script".exec[Text]().trim
       .assert(_ == t"hello from $hostLabel")
 
-    def stageDownloader(entries: List[(Text, Text, Text)]): Path on Linux =
+    def stageDownloader(jar: Data, entries: List[(Text, Text, Text)]): Path on Linux =
       val dir = tempDir()
       val script = dir / t"fetch"
       script.create[File]()
       script.open: handle =>
-        Stream(Xeq.multiDownloader(entries)).writeTo(handle)
+        Stream(Xeq.onlineLauncher(jar, entries)).writeTo(handle)
       script.executable() = true
       script
 
@@ -134,9 +134,9 @@ object Tests extends Suite(m"Ziggurat tests"):
         Stream(bytes).writeTo(handle)
       (label, t"file://$bin", hash.or(bytes.digest[Sha2[256]].serialize[Hex]))
 
-    suite(m"multiDownloader()"):
+    suite(m"onlineLauncher()"):
       val entries = labels.map(fileEntry(tempDir(), _, t"#!/bin/sh\n"))
-      val script: Data = Xeq.multiDownloader(entries)
+      val script: Data = Xeq.onlineLauncher(t"JAR".data, entries)
 
       test(m"output starts with bash shebang"):
         script.utf8.starts(t"#!/usr/bin/env bash")
@@ -147,20 +147,26 @@ object Tests extends Suite(m"Ziggurat tests"):
         labels.forall { label => text.contains(t"$label=") }
       .assert(_ == true)
 
+      test(m"embeds the JAR once as the data payload"):
+        script.utf8.contains(t"index:data=1")
+      .assert(_ == true)
+
     suite(m"native macOS download"):
-      test(m"downloads, verifies and runs host binary"):
+      // The "stub" served here exits before the appended JAR bytes are reached, so the
+      // launcher's download → verify → append-embedded-JAR → exec path runs end-to-end.
+      test(m"downloads, verifies, assembles and runs host binary"):
         val dir = tempDir()
         val entries = labels.map: label =>
-          fileEntry(dir, label, t"#!/bin/sh\necho 'fetched $label'\n")
-        sh"${stageDownloader(entries)}".exec[Text]().trim
+          fileEntry(dir, label, t"#!/bin/sh\necho 'fetched $label'\nexit 0\n")
+        sh"${stageDownloader(t"JAR".data, entries)}".exec[Text]().trim
       .assert(_ == t"fetched $hostLabel")
 
       test(m"rejects a binary whose hash does not match"):
         val dir = tempDir()
         val badHash = t"0"*64
         val entries = labels.map: label =>
-          fileEntry(dir, label, t"#!/bin/sh\necho oops\n", badHash)
-        sh"${stageDownloader(entries)}".exec[Exit]()
+          fileEntry(dir, label, t"#!/bin/sh\necho oops\nexit 0\n", badHash)
+        sh"${stageDownloader(t"JAR".data, entries)}".exec[Exit]()
       .assert(_ != Exit.Ok)
 
     suite(m"Packager validation"):
@@ -238,6 +244,32 @@ object Tests extends Suite(m"Ziggurat tests"):
 
         text.starts(t"#!/usr/bin/env bash") && text.contains(t"data=")
         && labels.all { label => text.contains(t"$label=") }
+      .assert(_ == true)
+
+      test(m"Download embeds the JAR once and an asset row per target"):
+        val dir: Path on Linux = tempDir()
+
+        val jar: Path on Linux = dir/t"app.jar"
+        jar.create[File]()
+        jar.open(Stream(t"JARBYTES".data).writeTo(_))
+
+        val out: Path on Linux = dir/t"hello"
+        val hashes: Map[Text, Text] = labels.map(_ -> t"0"*64).to(Map)
+
+        val packaging: Packaging =
+          Packaging
+            ( name         = t"hello",
+              targets      = labels,
+              delivery     = Packaging.Delivery.Download,
+              dependencies = Packaging.Dependencies.FatJar(jar),
+              output       = out,
+              runnerSource = Packaging.RunnerSource.Remote(t"https://r.test/", hashes) )
+
+        Packager.pack(packaging)
+        val text: Text = out.open(_.read[Data]).utf8
+
+        text.contains(t"index:data=1")
+        && labels.all { label => text.contains(t"$label=https://r.test/runner-$label") }
       .assert(_ == true)
 
     // Docker on macOS cannot run macOS containers, so macOS coverage is host-native only.
