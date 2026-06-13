@@ -73,32 +73,15 @@ object internal:
       repr.termSymbol.isNoSymbol && repr.typeSymbol.children.nonEmpty
 
     repr.dealias match
-      case AndType(left, right) => if parent(left) then productType(right) else productType(left)
-      case other                => other
+      case AndType(left, right)   => if parent(left) then productType(right) else productType(left)
+      case Refinement(base, _, _) => productType(base)
+      case other                  => other
 
   // The declared name of the resolved variant/product — the term symbol for a singleton case
   // object or parameterless enum case, otherwise the type symbol.
   private def caseName(using Quotes)(repr: quotes.reflect.TypeRepr): String =
     val resolved = productType(repr)
     if resolved.termSymbol.isNoSymbol then resolved.typeSymbol.name else resolved.termSymbol.name
-
-  // Builds `new Product(arguments*)` for the resolved product `tpe`.
-  private def constructProduct(using Quotes)
-    ( tpe: quotes.reflect.TypeRepr, arguments: List[quotes.reflect.Term] )
-  :   quotes.reflect.Term =
-
-    import quotes.reflect.*
-
-    val constructor = Select(New(TypeTree.of(using tpe.asType)), tpe.typeSymbol.primaryConstructor)
-
-    val construction = tpe.widen.dealias match
-      case AppliedType(_, typeArguments) =>
-        TypeApply(constructor, typeArguments.map { argument => TypeTree.of(using argument.asType) })
-
-      case _ =>
-        constructor
-
-    Apply(construction, arguments)
 
   // Applies the polymorphic-function `lambda` at type `field`, passing `value` as the value
   // argument and `contextArgs` as the trailing context-function arguments. The applications are
@@ -114,16 +97,14 @@ object internal:
 
     def reduce(term: Term): Term = Term.betaReduce(term).getOrElse(term)
 
-    val applied =
-      reduce
-       ( Apply
-          ( TypeApply(Select.unique(lambda, "apply"), List(TypeTree.of[field])),
-            List(value.asTerm) ) )
+    val typeApplied = TypeApply(Select.unique(lambda, "apply"), List(TypeTree.of[field]))
+    val applied = reduce(Apply(typeApplied, List(value.asTerm)))
 
     reduce(Apply(Select.unique(applied, "apply"), contextArgs.map(_.asTerm)))
 
-  def buildProduct[typeclass[_]: Type, derivation: Type]
-    ( lambda: Expr[Any], requirement: Expr[ContextRequirement] )
+  def buildProduct[typeclass[_]: Type, derivation <: Product: Type]
+    ( lambda: Expr[Any], requirement: Expr[ContextRequirement],
+      reflection: Expr[ProductReflection[derivation]] )
   :   Macro[derivation] =
 
     import quotes.reflect.*
@@ -132,7 +113,7 @@ object internal:
     val symbol = tpe.typeSymbol
     val lambdaTerm = lambda.asTerm
 
-    val arguments: List[Term] = symbol.caseFields.zipWithIndex.map: (field, index) =>
+    val arguments: List[Expr[Any]] = symbol.caseFields.zipWithIndex.map: (field, index) =>
       tpe.memberType(field).asType.absolve match
         case '[field] =>
           val indexExpr = Expr(index)
@@ -140,15 +121,20 @@ object internal:
 
           // `requirement.summon[typeclass[field]]` — built twice (idempotent): once as the
           // polymorphic-function value argument, once tagged as the `"contextual"` context arg.
-          val contextValue: Expr[Any] = '{$requirement.summon[typeclass[field]]}
-          val contextual = '{$requirement.summon[typeclass[field]].aka["contextual"]}
+          val contextValue: Expr[Any] = resolveField[typeclass, field](requirement)
+          val contextual = '{${resolveField[typeclass, field](requirement)}.aka["contextual"]}
           val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
           val label = '{$nameExpr.tt.aka["label"]}
           val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
 
           applyLambda[field](lambdaTerm, contextValue, List(contextual, default, label, fieldIndex))
+          . asExpr
 
-    constructProduct(tpe, arguments).asExprOf[derivation]
+    // Construct through the `Mirror`'s `fromProduct`, which correctly handles inner-class outer
+    // pointers and refined (`… over Json` carrier) derivation types — the only use of the Mirror;
+    // fields, labels and types all come from symbol inspection.
+    val tuple = Expr.ofTupleFromSeq(arguments)
+    '{$reflection.fromProduct($tuple)}
 
   def contextsProduct[typeclass[_]: Type, derivation: Type, result: Type]
     ( lambda: Expr[Any], requirement: Expr[ContextRequirement] )
@@ -165,8 +151,8 @@ object internal:
           val indexExpr = Expr(index)
           val nameExpr = Expr(field.name)
 
-          val contextValue: Expr[Any] = '{$requirement.summon[typeclass[field]]}
-          val contextual = '{$requirement.summon[typeclass[field]].aka["contextual"]}
+          val contextValue: Expr[Any] = resolveField[typeclass, field](requirement)
+          val contextual = '{${resolveField[typeclass, field](requirement)}.aka["contextual"]}
           val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
           val label = '{$nameExpr.tt.aka["label"]}
 
@@ -199,7 +185,7 @@ object internal:
           val fieldValue: Expr[Any] =
             '{$product.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[field]}
 
-          val contextual = '{$requirement.summon[typeclass[field]].aka["contextual"]}
+          val contextual = '{${resolveField[typeclass, field](requirement)}.aka["contextual"]}
           val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
           val label = '{$nameExpr.tt.aka["label"]}
           val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
@@ -209,8 +195,9 @@ object internal:
 
     immutableArray[result](results)
 
-  def constructMonadic[typeclass[_]: Type, constructor[_]: Type, derivation: Type]
-    ( bind: Expr[Any], pure: Expr[Any], lambda: Expr[Any], requirement: Expr[ContextRequirement] )
+  def constructMonadic[typeclass[_]: Type, constructor[_]: Type, derivation <: Product: Type]
+    ( bind: Expr[Any], pure: Expr[Any], lambda: Expr[Any], requirement: Expr[ContextRequirement],
+      reflection: Expr[ProductReflection[derivation]] )
   :   Macro[constructor[derivation]] =
 
     import quotes.reflect.*
@@ -256,8 +243,8 @@ object internal:
 
           val outer = Lambda(Symbol.spliceOwner, tupleFunction, { (owner, parameters) =>
             val tupleRef = parameters.head.asInstanceOf[Term]
-            val contextValue: Expr[Any] = '{$requirement.summon[typeclass[field]]}
-            val contextual = '{$requirement.summon[typeclass[field]].aka["contextual"]}
+            val contextValue: Expr[Any] = resolveField[typeclass, field](requirement)
+            val contextual = '{${resolveField[typeclass, field](requirement)}.aka["contextual"]}
             val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
             val label = '{$nameExpr.tt.aka["label"]}
             val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
@@ -281,12 +268,8 @@ object internal:
 
     val finalize = Lambda(Symbol.spliceOwner, derivationFunction, { (finalOwner, parameters) =>
       val reversed = '{${parameters.head.asInstanceOf[Term].asExprOf[Tuple]}.reverse}
-
-      val arguments = symbol.caseFields.zipWithIndex.map: (field, index) =>
-        tpe.memberType(field).asType.absolve match
-          case '[field] => '{$reversed.productElement(${Expr(index)}).asInstanceOf[field]}.asTerm
-
-      applyPure(derivationType, constructProduct(tpe, arguments)).changeOwner(finalOwner)
+      val constructed = '{$reflection.fromProduct($reversed)}.asTerm
+      applyPure(derivationType, constructed).changeOwner(finalOwner)
     })
 
     applyBind(tupleType, derivationType, accumulator, finalize).asExprOf[constructor[derivation]]
@@ -364,6 +347,14 @@ object internal:
 
     Match(ordinal.asTerm, cases :+ CaseDef(Wildcard(), None, default.asTerm)).asExprOf[result]
 
+  // Resolves a field's typeclass instance, wrapped per the `ContextRequirement`, deferring to the
+  // inline `summon` at the use site.
+  private def resolveField[typeclass[_]: Type, field: Type]
+    (requirement: Expr[ContextRequirement])(using Quotes)
+  :   Expr[Any] =
+
+    '{$requirement.summon[typeclass[field]]}
+
   def variantDispatch[typeclass[_]: Type, derivation: Type, result: Type]
     ( sum: Expr[derivation], lambda: Expr[Any], requirement: Expr[ContextRequirement] )
   :   Macro[result] =
@@ -380,7 +371,7 @@ object internal:
           case '[variant] =>
             val indexExpr = Expr(index)
             val variantValue: Expr[Any] = '{$sum.asInstanceOf[variant]}
-            val contextual = '{$requirement.summon[typeclass[variant]].aka["contextual"]}
+            val contextual = '{${resolveField[typeclass, variant](requirement)}.aka["contextual"]}
             val label = '{${Expr(child.name)}.tt.aka["label"]}
             val variantIndex = '{VariantIndex[variant]($indexExpr).aka["index"]}
             val arguments = List(contextual, label, variantIndex)
@@ -408,8 +399,8 @@ object internal:
           case '[variant] =>
             val indexExpr = Expr(index)
             val nameExpr = Expr(child.name)
-            val contextValue: Expr[Any] = '{$requirement.summon[typeclass[variant]]}
-            val contextual = '{$requirement.summon[typeclass[variant]].aka["contextual"]}
+            val contextValue: Expr[Any] = resolveField[typeclass, variant](requirement)
+            val contextual = '{${resolveField[typeclass, variant](requirement)}.aka["contextual"]}
             val label = '{$nameExpr.tt.aka["label"]}
             val variantIndex = '{VariantIndex[variant]($indexExpr).aka["index"]}
             val arguments = List(contextual, label, variantIndex)

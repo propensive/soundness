@@ -49,7 +49,7 @@ object ProductDerivation:
                               Int & FieldIndex[field] aka "index" ) ?=> field )
     :   derivation =
 
-      ${wisteria.internal.buildProduct[typeclass, derivation]('lambda, 'requirement)}
+      ${wisteria.internal.buildProduct[typeclass, derivation]('lambda, 'requirement, 'reflection)}
 
 
     protected transparent inline def construct[constructor[_]]
@@ -68,7 +68,7 @@ object ProductDerivation:
     :   constructor[derivation] =
 
       ${wisteria.internal.constructMonadic[typeclass, constructor, derivation]('bind, 'pure,
-          'lambda, 'requirement)}
+          'lambda, 'requirement, 'reflection)}
 
 
     protected transparent inline def contexts[derivation <: Product]
