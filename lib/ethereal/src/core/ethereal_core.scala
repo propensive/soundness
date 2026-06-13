@@ -153,8 +153,23 @@ def cli[bus <: Matchable](using executive: Executive)
             val runnerName: Text =
               if isWindows then t"runner-$platformLabel.exe" else t"runner-$platformLabel"
 
-            val runnerResource: Path on Classpath = Classpath/"ethereal"/runnerName
-            val runnerBytes: Data = runnerResource.read[Data]
+            // The reusable runner stubs are no longer embedded in the JAR; the right one is
+            // read from the `dist/runners` directory (relative to the working directory, or
+            // `-Dethereal.runners=<dir>`), which `make runners-build`/`make runners-fetch`
+            // populate.
+            val work: Path on Linux = workingDirectory
+
+            val runnersDir: Text =
+              safely(System.properties.ethereal.runners[Text]()).or(t"$work/dist/runners")
+
+            val runnerFile: Path on Linux = t"$runnersDir/$runnerName".decode[Path on Linux]
+
+            if !runnerFile.exists() then
+              Out.println(e"Runner stub $runnerName not found in $runnersDir.")
+              Out.println(e"Run $Italic(make runners-build) or $Italic(make runners-fetch) first.")
+              Exit.Fail(1).terminate()
+
+            val runnerBytes: Data = runnerFile.open(_.stream[Data].read[Data])
 
             // ML-DSA-44 public key used by the runner to verify upgrades.
             // When `ethereal.publicKey` is unset the slot stays zero and the

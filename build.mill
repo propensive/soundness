@@ -680,40 +680,16 @@ object ethereal extends Library:
   object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.core, quantitative.units):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-    val rustTargets: Seq[(String, String, String)] = Seq(
-      ("x86_64-pc-windows-gnu",       "windows-x64",   "runner.exe"),
-      ("x86_64-unknown-linux-gnu",    "linux-x64",     "runner"),
-      ("aarch64-unknown-linux-gnu",   "linux-arm64",   "runner"),
-      ("x86_64-apple-darwin",         "macos-x64",     "runner"),
-      ("aarch64-apple-darwin",        "macos-arm64",   "runner"))
-
-    def rustSources: T[Seq[PathRef]] = Task.Sources(
-      moduleDir / ".." / ".." / "Cargo.toml",
-      moduleDir / ".." / ".." / "src" / "runner")
-
-    def rustRunners: T[PathRef] = Task:
-      val _ = rustSources()
-      val ethDir = moduleDir / ".." / ".."
-      val manifest = ethDir / "Cargo.toml"
-      val targetDir = Task.dest / "target"
-      os.makeDir.all(targetDir)
-      val cmd = Seq("cargo", "zigbuild", "--release",
-        "--manifest-path", manifest.toString,
-        "--target-dir", targetDir.toString) ++
-        rustTargets.flatMap { case (triple, _, _) => Seq("--target", triple) }
-      os.proc(cmd).call(cwd = ethDir, stdout = os.Inherit, stderr = os.Inherit)
-      val outDir = Task.dest / "ethereal"
-      os.makeDir.all(outDir)
-      rustTargets.foreach { case (triple, label, binary) =>
-        val src = targetDir / triple / "release" / binary
-        val ext = if binary.endsWith(".exe") then ".exe" else ""
-        val dst = outDir / s"runner-$label$ext"
-        os.copy.over(src, dst)
-      }
-      PathRef(Task.dest)
-
-    override def resources: T[Seq[PathRef]] =
-      Task(super.resources() ++ Seq(rustRunners()))
+    // The platforms the reusable native runner stubs target — (label, binary filename).
+    // The stubs are built and published independently of this build (see `make
+    // runners-build` / `make runners-release`); the Soundness build never compiles them,
+    // and they are not embedded in any JAR.
+    val runnerTargets: Seq[(String, String)] = Seq(
+      ("windows-x64",   "runner.exe"),
+      ("linux-x64",     "runner"),
+      ("linux-arm64",   "runner"),
+      ("macos-x64",     "runner"),
+      ("macos-arm64",   "runner"))
 
   object example extends Internal(core, exoskeleton.completions):
     override def scalacOptions = Task:
@@ -724,16 +700,23 @@ object ethereal extends Library:
     // (`ethereal.run` and `ethereal.fixture`).
     override def mainClass: Task.Simple[Option[String]] = Some("ethereal.run")
 
+    // The reusable runner stubs are read from `dist/runners` (the output of
+    // `make runners-build` or `make runners-fetch`); run one of those first.
+    def runnersDir = moduleDir / ".." / ".." / ".." / ".." / "dist" / "runners"
+
     def bin(): Command[PathRef] = Task.Command:
       val jar = assembly().path
       val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "hello"
       os.makeDir.all(target / os.up)
 
-      val runnersBase = core.rustRunners().path / "ethereal"
+      val runnersBase = runnersDir
+      if !os.exists(runnersBase)
+      then throw new Exception(s"$runnersBase not found — run `make runners-build` first")
+
       val staging = Task.dest / "staging"
       os.makeDir.all(staging)
 
-      core.rustTargets.foreach: (_, label, binary) =>
+      core.runnerTargets.foreach: (label, binary) =>
         val ext = if binary.endsWith(".exe") then ".exe" else ""
         val src = runnersBase / s"runner-$label$ext"
         os.copy.over(src, staging / s"runner-$label$ext")
@@ -756,14 +739,16 @@ object ethereal extends Library:
     // launcher whose embedded SHA-256s are computed from those same bytes.
     def distributable(version: String, baseUrl: String): Command[PathRef] = Task.Command:
       val jar = assembly().path
-      val runnersBase = core.rustRunners().path / "ethereal"
+      val runnersBase = runnersDir
+      if !os.exists(runnersBase)
+      then throw new Exception(s"$runnersBase not found — run `make runners-build` first")
 
       val dist = moduleDir / ".." / ".." / ".." / ".." / "dist"
       os.makeDir.all(dist)
       val staging = Task.dest / "staging"
       os.makeDir.all(staging)
 
-      core.rustTargets.foreach: (_, label, binary) =>
+      core.runnerTargets.foreach: (label, binary) =>
         val ext = if binary.endsWith(".exe") then ".exe" else ""
         val runner = runnersBase / s"runner-$label$ext"
         val complete = staging / s"runner-$label$ext"
@@ -1385,11 +1370,14 @@ object ultimatum extends Library:
       val target = moduleDir / ".." / ".." / ".." / ".." / "bin" / "demo"
       os.makeDir.all(target / os.up)
 
-      val runnersBase = ethereal.core.rustRunners().path / "ethereal"
+      val runnersBase = moduleDir / ".." / ".." / ".." / ".." / "dist" / "runners"
+      if !os.exists(runnersBase)
+      then throw new Exception(s"$runnersBase not found — run `make runners-build` first")
+
       val staging = Task.dest / "staging"
       os.makeDir.all(staging)
 
-      ethereal.core.rustTargets.foreach: (_, label, binary) =>
+      ethereal.core.runnerTargets.foreach: (label, binary) =>
         val ext = if binary.endsWith(".exe") then ".exe" else ""
         os.copy.over(runnersBase / s"runner-$label$ext", staging / s"runner-$label$ext")
 
