@@ -305,6 +305,16 @@ object internal:
   private def variantType(using Quotes)(child: quotes.reflect.Symbol): quotes.reflect.TypeRepr =
     if child.isType then child.typeRef else child.termRef
 
+  // The variant type intersected with the sum parent (`variant & derivation`). The intersection
+  // is what keeps a parameterless enum case distinct: its bare type widens to the sum, but the
+  // intersection both stays distinct and conforms to the lambda's `variant <: derivation` bound.
+  private def variantWith(using Quotes)
+    ( child: quotes.reflect.Symbol, parent: quotes.reflect.TypeRepr )
+  :   quotes.reflect.TypeRepr =
+
+    import quotes.reflect.*
+    AndType(variantType(child), parent)
+
   def variantLabels[derivation: Type]: Macro[List[Text]] =
     import quotes.reflect.*
 
@@ -356,9 +366,11 @@ object internal:
 
     val lambdaTerm = lambda.asTerm
 
+    val derivationType = TypeRepr.of[derivation]
+
     val branches: List[Expr[result]] =
-      TypeRepr.of[derivation].typeSymbol.children.zipWithIndex.map: (child, index) =>
-        variantType(child).asType.absolve match
+      derivationType.typeSymbol.children.zipWithIndex.map: (child, index) =>
+        variantWith(child, derivationType).asType.absolve match
           case '[variant] =>
             val indexExpr = Expr(index)
             val variantValue: Expr[Any] = '{$sum.asInstanceOf[variant]}
@@ -382,9 +394,11 @@ object internal:
     val default: Expr[result] =
       '{provide[Tactic[VariantError]](abort(VariantError[derivation]($delegation)))}
 
-    TypeRepr.of[derivation].typeSymbol.children.zipWithIndex.foldRight(default):
+    val derivationType = TypeRepr.of[derivation]
+
+    derivationType.typeSymbol.children.zipWithIndex.foldRight(default):
       case ((child, index), rest) =>
-        variantType(child).asType.absolve match
+        variantWith(child, derivationType).asType.absolve match
           case '[variant] =>
             val indexExpr = Expr(index)
             val nameExpr = Expr(child.name)
