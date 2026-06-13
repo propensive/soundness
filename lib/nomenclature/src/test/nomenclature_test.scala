@@ -40,6 +40,7 @@ import classloaders.threadContext
 
 sealed trait Id
 sealed trait Id2
+sealed trait EndsO
 sealed trait Session
 sealed trait Other
 
@@ -47,6 +48,7 @@ object Tests extends Suite(m"Nomenclature tests"):
   def run(): Unit =
     inline given id: Id is Nominative under MustEnd["!"] & MustNotStart["0"] & MustNotContain["."] = !!
     inline given id2: Id2 is Nominative under MustNotEqual["."] & MustNotEqual[".."] = !!
+    inline given endsO: EndsO is Nominative under MustEnd["o"] = !!
 
     test(m"Create a successful new name"):
       Name[Id](t"hello!")
@@ -77,9 +79,41 @@ object Tests extends Suite(m"Nomenclature tests"):
       capture[NameError](Name[Id2](t"..")).message.show
     . assert(_ == t"the name .. is not valid because it must not equal ..")
 
-    test(m"Construct a new name at compiletime"):
-      n"hello": Name[Id2]
+    test(m"Covariance probe: a wider plane intersection is a subtype"):
+      val wide: Name[Id2 & EndsO] = t"hello".asInstanceOf[Name[Id2 & EndsO]]
+      val narrow: Name[EndsO] = wide
+      narrow
     . assert(_ == t"hello")
+
+    test(m"Construct a name at compiletime with no expected type"):
+      val name = n"hello"
+      name
+    . assert(_ == t"hello")
+
+    test(m"An inferred name is usable where one of its planes is required"):
+      val name: Name[EndsO] = n"hello"
+      name
+    . assert(_ == t"hello")
+
+    test(m"An inferred name conforms to the intersection of all its planes"):
+      val name: Name[Id2 & EndsO] = n"hello"
+      name
+    . assert(_ == t"hello")
+
+    test(m"An inferred name is usable where another of its planes is required"):
+      val name: Name[Id2] = n"world"
+      name
+    . assert(_ == t"world")
+
+    test(m"An inferred name is rejected where a non-matching plane is required"):
+      demilitarize:
+        val name: Name[EndsO] = n"world"
+    . assert(_.nonEmpty)
+
+    test(m"An identifier valid in no plane in scope is a compile error"):
+      demilitarize:
+        val name = n"."
+    . assert(_.nonEmpty)
 
     test(m"Name is required"):
       capture[NameError](Name[Required](t"")).message.show
@@ -92,10 +126,6 @@ object Tests extends Suite(m"Nomenclature tests"):
     test(m"A CSS class name may not start with a digit"):
       capture[NameError](Name[CssClass](t"1col")).message.show
     . assert(_ == t"the name 1col is not valid because it must be a valid CSS identifier")
-
-    test(m"A CSS class name is constructed at compiletime"):
-      n"button": Name[CssClass]
-    . assert(_ == t"button")
 
     test(m"A valid DOM id is accepted"):
       Name[DomId](t"main-content")

@@ -38,7 +38,7 @@ import distillate.*
 import prepositional.*
 
 object internal:
-  opaque type Name[plane] <: anticipation.Text = anticipation.Text
+  opaque type Name[+plane] <: anticipation.Text = anticipation.Text
 
   object Name:
     given encodable: [plane] => Name[plane] is Encodable in Text = identity(_)
