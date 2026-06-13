@@ -45,7 +45,9 @@ object Packaging:
   // How the per-platform binaries reach the user.
   enum Delivery:
     case EmbedAll
-    case Download(baseUrl: Text, version: Text)
+    // Online: the JAR is embedded once and each bare stub is downloaded at runtime from the
+    // `RunnerSource.Remote` base URL (so `Download` requires a `Remote` runner source).
+    case Download
     case Native
 
   // Where each platform's bare reusable runner stub comes from. The stubs are published

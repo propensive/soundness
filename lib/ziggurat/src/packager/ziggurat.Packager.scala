@@ -159,18 +159,28 @@ object Packager:
             write(config.output, Xeq.installer(stubs :+ data))
             config.output
 
-          case Packaging.Delivery.Download(baseUrl, version) =>
-            val dir: Path on Linux = config.output.parent.vouch
-            val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
+          case Packaging.Delivery.Download =>
+            // Online: the JAR is embedded once; the launcher downloads each bare stub from the
+            // `Remote` base URL at runtime and appends the embedded JAR. No per-platform binary
+            // is built or published here — only the reusable stubs (published independently).
+            val entries: List[(Text, Text, Text)] = config.runnerSource.absolve match
+              case Packaging.RunnerSource.Local(_) =>
+                abort(PackageError(m"Download delivery requires a Remote runner source"))
 
-            val entries: List[(Text, Text, Text)] = config.targets.map: label =>
-              val asset: Text = t"xeq-$label-$version"
-              val staged: Path on Linux = t"$dir/$asset".decode[Path on Linux]
-              binary(label, staged)
-              val hash: Text = staged.open(_.read[Data]).digest[Sha2[256]].serialize[Hex]
-              (label, t"$base$asset", hash)
+              case Packaging.RunnerSource.Remote(baseUrl, hashes) =>
+                val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
 
-            write(config.output, Xeq.multiDownloader(entries))
+                config.targets.map: label =>
+                  val name: Text =
+                    if label.starts(t"windows") then t"runner-$label.exe" else t"runner-$label"
+
+                  val hash: Text =
+                    hashes.at(label).lest(PackageError(m"No runner hash given for $label"))
+
+                  (label, t"$base$name", hash)
+
+            val jarData: Data = appJar.open(_.read[Data])
+            write(config.output, Xeq.onlineLauncher(jarData, entries))
             config.output
 
 
