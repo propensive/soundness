@@ -48,12 +48,16 @@ object Packaging:
     case Download(baseUrl: Text, version: Text)
     case Native
 
-  // Where each platform's bare runner binary comes from.
+  // Where each platform's bare reusable runner stub comes from. The stubs are published
+  // independently (see `make runners-release`); a build never compiles them.
   enum RunnerSource:
-    case LocalResource  // the app self-assembles using `Classpath/"ethereal"/runner-<label>`
+    // Read `<directory>/runner-<label>[.exe]` from a local directory (e.g. the output of
+    // `make runners-build`). For development and testing — no download, no hash check.
+    case Local(directory: Path on Linux)
 
-    // Each runner is downloaded from `<baseUrl>/runner-<label>[.exe]` and verified
-    // against `hashes(label)` (lowercase SHA-256 hex), then assembled in-process.
+    // Download each stub from `<baseUrl>/runner-<label>[.exe]` and verify it against
+    // `hashes(label)` (lowercase SHA-256 hex, from the committed `etc/runners/<v>.tsv`
+    // manifest). The production source.
     case Remote(baseUrl: Text, hashes: Map[Text, Text])
 
   // The bundled Java runtime *preference* recorded in the ETHRCFG block. Records
@@ -81,7 +85,7 @@ case class Packaging
    delivery:     Packaging.Delivery,
    dependencies: Packaging.Dependencies,
    output:       Path on Linux,
-   runnerSource: Packaging.RunnerSource      = Packaging.RunnerSource.LocalResource,
+   runnerSource: Packaging.RunnerSource,
    java:         Packaging.JavaPolicy        = Packaging.JavaPolicy(),
    signing:      Optional[Packaging.Signing] = Unset,
    buildId:      Long                        = 0L )
