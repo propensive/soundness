@@ -70,20 +70,19 @@ object Assembler:
 
   val PublicKeyLength: Int = 1312   // ML-DSA-44 public key size
 
-  def assemble
+  // Patches a bare runner's ETHRCFG block (build id, Java version policy, ML-DSA-44
+  // public key) and returns the patched bytes, without appending a JAR. Used both by
+  // `assemble` (which then appends the JAR) and by the offline polyglot packager, which
+  // embeds the patched stub and lets the launcher append the JAR at unpack time.
+  def patch
     ( runner:        Data,           // bare runner binary
-      jarFile:       Path on Linux,  // application JAR appended at EOF
-      output:        Path on Linux,
-      platformLabel: Text,
       buildId:       Long,
       javaMinimum:   Int,
       javaPreferred: Int,
       jdk:           Boolean,
       publicKey:     Data )           // 1312 raw bytes (all-zero disables upgrades)
-    ( using WorkingDirectory )
-  :   Unit raises AssemblyError raises IoError raises StreamError =
+  :   Data raises AssemblyError =
 
-    val isWindows: Boolean = platformLabel.starts(t"windows")
     val bytes: Array[Byte] = IArray.genericWrapArray(runner).toArray
 
     val magicOffset: Int =
@@ -118,13 +117,32 @@ object Assembler:
     metaBuf.put((if jdk then 1 else 0).toByte)
     while metaBuf.hasRemaining do metaBuf.put(0.toByte)
 
-    // Write the 1312-byte public-key region at offset 32 within the ETHRCFG
-    // block (8 magic + 24 metadata). The signature slot at offset 1344 stays
-    // zero — populated later by the signer when shipped as an upgrade.
+    // Write the 1312-byte public-key region at offset 32 within the ETHRCFG block (8
+    // magic + 24 metadata). The signature slot at offset 1344 stays zero — populated
+    // later by the signer when shipped as an upgrade.
     jl.System.arraycopy(keyBytes, 0, bytes, configOffset + 24, PublicKeyLength)
 
+    IArray.from(bytes.iterator): IArray[Byte]
+
+
+  def assemble
+    ( runner:        Data,           // bare runner binary
+      jarFile:       Path on Linux,  // application JAR appended at EOF
+      output:        Path on Linux,
+      platformLabel: Text,
+      buildId:       Long,
+      javaMinimum:   Int,
+      javaPreferred: Int,
+      jdk:           Boolean,
+      publicKey:     Data )           // 1312 raw bytes (all-zero disables upgrades)
+    ( using WorkingDirectory )
+  :   Unit raises AssemblyError raises IoError raises StreamError =
+
+    val isWindows: Boolean = platformLabel.starts(t"windows")
+    val patched: Data = patch(runner, buildId, javaMinimum, javaPreferred, jdk, publicKey)
+
     output.open: file =>
-      Stream(IArray.from(bytes.iterator): IArray[Byte]).writeTo(file)
+      Stream(patched).writeTo(file)
 
     if platformLabel.starts(t"macos") then
       if !isWindows then output.executable() = true

@@ -122,7 +122,11 @@ if [[ "${SOUNDNESS_CI_SKIP_BUILD:-0}" != "1" ]]; then
   set +e
   (
     cd "$WORKTREE" || exit 1
-    CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.all.compile \
+    # The reusable runner stubs are not stored in the repo or any JAR; build them into
+    # `dist/runners` so the test suite (the `Enclave` rig and the ethereal/profanity tests)
+    # can read them. They are not part of the Soundness (Mill) build.
+    make runners-build \
+      && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.all.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false test.assembly \
       && CLAUDECODE=1 make ci
   ) 2>&1 | tee "$LOG"

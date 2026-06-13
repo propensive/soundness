@@ -169,7 +169,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       def config
          (delivery:     Packaging.Delivery,
           dependencies: Packaging.Dependencies,
-          runnerSource: Packaging.RunnerSource = Packaging.RunnerSource.LocalResource,
+          runnerSource: Packaging.RunnerSource = Packaging.RunnerSource.Remote(t"https://x.test/", Map()),
           targets:      List[Text]             = List(t"linux-x64"))
       :   Packaging =
         val dir = tempDir()
@@ -199,6 +199,46 @@ object Tests extends Suite(m"Ziggurat tests"):
         capture[PackageError]:
           Packager.pack(config(Packaging.Delivery.Native, fatJar, targets = labels))
       .assert(_ => true)
+
+    suite(m"Packager assembly (offline, local stubs)"):
+      // A fake bare stub carrying the ETHRCFG marker so `Assembler.patch` can patch it,
+      // followed by enough zero bytes for the 24-byte metadata and public-key regions.
+      def writeStub(dir: Path on Linux, label: Text): Unit =
+        val file: Path on Linux = t"$dir/runner-$label".decode[Path on Linux]
+
+        val bytes: Array[Byte] =
+          Array.fill(64)(0.toByte)
+          ++ ethereal.Assembler.MagicMarker
+          ++ Array.fill(64 + ethereal.Assembler.PublicKeyLength)(0.toByte)
+
+        file.create[File]()
+        file.open(Stream(bytes.immutable(using Unsafe): Data).writeTo(_))
+
+      test(m"EmbedAll bundles the JAR once and every patched stub"):
+        val dir: Path on Linux = tempDir()
+        labels.each(writeStub(dir, _))
+
+        val jar: Path on Linux = dir/t"app.jar"
+        jar.create[File]()
+        jar.open(Stream(t"JARBYTES".data).writeTo(_))
+
+        val out: Path on Linux = dir/t"hello"
+
+        val packaging: Packaging =
+          Packaging
+            ( name         = t"hello",
+              targets      = labels,
+              delivery     = Packaging.Delivery.EmbedAll,
+              dependencies = Packaging.Dependencies.FatJar(jar),
+              output       = out,
+              runnerSource = Packaging.RunnerSource.Local(dir) )
+
+        Packager.pack(packaging)
+        val text: Text = out.open(_.read[Data]).utf8
+
+        text.starts(t"#!/usr/bin/env bash") && text.contains(t"data=")
+        && labels.all { label => text.contains(t"$label=") }
+      .assert(_ == true)
 
     // Docker on macOS cannot run macOS containers, so macOS coverage is host-native only.
     if !dockerOk then Out.println(t"Docker unavailable; skipping Linux container tests")
