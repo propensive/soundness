@@ -33,30 +33,16 @@
 package wisteria
 
 import scala.compiletime.*
-import scala.deriving.*
 
 import anticipation.*
-import contingency.*
 import denominative.*
-import fulminate.*
-import rudiments.*
 import vacuous.*
 
 object SumDerivation:
   trait Methods[typeclass[_]]:
 
     transparent inline def choice[derivation: SumReflection]: Boolean =
-      inline !![derivation.MirroredElemTypes] match
-        case _: (variant *: variants) => all[variant, variants]
-
-    private transparent inline def all[variant, variants <: Tuple]: Boolean = summonFrom:
-      case given (variant <:< Singleton) =>
-        inline !![variants] match
-          case _: Zero                           => true
-          case _: (variant *: variants)          => all[variant, variants]
-
-      case _ =>
-        false
+      ${wisteria.internal.isChoice[derivation]}
 
 
     protected transparent inline def complement[derivation, variant](sum: derivation)
@@ -64,51 +50,20 @@ object SumDerivation:
               reflection:   SumReflection[derivation] )
     :   Optional[variant] =
 
-      type Labels = reflection.MirroredElemLabels
-      type Variants = reflection.MirroredElemTypes
-
-      val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
-
-      fold[derivation, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
-        [variant2 <: derivation] => field =>
-          if index == variantIndex() then field.asInstanceOf[variant] else Unset
+      ${wisteria.internal.complementVariant[derivation, variant]('sum, 'variantIndex)}
 
 
     protected inline def variantLabels[derivation](using reflection: SumReflection[derivation])
     :   List[Text] =
 
-      constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
+      ${wisteria.internal.variantLabels[derivation]}
 
 
     protected transparent inline def singleton[derivation](input: Text)
       ( using reflection: SumReflection[derivation] )
     :   derivation =
 
-      type Variants = reflection.MirroredElemTypes
-      type Labels = reflection.MirroredElemLabels
-
-      singletonFold[derivation, Variants, Labels](_ == input).or:
-        provide[Tactic[VariantError]]:
-          abort(VariantError[derivation](input))
-
-
-    private transparent inline def singletonFold[derivation, variants <: Tuple, labels <: Tuple]
-      ( using reflection: SumReflection[derivation] )
-      ( predicate: Text => Boolean )
-    :   Optional[derivation] =
-
-      inline !![variants] match
-        case _: (variant *: variants) =>
-          inline !![labels] match
-            case _: (label *: labelsType) =>
-              type variant0 = variant & derivation
-
-              if predicate(valueOf[label & String].tt)
-              then infer[Mirror.ProductOf[variant0]].fromProduct(Zero)
-              else singletonFold[derivation, variants, labelsType](predicate)
-
-        case _ =>
-          Unset
+      ${wisteria.internal.singletonByLabel[derivation]('input)}
 
 
     protected transparent inline def delegate[derivation](delegation: Text)
@@ -120,17 +75,8 @@ object SumDerivation:
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   result =
 
-      type Labels = reflection.MirroredElemLabels
-      type Variants = reflection.MirroredElemTypes
-
-      val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
-
-      // Here label comes from context of fold's predicate
-      fold[derivation, Variants, Labels](delegation, size, 0, true)(label == delegation):
-        [variant <: derivation] =>
-          lambda[variant](_)
-
-      . vouch
+      ${wisteria.internal.delegateDispatch[typeclass, derivation, result]('delegation, 'lambda,
+          'requirement)}
 
 
     protected transparent inline def variant[derivation](sum: derivation)
@@ -143,108 +89,8 @@ object SumDerivation:
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   result =
 
-      type Labels = reflection.MirroredElemLabels
-      type Variants = reflection.MirroredElemTypes
-
-      val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
-
-      fold[derivation, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
-        [variant <: derivation] => variant =>
-          lambda[variant](variant)
-
-      . vouch
-
-
-    private transparent inline def fold[derivation, variants <: Tuple, labels <: Tuple]
-      ( inline inputLabel: Text, size: Int, index: Int, fallible: Boolean )
-      ( using reflection: SumReflection[derivation], requirement: ContextRequirement )
-      ( inline predicate:
-          (Text aka "label", Int & VariantIndex[derivation] aka "index") ?=> Boolean )
-      [ result ]
-      ( inline lambda:  [variant <: derivation]
-                        =>  requirement.Optionality[typeclass[variant]]
-                        =>  ( requirement.Optionality[typeclass[variant]] aka "contextual",
-                              Text aka "label",
-                              Int & VariantIndex[variant] aka "index" ) ?=> result )
-    :   Optional[result] =
-
-      inline !![variants] match
-        case _: (variant *: variants) =>
-          inline !![labels] match
-            case _: (label *: moreLabels) =>
-              type variant0 = variant & derivation
-
-              if index >= size then Unset else
-                (valueOf[label].asMatchable: @unchecked) match
-                  case label: String =>
-                    val index2: Int & VariantIndex[derivation] = VariantIndex[derivation](index)
-
-                    if predicate(using label.tt.aka["label"], index2.aka["index"])
-                    then
-                      val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
-                      val context = requirement.wrap(infer[typeclass[variant0]])
-
-                      lambda[variant0](context)
-                        ( using context.aka["contextual"],
-                                label.tt.aka["label"],
-                                index3.aka["index"] )
-                    else
-                      fold
-                        [ derivation, variants, moreLabels ]
-                        ( inputLabel, size, index + 1, fallible )
-                        ( predicate )
-                        ( lambda )
-
-        case _ =>
-          inline if fallible
-          then provide[Tactic[VariantError]]:
-            abort(VariantError[derivation](inputLabel))
-          else panic(m"Should be unreachable")
-
-
-    private transparent inline def fold[derivation, variants <: Tuple, labels <: Tuple]
-      ( inline sum: derivation, size: Int, index: Int, fallible: Boolean )
-      ( using reflection: SumReflection[derivation], requirement: ContextRequirement )
-      ( inline predicate: ( label: Text aka "label",
-                            index: Int & VariantIndex[derivation] aka "index" )
-                          ?=> Boolean )
-      [ result ]
-      ( inline lambda:  [variant <: derivation]
-                        =>  variant
-                        =>  ( requirement.Optionality[typeclass[variant]] aka "contextual",
-                              Text aka "label",
-                              Int & VariantIndex[variant] aka "index" ) ?=> result )
-    :   Optional[result] =
-
-      inline !![variants] match
-        case _: (variant *: variants) =>
-          inline !![labels] match
-            case _: (label *: moreLabels) =>
-              type variant0 = variant & derivation
-
-              if index >= size then Unset else
-                (valueOf[label].asMatchable: @unchecked) match
-                  case label: String =>
-                    val index2: Int & VariantIndex[derivation] = VariantIndex[derivation](index)
-
-                    if predicate(using label.tt.aka["label"], index2.aka["index"]) then
-                      val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
-                      val variant: variant0 = sum.asInstanceOf[variant0]
-                      val context = requirement.wrap(infer[typeclass[variant0]])
-
-                      lambda[variant0](variant)
-                        ( using context.aka["contextual"],
-                                label.tt.aka["label"],
-                                index3.aka["index"] )
-                    else
-                      fold[derivation, variants, moreLabels](sum, size, index + 1, fallible)
-                        ( predicate )
-                        ( lambda )
-
-        case _ =>
-          inline if fallible
-          then provide[Tactic[VariantError]](abort(VariantError[derivation]("".tt)))
-          else panic(m"Should be unreachable")
+      ${wisteria.internal.variantDispatch[typeclass, derivation, result]('sum, 'lambda,
+          'requirement)}
 
 
     inline def disjunction[derivation: SumReflection]: typeclass[derivation]

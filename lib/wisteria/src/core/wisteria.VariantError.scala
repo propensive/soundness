@@ -32,20 +32,15 @@
                                                                                                   */
 package wisteria
 
-import scala.compiletime.*
-
 import anticipation.*
 import fulminate.*
 
 object VariantError:
-  inline def apply[derivation](inputLabel: Text)
-    ( using reflection: SumReflection[derivation], diagnostics: Diagnostics )
-  :   VariantError =
-
-    val variants = constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
-    val sum = constValue[reflection.MirroredLabel].tt
-
-    VariantError(inputLabel, sum, variants)
+  inline def apply[derivation](inputLabel: Text)(using diagnostics: Diagnostics): VariantError =
+    VariantError
+      ( inputLabel,
+        wisteria.internal.sumName[derivation],
+        wisteria.internal.variantLabelList[derivation] )
 
 
 case class VariantError(inputLabel: Text, sum: Text, validVariants: List[Text])(using Diagnostics)

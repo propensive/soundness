@@ -36,6 +36,7 @@ import scala.quoted.*
 import scala.reflect.ClassTag
 
 import anticipation.*
+import contingency.*
 import denominative.*
 import gigantism.*
 import rudiments.*
@@ -44,6 +45,10 @@ import vacuous.*
 object internal:
   inline def default[product, field](index: Int): Optional[field] =
     ${getDefault[product, field]('index)}
+
+  // Inline accessors over the symbol-inspection macros, for use outside this object.
+  inline def sumName[derivation]: Text = ${typeName[derivation]}
+  inline def variantLabelList[derivation]: List[Text] = ${variantLabels[derivation]}
 
   // Wraps a homogeneous list of field results into an `IArray`, summoning the `ClassTag` at the
   // expansion site (where `result` is concrete).
@@ -292,6 +297,123 @@ object internal:
     import quotes.reflect.*
     val name: String = caseName(TypeRepr.of[derivation])
     '{${Expr(name)}.tt}
+
+  // ---- sum derivation ----
+
+  // The type of a variant: a `TypeRef` for a case-class variant, a `TermRef` (singleton) for a
+  // case object or parameterless enum case.
+  private def variantType(using Quotes)(child: quotes.reflect.Symbol): quotes.reflect.TypeRepr =
+    if child.isType then child.typeRef else child.termRef
+
+  def variantLabels[derivation: Type]: Macro[List[Text]] =
+    import quotes.reflect.*
+
+    val labels = TypeRepr.of[derivation].typeSymbol.children.map: child =>
+      '{${Expr(child.name)}.tt}
+
+    Expr.ofList(labels)
+
+  def isChoice[derivation: Type]: Macro[Boolean] =
+    import quotes.reflect.*
+    val children = TypeRepr.of[derivation].typeSymbol.children
+
+    val singleton = children.forall: child =>
+      variantType(child) <:< TypeRepr.of[scala.Singleton]
+
+    Expr(children.nonEmpty && singleton)
+
+  // The ordinal of the active variant — `Enum#ordinal` for enums, otherwise a type-test match in
+  // declaration order, matching the order of `children`.
+  private def ordinalOf[derivation: Type](sum: Expr[derivation])(using Quotes): Expr[Int] =
+    import quotes.reflect.*
+    val symbol = TypeRepr.of[derivation].typeSymbol
+
+    if symbol.flags.is(Flags.Enum) then '{$sum.asInstanceOf[scala.reflect.Enum].ordinal} else
+      val cases = symbol.children.zipWithIndex.map: (child, index) =>
+        val pattern = Typed(Wildcard(), TypeTree.of(using variantType(child).asType))
+        CaseDef(pattern, None, Literal(IntConstant(index)))
+
+      Match(sum.asTerm, cases).asExprOf[Int]
+
+  // Dispatches on the ordinal, applying `lambda` to the active variant.
+  private def ordinalMatch[result: Type]
+    ( ordinal: Expr[Int], branches: List[Expr[result]], default: Expr[result] )
+    ( using Quotes )
+  :   Expr[result] =
+
+    import quotes.reflect.*
+
+    val cases = branches.zipWithIndex.map: (branch, index) =>
+      CaseDef(Literal(IntConstant(index)), None, branch.asTerm)
+
+    Match(ordinal.asTerm, cases :+ CaseDef(Wildcard(), None, default.asTerm)).asExprOf[result]
+
+  def variantDispatch[typeclass[_]: Type, derivation: Type, result: Type]
+    ( sum: Expr[derivation], lambda: Expr[Any], requirement: Expr[ContextRequirement] )
+  :   Macro[result] =
+
+    import quotes.reflect.*
+
+    val lambdaTerm = lambda.asTerm
+
+    val branches: List[Expr[result]] =
+      TypeRepr.of[derivation].typeSymbol.children.zipWithIndex.map: (child, index) =>
+        variantType(child).asType.absolve match
+          case '[variant] =>
+            val indexExpr = Expr(index)
+            val variantValue: Expr[Any] = '{$sum.asInstanceOf[variant]}
+            val contextual = '{$requirement.summon[typeclass[variant]].aka["contextual"]}
+            val label = '{${Expr(child.name)}.tt.aka["label"]}
+            val variantIndex = '{VariantIndex[variant]($indexExpr).aka["index"]}
+            val arguments = List(contextual, label, variantIndex)
+
+            applyLambda[variant](lambdaTerm, variantValue, arguments).asExprOf[result]
+
+    ordinalMatch[result](ordinalOf[derivation](sum), branches, '{throw new MatchError($sum)})
+
+  def delegateDispatch[typeclass[_]: Type, derivation: Type, result: Type]
+    ( delegation: Expr[Text], lambda: Expr[Any], requirement: Expr[ContextRequirement] )
+  :   Macro[result] =
+
+    import quotes.reflect.*
+
+    val lambdaTerm = lambda.asTerm
+
+    val default: Expr[result] =
+      '{provide[Tactic[VariantError]](abort(VariantError[derivation]($delegation)))}
+
+    TypeRepr.of[derivation].typeSymbol.children.zipWithIndex.foldRight(default):
+      case ((child, index), rest) =>
+        variantType(child).asType.absolve match
+          case '[variant] =>
+            val indexExpr = Expr(index)
+            val nameExpr = Expr(child.name)
+            val contextValue: Expr[Any] = '{$requirement.summon[typeclass[variant]]}
+            val contextual = '{$requirement.summon[typeclass[variant]].aka["contextual"]}
+            val label = '{$nameExpr.tt.aka["label"]}
+            val variantIndex = '{VariantIndex[variant]($indexExpr).aka["index"]}
+            val arguments = List(contextual, label, variantIndex)
+            val branch = applyLambda[variant](lambdaTerm, contextValue, arguments).asExprOf[result]
+
+            '{if $delegation == $nameExpr.tt then $branch else $rest}
+
+  def complementVariant[derivation: Type, variant: Type]
+    ( sum: Expr[derivation], variantIndex: Expr[Any] )
+  :   Macro[Optional[variant]] =
+
+    '{  if ${ordinalOf[derivation](sum)} == $variantIndex.asInstanceOf[Int]
+        then $sum.asInstanceOf[variant]: Optional[variant]
+        else Unset  }
+
+  def singletonByLabel[derivation: Type](input: Expr[Text]): Macro[derivation] =
+    import quotes.reflect.*
+
+    val default: Expr[derivation] =
+      '{provide[Tactic[VariantError]](abort(VariantError[derivation]($input)))}
+
+    TypeRepr.of[derivation].typeSymbol.children.foldRight(default): (child, rest) =>
+      val reference = Ref(child).asExprOf[derivation]
+      '{if $input == ${Expr(child.name)}.tt then $reference else $rest}
 
   def getDefault[product: Type, field: Type](index: Expr[Int]): Macro[Optional[field]] =
     import quotes.reflect.*
