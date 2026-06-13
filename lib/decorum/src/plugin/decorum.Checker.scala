@@ -257,7 +257,7 @@ object Checker:
     checkR45BodyScopeIndent(s, lineNum, isBlank, leadingCols, firstReal, emit)
     checkR31ContinuationIndent(s, lineNum, leadingCols, isBlank, firstReal, emit)
     checkR44BodyIndent(s, lineNum, isBlank, leadingCols, firstReal, emit)
-    checkR33HeavyBracketAnchor(s, leadingCols, isBlank, firstReal, emit)
+    checkR33HeavyBracketAnchor(s, leadingCols, isBlank, firstReal, rest, emit)
 
     if isBlank then
       s.consecutiveBlanks += 1
@@ -888,11 +888,36 @@ object Checker:
   // - The current line is inside an open multi-line bracket (`openParens
   //   > 0` from a previous line) — the `(` is not a heavy continuation
   //   but interior content of an enclosing bracket.
+  // A line whose leading `(`/`[` group is immediately followed by `=>` is a
+  // lambda (or polymorphic-function) parameter list, not a heavy argument
+  // continuation, so R33 must not flag it.
+  private def lineOpensLambda(rest: IndexedSeq[Token]): Boolean =
+    val sem = rest.filter { t => t.kind != Kind.Space && t.kind != Kind.Comment }
+    sem.headOption.exists { t => t.text == "(" || t.text == "[" } && {
+      var depth = 0
+      var i     = 0
+      var close = -1
+      while i < sem.length && close < 0 do
+        sem(i).text match
+          case "(" | "[" => depth += 1
+
+          case ")" | "]" =>
+            depth -= 1
+            if depth == 0 then close = i
+
+          case _ => ()
+
+        i += 1
+
+      close >= 0 && sem.lift(close + 1).exists { t => t.text == "=>" }
+    }
+
   private def checkR33HeavyBracketAnchor
     ( s:           State,
       leadingCols: Int,
       isBlank:     Boolean,
       firstReal:   Option[Token],
+      rest:        IndexedSeq[Token],
       emit:        (Int, String, String) => Unit )
   :   Unit =
 
@@ -901,6 +926,9 @@ object Checker:
     else if s.prevLineWasBlank then ()
     else if !firstReal.exists { t => t.kind == Kind.Code && (t.text == "(" || t.text == "[") }
     then ()
+    // A lambda parameter list (`(params) =>`) is not a heavy argument
+    // continuation; the `(…)` belongs to the lambda. Skip it.
+    else if lineOpensLambda(rest) then ()
     // A heavy continuation is indented *more* than its anchor. If the
     // current line's indent is ≤ the previous code line's indent, the
     // `(`/`[` is a sibling statement (a tuple, parenthesised expression

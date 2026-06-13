@@ -783,6 +783,14 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("val foo: Bar = Bar\n  ( baz, quux )\n")
       . assert(r => !r.contains("473.8"))
 
+      test(m"Lambda parameter list is not a heavy continuation (833.4)"):
+        rules("foo +\n  (data: Origin) =>\n    body\n")
+      . assert(r => !r.contains("833.4"))
+
+      test(m"Genuine heavy bracket continuation is still rejected (833.4)"):
+        rules("foo +\n  ( baz, quux )\n")
+      . assert(r => r.contains("833.4"))
+
       test(m"if-sequence as RHS keeps its own anchor (833.1), not Rule B"):
         rules("val x = if pred\nthen y\nelse z\n")
       . assert(r => r.contains("833.1") && !r.contains("473.8"))
