@@ -939,6 +939,11 @@ object Checker:
     // construct (assignment RHS, lambda body, case body, etc.), not a
     // heavy continuation. Skip the check.
     else if BodyOpenerTerminators.contains(s.prevCodeLineLastTok) then ()
+    // If the previous line opened a block, quote or splice (ending in `{`), the
+    // current line is the first expression *inside* that scope — a tuple or
+    // parenthesised value standing on its own, not an argument continuation of
+    // a mid-line receiver. Skip.
+    else if s.prevCodeLineLastTok == "{" then ()
     else if s.prevLineIsTight then ()
     else if s.prevLineStartedDecl then ()
     else
@@ -1931,7 +1936,7 @@ object Checker:
     Set
       ( "private", "protected", "public", "final", "sealed", "abstract",
         "implicit", "lazy", "override", "case", "inline", "transparent",
-        "infix", "open", "opaque", "erased", "tracked", "given" )
+        "infix", "open", "opaque", "erased", "tracked", "given", "into" )
 
   private def skipModifiers(tokens: IndexedSeq[Token], start: Int): (Option[String], Int) =
     var i = start

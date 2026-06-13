@@ -791,6 +791,14 @@ object Tests extends Suite(m"Decorum Tests"):
         rules("foo +\n  ( baz, quux )\n")
       . assert(r => r.contains("833.4"))
 
+      test(m"Tuple as the first line inside a quote/block is not 833.4"):
+        rules("' {\n  ( baz, quux )\n")
+      . assert(r => !r.contains("833.4"))
+
+      test(m"Constructor params after an `into` class are not 833.4"):
+        rules("into case class Response private\n  ( a: A, b: B )\n")
+      . assert(r => !r.contains("833.4"))
+
       test(m"if-sequence as RHS keeps its own anchor (833.1), not Rule B"):
         rules("val x = if pred\nthen y\nelse z\n")
       . assert(r => r.contains("833.1") && !r.contains("473.8"))
