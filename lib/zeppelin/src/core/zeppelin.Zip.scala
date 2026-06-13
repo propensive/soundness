@@ -48,15 +48,12 @@ object Zip:
   type Rules =
     MustNotContain["\\"] & MustNotContain["\""] & MustNotContain["/"] & MustNotContain[":"]
     & MustNotContain["*"] & MustNotContain["?"] & MustNotContain["<"] & MustNotContain[">"]
-    & MustNotContain["|"]
+    & MustNotContain["|"] & MustNotEqual["."] & MustNotEqual[".."]
 
   inline given compliant: Linux is Compliant on Zip = !!
   inline given compliant2: MacOs is Compliant on Zip = !!
   inline given nominative: Zip is Nominative under Rules = !!
   given submissible: %.type is Submissible on Zip = _ => ()
-
-  class ZipRoot() extends Root(t""):
-    type Plane = Zip
 
   given filesystem: Zip is Filesystem:
     type UniqueRoot = false

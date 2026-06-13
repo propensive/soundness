@@ -264,6 +264,16 @@ object Tests extends Suite(m"Zeppelin tests"):
         readEntries(writeRawZip(t"foreign2.zip", t"solo.txt")).head.read[Text]
       . assert(_ == t"data")
 
+      test(m"an entry name with a forbidden character raises InvalidName"):
+        import errorDiagnostics.empty
+        capture[ZipError](readEntries(writeRawZip(t"badchar.zip", t"bad:name.txt"))).reason
+      . assert(_ == ZipError.Reason.InvalidName(t"bad:name.txt"))
+
+      test(m"a path-traversing entry name raises InvalidName"):
+        import errorDiagnostics.empty
+        capture[ZipError](readEntries(writeRawZip(t"slip.zip", t"../escape.txt"))).reason
+      . assert(_ == ZipError.Reason.InvalidName(t"../escape.txt"))
+
     suite(m"Entry reuse between archives"):
       val source = writeZip(t"src.zip", entry(t"x.txt", (t"reuse me "*32)))
       val reused: Zip.Entry = Zipfile.read(source).entries.head
