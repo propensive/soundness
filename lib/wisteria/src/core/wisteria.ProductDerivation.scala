@@ -41,48 +41,47 @@ import vacuous.*
 object ProductDerivation:
   trait Methods[typeclass[_]]:
     protected transparent inline def build[derivation <: Product]
-      ( using reflection: ProductReflection[derivation], requirement: ContextRequirement )
-      ( inline lambda:  [field] => requirement.Optionality[typeclass[field]]
-                        =>  ( requirement.Optionality[typeclass[field]] aka "contextual",
+      ( using reflection: ProductReflection[derivation] )
+      ( inline lambda:  [field] => typeclass[field]
+                        =>  ( typeclass[field] aka "contextual",
                               Default[Optional[field]],
                               Text aka "label",
                               Int & FieldIndex[field] aka "index" ) ?=> field )
     :   derivation =
 
-      ${wisteria.internal.buildProduct[typeclass, derivation]('lambda, 'requirement, 'reflection)}
+      ${wisteria.internal.buildProduct[typeclass, derivation]('lambda, 'reflection)}
 
 
     protected transparent inline def construct[constructor[_]]
-      ( using requirement: ContextRequirement )
-      [ derivation <: Product ]
-      ( using reflection: ProductReflection[derivation] )
       ( inline bind:  [input, output] => constructor[input] => (input => constructor[output])
                       =>  constructor[output],
         inline pure:    [monadic] => monadic => constructor[monadic],
-        inline lambda:  [field] => requirement.Optionality[typeclass[field]]
-                        =>  ( requirement.Optionality[typeclass[field]] aka "contextual",
+        inline lambda:  [field] => typeclass[field]
+                        =>  ( typeclass[field] aka "contextual",
                               Default[Optional[field]],
                               Text aka "label",
                               Int & FieldIndex[field] aka "index" )
                         ?=> constructor[field] )
+      [ derivation <: Product ]
+      ( using reflection: ProductReflection[derivation] )
     :   constructor[derivation] =
 
       ${wisteria.internal.constructMonadic[typeclass, constructor, derivation]('bind, 'pure,
-          'lambda, 'requirement, 'reflection)}
+          'lambda, 'reflection)}
 
 
     protected transparent inline def contexts[derivation <: Product]
-      ( using reflection:  ProductReflection[derivation], requirement: ContextRequirement )
+      ( using reflection:  ProductReflection[derivation] )
       [ result ]
-      ( inline lambda:  [field] => requirement.Optionality[typeclass[field]]
-                        =>  ( requirement.Optionality[typeclass[field]] aka "contextual",
+      ( inline lambda:  [field] => typeclass[field]
+                        =>  ( typeclass[field] aka "contextual",
                               Default[Optional[field]],
                               Text aka "label",
                               (derivation => field) aka "dereference",
                               Int & FieldIndex[field] aka "index" ) ?=> result )
     :   IArray[result] =
 
-      ${wisteria.internal.contextsProduct[typeclass, derivation, result]('lambda, 'requirement)}
+      ${wisteria.internal.contextsProduct[typeclass, derivation, result]('lambda)}
 
 
     inline def typeName[derivation](using reflection: Reflection[derivation]): Text =
@@ -98,26 +97,23 @@ object ProductDerivation:
     protected transparent inline def complement[derivation <: Product, field]
       ( product: derivation )
       ( using fieldIndex:  Int & FieldIndex[field] aka "index",
-              reflection:  ProductReflection[derivation],
-              requirement: ContextRequirement )
+              reflection:  ProductReflection[derivation] )
     :   field =
 
       product.productElement(fieldIndex.asInstanceOf[Int]).asInstanceOf[field]
 
 
     protected transparent inline def fields[derivation <: Product](inline product: derivation)
-      ( using requirement: ContextRequirement )
       ( using reflection: ProductReflection[derivation] )
       [ result ]
       ( inline lambda:  [field] => field
-                        =>  ( requirement.Optionality[typeclass[field]] aka "contextual",
+                        =>  ( typeclass[field] aka "contextual",
                               Default[Optional[field]],
                               Text aka "label",
                               (Int & FieldIndex[field]) aka "index" ) ?=> result )
     :   IArray[result] =
 
-      ${wisteria.internal.fieldsProduct[typeclass, derivation, result]('product, 'lambda,
-          'requirement)}
+      ${wisteria.internal.fieldsProduct[typeclass, derivation, result]('product, 'lambda)}
 
 
     inline def conjunction[derivation <: Product: ProductReflection]: typeclass[derivation]

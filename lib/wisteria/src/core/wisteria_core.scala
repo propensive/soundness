@@ -114,7 +114,3 @@ object arithmetic:
   =>  value is Divisible by value to value =
 
     DivisibleDerivation.derived[value]
-
-package derivationContext:
-  given required: ContextRequirement.required.type = ContextRequirement.required
-  given relaxed: ContextRequirement.relaxed.type = ContextRequirement.relaxed

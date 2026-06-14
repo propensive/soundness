@@ -67,30 +67,28 @@ object SumDerivation:
 
 
     protected transparent inline def delegate[derivation](delegation: Text)
-      ( using reflection: SumReflection[derivation], requirement: ContextRequirement )
+      ( using reflection: SumReflection[derivation] )
       [ result ]
-      ( inline lambda:  [variant <: derivation] => requirement.Optionality[typeclass[variant]]
-                        =>  ( requirement.Optionality[typeclass[variant]] aka "contextual",
+      ( inline lambda:  [variant <: derivation] => typeclass[variant]
+                        =>  ( typeclass[variant] aka "contextual",
                               Text aka "label",
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   result =
 
-      ${wisteria.internal.delegateDispatch[typeclass, derivation, result]('delegation, 'lambda,
-          'requirement)}
+      ${wisteria.internal.delegateDispatch[typeclass, derivation, result]('delegation, 'lambda)}
 
 
     protected transparent inline def variant[derivation](sum: derivation)
-      ( using reflection:  SumReflection[derivation], requirement: ContextRequirement )
+      ( using reflection:  SumReflection[derivation] )
       [ result ]
       ( inline lambda:  [variant <: derivation]
                         =>  variant
-                        =>  ( requirement.Optionality[typeclass[variant]] aka "contextual",
+                        =>  ( typeclass[variant] aka "contextual",
                               Text aka "label",
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   result =
 
-      ${wisteria.internal.variantDispatch[typeclass, derivation, result]('sum, 'lambda,
-          'requirement)}
+      ${wisteria.internal.variantDispatch[typeclass, derivation, result]('sum, 'lambda)}
 
 
     inline def disjunction[derivation: SumReflection]: typeclass[derivation]
