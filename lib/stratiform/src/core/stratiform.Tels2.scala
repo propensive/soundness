@@ -232,24 +232,6 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
 
       Tels.Struct(IArray.from(members), IArray.empty)
 
-  // The variants of a sum, as schema `Variant`s: each variant's keyword is its
-  // kebab-cased name (the discriminator the codec writes) and its type is the
-  // variant product's own derived struct. A value-less fold over the mirror's
-  // element types, so the whole select is available without an instance.
-  private transparent inline def variants[variants <: Tuple, labels <: Tuple]
-  :   List[Tels.Variant] =
-
-    inline erasedValue[variants] match
-      case _: (variant *: moreVariants) =>
-        inline erasedValue[labels] match
-          case _: (label *: moreLabels) =>
-            val keyword: Text = Tel.camelToKebab(constValue[label & String])
-            val variantType: Tels.Type = infer[variant is TelSchematic over Tels.Type].schema()
-            Tels.Variant(keyword, variantType) :: variants[moreVariants, moreLabels]
-
-      case _ =>
-        Nil
-
   // The schematic for a sum: `schema()` indirects to the named select; the select
   // itself is surfaced through `selectDefinitions` for registration. A plain `def`
   // (not the inline body) so the anonymous class is compiled once, not per call site.
@@ -262,13 +244,17 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
   // A sum derives to a named `SelectDefinition` (its variants) registered in the
   // namespace, with `schema()` returning a `Reference` to it — the indirected form
   // `Tel.Type.assign` and BinTEL resolve. Mirrors the codec's discriminator.
-  inline def disjunction[derivation](using reflection: SumReflection[derivation])
+  inline def disjunction[derivation: SumReflection]
   :   derivation is TelSchematic over Tels.Type =
 
-    val name: Text = constValue[reflection.MirroredLabel].tt
+    val name: Text = wisteria.internal.sumName[derivation]
 
     val selectVariants: List[Tels.Variant] =
-      variants[reflection.MirroredElemTypes, reflection.MirroredElemLabels]
+      choices:
+        [variant <: derivation] => schematic =>
+          Tels.Variant(Tel.camelToKebab(label.s), schematic.schema())
+
+      . to(List)
 
     val select = Tels.SelectDefinition(name, IArray.from(selectVariants), IArray.empty)
     selectSchematic(select).asInstanceOf[derivation is TelSchematic over Tels.Type]

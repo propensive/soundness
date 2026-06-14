@@ -32,15 +32,31 @@
                                                                                                   */
 package wisteria
 
-import scala.deriving.*
-
 import denominative.*
 import prepositional.*
 import symbolism.*
 
-type Reflection[derivation] = Mirror.Of[derivation]
-type ProductReflection[derivation <: Product] = Mirror.ProductOf[derivation]
-type SumReflection[derivation] = Mirror.SumOf[derivation]
+// Evidence that `derivation` is a data type wisteria can derive for — a product or a sum. These
+// replace `scala.deriving.Mirror`: a synthesised `given` validates the type by inspecting its
+// *symbol* (no `Mirror`), so resolving one never triggers a `Mirror` synthesis. The instance is an
+// erased witness; the structural information (fields, variants) comes from symbol inspection.
+object Reflection:
+  transparent inline given reflect: [derivation] => Reflection[derivation] =
+    ${wisteria.internal.reflectData[derivation]}
+
+trait Reflection[derivation]
+
+object ProductReflection:
+  transparent inline given reflect: [derivation <: Product] => ProductReflection[derivation] =
+    ${wisteria.internal.reflectProduct[derivation]}
+
+trait ProductReflection[derivation <: Product] extends Reflection[derivation]
+
+object SumReflection:
+  transparent inline given reflect: [derivation] => SumReflection[derivation] =
+    ${wisteria.internal.reflectSum[derivation]}
+
+trait SumReflection[derivation] extends Reflection[derivation]
 
 type Derivable[derivation <: { type Self }] =
   Derivation[[self] =>> derivation { type Self = self }]

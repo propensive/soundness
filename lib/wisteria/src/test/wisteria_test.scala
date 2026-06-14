@@ -189,11 +189,11 @@ object Tests extends Suite(m"Wisteria tests"):
 
     inline def conjunction[derivation <: Product](using reflection: ProductReflection[derivation])
     :   Labels[derivation] =
-      Impl(scala.compiletime.constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt))
+      Impl(wisteria.internal.fieldLabelList[derivation])
 
     inline def disjunction[derivation](using reflection: SumReflection[derivation])
     :   Labels[derivation] =
-      Impl(scala.compiletime.constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt))
+      Impl(wisteria.internal.variantLabelList[derivation])
 
   // ===== Data types =====
 

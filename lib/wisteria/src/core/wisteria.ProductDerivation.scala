@@ -119,8 +119,10 @@ object ProductDerivation:
     inline def conjunction[derivation <: Product: ProductReflection]: typeclass[derivation]
 
 trait ProductDerivation[typeclass[_]] extends ProductDerivation.Methods[typeclass]:
+  inline def derivedOne[derivation]: typeclass[derivation] =
+    conjunction[derivation & Product](using summonInline[ProductReflection[derivation & Product]])
+    . asMatchable.match
+      case typeclass: typeclass[`derivation`] => typeclass
+
   inline given derived: [derivation] => Reflection[derivation] => typeclass[derivation] =
-    inline summon[Reflection[derivation]] match
-      case reflection: ProductReflection[derivationType] =>
-        conjunction[derivationType](using reflection).asMatchable match
-          case typeclass: typeclass[`derivation`] => typeclass
+    ${wisteria.internal.deriveGraph[typeclass, derivation]('this)}

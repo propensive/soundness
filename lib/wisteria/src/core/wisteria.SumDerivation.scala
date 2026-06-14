@@ -59,6 +59,21 @@ object SumDerivation:
       ${wisteria.internal.variantLabels[derivation]}
 
 
+    // A value-less fold over every variant of the sum — the sum analogue of `contexts` — yielding
+    // the `lambda`'s result for each, with its typeclass instance, label and index in scope. Used
+    // for schemas and other instance-free derivations needing a variant without a dispatch value.
+    protected transparent inline def choices[derivation]
+      ( using reflection:  SumReflection[derivation] )
+      [ result ]
+      ( inline lambda:  [variant <: derivation] => typeclass[variant]
+                        =>  ( typeclass[variant] aka "contextual",
+                              Text aka "label",
+                              Int & VariantIndex[variant] aka "index" ) ?=> result )
+    :   IArray[result] =
+
+      ${wisteria.internal.choicesSum[typeclass, derivation, result]('lambda)}
+
+
     protected transparent inline def singleton[derivation](input: Text)
       ( using reflection: SumReflection[derivation] )
     :   derivation =
@@ -94,8 +109,9 @@ object SumDerivation:
     inline def disjunction[derivation: SumReflection]: typeclass[derivation]
 
 trait SumDerivation[typeclass[_]] extends SumDerivation.Methods[typeclass]:
+  inline def derivedOne[derivation]: typeclass[derivation] =
+    disjunction[derivation](using summonInline[SumReflection[derivation]]).asMatchable match
+      case typeclass: typeclass[`derivation`] => typeclass
+
   inline given derived: [derivation] => Reflection[derivation] => typeclass[derivation] =
-    inline summon[Reflection[derivation]] match
-      case reflection: SumReflection[derivationType] =>
-        disjunction[derivationType](using reflection).asMatchable match
-          case typeclass: typeclass[`derivation`] => typeclass
+    ${wisteria.internal.deriveGraph[typeclass, derivation]('this)}
