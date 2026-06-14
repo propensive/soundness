@@ -408,16 +408,13 @@ object internal:
         case '[field] =>
           val indexExpr = Expr(index)
           val nameExpr = Expr(field.name)
-
-          // `requirement.summon[typeclass[field]]` — built twice (idempotent): once as the
-          // polymorphic-function value argument, once tagged as the `"contextual"` context arg.
-          val contextValue: Expr[Any] = resolveField[typeclass, field]
-          val contextual = '{${resolveField[typeclass, field]}.aka["contextual"]}
           val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
           val label = '{$nameExpr.tt.aka["label"]}
           val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
 
-          applyLambda[field](lambdaTerm, contextValue, List(contextual, default, label, fieldIndex))
+          sharedInstance[typeclass, field](index): (reference, contextual) =>
+            applyLambda[field](lambdaTerm, reference, List(contextual, default, label, fieldIndex))
+
           . asExpr
 
     // Construct via the primary constructor — symbol inspection only, no `Mirror`.
@@ -437,9 +434,6 @@ object internal:
         case '[field] =>
           val indexExpr = Expr(index)
           val nameExpr = Expr(field.name)
-
-          val contextValue: Expr[Any] = resolveField[typeclass, field]
-          val contextual = '{${resolveField[typeclass, field]}.aka["contextual"]}
           val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
           val label = '{$nameExpr.tt.aka["label"]}
 
@@ -448,9 +442,12 @@ object internal:
 
           val dereference = '{$accessor.aka["dereference"]}
           val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
-          val arguments = List(contextual, default, label, dereference, fieldIndex)
 
-          applyLambda[field](lambdaTerm, contextValue, arguments).asExprOf[result]
+          sharedInstance[typeclass, field](index): (reference, contextual) =>
+            val arguments = List(contextual, default, label, dereference, fieldIndex)
+            applyLambda[field](lambdaTerm, reference, arguments)
+
+          . asExprOf[result]
 
     immutableArray[result](results)
 
@@ -471,13 +468,13 @@ object internal:
         variantWith(child, derivationType).asType.absolve match
           case '[variant] =>
             val indexExpr = Expr(index)
-            val contextValue: Expr[Any] = resolveField[typeclass, variant]
-            val contextual = '{${resolveField[typeclass, variant]}.aka["contextual"]}
             val label = '{${Expr(child.name)}.tt.aka["label"]}
             val variantIndex = '{VariantIndex[variant]($indexExpr).aka["index"]}
-            val arguments = List(contextual, label, variantIndex)
 
-            applyLambda[variant](lambdaTerm, contextValue, arguments).asExprOf[result]
+            sharedInstance[typeclass, variant](index): (reference, contextual) =>
+              applyLambda[variant](lambdaTerm, reference, List(contextual, label, variantIndex))
+
+            . asExprOf[result]
 
     immutableArray[result](results)
 
@@ -672,8 +669,34 @@ object internal:
   // Resolves a field's typeclass instance via an inline `summonInline` at the use site. Deferring
   // resolution to the splice site (rather than `Expr.summon` here) is what lets a recursive or
   // repeated field find a sibling synthetic given generated alongside it, instead of re-deriving.
-  private def resolveField[typeclass[_]: Type, field: Type](using Quotes): Expr[Any] =
+  private def resolveField[typeclass[_]: Type, field: Type](using Quotes): Expr[typeclass[field]] =
     '{wisteria.internal.field[typeclass, field]}
+
+  // Binds a field/variant's resolved instance to a single val, so the lambda's value argument and
+  // its `"contextual"` context argument share one instance instead of resolving it twice. Without
+  // that sharing each use re-emits — and, absent dedup, re-derives — the whole sub-instance,
+  // doubling the generated code (and anonymous classes) for every decoder- or `contexts`-style
+  // derivation. `build(ref, contextual)` produces the applied term given the shared ref and its
+  // `"contextual"`-tagged view; the result is wrapped in a block that introduces the val.
+  private def sharedInstance[typeclass[_]: Type, field: Type](using Quotes)
+    ( index: Int )
+    ( build: (Expr[typeclass[field]], Expr[Any]) => quotes.reflect.Term )
+  :   quotes.reflect.Term =
+
+    import quotes.reflect.*
+
+    val symbol =
+      Symbol.newVal
+        ( Symbol.spliceOwner,
+          "wisteria$field$"+index,
+          TypeRepr.of[typeclass[field]],
+          Flags.EmptyFlags,
+          Symbol.noSymbol )
+
+    val reference = Ref(symbol).asExprOf[typeclass[field]]
+    val applied = build(reference, '{$reference.aka["contextual"]})
+
+    Block(List(ValDef(symbol, Some(resolveField[typeclass, field].asTerm))), applied)
 
   def variantDispatch[typeclass[_]: Type, derivation: Type, result: Type]
     ( sum: Expr[derivation], lambda: Expr[Any] )
