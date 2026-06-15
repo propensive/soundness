@@ -58,6 +58,16 @@ object internal:
   // it are in scope.
   inline def field[typeclass[_], elem]: typeclass[elem] = ${fieldInstance[typeclass, elem]}
 
+  // A marker that `resolvableNonStructural` injects (as a synthetic `given`) into a probe's implicit
+  // scope, so the derivation macro can detect that implicit search has re-entered it for this exact
+  // instance type. Never instantiated at runtime.
+  trait Reentrant[carrier]
+
+  // What `deriveGraph` returns when reached only as a re-entry probe (a `Reentrant` for its own
+  // instance is in scope). `resolvableNonStructural` detects this tree; it is never evaluated and
+  // never reaches generated code (probe results are discarded).
+  def reentrySentinel[instance]: instance = null.asInstanceOf[instance]
+
   // Whether `derivation` is a sum — for `derivedOne` to pick `disjunction` vs `conjunction`.
   inline def isSum[derivation]: Boolean = ${isSumMacro[derivation]}
 
@@ -175,6 +185,65 @@ object internal:
 
     Select(selfTerm, method).appliedToType(TypeRepr.of(using elem)).asExpr
 
+  // Whether `tree` (the result of an implicit search) is the re-entry sentinel — i.e. the search fell
+  // through to the derivation macro, which bailed. Unwraps the layers an implicit resolution may add.
+  private def isSentinel(using Quotes)(tree: quotes.reflect.Term): Boolean =
+    import quotes.reflect.*
+    val sentinel = Symbol.requiredMethod("wisteria.internal.reentrySentinel")
+
+    def loop(term: Term): Boolean = term match
+      case Inlined(_, _, body) => loop(body)
+      case TypeApply(fun, _)   => loop(fun)
+      case Apply(fun, _)       => loop(fun)
+      case Typed(expr, _)      => loop(expr)
+      case Block(_, expr)      => loop(expr)
+      case other               => other.symbol == sentinel
+
+    loop(tree)
+
+  // Does `typeclass[tpe]` resolve to a *non-derivation* instance — a handwritten codec, a leaf, or a
+  // bridge resolution such as `Encodable in Text` → JSON? We run the compiler's own implicit search in
+  // a context augmented with a synthetic `given Reentrant[typeclass[tpe]]`. If nothing better matches,
+  // search falls through to the derivation macro (`deriveGraph`), which finds that marker and returns
+  // `reentrySentinel` rather than recursing — so a sentinel result means "structural, derive it" and
+  // any other success means "already resolvable elsewhere, don't make it a sibling". This is the one
+  // place wisteria reaches into `dotty.tools.dotc`: there is no public API to search with an extra
+  // given injected (a context-function search target is *not* synthesised by `Implicits.search`).
+  private def resolvableNonStructural(using Quotes)
+    ( typeclassConstructor: quotes.reflect.TypeRepr, tpe: quotes.reflect.TypeRepr )
+  :   Boolean =
+
+    import quotes.reflect.*
+    import dotty.tools.dotc as dotc
+
+    given context: dotc.core.Contexts.Context =
+      quotes.asInstanceOf[runtime.impl.QuotesImpl].ctx
+
+    val instance = typeclassConstructor.appliedTo(tpe)
+    val reentrant = TypeRepr.of[Reentrant].appliedTo(instance)
+
+    val marker =
+      dotc.core.Symbols.newSymbol
+        ( context.owner,
+          dotc.core.Names.termName("$wisteriaReentrant"),
+          dotc.core.Flags.Given,
+          reentrant.asInstanceOf[dotc.core.Types.Type],
+          dotc.core.Symbols.NoSymbol,
+          dotc.util.Spans.NoCoord )
+
+    val augmented = context.fresh.setScope(dotc.core.Scopes.newScopeWith(marker))
+
+    val result =
+      new dotc.typer.Typer(0).inferImplicit
+        ( instance.asInstanceOf[dotc.core.Types.Type],
+          dotc.ast.tpd.EmptyTree,
+          context.owner.span )
+        (using augmented)
+
+    result match
+      case success: dotc.typer.Implicits.SearchSuccess => !isSentinel(success.tree.asInstanceOf[Term])
+      case _                                           => false
+
   // Derives `typeclass[derivation]` by emitting a block of mutually-recursive synthetic
   // `given lazy val`s — one per distinct product/sum type reachable from `derivation` that a
   // structural derivation would otherwise build. Each instance is built once via `self.derivedOne`,
@@ -193,13 +262,9 @@ object internal:
 
     val typeclassConstructor = TypeRepr.of[typeclass]
     val wrappers = wrappersOf[typeclass]
+    val instanceTpe = typeclassConstructor.appliedTo(TypeRepr.of[derivation])
 
     def instanceOf(tpe: TypeRepr): TypeRepr = typeclassConstructor.appliedTo(tpe)
-
-    def resolves(tpe: TypeRepr): Boolean =
-      Implicits.searchIgnoring(instanceOf(tpe))(wrappers*) match
-        case _: ImplicitSearchSuccess => true
-        case _                        => false
 
     def codecFunction(tpe: TypeRepr, args: List[TypeRepr]): TypeRepr =
       defn.FunctionClass(args.length, isContextual = true).typeRef
@@ -211,72 +276,86 @@ object internal:
             case _: ImplicitSearchSuccess => true
             case _                        => false)
 
-    val reachable = scala.collection.mutable.LinkedHashMap[String, TypeRepr]()
-    val seen = scala.collection.mutable.HashSet[String]()
+    def fullGraph: Expr[typeclass[derivation]] =
+      val reachable = scala.collection.mutable.LinkedHashMap[String, TypeRepr]()
+      val seen = scala.collection.mutable.HashSet[String]()
 
-    // The root is always derived structurally when an ADT (never probed with `resolves`, which would
-    // find its own `derives TC` companion given and make the block self-reference, a lazy-val cycle).
-    // Non-root types are probed so they share existing instances; a codec's element types are followed.
-    def visit(raw: TypeRepr, isRoot: Boolean): Unit =
-      val tpe = raw.dealias
-      val key = tpe.show
+      // A codec (`List[T]`, …) is matched first and its element types followed, so a structural
+      // element wrapped in a codec still becomes a shared sibling. Only then do we ask whether a
+      // non-codec type already resolves elsewhere (skip it) or must be derived structurally (a
+      // sibling). The root is always derived structurally — never probed (it would otherwise find its
+      // own `derives` companion given and make the block self-reference, a lazy-val cycle).
+      def visit(raw: TypeRepr, isRoot: Boolean): Unit =
+        val tpe = raw.dealias
+        val key = tpe.show
 
-      if !seen.contains(key) then
-        seen += key
-        val args = tpe.typeArgs
+        if !seen.contains(key) then
+          seen += key
+          val args = tpe.typeArgs
 
-        if !isRoot && resolves(tpe) then ()
-        else if isCodec(tpe, args) then args.foreach(visit(_, false))
-        else if isSumType(tpe) then
-          reachable(key) = tpe
-          tpe.typeSymbol.children.foreach { child => visit(variantWith(child, tpe), false) }
-        else if isProductType(tpe) then
-          reachable(key) = tpe
-          val product = productType(tpe)
-          product.typeSymbol.caseFields.foreach { field => visit(product.memberType(field), false) }
+          if isCodec(tpe, args) then args.foreach(visit(_, false))
+          else if !isRoot && resolvableNonStructural(typeclassConstructor, tpe) then ()
+          else if isSumType(tpe) then
+            reachable(key) = tpe
+            tpe.typeSymbol.children.foreach { child => visit(variantWith(child, tpe), false) }
+          else if isProductType(tpe) then
+            reachable(key) = tpe
+            val product = productType(tpe)
+            product.typeSymbol.caseFields.foreach: field =>
+              visit(product.memberType(field), false)
 
-    val rootType = TypeRepr.of[derivation].dealias
-    visit(rootType, isRoot = true)
+      val rootType = TypeRepr.of[derivation].dealias
+      visit(rootType, isRoot = true)
 
-    val owner = Symbol.spliceOwner
+      val owner = Symbol.spliceOwner
 
-    val bindings: List[(String, TypeRepr, Symbol)] =
-      reachable.toList.zipWithIndex.map: (entry, index) =>
-        val (key, tpe) = entry
-        val flags = Flags.Given | Flags.Lazy
-        val symbol = Symbol.newVal(owner, "wisteria$"+index, instanceOf(tpe), flags, Symbol.noSymbol)
-        (key, tpe, symbol)
+      val bindings: List[(String, TypeRepr, Symbol)] =
+        reachable.toList.zipWithIndex.map: (entry, index) =>
+          val (key, tpe) = entry
+          val flags = Flags.Given | Flags.Lazy
+          val symbol = Symbol.newVal(owner, "wisteria$"+index, instanceOf(tpe), flags, Symbol.noSymbol)
+          (key, tpe, symbol)
 
-    val symbolByKey = bindings.map { (key, _, symbol) => key -> symbol }.toMap
+      val symbolByKey = bindings.map { (key, _, symbol) => key -> symbol }.toMap
 
-    // Each body is built in the val's *own* nested `Quotes` (`symbol.asQuotes`), so the `field`
-    // resolutions inside `derivedOne` resolve in that val's scope — where the sibling givens are.
-    val definitions: List[ValDef] = bindings.map: (_, tpe, symbol) =>
-      ValDef(symbol, Some(derivedOneInstance(using symbol.asQuotes)(self, tpe.asType).asTerm))
+      // Each body is built in the val's *own* nested `Quotes` (`symbol.asQuotes`), so the `field`
+      // resolutions inside `derivedOne` resolve in that val's scope — where the sibling givens are.
+      val definitions: List[ValDef] = bindings.map: (_, tpe, symbol) =>
+        ValDef(symbol, Some(derivedOneInstance(using symbol.asQuotes)(self, tpe.asType).asTerm))
 
-    def resolveDirect(tpe: TypeRepr): Term =
-      Implicits.searchIgnoring(instanceOf(tpe))(wrappers*).absolve match
-        case success: ImplicitSearchSuccess => success.tree
-        case failure: ImplicitSearchFailure => report.errorAndAbort(failure.explanation)
-
-    def elementInstance(tpe: TypeRepr): Term = symbolByKey.get(tpe.dealias.show) match
-      case Some(symbol) => Ref(symbol)
-      case None         => resolveDirect(tpe)
-
-    val rootArgs = rootType.typeArgs
-
-    val root: Term = symbolByKey.get(rootType.show) match
-      case Some(symbol) => Ref(symbol)
-
-      case None =>
-        if !isCodec(rootType, rootArgs) then resolveDirect(rootType)
-        else Implicits.searchIgnoring(codecFunction(rootType, rootArgs))(wrappers*).absolve.match
-          case success: ImplicitSearchSuccess =>
-            Select.unique(success.tree, "apply").appliedToArgs(rootArgs.map(elementInstance))
-
+      def resolveDirect(tpe: TypeRepr): Term =
+        Implicits.searchIgnoring(instanceOf(tpe))(wrappers*).absolve match
+          case success: ImplicitSearchSuccess => success.tree
           case failure: ImplicitSearchFailure => report.errorAndAbort(failure.explanation)
 
-    Block(definitions, root.changeOwner(owner)).asExprOf[typeclass[derivation]]
+      def elementInstance(tpe: TypeRepr): Term = symbolByKey.get(tpe.dealias.show) match
+        case Some(symbol) => Ref(symbol)
+        case None         => resolveDirect(tpe)
+
+      val rootArgs = rootType.typeArgs
+
+      val root: Term = symbolByKey.get(rootType.show) match
+        case Some(symbol) => Ref(symbol)
+
+        case None =>
+          if !isCodec(rootType, rootArgs) then resolveDirect(rootType)
+          else Implicits.searchIgnoring(codecFunction(rootType, rootArgs))(wrappers*).absolve.match
+            case success: ImplicitSearchSuccess =>
+              Select.unique(success.tree, "apply").appliedToArgs(rootArgs.map(elementInstance))
+
+            case failure: ImplicitSearchFailure => report.errorAndAbort(failure.explanation)
+
+      Block(definitions, root.changeOwner(owner)).asExprOf[typeclass[derivation]]
+
+    // If reached only as a re-entry probe (a `Reentrant` marker for this instance is in scope), bail
+    // with the sentinel the prober detects — do not build the graph.
+    Implicits.search(TypeRepr.of[Reentrant].appliedTo(instanceTpe)) match
+      case _: ImplicitSearchSuccess =>
+        Ref(Symbol.requiredMethod("wisteria.internal.reentrySentinel")).appliedToType(instanceTpe)
+        . asExprOf[typeclass[derivation]]
+
+      case _ =>
+        fullGraph
 
 
   // Wraps a homogeneous list of field results into an `IArray`, summoning the `ClassTag` at the
