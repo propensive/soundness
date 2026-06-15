@@ -35,13 +35,14 @@ package soundness
 export
   quantitative
   . { Acre, Ampere, Are, Barye, Becquerel, Biot, Calorie, Candela, Coulomb, Darcy, Days, Debye,
-      Drams, Dyne, Emu, Erg, Farad, Feet, FluidOunce, Foot, Franklin, Furlong, Furlongs, Galileo,
-      Gallon, Gauss, Gilbert, Grain, Grains, Gram, Gray, Henry, Hertz, Hour, Hours, Hundredweight,
+      Drams, Dyne, Em, Ems, Emu, Erg, Farad, Feet, FluidOunce, Foot, Franklin, Furlong, Furlongs,
+      Galileo, Gallon, Gauss, Gilbert, Grain, Grains, Gram, Gray, Henry, Hertz, Hour, Hours,
+      Hundredweight,
       Hundredweights, Inch, Inches, Joule, Katal, Kayser, Kelvin, Lambert, Langley, Lightyear,
       Lightyears, Litre, Lux, Maxwell, Metre, Mile, Miles, Minute, Minutes, Mole, NauticalMile,
       NauticalMiles, Newton, Oersted, Ohm, Ounce, Ounces, Pascal, Phot, Picas, Pint, Points, Poise,
       Pound, Pounds, Quart, Quarters, Rankines, Second, SiderealDays, Siemens, Sievert, SolarDay,
-      Stokes, Stone, Stones, Tesla, Ton, Tons, Volt, Watt, Weber, Yard, Yards }
+      Stokes, Stone, Stones, Tesla, Ton, Tons, Typometry, Volt, Watt, Weber, Yard, Yards }
 
 package constants:
   export

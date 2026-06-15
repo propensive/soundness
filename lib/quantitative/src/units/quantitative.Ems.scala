@@ -30,12 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package phoenicia
+package quantitative
 
-import quantitative.*
-import rudiments.*
+import anticipation.*
+import gossamer.*
 
-object FontSize:
-  inline given quantity: Amount[Units[1, FontSize], "font size"] = !!
+object Ems:
+  given designation: Designation[Ems[1]] = () => t"em"
 
-sealed trait FontSize extends Dimension
+sealed trait Ems[Power <: Nat] extends Units[Power, Typometry]

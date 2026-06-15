@@ -30,13 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package phoenicia
+package quantitative
 
-import anticipation.*
-import gossamer.*
-import quantitative.*
+import rudiments.*
 
-object Ems:
-  given designation: Designation[Ems[1]] = () => t"ems"
+// A typographic em: a relative length shared by CSS (cataclysm) and font
+// metrics (phoenicia). A fresh dimension with no `Ratio` to anything else,
+// so it is deliberately inconvertible to physical lengths.
+object Typometry:
+  inline given quantity: Amount[Units[1, Typometry], "em"] = !!
 
-sealed trait Ems[Power <: Nat] extends Units[Power, FontSize]
+sealed trait Typometry extends Dimension
