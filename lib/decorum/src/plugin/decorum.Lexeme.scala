@@ -35,6 +35,6 @@ package decorum
 enum Kind:
   case Code, Strs, Comment, Space
 
-case class Token(text: String, kind: Kind):
+case class Lexeme(text: String, kind: Kind):
   def length: Int = text.length
 

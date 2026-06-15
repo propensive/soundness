@@ -232,7 +232,7 @@ object Checker:
   private def checkLine
     ( s:       State,
       lineNum: Int,
-      line:    IndexedSeq[Token],
+      line:    IndexedSeq[Lexeme],
       out:     mutable.ListBuffer[Violation] )
   :   Unit =
 
@@ -462,7 +462,7 @@ object Checker:
       lineNum:     Int,
       leadingCols: Int,
       isBlank:     Boolean,
-      firstReal:   Option[Token],
+      firstReal:   Option[Lexeme],
       emit:        (Int, String, String) => Unit )
   :   Unit =
 
@@ -489,7 +489,7 @@ object Checker:
 
   // True if the semantic tokens of a line end with `' {` or `$ {` (the
   // opening of a quote/splice block whose body lives on the following lines).
-  private def lineEndsWithQuoteSpliceBrace(sem: IndexedSeq[Token]): Boolean =
+  private def lineEndsWithQuoteSpliceBrace(sem: IndexedSeq[Lexeme]): Boolean =
     if sem.length < 2 then false
     else
       val last = sem(sem.length - 1).text
@@ -499,7 +499,7 @@ object Checker:
   // True if the line is a chain method-application opener — the first
   // semantic token is `.` and the last is `:` or `=>` (e.g. `. within:` or
   // `. map: x =>`). Such lines deepen indentation by +4 rather than +2.
-  private def lineIsChainOpener(sem: IndexedSeq[Token]): Boolean =
+  private def lineIsChainOpener(sem: IndexedSeq[Lexeme]): Boolean =
     if sem.isEmpty then false
     else
       val first = sem(0).text
@@ -524,7 +524,7 @@ object Checker:
   // source line aren't multi-line and aren't subject to these rules.
   private def trackQuoteSpliceBraces
     ( s:       State,
-      line:    IndexedSeq[Token],
+      line:    IndexedSeq[Lexeme],
       ignored: Int,
       lineNum: Int,
       out:     mutable.ListBuffer[Violation] )
@@ -611,7 +611,7 @@ object Checker:
   // Multi-line quote/splices are handled by 473.2–473.6.
   private def checkInlineQuoteSplice
     ( file:    String,
-      arr:     Array[Token],
+      arr:     Array[Lexeme],
       cols:    Array[Int],
       lineNum: Int,
       out:     mutable.ListBuffer[Violation] )
@@ -673,7 +673,7 @@ object Checker:
       lineNum:     Int,
       isBlank:     Boolean,
       leadingCols: Int,
-      firstReal:   Option[Token],
+      firstReal:   Option[Lexeme],
       emit:        (Int, String, String) => Unit )
   :   Unit =
 
@@ -703,7 +703,7 @@ object Checker:
       lineNum:     Int,
       isBlank:     Boolean,
       leadingCols: Int,
-      firstReal:   Option[Token],
+      firstReal:   Option[Lexeme],
       emit:        (Int, String, String) => Unit )
   :   Unit =
 
@@ -741,7 +741,7 @@ object Checker:
   private def checkSignatureEqLast
     ( s:           State,
       lineNum:     Int,
-      rest:        IndexedSeq[Token],
+      rest:        IndexedSeq[Lexeme],
       leadingCols: Int,
       emit:        (Int, String, String) => Unit )
   :   Unit =
@@ -764,7 +764,7 @@ object Checker:
             +"be the last token on the signature's final line" )
 
   private def checkR4TrailingWs
-    ( line: IndexedSeq[Token], emit: (Int, String, String) => Unit )
+    ( line: IndexedSeq[Lexeme], emit: (Int, String, String) => Unit )
   :   Unit =
 
     line.lastOption match
@@ -784,7 +784,7 @@ object Checker:
     ( s:           State,
       leadingCols: Int,
       isBlank:     Boolean,
-      rest:        IndexedSeq[Token],
+      rest:        IndexedSeq[Lexeme],
       emit:        (Int, String, String) => Unit )
   :   Unit =
 
@@ -835,7 +835,7 @@ object Checker:
   //
   // Examples — not tight: `head :: recur`, `val foo = bar`,
   // `if x then y else z`, `x: Int`.
-  private def isTightExpression(line: IndexedSeq[Token]): Boolean =
+  private def isTightExpression(line: IndexedSeq[Lexeme]): Boolean =
     val arr = line.toArray
     var i = 0
     while i < arr.length && arr(i).kind == Kind.Space do i += 1
@@ -891,7 +891,7 @@ object Checker:
   // A line whose leading `(`/`[` group is immediately followed by `=>` is a
   // lambda (or polymorphic-function) parameter list, not a heavy argument
   // continuation, so R33 must not flag it.
-  private def lineOpensLambda(rest: IndexedSeq[Token]): Boolean =
+  private def lineOpensLambda(rest: IndexedSeq[Lexeme]): Boolean =
     val sem = rest.filter { t => t.kind != Kind.Space && t.kind != Kind.Comment }
     sem.headOption.exists { t => t.text == "(" || t.text == "[" } && {
       var depth = 0
@@ -916,8 +916,8 @@ object Checker:
     ( s:           State,
       leadingCols: Int,
       isBlank:     Boolean,
-      firstReal:   Option[Token],
-      rest:        IndexedSeq[Token],
+      firstReal:   Option[Lexeme],
+      rest:        IndexedSeq[Lexeme],
       emit:        (Int, String, String) => Unit )
   :   Unit =
 
@@ -977,7 +977,7 @@ object Checker:
                 +s"column ${a.anchorCol} (found ${a.colonCol})" )
 
   private def checkLicense
-    ( s: State, lineNum: Int, line: IndexedSeq[Token], emit: (Int, String, String) => Unit )
+    ( s: State, lineNum: Int, line: IndexedSeq[Lexeme], emit: (Int, String, String) => Unit )
   :   Unit =
 
     val text = line.iterator.map(_.text).mkString
@@ -1079,7 +1079,7 @@ object Checker:
   private def checkImportRules
     ( file:    String,
       imports: List[ImportInfo],
-      lines:   IndexedSeq[IndexedSeq[Token]],
+      lines:   IndexedSeq[IndexedSeq[Lexeme]],
       out:     mutable.ListBuffer[Violation] )
   :   Unit =
 
@@ -1149,7 +1149,7 @@ object Checker:
   private def blankLinesBetween
     ( prevEnd: Int,
       curStart: Int,
-      lines: IndexedSeq[IndexedSeq[Token]] )
+      lines: IndexedSeq[IndexedSeq[Lexeme]] )
   :   Int =
 
     var count = 0
@@ -1203,7 +1203,7 @@ object Checker:
   private def checkTokens
     ( s:       State,
       lineNum: Int,
-      line:    IndexedSeq[Token],
+      line:    IndexedSeq[Lexeme],
       prevTok: String,
       emit:    (Int, String, String) => Unit )
   :   Unit =
@@ -1227,7 +1227,7 @@ object Checker:
   private def checkCommas
     ( s:       State,
       lineNum: Int,
-      line:    IndexedSeq[Token],
+      line:    IndexedSeq[Lexeme],
       isBlank: Boolean,
       out:     mutable.ListBuffer[Violation] )
   :   Unit =
@@ -1299,7 +1299,7 @@ object Checker:
 
   private def checkBracketInteriors
     ( s:       State,
-      arr:     Array[Token],
+      arr:     Array[Lexeme],
       cols:    Array[Int],
       prevTok: String,
       emit:    (Int, String, String) => Unit )
@@ -1513,7 +1513,7 @@ object Checker:
   // expression (no commas, no `:`, has operators like `||`, `&&`, `==`,
   // `+`, etc.).
   private def bracketHasArgListShape
-    ( arr: Array[Token], opener: Int, closer: Int )
+    ( arr: Array[Lexeme], opener: Int, closer: Int )
   :   Boolean =
 
     var depth = 0
@@ -1548,7 +1548,7 @@ object Checker:
   // annotation (parameter list). Used to distinguish `:   ( a: T )`
   // (param list) from `:   (T1, T2)` (tuple type).
   private def bracketHasTopColon
-    ( arr: Array[Token], opener: Int, closer: Int )
+    ( arr: Array[Lexeme], opener: Int, closer: Int )
   :   Boolean =
 
     var depth = 0
@@ -1566,7 +1566,7 @@ object Checker:
 
   private def checkComments
     ( lineNum: Int,
-      arr:     Array[Token],
+      arr:     Array[Lexeme],
       cols:    Array[Int],
       emit:    (Int, String, String) => Unit )
   :   Unit =
@@ -1632,14 +1632,14 @@ object Checker:
       ( "if", "then", "else", "match", "case", "do", "while", "for", "yield",
         "return", "throw", "try", "catch", "finally" )
 
-  private def caseIsModifier(arr: Array[Token], i: Int): Boolean =
+  private def caseIsModifier(arr: Array[Lexeme], i: Int): Boolean =
     var j = i + 1
     while j < arr.length && (arr(j).kind == Kind.Space || arr(j).kind == Kind.Comment) do
       j += 1
     j < arr.length && arr(j).kind == Kind.Code
       && (arr(j).text == "class" || arr(j).text == "object")
 
-  private def isBinaryContext(arr: Array[Token], i: Int): Boolean =
+  private def isBinaryContext(arr: Array[Lexeme], i: Int): Boolean =
     val left =
       var j = i - 1
       while j >= 0 && (arr(j).kind == Kind.Space || arr(j).kind == Kind.Comment) do j -= 1
@@ -1676,7 +1676,7 @@ object Checker:
     left && right
 
   private def checkOperatorSpacing
-    ( arr:  Array[Token],
+    ( arr:  Array[Lexeme],
       cols: Array[Int],
       emit: (Int, String, String) => Unit )
   :   Unit =
@@ -1758,7 +1758,7 @@ object Checker:
     Set("=", "+=", "-=", "*=", "/=", "%=", "&=", "|=", "^=", "<<=", ">>=", ">>>=")
 
   private def checkAssignmentSpacing
-    ( arr: Array[Token], cols: Array[Int], emit: (Int, String, String) => Unit )
+    ( arr: Array[Lexeme], cols: Array[Int], emit: (Int, String, String) => Unit )
   :   Unit =
 
     var lastSemantic = arr.length - 1
@@ -1840,7 +1840,7 @@ object Checker:
         case _                                                   => false
 
   private def checkSymbolicMethodNames
-    ( arr:  Array[Token],
+    ( arr:  Array[Lexeme],
       cols: Array[Int],
       emit: (Int, String, String) => Unit )
   :   Unit =
@@ -1864,7 +1864,7 @@ object Checker:
       i += 1
 
   private def checkHardSpace
-    ( rest: IndexedSeq[Token], leadingCols: Int, emit: (Int, String, String) => Unit )
+    ( rest: IndexedSeq[Lexeme], leadingCols: Int, emit: (Int, String, String) => Unit )
   :   Unit =
 
     rest.headOption match
@@ -1886,7 +1886,7 @@ object Checker:
 
       case _ => ()
 
-  private def lineEndsWithEqualsToken(rest: IndexedSeq[Token]): Boolean =
+  private def lineEndsWithEqualsToken(rest: IndexedSeq[Lexeme]): Boolean =
     val nonWs = rest.filter{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
     nonWs.lastOption.exists(_.text == "=")
 
@@ -1895,7 +1895,7 @@ object Checker:
       lineNum:     Int,
       leadingCols: Int,
       isBlank:     Boolean,
-      firstReal:   Option[Token],
+      firstReal:   Option[Lexeme],
       emit:        (Int, String, String) => Unit )
   :   Unit =
 
@@ -1916,7 +1916,7 @@ object Checker:
     ( s:       State,
       lineNum: Int,
       isBlank: Boolean,
-      rest:    IndexedSeq[Token],
+      rest:    IndexedSeq[Lexeme],
       emit:    (Int, String, String) => Unit )
   :   Unit =
 
@@ -1928,7 +1928,7 @@ object Checker:
       s.prevWasReturnType = false
     if !isBlank && isReturnTypeLine(rest) then s.prevWasReturnType = true
 
-  private def isReturnTypeLine(rest: IndexedSeq[Token]): Boolean =
+  private def isReturnTypeLine(rest: IndexedSeq[Lexeme]): Boolean =
     rest.length >= 2 && rest(0).text == ":" && rest(1).kind == Kind.Space
       && rest(1).text == "   " && rest.lastOption.exists(_.text == "=")
 
@@ -1938,7 +1938,7 @@ object Checker:
         "implicit", "lazy", "override", "case", "inline", "transparent",
         "infix", "open", "opaque", "erased", "tracked", "given", "into" )
 
-  private def skipModifiers(tokens: IndexedSeq[Token], start: Int): (Option[String], Int) =
+  private def skipModifiers(tokens: IndexedSeq[Lexeme], start: Int): (Option[String], Int) =
     var i = start
     var lastModifier: Option[String] = None
     while i < tokens.length && tokens(i).kind == Kind.Code
@@ -2036,7 +2036,7 @@ object Checker:
   private def checkCaseRules
     ( file:   String,
       groups: List[List[CaseInfo]],
-      lines:  IndexedSeq[IndexedSeq[Token]],
+      lines:  IndexedSeq[IndexedSeq[Lexeme]],
       out:    mutable.ListBuffer[Violation] )
   :   Unit =
 
@@ -2115,7 +2115,7 @@ object Checker:
   private def blankBetween
     ( prevEnd:  Int,
       curStart: Int,
-      lines:    IndexedSeq[IndexedSeq[Token]] )
+      lines:    IndexedSeq[IndexedSeq[Lexeme]] )
   :   Boolean =
 
     var l = prevEnd + 1
@@ -2134,7 +2134,7 @@ object Checker:
     ( s:           State,
       lineNum:     Int,
       leadingCols: Int,
-      rest:        IndexedSeq[Token],
+      rest:        IndexedSeq[Lexeme],
       emit:        (Int, String, String) => Unit )
   :   Unit =
 
@@ -2192,13 +2192,13 @@ object Checker:
 
     s.openParens = depth max 0
 
-  private def nextSemantic(rest: IndexedSeq[Token], from: Int): Int =
+  private def nextSemantic(rest: IndexedSeq[Lexeme], from: Int): Int =
     var k = from
     while k < rest.length && (rest(k).kind == Kind.Space || rest(k).kind == Kind.Comment) do
       k += 1
     if k < rest.length then k else -1
 
-  private def lineStartsAnnotation(firstReal: Option[Token]): Boolean =
+  private def lineStartsAnnotation(firstReal: Option[Lexeme]): Boolean =
     firstReal.exists(_.text.startsWith("@"))
 
   // -----------------------------------------------------------------------
