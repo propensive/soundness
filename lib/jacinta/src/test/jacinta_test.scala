@@ -71,6 +71,27 @@ enum Status derives CanEqual:
   @name(t"gone")     case Removed(at: Int)
                      case Pending(at: Int)
 
+case class Person(name: Text, age: Int)
+case class Band(guitarists: List[Person], drummer: Person, bassist: Option[Person])
+
+case class FooOption(x: Int, y: Option[Int])
+case class FooOptional(x: Int, y: Optional[Int])
+
+enum Player:
+  case Guitarist(person: Person)
+  case Drummer(person: Person)
+  case Bassist(person: Person)
+
+case class NewBand(members: Set[Player])
+
+case class Role(name: String)
+case class Entity(name: String, age: Int, roles: List[Role])
+case class Org(name: String, leader: Entity)
+
+enum Animal:
+  case Dog(name: Text)
+  case Cat(name: Text)
+
 object Tests extends Suite(m"Jacinta Tests"):
   def run(): Unit =
     suite(m"Parsing tests"):
@@ -202,23 +223,19 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == t""""a\\\\b"""")
 
       test(m"Serialize case class with Option as None"):
-        case class Foo(x: Int, y: Option[Int])
-        Foo(1, None).json.show
+        FooOption(1, None).json.show
       . assert(_ == t"""{"x":1}""")
 
       test(m"Serialize case class with Option as Some"):
-        case class Foo(x: Int, y: Option[Int])
-        Foo(1, Some(2)).json.show
+        FooOption(1, Some(2)).json.show
       . assert(_ == t"""{"x":1,"y":2}""")
 
       test(m"Serialize case class with Optional as Unset"):
-        case class Foo(x: Int, y: Optional[Int])
-        Foo(1, Unset).json.show
+        FooOptional(1, Unset).json.show
       . assert(_ == t"""{"x":1}""")
 
       test(m"Serialize case class with present Optional"):
-        case class Foo(x: Int, y: Optional[Int])
-        Foo(1, 2).json.show
+        FooOptional(1, 2).json.show
       . assert(_ == t"""{"x":1,"y":2}""")
 
       test(m"Serialize a nested case class"):
@@ -247,27 +264,22 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == Renamed(t"Ann", 1984))
 
       test(m"Extract an absent Option"):
-        case class OptFoo(x: Option[Int])
         t"""{"y": 1}""".read[Json].as[OptFoo].x
       . assert(_ == None)
 
       test(m"Extract an option"):
-        case class OptFoo(x: Option[Int])
         t"""{"x": 1}""".read[Json].as[OptFoo].x
       . assert(_ == Some(1))
 
       test(m"Extract a present Optional"):
-        case class OptionalFoo(x: Optional[Int])
         t"""{"x": 1}""".read[Json].as[OptionalFoo].x
       . assert(_ == 1)
 
       test(m"Extract an absent Optional"):
-        case class OptionalFoo(x: Optional[Int])
         t"""{"y": 1}""".read[Json].as[OptionalFoo].x
       . assert(_ == Unset)
 
       test(m"Extract a None"):
-        case class OptFoo(x: Option[Int])
         t"""{"y": 1}""".read[Json].as[OptFoo].x
       . assert(_ == None)
 
@@ -277,9 +289,6 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == Unset)
 
     suite(m"Generic derivation tests"):
-      case class Person(name: Text, age: Int)
-      case class Band(guitarists: List[Person], drummer: Person, bassist: Option[Person])
-
       val paul =
         test(m"Serialize a simple case class"):
           Person(t"Paul", 81).json.show
@@ -307,11 +316,6 @@ object Tests extends Suite(m"Jacinta Tests"):
         beatles.read[Band over Json]
       . assert(_ == Band(List(Person(t"John", 40), Person(t"George", 58)), ringoObj, Some(paulObj)))
 
-      enum Player:
-        case Guitarist(person: Person)
-        case Drummer(person: Person)
-        case Bassist(person: Person)
-
       val paulCoproduct = test(m"Serialize a coproduct"):
         val paul: Player = Player.Bassist(paulObj)
         paul.json.show
@@ -324,8 +328,6 @@ object Tests extends Suite(m"Jacinta Tests"):
       test(m"Decode a coproduct as a precise subtype"):
         paulCoproduct.read[Json].as[Player.Bassist]
       . assert(_ == Player.Bassist(paulObj))
-
-      case class NewBand(members: Set[Player])
 
       import Player.*
       val newBand = NewBand(Set(Bassist(paulObj), Drummer(ringoObj), Guitarist(Person(t"John", 40)),
@@ -352,10 +354,6 @@ object Tests extends Suite(m"Jacinta Tests"):
         val array2 = array(1) = 5
         array2.as[List[Int]]
       . assert(_ == List(1, 5, 3))
-
-      case class Role(name: String)
-      case class Entity(name: String, age: Int, roles: List[Role])
-      case class Org(name: String, leader: Entity)
 
       val org = Org("The Beatles", Entity("John", 40, List(Role("Leader")))).json
 
@@ -776,9 +774,6 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       locally:
         import jsonDiscriminables.discriminatedUnionByType
-        enum Animal:
-          case Dog(name: Text)
-          case Cat(name: Text)
 
         test(m"Discriminate by 'type'"):
           val a: Animal = Animal.Dog(t"Rex")

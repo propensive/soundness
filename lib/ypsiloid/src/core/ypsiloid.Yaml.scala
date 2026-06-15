@@ -108,7 +108,7 @@ trait Yaml2:
 
               case _ => null
 
-            if arr != null then buildWith(arr)
+            if arr != null then buildWith[derivation](arr)
             else
               // Wrong-shape input (including the `Yaml.Ast(Unset)`
               // sentinel an outer conjunction passes in for a missing
@@ -136,7 +136,7 @@ trait Yaml2:
                   raise(YamlError(reason)) yet derivationDefault()
 
                 case _ =>
-                  buildWith(null)
+                  buildWith[derivation](null)
 
     private inline def buildWith[derivation <: Product: ProductReflection]
       ( arr: IArray[Any] | Null )
@@ -147,7 +147,7 @@ trait Yaml2:
       // back the same way they are written.
       val renames: Map[Text, Text] = relabelling[derivation, Yaml]
 
-      build: [field] =>
+      build[derivation]: [field] =>
         context =>
           val key: Text = renames.at(label).or(label)
           val target = key.s
@@ -198,7 +198,7 @@ trait Yaml2:
         provide[Tactic[YamlError]]:
           provide[Tactic[VariantError]]:
             val discriminable = infer[derivation is Discriminable in Yaml]
-            val labels: List[Text] = variantLabels[derivation]
+            val labels: List[Text] = variantLabels
 
             // `@name[Yaml]` / bare `@name` variant renames: map the serialized
             // discriminator back to the variant name before delegating.

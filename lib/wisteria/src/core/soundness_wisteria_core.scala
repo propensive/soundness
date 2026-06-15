@@ -34,9 +34,6 @@ package soundness
 
 export
   wisteria
-  . { arithmetic, ContextRequirement, contextual, dereference, Derivable, Derivation, Discriminable,
-      FieldIndex, index, label, ProductDerivable, ProductDerivation, ProductReflection, Reflection,
-      SumDerivation, SumReflection, variant, VariantError, VariantIndex }
-
-package derivationContext:
-  export wisteria.derivationContext.{relaxed, required}
+  . { arithmetic, contextual, dereference, Derivable, Derivation, Discriminable, FieldIndex, index,
+      label, ProductDerivable, ProductDerivation, ProductReflection, Reflection, SumDerivation,
+      SumReflection, variant, VariantError, VariantIndex }

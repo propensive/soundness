@@ -71,7 +71,7 @@ object Debufferable extends ProductDerivable[Debufferable]:
 
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Debufferable =
     Join[derivation]
-      ( contexts { [field] => _.width }.sum,
+      ( contexts[derivation]() { [field] => _.width }.sum,
         buffer => build { [field] => context => context.debuffer(buffer) } )
 
 trait Debufferable extends Typeclass:

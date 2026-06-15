@@ -107,7 +107,7 @@ trait Cbor2:
           // back the same way they are written.
           val renames: Map[Text, Text] = relabelling[derivation, Cbor]
 
-          build: [field] =>
+          build[derivation]: [field] =>
             context =>
               val key: Text = renames.at(label).or(label)
 

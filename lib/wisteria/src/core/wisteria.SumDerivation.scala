@@ -33,7 +33,8 @@
 package wisteria
 
 import scala.compiletime.*
-import scala.deriving.*
+import scala.deriving.Mirror
+import scala.reflect.ClassTag
 
 import anticipation.*
 import contingency.*
@@ -45,18 +46,8 @@ import vacuous.*
 object SumDerivation:
   trait Methods[typeclass[_]]:
 
-    transparent inline def choice[derivation: SumReflection]: Boolean =
-      inline !![derivation.MirroredElemTypes] match
-        case _: (variant *: variants) => all[variant, variants]
-
-    private transparent inline def all[variant, variants <: Tuple]: Boolean = summonFrom:
-      case given (variant <:< Singleton) =>
-        inline !![variants] match
-          case _: Zero                           => true
-          case _: (variant *: variants)          => all[variant, variants]
-
-      case _ =>
-        false
+    transparent inline def choice[derivation]: Boolean =
+      ${wisteria.internal.isChoice[derivation]}
 
 
     protected transparent inline def complement[derivation, variant](sum: derivation)
@@ -78,6 +69,65 @@ object SumDerivation:
     :   List[Text] =
 
       constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
+
+
+    // A value-less fold over every variant of the sum — the sum analogue of `contexts` — yielding
+    // the `lambda`'s result for each, with its typeclass instance, label and index in scope. Used
+    // for schemas and other instance-free derivations needing a variant without a dispatch value.
+    protected transparent inline def choices[derivation]
+      ( using reflection: SumReflection[derivation] )
+      [ result ]
+      ( inline lambda:  [variant <: derivation] => typeclass[variant]
+                        =>  ( typeclass[variant] aka "contextual",
+                              Text aka "label",
+                              Int & VariantIndex[variant] aka "index" ) ?=> result )
+    :   IArray[result] =
+
+      type Labels = reflection.MirroredElemLabels
+      type Variants = reflection.MirroredElemTypes
+
+      provide[ClassTag[result]]:
+        val array = new Array[result](valueOf[Tuple.Size[Variants]])
+
+        choicesFold[derivation, Variants, Labels, Unit]((), 0): accumulator =>
+          [variant <: derivation] => context ?=>
+            array(index) = lambda[variant](context)
+
+        array.immutable(using Unsafe)
+
+
+    private transparent inline def choicesFold
+      [ derivation, variants <: Tuple, labels <: Tuple, result ]
+      ( inline accumulator: result, index: Int )
+      ( inline lambda:  result => [variant <: derivation] => typeclass[variant]
+                        =>  ( typeclass[variant] aka "contextual",
+                              Text aka "label",
+                              (Int & VariantIndex[variant]) aka "index" ) ?=> result )
+    :   result =
+
+      inline !![variants] match
+        case _: Zero => accumulator
+
+        case _: (variant *: moreVariants) =>
+          inline !![labels] match
+            case _: (label *: moreLabels) => inline valueOf[label].asMatchable match
+              case label: String =>
+                type variant0 = variant & derivation
+
+                val typeclass = wisteria.internal.field[typeclass, variant0]
+
+                val variantIndex: Int & VariantIndex[variant0] =
+                  VariantIndex[variant0](index)
+
+                val accumulator2 =
+                  lambda(accumulator)[variant0](typeclass)
+                    ( using typeclass.aka["contextual"],
+                            label.tt.aka["label"],
+                            variantIndex.aka["index"] )
+
+                choicesFold[derivation, moreVariants, moreLabels, result]
+                  ( accumulator2, index + 1 )
+                  ( lambda )
 
 
     protected transparent inline def singleton[derivation](input: Text)
@@ -112,10 +162,10 @@ object SumDerivation:
 
 
     protected transparent inline def delegate[derivation](delegation: Text)
-      ( using reflection: SumReflection[derivation], requirement: ContextRequirement )
+      ( using reflection: SumReflection[derivation] )
       [ result ]
-      ( inline lambda:  [variant <: derivation] => requirement.Optionality[typeclass[variant]]
-                        =>  ( requirement.Optionality[typeclass[variant]] aka "contextual",
+      ( inline lambda:  [variant <: derivation] => typeclass[variant]
+                        =>  ( typeclass[variant] aka "contextual",
                               Text aka "label",
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   result =
@@ -134,11 +184,11 @@ object SumDerivation:
 
 
     protected transparent inline def variant[derivation](sum: derivation)
-      ( using reflection:  SumReflection[derivation], requirement: ContextRequirement )
+      ( using reflection: SumReflection[derivation] )
       [ result ]
       ( inline lambda:  [variant <: derivation]
                         =>  variant
-                        =>  ( requirement.Optionality[typeclass[variant]] aka "contextual",
+                        =>  ( typeclass[variant] aka "contextual",
                               Text aka "label",
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   result =
@@ -157,13 +207,13 @@ object SumDerivation:
 
     private transparent inline def fold[derivation, variants <: Tuple, labels <: Tuple]
       ( inline inputLabel: Text, size: Int, index: Int, fallible: Boolean )
-      ( using reflection: SumReflection[derivation], requirement: ContextRequirement )
+      ( using reflection: SumReflection[derivation] )
       ( inline predicate:
           (Text aka "label", Int & VariantIndex[derivation] aka "index") ?=> Boolean )
       [ result ]
       ( inline lambda:  [variant <: derivation]
-                        =>  requirement.Optionality[typeclass[variant]]
-                        =>  ( requirement.Optionality[typeclass[variant]] aka "contextual",
+                        =>  typeclass[variant]
+                        =>  ( typeclass[variant] aka "contextual",
                               Text aka "label",
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   Optional[result] =
@@ -182,7 +232,7 @@ object SumDerivation:
                     if predicate(using label.tt.aka["label"], index2.aka["index"])
                     then
                       val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
-                      val context = requirement.wrap(infer[typeclass[variant0]])
+                      val context = wisteria.internal.field[typeclass, variant0]
 
                       lambda[variant0](context)
                         ( using context.aka["contextual"],
@@ -204,14 +254,14 @@ object SumDerivation:
 
     private transparent inline def fold[derivation, variants <: Tuple, labels <: Tuple]
       ( inline sum: derivation, size: Int, index: Int, fallible: Boolean )
-      ( using reflection: SumReflection[derivation], requirement: ContextRequirement )
+      ( using reflection: SumReflection[derivation] )
       ( inline predicate: ( label: Text aka "label",
                             index: Int & VariantIndex[derivation] aka "index" )
                           ?=> Boolean )
       [ result ]
       ( inline lambda:  [variant <: derivation]
                         =>  variant
-                        =>  ( requirement.Optionality[typeclass[variant]] aka "contextual",
+                        =>  ( typeclass[variant] aka "contextual",
                               Text aka "label",
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   Optional[result] =
@@ -230,7 +280,7 @@ object SumDerivation:
                     if predicate(using label.tt.aka["label"], index2.aka["index"]) then
                       val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
                       val variant: variant0 = sum.asInstanceOf[variant0]
-                      val context = requirement.wrap(infer[typeclass[variant0]])
+                      val context = wisteria.internal.field[typeclass, variant0]
 
                       lambda[variant0](variant)
                         ( using context.aka["contextual"],
@@ -250,8 +300,9 @@ object SumDerivation:
     inline def disjunction[derivation: SumReflection]: typeclass[derivation]
 
 trait SumDerivation[typeclass[_]] extends SumDerivation.Methods[typeclass]:
+  inline def derivedOne[derivation]: typeclass[derivation] =
+    disjunction[derivation](using summonInline[SumReflection[derivation]]).asMatchable match
+      case typeclass: typeclass[`derivation`] => typeclass
+
   inline given derived: [derivation] => Reflection[derivation] => typeclass[derivation] =
-    inline summon[Reflection[derivation]] match
-      case reflection: SumReflection[derivationType] =>
-        disjunction[derivationType](using reflection).asMatchable match
-          case typeclass: typeclass[`derivation`] => typeclass
+    ${wisteria.internal.deriveGraph[typeclass, derivation]('this)}

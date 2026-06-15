@@ -64,7 +64,7 @@ object Contrastable:
           case _                                         => value.toString.tt
 
         if left == right then Juxtaposition.Same(show(left)) else
-          val map = contexts: [field] =>
+          val map = contexts[derivation](): [field] =>
             context => label -> context.juxtaposition(dereference(left), dereference(right))
 
           Juxtaposition.Collation(typeName, map.to(List), show(left), show(right))

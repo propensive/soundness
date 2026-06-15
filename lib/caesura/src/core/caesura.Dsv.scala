@@ -97,22 +97,24 @@ object Dsv:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Dsv =
 
-      var rowNumber: Ordinal = Prim
-
       val spans: IArray[Int] = Spannable.derived[derivation].spans()
 
-      var count = 0
-
+      // `count` must be local to each decode call, not captured per instance: a derived decoder for a
+      // type used in more than one field (e.g. two `Foo` fields) is deduplicated to a single shared
+      // instance, so per-instance mutable state would leak between successive decodes.
       provide[Foci[CellRef]]:
         DsvProductDecoder[derivation]:
-          (row: Dsv) => build:
-            [field] => context =>
-              val i = row.columns.let(_.at(label)).or(count)
-              count += spans(index)
-              val row2 = Dsv(row.data.drop(i))
+          (row: Dsv) =>
+            var count = 0
 
-              focus(CellRef(rowNumber, label)):
-                contextual.decoded(row2)
+            build[derivation]:
+              [field] => context =>
+                val i = row.columns.let(_.at(label)).or(count)
+                count += spans(index)
+                val row2 = Dsv(row.data.drop(i))
+
+                focus(CellRef(Prim, label)):
+                  contextual.decoded(row2)
 
   object EncodableDerivation extends ProductDerivable[Encodable in Dsv]:
     inline def conjunction[derivation <: Product: ProductReflection]

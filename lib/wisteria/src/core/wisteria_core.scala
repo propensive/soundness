@@ -32,12 +32,18 @@
                                                                                                   */
 package wisteria
 
-import scala.deriving.*
+import scala.deriving.Mirror
 
 import denominative.*
 import prepositional.*
 import symbolism.*
 
+// Evidence that `derivation` is a data type wisteria can derive for — a product or a sum.
+// `scala.deriving.Mirror` aliases: the type symbol drives field/variant inspection (no member
+// fold), while the `Mirror` itself is the ADT predicate, the dispatch selector and `fromProduct`.
+// Unlike a macro-synthesised marker, a `Mirror` resolves within a nested context-bound search (the
+// `read[T over Format]`/`Aggregable` decoders) and `Mirror.ProductOf <: Mirror.Of` gives the
+// subtyping that lets a `ProductReflection` satisfy a `Reflection` requirement.
 type Reflection[derivation] = Mirror.Of[derivation]
 type ProductReflection[derivation <: Product] = Mirror.ProductOf[derivation]
 type SumReflection[derivation] = Mirror.SumOf[derivation]
@@ -61,7 +67,7 @@ object arithmetic:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Addable by derivation to derivation =
 
-      (left, right) => build: [field] => _.add(complement(left), complement(right))
+      (left, right) => build[derivation]: [field] => _.add(complement(left), complement(right))
 
 
   inline given addable: [value <: Product: ProductReflection]
@@ -76,7 +82,7 @@ object arithmetic:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Subtractable by derivation to derivation =
 
-      (left, right) => build: [field] => _.subtract(complement(left), complement(right))
+      (left, right) => build[derivation]: [field] => _.subtract(complement(left), complement(right))
 
 
   inline given subtractable: [value <: Product: ProductReflection]
@@ -92,7 +98,7 @@ object arithmetic:
     :   derivation is Multiplicable by derivation to derivation =
 
       (left, right) =>
-        build: [field] => _.multiply(complement(left), complement(right))
+        build[derivation]: [field] => _.multiply(complement(left), complement(right))
 
 
   inline given multiplicable: [value <: Product: ProductReflection]
@@ -108,13 +114,9 @@ object arithmetic:
     :   derivation is Divisible by derivation to derivation =
 
       (left, right) =>
-        build: [field] => _.divide(complement(left), complement(right))
+        build[derivation]: [field] => _.divide(complement(left), complement(right))
 
   inline given divisible: [value <: Product: ProductReflection]
   =>  value is Divisible by value to value =
 
     DivisibleDerivation.derived[value]
-
-package derivationContext:
-  given required: ContextRequirement.required.type = ContextRequirement.required
-  given relaxed: ContextRequirement.relaxed.type = ContextRequirement.relaxed

@@ -231,8 +231,8 @@ object Xml extends Tag.Container
         provide[Foci[Xml.Focus]]:
           provide[Tactic[XmlError]]:
             xml match
-              case e: Element           => buildWith(e)
-              case Fragment(e: Element) => buildWith(e)
+              case e: Element           => buildWith[derivation](e)
+              case Fragment(e: Element) => buildWith[derivation](e)
 
               case _ =>
                 // Wrong-shape input (including the `Absent` sentinel an
@@ -250,7 +250,7 @@ object Xml extends Tag.Container
 
                   case _ =>
                     raise(XmlError())
-                    buildWith(Element(t"", Attributes.empty, IArray.empty))
+                    buildWith[derivation](Element(t"", Attributes.empty, IArray.empty))
 
     private inline def buildWith[derivation <: Product: ProductReflection]
       ( element: Element )
@@ -280,7 +280,7 @@ object Xml extends Tag.Container
 
         i += 1
 
-      build: [field] =>
+      build[derivation]: [field] =>
         context =>
           val fieldLabel: Text = wisteria.label[Text]
           val wireName: Text = renames.at(fieldLabel).or(fieldLabel)
@@ -323,7 +323,7 @@ object Xml extends Tag.Container
           provide[Tactic[XmlError]]:
             provide[Tactic[VariantError]]:
               val discriminable = infer[derivation is Discriminable in Xml]
-              val labels: List[Text]    = variantLabels[derivation]
+              val labels: List[Text]    = variantLabels
 
               // `@name[Xml]` / bare `@name` variant renames: map the serialized
               // element label back to the variant name before delegating.
@@ -402,7 +402,7 @@ object Xml extends Tag.Container
             else children += wrap(wireName, encoded)
 
         Element
-          ( typeName[derivation],
+          ( typeName,
             Attributes(attributes.toSeq*),
             children.toArray.immutable(using Unsafe) )
 

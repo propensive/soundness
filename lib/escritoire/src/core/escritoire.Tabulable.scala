@@ -37,7 +37,7 @@ import gossamer.*
 import prepositional.*
 import spectacular.*
 import vacuous.*
-import wisteria.*, derivationContext.required
+import wisteria.*
 
 object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
   class JoinTabulable[derivation <: Product](columns: IArray[Column[derivation, Text]])
@@ -51,7 +51,7 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
       case _                                    => Map()
 
     val columns: IArray[Column[derivation, Text]] =
-      contexts:
+      contexts[derivation]():
         [field] => tabulable =>
           tabulable.table().columns.map: element =>
             element.contramap(dereference).retitle:
