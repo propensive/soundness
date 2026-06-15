@@ -36,6 +36,20 @@ import soundness.*
 
 case class Person(name: Text, age: Int)
 
+case class Leaf(value: Int)
+case class Depth4(leaf: Leaf, tag: Int)
+case class Depth3(child: Depth4, tag: Int)
+case class Depth2(child: Depth3, tag: Int)
+case class Depth1(child: Depth2, tag: Int)
+case class Depth0(child: Depth1, tag: Int)
+
+case class Branch(value: Int, kids: List[Branch])
+
+class Underived(val x: Int):
+  override def toString: String = "Underived("+x+")"
+
+case class Holder(item: Underived, count: Int)
+
 object Tests extends Suite(m"Spectacular Tests"):
   def run(): Unit =
     suite(m"Debug tests"):
@@ -196,6 +210,19 @@ object Tests extends Suite(m"Spectacular Tests"):
       test(m"serialize IArray of strings"):
         IArray(t"one", t"two", t"three").inspect
       . assert(_ == t"""🅻⁅₀t"one"╱₁t"two"╱₂t"three"⁆""")
+
+    suite(m"Derivation tests"):
+      test(m"derive deeply-nested case class graph (issue #666)"):
+        Depth0(Depth1(Depth2(Depth3(Depth4(Leaf(5), 4), 3), 2), 1), 0).inspect
+      . assert(_ == t"Depth0(child:Depth1(child:Depth2(child:Depth3(child:Depth4(leaf:Leaf(value:5) ╱ tag:4) ╱ tag:3) ╱ tag:2) ╱ tag:1) ╱ tag:0)")
+
+      test(m"derive recursive case class via collection field"):
+        Branch(1, List(Branch(2, Nil), Branch(3, Nil))).inspect
+      . assert(_ == t"Branch(value:1 ╱ kids:[Branch(value:2 ╱ kids:[]), Branch(value:3 ╱ kids:[])])")
+
+      test(m"derivable field with underivable leaf falls back to toString"):
+        Holder(Underived(7), 3).inspect
+      . assert(_ == t"Holder(item:“Underived(7)” ╱ count:3)")
 
     suite(m"Show tests"):
       test(m"Show a string"):
