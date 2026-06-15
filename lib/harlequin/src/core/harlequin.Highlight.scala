@@ -36,31 +36,31 @@ import anthology.*
 import hellenism.*
 import vacuous.*
 
-enum Pipeline:
+enum Depth:
   case Tokenized, Typechecked, Compiled
 
 object Highlight:
   given default: Highlight = highlighting.tokenizedScala
 
 trait Highlight:
-  def pipeline: Pipeline
+  def depth: Depth
   def scalac: Optional[Scalac[?]]
   def classpath: Optional[LocalClasspath]
 
 object highlighting:
   given tokenizedScala: Highlight = new Highlight:
-    def pipeline: Pipeline = Pipeline.Tokenized
+    def depth: Depth = Depth.Tokenized
     def scalac: Optional[Scalac[?]] = Unset
     def classpath: Optional[LocalClasspath] = Unset
 
   given typecheckedScala(using scalac0: Scalac[?], classpath0: LocalClasspath): Highlight =
     new Highlight:
-      def pipeline: Pipeline = Pipeline.Typechecked
+      def depth: Depth = Depth.Typechecked
       def scalac: Optional[Scalac[?]] = scalac0
       def classpath: Optional[LocalClasspath] = classpath0
 
   given compiledScala(using scalac0: Scalac[?], classpath0: LocalClasspath): Highlight =
     new Highlight:
-      def pipeline: Pipeline = Pipeline.Compiled
+      def depth: Depth = Depth.Compiled
       def scalac: Optional[Scalac[?]] = scalac0
       def classpath: Optional[LocalClasspath] = classpath0

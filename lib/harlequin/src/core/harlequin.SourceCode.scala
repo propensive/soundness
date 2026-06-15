@@ -76,11 +76,11 @@ object SourceCode:
     val resolved
     :   Optional[(Map[(Int, Int), Syntax], List[Diagnostic], Optional[Completions])] =
 
-      if highlighting.pipeline == Pipeline.Tokenized then Unset else
+      if highlighting.depth == Depth.Tokenized then Unset else
         (highlighting.scalac, highlighting.classpath) match
           case (scalac: Scalac[?], classpath: LocalClasspath) =>
             resolveTypes
-              ( text, scalac, classpath, highlighting.pipeline == Pipeline.Compiled, caret )
+              ( text, scalac, classpath, highlighting.depth == Depth.Compiled, caret )
 
           case _ =>
             Unset
