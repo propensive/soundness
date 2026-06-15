@@ -45,7 +45,7 @@ import vacuous.*
 // `s32`; `type` aliases are resolved. `package`, `use`, `world`, `variant` and `resource`
 // declarations are recognised but their bodies are skipped. Line and block comments are ignored.
 object WitDialect extends Dialect:
-  def parse(source: Text): Map[Text, Map[Text, Signature]] =
+  def parse(source: Text): Map[Text, Map[Text, Prototype]] =
     val (types, typedefs) = items(tokenize(source.s), Map(), Map())
 
     resolve(types, typedefs)
@@ -119,9 +119,9 @@ object WitDialect extends Dialect:
   // functions) and `type` aliases.
   private def items
     ( tokens:   List[String],
-      types:    Map[Text, Map[Text, Signature]],
+      types:    Map[Text, Map[Text, Prototype]],
       typedefs: Map[Text, Foreign.Type] )
-  :   (Map[Text, Map[Text, Signature]], Map[Text, Foreign.Type]) =
+  :   (Map[Text, Map[Text, Prototype]], Map[Text, Foreign.Type]) =
 
     tokens match
       case Nil =>
@@ -148,16 +148,16 @@ object WitDialect extends Dialect:
   private def interface
     ( tokens:   List[String],
       name:     Text,
-      types:    Map[Text, Map[Text, Signature]],
+      types:    Map[Text, Map[Text, Prototype]],
       typedefs: Map[Text, Foreign.Type] )
-  :   (Map[Text, Map[Text, Signature]], Map[Text, Foreign.Type], List[String]) =
+  :   (Map[Text, Map[Text, Prototype]], Map[Text, Foreign.Type], List[String]) =
 
     def recur
       ( todo:      List[String],
-        functions: Map[Text, Signature],
-        types:     Map[Text, Map[Text, Signature]],
+        functions: Map[Text, Prototype],
+        types:     Map[Text, Map[Text, Prototype]],
         typedefs:  Map[Text, Foreign.Type] )
-    :   (Map[Text, Map[Text, Signature]], Map[Text, Foreign.Type], List[String]) =
+    :   (Map[Text, Map[Text, Prototype]], Map[Text, Foreign.Type], List[String]) =
 
       todo match
         case "}" :: rest =>
@@ -185,7 +185,7 @@ object WitDialect extends Dialect:
           recur(after, functions, types, typedefs.updated(alias.tt, Foreign.Type.Named(topic)))
 
         case "variant" :: variant :: "{" :: rest =>
-          val updated = types.updated(variant.tt, ListMap[Text, Signature]())
+          val updated = types.updated(variant.tt, ListMap[Text, Prototype]())
           recur(skipBraces(rest, 1), functions, updated, typedefs)
 
         case "resource" :: _ :: "{" :: rest =>
@@ -208,7 +208,7 @@ object WitDialect extends Dialect:
             case "->" :: more => typeOf(more)
             case more         => (Foreign.Type.Named(t"unit"), more)
 
-          val signature = Signature(parameters, result)
+          val signature = Prototype(parameters, result)
           recur(skipTo(after2, t";"), functions.updated(function.tt, signature), types, typedefs)
 
         // Any unrecognised `{ … }` block is skipped wholesale rather than token-by-token, so its
@@ -221,8 +221,8 @@ object WitDialect extends Dialect:
 
     recur(tokens, ListMap(), types, typedefs)
 
-  private def recordFields(tokens: List[String], acc: Map[Text, Signature])
-  :   (Map[Text, Signature], List[String]) =
+  private def recordFields(tokens: List[String], acc: Map[Text, Prototype])
+  :   (Map[Text, Prototype], List[String]) =
 
     tokens match
       case "}" :: rest =>
@@ -230,7 +230,7 @@ object WitDialect extends Dialect:
 
       case name :: ":" :: rest =>
         val (kind, after) = typeOf(rest)
-        val updated = acc.updated(name.tt, Signature(Unset, kind))
+        val updated = acc.updated(name.tt, Prototype(Unset, kind))
 
         after match
           case "," :: more => recordFields(more, updated)
@@ -265,8 +265,8 @@ object WitDialect extends Dialect:
 
   // Resolves every `type` alias appearing in a type, transitively.
   private def resolve
-    ( definitions: Map[Text, Map[Text, Signature]], typedefs: Map[Text, Foreign.Type] )
-  :   Map[Text, Map[Text, Signature]] =
+    ( definitions: Map[Text, Map[Text, Prototype]], typedefs: Map[Text, Foreign.Type] )
+  :   Map[Text, Map[Text, Prototype]] =
 
     def expand(foreign: Foreign.Type): Foreign.Type = foreign match
       case Foreign.Type.Named(name) =>
@@ -278,8 +278,8 @@ object WitDialect extends Dialect:
       case Foreign.Type.Applied(constructor, arguments) =>
         Foreign.Type.Applied(constructor, arguments.map(expand))
 
-    def signature(sig: Signature): Signature =
-      Signature(sig.parameters.let(_.map(expand)), expand(sig.result))
+    def signature(sig: Prototype): Prototype =
+      Prototype(sig.parameters.let(_.map(expand)), expand(sig.result))
 
     definitions.map: (name, members) =>
       (name, members.map { (member, sig) => (member, signature(sig)) })

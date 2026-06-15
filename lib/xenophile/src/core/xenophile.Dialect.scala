@@ -35,11 +35,11 @@ package xenophile
 import anticipation.*
 import vacuous.*
 
-// The signature of a member of a foreign type: a field has no parameters (`Unset`); a method
+// The prototype of a member of a foreign type: a field has no parameters (`Unset`); a method
 // records its parameter types. `result` is the foreign type the member produces.
-case class Signature(parameters: Optional[List[Foreign.Type]], result: Foreign.Type)
+case class Prototype(parameters: Optional[List[Foreign.Type]], result: Foreign.Type)
 
 // A grammar for a particular foreign type system: parses a definitions source into a map from each
-// foreign type name to its members' signatures. Keyed on an ecosystem so the macro stays agnostic.
+// foreign type name to its members' prototypes. Keyed on an ecosystem so the macro stays agnostic.
 trait Dialect:
-  def parse(source: Text): Map[Text, Map[Text, Signature]]
+  def parse(source: Text): Map[Text, Map[Text, Prototype]]
