@@ -217,15 +217,15 @@ object Tests extends Suite(m"Cataclysm Tests"):
     suite(m"Namespaces"):
       test(m"a namespaced type selector"):
         parse(t"svg|rect")
-      . assert(_ == sl(cx(cpd(Simple.Type(Namespace.Named(t"svg"), t"rect")))))
+      . assert(_ == sl(cx(cpd(Simple.Type(Prefix.Named(t"svg"), t"rect")))))
 
       test(m"an any-namespace type selector"):
         parse(t"*|a")
-      . assert(_ == sl(cx(cpd(Simple.Type(Namespace.Any, t"a")))))
+      . assert(_ == sl(cx(cpd(Simple.Type(Prefix.Any, t"a")))))
 
       test(m"a default-namespace type selector"):
         parse(t"|a")
-      . assert(_ == sl(cx(cpd(Simple.Type(Namespace.Default, t"a")))))
+      . assert(_ == sl(cx(cpd(Simple.Type(Prefix.Default, t"a")))))
 
     suite(m"Pseudo-classes and pseudo-elements"):
       val notArg = PseudoArgument.Selectors(sl(cx(cpd(cls(t"a"))), cx(cpd(cls(t"b")))))

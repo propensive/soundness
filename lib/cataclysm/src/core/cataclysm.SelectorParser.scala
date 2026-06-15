@@ -200,13 +200,13 @@ private[cataclysm] object SelectorParser:
 
       if datum == '|' then
         cursor.advance()
-        finishType(Namespace.Default)
+        finishType(Prefix.Default)
       else if datum == '*' then
         cursor.advance()
 
         if singlePipe() then
           cursor.advance()
-          finishType(Namespace.Any)
+          finishType(Prefix.Any)
         else
           Simple.Universal(Unset)
       else if !datum.isEnd && identStart(datum.asInt.toChar) then
@@ -214,13 +214,13 @@ private[cataclysm] object SelectorParser:
 
         if singlePipe() then
           cursor.advance()
-          finishType(Namespace.Named(name))
+          finishType(Prefix.Named(name))
         else
           Simple.Type(Unset, name)
       else
         Unset
 
-    private def finishType(namespace: Namespace): Simple =
+    private def finishType(namespace: Prefix): Simple =
       val datum = cursor.peek
 
       if datum == '*' then
@@ -286,22 +286,22 @@ private[cataclysm] object SelectorParser:
       ws()
       value
 
-    private def attrName(): (Optional[Namespace], Text) =
+    private def attrName(): (Optional[Prefix], Text) =
       val datum = cursor.peek
 
       if datum == '|' then
         cursor.advance()
-        (Namespace.Default, readIdent())
+        (Prefix.Default, readIdent())
       else if datum == '*' then
         cursor.advance()
         eat('|')
-        (Namespace.Any, readIdent())
+        (Prefix.Any, readIdent())
       else
         val name = readIdent()
 
         if singlePipe() then
           cursor.advance()
-          (Namespace.Named(name), readIdent())
+          (Prefix.Named(name), readIdent())
         else
           (Unset, name)
 

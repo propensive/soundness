@@ -105,7 +105,7 @@ enum AttributeMatcher derives CanEqual:
   case Suffix     // $=
   case Substring  // *=
 
-enum Namespace derives CanEqual:
+enum Prefix derives CanEqual:
   case Any                    // *|
   case Default                // |
   case Named(prefix: Text)    // ns|
@@ -122,10 +122,10 @@ object Simple:
     case PseudoElement(name, argument) => t"::$name${pseudoArgument(argument)}"
 
   // Render the optional namespace prefix of a type, universal or attribute selector.
-  private def prefix(namespace: Optional[Namespace]): Text = namespace.lay(t""):
-    case Namespace.Any         => t"*|"
-    case Namespace.Default     => t"|"
-    case Namespace.Named(name) => t"$name|"
+  private def prefix(namespace: Optional[Prefix]): Text = namespace.lay(t""):
+    case Prefix.Any         => t"*|"
+    case Prefix.Default     => t"|"
+    case Prefix.Named(name) => t"$name|"
 
   private def attributeTest(test: Optional[AttributeTest]): Text = test.lay(t""): test =>
     val modifier = test.modifier.lay(t""): char => t" ${char.show}"
@@ -163,12 +163,12 @@ object Simple:
       t"$coefficient$offset"
 
 enum Simple derives CanEqual:
-  case Universal(namespace: Optional[Namespace])                                  // *
-  case Type(namespace: Optional[Namespace], name: Text)                           // div
+  case Universal(namespace: Optional[Prefix])                                  // *
+  case Type(namespace: Optional[Prefix], name: Text)                           // div
   case Id(name: Name[DomId])                                                      // #id
   case Class(name: Name[CssClass])                                                // .cls
   case Nesting                                                                    // &
-  case Attribute(namespace: Optional[Namespace], name: Text, test: Optional[AttributeTest])
+  case Attribute(namespace: Optional[Prefix], name: Text, test: Optional[AttributeTest])
   case PseudoClass(name: Text, argument: Optional[PseudoArgument])                // :hover
   case PseudoElement(name: Text, argument: Optional[PseudoArgument])              // ::before
 
