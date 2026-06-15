@@ -32,9 +32,9 @@
                                                                                                   */
 package decorum
 
-enum Kind:
+enum Sort:
   case Code, Strs, Comment, Space
 
-case class Lexeme(text: String, kind: Kind):
+case class Lexeme(text: String, kind: Sort):
   def length: Int = text.length
 

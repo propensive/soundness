@@ -236,7 +236,7 @@ object Checker:
       out:     mutable.ListBuffer[Violation] )
   :   Unit =
 
-    val leadingWs   = line.takeWhile{ t => t.kind == Kind.Space }
+    val leadingWs   = line.takeWhile{ t => t.kind == Sort.Space }
     val rest        = line.drop(leadingWs.length)
     val visibleLen  = line.iterator.map(_.text.length).sum
     val firstReal   = rest.headOption
@@ -246,7 +246,7 @@ object Checker:
     inline def emit(col: Int, rule: String, message: String): Unit =
       out += Violation(s.file, lineNum, col, rule, message)
 
-    val isStringContent = firstReal.exists(_.kind == Kind.Strs)
+    val isStringContent = firstReal.exists(_.kind == Sort.Strs)
     checkR2LineLength(visibleLen, emit)
     // Skip R3 inside open `(...)` blocks: continuation rows inside parameter
     // lists align under names from the opener line and may need an odd
@@ -284,7 +284,7 @@ object Checker:
     // been removed as redundant.
     checkUsingAlignment(s, lineNum, leadingCols, rest, emit)
     if !isBlank then
-      val sem = rest.filter{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
+      val sem = rest.filter{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
       sem.lastOption.foreach: t => s.prevCodeLineLastTok = t.text
       s.prevFormalOpenerIndent = s.currentFormalOpenerIndent
       // Track whether the previous line is part of a (still incomplete)
@@ -365,7 +365,7 @@ object Checker:
       val (_, kwIdx) = skipModifiers(sem, 0)
 
       val startsGiven =
-        kwIdx < sem.length && sem(kwIdx).kind == Kind.Code && sem(kwIdx).text == "given"
+        kwIdx < sem.length && sem(kwIdx).kind == Sort.Code && sem(kwIdx).text == "given"
 
       if startsGiven then s.givenSignatureIndent = leadingCols
       else if s.givenSignatureIndent >= 0 && hasTopLevelEq then s.givenSignatureIndent = -1
@@ -391,7 +391,7 @@ object Checker:
       // they must not update `prevCodeLineIndent`, otherwise sibling-scope
       // detection mis-classifies the next declaration as a same-scope sibling
       // of whatever appeared before the comment.
-      val isCommentOnly = firstReal.exists(_.kind == Kind.Comment)
+      val isCommentOnly = firstReal.exists(_.kind == Sort.Comment)
       val isAnnotationOnly = lineStartsAnnotation(firstReal)
       // Continuation lines inside a multi-line triple-quoted string are
       // tokenised as a single Strs token with no leading Space token, so
@@ -401,7 +401,7 @@ object Checker:
       // `sh"…".exec()`) does have a leading Space token and is not affected.
 
       val isStringContinuation =
-        firstReal.exists(_.kind == Kind.Strs) && leadingWs.isEmpty
+        firstReal.exists(_.kind == Sort.Strs) && leadingWs.isEmpty
       if !isCommentOnly && !isAnnotationOnly && !isStringContinuation then
         s.prevCodeLineIndent = leadingCols
 
@@ -474,8 +474,8 @@ object Checker:
     else if s.importLineSet.contains(lineNum) then ()
     else if s.forFilterLines.contains(lineNum) then ()
     else
-      val isCommentOnly   = firstReal.exists(_.kind == Kind.Comment)
-      val isStringContent = firstReal.exists(_.kind == Kind.Strs)
+      val isCommentOnly   = firstReal.exists(_.kind == Sort.Comment)
+      val isStringContent = firstReal.exists(_.kind == Sort.Strs)
       if isCommentOnly || isStringContent then ()
       else
         val deepStep   = s.prevLineOpensQuoteSplice || s.prevLineOpensChain
@@ -537,23 +537,23 @@ object Checker:
     while i < arr.length do
       cols(i + 1) = cols(i) + arr(i).text.length
       i += 1
-    val firstSemantic = arr.indexWhere{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
-    val lastSemantic  = arr.lastIndexWhere{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
+    val firstSemantic = arr.indexWhere{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
+    val lastSemantic  = arr.lastIndexWhere{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
     val stack = s.quoteSpliceBraces
     i = 0
     while i < arr.length do
-      if arr(i).kind == Kind.Code then
+      if arr(i).kind == Sort.Code then
         val text = arr(i).text
         if text == "{" then
           val isLineEnd = i == lastSemantic
           var j = i - 1
-          while j >= 0 && (arr(j).kind == Kind.Space || arr(j).kind == Kind.Comment) do j -= 1
+          while j >= 0 && (arr(j).kind == Sort.Space || arr(j).kind == Sort.Comment) do j -= 1
           val precededByQuoteSplice =
-            j >= 0 && arr(j).kind == Kind.Code && (arr(j).text == "'" || arr(j).text == "$")
+            j >= 0 && arr(j).kind == Sort.Code && (arr(j).text == "'" || arr(j).text == "$")
           if isLineEnd && precededByQuoteSplice then
             // (a) Exactly one space character between `'`/`$` and `{`.
             val hasSingleSpace =
-              i - 1 >= 0 && arr(i - 1).kind == Kind.Space && arr(i - 1).text == " "
+              i - 1 >= 0 && arr(i - 1).kind == Sort.Space && arr(i - 1).text == " "
                 && (i - 2) == j
             if !hasSingleSpace then
               out +=
@@ -566,7 +566,7 @@ object Checker:
             val badBefore =
               (0 until j).exists: k =>
                 val t = arr(k)
-                t.kind != Kind.Space && t.kind != Kind.Comment
+                t.kind != Sort.Space && t.kind != Sort.Comment
                   && t.text != "(" && t.text != "{"
             if badBefore then
               out +=
@@ -594,7 +594,7 @@ object Checker:
               val badAfter =
                 (i + 1 until arr.length).exists: k =>
                   val t = arr(k)
-                  t.kind != Kind.Space && t.kind != Kind.Comment
+                  t.kind != Sort.Space && t.kind != Sort.Comment
                     && t.text != ")" && t.text != "}" && t.text != "=>"
               if semanticBefore || badAfter then
                 out +=
@@ -619,13 +619,13 @@ object Checker:
 
     var i = 0
     while i < arr.length do
-      if arr(i).kind == Kind.Code then
+      if arr(i).kind == Sort.Code then
         val text = arr(i).text
         if text == "{" || text == "[" then
           var j = i - 1
-          while j >= 0 && arr(j).kind == Kind.Space do j -= 1
+          while j >= 0 && arr(j).kind == Sort.Space do j -= 1
           val prefix =
-            if j >= 0 && arr(j).kind == Kind.Code then arr(j).text else ""
+            if j >= 0 && arr(j).kind == Sort.Code then arr(j).text else ""
           val isQuoteOpener =
             (text == "{" && (prefix == "'" || prefix == "$"))
               || (text == "[" && prefix == "'")
@@ -635,7 +635,7 @@ object Checker:
             var depth = 1
             var k = i + 1
             while k < arr.length && depth > 0 do
-              if arr(k).kind == Kind.Code then
+              if arr(k).kind == Sort.Code then
                 val t = arr(k).text
                 if t == otherOpen then depth += 1
                 else if t == closeText then depth -= 1
@@ -643,7 +643,7 @@ object Checker:
             if depth == 0 && k < arr.length then
               val afterOpen = i + 1
               val beforeClose = k - 1
-              if afterOpen < k && arr(afterOpen).kind == Kind.Space
+              if afterOpen < k && arr(afterOpen).kind == Sort.Space
                 && arr(afterOpen).text.nonEmpty
               then
                 out += Violation
@@ -651,7 +651,7 @@ object Checker:
                     s"no space is permitted directly after `$prefix$text` "
                       +"in an inline quote/splice" )
               if beforeClose > i && beforeClose != afterOpen
-                && arr(beforeClose).kind == Kind.Space
+                && arr(beforeClose).kind == Sort.Space
                 && arr(beforeClose).text.nonEmpty
               then
                 out += Violation
@@ -665,7 +665,7 @@ object Checker:
   // sit at column `{`+2 (the canonical body indent). Continuations and
   // sub-expressions inside a body statement may indent further; only
   // dedents below the canonical column are flagged. Lines that begin
-  // inside a multi-line string literal (Kind.Strs) or are comment-only
+  // inside a multi-line string literal (Sort.Strs) or are comment-only
   // don't count as body lines for this rule — their layout is governed
   // by the surrounding string/comment, not by the quote's indent.
   private def checkR44BodyIndent
@@ -682,7 +682,7 @@ object Checker:
     val top = s.quoteSpliceBraces.top
     if top.braceCol < 0 then return
     if lineNum == top.openerLine then return
-    if firstReal.exists{ t => t.kind == Kind.Strs || t.kind == Kind.Comment } then return
+    if firstReal.exists{ t => t.kind == Sort.Strs || t.kind == Sort.Comment } then return
     // The closer line is `}` alone (or with content) at column braceCol;
     // its `}` is processed by `trackQuoteSpliceBraces`, not here.
     if firstReal.exists(_.text == "}") && leadingCols + 1 == top.braceCol then return
@@ -710,11 +710,11 @@ object Checker:
     s.ruleBBodyLine = false
     if isBlank then ()
     else if s.bracketFormality.nonEmpty || s.quoteSpliceBraces.nonEmpty || s.openParens > 0 then ()
-    else if firstReal.exists(_.kind == Kind.Comment) then ()
+    else if firstReal.exists(_.kind == Sort.Comment) then ()
     // A line that *starts* with a string interpolation is still a real body
     // line; only a triple-quoted-string CONTINUATION (a `Strs` token with no
     // leading whitespace, hence leadingCols == 0) must be skipped.
-    else if firstReal.exists(_.kind == Kind.Strs) && leadingCols == 0 then ()
+    else if firstReal.exists(_.kind == Sort.Strs) && leadingCols == 0 then ()
     else
       while s.indentScopes.nonEmpty && leadingCols <= s.indentScopes.top.anchorCol do
         s.indentScopes.pop()
@@ -751,7 +751,7 @@ object Checker:
     var seenEq  = false
     var emitCol = -1
     rest.foreach: t =>
-      if t.kind == Kind.Code then
+      if t.kind == Sort.Code then
         if seenEq && emitCol < 0 then emitCol = col
         else if t.text == "(" || t.text == "[" || t.text == "{" then depth += 1
         else if t.text == ")" || t.text == "]" || t.text == "}" then depth -= 1
@@ -768,8 +768,8 @@ object Checker:
   :   Unit =
 
     line.lastOption match
-      case Some(token) if token.kind == Kind.Space && token.text.length > 0 =>
-        val hasNonWs = line.exists{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
+      case Some(token) if token.kind == Sort.Space && token.text.length > 0 =>
+        val hasNonWs = line.exists{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
         if hasNonWs then
           val col = line.iterator.map(_.text.length).sum - token.text.length + 1
           emit(col, "015", "line has trailing whitespace")
@@ -791,7 +791,7 @@ object Checker:
     if isBlank then ()
     else if s.givenSignatureIndent < 0 then ()
     else
-      val sem = rest.filter{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
+      val sem = rest.filter{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
       if sem.headOption.exists(_.text == "=>") && leadingCols != s.givenSignatureIndent then
         emit
           ( leadingCols + 1, "140",
@@ -838,29 +838,29 @@ object Checker:
   private def isTightExpression(line: IndexedSeq[Lexeme]): Boolean =
     val arr = line.toArray
     var i = 0
-    while i < arr.length && arr(i).kind == Kind.Space do i += 1
+    while i < arr.length && arr(i).kind == Sort.Space do i += 1
     if i >= arr.length then return false
     var depth             = 0
     var sawCodeAtTopLevel = false
     // Optional leading expression-introducing keyword followed by one space.
-    if arr(i).kind == Kind.Code && ExprIntroKeywords.contains(arr(i).text) then
+    if arr(i).kind == Sort.Code && ExprIntroKeywords.contains(arr(i).text) then
       sawCodeAtTopLevel = true
       i += 1
-      if i < arr.length && arr(i).kind == Kind.Space && arr(i).text == " " then
+      if i < arr.length && arr(i).kind == Sort.Space && arr(i).text == " " then
         i += 1
     // OR: optional leading `.` (chain continuation) followed by one space.
-    else if arr(i).kind == Kind.Code && arr(i).text == "." then
+    else if arr(i).kind == Sort.Code && arr(i).text == "." then
       sawCodeAtTopLevel = true
       i += 1
-      if i < arr.length && arr(i).kind == Kind.Space && arr(i).text == " " then
+      if i < arr.length && arr(i).kind == Sort.Space && arr(i).text == " " then
         i += 1
     while i < arr.length do
       val tok = arr(i)
       tok.kind match
-        case Kind.Space =>
+        case Sort.Space =>
           if depth == 0 && sawCodeAtTopLevel then return false
 
-        case Kind.Comment => ()
+        case Sort.Comment => ()
 
         case _ =>
           if depth == 0 then sawCodeAtTopLevel = true
@@ -892,7 +892,7 @@ object Checker:
   // lambda (or polymorphic-function) parameter list, not a heavy argument
   // continuation, so R33 must not flag it.
   private def lineOpensLambda(rest: IndexedSeq[Lexeme]): Boolean =
-    val sem = rest.filter { t => t.kind != Kind.Space && t.kind != Kind.Comment }
+    val sem = rest.filter { t => t.kind != Sort.Space && t.kind != Sort.Comment }
     sem.headOption.exists { t => t.text == "(" || t.text == "[" } && {
       var depth = 0
       var i     = 0
@@ -924,7 +924,7 @@ object Checker:
     if isBlank then ()
     else if s.openParens > 0 then ()
     else if s.prevLineWasBlank then ()
-    else if !firstReal.exists { t => t.kind == Kind.Code && (t.text == "(" || t.text == "[") }
+    else if !firstReal.exists { t => t.kind == Sort.Code && (t.text == "(" || t.text == "[") }
     then ()
     // A lambda parameter list (`(params) =>`) is not a heavy argument
     // continuation; the `(…)` belongs to the lambda. Skip it.
@@ -1158,7 +1158,7 @@ object Checker:
       val idx = l - 1
       if idx >= 0 && idx < lines.length then
         val toks = lines(idx)
-        if toks.isEmpty || toks.forall(_.kind == Kind.Space) then count += 1
+        if toks.isEmpty || toks.forall(_.kind == Sort.Space) then count += 1
       l += 1
     count
 
@@ -1245,8 +1245,8 @@ object Checker:
 
     var i = 0
     while i < arr.length do
-      if arr(i).text == "," && arr(i).kind == Kind.Code then
-        if i > 0 && arr(i - 1).kind == Kind.Space && arr(i - 1).text.length > 0 then
+      if arr(i).text == "," && arr(i).kind == Sort.Code then
+        if i > 0 && arr(i - 1).kind == Sort.Space && arr(i - 1).text.length > 0 then
           out +=
             Violation
               ( s.file, lineNum, cols(i), "529.1",
@@ -1254,7 +1254,7 @@ object Checker:
 
         if i + 1 < arr.length then
           val next = arr(i + 1)
-          if next.kind != Kind.Space then
+          if next.kind != Sort.Space then
             out +=
               Violation
                 ( s.file, lineNum, cols(i + 1), "529.2",
@@ -1305,15 +1305,15 @@ object Checker:
       emit:    (Int, String, String) => Unit )
   :   Unit =
 
-    val firstSemantic = arr.indexWhere{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
-    val lastSemantic  = arr.lastIndexWhere{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
+    val firstSemantic = arr.indexWhere{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
+    val lastSemantic  = arr.lastIndexWhere{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
 
     val lineStartsWithBracket =
       firstSemantic >= 0 && (arr(firstSemantic).text == "(" || arr(firstSemantic).text == "[")
 
     val secondSemantic =
       if firstSemantic < 0 then -1
-      else arr.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment, firstSemantic + 1)
+      else arr.indexWhere(t => t.kind != Sort.Space && t.kind != Sort.Comment, firstSemantic + 1)
 
     val arrowParen =
       firstSemantic >= 0 && arr(firstSemantic).text == "=>"
@@ -1342,7 +1342,7 @@ object Checker:
     //      This catches subsequent param clauses: `( a )\n( using b )`.
     //
     // A blank line before the opener rules out continuation in either case.
-    val leadingCols = arr.takeWhile(_.kind == Kind.Space).iterator.map(_.text.length).sum
+    val leadingCols = arr.takeWhile(_.kind == Sort.Space).iterator.map(_.text.length).sum
     val moreIndentedThanPrev = leadingCols > s.prevCodeLineIndent
     val sameIndentAsPrev = leadingCols == s.prevCodeLineIndent
 
@@ -1378,7 +1378,7 @@ object Checker:
     s.currentFormalOpenerIndent = -1
     var i = 0
     while i < arr.length do
-      if arr(i).kind == Kind.Code then
+      if arr(i).kind == Sort.Code then
         val text = arr(i).text
         if text == "(" || text == "[" then
           val isLineStartOpener = lineStartsWithBracket && i == firstSemantic
@@ -1403,7 +1403,7 @@ object Checker:
             // Formal block: opener is a candidate AND the closer is the
             // line's last semantic token or only followed by a body opener.
             val nextAfterCloser =
-              arr.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment, closer + 1)
+              arr.indexWhere(t => t.kind != Sort.Space && t.kind != Sort.Comment, closer + 1)
 
             // For colon-opener brackets (`:   ( ... )` / `:   [ ... ]`) the
             // bracket is a formal context-parameter / type-parameter list
@@ -1442,12 +1442,12 @@ object Checker:
               if nextAfterCloser < 0 then s.currentFormalOpenerIndent = leadingCols
               if closer > opener + 1 then
                 val firstInside = arr(opener + 1)
-                if firstInside.kind != Kind.Space then
+                if firstInside.kind != Sort.Space then
                   emit
                     ( cols(opener + 1), "811",
                       s"a space is required after `${arr(opener).text}` in a multi-line block" )
                 val lastInside = arr(closer - 1)
-                if lastInside.kind != Kind.Space then
+                if lastInside.kind != Sort.Space then
                   emit
                     ( cols(closer), "811",
                       s"a space is required before `$text` in a multi-line block" )
@@ -1459,12 +1459,12 @@ object Checker:
                 isArrowBodyContinuation && opener == firstSemantic && closer == lastSemantic
               if !isLambdaBodyTuple then
                 val firstInside = arr(opener + 1)
-                if firstInside.kind == Kind.Space && firstInside.text.length > 0 then
+                if firstInside.kind == Sort.Space && firstInside.text.length > 0 then
                   emit
                     ( cols(opener + 1), "402",
                       s"no space is permitted directly after `${arr(opener).text}`" )
                 val lastInside = arr(closer - 1)
-                if lastInside.kind == Kind.Space && lastInside.text.length > 0
+                if lastInside.kind == Sort.Space && lastInside.text.length > 0
                   && (closer - 1) != (opener + 1)
                 then
                   emit
@@ -1479,14 +1479,14 @@ object Checker:
               if s.bracketFormality.nonEmpty then s.bracketFormality.pop() else (false, -1)
             if wasFormal then
               val nextAfterCloser =
-                arr.indexWhere(t => t.kind != Kind.Space && t.kind != Kind.Comment, i + 1)
+                arr.indexWhere(t => t.kind != Sort.Space && t.kind != Sort.Comment, i + 1)
               if nextAfterCloser < 0 then s.currentFormalOpenerIndent = openerIndent
               if i == firstSemantic then
                 emit
                   ( cols(i), "811",
                     s"`$text` cannot appear alone on its line; the closing bracket of a "
                       +s"multi-line block goes on the same line as the last parameter" )
-              else if i > 0 && arr(i - 1).kind != Kind.Space then
+              else if i > 0 && arr(i - 1).kind != Sort.Space then
                 emit
                   ( cols(i), "811",
                     s"a space is required before `$text` in a multi-line block" )
@@ -1500,7 +1500,7 @@ object Checker:
     leftover.foreach: (opener, formalCandidate) =>
       val openerText = arr(opener).text
       if formalCandidate then
-        if opener + 1 >= arr.length || arr(opener + 1).kind != Kind.Space then
+        if opener + 1 >= arr.length || arr(opener + 1).kind != Sort.Space then
           emit
             ( cols(opener + 1), "811",
               s"a space is required after `$openerText` in a multi-line block" )
@@ -1523,7 +1523,7 @@ object Checker:
     var k = opener + 1
     while k < closer do
       val t = arr(k)
-      if t.kind == Kind.Code then
+      if t.kind == Sort.Code then
         val text = t.text
         if text == "(" || text == "[" then depth += 1
         else if text == ")" || text == "]" then depth -= 1
@@ -1556,7 +1556,7 @@ object Checker:
     var k = opener + 1
     while k < closer && !found do
       val t = arr(k)
-      if t.kind == Kind.Code then
+      if t.kind == Sort.Code then
         val text = t.text
         if text == "(" || text == "[" then depth += 1
         else if text == ")" || text == "]" then depth -= 1
@@ -1574,7 +1574,7 @@ object Checker:
     val inLicense = lineNum >= 1 && lineNum <= 32
     var i = 0
     while i < arr.length do
-      if arr(i).kind == Kind.Comment then
+      if arr(i).kind == Sort.Comment then
         val text = arr(i).text
         if text.startsWith("/**") then
           emit
@@ -1634,18 +1634,18 @@ object Checker:
 
   private def caseIsModifier(arr: Array[Lexeme], i: Int): Boolean =
     var j = i + 1
-    while j < arr.length && (arr(j).kind == Kind.Space || arr(j).kind == Kind.Comment) do
+    while j < arr.length && (arr(j).kind == Sort.Space || arr(j).kind == Sort.Comment) do
       j += 1
-    j < arr.length && arr(j).kind == Kind.Code
+    j < arr.length && arr(j).kind == Sort.Code
       && (arr(j).text == "class" || arr(j).text == "object")
 
   private def isBinaryContext(arr: Array[Lexeme], i: Int): Boolean =
     val left =
       var j = i - 1
-      while j >= 0 && (arr(j).kind == Kind.Space || arr(j).kind == Kind.Comment) do j -= 1
+      while j >= 0 && (arr(j).kind == Sort.Space || arr(j).kind == Sort.Comment) do j -= 1
       if j < 0 then false
-      else if arr(j).kind == Kind.Strs then true
-      else if arr(j).kind == Kind.Code then
+      else if arr(j).kind == Sort.Strs then true
+      else if arr(j).kind == Sort.Code then
         val t = arr(j).text
         if t == ")" || t == "]" then true
         else if t.isEmpty then false
@@ -1657,10 +1657,10 @@ object Checker:
 
     val right =
       var j = i + 1
-      while j < arr.length && (arr(j).kind == Kind.Space || arr(j).kind == Kind.Comment) do j += 1
+      while j < arr.length && (arr(j).kind == Sort.Space || arr(j).kind == Sort.Comment) do j += 1
       if j >= arr.length then false
-      else if arr(j).kind == Kind.Strs then true
-      else if arr(j).kind == Kind.Code then
+      else if arr(j).kind == Sort.Strs then true
+      else if arr(j).kind == Sort.Code then
         val t = arr(j).text
         // The next token must look like an operand (not a closing bracket or
         // separator). This excludes postfix usages like `xs*`, `tuple*`, etc.
@@ -1681,15 +1681,15 @@ object Checker:
       emit: (Int, String, String) => Unit )
   :   Unit =
 
-    val firstSemantic = arr.indexWhere{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
-    val lastSemantic  = arr.lastIndexWhere{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
+    val firstSemantic = arr.indexWhere{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
+    val lastSemantic  = arr.lastIndexWhere{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
     val frames = mutable.Stack[mutable.ArrayBuffer[OpHit]]()
     frames.push(mutable.ArrayBuffer.empty)
 
     var i = 0
     while i < arr.length do
       val tok = arr(i)
-      if tok.kind == Kind.Code then
+      if tok.kind == Sort.Code then
         val text = tok.text
         if text == "(" || text == "[" then
           frames.push(mutable.ArrayBuffer.empty)
@@ -1712,8 +1712,8 @@ object Checker:
           val isAtStart  = i == firstSemantic
           val isAtEnd    = i == lastSemantic
           val isBinary   = isAtStart || isBinaryContext(arr, i)
-          val leftSpace  = i > 0 && arr(i - 1).kind == Kind.Space
-          val rightSpace = i + 1 < arr.length && arr(i + 1).kind == Kind.Space
+          val leftSpace  = i > 0 && arr(i - 1).kind == Sort.Space
+          val rightSpace = i + 1 < arr.length && arr(i + 1).kind == Sort.Space
           if isBinary then
             // Symmetry: if both edges have a token of the same kind around, the
             // spaces should be matched. Skip at line edges.
@@ -1763,24 +1763,24 @@ object Checker:
 
     var lastSemantic = arr.length - 1
     while lastSemantic >= 0
-          && (arr(lastSemantic).kind == Kind.Space
-              || arr(lastSemantic).kind == Kind.Comment)
+          && (arr(lastSemantic).kind == Sort.Space
+              || arr(lastSemantic).kind == Sort.Comment)
     do lastSemantic -= 1
 
     var i = 0
     while i < arr.length do
       val t = arr(i)
-      if t.kind == Kind.Code && AssignOps.contains(t.text) && i != lastSemantic then
+      if t.kind == Sort.Code && AssignOps.contains(t.text) && i != lastSemantic then
         // `name_=` setter method-name suffix: skip. `=` follows an
         // identifier ending in `_` with no intervening space.
         val isSetterSuffix =
-          t.text == "=" && i > 0 && arr(i - 1).kind == Kind.Code
+          t.text == "=" && i > 0 && arr(i - 1).kind == Sort.Code
             && arr(i - 1).text.endsWith("_")
         if !isSetterSuffix then
           val leftHasSpace =
-            i > 0 && arr(i - 1).kind == Kind.Space && arr(i - 1).text.length >= 1
+            i > 0 && arr(i - 1).kind == Sort.Space && arr(i - 1).text.length >= 1
           val rightExactSpace =
-            i + 1 < arr.length && arr(i + 1).kind == Kind.Space && arr(i + 1).text == " "
+            i + 1 < arr.length && arr(i + 1).kind == Sort.Space && arr(i + 1).text == " "
           if !leftHasSpace then
             emit
               ( cols(i), "376.1",
@@ -1847,14 +1847,14 @@ object Checker:
 
     var i = 0
     while i < arr.length do
-      if arr(i).kind == Kind.Code && arr(i).text == "def" then
+      if arr(i).kind == Sort.Code && arr(i).text == "def" then
         var j = i + 1
-        while j < arr.length && (arr(j).kind == Kind.Space || arr(j).kind == Kind.Comment) do
+        while j < arr.length && (arr(j).kind == Sort.Space || arr(j).kind == Sort.Comment) do
           j += 1
-        if j < arr.length && arr(j).kind == Kind.Code && isSymbolicOperator(arr(j).text) then
+        if j < arr.length && arr(j).kind == Sort.Code && isSymbolicOperator(arr(j).text) then
           val opIdx = j
           val nextIdx = opIdx + 1
-          if nextIdx < arr.length && arr(nextIdx).kind == Kind.Code
+          if nextIdx < arr.length && arr(nextIdx).kind == Sort.Code
             && (arr(nextIdx).text == "(" || arr(nextIdx).text == "[")
           then
             emit
@@ -1871,7 +1871,7 @@ object Checker:
       case Some(tok) if tok.text == "=>" =>
         if rest.length >= 2 then
           val next = rest(1)
-          if next.kind != Kind.Space || next.text != "  " then
+          if next.kind != Sort.Space || next.text != "  " then
             emit
               ( leadingCols + 3, "444",
                 "`=>` continuation line must be followed by exactly two spaces" )
@@ -1879,7 +1879,7 @@ object Checker:
       case Some(tok) if tok.text == ":" && lineEndsWithEqualsToken(rest) =>
         if rest.length >= 2 then
           val next = rest(1)
-          if next.kind != Kind.Space || next.text != "   " then
+          if next.kind != Sort.Space || next.text != "   " then
             emit
               ( leadingCols + 2, "444",
                 "heavy-signature return type `:` must be followed by exactly three spaces" )
@@ -1887,7 +1887,7 @@ object Checker:
       case _ => ()
 
   private def lineEndsWithEqualsToken(rest: IndexedSeq[Lexeme]): Boolean =
-    val nonWs = rest.filter{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
+    val nonWs = rest.filter{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
     nonWs.lastOption.exists(_.text == "=")
 
   private def checkChainContinuation
@@ -1929,7 +1929,7 @@ object Checker:
     if !isBlank && isReturnTypeLine(rest) then s.prevWasReturnType = true
 
   private def isReturnTypeLine(rest: IndexedSeq[Lexeme]): Boolean =
-    rest.length >= 2 && rest(0).text == ":" && rest(1).kind == Kind.Space
+    rest.length >= 2 && rest(0).text == ":" && rest(1).kind == Sort.Space
       && rest(1).text == "   " && rest.lastOption.exists(_.text == "=")
 
   private val ModifierWords: Set[String] =
@@ -1941,7 +1941,7 @@ object Checker:
   private def skipModifiers(tokens: IndexedSeq[Lexeme], start: Int): (Option[String], Int) =
     var i = start
     var lastModifier: Option[String] = None
-    while i < tokens.length && tokens(i).kind == Kind.Code
+    while i < tokens.length && tokens(i).kind == Sort.Code
       && ModifierWords.contains(tokens(i).text)
       && tokens(i).text != "given"
     do
@@ -2123,7 +2123,7 @@ object Checker:
       val idx = l - 1
       if idx >= 0 && idx < lines.length then
         val toks = lines(idx)
-        if toks.isEmpty || toks.forall(_.kind == Kind.Space) then return true
+        if toks.isEmpty || toks.forall(_.kind == Sort.Space) then return true
       l += 1
     false
 
@@ -2149,7 +2149,7 @@ object Checker:
           s.prevCodeLineLastTok == "," || s.prevCodeLineLastTok == "("
             || s.prevCodeLineLastTok == "using"
 
-        val firstSemIdx = rest.indexWhere{ t => t.kind != Kind.Space && t.kind != Kind.Comment }
+        val firstSemIdx = rest.indexWhere{ t => t.kind != Sort.Space && t.kind != Sort.Comment }
         if freshRow && firstSemIdx >= 0 && rest(firstSemIdx).text != ")" then
           var c = leadingCols + 1
           var k = 0
@@ -2166,7 +2166,7 @@ object Checker:
     var i     = 0
     while i < rest.length do
       val t = rest(i)
-      if t.kind == Kind.Code then
+      if t.kind == Sort.Code then
         if t.text == "(" then
           if depth == 0 then
             val nextSem = nextSemantic(rest, i + 1)
@@ -2194,7 +2194,7 @@ object Checker:
 
   private def nextSemantic(rest: IndexedSeq[Lexeme], from: Int): Int =
     var k = from
-    while k < rest.length && (rest(k).kind == Kind.Space || rest(k).kind == Kind.Comment) do
+    while k < rest.length && (rest(k).kind == Sort.Space || rest(k).kind == Sort.Comment) do
       k += 1
     if k < rest.length then k else -1
 

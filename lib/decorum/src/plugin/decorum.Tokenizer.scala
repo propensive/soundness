@@ -66,7 +66,7 @@ object Tokenizer:
             inTripleString = false
           else
             i += 1
-        emit(Lexeme(text.substring(start, i).nn, Kind.Strs))
+        emit(Lexeme(text.substring(start, i).nn, Sort.Strs))
       else if inBlock then
         val start = i
         var done = false
@@ -77,11 +77,11 @@ object Tokenizer:
             done = true
           else
             i += 1
-        emit(Lexeme(text.substring(start, i).nn, Kind.Comment))
+        emit(Lexeme(text.substring(start, i).nn, Sort.Comment))
       else if c == '/' && i + 1 < text.length && text.charAt(i + 1) == '/' then
         val start = i
         while i < text.length && text.charAt(i) != '\n' do i += 1
-        emit(Lexeme(text.substring(start, i).nn, Kind.Comment))
+        emit(Lexeme(text.substring(start, i).nn, Sort.Comment))
       else if c == '/' && i + 1 < text.length && text.charAt(i + 1) == '*' then
         val start = i
         i += 2
@@ -94,10 +94,10 @@ object Tokenizer:
             done = true
           else
             i += 1
-        emit(Lexeme(text.substring(start, i).nn, Kind.Comment))
+        emit(Lexeme(text.substring(start, i).nn, Sort.Comment))
       else if c == '"' then
         val (newPos, content, closed) = scanQuotedString(text, i, '"')
-        emit(Lexeme(content, Kind.Strs))
+        emit(Lexeme(content, Sort.Strs))
         i = newPos
         if !closed && content.startsWith("\"\"\"") then inTripleString = true
       else if c == '\'' then
@@ -114,21 +114,21 @@ object Tokenizer:
                   && text.charAt(i + 2) == 'u' && text.charAt(i + 7) == '\'')
         if isCharLiteral then
           val (newPos, content, _) = scanQuotedString(text, i, '\'')
-          emit(Lexeme(content, Kind.Strs))
+          emit(Lexeme(content, Sort.Strs))
           i = newPos
         else
-          emit(Lexeme("'", Kind.Code))
+          emit(Lexeme("'", Sort.Code))
           i += 1
       else if c == '`' then
         val start = i
         i += 1
         while i < text.length && text.charAt(i) != '`' && text.charAt(i) != '\n' do i += 1
         if i < text.length && text.charAt(i) == '`' then i += 1
-        emit(Lexeme(text.substring(start, i).nn, Kind.Code))
+        emit(Lexeme(text.substring(start, i).nn, Sort.Code))
       else if c == ' ' || c == '\t' then
         val start = i
         while i < text.length && (text.charAt(i) == ' ' || text.charAt(i) == '\t') do i += 1
-        emit(Lexeme(text.substring(start, i).nn, Kind.Space))
+        emit(Lexeme(text.substring(start, i).nn, Sort.Space))
       else if isIdentStart(c) then
         val start = i
         while i < text.length && isIdentPart(text.charAt(i)) do i += 1
@@ -136,21 +136,21 @@ object Tokenizer:
         if i < text.length && (text.charAt(i) == '"' || text.charAt(i) == '\'') then
           val quote = text.charAt(i)
           val (newPos, content, closed) = scanQuotedString(text, i, quote)
-          emit(Lexeme(ident + content, Kind.Strs))
+          emit(Lexeme(ident + content, Sort.Strs))
           i = newPos
           if !closed && content.startsWith("\"\"\"") then inTripleString = true
         else
-          emit(Lexeme(ident, Kind.Code))
+          emit(Lexeme(ident, Sort.Code))
       else if c.isDigit then
         val start = i
         while i < text.length && (text.charAt(i).isLetterOrDigit || text.charAt(i) == '.') do i += 1
-        emit(Lexeme(text.substring(start, i).nn, Kind.Code))
+        emit(Lexeme(text.substring(start, i).nn, Sort.Code))
       else if isOpChar(c) then
         val start = i
         while i < text.length && isOpChar(text.charAt(i)) do i += 1
-        emit(Lexeme(text.substring(start, i).nn, Kind.Code))
+        emit(Lexeme(text.substring(start, i).nn, Sort.Code))
       else
-        emit(Lexeme(c.toString, Kind.Code))
+        emit(Lexeme(c.toString, Sort.Code))
         i += 1
 
     lines += line.toIndexedSeq
