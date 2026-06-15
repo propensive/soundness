@@ -74,14 +74,15 @@ import columnAttenuation.fail
 def run(): Unit =
   val table =
     Table[Library]
-      ( Column(e"$Bold(Name)", sizing = columnar.Prose): lib =>
+      ( Column(e"$Bold(Name)", sizing = columnar.Paragraph): lib =>
           e"$Bold(${lib.name})",
         Column(e"$Bold(Identifier)", sizing = columnar.Collapsible(0.9))(_.id),
         Column(e"$Bold(LoC)", sizing = columnar.Collapsible(0.3))(_.linesOfCode),
         Column(e"$Bold(Year)", sizing = columnar.Collapsible(0.5)): lib =>
           if lib.year > 2020 then e"${webColors.SandyBrown}(${lib.year})"
           else e"${webColors.Chocolate}(${lib.year})",
-        Column(e"$Bold(Description)", textAlign = TextAlignment.Justify, sizing = columnar.Prose):
+        Column
+         (e"$Bold(Description)", textAlign = TextAlignment.Justify, sizing = columnar.Paragraph):
           lib => e"$Italic(${lib.description})" )
 
   // given TableRelabelling[Person] = () => Map(

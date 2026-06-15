@@ -241,7 +241,7 @@ transform
   replace  t"Identifier"  t"Identifier", sizing = Collapsible(0.9)
   replace  t"LoC"  t"LoC", sizing = Collapsible(0.3)
   replace  t"Year"  t"Year", sizing = Collapsible(0.5)
-  replace  t"Description"  t"Description", textAlign = TextAlignment.Justify, sizing = Prose
+  replace  t"Description"  t"Description", textAlign = TextAlignment.Justify, sizing = Paragraph
 ##
 case class Library
     (id: Text, name: Text, linesOfCode: Int, year: Int, about: Text)
@@ -269,7 +269,7 @@ If the slack value tried is `0.6`, then both columns will be shown. If the
 value is `0.4`, then only `LoC` will be shown. And if it is `0.2`, then neither
 column will be visible.
 
-The `Description` column is sized as `Prose`. That was chosen because it
+The `Description` column is sized as `Paragraph`. That was chosen because it
 contains words which can be split on spaces, so long lines can be split into
 multiple lines. A _prose_ column usually responds well to changes in slack, and
 its width grows or shrinks as the text is reflowed onto multiple lines.
@@ -278,7 +278,7 @@ The alignment is also specified as `Justify`, which means that additional
 spaces are added to ensure each line (apart from the last in each paragraph)
 fills all the space available on each line.
 
-In addition to `Prose` and `Collapsible`, columns may be sized as `Fixed`,
+In addition to `Paragraph` and `Collapsible`, columns may be sized as `Fixed`,
 specifying an unchanging width in characters, or `Shortened` which will crop
 the content of a column down to a certain size, if there is not enough slack.
 
