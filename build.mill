@@ -245,7 +245,7 @@ object groupCheck extends Module:
   // test,tool,web} group bundle: the compiler plugins (published but used via `-Xplugin`),
   // and the `anticipation.*` interface components plus `proscenium.core`, which reach
   // `soundness-all` transitively as dependencies of bundled modules. Non-published modules
-  // (demos, examples, `satirical`) use the `Internal` trait instead and
+  // (demos, examples) use the `Internal` trait instead and
   // are not subject to this check.
   def excluded: Set[String] = Set(
     "anticipation.codec", "anticipation.color", "anticipation.generic", "anticipation.gfx",
@@ -1209,12 +1209,6 @@ object rudiments extends Library:
 
   object test extends Tests(core, abacist.core, quantitative.units)
 
-object satirical extends Library:
-  object core extends Internal(gossamer.core, turbulence.core, zephyrine.core):
-    override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
-
 object savagery extends Library:
   object core extends Component(cataclysm.core, xylophone.core, geodesy.core, iridescence.core,
     mosquito.core):
@@ -1540,7 +1534,7 @@ val allLibraries: Seq[Library] = Seq(
   mosquito, nomenclature, obligatory, octogenarian, orthodoxy, panopticon, parasite,
   perihelion, phoenicia, plutocrat, polaris, polysyllabic, polyvinyl, prepositional, probably,
   profanity,
-  proscenium, punctuation, quantitative, querencia, revolution, rudiments, satirical, savagery,
+  proscenium, punctuation, quantitative, querencia, revolution, rudiments, savagery,
   scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,
   surveillance, symbolism, synesthesia, tarantula, telekinesis, turbulence, typonym,
   ultimatum, ulysses, umbrageous, urticose, vacuous, vexillology, vicarious, wisteria, xenophile, xylophone,

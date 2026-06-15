@@ -88,7 +88,6 @@ punctuation: markdown commonmark prose text-formatting
 quantitative: units quantities dimensional-analysis si-units measurements physics
 revolution: jar-manifest semver versioning
 rudiments: utilities core-library bijection loops indexable
-satirical: wit webassembly-interface-types wasm interface-definitions
 savagery: svg vector-graphics 2d-graphics path shapes
 scintillate: http-server servlet web-framework http-routing
 sedentary: benchmarking performance-testing micro-benchmark
