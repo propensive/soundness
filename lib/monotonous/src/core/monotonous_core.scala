@@ -125,25 +125,6 @@ package alphabets:
     given uuencoding: Alphabet[Base64] =
       Alphabet(t"""!"#$$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_""", false)
 
-  package base256:
-    given modular: Alphabet[Base256] =
-      def char(i: Int): Char =
-        if i == 34 || i == 39 || i == 92 then (i + 8192).toChar
-        else if i <= 32 || 126 < i < 161 || i == 173 then (i + 256).toChar
-        else i.toChar
-
-      Alphabet(Text(IArray.tabulate(256)(char)), false)
-
-    given alphanumericOrBraille: Alphabet[Base256] =
-      def char(i: Int): Char =
-        if i <= 32 || i == 34 || i == 39 || i == 92 || i >= 127 then (i + '\u2800').toChar
-        else i.toChar
-
-      Alphabet(Text(IArray.tabulate(256)(char)), false)
-
-    given braille: Alphabet[Base256] =
-      Alphabet(Text(IArray.tabulate(256) { byte => (byte + '\u2800').toChar }), false)
-
 extension (value: Text)
   def deserialize[scheme <: Serialization](using deserializable: Deserializable in scheme): Data =
     deserializable.deserialize(value)
