@@ -30,33 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package jacinta
+package quantitative
 
-import anticipation.*
-import fulminate.*
-import kaleidoscope.*
-import vacuous.*
+import rudiments.*
 
-object RecordSchemaError:
-  object Reason:
-    given Reason is Communicable =
-      case JsonType(expected, found) => m"expected JSON type $expected, but found $found"
-      case MissingValue              => m"the value was missing"
+// A typographic em: a relative length shared by CSS (cataclysm) and font
+// metrics (phoenicia). A fresh dimension with no `Ratio` to anything else,
+// so it is deliberately inconvertible to physical lengths.
+object Typometry:
+  inline given quantity: Amount[Units[1, Typometry], "em"] = !!
 
-      case IntOutOfRange(value, minimum, maximum) =>
-        if minimum.absent then m"the value was greater than the maximum, ${maximum.or(0)}"
-        else if maximum.absent then m"the value was less than the minimum, ${minimum.or(0)}"
-        else m"the value was not between ${minimum.or(0)} and ${maximum.or(0)}"
-
-      case PatternMismatch(value, pattern) =>
-        m"the value did not conform to the regular expression ${pattern.pattern}"
-
-  enum Reason(val number: Int) extends Clarification:
-    case JsonType(expected: JsonPrimitive, found: JsonPrimitive)                  extends Reason(1)
-    case MissingValue                                                             extends Reason(2)
-    case IntOutOfRange(value: Int, minimum: Optional[Int], maximum: Optional[Int]) extends Reason(3)
-    case PatternMismatch(value: Text, pattern: Regex)                             extends Reason(4)
-
-case class RecordSchemaError(reason: RecordSchemaError.Reason)(using Diagnostics)
-extends Error(624, reason.number)
-  ( m"the JSON was not valid according to the schema because $reason" )
+sealed trait Typometry extends Dimension

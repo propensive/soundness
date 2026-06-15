@@ -90,7 +90,7 @@ object Decodable extends Decodable2:
       val names = enumeration.values.to(List).map(enumeration.name(_)).map(enumeration.encode(_))
       abort(VariantError(value, enumeration.name, names))
 
-trait Decodable extends Typeclass, Formal, Locatable:
+trait Decodable extends Typeclass, Formal, Locative:
   inline def decodable: this.type = this
   def decoded(value: Form): Self
 

@@ -56,12 +56,12 @@ object WebIdlDialect extends Dialect:
   // members, each interface's base type, the mixins applied by `includes`, and the `typedef`/`enum`
   // aliases.
   private case class Idl
-    ( types:    Map[Text, Map[Text, Signature]],
+    ( types:    Map[Text, Map[Text, Prototype]],
       parents:  Map[Text, Text],
       includes: Map[Text, List[Text]],
       typedefs: Map[Text, Foreign.Type] )
 
-  def parse(source: Text): Map[Text, Map[Text, Signature]] =
+  def parse(source: Text): Map[Text, Map[Text, Prototype]] =
     val idl = items(tokenize(source.s), Idl(Map(), Map(), Map(), Map()))
 
     resolve(flatten(idl), idl.typedefs)
@@ -259,7 +259,7 @@ object WebIdlDialect extends Dialect:
   :   (Idl, List[String]) =
 
     val (members, rest) = memberList(tokens, ListMap())
-    val merged = idl.types.get(name).getOrElse(ListMap[Text, Signature]()) ++ members
+    val merged = idl.types.get(name).getOrElse(ListMap[Text, Prototype]()) ++ members
 
     val parents = parent.lay(idl.parents): base =>
       idl.parents.updated(name, base)
@@ -271,8 +271,8 @@ object WebIdlDialect extends Dialect:
   // (`getter`, `setter`, `iterable`, `constructor`, …), `[extended attributes]` and stray `;` are
   // skipped. A bare `Type name;` (a dictionary member) is read as a field; `Type name(args);` as a
   // method.
-  private def memberList(tokens: List[String], members: Map[Text, Signature])
-  :   (Map[Text, Signature], List[String]) =
+  private def memberList(tokens: List[String], members: Map[Text, Prototype])
+  :   (Map[Text, Prototype], List[String]) =
 
     tokens match
       case "}" :: rest =>
@@ -295,7 +295,7 @@ object WebIdlDialect extends Dialect:
 
         after match
           case name :: more =>
-            memberList(skipTo(more, t";"), members.updated(name.tt, Signature(Unset, kind)))
+            memberList(skipTo(more, t";"), members.updated(name.tt, Prototype(Unset, kind)))
 
           case Nil =>
             (members, Nil)
@@ -305,7 +305,7 @@ object WebIdlDialect extends Dialect:
 
         after match
           case name :: more =>
-            memberList(skipTo(more, t";"), members.updated(name.tt, Signature(Unset, kind)))
+            memberList(skipTo(more, t";"), members.updated(name.tt, Prototype(Unset, kind)))
 
           case Nil =>
             (members, Nil)
@@ -320,10 +320,10 @@ object WebIdlDialect extends Dialect:
         after match
           case name :: "(" :: more =>
             val (parameters, rest) = params(more, Nil)
-            memberList(skipTo(rest, t";"), members.updated(name.tt, Signature(parameters, kind)))
+            memberList(skipTo(rest, t";"), members.updated(name.tt, Prototype(parameters, kind)))
 
           case name :: more =>
-            memberList(skipTo(more, t";"), members.updated(name.tt, Signature(Unset, kind)))
+            memberList(skipTo(more, t";"), members.updated(name.tt, Prototype(Unset, kind)))
 
           case Nil =>
             (members, Nil)
@@ -369,14 +369,14 @@ object WebIdlDialect extends Dialect:
   // Flattens inheritance: each type's members are those of its base chain, then of every applied
   // mixin, then its own (so a type's own members override inherited ones of the same name). A
   // visited set guards against cycles.
-  private def flatten(idl: Idl): Map[Text, Map[Text, Signature]] =
-    def collect(name: Text, visiting: Set[Text]): Map[Text, Signature] =
+  private def flatten(idl: Idl): Map[Text, Map[Text, Prototype]] =
+    def collect(name: Text, visiting: Set[Text]): Map[Text, Prototype] =
       if visiting.contains(name) then idl.types.get(name).getOrElse(ListMap())
       else
         val visiting2 = visiting + name
-        val own = idl.types.get(name).getOrElse(ListMap[Text, Signature]())
+        val own = idl.types.get(name).getOrElse(ListMap[Text, Prototype]())
 
-        val inherited = idl.parents.at(name).lay(ListMap[Text, Signature]()): base =>
+        val inherited = idl.parents.at(name).lay(ListMap[Text, Prototype]()): base =>
           collect(base, visiting2)
 
         val mixedIn = idl.includes.get(name).getOrElse(Nil).foldLeft(inherited): (acc, mixin) =>
@@ -389,8 +389,8 @@ object WebIdlDialect extends Dialect:
 
   // Resolves every `typedef`/`enum` alias appearing in a type, transitively.
   private def resolve
-    ( definitions: Map[Text, Map[Text, Signature]], typedefs: Map[Text, Foreign.Type] )
-  :   Map[Text, Map[Text, Signature]] =
+    ( definitions: Map[Text, Map[Text, Prototype]], typedefs: Map[Text, Foreign.Type] )
+  :   Map[Text, Map[Text, Prototype]] =
 
     def expand(foreign: Foreign.Type): Foreign.Type = foreign match
       case Foreign.Type.Named(name) =>
@@ -402,8 +402,8 @@ object WebIdlDialect extends Dialect:
       case Foreign.Type.Applied(constructor, arguments) =>
         Foreign.Type.Applied(constructor, arguments.map(expand))
 
-    def signature(sig: Signature): Signature =
-      Signature(sig.parameters.let(_.map(expand)), expand(sig.result))
+    def signature(sig: Prototype): Prototype =
+      Prototype(sig.parameters.let(_.map(expand)), expand(sig.result))
 
     definitions.map: (name, members) =>
       (name, members.map { (member, sig) => (member, signature(sig)) })

@@ -89,7 +89,7 @@ package columnar:
   private def displayWidth[textual: Textual](text: textual)(using Text is Measurable): Int =
     text.plain.metrics
 
-  object Prose extends Columnar:
+  object Paragraph extends Columnar:
     def longestWord[textual: Textual](text: textual)(using Char is Measurable): Int =
       val plain = text.plain.s
       val widths = prefixWidths(text)
@@ -199,7 +199,7 @@ package columnar:
 
       lines.to(IndexedSeq).flatMap(format(_).reverse)
 
-  object ProseOrBreak extends Columnar:
+  object ParagraphOrBreak extends Columnar:
     def width[textual: Textual](lines: IArray[textual], maxWidth: Int, slack: Double)
       ( using Text is Measurable )
     :   Optional[Int] =
@@ -213,8 +213,8 @@ package columnar:
 
       given Char is Measurable = _.toString.tt.metrics
 
-      if lines.map(Prose.longestWord(_)).max < width
-      then Prose.fit(lines, width, textAlign)
+      if lines.map(Paragraph.longestWord(_)).max < width
+      then Paragraph.fit(lines, width, textAlign)
       else
         var result: List[textual] = Nil
 

@@ -43,6 +43,8 @@ val Mole: MetricUnit[Moles[1]] = MetricUnit(1)
 val Ampere: MetricUnit[Amperes[1]] = MetricUnit(1)
 val Second: MetricUnit[Seconds[1]] = MetricUnit(1)
 
+val Em: Quantity[Ems[1]] = Quantity(1.0)
+
 val Kelvin: MetricUnit[Kelvins[1]] = MetricUnit(1)
 
 extension (singleton: Kelvin.type)

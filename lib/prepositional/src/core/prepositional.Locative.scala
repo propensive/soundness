@@ -30,30 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package satirical
+package prepositional
 
-import soundness.*
-
-import charEncoders.utf8
-
-object Tests extends Suite(m"Satirical tests"):
-  def run(): Unit =
-    test(m"Parse empty world"):
-      t"world example-world {   }".read[Wit]
-    . assert(_ == Wit(World(w"example-world", Nil)))
-
-    test(m"Parse empty interface"):
-      t"interface example-interface {   }".read[Wit]
-    . assert(_ == Wit(Interface(w"example-interface", Nil)))
-
-    test(m"Parse empty interface ignoring comment"):
-      t"// a comment\n // another\ninterface example-interface {   } ".read[Wit]
-    . assert(_ == Wit(Interface(w"example-interface", Nil)))
-
-    test(m"Parse empty world and interface"):
-      t"interface eg-int {   }\nworld eg-world {}".read[Wit]
-    . assert(_ == Wit(Interface(w"eg-int", Nil), World(w"eg-world", Nil)))
-
-    test(m"Parse package"):
-      t"package namespace:name;\ninterface eg-int {   }\nworld eg-world {}".read[Wit]
-    . assert(_ == Wit(Interface(w"eg-int", Nil), World(w"eg-world", Nil)))
+trait Locative:
+  type Locus

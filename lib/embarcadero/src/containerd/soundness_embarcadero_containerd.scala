@@ -42,5 +42,5 @@ export embarcadero.{AnyMessage, Containerd, Container, ContentDescriptor,
     GetContainerRequest, GetContainerResponse, GetImageRequest, GetImageResponse, GetTaskRequest,
     GetTaskResponse, ImageRecord, KillRequest, ListContainersRequest, ListContainersResponse,
     ListImagesRequest, ListImagesResponse, ListNamespacesRequest, ListNamespacesResponse,
-    ListTasksRequest, ListTasksResponse, Mount, Namespace, Process, ProcessStatus, Runtime,
+    ListTasksRequest, ListTasksResponse, Mount, Namespace, Workload, ProcessStatus, Runtime,
     StartRequest, StartResponse, VersionResponse, WaitRequest, WaitResponse}

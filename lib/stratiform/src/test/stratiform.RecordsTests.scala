@@ -46,7 +46,7 @@ import charEncoders.utf8
 
 object RecordsTests extends Suite(m"Stratiform Records tests"):
   def run(): Unit =
-    suite(m"RecordSchema field access"):
+    suite(m"TelBlueprint field access"):
       test(m"required String field is accessed as Text"):
         val record = ContactRecords.record(t"name Alice\nage 30\n".read[Tel])
         record.name
@@ -74,7 +74,7 @@ object RecordsTests extends Suite(m"Stratiform Records tests"):
         (a.name, b.name)
       . assert(_ == (t"Alice", t"Bob"))
 
-    suite(m"RecordSchema flag fields"):
+    suite(m"TelBlueprint flag fields"):
       test(m"present flag reads as true"):
         val record = FeatureRecords.record(t"enabled\n".read[Tel])
         record.enabled

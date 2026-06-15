@@ -30,21 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package jacinta
+package anticipation
 
-import anticipation.*
-import polyvinyl.*
-import vacuous.*
+// A format-neutral description of the *morphology* of an encoding. It is carried by
+// a codec (e.g. jacinta's `Json.Encodable`/`Json.Decodable`) so that the codec and
+// its schema are produced together — coherent by construction — and then *reified*
+// into a concrete, format-specific schema downstream (a `JsonSchema` in jacinta, a
+// `Tels.Type` in stratiform). Living here, upstream of every codec, is what lets a
+// codec carry its morphology without depending on any particular schema representation.
+//
+// It captures only structure (the part that must stay coherent with the codec);
+// richer, format-specific annotations (descriptions, formats, bounds) remain the
+// concern of each format's own schema derivation.
+enum Morphology:
+  // Whether a value of this morphology may be absent (used to compute which record
+  // fields are required).
+  def optional: Boolean = this match
+    case Opt(_) => true
+    case _      => false
 
-case class RecordSchemaDoc
-  ( `$schema`:  Text,
-    `$id`:      Text,
-    title:      Text,
-    `type`:     Text,
-    properties: Map[Text, RecordSchema.Property],
-    required:   Optional[Set[Text]] ):
-
-  lazy val requiredFields: Set[Text] = required.or(Set())
-
-  def fields: Map[Text, Member] =
-    properties.map: (key, value) => key -> value.field(requiredFields.contains(key))
+  case Str                                              // a string
+  case Whole                                            // an integer
+  case Real                                             // a (fractional) number
+  case Bool                                             // a boolean
+  case Empty                                            // null / unit
+  case Any                                              // unconstrained (e.g. a raw value)
+  case Opt(shape: Morphology)                           // an optional value
+  case Arr(items: Morphology)                           // a homogeneous sequence
+  case Dict(key: Morphology, value: Morphology)         // a map of arbitrary keys to values
+  case Obj(fields: List[(Text, Morphology)], required: List[Text]) // a record of named fields
+  case OneOf(variants: List[Morphology])                // a tagged disjunction

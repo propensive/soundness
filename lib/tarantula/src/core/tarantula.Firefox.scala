@@ -43,7 +43,7 @@ import telekinesis.*
 import abstractables.instantIsAbstractable
 import strategies.throwUnsafely
 
-object Firefox extends Browser(t"firefox"):
+object Firefox extends Navigator(t"firefox"):
   def launch(port: Int)(using WorkingDirectory, Monitor): Server logs ExecEvent =
     val server: Job["geckodriver", Text] = sh"geckodriver --port $port".fork()
     sleep(100L)

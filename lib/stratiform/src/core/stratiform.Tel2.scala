@@ -120,13 +120,13 @@ trait Tel2:
 
   inline given decodable: [value] => value is Tel.Decodable = summonFrom:
     case given (`value` is Decodable in Text) =>
-      Tel.Decodable(Shape.Str)(provide[Tactic[TelError]](_.primaryAtom.decode[value]))
+      Tel.Decodable(Morphology.Str)(provide[Tactic[TelError]](_.primaryAtom.decode[value]))
 
     case given Reflection[`value`] => DecodableDerivation.derived
 
   inline given encodable: [value] => value is Tel.Encodable = summonFrom:
     case given (`value` is Encodable in Text) =>
-      Tel.Encodable(Shape.Str): v => Tel.scalar(v.encode)
+      Tel.Encodable(Morphology.Str): v => Tel.scalar(v.encode)
 
     case given Reflection[`value`] => EncodableDerivation.derived
 
@@ -134,16 +134,16 @@ trait Tel2:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Tel.Decodable =
 
-      // The object `Shape` is built from the field decoders' own shapes (a single
+      // The object `Morphology` is built from the field decoders' own shapes (a single
       // inlined `contexts` traversal — kept here, not factored out, so it does not
       // perturb the `build` traversal), keeping a fused `Decodable & Schematic`
       // coherent. Built by-name so recursive types compile.
       Tel.Decodable({
-        val fields: List[(Text, Shape)] =
+        val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
           . to(List)
 
-        Shape.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
+        Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
       }):
         telVal =>
           provide[Tactic[TelError]]:
@@ -181,7 +181,7 @@ trait Tel2:
       // (`delegate`) is `fallible` and would leak a `Tactic[VariantError]` requirement
       // onto every codec; the precise select schema comes from the standalone
       // `Schematic` / `Tels.tels`.
-      Tel.Decodable(Shape.Any):
+      Tel.Decodable(Morphology.Any):
         telVal =>
           provide[Tactic[TelError]]:
             provide[Tactic[VariantError]]:
@@ -201,11 +201,11 @@ trait Tel2:
     :   derivation is Tel.Encodable =
 
       Tel.Encodable({
-        val fields: List[(Text, Shape)] =
+        val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
           . to(List)
 
-        Shape.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
+        Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
       }):
         value =>
           val compounds = scala.collection.mutable.ArrayBuffer.empty[Tel.Compound]
@@ -239,7 +239,7 @@ trait Tel2:
       // round-trips identically to the same document parsed from text. The codec-carried
       // shape stays permissive (`Any`); the precise select schema comes from the standalone
       // `Schematic` / `Tels.tels`.
-      Tel.Encodable(Shape.Any):
+      Tel.Encodable(Morphology.Any):
         value =>
           variant(value): [variant <: derivation] =>
             v =>
@@ -257,53 +257,54 @@ trait Tel2:
   // the atom text rather than a JSON AST.
 
   given textDecodable: Tactic[TelError] => Text is Tel.Decodable =
-    Tel.Decodable(Shape.Str)(_.primaryAtom)
+    Tel.Decodable(Morphology.Str)(_.primaryAtom)
 
   given stringDecodable: Tactic[TelError] => String is Tel.Decodable =
-    Tel.Decodable(Shape.Str)(_.primaryAtom.s)
+    Tel.Decodable(Morphology.Str)(_.primaryAtom.s)
 
   given intDecodable: Tactic[TelError] => Int is Tel.Decodable =
-    Tel.Decodable(Shape.Whole): telVal =>
+    Tel.Decodable(Morphology.Whole): telVal =>
       try telVal.primaryAtom.s.toInt
       catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
 
   given longDecodable: Tactic[TelError] => Long is Tel.Decodable =
-    Tel.Decodable(Shape.Whole): telVal =>
+    Tel.Decodable(Morphology.Whole): telVal =>
       try telVal.primaryAtom.s.toLong
       catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
 
   given doubleDecodable: Tactic[TelError] => Double is Tel.Decodable =
-    Tel.Decodable(Shape.Real): telVal =>
+    Tel.Decodable(Morphology.Real): telVal =>
       try telVal.primaryAtom.s.toDouble
       catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
 
   given booleanDecodable: Tactic[TelError] => Boolean is Tel.Decodable =
-    Tel.Decodable(Shape.Bool): telVal =>
+    Tel.Decodable(Morphology.Bool): telVal =>
       telVal.primaryAtom.s match
         case "true"  => true
         case "false" => false
         case _       => abort(TelError(TelError.Reason.BadVersion))
 
-  given telDecodable: Tel is Tel.Decodable = Tel.Decodable(Shape.Any)(identity(_))
+  given telDecodable: Tel is Tel.Decodable = Tel.Decodable(Morphology.Any)(identity(_))
 
-  given textEncodable: Text is Tel.Encodable = Tel.Encodable(Shape.Str): text => Tel.scalar(text)
+  given textEncodable: Text is Tel.Encodable =
+    Tel.Encodable(Morphology.Str): text => Tel.scalar(text)
 
   given stringEncodable: String is Tel.Encodable =
-    Tel.Encodable(Shape.Str): s => Tel.scalar(Text(s))
+    Tel.Encodable(Morphology.Str): s => Tel.scalar(Text(s))
 
   given intEncodable: Int is Tel.Encodable =
-    Tel.Encodable(Shape.Whole): i => Tel.scalar(Text(i.toString))
+    Tel.Encodable(Morphology.Whole): i => Tel.scalar(Text(i.toString))
 
   given longEncodable: Long is Tel.Encodable =
-    Tel.Encodable(Shape.Whole): l => Tel.scalar(Text(l.toString))
+    Tel.Encodable(Morphology.Whole): l => Tel.scalar(Text(l.toString))
 
   given doubleEncodable: Double is Tel.Encodable =
-    Tel.Encodable(Shape.Real): d => Tel.scalar(Text(d.toString))
+    Tel.Encodable(Morphology.Real): d => Tel.scalar(Text(d.toString))
 
   given booleanEncodable: Boolean is Tel.Encodable =
-    Tel.Encodable(Shape.Bool): b => Tel.scalar(Text(b.toString))
+    Tel.Encodable(Morphology.Bool): b => Tel.scalar(Text(b.toString))
 
-  given telEncodable: Tel is Tel.Encodable = Tel.Encodable(Shape.Any)(identity(_))
+  given telEncodable: Tel is Tel.Encodable = Tel.Encodable(Morphology.Any)(identity(_))
 
   // Optional / List support — repeatable scalar fields produce multiple
   // compounds with the same keyword; we return a Document-rooted Tel
@@ -311,12 +312,12 @@ trait Tel2:
   // recognises and flattens with the field's label.
 
   given optionalEncodable: [value: Tel.Encodable] => Optional[value] is Tel.Encodable =
-    Tel.Encodable(Shape.Opt(value.shape())): opt =>
+    Tel.Encodable(Morphology.Opt(value.shape())): opt =>
       opt.lay(Tel.empty)(_.encode)
 
   given optionalDecodable: [value: Tel.Decodable] => Tactic[TelError]
   =>  Optional[value] is Tel.Decodable =
-    Tel.Decodable(Shape.Opt(value.shape())): telVal =>
+    Tel.Decodable(Morphology.Opt(value.shape())): telVal =>
       if telVal.childCompounds.isEmpty && telVal.atomTexts.isEmpty then Unset
       else value.decoded(telVal)
 
@@ -348,17 +349,17 @@ trait Tel2:
 
   given listEncodable: [list <: List, element] => (encodable: => element is Tel.Encodable)
   =>  list[element] is Tel.Encodable =
-    Tel.Encodable(Shape.Arr(encodable.shape())): values =>
+    Tel.Encodable(Morphology.Arr(encodable.shape())): values =>
       collectionDocument(values)(using encodable)
 
   given setEncodable: [set <: Set, element] => (encodable: => element is Tel.Encodable)
   =>  set[element] is Tel.Encodable =
-    Tel.Encodable(Shape.Arr(encodable.shape())): values =>
+    Tel.Encodable(Morphology.Arr(encodable.shape())): values =>
       collectionDocument(values)(using encodable)
 
   given seriesEncodable: [series <: Series, element] => (encodable: => element is Tel.Encodable)
   =>  series[element] is Tel.Encodable =
-    Tel.Encodable(Shape.Arr(encodable.shape())): values =>
+    Tel.Encodable(Morphology.Arr(encodable.shape())): values =>
       collectionDocument(values)(using encodable)
 
   given collectionDecodable: [collection <: Iterable, element]
@@ -368,7 +369,7 @@ trait Tel2:
   =>  collection[element] is Tel.Decodable =
     new Tel.Decodable:
       type Self = collection[element]
-      def shape(): Shape = Shape.Arr(element0.shape())
+      def shape(): Morphology = Morphology.Arr(element0.shape())
       override def repeatable: Boolean = true
 
       def decoded(telVal: Tel): collection[element] =
@@ -390,7 +391,7 @@ trait Tel2:
 
   given mapEncodable: [key: Tel.Encodable, value: Tel.Encodable]
   =>  Map[key, value] is Tel.Encodable =
-    Tel.Encodable(Shape.Dict(key.shape(), value.shape())): map =>
+    Tel.Encodable(Morphology.Dict(key.shape(), value.shape())): map =>
       val entries = IArray.from:
         map.map: (k, v) =>
           val keyChild   = reKey(key.encoded(k), t"key")
@@ -401,7 +402,7 @@ trait Tel2:
 
   given mapDecodable: [key: Tel.Decodable, value: Tel.Decodable] => Tactic[TelError]
   =>  Map[key, value] is Tel.Decodable =
-    Tel.Decodable(Shape.Dict(key.shape(), value.shape())): telVal =>
+    Tel.Decodable(Morphology.Dict(key.shape(), value.shape())): telVal =>
       var accumulator = Map.empty[key, value]
 
       for entry <- telVal.fields(t"entries") do

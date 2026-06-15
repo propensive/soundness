@@ -72,7 +72,7 @@ object TastySymbol:
 
       Scaffold[(Text, Teletype)]
         ( Column(e"$Bold(Property)", textAlign = TextAlignment.Right)(_(0)),
-          Column(e"$Bold(Value)", sizing = columnar.ProseOrBreak)(_(1)) )
+          Column(e"$Bold(Value)", sizing = columnar.ParagraphOrBreak)(_(1)) )
 
       . tabulate(name :: (t"Flags", flags) :: (t"Properties", properties) :: details)
       . grid(120)

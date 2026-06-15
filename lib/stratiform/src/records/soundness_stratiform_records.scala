@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export stratiform.RecordSchema
+export stratiform.TelBlueprint

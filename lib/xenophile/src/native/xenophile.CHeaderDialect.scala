@@ -47,7 +47,7 @@ import vacuous.*
 object CHeaderDialect extends Dialect:
   val library: Text = t"library"
 
-  def parse(source: Text): Map[Text, Map[Text, Signature]] =
+  def parse(source: Text): Map[Text, Map[Text, Prototype]] =
     val (structs, functions, typedefs) = declarations(tokenize(source.s), Map(), Map(), Map())
     val all = if functions.isEmpty then structs else structs.updated(library, functions)
 
@@ -150,10 +150,10 @@ object CHeaderDialect extends Dialect:
   // `"library"` type's function members (`functions`), and `typedef` aliases (`typedefs`).
   private def declarations
     ( tokens:    List[String],
-      structs:   Map[Text, Map[Text, Signature]],
-      functions: Map[Text, Signature],
+      structs:   Map[Text, Map[Text, Prototype]],
+      functions: Map[Text, Prototype],
       typedefs:  Map[Text, Foreign.Type] )
-  :   (Map[Text, Map[Text, Signature]], Map[Text, Signature], Map[Text, Foreign.Type]) =
+  :   (Map[Text, Map[Text, Prototype]], Map[Text, Prototype], Map[Text, Foreign.Type]) =
 
     tokens match
       case Nil =>
@@ -194,7 +194,7 @@ object CHeaderDialect extends Dialect:
               declarations
                 ( skipStatement(after),
                   structs,
-                  functions.updated(function, Signature(params, result)),
+                  functions.updated(function, Prototype(params, result)),
                   typedefs )
 
           case _ =>
@@ -204,10 +204,10 @@ object CHeaderDialect extends Dialect:
   // `int`), or a simple `typedef <type> Alias;` alias.
   private def typedef
     ( tokens:    List[String],
-      structs:   Map[Text, Map[Text, Signature]],
-      functions: Map[Text, Signature],
+      structs:   Map[Text, Map[Text, Prototype]],
+      functions: Map[Text, Prototype],
       typedefs:  Map[Text, Foreign.Type] )
-  :   (Map[Text, Map[Text, Signature]], Map[Text, Signature], Map[Text, Foreign.Type]) =
+  :   (Map[Text, Map[Text, Prototype]], Map[Text, Prototype], Map[Text, Foreign.Type]) =
 
     tokens match
       case ("struct" | "union") :: name :: "{" :: more =>
@@ -242,8 +242,8 @@ object CHeaderDialect extends Dialect:
           declarations(skipStatement(after), structs, functions, typedefs.updated(alias, kind))
 
   // Reads a struct or union body's fields up to the closing `}`.
-  private def members(tokens: List[String], acc: Map[Text, Signature])
-  :   (Map[Text, Signature], List[String]) =
+  private def members(tokens: List[String], acc: Map[Text, Prototype])
+  :   (Map[Text, Prototype], List[String]) =
 
     tokens match
       case "}" :: rest =>
@@ -258,7 +258,7 @@ object CHeaderDialect extends Dialect:
         rest match
           case ";" :: more =>
             name.lay(members(more, acc)): field =>
-              members(more, acc.updated(field, Signature(Unset, kind)))
+              members(more, acc.updated(field, Prototype(Unset, kind)))
 
           case _ =>
             members(skipStatement(tokens), acc)
@@ -290,8 +290,8 @@ object CHeaderDialect extends Dialect:
 
   // Resolves every `typedef` alias appearing in a type, transitively.
   private def resolve
-    ( definitions: Map[Text, Map[Text, Signature]], typedefs: Map[Text, Foreign.Type] )
-  :   Map[Text, Map[Text, Signature]] =
+    ( definitions: Map[Text, Map[Text, Prototype]], typedefs: Map[Text, Foreign.Type] )
+  :   Map[Text, Map[Text, Prototype]] =
 
     def expand(foreign: Foreign.Type): Foreign.Type = foreign match
       case Foreign.Type.Named(name) =>
@@ -303,8 +303,8 @@ object CHeaderDialect extends Dialect:
       case Foreign.Type.Applied(constructor, arguments) =>
         Foreign.Type.Applied(constructor, arguments.map(expand))
 
-    def signature(sig: Signature): Signature =
-      Signature(sig.parameters.let(_.map(expand)), expand(sig.result))
+    def signature(sig: Prototype): Prototype =
+      Prototype(sig.parameters.let(_.map(expand)), expand(sig.result))
 
     definitions.map: (name, members) =>
       (name, members.map { (member, sig) => (member, signature(sig)) })

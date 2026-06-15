@@ -40,7 +40,7 @@ import vacuous.*
 // (`name: Type;`) and methods (`name(p: T, …): Type;`). It does not interpret the rest of the
 // language — unrecognised tokens between members are skipped.
 object TypescriptDialect extends Dialect:
-  def parse(source: Text): Map[Text, Map[Text, Signature]] = interfaces(tokenize(source.s), Map())
+  def parse(source: Text): Map[Text, Map[Text, Prototype]] = interfaces(tokenize(source.s), Map())
 
   // Splits the source into identifier and single-character punctuation tokens, discarding
   // whitespace; this is all the lexical structure the interface grammar needs.
@@ -65,8 +65,8 @@ object TypescriptDialect extends Dialect:
 
     recur(0, "", Nil)
 
-  private def interfaces(tokens: List[String], acc: Map[Text, Map[Text, Signature]])
-  :   Map[Text, Map[Text, Signature]] =
+  private def interfaces(tokens: List[String], acc: Map[Text, Map[Text, Prototype]])
+  :   Map[Text, Map[Text, Prototype]] =
 
     tokens match
       case "interface" :: name :: "{" :: rest =>
@@ -133,8 +133,8 @@ object TypescriptDialect extends Dialect:
           case ">" :: more => ((arg :: acc).reverse, more)
           case _           => arguments(rest, acc)
 
-  private def membersOf(tokens: List[String], acc: Map[Text, Signature])
-  :   (Map[Text, Signature], List[String]) =
+  private def membersOf(tokens: List[String], acc: Map[Text, Prototype])
+  :   (Map[Text, Prototype], List[String]) =
 
     tokens match
       case "}" :: rest =>
@@ -146,18 +146,18 @@ object TypescriptDialect extends Dialect:
         rest2 match
           case ":" :: rest3 =>
             val (result, rest4) = typeOf(rest3)
-            membersOf(semicolon(rest4), acc.updated(name.tt, Signature(parameters, result)))
+            membersOf(semicolon(rest4), acc.updated(name.tt, Prototype(parameters, result)))
 
           case _ =>
             (acc, rest2)
 
       case name :: "?" :: ":" :: rest =>
         val (result, rest2) = typeOf(rest)
-        membersOf(semicolon(rest2), acc.updated(name.tt, Signature(Unset, optional(result))))
+        membersOf(semicolon(rest2), acc.updated(name.tt, Prototype(Unset, optional(result))))
 
       case name :: ":" :: rest =>
         val (result, rest2) = typeOf(rest)
-        membersOf(semicolon(rest2), acc.updated(name.tt, Signature(Unset, result)))
+        membersOf(semicolon(rest2), acc.updated(name.tt, Prototype(Unset, result)))
 
       case _ :: rest =>
         membersOf(rest, acc)

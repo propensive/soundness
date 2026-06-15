@@ -43,4 +43,4 @@ object Styles:
 //
 //     given Styles at "/styles/app.css" = Styles(cp"/styles/app.css")
 //
-trait Styles extends Locatable
+trait Styles extends Locative

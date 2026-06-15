@@ -30,44 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package satirical
+package quantitative
 
 import anticipation.*
-import fulminate.*
 import gossamer.*
-import prepositional.*
-import turbulence.*
-import vacuous.*
 
-case class World(name: Ident, members: List[Import | Export])
-case class Interface(name: Ident, members: List[Primitive | Func])
-case class Ident(words: List[Text])
-case class Package(namespace: Ident, name: Ident, version: Optional[Text])
+object Ems:
+  given designation: Designation[Ems[1]] = () => t"em"
 
-case class Func(name: Ident, params: List[Primitive], returnType: Optional[Primitive])
-
-case class Use(namespace: Ident, ident: Ident)
-case class Import(ident: Ident)
-case class Export(ident: Ident)
-
-object Wit:
-  given aggregable: Wit is Aggregable by Data = parse(_)
-
-  def parse(input: Stream[Data]): Wit =
-    panic(m"satirical.Wit.parse is not yet implemented")
-
-case class Wit(entries: (World | Interface | Package)*)
-
-enum Primitive:
-  case Bool, S8, S16, S32, S64, U8, U16, U32, U64, F32, F64, Char, String
-  case List(elements: Primitive)
-  case Option(element: Primitive)
-  case Result(success: Primitive, failure: Primitive)
-  case Tuple(elements: Primitive*)
-  case Record(fields: (Ident, Primitive)*)
-  case Variant(variants: (Ident, Optional[Primitive])*)
-  case Enum(variants: Ident*)
-  case Resource(interface: Interface)
-  case Alias(name: Ident)
-
-extension (context: StringContext) def w(): Ident = Ident(context.parts.head.tt.cut(t"-"))
+sealed trait Ems[Power <: Nat] extends Units[Power, Typometry]

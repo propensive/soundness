@@ -30,16 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package urticose
+package jacinta
 
 import anticipation.*
-import prepositional.*
-import spectacular.*
+import fulminate.*
+import kaleidoscope.*
+import vacuous.*
 
-object Connectable:
-  given ipv4: Ipv4 is Connectable = _.show
-  given ipv6: Ipv6 is Connectable = _.show
-  given hostname: Hostname is Connectable = _.show
+object JsonBlueprintError:
+  object Reason:
+    given Reason is Communicable =
+      case JsonType(expected, found) => m"expected JSON type $expected, but found $found"
+      case MissingValue              => m"the value was missing"
 
-trait Connectable extends Typeclass:
-  def remote(remote: Self): Text
+      case IntOutOfRange(value, minimum, maximum) =>
+        if minimum.absent then m"the value was greater than the maximum, ${maximum.or(0)}"
+        else if maximum.absent then m"the value was less than the minimum, ${minimum.or(0)}"
+        else m"the value was not between ${minimum.or(0)} and ${maximum.or(0)}"
+
+      case PatternMismatch(value, pattern) =>
+        m"the value did not conform to the regular expression ${pattern.pattern}"
+
+  enum Reason(val number: Int) extends Clarification:
+    case JsonType(expected: JsonPrimitive, found: JsonPrimitive)                  extends Reason(1)
+    case MissingValue                                                             extends Reason(2)
+    case IntOutOfRange(value: Int, minimum: Optional[Int], maximum: Optional[Int]) extends Reason(3)
+    case PatternMismatch(value: Text, pattern: Regex)                             extends Reason(4)
+
+case class JsonBlueprintError(reason: JsonBlueprintError.Reason)(using Diagnostics)
+extends Error(624, reason.number)
+  ( m"the JSON was not valid according to the schema because $reason" )

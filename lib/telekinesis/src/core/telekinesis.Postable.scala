@@ -48,7 +48,7 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-import alphabets.base256.alphanumericOrBraille
+import alphabets.hex.lowerCase
 
 object Postable:
   def apply[response](mediaType0: MediaType, stream0: response => Stream[Data])
@@ -91,5 +91,5 @@ trait Postable extends Typeclass:
 
   def preview(value: Self): Text = stream(value).prim.lay(t""): data =>
     val sample = data.take(1024)
-    val string: Text = sample.serialize[Base256]
+    val string: Text = sample.serialize[Hex]
     if data.length > 128 then t"$string..." else string

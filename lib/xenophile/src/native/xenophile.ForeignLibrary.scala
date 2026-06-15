@@ -63,7 +63,7 @@ object ForeignLibrary:
     case Foreign.Type.Named(t"bool")   => ValueLayout.JAVA_BOOLEAN.nn
     case _                             => ValueLayout.ADDRESS.nn
 
-  def descriptor(signature: Signature): FunctionDescriptor =
+  def descriptor(signature: Prototype): FunctionDescriptor =
     val parameters = signature.parameters.or(Nil).map(layout)
 
     signature.result match
@@ -102,7 +102,7 @@ object ForeignLibrary:
     MemorySegment.copy(segment, ValueLayout.JAVA_BYTE, 0L, array, 0, length)
     array.immutable(using Unsafe)
 
-class ForeignLibrary(lookup: SymbolLookup, signatures: Map[Text, Signature]):
+class ForeignLibrary(lookup: SymbolLookup, signatures: Map[Text, Prototype]):
   // A bound `MethodHandle` for the named function, built from its parsed C
   // signature. Invoke it with `invokeWithArguments`, passing `MemorySegment`s for
   // pointer parameters and boxed primitives for the rest.

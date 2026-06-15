@@ -49,7 +49,7 @@ import urticose.*
 
 import strategies.throwUnsafely
 
-case class WebDriver(server: Browser#Server):
+case class WebDriver(server: Navigator#Server):
   private transparent inline def wd: this.type = this
 
   case class Session(sessionId: Text):

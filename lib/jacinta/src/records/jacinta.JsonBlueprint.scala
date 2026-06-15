@@ -47,37 +47,37 @@ import vacuous.*
 
 import strategies.throwUnsafely
 
-object RecordSchema:
-  given boolean: ("boolean" is Intensional in RecordSchema from Json to Boolean) =
-    RecordSchema.intensional(_.as[Boolean])
+object JsonBlueprint:
+  given boolean: ("boolean" is Intensional in JsonBlueprint from Json to Boolean) =
+    JsonBlueprint.intensional(_.as[Boolean])
 
 
   given optionalBoolean
-  :   ("boolean?" is Intensional in RecordSchema from Json to Optional[Boolean]) =
+  :   ("boolean?" is Intensional in JsonBlueprint from Json to Optional[Boolean]) =
 
     (value, params) => value.as[Optional[Boolean]]
 
 
-  given string: ("string" is Intensional in RecordSchema from Json to Text) =
-    RecordSchema.intensional(_.as[Text])
+  given string: ("string" is Intensional in JsonBlueprint from Json to Text) =
+    JsonBlueprint.intensional(_.as[Text])
 
-  given optionalText: ("string?" is Intensional in RecordSchema from Json to Optional[Text]) =
+  given optionalText: ("string?" is Intensional in JsonBlueprint from Json to Optional[Text]) =
     (value, params) => value.as[Optional[Text]]
 
-  given integer: ("integer" is Intensional in RecordSchema from Json to Int) =
-    RecordSchema.intensional(_.as[Int])
+  given integer: ("integer" is Intensional in JsonBlueprint from Json to Int) =
+    JsonBlueprint.intensional(_.as[Int])
 
-  given optionalInteger: ("integer?" is Intensional in RecordSchema from Json to Optional[Int]) =
+  given optionalInteger: ("integer?" is Intensional in JsonBlueprint from Json to Optional[Int]) =
     (value, params) => value.as[Optional[Int]]
 
 
   given boundedInteger
-  :   ("integer!" is Intensional in RecordSchema from Json to (Int raises BoundsError)) =
+  :   ("integer!" is Intensional in JsonBlueprint from Json to (Int raises BoundsError)) =
 
     new Intensional:
       type Self = "integer!"
       type Origin = Json
-      type Form = RecordSchema
+      type Form = JsonBlueprint
       type Result = Int raises BoundsError
 
       def transform(json: Json, params: List[Text]): Int raises BoundsError =
@@ -94,224 +94,226 @@ object RecordSchema:
             if int > max then abort(BoundsError(int, Double.MinValue, max)) else int
 
 
-  given number: ("number" is Intensional in RecordSchema from Json to Double) =
-    RecordSchema.intensional(_.as[Double])
+  given number: ("number" is Intensional in JsonBlueprint from Json to Double) =
+    JsonBlueprint.intensional(_.as[Double])
 
-  given optionalNumber: ("number?" is Intensional in RecordSchema from Json to Optional[Double]) =
+  given optionalNumber: ("number?" is Intensional in JsonBlueprint from Json to Optional[Double]) =
     (value, params) => value.as[Optional[Double]]
 
 
   given dateTime: [instant: Instantiable across Instants from Text]
-  =>  ( "date-time" is Intensional in RecordSchema from Json to instant ) =
+  =>  ( "date-time" is Intensional in JsonBlueprint from Json to instant ) =
 
-    RecordSchema.intensional(_.as[Text].instantiate)
+    JsonBlueprint.intensional(_.as[Text].instantiate)
 
 
   given optionalDateTime: [instant: Instantiable across Instants from Text]
-  =>  ( "date-time?" is Intensional in RecordSchema from Json to Optional[instant] ) =
+  =>  ( "date-time?" is Intensional in JsonBlueprint from Json to Optional[instant] ) =
 
-    RecordSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
+    JsonBlueprint.intensional(_.as[Optional[Text]].let(_.instantiate))
 
 
   given date: [date: Instantiable across Dates from Text]
-  =>  ( "date" is Intensional in RecordSchema from Json to date ) =
+  =>  ( "date" is Intensional in JsonBlueprint from Json to date ) =
 
-    RecordSchema.intensional(_.as[Text].instantiate)
+    JsonBlueprint.intensional(_.as[Text].instantiate)
 
 
   given optionalDate: [date: Instantiable across Dates from Text]
-  =>  ( "date?" is Intensional in RecordSchema from Json to Optional[date] ) =
+  =>  ( "date?" is Intensional in JsonBlueprint from Json to Optional[date] ) =
 
-    RecordSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
+    JsonBlueprint.intensional(_.as[Optional[Text]].let(_.instantiate))
 
 
   given time: [time: Instantiable across Times from Text]
-  =>  ( "time" is Intensional in RecordSchema from Json to time ) =
+  =>  ( "time" is Intensional in JsonBlueprint from Json to time ) =
 
-    RecordSchema.intensional(_.as[Text].instantiate)
+    JsonBlueprint.intensional(_.as[Text].instantiate)
 
 
   given optionalTime: [time: Instantiable across Times from Text]
-  =>  ( "time?" is Intensional in RecordSchema from Json to Optional[time] ) =
+  =>  ( "time?" is Intensional in JsonBlueprint from Json to Optional[time] ) =
 
-    RecordSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
+    JsonBlueprint.intensional(_.as[Optional[Text]].let(_.instantiate))
 
 
   given duration: [duration: Instantiable across Durations from Text]
-  =>  ( "duration" is Intensional in RecordSchema to duration ) =
+  =>  ( "duration" is Intensional in JsonBlueprint to duration ) =
 
-    RecordSchema.intensional(_.as[Text].instantiate)
+    JsonBlueprint.intensional(_.as[Text].instantiate)
 
 
   given optionalDuration: [duration: Instantiable across Durations from Text]
-  =>  ( "duration?" is Intensional in RecordSchema to Optional[duration] ) =
+  =>  ( "duration?" is Intensional in JsonBlueprint to Optional[duration] ) =
 
-    RecordSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
+    JsonBlueprint.intensional(_.as[Optional[Text]].let(_.instantiate))
 
 
-  given uriReference: ("uri-reference" is Intensional in RecordSchema from Json to Text) =
-    RecordSchema.intensional(_.as[Text])
+  given uriReference: ("uri-reference" is Intensional in JsonBlueprint from Json to Text) =
+    JsonBlueprint.intensional(_.as[Text])
 
 
   given optionalUriReference
-  :   ("uri-reference?" is Intensional in RecordSchema from Json to Optional[Text]) =
+  :   ("uri-reference?" is Intensional in JsonBlueprint from Json to Optional[Text]) =
 
-    RecordSchema.intensional(_.as[Optional[Text]])
+    JsonBlueprint.intensional(_.as[Optional[Text]])
 
 
   given email
-  :   ("email" is Intensional in RecordSchema from Json to (EmailAddress raises EmailAddressError))
+  :   ("email" is Intensional in JsonBlueprint from Json to (EmailAddress raises EmailAddressError))
   =
-    RecordSchema.intensional(_.as[EmailAddress])
+    JsonBlueprint.intensional(_.as[EmailAddress])
 
 
   given optionalEmail
-  :   ( "email?" is Intensional in RecordSchema from Json to
+  :   ( "email?" is Intensional in JsonBlueprint from Json to
             (Optional[EmailAddress] raises EmailAddressError) ) =
 
-    RecordSchema.intensional(_.as[Optional[EmailAddress]])
+    JsonBlueprint.intensional(_.as[Optional[EmailAddress]])
 
 
   given idnEmail
-  :   ( "idn-email" is Intensional in RecordSchema from Json to
+  :   ( "idn-email" is Intensional in JsonBlueprint from Json to
             (EmailAddress raises EmailAddressError) ) =
 
-    RecordSchema.intensional(_.as[EmailAddress])
+    JsonBlueprint.intensional(_.as[EmailAddress])
 
 
   given optionalIdnEmail
-  :   ( "idn-email?" is Intensional in RecordSchema from Json to
+  :   ( "idn-email?" is Intensional in JsonBlueprint from Json to
             (Optional[EmailAddress] raises EmailAddressError) ) =
 
-    RecordSchema.intensional(_.as[Optional[EmailAddress]])
+    JsonBlueprint.intensional(_.as[Optional[EmailAddress]])
 
 
   given hostname
-  :   ("hostname" is Intensional in RecordSchema from Json to (Hostname raises HostnameError)) =
+  :   ("hostname" is Intensional in JsonBlueprint from Json to (Hostname raises HostnameError)) =
 
-    RecordSchema.intensional(_.as[Hostname])
+    JsonBlueprint.intensional(_.as[Hostname])
 
 
   given optionalHostname
-  :   ( "hostname?" is Intensional in RecordSchema from Json to
+  :   ( "hostname?" is Intensional in JsonBlueprint from Json to
             (Optional[Hostname] raises HostnameError) ) =
 
-    RecordSchema.intensional(_.as[Hostname])
+    JsonBlueprint.intensional(_.as[Hostname])
 
 
-  given ipv4: ("ipv4" is Intensional in RecordSchema from Json to (Ipv4 raises IpAddressError)) =
-    RecordSchema.intensional(_.as[Ipv4])
+  given ipv4: ("ipv4" is Intensional in JsonBlueprint from Json to (Ipv4 raises IpAddressError)) =
+    JsonBlueprint.intensional(_.as[Ipv4])
 
 
   given optionalIpv4
-  :   ("ipv4?" is Intensional in RecordSchema from Json to (Optional[Ipv4] raises IpAddressError)) =
+  :   ( "ipv4?" is Intensional in JsonBlueprint from Json to
+        (Optional[Ipv4] raises IpAddressError) ) =
 
-    RecordSchema.intensional(_.as[Optional[Ipv4]])
+    JsonBlueprint.intensional(_.as[Optional[Ipv4]])
 
 
-  given ipv6: ("ipv6" is Intensional in RecordSchema from Json to (Ipv6 raises IpAddressError)) =
-    RecordSchema.intensional(_.as[Ipv6])
+  given ipv6: ("ipv6" is Intensional in JsonBlueprint from Json to (Ipv6 raises IpAddressError)) =
+    JsonBlueprint.intensional(_.as[Ipv6])
 
 
   given optionalIpv6
-  :   ("ipv6?" is Intensional in RecordSchema from Json to (Optional[Ipv6] raises IpAddressError)) =
+  :   ( "ipv6?" is Intensional in JsonBlueprint from Json to
+        (Optional[Ipv6] raises IpAddressError) ) =
 
-    RecordSchema.intensional(_.as[Optional[Ipv6]])
+    JsonBlueprint.intensional(_.as[Optional[Ipv6]])
 
 
   given uri: [url: Instantiable across Urls from Text]
-  =>  (  "uri" is Intensional in RecordSchema from Json to url  ) =
+  =>  (  "uri" is Intensional in JsonBlueprint from Json to url  ) =
 
-    RecordSchema.intensional: value => url.instantiate(value.as[Text])
+    JsonBlueprint.intensional: value => url.instantiate(value.as[Text])
 
 
   given optionalUri: [url: Instantiable across Urls from Text]
-  =>  (  "uri?" is Intensional in RecordSchema from Json to Optional[url]  ) =
+  =>  (  "uri?" is Intensional in JsonBlueprint from Json to Optional[url]  ) =
 
-    RecordSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
+    JsonBlueprint.intensional(_.as[Optional[Text]].let(_.instantiate))
 
 
   given iri: [url: Instantiable across Urls from Text]
-  =>  ( "iri" is Intensional in RecordSchema from Json to url ) =
+  =>  ( "iri" is Intensional in JsonBlueprint from Json to url ) =
 
-    RecordSchema.intensional:
+    JsonBlueprint.intensional:
       value => url.instantiate(value.as[Text])
 
 
   given optionalIri: [url: Instantiable across Urls from Text]
-  =>  (  "iri?" is Intensional in RecordSchema from Json to Optional[url]  ) =
+  =>  (  "iri?" is Intensional in JsonBlueprint from Json to Optional[url]  ) =
 
-    RecordSchema.intensional(_.as[Optional[Text]].let(_.instantiate))
+    JsonBlueprint.intensional(_.as[Optional[Text]].let(_.instantiate))
 
 
-  given iriReference: ("iri-reference" is Intensional in RecordSchema from Json to Text) =
-    RecordSchema.intensional(_.as[Text])
+  given iriReference: ("iri-reference" is Intensional in JsonBlueprint from Json to Text) =
+    JsonBlueprint.intensional(_.as[Text])
 
 
   given optionalIriReference
-  :   ("iri-reference?" is Intensional in RecordSchema from Json to Optional[Text]) =
+  :   ("iri-reference?" is Intensional in JsonBlueprint from Json to Optional[Text]) =
 
-    RecordSchema.intensional(_.as[Optional[Text]])
+    JsonBlueprint.intensional(_.as[Optional[Text]])
 
 
-  given uuid: ("uuid" is Intensional in RecordSchema from Json to (Uuid raises UuidError)) =
-    RecordSchema.intensional(_.as[Uuid])
+  given uuid: ("uuid" is Intensional in JsonBlueprint from Json to (Uuid raises UuidError)) =
+    JsonBlueprint.intensional(_.as[Uuid])
 
 
   given optionalUuid
-  :   ("uuid?" is Intensional in RecordSchema from Json to (Optional[Uuid] raises UuidError)) =
+  :   ("uuid?" is Intensional in JsonBlueprint from Json to (Optional[Uuid] raises UuidError)) =
 
-    RecordSchema.intensional(_.as[Optional[Uuid]])
+    JsonBlueprint.intensional(_.as[Optional[Uuid]])
 
 
-  given uriTemplate: ("uri-template" is Intensional in RecordSchema from Json to Text) =
-    RecordSchema.intensional(_.as[Text])
+  given uriTemplate: ("uri-template" is Intensional in JsonBlueprint from Json to Text) =
+    JsonBlueprint.intensional(_.as[Text])
 
 
   given optionalUriTemplate
-  :   ("uri-template?" is Intensional in RecordSchema from Json to Optional[Text]) =
+  :   ("uri-template?" is Intensional in JsonBlueprint from Json to Optional[Text]) =
 
-    RecordSchema.intensional(_.as[Optional[Text]])
+    JsonBlueprint.intensional(_.as[Optional[Text]])
 
 
-  given jsonPointer: ("json-pointer" is Intensional in RecordSchema from Json to JsonPointer) =
-    RecordSchema.intensional(_.as[JsonPointer])
+  given jsonPointer: ("json-pointer" is Intensional in JsonBlueprint from Json to JsonPointer) =
+    JsonBlueprint.intensional(_.as[JsonPointer])
 
 
   given optionalJsonPointer
-  :   ("json-pointer?" is Intensional in RecordSchema from Json to Optional[JsonPointer]) =
+  :   ("json-pointer?" is Intensional in JsonBlueprint from Json to Optional[JsonPointer]) =
 
-    RecordSchema.intensional(_.as[Optional[JsonPointer]])
+    JsonBlueprint.intensional(_.as[Optional[JsonPointer]])
 
 
-  given regex: ("regex" is Intensional in RecordSchema from Json to Regex) =
-    RecordSchema.intensional: value => Regex(value.as[Text])
+  given regex: ("regex" is Intensional in JsonBlueprint from Json to Regex) =
+    JsonBlueprint.intensional: value => Regex(value.as[Text])
 
-  given optionalRegex: ("regex?" is Intensional in RecordSchema from Json to Optional[Regex]) =
-    RecordSchema.intensional(_.as[Optional[Text]].let(Regex(_)))
+  given optionalRegex: ("regex?" is Intensional in JsonBlueprint from Json to Optional[Regex]) =
+    JsonBlueprint.intensional(_.as[Optional[Text]].let(Regex(_)))
 
-  given array: ("array" is Structural[List] in RecordSchema from Json) = _.as[List[Json]].map(_)
+  given array: ("array" is Structural[List] in JsonBlueprint from Json) = _.as[List[Json]].map(_)
 
 
   given optionalArray
-  :   ("array?" is Structural[[element] =>> Optional[List[element]]] in RecordSchema from Json) =
+  :   ("array?" is Structural[[element] =>> Optional[List[element]]] in JsonBlueprint from Json) =
 
     (value, make) => value.as[List[Json]].map(make)
 
 
-  given module: ("object" is Structural[[Type] =>> Type] in RecordSchema from Json) =
+  given module: ("object" is Structural[[Type] =>> Type] in JsonBlueprint from Json) =
     (value, make) => make(value)
 
 
   given optionalModule
-  :   ("object?" is Structural[[value] =>> Optional[value]] in RecordSchema from Json) =
+  :   ("object?" is Structural[[value] =>> Optional[value]] in JsonBlueprint from Json) =
 
     (value, make) => make(value)
 
 
   given pattern: ("pattern" is Intensional):
     type Origin = Json
-    type Form = RecordSchema
+    type Form = JsonBlueprint
     type Result = Text
 
     def transform(value: Json, params: List[Text]): Text = params.absolve match
@@ -320,11 +322,12 @@ object RecordSchema:
 
         if regex.matches(value.as[Text]) then value.as[Text]
         else
-          abort(RecordSchemaError(RecordSchemaError.Reason.PatternMismatch(value.as[Text], regex)))
+          abort:
+            JsonBlueprintError(JsonBlueprintError.Reason.PatternMismatch(value.as[Text], regex))
 
   given optionalPattern: ("pattern?" is Intensional):
     type Origin = Json
-    type Form = RecordSchema
+    type Form = JsonBlueprint
     type Result = Optional[Text]
 
     def transform(value: Json, params: List[Text] = Nil): Optional[Text] = params.absolve match
@@ -333,7 +336,8 @@ object RecordSchema:
 
         if regex.matches(value.as[Text]) then value.as[Text]
         else
-          abort(RecordSchemaError(RecordSchemaError.Reason.PatternMismatch(value.as[Text], regex)))
+          abort:
+            JsonBlueprintError(JsonBlueprintError.Reason.PatternMismatch(value.as[Text], regex))
 
   def record(data0: Json, access0: Text => Json => Any): Record = new Record:
     type Origin = Json
@@ -344,12 +348,12 @@ object RecordSchema:
 
 
   def intensional[name <: Label, value](accessor: Json => value)
-  :   name is Intensional in RecordSchema from Json to value =
+  :   name is Intensional in JsonBlueprint from Json to value =
 
     new Intensional:
       type Self = name
       type Origin = Json
-      type Form = RecordSchema
+      type Form = JsonBlueprint
       type Result = value
 
       def access(value: Json): value = accessor(value)
@@ -400,10 +404,10 @@ object RecordSchema:
       case other =>
         Member.Value(if required then other else other+"?")
 
-abstract class RecordSchema(val doc: RecordSchemaDoc) extends Specification:
+abstract class JsonBlueprint(val doc: JsonBlueprintDoc) extends Specification:
   type Origin = Json
-  type Form = RecordSchema
+  type Form = JsonBlueprint
 
   def access(name: Text, json: Json): Json = json(name)
-  def build(data: Json, access: Text => Json => Any): Record = RecordSchema.record(data, access)
+  def build(data: Json, access: Text => Json => Any): Record = JsonBlueprint.record(data, access)
   def fields: Map[Text, Member] = unsafely(doc.fields)

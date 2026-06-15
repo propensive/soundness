@@ -30,6 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package monotonous
+package decorum
 
-sealed trait Base256 extends Serialization
+enum Sort:
+  case Code, Strs, Comment, Space
+
+case class Lexeme(text: String, kind: Sort):
+  def length: Int = text.length
+

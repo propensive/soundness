@@ -1018,13 +1018,13 @@ object Tests extends Suite(m"Stratiform Tests"):
         Tel.show(updated.document.vouch)
       . assert(_ == t"# header\nname Alice\nemail b@example.com\n")
 
-      test(m"a multi-step Edit log round-trips through the printer"):
+      test(m"a multi-step Revision log round-trips through the printer"):
         val original = doc("name Alice\n")
         val edited =
           original.edited
-            ( Edit.at(Tel.Pointer.of(t"name")).update(t"Bob")
-           ++ Edit.at(Tel.Pointer.Empty)
-                  .insert(Edit.compound(t"email", t"b@example.com")) )
+            ( Revision.at(Tel.Pointer.of(t"name")).update(t"Bob")
+           ++ Revision.at(Tel.Pointer.Empty)
+                  .insert(Revision.compound(t"email", t"b@example.com")) )
 
         val printed   = Tel.show(edited.document.vouch)
         val reparsed  = printed.s.tt.read[Tel]
@@ -1092,39 +1092,39 @@ object Tests extends Suite(m"Stratiform Tests"):
         Tel.show(updated.document.vouch)
       . assert(_ == t"# header\ncontacts\n  contact alice\n  contact carol\n")
 
-    suite(m"Edit DSL"):
+    suite(m"Revision DSL"):
       def doc(source: String): Tel = source.tt.read[Tel]
 
       test(m"single-op edit changes one atom"):
         val tel  = doc("name Alice\n")
-        val edit = Edit.at(Tel.Pointer.of(t"name")).update(t"Bob")
+        val edit = Revision.at(Tel.Pointer.of(t"name")).update(t"Bob")
         Tel.show(tel.edited(edit).document.vouch)
       . assert(_ == t"name Bob\n")
 
       test(m"chained edits apply in order"):
         val tel = doc("name Alice\n")
-        val edit = Edit.at(Tel.Pointer.of(t"name")).update(t"Bob")
-                ++ Edit.at(Tel.Pointer.of(t"name")).attachRemark(t"note")
+        val edit = Revision.at(Tel.Pointer.of(t"name")).update(t"Bob")
+                ++ Revision.at(Tel.Pointer.of(t"name")).attachRemark(t"note")
 
         Tel.show(tel.edited(edit).document.vouch)
       . assert(_ == t"name Bob  # note\n")
 
-      test(m"Edit.compound helper builds an inline-atom compound"):
-        val c = Edit.compound(t"email", t"a@b.c")
+      test(m"Revision.compound helper builds an inline-atom compound"):
+        val c = Revision.compound(t"email", t"a@b.c")
         c.keyword
       . assert(_ == t"email")
 
-      test(m"inserting via Edit composes with deletion"):
+      test(m"inserting via Revision composes with deletion"):
         val tel  = doc("a 1\nb 2\n")
-        val edit = Edit.at(Tel.Pointer.of(t"b")).delete
-                ++ Edit.at(Tel.Pointer.of(t"a")).insertAfter(Edit.compound(t"c", t"3"))
+        val edit = Revision.at(Tel.Pointer.of(t"b")).delete
+                ++ Revision.at(Tel.Pointer.of(t"a")).insertAfter(Revision.compound(t"c", t"3"))
 
         Tel.show(tel.edited(edit).document.vouch)
       . assert(_ == t"a 1\nc 3\n")
 
       test(m"noop edit returns the document unchanged"):
         val tel = doc("name Alice\n")
-        Tel.show(tel.edited(Edit.noop).document.vouch)
+        Tel.show(tel.edited(Revision.noop).document.vouch)
       . assert(_ == t"name Alice\n")
 
     suite(m"Negative corpus (E1xx parsing)"):

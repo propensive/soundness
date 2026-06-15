@@ -69,7 +69,7 @@ object Tabulable extends ProductDerivation[[row] =>> row is Tabulable[Text]]:
       ( Column(t"", TextAlignment.Right, Unset, columnar.Collapsible(0.3))(_.show) )
 
   given text: Text is Tabulable[Text] = () =>
-    Scaffold[Text, Text](Column(t"", TextAlignment.Left, Unset, columnar.Prose)(identity))
+    Scaffold[Text, Text](Column(t"", TextAlignment.Left, Unset, columnar.Paragraph)(identity))
 
 trait Tabulable[text] extends Typeclass:
   def table(): Scaffold[Self, text]

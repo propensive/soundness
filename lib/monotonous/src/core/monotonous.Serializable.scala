@@ -75,7 +75,6 @@ object Serializable:
   given hex: Alphabet[Hex] => Serializable in Hex = base(4)
   given base32: Alphabet[Base32] => Serializable in Base32 = base(5)
   given base64: Alphabet[Base64] => Serializable in Base64 = base(6)
-  given base256: Alphabet[Base256] => Serializable in Base256 = base(8)
 
 trait Serializable extends Findable:
   type Form <: Serialization

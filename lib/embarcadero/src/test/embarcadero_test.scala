@@ -350,7 +350,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val namespace = Promise[Text]()
 
           val list =
-            ListTasksResponse(List(Process(t"web", t"", 4321, ProcessStatus.Running.code)))
+            ListTasksResponse(List(Workload(t"web", t"", 4321, ProcessStatus.Running.code)))
 
           val body = GrpcFraming.encode(list.protobuf.encode)
           runServer(serverSide, namespace, body)

@@ -30,23 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package embarcadero
+package tarantula
 
+import ambience.*
 import anticipation.*
-import gossamer.*
-import locomotion.field
-import vacuous.*
+import guillotine.*
+import parasite.*
+import telekinesis.*
 
-// A task's process state (`containerd.v1.types.Process`, a subset): which container and
-// exec it belongs to, its `pid`, the raw `status` code, and the exit status/time once
-// it has stopped. `state` decodes the status code to the `ProcessStatus` enum.
-case class Process
-  ( @field(1)  containerId: Text      = t"",
-    @field(2)  id:          Text      = t"",
-    @field(3)  pid:         Int       = 0,
-    @field(4)  status:      Int       = 0,
-    @field(9)  exitStatus:  Int       = 0,
-    @field(10) exitedAt:    Timestamp = Timestamp() )
-derives CanEqual:
+trait Navigator(name: Text):
+  transparent inline def browser = this
 
-  def state: ProcessStatus = ProcessStatus.of(status).or(ProcessStatus.Unknown)
+  case class Server(port: Int, value: Job[Label, Text]):
+    def stop(): Unit logs ExecEvent logs HttpEvent = browser.stop(this)
+
+  def launch(port: Int)(using WorkingDirectory, Monitor): Server logs ExecEvent
+  def stop(server: Server): Unit logs HttpEvent logs ExecEvent
+
+
+  def session[result](port: Int = 4444)(block: (session: WebDriver#Session) ?=> result)
+    ( using WorkingDirectory, Monitor )
+  :   result logs HttpEvent logs ExecEvent =
+
+    val server = launch(port)
+    try block(using WebDriver(server).startSession()) finally server.stop()

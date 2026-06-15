@@ -30,27 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package tarantula
+package urticose
 
-import ambience.*
 import anticipation.*
-import guillotine.*
-import parasite.*
-import telekinesis.*
+import prepositional.*
+import spectacular.*
 
-trait Browser(name: Text):
-  transparent inline def browser = this
+object Remotable:
+  given ipv4: Ipv4 is Remotable = _.show
+  given ipv6: Ipv6 is Remotable = _.show
+  given hostname: Hostname is Remotable = _.show
 
-  case class Server(port: Int, value: Job[Label, Text]):
-    def stop(): Unit logs ExecEvent logs HttpEvent = browser.stop(this)
-
-  def launch(port: Int)(using WorkingDirectory, Monitor): Server logs ExecEvent
-  def stop(server: Server): Unit logs HttpEvent logs ExecEvent
-
-
-  def session[result](port: Int = 4444)(block: (session: WebDriver#Session) ?=> result)
-    ( using WorkingDirectory, Monitor )
-  :   result logs HttpEvent logs ExecEvent =
-
-    val server = launch(port)
-    try block(using WebDriver(server).startSession()) finally server.stop()
+trait Remotable extends Typeclass:
+  def remote(remote: Self): Text

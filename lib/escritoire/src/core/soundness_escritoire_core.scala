@@ -45,4 +45,4 @@ package tableStyles:
   export escritoire.tableStyles.{default, horizontal, midOnly, minimal, thinRounded, vertical}
 
 package columnar:
-  export escritoire.columnar.{Collapsible, Fixed, Prose, Shortened}
+  export escritoire.columnar.{Collapsible, Fixed, Paragraph, Shortened}

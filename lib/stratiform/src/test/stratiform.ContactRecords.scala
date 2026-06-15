@@ -41,7 +41,7 @@ import vacuous.*
 
 import Tels.{Field, Polarity, Scalar, Struct}
 
-// Hand-built TEL schema for the Polyvinyl `RecordSchema` tests:
+// Hand-built TEL schema for the Polyvinyl `TelBlueprint` tests:
 // a `Contact` record with a required `name` (String scalar), an
 // optional `email` (String scalar), and a required `age` (identifier).
 object ContactSchemaFixture:
@@ -59,10 +59,10 @@ object ContactSchemaFixture:
     scalars  = IArray.empty,
     selects  = IArray.empty)
 
-// User-defined RecordSchema with the polyvinyl `record` inline-macro
+// User-defined TelBlueprint with the polyvinyl `record` inline-macro
 // entry point. Lives in its own file so its macro can be expanded
 // without a cyclic dependency from the call-site test file.
-object ContactRecords extends RecordSchema(ContactSchemaFixture.tels):
+object ContactRecords extends TelBlueprint(ContactSchemaFixture.tels):
   transparent inline def record(tel: Tel): Record = ${build('tel)}
 
 // A second schema with a Flag-typed field for the boolean records test.
@@ -79,5 +79,5 @@ object FeatureSchemaFixture:
     scalars  = IArray.empty,
     selects  = IArray.empty)
 
-object FeatureRecords extends RecordSchema(FeatureSchemaFixture.tels):
+object FeatureRecords extends TelBlueprint(FeatureSchemaFixture.tels):
   transparent inline def record(tel: Tel): Record = ${build('tel)}

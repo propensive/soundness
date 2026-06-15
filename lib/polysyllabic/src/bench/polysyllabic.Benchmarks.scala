@@ -38,7 +38,7 @@ import ambience.*, environments.java, systems.java
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import escritoire.*
-import escritoire.columnar.Prose
+import escritoire.columnar.Paragraph
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContext
@@ -74,7 +74,7 @@ object Benchmarks extends Suite(m"Polysyllabic benchmarks"):
   // Wrap the whole text to 80 columns with English hyphenation in scope. The
   // returned line count keeps the JIT honest — anything dead-coded would
   // collapse this to zero.
-  def wrapAt80(text: Text): Int = Prose.fit[Text](IArray(text), 80, TextAlignment.Left).length
+  def wrapAt80(text: Text): Int = Paragraph.fit[Text](IArray(text), 80, TextAlignment.Left).length
 
   // Insert soft-hyphens at every admissible break point in every word. Exercises
   // the Liang algorithm on every word, regardless of column width — a tighter

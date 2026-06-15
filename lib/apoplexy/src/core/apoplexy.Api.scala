@@ -176,7 +176,7 @@ object Api:
           val response = dispatch(t"application/xml")
           compiletime.summonInline[(value is Conformant) over xylophone.Xml].read(response)
 
-trait Api extends Dynamic, Locatable, Transportive:
+trait Api extends Dynamic, Locative, Transportive:
   def request: Api.Request
 
   transparent inline def selectDynamic(field: String): Any =

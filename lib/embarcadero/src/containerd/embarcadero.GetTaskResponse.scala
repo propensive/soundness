@@ -35,4 +35,4 @@ package embarcadero
 import locomotion.field
 
 // The reply from `Tasks.Get`: the requested process state.
-case class GetTaskResponse(@field(1) process: Process = Process()) derives CanEqual
+case class GetTaskResponse(@field(1) process: Workload = Workload()) derives CanEqual

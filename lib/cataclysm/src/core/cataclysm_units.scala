@@ -40,7 +40,6 @@ import quantitative.*
 // units (cm, mm, in, pt, pc) reuse Quantitative's `Distance` dimension and
 // interconvert with one another as usual.
 sealed trait CssPixel extends Dimension
-sealed trait CssFontSize extends Dimension
 sealed trait CssRootFontSize extends Dimension
 sealed trait CssXHeight extends Dimension
 sealed trait CssCharacterWidth extends Dimension
@@ -51,7 +50,6 @@ sealed trait CssViewportMax extends Dimension
 sealed trait CssRatio extends Dimension
 
 trait Pixels[Power <: Nat] extends Units[Power, CssPixel]
-trait Ems[Power <: Nat] extends Units[Power, CssFontSize]
 trait Rems[Power <: Nat] extends Units[Power, CssRootFontSize]
 trait Exs[Power <: Nat] extends Units[Power, CssXHeight]
 trait Chs[Power <: Nat] extends Units[Power, CssCharacterWidth]
@@ -79,7 +77,6 @@ trait Flexes[Power <: Nat] extends Units[Power, CssFlex]
 // `CssConvertible`), so `Cm`/`Mm`/`S`/`Ms` are convenient magnitudes, not new
 // types — `Inch`, `Centi(Metre)`, `Milli(Second)` etc. work just as well.
 val Px: Quantity[Pixels[1]] = Quantity(1.0)
-val Em: Quantity[Ems[1]] = Quantity(1.0)
 val Rem: Quantity[Rems[1]] = Quantity(1.0)
 val Ex: Quantity[Exs[1]] = Quantity(1.0)
 val Ch: Quantity[Chs[1]] = Quantity(1.0)

@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export anticipation.{bytestream, Data, Encodable, Schema, Schematic, Shape}
+export anticipation.{bytestream, Data, Encodable, Schema, Schematic, Morphology}

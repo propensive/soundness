@@ -34,6 +34,5 @@ package phoenicia
 
 import quantitative.*
 
-val Em: Quantity[Ems[1]] = Quantity(1.0)
 
 export phoenicia.internal.Glyph

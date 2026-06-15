@@ -50,7 +50,7 @@ extension (inline context: StringContext)
 
 
 extension (tel: Tel)
-  def edited(edit: Edit): Tel raises MutationError = edit(tel)
+  def edited(revision: Revision): Tel raises MutationError = revision(tel)
 
 
 extension (tel: Tel)

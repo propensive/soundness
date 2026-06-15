@@ -163,6 +163,5 @@ object Tests extends Suite(m"Soundness tests"):
 object FailingTests extends Suite(m"Failing tests"):
   def run(): Unit =
     jacinta.ParserTests()
-    satirical.Tests()
     telekinesis.Tests()
     // turbulence.Tests() - deadlock

@@ -35,4 +35,4 @@ package embarcadero
 import locomotion.field
 
 // The reply from `Tasks.List`: the matching task processes.
-case class ListTasksResponse(@field(1) tasks: List[Process] = Nil) derives CanEqual
+case class ListTasksResponse(@field(1) tasks: List[Workload] = Nil) derives CanEqual
