@@ -28,15 +28,15 @@ protocol.
 
 ## Getting Started
 
-### Browser Sessions
+### Navigator Sessions
 
 _Tarantula_ makes it possible to control a web browser programmatically from Scala. Currently [Firefox](https://www.mozilla.org/en-GB/firefox/new/) and [Chrome](https://www.google.com/chrome/) are supported.
 
 All browser operations take place in a _session_, which may be started by calling the `session` method, specifying a port number, on
-a `Browser` object; either `Chrome` or `Firefox`. For example:
+a `Navigator` object; either `Chrome` or `Firefox`. For example:
 ```scala
 Firefox.session(8120):
-  // Browser actions are carried out in this scope
+  // Navigator actions are carried out in this scope
 ```
 
 ### Simple navigation

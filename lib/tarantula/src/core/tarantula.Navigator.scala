@@ -38,7 +38,7 @@ import guillotine.*
 import parasite.*
 import telekinesis.*
 
-trait Browser(name: Text):
+trait Navigator(name: Text):
   transparent inline def browser = this
 
   case class Server(port: Int, value: Job[Label, Text]):

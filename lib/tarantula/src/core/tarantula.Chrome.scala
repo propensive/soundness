@@ -43,7 +43,7 @@ import telekinesis.*
 import abstractables.instantIsAbstractable
 import strategies.throwUnsafely
 
-object Chrome extends Browser(t"chrome"):
+object Chrome extends Navigator(t"chrome"):
   def launch(port: Int)(using WorkingDirectory, Monitor): Server logs ExecEvent =
     val server: Job["chromedriver", Text] = sh"chromedriver --port=$port".fork()
     sleep(100L)
