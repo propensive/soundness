@@ -33,16 +33,31 @@
 package wisteria
 
 import scala.compiletime.*
+import scala.deriving.Mirror
+import scala.reflect.ClassTag
 
 import anticipation.*
+import contingency.*
 import denominative.*
+import fulminate.*
+import rudiments.*
 import vacuous.*
 
 object SumDerivation:
   trait Methods[typeclass[_]]:
 
     transparent inline def choice[derivation: SumReflection]: Boolean =
-      ${wisteria.internal.isChoice[derivation]}
+      inline !![derivation.MirroredElemTypes] match
+        case _: (variant *: variants) => all[variant, variants]
+
+    private transparent inline def all[variant, variants <: Tuple]: Boolean = summonFrom:
+      case given (variant <:< Singleton) =>
+        inline !![variants] match
+          case _: Zero                  => true
+          case _: (variant *: variants) => all[variant, variants]
+
+      case _ =>
+        false
 
 
     protected transparent inline def complement[derivation, variant](sum: derivation)
@@ -50,20 +65,27 @@ object SumDerivation:
               reflection:   SumReflection[derivation] )
     :   Optional[variant] =
 
-      ${wisteria.internal.complementVariant[derivation, variant]('sum, 'variantIndex)}
+      type Labels = reflection.MirroredElemLabels
+      type Variants = reflection.MirroredElemTypes
+
+      val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
+
+      fold[derivation, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
+        [variant2 <: derivation] => field =>
+          if index == variantIndex() then field.asInstanceOf[variant] else Unset
 
 
     protected inline def variantLabels[derivation](using reflection: SumReflection[derivation])
     :   List[Text] =
 
-      ${wisteria.internal.variantLabels[derivation]}
+      constValueTuple[reflection.MirroredElemLabels].toList.map(_.toString.tt)
 
 
     // A value-less fold over every variant of the sum — the sum analogue of `contexts` — yielding
     // the `lambda`'s result for each, with its typeclass instance, label and index in scope. Used
     // for schemas and other instance-free derivations needing a variant without a dispatch value.
     protected transparent inline def choices[derivation]
-      ( using reflection:  SumReflection[derivation] )
+      ( using reflection: SumReflection[derivation] )
       [ result ]
       ( inline lambda:  [variant <: derivation] => typeclass[variant]
                         =>  ( typeclass[variant] aka "contextual",
@@ -71,14 +93,82 @@ object SumDerivation:
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   IArray[result] =
 
-      ${wisteria.internal.choicesSum[typeclass, derivation, result]('lambda)}
+      type Labels = reflection.MirroredElemLabels
+      type Variants = reflection.MirroredElemTypes
+
+      provide[ClassTag[result]]:
+        val array = new Array[result](valueOf[Tuple.Size[Variants]])
+
+        choicesFold[derivation, Variants, Labels, Unit]((), 0): accumulator =>
+          [variant <: derivation] => context ?=>
+            array(index) = lambda[variant](context)
+
+        array.immutable(using Unsafe)
+
+
+    private transparent inline def choicesFold
+      [ derivation, variants <: Tuple, labels <: Tuple, result ]
+      ( inline accumulator: result, index: Int )
+      ( inline lambda:  result => [variant <: derivation] => typeclass[variant]
+                        =>  ( typeclass[variant] aka "contextual",
+                              Text aka "label",
+                              (Int & VariantIndex[variant]) aka "index" ) ?=> result )
+    :   result =
+
+      inline !![variants] match
+        case _: Zero => accumulator
+
+        case _: (variant *: moreVariants) =>
+          inline !![labels] match
+            case _: (label *: moreLabels) => inline valueOf[label].asMatchable match
+              case label: String =>
+                type variant0 = variant & derivation
+
+                val typeclass = wisteria.internal.field[typeclass, variant0]
+
+                val variantIndex: Int & VariantIndex[variant0] =
+                  VariantIndex[variant0](index)
+
+                val accumulator2 =
+                  lambda(accumulator)[variant0](typeclass)
+                    ( using typeclass.aka["contextual"],
+                            label.tt.aka["label"],
+                            variantIndex.aka["index"] )
+
+                choicesFold[derivation, moreVariants, moreLabels, result]
+                  ( accumulator2, index + 1 )
+                  ( lambda )
 
 
     protected transparent inline def singleton[derivation](input: Text)
       ( using reflection: SumReflection[derivation] )
     :   derivation =
 
-      ${wisteria.internal.singletonByLabel[derivation]('input)}
+      type Variants = reflection.MirroredElemTypes
+      type Labels = reflection.MirroredElemLabels
+
+      singletonFold[derivation, Variants, Labels](_ == input).or:
+        provide[Tactic[VariantError]]:
+          abort(VariantError[derivation](input))
+
+
+    private transparent inline def singletonFold[derivation, variants <: Tuple, labels <: Tuple]
+      ( using reflection: SumReflection[derivation] )
+      ( predicate: Text => Boolean )
+    :   Optional[derivation] =
+
+      inline !![variants] match
+        case _: (variant *: variants) =>
+          inline !![labels] match
+            case _: (label *: labelsType) =>
+              type variant0 = variant & derivation
+
+              if predicate(valueOf[label & String].tt)
+              then infer[Mirror.ProductOf[variant0]].fromProduct(Zero)
+              else singletonFold[derivation, variants, labelsType](predicate)
+
+        case _ =>
+          Unset
 
 
     protected transparent inline def delegate[derivation](delegation: Text)
@@ -90,11 +180,21 @@ object SumDerivation:
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   result =
 
-      ${wisteria.internal.delegateDispatch[typeclass, derivation, result]('delegation, 'lambda)}
+      type Labels = reflection.MirroredElemLabels
+      type Variants = reflection.MirroredElemTypes
+
+      val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
+
+      // Here label comes from context of fold's predicate
+      fold[derivation, Variants, Labels](delegation, size, 0, true)(label == delegation):
+        [variant <: derivation] =>
+          lambda[variant](_)
+
+      . vouch
 
 
     protected transparent inline def variant[derivation](sum: derivation)
-      ( using reflection:  SumReflection[derivation] )
+      ( using reflection: SumReflection[derivation] )
       [ result ]
       ( inline lambda:  [variant <: derivation]
                         =>  variant
@@ -103,7 +203,108 @@ object SumDerivation:
                               Int & VariantIndex[variant] aka "index" ) ?=> result )
     :   result =
 
-      ${wisteria.internal.variantDispatch[typeclass, derivation, result]('sum, 'lambda)}
+      type Labels = reflection.MirroredElemLabels
+      type Variants = reflection.MirroredElemTypes
+
+      val size: Int = valueOf[Tuple.Size[reflection.MirroredElemTypes]]
+
+      fold[derivation, Variants, Labels](sum, size, 0, false)(index == reflection.ordinal(sum)):
+        [variant <: derivation] => variant =>
+          lambda[variant](variant)
+
+      . vouch
+
+
+    private transparent inline def fold[derivation, variants <: Tuple, labels <: Tuple]
+      ( inline inputLabel: Text, size: Int, index: Int, fallible: Boolean )
+      ( using reflection: SumReflection[derivation] )
+      ( inline predicate:
+          (Text aka "label", Int & VariantIndex[derivation] aka "index") ?=> Boolean )
+      [ result ]
+      ( inline lambda:  [variant <: derivation]
+                        =>  typeclass[variant]
+                        =>  ( typeclass[variant] aka "contextual",
+                              Text aka "label",
+                              Int & VariantIndex[variant] aka "index" ) ?=> result )
+    :   Optional[result] =
+
+      inline !![variants] match
+        case _: (variant *: variants) =>
+          inline !![labels] match
+            case _: (label *: moreLabels) =>
+              type variant0 = variant & derivation
+
+              if index >= size then Unset else
+                (valueOf[label].asMatchable: @unchecked) match
+                  case label: String =>
+                    val index2: Int & VariantIndex[derivation] = VariantIndex[derivation](index)
+
+                    if predicate(using label.tt.aka["label"], index2.aka["index"])
+                    then
+                      val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
+                      val context = wisteria.internal.field[typeclass, variant0]
+
+                      lambda[variant0](context)
+                        ( using context.aka["contextual"],
+                                label.tt.aka["label"],
+                                index3.aka["index"] )
+                    else
+                      fold
+                        [ derivation, variants, moreLabels ]
+                        ( inputLabel, size, index + 1, fallible )
+                        ( predicate )
+                        ( lambda )
+
+        case _ =>
+          inline if fallible
+          then provide[Tactic[VariantError]]:
+            abort(VariantError[derivation](inputLabel))
+          else panic(m"Should be unreachable")
+
+
+    private transparent inline def fold[derivation, variants <: Tuple, labels <: Tuple]
+      ( inline sum: derivation, size: Int, index: Int, fallible: Boolean )
+      ( using reflection: SumReflection[derivation] )
+      ( inline predicate: ( label: Text aka "label",
+                            index: Int & VariantIndex[derivation] aka "index" )
+                          ?=> Boolean )
+      [ result ]
+      ( inline lambda:  [variant <: derivation]
+                        =>  variant
+                        =>  ( typeclass[variant] aka "contextual",
+                              Text aka "label",
+                              Int & VariantIndex[variant] aka "index" ) ?=> result )
+    :   Optional[result] =
+
+      inline !![variants] match
+        case _: (variant *: variants) =>
+          inline !![labels] match
+            case _: (label *: moreLabels) =>
+              type variant0 = variant & derivation
+
+              if index >= size then Unset else
+                (valueOf[label].asMatchable: @unchecked) match
+                  case label: String =>
+                    val index2: Int & VariantIndex[derivation] = VariantIndex[derivation](index)
+
+                    if predicate(using label.tt.aka["label"], index2.aka["index"]) then
+                      val index3: Int & VariantIndex[variant0] = VariantIndex[variant0](index)
+                      val variant: variant0 = sum.asInstanceOf[variant0]
+                      val context = wisteria.internal.field[typeclass, variant0]
+
+                      lambda[variant0](variant)
+                        ( using context.aka["contextual"],
+                                label.tt.aka["label"],
+                                index3.aka["index"] )
+                    else
+                      fold[derivation, variants, moreLabels](sum, size, index + 1, fallible)
+                        ( predicate )
+                        ( lambda )
+
+        case _ =>
+          inline if fallible
+          then provide[Tactic[VariantError]](abort(VariantError[derivation]("".tt)))
+          else panic(m"Should be unreachable")
 
 
     inline def disjunction[derivation: SumReflection]: typeclass[derivation]

@@ -271,7 +271,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
         case _                           => Map()
 
       val map =
-        contexts:
+        contexts[derivation]():
           [field] => schema =>
             val schema2 = descriptions.at(label).lay(schema.schema()): memo =>
               schema.schema().description = memo.map(_.description).join(t"\n")
@@ -281,7 +281,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
         .to(Map)
 
       val required: List[Text] =
-        contexts:
+        contexts[derivation]():
           [field] => schema => label.unless(_ => schema.schema().optional)
 
         . compact
@@ -296,11 +296,13 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
         case annotated: Annotated.Subtypes => annotated.subtypes
         case _                             => Map()
 
-      val schemas = variantLabels.map: label =>
-        delegate(label):
+      val schemas =
+        choices:
           [variant <: derivation] => schema =>
             descriptions.at(label).lay(schema.schema()): memo =>
               schema.schema().description = memo.map(_.description).join(t"\n")
+
+        . to(List)
 
       JsonSchema.Object(oneOf = schemas, required = List("kind"))
 

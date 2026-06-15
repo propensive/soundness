@@ -32,31 +32,21 @@
                                                                                                   */
 package wisteria
 
+import scala.deriving.Mirror
+
 import denominative.*
 import prepositional.*
 import symbolism.*
 
-// Evidence that `derivation` is a data type wisteria can derive for — a product or a sum. These
-// replace `scala.deriving.Mirror`: a synthesised `given` validates the type by inspecting its
-// *symbol* (no `Mirror`), so resolving one never triggers a `Mirror` synthesis. The instance is an
-// erased witness; the structural information (fields, variants) comes from symbol inspection.
-object Reflection:
-  transparent inline given reflect: [derivation] => Reflection[derivation] =
-    ${wisteria.internal.reflectData[derivation]}
-
-trait Reflection[derivation]
-
-object ProductReflection:
-  transparent inline given reflect: [derivation <: Product] => ProductReflection[derivation] =
-    ${wisteria.internal.reflectProduct[derivation]}
-
-trait ProductReflection[derivation <: Product] extends Reflection[derivation]
-
-object SumReflection:
-  transparent inline given reflect: [derivation] => SumReflection[derivation] =
-    ${wisteria.internal.reflectSum[derivation]}
-
-trait SumReflection[derivation] extends Reflection[derivation]
+// Evidence that `derivation` is a data type wisteria can derive for — a product or a sum.
+// `scala.deriving.Mirror` aliases: the type symbol drives field/variant inspection (no member
+// fold), while the `Mirror` itself is the ADT predicate, the dispatch selector and `fromProduct`.
+// Unlike a macro-synthesised marker, a `Mirror` resolves within a nested context-bound search (the
+// `read[T over Format]`/`Aggregable` decoders) and `Mirror.ProductOf <: Mirror.Of` gives the
+// subtyping that lets a `ProductReflection` satisfy a `Reflection` requirement.
+type Reflection[derivation] = Mirror.Of[derivation]
+type ProductReflection[derivation <: Product] = Mirror.ProductOf[derivation]
+type SumReflection[derivation] = Mirror.SumOf[derivation]
 
 type Derivable[derivation <: { type Self }] =
   Derivation[[self] =>> derivation { type Self = self }]
@@ -77,7 +67,7 @@ object arithmetic:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Addable by derivation to derivation =
 
-      (left, right) => build: [field] => _.add(complement(left), complement(right))
+      (left, right) => build[derivation]: [field] => _.add(complement(left), complement(right))
 
 
   inline given addable: [value <: Product: ProductReflection]
@@ -92,7 +82,7 @@ object arithmetic:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Subtractable by derivation to derivation =
 
-      (left, right) => build: [field] => _.subtract(complement(left), complement(right))
+      (left, right) => build[derivation]: [field] => _.subtract(complement(left), complement(right))
 
 
   inline given subtractable: [value <: Product: ProductReflection]
@@ -108,7 +98,7 @@ object arithmetic:
     :   derivation is Multiplicable by derivation to derivation =
 
       (left, right) =>
-        build: [field] => _.multiply(complement(left), complement(right))
+        build[derivation]: [field] => _.multiply(complement(left), complement(right))
 
 
   inline given multiplicable: [value <: Product: ProductReflection]
@@ -124,7 +114,7 @@ object arithmetic:
     :   derivation is Divisible by derivation to derivation =
 
       (left, right) =>
-        build: [field] => _.divide(complement(left), complement(right))
+        build[derivation]: [field] => _.divide(complement(left), complement(right))
 
   inline given divisible: [value <: Product: ProductReflection]
   =>  value is Divisible by value to value =

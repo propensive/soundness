@@ -65,7 +65,7 @@ object Bufferable extends ProductDerivable[Bufferable]:
 
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Bufferable =
     Join[derivation]
-      ( contexts { [field] => _.width }.sum,
+      ( contexts[derivation]() { [field] => _.width }.sum,
         (buffer, value) => fields(value) { [field] => field => contextual.buffer(buffer, field) } )
 
 trait Bufferable extends Typeclass:

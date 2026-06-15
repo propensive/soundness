@@ -40,6 +40,24 @@ import vacuous.*
 
 object ProductDerivation:
   trait Methods[typeclass[_]]:
+    private transparent inline def buildFields[derivation <: Product]
+      ( inline lambda:  [field] => typeclass[field]
+                        =>  ( typeclass[field] aka "contextual",
+                              Default[Optional[field]],
+                              Text aka "label",
+                              Int & FieldIndex[field] aka "index" ) ?=> field )
+    :   Tuple =
+
+      ${wisteria.internal.buildProduct[typeclass, derivation]('lambda)}
+
+
+    // Construction is inline `Mirror.fromProduct`, using the `Mirror` threaded in via the
+    // `ProductReflection` context bound (from the caller's `summonFrom`) — NOT a fresh `summonInline`
+    // and NOT macro-emitted. This is the only construction form that works for method-local and
+    // object-nested case classes: `fromProduct` captures the outer pointer from the surrounding
+    // frame. The macro (`buildFields`) supplies only the field-value tuple; `fromProduct` returns the
+    // `Mirror`'s `MirroredMonoType` (= `derivation`), so no cast is needed — and a cast to a method-
+    // local `derivation` would re-introduce a `This`-ref that crashes erasure ("missing outer accessor").
     protected transparent inline def build[derivation <: Product]
       ( using reflection: ProductReflection[derivation] )
       ( inline lambda:  [field] => typeclass[field]
@@ -49,10 +67,10 @@ object ProductDerivation:
                               Int & FieldIndex[field] aka "index" ) ?=> field )
     :   derivation =
 
-      ${wisteria.internal.buildProduct[typeclass, derivation]('lambda, 'reflection)}
+      reflection.fromProduct(buildFields[derivation](lambda))
 
 
-    protected transparent inline def construct[constructor[_]]
+    protected transparent inline def construct[constructor[_], derivation <: Product]
       ( inline bind:  [input, output] => constructor[input] => (input => constructor[output])
                       =>  constructor[output],
         inline pure:    [monadic] => monadic => constructor[monadic],
@@ -62,16 +80,14 @@ object ProductDerivation:
                               Text aka "label",
                               Int & FieldIndex[field] aka "index" )
                         ?=> constructor[field] )
-      [ derivation <: Product ]
-      ( using reflection: ProductReflection[derivation] )
     :   constructor[derivation] =
 
       ${wisteria.internal.constructMonadic[typeclass, constructor, derivation]('bind, 'pure,
-          'lambda, 'reflection)}
+          'lambda)}
 
 
     protected transparent inline def contexts[derivation <: Product]
-      ( using reflection:  ProductReflection[derivation] )
+      ()
       [ result ]
       ( inline lambda:  [field] => typeclass[field]
                         =>  ( typeclass[field] aka "contextual",
@@ -85,26 +101,28 @@ object ProductDerivation:
 
 
     inline def typeName[derivation](using reflection: Reflection[derivation]): Text =
-      ${wisteria.internal.typeName[derivation]}
+      valueOf[reflection.MirroredLabel].tt
 
     inline def tuple[derivation](using reflection: Reflection[derivation]): Boolean =
-      ${wisteria.internal.isTuple[derivation]}
+      compiletime.summonFrom:
+        case given (reflection.MirroredMonoType <:< Tuple) => true
+        case _                                             => false
 
     inline def singleton[derivation](using reflection: Reflection[derivation]): Boolean =
-      ${wisteria.internal.isSingleton[derivation]}
+      compiletime.summonFrom:
+        case given (reflection.MirroredMonoType <:< Singleton) => true
+        case _                                                 => false
 
 
     protected transparent inline def complement[derivation <: Product, field]
       ( product: derivation )
-      ( using fieldIndex:  Int & FieldIndex[field] aka "index",
-              reflection:  ProductReflection[derivation] )
+      ( using fieldIndex:  Int & FieldIndex[field] aka "index" )
     :   field =
 
       product.productElement(fieldIndex.asInstanceOf[Int]).asInstanceOf[field]
 
 
     protected transparent inline def fields[derivation <: Product](inline product: derivation)
-      ( using reflection: ProductReflection[derivation] )
       [ result ]
       ( inline lambda:  [field] => field
                         =>  ( typeclass[field] aka "contextual",
@@ -122,7 +140,7 @@ trait ProductDerivation[typeclass[_]] extends ProductDerivation.Methods[typeclas
   inline def derivedOne[derivation]: typeclass[derivation] =
     conjunction[derivation & Product](using summonInline[ProductReflection[derivation & Product]])
     . asMatchable.match
-      case typeclass: typeclass[`derivation`] => typeclass
+        case typeclass: typeclass[`derivation`] => typeclass
 
   inline given derived: [derivation] => Reflection[derivation] => typeclass[derivation] =
     ${wisteria.internal.deriveGraph[typeclass, derivation]('this)}

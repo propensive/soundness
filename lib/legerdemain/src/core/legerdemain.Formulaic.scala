@@ -67,7 +67,7 @@ object Formulaic extends ProductDerivable[Formulaic]:
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Formulaic =
     (pointer, legend, query, errors, formulation) =>
       val content: Seq[Html of Flow] =
-        contexts:
+        contexts[derivation]():
           [field] => context =>
             val label2 = if pointer == Pointer.Self then Pointer(label) else pointer(label)
             val legend = label.uncamel.map(_.lower.capitalize).spaced

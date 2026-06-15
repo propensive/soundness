@@ -75,7 +75,7 @@ object Restorable extends ProductDerivation[[entity] =>> entity is Restorable]:
           else throw new RuntimeException()
         }
 
-  // inline def disjunction[derivation: SumReflection]: derivation is Restorable =
+  // inline def disjunction[derivation]: derivation is Restorable =
   //   new Restorable:
   //     type Self = derivation
 
@@ -89,7 +89,7 @@ object Restorable extends ProductDerivation[[entity] =>> entity is Restorable]:
     val cls = reflectClass[derivation]
 
     Restorable[derivation]: value =>
-      val params = contexts:
+      val params = contexts[derivation]():
         [field] => typeclass =>
           typeclass.restore('{$value.asInstanceOf[Array[Pojo]](${Expr[Int](index)})})
 

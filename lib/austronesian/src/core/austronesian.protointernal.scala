@@ -53,11 +53,11 @@ object protointernal:
       . asInstanceOf[Pojo]
 
 
-    inline def disjunction[derivation: SumReflection]: derivation is Encodable in Pojo =
-      variant(_): [variant <: derivation] => value =>
+    inline def disjunction[derivation: SumReflection]: derivation is Encodable in Pojo = sum =>
+      variant(sum): [variant <: derivation] => value =>
         IArray.build[Pojo](2): array =>
           array(0) = label.s.asInstanceOf[Pojo]
-          array(1) = value.encode
+          array(1) = contextual.encoded(value)
 
         . asInstanceOf[Pojo]
 
@@ -66,7 +66,7 @@ object protointernal:
     :   derivation is Decodable in Pojo =
 
       case array: Array[Pojo @unchecked] =>
-        build: [field] =>
+        build[derivation]: [field] =>
           _.decoded(array(index))
 
       case other =>

@@ -223,7 +223,7 @@ object TelsDerivation extends Derivable[TelSchematic over Tels.Type]:
       val renames: Map[Text, Text] = relabelling[derivation, Tel]
 
       val members =
-        contexts:
+        contexts[derivation]():
           [field] => schematic =>
             val keyword: Text = renames.getOrElse(label, Tel.camelToKebab(label.s))
             Tels.Field(schematic.polarity, schematic.repeatable, keyword, schematic.schema(), Unset)

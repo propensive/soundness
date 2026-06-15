@@ -373,7 +373,7 @@ object Protobuf extends Protobuf2:
         case _                           => Map()
 
       val pairs =
-        contexts:
+        contexts[derivation]():
           [field0] => context =>
             (label, annotated.at(label).let(_.head.number).or(index + 1))
 
@@ -389,7 +389,7 @@ object Protobuf extends Protobuf2:
         provide[Tactic[ProtobufError]]:
           val map = ProtobufParser(protobuf.payload).fields()
 
-          build:
+          build[derivation]:
             [field0] => context =>
               map.at(numbers(label)).lay(default.or(context.decoded(Protobuf.Absent))): values =>
                 context.decoded(Protobuf.Repeated(values))
@@ -399,7 +399,7 @@ object Protobuf extends Protobuf2:
         provide[Tactic[ProtobufError]]:
           provide[Tactic[VariantError]]:
             val map = ProtobufParser(protobuf.payload).fields()
-            val labels = variantLabels[derivation]
+            val labels = variantLabels
 
             var index = 0
             while index < labels.length && !map.contains(index + 1) do index += 1
@@ -415,7 +415,7 @@ object Protobuf extends Protobuf2:
         case _                           => Map()
 
       val pairs =
-        contexts:
+        contexts[derivation]():
           [field0] => context =>
             (label, annotated.at(label).let(_.head.number).or(index + 1))
 

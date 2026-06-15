@@ -140,7 +140,7 @@ trait Tel2:
       // coherent. Built by-name so recursive types compile.
       Tel.Decodable({
         val fields: List[(Text, Shape)] =
-          contexts: [field] => context => (label, context.shape())
+          contexts[derivation](): [field] => context => (label, context.shape())
           . to(List)
 
         Shape.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
@@ -151,7 +151,7 @@ trait Tel2:
             // verbatim; an unannotated field falls back to its camel→kebab form.
             val renames: Map[Text, Text] = relabelling[derivation, Tel]
 
-            build: [field] =>
+            build[derivation]: [field] =>
               ctx =>
                 val keyword: Text = renames.getOrElse(label, Tel.camelToKebab(label.s))
 
@@ -187,7 +187,7 @@ trait Tel2:
             provide[Tactic[VariantError]]:
               // Map the variant's kebab keyword back to the label `delegate` dispatches on.
               val labels: Map[Text, Text] =
-                variantLabels[derivation].map: label => Tel.camelToKebab(label.s) -> label
+                variantLabels.map: label => Tel.camelToKebab(label.s) -> label
                 . to(Map)
 
               val variant: Tel = Tel.make(telVal.childCompounds.head)
@@ -202,7 +202,7 @@ trait Tel2:
 
       Tel.Encodable({
         val fields: List[(Text, Shape)] =
-          contexts: [field] => context => (label, context.shape())
+          contexts[derivation](): [field] => context => (label, context.shape())
           . to(List)
 
         Shape.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })

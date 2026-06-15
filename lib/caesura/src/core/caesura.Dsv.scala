@@ -105,7 +105,7 @@ object Dsv:
 
       provide[Foci[CellRef]]:
         DsvProductDecoder[derivation]:
-          (row: Dsv) => build:
+          (row: Dsv) => build[derivation]:
             [field] => context =>
               val i = row.columns.let(_.at(label)).or(count)
               count += spans(index)

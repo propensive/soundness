@@ -48,8 +48,8 @@ object Tests extends Suite(m"Wisteria tests"):
     given Presentation[Int] = _.toString.tt
 
     inline def conjunction[derivation <: Product: ProductReflection]: Presentation[derivation] = value =>
-      inline if singleton then typeName else
-        val prefix = inline if tuple then t"" else typeName
+      inline if singleton[derivation] then typeName[derivation] else
+        val prefix = inline if tuple[derivation] then t"" else typeName[derivation]
         fields(value):
           [field] => field => s"$index:$label=${contextual.present(field)}".tt
         .mkString((prefix.s+"("), ", ", ")").tt
@@ -57,7 +57,7 @@ object Tests extends Suite(m"Wisteria tests"):
     inline def disjunction[derivation: SumReflection]: Presentation[derivation] = value =>
       variant(value):
         [variant <: derivation] =>
-          variant => (typeName.s+"."+contextual.present(variant)).tt
+          variant => (typeName[derivation].s+"."+contextual.present(variant)).tt
 
   extension [value](value: value)
     def present(using presentation: Presentation[value]): Text = presentation.present(value)
@@ -75,14 +75,14 @@ object Tests extends Suite(m"Wisteria tests"):
     inline def conjunction[derivation <: Product: ProductReflection]: Readable[derivation] = text =>
       text.s.split(",").nn.to(List).map(_.nn).pipe:
         array =>
-          build:
+          build[derivation]:
             [field] =>
               readable =>
                 if index < array.length then readable.read(array(index).tt) else default.or(???)
 
     inline def disjunction[derivation: SumReflection]: Readable[derivation] = text =>
       text.s.split(":").nn.to(List).map(_.nn.tt).absolve match
-        case List(variant, text2) => delegate(variant):
+        case List(variant, text2) => delegate[derivation](variant):
           [variant <: derivation] =>
             context => context.read(text2)
 
@@ -102,7 +102,7 @@ object Tests extends Suite(m"Wisteria tests"):
 
     inline def conjunction[derivation <: Product: ProductReflection]: Eq[derivation] =
       (left, right) =>
-        contexts[derivation]:
+        contexts[derivation]():
           [field] => typeclass =>
             val extract: derivation => field = dereference
             typeclass.equal(extract(left), extract(right))
@@ -128,7 +128,7 @@ object Tests extends Suite(m"Wisteria tests"):
 
     inline def conjunction[derivation <: Product: ProductReflection]: Parser[derivation] = input =>
       IArray.from(input.split(',')).pipe: inputArr =>
-        construct[Option](
+        construct[Option, derivation](
           [in, out] => _.flatMap,
           [monadic] => Some(_),
           [field] => context =>
@@ -143,13 +143,13 @@ object Tests extends Suite(m"Wisteria tests"):
 
   object Show extends Derivation[Show]:
     inline def conjunction[derivation <: Product: ProductReflection]: Show[derivation] = value =>
-      typeName.s
+      typeName[derivation].s
 
     inline def disjunction[derivation: SumReflection]: Show[derivation] = value =>
-      inline if choice then
+      inline if choice[derivation] then
         variant(value):
           [variant <: derivation] =>
-            arm => typeName.s+"."+contextual.show(arm)
+            arm => typeName[derivation].s+"."+contextual.show(arm)
       else
         compiletime.error("cannot derive Show for adt")
 
@@ -163,7 +163,8 @@ object Tests extends Suite(m"Wisteria tests"):
       compiletime.error("not a product choice")
 
     inline def disjunction[derivation: SumReflection]: Producer[derivation] = input =>
-      inline if choice then Some(singleton(input)) else compiletime.error("not a choice")
+      inline if choice[derivation] then Some(singleton[derivation](input))
+      else compiletime.error("not a choice")
 
   // ===== Typeclass: SumOnly =====
 
@@ -187,12 +188,10 @@ object Tests extends Suite(m"Wisteria tests"):
   object Labels extends Derivation[Labels]:
     class Impl[derivation](val labels: List[Text]) extends Labels[derivation]
 
-    inline def conjunction[derivation <: Product](using reflection: ProductReflection[derivation])
-    :   Labels[derivation] =
+    inline def conjunction[derivation <: Product: ProductReflection]: Labels[derivation] =
       Impl(wisteria.internal.fieldLabelList[derivation])
 
-    inline def disjunction[derivation](using reflection: SumReflection[derivation])
-    :   Labels[derivation] =
+    inline def disjunction[derivation: SumReflection]: Labels[derivation] =
       Impl(wisteria.internal.variantLabelList[derivation])
 
   // ===== Data types =====

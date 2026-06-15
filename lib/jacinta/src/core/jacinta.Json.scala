@@ -144,7 +144,7 @@ trait Json2 extends Json3:
       // perturb the `build` traversal below. Built by-name so recursive types compile.
       Json.Decodable({
         val fields: List[(Text, Shape)] =
-          contexts: [field] => context => (label, context.shape())
+          contexts[derivation](): [field] => context => (label, context.shape())
           . to(List)
 
         Shape.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
@@ -165,7 +165,7 @@ trait Json2 extends Json3:
               // back the same way they are written.
               val renames: Map[Text, Text] = relabelling[derivation, Json]
 
-              build: [field] =>
+              build[derivation]: [field] =>
                 context =>
                   val key: Text = renames.at(label).or(label)
 
@@ -215,7 +215,7 @@ trait Json2 extends Json3:
 
       Json.Encodable({
         val fields: List[(Text, Shape)] =
-          contexts: [field] => context => (label, context.shape())
+          contexts[derivation](): [field] => context => (label, context.shape())
           . to(List)
 
         Shape.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
