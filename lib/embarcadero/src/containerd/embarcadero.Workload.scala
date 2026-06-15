@@ -37,10 +37,10 @@ import gossamer.*
 import locomotion.field
 import vacuous.*
 
-// A task's process state (`containerd.v1.types.Process`, a subset): which container and
+// A task's process state (`containerd.v1.types.Workload`, a subset): which container and
 // exec it belongs to, its `pid`, the raw `status` code, and the exit status/time once
 // it has stopped. `state` decodes the status code to the `ProcessStatus` enum.
-case class Process
+case class Workload
   ( @field(1)  containerId: Text      = t"",
     @field(2)  id:          Text      = t"",
     @field(3)  pid:         Int       = 0,

@@ -35,7 +35,7 @@ package embarcadero
 import vacuous.*
 
 object ProcessStatus:
-  // The status code carried in a `Process` (a protobuf enum, encoded as its number).
+  // The status code carried in a `Workload` (a protobuf enum, encoded as its number).
   def of(code: Int): Optional[ProcessStatus] = values.find(_.code == code).optional
 
 enum ProcessStatus(val code: Int) derives CanEqual:

@@ -216,14 +216,14 @@ case class Containerd(channel: GrpcChannel):
 
   // The state of a single task (`Tasks.Get`).
   def task(containerId: Text, execId: Text = t"")
-  :   Process raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
+  :   Workload raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
 
     val request = GetTaskRequest(containerId, execId)
     channel.unary[GetTaskRequest, GetTaskResponse](Containerd.getTaskMethod, request).process
 
   // Every task known to the daemon (`Tasks.List`), optionally filtered.
   def tasks(filter: Text = t"")
-  :   List[Process] raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
+  :   List[Workload] raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
 
     val request = ListTasksRequest(filter)
     channel.unary[ListTasksRequest, ListTasksResponse](Containerd.listTasksMethod, request).tasks
