@@ -36,10 +36,10 @@ import anticipation.*
 import prepositional.*
 import spectacular.*
 
-object Connectable:
-  given ipv4: Ipv4 is Connectable = _.show
-  given ipv6: Ipv6 is Connectable = _.show
-  given hostname: Hostname is Connectable = _.show
+object Remotable:
+  given ipv4: Ipv4 is Remotable = _.show
+  given ipv6: Ipv6 is Remotable = _.show
+  given hostname: Hostname is Remotable = _.show
 
-trait Connectable extends Typeclass:
+trait Remotable extends Typeclass:
   def remote(remote: Self): Text
