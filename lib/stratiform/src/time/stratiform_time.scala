@@ -46,7 +46,8 @@ package telEncodables:
     Tel.Encodable(Morphology.Whole): instant => Tel.scalar(instant.long.toString.tt)
 
   given encodeDurationsAsMilliseconds: Duration is Tel.Encodable =
-    Tel.Encodable(Morphology.Whole): duration => Tel.scalar((duration.value*1000).toLong.toString.tt)
+    Tel.Encodable(Morphology.Whole): duration =>
+      Tel.scalar((duration.value*1000).toLong.toString.tt)
 
 package telDecodables:
   given decodeInstantsAsUnixEpochMilliseconds: Tactic[TelError]

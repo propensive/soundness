@@ -286,7 +286,8 @@ trait Tel2:
 
   given telDecodable: Tel is Tel.Decodable = Tel.Decodable(Morphology.Any)(identity(_))
 
-  given textEncodable: Text is Tel.Encodable = Tel.Encodable(Morphology.Str): text => Tel.scalar(text)
+  given textEncodable: Text is Tel.Encodable =
+    Tel.Encodable(Morphology.Str): text => Tel.scalar(text)
 
   given stringEncodable: String is Tel.Encodable =
     Tel.Encodable(Morphology.Str): s => Tel.scalar(Text(s))
