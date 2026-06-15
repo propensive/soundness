@@ -59,7 +59,7 @@ object Inspectable extends Inspectable2:
   inline given derived: [value] => value is Inspectable = compiletime.summonFrom:
     case given (`value` is Encodable in Text) => _.encode
     case given (`value` is Showable)          => _.show
-    case given Reflection[`value`]            => Derivation.derived[value].text(_)
+    case given Reflection[`value`]            => Derivation.derived[value]
     case _                                    => value => ("“"+value+"”").tt
 
   given char: Char is Inspectable = char => ("'"+escape(char).s+"'").tt
