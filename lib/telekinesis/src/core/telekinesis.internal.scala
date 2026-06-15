@@ -169,7 +169,7 @@ object internal:
           }
 
 
-  def response(headers: Expr[Seq[Any]]): Macro[Http.Response.Prototype | Http.Response] =
+  def response(headers: Expr[Seq[Any]]): Macro[Http.Response.Protoresponse | Http.Response] =
     headers.absolve.match
       case Varargs(exprs) => exprs.to(List).only:
         case '{$value: valueType} :: Nil =>
@@ -185,4 +185,4 @@ object internal:
               case Unset                   => '{Unset}
               case expr: Expr[Http.Status] => expr
 
-            '{Http.Response.Prototype($status2, $headers2)}
+            '{Http.Response.Protoresponse($status2, $headers2)}

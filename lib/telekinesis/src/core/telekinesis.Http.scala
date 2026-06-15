@@ -510,17 +510,18 @@ object Http:
 
   object Response extends Dynamic:
     transparent inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
-    :   Prototype | Response =
+    :   Protoresponse | Response =
 
       ${telekinesis.internal.response('headers)}
 
 
     given conversion: [servable: Servable] => Conversion[servable, Response] = servable.serve(_)
 
-    transparent inline def applyDynamic(id: "apply")(inline headers: Any*): Prototype | Response =
+    transparent inline def applyDynamic(id: "apply")(inline headers: Any*)
+    :   Protoresponse | Response =
       ${telekinesis.internal.response('headers)}
 
-    case class Prototype(status0: Optional[Status], headers: Seq[Header]):
+    case class Protoresponse(status0: Optional[Status], headers: Seq[Header]):
       def apply(body: Body = Body.Empty): Response =
         Response(1.1, status0.or(Ok), headers.to(List), body)
 
