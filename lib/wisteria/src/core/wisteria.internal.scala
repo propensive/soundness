@@ -293,16 +293,23 @@ object internal:
           seen += key
           val args = tpe.typeArgs
 
+          // `resolvableNonStructural` is asked ONLY about product/sum types — and only those reach
+          // it, never codecs or leaves. The probe bails fast at the type's own `deriveGraph` (its
+          // `Reentrant` marker is injected), so it never recurses into fields. Probing a codec
+          // instead (e.g. `Map[K, V]` whose `isCodec` we failed to recognise) would let the search
+          // descend through the codec into its elements' full derivations — for a deep graph that
+          // explodes. Such a type simply isn't made a sibling here; it resolves at the field site.
           if isCodec(tpe, args) then args.foreach(visit(_, false))
-          else if !isRoot && resolvableNonStructural(typeclassConstructor, tpe) then ()
           else if isSumType(tpe) then
-            reachable(key) = tpe
-            tpe.typeSymbol.children.foreach { child => visit(variantWith(child, tpe), false) }
+            if isRoot || !resolvableNonStructural(typeclassConstructor, tpe) then
+              reachable(key) = tpe
+              tpe.typeSymbol.children.foreach { child => visit(variantWith(child, tpe), false) }
           else if isProductType(tpe) then
-            reachable(key) = tpe
-            val product = productType(tpe)
-            product.typeSymbol.caseFields.foreach: field =>
-              visit(product.memberType(field), false)
+            if isRoot || !resolvableNonStructural(typeclassConstructor, tpe) then
+              reachable(key) = tpe
+              val product = productType(tpe)
+              product.typeSymbol.caseFields.foreach: field =>
+                visit(product.memberType(field), false)
 
       val rootType = TypeRepr.of[derivation].dealias
       visit(rootType, isRoot = true)
