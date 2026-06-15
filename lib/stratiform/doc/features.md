@@ -11,4 +11,4 @@
 - presentation-preserving mutation primitives (§22.2) — UpdateAtom,
   Insert, Delete, Replace, AttachRemark, RemoveRemark, SetFlag,
   UnsetFlag, InsertBefore, InsertAfter
-- composable `Edit` DSL with `++` sequencing
+- composable `Revision` DSL with `++` sequencing

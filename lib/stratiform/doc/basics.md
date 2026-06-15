@@ -63,11 +63,11 @@ contact match
 
 ### Mutation
 
-The `Edit` DSL builds presentation-preserving rewrites:
+The `Revision` DSL builds presentation-preserving rewrites:
 ```scala
 val updated = tel.edited
-                ( Edit.at(Tel.Pointer.of(t"name")).update(t"Bob")
-               ++ Edit.at(Tel.Pointer.of(t"name")).attachRemark(t"primary") )
+                ( Revision.at(Tel.Pointer.of(t"name")).update(t"Bob")
+               ++ Revision.at(Tel.Pointer.of(t"name")).attachRemark(t"primary") )
 ```
 
 Surrounding atoms, comments, and unrelated children stay untouched.
