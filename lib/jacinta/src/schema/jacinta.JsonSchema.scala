@@ -93,26 +93,26 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
   given emailSchematic: EmailAddress is Schematic over JsonSchema = () => JsonSchema.String()
   given booleanSchematic: scala.Boolean is Schematic over JsonSchema = () => JsonSchema.Boolean()
 
-  // Reifies a codec's format-neutral `Shape` (carried by `Json.Encodable` /
+  // Reifies a codec's format-neutral `Morphology` (carried by `Json.Encodable` /
   // `Json.Decodable`) into a concrete `JsonSchema`. This is the bridge that keeps
   // `jacinta.core` free of any `JsonSchema` dependency while still letting a fused
   // `Encodable & Schematic` / `Decodable & Schematic` expose a real schema that is
-  // coherent with the codec (since the `Shape` was produced by the codec itself).
-  def reify(shape: Shape): JsonSchema = shape match
-    case Shape.Str            => JsonSchema.String()
-    case Shape.Whole          => JsonSchema.Integer()
-    case Shape.Real           => JsonSchema.Number()
-    case Shape.Bool           => JsonSchema.Boolean()
-    case Shape.Empty          => JsonSchema.Null()
-    case Shape.Any            => JsonSchema.Object(additionalProperties = true)
-    case Shape.Opt(inner)     => JsonSchema.optional(reify(inner))
-    case Shape.Arr(items)     => JsonSchema.Array(items = reify(items))
-    case Shape.Dict(_, _)     => JsonSchema.Object(additionalProperties = true)
+  // coherent with the codec (since the `Morphology` was produced by the codec itself).
+  def reify(shape: Morphology): JsonSchema = shape match
+    case Morphology.Str            => JsonSchema.String()
+    case Morphology.Whole          => JsonSchema.Integer()
+    case Morphology.Real           => JsonSchema.Number()
+    case Morphology.Bool           => JsonSchema.Boolean()
+    case Morphology.Empty          => JsonSchema.Null()
+    case Morphology.Any            => JsonSchema.Object(additionalProperties = true)
+    case Morphology.Opt(inner)     => JsonSchema.optional(reify(inner))
+    case Morphology.Arr(items)     => JsonSchema.Array(items = reify(items))
+    case Morphology.Dict(_, _)     => JsonSchema.Object(additionalProperties = true)
 
-    case Shape.OneOf(variants) =>
+    case Morphology.OneOf(variants) =>
       JsonSchema.Object(oneOf = variants.map(reify), required = List(t"kind"))
 
-    case Shape.Obj(fields, required) =>
+    case Morphology.Obj(fields, required) =>
       JsonSchema.Object
         ( properties = fields.map { (label, shape) => (label, reify(shape)) }.to(Map),
           required   = required )
@@ -155,7 +155,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
   // `JsonPointer` carries a string (its `… in Text` codec). Provided explicitly as a `Json.Encodable`
   // so generic derivation resolves it as a leaf rather than structurally deriving `serpentine.Path`.
   given pointerEncodable: JsonPointer is Json.Encodable =
-    Json.Encodable(Shape.Str)(pointer => Json.ast(Json.Ast(pointer.encode.s)))
+    Json.Encodable(Morphology.Str)(pointer => Json.ast(Json.Ast(pointer.encode.s)))
 
   // `$ref` schemas have no `type` discriminator, so they are handled here
   // explicitly; every other variant is delegated to the `type`-discriminated
@@ -171,7 +171,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
   // hand-written instance instead of recursively deriving a schema-of-schemas
   // (which would diverge). The carried `schema()` is a fixed permissive object.
   given encodable: JsonSchema is Json.Encodable =
-    Json.Encodable(Shape.Any):
+    Json.Encodable(Morphology.Any):
       case JsonSchema.Ref(pointer, _, _) =>
         val ref = summon[JsonPointer is Encodable in Text].encoded(pointer).s
         Json.ast(Json.Ast.obj(IArray("$ref"), IArray(Json.Ast(ref))))
@@ -185,7 +185,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
   // keeps the recursion on nested schemas pointed back at this same given.
   given decodable: (Tactic[JsonError], Tactic[JsonPointerError])
   =>  JsonSchema is Json.Decodable =
-    Json.Decodable(Shape.Any): json =>
+    Json.Decodable(Morphology.Any): json =>
       def field[value: Json.Decodable](name: Text): Optional[value] =
         json(name).as[Optional[value]]
 

@@ -43,15 +43,15 @@ import contingency.*
 
 package telEncodables:
   given encodeInstantsAsUnixEpochMilliseconds: Instant is Tel.Encodable =
-    Tel.Encodable(Shape.Whole): instant => Tel.scalar(instant.long.toString.tt)
+    Tel.Encodable(Morphology.Whole): instant => Tel.scalar(instant.long.toString.tt)
 
   given encodeDurationsAsMilliseconds: Duration is Tel.Encodable =
-    Tel.Encodable(Shape.Whole): duration => Tel.scalar((duration.value*1000).toLong.toString.tt)
+    Tel.Encodable(Morphology.Whole): duration => Tel.scalar((duration.value*1000).toLong.toString.tt)
 
 package telDecodables:
   given decodeInstantsAsUnixEpochMilliseconds: Tactic[TelError]
   =>  Instant is Tel.Decodable =
-    Tel.Decodable(Shape.Whole): tel =>
+    Tel.Decodable(Morphology.Whole): tel =>
       import abstractables.instantIsAbstractable
 
       try Instant(tel.primaryAtom.s.toLong)
@@ -59,6 +59,6 @@ package telDecodables:
 
   given decodeDurationsAsMilliseconds: Tactic[TelError]
   =>  Duration is Tel.Decodable =
-    Tel.Decodable(Shape.Whole): tel =>
+    Tel.Decodable(Morphology.Whole): tel =>
       try Duration(tel.primaryAtom.s.toLong)
       catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))

@@ -62,32 +62,32 @@ object Tel extends Tel2:
   val Error: TelError.type = TelError
 
   object Encodable:
-    def apply[value](shape0: => Shape)(lambda: value => Tel): value is Tel.Encodable =
+    def apply[value](shape0: => Morphology)(lambda: value => Tel): value is Tel.Encodable =
       new Tel.Encodable:
         type Self = value
         def encoded(value: value): Tel = lambda(value)
-        def shape(): Shape = shape0
+        def shape(): Morphology = shape0
 
-  // A TEL encoder/decoder that also carries the format-neutral `Shape` of exactly
+  // A TEL encoder/decoder that also carries the format-neutral `Morphology` of exactly
   // what it reads/writes, so a fused `Encodable & Schematic` / `Decodable &
   // Schematic` (built by `telSchematics`) is coherent by construction — the shape
-  // travels with the codec rather than being resolved independently. The `Shape` is
+  // travels with the codec rather than being resolved independently. The `Morphology` is
   // reified into a concrete `Tels.Type` downstream. Mirrors jacinta's
   // `Json.Encodable`/`Json.Decodable`. Not itself `Schematic`.
   trait Encodable extends anticipation.Encodable:
     type Form = Tel
-    def shape(): Shape
+    def shape(): Morphology
 
   object Decodable:
-    def apply[value](shape0: => Shape)(lambda: Tel => value): value is Tel.Decodable =
+    def apply[value](shape0: => Morphology)(lambda: Tel => value): value is Tel.Decodable =
       new Tel.Decodable:
         type Self = value
         def decoded(tel: Tel): value = lambda(tel)
-        def shape(): Shape = shape0
+        def shape(): Morphology = shape0
 
   trait Decodable extends distillate.Decodable:
     type Form = Tel
-    def shape(): Shape
+    def shape(): Morphology
 
     // True for collection decoders (`List`/`Set`): a repeated field. The product
     // decoder gathers all same-keyword sibling compounds for such a field and hands

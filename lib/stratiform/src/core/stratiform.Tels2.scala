@@ -46,10 +46,10 @@ import Tels.Polarity
 
 // Constructors for fused `Encodable & Schematic` / `Decodable & Schematic`
 // instances. The schema is taken from the codec itself (`Tel.Encodable` /
-// `Tel.Decodable` *carry* a `Shape`), never resolved independently, so the fused
+// `Tel.Decodable` *carry* a `Morphology`), never resolved independently, so the fused
 // instance is coherent by construction — a gated or `… in Text`-branch codec
 // always pairs with the schema for exactly what it reads/writes. The carried
-// `Shape` is reified into a `Tels.Type` here. Deliberately *methods*, not givens
+// `Morphology` is reified into a `Tels.Type` here. Deliberately *methods*, not givens
 // (a fused given is `<: Schematic`, so two would be ambiguous for a bare
 // `Schematic` summon). Mirrors jacinta's `jsonSchematics`.
 object telSchematics:
@@ -90,23 +90,23 @@ trait TelSchematic extends Schematic:
   def selectDefinitions: List[Tels.SelectDefinition] = Nil
 
 object Tels2:
-  // Reifies a codec's format-neutral `Shape` (carried by `Tel.Encodable` /
+  // Reifies a codec's format-neutral `Morphology` (carried by `Tel.Encodable` /
   // `Tel.Decodable`) into a concrete `Tels.Type`. TEL records optionality and
   // repeatability on the *field*, so an `Opt` field becomes a `Loose` member and an
   // `Arr` (list/set) field a `Loose`/repeatable member whose type is the element's
   // schema (collections are repeated fields, per `#1291`, not wrapper structs).
   // Field keywords are camel→kebab-cased to match the encoding. A sum carries a
   // permissive `Any` shape; precise schemas come from the standalone `Schematic`.
-  private[stratiform] def reify(shape: Shape): Tels.Type = shape match
-    case Shape.Str | Shape.Whole | Shape.Real | Shape.Bool | Shape.Empty =>
+  private[stratiform] def reify(shape: Morphology): Tels.Type = shape match
+    case Morphology.Str | Morphology.Whole | Morphology.Real | Morphology.Bool | Morphology.Empty =>
       Tels.Scalar(IArray.empty)
 
-    case Shape.Any        => Tels.Struct(IArray.empty, IArray.empty)
-    case Shape.OneOf(_)   => Tels.Struct(IArray.empty, IArray.empty)
-    case Shape.Opt(inner) => reify(inner)
-    case Shape.Arr(items) => reify(items)
+    case Morphology.Any        => Tels.Struct(IArray.empty, IArray.empty)
+    case Morphology.OneOf(_)   => Tels.Struct(IArray.empty, IArray.empty)
+    case Morphology.Opt(inner) => reify(inner)
+    case Morphology.Arr(items) => reify(items)
 
-    case Shape.Dict(key, value) =>
+    case Morphology.Dict(key, value) =>
       val entry =
         Tels.Struct
           ( IArray
@@ -118,14 +118,14 @@ object Tels2:
         ( IArray(Tels.Field(Polarity.Implicit, Polarity.Loose, t"entries", entry, Unset)),
           IArray.empty )
 
-    case Shape.Obj(fields, required) =>
+    case Morphology.Obj(fields, required) =>
       val members = fields.map: (label, fieldShape) =>
         val repeatable = fieldShape match
-          case Shape.Arr(_) => Polarity.Loose
+          case Morphology.Arr(_) => Polarity.Loose
           case _            => Polarity.Implicit
 
         val polarity = fieldShape match
-          case Shape.Arr(_) | Shape.Opt(_) => Polarity.Loose
+          case Morphology.Arr(_) | Morphology.Opt(_) => Polarity.Loose
 
           case _ =>
             if required.contains(label) then Polarity.Tight else Polarity.Loose
