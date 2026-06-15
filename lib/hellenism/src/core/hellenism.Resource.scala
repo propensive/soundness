@@ -52,4 +52,4 @@ object Resource:
 
   given nominable: [resource <: Resource] => resource is Nominable = _.path.descent.prim.or(t"/")
 
-case class Resource private[hellenism](path: Path on Classpath) extends Locatable
+case class Resource private[hellenism](path: Path on Classpath) extends Locative

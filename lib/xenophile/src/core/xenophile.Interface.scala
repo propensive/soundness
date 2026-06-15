@@ -39,4 +39,4 @@ object Interface:
   transparent inline def apply[form](inline resource: Resource): Interface =
     ${Xenophile.interface[form]('resource)}
 
-trait Interface extends Formal, Locatable
+trait Interface extends Formal, Locative

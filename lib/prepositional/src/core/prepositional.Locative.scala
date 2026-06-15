@@ -32,5 +32,5 @@
                                                                                                   */
 package prepositional
 
-trait Locatable:
+trait Locative:
   type Locus
