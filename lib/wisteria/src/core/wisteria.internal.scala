@@ -98,6 +98,17 @@ object internal:
   private def variantType(using Quotes)(child: quotes.reflect.Symbol): quotes.reflect.TypeRepr =
     if child.isType then child.typeRef else child.termRef
 
+  // Whether every variant of the sum is a singleton (case object / parameterless enum case) — i.e.
+  // it is a "choice". Computed here, at macro time, by symbol inspection rather than via an inline
+  // `<:< Singleton` fold over `MirroredElemTypes`: that fold mis-reduces deep inside `deriveGraph`'s
+  // nested inlining (a non-singleton variant is wrongly accepted), so a typeclass that rejects
+  // non-choice sums would not surface its `compiletime.error`.
+  def isChoice[derivation: Type]: Macro[Boolean] =
+    import quotes.reflect.*
+    val children = TypeRepr.of[derivation].typeSymbol.children
+    val singleton = children.forall(variantType(_) <:< TypeRepr.of[scala.Singleton])
+    Expr(children.nonEmpty && singleton)
+
   // The variant type intersected with the sum parent (`variant & derivation`): keeps a parameterless
   // enum case distinct (its bare type widens to the sum) while conforming to `variant <: derivation`.
   private def variantWith(using Quotes)

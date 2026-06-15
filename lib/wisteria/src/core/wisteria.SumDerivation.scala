@@ -46,18 +46,8 @@ import vacuous.*
 object SumDerivation:
   trait Methods[typeclass[_]]:
 
-    transparent inline def choice[derivation: SumReflection]: Boolean =
-      inline !![derivation.MirroredElemTypes] match
-        case _: (variant *: variants) => all[variant, variants]
-
-    private transparent inline def all[variant, variants <: Tuple]: Boolean = summonFrom:
-      case given (variant <:< Singleton) =>
-        inline !![variants] match
-          case _: Zero                  => true
-          case _: (variant *: variants) => all[variant, variants]
-
-      case _ =>
-        false
+    transparent inline def choice[derivation]: Boolean =
+      ${wisteria.internal.isChoice[derivation]}
 
 
     protected transparent inline def complement[derivation, variant](sum: derivation)
