@@ -43,12 +43,12 @@ import vacuous.*
 import strategies.throwUnsafely
 
 // `stratiform.records` — a Polyvinyl Specification over a TEL schema.
-// Each `RecordSchema` instance binds a `Tels` schema to a structurally-
+// Each `TelBlueprint` instance binds a `Tels` schema to a structurally-
 // typed `Record` whose accessor fields are derived from the schema's
 // document struct, one field per Field member at the root.
 //
 // Usage:
-//   object MyRecords extends RecordSchema(myTels):
+//   object MyRecords extends TelBlueprint(myTels):
 //     transparent inline def record(tel: Tel): Record = ${build('tel)}
 //
 //   val r = MyRecords.record(myTel)
@@ -61,7 +61,7 @@ import strategies.throwUnsafely
 // `Boolean`. Optional variants of each (suffixed with "?") yield
 // `Optional[T]`.
 
-object RecordSchema:
+object TelBlueprint:
 
   // A Tel returned from `access` is "absent" iff its wrapped Compound
   // has an empty keyword — `Tel.empty` is the sentinel returned when
@@ -69,38 +69,38 @@ object RecordSchema:
   // Flag) have a non-empty keyword.
   private def absent(tel: Tel): Boolean = tel.keyword.s.isEmpty
 
-  given string: ("string" is Intensional in RecordSchema from Tel to Text) =
-    RecordSchema.intensional(_.primaryAtom)
+  given string: ("string" is Intensional in TelBlueprint from Tel to Text) =
+    TelBlueprint.intensional(_.primaryAtom)
 
-  given optionalString: ("string?" is Intensional in RecordSchema from Tel to Optional[Text]) =
-    RecordSchema.intensional: tel =>
+  given optionalString: ("string?" is Intensional in TelBlueprint from Tel to Optional[Text]) =
+    TelBlueprint.intensional: tel =>
       if absent(tel) then Unset else tel.primaryAtom
 
-  given identifier: ("identifier" is Intensional in RecordSchema from Tel to Text) =
-    RecordSchema.intensional(_.primaryAtom)
+  given identifier: ("identifier" is Intensional in TelBlueprint from Tel to Text) =
+    TelBlueprint.intensional(_.primaryAtom)
 
   given optionalIdentifier
-  :   ("identifier?" is Intensional in RecordSchema from Tel to Optional[Text]) =
+  :   ("identifier?" is Intensional in TelBlueprint from Tel to Optional[Text]) =
 
-    RecordSchema.intensional: tel =>
+    TelBlueprint.intensional: tel =>
       if absent(tel) then Unset else tel.primaryAtom
 
-  given typeName: ("type-name" is Intensional in RecordSchema from Tel to Text) =
-    RecordSchema.intensional(_.primaryAtom)
+  given typeName: ("type-name" is Intensional in TelBlueprint from Tel to Text) =
+    TelBlueprint.intensional(_.primaryAtom)
 
   given optionalTypeName
-  :   ("type-name?" is Intensional in RecordSchema from Tel to Optional[Text]) =
+  :   ("type-name?" is Intensional in TelBlueprint from Tel to Optional[Text]) =
 
-    RecordSchema.intensional: tel =>
+    TelBlueprint.intensional: tel =>
       if absent(tel) then Unset else tel.primaryAtom
 
-  given sigil: ("sigil" is Intensional in RecordSchema from Tel to Char) =
-    RecordSchema.intensional: tel =>
+  given sigil: ("sigil" is Intensional in TelBlueprint from Tel to Char) =
+    TelBlueprint.intensional: tel =>
       val text = tel.primaryAtom.s
       if text.length == 1 then text.charAt(0) else '#'
 
-  given optionalSigil: ("sigil?" is Intensional in RecordSchema from Tel to Optional[Char]) =
-    RecordSchema.intensional: tel =>
+  given optionalSigil: ("sigil?" is Intensional in TelBlueprint from Tel to Optional[Char]) =
+    TelBlueprint.intensional: tel =>
       if absent(tel) then Unset
       else
         val text = tel.primaryAtom.s
@@ -111,20 +111,20 @@ object RecordSchema:
   // Polyvinyl's accessor calls our `access` first, which returns
   // `Tel.empty` for an absent field; the Intensional below maps an
   // absent Tel to `false` and a present one to `true`.
-  given flag: ("flag" is Intensional in RecordSchema from Tel to Boolean) =
-    RecordSchema.intensional(!absent(_))
+  given flag: ("flag" is Intensional in TelBlueprint from Tel to Boolean) =
+    TelBlueprint.intensional(!absent(_))
 
-  given tel: ("tel" is Intensional in RecordSchema from Tel to Tel) =
-    RecordSchema.intensional(identity)
+  given tel: ("tel" is Intensional in TelBlueprint from Tel to Tel) =
+    TelBlueprint.intensional(identity)
 
   // Helper constructor for `Intensional` instances that ignore params.
   def intensional[name <: Label, value](accessor: Tel => value)
-  :   name is Intensional in RecordSchema from Tel to value =
+  :   name is Intensional in TelBlueprint from Tel to value =
 
     new Intensional:
       type Self = name
       type Origin = Tel
-      type Form = RecordSchema
+      type Form = TelBlueprint
       type Result = value
 
       def access(tel: Tel): value = accessor(tel)
@@ -184,13 +184,13 @@ object RecordSchema:
       case _: Tels.Struct =>
         Member.Value(t"tel")
 
-abstract class RecordSchema(val tels: Tels) extends Specification:
+abstract class TelBlueprint(val tels: Tels) extends Specification:
   type Origin = Tel
-  type Form = RecordSchema
+  type Form = TelBlueprint
 
-  def fields: Map[Text, Member] = RecordSchema.fieldsOf(tels.document, tels)
+  def fields: Map[Text, Member] = TelBlueprint.fieldsOf(tels.document, tels)
 
   def access(name: Text, tel: Tel): Tel = tel.field(name).or(Tel.empty)
 
   def build(data: Tel, access: Text => Tel => Any): Record =
-    RecordSchema.record(data, access)
+    TelBlueprint.record(data, access)

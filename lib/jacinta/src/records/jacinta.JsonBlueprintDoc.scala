@@ -36,12 +36,12 @@ import anticipation.*
 import polyvinyl.*
 import vacuous.*
 
-case class RecordSchemaDoc
+case class JsonBlueprintDoc
   ( `$schema`:  Text,
     `$id`:      Text,
     title:      Text,
     `type`:     Text,
-    properties: Map[Text, RecordSchema.Property],
+    properties: Map[Text, JsonBlueprint.Property],
     required:   Optional[Set[Text]] ):
 
   lazy val requiredFields: Set[Text] = required.or(Set())

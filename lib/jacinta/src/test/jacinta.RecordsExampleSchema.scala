@@ -21,7 +21,7 @@ import soundness.*
 import charEncoders.utf8
 import strategies.throwUnsafely
 
-object RecordsExampleSchema extends RecordSchema(t"""{
+object RecordsExampleSchema extends JsonBlueprint(t"""{
   "$$id": "abc",
   "$$schema": "schema",
   "title": "Title",
@@ -55,6 +55,6 @@ object RecordsExampleSchema extends RecordSchema(t"""{
       }
     }
   }
-}""".read[Json].as[RecordSchemaDoc]):
+}""".read[Json].as[JsonBlueprintDoc]):
 
   transparent inline def record(json: Json): Record = ${build('json)}

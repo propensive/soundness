@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export jacinta.{RecordSchema, RecordSchemaDoc, RecordSchemaError}
+export jacinta.{JsonBlueprint, JsonBlueprintDoc, JsonBlueprintError}

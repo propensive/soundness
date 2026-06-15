@@ -37,7 +37,7 @@ import fulminate.*
 import kaleidoscope.*
 import vacuous.*
 
-object RecordSchemaError:
+object JsonBlueprintError:
   object Reason:
     given Reason is Communicable =
       case JsonType(expected, found) => m"expected JSON type $expected, but found $found"
@@ -57,6 +57,6 @@ object RecordSchemaError:
     case IntOutOfRange(value: Int, minimum: Optional[Int], maximum: Optional[Int]) extends Reason(3)
     case PatternMismatch(value: Text, pattern: Regex)                             extends Reason(4)
 
-case class RecordSchemaError(reason: RecordSchemaError.Reason)(using Diagnostics)
+case class JsonBlueprintError(reason: JsonBlueprintError.Reason)(using Diagnostics)
 extends Error(624, reason.number)
   ( m"the JSON was not valid according to the schema because $reason" )
