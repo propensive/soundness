@@ -68,6 +68,12 @@ object Addressable:
     inline def storageSize(storage: Array[Byte]): Int = storage.length
     inline def storageAddress(storage: Array[Byte], index: Int): Byte = storage(index)
 
+    inline def storageUpdate(storage: Array[Byte], index: Int, operand: Byte): Unit =
+      storage(index) = operand
+
+    inline def append(target: ji.ByteArrayOutputStream, operand: Byte): Unit =
+      target.write(operand.toInt)
+
     inline def copyChunk
       ( source:  Data,
        srcOff:  Int,
@@ -121,6 +127,11 @@ object Addressable:
     inline def storageSize(storage: Array[Char]): Int = storage.length
     inline def storageAddress(storage: Array[Char], index: Int): Char = storage(index)
 
+    inline def storageUpdate(storage: Array[Char], index: Int, operand: Char): Unit =
+      storage(index) = operand
+
+    inline def append(target: jl.StringBuilder, operand: Char): Unit = target.append(operand)
+
     inline def copyChunk
       ( source:  Text,
        srcOff:  Int,
@@ -171,6 +182,11 @@ trait Addressable extends Typeclass, Operable, Targetable:
   def allocate(size: Int): Storage
   def storageSize(storage: Storage): Int
   def storageAddress(storage: Storage, index: Int): Operand
+
+  // Single-`Operand` writes: one element into the chunk storage (`storageUpdate`) or appended to
+  // the builder (`append`). These back `Producer.push` for element-at-a-time producers.
+  def storageUpdate(storage: Storage, index: Int, operand: Operand): Unit
+  def append(target: Target, operand: Operand): Unit
 
   def copyChunk
     ( source: Self, srcOff: Int, dest: Storage, destOff: Int, len: Int )

@@ -32,173 +32,85 @@
                                                                                                   */
 package zephyrine
 
-import java.io as ji
-import java.lang as jl
 import java.util.concurrent as juc
 
-import anticipation.*
 import denominative.*
-import rudiments.*
-import vacuous.*
-
-object Producible:
-  inline given text: Producible:
-    type Self = Text
-    type Transport = Array[Char]
-    type Builder = jl.StringBuilder
-    type Element = Char
-
-    def length(text: Text): Int = text.s.length
-    def produce(block: Array[Char], size: Int): Text = String(block, 0, size).tt
-    def allocate(size: Int): Array[Char] = new Array[Char](size)
-
-    def copy(source: Text, start: Ordinal, target: Array[Char], index: Ordinal, size: Int): Unit =
-      source.s.getChars(start.n0, start.n0 + size, target, index.n0)
-
-    def builder(hint: Int): jl.StringBuilder = jl.StringBuilder(hint)
-
-    def append(builder: jl.StringBuilder, source: Text, start: Ordinal, size: Int): Unit =
-      builder.append(source.s, start.n0, start.n0 + size)
-
-    def build(builder: jl.StringBuilder): Text = builder.toString.tt
-    def writeElement(builder: jl.StringBuilder, element: Char): Unit = builder.append(element)
-
-    def setElement(target: Array[Char], index: Ordinal, element: Char): Unit =
-      target(index.n0) = element
-
-  inline given bytes: Producible:
-    type Self = Data
-    type Transport = Array[Byte]
-    type Builder = ji.ByteArrayOutputStream
-    type Element = Byte
-
-    def produce(block: Array[Byte], size: Int): Data =
-      java.util.Arrays.copyOfRange(block, 0, size).nn.immutable(using Unsafe)
-
-    def length(bytes: Data): Int = bytes.length
-    def allocate(size: Int): Array[Byte] = new Array[Byte](size)
-
-    def copy(source: Data, start: Ordinal, target: Array[Byte], index: Ordinal, size: Int): Unit =
-      System.arraycopy(source.mutable(using Unsafe), start.n0, target, index.n0, size)
-
-    def builder(hint: Int): ji.ByteArrayOutputStream = ji.ByteArrayOutputStream(hint)
-
-    def append(builder: ji.ByteArrayOutputStream, source: Data, start: Ordinal, size: Int): Unit =
-      builder.write(source.mutable(using Unsafe), start.n0, size)
-
-    def build(builder: ji.ByteArrayOutputStream): Data =
-      builder.toByteArray.nn.immutable(using Unsafe)
-
-    def writeElement(builder: ji.ByteArrayOutputStream, element: Byte): Unit =
-      builder.write(element.toInt)
-
-    def setElement(target: Array[Byte], index: Ordinal, element: Byte): Unit =
-      target(index.n0) = element
-
-
-// A medium (text or bytes) that output can be produced into. The `allocate`/`copy`/`produce`
-// trio backs the chunked streaming path; the `builder`/`append`/`build` trio backs synchronous
-// collection. `Self` is both the medium written in pieces and the value finally produced.
-trait Producible:
-  type Self
-  type Transport
-  type Builder
-  type Element
-
-  def allocate(size: Int): Transport
-  def length(value: Self): Int
-  def produce(block: Transport, size: Int): Self
-
-  def copy
-    ( source: Self,
-      start:  Ordinal,
-      target: Transport,
-      index:  Ordinal,
-      size:   Int )
-  :   Unit
-
-  def builder(hint: Int): Builder
-  def append(builder: Builder, source: Self, start: Ordinal, size: Int): Unit
-  def build(builder: Builder): Self
-
-  // Single-element writes (`Char` for text, `Byte` for bytes), backing `Producer.push` for
-  // element-at-a-time producers such as binary encoders.
-  def writeElement(builder: Builder, element: Element): Unit
-  def setElement(target: Transport, index: Ordinal, element: Element): Unit
-
 
 // A sink into which a value of one medium is written in pieces. The same producing code can be
 // driven two ways without duplicating it: `Producer.collect` runs it synchronously and returns the
 // whole result, while `Producer.apply` (streaming) writes chunks into a bounded buffer drained
 // lazily through `iterator` — the producing code then runs on a separate fiber. Neither path
-// allocates per `put` along a contiguous run.
+// allocates per `put` along a contiguous run. `Operand` is the element type — `Char` for
+// `Producer[Text]`, `Byte` for `Producer[Data]` — and types the element-at-a-time `push`.
 object Producer:
   // Streaming: chunks are queued (with backpressure) and drained through `iterator`. The producing
   // code must run on a separate fiber, since `put` blocks once the window is full.
-  def apply[medium: Producible](block: Int = 4096, window: Int = 2): Channel[medium] =
-    Channel(block, window)
+  def apply[medium](block: Int = 4096, window: Int = 2)(using addr: medium is Addressable)
+  :   Channel[medium] { type Operand = addr.Operand } =
 
-  // Write a single element: a `Char` for `Producer[Text]`, a `Byte` for `Producer[Data]`.
-  extension [medium](producer: Producer[medium])(using element: ElementType[medium])
-    def push(value: element.Element): Unit = producer.pushElement(value)
+    Channel(block, window)(using addr)
 
   // Synchronous: run `body`, accumulating directly into a builder, and return the whole value. No
   // concurrency, no chunk buffer, and none of the streaming path's single-thread deadlock risk.
-  def collect[medium: Producible as medium2](hint: Int = 4096)
-    ( body: Producer[medium] => Unit )
+  def collect[medium](using addressable: medium is Addressable)(hint: Int = 4096)
+    ( body: (Producer[medium] { type Operand = addressable.Operand }) => Unit )
   :   medium =
 
-    val builder = medium2.builder(hint)
+    val target = addressable.blank(hint)
 
     val producer = new Producer[medium]:
+      type Operand = addressable.Operand
+
       def put(source: medium): Unit =
-        medium2.append(builder, source, Prim, medium2.length(source))
+        val size = addressable.length(source)
+        if size > 0 then addressable.clone(source, Prim, (size - 1).z)(target)
 
       def put(source: medium, offset: Ordinal, size: Int): Unit =
-        medium2.append(builder, source, offset, size)
+        if size > 0 then addressable.clone(source, offset, (offset.n0 + size - 1).z)(target)
 
-      def pushElement(element: Any): Unit =
-        medium2.writeElement(builder, element.asInstanceOf[medium2.Element])
+      def push(operand: Operand): Unit = addressable.append(target, operand)
 
     body(producer)
-    medium2.build(builder)
+    addressable.build(target)
 
-  final class Channel[medium: Producible as medium2](block: Int, window: Int)
+  final class Channel[medium](block: Int, window: Int)(using val addressable: medium is Addressable)
   extends Producer[medium]:
+
+    type Operand = addressable.Operand
 
     private object Done
 
     private val queue: juc.ArrayBlockingQueue[medium | Done.type] =
       juc.ArrayBlockingQueue(window)
 
-    private val current: medium2.Transport = medium2.allocate(block)
+    private val current: addressable.Storage = addressable.allocate(block)
     private var index: Ordinal = Prim
 
     private inline def free: Int = block - index.n0
 
     private inline def publish(): Unit =
       if index != Prim then
-        queue.put(medium2.produce(current, index.n0))
+        queue.put(addressable.materialize(current, 0, index.n0))
         index = Prim
 
-    def put(source: medium): Unit = put(source, Prim, medium2.length(source))
+    def put(source: medium): Unit = put(source, Prim, addressable.length(source))
 
     def put(source: medium, offset: Ordinal, size: Int): Unit =
       var done = 0
 
       while size - done > free do
-        medium2.copy(source, (offset.n0 + done).z, current, index, free)
+        addressable.copyChunk(source, offset.n0 + done, current, index.n0, free)
         done += free
         index = (index.n0 + free).z
         publish()
 
-      medium2.copy(source, (offset.n0 + done).z, current, index, size - done)
+      addressable.copyChunk(source, offset.n0 + done, current, index.n0, size - done)
       index = (index.n0 + size - done).z
 
       if free == 0 then publish()
 
-    def pushElement(element: Any): Unit =
-      medium2.setElement(current, index, element.asInstanceOf[medium2.Element])
+    def push(operand: Operand): Unit =
+      addressable.storageUpdate(current, index.n0, operand)
       index = (index.n0 + 1).z
       if free == 0 then publish()
 
@@ -216,25 +128,10 @@ object Producer:
       def next(): medium = ready.asInstanceOf[medium]
 
 
-// Maps a medium to its element type — a `Char` for `Text`, a `Byte` for `Data` — so that the
-// `push` extension below is statically typed per medium. (A match type can't do this: `Text` is
-// opaque, so `Text`/`Data` disjointness isn't provable either way round.)
-object ElementType:
-  given text: (ElementType[Text] { type Element = Char }) =
-    new ElementType[Text]:
-      type Element = Char
-
-  given bytes: (ElementType[Data] { type Element = Byte }) =
-    new ElementType[Data]:
-      type Element = Byte
-
-trait ElementType[medium]:
-  type Element
-
 trait Producer[medium]:
+  type Operand
   def put(source: medium): Unit
   def put(source: medium, offset: Ordinal, size: Int): Unit
 
-  // Append one element. The typed entry point is the `push` extension; the parameter here is `Any`
-  // because the trait can't name the element type without it erasing identically to `put(medium)`.
-  def pushElement(element: Any): Unit
+  // Write a single element: a `Char` for `Producer[Text]`, a `Byte` for `Producer[Data]`.
+  def push(operand: Operand): Unit
