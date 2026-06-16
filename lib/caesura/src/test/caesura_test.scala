@@ -255,7 +255,7 @@ object Tests extends Suite(m"Caesura tests"):
       . assert(_ == List(t"Alice", t"X"))
 
     suite(m"Roundtrip"):
-      import dsvFormats.csv
+      import dsvFormats.csvFormat
 
       test(m"case class survives encode, render, parse and decode"):
         Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")).dsv.show
@@ -285,17 +285,17 @@ object Tests extends Suite(m"Caesura tests"):
 
     suite(m"Field renaming"):
       test(m"unchanged redesignation preserves the field name"):
-        import dsvRedesignations.unchanged
+        import dsvRedesignations.unchangedRedesignation
         summon[DsvRedesignation].transform(t"targetPerson")
       . assert(_ == t"targetPerson")
 
       test(m"capitalizedWords redesignation maps to capitalised words"):
-        import dsvRedesignations.capitalizedWords
+        import dsvRedesignations.capitalizedWordsRedesignation
         summon[DsvRedesignation].transform(t"targetPerson")
       . assert(_ == t"Target Person")
 
       test(m"lowerWords redesignation maps to lower-case words"):
-        import dsvRedesignations.lowerWords
+        import dsvRedesignations.lowerWordsRedesignation
         summon[DsvRedesignation].transform(t"targetPerson")
       . assert(_ == t"target person")
 
