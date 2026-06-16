@@ -37,6 +37,8 @@ import soundness.*
 import doms.html.whatwg.*
 import cssFormatters.standardCssFormatter
 import strategies.throwUnsafely
+import parasite.probates.awaitProbate
+import parasite.threading.virtualThreading
 
 // A page assembled from a modest set of independent template traits, mirroring the README example.
 // `content` and `verso` are the only slots the page fills; everything else is contributed by traits.
@@ -216,3 +218,13 @@ object Tests extends Suite(m"Graffiti tests"):
             def content: Html of (? <: Flow) = P("x")
         . exists(_.message.contains("sidebar"))
       . assert(_ == true)
+
+    suite(m"Serving over HTTP"):
+      test(m"an archetype declares the text/html media type"):
+        Page(t"Demo", Nil).mediaType.show
+      . assert(_.starts(t"text/html"))
+
+      test(m"serving an archetype streams the full HTML document, with a doctype"):
+        supervise(Page(t"Demo", Nil).read[Text])
+      . assert: served =>
+          served.contains(t"<!DOCTYPE html>") && served.contains(t"Hello, world!")

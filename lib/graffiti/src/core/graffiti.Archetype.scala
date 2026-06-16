@@ -35,10 +35,23 @@ package graffiti
 import anticipation.*
 import cataclysm.*
 import cataclysm.cssFormatters.standardCssFormatter
+import gesticulate.*
 import gossamer.*
 import honeycomb.*
 import honeycomb.doms.html.whatwg.*
+import parasite.*
 import prepositional.*
+import turbulence.*
+
+object Archetype:
+  // Serve an archetype as an HTTP `text/html` response — exactly as `Document[Html]` is served — by
+  // pairing the media type with a text stream of the rendered page. `Servable` is then synthesised
+  // (in telekinesis) wherever a handler returns one, so graffiti needs no scintillate dependency.
+  // The instances range over every `page <: Archetype`, since a page is always a concrete subtype.
+  given media: [page <: Archetype] => page is Media = _ => media"text/html"(charset = "UTF-8")
+
+  given streamable: [page <: Archetype] => (Monitor, Probate) => page is Streamable by Text =
+    archetype => Html.emit(archetype.document).to(Stream)
 
 // The base of every page archetype. Concrete pages are built by mixing in feature traits (each a
 // subtype of `Archetype`); their only obligation is to provide `content`, the central matter.
@@ -82,3 +95,7 @@ trait Archetype:
   // set on `<body>` from `direction` (the `<html>` element admits no Whatwg global attributes).
   final def html: Html of "html" =
     Html(Head(Title(pageTitle), Style(stylesheet), head), Body(dir = direction)(frame))
+
+  // The page as a `Document[Html]` with a leading doctype — the form that is served over HTTP.
+  final def document: Document[Html] =
+    Document[Html](Fragment(Html.doctype, html), doms.html.whatwg)
