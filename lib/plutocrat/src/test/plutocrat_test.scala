@@ -34,107 +34,107 @@ package plutocrat
 
 import soundness.*
 
-import currencies.{Gbp, Eur}
+import currencies.{gbp, eur}
 
 object Tests extends Suite(m"Plutocrat tests"):
   def run(): Unit =
     suite(m"Money tests"):
       test(m"Show a local monetary value"):
         import currencyStyles.localCurrencyStyle
-        val amount: Money in "EUR" = Eur(3.01)
+        val amount: Money in "EUR" = eur(3.01)
         t"Received $amount"
 
       . assert(_ == t"Received €3.01")
 
       test(m"Type error for different currencies"):
         demilitarize:
-          val amount: Money in "EUR" = Gbp(3.01)
+          val amount: Money in "EUR" = gbp(3.01)
 
       . assert(!_.nil)
 
       test(m"No type error for unspecified currency"):
         demilitarize:
-          val amount: Money = Gbp(3.01)
+          val amount: Money = gbp(3.01)
 
       . assert(_.nil)
 
       test(m"Currency is recoverable from runtime"):
-        val amount: Money = Gbp(3.01)
+        val amount: Money = gbp(3.01)
         amount.currency
 
       . assert(_ == "GBP")
 
       test(m"Show a monetary value"):
         import currencyStyles.genericCurrencyStyle
-        val amount = Eur(3.01)
+        val amount = eur(3.01)
         t"Received $amount"
 
       . assert(_ == t"Received 3.01 EUR")
 
       test(m"Add two amounts"):
-        Eur(3.01) + Eur(0.02)
+        eur(3.01) + eur(0.02)
 
-      . assert(_ == Eur(3.03))
+      . assert(_ == eur(3.03))
 
       test(m"Subtract an amount"):
-        Eur(3.01) - Eur(0.02)
+        eur(3.01) - eur(0.02)
 
-      . assert(_ == Eur(2.99))
+      . assert(_ == eur(2.99))
 
       test(m"Multiply an amount"):
-        Eur(3.01)*3.0
+        eur(3.01)*3.0
 
-      . assert(_ == Eur(9.03))
+      . assert(_ == eur(9.03))
 
       test(m"Divide an amount"):
-        Eur(3.01)/3
+        eur(3.01)/3
 
-      . assert(_ == Eur(1.00))
+      . assert(_ == eur(1.00))
 
       test(m"Split an amount"):
-        Eur(3.01).share(3).total
+        eur(3.01).share(3).total
 
-      . assert(_ == Eur(3.01))
+      . assert(_ == eur(3.01))
 
       test(m"Different currencies cannot be combined"):
         demilitarize:
-          Eur(1.00) + Gbp(1.00)
+          eur(1.00) + gbp(1.00)
 
       . assert(_.map(_.reason) == List(CompileError.Reason.MissingImplicitArgument))
 
       test(m"Monetary values can be negated"):
-        -Eur(1.99)
+        -eur(1.99)
 
-      . assert(_ == Eur(-1.99))
+      . assert(_ == eur(-1.99))
 
       test(m"Compare amounts"):
-        Eur(1.01) > Eur(2.10)
+        eur(1.01) > eur(2.10)
 
       . assert(_ == false)
 
       test(m"Compare equal amounts with >"):
-        Eur(1.01) > Eur(1.01)
+        eur(1.01) > eur(1.01)
 
       . assert(_ == false)
 
       test(m"Compare equal amounts with >="):
-        Eur(1.01) >= Eur(1.01)
+        eur(1.01) >= eur(1.01)
 
       . assert(_ == true)
 
     suite(m"Price tests"):
       test(m"Construct new price"):
-        Gbp(2.30).tax(0.2)
+        gbp(2.30).tax(0.2)
 
-      . assert(_ == Price(Gbp(2.30), Gbp(0.46)))
+      . assert(_ == Price(gbp(2.30), gbp(0.46)))
 
       test(m"Tax amount is rounded up correctly"):
-        Gbp(2.94).tax(0.2)
+        gbp(2.94).tax(0.2)
 
-      . assert(_ == Price(Gbp(2.94), Gbp(0.59)))
+      . assert(_ == Price(gbp(2.94), gbp(0.59)))
 
       test(m"Prices in different currencies cannot be combined"):
-        demilitarize(Eur(1.00).tax(0.175) + Gbp(1.00).tax(0.2))
+        demilitarize(eur(1.00).tax(0.175) + gbp(1.00).tax(0.2))
       . assert(!_.nil)
 
 
