@@ -73,7 +73,7 @@ object Subcompiler:
 
         while cur.exists do
           if cur.source == cuSource then outermostInCu = cur
-          if cur.outer == NoSourcePosition then cur = NoSourcePosition else cur = cur.outer
+          if cur.outer == NoSourcePosition then cur = NoSourcePosition else cur = cur.outer.nn
 
         var position = diagnostic.pos
 
@@ -90,12 +90,12 @@ object Subcompiler:
                 && (c.end - c.start) < (found.end - found.start)
               then found = c
 
-              if c.outer == NoSourcePosition then c = NoSourcePosition else c = c.outer
+              if c.outer == NoSourcePosition then c = NoSourcePosition else c = c.outer.nn
 
             position = found
 
           case null =>
-            while position.outer != NoSourcePosition do position = position.outer
+            while position.outer != NoSourcePosition do position = position.outer.nn
 
         val content = context.compilationUnit.source.content
         val focus = String(content.slice(position.start, position.end))
