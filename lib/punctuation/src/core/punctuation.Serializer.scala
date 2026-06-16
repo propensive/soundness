@@ -35,43 +35,65 @@ package punctuation
 import anticipation.*
 import denominative.*
 import gossamer.*
+import parasite.*
 import prepositional.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
+import zephyrine.*
 
 // Round-trips a `Markdown` AST back into CommonMark source text. The output is
 // not byte-identical to whatever the parser originally consumed, but is
 // guaranteed to re-parse to an equal AST (modulo `Ordinal` `line` metadata).
 object Serializer:
-  def apply(markdown: Markdown of Layout): Text =
-    val builder = StringBuilder()
-    layoutSeq(builder, markdown.children, t"")
-    appendLinkRefs(builder, markdown.linkRefs)
-    builder.text
+  def apply(markdown: Markdown of Layout)(using width: MarkdownWidth): Text =
+    Producer.collect[Text](): producer =>
+      writeDocument(Writer(producer, width.columns), markdown)
 
   @scala.annotation.targetName("applyProse")
-  def apply(markdown: Markdown of Prose): Text =
-    val builder = StringBuilder()
-    markdown.children.each(prose(builder, _))
-    builder.text
+  def apply(markdown: Markdown of Prose)(using width: MarkdownWidth): Text =
+    Producer.collect[Text](): producer =>
+      flow(Writer(producer, width.columns), markdown.children, protectFirst = false)
 
-  private def appendLinkRefs(builder: StringBuilder, refs: List[Markdown.LinkRef]): Unit =
+  // Stream a document's source incrementally; the producing code runs on a separate fiber.
+  def emit(markdown: Markdown of Layout)
+    ( using width: MarkdownWidth, monitor: Monitor, probate: Probate )
+  :   Iterator[Text] =
+
+    val producer = Producer[Text](4096)
+
+    async:
+      writeDocument(Writer(producer, width.columns), markdown)
+      producer.finish()
+
+    producer.iterator
+
+  private def writeDocument(writer: Writer, markdown: Markdown of Layout): Unit =
+    var first = true
+
+    markdown.children.each: node =>
+      if !first then writer.blankLine()
+      first = false
+      layout(writer, node)
+
+    linkRefs(writer, markdown.linkRefs)
+
+  private def linkRefs(writer: Writer, refs: List[Markdown.LinkRef]): Unit =
     if !refs.nil then
-      if builder.length > 0 && !builder.text.ends(t"\n") then builder.add(t"\n")
+      if writer.written && !writer.atLineStart then writer.newline()
 
       refs.each: ref =>
-        builder.add('[')
-        builder.add(escapeLinkLabel(ref.label))
-        builder.add(t"]: ")
-        builder.add(linkDestination(ref.destination))
+        writer.raw(t"[")
+        writer.raw(escapeLinkLabel(ref.label))
+        writer.raw(t"]: ")
+        writer.raw(linkDestination(ref.destination))
 
         ref.title.let: title =>
-          builder.add(t" \"")
-          builder.add(title.sub(t"\"", t"\\\""))
-          builder.add('"')
+          writer.raw(t" \"")
+          writer.raw(title.sub(t"\"", t"\\\""))
+          writer.raw(t"\"")
 
-        builder.add('\n')
+        writer.newline()
 
   // Characters that, if unescaped in a `Textual` node, could start a new
   // inline construct when the output is re-parsed. We escape conservatively:
@@ -261,9 +283,8 @@ object Serializer:
     case Prose.HtmlInline(html) =>
       builder.add(html)
 
-  // Render the inline content of a paragraph or heading to a fresh `Text`,
-  // applying first-character block-start protection so a leading `#` etc.
-  // does not re-parse as a new block.
+  // Render the inline content of a heading to a fresh `Text`, applying first-character block-start
+  // protection so a leading `#` etc. does not re-parse as a new block.
   private def inlineLine(children: Seq[Prose]): Text =
     val buf = StringBuilder()
     children.each(prose(buf, _))
@@ -273,131 +294,202 @@ object Serializer:
     else if blockStart(out.s.charAt(0)) then t"\\$out"
     else out
 
-  private def layoutSeq(builder: StringBuilder, nodes: Seq[Layout], indent: Text): Unit =
-    var first = true
+  // Render one inline construct (code span, emphasis, link, …) to a `Text`, emitted as a single
+  // unbreakable unit by the paragraph word-wrapper.
+  private def inlineUnit(node: Prose): Text =
+    val buf = StringBuilder()
+    prose(buf, node)
+    buf.text
 
-    nodes.each: node =>
-      if !first then ensureBlankLine(builder)
-      first = false
-      layout(builder, node, indent)
+  // Render a sequence of blocks to a `Text` — the indented body of a block quote or list item,
+  // which is then re-emitted with a line prefix.
+  private def render(nodes: Seq[Layout], width: Int): Text =
+    Producer.collect[Text](): producer =>
+      val inner = Writer(producer, width)
+      var first = true
 
-  private def ensureBlankLine(builder: StringBuilder): Unit =
-    val txt = builder.text
+      nodes.each: node =>
+        if !first then inner.blankLine()
+        first = false
+        layout(inner, node)
 
-    if txt.length == 0 then ()
-    else if txt.ends(t"\n\n") then ()
-    else if txt.ends(t"\n") then builder.add('\n')
-    else builder.add(t"\n\n")
+  private def trimNewline(text: Text): Text = if text.ends(t"\n") then text.skip(1, Rtl) else text
 
-  private def writeWithIndent(builder: StringBuilder, text: Text, indent: Text): Unit =
-    val s = text.s
-    var lineStart = true
-    var i = 0
+  // Word-wrap a paragraph's inline content: textual nodes break at their spaces, inline constructs
+  // are atomic. `protectFirst` backslash-escapes a leading block-start character.
+  private def flow(writer: Writer, children: Seq[Prose], protectFirst: Boolean): Unit =
+    if protectFirst then writer.protectNext()
 
-    while i < s.length do
-      val c = s.charAt(i)
-      if lineStart && indent.length > 0 then builder.add(indent)
-      builder.add(c)
-      lineStart = c == '\n'
-      i += 1
+    children.each:
+      case Prose.Textual(text) => writer.text(escapeTextual(text))
+      case Prose.Softbreak     => writer.soft()
+      case Prose.Linebreak     => writer.hard()
+      case node                => writer.atom(inlineUnit(node))
 
-  private def layout(builder: StringBuilder, node: Layout, indent: Text): Unit = node match
+    writer.endFlow()
+
+  private def layout(writer: Writer, node: Layout): Unit = node match
     case Layout.Heading(_, level, children*) =>
-      builder.add(indent)
-      builder.add(t"#"*level)
-      builder.add(' ')
-      builder.add(inlineLine(children))
-      builder.add('\n')
+      writer.raw(t"#"*level)
+      writer.raw(t" ")
+      writer.raw(inlineLine(children))
+      writer.newline()
 
     case Layout.Paragraph(_, children*) =>
-      writeWithIndent(builder, inlineLine(children), indent)
-      builder.add('\n')
+      flow(writer, children, protectFirst = true)
+      writer.newline()
 
     case Layout.ThematicBreak(_) =>
-      builder.add(indent)
-      builder.add(t"---\n")
+      writer.raw(t"---")
+      writer.newline()
 
     case Layout.CodeBlock(_, info, code) =>
       val fence = codeBlockFence(code)
-      builder.add(indent)
-      builder.add(fence)
-      if !info.nil then builder.add(info.map(_.s).mkString(" ").tt)
-      builder.add('\n')
-      writeWithIndent(builder, code, indent)
-      if !code.ends(t"\n") then builder.add('\n')
-      builder.add(indent)
-      builder.add(fence)
-      builder.add('\n')
+      writer.raw(fence)
+      if !info.nil then writer.raw(info.map(_.s).mkString(" ").tt)
+      writer.newline()
+      writer.raw(code)
+      if !code.ends(t"\n") then writer.newline()
+      writer.raw(fence)
+      writer.newline()
 
     case Layout.BlockQuote(_, children*) =>
-      val inner = StringBuilder()
-      layoutSeq(inner, children, t"")
-      val text = inner.text
-      // Strip a single trailing newline so the loop doesn't emit a phantom
-      // empty final line.
-      val body = if text.ends(t"\n") then text.skip(1, Rtl) else text
-
-      body.cut(t"\n").each: line =>
-        builder.add(indent)
-
-        if line.length == 0 then builder.add('>')
+      trimNewline(render(children, writer.width)).cut(t"\n").each: line =>
+        if line.length == 0 then writer.raw(t">")
         else
-          builder.add(t"> ")
-          builder.add(line)
+          writer.raw(t"> ")
+          writer.raw(line)
 
-        builder.add('\n')
+        writer.newline()
 
     case Layout.HtmlBlock(_, html) =>
-      writeWithIndent(builder, html, indent)
-      if !html.ends(t"\n") then builder.add('\n')
+      writer.raw(html)
+      if !html.ends(t"\n") then writer.newline()
 
     case Layout.BulletList(_, tight, items*) =>
       var first = true
 
       items.each: item =>
-        if !first && !tight then ensureBlankLine(builder)
+        if !first && !tight then writer.blankLine()
         first = false
-        builder.add(indent)
-        builder.add(t"- ")
-        renderItemBody(builder, item, t"$indent  ", tight)
+        listItem(writer, item, t"- ", t"  ")
 
     case Layout.OrderedList(_, start, tight, delimiter, items*) =>
       var n = start
       var first = true
 
       items.each: item =>
-        if !first && !tight then ensureBlankLine(builder)
+        if !first && !tight then writer.blankLine()
         first = false
         val marker = t"$n${delimiter.or('.')} "
-        val hangingSpaces = t" "*marker.length
-        builder.add(indent)
-        builder.add(marker)
-        renderItemBody(builder, item, t"$indent$hangingSpaces", tight)
+        listItem(writer, item, marker, t" "*marker.length)
         n += 1
 
-  // A list item is itself a sequence of `Layout` blocks. We emit the first
-  // block's first line right after the marker, then everything else with
-  // the hanging-indent applied. Tight lists collapse the inter-paragraph
-  // blank lines exactly as the parser does.
-  private def renderItemBody
-    ( builder: StringBuilder, item: List[Layout], hangingIndent: Text, tight: Boolean )
-  :   Unit =
+  // Emit a list item: the first line carries the marker, subsequent lines the hanging indent.
+  private def listItem(writer: Writer, item: List[Layout], marker: Text, hanging: Text): Unit =
+    if item.nil then writer.newline() else
+      var first = true
 
-    if item.nil then builder.add('\n')
-    else
-      val inner = StringBuilder()
-      layoutSeq(inner, item, t"")
-      val rendered = inner.text.s
+      trimNewline(render(item, writer.width)).cut(t"\n").each: line =>
+        writer.raw(if first then marker else hanging)
+        writer.raw(line)
+        writer.newline()
+        first = false
 
+  // A streaming sink for Markdown source. Block separation, indentation and the first-character
+  // block-start escape are carried as state (no looking back at emitted output), and paragraph text
+  // is word-wrapped at `width` (the default `Int.MaxValue` never wraps, preserving the AST).
+  class Writer(producer: Producer[Text], val width: Int):
+    private var trailing = 0          // consecutive trailing newlines just emitted
+    private var col = 0               // current column, for wrapping
+    private var pendingSpaces = 0     // spaces buffered before the current word
+    private val seg = StringBuilder() // the current unbreakable run (word + adjacent atoms)
+    private var protect = false       // escape the next word's leading block-start char
+    var written: Boolean = false
+
+    def atLineStart: Boolean = col == 0
+
+    // Emit text verbatim (it may contain newlines), tracking the trailing-newline count and column.
+    def raw(text: Text): Unit =
+      val s = text.s
+
+      if s.length > 0 then
+        producer.put(text)
+        written = true
+        var nls = 0
+        var k = s.length
+
+        while k > 0 && s.charAt(k - 1) == '\n' do
+          nls += 1
+          k -= 1
+
+        if k == 0 then
+          trailing += nls
+          col = 0
+        else
+          trailing = nls
+          val lastNl = s.lastIndexOf('\n')
+          col = if lastNl < 0 then col + s.length else s.length - lastNl - 1
+
+    def newline(): Unit =
+      producer.put(t"\n")
+      written = true
+      trailing += 1
+      col = 0
+
+    // Ensure blocks are separated by a blank line (two trailing newlines), once content exists.
+    def blankLine(): Unit =
+      if written then
+        if trailing == 0 then
+          newline()
+          newline()
+        else if trailing == 1 then
+          newline()
+
+    def protectNext(): Unit = protect = true
+
+    def text(content: Text): Unit =
+      val s = content.s
       var i = 0
-      var lineStart = false
 
-      while i < rendered.length do
-        val c = rendered.charAt(i)
-        if lineStart then builder.add(hangingIndent)
-        builder.add(c)
-        lineStart = c == '\n'
+      while i < s.length do
+        if s.charAt(i) == ' ' then
+          flushSeg()
+          pendingSpaces += 1
+        else
+          seg.add(s.charAt(i))
+
         i += 1
 
-      if rendered.isEmpty || rendered.charAt(rendered.length - 1) != '\n'
-      then builder.add('\n')
+    def atom(content: Text): Unit = seg.add(content)
+
+    def soft(): Unit =
+      flushSeg()
+      pendingSpaces = 0
+      newline()
+
+    def hard(): Unit =
+      flushSeg()
+      pendingSpaces = 0
+      raw(t"\\")
+      newline()
+
+    def endFlow(): Unit = flushSeg()
+
+    private def flushSeg(): Unit =
+      if seg.length > 0 then
+        val word = seg.text
+        seg.clear()
+
+        if pendingSpaces > 0 then
+          if width != Int.MaxValue && col > 0 && col + pendingSpaces + word.length > width
+          then newline()
+          else raw(t" "*pendingSpaces)
+
+          pendingSpaces = 0
+
+        if protect then
+          protect = false
+          if blockStart(word.s.charAt(0)) then raw(t"\\")
+
+        raw(word)
