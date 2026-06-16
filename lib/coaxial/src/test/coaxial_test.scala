@@ -243,26 +243,26 @@ object Tests extends Suite(m"Coaxial tests"):
 
     suite(m"Socket options"):
       test(m"reuseAddress sets SO_REUSEADDR on a bound TCP server socket"):
-        import socketOptions.reuseAddress
+        import socketOptions.reuseAddressSocketOption
         val server = summon[TcpPort is Bindable].bind(Port[Tcp](), Unset)
         server.getOption(java.net.StandardSocketOptions.SO_REUSEADDR).nn.booleanValue
           .also(server.close())
       . assert(_ == true)
 
       test(m"broadcast sets SO_BROADCAST on a bound UDP socket"):
-        import socketOptions.broadcast
+        import socketOptions.broadcastSocketOption
         val socket = summon[UdpPort is Bindable].bind(Port[Udp](), Unset)
         socket.getOption(java.net.StandardSocketOptions.SO_BROADCAST).nn.booleanValue
           .also(socket.close())
       . assert(_ == true)
 
       test(m"a UDP-only option is collected only for UDP connections"):
-        import socketOptions.broadcast
+        import socketOptions.broadcastSocketOption
         (summon[Every[SocketOption.Tcp]].values, summon[Every[SocketOption.Udp]].values)
       . assert(_ == (Nil, List(SocketOption.Broadcast)))
 
       test(m"a shared option is collected for every connection type"):
-        import socketOptions.reuseAddress
+        import socketOptions.reuseAddressSocketOption
         ( summon[Every[SocketOption.Tcp]].values,
           summon[Every[SocketOption.Udp]].values,
           summon[Every[SocketOption.Domain]].values )
