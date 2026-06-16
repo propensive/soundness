@@ -116,7 +116,7 @@ final class ListItemBuilder(val line: Ordinal, val indent: Int) extends Containe
     // CommonMark §5.2: an empty list item that has seen a blank line cannot
     // accept further content. Returning Unset causes the dispatcher to close
     // the item; the residual then becomes content outside the list.
-    if hadBlank && children.isEmpty then return Unset
+    if hadBlank && children.nil then return Unset
     // Strip `indent` visual cols of leading whitespace, allowing partial
     // consumption of a tab. Use buildResidual so the returned text starts
     // with leftover-tab expansion + further leading-tab expansion (with
@@ -189,7 +189,7 @@ final class ParagraphBuilder(val line: Ordinal) extends LeafBuilder:
     val stripped = if i == 0 then text else Text(s.substring(i, n).nn)
     lines += stripped
 
-  def isEmpty: Boolean = lines.isEmpty
+  def isEmpty: Boolean = lines.nil
 
   // Stored after `extractLinkRefs` — the byte-position in the joined-lines
   // text where link-reference definitions end and paragraph content begins.

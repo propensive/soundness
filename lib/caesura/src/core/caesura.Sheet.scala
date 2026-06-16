@@ -181,7 +181,7 @@ object Sheet:
             state = State.Quoted
             return Unset
           else
-            if cellsBuf.isEmpty && builder.length == 0 then return Unset
+            if cellsBuf.nil && builder.length == 0 then return Unset
             else
               closeCell()
               return emitRow()

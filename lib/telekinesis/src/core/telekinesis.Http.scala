@@ -519,6 +519,7 @@ object Http:
 
     transparent inline def applyDynamic(id: "apply")(inline headers: Any*)
     :   Protoresponse | Response =
+
       ${telekinesis.internal.response('headers)}
 
     case class Protoresponse(status0: Optional[Status], headers: Seq[Header]):

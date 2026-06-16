@@ -36,6 +36,7 @@ import language.dynamics
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import gossamer.*
 import hellenism.*
@@ -81,7 +82,7 @@ object Api:
         path.sub(t"{${entry(0)}}", entry(1))
 
     val full =
-      if request.query.isEmpty then t"${request.base}$substituted"
+      if request.query.nil then t"${request.base}$substituted"
       else
         val parameters =
           request.query.map: (key, value) =>

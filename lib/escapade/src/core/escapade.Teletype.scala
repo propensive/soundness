@@ -319,10 +319,10 @@ case class Teletype
       val aN = plain.length
       val combinedPlain = plain+that.plain
 
-      val shiftedLinks = if that.hyperlinks.isEmpty then hyperlinks else
+      val shiftedLinks = if that.hyperlinks.nil then hyperlinks else
         hyperlinks ++ that.hyperlinks.map: (k, v) => (k + aN) -> v
 
-      val shiftedInsertions = if that.insertions.isEmpty then insertions else
+      val shiftedInsertions = if that.insertions.nil then insertions else
         insertions ++ that.insertions.map: (k, v) => (k + aN) -> v
 
       if isDense && that.isDense then
@@ -505,7 +505,7 @@ case class Teletype
         if from < to then
           val ins = insertions.range(from, to)
 
-          if ins.isEmpty then buffer.add(plain.s.substring(from, to).nn.tt)
+          if ins.nil then buffer.add(plain.s.substring(from, to).nn.tt)
           else
             var p = from
 

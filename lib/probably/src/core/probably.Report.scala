@@ -38,6 +38,7 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import dendrology.*
+import denominative.*
 import digression.*
 import distillate.*
 import escapade.*
@@ -345,7 +346,7 @@ class Report(using Environment)(using palette: TestPalette):
       val errorClass = Option(error.getClass.getName).map(_.nn.tt).getOrElse(t"")
       val msg = Option(error.getMessage).map(_.nn.tt).getOrElse(t"")
 
-      if active.isEmpty then Out.println(t"FATAL: $errorClass: $msg")
+      if active.nil then Out.println(t"FATAL: $errorClass: $msg")
       else Out.println(t"FATAL in $activeNames: $errorClass: $msg")
 
       StackTrace(error).frames.take(3).each: frame => Out.println(formatFrame(frame))
@@ -780,7 +781,7 @@ class Report(using Environment)(using palette: TestPalette):
         val errorClass = Option(error.getClass.getName).map(_.nn.tt).getOrElse(t"")
 
         val message =
-          if active.isEmpty
+          if active.nil
           then truncate(t"Fatal error: $errorClass: $cause")
           else truncate(t"Fatal error in $activeNames: $errorClass: $cause")
 

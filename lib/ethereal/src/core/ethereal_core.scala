@@ -36,7 +36,6 @@ import language.experimental.pureFunctions
 
 import java.io as ji
 import java.lang as jl
-import java.nio as jnio
 import java.util.concurrent.atomic as juca
 
 import scala.collection.concurrent as scc

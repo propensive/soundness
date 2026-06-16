@@ -38,7 +38,6 @@ import java.nio.file as jnf
 import ambience.*
 import anticipation.*
 import contingency.*
-import digression.*
 import distillate.*
 import exoskeleton.*
 import fulminate.*
@@ -46,12 +45,10 @@ import galilei.*
 import gossamer.*
 import hellenism.*, classloaders.threadContext
 import prepositional.*
-import revolution.*
 import rudiments.*
 import serpentine.*
 import spectacular.*
 import turbulence.*
-import urticose.*
 import vacuous.*
 import zeppelin.*
 

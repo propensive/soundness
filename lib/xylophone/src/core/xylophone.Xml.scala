@@ -1934,7 +1934,7 @@ object Xml extends Tag.Container
           if text.length > 0 then children += TextNode(text)
 
       val result =
-        if children.isEmpty then IArray.empty[Node]
+        if children.nil then IArray.empty[Node]
         else
           val arr = new Array[Node](children.length)
           var i = 0
@@ -2255,7 +2255,7 @@ object Xml extends Tag.Container
           if text.length > 0 then children += TextNode(text)
 
       val result =
-        if children.isEmpty then IArray.empty[Node]
+        if children.nil then IArray.empty[Node]
         else
           val arr = new Array[Node](children.length)
           var i = 0

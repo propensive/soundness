@@ -37,6 +37,7 @@ import scala.quoted.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import gigantism.*
@@ -455,7 +456,7 @@ object internal:
             ( name         = ${Expr(method.name.tt)},
               title        = $title,
               description  = $about,
-              arguments    = ${if params.isEmpty then 'Unset else Expr.ofList(params)} )
+              arguments    = ${if params.nil then 'Unset else Expr.ofList(params)} )
         }
 
     val resourceEntries = resourceMethods.map: method =>

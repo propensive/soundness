@@ -32,8 +32,6 @@
                                                                                                   */
 package stratiform
 
-import scala.compiletime.*
-
 import adversaria.*
 import anticipation.*
 import distillate.*
@@ -122,7 +120,7 @@ object Tels2:
       val members = fields.map: (label, fieldShape) =>
         val repeatable = fieldShape match
           case Morphology.Arr(_) => Polarity.Loose
-          case _            => Polarity.Implicit
+          case _                 => Polarity.Implicit
 
         val polarity = fieldShape match
           case Morphology.Arr(_) | Morphology.Opt(_) => Polarity.Loose

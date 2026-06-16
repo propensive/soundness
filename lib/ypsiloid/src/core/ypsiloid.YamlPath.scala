@@ -84,7 +84,7 @@ object YamlPath extends Root(""):
       ( inline insertions: Any* )
     :   YamlPath =
 
-      ${ypsiloid.YamlPathInterpolator.expand[parts, origins]('insertions)}
+      ${ypsiloid.internal.yamlPath[parts, origins]('insertions)}
 
   // Parses a same-document YAML path (`#`, `#/`, `#/a/b`), reporting the offset
   // of any error. Modelled on `jacinta.JsonPointer`'s decoder, with the same
@@ -113,7 +113,7 @@ object YamlPath extends Root(""):
       // Build with root `/`, matching the derivation's `prepend`, so the
       // slashless encoder (`#${path}`) renders `#/a/b`. The whole-document path
       // (`#`) keeps the default empty root so it encodes back to `#`.
-      if segments.isEmpty then YamlPath()
+      if segments.nil then YamlPath()
       else
         val descent = segments.reverse.map(filesystem.unescape)
         YamlPath(Unset, Path[YamlPath, YamlPath.type, Tuple]("/", descent))

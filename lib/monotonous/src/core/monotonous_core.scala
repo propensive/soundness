@@ -34,7 +34,6 @@ package monotonous
 
 import anticipation.*
 import gossamer.*
-import hypotenuse.*
 import prepositional.*
 
 package alphabets:

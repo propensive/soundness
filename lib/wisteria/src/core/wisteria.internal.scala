@@ -52,15 +52,15 @@ object internal:
 
   // Resolves a field/variant instance via the real implicit search while *ignoring the typeclass's
   // wrapper givens* (the derivation's own `derived`, which route data types into a fresh graph).
-  // This makes a field summon land on a *sibling* synthetic given (a recursive or shared type in the
-  // same derivation block), a codec (`List[T]`, …), or a leaf — never re-entering the derivation.
-  // Deferred to the splice site (a sibling val's nested `Quotes`) so the siblings emitted alongside
-  // it are in scope.
+  // This makes a field summon land on a *sibling* synthetic given (a recursive or shared type in
+  // the same derivation block), a codec (`List[T]`, …), or a leaf — never re-entering the
+  // derivation. Deferred to the splice site (a sibling val's nested `Quotes`) so the siblings
+  // emitted alongside it are in scope.
   inline def field[typeclass[_], elem]: typeclass[elem] = ${fieldInstance[typeclass, elem]}
 
-  // A marker that `resolvableNonStructural` injects (as a synthetic `given`) into a probe's implicit
-  // scope, so the derivation macro can detect that implicit search has re-entered it for this exact
-  // instance type. Never instantiated at runtime.
+  // A marker that `resolvableNonStructural` injects (as a synthetic `given`) into a probe's
+  // implicit scope, so the derivation macro can detect that implicit search has re-entered it for
+  // this exact instance type. Never instantiated at runtime.
   trait Reentrant[carrier]
 
   // What `deriveGraph` returns when reached only as a re-entry probe (a `Reentrant` for its own
@@ -85,16 +85,19 @@ object internal:
     Expr.ofList(labels)
 
 
-  // Whether `tpe` is a sum: a sealed trait / enum with `children`. A `Variant & Parent` intersection
-  // (a sum's variant) is the variant — a product. A singleton (case object / parameterless enum
-  // case) has a *term* symbol whose *type* symbol widens to the sum, so the term test comes first.
+  // Whether `tpe` is a sum: a sealed trait / enum with `children`. A `Variant & Parent`
+  // intersection (a sum's variant) is the variant — a product. A singleton (case object /
+  // parameterless enum case) has a *term* symbol whose *type* symbol widens to the sum, so the term
+  // test comes first.
   def isSumType(using Quotes)(tpe: quotes.reflect.TypeRepr): Boolean =
     import quotes.reflect.*
 
     tpe.dealias match
       case AndType(_, _)          => false
       case Refinement(base, _, _) => isSumType(base)
-      case other                  => other.termSymbol.isNoSymbol && other.typeSymbol.children.nonEmpty
+
+      case other =>
+        other.termSymbol.isNoSymbol && other.typeSymbol.children.nonEmpty
 
   // Whether `tpe` is a (non-sum) product wisteria can build structurally.
   def isProductType(using Quotes)(tpe: quotes.reflect.TypeRepr): Boolean =
@@ -110,17 +113,18 @@ object internal:
 
   // Whether every variant of the sum is a singleton (case object / parameterless enum case) — i.e.
   // it is a "choice". Computed here, at macro time, by symbol inspection rather than via an inline
-  // `<:< Singleton` fold over `MirroredElemTypes`: that fold mis-reduces deep inside `deriveGraph`'s
-  // nested inlining (a non-singleton variant is wrongly accepted), so a typeclass that rejects
-  // non-choice sums would not surface its `compiletime.error`.
+  // `<:< Singleton` fold over `MirroredElemTypes`: that fold mis-reduces deep inside
+  // `deriveGraph`'s nested inlining (a non-singleton variant is wrongly accepted), so a typeclass
+  // that rejects non-choice sums would not surface its `compiletime.error`.
   def isChoice[derivation: Type]: Macro[Boolean] =
     import quotes.reflect.*
     val children = TypeRepr.of[derivation].typeSymbol.children
     val singleton = children.forall(variantType(_) <:< TypeRepr.of[scala.Singleton])
     Expr(children.nonEmpty && singleton)
 
-  // The variant type intersected with the sum parent (`variant & derivation`): keeps a parameterless
-  // enum case distinct (its bare type widens to the sum) while conforming to `variant <: derivation`.
+  // The variant type intersected with the sum parent (`variant & derivation`): keeps a
+  // parameterless enum case distinct (its bare type widens to the sum) while conforming to
+  // `variant <: derivation`.
   private def variantWith(using Quotes)
     ( child: quotes.reflect.Symbol, parent: quotes.reflect.TypeRepr )
   :   quotes.reflect.TypeRepr =
@@ -130,8 +134,9 @@ object internal:
 
   // A "wrapper" given supplies `typeclass[T]` at a bare type parameter `T` — the derivation's own
   // `derived`, or a `summonFrom` catch-all routing data types in — unlike a structural codec like
-  // `List[T] is Encodable` whose argument is an applied type. These are ignored during field/variant
-  // resolution and reachability probing so neither re-enters the in-progress derivation.
+  // `List[T] is Encodable` whose argument is an applied type. These are ignored during
+  // field/variant resolution and reachability probing so neither re-enters the in-progress
+  // derivation.
   private def isWrapper(using Quotes)
     ( typeclassConstructor: quotes.reflect.TypeRepr, method: quotes.reflect.Symbol )
   :   Boolean =
@@ -155,20 +160,23 @@ object internal:
     val owner = typeclassConstructor.appliedTo(TypeRepr.of[Any]).typeSymbol.maybeOwner
 
     if owner.isNoSymbol then Nil
-    else (owner.methodMembers ++ owner.fieldMembers).filter(isWrapper(typeclassConstructor, _)).distinct
+    else
+      (owner.methodMembers ++ owner.fieldMembers)
+        . filter(isWrapper(typeclassConstructor, _)).distinct
 
-  // Resolves a field/variant instance via the real implicit search, ignoring the typeclass's wrapper
-  // givens so it lands on a sibling synthetic given (a recursive/shared type), a codec, or a leaf —
-  // never re-entering the in-progress derivation. Deferred to the use site (a sibling val's nested
-  // `Quotes`) so the siblings generated alongside it are in scope.
+  // Resolves a field/variant instance via the real implicit search, ignoring the typeclass's
+  // wrapper givens so it lands on a sibling synthetic given (a recursive/shared type), a codec, or
+  // a leaf — never re-entering the in-progress derivation. Deferred to the use site (a sibling
+  // val's nested `Quotes`) so the siblings generated alongside it are in scope.
   def fieldInstance[typeclass[_]: Type, elem: Type]: Macro[typeclass[elem]] =
     import quotes.reflect.*
 
     val wrappers = wrappersOf[typeclass]
     val instance = TypeRepr.of[typeclass[elem]]
 
-    // Prefer a resolution that avoids the wrappers — a sibling, a codec, or a concrete leaf. Only if
-    // none exists is `elem` something a wrapper handles specially, so fall back to the ordinary search.
+    // Prefer a resolution that avoids the wrappers — a sibling, a codec, or a concrete leaf. Only
+    // if none exists is `elem` something a wrapper handles specially, so fall back to the ordinary
+    // search.
     val result = Implicits.searchIgnoring(instance)(wrappers*) match
       case success: ImplicitSearchSuccess => success
       case _                              => Implicits.search(instance)
@@ -185,8 +193,9 @@ object internal:
 
     Select(selfTerm, method).appliedToType(TypeRepr.of(using elem)).asExpr
 
-  // Whether `tree` (the result of an implicit search) is the re-entry sentinel — i.e. the search fell
-  // through to the derivation macro, which bailed. Unwraps the layers an implicit resolution may add.
+  // Whether `tree` (the result of an implicit search) is the re-entry sentinel — i.e. the search
+  // fell through to the derivation macro, which bailed. Unwraps the layers an implicit resolution
+  // may add.
   private def isSentinel(using Quotes)(tree: quotes.reflect.Term): Boolean =
     import quotes.reflect.*
     val sentinel = Symbol.requiredMethod("wisteria.internal.reentrySentinel")
@@ -201,14 +210,15 @@ object internal:
 
     loop(tree)
 
-  // Does `typeclass[tpe]` resolve to a *non-derivation* instance — a handwritten codec, a leaf, or a
-  // bridge resolution such as `Encodable in Text` → JSON? We run the compiler's own implicit search in
-  // a context augmented with a synthetic `given Reentrant[typeclass[tpe]]`. If nothing better matches,
-  // search falls through to the derivation macro (`deriveGraph`), which finds that marker and returns
-  // `reentrySentinel` rather than recursing — so a sentinel result means "structural, derive it" and
-  // any other success means "already resolvable elsewhere, don't make it a sibling". This is the one
-  // place wisteria reaches into `dotty.tools.dotc`: there is no public API to search with an extra
-  // given injected (a context-function search target is *not* synthesised by `Implicits.search`).
+  // Does `typeclass[tpe]` resolve to a *non-derivation* instance — a handwritten codec, a leaf, or
+  // a bridge resolution such as `Encodable in Text` → JSON? We run the compiler's own implicit
+  // search in a context augmented with a synthetic `given Reentrant[typeclass[tpe]]`. If nothing
+  // better matches, search falls through to the derivation macro (`deriveGraph`), which finds that
+  // marker and returns `reentrySentinel` rather than recursing — so a sentinel result means
+  // "structural, derive it" and any other success means "already resolvable elsewhere, don't make
+  // it a sibling". This is the one place wisteria reaches into `dotty.tools.dotc`: there is no
+  // public API to search with an extra given injected (a context-function search target is *not*
+  // synthesised by `Implicits.search`).
   private def resolvableNonStructural(using Quotes)
     ( typeclassConstructor: quotes.reflect.TypeRepr, tpe: quotes.reflect.TypeRepr )
   :   Boolean =
@@ -238,11 +248,14 @@ object internal:
         ( instance.asInstanceOf[dotc.core.Types.Type],
           dotc.ast.tpd.EmptyTree,
           context.owner.span )
-        (using augmented)
+        ( using augmented )
 
     result match
-      case success: dotc.typer.Implicits.SearchSuccess => !isSentinel(success.tree.asInstanceOf[Term])
-      case _                                           => false
+      case success: dotc.typer.Implicits.SearchSuccess =>
+        !isSentinel(success.tree.asInstanceOf[Term])
+
+      case _ =>
+        false
 
   // Derives `typeclass[derivation]` by emitting a block of mutually-recursive synthetic
   // `given lazy val`s — one per distinct product/sum type reachable from `derivation` that a
@@ -257,7 +270,7 @@ object internal:
 
     import quotes.reflect.*
 
-    if self.asTerm.tpe.typeSymbol.methodMember("derivedOne").isEmpty then
+    if self.asTerm.tpe.typeSymbol.methodMember("derivedOne").nil then
       report.errorAndAbort("wisteria: the derivation defines no `derivedOne`")
 
     val typeclassConstructor = TypeRepr.of[typeclass]
@@ -283,8 +296,8 @@ object internal:
       // A codec (`List[T]`, …) is matched first and its element types followed, so a structural
       // element wrapped in a codec still becomes a shared sibling. Only then do we ask whether a
       // non-codec type already resolves elsewhere (skip it) or must be derived structurally (a
-      // sibling). The root is always derived structurally — never probed (it would otherwise find its
-      // own `derives` companion given and make the block self-reference, a lazy-val cycle).
+      // sibling). The root is always derived structurally — never probed (it would otherwise find
+      // its own `derives` companion given and make the block self-reference, a lazy-val cycle).
       def visit(raw: TypeRepr, isRoot: Boolean): Unit =
         val tpe = raw.dealias
         val key = tpe.show
@@ -303,11 +316,14 @@ object internal:
           else if isSumType(tpe) then
             if isRoot || !resolvableNonStructural(typeclassConstructor, tpe) then
               reachable(key) = tpe
-              tpe.typeSymbol.children.foreach { child => visit(variantWith(child, tpe), false) }
+
+              tpe.typeSymbol.children.foreach: child =>
+                visit(variantWith(child, tpe), false)
           else if isProductType(tpe) then
             if isRoot || !resolvableNonStructural(typeclassConstructor, tpe) then
               reachable(key) = tpe
               val product = productType(tpe)
+
               product.typeSymbol.caseFields.foreach: field =>
                 visit(product.memberType(field), false)
 
@@ -320,7 +336,10 @@ object internal:
         reachable.toList.zipWithIndex.map: (entry, index) =>
           val (key, tpe) = entry
           val flags = Flags.Given | Flags.Lazy
-          val symbol = Symbol.newVal(owner, "wisteria$"+index, instanceOf(tpe), flags, Symbol.noSymbol)
+
+          val symbol =
+            Symbol.newVal(owner, "wisteria$"+index, instanceOf(tpe), flags, Symbol.noSymbol)
+
           (key, tpe, symbol)
 
       val symbolByKey = bindings.map { (key, _, symbol) => key -> symbol }.toMap
@@ -354,8 +373,8 @@ object internal:
 
       Block(definitions, root.changeOwner(owner)).asExprOf[typeclass[derivation]]
 
-    // If reached only as a re-entry probe (a `Reentrant` marker for this instance is in scope), bail
-    // with the sentinel the prober detects — do not build the graph.
+    // If reached only as a re-entry probe (a `Reentrant` marker for this instance is in scope),
+    // bail with the sentinel the prober detects — do not build the graph.
     Implicits.search(TypeRepr.of[Reentrant].appliedTo(instanceTpe)) match
       case _: ImplicitSearchSuccess =>
         Ref(Symbol.requiredMethod("wisteria.internal.reentrySentinel")).appliedToType(instanceTpe)
@@ -392,12 +411,12 @@ object internal:
       case Refinement(base, _, _) => productType(base)
       case other                  => other
 
-  // Construct a product value from its field-value terms via the primary constructor — no `Mirror`,
-  // no `fromProduct`. The constructed type is `productType(derivation)` (stripping any `over` carrier
-  // refinement). For an inner class the type carries its prefix (`Outer.Inner` / `outer.Inner`), so
-  // `New` of that type tree resolves the outer pointer automatically; type arguments (generic case
-  // classes) are reapplied to the constructor. A singleton (case object / parameterless enum case) is
-  // referenced directly.
+  // Construct a product value from its field-value terms via the primary constructor — no
+  // `Mirror`, no `fromProduct`. The constructed type is `productType(derivation)` (stripping any
+  // `over` carrier refinement). For an inner class the type carries its prefix (`Outer.Inner` /
+  // `outer.Inner`), so `New` of that type tree resolves the outer pointer automatically; type
+  // arguments (generic case classes) are reapplied to the constructor. A singleton (case object /
+  // parameterless enum case) is referenced directly.
   private def constructProduct[derivation: Type](using Quotes)
     ( arguments: List[quotes.reflect.Term] )
   :   quotes.reflect.Term =
@@ -408,12 +427,15 @@ object internal:
 
     if !tpe.termSymbol.isNoSymbol then Ref(tpe.termSymbol)
     else
-      // `TypeTree.ref(symbol)` carries the class's *defining* prefix (e.g. the enclosing object for an
-      // inner class), giving a stable outer reference that resolves even within a nested context-bound
-      // implicit search — unlike `tpe.asType`, whose prefix can be the context-relative `this`.
+      // `TypeTree.ref(symbol)` carries the class's *defining* prefix (e.g. the enclosing object for
+      // an inner class), giving a stable outer reference that resolves even within a nested
+      // context-bound implicit search — unlike `tpe.asType`, whose prefix can be the
+      // context-relative `this`.
       val typeTree = tpe.typeArgs match
         case Nil  => TypeTree.ref(symbol)
-        case args => Applied(TypeTree.ref(symbol), args.map(arg => TypeTree.of(using arg.asType)))
+
+        case args =>
+          Applied(TypeTree.ref(symbol), args.map { arg => TypeTree.of(using arg.asType) })
 
       Select(New(typeTree), symbol.primaryConstructor).appliedToArgs(arguments)
 

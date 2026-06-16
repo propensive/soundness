@@ -112,7 +112,7 @@ def evolve[element: ClassTag]
         recur(iteration + 1, right :: more, Evolution(merge(evolution.sequence, changes)))
 
 
-  if versions.isEmpty then Evolution(Nil)
+  if versions.nil then Evolution(Nil)
   else recur(Sec, versions, Evolution(versions.head.map(Atom(_, Set(Prim)))))
 
 def diff[element]
@@ -148,7 +148,7 @@ def diff[element]
     lazy val ins = rows.head(deletes) - 1
     lazy val del = rows.head(deletes - 1)
 
-    if position == -1 && rightPosition == -1 then edits else if rows.isEmpty
+    if position == -1 && rightPosition == -1 then edits else if rows.nil
     then
       backtrack
         ( position - 1, deletes, rows, Par(position, rightPosition, left(position)) :: edits )

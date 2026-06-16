@@ -127,5 +127,5 @@ object GithubActions:
 
       . flatten
 
-    val propsText = if props.isEmpty then t"" else t" ${props.join(t",")}"
+    val propsText = if props.nil then t"" else t" ${props.join(t",")}"
     Out.println(t"::$kind$propsText::${escape(message)}")

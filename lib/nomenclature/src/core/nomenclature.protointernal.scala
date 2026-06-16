@@ -39,6 +39,7 @@ import dotty.tools.dotc.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gigantism.*
 import rudiments.*
@@ -168,7 +169,7 @@ object protointernal:
       . foldLeft(List[TypeRepr]()): (acc, self) =>
           if acc.exists(_ =:= self) then acc else self :: acc
 
-    if planes.isEmpty
+    if planes.nil
     then halt(914, m"the name $name is not a valid identifier in any namespace in scope")
     else planes.reduce(AndType(_, _)).asType.absolve match
       case '[type plane; plane] => '{${Expr(name)}.asInstanceOf[Name[plane]]}

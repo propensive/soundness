@@ -186,7 +186,7 @@ object SourceCode:
       case head :: tail if head.accent == Accent.Error && quoted(head.text) =>
         val (spill, rest) = tail.span(_.accent != Accent.Unparsed)
 
-        if spill.isEmpty then head :: coalesce(tail)
+        if spill.nil then head :: coalesce(tail)
         else head.copy(text = t"${head.text}${spill.map(_.text).join}") :: coalesce(rest)
 
       case head :: tail =>

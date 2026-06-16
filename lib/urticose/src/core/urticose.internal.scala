@@ -34,6 +34,7 @@ package urticose
 
 import java.io as ji
 
+import scala.compiletime.asMatchable
 import scala.quoted.*
 
 import anticipation.*
@@ -308,6 +309,22 @@ object internal:
 
   case class Ipv6(highBits: Long, lowBits: Long)
 
+
+  def emailAddress(context: Expr[StringContext]): Macro[EmailAddress] = abortive:
+    val text: Text = context.valueOrAbort.parts.head.tt
+    val address = EmailAddress.parse(text)
+
+    val localPart: Expr[LocalPart] = address.localPart match
+      case LocalPart.Quoted(text)   => '{LocalPart.Quoted(${Expr(text)})}
+      case LocalPart.Unquoted(text) => '{LocalPart.Unquoted(${Expr(text)})}
+
+    address.domain.asMatchable.absolve match
+      case ipv6: Ipv6         => '{EmailAddress(Unset, $localPart, ${Expr(ipv6)})}
+      case hostname: Hostname => '{EmailAddress(Unset, $localPart, ${Expr(hostname)})}
+      case ipv4: Int          => '{EmailAddress(Unset, $localPart, Ipv4(${Expr(ipv4)}))}
+
+  def hostname(context: Expr[StringContext]): Macro[Hostname] = abortive:
+    Expr(Hostname.parse(context.valueOrAbort.parts.head.tt))
 
   def portService(context: Expr[StringContext], tcp: Boolean)
   :   Macro[Port] =

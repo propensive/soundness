@@ -66,7 +66,7 @@ private def xmlNodes(xml: Xml): IArray[Node] = xml match
 
 private def firstNode(xml: Xml, fallback: Node): Node =
   val nodes = xmlNodes(xml)
-  if nodes.isEmpty then fallback else nodes(0)
+  if nodes.nil then fallback else nodes(0)
 
 private def replaceNamedChild(xml: Xml, name: String, value: Xml): Xml = xml match
   case Element(label, attributes, children) =>

@@ -834,7 +834,7 @@ private final class TelParser():
   // between two separators, or the absence of any document at the end of a
   // stream.
   private def documentIsEmpty(doc: Tel.Document): Boolean =
-    doc.children.isEmpty && doc.interpreterDirective.absent && doc.pragma.absent
+    doc.children.nil && doc.interpreterDirective.absent && doc.pragma.absent
 
   // `head` is parked on a separator (the cursor sits on its first sigil).
   // Consume both sigil bytes and the terminating line-ending so the next
@@ -1182,7 +1182,7 @@ private final class TelParser():
   private def pushAncestor(keyword: Text): Unit raises TelError =
     schema.let: s =>
       val parent: Optional[Tels.Struct] =
-        if ancestors.isEmpty then s.document else ancestors(ancestors.length - 1)
+        if ancestors.nil then s.document else ancestors(ancestors.length - 1)
 
       val resolved: Optional[Tels.Struct] =
         parent.let(resolveKeywordStruct(_, keyword, s))
@@ -1303,11 +1303,11 @@ private final class TelParser():
         if lastIx >= start then
           val last = scratchBlocks(lastIx)
 
-          if last.tabulation.present && last.compounds.isEmpty then
+          if last.tabulation.present && last.compounds.nil then
             errorAt(Reason.RowWrongIndent, line, 1)
           else if last.tabulation.present then
             errorAt(Reason.ChildOfNonCompound, line, 1)
-          else if last.compounds.isEmpty then
+          else if last.compounds.nil then
             errorAt(Reason.ChildOfNonCompound, line, 1)
           else
             errorAt(Reason.OverIndentation, line, 1)

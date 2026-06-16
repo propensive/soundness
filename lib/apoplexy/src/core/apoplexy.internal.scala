@@ -36,6 +36,7 @@ import scala.quoted.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
@@ -204,7 +205,7 @@ object Apoplexy:
 
   // JSON wins ties (the OpenAPI default, and the historical behaviour).
   private def wireOf(content: Map[Text, OpenApi.MediaTypeObject]): Optional[Wire] =
-    if content.isEmpty then Unset
+    if content.nil then Unset
     else if content.contains(t"application/json") then Wire.Json
     else if content.contains(t"application/xml") || content.contains(t"text/xml") then Wire.Xml
     else Wire.Json
@@ -415,7 +416,7 @@ object Apoplexy:
       members.at(t"Locus").lay(halt(m"apoplexy: the resource has no `Locus` path"))(stringOf(_))
 
     val doc = spec(source)
-    val base = if doc.servers.isEmpty then t"" else doc.servers.head.url
+    val base = if doc.servers.nil then t"" else doc.servers.head.url
     val baseExpr = Expr(base.s)
     val wire = uniformWire(doc)
 

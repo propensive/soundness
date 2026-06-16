@@ -36,6 +36,7 @@ import scala.collection.immutable.SeqMap
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
@@ -108,11 +109,11 @@ extends Documentary:
           t"height"  -> height.show )
 
     val defsElement: Seq[Xml] =
-      if defs.isEmpty then Nil
+      if defs.nil then Nil
       else Seq(Element(t"defs", Attributes.empty, defs.map(_.xml).toSeq.nodes))
 
     val figureNodes: Seq[Xml] =
-      if transforms.isEmpty then figures.map(_.xml)
+      if transforms.nil then figures.map(_.xml)
       else
         val groupAttrs = SeqMap(t"transform" -> transforms.map(_.encode).join(t" "))
         Seq(Element(t"g", Attributes.from(groupAttrs), figures.map(_.xml).toSeq.nodes))

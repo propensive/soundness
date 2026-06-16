@@ -315,7 +315,7 @@ object internal:
       else leafTerm.asExprOf[T]
 
     def emit[T: Type](origin: Expr[T], branches: List[Resolved]): Expr[T] =
-      if branches.isEmpty then origin else
+      if branches.nil then origin else
         var acc: Term = origin.asTerm
         val defs = scala.collection.mutable.ListBuffer.empty[Statement]
         val last = branches.length - 1
@@ -471,10 +471,10 @@ object internal:
       case None => fallback
 
       case Some(exprs) =>
-        if exprs.isEmpty then valueExpr else
+        if exprs.nil then valueExpr else
           val parsed = exprs.toList.map(parseLambda)
 
-          if parsed.exists(_.isEmpty) then
+          if parsed.exists(_.nil) then
             if exprs.length == 1 then
               val lambda = exprs.head.asExprOf[(Optic from value onto value) => value => value]
 

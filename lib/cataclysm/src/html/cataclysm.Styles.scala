@@ -36,7 +36,8 @@ import hellenism.*
 import prepositional.*
 
 object Styles:
-  transparent inline def apply(inline resource: Resource): Styles = ${HtmlMacros.styles('resource)}
+  transparent inline def apply(inline resource: Resource): Styles =
+    ${cataclysm.protointernal.styles('resource)}
 
 // A marker for a CSS stylesheet on the classpath, carrying its path as the
 // `Locus` type. Brought into scope to validate HTML class/id names against it:

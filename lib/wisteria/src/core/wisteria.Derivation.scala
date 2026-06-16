@@ -45,7 +45,7 @@ extends ProductDerivation.Methods[typeclass], SumDerivation.Methods[typeclass]:
     else
       conjunction[derivation & Product](using summonInline[ProductReflection[derivation & Product]])
       . asMatchable.match
-          case typeclass: typeclass[`derivation`] => typeclass
+        case typeclass: typeclass[`derivation`] => typeclass
 
   inline given derived: [derivation] => (Reflection[derivation]) => typeclass[derivation] =
     ${wisteria.internal.deriveGraph[typeclass, derivation]('this)}

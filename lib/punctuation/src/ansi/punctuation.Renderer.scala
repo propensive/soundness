@@ -33,6 +33,7 @@
 package punctuation
 
 import anticipation.*
+import denominative.*
 import escapade.*
 import frontier.*
 import gossamer.*
@@ -225,7 +226,7 @@ object Renderer:
             palette: MarkdownPalette )
   :   List[Teletype] =
 
-    if items.isEmpty then Nil
+    if items.nil then Nil
     else
       val rendered = items.zipWithIndex.map: (item, idx) =>
         val mk = marker(idx)

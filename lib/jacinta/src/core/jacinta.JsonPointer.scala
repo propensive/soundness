@@ -83,7 +83,7 @@ object JsonPointer extends Root(""):
       ( inline insertions: Any* )
     :   JsonPointer =
 
-      ${jacinta.JsonPointerInterpolator.expand[parts, origins]('insertions)}
+      ${jacinta.internal.jsonPointer[parts, origins]('insertions)}
 
   // Parses a same-document JSON reference (`#`, `#/`, `#/a/b`), reporting the
   // offset of any error. URL-bearing references begin with a non-`#` character

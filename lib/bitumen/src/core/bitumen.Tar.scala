@@ -83,7 +83,7 @@ object Tar:
       t"PaxHeaders/0".decode[Relative on Tar]
 
     private[bitumen] def sparseExtensionBlocks(segments: List[SparseSegment]): LazyList[Data] =
-      if segments.isEmpty then LazyList()
+      if segments.nil then LazyList()
       else
         val (batch, rest) = segments.splitAt(21)
 

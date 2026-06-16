@@ -52,12 +52,13 @@ object ProductDerivation:
 
 
     // Construction is inline `Mirror.fromProduct`, using the `Mirror` threaded in via the
-    // `ProductReflection` context bound (from the caller's `summonFrom`) — NOT a fresh `summonInline`
-    // and NOT macro-emitted. This is the only construction form that works for method-local and
-    // object-nested case classes: `fromProduct` captures the outer pointer from the surrounding
-    // frame. The macro (`buildFields`) supplies only the field-value tuple; `fromProduct` returns the
-    // `Mirror`'s `MirroredMonoType` (= `derivation`), so no cast is needed — and a cast to a method-
-    // local `derivation` would re-introduce a `This`-ref that crashes erasure ("missing outer accessor").
+    // `ProductReflection` context bound (from the caller's `summonFrom`) — NOT a fresh
+    // `summonInline` and NOT macro-emitted. This is the only construction form that works for
+    // method-local and object-nested case classes: `fromProduct` captures the outer pointer from
+    // the surrounding frame. The macro (`buildFields`) supplies only the field-value tuple;
+    // `fromProduct` returns the `Mirror`'s `MirroredMonoType` (= `derivation`), so no cast is
+    // needed — and a cast to a method-local `derivation` would re-introduce a `This`-ref that
+    // crashes erasure ("missing outer accessor").
     protected transparent inline def build[derivation <: Product]
       ( using reflection: ProductReflection[derivation] )
       ( inline lambda:  [field] => typeclass[field]
@@ -140,7 +141,7 @@ trait ProductDerivation[typeclass[_]] extends ProductDerivation.Methods[typeclas
   inline def derivedOne[derivation]: typeclass[derivation] =
     conjunction[derivation & Product](using summonInline[ProductReflection[derivation & Product]])
     . asMatchable.match
-        case typeclass: typeclass[`derivation`] => typeclass
+      case typeclass: typeclass[`derivation`] => typeclass
 
   inline given derived: [derivation] => Reflection[derivation] => typeclass[derivation] =
     ${wisteria.internal.deriveGraph[typeclass, derivation]('this)}

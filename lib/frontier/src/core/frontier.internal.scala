@@ -38,6 +38,7 @@ import dotty.tools.dotc.*
 
 import anticipation.*
 import dendrology.*
+import denominative.*
 import escapade.*
 import gigantism.*
 import gossamer.*
@@ -195,7 +196,7 @@ object internal:
         case tp if matched.bindings.contains(tp) =>
           s"${tp.name.toString} = ${stenography.internal.name(matched.bindings(tp)).s}"
 
-      if pairs.isEmpty then baseName.tt
+      if pairs.nil then baseName.tt
       else s"$baseName [${pairs.mkString(", ")}]".tt
 
     // Render a symbol's path via Stenography (so import-scope abbreviations
@@ -217,7 +218,7 @@ object internal:
       val typeParams =
         symbol.paramSymss.headOption.filter(_.forall(_.isType)).getOrElse(Nil)
 
-      if typeParams.isEmpty then
+      if typeParams.nil then
         val resultRaw = resultOf(symbol.info)
         if resultRaw <:< target then Some(Matched(symbol, Nil, Map.empty)) else None
       else
@@ -298,7 +299,7 @@ object internal:
     // rather than from the source AST, so the substitution applies to the
     // bound `TypeParamRef`s that `Symbol.tree` would expose unsubstituted.
     def usingTypesInstantiated(matched: Matched): List[TypeRepr] =
-      if matched.typeParams.isEmpty then usingTypes(matched.symbol)
+      if matched.typeParams.nil then usingTypes(matched.symbol)
       else
         val args = matched.typeParams.map(matched.bindings)
 

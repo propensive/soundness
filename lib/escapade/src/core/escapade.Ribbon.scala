@@ -33,6 +33,7 @@
 package escapade
 
 import anticipation.*
+import denominative.*
 import gossamer.*
 
 object Ribbon:
@@ -40,7 +41,7 @@ object Ribbon:
 
 case class Ribbon(colors: Bg*):
   def fill(parts: Teletype*): Teletype =
-    if colors.isEmpty then parts.join(e" ") else
+    if colors.nil then parts.join(e" ") else
       val array = IArray.from(colors.zip(parts))
 
       array.indices.map: index =>

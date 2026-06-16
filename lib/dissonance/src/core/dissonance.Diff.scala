@@ -34,6 +34,7 @@ package dissonance
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import prepositional.*
 import rudiments.*
@@ -121,8 +122,8 @@ object Diff:
           s"$start${if start == end then "" else s",$end"}".tt
 
         val command: Text =
-          if dels.isEmpty then s"${left}a${range(right + 1, right + inss.size)}".tt
-          else if inss.isEmpty then s"${range(left + 1, left + dels.size)}d${right}".tt
+          if dels.nil then s"${left}a${range(right + 1, right + inss.size)}".tt
+          else if inss.nil then s"${range(left + 1, left + dels.size)}d${right}".tt
           else s"${range(left + 1, left + dels.size)}c${range(right + 1, right + inss.size)}".tt
 
         val delSeq = dels.map: del => Text("< "+del.value)
