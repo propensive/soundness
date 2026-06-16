@@ -47,8 +47,6 @@ final val Sept: Ordinal = Ordinal.zerary(6)
 extension (inline cardinal: Int)
   inline def z: Ordinal = Ordinal.zerary(cardinal)
   inline def u: Ordinal = Ordinal.uniary(cardinal)
-  inline def from(ordinal: Ordinal): Interval = ordinal till (ordinal + cardinal)
-  inline def upto(ordinal: Ordinal): Interval = (ordinal - cardinal) till ordinal
 
 extension [countable: Countable](value: countable)
   inline def gamut: Interval = Interval.initial(countable.size(value))

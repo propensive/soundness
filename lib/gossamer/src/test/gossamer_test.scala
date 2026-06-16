@@ -290,6 +290,39 @@ object Tests extends Suite(m"Gossamer Tests"):
 
       . assert(_ == t"Hello")
 
+      test(m"from includes the anchor to the end"):
+        t"hello".from(Ter)
+      . assert(_ == t"llo")
+
+      test(m"upto includes the anchor from the start"):
+        t"hello".upto(Ter)
+      . assert(_ == t"hel")
+
+      test(m"before excludes the anchor from the start"):
+        t"hello".before(Ter)
+      . assert(_ == t"he")
+
+      test(m"after excludes the anchor to the end"):
+        t"hello".after(Ter)
+      . assert(_ == t"lo")
+
+      test(m"from slices a List by ordinal"):
+        List(0, 1, 2, 3, 4).from(Ter)
+      . assert(_ == List(2, 3, 4))
+
+      test(m"after slices a List by ordinal"):
+        List(0, 1, 2, 3, 4).after(Ter)
+      . assert(_ == List(3, 4))
+
+      test(m"upto slices an IArray by ordinal"):
+        IArray(0, 1, 2, 3, 4).upto(Ter).to(List)
+      . assert(_ == List(0, 1, 2))
+
+      test(m"before slices an IndexedSeq by ordinal"):
+        val sequence: IndexedSeq[Int] = Vector(0, 1, 2, 3, 4)
+        sequence.before(Ter).to(List)
+      . assert(_ == List(0, 1))
+
       test(m"snip a Text in two"):
         t"Hello".snip(2): (Text, Text)
 
