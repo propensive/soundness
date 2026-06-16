@@ -68,6 +68,7 @@ object settings:
     "-Wconf:origin=.*systems.java:s",
     "-Wconf:origin=.*overwritePreexisting.enabled:s",
     "-Wconf:origin=.*dynamicJsonAccess.enabled:s",
+    "-Wconf:origin=.*CssClass.nominative:s",
     // "-Wsafe-init",
     "-Xmax-inlines", "32",
     //"-Ycc-new",
@@ -237,7 +238,7 @@ object soundness extends ScalaModule:
     legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http, jacinta.schema,
     stratiform.http, obligatory.core, obligatory.json, synesthesia.core, apoplexy.core,
     cataclysm.html, querencia.core, cordillera.core, embarcadero.containerd, obligatory.grpc,
-    xenophile.core, xenophile.typescript, xenophile.webidl, xenophile.wit)
+    xenophile.core, xenophile.typescript, xenophile.webidl, xenophile.wit, graffiti.core)
 
   object all extends Bundle(base, cli, data, sci, test, tool, web)
 
@@ -892,6 +893,12 @@ object gossamer extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, serpentine.core)
 
+object graffiti extends Library:
+  object core extends Component(honeycomb.core, cataclysm.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core)
+
 object guillotine extends Library:
   object core extends Component(turbulence.core, ambience.core):
     override def scalacOptions = Task:
@@ -1542,7 +1549,7 @@ val allLibraries: Seq[Library] = Seq(
   embarcadero, enigmatic, escapade, escritoire, ethereal, eucalyptus, exegesis,
   exoskeleton,
   frontier, fulminate, galilei, gastronomy, geodesy, gesticulate, gigantism,
-  gnossienne, gossamer, guillotine, hallucination, harlequin, hellenism, hieroglyph,
+  gnossienne, gossamer, graffiti, guillotine, hallucination, harlequin, hellenism, hieroglyph,
   honeycomb, hyperbole, hypotenuse, imperial, inimitable, iridescence, jacinta,
   kaleidoscope, larceny, legerdemain, locomotion, mandible, mercator, metamorphose,
   monotonous,
