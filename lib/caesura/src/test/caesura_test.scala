@@ -254,6 +254,51 @@ object Tests extends Suite(m"Caesura tests"):
          .rows.to(List).map(_.data.head)
       . assert(_ == List(t"Alice", t"X"))
 
+    suite(m"Roundtrip"):
+      import dsvFormats.csv
+
+      test(m"case class survives encode, render, parse and decode"):
+        Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")).dsv.show
+         .read[Sheet].rows.head.as[Bar]
+      . assert(_ == Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")))
+
+      test(m"quoted cell survives a parse/render roundtrip"):
+        t""""hello, world",test""".read[Sheet].show
+      . assert(_ == t""""hello, world",test""")
+
+      test(m"multi-row data survives a parse/render roundtrip"):
+        t"foo,bar\nbaz,quux".read[Sheet].show
+      . assert(_ == t"foo,bar\nbaz,quux")
+
+    suite(m"Cell spanning"):
+      test(m"a flat product spans one column per field"):
+        Spannable.derived[Foo].spans().to(List)
+      . assert(_ == List(1, 1))
+
+      test(m"a nested product sums each field's child spans"):
+        Spannable.derived[Bar].spans().to(List)
+      . assert(_ == List(1, 2, 1, 2))
+
+      test(m"the total column count is the sum of all spans"):
+        Spannable.derived[Bar].spans().sum
+      . assert(_ == 6)
+
+    suite(m"Field renaming"):
+      test(m"unchanged redesignation preserves the field name"):
+        import dsvRedesignations.unchanged
+        summon[DsvRedesignation].transform(t"targetPerson")
+      . assert(_ == t"targetPerson")
+
+      test(m"capitalizedWords redesignation maps to capitalised words"):
+        import dsvRedesignations.capitalizedWords
+        summon[DsvRedesignation].transform(t"targetPerson")
+      . assert(_ == t"Target Person")
+
+      test(m"lowerWords redesignation maps to lower-case words"):
+        import dsvRedesignations.lowerWords
+        summon[DsvRedesignation].transform(t"targetPerson")
+      . assert(_ == t"target person")
+
 case class Foo(one: Text, two: Text)
 case class Bar(one: Double, foo1: Foo, four: Int, foo2: Foo)
 case class Quux(name: Text, greeting: Text)

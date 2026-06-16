@@ -35,11 +35,13 @@ package breviloquence
 import soundness.*
 
 import strategies.throwUnsafely
+import errorDiagnostics.stackTraces
 
 case class Point(x: Int, y: Int) derives CanEqual
 case class Person(name: Text, age: Int) derives CanEqual
 case class Wrapper(values: List[Int], label: Text) derives CanEqual
 case class Team(lead: Person, size: Int) derives CanEqual
+case class OptPerson(name: Text, age: Optional[Int]) derives CanEqual
 case class Renamed
    (@name[Cbor](t"data_files")  dataFiles:  List[Long],
     @name[Cbor](t"index_files") indexFiles: List[Long])
@@ -363,3 +365,52 @@ object Tests extends Suite(m"Breviloquence Tests"):
       test(m"setting an absent field inserts it"):
         list.lens(_.extra = 7.cbor).selectDynamic("extra").as[Int]
       . assert(_ == 7)
+
+    suite(m"Error byte-offsets"):
+      test(m"truncated input reports the offset of the missing byte"):
+        capture[CborError](Cbor.Ast.parse(hex("18"))).reason match
+          case CborError.Reason.Truncated(offset) => offset
+          case _                                   => -1L
+      . assert(_ == 1L)
+
+      test(m"trailing bytes report the offset where they begin"):
+        capture[CborError](Cbor.Ast.parse(hex("0000"))).reason match
+          case CborError.Reason.Trailing(offset) => offset
+          case _                                 => -1L
+      . assert(_ == 1L)
+
+      test(m"a reserved head byte reports its offset and byte value"):
+        capture[CborError](Cbor.Ast.parse(hex("1c"))).reason match
+          case CborError.Reason.Reserved(offset, byte) => (offset, byte)
+          case _                                        => (-1L, -1)
+      . assert(_ == (0L, 28))
+
+    suite(m"Dynamic access"):
+      import dynamicCborAccess.enabled
+
+      test(m"selectDynamic reads a map field by name"):
+        Person(t"Ada", 36).cbor.selectDynamic("name").as[Text]
+      . assert(_ == t"Ada")
+
+      test(m"applyDynamic indexes into an array-valued field"):
+        Wrapper(List(10, 20, 30), t"hi").cbor.applyDynamic("values")(1).as[Int]
+      . assert(_ == 20)
+
+      test(m"updateDynamic replaces a field's value"):
+        Person(t"Ada", 36).cbor.updateDynamic("age")(40).as[Person]
+      . assert(_ == Person(t"Ada", 40))
+
+      test(m"updateDynamic with Unset deletes a field"):
+        Person(t"Ada", 36).cbor.updateDynamic("age")(Unset).as[OptPerson]
+      . assert(_ == OptPerson(t"Ada", Unset))
+
+    suite(m"Optional fields"):
+      test(m"an Optional field round-trips when present"):
+        val bytes = CborPrinter.encode(Cbor.unseal(OptPerson(t"Ada", 36).cbor))
+        Cbor.ast(Cbor.Ast.parse(bytes)).as[OptPerson]
+      . assert(_ == OptPerson(t"Ada", 36))
+
+      test(m"an Optional field round-trips when unset"):
+        val bytes = CborPrinter.encode(Cbor.unseal(OptPerson(t"Eve", Unset).cbor))
+        Cbor.ast(Cbor.Ast.parse(bytes)).as[OptPerson]
+      . assert(_ == OptPerson(t"Eve", Unset))

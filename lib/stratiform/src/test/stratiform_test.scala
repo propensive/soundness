@@ -601,6 +601,49 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[TelError](Tel.Type.assign(doc, statusSchema)).reason
       . assert(_ == TelError.Reason.UnknownKeyword)
 
+    suite(m"Schema default-field"):
+      // Like `personSchema`, but the required `name` field carries a default,
+      // so a document omitting it is filled with the default rather than
+      // raising `RequiredMemberAbsent`.
+      val defaultingSchema = Tels(
+        name     = t"person",
+        document = Tels.Struct(
+          members = IArray(
+            Tels.Field
+             ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+               t"name", Tels.Scalar(IArray(t"string")), t"Anonymous" ),
+            Tels.Field
+             ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
+               t"age", Tels.Scalar(IArray(t"identifier")), Unset )),
+          validators = IArray.empty),
+        layers   = IArray.empty,
+        sigil    = Unset,
+        records  = IArray.empty,
+        scalars  = IArray.empty,
+        selects  = IArray.empty)
+
+      test(m"applies the schema default when the field is omitted"):
+        val doc = t"age 30\n".read[Tel]
+        Tel.Type.assign(doc, defaultingSchema) match
+          case Tel.Element.Node(_, _, children) =>
+            children.collect:
+              case Tel.Element.Value(_, _, t) => t
+            .to(Set)
+
+          case _ => Set()
+      . assert(_ == Set(t"Anonymous", t"30"))
+
+      test(m"an explicit value overrides the schema default"):
+        val doc = t"name Alice\nage 30\n".read[Tel]
+        Tel.Type.assign(doc, defaultingSchema) match
+          case Tel.Element.Node(_, _, children) =>
+            children.collect:
+              case Tel.Element.Value(_, _, t) => t
+            .toList
+
+          case _ => Nil
+      . assert(_ == List(t"Alice", t"30"))
+
     suite(m"Validators"):
       val reg = Tel.Validator.Registry.builtins
 
