@@ -110,10 +110,10 @@ object Benchmarks extends Suite(m"Escapade benchmarks"):
     + e" ${Fg(Chroma(0x55aaff))}(fox) jumps over the ${Underline}(lazy ${Strike}(dog))"
 
   def renderTrueColor(t: Teletype): Text =
-    t.render(termcapDefinitions.xtermTrueColor)
+    t.render(termcapDefinitions.xtermTrueColorTermcap)
 
   def renderXterm256(t: Teletype): Text =
-    t.render(termcapDefinitions.xterm256)
+    t.render(termcapDefinitions.xterm256Termcap)
 
   def render(input: Teletype): Text = renderTrueColor(input)
 

@@ -848,7 +848,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       import decodables.instantJsonDecodable
       import decodables.durationJsonDecodable
       import aviation.*
-      import abstractables.instantIsAbstractable
+      import abstractables.instantAbstractable
 
       test(m"Encode an Instant as a Long"):
         Instant(1700000000000L).json.show

@@ -50,7 +50,7 @@ import symbolism.*
 import vacuous.*
 
 import LineSeparation.*
-import abstractables.instantIsAbstractable
+import abstractables.instantAbstractable
 import probates.awaitProbate
 
 inline def more[value](using value: value aka "more"): value = value()
@@ -73,7 +73,7 @@ extension [value: Streamable by Text](value: value)
     result.load(value.stream[Text])
 
 package stdios:
-  given muteStdio: Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+  given muteStdio: Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
 
   given systemStdio: (termcap: Termcap) => Stdio =
     Stdio

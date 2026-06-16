@@ -65,7 +65,7 @@ package logFormats:
           val color = palette.subdued
           val first = e"$color($date) $level > $head"
 
-          (first :: tail.map(indent+_)).join(e"\n").render(termcapDefinitions.xterm256)
+          (first :: tail.map(indent+_)).join(e"\n").render(termcapDefinitions.xterm256Termcap)
           (first :: tail.map(indent+_)).join(e"\n")
       catch case error: Throwable => e"${error.stackTrace.show}"
 

@@ -42,7 +42,7 @@ import kaleidoscope.*
 import prepositional.*
 import spectacular.*
 
-import abstractables.instantIsAbstractable
+import abstractables.instantAbstractable
 import errorDiagnostics.stackTracesDiagnostics
 
 object Timestamp:

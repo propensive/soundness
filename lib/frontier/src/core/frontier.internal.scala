@@ -507,7 +507,7 @@ object internal:
           e"\n",
           e"\n" )
 
-      . render(termcapDefinitions.xterm256)
+      . render(termcapDefinitions.xterm256Termcap)
       . s
 
     // Detect whether the Frontier compiler plugin is wired into this

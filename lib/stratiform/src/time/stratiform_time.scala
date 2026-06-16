@@ -53,7 +53,7 @@ package decodables:
   given instantTelDecodable: Tactic[TelError]
   =>  Instant is Tel.Decodable =
     Tel.Decodable(Morphology.Whole): tel =>
-      import abstractables.instantIsAbstractable
+      import abstractables.instantAbstractable
 
       try Instant(tel.primaryAtom.s.toLong)
       catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))

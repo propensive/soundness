@@ -47,7 +47,7 @@ package encodables:
 package decodables:
   given instantJsonDecodable: Tactic[JsonError] => Instant is Json.Decodable =
     Json.Decodable(Morphology.Whole): json =>
-      import abstractables.instantIsAbstractable
+      import abstractables.instantAbstractable
       Instant(json.as[Long])
 
   given durationJsonDecodable: Tactic[JsonError] => Duration is Json.Decodable =

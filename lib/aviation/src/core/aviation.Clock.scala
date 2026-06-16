@@ -35,7 +35,7 @@ package aviation
 import anticipation.*
 import symbolism.*
 
-import abstractables.instantIsAbstractable
+import abstractables.instantAbstractable
 import beneficence.*
 
 object Clock:

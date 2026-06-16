@@ -126,7 +126,7 @@ object Tests extends Suite(m"Punctuation tests"):
 
     suite(m"Terminal renderer"):
       import hyphenations.englishHyphenation
-      import termcapDefinitions.xtermTrueColor
+      import termcapDefinitions.xtermTrueColorTermcap
 
       test(m"heading is styled and followed by a rule"):
         val md = Parser.parse(t"# Hello\n")
