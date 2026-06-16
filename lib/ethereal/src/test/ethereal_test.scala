@@ -77,7 +77,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     val launcher = Enclave(name).dispatch:
       ' {
           import executives.completions
-          import interpreters.posix
+          import interpreters.posixInterpreter
           import environments.daemonClientEnvironment
           import systems.javaSystem
 
@@ -505,7 +505,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     val launcherV1 = Enclave(upgradeName, buildId = 1).dispatch:
       ' {
           import executives.completions
-          import interpreters.posix
+          import interpreters.posixInterpreter
 
           cli:
             arguments match
@@ -523,7 +523,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     val launcherV2 = Enclave(upgradeName, buildId = 2).dispatch:
       ' {
           import executives.completions
-          import interpreters.posix
+          import interpreters.posixInterpreter
 
           cli:
             arguments match
@@ -582,7 +582,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     val selfuV1 = Enclave(selfuName, buildId = 1).dispatch:
       ' {
           import executives.completions
-          import interpreters.posix
+          import interpreters.posixInterpreter
 
           cli:
             arguments match
@@ -598,7 +598,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     val selfuV2 = Enclave(selfuName, buildId = 2).dispatch:
       ' {
           import executives.completions
-          import interpreters.posix
+          import interpreters.posixInterpreter
 
           cli:
             arguments match
@@ -641,7 +641,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     val brokenExe: Path on Linux = Enclave("brokn").dispatch:
       ' {
           import executives.completions
-          import interpreters.posix
+          import interpreters.posixInterpreter
 
           if jl.System.getProperty("ethereal.name") != null then jl.System.exit(1)
 

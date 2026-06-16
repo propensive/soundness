@@ -80,7 +80,7 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       test(m"Construct a Query by partial generic derivation"):
         // This import seems to be required
-        import queryParameters.arbitrary
+        import queryParameters.arbitraryQueryParameter
         Query.make(person = Person(t"Ken", 39)).show
 
       . assert(_ == t"person.name=Ken&person.age=39")

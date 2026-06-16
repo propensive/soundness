@@ -55,7 +55,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
     Enclave(t"abcd").dispatch:
       ' {
           import executives.completions
-          import interpreters.posix
+          import interpreters.posixInterpreter
 
           val Alpha = Subcommand("alpha", e"a command to run")
           val Beta = Subcommand("beta", e"another command to run")
@@ -412,7 +412,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           .assert(_ == Exit.Ok)
 
     object HelpApp:
-      import interpreters.posix
+      import interpreters.posixInterpreter
       import stdios.muteStdio
 
       val Alpha = Subcommand(t"alpha", e"a command to run")

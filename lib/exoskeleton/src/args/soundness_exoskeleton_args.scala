@@ -38,4 +38,4 @@ export
       Shell, Subcommand, Suggestible, Suggestion, Switch }
 
 package interpreters:
-  export exoskeleton.interpreters.{posix, posixClustering, simple}
+  export exoskeleton.interpreters.{posixInterpreter, posixClusteringInterpreter, simpleInterpreter}

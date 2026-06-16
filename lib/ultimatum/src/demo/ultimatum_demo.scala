@@ -37,7 +37,7 @@ import soundness.*
 import backstops.silentBackstop
 import probates.cancelProbate
 import executives.completions
-import interpreters.posix
+import interpreters.posixInterpreter
 import strategies.throwUnsafely
 import supervisors.globalSupervisor
 import threading.platformThreading

@@ -13,7 +13,7 @@ import executives.completions
 import homeDirectories.system
 import logging.silentLogging
 import codicils.cancel
-import interpreters.posix
+import interpreters.posixInterpreter
 import displayableTypes.messagePrintable
 import supervisors.globalSupervisor
 import textMetrics.uniformMetric

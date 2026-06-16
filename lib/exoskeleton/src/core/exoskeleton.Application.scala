@@ -38,7 +38,7 @@ import rudiments.*
 abstract class Application:
   import executives.directExecutive
   import backstops.genericErrorMessageBackstop
-  import interpreters.posix
+  import interpreters.posixInterpreter
   import ambience.systems.javaSystem
 
   def invoke(using Cli): Exit

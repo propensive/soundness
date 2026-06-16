@@ -39,7 +39,7 @@ import gossamer.*
 import vacuous.*
 
 package interpreters:
-  given simple: Interpreter:
+  given simpleInterpreter: Interpreter:
     type Topic = List[Argument]
 
     def interpret(arguments: List[Argument]): List[Argument] = arguments
@@ -53,7 +53,7 @@ package interpreters:
 
       Unset
 
-  given posixClustering: Interpreter:
+  given posixClusteringInterpreter: Interpreter:
     type Topic = Commandline
 
     def interpret(arguments: List[Argument]): Commandline = interpreter(arguments, true)
@@ -67,7 +67,7 @@ package interpreters:
 
       commandline.read(flag)
 
-  given posix: Interpreter:
+  given posixInterpreter: Interpreter:
     type Topic = Commandline
 
     def interpret(arguments: List[Argument]): Commandline = interpreter(arguments, false)

@@ -57,7 +57,7 @@ import backstops.stackTraceBackstop
 import environments.javaEnvironment
 import executives.directExecutive
 import filesystemOptions.dereferenceSymlinks.enabled
-import interpreters.posix
+import interpreters.posixInterpreter
 import stdios.virtualMachineStdio
 import systems.javaSystem
 import termcaps.environmentTermcap

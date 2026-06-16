@@ -51,7 +51,7 @@ import vacuous.*
 import zephyrine.*
 
 import errorDiagnostics.stackTracesDiagnostics
-import queryParameters.arbitrary
+import queryParameters.arbitraryQueryParameter
 
 object Issuer:
   object Context:

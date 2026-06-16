@@ -36,7 +36,7 @@ import soundness.*
 
 import backstops.stackTraceBackstop
 import executives.completions
-import interpreters.posix
+import interpreters.posixInterpreter
 import threading.virtualThreading
 
 @main
