@@ -54,6 +54,7 @@ case class OptFoo(x: Option[Int])
 case class OptionalFoo(x: Optional[Int])
 case class Bar(a: Int, b: Text)
 case class BarOpt(a: Int, b: Optional[Text])
+case class WithDefault(name: Text, age: Int = 18) derives CanEqual
 case class Marked(@memo(t"the count") n: Int)
 case class Renamed(@name[Json](t"first_name") firstName: Text, @name(t"yob") year: Int)
 derives CanEqual
@@ -287,6 +288,14 @@ object Tests extends Suite(m"Jacinta Tests"):
         import dynamicJsonAccess.enabled
         t"""{"y": 1}""".read[Json].missing.as[Optional[Int]]
       . assert(_ == Unset)
+
+      test(m"Apply a case-class default when the field is omitted"):
+        t"""{"name": "Eve"}""".read[Json].as[WithDefault]
+      . assert(_ == WithDefault(t"Eve", 18))
+
+      test(m"An explicit value overrides a case-class default"):
+        t"""{"name": "Eve", "age": 30}""".read[Json].as[WithDefault]
+      . assert(_ == WithDefault(t"Eve", 30))
 
     suite(m"Generic derivation tests"):
       val paul =
