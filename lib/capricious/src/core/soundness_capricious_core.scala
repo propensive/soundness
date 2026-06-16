@@ -38,7 +38,8 @@ export
       Randomization, RandomSize, Seed, stochastic, toss, UniformDistribution }
 
 package randomization:
-  export capricious.randomization.{secureSeeded, secureUnseeded, seeded, stronglySecure, unseeded}
+  export capricious.randomization.{secureSeededRandomization, secureUnseededRandomization,
+      seededRandomization, stronglySecureRandomization, unseededRandomization}
 
   package sizes:
     export
@@ -48,4 +49,5 @@ package randomization:
 package randomDistributions:
   export
     capricious.randomDistributions
-    . { binary, gaussian, uniformSymmetricUnitInterval, uniformUnitInterval }
+    . { binaryDistribution, gaussianDistribution, uniformSymmetricUnitIntervalDistribution,
+        uniformUnitIntervalDistribution }

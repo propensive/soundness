@@ -34,7 +34,7 @@ package capricious
 
 import soundness.*
 
-import randomization.seeded
+import randomization.seededRandomization
 given Seed = Seed(1L)
 
 object Tests extends Suite(m"Capricious Tests"):

@@ -46,7 +46,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
     suite(m"Shredding"):
       given Seed = Seed(1L)
-      import randomization.seeded
+      import randomization.seededRandomization
       val data: Data = Data.fill(1000)(_.toByte)
       val stream: Stream[Data] = Stream(data)
       val shredded: Iterable[Stream[Data]] = stochastic:

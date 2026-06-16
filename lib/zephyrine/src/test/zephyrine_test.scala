@@ -34,7 +34,7 @@ package zephyrine
 
 import soundness.*
 
-import randomization.unseeded
+import randomization.unseededRandomization
 
 import supervisors.globalSupervisor
 import probates.panicProbate

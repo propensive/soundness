@@ -34,7 +34,7 @@ package monotonous
 
 import soundness.*
 
-import randomization.seeded, randomization.sizes.uniformUpto100000
+import randomization.seededRandomization, randomization.sizes.uniformUpto100000
 import errorDiagnostics.stackTracesDiagnostics
 
 given Seed = Seed(1L)
