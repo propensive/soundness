@@ -65,7 +65,7 @@ object internal:
   // around the quotes below, so this file branches on `Optional` with plain `match`.
   def expand[parts <: Tuple: Type, origins <: Tuple: Type]
     (insertions0: Expr[Seq[Any]])(using Quotes)
-  :   Expr[Css] =
+  :   Expr[Css | Css.Style] =
 
     import quotes.reflect.*
 
@@ -143,6 +143,19 @@ object internal:
 
       '{SelectorList.read($acc.tt)}
 
+    // The (type-checked) value of a declaration: a lone sentinel becomes the typed
+    // substitution; a substitution mixed with literal text, or in the property name,
+    // is an error. Shared by the stylesheet (`Css`) and inline-style (`Css.Style`) builds.
+    def declarationValue(property: Text, value: Text): Expr[Text] =
+      if has(property) then
+        halt(m"cataclysm: a substitution may only be a property value, not a property name")
+      else if value == placeholder then
+        hole(property)
+      else if has(value) then
+        halt(m"cataclysm: a substitution must be a whole property value, not mixed with text")
+      else
+        lift(value)
+
     def listExpr(nodes: List[Css.Node]): Expr[List[Css.Node]] = Expr.ofList(nodes.map(nodeExpr))
 
     def nodeExpr(node: Css.Node): Expr[Css.Node] = node match
@@ -154,14 +167,7 @@ object internal:
         '{Css.Node.Rule($selectorExpr, ${listExpr(body)})}
 
       case Css.Node.Declaration(property, value) =>
-        if has(property) then
-          halt(m"cataclysm: a substitution may only be a property value, not a property name")
-        else if value == placeholder then
-          '{Css.Node.Declaration(${lift(property)}, ${hole(property)})}
-        else if has(value) then
-          halt(m"cataclysm: a substitution must be a whole property value, not mixed with text")
-        else
-          '{Css.Node.Declaration(${lift(property)}, ${lift(value)})}
+        '{Css.Node.Declaration(${lift(property)}, ${declarationValue(property, value)})}
 
       case Css.Node.At(name, prelude, body) =>
         if has(name) || has(prelude) then
@@ -174,7 +180,25 @@ object internal:
           case nodes: List[Css.Node] @unchecked =>
             '{Css.Node.At(${lift(name)}, ${lift(prelude)}, ${listExpr(nodes)})}
 
-    val result = '{Css(${listExpr(css.rules)})}
+    def isDeclaration(node: Css.Node): Boolean = node match
+      case Css.Node.Declaration(_, _) => true
+      case _                          => false
+
+    // A bare declaration in inline-style position, e.g. `("color", $value)`.
+    def stylePair(node: Css.Node): Expr[(Text, Text)] = node match
+      case Css.Node.Declaration(property, value) =>
+        '{(${lift(property)}, ${declarationValue(property, value)})}
+
+      case _ =>
+        halt(m"cataclysm: only declarations may appear in an inline style")
+
+    // Detect the kind of CSS from its content: top-level declarations with no selector
+    // or at-rule are an inline style set (`Css.Style`); anything with a rule or at-rule
+    // is a stylesheet (`Css`). The `transparent inline` interpolator returns whichever.
+    val result: Expr[Css | Css.Style] =
+      if css.rules.nonEmpty && css.rules.forall(isDeclaration)
+      then '{Css.Style.of(${Expr.ofList(css.rules.map(stylePair))})}
+      else '{Css(${listExpr(css.rules)})}
 
     if holeIndex != insertions.length
     then halt(m"cataclysm: a substitution is only allowed as a property value or in a selector")
