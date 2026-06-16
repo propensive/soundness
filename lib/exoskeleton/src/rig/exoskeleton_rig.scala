@@ -34,7 +34,7 @@ package exoskeleton
 
 import soundness.*
 
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import interfaces.paths.pathOnLinux
 
 extension (shell: Shell)

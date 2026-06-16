@@ -43,7 +43,7 @@ import telekinesis.*
 import turbulence.*
 import vacuous.*
 
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 
 object Acceptable:

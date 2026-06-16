@@ -33,7 +33,7 @@
 package urticose
 
 import soundness.*
-import fulminate.errorDiagnostics.stackTraces
+import fulminate.errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 
 object Tests extends Suite(m"Urticose tests"):

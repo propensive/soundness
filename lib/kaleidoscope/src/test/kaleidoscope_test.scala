@@ -35,7 +35,7 @@ package kaleidoscope
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 object Tests extends Suite(m"Kaleidoscope tests"):
   def run(): Unit =

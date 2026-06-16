@@ -55,7 +55,7 @@ import zephyrine.*
 import zephyrine.lineation.linefeedByte
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8
 import charDecoders.utf8
 import Tel.given

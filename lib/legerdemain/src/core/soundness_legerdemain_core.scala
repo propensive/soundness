@@ -38,4 +38,4 @@ export
       Formulation, Parametric, Query, QueryError, RadioGroup, Widget }
 
 package formulations:
-  export legerdemain.formulations.default
+  export legerdemain.formulations.defaultFormulation

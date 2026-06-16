@@ -41,7 +41,7 @@ import fulminate.*
 import rudiments.*
 import vacuous.*
 
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 object Validation:
   def text(messages: List[(Pointer, Message)] = Nil): Message =

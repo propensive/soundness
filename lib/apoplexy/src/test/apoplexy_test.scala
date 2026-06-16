@@ -35,7 +35,7 @@ package apoplexy
 import soundness.*
 import apoplexy.OpenApi.*
 
-import errorDiagnostics.empty
+import errorDiagnostics.emptyDiagnostics
 import strategies.throwUnsafely
 
 object Tests extends Suite(m"OpenAPI tests"):

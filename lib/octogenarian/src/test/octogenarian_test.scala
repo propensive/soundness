@@ -49,7 +49,7 @@ import internetAccess.enabled
 
 import strategies.throwUnsafely
 import charEncoders.utf8
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled

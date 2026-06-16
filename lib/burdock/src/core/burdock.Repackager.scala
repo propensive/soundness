@@ -50,7 +50,7 @@ import urticose.*
 import vacuous.*
 import zeppelin.*
 
-import errorDiagnostics.empty
+import errorDiagnostics.emptyDiagnostics
 
 // The repackager. Reads the dependency hashes embedded by the compile-time macro
 // and partitions them: a hash that resolves to a public URL is externalized (a

@@ -238,7 +238,7 @@ object Zipfile:
         case other => abort(ZipError(ZipError.Reason.UnsupportedMethod(other)))
 
       val ref: Path on Zip =
-        import errorDiagnostics.empty
+        import errorDiagnostics.emptyDiagnostics
 
         whereas:
           case PathError(_, _)    => ZipError(ZipError.Reason.InvalidName(cleanName))

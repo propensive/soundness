@@ -41,7 +41,7 @@ import soundness.{transmit as _, listen as _, exchange as _, duplex as _, *}
 import charEncoders.utf8
 import charDecoders.utf8
 import textSanitizers.skip
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import threading.platformThreading
 import probates.await
 

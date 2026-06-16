@@ -8,7 +8,7 @@ import charEncoders.utf8
 import classloaders.scala
 import codicils.cancel
 import environments.java
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import httpServers.stdlibPublic
 import logging.silent
 import stdios.virtualMachine

@@ -35,7 +35,7 @@ package ypsiloid
 import soundness.*
 
 import autopsies.contrastExpectations
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 object ConformanceTests:
   // Adds the YAML 1.2 test-suite cases as `test(...)` entries inside the

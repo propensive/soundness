@@ -38,7 +38,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import textMetrics.eastAsianScripts
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 object Tests extends Suite(m"Hieroglyph tests"):
   def run(): Unit =

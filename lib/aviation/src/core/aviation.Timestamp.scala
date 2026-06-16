@@ -43,7 +43,7 @@ import prepositional.*
 import spectacular.*
 
 import abstractables.instantIsAbstractable
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 object Timestamp:
   import calendars.gregorian

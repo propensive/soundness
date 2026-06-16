@@ -35,7 +35,7 @@ package savagery
 import soundness.*
 
 import autopsies.contrastExpectations
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import iridescence.WebColors.{Red, Blue, Green, Black, White}
 import strategies.throwUnsafely
 import xylophone.XmlSchema

@@ -34,7 +34,7 @@ package inimitable
 
 import soundness.*
 
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import autopsies.contrastExpectations
 
 object Tests extends Suite(m"Inimitable Tests"):

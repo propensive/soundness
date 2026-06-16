@@ -35,14 +35,14 @@ package caesura
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 given decimalizer: Decimalizer = Decimalizer(1)
 
 object Tests extends Suite(m"Caesura tests"):
   def run(): Unit =
     suite(m"Parsing tests"):
-      import dsvFormats.csv
+      import dsvFormats.csvFormat
 
       test(m"simple parse"):
         t"""hello,world""".read[Sheet].rows.head
@@ -123,14 +123,14 @@ object Tests extends Suite(m"Caesura tests"):
 
     suite(m"Alternative formats"):
       test(m"Parse TSV data without header"):
-        import dsvFormats.tsv
+        import dsvFormats.tsvFormat
         t"Hello\tWorld\n".read[Sheet].rows
       . assert(_ == Stream(Dsv(t"Hello", t"World")))
 
       test(m"Parse TSV data with header"):
-        import dsvFormats.tsvWithHeader
+        import dsvFormats.tsvWithHeaderFormat
         t"Greeting\tAddressee\nHello\tWorld\n".read[Sheet]
-      . assert(_ == Sheet(Stream(Dsv(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeader, IArray(t"Greeting", t"Addressee")))
+      . assert(_ == Sheet(Stream(Dsv(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeaderFormat, IArray(t"Greeting", t"Addressee")))
 
 
 
@@ -138,22 +138,22 @@ object Tests extends Suite(m"Caesura tests"):
       import dynamicDsvAccess.enabled
 
       test(m"Access field by name"):
-        import dsvFormats.tsvWithHeader
-        import dsvRedesignations.unchanged
+        import dsvFormats.tsvWithHeaderFormat
+        import dsvRedesignations.unchangedRedesignation
         val dsv = t"greeting\taddressee\nHello\tWorld\n".read[Sheet]
         dsv.rows.head.addressee[Text]
       . assert(_ == t"World")
 
       test(m"Access field by mapped name"):
-        import dsvFormats.tsvWithHeader
-        import dsvRedesignations.capitalizedWords
+        import dsvFormats.tsvWithHeaderFormat
+        import dsvRedesignations.capitalizedWordsRedesignation
         val dsv = t"Personal Greeting\tTarget Person\nHello\tWorld\n".read[Sheet]
         dsv.rows.head.targetPerson[Text]
       . assert(_ == t"World")
 
       test(m"Access field by name 2"):
-        import dsvFormats.tsvWithHeader
-        import dsvRedesignations.unchanged
+        import dsvFormats.tsvWithHeaderFormat
+        import dsvRedesignations.unchangedRedesignation
         val dsv = t"greeting\tnumber\nHello\t23\n".read[Sheet]
         dsv.rows.head.number[Int]
       . assert(_ == 23)
@@ -161,12 +161,12 @@ object Tests extends Suite(m"Caesura tests"):
 
 
     test(m"decode case class"):
-      import dsvFormats.csv
+      import dsvFormats.csvFormat
       t"""hello,world""".read[Sheet].rows.head.as[Foo]
     . assert(_ == Foo(t"hello", t"world"))
 
     test(m"decode complex case class"):
-      import dsvFormats.csv
+      import dsvFormats.csvFormat
       t"""0.1,two,three,4,five,six""".read[Sheet].rows.head.as[Bar]
     . assert(_ == Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")))
 
@@ -179,57 +179,57 @@ object Tests extends Suite(m"Caesura tests"):
     . assert(_ == Dsv(t"0.1", t"two", t"three", t"4", t"five", t"six"))
 
     test(m"convert simple row to string"):
-      import dsvFormats.csv
+      import dsvFormats.csvFormat
       Sheet(Stream(Dsv(t"hello", t"world"))).show
     . assert(_ == t"""hello,world""")
 
     test(m"convert complex row to string"):
-      import dsvFormats.csv
+      import dsvFormats.csvFormat
       Sheet(Stream(Dsv(t"0.1", t"two", t"three", t"4", t"five", t"six"))).show
     . assert(_ == t"""0.1,two,three,4,five,six""")
 
     test(m"convert row with escaped quote"):
-      import dsvFormats.csv
+      import dsvFormats.csvFormat
       Sheet(Stream(Dsv(t"hello\"world"))).show
     . assert(_ == t""""hello""world"""")
 
     test(m"convert row with delimiter in cell"):
-      import dsvFormats.csv
+      import dsvFormats.csvFormat
       Sheet(Stream(Dsv(t"hello, world", t"test"))).show
     . assert(_ == t""""hello, world",test""")
 
     test(m"convert row with newline in cell"):
-      import dsvFormats.csv
+      import dsvFormats.csvFormat
       Sheet(Stream(Dsv(t"line1\nline2", t"test"))).show
     . assert(_ == t""""line1\nline2",test""")
 
     test(m"convert row with carriage return in cell"):
-      import dsvFormats.csv
+      import dsvFormats.csvFormat
       Sheet(Stream(Dsv(t"line1\rline2", t"test"))).show
     . assert(_ == t""""line1\rline2",test""")
 
     test(m"simple parse TSV"):
-      import dsvFormats.tsv
+      import dsvFormats.tsvFormat
       t"hello\tworld".read[Sheet]
-    . assert(_ == Sheet(Stream(Dsv(t"hello", t"world")), format = dsvFormats.tsv))
+    . assert(_ == Sheet(Stream(Dsv(t"hello", t"world")), format = dsvFormats.tsvFormat))
 
     test(m"decode case class from TSV"):
-      import dsvFormats.tsv
+      import dsvFormats.tsvFormat
       t"hello\tworld".read[Sheet].rows.head.as[Foo]
     . assert(_ == Foo(t"hello", t"world"))
 
     test(m"decode case class from CSV by headings"):
-      import dsvFormats.csvWithHeader
+      import dsvFormats.csvWithHeaderFormat
       t"greeting,name\nhello,world".read[Sheet].rows.head.as[Quux]
     . assert(_ == Quux(t"world", t"hello"))
 
     test(m"convert case class to TSV"):
-      import dsvFormats.tsv
+      import dsvFormats.tsvFormat
       Seq(Foo(t"hello", t"world")).dsv.show
     . assert(_ == t"hello\tworld")
 
     suite(m"Optics"):
-      import dsvFormats.csvWithHeader
+      import dsvFormats.csvWithHeaderFormat
       import dynamicDsvAccess.enabled
       def sheet: Sheet = t"name,age\nAlice,30\nBob,25".read[Sheet]
 

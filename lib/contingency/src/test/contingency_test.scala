@@ -35,7 +35,7 @@ package contingency
 import soundness.*
 import contingency.strategies.throwUnsafely
 
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 case class VarargsError(arguments: Text*)(using Diagnostics) extends Error(m"varargs error")
 case class VarargsError2(argument: Text, arguments: Text*)(using Diagnostics) extends Error(m"varargs error 2")
@@ -584,7 +584,7 @@ object Tests extends Suite(m"Contingency"):
           (Accumulated(Nil), (sum, ex) => ex match
             case ErrorA(n) => Accumulated(sum.values :+ n)
             case _         => sum)
-          (using errorDiagnostics.stackTraces)
+          (using errorDiagnostics.stackTracesDiagnostics)
         acc.changed
       . assert(_ == false)
 
@@ -593,29 +593,29 @@ object Tests extends Suite(m"Contingency"):
           (Accumulated(Nil), (sum, ex) => ex match
             case ErrorA(n) => Accumulated(sum.values :+ n)
             case _         => sum)
-          (using errorDiagnostics.stackTraces)
+          (using errorDiagnostics.stackTracesDiagnostics)
         acc.record(ErrorA(1))
         acc.record(ErrorA(2))
         acc.accumulated.values
       . assert(_ == List(1, 2))
 
-    suite(m"Diagnostics (errorDiagnostics.empty vs stackTraces)"):
+    suite(m"Diagnostics (errorDiagnostics.emptyDiagnostics vs stackTraces)"):
       test(m"empty produces an error with no stack frames"):
         val err: ErrorA =
-          given Diagnostics = errorDiagnostics.empty
+          given Diagnostics = errorDiagnostics.emptyDiagnostics
           ErrorA(1)
         err.getStackTrace.nn.length
       . assert(_ == 0)
 
       test(m"stackTraces produces an error with at least one stack frame"):
         val err: ErrorA =
-          given Diagnostics = errorDiagnostics.stackTraces
+          given Diagnostics = errorDiagnostics.stackTracesDiagnostics
           ErrorA(2)
         err.getStackTrace.nn.length > 0
       . assert(_ == true)
 
       test(m"empty: fillInStackTrace is a no-op (no-trace exception stays no-trace)"):
-        given Diagnostics = errorDiagnostics.empty
+        given Diagnostics = errorDiagnostics.emptyDiagnostics
         val err = ErrorA(3)
         err.fillInStackTrace()
         err.getStackTrace.nn.length
@@ -623,7 +623,7 @@ object Tests extends Suite(m"Contingency"):
 
       test(m"stackTraces: top frame originates in this file"):
         val err: ErrorA =
-          given Diagnostics = errorDiagnostics.stackTraces
+          given Diagnostics = errorDiagnostics.stackTracesDiagnostics
           ErrorA(4)
         err.getStackTrace.nn.head.nn.getFileName.nn
       . assert(_.contains("contingency_test"))
@@ -634,14 +634,14 @@ object Tests extends Suite(m"Contingency"):
 
       test(m"captured-trace error still serialises its message correctly"):
         val err: ErrorA =
-          given Diagnostics = errorDiagnostics.stackTraces
+          given Diagnostics = errorDiagnostics.stackTracesDiagnostics
           ErrorA(99)
         err.message.text
       . assert(_ == t"error a: 99")
 
       test(m"empty-trace error still serialises its message correctly"):
         val err: ErrorA =
-          given Diagnostics = errorDiagnostics.empty
+          given Diagnostics = errorDiagnostics.emptyDiagnostics
           ErrorA(99)
         err.message.text
       . assert(_ == t"error a: 99")

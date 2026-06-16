@@ -41,7 +41,7 @@ import charEncoders.utf8
 import charDecoders.utf8
 import textSanitizers.skip
 import printers.jsonMinimalPrinter
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 case class Credentials(username: Text, password: Text)
 case class NewPet(name: Text, tag: Optional[Text] = Unset)

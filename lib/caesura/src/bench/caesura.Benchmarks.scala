@@ -149,13 +149,13 @@ object Benchmarks extends Suite(m"Caesura benchmarks"):
   // ─── Caesura helpers ──────────────────────────────────────────────────────
 
   def caesuraParseCsv(text: Text): Int =
-    import dsvFormats.csv
+    import dsvFormats.csvFormat
     var n = 0
     text.read[Sheet].rows.foreach { _ => n += 1 }
     n
 
   def caesuraParseTsv(text: Text): Int =
-    import dsvFormats.tsv
+    import dsvFormats.tsvFormat
     var n = 0
     text.read[Sheet].rows.foreach { _ => n += 1 }
     n

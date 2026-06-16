@@ -40,7 +40,7 @@ import fulminate.*
 import jacinta.*
 import prepositional.*
 
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import strategies.mitigation
 
 object Stageable:

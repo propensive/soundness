@@ -34,7 +34,7 @@ package exoskeleton
 
 import soundness.*
 
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 object Tmux:
   def enter(keypresses: (Text | Char)*)(using tmux: Tmux): Unit raises TmuxError =

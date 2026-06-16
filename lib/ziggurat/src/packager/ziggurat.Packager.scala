@@ -49,7 +49,7 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-import errorDiagnostics.empty
+import errorDiagnostics.emptyDiagnostics
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled

@@ -37,7 +37,7 @@ import soundness.*
 import proximities.levenshteinDistance
 import caseSensitivity.sensitive
 import strategies.throwUnsafely
-import errorDiagnostics.empty
+import errorDiagnostics.emptyDiagnostics
 
 import Redraft.Directive as D
 

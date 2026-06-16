@@ -35,7 +35,7 @@ package ypsiloid
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import yamlDiscriminables.discriminatedUnionByType
 
 case class DPerson(name: Text, age: Int, email: Text) derives CanEqual

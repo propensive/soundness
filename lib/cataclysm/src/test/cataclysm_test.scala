@@ -35,7 +35,7 @@ package cataclysm
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 import cataclysm.Syntax
 import Css.Node.*

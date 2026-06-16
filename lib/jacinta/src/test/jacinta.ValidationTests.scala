@@ -37,7 +37,7 @@ import soundness.*
 import charEncoders.utf8
 import strategies.throwUnsafely
 import printers.jsonMinimalPrinter
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 case class VPerson(name: Text, age: Int, email: Text) derives CanEqual
 case class VAddress(street: Text, city: Text, zip: Text) derives CanEqual

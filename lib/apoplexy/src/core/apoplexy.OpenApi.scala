@@ -46,7 +46,7 @@ import turbulence.*
 import vacuous.*
 import ypsiloid.*
 
-import errorDiagnostics.empty
+import errorDiagnostics.emptyDiagnostics
 import zephyrine.ParseError
 
 object OpenApi:

@@ -38,4 +38,4 @@ export
       Panic, panic, TextEscapes, UncheckedError, warn }
 
 package errorDiagnostics:
-  export fulminate.errorDiagnostics.{empty, stackTraces}
+  export fulminate.errorDiagnostics.{emptyDiagnostics, stackTracesDiagnostics}

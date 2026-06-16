@@ -39,7 +39,7 @@ import juc.atomic as juca
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.empty
+import errorDiagnostics.emptyDiagnostics
 
 import threading.virtualThreading
 import probates.cancel

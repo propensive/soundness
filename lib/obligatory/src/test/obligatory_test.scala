@@ -148,7 +148,7 @@ object Tests extends Suite(m"Obligatory Tests"):
     suite(m"gRPC over HTTP/2 (loopback)"):
       import threading.virtualThreading
       import probates.cancel
-      import errorDiagnostics.stackTraces
+      import errorDiagnostics.stackTracesDiagnostics
 
       def pair(): (Duplex, Duplex) =
         val clientToServer = Spool[Data]()

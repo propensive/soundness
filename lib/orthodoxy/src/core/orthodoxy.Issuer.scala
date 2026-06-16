@@ -50,7 +50,7 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import queryParameters.arbitrary
 
 object Issuer:

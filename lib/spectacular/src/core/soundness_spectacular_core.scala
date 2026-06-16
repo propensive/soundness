@@ -35,4 +35,5 @@ package soundness
 export spectacular.{Affirmation, inspect, Inspectable, Inspectable2, show, Showable}
 
 package affirmations:
-  export spectacular.affirmations.{oneZero, onOff, trueFalse, yesNo}
+  export spectacular.affirmations.{oneZeroAffirmation, onOffAffirmation, trueFalseAffirmation,
+      yesNoAffirmation}

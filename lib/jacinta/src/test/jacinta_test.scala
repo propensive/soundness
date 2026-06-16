@@ -40,7 +40,7 @@ import printers.jsonMinimalPrinter
 
 import jsonDiscriminables.discriminatedUnionByKind
 import autopsies.contrastExpectations
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 case class Foo(x: Int, y: Text) derives CanEqual
 

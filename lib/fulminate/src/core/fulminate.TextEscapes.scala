@@ -39,7 +39,7 @@ import scala.annotation.*
 import anticipation.*
 
 object TextEscapes:
-  import errorDiagnostics.stackTraces
+  import errorDiagnostics.stackTracesDiagnostics
 
 
   def standardEscape(text: Text, cur: Int, esc: Boolean)

@@ -38,9 +38,11 @@ export
       Sheet, Spannable }
 
 package dsvFormats:
-  export caesura.dsvFormats.{csv, csvWithHeader, ssv, ssvWithHeader, tsv, tsvWithHeader}
+  export caesura.dsvFormats.{csvFormat, csvWithHeaderFormat, ssvFormat, ssvWithHeaderFormat,
+      tsvFormat, tsvWithHeaderFormat}
 
 package dsvRedesignations:
   export
     caesura.dsvRedesignations
-    . { capitalizedWords, lowerDotted, lowerSlashed, lowerWords, unchanged }
+    . { capitalizedWordsRedesignation, lowerDottedRedesignation, lowerSlashedRedesignation,
+        lowerWordsRedesignation, unchangedRedesignation }

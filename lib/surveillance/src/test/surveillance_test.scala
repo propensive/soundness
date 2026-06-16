@@ -34,7 +34,7 @@ package surveillance
 
 import soundness.*
 
-import errorDiagnostics.empty
+import errorDiagnostics.emptyDiagnostics
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.overwritePreexisting.disabled
 import strategies.throwUnsafely

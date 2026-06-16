@@ -37,7 +37,7 @@ import soundness.*
 import workingDirectories.default
 import abstractables.durationIsAbstractable
 import strategies.throwUnsafely
-import errorDiagnostics.empty
+import errorDiagnostics.emptyDiagnostics
 
 given silentExecEvent: ExecEvent is Loggable =
   new Loggable:

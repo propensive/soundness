@@ -35,7 +35,7 @@ package burdock
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8
 import systems.java
 import temporaryDirectories.system

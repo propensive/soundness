@@ -283,7 +283,7 @@ object Tarfile:
     if text.s.endsWith("/") then text.s.dropRight(1).nn.tt else text
 
   private def decodePath(text: Text): TarRef raises TarError =
-    import errorDiagnostics.empty
+    import errorDiagnostics.emptyDiagnostics
 
     whereas:
       case PathError(_, _) => TarError(TarError.Reason.BadName(text))

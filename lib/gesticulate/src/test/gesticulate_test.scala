@@ -36,7 +36,7 @@ import soundness.*
 
 import charEncoders.utf8
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 object Tests extends Suite(m"Gesticulate tests"):
   def run(): Unit =

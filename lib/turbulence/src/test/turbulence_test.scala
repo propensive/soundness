@@ -37,7 +37,7 @@ import soundness.*
 import charEncoders.utf8, charDecoders.utf8, textSanitizers.strict
 import threading.platformThreading
 import strategies.throwUnsafely
-import errorDiagnostics.empty
+import errorDiagnostics.emptyDiagnostics
 
 import scala.collection.mutable as scm
 

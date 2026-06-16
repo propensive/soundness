@@ -36,7 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import charDecoders.utf8, charEncoders.utf8, textSanitizers.skip
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import providers.javaStdlibProvider
 import crypto.permitDisallowedCrypto   // the suite deliberately exercises weak crypto
 

@@ -35,7 +35,7 @@ package xylophone
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import threading.virtualThreading
 import probates.cancel
 

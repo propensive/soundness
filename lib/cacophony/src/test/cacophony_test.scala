@@ -35,7 +35,7 @@ package cacophony
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 object Tests extends Suite(m"Cacophony Tests"):
 

@@ -45,7 +45,7 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 object Semver:
   given encodable: Semver is Encodable in Text =

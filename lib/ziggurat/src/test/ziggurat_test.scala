@@ -46,7 +46,7 @@ import strategies.throwUnsafely
 import charEncoders.utf8
 import providers.javaStdlibProvider
 import alphabets.hex.lowerCase
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled

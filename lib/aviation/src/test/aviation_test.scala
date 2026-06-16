@@ -35,7 +35,7 @@ package aviation
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import abstractables.instantIsAbstractable
 
 object Tests extends Suite(m"Aviation Tests"):

@@ -37,7 +37,7 @@ import language.experimental.genericNumberLiterals
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 object Tests extends Suite(m"Metamorphose tests"):
   def run(): Unit =

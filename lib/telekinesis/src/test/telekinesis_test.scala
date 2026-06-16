@@ -34,7 +34,7 @@ package telekinesis
 
 import soundness.*
 
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import logging.silent
 import strategies.throwUnsafely
 import charEncoders.utf8

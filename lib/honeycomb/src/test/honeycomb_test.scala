@@ -36,7 +36,7 @@ import scala.collection.immutable as sci
 
 import soundness.*
 
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 
 object Tests extends Suite(m"Honeycombd Tests"):
@@ -1063,7 +1063,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
             given Tactic[ParseError]:
               given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
 
-              def diagnostics: Diagnostics = errorDiagnostics.stackTraces
+              def diagnostics: Diagnostics = errorDiagnostics.stackTracesDiagnostics
 
               def record(error: Diagnostics ?=> ParseError): Unit =
                 errors += error(using diagnostics)

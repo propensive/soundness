@@ -137,7 +137,7 @@ object Html extends Tag.Container
   // throw, since the caller hasn't supplied a way to handle them.
   private def lenientTactic: Tactic[ParseError] = new Tactic[ParseError]:
     given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
-    def diagnostics: Diagnostics = errorDiagnostics.stackTraces
+    def diagnostics: Diagnostics = errorDiagnostics.stackTracesDiagnostics
     def record(error: Diagnostics ?=> ParseError): Unit = ()
 
     def abort(error: Diagnostics ?=> ParseError): Nothing =

@@ -133,7 +133,7 @@ object Bintel:
       i += 1
 
     val sigLenDecoded =
-      import errorDiagnostics.empty
+      import errorDiagnostics.emptyDiagnostics
 
       whereas:
         case _: VarintError => BintelError(BintelError.Reason.VarintError)
@@ -196,7 +196,7 @@ object Bintel:
   // (B11 on mismatch) before the document root is decoded under the
   // reconstructed schema.
   def decodeDocumentSelfContained(data: Data): Document raises BintelError =
-    import errorDiagnostics.empty
+    import errorDiagnostics.emptyDiagnostics
 
     if data.length < magicSelfContained.length
     then abort(BintelError(BintelError.Reason.BadMagic))
@@ -340,7 +340,7 @@ object Bintel:
         abort(BintelError(BintelError.Reason.ReferenceUnresolved))
 
   private def readVarint(cursor: Cursor): Long raises BintelError =
-    import errorDiagnostics.empty
+    import errorDiagnostics.emptyDiagnostics
 
     if cursor.offset >= cursor.data.length
     then abort(BintelError(BintelError.Reason.UnexpectedEoi))
