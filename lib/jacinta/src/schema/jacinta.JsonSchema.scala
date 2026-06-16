@@ -152,10 +152,12 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
   // that nests `JsonSchema` terminates instead of recursing forever.
   given jsonSchemaSchematic: JsonSchema is Schematic over JsonSchema = () => JsonSchema.Object()
 
-  // `JsonPointer` carries a string (its `… in Text` codec). Provided explicitly as a `Json.Encodable`
-  // so generic derivation resolves it as a leaf rather than structurally deriving `serpentine.Path`.
+  // `JsonPointer` carries a string (its `… in Text` codec). Provided explicitly as a
+  // `Json.Encodable` so generic derivation resolves it as a leaf rather than structurally
+  // deriving `serpentine.Path`.
   given pointerEncodable: JsonPointer is Json.Encodable =
-    Json.Encodable(Morphology.Str)(pointer => Json.ast(Json.Ast(pointer.encode.s)))
+    Json.Encodable(Morphology.Str): pointer =>
+      Json.ast(Json.Ast(pointer.encode.s))
 
   // `$ref` schemas have no `type` discriminator, so they are handled here
   // explicitly; every other variant is delegated to the `type`-discriminated

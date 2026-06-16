@@ -75,7 +75,7 @@ object Assembler:
   // `assemble` (which then appends the JAR) and by the offline polyglot packager, which
   // embeds the patched stub and lets the launcher append the JAR at unpack time.
   def patch
-    ( runner:        Data,           // bare runner binary
+    ( runner:        Data, // bare runner binary
       buildId:       Long,
       javaMinimum:   Int,
       javaPreferred: Int,
@@ -126,7 +126,7 @@ object Assembler:
 
 
   def assemble
-    ( runner:        Data,           // bare runner binary
+    ( runner:        Data, // bare runner binary
       jarFile:       Path on Linux,  // application JAR appended at EOF
       output:        Path on Linux,
       platformLabel: Text,

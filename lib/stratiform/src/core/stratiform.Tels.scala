@@ -621,7 +621,7 @@ object Tels extends Tels2:
         c.keyword.s match
           case "name"     => name = firstAtomText(c)
 
-          case "sigil"    =>
+          case "sigil" =>
             val s = firstAtomText(c)
             sigil = if s.absent then Unset else Optional(s.vouch.s.charAt(0))
 
@@ -755,7 +755,7 @@ object Tels extends Tels2:
           case "select"   => members += parseSelectRef(cc)
           case "validate" => validators ++= atomTexts(cc)
 
-          case "exclude"  =>
+          case "exclude" =>
             val ats = atomTexts(cc)
             if ats.length >= 1 then members += Exclude(ats(0))
 
@@ -785,7 +785,7 @@ object Tels extends Tels2:
           case "repeatable"   => repeatable = Polarity.Loose
           case "irrepeatable" => repeatable = Polarity.Tight
 
-          case "default"      =>
+          case "default" =>
             if j + 1 < ats.length then
               default = ats(j + 1): Optional[Text]
               j += 1

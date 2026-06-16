@@ -82,6 +82,7 @@ object Randomizable extends Derivation[[derivation] =>> derivation is Randomizab
   inline def disjunction[derivation: SumReflection]: derivation is Randomizable = random =>
     stochastic(using infer[Randomization]):
       val labels = variantLabels
+
       delegate(labels(random.long().abs.toInt%labels.length)):
         [variant <: derivation] => _.randomize(summon[Random])
 

@@ -99,9 +99,10 @@ object Dsv:
 
       val spans: IArray[Int] = Spannable.derived[derivation].spans()
 
-      // `count` must be local to each decode call, not captured per instance: a derived decoder for a
-      // type used in more than one field (e.g. two `Foo` fields) is deduplicated to a single shared
-      // instance, so per-instance mutable state would leak between successive decodes.
+      // `count` must be local to each decode call, not captured per instance: a derived
+      // decoder for a type used in more than one field (e.g. two `Foo` fields) is deduplicated
+      // to a single shared instance, so per-instance mutable state would leak between
+      // successive decodes.
       provide[Foci[CellRef]]:
         DsvProductDecoder[derivation]:
           (row: Dsv) =>
