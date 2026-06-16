@@ -40,7 +40,7 @@ import jacinta.*
 import turbulence.*
 import vacuous.*
 
-import hellenism.classloaders.threadContext
+import hellenism.classloaders.threadContextClassloader
 
 object PropertyDef:
   // One entry of the bundled `properties.json`. Only `syntax` is read; jacinta

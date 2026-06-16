@@ -34,13 +34,13 @@ package ziggurat
 
 import soundness.*
 
-import systems.java
-import environments.java
-import temporaryDirectories.system
+import systems.javaSystem
+import environments.javaEnvironment
+import temporaryDirectories.systemTemporaryDirectory
 import workingDirectories.default
 import logging.silent
-import stdios.virtualMachine
-import termcaps.environment
+import stdios.virtualMachineStdio
+import termcaps.environmentTermcap
 
 import strategies.throwUnsafely
 import charEncoders.utf8Encoder

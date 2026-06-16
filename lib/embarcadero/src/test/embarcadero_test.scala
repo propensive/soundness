@@ -157,7 +157,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
     suite(m"containerd over a gRPC loopback"):
       import threading.virtualThreading
-      import probates.cancel
+      import probates.cancelProbate
 
       def pair(): (Duplex, Duplex) =
         val clientToServer = Spool[Data]()

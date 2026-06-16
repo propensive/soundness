@@ -36,8 +36,8 @@ import soundness.*
 
 import randomization.unseeded
 
-import supervisors.global
-import probates.panic
+import supervisors.globalSupervisor
+import probates.panicProbate
 
 object Tests extends Suite(m"Zephyrine tests"):
   val bytes = Data.fill(1000)(_.toByte)

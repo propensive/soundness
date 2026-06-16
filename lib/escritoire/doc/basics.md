@@ -62,7 +62,7 @@ transform
         import tableStyles.default
         import textMetrics.uniformMetric
         import columnAttenuation.ignore
-        import stdios.virtualMachine
+        import stdios.virtualMachineStdio
 ##
 import soundness.*
 

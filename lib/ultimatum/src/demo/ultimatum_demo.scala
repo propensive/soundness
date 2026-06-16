@@ -34,12 +34,12 @@ package ultimatum
 
 import soundness.*
 
-import backstops.silent
-import probates.cancel
+import backstops.silentBackstop
+import probates.cancelProbate
 import executives.completions
 import interpreters.posix
 import strategies.throwUnsafely
-import supervisors.global
+import supervisors.globalSupervisor
 import threading.platformThreading
 
 // A medium-complexity fullscreen layout demonstrating the framework: a title bar

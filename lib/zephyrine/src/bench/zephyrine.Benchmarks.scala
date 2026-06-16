@@ -34,19 +34,19 @@ package zephyrine
 
 import scala.quoted.*
 
-import ambience.*, environments.java, systems.java
+import ambience.*, environments.javaEnvironment, systems.javaSystem
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import fulminate.*
 import gossamer.*
-import hellenism.*, classloaders.threadContext
+import hellenism.*, classloaders.threadContextClassloader
 import probably.*
 import proscenium.*
 import quantitative.*
 import rudiments.*
 import sedentary.*
 import symbolism.*
-import temporaryDirectories.system
+import temporaryDirectories.systemTemporaryDirectory
 import vacuous.*
 
 object Benchmarks extends Suite(m"Zephyrine benchmarks"):

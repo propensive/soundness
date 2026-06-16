@@ -42,9 +42,9 @@ import rudiments.*
 import spectacular.*
 import turbulence.*
 
-import environments.java
-import stdios.virtualMachine
-import termcaps.environment
+import environments.javaEnvironment
+import stdios.virtualMachineStdio
+import termcaps.environmentTermcap
 
 given decimalizer: Decimalizer = Decimalizer(3)
 

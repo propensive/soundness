@@ -34,13 +34,13 @@ package scintillate
 
 import scala.quoted.*
 
-import ambience.*, environments.java, systems.java
+import ambience.*, environments.javaEnvironment, systems.javaSystem
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import eucalyptus.*, logging.silent
 import fulminate.*
 import gossamer.*
-import hellenism.*, classloaders.threadContext
+import hellenism.*, classloaders.threadContextClassloader
 import hieroglyph.*, charEncoders.utf8Encoder
 import probably.*
 import proscenium.*
@@ -49,7 +49,7 @@ import rudiments.*
 import sedentary.*
 import symbolism.*
 import telekinesis.*
-import temporaryDirectories.system
+import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
 import vacuous.*
 import webserverErrorPages.minimal

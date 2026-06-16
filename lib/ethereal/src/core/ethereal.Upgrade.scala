@@ -34,7 +34,7 @@ package ethereal
 
 import java.lang as jl
 
-import ambience.*, systems.java
+import ambience.*, systems.javaSystem
 import anticipation.*
 import contingency.*
 import fulminate.*

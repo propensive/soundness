@@ -36,7 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import classloaders.threadContext
+import classloaders.threadContextClassloader
 
 sealed trait Id
 sealed trait Id2

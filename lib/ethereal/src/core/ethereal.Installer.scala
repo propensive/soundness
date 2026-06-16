@@ -111,7 +111,7 @@ object Installer:
   :   Result logs DaemonLogEvent raises InstallError =
 
     import workingDirectories.java
-    import systems.java
+    import systems.javaSystem
 
     whereas:
       case PathError(_, _)      => InstallError(InstallError.Reason.Environment)

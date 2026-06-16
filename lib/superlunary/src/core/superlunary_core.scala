@@ -43,7 +43,7 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 import interfaces.paths.pathOnLinux
-import systems.java
+import systems.javaSystem
 
 object embeddings:
   inline given automatic: [value]

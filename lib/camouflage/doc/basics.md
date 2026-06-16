@@ -69,7 +69,7 @@ Here is a complete example of a tiny `LruCache`:
 
 ```scala
 import turbulence.Out
-import turbulence.stdios.virtualMachine
+import turbulence.stdios.virtualMachineStdio
 import gossamer.t
 
 def numbers(): Unit =

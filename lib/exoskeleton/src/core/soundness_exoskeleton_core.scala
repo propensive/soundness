@@ -38,10 +38,11 @@ export
       Invocation, trap }
 
 package backstops:
-  export exoskeleton.backstops.{exceptionMessage, genericErrorMessage, silent, stackTrace}
+  export exoskeleton.backstops.{exceptionMessageBackstop, genericErrorMessageBackstop,
+      silentBackstop, stackTraceBackstop}
 
 package executives:
-  export exoskeleton.executives.direct
+  export exoskeleton.executives.directExecutive
 
 package environments:
-  export ambience.environments.daemonClient
+  export ambience.environments.daemonClientEnvironment

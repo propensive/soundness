@@ -5,16 +5,16 @@ import soundness.*
 import attributives.textAttributes
 import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
-import classloaders.scala
+import classloaders.scalaClassloader
 import codicils.cancel
-import environments.java
+import environments.javaEnvironment
 import errorDiagnostics.stackTracesDiagnostics
 import httpServers.stdlibPublic
 import logging.silent
-import stdios.virtualMachine
+import stdios.virtualMachineStdio
 import stylesheets.uncheckedClasses
-import supervisors.global
-import termcaps.environment
+import supervisors.globalSupervisor
+import termcaps.environmentTermcap
 import threading.platformThreading
 import webserverErrorPages.stackTraces
 

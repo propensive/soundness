@@ -40,7 +40,7 @@ import java.util.concurrent.atomic as juca
 
 import scala.collection.concurrent as scc
 
-import ambience.*, systems.java
+import ambience.*, systems.javaSystem
 import anticipation.*
 import coaxial.*
 import contingency.*
@@ -53,7 +53,7 @@ import fulminate.*
 import galilei.*
 import gossamer.*
 import guillotine.*
-import hellenism.*, classloaders.threadContext
+import hellenism.*, classloaders.threadContextClassloader
 import hieroglyph.*, charEncoders.utf8Encoder, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
 import nomenclature.*
 import parasite.*
@@ -88,9 +88,9 @@ def cli[bus <: Matchable](using executive: Executive)
 
   import strategies.throwUnsafely
   import workingDirectories.system
-  import environments.java
-  import termcaps.environment
-  import stdios.virtualMachine
+  import environments.javaEnvironment
+  import termcaps.environmentTermcap
+  import stdios.virtualMachineStdio
 
   val name: Text =
     whereas:
@@ -460,11 +460,11 @@ def cli[bus <: Matchable](using executive: Executive)
           connection.close()
           Log.info(DaemonLogEvent.CloseConnection(pid))
 
-  application(using executives.direct(using backstops.silent))(Nil):
-    import environments.java
-    import termcaps.environment
-    import stdios.virtualMachine
-    import probates.await
+  application(using executives.directExecutive(using backstops.silentBackstop))(Nil):
+    import environments.javaEnvironment
+    import termcaps.environmentTermcap
+    import stdios.virtualMachineStdio
+    import probates.awaitProbate
 
     Os.intercept[Shutdown]:
       wipeState()

@@ -44,12 +44,12 @@ object Tests extends Suite(m"Synesthesia Tests"):
     //
     // test(m"Remote server"):
     //   import internetAccess.enabled
-    //   import supervisors.global
-    //   import probates.cancel
+    //   import supervisors.globalSupervisor
+    //   import probates.cancelProbate
     //   import httpServers.stdlib
     //   import logging.silent
     //   import webserverErrorPages.stackTraces
-    //   import classloaders.threadContext
+    //   import classloaders.threadContextClassloader
     //
     //   tcp"8080".serve:
     //     request.path match

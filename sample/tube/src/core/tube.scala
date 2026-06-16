@@ -4,10 +4,10 @@ import soundness.*
 
 import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
-import classloaders.threadContext
+import classloaders.threadContextClassloader
 import dsvFormats.csvWithHeaderFormat
 import enumIdentification.kebabCaseIdentifiable
-import environments.daemonClient
+import environments.daemonClientEnvironment
 import errorDiagnostics.stackTracesDiagnostics
 import executives.completions
 import homeDirectories.system
@@ -15,7 +15,7 @@ import logging.silent
 import codicils.cancel
 import interpreters.posix
 import displayableTypes.message
-import supervisors.global
+import supervisors.globalSupervisor
 import textMetrics.uniformMetric
 import textSanitizers.skipSanitizer
 import threading.platformThreading

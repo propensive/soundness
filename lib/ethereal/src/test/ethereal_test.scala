@@ -38,17 +38,17 @@ import java.util.concurrent as juc
 
 import soundness.*
 
-import classloaders.system
-import environments.java
-import systems.java
-import temporaryDirectories.system
+import classloaders.systemClassloader
+import environments.javaEnvironment
+import systems.javaSystem
+import temporaryDirectories.systemTemporaryDirectory
 import workingDirectories.default
-import supervisors.global
+import supervisors.globalSupervisor
 import logging.silent
 import threading.platformThreading
 
 import strategies.throwUnsafely
-import backstops.silent
+import backstops.silentBackstop
 import autopsies.contrastExpectations
 
 object Tests extends Suite(m"Ethereal Tests"):
@@ -78,8 +78,8 @@ object Tests extends Suite(m"Ethereal Tests"):
       ' {
           import executives.completions
           import interpreters.posix
-          import environments.daemonClient
-          import systems.java
+          import environments.daemonClientEnvironment
+          import systems.javaSystem
 
           cli:
             arguments match

@@ -39,16 +39,17 @@ export
       WorkingDirectory, workingDirectory, WorkingDirectoryError, Xdg }
 
 package systems:
-  export ambience.systems.{empty, java}
+  export ambience.systems.{emptySystem, javaSystem}
 
 package environments:
-  export ambience.environments.{empty, java}
+  export ambience.environments.{emptyEnvironment, javaEnvironment}
 
 package workingDirectories:
   export ambience.workingDirectories.{default, system}
 
 package temporaryDirectories:
-  export ambience.temporaryDirectories.{environment, java, system}
+  export ambience.temporaryDirectories.{environmentTemporaryDirectory, javaTemporaryDirectory,
+      systemTemporaryDirectory}
 
 package termcaps:
-  export ambience.termcaps.environment
+  export ambience.termcaps.environmentTermcap

@@ -34,7 +34,7 @@ package harlequin
 
 import soundness.*
 
-import ambience.systems.java
+import ambience.systems.javaSystem
 
 object Tests extends Suite(m"Harlequin Tests"):
   def run(): Unit =

@@ -37,7 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 
 import doms.html.whatwg
-import classloaders.system
+import classloaders.systemClassloader
 
 object Tests extends Suite(m"Punctuation tests"):
   def run(): Unit =

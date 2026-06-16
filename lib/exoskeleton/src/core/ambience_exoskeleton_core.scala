@@ -35,4 +35,4 @@ package ambience
 import exoskeleton.*
 
 package environments:
-  given daemonClient(using cli: Cli): Environment = cli.environment
+  given daemonClientEnvironment(using cli: Cli): Environment = cli.environment

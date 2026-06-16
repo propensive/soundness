@@ -55,7 +55,7 @@ import vacuous.*
 
 import filesystemOptions.deleteRecursively.disabled
 import logging.silent
-import probates.cancel
+import probates.cancelProbate
 import workingDirectories.java
 
 

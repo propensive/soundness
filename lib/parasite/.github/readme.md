@@ -172,11 +172,11 @@ The child task runs continuously for ten seconds. Does that mean the call to `pa
 take ten seconds too? That depends!
 
 Three options are available, as contextual values:
-- `probates.await` will wait for all child tasks to terminate,
-- `probates.cancel` will cancel the child asks at the first opportunity, and
-- `probates.fail` will cause the call to `parent.await()` to throw an error
+- `probates.awaitProbate` will wait for all child tasks to terminate,
+- `probates.cancelProbate` will cancel the child asks at the first opportunity, and
+- `probates.failProbate` will cause the call to `parent.await()` to throw an error
   (which must be handled) if any incomplete tasks exist when the parent task returns.
-- `probates.panic` behaves like `probates.fail`, but throws an unchecked `Panic`
+- `probates.panicProbate` behaves like `probates.failProbate`, but throws an unchecked `Panic`
   error.
 
 Each of these options may be more useful in different scenarios.

@@ -160,7 +160,7 @@ def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
 
   mode match
     case Mode.Fullscreen =>
-      profanity.terminalFeatures.alternateScreen:
+      profanity.terminalFeatures.alternateScreenFeature:
         val root = TerminalCanvas(terminal)
         root.cursor(false)
 

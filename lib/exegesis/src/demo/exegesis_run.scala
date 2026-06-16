@@ -34,10 +34,10 @@ package exegesis
 
 import soundness.*
 
-import backstops.stackTrace
+import backstops.stackTraceBackstop
 import executives.completions
 import interpreters.posix
-import probates.await
+import probates.awaitProbate
 import strategies.throwUnsafely
 import threading.virtualThreading
 

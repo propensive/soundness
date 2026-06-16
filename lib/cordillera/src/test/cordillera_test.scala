@@ -215,7 +215,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
 
     suite(m"End-to-end over an in-memory Duplex (the whole stack)"):
       import threading.virtualThreading
-      import probates.cancel
+      import probates.cancelProbate
 
       // An in-memory `Duplex` pair: bytes written to one side surface on the other's
       // stream. Backed by `Spool`s so reads block until data arrives, like a socket.

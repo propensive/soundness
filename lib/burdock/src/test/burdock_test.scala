@@ -37,8 +37,8 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import charEncoders.utf8Encoder
-import systems.java
-import temporaryDirectories.system
+import systems.javaSystem
+import temporaryDirectories.systemTemporaryDirectory
 
 object Tests extends Suite(m"Burdock Tests"):
   def run(): Unit =

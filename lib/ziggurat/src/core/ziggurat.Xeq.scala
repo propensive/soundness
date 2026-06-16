@@ -47,7 +47,7 @@ import vacuous.*
 
 import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
-import classloaders.threadContext
+import classloaders.threadContextClassloader
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled

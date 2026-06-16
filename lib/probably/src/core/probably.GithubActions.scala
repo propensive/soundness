@@ -32,7 +32,7 @@
                                                                                                   */
 package probably
 
-import ambience.*, environments.java
+import ambience.*, environments.javaEnvironment
 import anticipation.*
 import contingency.*
 import denominative.*

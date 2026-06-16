@@ -39,7 +39,7 @@ import logging.silent
 import strategies.throwUnsafely
 import webserverErrorPages.minimal
 import threading.virtualThreading
-import probates.await
+import probates.awaitProbate
 
 import Control.*
 

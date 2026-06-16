@@ -50,11 +50,11 @@ import zephyrine.*
 
 import alphabets.base64.standard
 import charEncoders.utf8Encoder
-import environments.java
+import environments.javaEnvironment
 import errorDiagnostics.stackTracesDiagnostics
 import printers.jsonMinimalPrinter
-import stdios.virtualMachine
-import termcaps.environment
+import stdios.virtualMachineStdio
+import termcaps.environmentTermcap
 
 package couriers:
   given resend: (Tactic[CourierError], Online, HttpEvent is Loggable, HttpClient)

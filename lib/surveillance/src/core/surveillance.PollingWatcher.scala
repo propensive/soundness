@@ -54,7 +54,7 @@ import vacuous.*
 class PollingWatcher[duration: Abstractable across Durations to Long](interval: duration)
 extends Watcher:
 
-  import probates.await
+  import probates.awaitProbate
 
   private case class Entry(directory: Boolean, modified: Long, size: Long)
 

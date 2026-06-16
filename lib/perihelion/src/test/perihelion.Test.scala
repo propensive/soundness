@@ -40,7 +40,7 @@ import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import webserverErrorPages.minimal
 import threading.virtualThreading
-import probates.await
+import probates.awaitProbate
 import printers.jsonMinimalPrinter
 import charEncoders.utf8Encoder
 import charDecoders.utf8Decoder

@@ -34,15 +34,15 @@ package probably
 
 import java.lang as jl
 
-import ambience.{System as _, *}, environments.java
+import ambience.{System as _, *}, environments.javaEnvironment
 import escapade.*
 import iridescence.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
 
-import stdios.virtualMachine
-import termcaps.environment
+import stdios.virtualMachineStdio
+import termcaps.environmentTermcap
 import beneficence.*
 
 object Runner:

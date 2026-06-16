@@ -446,8 +446,8 @@ Any `Document[Html]` may be converted to a stream with, `doc.stream[Text]` (or
 `doc.stream[Bytes]`), in a concurrent environment. This requires a few imports
 to set up:
 ```scala
-import probates.cancel
-import supervisors.global
+import probates.cancelProbate
+import supervisors.globalSupervisor
 import threading.virtualThreading
 
 doc.stream[Text]

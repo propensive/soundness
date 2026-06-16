@@ -38,8 +38,8 @@ import scala.quoted.*
 
 import soundness.*
 
-import systems.java
-import temporaryDirectories.system
+import systems.javaSystem
+import temporaryDirectories.systemTemporaryDirectory
 import embeddings.automatic
 import strategies.throwUnsafely
 

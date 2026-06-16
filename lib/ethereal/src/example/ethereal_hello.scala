@@ -34,7 +34,7 @@ package ethereal
 
 import soundness.*
 
-import backstops.stackTrace
+import backstops.stackTraceBackstop
 import executives.completions
 import interpreters.posix
 import threading.virtualThreading

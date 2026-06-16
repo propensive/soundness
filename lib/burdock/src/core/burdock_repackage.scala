@@ -43,7 +43,7 @@ import exoskeleton.*
 import fulminate.*
 import galilei.*
 import gossamer.*
-import hellenism.*, classloaders.threadContext
+import hellenism.*, classloaders.threadContextClassloader
 import prepositional.*
 import rudiments.*
 import serpentine.*
@@ -53,14 +53,14 @@ import vacuous.*
 import zeppelin.*
 
 import Repackager.UserError
-import backstops.stackTrace
-import environments.java
-import executives.direct
+import backstops.stackTraceBackstop
+import environments.javaEnvironment
+import executives.directExecutive
 import filesystemOptions.dereferenceSymlinks.enabled
 import interpreters.posix
-import stdios.virtualMachine
-import systems.java
-import termcaps.environment
+import stdios.virtualMachineStdio
+import systems.javaSystem
+import termcaps.environmentTermcap
 
 // The repackager's command-line logic, launched by the `soundness.repackage` entry point.
 // It takes no arguments — it self-locates the application JAR it is running from and

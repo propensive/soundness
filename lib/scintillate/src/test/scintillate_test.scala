@@ -39,7 +39,7 @@ import strategies.throwUnsafely
 import charEncoders.utf8Encoder
 import webserverErrorPages.minimal
 import threading.virtualThreading
-import probates.await
+import probates.awaitProbate
 
 object Tests extends Suite(m"Scintillate tests"):
   def run(): Unit =

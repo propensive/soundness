@@ -49,7 +49,7 @@ import prepositional.*
 import serpentine.*
 
 import interfaces.paths.pathOnLinux
-import systems.java
+import systems.javaSystem
 
 
 trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transportive:
@@ -65,7 +65,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
   protected val classloader = classloader0
 
   def classpath(out: Path on Linux): LocalClasspath =
-    val entries = Classpath.Directory(out) :: (classloaders.threadContext.classpath.match
+    val entries = Classpath.Directory(out) :: (classloaders.threadContextClassloader.classpath.match
       case classpath: LocalClasspath => classpath.entries
 
       case _ =>

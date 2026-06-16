@@ -36,18 +36,18 @@ import java.lang as jl
 
 import soundness.*
 
-import classloaders.system
-import environments.java
-import systems.java
-import temporaryDirectories.system
+import classloaders.systemClassloader
+import environments.javaEnvironment
+import systems.javaSystem
+import temporaryDirectories.systemTemporaryDirectory
 import workingDirectories.default
-import supervisors.global
+import supervisors.globalSupervisor
 import logging.silent
 import threading.platformThreading
 
 import strategies.throwUnsafely
-import backstops.silent
-import probates.cancel
+import backstops.silentBackstop
+import probates.cancelProbate
 
 import Shell.*
 
@@ -57,7 +57,7 @@ object Tests extends Suite(m"Profanity Tests"):
       ' {
           import executives.completions
           import interpreters.posix
-          import probates.cancel
+          import probates.cancelProbate
 
           cli:
             arguments match
@@ -430,15 +430,15 @@ object Tests extends Suite(m"Profanity Tests"):
 
     suite(m"Terminal features"):
       test(m"the kitty keyboard feature pushes the protocol on"):
-        terminalFeatures.kittyKeyboard.enable
+        terminalFeatures.kittyKeyboardFeature.enable
       . assert(_ == t"\e[>1u")
 
       test(m"a query feature has an empty disable sequence"):
-        terminalFeatures.backgroundColor.disable
+        terminalFeatures.backgroundColorFeature.disable
       . assert(_ == t"")
 
       test(m"a by-name imported feature is collected by Every"):
-        import terminalFeatures.kittyKeyboard
+        import terminalFeatures.kittyKeyboardFeature
         summon[Every[TerminalFeature]].values.map(_.enable)
       . assert(_.contains(t"\e[>1u"))
 

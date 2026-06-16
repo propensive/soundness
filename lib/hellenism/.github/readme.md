@@ -88,10 +88,10 @@ The choice of classloader is determined by a contextual `Classloader` value. Thi
 a Java `ClassLoader` (note the capital `L` in the Java standard class, and the lower-case `l` in Hellenism's
 type name), but for most purposes, one of the following imports is sufficient:
 
-- `classloaders.threadContext`: use the current thread's context classloader
-- `classloaders.system`: use the _system_ classloader
-- `classloaders.platform`: use the _platform_ classloader
-- `classloaders.scala`: use the classloader which was used to load the first Scala classes
+- `classloaders.threadContextClassloader`: use the current thread's context classloader
+- `classloaders.systemClassloader`: use the _system_ classloader
+- `classloaders.platformClassloader`: use the _platform_ classloader
+- `classloaders.scalaClassloader`: use the classloader which was used to load the first Scala classes
 
 The `threadContext` classloader is a reasonable default choice for most purposes.
 

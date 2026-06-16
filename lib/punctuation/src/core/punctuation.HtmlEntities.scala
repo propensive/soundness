@@ -33,7 +33,7 @@
 package punctuation
 
 import anticipation.*
-import hellenism.*, classloaders.threadContext
+import hellenism.*, classloaders.threadContextClassloader
 import hieroglyph.*, charDecoders.utf8Decoder, textSanitizers.skipSanitizer
 import turbulence.*
 

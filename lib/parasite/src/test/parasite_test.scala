@@ -42,7 +42,7 @@ import strategies.throwUnsafely
 import errorDiagnostics.emptyDiagnostics
 
 import threading.virtualThreading
-import probates.cancel
+import probates.cancelProbate
 
 case class FooError(value: Int)(using Diagnostics) extends Error(m"foo failed with $value")
 case class BarError(label: Text)(using Diagnostics) extends Error(m"bar failed: $label")
@@ -419,7 +419,7 @@ object Tests extends Suite(m"Parasite tests"):
 
       suite(m"Probates"):
         test(m"With await probate parent waits for incomplete child"):
-          import probates.await
+          import probates.awaitProbate
           val parentReady = Promise[Unit]()
           val childDone = juca.AtomicBoolean(false)
           val task = async:
@@ -433,7 +433,7 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == true)
 
         test(m"With cancel probate parent cancels incomplete child"):
-          import probates.cancel
+          import probates.cancelProbate
           val parentReady = Promise[Unit]()
           val childGate = Promise[Unit]()
           val childCompleted = juca.AtomicBoolean(false)
@@ -448,7 +448,7 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == false)
 
         test(m"With fail probate incomplete child raises"):
-          import probates.fail
+          import probates.failProbate
           val task = async:
             val child = async:
               snooze(10.0*Second)
@@ -457,7 +457,7 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == AsyncError(AsyncError.Reason.Incomplete))
 
         test(m"Probates only affect non-daemon children for daemons"):
-          import probates.cancel
+          import probates.cancelProbate
           val daemonRunning = Promise[Unit]()
           val daemonCompleted = juca.AtomicBoolean(false)
           val task = async:
@@ -507,7 +507,7 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == true)
 
       suite(m"Retry / Tenacity"):
-        import retryTenacities.fixedNoDelayFiveTimes
+        import retryTenacities.fixedNoDelayFiveTimesTenacity
 
         test(m"Retry returns successfully on first try"):
           retry: (surrender, persevere) ?=>
@@ -723,7 +723,7 @@ object Tests extends Suite(m"Parasite tests"):
 
       suite(m"Race conditions in delegate"):
         test(m"Probate await with multiple children"):
-          import probates.await
+          import probates.awaitProbate
           val numChildren = 30
           val completed = juca.AtomicInteger(0)
           val task = async:
@@ -737,7 +737,7 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == 30)
 
         test(m"Probate cancel cancels all incomplete children"):
-          import probates.cancel
+          import probates.cancelProbate
           val numChildren = 30
           val gate = Promise[Unit]()
           val completed = juca.AtomicInteger(0)
@@ -868,7 +868,7 @@ object Tests extends Suite(m"Parasite tests"):
 
       suite(m"Children of children"):
         test(m"Nested tasks with await probate all complete"):
-          import probates.await
+          import probates.awaitProbate
           val counter = juca.AtomicInteger(0)
           val task = async:
             val a = async:
@@ -886,7 +886,7 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == 3)
 
         test(m"Cancelling outer cancels nested children"):
-          import probates.cancel
+          import probates.cancelProbate
           val gate = Promise[Unit]()
           val started = juc.CountDownLatch(3)
           val completed = juca.AtomicInteger(0)
@@ -1017,7 +1017,7 @@ object Tests extends Suite(m"Parasite tests"):
 
         test(m"Spawning tasks under load - no lost promises"):
           val n = 200
-          import probates.await
+          import probates.awaitProbate
           val sums = juca.AtomicInteger(0)
           val outer = async:
             (1 to n).foreach: i =>
@@ -1038,7 +1038,7 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == 42)
 
         test(m"Multiple daemons all started and cancelled"):
-          import probates.cancel
+          import probates.cancelProbate
           val started = juc.CountDownLatch(10)
           val gate = Promise[Unit]()
           val finished = juca.AtomicInteger(0)
@@ -1218,7 +1218,7 @@ object Tests extends Suite(m"Parasite tests"):
 
       suite(m"Bidirectional cancellation"):
         test(m"Cancel propagates from parent to child via probate"):
-          import probates.cancel
+          import probates.cancelProbate
           val childGate = Promise[Unit]()
           val childResult = juca.AtomicInteger(0)
           val task = async:
@@ -1232,7 +1232,7 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == 0)
 
         test(m"Multiple sibling tasks all cancelled by probate"):
-          import probates.cancel
+          import probates.cancelProbate
           val gate = Promise[Unit]()
           val started = juc.CountDownLatch(5)
           val completed = juca.AtomicInteger(0)
@@ -1313,7 +1313,7 @@ object Tests extends Suite(m"Parasite tests"):
 
       suite(m"Panic probate"):
         test(m"Panic probate with all children complete passes"):
-          import probates.panic
+          import probates.panicProbate
           val task = async:
             async(()).await()
           task.await()
@@ -1351,7 +1351,7 @@ object Tests extends Suite(m"Parasite tests"):
         . assert(_ == 10)
 
         test(m"Heavy parent-child cancellation cascade"):
-          import probates.cancel
+          import probates.cancelProbate
           val depth = 20
           val gate = Promise[Unit]()
           val completed = juca.AtomicInteger(0)

@@ -34,7 +34,7 @@ package hellenism
 
 import soundness.*
 
-import classloaders.threadContext
+import classloaders.threadContextClassloader
 
 trait TestService:
   def name: Text
@@ -69,7 +69,7 @@ object Tests extends Suite(m"Proscenium Tests"):
     . assert(_ == List(t"hellenism: the path foobar is not a valid classpath path"))
 
     test(m"load services from META-INF/services"):
-      import systems.java
+      import systems.javaSystem
       val classpath = unsafely(System.properties.java.`class`.path().decode[LocalClasspath])
       classpath.services[TestService].map(_.name)
     . assert(_ == Set(t"A", t"B"))

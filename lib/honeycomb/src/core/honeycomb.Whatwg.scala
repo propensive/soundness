@@ -49,7 +49,7 @@ import typonym.*
 import vacuous.*
 
 import charDecoders.utf8Decoder
-import classloaders.threadContext
+import classloaders.threadContextClassloader
 import textSanitizers.skipSanitizer
 
 object Whatwg:

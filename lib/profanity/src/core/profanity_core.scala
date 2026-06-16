@@ -80,33 +80,33 @@ def interactive[result](block: (terminal: Terminal) ?=> result)
 
 
 package keyboards:
-  given raw: Keyboard:
+  given rawKeyboard: Keyboard:
     type Keypress = Char
 
     def process(stream: Stream[Char]): Stream[Keypress] = stream
 
-  given numeric: Keyboard:
+  given numericKeyboard: Keyboard:
     type Keypress = Int
 
     def process(stream: Stream[Char]): Stream[Int] = stream.map(_.toInt)
 
-  given standard: (monitor: Monitor, probate: Probate) => Keyboard.Standard = Keyboard.Standard()
+  given standardKeyboard: (monitor: Monitor, probate: Probate) => Keyboard.Standard = Keyboard.Standard()
 
 // The standard terminal features, each a turn-on/turn-off escape-sequence pair.
 // Import the ones a session should enable (or `terminalFeatures.*` for all);
 // `interactive` applies every imported feature. The two queries (`backgroundColor`,
 // `terminalSize`) have no turn-off, so their `disable` sequence is empty.
 package terminalFeatures:
-  given bracketedPaste: TerminalFeature = TerminalFeature(t"\e[?2004h", t"\e[?2004l")
-  given focusReporting: TerminalFeature = TerminalFeature(t"\e[?1004h", t"\e[?1004l")
+  given bracketedPasteFeature: TerminalFeature = TerminalFeature(t"\e[?2004h", t"\e[?2004l")
+  given focusReportingFeature: TerminalFeature = TerminalFeature(t"\e[?1004h", t"\e[?1004l")
 
-  given mouseTracking: TerminalFeature =
+  given mouseTrackingFeature: TerminalFeature =
     TerminalFeature(t"\e[?1000h\e[?1006h", t"\e[?1006l\e[?1000l")
 
-  given alternateScreen: TerminalFeature = TerminalFeature(t"\e[?1049h", t"\e[?1049l")
-  given kittyKeyboard: TerminalFeature = TerminalFeature(t"\e[>1u", t"\e[<u")
-  given backgroundColor: TerminalFeature = TerminalFeature(t"\e]11;?\e\\", t"")
-  given terminalSize: TerminalFeature = TerminalFeature(Terminal.reportSize, t"")
+  given alternateScreenFeature: TerminalFeature = TerminalFeature(t"\e[?1049h", t"\e[?1049l")
+  given kittyKeyboardFeature: TerminalFeature = TerminalFeature(t"\e[>1u", t"\e[<u")
+  given backgroundColorFeature: TerminalFeature = TerminalFeature(t"\e]11;?\e\\", t"")
+  given terminalSizeFeature: TerminalFeature = TerminalFeature(Terminal.reportSize, t"")
 
 
 type UnixSignal = Signal

@@ -52,16 +52,16 @@ import serpentine.*
 import turbulence.*
 import vacuous.*
 
-import environments.java
-import termcaps.environment
+import environments.javaEnvironment
+import termcaps.environmentTermcap
 
 package backstops:
-  given silent: Backstop:
+  given silentBackstop: Backstop:
     def handle(error: Throwable)(using Stdio): Exit = error match
       case error: Exception => Exit(1)
       case error: Throwable => Exit(2)
 
-  given genericErrorMessage: Backstop:
+  given genericErrorMessageBackstop: Backstop:
     def handle(error: Throwable)(using Stdio): Exit = error match
       case error: Exception =>
         Out.println(t"An unexpected error occurred.")
@@ -71,7 +71,7 @@ package backstops:
         Out.println(t"An unexpected error occurred.")
         Exit(2)
 
-  given exceptionMessage: Backstop:
+  given exceptionMessageBackstop: Backstop:
     def handle(error: Throwable)(using Stdio): Exit = error match
       case error: Exception =>
         Out.println(error.toString.tt)
@@ -81,7 +81,7 @@ package backstops:
         Out.println(error.toString.tt)
         Exit(2)
 
-  given stackTrace: Backstop:
+  given stackTraceBackstop: Backstop:
     def handle(error: Throwable)(using Stdio): Exit = error match
       case error: Exception =>
         Out.println(StackTrace(error).teletype)
@@ -92,7 +92,7 @@ package backstops:
         Exit(2)
 
 package executives:
-  given direct: (backstop: Backstop) => Executive:
+  given directExecutive: (backstop: Backstop) => Executive:
     type Return = Exit
     type Interface = Invocation
 
@@ -109,7 +109,7 @@ package executives:
 
       Invocation
         ( Cli.arguments(arguments, Unset, Unset, Unset),
-          environments.java,
+          environments.javaEnvironment,
           workingDirectories.java,
           stdio,
           arguments.size == 0 || arguments.head != t"{admin}",
@@ -146,9 +146,9 @@ def application(using executive: Executive, interpreter: Interpreter, system: Sy
   val cli =
     executive.invocation
       ( arguments,
-        environments.java,
+        environments.javaEnvironment,
         workingDirectories.java,
-        stdios.virtualMachine,
+        stdios.virtualMachineStdio,
         entrypoint,
         Login(ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt, Unset) )
 

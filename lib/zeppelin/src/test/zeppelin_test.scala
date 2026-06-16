@@ -45,8 +45,8 @@ import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 import logging.silent
 import strategies.throwUnsafely
-import systems.java
-import temporaryDirectories.system
+import systems.javaSystem
+import temporaryDirectories.systemTemporaryDirectory
 import textSanitizers.skipSanitizer
 
 import _root_.java.io as ji

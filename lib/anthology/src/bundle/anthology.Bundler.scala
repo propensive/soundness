@@ -55,12 +55,12 @@ import filesystemOptions.writeAccess.enabled
 import filesystemTraversal.preOrder
 import logging.silent
 import manifestAttributes.*
-import systems.java
+import systems.javaSystem
 import workingDirectories.java
 
 object Bundler:
   def classpath(out: Path on Linux): LocalClasspath =
-    val entries = Classpath.Directory(out) :: (classloaders.threadContext.classpath.match
+    val entries = Classpath.Directory(out) :: (classloaders.threadContextClassloader.classpath.match
       case classpath: LocalClasspath => classpath.entries
 
       case _ =>

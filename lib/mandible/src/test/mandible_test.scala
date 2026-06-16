@@ -34,7 +34,7 @@ package mandible
 
 import soundness.*
 
-import classloaders.threadContext
+import classloaders.threadContextClassloader
 
 object Tests extends Suite(m"Mandible tests"):
   def run(): Unit =

@@ -479,7 +479,7 @@ object Tests extends Suite(m"Quantitative Tests"):
       . assert(_ == t"0.500 B")
 
     suite(m"Bytecode shape"):
-      import classloaders.threadContext
+      import classloaders.threadContextClassloader
 
       def methodBytecode(method: Text)(using Classloader): Bytecode =
         Classfile[Probes.type]

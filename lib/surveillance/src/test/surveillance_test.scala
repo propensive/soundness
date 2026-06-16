@@ -38,8 +38,8 @@ import errorDiagnostics.emptyDiagnostics
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.overwritePreexisting.disabled
 import strategies.throwUnsafely
-import systems.java
-import temporaryDirectories.system
+import systems.javaSystem
+import temporaryDirectories.systemTemporaryDirectory
 
 object Tests extends Suite(m"Surveillance tests"):
   def run(): Unit =
