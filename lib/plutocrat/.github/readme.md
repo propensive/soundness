@@ -91,8 +91,8 @@ which will just display the raw number, without a currency or a decimal point.
 Instead, to display a `Money`, the `show` method should be used. This will use the information in
 the `Money`'s `Currency` value to print the value correctly, however it requires a contextual
 `CurrencyStyle` value, which will format the currency appropriately. A choice of two is provided:
-- `plutocrat.currencyStyles.generic`, for currencies in the style, `3.01 EUR`
-- `plutocrat.currencyStyles.local`, for currencies in the style, `€3.01`
+- `plutocrat.currencyStyles.genericCurrencyStyle`, for currencies in the style, `3.01 EUR`
+- `plutocrat.currencyStyles.localCurrencyStyle`, for currencies in the style, `€3.01`
 
 Different implementations may be provided, if necessary.
 

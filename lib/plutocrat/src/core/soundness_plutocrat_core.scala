@@ -35,7 +35,7 @@ package soundness
 export plutocrat.{Currency, CurrencyStyle, IsinError, Luhn, Money, Price}
 
 package currencyStyles:
-  export plutocrat.currencyStyles.{generic, local}
+  export plutocrat.currencyStyles.{genericCurrencyStyle, localCurrencyStyle}
 
 package currencies:
   export

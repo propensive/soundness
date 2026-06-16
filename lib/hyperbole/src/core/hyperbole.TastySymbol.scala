@@ -34,7 +34,7 @@ package hyperbole
 
 import anticipation.*
 import escapade.*
-import escritoire.*, tableStyles.default, columnAttenuation.ignore
+import escritoire.*, tableStyles.defaultTableStyle, columnAttenuation.ignoreAttenuation
 import gossamer.*
 import hieroglyph.*, textMetrics.uniformMetric
 import iridescence.*

@@ -85,7 +85,7 @@ parameter, a lambda for converting from the type of the nodes, `NodeType`, to a 
 For example, we could write,
 
 ```scala
-import treeStyles.default
+import treeStyles.defaultTreeStyle
 
 val lines = diagram2.render(_.name)
 @main
@@ -134,7 +134,7 @@ Here is the full code used to create the example DAG above:
 import acyclicity.Dag
 import gossamer.t
 import turbulence.Out, turbulence.stdios.jvm
-import dagStyles.default
+import dagStyles.defaultDagStyle
 
 val dag = Dag(
   t"Any"       -> Set(),

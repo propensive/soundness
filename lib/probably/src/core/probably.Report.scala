@@ -42,7 +42,7 @@ import denominative.*
 import digression.*
 import distillate.*
 import escapade.*
-import escritoire.*, columnAttenuation.ignore
+import escritoire.*, columnAttenuation.ignoreAttenuation
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
@@ -53,7 +53,7 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import tableStyles.default
+import tableStyles.defaultTableStyle
 
 object Report:
   given verdict: Inclusion[Report, Verdict]:
@@ -226,7 +226,7 @@ class Report(using Environment)(using palette: TestPalette):
     if Ci.claudeCode then terseComplete() else humanComplete(coverage)
 
   private def terseComplete()(using Stdio): Unit =
-    import tableStyles.minimal
+    import tableStyles.minimalTableStyle
 
     val columns: Int = safely(Environment.columns.decode[Int]).or(120)
     val summaryLines = lines.summaries
@@ -418,7 +418,7 @@ class Report(using Environment)(using palette: TestPalette):
 
       val maxHits = data.map(_.branches).maxOption
 
-      import treeStyles.default
+      import treeStyles.defaultTreeStyle
 
       def describe(surface: Surface): Teletype =
         if surface.juncture.treeName == t"DefDef" then e"• ${surface.juncture.method.teletype}"
@@ -455,7 +455,7 @@ class Report(using Environment)(using palette: TestPalette):
           Column(e"Symbol")(_(0).juncture.symbolName) )
 
       . tabulate(render(junctures2))
-      . grid(columns)(using tableStyles.horizontal)
+      . grid(columns)(using tableStyles.horizontalTableStyle)
       . render
       . each(Out.println(_))
 

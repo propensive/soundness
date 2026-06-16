@@ -49,7 +49,7 @@ package colorimetry:
         whiteFluorescent }
 
 package luminosity:
-  export iridescence.luminosity.{dark, light}
+  export iridescence.luminosity.{darkBrightness, lightBrightness}
 
 package themes:
-  export iridescence.themes.solarized
+  export iridescence.themes.solarizedTheme

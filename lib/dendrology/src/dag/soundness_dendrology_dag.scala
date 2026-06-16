@@ -36,7 +36,7 @@ export dendrology.{DagDiagram, DagStyle, DagTile, LaneDagDiagram, LaneDagStyle,
         LayeredDagDiagram, TextualDagStyle, TextualLaneDagStyle}
 
 package dagStyles:
-  export dendrology.dagStyles.{ascii, default}
+  export dendrology.dagStyles.{asciiDagStyle, defaultDagStyle}
 
 package laneDagStyles:
-  export dendrology.laneDagStyles.{ascii, default}
+  export dendrology.laneDagStyles.{asciiLaneDagStyle, defaultLaneDagStyle}

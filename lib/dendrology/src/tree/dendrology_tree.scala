@@ -36,11 +36,11 @@ import anticipation.*
 import gossamer.*
 
 package treeStyles:
-  given default: [text: Textual] => TextualTreeStyle[text] =
+  given defaultTreeStyle: [text: Textual] => TextualTreeStyle[text] =
     TextualTreeStyle(t"  ", t"└─", t"├─", t"│ ")
 
-  given rounded: [text: Textual] => TextualTreeStyle[text] =
+  given roundedTreeStyle: [text: Textual] => TextualTreeStyle[text] =
     TextualTreeStyle(t"  ", t"╰─", t"├─", t"│ ")
 
-  given ascii: [text: Textual] => TextualTreeStyle[text] =
+  given asciiTreeStyle: [text: Textual] => TextualTreeStyle[text] =
     TextualTreeStyle(t"  ", t"+-", t"|-", t"| ")

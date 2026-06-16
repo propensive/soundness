@@ -45,9 +45,9 @@ import prepositional.*
 import turbulence.*
 import vacuous.*
 
-import luminosity.dark
+import luminosity.darkBrightness
 import termcaps.environmentTermcap
-import themes.solarized
+import themes.solarizedTheme
 
 abstract class Suite(suiteName: Message) extends Testable(suiteName):
   val suiteIo = safely(stdios.virtualMachineStdio).vouch

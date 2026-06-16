@@ -59,9 +59,9 @@ transform
   replace
     match  // more imports
     replacement
-        import tableStyles.default
+        import tableStyles.defaultTableStyle
         import textMetrics.uniformMetric
-        import columnAttenuation.ignore
+        import columnAttenuation.ignoreAttenuation
         import stdios.virtualMachineStdio
 ##
 import soundness.*
@@ -388,12 +388,12 @@ width, and to print the table ignoring the limit. We know that it will not
 fit within the space available, but a user may still be able to get useful
 information from the table.
 
-This route may be chosen by including the import `columnAttenuation.ignore`:
+This route may be chosen by including the import `columnAttenuation.ignoreAttenuation`:
 
 ```amok
 syntax  scala
 ##
-import columnAttenuation.ignore
+import columnAttenuation.ignoreAttenuation
 ```
 
 Alternatively, it might be considered unacceptable to render a table in a space
@@ -402,7 +402,7 @@ that's too small for it, and we can raise a `TableError` instead, by importing:
 ```amok
 syntax  scala
 ##
-import columnAttenuation.fail
+import columnAttenuation.failAttenuation
 ```
 
 Like all Soundness errors, `TableError` is a checked error, and using the
@@ -417,7 +417,7 @@ be rendered in the space available.
 ```amok
 syntax scala
 ##
-import columnAttenuation.fail
+import columnAttenuation.failAttenuation
 
 mend:
   case TableError(minimum, available) =>
@@ -434,7 +434,7 @@ in the `escritoire.tableStyles` (or `soundness.tableStyles`) package.
 
 Below are samples of each table style.
 
-Aside from `tableStyles.default', `tableStyles.thinRounded` provides tables
+Aside from `tableStyles.defaultTableStyle', `tableStyles.thinRoundedTableStyle` provides tables
 with rounded corners:
 
 ```mono
@@ -452,7 +452,7 @@ with rounded corners:
 ```
 
 Tables can be rendered with only horizontal lines using,
-`tableStyles.horizontal`:
+`tableStyles.horizontalTableStyle`:
 
 ```mono
 ╶────────────────────────────────────────────────╴
@@ -468,7 +468,7 @@ Tables can be rendered with only horizontal lines using,
 ╶────────────────────────────────────────────────╴
 ```
 
-Or with only vertical lines with `tableStyles.vertical`:
+Or with only vertical lines with `tableStyles.verticalTableStyle`:
 
 ```mono
 ╷              ╷      ╷                          ╷
@@ -485,7 +485,7 @@ Or with only vertical lines with `tableStyles.vertical`:
 ```
 
 A "minimal" approach includes just a horizontal line under the title, with
-`tableStyles.minimal`:
+`tableStyles.minimalTableStyle`:
 
 ```mono
   Name            LoC   Description

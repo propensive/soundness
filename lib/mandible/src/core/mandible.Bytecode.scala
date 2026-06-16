@@ -49,8 +49,8 @@ import iridescence.*
 import spectacular.*
 import vacuous.*
 
-import columnAttenuation.ignore
-import tableStyles.minimal
+import columnAttenuation.ignoreAttenuation
+import tableStyles.minimalTableStyle
 import textMetrics.uniformMetric
 
 object Bytecode:

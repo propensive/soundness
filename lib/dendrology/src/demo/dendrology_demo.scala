@@ -34,7 +34,7 @@ package dendrology
 
 import soundness.*
 
-import dendrology.laneDagStyles.default
+import dendrology.laneDagStyles.defaultLaneDagStyle
 import environments.javaEnvironment
 import stdios.virtualMachineStdio
 import strategies.throwUnsafely

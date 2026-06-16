@@ -165,7 +165,7 @@ object Teletypeable:
           innerLines = BoxLine.Blank,
           charset    = LineCharset.Default )
 
-    given attenuation: Attenuation = columnAttenuation.ignore
+    given attenuation: Attenuation = columnAttenuation.ignoreAttenuation
 
     val grid = scaffold.tabulate(rows).grid(200)
     val dataOnly = grid.copy(sections = grid.sections.tail)

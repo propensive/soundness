@@ -40,7 +40,7 @@ object Tests extends Suite(m"Plutocrat tests"):
   def run(): Unit =
     suite(m"Money tests"):
       test(m"Show a local monetary value"):
-        import currencyStyles.local
+        import currencyStyles.localCurrencyStyle
         val amount: Money in "EUR" = Eur(3.01)
         t"Received $amount"
 
@@ -65,7 +65,7 @@ object Tests extends Suite(m"Plutocrat tests"):
       . assert(_ == "GBP")
 
       test(m"Show a monetary value"):
-        import currencyStyles.generic
+        import currencyStyles.genericCurrencyStyle
         val amount = Eur(3.01)
         t"Received $amount"
 

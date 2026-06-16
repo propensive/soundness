@@ -68,7 +68,7 @@ val libraries: List[Library] =
         ( t"turbulence", t"internal", 1047, 2022, t"Simple tools for working with data streams" ),
       Library(t"escritoire", t"Escritoire", 494, 2018, t"A library for writing tables") )
 
-import columnAttenuation.fail
+import columnAttenuation.failAttenuation
 
 @main
 def run(): Unit =
@@ -91,7 +91,7 @@ def run(): Unit =
   // )
 
   locally:
-    import tableStyles.thinRounded
+    import tableStyles.thinRoundedTableStyle
     Out.println(table.tabulate(libraries).grid(70))
 
     case class Digit(n: Int, digitName: Text)
@@ -120,12 +120,12 @@ def run(): Unit =
     Out.println(pinkFloyd.table)
 
   // for style <- List
-  //               (tableStyles.default,
-  //                tableStyles.thinRounded,
-  //                tableStyles.horizontal,
-  //                tableStyles.midOnly,
-  //                tableStyles.vertical,
-  //                tableStyles.minimal)
+  //               (tableStyles.defaultTableStyle,
+  //                tableStyles.thinRoundedTableStyle,
+  //                tableStyles.horizontalTableStyle,
+  //                tableStyles.midOnlyTableStyle,
+  //                tableStyles.verticalTableStyle,
+  //                tableStyles.minimalTableStyle)
   // do style.give(Out.println(table.tabulate(libraries.take(2)).grid(50)))
 
 case class Fruit(chinese: Text, english: Text, russian: Text, japanese: Text, color: Chroma)

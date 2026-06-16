@@ -37,7 +37,7 @@ import dendrology.*
 import denominative.*
 import digression.*
 import escapade.*
-import escritoire.*, tableStyles.minimal, columnAttenuation.ignore
+import escritoire.*, tableStyles.minimalTableStyle, columnAttenuation.ignoreAttenuation
 import gossamer.*
 import hieroglyph.*, textMetrics.uniformMetric
 import iridescence.*
@@ -61,7 +61,7 @@ object TastyTree:
         val tag2: Text = if node.tag == ' ' then "▪".tt else "⟨"+node.tag+"⟩"
 
         Expansion
-          ( e"${tiles.drop(1).map(treeStyles.default.text(_)).join}$tag2 $text",
+          ( e"${tiles.drop(1).map(treeStyles.defaultTreeStyle.text(_)).join}$tag2 $text",
             node.typeName,
             node.param,
             node.shortCode,
