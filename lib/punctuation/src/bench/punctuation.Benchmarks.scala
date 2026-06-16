@@ -40,7 +40,7 @@ import contingency.*, strategies.throwUnsafely
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContext
-import hieroglyph.*, charDecoders.utf8, textSanitizers.strict
+import hieroglyph.*, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
 import probably.*
 import proscenium.*
 import quantitative.*

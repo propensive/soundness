@@ -34,7 +34,7 @@ package jacinta
 
 import soundness.*
 
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 import strategies.throwUnsafely
 
 object PositionTests extends Suite(m"Jacinta position-index tests"):

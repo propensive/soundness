@@ -129,7 +129,7 @@ extension (shell: Shell)
             import filesystemOptions.createNonexistent.enabled
             import filesystemOptions.createNonexistentParents.disabled
             import filesystemOptions.dereferenceSymlinks.enabled
-            import charEncoders.utf8
+            import charEncoders.utf8Encoder
 
             val file: Path on Linux = unsafely(temporaryDirectory/t"exoskeleton-${Uuid()}.ps1")
             file.open(psScript.tt.writeTo(_))

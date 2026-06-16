@@ -36,7 +36,7 @@ import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import escapade.*
 import gossamer.*
-import hieroglyph.*, textMetrics.uniform
+import hieroglyph.*, textMetrics.uniformMetric
 import iridescence.*
 import rudiments.*
 import spectacular.*

@@ -38,7 +38,7 @@ import distillate.*
 import gesticulate.*
 import gossamer.*
 import hallucination.*
-import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, textSanitizers.strict
+import hieroglyph.*, charEncoders.utf8Encoder, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
 import jacinta.*, printers.jsonMinimalPrinter, dynamicJsonAccess.enabled
 import monotonous.*, alphabets.base64.standard
 import prepositional.*

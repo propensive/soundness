@@ -39,7 +39,7 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import galilei.*
-import hieroglyph.*, charEncoders.ascii
+import hieroglyph.*, charEncoders.asciiEncoder
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
 import prepositional.*
 import rudiments.*

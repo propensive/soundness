@@ -39,7 +39,7 @@ import digression.*
 import escapade.*
 import escritoire.*, tableStyles.minimal, columnAttenuation.ignore
 import gossamer.*
-import hieroglyph.*, textMetrics.uniform
+import hieroglyph.*, textMetrics.uniformMetric
 import iridescence.*
 import spectacular.*
 import vacuous.*

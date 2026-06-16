@@ -39,7 +39,7 @@ import prepositional.*
 import spectacular.*
 import vacuous.*
 
-import decimalFormatters.java
+import decimalConverters.javaDecimalConverter
 
 object Stroke:
   private def bit(value: Boolean): Text = if value then t"1" else t"0"

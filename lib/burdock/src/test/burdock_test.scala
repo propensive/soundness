@@ -36,7 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 import systems.java
 import temporaryDirectories.system
 

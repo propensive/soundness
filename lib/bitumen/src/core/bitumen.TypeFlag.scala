@@ -32,7 +32,7 @@
                                                                                                   */
 package bitumen
 
-import hieroglyph.*, charEncoders.ascii, textMetrics.uniform
+import hieroglyph.*, charEncoders.asciiEncoder, textMetrics.uniformMetric
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
 
 enum TypeFlag:

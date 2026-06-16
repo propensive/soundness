@@ -36,7 +36,7 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8
+import hieroglyph.*, charEncoders.utf8Encoder
 import kaleidoscope.*
 import monotonous.*
 import prepositional.*

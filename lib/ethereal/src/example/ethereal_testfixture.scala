@@ -39,13 +39,13 @@ import java.util.concurrent as juc
 import soundness.*
 
 import backstops.silent
-import charDecoders.utf8
+import charDecoders.utf8Decoder
 import classloaders.threadContext
 import environments.daemonClient
 import executives.completions
 import interpreters.posix
 import systems.java
-import textSanitizers.strict
+import textSanitizers.strictSanitizer
 import threading.platformThreading
 import workingDirectories.system
 

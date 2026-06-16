@@ -87,7 +87,7 @@ transform
     match  // more imports
     replacement
         import tableStyles.default
-        import textMetrics.uniform
+        import textMetrics.uniformMetric
         import columnAttenuation.ignore
         import stdios.virtualMachine
 ##

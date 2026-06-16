@@ -41,7 +41,7 @@ import eucalyptus.*, logging.silent
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContext
-import hieroglyph.*, charEncoders.utf8
+import hieroglyph.*, charEncoders.utf8Encoder
 import probably.*
 import proscenium.*
 import quantitative.*

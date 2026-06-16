@@ -34,7 +34,7 @@ package bitumen
 
 import anticipation.*
 import gossamer.*
-import hieroglyph.*, charEncoders.ascii, textMetrics.uniform
+import hieroglyph.*, charEncoders.asciiEncoder, textMetrics.uniformMetric
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
 
 object UnixMode:

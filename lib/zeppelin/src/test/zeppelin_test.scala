@@ -34,8 +34,8 @@ package zeppelin
 
 import soundness.*
 
-import charDecoders.utf8
-import charEncoders.utf8
+import charDecoders.utf8Decoder
+import charEncoders.utf8Encoder
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
@@ -47,7 +47,7 @@ import logging.silent
 import strategies.throwUnsafely
 import systems.java
 import temporaryDirectories.system
-import textSanitizers.skip
+import textSanitizers.skipSanitizer
 
 import _root_.java.io as ji
 import _root_.java.util.zip as juz

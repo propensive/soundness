@@ -34,7 +34,7 @@ package escritoire
 
 import soundness.*
 
-import textMetrics.uniform
+import textMetrics.uniformMetric
 
 object Tests extends Suite(m"Escritoire tests"):
   def run(): Unit =

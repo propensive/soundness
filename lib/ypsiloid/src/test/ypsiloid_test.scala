@@ -1191,7 +1191,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(identity)
 
     suite(m"HTTP content-type integration"):
-      import charEncoders.utf8
+      import charEncoders.utf8Encoder
       import printers.yamlBlockPrinter
 
       test(m"serialises with an application/yaml media type"):

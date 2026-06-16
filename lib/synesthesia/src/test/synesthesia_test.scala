@@ -39,7 +39,7 @@ object Tests extends Suite(m"Synesthesia Tests"):
     // Manual-only MCP server runner — NOT an automated test. It serves MCP on :8080
     // and `Thread.sleep`s to keep the server alive for an external MCP client to
     // connect to; it asserts nothing and blocked CI for ~16 minutes. Disabled here;
-    // uncomment (and restore the `strategies.throwUnsafely` / `charEncoders.utf8`
+    // uncomment (and restore the `strategies.throwUnsafely` / `charEncoders.utf8Encoder`
     // imports) to run a live server by hand.
     //
     // test(m"Remote server"):

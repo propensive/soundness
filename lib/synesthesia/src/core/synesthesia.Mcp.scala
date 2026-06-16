@@ -66,7 +66,7 @@ object Mcp:
   :   Http.Response =
 
     import printers.jsonMinimalPrinter
-    import charEncoders.utf8
+    import charEncoders.utf8Encoder
 
     given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
     given mcpProtocolVersion: ("mcpProtocolVersion" is Directive of Text) = identity(_)

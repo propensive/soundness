@@ -49,7 +49,7 @@ import vacuous.*
 import zephyrine.*
 
 import alphabets.base64.standard
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 import environments.java
 import errorDiagnostics.stackTracesDiagnostics
 import printers.jsonMinimalPrinter

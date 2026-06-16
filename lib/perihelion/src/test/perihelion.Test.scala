@@ -42,9 +42,9 @@ import webserverErrorPages.minimal
 import threading.virtualThreading
 import probates.await
 import printers.jsonMinimalPrinter
-import charEncoders.utf8
-import charDecoders.utf8
-import textSanitizers.skip
+import charEncoders.utf8Encoder
+import charDecoders.utf8Decoder
+import textSanitizers.skipSanitizer
 
 import Control.*
 

@@ -40,7 +40,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import gossamer.*
-import hieroglyph.charEncoders.ascii
+import hieroglyph.charEncoders.asciiEncoder
 import parasite.*
 import rudiments.*
 import telekinesis.*

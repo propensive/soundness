@@ -34,7 +34,7 @@ package gesticulate
 
 import soundness.*
 
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 

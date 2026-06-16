@@ -51,7 +51,7 @@ import vacuous.*
 
 import columnAttenuation.ignore
 import tableStyles.minimal
-import textMetrics.uniform
+import textMetrics.uniformMetric
 
 object Bytecode:
   given teletypeable: (palette: BytecodePalette) => Bytecode is Teletypeable = bytecode =>

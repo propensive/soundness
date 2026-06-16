@@ -37,7 +37,7 @@ import soundness.*
 import interfaces.paths.pathOnLinux
 import strategies.throwUnsafely
 import logging.silent
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 import gitCommands.environmentDefault
 import workingDirectories.system
 import internetAccess.enabled

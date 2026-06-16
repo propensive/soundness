@@ -54,13 +54,13 @@ import symbolism.*
 import turbulence.*
 import vacuous.*
 
-import charDecoders.utf8
+import charDecoders.utf8Decoder
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
-import textSanitizers.skip
+import textSanitizers.skipSanitizer
 
 object Completions:
   case class Tab(arguments: List[Text], focus: Int, cursor: Int, count: Int = 0):

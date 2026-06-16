@@ -44,7 +44,7 @@ import distillate.*
 import escapade.*
 import fulminate.*
 import gossamer.*
-import hieroglyph.*, textMetrics.uniform
+import hieroglyph.*, textMetrics.uniformMetric
 import prepositional.*
 import profanity.*
 import rudiments.*

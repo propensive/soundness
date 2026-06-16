@@ -35,7 +35,7 @@ package escapade
 import soundness.*
 
 import strategies.throwUnsafely
-import textMetrics.uniform
+import textMetrics.uniformMetric
 
 import WebColors.{Red, Yellow, Green, Blue, Tan}
 

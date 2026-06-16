@@ -221,7 +221,7 @@ object Http:
       ).map { case (key, value) => t"$key = $value" }.join(t", ")
 
     given transmissible: Request is Transmissible = request =>
-      import charEncoders.ascii
+      import charEncoders.asciiEncoder
 
       val text: Text = Text.build:
         def newline(): Unit = append(t"\r\n")
@@ -554,7 +554,7 @@ object Http:
     def serialize(response: Response, includeBody: Boolean = true, version: Version = 1.1)
     :   Stream[Data] =
 
-      import charEncoders.ascii
+      import charEncoders.asciiEncoder
 
       // After `101 Switching Protocols` the bytes are no longer HTTP: the body is
       // the upgraded protocol's raw stream (e.g. WebSocket frames), so suppress

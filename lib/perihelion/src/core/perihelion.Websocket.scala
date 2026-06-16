@@ -50,7 +50,7 @@ import zephyrine.*
 
 import Control.*
 import alphabets.base64.standard
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 import crypto.permitDeprecatedCrypto
 import providers.javaStdlibProvider
 

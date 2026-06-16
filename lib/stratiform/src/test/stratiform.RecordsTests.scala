@@ -42,7 +42,7 @@ import turbulence.*
 import vacuous.*
 
 import strategies.throwUnsafely
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 
 object RecordsTests extends Suite(m"Stratiform Records tests"):
   def run(): Unit =

@@ -2,11 +2,11 @@ package tube.terminal
 
 import soundness.*
 
-import charDecoders.utf8
-import charEncoders.utf8
+import charDecoders.utf8Decoder
+import charEncoders.utf8Encoder
 import classloaders.threadContext
 import dsvFormats.csvWithHeaderFormat
-import enumIdentification.kebabCase
+import enumIdentification.kebabCaseIdentifiable
 import environments.daemonClient
 import errorDiagnostics.stackTracesDiagnostics
 import executives.completions
@@ -16,8 +16,8 @@ import codicils.cancel
 import interpreters.posix
 import displayableTypes.message
 import supervisors.global
-import textMetrics.uniform
-import textSanitizers.skip
+import textMetrics.uniformMetric
+import textSanitizers.skipSanitizer
 import threading.platformThreading
 import unhandledErrors.stackTrace
 import workingDirectories.daemonClient

@@ -3,8 +3,8 @@ package dev.soundness
 import soundness.*
 
 import attributives.textAttributes
-import charDecoders.utf8
-import charEncoders.utf8
+import charDecoders.utf8Decoder
+import charEncoders.utf8Encoder
 import classloaders.scala
 import codicils.cancel
 import environments.java

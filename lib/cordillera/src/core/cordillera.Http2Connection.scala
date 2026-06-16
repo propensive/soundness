@@ -40,7 +40,7 @@ import anticipation.{Data as Bytes, *}
 import coaxial.*
 import contingency.*
 import gossamer.*
-import hieroglyph.*, charEncoders.ascii
+import hieroglyph.*, charEncoders.asciiEncoder
 import parasite.*
 import proscenium.*
 import rudiments.*

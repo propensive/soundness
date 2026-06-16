@@ -44,21 +44,21 @@ export
       tr, trim, txt, uncamel, uncapitalize, unkebab, unsnake, upper, upto, urlDecode,
       urlEncode, utf16, utf8, where, words, Writing, WritingBuilder }
 
-package decimalFormatters:
-  export gossamer.decimalFormatters.java
+package decimalConverters:
+  export gossamer.decimalConverters.javaDecimalConverter
 
 package enumIdentification:
-  export gossamer.enumIdentification.kebabCase
-  export gossamer.enumIdentification.pascalCase
-  export gossamer.enumIdentification.snakeCase
-  export gossamer.enumIdentification.camelCase
+  export gossamer.enumIdentification.kebabCaseIdentifiable
+  export gossamer.enumIdentification.pascalCaseIdentifiable
+  export gossamer.enumIdentification.snakeCaseIdentifiable
+  export gossamer.enumIdentification.camelCaseIdentifiable
 
 package proximities:
-  export gossamer.proximities.jaroDistance
-  export gossamer.proximities.jaroWinklerDistance
-  export gossamer.proximities.prefixMatch
-  export gossamer.proximities.levenshteinDistance
-  export gossamer.proximities.normalizedLevenshteinDistance
+  export gossamer.proximities.jaroProximity
+  export gossamer.proximities.jaroWinklerProximity
+  export gossamer.proximities.prefixProximity
+  export gossamer.proximities.levenshteinProximity
+  export gossamer.proximities.normalizedLevenshteinProximity
 
 package caseSensitivity:
-  export gossamer.caseSensitivity.{insensitive, sensitive, smart}
+  export gossamer.caseSensitivity.{caseInsensitive, caseSensitive, smartCase}

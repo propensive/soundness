@@ -209,7 +209,7 @@ object internal:
 
     given showable: (Endianness, DateNumerics, DateSeparation, Years) => Date is Showable = date =>
       import DateNumerics.*, Years.*
-      import textMetrics.uniform
+      import textMetrics.uniformMetric
 
       given calendar: RomanCalendar = calendars.gregorian
 
@@ -244,7 +244,7 @@ object internal:
           abort(TimeError(_.Format(value, Iso8601, Prim)(Iso8601.Issue.Digit)))
 
     given encodable: RomanCalendar => Date is Encodable in Text = date =>
-      import hieroglyph.textMetrics.uniform
+      import hieroglyph.textMetrics.uniformMetric
 
       List
         ( date.year.toString.tt,

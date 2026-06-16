@@ -34,7 +34,7 @@ package enigmatic
 
 import soundness.*
 
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 import blockCipherMode.cbc, blockCipherPadding.pkcs7
 import providers.javaStdlibProvider
 import crypto.permitUnauthenticatedCrypto   // AES-CBC is unauthenticated

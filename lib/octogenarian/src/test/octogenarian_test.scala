@@ -48,7 +48,7 @@ import logging.silent
 import internetAccess.enabled
 
 import strategies.throwUnsafely
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 import errorDiagnostics.stackTracesDiagnostics
 
 import filesystemOptions.dereferenceSymlinks.enabled

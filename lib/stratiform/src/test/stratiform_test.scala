@@ -56,8 +56,8 @@ import zephyrine.lineation.linefeedByte
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import charEncoders.utf8
-import charDecoders.utf8
+import charEncoders.utf8Encoder
+import charDecoders.utf8Decoder
 import Tel.given
 
 object Tests extends Suite(m"Stratiform Tests"):

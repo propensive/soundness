@@ -15,7 +15,7 @@ that is `Streamable by Data` (bytes, files, network buffers) or `Streamable by T
 `Text` value, an `InputStream`, an HTTP body) can be parsed by asking for the result type.
 ```scala
 import contingency.*, strategies.throwUnsafely
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 
 val tel: Tel = t"name Alice\nemail a@b.c\n".read[Tel]
 ```

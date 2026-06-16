@@ -34,7 +34,7 @@ package obligatory
 
 import soundness.*
 
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 import strategies.throwUnsafely
 import Http2.*
 

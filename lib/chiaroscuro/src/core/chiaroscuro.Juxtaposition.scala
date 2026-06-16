@@ -159,8 +159,8 @@ object Juxtaposition:
                 case Collation(_, comparison, left, right) =>
                   if comparison.all(_(1).singleChar)
                   then
-                    import proximities.levenshteinDistance
-                    import caseSensitivity.sensitive
+                    import proximities.levenshteinProximity
+                    import caseSensitivity.caseSensitive
                     val distance = left.proximity(right).toInt
 
                     Row

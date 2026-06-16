@@ -43,7 +43,7 @@ import distillate.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
-import hieroglyph.*, textMetrics.uniform
+import hieroglyph.*, textMetrics.uniformMetric
 import hypotenuse.*
 import prepositional.*
 import rudiments.*

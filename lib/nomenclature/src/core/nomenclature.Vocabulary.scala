@@ -39,8 +39,8 @@ import hieroglyph.*
 import prepositional.*
 import turbulence.*
 
-import charDecoders.utf8
-import textSanitizers.skip
+import charDecoders.utf8Decoder
+import textSanitizers.skipSanitizer
 
 object Vocabulary:
   def apply[source: Streamable by Data, transport](adjectives: source, animals: source)

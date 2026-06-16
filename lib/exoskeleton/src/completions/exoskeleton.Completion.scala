@@ -40,7 +40,7 @@ import denominative.*
 import escapade.*
 import gossamer.*
 import guillotine.*
-import hieroglyph.*, textMetrics.uniform
+import hieroglyph.*, textMetrics.uniformMetric
 import hypotenuse.*
 import spectacular.*
 import symbolism.*

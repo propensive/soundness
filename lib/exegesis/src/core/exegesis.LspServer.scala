@@ -184,7 +184,7 @@ trait LspServer() extends Lsp:
   // `publishDiagnostics`) and frames each message back onto standard output, so writes never
   // interleave.
   def serve()(using Stdio, Monitor, Probate): Unit =
-    import charEncoders.utf8
+    import charEncoders.utf8Encoder
     import strategies.throwUnsafely
 
     val dispatch: Json => Optional[Json] = JsonRpc.serve[Lsp](this)

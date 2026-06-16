@@ -184,7 +184,7 @@ package dateFormats:
     given numeric: Months = _.numerical.show
 
     given twoDigit: Months = month =>
-      import textMetrics.uniform
+      import textMetrics.uniformMetric
       month.numerical.show.pad(2, Rtl, '0')
 
 package timeFormats:

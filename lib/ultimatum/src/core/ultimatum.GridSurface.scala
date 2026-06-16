@@ -36,7 +36,7 @@ import anticipation.*
 import denominative.*
 import escapade.*
 import gossamer.*
-import hieroglyph.*, textMetrics.wideCharacterWidth
+import hieroglyph.*, textMetrics.wideCharacterWidthMetric
 import profanity.*
 import yossarian.*
 

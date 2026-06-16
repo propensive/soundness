@@ -38,7 +38,7 @@ import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.ascii
+import hieroglyph.*, charEncoders.asciiEncoder
 import hypotenuse.*
 import prepositional.*
 import serpentine.*

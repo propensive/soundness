@@ -50,7 +50,7 @@ import zephyrine.*
 
 object Sse:
   given servable: LazyList[Sse] is Servable =
-    import charEncoders.utf8
+    import charEncoders.utf8Encoder
 
     Servable[LazyList[Sse]](_ => media"text/event-stream"): stream =>
       Http.Body.Streaming(stream.map(_.encode.data))

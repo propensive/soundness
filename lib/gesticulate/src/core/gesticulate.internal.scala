@@ -43,8 +43,8 @@ import gossamer.*
 import rudiments.*
 import vacuous.*
 
-import caseSensitivity.insensitive
-import proximities.levenshteinDistance
+import caseSensitivity.caseInsensitive
+import proximities.levenshteinProximity
 
 object internal:
   // Validation runs at macro-expansion time, so it must not reflectively

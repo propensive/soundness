@@ -34,7 +34,7 @@ package harlequin
 
 import escapade.*
 import gossamer.*
-import hieroglyph.*, textMetrics.uniform
+import hieroglyph.*, textMetrics.uniformMetric
 import iridescence.*
 import prepositional.*
 import spectacular.*

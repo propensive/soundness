@@ -40,13 +40,18 @@ export
       WideCharacterWidth }
 
 package textSanitizers:
-  export hieroglyph.textSanitizers.{skip, strict, substitute}
+  export hieroglyph.textSanitizers.{skipSanitizer, strictSanitizer, substituteSanitizer}
 
 package textMetrics:
-  export hieroglyph.textMetrics.{eastAsianScripts, wideCharacterWidth, uniform}
+  export hieroglyph.textMetrics.{eastAsianScriptsMetric, wideCharacterWidthMetric, uniformMetric}
 
 package charDecoders:
-  export hieroglyph.charDecoders.{ascii, utf16, utf16Be, utf16Le, utf8}
+  export hieroglyph.charDecoders.{asciiDecoder, utf16Decoder, utf16BeDecoder, utf16LeDecoder,
+      utf8Decoder}
 
 package charEncoders:
-  export hieroglyph.charEncoders.{ascii, utf16, utf16Be, utf16Le, utf8}
+  export hieroglyph.charEncoders.{asciiEncoder, utf16Encoder, utf16BeEncoder, utf16LeEncoder,
+      utf8Encoder}
+
+package communication:
+  export hieroglyph.communication.unicodeCharNamesCommunicable

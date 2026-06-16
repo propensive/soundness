@@ -54,7 +54,7 @@ import galilei.*
 import gossamer.*
 import guillotine.*
 import hellenism.*, classloaders.threadContext
-import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, textSanitizers.strict
+import hieroglyph.*, charEncoders.utf8Encoder, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
 import nomenclature.*
 import parasite.*
 import prepositional.*

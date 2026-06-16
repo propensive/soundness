@@ -37,9 +37,9 @@ import soundness.*
 import strategies.throwUnsafely
 import logging.silent
 import internetAccess.enabled
-import charEncoders.utf8
-import charDecoders.utf8
-import textSanitizers.skip
+import charEncoders.utf8Encoder
+import charDecoders.utf8Decoder
+import textSanitizers.skipSanitizer
 import printers.jsonMinimalPrinter
 import errorDiagnostics.stackTracesDiagnostics
 

@@ -44,7 +44,7 @@ import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8
+import hieroglyph.*, charEncoders.utf8Encoder
 import nomenclature.*
 import prepositional.*
 import rudiments.*

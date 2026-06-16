@@ -132,7 +132,7 @@ extension (request: Http.Request)
 
 package webserverErrorPages:
   given minimal: WebserverErrorPage = (request, throwable) =>
-    import hieroglyph.charEncoders.utf8
+    import hieroglyph.charEncoders.utf8Encoder
     Http.Response(Unfulfilled(t"An error occurred which prevented the request from completing."))
 
   private def prefix(using Classloader): Data = cp"/scintillate/error.pre.html".read[Data]
@@ -142,7 +142,7 @@ package webserverErrorPages:
     Http.Response(Unfulfilled(Stream(prefix, postfix).ascribe(media"text/html")))
 
   given stackTraces: Classloader => WebserverErrorPage = (throwable, request) =>
-    import charEncoders.utf8
+    import charEncoders.utf8Encoder
 
     val stack = t"<pre>${throwable.stackTrace}</pre>".read[Data]
     Http.Response(Unfulfilled(Stream(prefix, stack, postfix).ascribe(media"text/html")))

@@ -39,7 +39,7 @@ import gossamer.*
 import spectacular.*
 import xylophone.*
 
-import decimalFormatters.java
+import decimalConverters.javaDecimalConverter
 
 object Stop:
   private[savagery] def hex2(n: Int): Text =

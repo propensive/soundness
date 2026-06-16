@@ -36,7 +36,7 @@ import anticipation.*
 import gastronomy.*, providers.javaStdlibProvider
 import gesticulate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8
+import hieroglyph.*, charEncoders.utf8Encoder
 import jacinta.*, printers.jsonMinimalPrinter
 import monotonous.*
 import monotonous.alphabets.hex.lowerCase

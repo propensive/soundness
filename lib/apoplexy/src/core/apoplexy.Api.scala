@@ -75,7 +75,7 @@ object Api:
   :   Http.Response =
 
     import printers.jsonMinimalPrinter
-    import charEncoders.utf8
+    import charEncoders.utf8Encoder
 
     val substituted =
       request.substitutions.foldLeft(request.path): (path, entry) =>

@@ -39,7 +39,7 @@ import prepositional.*
 import spectacular.*
 import vacuous.*
 
-import decimalFormatters.java
+import decimalConverters.javaDecimalConverter
 
 object Transform:
   private given floatShowable: Float is Showable = _.toString.tt

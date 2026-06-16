@@ -38,9 +38,9 @@ package coaxial
 // `Routable`) ambiguous, so they are excluded from the wildcard.
 import soundness.{transmit as _, listen as _, exchange as _, duplex as _, *}
 
-import charEncoders.utf8
-import charDecoders.utf8
-import textSanitizers.skip
+import charEncoders.utf8Encoder
+import charDecoders.utf8Decoder
+import textSanitizers.skipSanitizer
 import errorDiagnostics.stackTracesDiagnostics
 import threading.platformThreading
 import probates.await

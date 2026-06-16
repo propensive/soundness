@@ -34,8 +34,8 @@ package dissonance
 
 import soundness.*
 
-import proximities.levenshteinDistance
-import caseSensitivity.sensitive
+import proximities.levenshteinProximity
+import caseSensitivity.caseSensitive
 import strategies.throwUnsafely
 import errorDiagnostics.emptyDiagnostics
 

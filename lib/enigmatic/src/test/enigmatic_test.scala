@@ -35,7 +35,7 @@ package enigmatic
 import soundness.*
 
 import strategies.throwUnsafely
-import charDecoders.utf8, charEncoders.utf8, textSanitizers.skip
+import charDecoders.utf8Decoder, charEncoders.utf8Encoder, textSanitizers.skipSanitizer
 import errorDiagnostics.stackTracesDiagnostics
 import providers.javaStdlibProvider
 import crypto.permitDisallowedCrypto   // the suite deliberately exercises weak crypto
