@@ -38,8 +38,8 @@ export
       Digestion, Feistel, Hash, Hashing, Md5, Permit, ProcessingPermit, Sha1, Sha2, Sha384,
       Sha512 }
 
-package hashProviders:
-  export gastronomy.hashProviders.{javaStdlibHashing, soundnessHashing}
+package providers:
+  export gastronomy.providers.{javaStdlibProvider, soundnessProvider}
 
 package crypto:
   export gastronomy.crypto.{permitUnauthenticatedCrypto, permitDeprecatedCrypto, permitLegacyCrypto,

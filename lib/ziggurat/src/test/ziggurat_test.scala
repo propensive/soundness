@@ -44,7 +44,7 @@ import termcaps.environment
 
 import strategies.throwUnsafely
 import charEncoders.utf8
-import hashProviders.javaStdlibHashing
+import providers.javaStdlibProvider
 import alphabets.hex.lowerCase
 import errorDiagnostics.stackTraces
 

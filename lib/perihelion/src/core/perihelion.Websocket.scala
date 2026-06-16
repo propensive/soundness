@@ -52,7 +52,7 @@ import Control.*
 import alphabets.base64.standard
 import charEncoders.utf8
 import crypto.permitDeprecatedCrypto
-import hashProviders.javaStdlibHashing
+import providers.javaStdlibProvider
 
 object Message:
   // A `Message` serialises to a complete (unmasked) WebSocket frame, so it can

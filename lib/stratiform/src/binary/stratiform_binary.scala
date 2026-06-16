@@ -36,7 +36,7 @@ import scala.language.unsafeNulls
 
 import anticipation.*
 import contingency.*
-import gastronomy.*, hashProviders.soundnessHashing
+import gastronomy.*, providers.soundnessProvider
 import prepositional.*
 
 

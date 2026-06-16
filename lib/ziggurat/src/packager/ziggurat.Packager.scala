@@ -57,7 +57,7 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
-import gastronomy.*, hashProviders.javaStdlibHashing
+import gastronomy.*, providers.javaStdlibProvider
 import internetAccess.enabled
 import monotonous.*, alphabets.hex.lowerCase
 

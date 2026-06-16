@@ -30,33 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package enigmatic
+package gastronomy
 
-import anticipation.*
-import gastronomy.*, providers.javaStdlibProvider
-import gossamer.*
-import monotonous.*
-import prepositional.*
-import spectacular.*
-
-object PrivateKey:
-  def generate[cipher <: Cipher]()(using cipher: cipher): PrivateKey[cipher] =
-    PrivateKey(cipher.genKey())
-
-  given showable: [key <: Cipher] => PrivateKey[key] is Showable = key =>
-    import alphabets.base64.standard
-    t"PrivateKey(${key.privateData.digest[Sha2[256]].serialize[Base64]})"
-
-class PrivateKey[cipher <: Cipher](private[enigmatic] val privateData: Data):
-  def public(using cipher: cipher): PublicKey[cipher] =
-    PublicKey(cipher.privateToPublic(privateData))
-
-
-  def sign[encodable: Encodable in Data](value: encodable)
-    ( using cipher: cipher & Signing, erased weakness: Permit[Weakness[cipher]] )
-  :   Signature[cipher] =
-
-    Signature(cipher.sign(encodable.encode(value), privateData))
-
-
-  def pem(reveal: Divulgence.type): Pem = Pem(PemLabel.PrivateKey, privateData)
+// Identifies a capability provider. A provider may supply more than one capability
+// (the JDK provides both hashing and cryptography); importing its `providers` given
+// brings the marker below into scope, which in turn enables every capability that
+// derives from it — hashing here in gastronomy, and cryptography in enigmatic.
+// Single-capability providers (Soundness's BLAKE3 hashing, OpenSSL's cryptography)
+// have no marker: their `providers` given supplies the capability directly.
+object Provider:
+  // The JDK provider: `MessageDigest`/`CRC32` hashing and JCE cryptography.
+  object JavaStdlib

@@ -40,7 +40,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import fulminate.*
-import gastronomy.*, hashProviders.soundnessHashing
+import gastronomy.*, providers.soundnessProvider
 import prepositional.*
 import ulysses.*
 import vacuous.*

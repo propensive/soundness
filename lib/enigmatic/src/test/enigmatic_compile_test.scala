@@ -36,7 +36,7 @@ import soundness.*
 
 import charEncoders.utf8
 import blockCipherMode.cbc, blockCipherPadding.pkcs7
-import cryptoProviders.javaStdlibCrypto
+import providers.javaStdlibProvider
 import crypto.permitUnauthenticatedCrypto   // AES-CBC is unauthenticated
 
 // Compile-time regressions for the cipher API. (Capture-checking confinement of

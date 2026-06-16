@@ -34,5 +34,5 @@ package soundness
 
 export enigmatic.OpensslCrypto
 
-package cryptoProviders:
-  export enigmatic.cryptoProviders.opensslCrypto
+package providers:
+  export enigmatic.providers.opensslProvider

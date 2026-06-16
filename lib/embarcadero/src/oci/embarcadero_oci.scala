@@ -33,7 +33,7 @@
 package embarcadero
 
 import anticipation.*
-import gastronomy.*, hashProviders.javaStdlibHashing
+import gastronomy.*, providers.javaStdlibProvider
 import gesticulate.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8

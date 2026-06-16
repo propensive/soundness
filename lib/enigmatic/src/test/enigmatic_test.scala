@@ -37,8 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import charDecoders.utf8, charEncoders.utf8, textSanitizers.skip
 import errorDiagnostics.stackTraces
-import cryptoProviders.javaStdlibCrypto
-import hashProviders.javaStdlibHashing
+import providers.javaStdlibProvider
 import crypto.permitDisallowedCrypto   // the suite deliberately exercises weak crypto
 
 import alphabets.hex.upperCase
@@ -195,9 +194,9 @@ object Tests extends Suite(m"Gastronomy tests"):
       // the provider seam (and its random source) is injectable.
       given Crypto:
         def random: Crypto.Random = size => IArray.fill[Byte](size)(0.toByte)
-        def aes: Crypto.SymmetricCipher = javaStdlibCrypto.aes
-        def rsa: Crypto.PublicKeyCipher = javaStdlibCrypto.rsa
-        def hmac(algorithm: Text): Crypto.Mac = javaStdlibCrypto.hmac(algorithm)
+        def aes: Crypto.SymmetricCipher = JavaStdlibCrypto.aes
+        def rsa: Crypto.PublicKeyCipher = JavaStdlibCrypto.rsa
+        def hmac(algorithm: Text): Crypto.Mac = JavaStdlibCrypto.hmac(algorithm)
 
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.expose:

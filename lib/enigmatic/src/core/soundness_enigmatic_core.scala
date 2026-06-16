@@ -48,6 +48,3 @@ package blockCipherMode:
 
 package blockCipherPadding:
   export enigmatic.blockCipherPadding.{iso10126, pkcs7}
-
-package cryptoProviders:
-  export enigmatic.cryptoProviders.javaStdlibCrypto
