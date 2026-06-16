@@ -30,8 +30,48 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package graffiti
 
-export graffiti.{Archetype, Headline, TopMenu, VersoPanel, RectoPanel, FoldableRectoPanel,
-    Breadcrumbs, Logo, Masthead, Colophon, Mainstay, Hero, Description, Viewport, Keywords, Author,
-    ThemeColor, Favicon, Canonical, StandardMetadata, Dashboard}
+import anticipation.*
+import cataclysm.*
+import honeycomb.*
+import honeycomb.doms.html.whatwg.*
+import nomenclature.*
+import nomenclature.CssClass.nominative
+import prepositional.*
+import symbolism.*
+
+object Dashboard:
+  val gridClass: Name[CssClass] = n"graffiti-dashboard"
+  val cardClass: Name[CssClass] = n"graffiti-card"
+
+  // One tile of a dashboard: a heading and its own flow content.
+  case class Card(heading: Text, body: Html of (? <: Flow))
+
+// A typical dashboard view, composed from the `Mainstay` (a `<main>` landmark) and `Masthead`
+// features. It lays the cards out in a responsive grid as the page's main content and shows the
+// `brand` in the masthead. A concrete dashboard supplies just the details left abstract below.
+trait Dashboard extends Archetype, Mainstay, Masthead:
+  // The details a concrete dashboard must provide.
+  def brand: Text
+  def cards: List[Dashboard.Card]
+
+  // Title the document after the brand.
+  override def pageTitle: Text = brand
+
+  // Renders one card; override to restructure it.
+  protected def card(entry: Dashboard.Card): Html of (? <: Flow) =
+    Article(`class` = Dashboard.cardClass)(H2(entry.heading), entry.body)
+
+  // The masthead shows the brand; the main content is the grid of cards.
+  override def masthead: Html of (? <: Flow) = Strong(brand)
+  def content: Html of (? <: Flow) = Div(`class` = Dashboard.gridClass)(cards.map(card)*)
+
+  // This view's own rules; override to restyle the grid or the cards.
+  protected def dashboardStyles: Css =
+    val grid = Dashboard.gridClass
+    css"$grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)) }"
+    + css"$grid { gap: 1rem }"
+    + css"${Dashboard.cardClass} { padding: 1rem; border: 1px solid; border-radius: 0.5rem }"
+
+  protected override def styles: Css = super.styles + dashboardStyles

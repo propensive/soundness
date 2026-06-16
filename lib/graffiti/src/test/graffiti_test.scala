@@ -82,6 +82,13 @@ trait LeftRail extends Archetype:
 trait RightRail extends Archetype:
   def sidebar: Html of (? <: Flow) = Fragment[Flow]()
 
+// A concrete dashboard, supplying only the details `Dashboard` leaves abstract.
+class AdminDashboard extends Dashboard:
+  def brand: Text = t"Admin"
+
+  def cards: List[Dashboard.Card] =
+    List(Dashboard.Card(t"Users", P("128 active")), Dashboard.Card(t"Revenue", P("4200")))
+
 object Tests extends Suite(m"Graffiti tests"):
   def run(): Unit =
     val page = Page(t"Welcome", List(t"home", t"docs"))
@@ -217,6 +224,25 @@ object Tests extends Suite(m"Graffiti tests"):
           class Clash extends Archetype, LeftRail, RightRail:
             def content: Html of (? <: Flow) = P("x")
         . exists(_.message.contains("sidebar"))
+      . assert(_ == true)
+
+    suite(m"Dashboard view"):
+      val html = AdminDashboard().html.show
+
+      test(m"the brand titles the document and fills the masthead"):
+        html.contains(t"<title>Admin</title>") && html.contains(t"graffiti-masthead")
+      . assert(_ == true)
+
+      test(m"the cards are laid out in the dashboard grid"):
+        html.contains(t"graffiti-dashboard") && html.contains(t"graffiti-card")
+      . assert(_ == true)
+
+      test(m"each card shows its heading and its own content"):
+        html.contains(t"Users") && html.contains(t"128 active") && html.contains(t"Revenue")
+      . assert(_ == true)
+
+      test(m"the cards sit inside the <main> landmark"):
+        html.contains(t"graffiti-mainstay")
       . assert(_ == true)
 
     suite(m"Serving over HTTP"):
