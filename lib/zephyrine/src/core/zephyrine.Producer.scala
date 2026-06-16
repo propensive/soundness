@@ -34,6 +34,7 @@ package zephyrine
 
 import java.util.concurrent as juc
 
+import anticipation.Data
 import denominative.*
 
 // A sink into which a value of one medium is written in pieces. The same producing code can be
@@ -43,6 +44,11 @@ import denominative.*
 // allocates per `put` along a contiguous run. `Operand` is the element type — `Char` for
 // `Producer[Text]`, `Byte` for `Producer[Data]` — and types the element-at-a-time `push`.
 object Producer:
+  // A byte producer: `Producer[Data]` with its element type pinned to `Byte`, the shape binary
+  // encoders (CBOR, Protobuf, …) write into. `Producer[Data](…)` / `Producer.collect[Data]` already
+  // surface this refinement; this alias names it for helper signatures.
+  type Bytes = Producer[Data] { type Operand = Byte }
+
   // Streaming: chunks are queued (with backpressure) and drained through `iterator`. The producing
   // code must run on a separate fiber, since `put` blocks once the window is full.
   def apply[medium](block: Int = 4096, window: Int = 2)(using addr: medium is Addressable)

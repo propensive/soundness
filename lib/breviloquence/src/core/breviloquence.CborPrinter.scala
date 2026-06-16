@@ -32,59 +32,69 @@
                                                                                                   */
 package breviloquence
 
-import scala.collection.mutable.ArrayBuffer
+import anticipation.*
+import parasite.*
+import rudiments.*
+import vacuous.*
+import zephyrine.*
 
 object CborPrinter:
-  def encode(cbor: Cbor.Ast): IArray[Byte] =
-    val buffer = ArrayBuffer.empty[Byte]
-    write(buffer, cbor)
-    val out = new Array[Byte](buffer.length)
-    var index = 0
-    while index < buffer.length do { out(index) = buffer(index); index += 1 }
-    out.asInstanceOf[IArray[Byte]]
+  def encode(cbor: Cbor.Ast): Data =
+    Producer.collect[Data](): producer =>
+      write(producer, cbor)
 
-  private def head(out: ArrayBuffer[Byte], major: Int, value: Long): Unit =
+  // Stream the encoded bytes incrementally; the producing code runs on a separate fiber.
+  def emit(cbor: Cbor.Ast)(using Monitor, Probate): Iterator[Data] =
+    val producer = Producer[Data](4096)
+
+    async:
+      write(producer, cbor)
+      producer.finish()
+
+    producer.iterator
+
+  private def head(out: Producer.Bytes, major: Int, value: Long): Unit =
     val majorBits = major << 5
 
     if value < 0 then
-      out += (majorBits | 27).toByte
+      out.push((majorBits | 27).toByte)
       u64(out, value)
     else if value < 24 then
-      out += (majorBits | value.toInt).toByte
+      out.push((majorBits | value.toInt).toByte)
     else if value < (1 << 8) then
-      out += (majorBits | 24).toByte
-      out += value.toByte
+      out.push((majorBits | 24).toByte)
+      out.push(value.toByte)
     else if value < (1 << 16) then
-      out += (majorBits | 25).toByte
+      out.push((majorBits | 25).toByte)
       u16(out, value.toInt)
     else if value < (1L << 32) then
-      out += (majorBits | 26).toByte
+      out.push((majorBits | 26).toByte)
       u32(out, value)
     else
-      out += (majorBits | 27).toByte
+      out.push((majorBits | 27).toByte)
       u64(out, value)
 
-  private def u16(out: ArrayBuffer[Byte], value: Int): Unit =
-    out += ((value >>> 8) & 0xFF).toByte
-    out += (value & 0xFF).toByte
+  private def u16(out: Producer.Bytes, value: Int): Unit =
+    out.push(((value >>> 8) & 0xFF).toByte)
+    out.push((value & 0xFF).toByte)
 
-  private def u32(out: ArrayBuffer[Byte], value: Long): Unit =
-    out += ((value >>> 24) & 0xFF).toByte
-    out += ((value >>> 16) & 0xFF).toByte
-    out += ((value >>> 8) & 0xFF).toByte
-    out += (value & 0xFF).toByte
+  private def u32(out: Producer.Bytes, value: Long): Unit =
+    out.push(((value >>> 24) & 0xFF).toByte)
+    out.push(((value >>> 16) & 0xFF).toByte)
+    out.push(((value >>> 8) & 0xFF).toByte)
+    out.push((value & 0xFF).toByte)
 
-  private def u64(out: ArrayBuffer[Byte], value: Long): Unit =
-    out += ((value >>> 56) & 0xFF).toByte
-    out += ((value >>> 48) & 0xFF).toByte
-    out += ((value >>> 40) & 0xFF).toByte
-    out += ((value >>> 32) & 0xFF).toByte
-    out += ((value >>> 24) & 0xFF).toByte
-    out += ((value >>> 16) & 0xFF).toByte
-    out += ((value >>> 8) & 0xFF).toByte
-    out += (value & 0xFF).toByte
+  private def u64(out: Producer.Bytes, value: Long): Unit =
+    out.push(((value >>> 56) & 0xFF).toByte)
+    out.push(((value >>> 48) & 0xFF).toByte)
+    out.push(((value >>> 40) & 0xFF).toByte)
+    out.push(((value >>> 32) & 0xFF).toByte)
+    out.push(((value >>> 24) & 0xFF).toByte)
+    out.push(((value >>> 16) & 0xFF).toByte)
+    out.push(((value >>> 8) & 0xFF).toByte)
+    out.push((value & 0xFF).toByte)
 
-  private def write(out: ArrayBuffer[Byte], cbor: Cbor.Ast): Unit =
+  private def write(out: Producer.Bytes, cbor: Cbor.Ast): Unit =
     if cbor.isInteger then
       val long = cbor.asInstanceOf[Long]
 
@@ -92,32 +102,27 @@ object CborPrinter:
       else head(out, 1, -1L - long)
 
     else if cbor.isFloat then
-      out += (0xE0 | 27).toByte
+      out.push((0xE0 | 27).toByte)
       u64(out, java.lang.Double.doubleToLongBits(cbor.asInstanceOf[Double]))
 
     else if cbor.isTextString then
       val text = cbor.asInstanceOf[String]
       val bytes = text.getBytes("UTF-8").nn
       head(out, 3, bytes.length.toLong)
-      var index = 0
-
-      while index < bytes.length do
-        out += bytes(index)
-        index += 1
+      out.put(bytes.immutable(using Unsafe))
 
     else if cbor.isByteString then
       val bytes = cbor.asInstanceOf[Array[Byte]]
       head(out, 2, bytes.length.toLong)
-      var index = 0
-      while index < bytes.length do { out += bytes(index); index += 1 }
+      out.put(bytes.immutable(using Unsafe))
 
     else if cbor.isBoolean then
-      out += (if cbor.asInstanceOf[Boolean] then 0xF5.toByte else 0xF4.toByte)
+      out.push(if cbor.asInstanceOf[Boolean] then 0xF5.toByte else 0xF4.toByte)
 
     else if cbor.nullary then
-      out += 0xF6.toByte
+      out.push(0xF6.toByte)
     else if cbor.unset then
-      out += 0xF7.toByte
+      out.push(0xF7.toByte)
 
     else if cbor.isTag then
       val tag = cbor.asInstanceOf[Cbor.Tag]

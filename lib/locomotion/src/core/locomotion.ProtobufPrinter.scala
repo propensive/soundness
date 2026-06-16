@@ -32,26 +32,17 @@
                                                                                                   */
 package locomotion
 
-import scala.collection.mutable as scm
-
 import anticipation.*
-import rudiments.*
-import vacuous.*
+import zephyrine.*
 
-// Accumulates Protocol Buffers wire bytes. Varints are LEB128; fixed32/fixed64 are
-// little-endian; a field is its tag varint followed by the value (length-prefixed
-// for the length-delimited wire type).
-class ProtobufPrinter():
-  private val buffer = scm.ArrayBuilder.make[Byte]
+// Writes Protocol Buffers wire bytes into a `Producer[Data]`. Varints are LEB128; fixed32/fixed64
+// are little-endian; a field is its tag varint followed by the value (length-prefixed for the
+// length-delimited wire type). Drive it through `Protobuf.printed` (synchronous) or `Protobuf.emit`
+// (streaming).
+class ProtobufPrinter(out: Producer.Bytes):
+  def byte(value: Int): Unit = out.push(value.toByte)
 
-  def byte(value: Int): Unit = buffer.addOne(value.toByte)
-
-  def raw(data: Data): Unit =
-    var i = 0
-
-    while i < data.length do
-      buffer.addOne(data(i))
-      i += 1
+  def raw(data: Data): Unit = out.put(data)
 
   def varint(value: Long): Unit =
     var rest = value
@@ -89,5 +80,3 @@ class ProtobufPrinter():
       tag(number, wireType)
       if wireType == WireType.Len then varint(bytes.length)
       raw(bytes)
-
-  def result: Data = buffer.result().immutable(using Unsafe)

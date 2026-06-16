@@ -48,11 +48,13 @@ import distillate.*
 import gossamer.*
 import hypotenuse.*
 import panopticon.*
+import parasite.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
 import wisteria.*
+import zephyrine.*
 
 import ProtobufError.Reason
 
@@ -141,20 +143,31 @@ object Protobuf extends Protobuf2:
         val fields = ProtobufParser(origin.payload).fields()
 
         if !fields.contains(number) then origin else
-          val printer = ProtobufPrinter()
+          val bytes = printed: printer =>
+            fields.each: (key, values) =>
+              val value = Protobuf.Repeated(values)
+              printer.field(key, if key == number then lambda(value) else value)
 
-          fields.each: (key, values) =>
-            val value = Protobuf.Repeated(values)
-            printer.field(key, if key == number then lambda(value) else value)
-
-          Protobuf.Wire(WireType.Len, printer.result)
+          Protobuf.Wire(WireType.Len, bytes)
 
       . or(origin)
 
+  // Synchronously assemble wire bytes by running `lambda` against a `ProtobufPrinter`.
   private def printed(lambda: ProtobufPrinter => Unit): Data =
-    val printer = ProtobufPrinter()
-    lambda(printer)
-    printer.result
+    Producer.collect[Data](): producer =>
+      lambda(ProtobufPrinter(producer))
+
+  // Stream a message's wire bytes incrementally (chunked); the producing code runs on a separate
+  // fiber. The bytes themselves are already assembled (Protobuf length-prefixes nested messages, so
+  // their lengths must be known up front); this hands them out in bounded chunks.
+  def emit(value: Protobuf)(using Monitor, Probate): Iterator[Data] =
+    val producer = Producer[Data](4096)
+
+    async:
+      producer.put(value.payload)
+      producer.finish()
+
+    producer.iterator
 
   private def readVarint(protobuf: Protobuf)(using Tactic[ProtobufError]): Long =
     if protobuf.isAbsent then 0L else ProtobufParser(protobuf.payload).varint()
@@ -283,14 +296,14 @@ object Protobuf extends Protobuf2:
       val list = values.to(List)
 
       if list.isEmpty then Absent else
-        val printer = ProtobufPrinter()
-        var rest = list
+        val bytes = printed: printer =>
+          var rest = list
 
-        while rest.nonEmpty do
-          printer.raw(encodable.encode(rest.head).payload)
-          rest = rest.tail
+          while rest.nonEmpty do
+            printer.raw(encodable.encode(rest.head).payload)
+            rest = rest.tail
 
-        Wire(WireType.Len, printer.result)
+        Wire(WireType.Len, bytes)
 
   given packedDecodable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
@@ -323,10 +336,11 @@ object Protobuf extends Protobuf2:
     map =>
       if map.isEmpty then Absent else
         val entries = map.to(List).map: (key, value) =>
-          val printer = ProtobufPrinter()
-          printer.field(1, keyEncodable.encode(key))
-          printer.field(2, valueEncodable.encode(value))
-          Wire(WireType.Len, printer.result)
+          val bytes = printed: printer =>
+            printer.field(1, keyEncodable.encode(key))
+            printer.field(2, valueEncodable.encode(value))
+
+          Wire(WireType.Len, bytes)
 
         Repeated(entries)
 
@@ -352,13 +366,12 @@ object Protobuf extends Protobuf2:
       val numbers = fieldNumbers[derivation]
 
       value =>
-        val printer = ProtobufPrinter()
+        val bytes = printed: printer =>
+          fields(value):
+            [field0] => fieldValue =>
+              printer.field(numbers(label), contextual.encode(fieldValue))
 
-        fields(value):
-          [field0] => fieldValue =>
-            printer.field(numbers(label), contextual.encode(fieldValue))
-
-        Protobuf.Wire(WireType.Len, printer.result)
+        Protobuf.Wire(WireType.Len, bytes)
 
     inline def disjunction[derivation: SumReflection]: derivation is Encodable in Protobuf =
       value =>
