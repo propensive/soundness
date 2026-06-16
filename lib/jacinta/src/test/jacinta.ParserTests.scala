@@ -41,7 +41,7 @@ import charEncoders.utf8
 import gitCommands.environmentDefault
 import workingDirectories.system
 import internetAccess.enabled
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 import scala.compiletime.*
 

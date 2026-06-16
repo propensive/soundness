@@ -38,7 +38,7 @@ import charEncoders.utf8
 import strategies.throwUnsafely
 import printers.jsonMinimalPrinter
 
-import jsonDiscriminables.discriminatedUnionByKind
+import discriminables.jsonByKindDiscriminable
 import autopsies.contrastExpectations
 import errorDiagnostics.stackTracesDiagnostics
 
@@ -782,7 +782,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == List(Status.Active(5), Status.Removed(9), Status.Pending(1)))
 
       locally:
-        import jsonDiscriminables.discriminatedUnionByType
+        import discriminables.jsonByTypeDiscriminable
 
         test(m"Discriminate by 'type'"):
           val a: Animal = Animal.Dog(t"Rex")
@@ -843,10 +843,10 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(identity)
 
     suite(m"Time encodables/decodables"):
-      import jsonEncodables.encodeInstantsAsUnixEpochMilliseconds
-      import jsonEncodables.encodeDurationsAsMilliseconds
-      import jsonDecodables.decodeInstantsAsUnixEpochMilliseconds
-      import jsonDecodables.decodeDurationsAsMilliseconds
+      import encodables.instantJsonEncodable
+      import encodables.durationJsonEncodable
+      import decodables.instantJsonDecodable
+      import decodables.durationJsonDecodable
       import aviation.*
       import abstractables.instantIsAbstractable
 

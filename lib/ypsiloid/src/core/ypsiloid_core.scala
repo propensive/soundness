@@ -163,9 +163,9 @@ package printers:
   // style may be added later. Mirrors jacinta's `printers.jsonIndentedPrinter`.
   given yamlBlockPrinter: YamlPrinter = YamlPrinter.print(_)
 
-package yamlDiscriminables:
-  given discriminatedUnionByType: [value] => value is Discriminable in Yaml =
+package discriminables:
+  given yamlByTypeDiscriminable: [value] => value is Discriminable in Yaml =
     Yaml.discriminatedUnion[value](t"type")
 
-  given discriminatedUnionByKind: [value] => value is Discriminable in Yaml =
+  given yamlByKindDiscriminable: [value] => value is Discriminable in Yaml =
     Yaml.discriminatedUnion[value](t"kind")

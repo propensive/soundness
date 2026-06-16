@@ -40,6 +40,6 @@ export
 package printers:
   export jacinta.printers.{jsonIndentedPrinter, jsonMinimalPrinter}
 
-package jsonDiscriminables:
-  export jacinta.jsonDiscriminables.discriminatedUnionByType
-  export jacinta.jsonDiscriminables.discriminatedUnionByKind
+package discriminables:
+  export jacinta.discriminables.jsonByTypeDiscriminable
+  export jacinta.discriminables.jsonByKindDiscriminable

@@ -740,7 +740,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == 1)
 
     suite(m"Sum-type derivation"):
-      import yamlDiscriminables.discriminatedUnionByType
+      import discriminables.yamlByTypeDiscriminable
 
       test(m"Round-trip a sum-type variant (Circle)"):
         val shape: Shape = Shape.Circle(2.0)

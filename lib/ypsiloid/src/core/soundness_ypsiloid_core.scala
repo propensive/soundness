@@ -36,3 +36,6 @@ export ypsiloid.{Yaml, YamlError, YamlParser, YamlPrimitive, YamlPrinter}
 
 package printers:
   export ypsiloid.printers.yamlBlockPrinter
+
+package discriminables:
+  export ypsiloid.discriminables.{yamlByTypeDiscriminable, yamlByKindDiscriminable}

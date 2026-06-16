@@ -32,10 +32,8 @@
                                                                                                   */
 package soundness
 
-package telEncodables:
-  export stratiform.telEncodables.{encodeInstantsAsUnixEpochMilliseconds,
-      encodeDurationsAsMilliseconds}
+package encodables:
+  export stratiform.encodables.{instantTelEncodable, durationTelEncodable}
 
-package telDecodables:
-  export stratiform.telDecodables.{decodeInstantsAsUnixEpochMilliseconds,
-      decodeDurationsAsMilliseconds}
+package decodables:
+  export stratiform.decodables.{instantTelDecodable, durationTelDecodable}
