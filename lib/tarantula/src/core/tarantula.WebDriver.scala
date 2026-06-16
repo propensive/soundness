@@ -39,7 +39,7 @@ import gesticulate.*
 import gossamer.*
 import hallucination.*
 import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, textSanitizers.strict
-import jacinta.*, jsonPrinters.minimal, dynamicJsonAccess.enabled
+import jacinta.*, printers.jsonMinimalPrinter, dynamicJsonAccess.enabled
 import monotonous.*, alphabets.base64.standard
 import prepositional.*
 import spectacular.*

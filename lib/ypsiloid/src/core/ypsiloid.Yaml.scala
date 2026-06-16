@@ -1297,7 +1297,7 @@ object Yaml extends Yaml2, Dynamic:
   // `Yaml` value usable as an HTTP request/response body (telekinesis derives
   // `Postable`/`Servable` from it); `Instantiable across HttpRequests` reads a
   // request/response body back into `Yaml`. Encoding needs a `YamlPrinter` (see
-  // `yamlPrinters`).
+  // `printers`).
   given abstractable: (encoder: CharEncoder, printer: YamlPrinter)
   =>  Yaml is Abstractable across HttpStreams to HttpStreams.Content =
 

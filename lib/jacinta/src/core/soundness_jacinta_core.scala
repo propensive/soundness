@@ -37,8 +37,8 @@ export
   . { dynamicJsonAccess, DynamicJsonEnabler, Json, json, Json2, JsonError, JsonPointer,
       JsonPrimitive, JsonPrinter, Ndjson, parserAggregable, showable }
 
-package jsonPrinters:
-  export jacinta.jsonPrinters.{indented, minimal}
+package printers:
+  export jacinta.printers.{jsonIndentedPrinter, jsonMinimalPrinter}
 
 package jsonDiscriminables:
   export jacinta.jsonDiscriminables.discriminatedUnionByType

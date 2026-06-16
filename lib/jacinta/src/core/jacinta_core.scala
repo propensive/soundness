@@ -238,9 +238,9 @@ extension (inline context: StringContext)
   transparent inline def j: Interpolation = interpolation[Json](context)
   transparent inline def jp: Interpolation = interpolation[JsonPointer](context)
 
-package jsonPrinters:
-  given indented: JsonPrinter = JsonPrinter.print(_, true)
-  given minimal: JsonPrinter = JsonPrinter.print(_, false)
+package printers:
+  given jsonIndentedPrinter: JsonPrinter = JsonPrinter.print(_, true)
+  given jsonMinimalPrinter: JsonPrinter = JsonPrinter.print(_, false)
 
 package jsonDiscriminables:
   given discriminatedUnionByType: [value] => value is Discriminable in Json =

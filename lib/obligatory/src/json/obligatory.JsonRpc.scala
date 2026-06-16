@@ -90,7 +90,7 @@ object JsonRpc:
     val promise: Promise[Json] = Promise()
     promises(uuid) = promise
     import charEncoders.utf8
-    import jsonPrinters.minimal
+    import printers.jsonMinimalPrinter
     import logging.silent
 
     val request = Request("2.0", method, payload, uuid.json).json
@@ -114,7 +114,7 @@ object JsonRpc:
   :   Promise[Unit] =
 
     import charEncoders.utf8
-    import jsonPrinters.minimal
+    import printers.jsonMinimalPrinter
     import logging.silent
 
     val request = Request("2.0", method, payload, Unset).json

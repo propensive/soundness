@@ -54,7 +54,7 @@ extension [path: Abstractable across Paths to Text](paths: Iterable[path])
 export WatchEvent.{NewFile, NewDirectory, Modify, Delete}
 
 package watchers:
-  given native: Watcher = NativeWatcher
+  given nativeWatcher: Watcher = NativeWatcher
 
   def polling[duration: Abstractable across Durations to Long](interval: duration): Watcher =
     PollingWatcher(interval)

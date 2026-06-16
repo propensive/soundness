@@ -37,7 +37,7 @@ import gastronomy.*, hashProviders.javaStdlibHashing
 import gesticulate.*
 import gossamer.*
 import hieroglyph.*, charEncoders.utf8
-import jacinta.*, jsonPrinters.minimal
+import jacinta.*, printers.jsonMinimalPrinter
 import monotonous.*
 import monotonous.alphabets.hex.lowerCase
 import prepositional.*

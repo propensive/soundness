@@ -52,7 +52,7 @@ import alphabets.base64.standard
 import charEncoders.utf8
 import environments.java
 import errorDiagnostics.stackTraces
-import jsonPrinters.minimal
+import printers.jsonMinimalPrinter
 import stdios.virtualMachine
 import termcaps.environment
 

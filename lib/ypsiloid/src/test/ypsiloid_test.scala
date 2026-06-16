@@ -1053,7 +1053,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == 7)
 
     suite(m"Serializer roundtrip"):
-      import yamlPrinters.block
+      import printers.yamlBlockPrinter
 
       // Encode a value to `Yaml`, render it with the printer, parse the text
       // back, and decode: the full encode → print → parse → decode loop.
@@ -1192,7 +1192,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
 
     suite(m"HTTP content-type integration"):
       import charEncoders.utf8
-      import yamlPrinters.block
+      import printers.yamlBlockPrinter
 
       test(m"serialises with an application/yaml media type"):
         Person(t"Jon", 42).yaml.generic(0)
