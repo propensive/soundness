@@ -64,6 +64,7 @@ trait VersoPanel extends Archetype:
   protected def versoArrangement
     ( panel: Html of (? <: Flow), content: Html of (? <: Flow) )
   :   Html of (? <: Flow) =
+
     Fragment[Flow](Div(`class` = VersoPanel.layoutClass)(panel, content))
 
   // This feature's own rules; override to restyle the panel and its grid.

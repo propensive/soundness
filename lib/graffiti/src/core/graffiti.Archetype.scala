@@ -41,19 +41,20 @@ import honeycomb.doms.html.whatwg.*
 import prepositional.*
 
 // The base of every page archetype. Concrete pages are built by mixing in feature traits (each a
-// subtype of `Archetype`); their only obligation is to provide `content`, the page's central matter.
+// subtype of `Archetype`); their only obligation is to provide `content`, the central matter.
 //
 // Three members are the seams that feature traits compose through:
 //   - `frame`  — the wrapping pipeline. Layout traits override it as `decorate(super.frame)`, so a
 //                set of them simply nests in linearization order; independent panels never collide.
 //   - `styles` — the stylesheet accumulator. Traits override it as `super.styles + ownRules`.
+//   - `head`   — the `<head>` accumulator; traits override it as `Fragment(…, super.head)`.
 //   - named slots (introduced by feature traits, e.g. `verso`) — filled by the user or a trait.
 //
 // A page author rarely touches `frame`/`styles` (or `super`): each feature exposes its own hooks —
 // content (`verso`, `menu`, …), configuration (`versoWidth`, `menuGap`, …) and a self-contained
-// `…Styles` rule set — that are overridden directly, with no `super` call. The two seams stay
-// `protected` (feature traits chain through them); the page assembly (`html`/`css`) is `final`, so a
-// page can't override it and silently lose the inline stylesheet or the direction.
+// `…Styles` rule set — that are overridden directly, with no `super` call. The seams stay
+// `protected` (feature traits chain through them); the page assembly (`html`/`css`) is `final`, so
+// a page can't override it and silently lose the inline stylesheet or the direction.
 trait Archetype:
   // The central content of the page; supplied by the concrete template.
   def content: Html of (? <: Flow)
@@ -69,6 +70,7 @@ trait Archetype:
   // customises through the per-feature hooks instead and need not touch them.
   protected def frame: Html of (? <: Flow) = content
   protected def styles: Css = Css(Nil)
+  protected def head: Html of (? <: Metadata) = Fragment[Metadata]()
 
   // The stylesheet rendered to text for inline embedding in a `<style>` element.
   private def stylesheet: Text = CssSerializer.render(styles)
@@ -76,7 +78,7 @@ trait Archetype:
   // The page stylesheet, as structured CSS (for serving separately, later).
   final def css: Css = styles
 
-  // The complete single-document page: inline `<style>`, `dir` set on `<body>` from `direction`
-  // (the document `<html>` element does not admit Whatwg global attributes).
+  // The complete single-document page: inline `<style>`, accumulated `<head>` metadata, and `dir`
+  // set on `<body>` from `direction` (the `<html>` element admits no Whatwg global attributes).
   final def html: Html of "html" =
-    Html(Head(Title(pageTitle), Style(stylesheet)), Body(dir = direction)(frame))
+    Html(Head(Title(pageTitle), Style(stylesheet), head), Body(dir = direction)(frame))

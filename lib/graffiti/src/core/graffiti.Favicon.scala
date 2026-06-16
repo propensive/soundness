@@ -30,8 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package graffiti
 
-export graffiti.{Archetype, Headline, TopMenu, VersoPanel, RectoPanel, FoldableRectoPanel,
-    Breadcrumbs, Logo, Masthead, Colophon, Mainstay, Hero, Description, Viewport, Keywords, Author,
-    ThemeColor, Favicon, Canonical, StandardMetadata}
+import anticipation.*
+import honeycomb.*
+import honeycomb.doms.html.whatwg.*
+import prepositional.*
+
+// Adds a `<link rel="icon">` favicon to the head, from the trait parameter (a URL or path).
+trait Favicon(href: Text) extends Archetype:
+  protected override def head: Html of (? <: Metadata) =
+    Fragment[Metadata](Link.Icon(href = href), super.head)

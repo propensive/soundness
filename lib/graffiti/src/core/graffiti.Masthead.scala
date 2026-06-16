@@ -30,8 +30,30 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package graffiti
 
-export graffiti.{Archetype, Headline, TopMenu, VersoPanel, RectoPanel, FoldableRectoPanel,
-    Breadcrumbs, Logo, Masthead, Colophon, Mainstay, Hero, Description, Viewport, Keywords, Author,
-    ThemeColor, Favicon, Canonical, StandardMetadata}
+import cataclysm.*
+import honeycomb.*
+import honeycomb.doms.html.whatwg.*
+import nomenclature.*
+import nomenclature.CssClass.nominative
+import prepositional.*
+import symbolism.*
+
+object Masthead:
+  val mastheadClass: Name[CssClass] = n"graffiti-masthead"
+
+// Prepends a `<header>` masthead at the top of the page. Fill it through the `masthead` slot (often
+// with a logo, headline and menu); a layout feature contributing a sibling before the content.
+trait Masthead extends Archetype:
+  // The masthead's content; empty by default.
+  def masthead: Html of (? <: Flow) = Fragment[Flow]()
+
+  // This feature's own rules; override to restyle the banner.
+  protected def mastheadStyles: Css =
+    css"${Masthead.mastheadClass} { display: flex; gap: 1rem; align-items: center }"
+
+  protected override def frame: Html of (? <: Flow) =
+    Fragment[Flow](Header(`class` = Masthead.mastheadClass)(masthead), super.frame)
+
+  protected override def styles: Css = super.styles + mastheadStyles

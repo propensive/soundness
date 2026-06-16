@@ -30,8 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package graffiti
 
-export graffiti.{Archetype, Headline, TopMenu, VersoPanel, RectoPanel, FoldableRectoPanel,
-    Breadcrumbs, Logo, Masthead, Colophon, Mainstay, Hero, Description, Viewport, Keywords, Author,
-    ThemeColor, Favicon, Canonical, StandardMetadata}
+import anticipation.*
+import honeycomb.*
+import honeycomb.doms.html.whatwg.*
+import prepositional.*
+
+// Aggregates the metadata most pages want: a responsive viewport and a description (from the trait
+// parameter). Mix in `StandardMetadata(t"…")` instead of wiring each `<meta>` separately; add
+// `Keywords`, `Author`, `Favicon`, `Canonical`, … alongside it as needed.
+//
+// A trait can't pass a constructor argument to a parameterized parent trait (only a class can), so
+// rather than extending `Description(description)` this reuses the param-less `Viewport` by
+// inheritance and contributes the description `<meta>` directly.
+trait StandardMetadata(description: Text) extends Viewport:
+  protected override def head: Html of (? <: Metadata) =
+    Fragment[Metadata](Meta.Description(content = description), super.head)

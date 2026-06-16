@@ -33,27 +33,12 @@
 package graffiti
 
 import anticipation.*
-import cataclysm.*
+import gossamer.*
 import honeycomb.*
 import honeycomb.doms.html.whatwg.*
-import nomenclature.*
-import nomenclature.CssClass.nominative
 import prepositional.*
-import symbolism.*
 
-object Title:
-  val titleClass: Name[CssClass] = n"graffiti-title"
-
-// Sets the document title and prepends a top-level heading. A content trait: it fills no slot of
-// its own, it just contributes a heading at the head of the wrapping pipeline.
-trait Title(title: Text) extends Archetype:
-  override def pageTitle: Text = title
-
-  // The heading rendered at the top of the page; override to restructure it.
-  protected def heading: Html of (? <: Heading) = H1(`class` = Title.titleClass)(title)
-
-  // This feature's own rules; override to restyle the heading without affecting other features.
-  protected def titleStyles: Css = css"${Title.titleClass} { margin-block: 0 0.5rem }"
-
-  protected override def frame: Html of (? <: Flow) = Fragment[Flow](heading, super.frame)
-  protected override def styles: Css = super.styles + titleStyles
+// Adds a `<meta name="keywords">`, from the comma-joined trait parameters.
+trait Keywords(keywords: Text*) extends Archetype:
+  protected override def head: Html of (? <: Metadata) =
+    Fragment[Metadata](Meta.Keywords(content = keywords.join(t", ")), super.head)

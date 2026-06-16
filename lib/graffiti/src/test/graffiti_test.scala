@@ -41,7 +41,7 @@ import strategies.throwUnsafely
 // A page assembled from a modest set of independent template traits, mirroring the README example.
 // `content` and `verso` are the only slots the page fills; everything else is contributed by traits.
 class Page(title: Text, path: List[Text], dir: HDir = HDir.Ltr)
-extends Archetype, VersoPanel, FoldableRectoPanel, TopMenu, Title(title), Breadcrumbs(path*), Logo:
+extends Archetype, VersoPanel, FoldableRectoPanel, TopMenu, Headline(title), Breadcrumbs(path*), Logo:
   override def direction: HDir = dir
   override def menuItems: List[Html of (? <: Phrasing)] = List(Strong("Home"), Strong("About"))
   def content: Html of (? <: Flow) = P("Hello, world!")
@@ -58,6 +58,27 @@ class RectoFirst extends Archetype, RectoPanel, VersoPanel:
 class WideVerso extends Archetype, VersoPanel:
   def content: Html of (? <: Flow) = P("body")
   override def versoWidth = 20.0*Rem
+
+// A fuller page: the regions (hero, masthead, mainstay, colophon) plus a head full of metadata.
+class FullPage(title: Text)
+extends Archetype, Mainstay, Masthead, Colophon, Hero(t"Big Headline"), Headline(title),
+    StandardMetadata(t"A demo page"), Author(t"Jon Pretty"), Keywords(t"scala", t"html"),
+    Favicon(t"/icon.png"), Canonical(t"https://example.com/"):
+  def content: Html of (? <: Flow) = P("Main body")
+  override def masthead: Html of (? <: Flow) = P("Site name")
+  override def colophon: Html of (? <: Flow) = P("Copyright")
+
+// A page carrying only the aggregated standard metadata.
+class MetaPage extends Archetype, StandardMetadata(t"Just a description"):
+  def content: Html of (? <: Flow) = P("x")
+
+// Two features that each introduce a `sidebar` slot of their own — a genuinely incompatible pair:
+// the two independent definitions collide, and a page must say which it means to keep.
+trait LeftRail extends Archetype:
+  def sidebar: Html of (? <: Flow) = Fragment[Flow]()
+
+trait RightRail extends Archetype:
+  def sidebar: Html of (? <: Flow) = Fragment[Flow]()
 
 object Tests extends Suite(m"Graffiti tests"):
   def run(): Unit =
@@ -147,4 +168,51 @@ object Tests extends Suite(m"Graffiti tests"):
             def content: Html of (? <: Flow) = P("x")
             override def css: Css = Css(Nil)
         . exists(_.message.contains("final"))
+      . assert(_ == true)
+
+    suite(m"Page regions"):
+      val html = FullPage(t"Demo").html.show
+
+      test(m"the content is wrapped in a <main> landmark"):
+        html.contains(t"graffiti-mainstay")
+      . assert(_ == true)
+
+      test(m"the masthead region and its content are present"):
+        html.contains(t"graffiti-masthead") && html.contains(t"Site name")
+      . assert(_ == true)
+
+      test(m"the colophon region and its content are present"):
+        html.contains(t"graffiti-colophon") && html.contains(t"Copyright")
+      . assert(_ == true)
+
+      test(m"the hero banner and its headline are present"):
+        html.contains(t"graffiti-hero") && html.contains(t"Big Headline")
+      . assert(_ == true)
+
+    suite(m"Head metadata"):
+      val html = FullPage(t"Demo").html.show
+
+      test(m"StandardMetadata contributes a description and a viewport"):
+        html.contains(t"A demo page") && html.contains(t"width=device-width")
+      . assert(_ == true)
+
+      test(m"author and keywords reach the head"):
+        html.contains(t"Jon Pretty") && html.contains(t"scala, html")
+      . assert(_ == true)
+
+      test(m"favicon and canonical links reach the head"):
+        html.contains(t"/icon.png") && html.contains(t"https://example.com/")
+      . assert(_ == true)
+
+      test(m"StandardMetadata alone yields a description and a viewport"):
+        val head = MetaPage().html.show
+        head.contains(t"Just a description") && head.contains(t"viewport")
+      . assert(_ == true)
+
+    suite(m"Incompatible combinations"):
+      test(m"two features that each introduce a sidebar cannot be combined"):
+        demilitarize:
+          class Clash extends Archetype, LeftRail, RightRail:
+            def content: Html of (? <: Flow) = P("x")
+        . exists(_.message.contains("sidebar"))
       . assert(_ == true)

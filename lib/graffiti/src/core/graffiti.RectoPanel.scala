@@ -64,6 +64,7 @@ trait RectoPanel extends Archetype:
   protected def rectoArrangement
     ( content: Html of (? <: Flow), panel: Html of (? <: Flow) )
   :   Html of (? <: Flow) =
+
     Fragment[Flow](Div(`class` = RectoPanel.layoutClass)(content, panel))
 
   // This feature's own rules; override to restyle the panel and its grid.

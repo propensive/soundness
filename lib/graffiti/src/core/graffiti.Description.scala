@@ -30,8 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package graffiti
 
-export graffiti.{Archetype, Headline, TopMenu, VersoPanel, RectoPanel, FoldableRectoPanel,
-    Breadcrumbs, Logo, Masthead, Colophon, Mainstay, Hero, Description, Viewport, Keywords, Author,
-    ThemeColor, Favicon, Canonical, StandardMetadata}
+import anticipation.*
+import honeycomb.*
+import honeycomb.doms.html.whatwg.*
+import prepositional.*
+
+// Adds a `<meta name="description">` to the document head, from the trait parameter.
+trait Description(text: Text) extends Archetype:
+  protected override def head: Html of (? <: Metadata) =
+    Fragment[Metadata](Meta.Description(content = text), super.head)

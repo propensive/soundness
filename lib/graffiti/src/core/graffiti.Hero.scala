@@ -30,8 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package graffiti
 
-export graffiti.{Archetype, Headline, TopMenu, VersoPanel, RectoPanel, FoldableRectoPanel,
-    Breadcrumbs, Logo, Masthead, Colophon, Mainstay, Hero, Description, Viewport, Keywords, Author,
-    ThemeColor, Favicon, Canonical, StandardMetadata}
+import anticipation.*
+import cataclysm.*
+import honeycomb.*
+import honeycomb.doms.html.whatwg.*
+import nomenclature.*
+import nomenclature.CssClass.nominative
+import prepositional.*
+import symbolism.*
+
+object Hero:
+  val heroClass: Name[CssClass] = n"graffiti-hero"
+
+// Prepends a prominent banner introducing the page, with its `headline` as the trait parameter and
+// any further banner material supplied through the `hero` slot.
+trait Hero(headline: Text) extends Archetype:
+  // Additional banner content, beneath the headline; empty by default.
+  def hero: Html of (? <: Flow) = Fragment[Flow]()
+
+  // The rendered banner; override to restructure it.
+  protected def heroBanner: Html of (? <: Flow) =
+    Section(`class` = Hero.heroClass)(H1(headline), hero)
+
+  // This feature's own rules; override to restyle the banner.
+  protected def heroStyles: Css =
+    css"${Hero.heroClass} { padding-block: 3rem; text-align: center }"
+
+  protected override def frame: Html of (? <: Flow) = Fragment[Flow](heroBanner, super.frame)
+  protected override def styles: Css = super.styles + heroStyles

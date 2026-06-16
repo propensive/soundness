@@ -32,6 +32,7 @@
                                                                                                   */
 package graffiti
 
+import anticipation.*
 import honeycomb.*
 import prepositional.*
 import spectacular.*
@@ -39,3 +40,7 @@ import spectacular.*
 // The `dir` attribute is typed `of Dir`, but honeycomb ships no value instance for it; this makes
 // the directionality enum usable directly, e.g. `Body(dir = HDir.Rtl)(…)`.
 given hdir: HDir is Attributive to Whatwg.Dir = (key, value) => (key, value.show)
+
+// `href` is typed `of Url`; honeycomb accepts an `HttpUrl` or abstractable URL, but page metadata
+// (a favicon, a canonical link) is naturally an arbitrary path string, so accept `Text` directly.
+given urlText: Text is Attributive to Whatwg.Url = (key, value) => (key, value)

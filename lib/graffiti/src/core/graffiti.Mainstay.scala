@@ -30,8 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package graffiti
 
-export graffiti.{Archetype, Headline, TopMenu, VersoPanel, RectoPanel, FoldableRectoPanel,
-    Breadcrumbs, Logo, Masthead, Colophon, Mainstay, Hero, Description, Viewport, Keywords, Author,
-    ThemeColor, Favicon, Canonical, StandardMetadata}
+import honeycomb.*
+import honeycomb.doms.html.whatwg.*
+import nomenclature.*
+import nomenclature.CssClass.nominative
+import prepositional.*
+
+object Mainstay:
+  val mainstayClass: Name[CssClass] = n"graffiti-mainstay"
+
+// Wraps the content in a `<main>` landmark at this point in the pipeline. Mix in before the
+// page chrome (masthead, colophon) so the landmark encloses the content but not the chrome.
+trait Mainstay extends Archetype:
+  protected override def frame: Html of (? <: Flow) =
+    Main(`class` = Mainstay.mainstayClass)(super.frame)

@@ -30,8 +30,30 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package graffiti
 
-export graffiti.{Archetype, Headline, TopMenu, VersoPanel, RectoPanel, FoldableRectoPanel,
-    Breadcrumbs, Logo, Masthead, Colophon, Mainstay, Hero, Description, Viewport, Keywords, Author,
-    ThemeColor, Favicon, Canonical, StandardMetadata}
+import cataclysm.*
+import honeycomb.*
+import honeycomb.doms.html.whatwg.*
+import nomenclature.*
+import nomenclature.CssClass.nominative
+import prepositional.*
+import symbolism.*
+
+object Colophon:
+  val colophonClass: Name[CssClass] = n"graffiti-colophon"
+
+// Appends a `<footer>` colophon at the foot of the page. Fill it through the `colophon` slot (often
+// a sitemap, copyright or contact details); a feature contributing a sibling after the content.
+trait Colophon extends Archetype:
+  // The colophon's content; empty by default.
+  def colophon: Html of (? <: Flow) = Fragment[Flow]()
+
+  // This feature's own rules; override to restyle the footer.
+  protected def colophonStyles: Css =
+    css"${Colophon.colophonClass} { margin-block-start: 2rem; padding-block: 1rem }"
+
+  protected override def frame: Html of (? <: Flow) =
+    Fragment[Flow](super.frame, Footer(`class` = Colophon.colophonClass)(colophon))
+
+  protected override def styles: Css = super.styles + colophonStyles

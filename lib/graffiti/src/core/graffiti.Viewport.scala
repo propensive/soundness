@@ -30,8 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package graffiti
 
-export graffiti.{Archetype, Headline, TopMenu, VersoPanel, RectoPanel, FoldableRectoPanel,
-    Breadcrumbs, Logo, Masthead, Colophon, Mainstay, Hero, Description, Viewport, Keywords, Author,
-    ThemeColor, Favicon, Canonical, StandardMetadata}
+import anticipation.*
+import gossamer.*
+import honeycomb.*
+import honeycomb.doms.html.whatwg.*
+import prepositional.*
+
+// Adds a responsive `<meta name="viewport">`. Override `viewport` to change the directive.
+trait Viewport extends Archetype:
+  def viewport: Text = t"width=device-width, initial-scale=1"
+
+  protected override def head: Html of (? <: Metadata) =
+    Fragment[Metadata](Meta.Viewport(content = viewport), super.head)

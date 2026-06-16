@@ -30,8 +30,30 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package graffiti
 
-export graffiti.{Archetype, Headline, TopMenu, VersoPanel, RectoPanel, FoldableRectoPanel,
-    Breadcrumbs, Logo, Masthead, Colophon, Mainstay, Hero, Description, Viewport, Keywords, Author,
-    ThemeColor, Favicon, Canonical, StandardMetadata}
+import anticipation.*
+import cataclysm.*
+import honeycomb.*
+import honeycomb.doms.html.whatwg.*
+import nomenclature.*
+import nomenclature.CssClass.nominative
+import prepositional.*
+import symbolism.*
+
+object Headline:
+  val headlineClass: Name[CssClass] = n"graffiti-headline"
+
+// Sets the document title and prepends a top-level heading. A content trait: it fills no slot of
+// its own, it just contributes a heading at the head of the wrapping pipeline.
+trait Headline(title: Text) extends Archetype:
+  override def pageTitle: Text = title
+
+  // The heading rendered at the top of the page; override to restructure it.
+  protected def heading: Html of (? <: Heading) = H1(`class` = Headline.headlineClass)(title)
+
+  // This feature's own rules; override to restyle the heading without affecting other features.
+  protected def headlineStyles: Css = css"${Headline.headlineClass} { margin-block: 0 0.5rem }"
+
+  protected override def frame: Html of (? <: Flow) = Fragment[Flow](heading, super.frame)
+  protected override def styles: Css = super.styles + headlineStyles
