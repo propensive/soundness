@@ -318,7 +318,7 @@ trait Tel2:
   given optionalDecodable: [value: Tel.Decodable] => Tactic[TelError]
   =>  Optional[value] is Tel.Decodable =
     Tel.Decodable(Morphology.Opt(value.shape())): telVal =>
-      if telVal.childCompounds.isEmpty && telVal.atomTexts.isEmpty then Unset
+      if telVal.childCompounds.nil && telVal.atomTexts.nil then Unset
       else value.decoded(telVal)
 
   // Collection support (aligned with `#1291`) — a `List`/`Set` encodes to a
@@ -422,7 +422,7 @@ trait Tel2:
   :   Tel =
 
     val children =
-      if compounds.isEmpty then IArray.empty[Tel.Block]
+      if compounds.nil then IArray.empty[Tel.Block]
       else IArray(Tel.Block(IArray.empty, Unset, compounds, 0))
 
     Tel(Tel.Compound(keyword, atoms, Unset, children))

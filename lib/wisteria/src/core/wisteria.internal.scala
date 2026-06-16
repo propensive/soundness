@@ -257,7 +257,7 @@ object internal:
 
     import quotes.reflect.*
 
-    if self.asTerm.tpe.typeSymbol.methodMember("derivedOne").isEmpty then
+    if self.asTerm.tpe.typeSymbol.methodMember("derivedOne").nil then
       report.errorAndAbort("wisteria: the derivation defines no `derivedOne`")
 
     val typeclassConstructor = TypeRepr.of[typeclass]

@@ -37,6 +37,7 @@ import scala.collection.mutable as scm
 import acyclicity.*
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import spectacular.*
 import vacuous.*
@@ -89,7 +90,7 @@ object LayeredDagDiagram:
 
       for n <- nodes do
         val ps = parents.getOrElse(n, Set.empty)
-        level(n) = if ps.isEmpty then 0 else ps.iterator.map(level).max + 1
+        level(n) = if ps.nil then 0 else ps.iterator.map(level).max + 1
 
       val maxLevel: Int = level.values.max
 

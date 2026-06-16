@@ -33,6 +33,7 @@
 package ulysses
 
 import anticipation.*
+import denominative.*
 import fulminate.*
 import vacuous.*
 
@@ -41,7 +42,7 @@ object Palimpsest:
   // hash in at offset `cadence.offset(i)`, then append the trailing byte
   // adjusted so the XOR-fold of every output byte equals the cadence byte.
   def apply(hashes: IndexedSeq[Data])(using cadence: Cadence): Palimpsest =
-    if hashes.isEmpty then panic(m"palimpsest requires at least one hash")
+    if hashes.nil then panic(m"palimpsest requires at least one hash")
 
     if !hashes.forall(_.length == cadence.hashSize)
     then panic(m"all hashes must have length ${cadence.hashSize}")

@@ -36,6 +36,7 @@ import scala.language.unsafeNulls
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import gastronomy.*
 import ulysses.*
 import vacuous.*
@@ -152,7 +153,7 @@ object SchemaSignature:
   // (32) bytes long; an empty list, or any mis-sized hash, raises
   // `BadSignatureLength`.
   def encode(hashes: List[Data]): Data raises BintelError =
-    if hashes.isEmpty then abort(BintelError(BintelError.Reason.BadSignatureLength))
+    if hashes.nil then abort(BintelError(BintelError.Reason.BadSignatureLength))
 
     val it = hashes.iterator
     var bad = false

@@ -38,6 +38,7 @@ import scala.language.unsafeNulls
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gastronomy.*, hashProviders.soundnessHashing
 import prepositional.*
@@ -419,7 +420,7 @@ object Bintel:
         Tel.Compound(kidx.let(flat(_)._1).or(Text("")), IArray.empty, Unset, IArray.empty)
 
   private def blocks(compounds: IArray[Tel.Compound]): IArray[Tel.Block] =
-    if compounds.isEmpty then IArray.empty
+    if compounds.nil then IArray.empty
     else IArray(Tel.Block(IArray.empty, Unset, compounds, 0))
 
   // Decode BinTEL body bytes to a typed value, deriving the schema from the value's type

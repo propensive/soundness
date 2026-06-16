@@ -34,6 +34,7 @@ package dissonance
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import rudiments.*
 import vacuous.*
@@ -206,7 +207,7 @@ object Redraft:
 
       . to(Set)
 
-      if ambiguous.isEmpty then directives
+      if ambiguous.nil then directives
       else deambiguate:
         directives.zipWithIndex.map: (directive, index) =>
           if !ambiguous.contains(index) then directive else directive match
@@ -244,12 +245,12 @@ object Redraft:
 
     def valid(candidate: List[Directive]): Boolean =
       val (edits, anomalies) = analyze(candidate, original, _ == _)
-      anomalies.isEmpty && Diff(edits*).patch(original).to(List) == target
+      anomalies.nil && Diff(edits*).patch(original).to(List) == target
 
     val changes = array.indices.filter(!array(_).isInstanceOf[Directive.Keep])
 
     def distance(index: Int): Int =
-      if changes.isEmpty then 0 else changes.map { c => (c - index).abs }.min
+      if changes.nil then 0 else changes.map { c => (c - index).abs }.min
 
     val order =
       array.indices

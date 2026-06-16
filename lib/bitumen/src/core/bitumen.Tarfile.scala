@@ -34,6 +34,7 @@ package bitumen
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -366,7 +367,7 @@ case class Tarfile
         case LongNameFormat.Gnu => key != t"path" && key != t"linkpath"
 
     val paxPart: LazyList[Data] =
-      if records.isEmpty then LazyList()
+      if records.nil then LazyList()
       else Tar.Entry.Pax(Pax.records(records)).serialize
 
     longNamePart #::: paxPart #::: entry.serialize

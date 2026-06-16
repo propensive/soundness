@@ -38,6 +38,7 @@ import scala.quoted.*
 import anticipation.*
 import contextual.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import gigantism.*
@@ -155,7 +156,7 @@ object internal:
     // Plain (unverified) access: gate on the enabler (resolved at the call site),
     // then read the field totally.
     def plain: Expr[Json] =
-      if Expr.summon[DynamicJsonEnabler].isEmpty then halt:
+      if Expr.summon[DynamicJsonEnabler].nil then halt:
         m"""
           dynamic field access on an unverified `Json` requires `import dynamicJsonAccess.enabled`
           (or verify the value against a schema first)
@@ -206,7 +207,7 @@ object internal:
     import quotes.reflect.*
 
     def plain: Expr[Json] =
-      if Expr.summon[DynamicJsonEnabler].isEmpty then halt:
+      if Expr.summon[DynamicJsonEnabler].nil then halt:
         m"""
           dynamic field access on an unverified `Json` requires `import dynamicJsonAccess.enabled`
           (or verify the value against a schema first)

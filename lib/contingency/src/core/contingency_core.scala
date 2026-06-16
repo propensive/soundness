@@ -167,7 +167,7 @@ infix type raises [success, error <: Exception] = Tactic[error] ?=> success
 // the unreduced `AppliedType`. At a cross-module use site, erasure runs
 // `ContextFunctionResults.integrateContextResults` (lines ~70-78) whose `tp.dealias match` has
 // no default case. `dealias` does not reduce match types during erasure because
-// `TypeApplications.appliedTo` short-circuits with `if (args.isEmpty || ctx.erasedTypes) self`,
+// `TypeApplications.appliedTo` short-circuits with `if (args.nil || ctx.erasedTypes) self`,
 // so the unreduced `AppliedType` falls through every case and crashes with a `MatchError`.
 // Fix candidates: give the match a default case, or use `tryNormalize`/`superTypeNormalized`
 // in place of `dealias`.

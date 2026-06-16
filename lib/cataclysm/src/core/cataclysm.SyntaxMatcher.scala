@@ -34,6 +34,7 @@ package cataclysm
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import hellenism.*
 import jacinta.*
@@ -112,7 +113,7 @@ object SyntaxMatcher:
     else
       val matcher = Matcher()
 
-      if matcher.consume(grammar, tokens).exists(_.isEmpty) then Outcome.Valid
+      if matcher.consume(grammar, tokens).exists(_.nil) then Outcome.Valid
       else if matcher.unsupported.nonEmpty then Outcome.Unsupported(matcher.unsupported.to(List))
       else Outcome.Invalid
 
@@ -171,7 +172,7 @@ object SyntaxMatcher:
           (terms.patch(index, Nil, 1), rem)
 
     private def allOf(terms: List[Syntax], tokens: List[ValueToken]): List[List[ValueToken]] =
-      if terms.isEmpty then List(tokens)
+      if terms.nil then List(tokens)
       else
         pickEach(terms, tokens).flatMap: (rest, rem) =>
           allOf(rest, rem)
@@ -250,7 +251,7 @@ object SyntaxMatcher:
           val (inner, after) = split(tail)
 
           after.lay(Nil): rest =>
-            if consume(body, inner).exists(_.isEmpty) then List(rest) else Nil
+            if consume(body, inner).exists(_.nil) then List(rest) else Nil
 
         case _ =>
           Nil

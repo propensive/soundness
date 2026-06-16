@@ -35,6 +35,7 @@ package stratiform
 import scala.quoted.*
 
 import anticipation.*
+import denominative.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
@@ -100,7 +101,7 @@ object Stratiform:
   def select(self: Expr[Tel], field: Expr[String]): Macro[Tel] =
 
     def plain: Expr[Tel] =
-      if Expr.summon[DynamicTelEnabler].isEmpty
+      if Expr.summon[DynamicTelEnabler].nil
       then
         halt:
           m"""
@@ -131,7 +132,7 @@ object Stratiform:
     import quotes.reflect.*
 
     def plain: Expr[Tel] =
-      if Expr.summon[DynamicTelEnabler].isEmpty then halt:
+      if Expr.summon[DynamicTelEnabler].nil then halt:
         m"""
           dynamic field access on an unverified `Tel` requires `import dynamicTelAccess.enabled`
           (or verify the value against a schema first)

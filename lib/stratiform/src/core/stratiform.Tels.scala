@@ -34,6 +34,7 @@ package stratiform
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -325,7 +326,7 @@ object Tels extends Tels2:
     // Top-level entry: applies every layer in `schema.layers` to the
     // schema's base, returning a composed Schema with empty `layers`.
     def compose(schema: Tels): Tels raises TelError =
-      if schema.layers.isEmpty then schema
+      if schema.layers.nil then schema
       else
         val seenLayerNames = scala.collection.mutable.HashSet.empty[Text]
         var composed = schema.copy(layers = IArray.empty)
@@ -651,7 +652,7 @@ object Tels extends Tels2:
 
     private def firstAtomText(c: Tel.Compound): Optional[Text] =
       val texts = c.atoms.collect { case Tel.Atom.Inline(t, _) => t }
-      if texts.isEmpty then Unset else texts(0): Optional[Text]
+      if texts.nil then Unset else texts(0): Optional[Text]
 
     private def atomTexts(c: Tel.Compound): IArray[Text] =
       c.atoms.collect { case Tel.Atom.Inline(t, _) => t }
@@ -666,7 +667,7 @@ object Tels extends Tels2:
     // (inline, source, or literal) — used for both `default` and the §20
     // `description` child, whose prose is typically a source atom (§14).
     private def scalarAtomText(c: Tel.Compound): Optional[Text] =
-      if c.atoms.isEmpty then Unset else c.atoms(0) match
+      if c.atoms.nil then Unset else c.atoms(0) match
         case Tel.Atom.Inline(t, _)  => t
         case Tel.Atom.Source(t)     => t
         case Tel.Atom.Literal(_, t) => t
@@ -882,7 +883,7 @@ object Tels extends Tels2:
 
     private def nodeAt(children: IArray[Tel.Element], idx: Int): Optional[Tel.Element] =
       val found = nodesAt(children, idx)
-      if found.isEmpty then Unset else found(0)
+      if found.nil then Unset else found(0)
 
     private def present(children: IArray[Tel.Element], idx: Int): Boolean =
       children.exists(kidx(_) == idx)

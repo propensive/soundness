@@ -34,6 +34,7 @@ package stratiform
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import vacuous.*
 
@@ -403,7 +404,7 @@ object Mutation:
       val indices = flat.zipWithIndex.collect:
         case ((_, _, cmp), idx) if cmp.keyword == kw => idx
 
-      if indices.isEmpty then Unset
+      if indices.nil then Unset
       else if indices.last - indices.head + 1 != indices.length
       then abort(MutationError(Reason.PointerNotFound))
       else (indices.head, indices.last): Optional[(Int, Int)]

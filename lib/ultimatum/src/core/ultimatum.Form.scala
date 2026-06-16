@@ -32,6 +32,7 @@
                                                                                                   */
 package ultimatum
 
+import denominative.*
 import profanity.*
 import rudiments.*
 import vacuous.*
@@ -85,7 +86,7 @@ class Form
     val stays = focused.lay(false): widget =>
       focuses.indexWhere(_ eq widget) >= 0
 
-    if !stays then focused = if focuses.isEmpty then Unset else focuses(0)
+    if !stays then focused = if focuses.nil then Unset else focuses(0)
 
   private def focusIndex: Int = focused.lay(0): widget =>
     val index = focuses.indexWhere(_ eq widget)
@@ -95,7 +96,7 @@ class Form
   // size its content needs at the width it last occupied (the root width on the
   // first solve).
   private def liveFrame: Frame =
-    val widths = if rects.isEmpty then leaves.map(_ => root.width) else rects.map(_.width)
+    val widths = if rects.nil then leaves.map(_ => root.width) else rects.map(_.width)
     var index = -1
 
     def project(node: Pane): Frame = node match
