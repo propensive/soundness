@@ -32,9 +32,7 @@
                                                                                                   */
 package superlunary
 
-import java.lang as jl
 import java.nio.file as jnf
-import java.util as ju
 import java.util.function as juf
 
 import scala.quoted.*

@@ -38,8 +38,6 @@ import java.util as ju
 
 import scala.quoted.*
 
-import anticipation.*
-
 // The compile-time half of Burdock. The `externalize` macro captures the build's
 // classpath, computes each dependency JAR's SHA-256, hard-links it into the Burdock
 // cache (`~/.cache/burdock/<sha256>.jar`) so its bytes stay retrievable by hash

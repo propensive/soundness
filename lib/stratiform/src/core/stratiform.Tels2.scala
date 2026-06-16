@@ -32,8 +32,6 @@
                                                                                                   */
 package stratiform
 
-import scala.compiletime.*
-
 import adversaria.*
 import anticipation.*
 import distillate.*

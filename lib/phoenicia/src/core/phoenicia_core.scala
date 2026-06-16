@@ -32,7 +32,4 @@
                                                                                                   */
 package phoenicia
 
-import quantitative.*
-
-
 export phoenicia.internal.Glyph

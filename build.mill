@@ -53,6 +53,21 @@ object settings:
     "-deprecation",
     "-Wunused:imports",
     "-Wimplausible-patterns",
+    // Suppress `-Wunused:imports` false positives on given/capability marker imports that
+    // dotty's usage tracking misses: the import is load-bearing (removing it breaks
+    // compilation), so it is silenced narrowly by `origin` (the imported symbol's path).
+    "-Wconf:origin=.*unsafeExceptions.canThrowAny:s",
+    "-Wconf:origin=.*strategies.throwUnsafely:s",
+    "-Wconf:origin=.*hashProviders.soundnessHashing:s",
+    "-Wconf:origin=.*charEncoders.ascii:s",
+    "-Wconf:origin=.*textMetrics.uniform:s",
+    "-Wconf:origin=.*arithmeticOptions.overflow.unchecked:s",
+    "-Wconf:origin=.*errorDiagnostics.empty:s",
+    "-Wconf:origin=.*logging.silent:s",
+    "-Wconf:origin=.*pathOnLinux:s",
+    "-Wconf:origin=.*systems.java:s",
+    "-Wconf:origin=.*overwritePreexisting.enabled:s",
+    "-Wconf:origin=.*dynamicJsonAccess.enabled:s",
     // "-Wsafe-init",
     "-Xmax-inlines", "32",
     //"-Ycc-new",

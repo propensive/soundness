@@ -35,11 +35,11 @@ package nomenclature
 import scala.compiletime.*
 import scala.quoted.*
 
-import denominative.*
 import dotty.tools.dotc.*
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import fulminate.*
 import gigantism.*
 import rudiments.*

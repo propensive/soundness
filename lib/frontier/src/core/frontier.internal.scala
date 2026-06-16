@@ -34,11 +34,11 @@ package frontier
 
 import scala.quoted.*
 
-import denominative.*
 import dotty.tools.dotc.*
 
 import anticipation.*
 import dendrology.*
+import denominative.*
 import escapade.*
 import gigantism.*
 import gossamer.*

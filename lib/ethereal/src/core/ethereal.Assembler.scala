@@ -127,7 +127,7 @@ object Assembler:
 
   def assemble
     ( runner:        Data, // bare runner binary
-      jarFile:       Path on Linux,  // application JAR appended at EOF
+      jarFile:       Path on Linux, // application JAR appended at EOF
       output:        Path on Linux,
       platformLabel: Text,
       buildId:       Long,
