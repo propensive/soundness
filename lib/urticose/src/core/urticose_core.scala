@@ -76,5 +76,5 @@ val Localhost: Hostname = Hostname(DnsLabel("localhost".tt))
 type Host = Hostname | Ipv4 | Ipv6
 
 package internetAccess:
-  given enabled: Online = Online()
-  given disabled: Tactic[OfflineError] => Online = abort(OfflineError())
+  given online: Online = Online()
+  given offline: Tactic[OfflineError] => Online = abort(OfflineError())

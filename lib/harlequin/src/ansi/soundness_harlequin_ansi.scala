@@ -35,4 +35,4 @@ package soundness
 export harlequin.{ScalaSyntaxPalette}
 
 package syntaxHighlighting:
-  export harlequin.syntaxHighlighting.{numbered, unnumbered}
+  export harlequin.syntaxHighlighting.{numberedTeletypeable, unnumberedTeletypeable}

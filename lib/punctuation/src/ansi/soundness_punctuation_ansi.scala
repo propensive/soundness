@@ -35,4 +35,4 @@ package soundness
 export punctuation.{MarkdownPalette, Renderer, TeletypeFormattable, terminal}
 
 package teletypeFormattables:
-  export punctuation.teletypeFormattables.{scala, java}
+  export punctuation.teletypeFormattables.{scalaTeletypeFormattable, javaTeletypeFormattable}

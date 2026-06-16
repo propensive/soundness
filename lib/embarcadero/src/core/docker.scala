@@ -60,7 +60,7 @@ case class DockerEngine(port: Int)
 
 @main
 def run(): Unit =
-  import internetAccess.enabled
+  import internetAccess.online
   import strategies.throwUnsafely
 
   val response =

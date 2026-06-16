@@ -45,7 +45,7 @@ import telekinesis.*
 import urticose.*
 import vacuous.*
 
-import internetAccess.enabled
+import internetAccess.online
 
 // Resolves a dependency's content hash to its public download URL using Google's
 // deps.dev ("Open Source Insights") Query API. Returns `Unset` for anything

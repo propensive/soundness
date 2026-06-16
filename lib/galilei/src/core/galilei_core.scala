@@ -64,8 +64,8 @@ extension [target: Openable](value: target)
     target.open(value, lambda, options)
 
 package filesystemTraversal:
-  given preOrder: TraversalOrder = TraversalOrder.PreOrder
-  given postOrder: TraversalOrder = TraversalOrder.PostOrder
+  given preOrderTraversal: TraversalOrder = TraversalOrder.PreOrder
+  given postOrderTraversal: TraversalOrder = TraversalOrder.PostOrder
 
 extension [plane: Filesystem](path: Path on plane)
 

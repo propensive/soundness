@@ -36,7 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import logging.silent
-import internetAccess.enabled
+import internetAccess.online
 import charEncoders.utf8Encoder
 import charDecoders.utf8Decoder
 import textSanitizers.skipSanitizer

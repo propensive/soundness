@@ -42,4 +42,5 @@ export
 package compassBearings:
   export
     geodesy.compassBearings
-    . { eightPointCompass, fourPointCompass, fromEast, fromNorth, sixteenPointCompass }
+    . { eightPointCompassBearing, fourPointCompassBearing, fromEastBearing, fromNorthBearing,
+        sixteenPointCompassBearing }

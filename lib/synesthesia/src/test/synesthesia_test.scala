@@ -43,7 +43,7 @@ object Tests extends Suite(m"Synesthesia Tests"):
     // imports) to run a live server by hand.
     //
     // test(m"Remote server"):
-    //   import internetAccess.enabled
+    //   import internetAccess.online
     //   import supervisors.globalSupervisor
     //   import probates.cancelProbate
     //   import httpServers.stdlib

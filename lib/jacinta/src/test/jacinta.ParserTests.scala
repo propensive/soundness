@@ -38,9 +38,9 @@ import interfaces.paths.pathOnLinux
 import strategies.throwUnsafely
 import logging.silent
 import charEncoders.utf8Encoder
-import gitCommands.environmentDefault
+import gitCommands.environmentDefaultGitCommand
 import workingDirectories.javaWorkingDirectory
-import internetAccess.enabled
+import internetAccess.online
 import errorDiagnostics.stackTracesDiagnostics
 
 import scala.compiletime.*

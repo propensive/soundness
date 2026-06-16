@@ -58,7 +58,7 @@ import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 import gastronomy.*, providers.javaStdlibProvider
-import internetAccess.enabled
+import internetAccess.online
 import monotonous.*, alphabets.hex.lowerCase
 
 // Turns a `Packaging` configuration into a distributable. Each per-platform binary is the

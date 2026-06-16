@@ -47,24 +47,24 @@ import vacuous.*
 // content through Harlequin's highlighter and out via the `unnumbered` token
 // stream. Callers supply a `ScalaSyntaxPalette` to colour the tokens.
 package teletypeFormattables:
-  given scala: (palette: ScalaSyntaxPalette) => ("scala" is TeletypeFormattable) =
+  given scalaTeletypeFormattable: (palette: ScalaSyntaxPalette) => ("scala" is TeletypeFormattable) =
     new TeletypeFormattable:
       type Self = "scala"
 
       def format(meta: List[Text], content: Text): Optional[Teletype] =
         if meta.prim != t"scala" then Unset
         else
-          import syntaxHighlighting.unnumbered
+          import syntaxHighlighting.unnumberedTeletypeable
           Scala.highlight(content).teletype
 
-  given java: (palette: ScalaSyntaxPalette) => ("java" is TeletypeFormattable) =
+  given javaTeletypeFormattable: (palette: ScalaSyntaxPalette) => ("java" is TeletypeFormattable) =
     new TeletypeFormattable:
       type Self = "java"
 
       def format(meta: List[Text], content: Text): Optional[Teletype] =
         if meta.prim != t"java" then Unset
         else
-          import syntaxHighlighting.unnumbered
+          import syntaxHighlighting.unnumberedTeletypeable
           Java.highlight(content).teletype
 
 extension (markdown: Markdown of Layout)

@@ -45,7 +45,7 @@ import systems.javaSystem
 import temporaryDirectories.systemTemporaryDirectory
 import workingDirectories.defaultWorkingDirectory
 import logging.silent
-import internetAccess.enabled
+import internetAccess.online
 
 import strategies.throwUnsafely
 import charEncoders.utf8Encoder
@@ -59,7 +59,7 @@ import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 
-import gitCommands.environmentDefault
+import gitCommands.environmentDefaultGitCommand
 
 object Tests extends Suite(m"Octogenarian Tests"):
   def run(): Unit =

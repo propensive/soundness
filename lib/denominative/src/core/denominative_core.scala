@@ -66,8 +66,8 @@ infix type aka [subject, label <: Label] = denominative.protointernal.Tagged[sub
 extension (any: Any)
   inline def aka[label <: Label]: any.type aka label = denominative.protointernal.Tagged[label](any)
 
-package ordinalShowables:
-  given nominal: Ordinal is Textualizable =
+package ordinalTextualizables:
+  given nominalOrdinal: Ordinal is Textualizable =
     case Prim    => "prim".tt
     case Sec     => "sec".tt
     case Ter     => "ter".tt
@@ -77,13 +77,13 @@ package ordinalShowables:
     case Sept    => "sept".tt
     case ordinal => (""+ordinal+".z").tt
 
-  given uniary: Ordinal is Textualizable = ordinal => ""+ordinal.n1+"♭"
-  given zerary: Ordinal is Textualizable = ordinal => ""+ordinal.n0+"♯"
-  given unmarkedUniary: Ordinal is Textualizable = ordinal => ""+ordinal.n1
-  given unmarkedZerary: Ordinal is Textualizable = ordinal => ""+ordinal.n0
-  given intermediate: Ordinal is Textualizable = ordinal => "⌞"+ordinal.n0+"⌟|⌞"+ordinal.n1+"⌟"
+  given uniaryOrdinal: Ordinal is Textualizable = ordinal => ""+ordinal.n1+"♭"
+  given zeraryOrdinal: Ordinal is Textualizable = ordinal => ""+ordinal.n0+"♯"
+  given unmarkedUniaryOrdinal: Ordinal is Textualizable = ordinal => ""+ordinal.n1
+  given unmarkedZeraryOrdinal: Ordinal is Textualizable = ordinal => ""+ordinal.n0
+  given intermediateOrdinal: Ordinal is Textualizable = ordinal => "⌞"+ordinal.n0+"⌟|⌞"+ordinal.n1+"⌟"
 
-  given english: Ordinal is Textualizable = ordinal =>
+  given englishOrdinal: Ordinal is Textualizable = ordinal =>
     ordinal.n1%100 match
       case 11 | 12 | 13 => ordinal.n1.toString+"th"
 
@@ -94,7 +94,7 @@ package ordinalShowables:
           case 3 => ordinal.n1.toString+"rd"
           case _ => ordinal.n1.toString+"th"
 
-  given englishSuperscript: Ordinal is Textualizable = ordinal =>
+  given englishSuperscriptOrdinal: Ordinal is Textualizable = ordinal =>
     ordinal.n1%100 match
       case 11 | 12 | 13 => ordinal.n1.toString+"ᵗʰ"
 
@@ -105,9 +105,9 @@ package ordinalShowables:
           case 3 => ordinal.n1.toString+"ʳᵈ"
           case _ => ordinal.n1.toString+"ᵗʰ"
 
-  given french: Ordinal is Textualizable = ordinal =>
+  given frenchOrdinal: Ordinal is Textualizable = ordinal =>
     if ordinal.n1 == 1 then "1ᵉʳ" else s"${ordinal.n1}ᵉ"
 
-  given italian: Ordinal is Textualizable = ordinal => s"${ordinal.n1}ᵒ"
-  given spanish: Ordinal is Textualizable = ordinal => s"${ordinal.n1}.ᵒ"
-  given russian: Ordinal is Textualizable = ordinal => s"${ordinal.n1}-й"
+  given italianOrdinal: Ordinal is Textualizable = ordinal => s"${ordinal.n1}ᵒ"
+  given spanishOrdinal: Ordinal is Textualizable = ordinal => s"${ordinal.n1}.ᵒ"
+  given russianOrdinal: Ordinal is Textualizable = ordinal => s"${ordinal.n1}-й"

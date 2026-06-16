@@ -14,7 +14,7 @@ import homeDirectories.system
 import logging.silent
 import codicils.cancel
 import interpreters.posix
-import displayableTypes.message
+import displayableTypes.messagePrintable
 import supervisors.globalSupervisor
 import textMetrics.uniformMetric
 import textSanitizers.skipSanitizer
@@ -70,7 +70,7 @@ extension (name: Name[Naptan]) def resolve(using Online): Name[Naptan] = name ma
 
 @main
 def app(): Unit = cli:
-  import internetAccess.enabled
+  import internetAccess.online
 
   recover:
     case error: InitError => execute:

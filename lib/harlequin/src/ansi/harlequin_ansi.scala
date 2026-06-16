@@ -61,7 +61,7 @@ type ScalaSyntaxPalette = Palette:
 package syntaxHighlighting:
   import Accent.*
 
-  given teletypeable: (palette: ScalaSyntaxPalette) => Token is Teletypeable =
+  given tokenTeletypeable: (palette: ScalaSyntaxPalette) => Token is Teletypeable =
     case Token(text, Error, _, _)    => e"${palette.scalaError}($text)"
     case Token(text, Number, _, _)   => e"${palette.scalaNumber}($text)"
     case Token(text, Modifier, _, _) => e"${palette.scalaModifier}($text)"
@@ -74,7 +74,7 @@ package syntaxHighlighting:
     case Token(text, Symbol, _, _)   => e"${palette.scalaSymbol}($text)"
     case Token(text, Unparsed, _, _) => e"${palette.scalaComment}($Italic($text))"
 
-  given numbered: (palette: ScalaSyntaxPalette) => SourceCode is Teletypeable = source =>
+  given numberedTeletypeable: (palette: ScalaSyntaxPalette) => SourceCode is Teletypeable = source =>
     val indent = source.lastLine.show.length
     lazy val error = e"${Fg(palette.subdued)}(║)"
 
@@ -115,7 +115,7 @@ package syntaxHighlighting:
 
     . join(e"", e"\n", markup)
 
-  given unnumbered: ScalaSyntaxPalette => SourceCode is Teletypeable = source =>
+  given unnumberedTeletypeable: ScalaSyntaxPalette => SourceCode is Teletypeable = source =>
     (source.offset to source.lastLine).map: lineNo =>
       source(lineNo).map(_.teletype).join
 
