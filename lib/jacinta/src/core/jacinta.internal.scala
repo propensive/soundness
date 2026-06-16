@@ -38,14 +38,211 @@ import scala.quoted.*
 import anticipation.*
 import contextual.*
 import contingency.*
+import distillate.*
 import fulminate.*
 import gigantism.*
+import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
 
 object internal:
+
+  // Reuses `JsonPointer`'s own `Decodable` for validation: the literal is
+  // decoded at macro-expansion time and, if it fails, the `JsonPointerError`'s
+  // offset is mapped back to a source position so the error points exactly at
+  // the offending character.
+  def jsonPointer[parts <: Tuple: Type, origins <: Tuple: Type](insertions: Expr[Seq[Any]])
+  :   Macro[JsonPointer] =
+
+    import quotes.reflect.*
+
+    def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case _               => strings
+
+    def firstOrigin[tuple: Type]: Int = Type.of[tuple] match
+      case '[head *: tail] => TypeRepr.of[head].dealias match
+        case AppliedType(_, ConstantType(IntConstant(start)) :: _) => start
+        case _                                                     => 0
+
+      case _ => 0
+
+    val parts = recur[parts](Nil)
+    if parts.length != 1 then halt(m"a JSON pointer literal cannot have substitutions")
+    val raw: String = parts.head
+    val start: Int = firstOrigin[origins]
+
+    try unsafely(raw.tt.decode[JsonPointer]) catch
+      case error: JsonPointerError =>
+        val sourceFile = Position.ofMacroExpansion.sourceFile
+
+        val position = sourceFile.content match
+          case Some(content: String) if start > 0 && start < content.length =>
+            val upper = (start + raw.length*6 + 16).min(content.length)
+            val mapping = Interpolation.buildMapping(content.substring(start, upper).nn, raw)
+            val at = (start + mapping(error.offset.min(raw.length))).min(content.length - 1)
+            Position(sourceFile, at, (at + 1).min(content.length))
+
+          case _ =>
+            Position.ofMacroExpansion
+
+        halt(error.message, position)
+
+    '{unsafely(${Expr(raw)}.tt.decode[JsonPointer])}
+
+  // Compile-time navigation for schema-typed `Json` values. A `Json of P from R`
+  // carries a phantom *position* (`Topic = P`, a Scala model type) within a *root
+  // schema* (`Origin = R`). The `Dynamic` methods on `Json` are `transparent
+  // inline` and delegate here: when the receiver's position is bound and the field
+  // name is a literal, the macro looks the field up in `P`'s structure and yields a
+  // `Json of <field-type> from R`; otherwise it falls back to the plain
+  // (`DynamicJsonEnabler`-gated) runtime access, exactly as before.
+
+  // Every `type X = …` member of a (possibly nested) refinement, by name.
+  private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
+  :   Map[Text, quotes.reflect.TypeRepr] =
+
+    import quotes.reflect.*
+
+    repr.dealias match
+      case Refinement(parent, name, TypeBounds(_, hi)) => refinements(parent).updated(name.tt, hi)
+      case Refinement(parent, name, info)              => refinements(parent).updated(name.tt, info)
+      case AndType(left, right)                        => refinements(left) ++ refinements(right)
+      case _                                           => Map()
+
+  // Builds the refined type `Json of <position> from <root>`.
+  private def jsonType(using quotes: Quotes)
+    ( position: quotes.reflect.TypeRepr, root: quotes.reflect.TypeRepr )
+  :   quotes.reflect.TypeRepr =
+
+    import quotes.reflect.*
+
+    Refinement
+      ( Refinement(TypeRepr.of[Json], "Topic", TypeBounds(position, position)),
+        "Origin",
+        TypeBounds(root, root) )
+
+  // The single ordered-collection element type of `repr`, if it is one (`List`,
+  // `Vector`, `Seq`, `LazyList`, `Array`, `IArray`); `Set` is excluded as it has
+  // no positional index.
+  private def elementType(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
+  :   Optional[quotes.reflect.TypeRepr] =
+
+    import quotes.reflect.*
+
+    repr.dealias match
+      case AppliedType(constructor, List(element))
+      if repr <:< TypeRepr.of[Seq[Any]] || constructor.typeSymbol == defn.ArrayClass =>
+        element
+
+      case _ =>
+        Unset
+
+  // Reads `Topic` (position) and `Origin` (root) from a receiver, if present.
+  private def receiver(using quotes: Quotes)(self: Expr[Json])
+  :   Optional[(quotes.reflect.TypeRepr, quotes.reflect.TypeRepr)] =
+
+    import quotes.reflect.*
+    val members = refinements(self.asTerm.tpe.widen)
+
+    members.at(t"Topic").let: position =>
+      (position, members.at(t"Origin").or(position))
+
+  def select(self: Expr[Json], field: Expr[String]): Macro[Json] =
+
+    // Plain (unverified) access: gate on the enabler (resolved at the call site),
+    // then read the field totally.
+    def plain: Expr[Json] =
+      if Expr.summon[DynamicJsonEnabler].isEmpty then halt:
+        m"""
+          dynamic field access on an unverified `Json` requires `import dynamicJsonAccess.enabled`
+          (or verify the value against a schema first)
+        """
+
+      '{$self.selectField($field)}
+
+    receiver(self) match
+      case (position, root) => field.value match
+        case Some(name) => position.typeSymbol.caseFields.find(_.name == name) match
+          case Some(member) =>
+            jsonType(position.memberType(member), root).asType.absolve match
+              case '[type result <: Json; result] =>
+                '{$self.selectField(${Expr(name)}).asInstanceOf[result]}
+
+          case None =>
+            halt(m"the schema position ${position.show} has no field $name")
+
+        case None =>
+          plain
+
+      case _ =>
+        plain
+
+  def index(self: Expr[Json], idx: Expr[Int]): Macro[Json] =
+    import quotes.reflect.*
+
+    receiver(self) match
+      case (position, root) =>
+        val element = elementType(position)
+
+        if element.absent
+        then halt(m"the schema position ${position.show} is not an indexable array type")
+
+        jsonType(element.vouch, root).asType.absolve match
+          case '[type result <: Json; result] =>
+            '{$self.selectIndex($idx).asInstanceOf[result]}
+
+      case _ => Expr.summon[Tactic[JsonError]] match
+        case Some(tactic) =>
+          '{$self.indexValue($idx)(using $tactic)}
+
+        case None =>
+          halt(m"""indexing a `Json` array may raise `JsonError`; a `Tactic[JsonError]`
+                   must be in scope (e.g. via `raises JsonError`)""")
+
+  def applied(self: Expr[Json], field: Expr[String], idx: Expr[Int]): Macro[Json] =
+    import quotes.reflect.*
+
+    def plain: Expr[Json] =
+      if Expr.summon[DynamicJsonEnabler].isEmpty then halt:
+        m"""
+          dynamic field access on an unverified `Json` requires `import dynamicJsonAccess.enabled`
+          (or verify the value against a schema first)
+        """
+
+      Expr.summon[Tactic[JsonError]] match
+        case Some(tactic) => '{$self.selectField($field).indexValue($idx)(using $tactic)}
+
+        case None =>
+          halt:
+            m"""
+              indexing a `Json` array may raise `JsonError`; a `Tactic[JsonError]` must be in scope
+              (e.g. via `raises JsonError`)
+            """
+
+    receiver(self) match
+      case (position, root) => field.value match
+        case Some(name) => position.typeSymbol.caseFields.find(_.name == name) match
+          case Some(member) =>
+            val element = elementType(position.memberType(member))
+
+            if element.absent
+            then halt(m"the field $name of ${position.show} is not an indexable array")
+
+            jsonType(element.vouch, root).asType.absolve match
+              case '[type result <: Json; result] =>
+                '{$self.selectField(${Expr(name)}).selectIndex($idx).asInstanceOf[result]}
+
+          case None =>
+            halt(m"the schema position ${position.show} has no field $name")
+
+        case None =>
+          plain
+
+      case _ =>
+        plain
 
   opaque type Bcd = Array[Double]
 

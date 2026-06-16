@@ -37,51 +37,95 @@ import scala.quoted.*
 import anticipation.*
 import contingency.*
 import fulminate.*
+import gigantism.*
 import gossamer.*
+import hellenism.*
 import vacuous.*
 
-// Compile-time helpers shared by the `Css.Style` dynamic constructor and the
-// `css"…"` interpolator: reading a `CssConvertible`'s value-definition-syntax
-// `Topic`, and checking a value of that type against a property's grammar.
-private[cataclysm] object CssMacros:
-  // The VDS type a `CssConvertible` instance tags its values with (or "" if none).
-  def topicOf(using quotes: Quotes)(convertible: Expr[Any]): Text =
+// Compile-time machinery behind `Styles` and the `cssBindings.checked` given. A
+// `Styles` marker carries a stylesheet's classpath path as its `Locus` type; the
+// resource is read and parsed during macro expansion (cached per path), and a
+// requested name is checked against the stylesheet's class and id names.
+private[cataclysm] object protointernal:
+  private val cache: scala.collection.mutable.HashMap[Text, (Set[Text], Set[Text])] =
+    scala.collection.mutable.HashMap()
+
+  // Every `type X = …` member of a (possibly nested) refinement type, as a map.
+  private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
+  :   Map[Text, quotes.reflect.TypeRepr] =
+
     import quotes.reflect.*
 
-    def refinements(repr: TypeRepr): Map[Text, TypeRepr] = repr.dealias match
+    repr.dealias match
       case Refinement(parent, name, TypeBounds(_, hi)) => refinements(parent).updated(name.tt, hi)
       case Refinement(parent, name, info)              => refinements(parent).updated(name.tt, info)
       case AndType(left, right)                        => refinements(left) ++ refinements(right)
       case _                                           => Map()
 
-    val members = refinements(convertible.asTerm.tpe) ++ refinements(convertible.asTerm.tpe.widen)
+  // The path of the `Styles` stylesheet in scope, read from its `Locus` type.
+  private def stylesPath(using quotes: Quotes): Text =
+    import quotes.reflect.*
 
-    members.get(t"Topic") match
-      case Some(ConstantType(StringConstant(name))) => name.tt
-      case _                                        => t""
+    val styles = Expr.summon[Styles].getOrElse:
+      halt(m"cataclysm: no stylesheet is in scope; add a `given Styles at \"/path\"`")
 
-  // A canonical instance of a value type, used to probe a property's grammar.
-  private def sample(topic: Text): Optional[Text] = topic match
-    case t"length"     => t"1px"
-    case t"color"      => t"#000000"
-    case t"percentage" => t"1%"
-    case t"number"     => t"1.5"
-    case t"integer"    => t"1"
-    case t"time"       => t"1s"
-    case t"angle"      => t"1deg"
-    case t"flex"       => t"1fr"
-    case _             => Unset
+    val members = refinements(styles.asTerm.tpe) ++ refinements(styles.asTerm.tpe.widen)
 
-  // `Unset` if a value of VDS type `topic` is acceptable for `property`; otherwise
-  // a `Message` describing why not (unknown property, or wrong value type).
-  def propertyIssue(property: Text, topic: Text): Optional[Message] =
-    PropertyDef.of(property).lay(m"cataclysm: $property is not a known CSS property"): definition =>
-      // A wildcard topic (the CSS-wide keywords) is valid for any known property.
-      if topic == t"*" then Unset
-      else sample(topic).lay(Unset):
-        sampleText =>
-          val outcome = safely(SyntaxMatcher.check(definition, sampleText))
+    val locus = members.get(t"Locus").getOrElse:
+      halt(m"cataclysm: the stylesheet carries no path")
 
-          if outcome.or(Outcome.Unsupported(Nil)) == Outcome.Invalid
-          then m"cataclysm: a $topic value is not valid for the $property property"
-          else Unset
+    locus.absolve match
+      case ConstantType(StringConstant(path)) =>
+        path.tt
+
+      case _ =>
+        halt(m"cataclysm: the stylesheet path is not a string literal")
+
+  private def references(path: Text)(using Quotes): (Set[Text], Set[Text]) =
+    cache.getOrElseUpdate(path, parseResource(path))
+
+  private def parseResource(path: Text)(using Quotes): (Set[Text], Set[Text]) =
+    val stream = Optional(getClass.getResourceAsStream(path.s)).or:
+      halt(m"cataclysm: could not read the stylesheet at $path on the classpath")
+
+    val content = scala.io.Source.fromInputStream(stream).mkString.tt
+
+    val css = safely(CssParser.parse(Iterator(content))).or:
+      halt(m"cataclysm: could not parse the stylesheet at $path")
+
+    // Upcast the typed names to `Text` for comparison against the requested name.
+    (css.classes.map(identity[Text]), css.ids.map(identity[Text]))
+
+  // Decide whether `name` is a class or an id in the in-scope stylesheet, or halt.
+  def attributeFor[name <: Label: Type]: Macro[Text] =
+    import quotes.reflect.*
+
+    val target = TypeRepr.of[name].absolve match
+      case ConstantType(StringConstant(value)) =>
+        value.tt
+
+      case _ =>
+        halt(m"cataclysm: the class or id name must be a string literal")
+
+    val (classes, ids) = references(stylesPath)
+
+    val attribute =
+      if classes.contains(target) && ids.contains(target)
+      then halt(m"cataclysm: $target is both a class and an id in the stylesheet; rename one")
+      else if classes.contains(target) then "class"
+      else if ids.contains(target) then "id"
+      else halt(m"cataclysm: $target is not a class or id in the stylesheet")
+
+    '{${Expr(attribute)}.tt}
+
+  // Lift a `cp"…"` resource's `Locus` path into a `Styles` marker carrying it.
+  def styles(resource: Expr[Resource]): Macro[Styles] =
+    import quotes.reflect.*
+
+    val members = refinements(resource.asTerm.tpe) ++ refinements(resource.asTerm.tpe.widen)
+
+    val locus = members.get(t"Locus").getOrElse:
+      halt(m"cataclysm: the resource carries no path (it has no `Locus`)")
+
+    Refinement(TypeRepr.of[Styles], "Locus", TypeBounds(locus, locus)).asType.absolve match
+      case '[type result <: Styles; result] => '{(new Styles {}).asInstanceOf[result]}

@@ -84,7 +84,7 @@ object YamlPath extends Root(""):
       ( inline insertions: Any* )
     :   YamlPath =
 
-      ${ypsiloid.YamlPathInterpolator.expand[parts, origins]('insertions)}
+      ${ypsiloid.internal.yamlPath[parts, origins]('insertions)}
 
   // Parses a same-document YAML path (`#`, `#/`, `#/a/b`), reporting the offset
   // of any error. Modelled on `jacinta.JsonPointer`'s decoder, with the same

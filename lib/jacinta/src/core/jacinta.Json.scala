@@ -864,16 +864,17 @@ extends Dynamic, Topical, Original derives CanEqual:
   // Array indexing. For a schema-typed `Json of List[E] from R` the navigation
   // macro yields `Json of E from R`; for a plain `Json` it indexes at runtime
   // (raising on a non-array or out-of-bounds index), exactly as before.
-  transparent inline def apply(index: Int): Json = ${Jacinta.index('this, 'index)}
+  transparent inline def apply(index: Int): Json = ${jacinta.internal.index('this, 'index)}
 
   // Dynamic field selection. For a schema-typed `Json of P from R` the macro
   // checks `P` has the field and yields `Json of <field-type> from R`; for a
   // plain `Json` it requires a `DynamicJsonEnabler` (as before) and reads the
   // field at runtime.
-  transparent inline def selectDynamic(field: String): Json = ${Jacinta.select('this, 'field)}
+  transparent inline def selectDynamic(field: String): Json =
+    ${jacinta.internal.select('this, 'field)}
 
   transparent inline def applyDynamic(field: String)(index: Int): Json =
-    ${Jacinta.applied('this, 'field, 'index)}
+    ${jacinta.internal.applied('this, 'field, 'index)}
 
 
   def update[value: anticipation.Encodable in Json](index: Int, value: value)

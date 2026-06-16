@@ -42,27 +42,27 @@ import nomenclature.*
 import spectacular.*
 import vacuous.*
 
-// The macro behind the `css"…"` interpolator. The literal parts are joined with a
-// sentinel char at each `$substitution`, parsed at compile time, and the parsed
-// `Css` is rebuilt as an `Expr` — a declaration value that is a lone sentinel
-// becomes the (type-checked) substitution, everything else is literal. Each such
-// substitution's type must have a `CssConvertible` whose VDS type is valid for that
-// property, so `css"a { color: $length }"` does not compile.
-//
-// A substitution within a selector is also permitted, but only of a `Name[CssClass]`
-// or a `Name[DomId]`, which render as the simple selectors `.class` and `#id`
-// respectively; so `css"$button { … }"` is a rule for the class `button`. Anywhere
-// else (a property name, an at-rule prelude, or mixed with literal property text) is
-// a compile error.
-//
-// NB: `Optional`'s `let`/`lay`/… are inline and crash `pickleQuotes` when used
-// around the quotes below, so this file branches on `Optional` with plain `match`.
-object CssInterpolator:
+object internal:
   // A private-use sentinel marks each substitution. NUL would be removed by the
   // parser's `.trim` (it is ≤ space), so a non-whitespace char is needed.
   private val sentinel: Char = 0xe000.toChar
   private val placeholder: Text = sentinel.toString.tt
 
+  // The macro behind the `css"…"` interpolator. The literal parts are joined with a
+  // sentinel char at each `$substitution`, parsed at compile time, and the parsed
+  // `Css` is rebuilt as an `Expr` — a declaration value that is a lone sentinel
+  // becomes the (type-checked) substitution, everything else is literal. Each such
+  // substitution's type must have a `CssConvertible` whose VDS type is valid for that
+  // property, so `css"a { color: $length }"` does not compile.
+  //
+  // A substitution within a selector is also permitted, but only of a `Name[CssClass]`
+  // or a `Name[DomId]`, which render as the simple selectors `.class` and `#id`
+  // respectively; so `css"$button { … }"` is a rule for the class `button`. Anywhere
+  // else (a property name, an at-rule prelude, or mixed with literal property text) is
+  // a compile error.
+  //
+  // NB: `Optional`'s `let`/`lay`/… are inline and crash `pickleQuotes` when used
+  // around the quotes below, so this file branches on `Optional` with plain `match`.
   def expand[parts <: Tuple: Type, origins <: Tuple: Type]
     (insertions0: Expr[Seq[Any]])(using Quotes)
   :   Expr[Css] =
@@ -102,7 +102,7 @@ object CssInterpolator:
       expr match
         case '{$value: tpe} => Expr.summon[(? >: tpe) is CssConvertible] match
           case Some(convertible) =>
-            CssMacros.propertyIssue(property, CssMacros.topicOf(convertible)) match
+            propertyIssue(property, topicOf(convertible)) match
               case message: Message => halt(message, pos)
               case _                => ()
 
@@ -180,3 +180,70 @@ object CssInterpolator:
     then halt(m"cataclysm: a substitution is only allowed as a property value or in a selector")
 
     result
+
+  // Compile-time machinery behind the `Css.Style(borderWidth = …, color = …)`
+  // dynamic constructor. Each named parameter's camelCase label becomes a
+  // kebab-case property name; the value's type must have a `CssConvertible`
+  // instance (which both renders it and tags it with a value-definition-syntax
+  // type); and that type is checked against the property's grammar, so e.g.
+  // `Css.Style(color = 4.0*Px)` and `Css.Style(notAProperty = …)` fail to compile.
+  def style(properties: Expr[Seq[(Label, Any)]])(using Quotes): Expr[Css.Style] =
+    def recur(exprs: Seq[Expr[(Label, Any)]]): List[Expr[(Text, Text)]] = exprs match
+      case '{type key <: Label; ($key: key, $value: value)} +: tail =>
+        val convertible = Expr.summon[value is CssConvertible].getOrElse:
+          halt(m"cataclysm: no CSS value is available for this property's value")
+
+        val name = key.value.getOrElse(halt(m"cataclysm: the property name must be a literal"))
+        val property = name.tt.uncamel.kebab
+        propertyIssue(property, topicOf(convertible)).let(halt(_))
+
+        '{(${Expr(property)}, $convertible.value($value))} :: recur(tail)
+
+      case _ =>
+        Nil
+
+    properties match
+      case Varargs(exprs) => '{Css.Style.of(${Expr.ofList(recur(exprs))})}
+      case _              => '{Css.Style.of(Nil)}
+
+  // The VDS type a `CssConvertible` instance tags its values with (or "" if none).
+  def topicOf(using quotes: Quotes)(convertible: Expr[Any]): Text =
+    import quotes.reflect.*
+
+    def refinements(repr: TypeRepr): Map[Text, TypeRepr] = repr.dealias match
+      case Refinement(parent, name, TypeBounds(_, hi)) => refinements(parent).updated(name.tt, hi)
+      case Refinement(parent, name, info)              => refinements(parent).updated(name.tt, info)
+      case AndType(left, right)                        => refinements(left) ++ refinements(right)
+      case _                                           => Map()
+
+    val members = refinements(convertible.asTerm.tpe) ++ refinements(convertible.asTerm.tpe.widen)
+
+    members.get(t"Topic") match
+      case Some(ConstantType(StringConstant(name))) => name.tt
+      case _                                        => t""
+
+  // A canonical instance of a value type, used to probe a property's grammar.
+  private def sample(topic: Text): Optional[Text] = topic match
+    case t"length"     => t"1px"
+    case t"color"      => t"#000000"
+    case t"percentage" => t"1%"
+    case t"number"     => t"1.5"
+    case t"integer"    => t"1"
+    case t"time"       => t"1s"
+    case t"angle"      => t"1deg"
+    case t"flex"       => t"1fr"
+    case _             => Unset
+
+  // `Unset` if a value of VDS type `topic` is acceptable for `property`; otherwise
+  // a `Message` describing why not (unknown property, or wrong value type).
+  def propertyIssue(property: Text, topic: Text): Optional[Message] =
+    PropertyDef.of(property).lay(m"cataclysm: $property is not a known CSS property"): definition =>
+      // A wildcard topic (the CSS-wide keywords) is valid for any known property.
+      if topic == t"*" then Unset
+      else sample(topic).lay(Unset):
+        sampleText =>
+          val outcome = safely(SyntaxMatcher.check(definition, sampleText))
+
+          if outcome.or(Outcome.Unsupported(Nil)) == Outcome.Invalid
+          then m"cataclysm: a $topic value is not valid for the $property property"
+          else Unset

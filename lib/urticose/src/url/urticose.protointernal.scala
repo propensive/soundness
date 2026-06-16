@@ -30,7 +30,7 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ypsiloid
+package urticose
 
 import scala.quoted.*
 
@@ -39,50 +39,116 @@ import contextual.*
 import contingency.*
 import distillate.*
 import fulminate.*
-import gigantism.*
-import rudiments.*
-import vacuous.*
+import gossamer.*
+import spectacular.*
+import symbolism.*
 
-object YamlPathInterpolator:
-  // Reuses `YamlPath`'s own `Decodable` for validation: the literal is decoded
-  // at macro-expansion time and, if it fails, the `YamlPathError`'s offset is
-  // mapped back to a source position so the error points exactly at the
-  // offending character. Mirrors `jacinta.JsonPointerInterpolator`.
-  def expand[parts <: Tuple: Type, origins <: Tuple: Type](insertions: Expr[Seq[Any]])
-  :   Macro[YamlPath] =
+object protointernal:
+  case class UrlInterpolatorError(detail: Message)
+  extends Exception(s"urticose: ${detail.text.s}")
+
+  object Runtime:
+    import unsafeExceptions.canThrowAny
+
+    def initial: Text = t""
+
+    def parse(state: Text, next: Text): Text = state+next
+
+    def skip(state: Text): Text = state+t"1"
+
+    def substitute(state: Text, sub: Text): Text = state+sub
+
+    def insert(state: Text, value: UrlFragment): Text = value match
+      case UrlFragment.Integral(port) =>
+        if !state.ends(t":")
+        then throw UrlInterpolatorError(m"a port number must be specified after a colon")
+
+        try throwErrors((state+port.show).decode[HttpUrl]) catch
+          case error: UrlError => throw UrlInterpolatorError(Message(error.message.text))
+
+        state+port.show
+
+      case UrlFragment.Textual(text) =>
+        try throwErrors((state+text.urlEncode).decode[HttpUrl]) catch
+          case error: UrlError => throw UrlInterpolatorError(Message(error.message.text))
+
+        state+text.urlEncode
+
+      case UrlFragment.RawTextual(text) =>
+        try throwErrors((state+text.urlEncode).decode[HttpUrl]) catch
+          case error: UrlError => throw UrlInterpolatorError(Message(error.message.text))
+
+        state+text
+
+    def complete(value: Text): Url[Label] =
+      try throwErrors(value.decode[Url[Label]]) catch
+        case error: UrlError => throw UrlInterpolatorError(error.message)
+
+
+  def refined(context: Expr[StringContext], insertions: Expr[Seq[Any]])(using Quotes)
+  :   Expr[Url[Label]] =
 
     import quotes.reflect.*
 
-    def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
-      case _               => strings
+    val parts: List[String] =
+      context.value.getOrElse:
+        halt(m"the StringContext extension method parameter does not appear to be inline")
 
-    def firstOrigin[tuple: Type]: Int = Type.of[tuple] match
-      case '[head *: tail] => TypeRepr.of[head].dealias match
-        case AppliedType(_, ConstantType(IntConstant(start)) :: _) => start
-        case _                                                     => 0
+      . parts.toList
 
-      case _ => 0
+    val insertionExprs: List[Expr[Any]] = insertions.absolve match
+      case Varargs(exprs) => exprs.toList
 
-    val parts = recur[parts](Nil)
-    if parts.length != 1 then halt(m"a YAML path literal cannot have substitutions")
-    val raw: String = parts.head
-    val start: Int = firstOrigin[origins]
+    def rethrow[result](block: => result): result =
+      try block catch case error: UrlInterpolatorError => halt(error.detail)
 
-    try unsafely(raw.tt.decode[YamlPath]) catch
-      case error: YamlPathError =>
-        val sourceFile = Position.ofMacroExpansion.sourceFile
+    var checkState: Text = rethrow(Runtime.parse(Runtime.initial, parts.head.tt))
 
-        val position = sourceFile.content match
-          case Some(content: String) if start > 0 && start < content.length =>
-            val upper = (start + raw.length*6 + 16).min(content.length)
-            val mapping = Interpolation.buildMapping(content.substring(start, upper).nn, raw)
-            val at = (start + mapping(error.offset.min(raw.length))).min(content.length - 1)
-            Position(sourceFile, at, (at + 1).min(content.length))
+    var runtimeExpr: Expr[Text] =
+      '{Runtime.parse(Runtime.initial, ${Expr(parts.head)}.tt)}
 
-          case _ =>
-            Position.ofMacroExpansion
+    var i = 0
 
-        halt(error.message, position)
+    while i < insertionExprs.length do
+      val head = insertionExprs(i)
+      val nextPart = parts(i + 1)
 
-    '{unsafely(${Expr(raw)}.tt.decode[YamlPath])}
+      head.absolve match
+        case '{$value: tpe} =>
+          val typeclassExpr: Expr[Insertion[UrlFragment, tpe]] =
+            Expr.summon[Insertion[UrlFragment, tpe]].getOrElse:
+              halt(m"can't substitute ${TypeRepr.of[tpe].show} into a url-interpolator")
+
+          typeclassExpr.absolve match
+            case '{$_ : Substitution[UrlFragment, tpe, sub]} =>
+              val label: String = TypeRepr.of[sub] match
+                case ConstantType(StringConstant(s)) => s
+
+                case _ =>
+                  halt(m"expected a literal string label for the substitution")
+
+              checkState = rethrow(Runtime.substitute(checkState, label.tt))
+
+            case _ =>
+              checkState = rethrow(Runtime.skip(checkState))
+
+          checkState = rethrow(Runtime.parse(checkState, nextPart.tt))
+
+          val current = runtimeExpr
+
+          runtimeExpr =
+            ' {
+                Runtime.parse
+                  ( Runtime.insert($current, $typeclassExpr.embed($value)),
+                    ${Expr(nextPart)}.tt )
+              }
+
+      i += 1
+
+    rethrow(Runtime.complete(checkState))
+
+    val schemeConstant = parts.head.split(":").nn.head.nn
+
+    ConstantType(StringConstant(schemeConstant)).asType.absolve match
+      case '[type label <: Label; label] =>
+        '{Runtime.complete($runtimeExpr).asInstanceOf[Url[label]]}

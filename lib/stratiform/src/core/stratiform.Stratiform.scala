@@ -47,7 +47,7 @@ import vacuous.*
 // and delegate here: when the receiver's position is bound and the field name is a
 // literal, the macro looks the field up in `P`'s structure and yields a `Tel of
 // <field-type> from R`; otherwise it falls back to the plain
-// (`DynamicTelEnabler`-gated) runtime access. Mirrors `jacinta.Jacinta`.
+// (`DynamicTelEnabler`-gated) runtime access. Mirrors `jacinta.internal`.
 object Stratiform:
 
   private def refinements(using quotes: Quotes)(repr: quotes.reflect.TypeRepr)

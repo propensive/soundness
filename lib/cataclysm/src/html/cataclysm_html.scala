@@ -41,7 +41,8 @@ import prepositional.*
 // Expands to the attribute (`"class"` or `"id"`) that `name` denotes in the
 // in-scope `Styles` stylesheet, failing to compile if it denotes neither (or
 // both).
-transparent inline def attributeFor[name <: Label]: Text = ${HtmlMacros.attributeFor[name]}
+transparent inline def attributeFor[name <: Label]: Text =
+  ${cataclysm.protointernal.attributeFor[name]}
 
 // Lets a `Css.Style` be used as an inline `style="…"` attribute value in
 // Honeycomb, e.g. `Div(style = Css.Style(color = rgb, width = 4.0*Px))`.

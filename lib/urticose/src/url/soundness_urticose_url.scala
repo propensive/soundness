@@ -35,4 +35,4 @@ package soundness
 export
   urticose
   . { Authority, email, host, HttpUrl, Origin, Scheme, Url, url, UrlError, UrlFragment,
-      UrlInterpolator, UrlPalette, Www }
+      UrlPalette, Www }

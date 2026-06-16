@@ -37,10 +37,10 @@ import prepositional.*
 
 extension (inline context: StringContext)
   transparent inline def url(inline parts: Any*): Url[Label] =
-    ${UrlInterpolator.refined('context, 'parts)}
+    ${urticose.protointernal.refined('context, 'parts)}
 
-  transparent inline def email(): EmailAddress = ${EmailAddress.expand('context)}
-  transparent inline def host(): Hostname = ${Hostname.expand('context)}
+  transparent inline def email(): EmailAddress = ${urticose.internal.emailAddress('context)}
+  transparent inline def host(): Hostname = ${urticose.internal.hostname('context)}
 
 type HttpUrl = Url["https" | "http"]
 

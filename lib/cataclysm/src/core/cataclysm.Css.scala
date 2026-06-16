@@ -57,7 +57,7 @@ object Css:
   given showable: CssFormatter => Css is Showable = CssSerializer.render(_)
 
   // The `css"…"` interpolator: substitutions are checked against the property they
-  // sit in (see `CssInterpolator`). Wired through `contextual` like `x"…"`/`h"…"`.
+  // sit in (see `internal.expand`). Wired through `contextual` like `x"…"`/`h"…"`.
   inline given interpolator: Css is Interpolable:
     type Result = Css
 
@@ -65,7 +65,7 @@ object Css:
       ( inline insertions: Any* )
     :   Css =
 
-      ${CssInterpolator.expand[parts, origins]('insertions)}
+      ${cataclysm.internal.expand[parts, origins]('insertions)}
 
   // Serve a stylesheet as an HTTP `text/css` response body (paired with the
   // `Streamable` instance above).
@@ -74,7 +74,7 @@ object Css:
   // A set of declarations for an inline `style="…"` attribute, built with a typed
   // dynamic constructor: `Css.Style(borderWidth = 4.0*Px, color = rgb)`. Property
   // names are camelCase (converted to kebab-case) and each value is checked
-  // against the property's grammar at compile time (see `StyleMacros`).
+  // against the property's grammar at compile time (see `internal.style`).
   object Style extends Dynamic:
     // The private primary constructor suppresses the synthetic constructor proxy,
     // so `Css.Style(borderWidth = …)` routes to `applyDynamicNamed` rather than
@@ -83,7 +83,7 @@ object Css:
     def applyDynamic(method: "apply")(): Style = of(Nil)
 
     inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Style =
-      ${StyleMacros.style('properties)}
+      ${cataclysm.internal.style('properties)}
 
   class Style private (val properties: List[(Text, Text)]):
     def text: Text = properties.map { (name, value) => t"$name: $value" }.join(t"; ")

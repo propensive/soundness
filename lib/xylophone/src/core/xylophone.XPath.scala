@@ -71,7 +71,7 @@ object XPath extends Root("/"):
       ( inline insertions: Any* )
     :   XPath =
 
-      ${xylophone.XPathInterpolator.expand[parts, origins]('insertions)}
+      ${xylophone.internal.xpath[parts, origins]('insertions)}
 
   // Parses an absolute XPath (`/`, `/root[1]/child[2]`, `/root/@attr`),
   // reporting the offset of any error. Each step is interpreted by `parseStep`;
