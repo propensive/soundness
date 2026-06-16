@@ -41,7 +41,7 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
-import attributives.textAttributes
+import attributives.textAttributive
 import doms.html.whatwg, whatwg.*
 
 object Markdown:

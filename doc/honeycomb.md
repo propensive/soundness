@@ -375,7 +375,7 @@ those values, but most other types are not defined. For now, the best solution
 is to make `Text` values attribtive for _all_ attributes. This can be achieved
 with one import:
 ```scala
-import attributives.textAttributes
+import attributives.textAttributive
 ```
 
 #### CSS `class` attributes

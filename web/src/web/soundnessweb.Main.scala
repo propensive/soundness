@@ -2,7 +2,7 @@ package dev.soundness
 
 import soundness.*
 
-import attributives.textAttributes
+import attributives.textAttributive
 import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
 import classloaders.scalaClassloader

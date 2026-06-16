@@ -39,7 +39,7 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import attributives.textAttributes
+import attributives.textAttributive
 import doms.html.whatwg, whatwg.*
 
 object Checkbox:
