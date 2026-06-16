@@ -33,6 +33,7 @@
 package denominative
 
 import anticipation.*
+import prepositional.*
 import symbolism.*
 
 final val Prim: Ordinal = Ordinal.zerary(0)
@@ -52,6 +53,13 @@ extension (inline cardinal: Int)
 extension [countable: Countable](value: countable)
   inline def gamut: Interval = Interval.initial(countable.size(value))
   inline def nil: Boolean = countable.nil(value)
+
+  inline def iterate(inline lambda: (Ordinal in value.type) => Unit): Unit =
+    var index: Int = 0
+
+    while index < countable.size(value) do
+      lambda(Ordinal.zerary(index).asInstanceOf[Ordinal in value.type])
+      index += 1
 
 export denominative.internal.{Ordinal, Interval, Span}
 

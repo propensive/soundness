@@ -47,7 +47,7 @@ object Textual:
     def concat(left: textual, right: textual): textual = textual.concat(left, right)
 
   given text: Text is Textual:
-    type Operand = Char
+    type Result = Char
     type Show[value] = value is spectacular.Showable
 
     val classTag: ClassTag[Text] = summon[ClassTag[Text]]
@@ -69,7 +69,7 @@ object Textual:
 
     def empty: Text = Text("")
     def concat(left: Text, right: Text): Text = Text(left.s+right.s)
-    def at(text: Text, index: Ordinal): Char = text.s.charAt(index.n0)
+    def access(text: Text, index: Ordinal): Char = text.s.charAt(index.n0)
 
     def indexOf(text: Text, sub: Text, start: Ordinal): Optional[Ordinal] =
       text.s.indexOf(sub.s, start.n0).puncture(-1).let(_.z)
@@ -80,21 +80,23 @@ object Textual:
     def builder(size: Optional[Int]): Builder[Text] = TextBuilder(size)
     def size(text: Self): Int = text.length
 
-trait Textual extends Typeclass, Countable, Segmentable, Zeroic:
-  type Operand
+trait Textual extends Typeclass, Countable, Segmentable, Zeroic, Indexable:
+  type Operand = Ordinal
+  type Result
   type Show[value]
 
   def show[value](value: value)(using show: Show[value]): Self
   def apply(text: Text): Self
-  def single(operand: Operand): Self
-  def fromChar(char: Char): Operand
+  def single(operand: Result): Self
+  def fromChar(char: Char): Result
   def classTag: ClassTag[Self]
   def length(text: Self): Int
   def text(text: Self): Text
-  def map(text: Self)(lambda: Operand => Operand): Self
+  def map(text: Self)(lambda: Result => Result): Self
   def empty: Self
   def concat(left: Self, right: Self): Self
-  def at(text: Self, index: Ordinal): Operand
+  def access(text: Self, index: Ordinal): Result
+  def contains(text: Self, index: Ordinal): Boolean = index.n0 >= 0 && index.n0 < length(text)
   def indexOf(text: Self, sub: Text, start: Ordinal = Prim): Optional[Ordinal]
 
   def lastIndexOf(text: Self, sub: Text): Optional[Ordinal] =

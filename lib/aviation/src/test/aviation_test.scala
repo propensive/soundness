@@ -290,7 +290,7 @@ object Tests extends Suite(m"Aviation Tests"):
       import calendars.gregorian
 
       test(m"Specify datetime"):
-        2018-Aug-11 at 5.25.pm
+        5.25.pm on 2018-Aug-11
       . assert(_ == Timestamp(Date(Year(2018), Aug, Day(11)), Clockface(17, 25, 0)))
 
       test(m"Add two months to a date"):

@@ -149,7 +149,7 @@ object Tag:
 
           val value =
             if attribution.attribute == t"class"
-            then presets.at("class").lay(name): preset => t"$preset $name"
+            then presets.at(t"class").lay(name): preset => t"$preset $name"
             else name
 
           presets.updated(attribution.attribute, value)
@@ -195,7 +195,7 @@ object Tag:
 
           val value =
             if attribution.attribute == t"class"
-            then presets.at("class").lay(name): preset => t"$preset $name"
+            then presets.at(t"class").lay(name): preset => t"$preset $name"
             else name
 
           presets.updated(attribution.attribute, value)

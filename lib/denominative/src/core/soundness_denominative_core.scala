@@ -34,8 +34,8 @@ package soundness
 
 export
   denominative
-  . { aka, Countable, gamut, Interval, nil, Ordinal, Prim, Quat, Quin, Sec, Sen, Sept, Span, Ter,
-      u, z, Zerary }
+  . { aka, Countable, gamut, Interval, iterate, nil, Ordinal, Prim, Quat, Quin, Sec, Sen, Sept,
+      Span, Ter, u, z, Zerary }
 
 package ordinalShowables:
   export

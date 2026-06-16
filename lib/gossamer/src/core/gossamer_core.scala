@@ -131,7 +131,7 @@ extension [textual](text: textual)
 
     cuttable.cut(text, delimiter, limit)
 
-extension [textual: Textual { type Operand = Char }](words: Iterable[textual])
+extension [textual: Textual { type Result = Char }](words: Iterable[textual])
   def pascal: textual = words.map(_.lower.capitalize).join
   def camel: textual = pascal.uncapitalize
   def snake: textual = words.join(textual("_".tt))
@@ -190,7 +190,7 @@ extension [textual: Textual](text: textual)
     var index = n - 1
 
     while index >= 0 do
-      builder.append(textual.single(textual.at(text, index.z)))
+      builder.append(textual.single(textual.access(text, index.z)))
       index -= 1
 
     builder()
@@ -235,7 +235,7 @@ extension [textual: Textual](text: textual)
     case Ltr => if text.starts(affix) then text.skip(affix.length) else text
     case Rtl => if text.ends(affix) then text.skip(affix.length, Rtl) else text
 
-extension [textual: Textual { type Operand = Char }](text: textual)
+extension [textual: Textual { type Result = Char }](text: textual)
   inline def lower: textual = textual.map(text)(_.toLower)
   inline def upper: textual = textual.map(text)(_.toUpper)
 
@@ -249,7 +249,7 @@ extension [textual: Textual { type Operand = Char }](text: textual)
         builder.append(text.from(from))
         builder()
       else
-        if !predicate(textual.at(text, index - 1), textual.at(text, index))
+        if !predicate(textual.access(text, index - 1), textual.access(text, index))
         then recur(from, index + 1)
         else
           builder.append(text.segment(from till index))
@@ -295,7 +295,7 @@ extension [textual: Textual { type Operand = Char }](text: textual)
 
     def recur(ordinal: Ordinal): Optional[Ordinal] =
       if ordinal >= text.limit || ordinal < Prim then Unset
-      else if predicate(textual.at(text, ordinal)) then ordinal
+      else if predicate(textual.access(text, ordinal)) then ordinal
       else recur(ordinal + step)
 
     recur(first)
@@ -323,7 +323,7 @@ extension [textual: Textual { type Operand = Char }](text: textual)
 
   inline def count(predicate: Char => Boolean): Int =
     def recur(index: Ordinal, sum: Int): Int = if index >= text.limit then sum else
-      val increment = if predicate(textual.at(text, index)) then 1 else 0
+      val increment = if predicate(textual.access(text, index)) then 1 else 0
       recur(index + 1, sum + increment)
 
     recur(Prim, 0)

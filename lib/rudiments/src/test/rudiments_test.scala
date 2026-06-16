@@ -100,6 +100,28 @@ object Tests extends Suite(m"Rudiments Tests"):
         Map(t"a" -> 1, t"b" -> 2).has(t"c")
       . assert(_ == false)
 
+    suite(m"Confined index tests"):
+      val text = t"hello"
+      val array = IArray(10, 20, 30)
+
+      test(m"Plain `at` returns Optional"):
+        text.at(Prim).vouch
+      . assert(_ == 'h')
+
+      test(m"`within` + confined `at` returns a bare element"):
+        Ter.within(text).let { i => val c: Char = text.at(i); c }
+      . assert(_ == 'l')
+
+      test(m"`within` returns Unset for an out-of-range Ordinal"):
+        Ordinal.zerary(99).within(text)
+      . assert(_ == Unset)
+
+      test(m"`iterate` yields confined indices usable with bare `at`"):
+        var total = 0
+        array.iterate { i => total += array.at(i) }
+        total
+      . assert(_ == 60)
+
     // test(m"Display a PID"):
     //   Pid(2999).toString
     // .assert(_ == "↯2999")

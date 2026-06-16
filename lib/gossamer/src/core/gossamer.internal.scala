@@ -159,7 +159,7 @@ object internal:
       extension (ascii: Ascii) def bytes: Data = ascii
 
       given textual: Ascii is Textual:
-        type Operand = Byte
+        type Result = Byte
         type Show[value] = value is Showable
 
         val empty: Ascii = IArray.from[Byte](Nil)
@@ -170,7 +170,7 @@ object internal:
         def fromChar(char: Char): Byte = char.toByte
         def length(ascii: Ascii): Int = ascii.size
         def text(ascii: Ascii): Text = String(ascii.mutable(using Unsafe), "ASCII").nn.tt
-        def at(ascii: Ascii, index: Ordinal): Byte = ascii(index.n0)
+        def access(ascii: Ascii, index: Ordinal): Byte = ascii(index.n0)
         def builder(size: Optional[Int]): Builder[Ascii] = AsciiBuilder(size)
         def size(ascii: Ascii): Int = ascii.length
 

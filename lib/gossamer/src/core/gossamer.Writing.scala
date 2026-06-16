@@ -72,7 +72,7 @@ object Writing:
     total
 
   given textual: Writing is Textual:
-    type Operand = Grapheme
+    type Result = Grapheme
     type Show[value] = value is Showable
 
     val classTag: ClassTag[Writing] = summon[ClassTag[Writing]]
@@ -100,7 +100,7 @@ object Writing:
     def empty: Writing = Writing.empty
     def concat(left: Writing, right: Writing): Writing = Writing(Text(left.text.s+right.text.s))
 
-    def at(writing: Writing, index: Ordinal): Grapheme =
+    def access(writing: Writing, index: Ordinal): Grapheme =
       Grapheme:
         writing.text.s.substring(writing.boundaries(index.n0), writing.boundaries(index.n0 + 1)).nn
 
