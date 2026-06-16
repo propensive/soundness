@@ -152,23 +152,47 @@ def cli[bus <: Matchable](using executive: Executive)
             val runnerName: Text =
               if isWindows then t"runner-$platformLabel.exe" else t"runner-$platformLabel"
 
-            // The reusable runner stubs are no longer embedded in the JAR; the right one is
-            // read from the `dist/runners` directory (relative to the working directory, or
-            // `-Dethereal.runners=<dir>`), which `make runners-build`/`make runners-fetch`
-            // populate.
+            // The reusable runner stubs are not embedded in the JAR. A locally-built or
+            // pre-fetched directory (an explicit `-Dethereal.runners=<dir>`, or `dist/runners`
+            // relative to the working directory) takes priority; otherwise the one stub this
+            // platform needs is downloaded from the published `runners-<version>` GitHub
+            // release, verified against its SHA-256, and cached for subsequent builds.
             val work: Path on Linux = workingDirectory
 
             val runnersDir: Text =
               safely(System.properties.ethereal.runners[Text]()).or(t"$work/dist/runners")
 
-            val runnerFile: Path on Linux = t"$runnersDir/$runnerName".decode[Path on Linux]
+            val localRunner: Path on Linux = t"$runnersDir/$runnerName".decode[Path on Linux]
 
-            if !runnerFile.exists() then
-              Out.println(e"Runner stub $runnerName not found in $runnersDir.")
-              Out.println(e"Run $Italic(make runners-build) or $Italic(make runners-fetch) first.")
-              Exit.Fail(1).terminate()
+            val cacheDir: Path on Linux =
+              Directories.cacheHome[Path on Linux]/t"ethereal"/t"runners"/Runners.version
 
-            val runnerBytes: Data = runnerFile.open(_.stream[Data].read[Data])
+            val cacheRunner: Path on Linux = cacheDir/runnerName
+
+            val runnerBytes: Data =
+              if localRunner.exists() then localRunner.open(_.stream[Data].read[Data])
+              else if cacheRunner.exists() then cacheRunner.open(_.stream[Data].read[Data])
+              else
+                whereas:
+                  case RunnerError(detail) =>
+                    Out.println(detail.text)
+                    Exit.Fail(1).terminate()
+
+                  case IoError(_, _, _, _) =>
+                    Out.println(e"Could not cache the downloaded runner stub $runnerName")
+                    Exit.Fail(1).terminate()
+
+                  case StreamError(_) =>
+                    Out.println(e"The runner stub download was interrupted")
+                    Exit.Fail(1).terminate()
+
+                . mitigate:
+                    import filesystemOptions.overwritePreexisting.disabled
+                    Out.println(e"Downloading $runnerName from runners-${Runners.version}")
+                    val bytes: Data = Runners.download(platformLabel)
+                    if !cacheDir.exists() then cacheDir.create[Directory]()
+                    cacheRunner.open(Stream(bytes).writeTo(_))
+                    bytes
 
             // ML-DSA-44 public key used by the runner to verify upgrades.
             // When `ethereal.publicKey` is unset the slot stays zero and the
