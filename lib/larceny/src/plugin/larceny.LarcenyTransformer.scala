@@ -146,7 +146,7 @@ class LarcenyTransformer() extends PluginPhase:
     object transformer extends UntypedTreeMap:
       override def transform(tree: Tree)(using Context): Tree = tree match
         case Apply(Ident(name), List(content)) if name.toString == "procrastinate" =>
-          val source2 = source.substring(content.span.start, content.span.end).nn
+          val source2 = source.substring(content.span.start, content.span.end)
           val javaClasspath = System.getProperty("java.class.path").nn
 
           Apply
