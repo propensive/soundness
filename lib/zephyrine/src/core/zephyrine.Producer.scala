@@ -46,6 +46,7 @@ object Producible:
     type Self = Text
     type Transport = Array[Char]
     type Builder = jl.StringBuilder
+    type Element = Char
 
     def length(text: Text): Int = text.s.length
     def produce(block: Array[Char], size: Int): Text = String(block, 0, size).tt
@@ -60,11 +61,16 @@ object Producible:
       builder.append(source.s, start.n0, start.n0 + size)
 
     def build(builder: jl.StringBuilder): Text = builder.toString.tt
+    def writeElement(builder: jl.StringBuilder, element: Char): Unit = builder.append(element)
+
+    def setElement(target: Array[Char], index: Ordinal, element: Char): Unit =
+      target(index.n0) = element
 
   inline given bytes: Producible:
     type Self = Data
     type Transport = Array[Byte]
     type Builder = ji.ByteArrayOutputStream
+    type Element = Byte
 
     def produce(block: Array[Byte], size: Int): Data =
       java.util.Arrays.copyOfRange(block, 0, size).nn.immutable(using Unsafe)
@@ -83,6 +89,12 @@ object Producible:
     def build(builder: ji.ByteArrayOutputStream): Data =
       builder.toByteArray.nn.immutable(using Unsafe)
 
+    def writeElement(builder: ji.ByteArrayOutputStream, element: Byte): Unit =
+      builder.write(element.toInt)
+
+    def setElement(target: Array[Byte], index: Ordinal, element: Byte): Unit =
+      target(index.n0) = element
+
 
 // A medium (text or bytes) that output can be produced into. The `allocate`/`copy`/`produce`
 // trio backs the chunked streaming path; the `builder`/`append`/`build` trio backs synchronous
@@ -91,6 +103,7 @@ trait Producible:
   type Self
   type Transport
   type Builder
+  type Element
 
   def allocate(size: Int): Transport
   def length(value: Self): Int
@@ -108,6 +121,11 @@ trait Producible:
   def append(builder: Builder, source: Self, start: Ordinal, size: Int): Unit
   def build(builder: Builder): Self
 
+  // Single-element writes (`Char` for text, `Byte` for bytes), backing `Producer.push` for
+  // element-at-a-time producers such as binary encoders.
+  def writeElement(builder: Builder, element: Element): Unit
+  def setElement(target: Transport, index: Ordinal, element: Element): Unit
+
 
 // A sink into which a value of one medium is written in pieces. The same producing code can be
 // driven two ways without duplicating it: `Producer.collect` runs it synchronously and returns the
@@ -119,6 +137,10 @@ object Producer:
   // code must run on a separate fiber, since `put` blocks once the window is full.
   def apply[medium: Producible](block: Int = 4096, window: Int = 2): Channel[medium] =
     Channel(block, window)
+
+  // Write a single element: a `Char` for `Producer[Text]`, a `Byte` for `Producer[Data]`.
+  extension [medium](producer: Producer[medium])(using element: ElementType[medium])
+    def push(value: element.Element): Unit = producer.pushElement(value)
 
   // Synchronous: run `body`, accumulating directly into a builder, and return the whole value. No
   // concurrency, no chunk buffer, and none of the streaming path's single-thread deadlock risk.
@@ -134,6 +156,9 @@ object Producer:
 
       def put(source: medium, offset: Ordinal, size: Int): Unit =
         medium2.append(builder, source, offset, size)
+
+      def pushElement(element: Any): Unit =
+        medium2.writeElement(builder, element.asInstanceOf[medium2.Element])
 
     body(producer)
     medium2.build(builder)
@@ -172,6 +197,11 @@ object Producer:
 
       if free == 0 then publish()
 
+    def pushElement(element: Any): Unit =
+      medium2.setElement(current, index, element.asInstanceOf[medium2.Element])
+      index = (index.n0 + 1).z
+      if free == 0 then publish()
+
     def finish(): Unit =
       publish()
       queue.put(Done)
@@ -186,6 +216,25 @@ object Producer:
       def next(): medium = ready.asInstanceOf[medium]
 
 
+// Maps a medium to its element type — a `Char` for `Text`, a `Byte` for `Data` — so that the
+// `push` extension below is statically typed per medium. (A match type can't do this: `Text` is
+// opaque, so `Text`/`Data` disjointness isn't provable either way round.)
+object ElementType:
+  given text: (ElementType[Text] { type Element = Char }) =
+    new ElementType[Text]:
+      type Element = Char
+
+  given bytes: (ElementType[Data] { type Element = Byte }) =
+    new ElementType[Data]:
+      type Element = Byte
+
+trait ElementType[medium]:
+  type Element
+
 trait Producer[medium]:
   def put(source: medium): Unit
   def put(source: medium, offset: Ordinal, size: Int): Unit
+
+  // Append one element. The typed entry point is the `push` extension; the parameter here is `Any`
+  // because the trait can't name the element type without it erasing identically to `put(medium)`.
+  def pushElement(element: Any): Unit

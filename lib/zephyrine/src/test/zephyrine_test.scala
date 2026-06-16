@@ -177,6 +177,33 @@ object Tests extends Suite(m"Zephyrine tests"):
           producer.put(Data.fill(5)(i => (i + 10).toByte))
       . assert(_.to(List) == List[Byte](0, 1, 2, 10, 11, 12, 13, 14))
 
+      test(m"Push bytes one at a time (synchronous)"):
+        Producer.collect[Data](): producer =>
+          var i = 0
+          while i < 6 do
+            producer.push((i*2).toByte)
+            i += 1
+      . assert(_.to(List) == List[Byte](0, 2, 4, 6, 8, 10))
+
+      test(m"Push bytes across a block boundary (streaming)"):
+        val producer = Producer[Data](4)
+        val output = async(producer.iterator.to(List))
+        var i = 0
+
+        while i < 10 do
+          producer.push(i.toByte)
+          i += 1
+
+        producer.finish()
+        unsafely(output.await()).flatMap(_.to(List))
+      . assert(_ == (0 until 10).map(_.toByte).to(List))
+
+      test(m"Push chars (synchronous text)"):
+        Producer.collect[Text](): producer =>
+          producer.push('h')
+          producer.push('i')
+      . assert(_ == "hi")
+
 
 
     suite(m"Cursor tests"):
