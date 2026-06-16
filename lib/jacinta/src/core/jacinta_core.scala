@@ -251,6 +251,6 @@ package discriminables:
 
 
 package numberModes:
-  given full:   NumberMode = NumberMode.Full
-  given bcd:    NumberMode = NumberMode.Bcd
-  given double: NumberMode = NumberMode.Double
+  given fullNumberMode:   NumberMode = NumberMode.Full
+  given bcdNumberMode:    NumberMode = NumberMode.Bcd
+  given doubleNumberMode: NumberMode = NumberMode.Double

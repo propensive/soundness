@@ -40,6 +40,9 @@ export
 package printers:
   export jacinta.printers.{jsonIndentedPrinter, jsonMinimalPrinter}
 
+package numberModes:
+  export jacinta.numberModes.{fullNumberMode, bcdNumberMode, doubleNumberMode}
+
 package discriminables:
   export jacinta.discriminables.jsonByTypeDiscriminable
   export jacinta.discriminables.jsonByKindDiscriminable

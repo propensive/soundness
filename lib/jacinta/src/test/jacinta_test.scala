@@ -829,13 +829,13 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(identity)
 
       test(m"Standalone registry returns Unset for unknown URLs"):
-        import jsonPointerRegistries.standalone
+        import jsonPointerRegistries.standaloneRegistry
         val registry = summon[JsonPointer.Registry]
         registry(url"http://example.com/")
       . assert(_ == Unset)
 
       test(m"Standalone registry returns updated values"):
-        import jsonPointerRegistries.standalone
+        import jsonPointerRegistries.standaloneRegistry
         val registry = summon[JsonPointer.Registry]
         val doc = t"""{"a": 1}""".read[Json]
         registry(url"http://example.com/doc") = doc
