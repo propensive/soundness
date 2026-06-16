@@ -781,3 +781,37 @@ object Tests extends Suite(m"Cataclysm Tests"):
       test(m"a substitution mixed with literal text fails to compile"):
         demilitarize(css"a { margin: $width 0 }").nonEmpty
       . assert(_ == true)
+
+    suite(m"CSS interpolator result type"):
+      val width = 4.0*Px
+
+      test(m"bare declarations produce an inline style set"):
+        css"color: red; width: 4px".text
+      . assert(_ == t"color: red; width: 4px")
+
+      test(m"a substitution in a bare declaration is checked and rendered"):
+        css"width: $width".text
+      . assert(_ == t"width: 4px")
+
+      test(m"a rule produces a stylesheet"):
+        css"a { color: red }".rules
+      . assert(_ == t"a { color: red }".read[Css].rules)
+
+      test(m"a bare style set is statically a Css.Style, not a stylesheet"):
+        demilitarize(css"color: red".rules).nonEmpty
+      . assert(_ == true)
+
+      test(m"a stylesheet is statically a Css, not an inline style set"):
+        demilitarize(css"a { color: red }".text).nonEmpty
+      . assert(_ == true)
+
+    suite(m"Joining CSS with +"):
+      val width = 4.0*Px
+
+      test(m"two stylesheets join into one"):
+        (css"a { color: red }" + css"b { color: blue }").rules
+      . assert(_ == t"a { color: red } b { color: blue }".read[Css].rules)
+
+      test(m"two inline style sets join into one"):
+        (css"color: red" + css"width: $width").text
+      . assert(_ == t"color: red; width: 4px")

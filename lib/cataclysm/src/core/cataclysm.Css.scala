@@ -41,6 +41,7 @@ import gossamer.*
 import parasite.*
 import prepositional.*
 import spectacular.*
+import symbolism.*
 import turbulence.*
 import vacuous.*
 
@@ -58,14 +59,20 @@ object Css:
 
   // The `css"…"` interpolator: substitutions are checked against the property they
   // sit in (see `internal.expand`). Wired through `contextual` like `x"…"`/`h"…"`.
-  inline given interpolator: Css is Interpolable:
-    type Result = Css
-
+  // The result type is decided by the content: bare declarations (`css"width: 38px"`)
+  // produce a `Css.Style`, a selector-bearing or at-rule body (`css"a { … }"`) a `Css`.
+  inline given interpolator: (Css | Css.Style) is Interpolable:
     transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
       ( inline insertions: Any* )
-    :   Css =
+    :   Css | Css.Style =
 
       ${cataclysm.internal.expand[parts, origins]('insertions)}
+
+  // Stylesheets concatenate their rule lists, so `css"a { … }" + css"b { … }"` is one
+  // stylesheet of both rules.
+  given addable: Css is Addable by Css to Css =
+    Addable: (left, right) =>
+      Css(left.rules ++ right.rules)
 
   // Serve a stylesheet as an HTTP `text/css` response body (paired with the
   // `Streamable` instance above).
@@ -84,6 +91,12 @@ object Css:
 
     inline def applyDynamicNamed(method: "apply")(inline properties: (Label, Any)*): Style =
       ${cataclysm.internal.style('properties)}
+
+    // Inline-style sets concatenate their property lists, so two `Css.Style`s (or two
+    // bare `css"…"`s) join into one.
+    given addable: Style is Addable by Style to Style =
+      Addable: (left, right) =>
+        Style.of(left.properties ++ right.properties)
 
   class Style private (val properties: List[(Text, Text)]):
     def text: Text = properties.map { (name, value) => t"$name: $value" }.join(t"; ")
