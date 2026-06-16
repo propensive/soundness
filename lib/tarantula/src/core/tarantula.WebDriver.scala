@@ -40,7 +40,7 @@ import gossamer.*
 import hallucination.*
 import hieroglyph.*, charEncoders.utf8Encoder, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
 import jacinta.*, printers.jsonMinimalPrinter, dynamicJsonAccess.enabled
-import monotonous.*, alphabets.base64.standard
+import monotonous.*, alphabets.base64Standard
 import prepositional.*
 import spectacular.*
 import telekinesis.*

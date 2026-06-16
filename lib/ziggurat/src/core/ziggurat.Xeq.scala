@@ -39,7 +39,7 @@ import galilei.*
 import gossamer.*
 import hellenism.*
 import hieroglyph.*
-import monotonous.*, alphabets.base64.standard
+import monotonous.*, alphabets.base64Standard
 import prepositional.*
 import serpentine.*
 import turbulence.*

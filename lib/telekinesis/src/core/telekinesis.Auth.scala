@@ -43,7 +43,7 @@ import prepositional.*
 import spectacular.*
 
 object Auth:
-  import alphabets.base64.standard
+  import alphabets.base64Standard
 
   given showable: Auth is Showable =
     case Basic(username, password) => t"Basic ${t"$username:$password".data.serialize[Base64]}"

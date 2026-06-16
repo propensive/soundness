@@ -40,7 +40,7 @@ import spectacular.*
 
 object Signature:
   given showable: [signature <: Cipher] => Signature[signature] is Showable = sig =>
-    import alphabets.base64.standard
+    import alphabets.base64Standard
     t"Signature(${sig.bytes.serialize[Base64]})"
 
   given encodable: [cipher <: Cipher] => Signature[cipher] is Encodable in Data = _.bytes

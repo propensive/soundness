@@ -71,7 +71,7 @@ import soundness.*
 To serialize a `Bytes` value (an instance of `IArray[Byte]`) to BASE-64, we can
 use:
 ```scala
-import alphabets.base64.standard
+import alphabets.base64Standard
 val bytes: Bytes = ???
 bytes.serialize[Base64]
 ```

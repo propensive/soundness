@@ -38,27 +38,12 @@ export
       Quaternary, Serializable, Serialization, SerializationError, serialize }
 
 package alphabets:
-  package binary:
-    export monotonous.alphabets.binary.standard
-
-  package quaternary:
-    export monotonous.alphabets.quaternary.{dnaNucleotide, standard}
-
-  package octal:
-    export monotonous.alphabets.octal.standard
-
-  package hex:
-    export
-      monotonous.alphabets.hex
-      . { bioctal, lowerCase, strictLowerCase, strictUpperCase, upperCase }
-
-  package base32:
-    export
-      monotonous.alphabets.base32
-      . { crockford, extendedHexLowerCase, extendedHexUpperCase, geohash, lowerCase,
-          strictLowerCase, strictUpperCase, upperCase, wordSafe, zBase32, zBase32Unpadded }
-
-  package base64:
-    export
-      monotonous.alphabets.base64
-      . { bcrypt, imap, radix64, sasl, standard, unpadded, url, uuencoding, xml, yui }
+  export
+    monotonous.alphabets
+    . { binaryStandard, quaternaryStandard, quaternaryDnaNucleotide, octalStandard,
+        hexStrictUpperCase, hexStrictLowerCase, hexUpperCase, hexLowerCase, hexBioctal,
+        base32StrictUpperCase, base32StrictLowerCase, base32UpperCase, base32LowerCase,
+        base32ExtendedHexUpperCase, base32ExtendedHexLowerCase, base32ZBase32,
+        base32ZBase32Unpadded, base32Geohash, base32WordSafe, base32Crockford, base64Standard,
+        base64Unpadded, base64Url, base64Xml, base64Imap, base64Yui, base64Radix64, base64Bcrypt,
+        base64Sasl, base64Uuencoding }

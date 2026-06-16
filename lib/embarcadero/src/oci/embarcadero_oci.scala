@@ -39,7 +39,7 @@ import gossamer.*
 import hieroglyph.*, charEncoders.utf8Encoder
 import jacinta.*, printers.jsonMinimalPrinter
 import monotonous.*
-import monotonous.alphabets.hex.lowerCase
+import monotonous.alphabets.hexLowerCase
 import prepositional.*
 import spectacular.*
 

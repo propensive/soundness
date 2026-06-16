@@ -48,7 +48,7 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-import alphabets.base64.standard
+import alphabets.base64Standard
 import charEncoders.utf8Encoder
 import environments.javaEnvironment
 import errorDiagnostics.stackTracesDiagnostics

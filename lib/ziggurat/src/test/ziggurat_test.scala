@@ -45,7 +45,7 @@ import termcaps.environmentTermcap
 import strategies.throwUnsafely
 import charEncoders.utf8Encoder
 import providers.javaStdlibProvider
-import alphabets.hex.lowerCase
+import alphabets.hexLowerCase
 import errorDiagnostics.stackTracesDiagnostics
 
 import filesystemOptions.dereferenceSymlinks.enabled

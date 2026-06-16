@@ -39,7 +39,7 @@ import eucalyptus.*
 import fulminate.*
 import gossamer.*
 import jacinta.*
-import monotonous.*, alphabets.base64.standard, alphabets.hex.lowerCase
+import monotonous.*, alphabets.base64Standard, alphabets.hexLowerCase
 import prepositional.*
 import telekinesis.*
 import urticose.*

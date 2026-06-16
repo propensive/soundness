@@ -36,7 +36,7 @@ import soundness.*
 import bitumen.fromGzip
 
 import providers.javaStdlibProvider
-import alphabets.hex.lowerCase
+import alphabets.hexLowerCase
 import charEncoders.utf8Encoder
 import printers.jsonMinimalPrinter
 import strategies.throwUnsafely

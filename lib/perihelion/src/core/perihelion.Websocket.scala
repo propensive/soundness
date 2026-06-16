@@ -49,7 +49,7 @@ import vacuous.*
 import zephyrine.*
 
 import Control.*
-import alphabets.base64.standard
+import alphabets.base64Standard
 import charEncoders.utf8Encoder
 import crypto.permitDeprecatedCrypto
 import providers.javaStdlibProvider

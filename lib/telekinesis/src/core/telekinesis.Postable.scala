@@ -48,7 +48,7 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-import alphabets.hex.lowerCase
+import alphabets.hexLowerCase
 
 object Postable:
   def apply[response](mediaType0: MediaType, stream0: response => Stream[Data])
