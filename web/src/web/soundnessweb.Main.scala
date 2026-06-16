@@ -9,14 +9,14 @@ import classloaders.scalaClassloader
 import codicils.cancel
 import environments.javaEnvironment
 import errorDiagnostics.stackTracesDiagnostics
-import httpServers.stdlibPublic
+import httpServers.stdlibPublicHttpServer
 import logging.silentLogging
 import stdios.virtualMachineStdio
 import stylesheets.uncheckedClasses
 import supervisors.globalSupervisor
 import termcaps.environmentTermcap
 import threading.platformThreading
-import webserverErrorPages.stackTraces
+import webserverErrorPages.stackTracesErrorPage
 
 import doms.html.whatwg
 import doms.html.whatwg.{Em as WhatwgEm, Map as _, *}

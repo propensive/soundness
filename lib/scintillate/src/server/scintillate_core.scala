@@ -50,7 +50,7 @@ import urticose.*
 import vacuous.*
 
 package httpServers:
-  given stdlib: [port <: (80 | 443 | 8080 | 8000)]
+  given stdlibHttpServer: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( Tactic[ServerError], Monitor, Probate, HttpServerEvent is Loggable )
   =>  WebserverErrorPage
   =>  Http is Protocolic:
@@ -65,7 +65,7 @@ package httpServers:
       HttpServer(port.number, true).handle(lambda)
 
 
-  given stdlibPublic: [port <: (80 | 443 | 8080 | 8000)]
+  given stdlibPublicHttpServer: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( Tactic[ServerError], Monitor, Probate, HttpServerEvent is Loggable )
   =>  WebserverErrorPage
   =>  Http is Protocolic:
@@ -80,7 +80,7 @@ package httpServers:
       HttpServer(port.number, false).handle(lambda)
 
 
-  given native: [port <: (80 | 443 | 8080 | 8000)]
+  given nativeHttpServer: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( Tactic[ServerError], Monitor, Probate, HttpServerEvent is Loggable )
   =>  WebserverErrorPage
   =>  Http is Protocolic:
@@ -95,7 +95,7 @@ package httpServers:
       SocketServer(port.number, true).handle(lambda)
 
 
-  given nativePublic: [port <: (80 | 443 | 8080 | 8000)]
+  given nativePublicHttpServer: [port <: (80 | 443 | 8080 | 8000)]
   =>  ( Tactic[ServerError], Monitor, Probate, HttpServerEvent is Loggable )
   =>  WebserverErrorPage
   =>  Http is Protocolic:
@@ -131,17 +131,17 @@ extension (request: Http.Request)
   def as[body: Acceptable]: body = body.accept(request)
 
 package webserverErrorPages:
-  given minimal: WebserverErrorPage = (request, throwable) =>
+  given minimalErrorPage: WebserverErrorPage = (request, throwable) =>
     import hieroglyph.charEncoders.utf8Encoder
     Http.Response(Unfulfilled(t"An error occurred which prevented the request from completing."))
 
   private def prefix(using Classloader): Data = cp"/scintillate/error.pre.html".read[Data]
   private def postfix(using Classloader): Data = cp"/scintillate/error.post.html".read[Data]
 
-  given standard: Classloader => WebserverErrorPage = (throwable, request) =>
+  given standardErrorPage: Classloader => WebserverErrorPage = (throwable, request) =>
     Http.Response(Unfulfilled(Stream(prefix, postfix).ascribe(media"text/html")))
 
-  given stackTraces: Classloader => WebserverErrorPage = (throwable, request) =>
+  given stackTracesErrorPage: Classloader => WebserverErrorPage = (throwable, request) =>
     import charEncoders.utf8Encoder
 
     val stack = t"<pre>${throwable.stackTrace}</pre>".read[Data]

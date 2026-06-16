@@ -39,4 +39,4 @@ export cataclysm.{Css, CssError, CssErrors, cssAggregable, SelectorList, Selecto
     Rem, Ex, Ch, Vw, Vh, Vmin, Vmax, Cm, Mm, Pt, Pc, Pct, S, Ms, Deg, Rad, Turn, Fr, css}
 
 package cssFormatters:
-  export cataclysm.cssFormatters.{standard, compact}
+  export cataclysm.cssFormatters.{standardCssFormatter, compactCssFormatter}

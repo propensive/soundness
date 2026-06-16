@@ -38,7 +38,7 @@ import scintillate.SocketServer
 import logging.silentLogging
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
-import webserverErrorPages.minimal
+import webserverErrorPages.minimalErrorPage
 import threading.virtualThreading
 import probates.awaitProbate
 import printers.jsonMinimalPrinter

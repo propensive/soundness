@@ -52,7 +52,7 @@ import telekinesis.*
 import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
 import vacuous.*
-import webserverErrorPages.minimal
+import webserverErrorPages.minimalErrorPage
 
 // Benchmarks for the raw-TCP HTTP/1.1 server. The wire-codec benchmarks (parse,
 // serialize) and the full-pipeline benchmark all run entirely in memory — no

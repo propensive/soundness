@@ -37,7 +37,7 @@ import soundness.*
 import logging.silentLogging
 import strategies.throwUnsafely
 import charEncoders.utf8Encoder
-import webserverErrorPages.minimal
+import webserverErrorPages.minimalErrorPage
 import threading.virtualThreading
 import probates.awaitProbate
 
