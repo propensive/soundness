@@ -42,11 +42,11 @@ import kaleidoscope.*
 import prepositional.*
 import spectacular.*
 
-import abstractables.instantIsAbstractable
-import errorDiagnostics.stackTraces
+import abstractables.instantAbstractable
+import errorDiagnostics.stackTracesDiagnostics
 
 object Timestamp:
-  import calendars.gregorian
+  import calendars.gregorianCalendar
 
   given showable: (Clockface is Showable, Date is Showable) => Timestamp is Showable =
     timestamp => s"${timestamp.time.show}, ${timestamp.date.show}".tt

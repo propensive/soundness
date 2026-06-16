@@ -34,10 +34,10 @@ package guillotine
 
 import soundness.*
 
-import workingDirectories.default
-import abstractables.durationIsAbstractable
+import workingDirectories.defaultWorkingDirectory
+import abstractables.durationAbstractable
 import strategies.throwUnsafely
-import errorDiagnostics.empty
+import errorDiagnostics.emptyDiagnostics
 
 given silentExecEvent: ExecEvent is Loggable =
   new Loggable:

@@ -37,18 +37,18 @@ import aviation.*
 import contingency.*
 import prepositional.*
 
-package jsonEncodables:
-  given encodeInstantsAsUnixEpochMilliseconds: Instant is Json.Encodable =
+package encodables:
+  given instantJsonEncodable: Instant is Json.Encodable =
     Json.Encodable(Morphology.Whole): instant => Json(instant.long)
 
-  given encodeDurationsAsMilliseconds: Duration is Json.Encodable =
+  given durationJsonEncodable: Duration is Json.Encodable =
     Json.Encodable(Morphology.Whole): duration => Json((duration.value*1000).toLong)
 
-package jsonDecodables:
-  given decodeInstantsAsUnixEpochMilliseconds: Tactic[JsonError] => Instant is Json.Decodable =
+package decodables:
+  given instantJsonDecodable: Tactic[JsonError] => Instant is Json.Decodable =
     Json.Decodable(Morphology.Whole): json =>
-      import abstractables.instantIsAbstractable
+      import abstractables.instantAbstractable
       Instant(json.as[Long])
 
-  given decodeDurationsAsMilliseconds: Tactic[JsonError] => Duration is Json.Decodable =
+  given durationJsonDecodable: Tactic[JsonError] => Duration is Json.Decodable =
     Json.Decodable(Morphology.Whole): json => Duration(json.as[Long])

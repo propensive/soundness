@@ -43,7 +43,7 @@ import urticose.*
 import vacuous.*
 
 package queryParameters:
-  inline given arbitrary: [key <: Label, value] => key is Parametric to value = !!
+  inline given arbitraryQueryParameter: [key <: Label, value] => key is Parametric to value = !!
 
 package httpRedirections:
   given doNotFollowRedirects: Redirects.Disabled = Redirects.Disabled()

@@ -35,4 +35,4 @@ package soundness
 export cataclysm.{Styles, inlineStyle}
 
 package cssBindings:
-  export cataclysm.cssBindings.checked
+  export cataclysm.cssBindings.checkedBinding

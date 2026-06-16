@@ -49,10 +49,10 @@ import vacuous.*
 import zephyrine.*
 
 import Control.*
-import alphabets.base64.standard
-import charEncoders.utf8
+import alphabets.base64Standard
+import charEncoders.utf8Encoder
 import crypto.permitDeprecatedCrypto
-import hashProviders.javaStdlibHashing
+import providers.javaStdlibProvider
 
 object Message:
   // A `Message` serialises to a complete (unmasked) WebSocket frame, so it can

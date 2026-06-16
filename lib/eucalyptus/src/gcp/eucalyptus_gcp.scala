@@ -39,12 +39,12 @@ import jacinta.*
 import prepositional.*
 import spectacular.*
 
-import jsonPrinters.minimal
+import printers.jsonMinimalPrinter
 
 object EucalyptusGcp
 
 package logFormats:
-  given googleCloudPlatform: Message is Inscribable in Text = (event, level, timestamp) =>
+  given googleCloudPlatformLogFormat: Message is Inscribable in Text = (event, level, timestamp) =>
     case class GcpLog(severity: Text, message: Text)
 
     val severity = level match

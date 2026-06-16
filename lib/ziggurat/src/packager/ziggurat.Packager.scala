@@ -49,7 +49,7 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
-import errorDiagnostics.empty
+import errorDiagnostics.emptyDiagnostics
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
@@ -57,9 +57,9 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
-import gastronomy.*, hashProviders.javaStdlibHashing
-import internetAccess.enabled
-import monotonous.*, alphabets.hex.lowerCase
+import gastronomy.*, providers.javaStdlibProvider
+import internetAccess.online
+import monotonous.*, alphabets.hexLowerCase
 
 // Turns a `Packaging` configuration into a distributable. Each per-platform binary is the
 // application JAR appended to a bare reusable runner stub, obtained from `RunnerSource` —

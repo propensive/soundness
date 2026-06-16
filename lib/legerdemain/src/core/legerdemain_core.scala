@@ -40,7 +40,7 @@ import honeycomb.*
 import prepositional.*
 import vacuous.*
 
-import attributives.textAttributes
+import attributives.textAttributive
 import doms.html.whatwg, whatwg.*
 
 def elicit[value: Formulaic]
@@ -62,7 +62,7 @@ extension [formulaic: {Formulaic, Encodable in Query}](value: formulaic)
 
 
 package formulations:
-  given default: Formulation:
+  given defaultFormulation: Formulation:
     def form(content: Seq[Html of Flow], submit: Optional[Text]): Html of Flow =
       Form
         ( action = t".", method = t"post" )

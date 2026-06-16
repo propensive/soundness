@@ -214,8 +214,8 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
       . assert(_ == true)
 
     suite(m"End-to-end over an in-memory Duplex (the whole stack)"):
-      import threading.virtual
-      import probates.cancel
+      import threading.virtualThreading
+      import probates.cancelProbate
 
       // An in-memory `Duplex` pair: bytes written to one side surface on the other's
       // stream. Backed by `Spool`s so reads block until data arrives, like a socket.
@@ -293,7 +293,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           runServer(serverSide)
 
           import Http2.Client.http2
-          import logging.silent
+          import logging.silentLogging
 
           // A `Connectable` whose connect() hands back the client side of the pair —
           // lets the real `HttpClient` given (which calls `target.connect()`) run

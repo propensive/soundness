@@ -35,9 +35,9 @@ package anticipation
 import prepositional.*
 
 package abstractables:
-  given durationIsAbstractable: Long is Abstractable across Durations to Long = identity(_)
-  given instantIsAbstractable: Long is Abstractable across Instants to Long = identity(_)
+  given durationAbstractable: Long is Abstractable across Durations to Long = identity(_)
+  given instantAbstractable: Long is Abstractable across Instants to Long = identity(_)
 
 package instantiables:
-  given durationIsInstantiable: Long is Instantiable across Durations from Long = identity(_)
-  given instantIsInstantiable: Long is Instantiable across Instants from Long = identity(_)
+  given durationInstantiable: Long is Instantiable across Durations from Long = identity(_)
+  given instantInstantiable: Long is Instantiable across Instants from Long = identity(_)

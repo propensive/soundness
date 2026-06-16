@@ -44,7 +44,7 @@ import symbolism.*
 
 
 package logFormats:
-  given teleypeable: (palette: LogPalette) => Level is Teletypeable = level =>
+  given teletypeableLogFormat: (palette: LogPalette) => Level is Teletypeable = level =>
     val color = level match
       case Level.Fine => palette.subdued
       case Level.Info => palette.informative
@@ -55,7 +55,7 @@ package logFormats:
 
   private val indent = e" "*46
 
-  given ansiStandard: (palette: LogPalette) => Message is Inscribable in Teletype =
+  given ansiStandardLogFormat: (palette: LogPalette) => Message is Inscribable in Teletype =
     (event, level, timestamp) =>
       try event.teletype.cut(t"\n").flatMap(_.slices(76)) match
         case Nil => e""
@@ -65,7 +65,7 @@ package logFormats:
           val color = palette.subdued
           val first = e"$color($date) $level > $head"
 
-          (first :: tail.map(indent+_)).join(e"\n").render(termcapDefinitions.xterm256)
+          (first :: tail.map(indent+_)).join(e"\n").render(termcapDefinitions.xterm256Termcap)
           (first :: tail.map(indent+_)).join(e"\n")
       catch case error: Throwable => e"${error.stackTrace.show}"
 

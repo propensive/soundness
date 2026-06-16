@@ -49,9 +49,9 @@ import iridescence.*
 import spectacular.*
 import vacuous.*
 
-import columnAttenuation.ignore
-import tableStyles.minimal
-import textMetrics.uniform
+import columnAttenuation.ignoreAttenuation
+import tableStyles.minimalTableStyle
+import textMetrics.uniformMetric
 
 object Bytecode:
   given teletypeable: (palette: BytecodePalette) => Bytecode is Teletypeable = bytecode =>

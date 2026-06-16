@@ -42,10 +42,12 @@ export
       writeTo, Zlib }
 
 package stdios:
-  export turbulence.stdios.{mute, system, virtualMachine}
+  export turbulence.stdios.{muteStdio, systemStdio, virtualMachineStdio}
 
 package lineSeparation:
   export
     turbulence.lineSeparation
-    . { adaptiveLinefeed, carriageReturn, carriageReturnLinefeed, linefeed, strictCarriageReturn,
-        strictLinefeeds, virtualMachine }
+    . { adaptiveLinefeedLineSeparation, carriageReturnLineSeparation,
+        carriageReturnLinefeedLineSeparation, linefeedLineSeparation,
+        strictCarriageReturnLineSeparation, strictLinefeedsLineSeparation,
+        virtualMachineLineSeparation }

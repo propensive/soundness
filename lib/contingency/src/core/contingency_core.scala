@@ -58,14 +58,14 @@ package strategies:
 
 
   given fatalErrors: [exception <: Exception: Fatal] => Tactic[exception]:
-    given diagnostics: Diagnostics = errorDiagnostics.stackTraces
+    given diagnostics: Diagnostics = errorDiagnostics.stackTracesDiagnostics
 
     def record(error: Diagnostics ?=> exception): Unit = exception.status(error).terminate()
     def abort(error: Diagnostics ?=> exception): Nothing = exception.status(error).terminate()
     def certify(): Unit = ()
 
   given uncheckedErrors: [error <: Exception] => (erased error is Unchecked) => Tactic[error]:
-    given diagnostics: Diagnostics = errorDiagnostics.stackTraces
+    given diagnostics: Diagnostics = errorDiagnostics.stackTracesDiagnostics
     given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
 
     def record(error: Diagnostics ?=> error): Unit = throw error

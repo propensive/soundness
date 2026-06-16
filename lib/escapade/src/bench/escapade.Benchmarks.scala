@@ -34,18 +34,18 @@ package escapade
 
 import scala.quoted.*
 
-import ambience.*, environments.java, systems.java
+import ambience.*, environments.javaEnvironment, systems.javaSystem
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import fulminate.*
 import gossamer.*
-import hellenism.*, classloaders.threadContext
+import hellenism.*, classloaders.threadContextClassloader
 import probably.*
 import proscenium.*
 import quantitative.*
 import sedentary.*
 import symbolism.*
-import temporaryDirectories.system
+import temporaryDirectories.systemTemporaryDirectory
 import vacuous.*
 
 object Benchmarks extends Suite(m"Escapade benchmarks"):
@@ -110,10 +110,10 @@ object Benchmarks extends Suite(m"Escapade benchmarks"):
     + e" ${Fg(Chroma(0x55aaff))}(fox) jumps over the ${Underline}(lazy ${Strike}(dog))"
 
   def renderTrueColor(t: Teletype): Text =
-    t.render(termcapDefinitions.xtermTrueColor)
+    t.render(termcapDefinitions.xtermTrueColorTermcap)
 
   def renderXterm256(t: Teletype): Text =
-    t.render(termcapDefinitions.xterm256)
+    t.render(termcapDefinitions.xterm256Termcap)
 
   def render(input: Teletype): Text = renderTrueColor(input)
 

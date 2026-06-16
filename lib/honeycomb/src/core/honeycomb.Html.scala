@@ -137,7 +137,7 @@ object Html extends Tag.Container
   // throw, since the caller hasn't supplied a way to handle them.
   private def lenientTactic: Tactic[ParseError] = new Tactic[ParseError]:
     given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
-    def diagnostics: Diagnostics = errorDiagnostics.stackTraces
+    def diagnostics: Diagnostics = errorDiagnostics.stackTracesDiagnostics
     def record(error: Diagnostics ?=> ParseError): Unit = ()
 
     def abort(error: Diagnostics ?=> ParseError): Nothing =
@@ -475,7 +475,7 @@ object Html extends Tag.Container
   // Bringing a `Recovery.Permissive` into scope selects the permissive HTML
   // reader, which recovers from a defined subset of malformed inputs instead
   // of aborting and does not require a `Tactic[ParseError]`. To enable it,
-  // `import honeycomb.recoveries.permissive` (defined in honeycomb_core.scala).
+  // `import honeycomb.recoveries.permissiveRecovery` (defined in honeycomb_core.scala).
   object Recovery:
     class Permissive
 

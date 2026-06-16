@@ -48,9 +48,9 @@ import turbulence.*
 import typonym.*
 import vacuous.*
 
-import charDecoders.utf8
-import classloaders.threadContext
-import textSanitizers.skip
+import charDecoders.utf8Decoder
+import classloaders.threadContextClassloader
+import textSanitizers.skipSanitizer
 
 object Whatwg:
   // Attribute types

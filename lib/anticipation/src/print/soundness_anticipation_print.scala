@@ -35,4 +35,4 @@ package soundness
 export anticipation.{ColorDepth, Printable, Termcap}
 
 package termcapDefinitions:
-  export anticipation.termcapDefinitions.{basic, xterm256, xtermTrueColor}
+  export anticipation.termcapDefinitions.{basicTermcap, xterm256Termcap, xtermTrueColorTermcap}

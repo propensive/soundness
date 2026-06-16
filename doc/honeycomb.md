@@ -375,7 +375,7 @@ those values, but most other types are not defined. For now, the best solution
 is to make `Text` values attribtive for _all_ attributes. This can be achieved
 with one import:
 ```scala
-import attributives.textAttributes
+import attributives.textAttributive
 ```
 
 #### CSS `class` attributes
@@ -446,9 +446,9 @@ Any `Document[Html]` may be converted to a stream with, `doc.stream[Text]` (or
 `doc.stream[Bytes]`), in a concurrent environment. This requires a few imports
 to set up:
 ```scala
-import probates.cancel
-import supervisors.global
-import threading.virtual
+import probates.cancelProbate
+import supervisors.globalSupervisor
+import threading.virtualThreading
 
 doc.stream[Text]
 ```

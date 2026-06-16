@@ -39,15 +39,15 @@ import galilei.*
 import gossamer.*
 import hellenism.*
 import hieroglyph.*
-import monotonous.*, alphabets.base64.standard
+import monotonous.*, alphabets.base64Standard
 import prepositional.*
 import serpentine.*
 import turbulence.*
 import vacuous.*
 
-import charDecoders.utf8
-import charEncoders.utf8
-import classloaders.threadContext
+import charDecoders.utf8Decoder
+import charEncoders.utf8Encoder
+import classloaders.threadContextClassloader
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
@@ -55,7 +55,7 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
-import textSanitizers.skip
+import textSanitizers.skipSanitizer
 
 object Xeq:
   private val ChunkSize: Int = 8000
@@ -100,7 +100,7 @@ object Xeq:
       builder.add(t"-----END CERTIFICATE-----\n")
 
     builder.add(t"#>\n")
-    builder.text.data(using charEncoders.utf8)
+    builder.text.data(using charEncoders.utf8Encoder)
 
 
   def downloader(url: Text, hash: Text): Data =
@@ -122,7 +122,7 @@ object Xeq:
     builder.add(hash)
     builder.add('\n')
     builder.add(t"#>\n")
-    builder.text.data(using charEncoders.utf8)
+    builder.text.data(using charEncoders.utf8Encoder)
 
 
   // The polyglot online launcher. Unlike `installer` (which embeds every bare stub), this
@@ -157,7 +157,7 @@ object Xeq:
     builder.add(rows.join(t","))
     builder.add('\n')
     builder.add(t"#>\n")
-    builder.text.data(using charEncoders.utf8)
+    builder.text.data(using charEncoders.utf8Encoder)
 
 
   private def write(output: Path on Linux, data: Data): Unit = unsafely:

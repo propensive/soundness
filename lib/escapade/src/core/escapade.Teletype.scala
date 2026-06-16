@@ -261,7 +261,7 @@ case class Teletype
       newStyles(runs) = styles(n)
       (IArray.unsafeFromArray(newStyles), IArray.unsafeFromArray(newBoundaries))
 
-  def explicit: Text = render(termcapDefinitions.xtermTrueColor).bind: char =>
+  def explicit: Text = render(termcapDefinitions.xtermTrueColorTermcap).bind: char =>
     if char.toInt == 27 then t"\\e" else char.show
 
   @targetName("add")

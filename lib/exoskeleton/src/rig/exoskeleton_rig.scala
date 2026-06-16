@@ -34,7 +34,7 @@ package exoskeleton
 
 import soundness.*
 
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import interfaces.paths.pathOnLinux
 
 extension (shell: Shell)
@@ -62,7 +62,7 @@ extension (shell: Shell)
           case Shell.Powershell => t"pwsh"
 
         locally:
-          import logging.silent
+          import logging.silentLogging
 
           if sh"which $shellBinary".exec[Exit]() != Exit.Ok
           then abort(TmuxError(TmuxError.Reason.ShellNotInstalled(shellBinary)))
@@ -129,7 +129,7 @@ extension (shell: Shell)
             import filesystemOptions.createNonexistent.enabled
             import filesystemOptions.createNonexistentParents.disabled
             import filesystemOptions.dereferenceSymlinks.enabled
-            import charEncoders.utf8
+            import charEncoders.utf8Encoder
 
             val file: Path on Linux = unsafely(temporaryDirectory/t"exoskeleton-${Uuid()}.ps1")
             file.open(psScript.tt.writeTo(_))

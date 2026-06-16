@@ -35,10 +35,10 @@ package soundness
 export plutocrat.{Currency, CurrencyStyle, IsinError, Luhn, Money, Price}
 
 package currencyStyles:
-  export plutocrat.currencyStyles.{generic, local}
+  export plutocrat.currencyStyles.{genericCurrencyStyle, localCurrencyStyle}
 
 package currencies:
   export
     plutocrat.currencies
-    . { Aed, Aud, Brl, Cad, Chf, Clp, Cny, Cop, Czk, Dkk, Eur, Gbp, Hkd, Huf, Idr, Ils, Inr, Jpy,
-        Krw, Mxn, Myr, Nok, Nzd, Pen, Php, Pln, Ron, Rub, Sar, Sek, Sgd, Thb, Try, Twd, Usd, Zar }
+    . { aed, aud, brl, cad, chf, clp, cny, cop, czk, dkk, eur, gbp, hkd, huf, idr, ils, inr, jpy,
+        krw, mxn, myr, nok, nzd, pen, php, pln, ron, rub, sar, sek, sgd, thb, `try`, twd, usd, zar }

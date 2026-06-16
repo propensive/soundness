@@ -38,7 +38,7 @@ import vacuous.*
 // A pluggable cryptographic provider: it supplies the raw algorithmic
 // implementations (the JDK's JCE, BouncyCastle, OpenSSL, …) that the typed
 // enigmatic API delegates to. Pick one with an explicit import, e.g.
-// `import cryptoProviders.javaStdlibCrypto`.
+// `import providers.javaStdlibProvider`.
 //
 // Every provider must implement the mandatory baseline below — the modern,
 // universally-supported primitives. Legacy or provider-specific algorithms (DES,
@@ -80,6 +80,12 @@ object Crypto:
 
   trait Random:
     def bytes(size: Int): Data
+
+  // The JDK provider supplies cryptography whenever it has been selected with
+  // `import providers.javaStdlibProvider`. The marker lives in gastronomy, so the
+  // single provider import enables both hashing (in gastronomy) and cryptography.
+  given javaStdlibCrypto(using gastronomy.Provider.JavaStdlib.type): JavaStdlibCrypto.type =
+    JavaStdlibCrypto
 
 trait Crypto:
   def random: Crypto.Random

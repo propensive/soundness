@@ -39,8 +39,8 @@ import anticipation.*
 export fulminate.internal.Diagnostics
 
 package errorDiagnostics:
-  given empty: Diagnostics = Diagnostics.omit
-  given stackTraces: Diagnostics = Diagnostics.capture
+  given emptyDiagnostics: Diagnostics = Diagnostics.omit
+  given stackTracesDiagnostics: Diagnostics = Diagnostics.capture
 
 def panic(message: Message): Nothing = throw Panic(message)
 

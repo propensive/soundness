@@ -40,7 +40,7 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 import denominative.*
-import parasite.*, threading.platform
+import parasite.*, threading.platformThreading
 import rudiments.*
 import spectacular.*
 import turbulence.*
@@ -52,7 +52,7 @@ import vacuous.*
 // watched.
 object NativeWatcher extends Watcher:
   private case class WatchService(watchService: jnf.WatchService, pollLoop: Loop):
-    import probates.await
+    import probates.awaitProbate
 
     def stop(): Unit =
       pollLoop.stop()

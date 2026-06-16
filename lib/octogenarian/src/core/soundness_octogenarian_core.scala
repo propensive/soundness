@@ -40,4 +40,4 @@ export
       Worktree }
 
 package gitCommands:
-  export octogenarian.gitCommands.environmentDefault
+  export octogenarian.gitCommands.environmentDefaultGitCommand

@@ -34,7 +34,7 @@ package gastronomy
 
 // A pure-Scala hashing provider for algorithms with no JDK implementation. Today
 // that is just BLAKE3 (implemented in `Blake3`); other native-Scala hashes would
-// be added here. Select it with `import hashProviders.soundnessHashing`.
+// be added here. Select it with `import providers.soundnessProvider`.
 object SoundnessHashing extends Hashing:
   def blake3: Hashing.Function = new Hashing.Function:
     def digestion(): Digestion = Blake3.digestion()

@@ -33,8 +33,8 @@
 package punctuation
 
 import anticipation.*
-import hellenism.*, classloaders.threadContext
-import hieroglyph.*, charDecoders.utf8, textSanitizers.skip
+import hellenism.*, classloaders.threadContextClassloader
+import hieroglyph.*, charDecoders.utf8Decoder, textSanitizers.skipSanitizer
 import turbulence.*
 
 // HTML5 named character references, loaded once from the entity TSV resources

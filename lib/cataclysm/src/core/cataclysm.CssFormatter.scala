@@ -35,7 +35,7 @@ package cataclysm
 // Controls how a `Css` tree is serialized. `newlines` puts each rule and
 // declaration on its own indented line; `spaces` adds the cosmetic spaces (after
 // `:` and before `{`) that aid legibility. The two bundled formatters are
-// `cssFormatters.standard` (both on) and `cssFormatters.compact` (both off).
+// `cssFormatters.standardCssFormatter` (both on) and `cssFormatters.compactCssFormatter` (both off).
 object CssFormatter:
   def apply(newlines: Boolean, spaces: Boolean): CssFormatter = Basic(newlines, spaces)
   private case class Basic(newlines: Boolean, spaces: Boolean) extends CssFormatter

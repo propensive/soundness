@@ -40,4 +40,4 @@ export
       Tcp, tcp, TcpPort, Udp, udp, UdpPort, via }
 
 package internetAccess:
-  export urticose.internetAccess.{disabled, enabled}
+  export urticose.internetAccess.{offline, online}

@@ -18,8 +18,8 @@ package jacinta
 
 import soundness.*
 
-import charEncoders.utf8
-import errorDiagnostics.stackTraces
+import charEncoders.utf8Encoder
+import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 
 object RecordsTests extends Suite(m"Jacinta records tests"):

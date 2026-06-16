@@ -2,21 +2,21 @@ package dev.soundness
 
 import soundness.*
 
-import attributives.textAttributes
-import charDecoders.utf8
-import charEncoders.utf8
-import classloaders.scala
+import attributives.textAttributive
+import charDecoders.utf8Decoder
+import charEncoders.utf8Encoder
+import classloaders.scalaClassloader
 import codicils.cancel
-import environments.java
-import errorDiagnostics.stackTraces
-import httpServers.stdlibPublic
-import logging.silent
-import stdios.virtualMachine
+import environments.javaEnvironment
+import errorDiagnostics.stackTracesDiagnostics
+import httpServers.stdlibPublicHttpServer
+import logging.silentLogging
+import stdios.virtualMachineStdio
 import stylesheets.uncheckedClasses
-import supervisors.global
-import termcaps.environment
-import threading.platform
-import webserverErrorPages.stackTraces
+import supervisors.globalSupervisor
+import termcaps.environmentTermcap
+import threading.platformThreading
+import webserverErrorPages.stackTracesErrorPage
 
 import doms.html.whatwg
 import doms.html.whatwg.{Em as WhatwgEm, Map as _, *}

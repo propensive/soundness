@@ -45,14 +45,14 @@ inline def dark(using luminosity: Brightness): Boolean = luminosity == Brightnes
 inline def light(using luminosity: Brightness): Boolean = luminosity != Brightness.Dark
 
 package themes:
-  given solarized: Brightness => Theme = new Theme with Solarized:
+  given solarizedTheme: Brightness => Theme = new Theme with Solarized:
     val luminosity = summon[Brightness]
     val background = if dark then base03 else base3
     val foreground = if dark then base3 else base03
 
 package luminosity:
-  given dark: Brightness = Brightness.Dark
-  given light: Brightness = Brightness.Light
+  given darkBrightness: Brightness = Brightness.Dark
+  given lightBrightness: Brightness = Brightness.Light
 
 package colorimetry:
   given incandescentTungsten: Colorimetry = Colorimetry(109.850, 100, 35.585, 111.144, 100, 35.2)

@@ -42,7 +42,7 @@ import telekinesis.*
 import turbulence.*
 import xylophone.*
 
-import errorDiagnostics.empty
+import errorDiagnostics.emptyDiagnostics
 import zephyrine.ParseError
 
 // Interprets an `Http.Response` as a value of `Self`, reading the body in the wire

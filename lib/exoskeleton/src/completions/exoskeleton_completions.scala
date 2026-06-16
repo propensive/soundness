@@ -224,8 +224,8 @@ package executives:
             case t"install" =>
               given Entrypoint = entrypoint
               given WorkingDirectory = workingDirectory
-              import errorDiagnostics.stackTraces
-              import logging.silent
+              import errorDiagnostics.stackTracesDiagnostics
+              import logging.silentLogging
               Out.println(Completions.ensure(force = true).join(t"\n"))
               Exit.Ok
 

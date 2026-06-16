@@ -42,7 +42,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // Capture everything a surface writes into an in-memory buffer.
       def captured(block: Stdio ?=> Unit): Text =
         val bytes = ji.ByteArrayOutputStream()
-        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic)
+        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basicTermcap)
         block
         String(bytes.toByteArray.nn, "UTF-8").tt
 
@@ -70,7 +70,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // A standalone extent over a muted parent; mutation tests never flush, so
       // the parent surface is unused.
       def extent(width: Int, height: Int): FlowExtent =
-        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         FlowExtent(TerminalCanvas(width, height), Rect(0, 0, width, height))
 
       test(m"text wraps at the rectangle's width"):
@@ -119,7 +119,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"flush paints the grid onto the parent at the rect's offset"):
         val bytes = ji.ByteArrayOutputStream()
-        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic)
+        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basicTermcap)
         val flow = FlowExtent(TerminalCanvas(80, 24), Rect(2, 1, 3, 1))
         flow.put(t"xy")
         flow.flush()
@@ -179,7 +179,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
     suite(m"layout / panel DSL"):
       test(m"side-by-side panels paint at their own offsets, no bleed"):
         val bytes = ji.ByteArrayOutputStream()
-        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic)
+        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basicTermcap)
 
         paint(TerminalCanvas(4, 1), file(panel()(Out.print(t"AA")), panel()(Out.print(t"BB"))))
 
@@ -188,7 +188,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
       test(m"a panel's output wraps and scrolls within its own rectangle, no bleed"):
         val bytes = ji.ByteArrayOutputStream()
-        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic)
+        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basicTermcap)
 
         // "HELLO" in a 2x1 panel wraps and scrolls until only "O" remains; the
         // sibling panel's "X" is unaffected, so neither bleeds past column 2.
@@ -260,7 +260,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // first editor, TAB to the second, type into it, then exit, and read back
       // the composed screen.
       test(m"TAB moves focus so typing lands in the right panel"):
-        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val root = FlowExtent(TerminalCanvas(10, 4), Rect(0, 0, 10, 4))
 
         val events = List
@@ -277,7 +277,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // its panel's minimum height; the solver re-tiles and the bottom editor is
       // pushed from row 2 down to row 3.
       test(m"a growing editor re-tiles and pushes its sibling down"):
-        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val root = FlowExtent(TerminalCanvas(10, 4), Rect(0, 0, 10, 4))
         val events = List.fill(21)(Keypress.CharKey('a')) ++ List(Keypress.Escape)
         Form(root, Mode.Fullscreen, rank(editor(), editor())).run(events.iterator)
@@ -289,7 +289,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // the rows freed by shrinking are cleared. The custom iterator shrinks the
       // root just before yielding the event, mimicking the live size update.
       test(m"a WindowSize event re-tiles to the new terminal size"):
-        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val root = ResizableRoot(10, 4)
 
         val resize = new Iterator[TerminalEvent]:
@@ -308,11 +308,11 @@ object Tests extends Suite(m"Ultimatum Tests"):
     suite(m"InlineRoot present (inline mode)"):
       def capturing(): (ji.ByteArrayOutputStream, Stdio) =
         val bytes = ji.ByteArrayOutputStream()
-        (bytes, Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic))
+        (bytes, Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basicTermcap))
 
       test(m"a styled cell emits its colour as SGR"):
         val bytes = ji.ByteArrayOutputStream()
-        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.xtermTrueColor)
+        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.xtermTrueColorTermcap)
         val root = InlineRoot(3, 4)
         root.reframe(3, 1)
         root.move(Prim, Prim)
@@ -441,7 +441,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // Drive a running form, append a pane mid-loop (the synthetic iterator
       // yields a Redraw to wake it), and confirm the layout re-tiles to include it.
       test(m"a form picks up a pane appended while it runs"):
-        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val root = FlowExtent(TerminalCanvas(10, 2), Rect(0, 0, 10, 2))
         val panes = Panes(panel()(Out.print(t"A")))
 
@@ -460,12 +460,12 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
     suite(m"Focus indication"):
       def grid(): FlowExtent =
-        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         FlowExtent(TerminalCanvas(12, 2), Rect(0, 0, 12, 2))
 
       def captured(block: Stdio ?=> Unit): Text =
         val bytes = ji.ByteArrayOutputStream()
-        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basic)
+        given Stdio = Stdio(ji.PrintStream(bytes, true), null, null, termcapDefinitions.basicTermcap)
         block
         String(bytes.toByteArray.nn, "UTF-8").tt
 
@@ -494,7 +494,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
       // Tabbing focus away from the menu must repaint it, so its marker updates
       // from `>` to `·` (a regression: only the panel gaining focus was redrawn).
       test(m"a panel that loses focus is repainted so its marker updates"):
-        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val root = FlowExtent(TerminalCanvas(12, 3), Rect(0, 0, 12, 3))
         val pane = rank(menu(List(t"alpha", t"beta"), t"alpha"), editor())
         Form(root, Mode.Fullscreen, pane).run(List(Keypress.Tab, Keypress.Escape).iterator)
@@ -503,7 +503,7 @@ object Tests extends Suite(m"Ultimatum Tests"):
 
     suite(m"Borders"):
       def render(width: Int, height: Int)(pane: Pane): Text =
-        given Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+        given Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
         val root = FlowExtent(TerminalCanvas(width, height), Rect(0, 0, width, height))
         paint(root, pane)
         root.render

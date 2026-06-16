@@ -40,10 +40,10 @@ export
       UnixSignal, WindowsSignal }
 
 package keyboards:
-  export profanity.keyboards.{numeric, raw, standard}
+  export profanity.keyboards.{numericKeyboard, rawKeyboard, standardKeyboard}
 
 package terminalFeatures:
   export
     profanity.terminalFeatures
-    . { bracketedPaste, focusReporting, mouseTracking, alternateScreen, kittyKeyboard,
-        backgroundColor, terminalSize }
+    . { bracketedPasteFeature, focusReportingFeature, mouseTrackingFeature, alternateScreenFeature,
+        kittyKeyboardFeature, backgroundColorFeature, terminalSizeFeature }

@@ -50,8 +50,8 @@ import symbolism.*
 import vacuous.*
 
 import LineSeparation.*
-import abstractables.instantIsAbstractable
-import probates.await
+import abstractables.instantAbstractable
+import probates.awaitProbate
 
 inline def more[value](using value: value aka "more"): value = value()
 
@@ -73,16 +73,16 @@ extension [value: Streamable by Text](value: value)
     result.load(value.stream[Text])
 
 package stdios:
-  given mute: Stdio = Stdio(null, null, null, termcapDefinitions.basic)
+  given muteStdio: Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
 
-  given system: (termcap: Termcap) => Stdio =
+  given systemStdio: (termcap: Termcap) => Stdio =
     Stdio
       ( jl.System.out.nn,
         jl.System.err.nn,
         jl.System.in.nn,
         termcap )
 
-  given virtualMachine: (termcap: Termcap) => Stdio =
+  given virtualMachineStdio: (termcap: Termcap) => Stdio =
     Stdio
       ( ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.out)),
         ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.err)),
@@ -193,26 +193,26 @@ extension [element](stream: Stream[element])
     out.stream
 
 package lineSeparation:
-  given carriageReturn: LineSeparation(NewlineSeq.Cr, Action.Nl, Action.Skip, Action.Nl, Action.Nl)
+  given carriageReturnLineSeparation: LineSeparation(NewlineSeq.Cr, Action.Nl, Action.Skip, Action.Nl, Action.Nl)
 
-  given strictCarriageReturn
+  given strictCarriageReturnLineSeparation
   :   LineSeparation(NewlineSeq.Cr, Action.Nl, Action.Lf, Action.NlLf, Action.LfNl)
 
-  given linefeed: LineSeparation(NewlineSeq.Lf, Action.Skip, Action.Nl, Action.Nl, Action.Nl)
+  given linefeedLineSeparation: LineSeparation(NewlineSeq.Lf, Action.Skip, Action.Nl, Action.Nl, Action.Nl)
 
-  given strictLinefeeds
+  given strictLinefeedsLineSeparation
   :   LineSeparation(NewlineSeq.Lf, Action.Nl, Action.Lf, Action.NlLf, Action.LfNl)
 
-  given carriageReturnLinefeed
+  given carriageReturnLinefeedLineSeparation
   :   LineSeparation(NewlineSeq.CrLf, Action.Skip, Action.Lf, Action.Nl, Action.LfNl)
 
-  given adaptiveLinefeed: LineSeparation(NewlineSeq.Lf, Action.Nl, Action.Nl, Action.Nl, Action.Nl)
+  given adaptiveLinefeedLineSeparation: LineSeparation(NewlineSeq.Lf, Action.Nl, Action.Nl, Action.Nl, Action.Nl)
 
-  given virtualMachine: LineSeparation = jl.System.lineSeparator.nn match
-    case "\r\n"    => carriageReturnLinefeed
-    case "\r"      => carriageReturn
-    case "\n"      => linefeed
-    case _: String => adaptiveLinefeed
+  given virtualMachineLineSeparation: LineSeparation = jl.System.lineSeparator.nn match
+    case "\r\n"    => carriageReturnLinefeedLineSeparation
+    case "\r"      => carriageReturnLineSeparation
+    case "\n"      => linefeedLineSeparation
+    case _: String => adaptiveLinefeedLineSeparation
 
 extension (obj: Stream.type)
   def multiplex[element](streams: Stream[element]*)(using Monitor): Stream[element] =

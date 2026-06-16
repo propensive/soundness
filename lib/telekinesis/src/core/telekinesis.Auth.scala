@@ -36,14 +36,14 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8
+import hieroglyph.*, charEncoders.utf8Encoder
 import kaleidoscope.*
 import monotonous.*
 import prepositional.*
 import spectacular.*
 
 object Auth:
-  import alphabets.base64.standard
+  import alphabets.base64Standard
 
   given showable: Auth is Showable =
     case Basic(username, password) => t"Basic ${t"$username:$password".data.serialize[Base64]}"

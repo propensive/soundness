@@ -39,7 +39,7 @@ import contingency.*
 import distillate.*
 import fulminate.*
 import galilei.*
-import hieroglyph.*, charEncoders.ascii
+import hieroglyph.*, charEncoders.asciiEncoder
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
 import prepositional.*
 import rudiments.*
@@ -159,7 +159,7 @@ private[bitumen] object TarFilesystem:
     ( using Tactic[TarError] )
   :   Path on plane =
 
-    import errorDiagnostics.empty
+    import errorDiagnostics.emptyDiagnostics
     val rel = relativeFromPath(base.encode.s, text)
     base + rel
 
@@ -167,7 +167,7 @@ private[bitumen] object TarFilesystem:
     ( using Tactic[TarError] )
   :   Relative on Posix =
 
-    import errorDiagnostics.empty
+    import errorDiagnostics.emptyDiagnostics
     val prefix = if rootText.endsWith("/") then rootText else rootText+"/"
 
     val relText: Text =
@@ -180,7 +180,7 @@ private[bitumen] object TarFilesystem:
     . mitigate(relText.decode[Relative on Posix])
 
   private def decodePath(text: Text)(using Tactic[TarError]): TarRef =
-    import errorDiagnostics.empty
+    import errorDiagnostics.emptyDiagnostics
 
     whereas:
       case PathError(_, _) => TarError(TarError.Reason.BadName(text))

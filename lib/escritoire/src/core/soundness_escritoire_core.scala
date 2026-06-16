@@ -39,10 +39,11 @@ export
       Tabulable, Tabular, Tabulation, tabulation, TextAlignment, VerticalAlignment }
 
 package columnAttenuation:
-  export escritoire.columnAttenuation.{fail, ignore}
+  export escritoire.columnAttenuation.{failAttenuation, ignoreAttenuation}
 
 package tableStyles:
-  export escritoire.tableStyles.{default, horizontal, midOnly, minimal, thinRounded, vertical}
+  export escritoire.tableStyles.{defaultTableStyle, horizontalTableStyle, midOnlyTableStyle,
+      minimalTableStyle, thinRoundedTableStyle, verticalTableStyle}
 
 package columnar:
   export escritoire.columnar.{Collapsible, Fixed, Paragraph, Shortened}

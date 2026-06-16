@@ -33,7 +33,7 @@
 package soundness
 
 package postables:
-  export stratiform.postables.telIsPostable
+  export stratiform.postables.telPostable
 
 package servables:
-  export stratiform.servables.telIsServable
+  export stratiform.servables.telServable

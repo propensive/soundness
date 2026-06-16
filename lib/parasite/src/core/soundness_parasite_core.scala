@@ -41,16 +41,16 @@ export
       Tenacity, Threading, Timeout, Transgression, VirtualSupervisor, Worker }
 
 package threading:
-  export parasite.threading.{adaptive, platform, virtual}
+  export parasite.threading.{adaptiveThreading, platformThreading, virtualThreading}
 
 package probates:
-  export parasite.probates.{await, cancel, fail, panic}
+  export parasite.probates.{awaitProbate, cancelProbate, failProbate, panicProbate}
 
 package supervisors:
-  export parasite.supervisors.global
+  export parasite.supervisors.globalSupervisor
 
 package retryTenacities:
   export
     parasite.retryTenacities
-    . { exponentialFiveTimes, exponentialForever, exponentialTenTimes, fixedNoDelayFiveTimes,
-        fixedNoDelayForever, fixedNoDelayTenTimes }
+    . { exponentialFiveTimesTenacity, exponentialForeverTenacity, exponentialTenTimesTenacity,
+        fixedNoDelayFiveTimesTenacity, fixedNoDelayForeverTenacity, fixedNoDelayTenTimesTenacity }

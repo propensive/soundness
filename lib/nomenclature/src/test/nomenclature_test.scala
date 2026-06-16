@@ -35,8 +35,8 @@ package nomenclature
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
-import classloaders.threadContext
+import errorDiagnostics.stackTracesDiagnostics
+import classloaders.threadContextClassloader
 
 sealed trait Id
 sealed trait Id2

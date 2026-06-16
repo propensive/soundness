@@ -38,7 +38,7 @@ import hypotenuse.*
 
 case class Gaussian(mean: Double = 0.0, std: Double = 1.0) extends Distribution:
   def transform(random: Random): Double =
-    val u0 = randomDistributions.uniformUnitInterval.transform(random)
-    val u1 = randomDistributions.uniformUnitInterval.transform(random)
+    val u0 = randomDistributions.uniformUnitIntervalDistribution.transform(random)
+    val u1 = randomDistributions.uniformUnitIntervalDistribution.transform(random)
 
     ((ln(u0)*(-2.0)).sqrt*cos(2*π*u1)*std + mean).double

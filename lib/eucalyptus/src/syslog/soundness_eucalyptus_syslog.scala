@@ -35,4 +35,4 @@ package soundness
 export eucalyptus.Syslog
 
 package logging:
-  export eucalyptus.logging.syslog
+  export eucalyptus.logging.syslogLogging

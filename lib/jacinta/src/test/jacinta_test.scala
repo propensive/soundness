@@ -34,13 +34,13 @@ package jacinta
 
 import soundness.*
 
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 import strategies.throwUnsafely
-import jsonPrinters.minimal
+import printers.jsonMinimalPrinter
 
-import jsonDiscriminables.discriminatedUnionByKind
+import discriminables.jsonByKindDiscriminable
 import autopsies.contrastExpectations
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 case class Foo(x: Int, y: Text) derives CanEqual
 
@@ -746,18 +746,18 @@ object Tests extends Suite(m"Jacinta Tests"):
 
     suite(m"Json printing"):
       test(m"Minimal printer omits whitespace"):
-        import jsonPrinters.minimal
+        import printers.jsonMinimalPrinter
         Json.make(a = 1.json, b = 2.json).show
       . assert(_ == t"""{"a":1,"b":2}""")
 
       test(m"Indented printer adds whitespace"):
-        import jsonPrinters.indented
+        import printers.jsonIndentedPrinter
         val printed = Json.make(a = 1.json, b = 2.json).show
         printed.contains(t"\n")
       . assert(identity)
 
       test(m"Indented printer pretty-prints arrays"):
-        import jsonPrinters.indented
+        import printers.jsonIndentedPrinter
         val printed = List(1, 2, 3).json.show
         printed.contains(t"\n")
       . assert(identity)
@@ -782,7 +782,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == List(Status.Active(5), Status.Removed(9), Status.Pending(1)))
 
       locally:
-        import jsonDiscriminables.discriminatedUnionByType
+        import discriminables.jsonByTypeDiscriminable
 
         test(m"Discriminate by 'type'"):
           val a: Animal = Animal.Dog(t"Rex")
@@ -829,13 +829,13 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(identity)
 
       test(m"Standalone registry returns Unset for unknown URLs"):
-        import jsonPointerRegistries.standalone
+        import jsonPointerRegistries.standaloneRegistry
         val registry = summon[JsonPointer.Registry]
         registry(url"http://example.com/")
       . assert(_ == Unset)
 
       test(m"Standalone registry returns updated values"):
-        import jsonPointerRegistries.standalone
+        import jsonPointerRegistries.standaloneRegistry
         val registry = summon[JsonPointer.Registry]
         val doc = t"""{"a": 1}""".read[Json]
         registry(url"http://example.com/doc") = doc
@@ -843,12 +843,12 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(identity)
 
     suite(m"Time encodables/decodables"):
-      import jsonEncodables.encodeInstantsAsUnixEpochMilliseconds
-      import jsonEncodables.encodeDurationsAsMilliseconds
-      import jsonDecodables.decodeInstantsAsUnixEpochMilliseconds
-      import jsonDecodables.decodeDurationsAsMilliseconds
+      import encodables.instantJsonEncodable
+      import encodables.durationJsonEncodable
+      import decodables.instantJsonDecodable
+      import decodables.durationJsonDecodable
       import aviation.*
-      import abstractables.instantIsAbstractable
+      import abstractables.instantAbstractable
 
       test(m"Encode an Instant as a Long"):
         Instant(1700000000000L).json.show

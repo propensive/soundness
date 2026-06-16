@@ -35,10 +35,10 @@ package embarcadero
 import soundness.*
 import bitumen.fromGzip
 
-import hashProviders.javaStdlibHashing
-import alphabets.hex.lowerCase
-import charEncoders.utf8
-import jsonPrinters.minimal
+import providers.javaStdlibProvider
+import alphabets.hexLowerCase
+import charEncoders.utf8Encoder
+import printers.jsonMinimalPrinter
 import strategies.throwUnsafely
 import Http2.*
 
@@ -156,8 +156,8 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == List(t"""{"imageLayoutVersion":"1.0.0"}""".data.to(List)))
 
     suite(m"containerd over a gRPC loopback"):
-      import threading.virtual
-      import probates.cancel
+      import threading.virtualThreading
+      import probates.cancelProbate
 
       def pair(): (Duplex, Duplex) =
         val clientToServer = Spool[Data]()
@@ -366,7 +366,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       // The `Long`-as-instant given lets us mint an Aviation `Instant` from epoch
       // millis; Aviation's own `Instant` abstractable/instantiable instances are found
       // via its companion, so `embarcadero` needs no dependency on Aviation.
-      import abstractables.instantIsAbstractable
+      import abstractables.instantAbstractable
       val moment = Instant(1_700_000_001_000L)
 
       test(m"a Container timestamp round-trips and converts to an Aviation Instant"):

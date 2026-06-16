@@ -34,15 +34,15 @@ package gossamer
 
 import soundness.*
 
-import textMetrics.uniform
-import caseSensitivity.sensitive
+import textMetrics.uniformMetric
+import caseSensitivity.caseSensitive
 
 case class Person(name: Text, age: Int)
 
 object Tests extends Suite(m"Gossamer Tests"):
   def run(): Unit =
     suite(m"Minimum Edit Distance"):
-      import proximities.levenshteinDistance
+      import proximities.levenshteinProximity
 
       test(m"equal strings have zero edit distance"):
         t"Hello world".proximity(t"Hello world")
@@ -1020,7 +1020,7 @@ object Tests extends Suite(m"Gossamer Tests"):
           "absorptiometric", "absorption", "absorptive", "absorptively" )
 
     suite(m"BK-Tree tests"):
-      import proximities.levenshteinDistance
+      import proximities.levenshteinProximity
 
       val lexicon = Lexicon(words)
 
@@ -1143,7 +1143,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == "abc")
 
     suite(m"Grapheme widths via Kuhn"):
-      import textMetrics.wideCharacterWidth
+      import textMetrics.wideCharacterWidthMetric
 
       test(m"ASCII grapheme width 1"):
         Grapheme("a").metrics
@@ -1259,7 +1259,7 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == Nil)
 
     suite(m"Fuzzy match"):
-      import proximities.normalizedLevenshteinDistance
+      import proximities.normalizedLevenshteinProximity
 
       test(m"exact match returns that case's RHS"):
         t"hello".fuzzy():

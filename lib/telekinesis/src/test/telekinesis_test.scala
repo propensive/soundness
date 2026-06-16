@@ -34,17 +34,17 @@ package telekinesis
 
 import soundness.*
 
-import errorDiagnostics.stackTraces
-import logging.silent
+import errorDiagnostics.stackTracesDiagnostics
+import logging.silentLogging
 import strategies.throwUnsafely
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 
 case class Address(house: Int, street: Text, city: Text, country: Text)
 case class Person(name: Text, address: Address)
 
 object Tests extends Suite(m"Telekinesis tests"):
   def run(): Unit =
-    import internetAccess.enabled
+    import internetAccess.online
 
     suite(m"Response construction tests"):
       test(m"Create HTTP response with status and content type"):
@@ -80,7 +80,7 @@ object Tests extends Suite(m"Telekinesis tests"):
 
       test(m"Construct a Query by partial generic derivation"):
         // This import seems to be required
-        import queryParameters.arbitrary
+        import queryParameters.arbitraryQueryParameter
         Query.make(person = Person(t"Ken", 39)).show
 
       . assert(_ == t"person.name=Ken&person.age=39")

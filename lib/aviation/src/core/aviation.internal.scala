@@ -209,9 +209,9 @@ object internal:
 
     given showable: (Endianness, DateNumerics, DateSeparation, Years) => Date is Showable = date =>
       import DateNumerics.*, Years.*
-      import textMetrics.uniform
+      import textMetrics.uniformMetric
 
-      given calendar: RomanCalendar = calendars.gregorian
+      given calendar: RomanCalendar = calendars.gregorianCalendar
 
       def pad(n: Int): Text = (n%100).show.pad(2, Rtl, '0')
 
@@ -235,7 +235,7 @@ object internal:
       . join(summon[DateSeparation].separator)
 
     given decoder: Tactic[TimeError] => Date is Decodable in Text = value =>
-      import calendars.gregorian
+      import calendars.gregorianCalendar
 
       value.cut(t"-").to(List) match
         case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil => Date(year, Month(month), day)
@@ -244,7 +244,7 @@ object internal:
           abort(TimeError(_.Format(value, Iso8601, Prim)(Iso8601.Issue.Digit)))
 
     given encodable: RomanCalendar => Date is Encodable in Text = date =>
-      import hieroglyph.textMetrics.uniform
+      import hieroglyph.textMetrics.uniformMetric
 
       List
         ( date.year.toString.tt,
@@ -302,7 +302,7 @@ object internal:
     def weekend(using hebdomad: Hebdomad): Boolean = weekday.weekend
 
     def anniversary: Anniversary =
-      Anniversary(calendars.gregorian.mensual(date), calendars.gregorian.diurnal(date))
+      Anniversary(calendars.gregorianCalendar.mensual(date), calendars.gregorianCalendar.diurnal(date))
 
     def jdn: Int = date
 

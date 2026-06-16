@@ -34,21 +34,21 @@ package polysyllabic
 
 import scala.quoted.*
 
-import ambience.*, environments.java, systems.java
+import ambience.*, environments.javaEnvironment, systems.javaSystem
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import escritoire.*
 import escritoire.columnar.Paragraph
 import fulminate.*
 import gossamer.*
-import hellenism.*, classloaders.threadContext
-import hieroglyph.*, charDecoders.utf8, textMetrics.uniform, textSanitizers.strict
+import hellenism.*, classloaders.threadContextClassloader
+import hieroglyph.*, charDecoders.utf8Decoder, textMetrics.uniformMetric, textSanitizers.strictSanitizer
 import probably.*
 import proscenium.*
 import quantitative.*
 import sedentary.*
 import symbolism.*
-import temporaryDirectories.system
+import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
 import vacuous.*
 

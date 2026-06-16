@@ -66,12 +66,10 @@ package blockCipherPadding:
 // `InitializationVector.random` / `.fixed(…)` / `.zero` — so there is no
 // `initializationVector` given namespace.
 
-// Crypto providers select the algorithmic backend. Pick one with an explicit
-// import, e.g. `import cryptoProviders.javaStdlibCrypto`. The given's type is the
-// provider object's singleton type, so the optional (structurally-typed)
-// algorithms it offers remain visible to consumers that require them.
-package cryptoProviders:
-  given javaStdlibCrypto: JavaStdlibCrypto.type = JavaStdlibCrypto
+// The JDK crypto provider is derived from the shared `Provider.JavaStdlib` marker
+// in `Crypto`'s companion, so `import providers.javaStdlibProvider` (from
+// gastronomy) enables both hashing and cryptography. OpenSSL (crypto-only) is
+// selected directly via `import providers.opensslProvider` in the openssl module.
 
 // The `Permit`/`Concession` machinery and the `crypto.permit…Crypto` aggregates
 // live in gastronomy (shared with hashing); the cipher concessions they cover are

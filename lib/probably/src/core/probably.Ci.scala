@@ -39,7 +39,7 @@ import gossamer.*
 import vacuous.*
 
 object Ci:
-  import environments.java
+  import environments.javaEnvironment
 
   def apply(): Boolean =
     githubActions || gitlabCi || circleCi || travisCi || jenkins || azurePipelines || teamCity

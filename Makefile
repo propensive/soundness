@@ -14,8 +14,12 @@ failing:
 	./mill test.assembly
 	java -Xss2m -Xmx4g -cp out/test/assembly.dest/out.jar soundness.FailingTests
 
+check-givens:
+	python3 etc/check-given-uniqueness.py
+
 build:
 	./mill groupCheck.validate
+	python3 etc/check-given-uniqueness.py
 	./mill soundness.all
 
 dev:

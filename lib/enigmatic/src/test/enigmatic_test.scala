@@ -35,13 +35,12 @@ package enigmatic
 import soundness.*
 
 import strategies.throwUnsafely
-import charDecoders.utf8, charEncoders.utf8, textSanitizers.skip
-import errorDiagnostics.stackTraces
-import cryptoProviders.javaStdlibCrypto
-import hashProviders.javaStdlibHashing
+import charDecoders.utf8Decoder, charEncoders.utf8Encoder, textSanitizers.skipSanitizer
+import errorDiagnostics.stackTracesDiagnostics
+import providers.javaStdlibProvider
 import crypto.permitDisallowedCrypto   // the suite deliberately exercises weak crypto
 
-import alphabets.hex.upperCase
+import alphabets.hexUpperCase
 
 object Tests extends Suite(m"Gastronomy tests"):
 
@@ -69,27 +68,27 @@ object Tests extends Suite(m"Gastronomy tests"):
     . assert(_ == t"64EC88CA00B268E5BA1A35678A1B5316D212F4F366B2477232534A8AECA37F3C")
 
     test(m"Md5, Base64"):
-      import alphabets.base64.standard
+      import alphabets.base64Standard
       t"Hello world".digest[Md5].serialize[Base64]
     . assert(_ == t"PiWWCnnbxptnTNTsZ6csYg==")
 
     test(m"Sha1, Base64Url"):
-      import alphabets.base64.url
+      import alphabets.base64Url
       t"Hello world".digest[Sha1].data.serialize[Base64]
     . assert(_ == t"e1AsOh9IyGCa4hLN-2Od7jlnP14")
 
     test(m"Sha384, Base64"):
-      import alphabets.base64.standard
+      import alphabets.base64Standard
       t"Hello world".digest[Sha2[384]].serialize[Base64]
     . assert(_ == t"kgOwxEOf0eauWHiGYze3xTKs1tkmAVDIAxjoq4wnzjMBifjflPuJDfHSmP82Bifh")
 
     test(m"Sha512, Base64"):
-      import alphabets.base64.standard
+      import alphabets.base64Standard
       t"Hello world".digest[Sha2[512]].serialize[Base64]
     . assert(_ == t"t/eDuu2Cl/DbkXRiGE/08I5pwtXl95qUJgD5cl9Yzh8pwYE5v4CwbA//K900c4RS7PQMSIwip+PYDN9vnBwNRw==")
 
     test(m"Encode to Binary"):
-      import alphabets.binary.standard
+      import alphabets.binaryStandard
       IArray[Byte](1, 2, 3, 4).serialize[Binary]
     . assert(_ == t"00000001000000100000001100000100")
 
@@ -104,7 +103,7 @@ object Tests extends Suite(m"Gastronomy tests"):
     . assert(_ == PemLabel.Proprietary(t"EXAMPLE"))
 
     test(m"Decode PEM certificate"):
-      import alphabets.base64.standard
+      import alphabets.base64Standard
       Pem.parse(request).data.digest[Md5].serialize[Base64]
     . assert(_ == t"iMwRdyDFStqq08vqjPbzYw==")
 
@@ -195,9 +194,9 @@ object Tests extends Suite(m"Gastronomy tests"):
       // the provider seam (and its random source) is injectable.
       given Crypto:
         def random: Crypto.Random = size => IArray.fill[Byte](size)(0.toByte)
-        def aes: Crypto.SymmetricCipher = javaStdlibCrypto.aes
-        def rsa: Crypto.PublicKeyCipher = javaStdlibCrypto.rsa
-        def hmac(algorithm: Text): Crypto.Mac = javaStdlibCrypto.hmac(algorithm)
+        def aes: Crypto.SymmetricCipher = JavaStdlibCrypto.aes
+        def rsa: Crypto.PublicKeyCipher = JavaStdlibCrypto.rsa
+        def hmac(algorithm: Text): Crypto.Mac = JavaStdlibCrypto.hmac(algorithm)
 
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.expose:
@@ -304,12 +303,12 @@ object Tests extends Suite(m"Gastronomy tests"):
     . assert(_ == t"F7BC83F430538424B13298E6AA6FB143EF4D59A14946175997479DBC2D1A3CD8")
 
     test(m"SHA384 HMAC"):
-      import alphabets.base64.standard
+      import alphabets.base64Standard
       pangram.hmac[Sha2[384]](t"key".data).serialize[Base64]
     . assert(_ == t"1/RyfiwLOa4PHkDMlvYCQtW3gBhBzqb8WSxdPhrlBwBYKpbPNeHlVJlf5OAzgcI3")
 
     test(m"SHA512 HMAC"):
-      import alphabets.base64.standard
+      import alphabets.base64Standard
       pangram.hmac[Sha2[512]](t"key".data).serialize[Base64]
     . assert(_ == t"tCrwkFe6weLUFwjkipAuCbX/fxKrQopP6GZTxz3SSPuC+UilSfe3kaW0GRXuTR7Dk1NX5OIxclDQNyr6Lr7rOg==")
 

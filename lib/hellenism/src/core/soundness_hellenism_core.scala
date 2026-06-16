@@ -38,4 +38,5 @@ export
       Resource }
 
 package classloaders:
-  export hellenism.classloaders.{platform, scala, system, threadContext}
+  export hellenism.classloaders.{platformClassloader, scalaClassloader, systemClassloader,
+      threadContextClassloader}

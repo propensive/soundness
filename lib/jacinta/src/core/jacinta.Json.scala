@@ -818,10 +818,10 @@ object Json extends Json2, Dynamic:
 
 
   given decodable: Tactic[ParseError] => Json is distillate.Decodable in Text =
-    text => Stream(text.data(using charEncoders.utf8)).read[Json]
+    text => Stream(text.data(using charEncoders.utf8Encoder)).read[Json]
 
   given instantiable: Tactic[ParseError] => Json is Instantiable across HttpRequests from Text =
-    text => Stream(text.data(using charEncoders.utf8)).read[Json]
+    text => Stream(text.data(using charEncoders.utf8Encoder)).read[Json]
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0)))

@@ -38,7 +38,7 @@ extension [showable: Showable](value: showable) def show: Text = showable.text(v
 extension [inspectable: Inspectable](value: inspectable) def inspect: Text = inspectable.text(value)
 
 package affirmations:
-  given yesNo: Affirmation = Affirmation("yes".tt, "no".tt)
-  given onOff: Affirmation = Affirmation("on".tt, "off".tt)
-  given trueFalse: Affirmation = Affirmation("true".tt, "false".tt)
-  given oneZero: Affirmation = Affirmation("1".tt, "0".tt)
+  given yesNoAffirmation: Affirmation = Affirmation("yes".tt, "no".tt)
+  given onOffAffirmation: Affirmation = Affirmation("on".tt, "off".tt)
+  given trueFalseAffirmation: Affirmation = Affirmation("true".tt, "false".tt)
+  given oneZeroAffirmation: Affirmation = Affirmation("1".tt, "0".tt)

@@ -36,7 +36,7 @@ import anticipation.*
 import dendrology.*
 import denominative.*
 import escapade.*
-import escritoire.*, columnAttenuation.ignore
+import escritoire.*, columnAttenuation.ignoreAttenuation
 import gossamer.*
 import hieroglyph.*
 import iridescence.*
@@ -71,7 +71,7 @@ object Juxtaposition:
 
       value match
         case Juxtaposition.Collation(name, comparison, _, _) =>
-          import tableStyles.default
+          import tableStyles.defaultTableStyle
           val columns = 110
           val length = comparison.length
           val topRule = e"\n$subdued(────┬${(t"─"*(length.min(columns)))}┬────)\n"
@@ -136,7 +136,7 @@ object Juxtaposition:
             case class Row(treeLine: Text, left: Teletype, right: Teletype, memo: Teletype)
 
             given treeStyle: (Text is Textual) => TreeStyle[Row] = (tiles, row) =>
-              row.copy(treeLine = tiles.map(treeStyles.default.text(_)).join+row.treeLine)
+              row.copy(treeLine = tiles.map(treeStyles.defaultTreeStyle.text(_)).join+row.treeLine)
 
             def line(data: (Text, Juxtaposition)): Row =
               def line(bullet: Text): Text = t"$bullet ${data(0)}"
@@ -159,8 +159,8 @@ object Juxtaposition:
                 case Collation(_, comparison, left, right) =>
                   if comparison.all(_(1).singleChar)
                   then
-                    import proximities.levenshteinDistance
-                    import caseSensitivity.sensitive
+                    import proximities.levenshteinProximity
+                    import caseSensitivity.caseSensitive
                     val distance = left.proximity(right).toInt
 
                     Row

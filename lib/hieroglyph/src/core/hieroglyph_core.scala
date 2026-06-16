@@ -46,37 +46,37 @@ extension (char: Char)
   def name: Optional[Text] = Unicode.name(char)
 
 package charDecoders:
-  given utf8: TextSanitizer => CharDecoder = CharDecoder.unapply("UTF-8".tt).get
-  given utf16: TextSanitizer => CharDecoder = CharDecoder.unapply("UTF-16".tt).get
+  given utf8Decoder: TextSanitizer => CharDecoder = CharDecoder.unapply("UTF-8".tt).get
+  given utf16Decoder: TextSanitizer => CharDecoder = CharDecoder.unapply("UTF-16".tt).get
 
-  given utf16Le: TextSanitizer => CharDecoder =
+  given utf16LeDecoder: TextSanitizer => CharDecoder =
     CharDecoder.unapply("UTF-16LE".tt).get
 
-  given utf16Be: TextSanitizer => CharDecoder =
+  given utf16BeDecoder: TextSanitizer => CharDecoder =
     CharDecoder.unapply("UTF-16BE".tt).get
 
-  given ascii: TextSanitizer => CharDecoder = CharDecoder.unapply("ASCII".tt).get
+  given asciiDecoder: TextSanitizer => CharDecoder = CharDecoder.unapply("ASCII".tt).get
 
-  given iso88591: CharDecoder =
-    CharDecoder.unapply("ISO-8859-1".tt)(using textSanitizers.skip).get
+  given iso88591Decoder: CharDecoder =
+    CharDecoder.unapply("ISO-8859-1".tt)(using textSanitizers.skipSanitizer).get
 
 package charEncoders:
-  given utf8: CharEncoder = CharEncoder.unapply("UTF-8".tt).get
-  given utf16: CharEncoder = CharEncoder.unapply("UTF-16".tt).get
-  given utf16Le: CharEncoder = CharEncoder.unapply("UTF-16LE".tt).get
-  given utf16Be: CharEncoder = CharEncoder.unapply("UTF-16BE".tt).get
-  given ascii: CharEncoder = CharEncoder.unapply("ASCII".tt).get
-  given iso88591: CharEncoder = CharEncoder.unapply("ISO-8859-1".tt).get
+  given utf8Encoder: CharEncoder = CharEncoder.unapply("UTF-8".tt).get
+  given utf16Encoder: CharEncoder = CharEncoder.unapply("UTF-16".tt).get
+  given utf16LeEncoder: CharEncoder = CharEncoder.unapply("UTF-16LE".tt).get
+  given utf16BeEncoder: CharEncoder = CharEncoder.unapply("UTF-16BE".tt).get
+  given asciiEncoder: CharEncoder = CharEncoder.unapply("ASCII".tt).get
+  given iso88591Encoder: CharEncoder = CharEncoder.unapply("ISO-8859-1".tt).get
 
 package textSanitizers:
-  given strict: Tactic[CharDecodeError] => TextSanitizer = (position, encoding) =>
+  given strictSanitizer: Tactic[CharDecodeError] => TextSanitizer = (position, encoding) =>
     abort(CharDecodeError(position, encoding))
 
-  given skip: TextSanitizer = (position, encoding) => Unset
-  given substitute: TextSanitizer = (position, encoding) => '?'
+  given skipSanitizer: TextSanitizer = (position, encoding) => Unset
+  given substituteSanitizer: TextSanitizer = (position, encoding) => '?'
 
 package communication:
-  given unicodeCharNames: Char is Communicable = char => Message:
+  given unicodeCharNamesCommunicable: Char is Communicable = char => Message:
     val name =
       char.name.let { text => Unicode.smallCaps(text.s.toLowerCase.nn.tt) }.or("unknown".tt)
 
@@ -87,9 +87,10 @@ extension (inline context: StringContext)
   transparent inline def ucs(): Char | Text = ${hieroglyph.internal.char('context)}
 
 package textMetrics:
-  given uniform: Char is Measurable = _ => 1
-  given eastAsianScripts: Char is Measurable = Unicode.eastAsianWidth(_).let(_.width).or(1)
-  given wideCharacterWidth: Char is Measurable = char => WideCharacterWidth.width(char.toInt).max(0)
+  given uniformMetric: Char is Measurable = _ => 1
+  given eastAsianScriptsMetric: Char is Measurable = Unicode.eastAsianWidth(_).let(_.width).or(1)
+  given wideCharacterWidthMetric: Char is Measurable =
+    char => WideCharacterWidth.width(char.toInt).max(0)
 
 extension (char: Char)
   def superscript: Optional[Char] = Chars.superscript.applyOrElse(char, _ => Unset)

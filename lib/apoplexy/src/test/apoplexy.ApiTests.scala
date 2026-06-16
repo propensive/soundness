@@ -35,13 +35,13 @@ package apoplexy
 import soundness.*
 
 import strategies.throwUnsafely
-import logging.silent
-import internetAccess.enabled
-import charEncoders.utf8
-import charDecoders.utf8
-import textSanitizers.skip
-import jsonPrinters.minimal
-import errorDiagnostics.stackTraces
+import logging.silentLogging
+import internetAccess.online
+import charEncoders.utf8Encoder
+import charDecoders.utf8Decoder
+import textSanitizers.skipSanitizer
+import printers.jsonMinimalPrinter
+import errorDiagnostics.stackTracesDiagnostics
 
 case class Credentials(username: Text, password: Text)
 case class NewPet(name: Text, tag: Optional[Text] = Unset)

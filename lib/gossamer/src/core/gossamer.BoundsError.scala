@@ -36,7 +36,7 @@ import anticipation.*
 import fulminate.*
 import spectacular.*
 
-import decimalFormatters.java
+import decimalConverters.javaDecimalConverter
 
 object BoundsError:
   def range(minimum: Double, maximum: Double): Text = minimum match

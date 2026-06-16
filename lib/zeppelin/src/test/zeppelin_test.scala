@@ -34,8 +34,8 @@ package zeppelin
 
 import soundness.*
 
-import charDecoders.utf8
-import charEncoders.utf8
+import charDecoders.utf8Decoder
+import charEncoders.utf8Encoder
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
@@ -43,11 +43,11 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
-import logging.silent
+import logging.silentLogging
 import strategies.throwUnsafely
-import systems.java
-import temporaryDirectories.system
-import textSanitizers.skip
+import systems.javaSystem
+import temporaryDirectories.systemTemporaryDirectory
+import textSanitizers.skipSanitizer
 
 import _root_.java.io as ji
 import _root_.java.util.zip as juz
@@ -190,7 +190,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       . assert(_ == Nil)
 
       test(m"writing two entries with the same path raises DuplicateEntry"):
-        import errorDiagnostics.empty
+        import errorDiagnostics.emptyDiagnostics
         capture[ZipError]:
           Zipfile.write(workDir/t"dup.zip")(List(entry(t"x.txt", t"1"), entry(t"x.txt", t"2")))
         . reason
@@ -246,12 +246,12 @@ object Tests extends Suite(m"Zeppelin tests"):
       . assert(_ == t"soundness "*4096)
 
       test(m"looking up an absent entry raises NotFound"):
-        import errorDiagnostics.empty
+        import errorDiagnostics.emptyDiagnostics
         capture[ZipError](Zipfile.read(archive).entry(zipRef(t"absent.txt"))).reason
       . assert(_.isInstanceOf[ZipError.Reason.NotFound])
 
       test(m"reading data that is not a ZIP archive raises MissingEocd"):
-        import errorDiagnostics.empty
+        import errorDiagnostics.emptyDiagnostics
         capture[ZipError](Zipfile.read(t"this is not a zip file".data)).reason
       . assert(_ == ZipError.Reason.MissingEocd)
 
@@ -265,12 +265,12 @@ object Tests extends Suite(m"Zeppelin tests"):
       . assert(_ == t"data")
 
       test(m"an entry name with a forbidden character raises InvalidName"):
-        import errorDiagnostics.empty
+        import errorDiagnostics.emptyDiagnostics
         capture[ZipError](readEntries(writeRawZip(t"badchar.zip", t"bad:name.txt"))).reason
       . assert(_ == ZipError.Reason.InvalidName(t"bad:name.txt"))
 
       test(m"a path-traversing entry name raises InvalidName"):
-        import errorDiagnostics.empty
+        import errorDiagnostics.emptyDiagnostics
         capture[ZipError](readEntries(writeRawZip(t"slip.zip", t"../escape.txt"))).reason
       . assert(_ == ZipError.Reason.InvalidName(t"../escape.txt"))
 

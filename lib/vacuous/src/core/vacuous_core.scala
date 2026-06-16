@@ -39,7 +39,7 @@ import scala.compiletime.*
 import anticipation.*
 import fulminate.*
 
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 inline def default[value](using default: Default[value]): value = default()
 

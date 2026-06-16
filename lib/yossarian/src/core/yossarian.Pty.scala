@@ -37,7 +37,7 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.*
-import hieroglyph.*, textMetrics.wideCharacterWidth
+import hieroglyph.*, textMetrics.wideCharacterWidthMetric
 import hypotenuse.*
 import kaleidoscope.*
 import rudiments.*

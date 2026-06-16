@@ -35,7 +35,7 @@ package bitumen
 import anticipation.*
 import contingency.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8
+import hieroglyph.*, charEncoders.utf8Encoder
 import rudiments.*
 import vacuous.*
 

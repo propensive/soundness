@@ -36,7 +36,7 @@ import scala.collection.immutable as sci
 
 import soundness.*
 
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
 
 object Tests extends Suite(m"Honeycombd Tests"):
@@ -828,7 +828,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
         . assert(_ == t"<div><ul><li>x</li><li>x</li></ul></div>")
 
       suite(m"Interpolator tests"):
-        import attributives.textAttributes
+        import attributives.textAttributive
 
         test(m"simple interpolator"):
           val comment = "comment"
@@ -950,7 +950,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
         . assert(_ == h"<div><h1>title</h1><p>body</p><p>more</p></div>")
 
       suite(m"Permissive parsing"):
-        import recoveries.permissive
+        import recoveries.permissiveRecovery
 
         test(m"unknown attribute is accepted"):
           t"""<div bogus="x"></div>""".read[Html of "div"]
@@ -1047,7 +1047,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         test(m"permissive given wins when Tactic[ParseError] is also in scope"):
           // `throwUnsafely` (file-level import) provides Tactic[ParseError] via
-          // contravariance. `recoveries.permissive` provides Recovery.Permissive.
+          // contravariance. `recoveries.permissiveRecovery` provides Recovery.Permissive.
           // Both givens are visible: strict requires `NotGiven[Permissive]`,
           // which fails — so only permissive resolves.
           //
@@ -1063,7 +1063,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
             given Tactic[ParseError]:
               given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
 
-              def diagnostics: Diagnostics = errorDiagnostics.stackTraces
+              def diagnostics: Diagnostics = errorDiagnostics.stackTracesDiagnostics
 
               def record(error: Diagnostics ?=> ParseError): Unit =
                 errors += error(using diagnostics)

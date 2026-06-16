@@ -42,10 +42,10 @@ private val telMediaType: MediaType =
   MediaType(Media.Group.Application, Media.Subtype.Vendor(t"tel"))
 
 package postables:
-  given telIsPostable: (encoder: CharEncoder) => Tel is Postable =
+  given telPostable: (encoder: CharEncoder) => Tel is Postable =
     Postable(telMediaType, value => Stream(encoder.encoded(Tel.show(value))))
 
 package servables:
-  given telIsServable: (encoder: CharEncoder) => Tel is Servable =
+  given telServable: (encoder: CharEncoder) => Tel is Servable =
     Servable[Tel](_ => telMediaType): value =>
       Http.Body.Fixed(encoder.encoded(Tel.show(value)))

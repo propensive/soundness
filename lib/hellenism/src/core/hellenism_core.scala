@@ -33,10 +33,10 @@
 package hellenism
 
 package classloaders:
-  given threadContext: Classloader = Classloader.threadContext
-  given system: Classloader = new Classloader(ClassLoader.getSystemClassLoader.nn)
-  given platform: Classloader = new Classloader(ClassLoader.getPlatformClassLoader.nn)
-  given scala: Classloader = Classloader[List]
+  given threadContextClassloader: Classloader = Classloader.threadContext
+  given systemClassloader: Classloader = new Classloader(ClassLoader.getSystemClassLoader.nn)
+  given platformClassloader: Classloader = new Classloader(ClassLoader.getPlatformClassLoader.nn)
+  given scalaClassloader: Classloader = Classloader[List]
 
 extension (inline context: StringContext)
   transparent inline def cp(): Resource = ${internal.classpath('context)}

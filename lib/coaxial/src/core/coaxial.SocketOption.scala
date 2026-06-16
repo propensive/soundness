@@ -64,15 +64,15 @@ sealed trait SocketOption
 
 // Importable socket-option contributions. Each flag is a named `given` declared at its concrete
 // option type (not `SocketOption`), so the per-connection `Every[SocketOption.Tcp]` / `.Udp` /
-// `.Domain` searches collect it. Bring one into scope with, e.g., `import socketOptions.noDelay`.
+// `.Domain` searches collect it. Bring one into scope with, e.g., `import socketOptions.noDelaySocketOption`.
 // Options that carry a value are factory methods whose result type is the concrete option, so a
 // `given SocketOption.ReceiveBuffer = socketOptions.receiveBuffer(65536)` is likewise collected.
-object socketOptions:
-  given reuseAddress: SocketOption.ReuseAddress.type = SocketOption.ReuseAddress
-  given reusePort:    SocketOption.ReusePort.type    = SocketOption.ReusePort
-  given noDelay:      SocketOption.NoDelay.type      = SocketOption.NoDelay
-  given keepAlive:    SocketOption.KeepAlive.type    = SocketOption.KeepAlive
-  given broadcast:    SocketOption.Broadcast.type    = SocketOption.Broadcast
+package socketOptions:
+  given reuseAddressSocketOption: SocketOption.ReuseAddress.type = SocketOption.ReuseAddress
+  given reusePortSocketOption:    SocketOption.ReusePort.type    = SocketOption.ReusePort
+  given noDelaySocketOption:      SocketOption.NoDelay.type      = SocketOption.NoDelay
+  given keepAliveSocketOption:    SocketOption.KeepAlive.type    = SocketOption.KeepAlive
+  given broadcastSocketOption:    SocketOption.Broadcast.type    = SocketOption.Broadcast
 
   def receiveBuffer(bytes: Int): SocketOption.ReceiveBuffer = SocketOption.ReceiveBuffer(bytes)
   def sendBuffer(bytes: Int): SocketOption.SendBuffer = SocketOption.SendBuffer(bytes)

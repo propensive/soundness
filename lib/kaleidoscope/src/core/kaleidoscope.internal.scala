@@ -76,7 +76,7 @@ object internal:
       else AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types)
 
     try Pattern.compile(parts.mkString) catch case exception: PatternSyntaxException =>
-      import errorDiagnostics.empty
+      import errorDiagnostics.emptyDiagnostics
       halt(RegexError(exception.getIndex, RegexError.Reason.InvalidPattern).labelled)
 
     if types.length == 0 then '{NoExtraction(${Expr(parts.head)})}

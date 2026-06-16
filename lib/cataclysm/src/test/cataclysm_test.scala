@@ -35,7 +35,7 @@ package cataclysm
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 import cataclysm.Syntax
 import Css.Node.*
@@ -556,7 +556,7 @@ object Tests extends Suite(m"Cataclysm Tests"):
 
     suite(m"CSS-checked attributions"):
       given (Styles at "/cataclysm/test.css") = Styles(cp"/cataclysm/test.css")
-      import cssBindings.checked
+      import cssBindings.checkedBinding
 
       test(m"a class name resolves to the class attribute"):
         summon[Attribution of "button"].attribute
@@ -604,14 +604,14 @@ object Tests extends Suite(m"Cataclysm Tests"):
       val nestedAt = nestedAtText.read[Css]
 
       def roundTrip(css: Css): Css =
-        CssSerializer.render(css)(using cssFormatters.compact).read[Css]
+        CssSerializer.render(css)(using cssFormatters.compactCssFormatter).read[Css]
 
       test(m"compact serialization has no spaces or newlines"):
-        CssSerializer.render(t"a { color: red }".read[Css])(using cssFormatters.compact)
+        CssSerializer.render(t"a { color: red }".read[Css])(using cssFormatters.compactCssFormatter)
       . assert(_ == t"a{color:red;}")
 
       test(m"standard serialization indents declarations"):
-        CssSerializer.render(t"a { color: red }".read[Css])(using cssFormatters.standard)
+        CssSerializer.render(t"a { color: red }".read[Css])(using cssFormatters.standardCssFormatter)
       . assert(_ == t"a {\n  color: red;\n}\n")
 
       test(m"a complex selector round-trips through serialization"):

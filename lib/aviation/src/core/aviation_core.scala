@@ -47,30 +47,30 @@ export aviation.internal.{Date, Year, Day, Anniversary, WorkingDays}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
 package instantDecodables:
-  given iso8601: Tactic[TimeError] => Instant is Decodable in Text = Iso8601.parse(_)
-  given rfc1123: Tactic[TimeError] => Instant is Decodable in Text = Rfc1123.parse(_)
+  given iso8601InstantDecodable: Tactic[TimeError] => Instant is Decodable in Text = Iso8601.parse(_)
+  given rfc1123InstantDecodable: Tactic[TimeError] => Instant is Decodable in Text = Rfc1123.parse(_)
 
 package dateFormats:
-  private given calendar: RomanCalendar = calendars.gregorian
+  private given calendar: RomanCalendar = calendars.gregorianCalendar
 
-  given european: Date is Showable =
-    import endianness.littleEndian, numerics.fixedWidth, separators.dot, years.full
+  given europeanDateFormat: Date is Showable =
+    import endianness.littleEndian, numerics.fixedWidthDateNumerics, separators.dotDateSeparator, years.fullYears
     Date.showable.text(_)
 
-  given american: Date is Showable =
-    import endianness.middleEndian, numerics.fixedWidth, separators.slash, years.full
+  given americanDateFormat: Date is Showable =
+    import endianness.middleEndian, numerics.fixedWidthDateNumerics, separators.slashDateSeparator, years.fullYears
     Date.showable.text(_)
 
-  given unitedKingdom: Date is Showable =
-    import endianness.littleEndian, numerics.fixedWidth, separators.slash, years.full
+  given unitedKingdomDateFormat: Date is Showable =
+    import endianness.littleEndian, numerics.fixedWidthDateNumerics, separators.slashDateSeparator, years.fullYears
     Date.showable.text(_)
 
-  given southEastAsia: Date is Showable =
-    import endianness.littleEndian, numerics.fixedWidth, separators.hyphen, years.full
+  given southEastAsiaDateFormat: Date is Showable =
+    import endianness.littleEndian, numerics.fixedWidthDateNumerics, separators.hyphenDateSeparator, years.fullYears
     Date.showable.text(_)
 
-  given iso8601: Date is Showable =
-    import endianness.bigEndian, numerics.fixedWidth, separators.hyphen, years.full
+  given iso8601DateFormat: Date is Showable =
+    import endianness.bigEndian, numerics.fixedWidthDateNumerics, separators.hyphenDateSeparator, years.fullYears
     Date.showable.text(_)
 
   package endianness:
@@ -79,21 +79,21 @@ package dateFormats:
     given middleEndian: Endianness = Endianness.MiddleEndian
 
   package numerics:
-    given fixedWidth: DateNumerics = DateNumerics.FixedWidth
-    given variableWidth: DateNumerics = DateNumerics.VariableWidth
+    given fixedWidthDateNumerics: DateNumerics = DateNumerics.FixedWidth
+    given variableWidthDateNumerics: DateNumerics = DateNumerics.VariableWidth
 
   package separators:
-    given slash: DateSeparation = () => t"/"
-    given hyphen: DateSeparation = () => t"-"
-    given dot: DateSeparation = () => t"."
-    given space: DateSeparation = () => t" "
+    given slashDateSeparator: DateSeparation = () => t"/"
+    given hyphenDateSeparator: DateSeparation = () => t"-"
+    given dotDateSeparator: DateSeparation = () => t"."
+    given spaceDateSeparator: DateSeparation = () => t" "
 
   package years:
-    given twoDigits: Years = Years.TwoDigitYear
-    given full: Years = Years.FullYear
+    given twoDigitsYears: Years = Years.TwoDigitYear
+    given fullYears: Years = Years.FullYear
 
   package weekdays:
-    given english: Weekdays =
+    given englishWeekdays: Weekdays =
       case Weekday.Mon => t"Monday"
       case Weekday.Tue => t"Tuesday"
       case Weekday.Wed => t"Wednesday"
@@ -102,7 +102,7 @@ package dateFormats:
       case Weekday.Sat => t"Saturday"
       case Weekday.Sun => t"Sunday"
 
-    given englishShort: Weekdays =
+    given englishShortWeekdays: Weekdays =
       case Weekday.Mon => t"Mon"
       case Weekday.Tue => t"Tue"
       case Weekday.Wed => t"Wed"
@@ -111,7 +111,7 @@ package dateFormats:
       case Weekday.Sat => t"Sat"
       case Weekday.Sun => t"Sun"
 
-    given oneLetterAmbiguous: Weekdays =
+    given oneLetterAmbiguousWeekdays: Weekdays =
       case Weekday.Mon => t"M"
       case Weekday.Tue => t"T"
       case Weekday.Wed => t"W"
@@ -120,7 +120,7 @@ package dateFormats:
       case Weekday.Sat => t"S"
       case Weekday.Sun => t"S"
 
-    given shortestUnambiguous: Weekdays =
+    given shortestUnambiguousWeekdays: Weekdays =
       case Weekday.Mon => t"M"
       case Weekday.Tue => t"Tu"
       case Weekday.Wed => t"W"
@@ -129,7 +129,7 @@ package dateFormats:
       case Weekday.Sat => t"Sa"
       case Weekday.Sun => t"Su"
 
-    given twoLetter: Weekdays =
+    given twoLetterWeekdays: Weekdays =
       case Weekday.Mon => t"Mo"
       case Weekday.Tue => t"Tu"
       case Weekday.Wed => t"We"
@@ -139,7 +139,7 @@ package dateFormats:
       case Weekday.Sun => t"Su"
 
   package months:
-    given english: Months =
+    given englishMonths: Months =
       case Jan => t"January"
       case Feb => t"February"
       case Mar => t"March"
@@ -153,7 +153,7 @@ package dateFormats:
       case Nov => t"November"
       case Dec => t"December"
 
-    given englishShort: Months =
+    given englishShortMonths: Months =
       case Jan => t"Jan"
       case Feb => t"Feb"
       case Mar => t"Mar"
@@ -167,7 +167,7 @@ package dateFormats:
       case Nov => t"Nov"
       case Dec => t"Dec"
 
-    given oneLetterAmbiguous: Months =
+    given oneLetterAmbiguousMonths: Months =
       case Jan => t"J"
       case Feb => t"F"
       case Mar => t"M"
@@ -181,116 +181,116 @@ package dateFormats:
       case Nov => t"N"
       case Dec => t"D"
 
-    given numeric: Months = _.numerical.show
+    given numericMonths: Months = _.numerical.show
 
-    given twoDigit: Months = month =>
-      import textMetrics.uniform
+    given twoDigitMonths: Months = month =>
+      import textMetrics.uniformMetric
       month.numerical.show.pad(2, Rtl, '0')
 
 package timeFormats:
-  given military: Clockface is Showable =
-    import hours.twentyFourHour, numerics.fixedWidth, separators.none, specificity.minutes
+  given militaryTimeFormat: Clockface is Showable =
+    import hours.twentyFourHourClock, numerics.fixedWidthTimeNumerics, separators.noneTimeSeparator, specificity.minutesSpecificity
     Clockface.showable.text(_)
 
-  given civilian: Clockface is Showable =
-    import hours.twelveHour, meridiems.upper, numerics.fixedWidth, separators.colon
-    import specificity.minutes
+  given civilianTimeFormat: Clockface is Showable =
+    import hours.twelveHourClock, meridiems.upperMeridiem, numerics.fixedWidthTimeNumerics, separators.colonTimeSeparator
+    import specificity.minutesSpecificity
 
     Clockface.showable.text(_)
 
-  given associatedPress: Clockface is Showable =
-    import hours.twelveHour, meridiems.lowerPunctuated, numerics.variableWidth, separators.colon
-    import specificity.minutes
+  given associatedPressTimeFormat: Clockface is Showable =
+    import hours.twelveHourClock, meridiems.lowerPunctuatedMeridiem, numerics.variableWidthTimeNumerics, separators.colonTimeSeparator
+    import specificity.minutesSpecificity
     Clockface.showable.text(_)
 
-  given french: Clockface is Showable =
-    import hours.twentyFourHour, numerics.fixedWidth, separators.french, specificity.minutes
+  given frenchTimeFormat: Clockface is Showable =
+    import hours.twentyFourHourClock, numerics.fixedWidthTimeNumerics, separators.frenchTimeSeparator, specificity.minutesSpecificity
     Clockface.showable.text(_)
 
-  given iso8601: Clockface is Showable =
-    import hours.twentyFourHourSeconds, numerics.fixedWidth, separators.colon, specificity.seconds
+  given iso8601TimeFormat: Clockface is Showable =
+    import hours.twentyFourHourSecondsClock, numerics.fixedWidthTimeNumerics, separators.colonTimeSeparator, specificity.secondsSpecificity
     Clockface.showable.text(_)
 
-  given ledger: Clockface is Showable =
-    import hours.twentyFourHour, numerics.fixedWidth, separators.dot, specificity.minutes
+  given ledgerTimeFormat: Clockface is Showable =
+    import hours.twentyFourHourClock, numerics.fixedWidthTimeNumerics, separators.dotTimeSeparator, specificity.minutesSpecificity
     Clockface.showable.text(_)
 
-  given railway: Clockface is Showable =
-    import hours.twentyFourHour, numerics.fixedWidth, separators.colon, specificity.minutes
+  given railwayTimeFormat: Clockface is Showable =
+    import hours.twentyFourHourClock, numerics.fixedWidthTimeNumerics, separators.colonTimeSeparator, specificity.minutesSpecificity
     Clockface.showable.text(_)
 
   package meridiems:
-    given upper: Meridiem is Showable =
+    given upperMeridiem: Meridiem is Showable =
       case Meridiem.Am => t"AM"
       case Meridiem.Pm => t"PM"
 
-    given lower: Meridiem is Showable =
+    given lowerMeridiem: Meridiem is Showable =
       case Meridiem.Am => t"am"
       case Meridiem.Pm => t"pm"
 
-    given upperPunctuated: Meridiem is Showable =
+    given upperPunctuatedMeridiem: Meridiem is Showable =
       case Meridiem.Am => t"A.M."
       case Meridiem.Pm => t"P.M."
 
-    given lowerPunctuated: Meridiem is Showable =
+    given lowerPunctuatedMeridiem: Meridiem is Showable =
       case Meridiem.Am => t"a.m."
       case Meridiem.Pm => t"p.m."
 
   package hours:
-    given twelveHour: (Meridiem is Showable) => TimeFormat:
+    given twelveHourClock: (Meridiem is Showable) => TimeFormat:
       def postfix(meridiem: Meridiem): Text = t" ${meridiem}"
       def halfDay: Boolean = true
       def seconds: Boolean = false
 
-    given twelveHourSeconds: (Meridiem is Showable) => TimeFormat:
+    given twelveHourSecondsClock: (Meridiem is Showable) => TimeFormat:
       def postfix(meridiem: Meridiem): Text = t" ${meridiem}"
       def halfDay: Boolean = true
       def seconds: Boolean = false
 
-    given twentyFourHour: TimeFormat:
+    given twentyFourHourClock: TimeFormat:
       def postfix(meridiem: Meridiem): Text = t""
       def halfDay: Boolean = false
       def seconds: Boolean = false
 
-    given twentyFourHourSeconds: TimeFormat:
+    given twentyFourHourSecondsClock: TimeFormat:
       def postfix(meridiem: Meridiem): Text = t""
       def halfDay: Boolean = false
       def seconds: Boolean = true
 
   package specificity:
-    given minutes: TimeSpecificity = TimeSpecificity.Minutes
-    given seconds: TimeSpecificity = TimeSpecificity.Seconds
+    given minutesSpecificity: TimeSpecificity = TimeSpecificity.Minutes
+    given secondsSpecificity: TimeSpecificity = TimeSpecificity.Seconds
 
   package numerics:
-    given fixedWidth: TimeNumerics = TimeNumerics.FixedWidth
-    given variableWidth: TimeNumerics = TimeNumerics.VariableWidth
+    given fixedWidthTimeNumerics: TimeNumerics = TimeNumerics.FixedWidth
+    given variableWidthTimeNumerics: TimeNumerics = TimeNumerics.VariableWidth
 
   package separators:
-    given dot: TimeSeparation = () => t"."
-    given colon: TimeSeparation = () => t":"
-    given none: TimeSeparation = () => t""
-    given french: TimeSeparation = () => t"h"
+    given dotTimeSeparator: TimeSeparation = () => t"."
+    given colonTimeSeparator: TimeSeparation = () => t":"
+    given noneTimeSeparator: TimeSeparation = () => t""
+    given frenchTimeSeparator: TimeSeparation = () => t"h"
 
 package calendars:
-  given julian: RomanCalendar(t"Julian"):
+  given julianCalendar: RomanCalendar(t"Julian"):
     def leapYear(year: Annual): Boolean = year()%4 == 0
     def leapYearsSinceEpoch(year: Year): Int = year()/4
 
-  given gregorian: RomanCalendar("Gregorian"):
+  given gregorianCalendar: RomanCalendar("Gregorian"):
     def leapYear(year: Annual): Boolean = year()%4 == 0 && year()%100 != 0 || year()%400 == 0
     def leapYearsSinceEpoch(year: Year): Int = year()/4 - year()/100 + year()/400 + 1
 
   package nonexistentLeapDays:
-    given roundUp: Anniversary.NonexistentLeapDay = year =>
-      import calendars.gregorian
+    given roundUpLeapDay: Anniversary.NonexistentLeapDay = year =>
+      import calendars.gregorianCalendar
       unsafely(Date(year, Mar, Day(1)))
 
-    given roundDown: Anniversary.NonexistentLeapDay = year =>
-      import calendars.gregorian
+    given roundDownLeapDay: Anniversary.NonexistentLeapDay = year =>
+      import calendars.gregorianCalendar
       unsafely(Date(year, Feb, Day(28)))
 
-    given raiseErrors: Tactic[TimeError] => Anniversary.NonexistentLeapDay = year =>
-      import calendars.gregorian
+    given raiseErrorsLeapDay: Tactic[TimeError] => Anniversary.NonexistentLeapDay = year =>
+      import calendars.gregorianCalendar
       unsafely(Date(year, Feb, Day(29)))
 
 def now()(using clock: Clock): Instant = clock()
@@ -335,15 +335,15 @@ extension (inline context: StringContext)
 export Weekday.{Mon, Tue, Wed, Thu, Fri, Sat, Sun}
 
 package hebdomads:
-  given european: Hebdomad:
+  given europeanHebdomad: Hebdomad:
     def start: Weekday = Weekday.Mon
     def weekend(day: Weekday): Boolean = day.ordinal >= 5
 
-  given northAmerican: Hebdomad:
+  given northAmericanHebdomad: Hebdomad:
     def start: Weekday = Weekday.Sun
     def weekend(day: Weekday): Boolean = day.ordinal >= 5
 
-  given jewish: Hebdomad:
+  given jewishHebdomad: Hebdomad:
     def start: Weekday = Weekday.Sun
     def weekend(day: Weekday): Boolean = day == Weekday.Fri || day == Weekday.Sat
 

@@ -33,7 +33,7 @@
 package aviation
 
 import gossamer.*
-import hieroglyph.*, textMetrics.uniform
+import hieroglyph.*, textMetrics.uniformMetric
 import spectacular.*
 
 object Clockface:

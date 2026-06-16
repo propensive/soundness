@@ -30,86 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package anthology
+package gastronomy
 
-import ambience.*
-import anticipation.*
-import contingency.*
-import digression.*
-import distillate.*
-import eucalyptus.*
-import galilei.*
-import gossamer.*
-import hellenism.*
-import prepositional.*
-import revolution.*
-import serpentine.*
-import turbulence.*
-import vacuous.*
-import zeppelin.*
-
-import filesystemOptions.createNonexistent.disabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
-import filesystemTraversal.preOrderTraversal
-import logging.silentLogging
-import manifestAttributes.*
-import systems.javaSystem
-import workingDirectories.javaWorkingDirectory
-
-object Bundler:
-  def classpath(out: Path on Linux): LocalClasspath =
-    val entries = Classpath.Directory(out) :: (classloaders.threadContextClassloader.classpath.match
-      case classpath: LocalClasspath => classpath.entries
-
-      case _ =>
-        unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries)
-
-    LocalClasspath(entries*)
-
-
-  def bundle(directory: Path on Linux, jarfile0: Optional[Path on Linux], main: Optional[Fqcn])
-  :   Path on Linux raises ZipError raises PathError raises IoError raises StreamError =
-
-    val jarfile = jarfile0.or(directory.peer("tmpfile.jar"))
-
-    val manifest =
-      main.let(MainClass(_)).let: main =>
-        Manifest(ManifestVersion(()), CreatedBy(t"Soundness"), main)
-
-      . or:
-          Manifest(ManifestVersion(()), CreatedBy(t"Soundness"))
-
-
-    val omissions: Set[Text] = Set("MANIFEST.MF", "plugin.properties")
-
-    Zipfile.write(jarfile):
-      val entries =
-        Zip.Entry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest)
-        :: classpath(directory).entries.to(List).flatMap:
-          case ClasspathEntry.Directory(directory) =>
-            val root = directory.decode[Path on Linux]
-            root.descendants.to(List).filter: entry => !omissions(entry.name)
-            . map: file =>
-              if file.entry() == Directory then Unset else file.open: handle =>
-                val ref = %.on[Zip] + root.toward(file).on[Zip]
-                Zip.Entry(ref, handle.read[Data])
-
-            . compact
-
-          case ClasspathEntry.Jar(jar) =>
-            val jarfile = workingDirectory[Path on Linux].resolve(jar)
-
-            // Re-emit each entry verbatim: it already carries its compressed bytes, so no
-            // decompression or recompression is needed.
-            Zipfile.read(jarfile).entries.to(List).filter: entry =>
-              val name: Text = entry.ref.encode
-              !entry.directory && name != t"META-INF/MANIFEST.MF"
-
-          case _ =>
-            Nil
-
-      entries.distinctBy(_.ref)
-
-    jarfile
+// Identifies a capability provider. A provider may supply more than one capability
+// (the JDK provides both hashing and cryptography); importing its `providers` given
+// brings the marker below into scope, which in turn enables every capability that
+// derives from it — hashing here in gastronomy, and cryptography in enigmatic.
+// Single-capability providers (Soundness's BLAKE3 hashing, OpenSSL's cryptography)
+// have no marker: their `providers` given supplies the capability directly.
+object Provider:
+  // The JDK provider: `MessageDigest`/`CRC32` hashing and JCE cryptography.
+  object JavaStdlib

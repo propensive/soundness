@@ -50,7 +50,7 @@ import xenophile.*
 // offered). `rsa` currently delegates to the JDK provider — native EVP_PKEY RSA
 // (DER key parsing + keygen) is future work.
 //
-// Select it with `import cryptoProviders.opensslCrypto`.
+// Select it with `import providers.opensslProvider`.
 object OpensslCrypto extends Crypto:
   private val header: Text = t"""
     int RAND_bytes(unsigned char* buf, int num);

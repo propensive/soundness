@@ -2,27 +2,27 @@ package tube.terminal
 
 import soundness.*
 
-import charDecoders.utf8
-import charEncoders.utf8
-import classloaders.threadContext
-import dsvFormats.csvWithHeader
-import enumIdentification.kebabCase
-import environments.daemonClient
-import errorDiagnostics.stackTraces
+import charDecoders.utf8Decoder
+import charEncoders.utf8Encoder
+import classloaders.threadContextClassloader
+import dsvFormats.csvWithHeaderFormat
+import enumIdentification.kebabCaseIdentifiable
+import environments.daemonClientEnvironment
+import errorDiagnostics.stackTracesDiagnostics
 import executives.completions
 import homeDirectories.system
-import logging.silent
+import logging.silentLogging
 import codicils.cancel
-import interpreters.posix
-import displayableTypes.message
-import supervisors.global
-import textMetrics.uniform
-import textSanitizers.skip
-import threading.platform
+import interpreters.posixInterpreter
+import displayableTypes.messagePrintable
+import supervisors.globalSupervisor
+import textMetrics.uniformMetric
+import textSanitizers.skipSanitizer
+import threading.platformThreading
 import unhandledErrors.stackTrace
-import workingDirectories.daemonClient
-import httpServers.stdlibPublic
-import timeFormats.railway
+import workingDirectories.daemonClientWorkingDirectory
+import httpServers.stdlibPublicHttpServer
+import timeFormats.railwayTimeFormat
 
 erased given Naptan is Nominative under MustMatch["(|HUB[A-Z0-9]{3}|9[14]0[A-Z]+)"] = !!
 given StationRow is Suggestible = row => Suggestion(row.ref, row.name)
@@ -70,7 +70,7 @@ extension (name: Name[Naptan]) def resolve(using Online): Name[Naptan] = name ma
 
 @main
 def app(): Unit = cli:
-  import internetAccess.enabled
+  import internetAccess.online
 
   recover:
     case error: InitError => execute:

@@ -38,11 +38,11 @@ import anticipation.*
 import gossamer.*
 
 package temperatureScales:
-  given kelvin: TemperatureScale:
+  given kelvinScale: TemperatureScale:
     def suffix: Text = t"K"
     def apply(value: Double): Temperature = Temperature(value)
     def kelvin(value: Temperature): Double = value.kelvin
 
-  given celsius: TemperatureScale = Celsius
-  given rankine: TemperatureScale = Rankine
-  given fahrenheit: TemperatureScale = Fahrenheit
+  given celsiusScale: TemperatureScale = Celsius
+  given rankineScale: TemperatureScale = Rankine
+  given fahrenheitScale: TemperatureScale = Fahrenheit

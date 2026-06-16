@@ -33,14 +33,14 @@
 package anticipation
 
 package termcapDefinitions:
-  given basic: Termcap:
+  given basicTermcap: Termcap:
     def ansi: Boolean = false
     def color: ColorDepth = ColorDepth.NoColor
 
-  given xterm256: Termcap:
+  given xterm256Termcap: Termcap:
     def ansi: Boolean = true
     def color: ColorDepth = ColorDepth.Cube6
 
-  given xtermTrueColor: Termcap:
+  given xtermTrueColorTermcap: Termcap:
     def ansi: Boolean = true
     def color: ColorDepth = ColorDepth.TrueColor

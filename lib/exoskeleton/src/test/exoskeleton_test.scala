@@ -34,17 +34,17 @@ package exoskeleton
 
 import soundness.*
 
-import classloaders.system
-import environments.java
-import systems.java
-import temporaryDirectories.system
-import workingDirectories.default
-import supervisors.global
-import logging.silent
-import threading.platform
+import classloaders.systemClassloader
+import environments.javaEnvironment
+import systems.javaSystem
+import temporaryDirectories.systemTemporaryDirectory
+import workingDirectories.defaultWorkingDirectory
+import supervisors.globalSupervisor
+import logging.silentLogging
+import threading.platformThreading
 
 import strategies.throwUnsafely
-import backstops.silent
+import backstops.silentBackstop
 import autopsies.contrastExpectations
 
 import Shell.*
@@ -55,7 +55,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
     Enclave(t"abcd").dispatch:
       ' {
           import executives.completions
-          import interpreters.posix
+          import interpreters.posixInterpreter
 
           val Alpha = Subcommand("alpha", e"a command to run")
           val Beta = Subcommand("beta", e"another command to run")
@@ -412,8 +412,8 @@ object Tests extends Suite(m"Exoskeleton Tests"):
           .assert(_ == Exit.Ok)
 
     object HelpApp:
-      import interpreters.posix
-      import stdios.mute
+      import interpreters.posixInterpreter
+      import stdios.muteStdio
 
       val Alpha = Subcommand(t"alpha", e"a command to run")
       val Beta = Subcommand(t"beta", e"another command to run")
@@ -470,5 +470,5 @@ object Tests extends Suite(m"Exoskeleton Tests"):
     .assert(_ == List(t"--one", t"--two"))
 
     test(m"Help renders as Printable text mentioning a subcommand"):
-      summon[Help is Printable].print(HelpApp.tree, stdios.mute.termcap)
+      summon[Help is Printable].print(HelpApp.tree, stdios.muteStdio.termcap)
     .assert(_.contains(t"alpha"))

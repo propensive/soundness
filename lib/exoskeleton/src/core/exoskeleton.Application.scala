@@ -36,10 +36,10 @@ import anticipation.*
 import rudiments.*
 
 abstract class Application:
-  import executives.direct
-  import backstops.genericErrorMessage
-  import interpreters.posix
-  import ambience.systems.java
+  import executives.directExecutive
+  import backstops.genericErrorMessageBackstop
+  import interpreters.posixInterpreter
+  import ambience.systems.javaSystem
 
   def invoke(using Cli): Exit
   def main(textArguments: IArray[Text]): Unit = application(textArguments)(invoke)

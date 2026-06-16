@@ -39,13 +39,13 @@ import eucalyptus.*
 import fulminate.*
 import gossamer.*
 import jacinta.*
-import monotonous.*, alphabets.base64.standard, alphabets.hex.lowerCase
+import monotonous.*, alphabets.base64Standard, alphabets.hexLowerCase
 import prepositional.*
 import telekinesis.*
 import urticose.*
 import vacuous.*
 
-import internetAccess.enabled
+import internetAccess.online
 
 // Resolves a dependency's content hash to its public download URL using Google's
 // deps.dev ("Open Source Insights") Query API. Returns `Unset` for anything

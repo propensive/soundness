@@ -46,40 +46,41 @@ import rudiments.*
 import vacuous.*
 
 package systems:
-  given empty: System:
+  given emptySystem: System:
     def apply(name: Text): Unset.type = Unset
 
-  given java: System:
+  given javaSystem: System:
     def apply(name: Text): Optional[Text] = Optional(jl.System.getProperty(name.s)).let(_.tt)
 
 package workingDirectories:
-  given system: (properties: System) => WorkingDirectory =
+  // Derives the working directory from the ambient `System` (reading `user.dir`).
+  given systemWorkingDirectory: (properties: System) => WorkingDirectory =
     () => properties(t"user.dir").or(panic(m"the property `user.dir` should be present"))
 
-  given java: WorkingDirectory = system(using ambience.systems.java)
+  // The JDK's working directory: `systemWorkingDirectory` specialised to the JVM
+  // `System`, equivalent to reading `user.dir` directly.
+  given javaWorkingDirectory: WorkingDirectory =
+    systemWorkingDirectory(using ambience.systems.javaSystem)
 
-  given system: WorkingDirectory = () =>
-    Optional(jl.System.getProperty("user.dir")).let(_.tt).or:
-      panic(m"the `user.dir` system property is not set")
-
-  given default: WorkingDirectory = () => jnf.Paths.get("").nn.toAbsolutePath.toString
+  given defaultWorkingDirectory: WorkingDirectory =
+    () => jnf.Paths.get("").nn.toAbsolutePath.toString
 
 package environments:
-  given empty: Environment:
+  given emptyEnvironment: Environment:
     def variable(name: Text): Unset.type = Unset
 
-  given java: Environment:
+  given javaEnvironment: Environment:
     def variable(name: Text): Optional[Text] = Optional(jl.System.getenv(name.s)).let(_.tt)
 
 package temporaryDirectories:
-  given java: TemporaryDirectory = () =>
+  given javaTemporaryDirectory: TemporaryDirectory = () =>
     Optional(jl.System.getProperty("java.io.tmpdir")).let(_.tt).or:
       panic(m"the `java.io.tmpdir` system property is not set")
 
-  given system: (system: System) => TemporaryDirectory =
+  given systemTemporaryDirectory: (system: System) => TemporaryDirectory =
     () => jl.System.getProperty("java.io.tmpdir").nn.tt
 
-  given environment: Environment => TemporaryDirectory = () =>
+  given environmentTemporaryDirectory: Environment => TemporaryDirectory = () =>
     List("TMPDIR", "TMP", "TEMP").map(jl.System.getenv(_)).map(Optional(_)).compact.prim.let(_.tt)
     . or(panic(m"none of `TMPDIR`, `TMP` or `TEMP` environment variables is set"))
 
@@ -104,7 +105,7 @@ inline def workingDirectory[path: Representative of Paths](using work: WorkingDi
       work.directory().instantiate
 
 package termcaps:
-  given environment: Environment => Termcap:
+  given environmentTermcap: Environment => Termcap:
     val ansi: Boolean = true
 
     lazy val color: ColorDepth =

@@ -306,7 +306,7 @@ object internal:
                             case None => Expr.summon[result is Streamable by Data] match
                               case Some(streamable) =>
                                 ' {
-                                    import alphabets.base64.standard
+                                    import alphabets.base64Standard
                                     given result is Streamable by Data = $streamable
 
                                     Mcp.Contents:

@@ -36,19 +36,19 @@ import anticipation.*
 import gossamer.*
 
 package dagStyles:
-  given default: [text: Textual] => TextualDagStyle[text] =
+  given defaultDagStyle: [text: Textual] => TextualDagStyle[text] =
     TextualDagStyle("  ".tt, "└─".tt, "│ ".tt, "├─".tt, "──".tt, "┴─".tt, "│─".tt, "┼─".tt)
 
-  given ascii: [text: Textual] => TextualDagStyle[text] =
+  given asciiDagStyle: [text: Textual] => TextualDagStyle[text] =
     TextualDagStyle("  ".tt, "+-".tt, "| ".tt, "+-".tt, "--".tt, "+-".tt, "|-".tt, "+-".tt)
 
 package laneDagStyles:
-  given default: [text: Textual] => TextualLaneDagStyle[text] =
+  given defaultLaneDagStyle: [text: Textual] => TextualLaneDagStyle[text] =
     TextualLaneDagStyle
       ( "  ".tt, "│ ".tt, "──".tt, "╰─".tt, "╯ ".tt, "╭─".tt, "╮ ".tt,
         "┴─".tt, "┬─".tt, "├─".tt, "┤ ".tt, "┼─".tt, "──".tt, "● ".tt )
 
-  given ascii: [text: Textual] => TextualLaneDagStyle[text] =
+  given asciiLaneDagStyle: [text: Textual] => TextualLaneDagStyle[text] =
     TextualLaneDagStyle
       ( "  ".tt, "| ".tt, "--".tt, "+-".tt, "+ ".tt, "+-".tt, "+ ".tt,
         "+-".tt, "+-".tt, "+-".tt, "+ ".tt, "+-".tt, "--".tt, "* ".tt )

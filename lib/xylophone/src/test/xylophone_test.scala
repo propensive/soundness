@@ -35,9 +35,9 @@ package xylophone
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
-import threading.virtual
-import probates.cancel
+import errorDiagnostics.stackTracesDiagnostics
+import threading.virtualThreading
+import probates.cancelProbate
 
 case class Worker(name: Text, age: Int)
 case class Firm(name: Text, ceo: Worker)
@@ -948,7 +948,7 @@ object Tests extends Suite(m"Xylophone tests"):
       . assert(_ == List(true))
 
     suite(m"HTTP content-type integration"):
-      import charEncoders.utf8
+      import charEncoders.utf8Encoder
 
       test(m"serialises with an application/xml media type"):
         x"<doc/>".generic(0)

@@ -42,7 +42,7 @@ import zephyrine.*
 // Serializes a `Css` tree back to CSS text. Output is produced lazily through a
 // `zephyrine.Emitter` (the same streaming mechanism Honeycomb uses for HTML), so
 // a large stylesheet never needs to be held in memory at once. The output style
-// is chosen by a contextual `CssFormatter` (`cssFormatters.standard` or
+// is chosen by a contextual `CssFormatter` (`cssFormatters.standardCssFormatter` or
 // `.compact`).
 object CssSerializer:
   def emit(css: Css)(using CssFormatter, Monitor, Probate): Iterator[Text] =

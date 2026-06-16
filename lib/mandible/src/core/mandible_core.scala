@@ -51,7 +51,7 @@ import serpentine.*
 import turbulence.*
 import vacuous.*
 
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import filesystemOptions.createNonexistent.disabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled

@@ -37,92 +37,86 @@ import gossamer.*
 import prepositional.*
 
 package alphabets:
-  package binary:
-    given standard: Alphabet[Binary] = Alphabet(t"01", false)
+  given binaryStandard: Alphabet[Binary] = Alphabet(t"01", false)
 
-  package quaternary:
-    given standard: Alphabet[Quaternary] = Alphabet(t"0123", false)
-    given dnaNucleotide: Alphabet[Quaternary] = Alphabet(t"ATCG", false)
+  given quaternaryStandard: Alphabet[Quaternary] = Alphabet(t"0123", false)
+  given quaternaryDnaNucleotide: Alphabet[Quaternary] = Alphabet(t"ATCG", false)
 
-  package octal:
-    given standard: Alphabet[Octal] = Alphabet(t"01234567=", false)
+  given octalStandard: Alphabet[Octal] = Alphabet(t"01234567=", false)
 
-  package hex:
-    given strictUpperCase: Alphabet[Hex] = Alphabet(t"0123456789ABCDEF", false)
-    given strictLowerCase: Alphabet[Hex] = Alphabet(t"0123456789abcdef", false)
+  given hexStrictUpperCase: Alphabet[Hex] = Alphabet(t"0123456789ABCDEF", false)
+  given hexStrictLowerCase: Alphabet[Hex] = Alphabet(t"0123456789abcdef", false)
 
-    given upperCase: Alphabet[Hex] =
-      Alphabet(t"0123456789ABCDEF", false, strictLowerCase.inverse)
+  given hexUpperCase: Alphabet[Hex] =
+    Alphabet(t"0123456789ABCDEF", false, hexStrictLowerCase.inverse)
 
-    given lowerCase: Alphabet[Hex] =
-      Alphabet(t"0123456789abcdef", false, strictUpperCase.inverse)
+  given hexLowerCase: Alphabet[Hex] =
+    Alphabet(t"0123456789abcdef", false, hexStrictUpperCase.inverse)
 
-    given bioctal: Alphabet[Hex] = Alphabet(t"01234567cjzwfsbv", false)
+  given hexBioctal: Alphabet[Hex] = Alphabet(t"01234567cjzwfsbv", false)
 
-  package base32:
-    given strictUpperCase: Alphabet[Base32] =
-      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=", true)
+  given base32StrictUpperCase: Alphabet[Base32] =
+    Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=", true)
 
-    given strictLowerCase: Alphabet[Base32] =
-      Alphabet(t"abcdefghijklmnopqrstuvwxyz234567=", true)
+  given base32StrictLowerCase: Alphabet[Base32] =
+    Alphabet(t"abcdefghijklmnopqrstuvwxyz234567=", true)
 
-    given upperCase: Alphabet[Base32] =
-      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=", true, strictLowerCase.inverse)
+  given base32UpperCase: Alphabet[Base32] =
+    Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567=", true, base32StrictLowerCase.inverse)
 
-    given lowerCase: Alphabet[Base32] =
-      Alphabet(t"abcdefghijklmnopqrstuvwxyz234567=", true, strictUpperCase.inverse)
+  given base32LowerCase: Alphabet[Base32] =
+    Alphabet(t"abcdefghijklmnopqrstuvwxyz234567=", true, base32StrictUpperCase.inverse)
 
-    given extendedHexUpperCase: Alphabet[Base32] =
-      Alphabet(t"0123456789ABCDEFGHIJKLMNOPQRSTUV=", true, strictLowerCase.inverse)
+  given base32ExtendedHexUpperCase: Alphabet[Base32] =
+    Alphabet(t"0123456789ABCDEFGHIJKLMNOPQRSTUV=", true, base32StrictLowerCase.inverse)
 
-    given extendedHexLowerCase: Alphabet[Base32] =
-      Alphabet(t"0123456789abcdefghijklmnopqrstuv=", true, strictUpperCase.inverse)
+  given base32ExtendedHexLowerCase: Alphabet[Base32] =
+    Alphabet(t"0123456789abcdefghijklmnopqrstuv=", true, base32StrictUpperCase.inverse)
 
-    given zBase32: Alphabet[Base32] = Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769=", true)
+  given base32ZBase32: Alphabet[Base32] = Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769=", true)
 
-    given zBase32Unpadded: Alphabet[Base32] =
-      Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769", false)
+  given base32ZBase32Unpadded: Alphabet[Base32] =
+    Alphabet(t"ybndrfg8ejkmcpqxot1uwisza345h769", false)
 
-    given geohash: Alphabet[Base32] = Alphabet(t"0123456789bcdefghjkmnpqrstuvwxyz", false)
-    given wordSafe: Alphabet[Base32] = Alphabet(t"23456789CFGHJMPQRVWXcfghjmpqrvwx", false)
+  given base32Geohash: Alphabet[Base32] = Alphabet(t"0123456789bcdefghjkmnpqrstuvwxyz", false)
+  given base32WordSafe: Alphabet[Base32] = Alphabet(t"23456789CFGHJMPQRVWXcfghjmpqrvwx", false)
 
-    private val crockfordAlternatives =
-      Alphabet(t"0123456789abcdefghjkmnpqrstvwxyz", false).inverse ++ Map('o' -> 0, 'O' -> 0,
-          'i' -> 1, 'I' -> 1, 'L' -> 1)
+  private val crockfordAlternatives =
+    Alphabet(t"0123456789abcdefghjkmnpqrstvwxyz", false).inverse ++ Map('o' -> 0, 'O' -> 0,
+        'i' -> 1, 'I' -> 1, 'L' -> 1)
 
-    given crockford: Alphabet[Base32] =
-      Alphabet(t"0123456789ABCDEFGHJKMNPQRSTVWXYZ", false, crockfordAlternatives)
+  given base32Crockford: Alphabet[Base32] =
+    Alphabet(t"0123456789ABCDEFGHJKMNPQRSTVWXYZ", false, crockfordAlternatives)
 
-  package base64:
-    given standard: Alphabet[Base64] =
-      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=", true)
+  given base64Standard: Alphabet[Base64] =
+    Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=", true)
 
-    given unpadded: Alphabet[Base64] =
-      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", false)
+  given base64Unpadded: Alphabet[Base64] =
+    Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/", false)
 
-    given url: Alphabet[Base64] =
-      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_", false)
+  given base64Url: Alphabet[Base64] =
+    Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_", false)
 
-    given xml: Alphabet[Base64] =
-      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-.", true)
+  given base64Xml: Alphabet[Base64] =
+    Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+-.", true)
 
-    given imap: Alphabet[Base64] =
-      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,", false)
+  given base64Imap: Alphabet[Base64] =
+    Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,", false)
 
-    given yui: Alphabet[Base64] =
-      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._", false)
+  given base64Yui: Alphabet[Base64] =
+    Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._", false)
 
-    given radix64: Alphabet[Base64] =
-      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=", true)
+  given base64Radix64: Alphabet[Base64] =
+    Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=", true)
 
-    given bcrypt: Alphabet[Base64] =
-      Alphabet(t"./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", false)
+  given base64Bcrypt: Alphabet[Base64] =
+    Alphabet(t"./ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789", false)
 
-    given sasl: Alphabet[Base64] =
-      Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,", false)
+  given base64Sasl: Alphabet[Base64] =
+    Alphabet(t"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+,", false)
 
-    given uuencoding: Alphabet[Base64] =
-      Alphabet(t"""!"#$$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_""", false)
+  given base64Uuencoding: Alphabet[Base64] =
+    Alphabet(t"""!"#$$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_""", false)
 
 extension (value: Text)
   def deserialize[scheme <: Serialization](using deserializable: Deserializable in scheme): Data =

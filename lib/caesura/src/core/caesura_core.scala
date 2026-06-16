@@ -41,19 +41,19 @@ import rudiments.*
 import vacuous.*
 
 package dsvFormats:
-  given csv: DsvFormat = DsvFormat(false, ',', '"', '"')
-  given csvWithHeader: DsvFormat = DsvFormat(true, ',', '"', '"')
-  given tsv: DsvFormat = DsvFormat(false, '\t', '"', '"')
-  given tsvWithHeader: DsvFormat = DsvFormat(true, '\t', '"', '"')
-  given ssv: DsvFormat = DsvFormat(false, ' ', '"', '"')
-  given ssvWithHeader: DsvFormat = DsvFormat(true, ' ', '"', '"')
+  given csvFormat: DsvFormat = DsvFormat(false, ',', '"', '"')
+  given csvWithHeaderFormat: DsvFormat = DsvFormat(true, ',', '"', '"')
+  given tsvFormat: DsvFormat = DsvFormat(false, '\t', '"', '"')
+  given tsvWithHeaderFormat: DsvFormat = DsvFormat(true, '\t', '"', '"')
+  given ssvFormat: DsvFormat = DsvFormat(false, ' ', '"', '"')
+  given ssvWithHeaderFormat: DsvFormat = DsvFormat(true, ' ', '"', '"')
 
 package dsvRedesignations:
-  given unchanged: DsvRedesignation = identity(_)
-  given lowerDotted: DsvRedesignation = _.uncamel.map(_.lower).join(t" ")
-  given lowerSlashed: DsvRedesignation = _.uncamel.map(_.lower).join(t" ")
-  given capitalizedWords: DsvRedesignation = _.uncamel.map(_.capitalize).join(t" ")
-  given lowerWords: DsvRedesignation = _.uncamel.map(_.lower).join(t" ")
+  given unchangedRedesignation: DsvRedesignation = identity(_)
+  given lowerDottedRedesignation: DsvRedesignation = _.uncamel.map(_.lower).join(t" ")
+  given lowerSlashedRedesignation: DsvRedesignation = _.uncamel.map(_.lower).join(t" ")
+  given capitalizedWordsRedesignation: DsvRedesignation = _.uncamel.map(_.capitalize).join(t" ")
+  given lowerWordsRedesignation: DsvRedesignation = _.uncamel.map(_.lower).join(t" ")
 
 extension [encodable: Encodable in Dsv](value: encodable) def dsv: Dsv = encodable.encode(value)
 

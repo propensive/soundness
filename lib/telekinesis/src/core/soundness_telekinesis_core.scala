@@ -40,7 +40,7 @@ export
       Session, Submission, submit, TransferEncoding }
 
 package queryParameters:
-  export telekinesis.queryParameters.arbitrary
+  export telekinesis.queryParameters.arbitraryQueryParameter
 
 package httpRedirections:
   export telekinesis.httpRedirections.doNotFollowRedirects

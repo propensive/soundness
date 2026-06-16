@@ -51,4 +51,4 @@ package filesystemOptions:
         writeSynchronously }
 
 package filesystemTraversal:
-  export galilei.filesystemTraversal.{postOrder, preOrder}
+  export galilei.filesystemTraversal.{postOrderTraversal, preOrderTraversal}

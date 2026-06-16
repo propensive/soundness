@@ -34,11 +34,11 @@ package dendrology
 
 import soundness.*
 
-import dendrology.laneDagStyles.default
-import environments.java
-import stdios.virtualMachine
+import dendrology.laneDagStyles.defaultLaneDagStyle
+import environments.javaEnvironment
+import stdios.virtualMachineStdio
 import strategies.throwUnsafely
-import termcaps.environment
+import termcaps.environmentTermcap
 
 @main
 def laneDemo(): Unit =

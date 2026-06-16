@@ -46,34 +46,34 @@ import prepositional.*
 import symbolism.*
 import vacuous.*
 
-import abstractables.durationIsAbstractable
-import abstractables.instantIsAbstractable
+import abstractables.durationAbstractable
+import abstractables.instantAbstractable
 
 package threading:
-  given platform: Threading = () => PlatformSupervisor
-  given virtual: Threading = () => VirtualSupervisor
-  given adaptive: Threading = () => AdaptiveSupervisor
+  given platformThreading: Threading = () => PlatformSupervisor
+  given virtualThreading: Threading = () => VirtualSupervisor
+  given adaptiveThreading: Threading = () => AdaptiveSupervisor
 
 package probates:
-  given await: Probate = _.delegate(_.attend())
-  given cancel: Probate = _.delegate(_.cancel())
+  given awaitProbate: Probate = _.delegate(_.attend())
+  given cancelProbate: Probate = _.delegate(_.cancel())
 
-  given panic: Probate = _.delegate: child =>
+  given panicProbate: Probate = _.delegate: child =>
     if !child.ready then fulminate.panic(m"asynchronous child task did not complete")
 
-  given fail: Tactic[AsyncError] => Probate = _.delegate: child =>
+  given failProbate: Tactic[AsyncError] => Probate = _.delegate: child =>
     if !child.ready then raise(AsyncError(AsyncError.Reason.Incomplete))
 
 package supervisors:
-  given global: Supervisor = PlatformSupervisor.supervisor
+  given globalSupervisor: Supervisor = PlatformSupervisor.supervisor
 
 package retryTenacities:
-  given exponentialForever: Tenacity = Tenacity.exponential(10L, 1.2)
-  given exponentialFiveTimes: Tenacity = Tenacity.exponential(10L, 1.2).limit(5)
-  given exponentialTenTimes: Tenacity = Tenacity.exponential(10L, 1.2).limit(10)
-  given fixedNoDelayForever: Tenacity = Tenacity.fixed(0L)
-  given fixedNoDelayFiveTimes: Tenacity = Tenacity.fixed(0L).limit(5)
-  given fixedNoDelayTenTimes: Tenacity = Tenacity.fixed(0L).limit(10)
+  given exponentialForeverTenacity: Tenacity = Tenacity.exponential(10L, 1.2)
+  given exponentialFiveTimesTenacity: Tenacity = Tenacity.exponential(10L, 1.2).limit(5)
+  given exponentialTenTimesTenacity: Tenacity = Tenacity.exponential(10L, 1.2).limit(10)
+  given fixedNoDelayForeverTenacity: Tenacity = Tenacity.fixed(0L)
+  given fixedNoDelayFiveTimesTenacity: Tenacity = Tenacity.fixed(0L).limit(5)
+  given fixedNoDelayTenTimesTenacity: Tenacity = Tenacity.fixed(0L).limit(10)
 
 transparent inline def monitor: Monitor = infer[Monitor]
 

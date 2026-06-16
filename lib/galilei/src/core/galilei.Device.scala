@@ -65,7 +65,7 @@ object Device:
       overwritePreexisting(path):
         whereas:
           case ExecError(_, _, _) =>
-            import errorDiagnostics.stackTraces
+            import errorDiagnostics.stackTracesDiagnostics
             IoError(path, IoError.Operation.Create, IoError.Reason.Unsupported)
 
         . mitigate:

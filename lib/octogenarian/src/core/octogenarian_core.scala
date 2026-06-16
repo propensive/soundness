@@ -44,7 +44,7 @@ import prepositional.*
 import serpentine.*
 
 package gitCommands:
-  given environmentDefault: (WorkingDirectory, GitEvent is Loggable)
+  given environmentDefaultGitCommand: (WorkingDirectory, GitEvent is Loggable)
   =>  (Path on Linux) is Instantiable across Paths from Text
   =>  GitCommand raises NameError raises PathError raises IoError raises ExecError =
 

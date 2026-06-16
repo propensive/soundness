@@ -56,7 +56,7 @@ import jacinta.Json
 import turbulence.read
 
 import strategies.throwUnsafely
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 
 object Conformance:
   // Tags whose test cases exercise YAML features outside the Ypsiloid

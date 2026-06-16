@@ -34,9 +34,9 @@ package gesticulate
 
 import soundness.*
 
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 object Tests extends Suite(m"Gesticulate tests"):
   def run(): Unit =

@@ -34,9 +34,9 @@ package jacinta
 
 import soundness.*
 
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 // NB: `dynamicJsonAccess.enabled` is deliberately *not* imported here — verified
 // `Json of T` navigation must work without it.

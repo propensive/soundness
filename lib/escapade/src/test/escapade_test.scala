@@ -35,7 +35,7 @@ package escapade
 import soundness.*
 
 import strategies.throwUnsafely
-import textMetrics.uniform
+import textMetrics.uniformMetric
 
 import WebColors.{Red, Yellow, Green, Blue, Tan}
 
@@ -45,13 +45,13 @@ object Tests extends Suite(m"Escapade tests"):
     // ─── helpers ──────────────────────────────────────────────────────────
 
     def emit(teletype: Teletype): Text =
-      teletype.render(termcapDefinitions.xtermTrueColor)
+      teletype.render(termcapDefinitions.xtermTrueColorTermcap)
 
     def emit256(teletype: Teletype): Text =
-      teletype.render(termcapDefinitions.xterm256)
+      teletype.render(termcapDefinitions.xterm256Termcap)
 
     def plainRender(teletype: Teletype): Text =
-      teletype.render(termcapDefinitions.basic)
+      teletype.render(termcapDefinitions.basicTermcap)
 
     def emulate(teletype: Teletype, width: Int = 80, height: Int = 4): Pty =
       Pty(width, height).consume(emit(teletype))
@@ -411,7 +411,7 @@ object Tests extends Suite(m"Escapade tests"):
 
     suite(m"Teletype: render"):
       test(m"empty Teletype renders to empty text"):
-        Teletype.empty.render(termcapDefinitions.xtermTrueColor)
+        Teletype.empty.render(termcapDefinitions.xtermTrueColorTermcap)
       . assert(_ == t"")
 
       test(m"basic termcap (no ansi) returns plain text"):

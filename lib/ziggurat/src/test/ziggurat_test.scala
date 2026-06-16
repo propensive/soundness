@@ -34,19 +34,19 @@ package ziggurat
 
 import soundness.*
 
-import systems.java
-import environments.java
-import temporaryDirectories.system
-import workingDirectories.default
-import logging.silent
-import stdios.virtualMachine
-import termcaps.environment
+import systems.javaSystem
+import environments.javaEnvironment
+import temporaryDirectories.systemTemporaryDirectory
+import workingDirectories.defaultWorkingDirectory
+import logging.silentLogging
+import stdios.virtualMachineStdio
+import termcaps.environmentTermcap
 
 import strategies.throwUnsafely
-import charEncoders.utf8
-import hashProviders.javaStdlibHashing
-import alphabets.hex.lowerCase
-import errorDiagnostics.stackTraces
+import charEncoders.utf8Encoder
+import providers.javaStdlibProvider
+import alphabets.hexLowerCase
+import errorDiagnostics.stackTracesDiagnostics
 
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled

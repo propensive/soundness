@@ -36,14 +36,16 @@ import anticipation.*
 import prepositional.*
 import turbulence.*
 
-// Hashing providers supply the per-algorithm implementations. Pick one (or both)
-// with an explicit import, e.g. `import hashProviders.javaStdlibHashing` for the
-// JDK hashes and `import hashProviders.soundnessHashing` for BLAKE3. The given's
-// type is the provider object's singleton type, so the structurally-typed
-// algorithms it offers stay visible to the per-algorithm `Hash` givens.
-package hashProviders:
-  given javaStdlibHashing: JavaStdlibHashing.type = JavaStdlibHashing
-  given soundnessHashing: SoundnessHashing.type = SoundnessHashing
+// Capability providers. Pick one (or more) with an explicit import, e.g.
+// `import providers.javaStdlibProvider` for the JDK (which enables both hashing
+// and, in enigmatic, cryptography) and `import providers.soundnessProvider` for
+// BLAKE3 hashing. The JDK provider is a marker that the `Hashing` and `Crypto`
+// companions derive their implementations from; single-capability providers
+// supply their capability object's singleton type directly, so the
+// structurally-typed algorithms it offers stay visible to the per-algorithm givens.
+package providers:
+  given javaStdlibProvider: Provider.JavaStdlib.type = Provider.JavaStdlib
+  given soundnessProvider: SoundnessHashing.type = SoundnessHashing
 
 // Opt-in permits for sub-optimal cryptography, named after NIST SP 800-131A's
 // algorithm statuses. Each is an (erased) intersection of fine-grained `Permit`s,

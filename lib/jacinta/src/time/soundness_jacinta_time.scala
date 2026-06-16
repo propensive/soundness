@@ -32,10 +32,10 @@
                                                                                                   */
 package soundness
 
-package jsonEncodables:
-  export jacinta.jsonEncodables.encodeInstantsAsUnixEpochMilliseconds
-  export jacinta.jsonEncodables.encodeDurationsAsMilliseconds
+package encodables:
+  export jacinta.encodables.instantJsonEncodable
+  export jacinta.encodables.durationJsonEncodable
 
-package jsonDecodables:
-  export jacinta.jsonDecodables.decodeInstantsAsUnixEpochMilliseconds
-  export jacinta.jsonDecodables.decodeDurationsAsMilliseconds
+package decodables:
+  export jacinta.decodables.instantJsonDecodable
+  export jacinta.decodables.durationJsonDecodable

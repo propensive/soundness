@@ -35,7 +35,7 @@ Here is an example of using the `LruCache` to cache reading two files from disk:
 import galilei.File
 import galilei.filesystemOptions.{dereferenceSymlinks, doNotCreateNonexistent}
 import contingency.strategies.throwUnsafely
-import hieroglyph.charDecoders.utf8
+import hieroglyph.charDecoders.utf8Decoder
 import hieroglyph.badEncodingHandlers.skip
 import serpentine.{%, p, Slash}
 import serpentine.hierarchies.unix
@@ -69,7 +69,7 @@ Here is a complete example of a tiny `LruCache`:
 
 ```scala
 import turbulence.Out
-import turbulence.stdios.virtualMachine
+import turbulence.stdios.virtualMachineStdio
 import gossamer.t
 
 def numbers(): Unit =

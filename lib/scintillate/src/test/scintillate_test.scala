@@ -34,12 +34,12 @@ package scintillate
 
 import soundness.*
 
-import logging.silent
+import logging.silentLogging
 import strategies.throwUnsafely
-import charEncoders.utf8
-import webserverErrorPages.minimal
-import threading.virtual
-import probates.await
+import charEncoders.utf8Encoder
+import webserverErrorPages.minimalErrorPage
+import threading.virtualThreading
+import probates.awaitProbate
 
 object Tests extends Suite(m"Scintillate tests"):
   def run(): Unit =

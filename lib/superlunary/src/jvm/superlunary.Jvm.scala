@@ -43,8 +43,8 @@ import jacinta.*
 import prepositional.*
 import serpentine.*
 
-import classloaders.system
-import systems.java
+import classloaders.systemClassloader
+import systems.javaSystem
 
 object Jvm extends Rig:
   type Result[output] = output
@@ -57,8 +57,8 @@ object Jvm extends Rig:
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Form, Target]): output =
-    import workingDirectories.system
-    import logging.silent
+    import workingDirectories.systemWorkingDirectory
+    import logging.silentLogging
 
     stage.remote: input =>
       val cmd = sh"java -classpath ${stage.target()} superlunary.Executor $input"

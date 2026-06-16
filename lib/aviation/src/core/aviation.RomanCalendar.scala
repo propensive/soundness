@@ -108,6 +108,6 @@ abstract class RomanCalendar(val name: Text) extends Calendar:
   def jdn(year: Year, month: Month, day: Day): Date raises TimeError =
     if day() < 1 || day() > daysInMonth(month, year) then
       raise(TimeError(_.Invalid(year(), month.numerical, day(), this)))
-      Date(using calendars.julian)(Year(2000), Month(1), Day(1))
+      Date(using calendars.julianCalendar)(Year(2000), Month(1), Day(1))
 
     zerothDayOfYear(year).addDays(month.offset(leapYear(year)) + day())

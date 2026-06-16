@@ -44,7 +44,7 @@ package doms.html:
   export honeycomb.doms.html.html4Transitional
 
 package attributives:
-  export honeycomb.attributives.textAttributes
+  export honeycomb.attributives.textAttributive
 
 package stylesheets:
   export honeycomb.stylesheets.uncheckedClasses

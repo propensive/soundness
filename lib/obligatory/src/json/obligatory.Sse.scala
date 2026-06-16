@@ -50,7 +50,7 @@ import zephyrine.*
 
 object Sse:
   given servable: LazyList[Sse] is Servable =
-    import charEncoders.utf8
+    import charEncoders.utf8Encoder
 
     Servable[LazyList[Sse]](_ => media"text/event-stream"): stream =>
       Http.Body.Streaming(stream.map(_.encode.data))
@@ -74,7 +74,7 @@ object Sse:
       cursor.hold(frame(cursor.mark))
 
   given jsonEncodable: Json is Encodable in Sse =
-    import jsonPrinters.minimal
+    import printers.jsonMinimalPrinter
     json => Sse("message", List(json.show))
 
   given textEncodable: Text is Encodable in Sse =

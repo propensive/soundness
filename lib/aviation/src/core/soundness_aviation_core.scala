@@ -44,55 +44,63 @@ export
       Tzdb, TzdbError, Wed, Weekday, Weekdays, weeks, WorkingDays, Year, Years, years }
 
 package calendars:
-  export aviation.calendars.{gregorian, julian}
+  export aviation.calendars.{gregorianCalendar, julianCalendar}
 
-  package nonexistentLeapDays:
-    export aviation.calendars.nonexistentLeapDays.{raiseErrors, roundDown, roundUp}
+package nonexistentLeapDays:
+  export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,
+      roundUpLeapDay}
 
 package dateFormats:
-  export aviation.dateFormats.{american, european, iso8601, southEastAsia, unitedKingdom}
+  export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,
+      southEastAsiaDateFormat, unitedKingdomDateFormat}
 
-  package endianness:
-    export aviation.dateFormats.endianness.{bigEndian, littleEndian, middleEndian}
+package endianness:
+  export aviation.dateFormats.endianness.{bigEndian, littleEndian, middleEndian}
 
-  package numerics:
-    export aviation.dateFormats.numerics.{fixedWidth, variableWidth}
+package dateNumerics:
+  export aviation.dateFormats.numerics.{fixedWidthDateNumerics, variableWidthDateNumerics}
 
-  package separators:
-    export aviation.dateFormats.separators.{dot, hyphen, slash, space}
+package dateSeparators:
+  export aviation.dateFormats.separators.{dotDateSeparator, hyphenDateSeparator, slashDateSeparator,
+      spaceDateSeparator}
 
-  package years:
-    export aviation.dateFormats.years.{full, twoDigits}
+package yearFormats:
+  export aviation.dateFormats.years.{fullYears, twoDigitsYears}
 
-  package weekdays:
-    export
-      aviation.dateFormats.weekdays
-      . { english, englishShort, oneLetterAmbiguous, shortestUnambiguous, twoLetter }
+package weekdays:
+  export
+    aviation.dateFormats.weekdays
+    . { englishWeekdays, englishShortWeekdays, oneLetterAmbiguousWeekdays,
+        shortestUnambiguousWeekdays, twoLetterWeekdays }
 
-  package months:
-    export
-      aviation.dateFormats.months
-      . { english, englishShort, numeric, oneLetterAmbiguous, twoDigit }
+package monthFormats:
+  export
+    aviation.dateFormats.months
+    . { englishMonths, englishShortMonths, numericMonths, oneLetterAmbiguousMonths,
+        twoDigitMonths }
 
 package timeFormats:
   export
     aviation.timeFormats
-    . { associatedPress, civilian, french, iso8601, ledger, military, railway }
+    . { associatedPressTimeFormat, civilianTimeFormat, frenchTimeFormat, iso8601TimeFormat,
+        ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
 
-  package hours:
-    export aviation.timeFormats.hours.{twelveHour, twentyFourHour}
+package hourFormats:
+  export aviation.timeFormats.hours.{twelveHourClock, twentyFourHourClock}
 
-  package meridiems:
-    export aviation.timeFormats.meridiems.{lower, lowerPunctuated, upper, upperPunctuated}
+package meridiems:
+  export aviation.timeFormats.meridiems.{lowerMeridiem, lowerPunctuatedMeridiem, upperMeridiem,
+      upperPunctuatedMeridiem}
 
-  package numerics:
-    export aviation.timeFormats.numerics.{fixedWidth, variableWidth}
+package timeNumerics:
+  export aviation.timeFormats.numerics.{fixedWidthTimeNumerics, variableWidthTimeNumerics}
 
-  package separation:
-    export aviation.timeFormats.separators.{colon, dot, french, none}
+package timeSeparators:
+  export aviation.timeFormats.separators.{colonTimeSeparator, dotTimeSeparator, frenchTimeSeparator,
+      noneTimeSeparator}
 
 package hebdomads:
-  export aviation.hebdomads.{european, jewish, northAmerican}
+  export aviation.hebdomads.{europeanHebdomad, jewishHebdomad, northAmericanHebdomad}
 
 package instantDecodables:
-  export aviation.instantDecodables.{iso8601, rfc1123}
+  export aviation.instantDecodables.{iso8601InstantDecodable, rfc1123InstantDecodable}

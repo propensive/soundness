@@ -35,20 +35,20 @@ package stratiform
 import scala.language.unsafeNulls
 import scala.quoted.*
 
-import ambience.*, environments.java, systems.java
+import ambience.*, environments.javaEnvironment, systems.javaSystem
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import fulminate.*
 import gossamer.*
-import hellenism.*, classloaders.threadContext
-import hieroglyph.*, charEncoders.utf8
+import hellenism.*, classloaders.threadContextClassloader
+import hieroglyph.*, charEncoders.utf8Encoder
 import probably.*
 import proscenium.*
 import quantitative.*
 import rudiments.*
 import sedentary.*
 import symbolism.*
-import temporaryDirectories.system
+import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
 import vacuous.*
 

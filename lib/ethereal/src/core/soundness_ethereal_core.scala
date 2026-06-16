@@ -38,4 +38,4 @@ export
       LazyEnvironment, service, Stdin, Upgrade, UpgradeError }
 
 package workingDirectories:
-  export ambience.workingDirectories.daemonClient
+  export ambience.workingDirectories.daemonClientWorkingDirectory

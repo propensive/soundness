@@ -35,7 +35,7 @@ package bitumen
 import anticipation.*
 import contingency.*
 import galilei.*
-import hieroglyph.*, charEncoders.ascii
+import hieroglyph.*, charEncoders.asciiEncoder
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
 import prepositional.*
 import serpentine.*

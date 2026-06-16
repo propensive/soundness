@@ -41,24 +41,24 @@ import contingency.*
 // scoped to package objects so they're imported explicitly and don't
 // clash with project-wide default encodings.
 
-package telEncodables:
-  given encodeInstantsAsUnixEpochMilliseconds: Instant is Tel.Encodable =
+package encodables:
+  given instantTelEncodable: Instant is Tel.Encodable =
     Tel.Encodable(Morphology.Whole): instant => Tel.scalar(instant.long.toString.tt)
 
-  given encodeDurationsAsMilliseconds: Duration is Tel.Encodable =
+  given durationTelEncodable: Duration is Tel.Encodable =
     Tel.Encodable(Morphology.Whole): duration =>
       Tel.scalar((duration.value*1000).toLong.toString.tt)
 
-package telDecodables:
-  given decodeInstantsAsUnixEpochMilliseconds: Tactic[TelError]
+package decodables:
+  given instantTelDecodable: Tactic[TelError]
   =>  Instant is Tel.Decodable =
     Tel.Decodable(Morphology.Whole): tel =>
-      import abstractables.instantIsAbstractable
+      import abstractables.instantAbstractable
 
       try Instant(tel.primaryAtom.s.toLong)
       catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
 
-  given decodeDurationsAsMilliseconds: Tactic[TelError]
+  given durationTelDecodable: Tactic[TelError]
   =>  Duration is Tel.Decodable =
     Tel.Decodable(Morphology.Whole): tel =>
       try Duration(tel.primaryAtom.s.toLong)

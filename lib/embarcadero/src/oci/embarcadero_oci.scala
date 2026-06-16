@@ -33,13 +33,13 @@
 package embarcadero
 
 import anticipation.*
-import gastronomy.*, hashProviders.javaStdlibHashing
+import gastronomy.*, providers.javaStdlibProvider
 import gesticulate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8
-import jacinta.*, jsonPrinters.minimal
+import hieroglyph.*, charEncoders.utf8Encoder
+import jacinta.*, printers.jsonMinimalPrinter
 import monotonous.*
-import monotonous.alphabets.hex.lowerCase
+import monotonous.alphabets.hexLowerCase
 import prepositional.*
 import spectacular.*
 

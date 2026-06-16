@@ -74,8 +74,8 @@ object Api:
     ( using client: HttpClient onto Origin["http" | "https"] )
   :   Http.Response =
 
-    import jsonPrinters.minimal
-    import charEncoders.utf8
+    import printers.jsonMinimalPrinter
+    import charEncoders.utf8Encoder
 
     val substituted =
       request.substitutions.foldLeft(request.path): (path, entry) =>

@@ -36,12 +36,12 @@ import soundness.*
 
 import interfaces.paths.pathOnLinux
 import strategies.throwUnsafely
-import logging.silent
-import charEncoders.utf8
-import gitCommands.environmentDefault
-import workingDirectories.system
-import internetAccess.enabled
-import errorDiagnostics.stackTraces
+import logging.silentLogging
+import charEncoders.utf8Encoder
+import gitCommands.environmentDefaultGitCommand
+import workingDirectories.javaWorkingDirectory
+import internetAccess.online
+import errorDiagnostics.stackTracesDiagnostics
 
 import scala.compiletime.*
 

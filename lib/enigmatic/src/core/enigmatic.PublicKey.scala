@@ -41,7 +41,7 @@ import spectacular.*
 
 object PublicKey:
   given showable: [key <: Cipher] => PublicKey[key] is Showable = key =>
-    import alphabets.hex.lowerCase
+    import alphabets.hexLowerCase
     t"PublicKey(${key.bytes.serialize[Hex]})"
 
   given encodable: [cipher <: Cipher] => PublicKey[cipher] is Encodable in Data = _.bytes

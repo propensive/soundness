@@ -35,7 +35,7 @@ package xylophone
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 case class DPerson(name: Text, age: Int, email: Text) derives CanEqual
 case class DContact(person: DPerson, company: Text) derives CanEqual

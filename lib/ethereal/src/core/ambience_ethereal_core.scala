@@ -35,4 +35,4 @@ package ambience
 import exoskeleton.*
 
 package workingDirectories:
-  given daemonClient(using cli: Cli): WorkingDirectory = cli.workingDirectory
+  given daemonClientWorkingDirectory(using cli: Cli): WorkingDirectory = cli.workingDirectory

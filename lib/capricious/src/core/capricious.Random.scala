@@ -39,7 +39,7 @@ import scala.util as su
 import beneficence.*
 
 object Random:
-  lazy val global: Random = new Random(randomization.unseeded.initialize())
+  lazy val global: Random = new Random(randomization.unseededRandomization.initialize())
 
   def apply(seed: Seed)(using randomization: Randomization): Random =
     new Random(randomization.initialize())

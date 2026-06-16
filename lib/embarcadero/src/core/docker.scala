@@ -49,8 +49,8 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 
-import jsonPrinters.indented
-import logging.silent
+import printers.jsonIndentedPrinter
+import logging.silentLogging
 
 case class ContainerImage(id: Text)
 
@@ -60,12 +60,12 @@ case class DockerEngine(port: Int)
 
 @main
 def run(): Unit =
-  import internetAccess.enabled
+  import internetAccess.online
   import strategies.throwUnsafely
 
   val response =
     unsafely(DomainSocket(% / "var" / "run" / "docker.sock")).at(t"/images/json").fetch()
 
-  import hieroglyph.*, charEncoders.utf8
+  import hieroglyph.*, charEncoders.utf8Encoder
 
   println(response.receive[Json].as[List[Container]])

@@ -37,7 +37,7 @@ import contingency.*
 import fulminate.*
 import gossamer.*
 import kaleidoscope.*
-import monotonous.*, alphabets.base64.standard
+import monotonous.*, alphabets.base64Standard
 import rudiments.*
 import vacuous.*
 

@@ -34,7 +34,7 @@ package ulysses
 
 import soundness.*
 
-import hashProviders.soundnessHashing
+import providers.soundnessProvider
 import Blake3.hash   // a concrete `Hash in Blake3` in scope, so BloomFilter infers BLAKE3
 
 object Tests extends Suite(m"Ulysses tests"):

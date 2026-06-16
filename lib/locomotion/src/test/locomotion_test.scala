@@ -35,7 +35,7 @@ package locomotion
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 case class Sample(@field(1) value: Int) derives CanEqual
 case class Point(@field(1) x: Int, @field(2) y: Int) derives CanEqual

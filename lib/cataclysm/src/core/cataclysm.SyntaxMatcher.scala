@@ -41,7 +41,7 @@ import jacinta.*
 import turbulence.*
 import vacuous.*
 
-import hellenism.classloaders.threadContext
+import hellenism.classloaders.threadContextClassloader
 
 // Checks a CSS property value against its `Syntax` grammar. Composite `<type>`s
 // are resolved lazily from the bundled `syntaxes.json` (which expand to keywords,

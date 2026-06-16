@@ -43,4 +43,4 @@ export
       Yotta, Zebi, Zepto, Zetta }
 
 package temperatureScales:
-  export quantitative.temperatureScales.{celsius, fahrenheit, kelvin, rankine}
+  export quantitative.temperatureScales.{celsiusScale, fahrenheitScale, kelvinScale, rankineScale}

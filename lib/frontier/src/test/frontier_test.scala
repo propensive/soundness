@@ -109,7 +109,7 @@ object Tests extends Suite(m"Frontier Tests"):
         import frontier.context.explainMissingContext
         summon[rudiments.DecimalConverter]
       . map(_.message)
-    . assert(_.exists(_.contains("decimalFormatters.java")))
+    . assert(_.exists(_.contains("decimalConverters.javaDecimalConverter")))
 
     test(m"explainMissingContext shows type-parameter bindings for polymorphic givens"):
       demilitarize:
@@ -159,5 +159,5 @@ object Tests extends Suite(m"Frontier Tests"):
           m.contains("resolving Holder")
           && m.contains("candidate mkHolder")
           && m.contains("requires") && m.contains("DecimalConverter")
-          && m.contains("decimalFormatters.java")
+          && m.contains("decimalConverters.javaDecimalConverter")
 

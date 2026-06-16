@@ -38,17 +38,17 @@ import java.util.concurrent as juc
 
 import soundness.*
 
-import classloaders.system
-import environments.java
-import systems.java
-import temporaryDirectories.system
-import workingDirectories.default
-import supervisors.global
-import logging.silent
-import threading.platform
+import classloaders.systemClassloader
+import environments.javaEnvironment
+import systems.javaSystem
+import temporaryDirectories.systemTemporaryDirectory
+import workingDirectories.defaultWorkingDirectory
+import supervisors.globalSupervisor
+import logging.silentLogging
+import threading.platformThreading
 
 import strategies.throwUnsafely
-import backstops.silent
+import backstops.silentBackstop
 import autopsies.contrastExpectations
 
 object Tests extends Suite(m"Ethereal Tests"):
@@ -77,9 +77,9 @@ object Tests extends Suite(m"Ethereal Tests"):
     val launcher = Enclave(name).dispatch:
       ' {
           import executives.completions
-          import interpreters.posix
-          import environments.daemonClient
-          import systems.java
+          import interpreters.posixInterpreter
+          import environments.daemonClientEnvironment
+          import systems.javaSystem
 
           cli:
             arguments match
@@ -505,7 +505,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     val launcherV1 = Enclave(upgradeName, buildId = 1).dispatch:
       ' {
           import executives.completions
-          import interpreters.posix
+          import interpreters.posixInterpreter
 
           cli:
             arguments match
@@ -523,7 +523,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     val launcherV2 = Enclave(upgradeName, buildId = 2).dispatch:
       ' {
           import executives.completions
-          import interpreters.posix
+          import interpreters.posixInterpreter
 
           cli:
             arguments match
@@ -582,7 +582,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     val selfuV1 = Enclave(selfuName, buildId = 1).dispatch:
       ' {
           import executives.completions
-          import interpreters.posix
+          import interpreters.posixInterpreter
 
           cli:
             arguments match
@@ -598,7 +598,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     val selfuV2 = Enclave(selfuName, buildId = 2).dispatch:
       ' {
           import executives.completions
-          import interpreters.posix
+          import interpreters.posixInterpreter
 
           cli:
             arguments match
@@ -641,7 +641,7 @@ object Tests extends Suite(m"Ethereal Tests"):
     val brokenExe: Path on Linux = Enclave("brokn").dispatch:
       ' {
           import executives.completions
-          import interpreters.posix
+          import interpreters.posixInterpreter
 
           if jl.System.getProperty("ethereal.name") != null then jl.System.exit(1)
 

@@ -110,8 +110,8 @@ object Installer:
     ( using Diagnostics )
   :   Result logs DaemonLogEvent raises InstallError =
 
-    import workingDirectories.java
-    import systems.java
+    import workingDirectories.javaWorkingDirectory
+    import systems.javaSystem
 
     whereas:
       case PathError(_, _)      => InstallError(InstallError.Reason.Environment)

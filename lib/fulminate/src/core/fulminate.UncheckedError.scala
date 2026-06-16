@@ -47,5 +47,5 @@ object UncheckedError:
     new UncheckedError(message, throwable.getStackTrace)
 
 case class UncheckedError private(text: Text, stackTrace: Array[StackTraceElement | Null] | Null)
-extends Error(117, 0)(UncheckedError.describe(text))(using errorDiagnostics.empty):
+extends Error(117, 0)(UncheckedError.describe(text))(using errorDiagnostics.emptyDiagnostics):
   setStackTrace(stackTrace)

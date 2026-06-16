@@ -34,5 +34,8 @@ package soundness
 
 export ypsiloid.{Yaml, YamlError, YamlParser, YamlPrimitive, YamlPrinter}
 
-package yamlPrinters:
-  export ypsiloid.yamlPrinters.block
+package printers:
+  export ypsiloid.printers.yamlBlockPrinter
+
+package discriminables:
+  export ypsiloid.discriminables.{yamlByTypeDiscriminable, yamlByKindDiscriminable}

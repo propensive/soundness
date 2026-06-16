@@ -34,15 +34,15 @@ package serpentine
 
 import scala.quoted.*
 
-import ambience.*, environments.java, systems.java
+import ambience.*, environments.javaEnvironment, systems.javaSystem
 import contingency.*, strategies.throwUnsafely
 import fulminate.*
-import hellenism.*, classloaders.threadContext
+import hellenism.*, classloaders.threadContextClassloader
 import probably.*
 import quantitative.*
 import sedentary.*
 import symbolism.*
-import temporaryDirectories.system
+import temporaryDirectories.systemTemporaryDirectory
 
 object Benchmarks extends Suite(m"Serpentine benchmarks"):
   given device: BenchmarkDevice = LocalhostDevice

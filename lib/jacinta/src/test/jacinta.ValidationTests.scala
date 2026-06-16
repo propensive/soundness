@@ -34,10 +34,10 @@ package jacinta
 
 import soundness.*
 
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 import strategies.throwUnsafely
-import jsonPrinters.minimal
-import errorDiagnostics.stackTraces
+import printers.jsonMinimalPrinter
+import errorDiagnostics.stackTracesDiagnostics
 
 case class VPerson(name: Text, age: Int, email: Text) derives CanEqual
 case class VAddress(street: Text, city: Text, zip: Text) derives CanEqual

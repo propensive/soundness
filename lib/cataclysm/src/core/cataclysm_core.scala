@@ -88,5 +88,5 @@ private def argumentSimples(argument: Optional[PseudoArgument]): List[Simple] =
     case PseudoArgument.Raw(_)          => Nil
 
 package cssFormatters:
-  given standard: CssFormatter = CssFormatter(newlines = true, spaces = true)
-  given compact: CssFormatter = CssFormatter(newlines = false, spaces = false)
+  given standardCssFormatter: CssFormatter = CssFormatter(newlines = true, spaces = true)
+  given compactCssFormatter: CssFormatter = CssFormatter(newlines = false, spaces = false)

@@ -35,11 +35,11 @@ package perihelion
 import soundness.*
 import scintillate.SocketServer
 
-import logging.silent
+import logging.silentLogging
 import strategies.throwUnsafely
-import webserverErrorPages.minimal
-import threading.virtual
-import probates.await
+import webserverErrorPages.minimalErrorPage
+import threading.virtualThreading
+import probates.awaitProbate
 
 import Control.*
 

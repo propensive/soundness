@@ -37,11 +37,11 @@ import diuretic.*
 package interfaces:
   package instants:
     given javaTimeInstant: JavaTimeInstant.type = JavaTimeInstant
-    given javaLong: JavaLongInstant.type = JavaLongInstant
+    given javaLongInstant: JavaLongInstant.type = JavaLongInstant
     given javaUtilDate: JavaUtilDate.type = JavaUtilDate
 
   package durations:
-    given javaLong: JavaLongDuration.type = JavaLongDuration
+    given javaLongDuration: JavaLongDuration.type = JavaLongDuration
 
   package paths:
     given javaNioPath: JavaNioPath.type = JavaNioPath

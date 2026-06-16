@@ -43,7 +43,7 @@ import rudiments.*
 import vacuous.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 import Tel.given
 
 // NB: `dynamicTelAccess.enabled` is deliberately *not* imported here — verified

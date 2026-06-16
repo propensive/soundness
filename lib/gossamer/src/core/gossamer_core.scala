@@ -383,7 +383,7 @@ extension [textual: Textual { type Result = Char }](text: textual)
   inline def superscripts: textual = textual.map(text)(_.superscript.or(' '))
 
 package proximities:
-  given jaroDistance: (sensitivity: CaseSensitivity) => Proximity by Double = (left, right) =>
+  given jaroProximity: (sensitivity: CaseSensitivity) => Proximity by Double = (left, right) =>
     if left == right then 1.0 else
       val maxDist: Int = left.length.max(right.length)/2 - 1
       val found1 = new scm.BitSet(left.length)
@@ -424,7 +424,7 @@ package proximities:
           + (matches - count/2.0)/matches )
         / 3
 
-  given prefixMatch: (sensitivity: CaseSensitivity) => Proximity by Int = (left, right) =>
+  given prefixProximity: (sensitivity: CaseSensitivity) => Proximity by Int = (left, right) =>
     val limit = left.length.min(right.length)
 
     def recur(index: Int = 0): Int = if index >= limit then index else
@@ -434,13 +434,13 @@ package proximities:
 
     recur()
 
-  given jaroWinklerDistance: CaseSensitivity => Proximity by Double = (left, right) =>
+  given jaroWinklerProximity: CaseSensitivity => Proximity by Double = (left, right) =>
     val scale = 0.1
-    val distance = jaroDistance.distance(left, right)
-    distance + scale*prefixMatch.distance(left, right).min(4)*(1.0 - distance)
+    val distance = jaroProximity.distance(left, right)
+    distance + scale*prefixProximity.distance(left, right).min(4)*(1.0 - distance)
 
 
-  given levenshteinDistance: (sensitivity: CaseSensitivity)
+  given levenshteinProximity: (sensitivity: CaseSensitivity)
   =>  (Proximity { type Triangulable = true }) by Int =
 
     (left, right) =>
@@ -465,10 +465,10 @@ package proximities:
       if m == 0 then n else dist(n)
 
 
-  given normalizedLevenshteinDistance: CaseSensitivity => Proximity by Double =
+  given normalizedLevenshteinProximity: CaseSensitivity => Proximity by Double =
     (left, right) =>
       val span = left.length.max(right.length)
-      if span == 0 then 0.0 else levenshteinDistance.distance(left, right).toDouble/span
+      if span == 0 then 0.0 else levenshteinProximity.distance(left, right).toDouble/span
 
 extension (text: Text)
   inline def has(substring: Text): Boolean = text.contains(substring)
@@ -545,26 +545,26 @@ extension (builder: StringBuilder)
   def add(char: Char): Unit = builder.append(char)
   def text: Text = builder.toString.tt
 
-package decimalFormatters:
-  given java: DecimalConverter:
+package decimalConverters:
+  given javaDecimalConverter: DecimalConverter:
     def decimalize(double: Double): Text = double.toString.tt
 
 package enumIdentification:
-  given kebabCase: [enumeration <: reflect.Enum] => enumeration is Identifiable =
+  given kebabCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
     Identifiable(_.uncamel.kebab, _.unkebab.pascal)
 
-  given snakeCase: [enumeration <: reflect.Enum] => enumeration is Identifiable =
+  given snakeCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
     Identifiable(_.uncamel.snake, _.unsnake.pascal)
 
-  given pascalCase: [enumeration <: reflect.Enum] => enumeration is Identifiable =
+  given pascalCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
     Identifiable(identity(_), identity(_))
 
-  given camelCase: [enumeration <: reflect.Enum] => enumeration is Identifiable =
+  given camelCaseIdentifiable: [enumeration <: reflect.Enum] => enumeration is Identifiable =
     Identifiable(_.uncamel.camel, _.unsnake.pascal)
 
 package caseSensitivity:
-  given sensitive: CaseSensitivity = _ == _
-  given insensitive: CaseSensitivity = _.majuscule == _.majuscule
+  given caseSensitive: CaseSensitivity = _ == _
+  given caseInsensitive: CaseSensitivity = _.majuscule == _.majuscule
 
-  given smart: CaseSensitivity = (left, right) =>
+  given smartCase: CaseSensitivity = (left, right) =>
     left == right || left.isLower && left.majuscule == right

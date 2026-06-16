@@ -38,11 +38,17 @@ object Hashing:
   trait Function:
     def digestion(): Digestion
 
+  // The JDK provider supplies hashing whenever it has been selected with
+  // `import providers.javaStdlibProvider`. Ambient here (in `Hashing`'s implicit
+  // scope) so the single provider import enables both hashing and cryptography.
+  given javaStdlibHashing(using Provider.JavaStdlib.type): JavaStdlibHashing.type =
+    JavaStdlibHashing
+
 // A pluggable hashing provider: it supplies the implementation of each hash
 // function as a `Hashing.Function` (a factory for fresh `Digestion`s). Providers
 // are *disjoint* — the JDK provider handles MD5/SHA-1/SHA-2/CRC-32, while BLAKE3
 // (with no JDK implementation) is supplied by the pure-Scala Soundness provider —
 // so each algorithm is reached through a structural refinement rather than a
 // mandatory baseline. Select providers with explicit imports, e.g.
-// `import hashProviders.javaStdlibHashing, hashProviders.soundnessHashing`.
+// `import providers.javaStdlibProvider, providers.soundnessProvider`.
 trait Hashing

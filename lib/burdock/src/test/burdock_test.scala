@@ -35,10 +35,10 @@ package burdock
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
-import charEncoders.utf8
-import systems.java
-import temporaryDirectories.system
+import errorDiagnostics.stackTracesDiagnostics
+import charEncoders.utf8Encoder
+import systems.javaSystem
+import temporaryDirectories.systemTemporaryDirectory
 
 object Tests extends Suite(m"Burdock Tests"):
   def run(): Unit =

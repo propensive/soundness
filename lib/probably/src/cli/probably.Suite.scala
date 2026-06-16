@@ -34,7 +34,7 @@ package probably
 
 import java.lang as jl
 
-import ambience.*, environments.java
+import ambience.*, environments.javaEnvironment
 import anticipation.*
 import contingency.*
 import digression.*
@@ -45,12 +45,12 @@ import prepositional.*
 import turbulence.*
 import vacuous.*
 
-import luminosity.dark
-import termcaps.environment
-import themes.solarized
+import luminosity.darkBrightness
+import termcaps.environmentTermcap
+import themes.solarizedTheme
 
 abstract class Suite(suiteName: Message) extends Testable(suiteName):
-  val suiteIo = safely(stdios.virtualMachine).vouch
+  val suiteIo = safely(stdios.virtualMachineStdio).vouch
 
   var runner0: Runner[Report] =
     given stdio: Stdio = suiteIo

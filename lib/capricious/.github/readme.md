@@ -122,13 +122,13 @@ probability each possible `Double` value should have of being chosen randomly.
 Hence, several options are provided, which can be selected by importing them as
 contextual values:
 
-- `import randomDistributions.gaussian` - the Gaussian distribution with mean,
+- `import randomDistributions.gaussianDistribution` - the Gaussian distribution with mean,
   `0`, and variance, `1`
-- `import randomDistributions.uniformUnitInterval` - uniform across the
+- `import randomDistributions.uniformUnitIntervalDistribution` - uniform across the
   interval `[0, 1]`
-- `import randomDistributions.uniformSymmetricUnitInterval` - uniform across
+- `import randomDistributions.uniformSymmetricUnitIntervalDistribution` - uniform across
   the interval `[-1, 1]`
-- `import randomDistributions.binary` - uniform across the 64-bit binary
+- `import randomDistributions.binaryDistribution` - uniform across the 64-bit binary
   representations of IEEE 754
   double-precision values
 - `given Distribution = Gamma(shape, scale)` - a Gamma distribution with a

@@ -39,4 +39,4 @@ export
       TextStyle, Underline }
 
 package displayableTypes:
-  export escapade.displayableTypes.message
+  export escapade.displayableTypes.messagePrintable

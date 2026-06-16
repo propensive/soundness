@@ -47,7 +47,7 @@ import YamlError.Reason
 
 // Render a `Yaml` / `Yaml.Ast` to YAML text using the `YamlPrinter` in scope.
 // Mirrors jacinta's `Json` / `Json.Ast` `Showable` givens. Bring a printer into
-// scope (e.g. `import yamlPrinters.block`) to enable `.show` and HTTP encoding.
+// scope (e.g. `import printers.yamlBlockPrinter`) to enable `.show` and HTTP encoding.
 given astShowable: (printer: YamlPrinter) => Yaml.Ast is Showable = printer.print(_)
 given showable: YamlPrinter => Yaml is Showable = Yaml.unseal(_).show
 
@@ -158,14 +158,14 @@ extension (yaml: Yaml.Ast)
 
   def primitive: YamlPrimitive = Yaml.primitive(yaml)
 
-package yamlPrinters:
+package printers:
   // Block-style serializer. The default (and currently only) printer; flow
-  // style may be added later. Mirrors jacinta's `jsonPrinters.indented`.
-  given block: YamlPrinter = YamlPrinter.print(_)
+  // style may be added later. Mirrors jacinta's `printers.jsonIndentedPrinter`.
+  given yamlBlockPrinter: YamlPrinter = YamlPrinter.print(_)
 
-package yamlDiscriminables:
-  given discriminatedUnionByType: [value] => value is Discriminable in Yaml =
+package discriminables:
+  given yamlByTypeDiscriminable: [value] => value is Discriminable in Yaml =
     Yaml.discriminatedUnion[value](t"type")
 
-  given discriminatedUnionByKind: [value] => value is Discriminable in Yaml =
+  given yamlByKindDiscriminable: [value] => value is Discriminable in Yaml =
     Yaml.discriminatedUnion[value](t"kind")

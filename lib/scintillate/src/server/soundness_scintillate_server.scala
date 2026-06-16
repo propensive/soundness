@@ -38,7 +38,7 @@ export
       Redirect, request, RequestServable, Responder, ServerError, Unfulfilled, WebserverErrorPage }
 
 package httpServers:
-  export scintillate.httpServers.{stdlib, stdlibPublic}
+  export scintillate.httpServers.{stdlibHttpServer, stdlibPublicHttpServer}
 
 package webserverErrorPages:
-  export scintillate.webserverErrorPages.{minimal, stackTraces, standard}
+  export scintillate.webserverErrorPages.{minimalErrorPage, stackTracesErrorPage, standardErrorPage}

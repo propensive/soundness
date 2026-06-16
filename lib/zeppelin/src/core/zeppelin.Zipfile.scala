@@ -44,7 +44,7 @@ import denominative.*
 import distillate.*
 import fulminate.*
 import gossamer.*
-import hieroglyph.*, charEncoders.utf8
+import hieroglyph.*, charEncoders.utf8Encoder
 import nomenclature.*
 import prepositional.*
 import rudiments.*
@@ -238,7 +238,7 @@ object Zipfile:
         case other => abort(ZipError(ZipError.Reason.UnsupportedMethod(other)))
 
       val ref: Path on Zip =
-        import errorDiagnostics.empty
+        import errorDiagnostics.emptyDiagnostics
 
         whereas:
           case PathError(_, _)    => ZipError(ZipError.Reason.InvalidName(cleanName))

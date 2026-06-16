@@ -37,8 +37,8 @@ import java.lang as jl
 import soundness.*
 
 import strategies.throwUnsafely
-import textMetrics.eastAsianScripts
-import errorDiagnostics.stackTraces
+import textMetrics.eastAsianScriptsMetric
+import errorDiagnostics.stackTracesDiagnostics
 
 object Tests extends Suite(m"Hieroglyph tests"):
   def run(): Unit =
@@ -61,37 +61,37 @@ object Tests extends Suite(m"Hieroglyph tests"):
     suite(m"Roundtrip decoding"):
 
       test(m"Decode Japanese from UTF-8"):
-        import textSanitizers.skip
-        charDecoders.utf8.decoded(japaneseData)
+        import textSanitizers.skipSanitizer
+        charDecoders.utf8Decoder.decoded(japaneseData)
       . assert(_ == japanese)
 
       for chunk <- 1 to 25 do
         test(m"Decode Japanese text in chunks of size $chunk"):
-          import textSanitizers.skip
-          charDecoders.utf8.decoded(japaneseData.grouped(chunk).to(Stream)).join
+          import textSanitizers.skipSanitizer
+          charDecoders.utf8Decoder.decoded(japaneseData.grouped(chunk).to(Stream)).join
         . assert(_ == japanese)
 
       val badUtf8 = Data(45, -62, 49, 48)
 
       test(m"Decode invalid UTF-8 sequence, skipping errors"):
-        import textSanitizers.skip
-        charDecoders.utf8.decoded(badUtf8)
+        import textSanitizers.skipSanitizer
+        charDecoders.utf8Decoder.decoded(badUtf8)
       . assert(_ == t"-10")
 
       test(m"Decode invalid UTF-8 with question mark substitution"):
-        import textSanitizers.substitute
-        charDecoders.utf8.decoded(badUtf8)
+        import textSanitizers.substituteSanitizer
+        charDecoders.utf8Decoder.decoded(badUtf8)
       . assert(_ == t"-?10")
 
       test(m"Decode invalid UTF-8 sequence, throwing exception"):
-        import textSanitizers.strict
-        capture[CharDecodeError](charDecoders.utf8.decoded(badUtf8))
+        import textSanitizers.strictSanitizer
+        capture[CharDecodeError](charDecoders.utf8Decoder.decoded(badUtf8))
       . assert(_ == CharDecodeError(1, enc"UTF-8"))
 
       test(m"Ensure that decoding is finished"):
-        import textSanitizers.strict
+        import textSanitizers.strictSanitizer
         given CharEncoder = enc"UTF-8".encoder
-        capture[CharDecodeError](charDecoders.utf8.decoded(t"café".data.dropRight(1)))
+        capture[CharDecodeError](charDecoders.utf8Decoder.decoded(t"café".data.dropRight(1)))
       . assert(_ == CharDecodeError(4, enc"UTF-8"))
 
     suite(m"Compile-time tests"):
@@ -101,7 +101,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
 
       test(m"Non-encoding has a decoder method"):
         demilitarize:
-          import textSanitizers.skip
+          import textSanitizers.skipSanitizer
           enc"ISO-2022-CN".decoder
 
         . map(_.message)

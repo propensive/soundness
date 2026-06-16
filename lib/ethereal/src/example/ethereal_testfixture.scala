@@ -38,16 +38,16 @@ import java.util.concurrent as juc
 
 import soundness.*
 
-import backstops.silent
-import charDecoders.utf8
-import classloaders.threadContext
-import environments.daemonClient
+import backstops.silentBackstop
+import charDecoders.utf8Decoder
+import classloaders.threadContextClassloader
+import environments.daemonClientEnvironment
 import executives.completions
-import interpreters.posix
-import systems.java
-import textSanitizers.strict
-import threading.platform
-import workingDirectories.system
+import interpreters.posixInterpreter
+import systems.javaSystem
+import textSanitizers.strictSanitizer
+import threading.platformThreading
+import workingDirectories.systemWorkingDirectory
 
 @main
 def fixture(): Unit = cli:

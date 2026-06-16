@@ -37,7 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 
 import doms.html.whatwg
-import classloaders.system
+import classloaders.systemClassloader
 
 object Tests extends Suite(m"Punctuation tests"):
   def run(): Unit =
@@ -126,7 +126,7 @@ object Tests extends Suite(m"Punctuation tests"):
 
     suite(m"Terminal renderer"):
       import hyphenations.englishHyphenation
-      import termcapDefinitions.xtermTrueColor
+      import termcapDefinitions.xtermTrueColorTermcap
 
       test(m"heading is styled and followed by a rule"):
         val md = Parser.parse(t"# Hello\n")
@@ -135,7 +135,7 @@ object Tests extends Suite(m"Punctuation tests"):
 
       test(m"link content carries an OSC 8 escape"):
         val md = Parser.parse(t"See [home](https://example.org/) here.\n")
-        md.terminal(width = 60).render(xtermTrueColor).s
+        md.terminal(width = 60).render(xtermTrueColorTermcap).s
       . assert(_.contains("]8;;https://example.org/"))
 
       test(m"long word hyphenates at width 20"):

@@ -51,7 +51,7 @@ import turbulence.*
 import vacuous.*
 import xylophone.*
 
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 import strategies.throwUnsafely
 
 object Apoplexy:

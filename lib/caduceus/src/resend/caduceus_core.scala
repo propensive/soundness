@@ -48,13 +48,13 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
-import alphabets.base64.standard
-import charEncoders.utf8
-import environments.java
-import errorDiagnostics.stackTraces
-import jsonPrinters.minimal
-import stdios.virtualMachine
-import termcaps.environment
+import alphabets.base64Standard
+import charEncoders.utf8Encoder
+import environments.javaEnvironment
+import errorDiagnostics.stackTracesDiagnostics
+import printers.jsonMinimalPrinter
+import stdios.virtualMachineStdio
+import termcaps.environmentTermcap
 
 package couriers:
   given resend: (Tactic[CourierError], Online, HttpEvent is Loggable, HttpClient)

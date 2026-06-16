@@ -37,7 +37,7 @@ import language.experimental.pureFunctions
 import anticipation.*
 import escapade.*
 import gossamer.*
-import hieroglyph.*, textMetrics.uniform
+import hieroglyph.*, textMetrics.uniformMetric
 import symbolism.*
 import vacuous.*
 

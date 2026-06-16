@@ -35,7 +35,7 @@ package ypsiloid
 import soundness.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
+import errorDiagnostics.stackTracesDiagnostics
 
 case class FPerson(name: Text, age: Int, email: Text) derives CanEqual
 case class FAddress(street: Text, city: Text, zip: Text) derives CanEqual

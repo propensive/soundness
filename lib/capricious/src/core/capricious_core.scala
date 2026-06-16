@@ -57,16 +57,16 @@ package randomization:
     given uniformUpto10000: RandomSize = _.long().toInt.abs%10000
     given uniformUpto100000: RandomSize = _.long().toInt.abs%100000
 
-  given unseeded: Randomization = () => su.Random(java.util.Random())
-  given secureUnseeded: Randomization = () => su.Random(js.SecureRandom())
+  given unseededRandomization: Randomization = () => su.Random(java.util.Random())
+  given secureUnseededRandomization: Randomization = () => su.Random(js.SecureRandom())
 
-  given stronglySecure: Randomization = () =>
+  given stronglySecureRandomization: Randomization = () =>
     su.Random(js.SecureRandom.getInstanceStrong().nn)
 
-  given seeded: (seed: Seed) => Randomization = () =>
+  given seededRandomization: (seed: Seed) => Randomization = () =>
     su.Random(ju.Random(seed.long))
 
-  given secureSeeded: (seed: Seed) => Randomization = () =>
+  given secureSeededRandomization: (seed: Seed) => Randomization = () =>
     su.Random(js.SecureRandom(seed.value.to(Array)))
 
 def stochastic[result](using randomization: Randomization)(block: Random ?=> result): result =
@@ -75,13 +75,13 @@ def stochastic[result](using randomization: Randomization)(block: Random ?=> res
 def arbitrary[value: Randomizable]()(using Random): value = value()
 
 def random[value: Randomizable](): value =
-  given random: Random = Random.global
+  given globalRandom: Random = Random.global
   value()
 
 def toss()(using Random): Boolean = math.random() < 0.5
 
 package randomDistributions:
-  given gaussian: Distribution = Gaussian()
-  given uniformUnitInterval: Distribution = UniformDistribution(0, 1)
-  given uniformSymmetricUnitInterval: Distribution = UniformDistribution(-1, 1)
-  given binary: Distribution = random => Double(random.long())
+  given gaussianDistribution: Distribution = Gaussian()
+  given uniformUnitIntervalDistribution: Distribution = UniformDistribution(0, 1)
+  given uniformSymmetricUnitIntervalDistribution: Distribution = UniformDistribution(-1, 1)
+  given binaryDistribution: Distribution = random => Double(random.long())

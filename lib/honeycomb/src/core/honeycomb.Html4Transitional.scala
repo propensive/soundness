@@ -48,9 +48,9 @@ import turbulence.*
 import typonym.*
 import vacuous.*
 
-import charDecoders.utf8
-import classloaders.threadContext
-import textSanitizers.skip
+import charDecoders.utf8Decoder
+import classloaders.threadContextClassloader
+import textSanitizers.skipSanitizer
 
 object Html4Transitional:
   // Reuse WHATWG attribute value type markers (Textual, Url, Color, Presence, etc.)

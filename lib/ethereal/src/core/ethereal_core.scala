@@ -40,7 +40,7 @@ import java.util.concurrent.atomic as juca
 
 import scala.collection.concurrent as scc
 
-import ambience.*, systems.java
+import ambience.*, systems.javaSystem
 import anticipation.*
 import coaxial.*
 import contingency.*
@@ -53,8 +53,8 @@ import fulminate.*
 import galilei.*
 import gossamer.*
 import guillotine.*
-import hellenism.*, classloaders.threadContext
-import hieroglyph.*, charEncoders.utf8, charDecoders.utf8, textSanitizers.strict
+import hellenism.*, classloaders.threadContextClassloader
+import hieroglyph.*, charEncoders.utf8Encoder, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
 import nomenclature.*
 import parasite.*
 import prepositional.*
@@ -87,10 +87,10 @@ def cli[bus <: Matchable](using executive: Executive)
 :   Unit =
 
   import strategies.throwUnsafely
-  import workingDirectories.system
-  import environments.java
-  import termcaps.environment
-  import stdios.virtualMachine
+  import workingDirectories.systemWorkingDirectory
+  import environments.javaEnvironment
+  import termcaps.environmentTermcap
+  import stdios.virtualMachineStdio
 
   val name: Text =
     whereas:
@@ -391,7 +391,7 @@ def cli[bus <: Matchable](using executive: Executive)
           def ansi: Boolean = true
 
           lazy val color: ColorDepth =
-            import workingDirectories.system
+            import workingDirectories.systemWorkingDirectory
 
             if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
             else
@@ -460,17 +460,17 @@ def cli[bus <: Matchable](using executive: Executive)
           connection.close()
           Log.info(DaemonLogEvent.CloseConnection(pid))
 
-  application(using executives.direct(using backstops.silent))(Nil):
-    import environments.java
-    import termcaps.environment
-    import stdios.virtualMachine
-    import probates.await
+  application(using executives.directExecutive(using backstops.silentBackstop))(Nil):
+    import environments.javaEnvironment
+    import termcaps.environmentTermcap
+    import stdios.virtualMachineStdio
+    import probates.awaitProbate
 
     Os.intercept[Shutdown]:
       wipeState()
 
     supervise:
-      import logFormats.standard
+      import logFormats.standardLogFormat
       given loggable: Message is Loggable = Log.route(Syslog(t"ethereal"))
 
       safely(socketFile.wipe())

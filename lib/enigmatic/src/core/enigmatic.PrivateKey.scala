@@ -33,7 +33,7 @@
 package enigmatic
 
 import anticipation.*
-import gastronomy.*, hashProviders.javaStdlibHashing
+import gastronomy.*, providers.javaStdlibProvider
 import gossamer.*
 import monotonous.*
 import prepositional.*
@@ -44,7 +44,7 @@ object PrivateKey:
     PrivateKey(cipher.genKey())
 
   given showable: [key <: Cipher] => PrivateKey[key] is Showable = key =>
-    import alphabets.base64.standard
+    import alphabets.base64Standard
     t"PrivateKey(${key.privateData.digest[Sha2[256]].serialize[Base64]})"
 
 class PrivateKey[cipher <: Cipher](private[enigmatic] val privateData: Data):

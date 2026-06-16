@@ -35,7 +35,7 @@ package soundness
 export eucalyptus.{dateFormat, envelop, ignore, Inscribable, mute, route, silent, Taggable}
 
 package logFormats:
-  export eucalyptus.logFormats.{lightweight, standard, untimestamped}
+  export eucalyptus.logFormats.{lightweightLogFormat, standardLogFormat, untimestampedLogFormat}
 
 package logging:
-  export eucalyptus.logging.{silent, stderr, stdout}
+  export eucalyptus.logging.{silentLogging, stderrLogging, stdoutLogging}

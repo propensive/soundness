@@ -33,7 +33,7 @@
 package mosquito
 
 import soundness.*
-import textMetrics.uniform
+import textMetrics.uniformMetric
 
 given Decimalizer(4)
 

@@ -337,22 +337,22 @@ object Tests extends Suite(m"Quantitative Tests"):
 
     suite(m"Offset quantities"):
       test(m"Get Celsius value"):
-        import temperatureScales.celsius
+        import temperatureScales.celsiusScale
         (zero[Temperature] + 300*Kelvin).show
       . assert(_ == t"26.9 °C")
 
       test(m"Get Fahrenheit value"):
-        import temperatureScales.fahrenheit
+        import temperatureScales.fahrenheitScale
         (zero[Temperature] + 300*Kelvin).show
       . assert(_ == t"80.3 °F")
 
       test(m"Create Celsius value"):
-        import temperatureScales.celsius
+        import temperatureScales.celsiusScale
         Celsius(30).show
       . assert(_ == t"30.0 °C")
 
       test(m"Create Fahrenheit value"):
-        import temperatureScales.fahrenheit
+        import temperatureScales.fahrenheitScale
         Fahrenheit(30).show
       . assert(_ == t"30.0 °F")
 
@@ -373,18 +373,18 @@ object Tests extends Suite(m"Quantitative Tests"):
       . assert(_ == t"560 °R")
 
       test(m"Convert Fahrenheit directly to Celsius"):
-        import temperatureScales.celsius
+        import temperatureScales.celsiusScale
         Fahrenheit(100).show
       . assert(_ == t"37.8 °C")
 
       test(m"Add a Rankine quantity to a Temperature"):
-        import temperatureScales.kelvin
+        import temperatureScales.kelvinScale
         // (9*Kelvin).in[Rankines] is 16.2 R, equivalent to 9 K
         (zero[Temperature] + (9.0*Kelvin).in[Rankines]).show
       . assert(_ == t"9.00 K")
 
       test(m"Subtract a Rankine quantity from a Temperature"):
-        import temperatureScales.kelvin
+        import temperatureScales.kelvinScale
         ((zero[Temperature] + 20.0*Kelvin) - (9.0*Kelvin).in[Rankines]).show
       . assert(_ == t"11.0 K")
 
@@ -479,7 +479,7 @@ object Tests extends Suite(m"Quantitative Tests"):
       . assert(_ == t"0.500 B")
 
     suite(m"Bytecode shape"):
-      import classloaders.threadContext
+      import classloaders.threadContextClassloader
 
       def methodBytecode(method: Text)(using Classloader): Bytecode =
         Classfile[Probes.type]

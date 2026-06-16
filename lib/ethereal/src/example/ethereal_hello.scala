@@ -34,10 +34,10 @@ package ethereal
 
 import soundness.*
 
-import backstops.stackTrace
+import backstops.stackTraceBackstop
 import executives.completions
-import interpreters.posix
-import threading.virtual
+import interpreters.posixInterpreter
+import threading.virtualThreading
 
 @main
 def run(): Unit = cli:

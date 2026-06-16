@@ -34,7 +34,7 @@ package exegesis
 
 import soundness.*
 
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 import strategies.throwUnsafely
 
 // Kept as a top-level object (its own class) rather than nested in `Tests` so the

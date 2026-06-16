@@ -39,10 +39,10 @@ export
 
 package interfaces:
   package instants:
-    export anticipation.interfaces.instants.{javaLong, javaTimeInstant, javaUtilDate}
+    export anticipation.interfaces.instants.{javaLongInstant, javaTimeInstant, javaUtilDate}
 
   package durations:
-    export anticipation.interfaces.durations.javaLong
+    export anticipation.interfaces.durations.javaLongDuration
 
   package paths:
     export anticipation.interfaces.paths.{javaIoFile, javaNioPath}

@@ -34,7 +34,7 @@ package obligatory
 
 import soundness.*
 
-import charEncoders.utf8
+import charEncoders.utf8Encoder
 import strategies.throwUnsafely
 import Http2.*
 
@@ -146,9 +146,9 @@ object Tests extends Suite(m"Obligatory Tests"):
       . assert(_ == Grpc.Status.NotFound)
 
     suite(m"gRPC over HTTP/2 (loopback)"):
-      import threading.virtual
-      import probates.cancel
-      import errorDiagnostics.stackTraces
+      import threading.virtualThreading
+      import probates.cancelProbate
+      import errorDiagnostics.stackTracesDiagnostics
 
       def pair(): (Duplex, Duplex) =
         val clientToServer = Spool[Data]()

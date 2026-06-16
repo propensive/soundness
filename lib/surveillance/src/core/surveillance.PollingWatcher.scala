@@ -39,7 +39,7 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 import denominative.*
-import parasite.*, threading.platform
+import parasite.*, threading.platformThreading
 import prepositional.*
 import rudiments.*
 import spectacular.*
@@ -54,7 +54,7 @@ import vacuous.*
 class PollingWatcher[duration: Abstractable across Durations to Long](interval: duration)
 extends Watcher:
 
-  import probates.await
+  import probates.awaitProbate
 
   private case class Entry(directory: Boolean, modified: Long, size: Long)
 

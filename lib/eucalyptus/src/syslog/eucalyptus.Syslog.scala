@@ -43,7 +43,7 @@ import vacuous.*
 
 object Syslog:
   given writable: Monitor => Syslog is Writable by Text = (syslog, stream) =>
-    import workingDirectories.system
+    import workingDirectories.javaWorkingDirectory
 
     whereas:
       case StreamError(_)     => ()

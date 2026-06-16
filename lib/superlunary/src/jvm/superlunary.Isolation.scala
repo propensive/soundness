@@ -41,7 +41,7 @@ import prepositional.*
 import serpentine.*
 import vacuous.*
 
-import classloaders.system
+import classloaders.systemClassloader
 
 object Isolation extends Rig:
   type Result[output] = output

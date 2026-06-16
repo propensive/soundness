@@ -33,7 +33,7 @@
 package soundness
 
 package postables:
-  export jacinta.postables.jsonIsPostable
+  export jacinta.postables.jsonPostable
 
 package servables:
-  export jacinta.servables.jsonIsServable
+  export jacinta.servables.jsonServable

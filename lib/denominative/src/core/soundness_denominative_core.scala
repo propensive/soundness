@@ -37,8 +37,9 @@ export
   . { aka, Countable, gamut, Interval, iterate, nil, Ordinal, Prim, Quat, Quin, Sec, Sen, Sept,
       Span, Ter, u, z, Zerary }
 
-package ordinalShowables:
+package ordinalTextualizables:
   export
-    denominative.ordinalShowables
-    . { english, englishSuperscript, french, intermediate, italian, nominal, russian, spanish,
-        uniary, unmarkedUniary, unmarkedZerary, zerary }
+    denominative.ordinalTextualizables
+    . { englishOrdinal, englishSuperscriptOrdinal, frenchOrdinal, intermediateOrdinal,
+        italianOrdinal, nominalOrdinal, russianOrdinal, spanishOrdinal, uniaryOrdinal,
+        unmarkedUniaryOrdinal, unmarkedZeraryOrdinal, zeraryOrdinal }

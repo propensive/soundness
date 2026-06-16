@@ -63,6 +63,6 @@ extension [teletypeable: Teletypeable](value: teletypeable) def teletype: Telety
   teletypeable.teletype(value)
 
 package displayableTypes:
-  given message: Message is Printable = summon[Teletype is Printable].contramap(_.teletype)
+  given messagePrintable: Message is Printable = summon[Teletype is Printable].contramap(_.teletype)
 
 type Stylize[T] = Substitution[Ansi.Input, T, "esc"]

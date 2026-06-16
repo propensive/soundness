@@ -47,7 +47,7 @@ extension [renderable: Renderable](value: renderable)
   def html: Html of renderable.Form = renderable.render(value)
 
 package attributives:
-  given textAttributes: [target] => Text is Attributive to target =
+  given textAttributive: [target] => Text is Attributive to target =
     (key, value) => (key, value)
 
 extension (inline context: StringContext)
@@ -65,4 +65,4 @@ package stylesheets:
       type Topic = classname
 
 package recoveries:
-  given permissive: Html.Recovery.Permissive = new Html.Recovery.Permissive
+  given permissiveRecovery: Html.Recovery.Permissive = new Html.Recovery.Permissive

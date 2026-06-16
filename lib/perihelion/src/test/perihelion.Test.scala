@@ -35,16 +35,16 @@ package perihelion
 import soundness.*
 import scintillate.SocketServer
 
-import logging.silent
+import logging.silentLogging
 import strategies.throwUnsafely
-import errorDiagnostics.stackTraces
-import webserverErrorPages.minimal
-import threading.virtual
-import probates.await
-import jsonPrinters.minimal
-import charEncoders.utf8
-import charDecoders.utf8
-import textSanitizers.skip
+import errorDiagnostics.stackTracesDiagnostics
+import webserverErrorPages.minimalErrorPage
+import threading.virtualThreading
+import probates.awaitProbate
+import printers.jsonMinimalPrinter
+import charEncoders.utf8Encoder
+import charDecoders.utf8Decoder
+import textSanitizers.skipSanitizer
 
 import Control.*
 

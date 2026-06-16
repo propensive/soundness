@@ -48,7 +48,7 @@ import rudiments.*
 import spectacular.*
 import vacuous.*
 
-import alphabets.hex.lowerCase
+import alphabets.hexLowerCase
 
 object Postable:
   def apply[response](mediaType0: MediaType, stream0: response => Stream[Data])
@@ -71,7 +71,7 @@ object Postable:
   given byteStream: Stream[Data] is Postable = Postable(media"application/octet-stream", identity)
 
   given query: Query is Postable =
-    import charEncoders.utf8
+    import charEncoders.utf8Encoder
     Postable(media"application/x-www-form-urlencoded", query => Stream(query.queryString.data))
 
 

@@ -50,7 +50,7 @@ We can create one inside a `supervise` block with:
 import soundness.*
 
 import strategies.throwUnsafely
-import threadingModels.virtual
+import threading.virtualThreading
 
 def run() = supervise:
   val task = async:
@@ -172,11 +172,11 @@ The child task runs continuously for ten seconds. Does that mean the call to `pa
 take ten seconds too? That depends!
 
 Three options are available, as contextual values:
-- `probates.await` will wait for all child tasks to terminate,
-- `probates.cancel` will cancel the child asks at the first opportunity, and
-- `probates.fail` will cause the call to `parent.await()` to throw an error
+- `probates.awaitProbate` will wait for all child tasks to terminate,
+- `probates.cancelProbate` will cancel the child asks at the first opportunity, and
+- `probates.failProbate` will cause the call to `parent.await()` to throw an error
   (which must be handled) if any incomplete tasks exist when the parent task returns.
-- `probates.panic` behaves like `probates.fail`, but throws an unchecked `Panic`
+- `probates.panicProbate` behaves like `probates.failProbate`, but throws an unchecked `Panic`
   error.
 
 Each of these options may be more useful in different scenarios.
@@ -255,12 +255,12 @@ From Java 21 and above, threads may be either _platform_ (corresponding to
 threads managed by the operating system) or _virtual_ (managed by the JVM).
 Prior to Java 21, all threads are _platform threads_. Parasite needs to know
 which type of thread to use, and this requires one of three imports:
-- `threadingModels.virtual`
-- `threadingModels.platform`
-- `threadingModels.adaptive`
+- `threading.virtualThreading`
+- `threading.platformThreading`
+- `threading.adaptiveThreading`
 
-Note that choosing `threadingModels.virtual` will result an a runtime error on JDKs
-older than Java 21. To avoid this, use `threadingModels.adaptive` which will fall
+Note that choosing `threading.virtualThreading` will result an a runtime error on JDKs
+older than Java 21. To avoid this, use `threading.adaptiveThreading` which will fall
 back to platform threads on earlier JVMs.
 
 ### Cancellation

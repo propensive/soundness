@@ -42,7 +42,7 @@ import gossamer.*
 import hellenism.*
 import vacuous.*
 
-// Compile-time machinery behind `Styles` and the `cssBindings.checked` given. A
+// Compile-time machinery behind `Styles` and the `cssBindings.checkedBinding` given. A
 // `Styles` marker carries a stylesheet's classpath path as its `Locus` type; the
 // resource is read and parsed during macro expansion (cached per path), and a
 // requested name is checked against the stylesheet's class and id names.
