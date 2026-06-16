@@ -306,8 +306,6 @@ object internal:
 
     def jdn: Int = date
 
-    infix def at (time: Clockface)(using Calendar): Timestamp = Timestamp(date, time)
-
     def monthstamp(using calendar: RomanCalendar): Monthstamp =
       Monthstamp(calendar.annual(date), calendar.mensual(date))
 

@@ -142,7 +142,7 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
         fail(Digit) yet 2000-Jan-1
 
     val instant: Instant = next() match
-      case '\u0000' => date.at(Clockface(Base24(0), Base60(0), Base60(0))).instant
+      case '\u0000' => Clockface(Base24(0), Base60(0), Base60(0)).on(date).instant
 
       case 'T' =>
         val hour = next() yet number(2)
@@ -153,7 +153,7 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
             next() match
               case '.' | ',' =>
-                date.at(Clockface(Base24(hour), Base60(minute), Base60(0))).instant
+                Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant
                 + fraction()*Minute
 
               case ':' =>
@@ -161,26 +161,26 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
                 next() match
                   case '.' | ',' =>
-                    date.at(Clockface(Base24(hour), Base60(minute), Base60(second))).instant
+                    Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant
                     + fraction()*Second
 
                   case _ =>
-                    date.at(Clockface(Base24(hour), Base60(minute), Base60(second))).instant
+                    Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant
 
               case d if digit =>
                 val second = number(2)
                 next()
-                date.at(Clockface(Base24(hour), Base60(minute), Base60(second))).instant
+                Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant
 
               case _ =>
-                date.at(Clockface(Base24(hour), Base60(minute), Base60(0))).instant
+                Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant
 
           case d if digit =>
             val minute = number(2)
 
             next() match
               case '.' | ',' =>
-                date.at(Clockface(Base24(hour), Base60(minute), Base60(0))).instant
+                Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant
                 + fraction()*Minute
 
               case d if digit =>
@@ -188,24 +188,24 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
                 next() match
                   case '.' | ',' =>
-                    date.at(Clockface(Base24(hour), Base60(minute), Base60(second))).instant
+                    Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant
                     + fraction()*Second
 
                   case _ =>
-                    date.at(Clockface(Base24(hour), Base60(minute), Base60(second)))
+                    Clockface(Base24(hour), Base60(minute), Base60(second)).on(date)
                     . instant
 
               case _ =>
-                date.at(Clockface(Base24(hour), Base60(minute), Base60(0))).instant
+                Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant
 
           case '.' | ',' =>
-            date.at(Clockface(Base24(hour), Base60(0), Base60(0))).instant + fraction()*Hour
+            Clockface(Base24(hour), Base60(0), Base60(0)).on(date).instant + fraction()*Hour
 
           case _ =>
-            date.at(Clockface(Base24(hour), Base60(0), Base60(0))).instant
+            Clockface(Base24(hour), Base60(0), Base60(0)).on(date).instant
 
       case _ =>
-        date.at(0.00.am).instant
+        0.00.am.on(date).instant
 
 
     focus match

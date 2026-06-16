@@ -78,6 +78,11 @@ object internal:
     inline def subsequent(size: Int): Interval = Interval(ordinal + 1, ordinal + size)
     inline def preceding(size: Int): Interval = Interval((ordinal - size).max(0), ordinal - 1)
 
+    inline def within[collection: Countable](value: collection): Optional[Ordinal in value.type] =
+      if ordinal >= 0 && ordinal < collection.size(value)
+      then ordinal.asInstanceOf[Ordinal in value.type]
+      else Unset
+
 
   object Ordinal:
     inline def zerary(inline cardinal: Int): Ordinal = cardinal

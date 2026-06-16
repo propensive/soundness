@@ -753,6 +753,14 @@ object internal:
   object Attributes:
     val empty: Attributes = IArray.empty[String]
 
+    // `Attributes` is a `Text`-keyed map, so it indexes through the shared `at` (giving `Optional`).
+    given indexable: Attributes is Indexable:
+      type Operand = Text
+      type Result = Text
+
+      def contains(attrs: Attributes, key: Text): Boolean = attrs.contains(key)
+      def access(attrs: Attributes, key: Text): Text = attrs(key)
+
     def apply(pairs: (Text, Text)*): Attributes =
       if pairs.isEmpty then empty else
         val n = pairs.length
@@ -808,18 +816,6 @@ object internal:
           i += 2
 
         throw new NoSuchElementException(s"key not found: $key")
-
-      def at(key: Text): Optional[Text] =
-        val a = storage(attrs)
-        val keyStr: String = key.s
-        val n = a.length
-        var i = 0
-
-        while i < n do
-          if a(i) == keyStr then return a(i + 1).asInstanceOf[Text]
-          i += 2
-
-        Unset
 
       def contains(key: Text): Boolean =
         val a = storage(attrs)

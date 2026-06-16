@@ -78,7 +78,7 @@ object Teletype:
       stream.flow(())(Err.print(next) yet write(target, more))
 
   given textual: Teletype is Textual:
-    type Operand = Char
+    type Result = Char
     type Show[value] = value is Teletypeable
 
     def classTag: ClassTag[Teletype] = summon[ClassTag[Teletype]]
@@ -103,7 +103,7 @@ object Teletype:
     val empty: Teletype = Teletype.empty
 
     def concat(left: Teletype, right: Teletype): Teletype = left.append(right)
-    def at(text: Teletype, index: Ordinal): Char = text.plain.s.charAt(index.n0)
+    def access(text: Teletype, index: Ordinal): Char = text.plain.s.charAt(index.n0)
 
     def indexOf(text: Teletype, sub: Text, start: Ordinal): Optional[Ordinal] =
       text.plain.s.indexOf(sub.s, start.n0).puncture(-1).let(_.z)
