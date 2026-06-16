@@ -110,7 +110,7 @@ package executives:
       Invocation
         ( Cli.arguments(arguments, Unset, Unset, Unset),
           environments.javaEnvironment,
-          workingDirectories.java,
+          workingDirectories.javaWorkingDirectory,
           stdio,
           arguments.size == 0 || arguments.head != t"{admin}",
           login )
@@ -147,7 +147,7 @@ def application(using executive: Executive, interpreter: Interpreter, system: Sy
     executive.invocation
       ( arguments,
         environments.javaEnvironment,
-        workingDirectories.java,
+        workingDirectories.javaWorkingDirectory,
         stdios.virtualMachineStdio,
         entrypoint,
         Login(ProcessHandle.current().nn.info().nn.user().nn.get().nn.tt, Unset) )

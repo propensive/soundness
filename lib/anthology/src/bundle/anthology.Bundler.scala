@@ -56,7 +56,7 @@ import filesystemTraversal.preOrder
 import logging.silent
 import manifestAttributes.*
 import systems.javaSystem
-import workingDirectories.java
+import workingDirectories.javaWorkingDirectory
 
 object Bundler:
   def classpath(out: Path on Linux): LocalClasspath =

@@ -57,7 +57,7 @@ object Jvm extends Rig:
   val scalac: Scalac[3.6] = Scalac[3.6](List(scalacOptions.experimental))
 
   protected def invoke[output](stage: Stage[output, Form, Target]): output =
-    import workingDirectories.system
+    import workingDirectories.systemWorkingDirectory
     import logging.silent
 
     stage.remote: input =>

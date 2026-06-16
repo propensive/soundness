@@ -43,7 +43,7 @@ import octogenarian.{read, namespace, target}
 
 import systems.javaSystem
 import temporaryDirectories.systemTemporaryDirectory
-import workingDirectories.default
+import workingDirectories.defaultWorkingDirectory
 import logging.silent
 import internetAccess.enabled
 

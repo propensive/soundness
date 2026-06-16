@@ -87,7 +87,7 @@ def cli[bus <: Matchable](using executive: Executive)
 :   Unit =
 
   import strategies.throwUnsafely
-  import workingDirectories.system
+  import workingDirectories.systemWorkingDirectory
   import environments.javaEnvironment
   import termcaps.environmentTermcap
   import stdios.virtualMachineStdio
@@ -391,7 +391,7 @@ def cli[bus <: Matchable](using executive: Executive)
           def ansi: Boolean = true
 
           lazy val color: ColorDepth =
-            import workingDirectories.system
+            import workingDirectories.systemWorkingDirectory
 
             if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
             else

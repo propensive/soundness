@@ -53,16 +53,17 @@ package systems:
     def apply(name: Text): Optional[Text] = Optional(jl.System.getProperty(name.s)).let(_.tt)
 
 package workingDirectories:
-  given system: (properties: System) => WorkingDirectory =
+  // Derives the working directory from the ambient `System` (reading `user.dir`).
+  given systemWorkingDirectory: (properties: System) => WorkingDirectory =
     () => properties(t"user.dir").or(panic(m"the property `user.dir` should be present"))
 
-  given java: WorkingDirectory = system(using ambience.systems.javaSystem)
+  // The JDK's working directory: `systemWorkingDirectory` specialised to the JVM
+  // `System`, equivalent to reading `user.dir` directly.
+  given javaWorkingDirectory: WorkingDirectory =
+    systemWorkingDirectory(using ambience.systems.javaSystem)
 
-  given system: WorkingDirectory = () =>
-    Optional(jl.System.getProperty("user.dir")).let(_.tt).or:
-      panic(m"the `user.dir` system property is not set")
-
-  given default: WorkingDirectory = () => jnf.Paths.get("").nn.toAbsolutePath.toString
+  given defaultWorkingDirectory: WorkingDirectory =
+    () => jnf.Paths.get("").nn.toAbsolutePath.toString
 
 package environments:
   given emptyEnvironment: Environment:

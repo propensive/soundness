@@ -39,7 +39,7 @@ import strategies.throwUnsafely
 import logging.silent
 import charEncoders.utf8Encoder
 import gitCommands.environmentDefault
-import workingDirectories.system
+import workingDirectories.javaWorkingDirectory
 import internetAccess.enabled
 import errorDiagnostics.stackTracesDiagnostics
 

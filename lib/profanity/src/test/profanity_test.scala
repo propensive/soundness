@@ -40,7 +40,7 @@ import classloaders.systemClassloader
 import environments.javaEnvironment
 import systems.javaSystem
 import temporaryDirectories.systemTemporaryDirectory
-import workingDirectories.default
+import workingDirectories.defaultWorkingDirectory
 import supervisors.globalSupervisor
 import logging.silent
 import threading.platformThreading

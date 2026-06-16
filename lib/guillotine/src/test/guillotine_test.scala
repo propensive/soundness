@@ -34,7 +34,7 @@ package guillotine
 
 import soundness.*
 
-import workingDirectories.default
+import workingDirectories.defaultWorkingDirectory
 import abstractables.durationIsAbstractable
 import strategies.throwUnsafely
 import errorDiagnostics.emptyDiagnostics

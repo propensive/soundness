@@ -45,7 +45,8 @@ package environments:
   export ambience.environments.{emptyEnvironment, javaEnvironment}
 
 package workingDirectories:
-  export ambience.workingDirectories.{default, system}
+  export ambience.workingDirectories.{defaultWorkingDirectory, systemWorkingDirectory,
+      javaWorkingDirectory}
 
 package temporaryDirectories:
   export ambience.temporaryDirectories.{environmentTemporaryDirectory, javaTemporaryDirectory,

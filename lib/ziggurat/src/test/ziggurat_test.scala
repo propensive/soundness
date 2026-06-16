@@ -37,7 +37,7 @@ import soundness.*
 import systems.javaSystem
 import environments.javaEnvironment
 import temporaryDirectories.systemTemporaryDirectory
-import workingDirectories.default
+import workingDirectories.defaultWorkingDirectory
 import logging.silent
 import stdios.virtualMachineStdio
 import termcaps.environmentTermcap

@@ -20,7 +20,7 @@ import textMetrics.uniformMetric
 import textSanitizers.skipSanitizer
 import threading.platformThreading
 import unhandledErrors.stackTrace
-import workingDirectories.daemonClient
+import workingDirectories.daemonClientWorkingDirectory
 import httpServers.stdlibPublic
 import timeFormats.railway
 

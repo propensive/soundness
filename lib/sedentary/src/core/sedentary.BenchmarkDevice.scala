@@ -44,7 +44,7 @@ import serpentine.*
 import urticose.*
 
 import logging.silent
-import workingDirectories.java
+import workingDirectories.javaWorkingDirectory
 import beneficence.*
 
 trait BenchmarkDevice extends Findable:

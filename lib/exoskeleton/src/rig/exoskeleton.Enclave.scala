@@ -56,7 +56,7 @@ import vacuous.*
 import filesystemOptions.deleteRecursively.disabled
 import logging.silent
 import probates.cancelProbate
-import workingDirectories.java
+import workingDirectories.javaWorkingDirectory
 
 
 object Enclave:

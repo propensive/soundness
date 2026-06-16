@@ -110,7 +110,7 @@ object Installer:
     ( using Diagnostics )
   :   Result logs DaemonLogEvent raises InstallError =
 
-    import workingDirectories.java
+    import workingDirectories.javaWorkingDirectory
     import systems.javaSystem
 
     whereas:

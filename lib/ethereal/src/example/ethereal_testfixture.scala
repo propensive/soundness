@@ -47,7 +47,7 @@ import interpreters.posix
 import systems.javaSystem
 import textSanitizers.strictSanitizer
 import threading.platformThreading
-import workingDirectories.system
+import workingDirectories.systemWorkingDirectory
 
 @main
 def fixture(): Unit = cli:
