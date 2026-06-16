@@ -692,7 +692,7 @@ object polysyllabic extends Library:
   object bench extends Benchmarks(core, escritoire.core, hellenism.core, quantitative.units)
 
 object ethereal extends Library:
-  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.core, quantitative.units):
+  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.core, quantitative.units, telekinesis.core, urticose.url, gastronomy.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     // The platforms the reusable native runner stubs target — (label, binary filename).
