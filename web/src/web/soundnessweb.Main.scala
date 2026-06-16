@@ -10,7 +10,7 @@ import codicils.cancel
 import environments.javaEnvironment
 import errorDiagnostics.stackTracesDiagnostics
 import httpServers.stdlibPublic
-import logging.silent
+import logging.silentLogging
 import stdios.virtualMachineStdio
 import stylesheets.uncheckedClasses
 import supervisors.globalSupervisor

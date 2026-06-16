@@ -4,15 +4,15 @@ Libraries which use Eucalyptus for logging will need a contextual `Log` instance
 be used. This may be as simple as defining a `given Log` instance in the package where the
 libraries are used, for example,
 ```scala
-given Log = logging.silent
+given Log = logging.silentLogging
 ```
 or,
 ```scala
-given Log = logging.stdout
+given Log = logging.stdoutLogging
 ```
 or,
 ```scala
-given Log = logging.syslog
+given Log = logging.syslogLogging
 ```
 
 A more versatile `Log` can route different log messages to different targets, for example,

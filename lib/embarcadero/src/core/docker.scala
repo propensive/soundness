@@ -50,7 +50,7 @@ import turbulence.*
 import urticose.*
 
 import printers.jsonIndentedPrinter
-import logging.silent
+import logging.silentLogging
 
 case class ContainerImage(id: Text)
 

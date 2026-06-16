@@ -225,7 +225,7 @@ package executives:
               given Entrypoint = entrypoint
               given WorkingDirectory = workingDirectory
               import errorDiagnostics.stackTracesDiagnostics
-              import logging.silent
+              import logging.silentLogging
               Out.println(Completions.ensure(force = true).join(t"\n"))
               Exit.Ok
 

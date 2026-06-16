@@ -47,21 +47,21 @@ import spectacular.*
 import turbulence.*
 
 package logFormats:
-  given textLevel: Level is Showable =
+  given textLevelLogFormat: Level is Showable =
     case Level.Fine => t"FINE"
     case Level.Info => t"INFO"
     case Level.Warn => t"WARN"
     case Level.Fail => t"FAIL"
 
-  given standard: [event: Communicable] => event is Inscribable in Text =
+  given standardLogFormat: [event: Communicable] => event is Inscribable in Text =
     (event, level, timestamp) =>
       t"${dateFormat.format(timestamp).nn} [$level] ${event.communicate}\n"
 
-  given untimestamped: [event: Communicable] => event is Inscribable in Text =
+  given untimestampedLogFormat: [event: Communicable] => event is Inscribable in Text =
     (event, level, timestamp) =>
       t"[$level] ${event.communicate}\n"
 
-  given lightweight: [event: Communicable] => event is Inscribable in Text =
+  given lightweightLogFormat: [event: Communicable] => event is Inscribable in Text =
     (event, level, timestamp) =>
       t"[$level] ${event.communicate}\n"
 
@@ -110,17 +110,17 @@ extension (logObject: Log.type)
 
 
 package logging:
-  given silent: [format] => format is Loggable = Log.silent[format]
+  given silentLogging: [format] => format is Loggable = Log.silent[format]
 
 
-  given stdout: [format: Printable, inscribable: Inscribable in format] => Stdio
+  given stdoutLogging: [format: Printable, inscribable: Inscribable in format] => Stdio
   =>  inscribable is Loggable =
 
     (level, timestamp, event) =>
       Out.println(inscribable.formatter(event, level, timestamp))
 
 
-  given stderr: [inscribable: Inscribable in format, format: Printable] => Stdio
+  given stderrLogging: [inscribable: Inscribable in format, format: Printable] => Stdio
   =>  inscribable is Loggable =
 
     (level, timestamp, event) =>

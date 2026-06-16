@@ -43,7 +43,7 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
-import logging.silent
+import logging.silentLogging
 import strategies.throwUnsafely
 import systems.javaSystem
 import temporaryDirectories.systemTemporaryDirectory

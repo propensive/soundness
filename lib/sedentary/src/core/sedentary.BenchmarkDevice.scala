@@ -43,7 +43,7 @@ import rudiments.*
 import serpentine.*
 import urticose.*
 
-import logging.silent
+import logging.silentLogging
 import workingDirectories.javaWorkingDirectory
 import beneficence.*
 

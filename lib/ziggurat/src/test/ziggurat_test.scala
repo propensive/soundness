@@ -38,7 +38,7 @@ import systems.javaSystem
 import environments.javaEnvironment
 import temporaryDirectories.systemTemporaryDirectory
 import workingDirectories.defaultWorkingDirectory
-import logging.silent
+import logging.silentLogging
 import stdios.virtualMachineStdio
 import termcaps.environmentTermcap
 

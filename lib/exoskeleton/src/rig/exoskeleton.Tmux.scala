@@ -40,7 +40,7 @@ object Tmux:
   def enter(keypresses: (Text | Char)*)(using tmux: Tmux): Unit raises TmuxError =
     given WorkingDirectory = tmux.workingDirectory
 
-    import logging.silent
+    import logging.silentLogging
 
     whereas:
       case ExecError(_, _, _) => TmuxError(TmuxError.Reason.ExecFailed)
@@ -52,7 +52,7 @@ object Tmux:
           case _          => panic(m"unreachable case")
 
   def screenshot()(using tmux: Tmux)(using WorkingDirectory): Screenshot raises TmuxError =
-    import logging.silent
+    import logging.silentLogging
 
     whereas:
       case ExecError(_, _, _)   => TmuxError(TmuxError.Reason.SessionDied)

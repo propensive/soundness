@@ -11,7 +11,7 @@ import environments.daemonClientEnvironment
 import errorDiagnostics.stackTracesDiagnostics
 import executives.completions
 import homeDirectories.system
-import logging.silent
+import logging.silentLogging
 import codicils.cancel
 import interpreters.posix
 import displayableTypes.messagePrintable

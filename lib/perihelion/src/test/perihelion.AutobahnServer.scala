@@ -35,7 +35,7 @@ package perihelion
 import soundness.*
 import scintillate.SocketServer
 
-import logging.silent
+import logging.silentLogging
 import strategies.throwUnsafely
 import webserverErrorPages.minimal
 import threading.virtualThreading

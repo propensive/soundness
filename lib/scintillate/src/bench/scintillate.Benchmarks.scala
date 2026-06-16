@@ -37,7 +37,7 @@ import scala.quoted.*
 import ambience.*, environments.javaEnvironment, systems.javaSystem
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
-import eucalyptus.*, logging.silent
+import eucalyptus.*, logging.silentLogging
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader

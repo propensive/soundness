@@ -53,7 +53,7 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 import filesystemTraversal.preOrderTraversal
-import logging.silent
+import logging.silentLogging
 import manifestAttributes.*
 import systems.javaSystem
 import workingDirectories.javaWorkingDirectory

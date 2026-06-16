@@ -37,5 +37,5 @@ import parasite.*
 import prepositional.*
 
 package logging:
-  given syslog: [message: Inscribable in Text] => Monitor => message is Loggable =
+  given syslogLogging: [message: Inscribable in Text] => Monitor => message is Loggable =
     Log.route[Text](Syslog())

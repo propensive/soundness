@@ -40,7 +40,7 @@ import systems.javaSystem
 import temporaryDirectories.systemTemporaryDirectory
 import workingDirectories.defaultWorkingDirectory
 import supervisors.globalSupervisor
-import logging.silent
+import logging.silentLogging
 import threading.platformThreading
 
 import strategies.throwUnsafely

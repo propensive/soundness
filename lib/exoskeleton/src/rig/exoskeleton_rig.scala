@@ -62,7 +62,7 @@ extension (shell: Shell)
           case Shell.Powershell => t"pwsh"
 
         locally:
-          import logging.silent
+          import logging.silentLogging
 
           if sh"which $shellBinary".exec[Exit]() != Exit.Ok
           then abort(TmuxError(TmuxError.Reason.ShellNotInstalled(shellBinary)))

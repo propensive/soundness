@@ -44,7 +44,7 @@ import octogenarian.{read, namespace, target}
 import systems.javaSystem
 import temporaryDirectories.systemTemporaryDirectory
 import workingDirectories.defaultWorkingDirectory
-import logging.silent
+import logging.silentLogging
 import internetAccess.online
 
 import strategies.throwUnsafely

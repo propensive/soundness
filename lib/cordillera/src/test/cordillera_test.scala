@@ -293,7 +293,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           runServer(serverSide)
 
           import Http2.Client.http2
-          import logging.silent
+          import logging.silentLogging
 
           // A `Connectable` whose connect() hands back the client side of the pair —
           // lets the real `HttpClient` given (which calls `target.connect()`) run

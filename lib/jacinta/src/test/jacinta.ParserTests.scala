@@ -36,7 +36,7 @@ import soundness.*
 
 import interfaces.paths.pathOnLinux
 import strategies.throwUnsafely
-import logging.silent
+import logging.silentLogging
 import charEncoders.utf8Encoder
 import gitCommands.environmentDefaultGitCommand
 import workingDirectories.javaWorkingDirectory

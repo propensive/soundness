@@ -470,7 +470,7 @@ def cli[bus <: Matchable](using executive: Executive)
       wipeState()
 
     supervise:
-      import logFormats.standard
+      import logFormats.standardLogFormat
       given loggable: Message is Loggable = Log.route(Syslog(t"ethereal"))
 
       safely(socketFile.wipe())

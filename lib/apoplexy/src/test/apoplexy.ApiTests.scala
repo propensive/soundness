@@ -35,7 +35,7 @@ package apoplexy
 import soundness.*
 
 import strategies.throwUnsafely
-import logging.silent
+import logging.silentLogging
 import internetAccess.online
 import charEncoders.utf8Encoder
 import charDecoders.utf8Decoder

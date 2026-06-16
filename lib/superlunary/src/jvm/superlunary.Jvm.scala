@@ -58,7 +58,7 @@ object Jvm extends Rig:
 
   protected def invoke[output](stage: Stage[output, Form, Target]): output =
     import workingDirectories.systemWorkingDirectory
-    import logging.silent
+    import logging.silentLogging
 
     stage.remote: input =>
       val cmd = sh"java -classpath ${stage.target()} superlunary.Executor $input"

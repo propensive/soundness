@@ -34,7 +34,7 @@ package scintillate
 
 import soundness.*
 
-import logging.silent
+import logging.silentLogging
 import strategies.throwUnsafely
 import charEncoders.utf8Encoder
 import webserverErrorPages.minimal

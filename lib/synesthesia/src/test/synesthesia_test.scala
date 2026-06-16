@@ -47,7 +47,7 @@ object Tests extends Suite(m"Synesthesia Tests"):
     //   import supervisors.globalSupervisor
     //   import probates.cancelProbate
     //   import httpServers.stdlib
-    //   import logging.silent
+    //   import logging.silentLogging
     //   import webserverErrorPages.stackTraces
     //   import classloaders.threadContextClassloader
     //
