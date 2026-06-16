@@ -138,6 +138,12 @@ extension [textual: Textual { type Result = Char }](words: Iterable[textual])
   def kebab: textual = words.join(textual("-".tt))
   def spaced: textual = words.join(textual(" ".tt))
 
+extension [value: {Segmentable, Countable}](value: value)
+  def before(ordinal: Ordinal): value = value.segment(Prim till ordinal)
+  def upto(ordinal: Ordinal): value = value.segment(Prim thru ordinal)
+  def from(ordinal: Ordinal): value = value.segment(ordinal thru value.limit)
+  def after(ordinal: Ordinal): value = value.segment((ordinal + 1) till value.limit)
+
 extension [textual: Textual](text: textual)
   inline def length: Int = textual.length(text)
   def plain: Text = textual.text(text)
@@ -153,11 +159,6 @@ extension [textual: Textual](text: textual)
         recur(word - 1, spaces - gap, result+textual(t" "*(gap + 1))+words(words.length - word.n0))
 
     recur(Prim, extra, words(0))
-
-  def before(ordinal: Ordinal): textual = text.segment(Prim till ordinal)
-  def after(ordinal: Ordinal): textual = text.segment((ordinal + 1) till text.limit)
-  def upto(ordinal: Ordinal): textual = text.segment(Prim thru ordinal)
-  def from(ordinal: Ordinal): textual = text.segment(ordinal thru text.limit)
 
   def slices(size: Int): List[textual] =
     val length = text.length

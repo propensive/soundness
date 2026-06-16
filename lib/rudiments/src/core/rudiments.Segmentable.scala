@@ -43,6 +43,12 @@ object Segmentable:
   given iarray: [element] => IArray[element] is Segmentable =
     (iarray, interval) => iarray.slice(interval.start.n0, interval.limit.n0)
 
+  given seq: [element] => Seq[element] is Segmentable =
+    (seq, interval) => seq.slice(interval.start.n0, interval.limit.n0)
+
+  given list: [element] => List[element] is Segmentable =
+    (list, interval) => list.slice(interval.start.n0, interval.limit.n0)
+
   given text: Text is Segmentable = (text, interval) =>
     val min = interval.start.n0.max(0)
     val max = interval.limit.n0.min(text.s.length)
