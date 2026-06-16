@@ -146,7 +146,7 @@ object Tests extends Suite(m"Obligatory Tests"):
       . assert(_ == Grpc.Status.NotFound)
 
     suite(m"gRPC over HTTP/2 (loopback)"):
-      import threading.virtual
+      import threading.virtualThreading
       import probates.cancel
       import errorDiagnostics.stackTraces
 

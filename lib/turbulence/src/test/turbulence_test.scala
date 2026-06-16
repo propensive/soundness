@@ -35,7 +35,7 @@ package turbulence
 import soundness.*
 
 import charEncoders.utf8, charDecoders.utf8, textSanitizers.strict
-import threading.platform
+import threading.platformThreading
 import strategies.throwUnsafely
 import errorDiagnostics.empty
 

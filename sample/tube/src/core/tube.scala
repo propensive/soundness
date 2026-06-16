@@ -18,7 +18,7 @@ import displayableTypes.message
 import supervisors.global
 import textMetrics.uniform
 import textSanitizers.skip
-import threading.platform
+import threading.platformThreading
 import unhandledErrors.stackTrace
 import workingDirectories.daemonClient
 import httpServers.stdlibPublic

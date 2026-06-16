@@ -50,9 +50,9 @@ import abstractables.durationIsAbstractable
 import abstractables.instantIsAbstractable
 
 package threading:
-  given platform: Threading = () => PlatformSupervisor
-  given virtual: Threading = () => VirtualSupervisor
-  given adaptive: Threading = () => AdaptiveSupervisor
+  given platformThreading: Threading = () => PlatformSupervisor
+  given virtualThreading: Threading = () => VirtualSupervisor
+  given adaptiveThreading: Threading = () => AdaptiveSupervisor
 
 package probates:
   given await: Probate = _.delegate(_.attend())

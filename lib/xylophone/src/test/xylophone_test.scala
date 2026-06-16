@@ -36,7 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
-import threading.virtual
+import threading.virtualThreading
 import probates.cancel
 
 case class Worker(name: Text, age: Int)

@@ -43,7 +43,7 @@ import temporaryDirectories.system
 import workingDirectories.default
 import supervisors.global
 import logging.silent
-import threading.platform
+import threading.platformThreading
 
 import strategies.throwUnsafely
 import backstops.silent

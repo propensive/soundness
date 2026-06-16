@@ -214,7 +214,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
       . assert(_ == true)
 
     suite(m"End-to-end over an in-memory Duplex (the whole stack)"):
-      import threading.virtual
+      import threading.virtualThreading
       import probates.cancel
 
       // An in-memory `Duplex` pair: bytes written to one side surface on the other's

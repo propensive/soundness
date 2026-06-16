@@ -39,7 +39,7 @@ import logging.silent
 import strategies.throwUnsafely
 import errorDiagnostics.stackTraces
 import webserverErrorPages.minimal
-import threading.virtual
+import threading.virtualThreading
 import probates.await
 import printers.jsonMinimalPrinter
 import charEncoders.utf8

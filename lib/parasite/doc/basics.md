@@ -17,7 +17,7 @@ We can create one inside a `supervise` block with:
 import soundness.*
 
 import strategies.throwUnsafely
-import threadingModels.virtual
+import threading.virtualThreading
 
 def run() = supervise:
   val task = async:
@@ -222,12 +222,12 @@ From Java 21 and above, threads may be either _platform_ (corresponding to
 threads managed by the operating system) or _virtual_ (managed by the JVM).
 Prior to Java 21, all threads are _platform threads_. Parasite needs to know
 which type of thread to use, and this requires one of three imports:
-- `threadingModels.virtual`
-- `threadingModels.platform`
-- `threadingModels.adaptive`
+- `threading.virtualThreading`
+- `threading.platformThreading`
+- `threading.adaptiveThreading`
 
-Note that choosing `threadingModels.virtual` will result an a runtime error on JDKs
-older than Java 21. To avoid this, use `threadingModels.adaptive` which will fall
+Note that choosing `threading.virtualThreading` will result an a runtime error on JDKs
+older than Java 21. To avoid this, use `threading.adaptiveThreading` which will fall
 back to platform threads on earlier JVMs.
 
 ### Cancellation

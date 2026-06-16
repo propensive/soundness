@@ -38,7 +38,7 @@ import logging.silent
 import strategies.throwUnsafely
 import charEncoders.utf8
 import webserverErrorPages.minimal
-import threading.virtual
+import threading.virtualThreading
 import probates.await
 
 object Tests extends Suite(m"Scintillate tests"):

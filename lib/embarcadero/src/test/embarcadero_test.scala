@@ -156,7 +156,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == List(t"""{"imageLayoutVersion":"1.0.0"}""".data.to(List)))
 
     suite(m"containerd over a gRPC loopback"):
-      import threading.virtual
+      import threading.virtualThreading
       import probates.cancel
 
       def pair(): (Duplex, Duplex) =

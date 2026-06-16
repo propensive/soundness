@@ -46,7 +46,7 @@ import executives.completions
 import interpreters.posix
 import systems.java
 import textSanitizers.strict
-import threading.platform
+import threading.platformThreading
 import workingDirectories.system
 
 @main

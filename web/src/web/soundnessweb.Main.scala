@@ -15,7 +15,7 @@ import stdios.virtualMachine
 import stylesheets.uncheckedClasses
 import supervisors.global
 import termcaps.environment
-import threading.platform
+import threading.platformThreading
 import webserverErrorPages.stackTraces
 
 import doms.html.whatwg

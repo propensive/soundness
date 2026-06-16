@@ -40,7 +40,7 @@ import executives.completions
 import interpreters.posix
 import strategies.throwUnsafely
 import supervisors.global
-import threading.platform
+import threading.platformThreading
 
 // A medium-complexity fullscreen layout demonstrating the framework: a title bar
 // and a status bar each pinned to a single row; a fixed-width sidebar menu; and a

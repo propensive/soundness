@@ -41,7 +41,7 @@ export
       Tenacity, Threading, Timeout, Transgression, VirtualSupervisor, Worker }
 
 package threading:
-  export parasite.threading.{adaptive, platform, virtual}
+  export parasite.threading.{adaptiveThreading, platformThreading, virtualThreading}
 
 package probates:
   export parasite.probates.{await, cancel, fail, panic}

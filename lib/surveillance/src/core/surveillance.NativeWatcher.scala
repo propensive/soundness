@@ -40,7 +40,7 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 import denominative.*
-import parasite.*, threading.platform
+import parasite.*, threading.platformThreading
 import rudiments.*
 import spectacular.*
 import turbulence.*

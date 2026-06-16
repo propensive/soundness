@@ -448,7 +448,7 @@ to set up:
 ```scala
 import probates.cancel
 import supervisors.global
-import threading.virtual
+import threading.virtualThreading
 
 doc.stream[Text]
 ```

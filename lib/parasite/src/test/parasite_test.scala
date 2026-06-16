@@ -41,7 +41,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.empty
 
-import threading.virtual
+import threading.virtualThreading
 import probates.cancel
 
 case class FooError(value: Int)(using Diagnostics) extends Error(m"foo failed with $value")
@@ -1133,17 +1133,17 @@ object Tests extends Suite(m"Parasite tests"):
 
       suite(m"Multiple supervisors"):
         test(m"Platform supervisor can be used"):
-          import threading.platform
+          import threading.platformThreading
           supervise(async(42).await())
         . assert(_ == 42)
 
         test(m"Adaptive supervisor can be used"):
-          import threading.adaptive
+          import threading.adaptiveThreading
           supervise(async(42).await())
         . assert(_ == 42)
 
         test(m"Virtual supervisor can be used"):
-          import threading.virtual
+          import threading.virtualThreading
           supervise(async(42).await())
         . assert(_ == 42)
 

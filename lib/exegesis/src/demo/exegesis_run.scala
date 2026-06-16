@@ -39,7 +39,7 @@ import executives.completions
 import interpreters.posix
 import probates.await
 import strategies.throwUnsafely
-import threading.virtual
+import threading.virtualThreading
 
 @main
 def lsp(): Unit = cli:
