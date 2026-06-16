@@ -671,7 +671,7 @@ object Tests extends Suite(m"Xylophone tests"):
 
       test(m"Element escapes special characters in text"):
         elem(t"a", TextNode(t"<&>")).show
-      . assert(_ == t"<a>&lt;&amp;></a>")
+      . assert(_ == t"<a>&lt;&amp;&gt;</a>")
 
       test(m"Element escapes special characters in attribute"):
         elem(t"a", Map(t"x" -> t"\"&'<")).show

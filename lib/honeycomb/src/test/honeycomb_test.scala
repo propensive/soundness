@@ -729,7 +729,7 @@ object Tests extends Suite(m"Honeycombd Tests"):
 
         test(m"element with attribute"):
           t"""<img alt="x">""".read[Html of "img"].show
-        . assert(_ == t"""<img alt="x"></img>""")
+        . assert(_ == t"""<img alt="x">""")
 
         test(m"nested elements"):
           t"<div><p>x</p></div>".read[Html of "div"].show
@@ -1536,7 +1536,7 @@ object Html4Tests extends Suite(m"HTML4 parsing tests"):
 
         test(m"element with attribute"):
           t"""<img alt="x">""".read[Html of "img"].show
-        . assert(_ == t"""<img alt="x"></img>""")
+        . assert(_ == t"""<img alt="x">""")
 
         test(m"nested elements"):
           t"<div><p>x</p></div>".read[Html of "div"].show
