@@ -175,7 +175,7 @@ object Rfc1123 extends Date.Format(t"RFC 1123"):
     expect('M')
     expect('T')
 
-    import calendars.gregorian
+    import calendars.gregorianCalendar
 
     val date = Date(Year(year), month, Day(day))
     val time = Clockface(Base24(hour), Base60(minute), Base60(second))

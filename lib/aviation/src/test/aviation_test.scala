@@ -63,11 +63,11 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"Day cannot be over 31"):
         capture(t"59-11-32".decode[Date])
-      . assert(_ == TimeError(_.Invalid(59, 11, 32, calendars.gregorian)))
+      . assert(_ == TimeError(_.Invalid(59, 11, 32, calendars.gregorianCalendar)))
 
       test(m"Day must exist in month"):
         capture(t"59-11-31".decode[Date])
-      . assert(_ == TimeError(_.Invalid(59, 11, 31, calendars.gregorian)))
+      . assert(_ == TimeError(_.Invalid(59, 11, 31, calendars.gregorianCalendar)))
 
 
     suite(m"Leap Seconds tests"):
@@ -137,15 +137,15 @@ object Tests extends Suite(m"Aviation Tests"):
 
     suite(m"Gregorian Calendar Tests"):
       test(m"2000 is a leap year"):
-        calendars.gregorian.leapYear(Year(2000))
+        calendars.gregorianCalendar.leapYear(Year(2000))
       . assert(_ == true)
 
       test(m"1800, 1900, 2100, 2200 are not leap years"):
-        List(Year(1800), Year(1900), Year(2100), Year(2200)).map(calendars.gregorian.leapYear)
+        List(Year(1800), Year(1900), Year(2100), Year(2200)).map(calendars.gregorianCalendar.leapYear)
       . assert(_.all(!_))
 
       test(m"Years not divisble by 4 are never leap years"):
-        List(Year(1985), Year(200), Year(202), Year(1843)).map(calendars.gregorian.leapYear)
+        List(Year(1985), Year(200), Year(202), Year(1843)).map(calendars.gregorianCalendar.leapYear)
       . assert(_.all(!_))
 
       test(m"Check recent Julian Day"):
@@ -173,25 +173,25 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == 1721426)
 
       test(m"Get zeroth day of year"):
-        (2010-Jan-1).jdn -> (calendars.gregorian.zerothDayOfYear(Year(2010)).jdn + 1)
+        (2010-Jan-1).jdn -> (calendars.gregorianCalendar.zerothDayOfYear(Year(2010)).jdn + 1)
       . assert(_ == _)
 
       test(m"Get days in non-leap-year"):
-        calendars.gregorian.daysInYear(Year(1995))
+        calendars.gregorianCalendar.daysInYear(Year(1995))
       . assert(_ == 365)
 
       test(m"Get days in leap-year"):
-        calendars.gregorian.daysInYear(Year(1996))
+        calendars.gregorianCalendar.daysInYear(Year(1996))
       . assert(_ == 366)
 
       test(m"Get Year from Date"):
-        given calendar: Calendar = calendars.gregorian
+        given calendar: Calendar = calendars.gregorianCalendar
         val date = 2016-Jul-11
         calendar.annual(date)
       . assert(_ == 2016)
 
       test(m"Check Gregorian date"):
-        given calendar: Calendar = calendars.gregorian
+        given calendar: Calendar = calendars.gregorianCalendar
         2016-Apr-11
       . assert(_ == 2016-Apr-11)
 
@@ -212,7 +212,7 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == 2018-Nov-21)
 
       test(m"Get Gregorian date"):
-        given calendar: Calendar = calendars.gregorian
+        given calendar: Calendar = calendars.gregorianCalendar
         val date = 2016-Jul-11
         (date.year, date.month, date.day)
       . assert(_ == (2016, Jul, 11))
@@ -287,7 +287,7 @@ object Tests extends Suite(m"Aviation Tests"):
         12.25.am
       . assert(_ == Clockface(0, 25, 0))
 
-      import calendars.gregorian
+      import calendars.gregorianCalendar
 
       test(m"Specify datetime"):
         5.25.pm on 2018-Aug-11
@@ -319,7 +319,7 @@ object Tests extends Suite(m"Aviation Tests"):
 
     suite(m"Decoding instants"):
       suite(m"ISO 8601"):
-        import instantDecodables.iso8601
+        import instantDecodables.iso8601InstantDecodable
         test(m"with Z suffix (UTC)"):
           t"1994-11-06T08:49:37Z".decode[Instant]
         . assert(_ == Instant(784111777000L))
@@ -445,7 +445,7 @@ object Tests extends Suite(m"Aviation Tests"):
         . assert(_ == Instant(1668556799000L))
 
       suite(m"RFC 1123"):
-        import instantDecodables.rfc1123
+        import instantDecodables.rfc1123InstantDecodable
         test(m"basic with GMT timezone"):
           t"Sun, 06 Nov 1994 08:49:37 GMT".decode[Instant]
         . assert(_ == Instant(784111777000L))
@@ -619,53 +619,53 @@ object Tests extends Suite(m"Aviation Tests"):
               Holiday(2025-Dec-26, t"Boxing Day")) )
 
           test(m"Check the next working day after Monday is Tuesday"):
-            import hebdomads.european
+            import hebdomads.europeanHebdomad
             2025-Aug-18 + WorkingDays(1)
           . assert(_ == 2025-Aug-19)
 
           test(m"Check two working days after a Monday is Wednesday"):
-            import hebdomads.european
+            import hebdomads.europeanHebdomad
             2025-Aug-18 + WorkingDays(2)
           . assert(_ == 2025-Aug-20)
 
           test(m"Check four working days after a Monday is Friday"):
-            import hebdomads.european
+            import hebdomads.europeanHebdomad
             2025-Aug-18 + WorkingDays(4)
           . assert(_ == 2025-Aug-22)
 
           test(m"Check five working days after a Monday is Monday"):
-            import hebdomads.european
+            import hebdomads.europeanHebdomad
             2025-Aug-11 + WorkingDays(5)
           . assert(_ == 2025-Aug-18)
 
           test(m"Check one working days after a Friday is Monday"):
-            import hebdomads.european
+            import hebdomads.europeanHebdomad
             2025-Apr-11 + WorkingDays(1)
           . assert(_ == 2025-Apr-14)
 
           test(m"Check the working day after Christmas Eve"):
-            import hebdomads.european
+            import hebdomads.europeanHebdomad
             2025-Dec-24 + WorkingDays(1)
           . assert(_ == 2025-Dec-29)
 
           test(m"Check the working day after Maundy Thursday is Easter Monday"):
-            import hebdomads.european
+            import hebdomads.europeanHebdomad
             2025-Apr-18 + WorkingDays(1)
           . assert(_ == 2025-Apr-22)
 
           test(m"Working day after Good Friday is Easter Tuesday"):
-            import hebdomads.european
+            import hebdomads.europeanHebdomad
             2025-Apr-19 + WorkingDays(1)
           . assert(_ == 2025-Apr-23)
 
           test(m"Check there are 253 working days in a year"):
-            import hebdomads.european
+            import hebdomads.europeanHebdomad
             2025-Jan-3 + WorkingDays(253)
           . assert(_ == 2026-Jan-1)
 
     suite(m"Hebdomad implementations"):
       suite(m"European hebdomad"):
-        import hebdomads.european
+        import hebdomads.europeanHebdomad
 
         test(m"starts on Monday"):
           summon[Hebdomad].start
@@ -692,7 +692,7 @@ object Tests extends Suite(m"Aviation Tests"):
         . assert(_ == 6)
 
       suite(m"North American hebdomad"):
-        import hebdomads.northAmerican
+        import hebdomads.northAmericanHebdomad
 
         test(m"starts on Sunday"):
           summon[Hebdomad].start
@@ -711,7 +711,7 @@ object Tests extends Suite(m"Aviation Tests"):
         . assert(_ == 1)
 
       suite(m"Jewish hebdomad"):
-        import hebdomads.jewish
+        import hebdomads.jewishHebdomad
 
         test(m"starts on Sunday"):
           summon[Hebdomad].start
@@ -860,7 +860,7 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_.nonEmpty)
 
     suite(m"Anniversary"):
-      import calendars.gregorian
+      import calendars.gregorianCalendar
 
       test(m"Mar - 14 constructs an Anniversary"):
         val ann: Anniversary = Mar - 14
@@ -868,28 +868,28 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == (Mar, 14))
 
       test(m"Anniversary applied to a year produces a Date"):
-        given Anniversary.NonexistentLeapDay = calendars.nonexistentLeapDays.roundDown
+        given Anniversary.NonexistentLeapDay = nonexistentLeapDays.roundDownLeapDay
         (Mar - 14)(Year(2024))
       . assert(_ == 2024-Mar-14)
 
       test(m"Feb 29 in non-leap year roundDown gives Feb 28"):
-        given Anniversary.NonexistentLeapDay = calendars.nonexistentLeapDays.roundDown
+        given Anniversary.NonexistentLeapDay = nonexistentLeapDays.roundDownLeapDay
         (Feb - 29)(Year(2023))
       . assert(_ == 2023-Feb-28)
 
       test(m"Feb 29 in non-leap year roundUp gives Mar 1"):
-        given Anniversary.NonexistentLeapDay = calendars.nonexistentLeapDays.roundUp
+        given Anniversary.NonexistentLeapDay = nonexistentLeapDays.roundUpLeapDay
         (Feb - 29)(Year(2023))
       . assert(_ == 2023-Mar-1)
 
       test(m"Feb 29 in non-leap year raiseErrors raises TimeError"):
-        given Anniversary.NonexistentLeapDay = calendars.nonexistentLeapDays.raiseErrors
+        given Anniversary.NonexistentLeapDay = nonexistentLeapDays.raiseErrorsLeapDay
         capture((Feb - 29)(Year(2023)))
       . matches:
           case TimeError(_) =>
 
       test(m"Feb 29 in a leap year is unaffected by rounding strategy"):
-        given Anniversary.NonexistentLeapDay = calendars.nonexistentLeapDays.roundDown
+        given Anniversary.NonexistentLeapDay = nonexistentLeapDays.roundDownLeapDay
         (Feb - 29)(Year(2024))
       . assert(_ == 2024-Feb-29)
 
@@ -899,19 +899,19 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == (Mar, 14))
 
       test(m"Anniversary Showable, big-endian dot separator"):
-        import dateFormats.{endianness, separators}, endianness.bigEndian, separators.dot
-        import dateFormats.months.englishShort
+        import endianness.bigEndian, dateSeparators.dotDateSeparator
+        import monthFormats.englishShortMonths
         (Mar - 14).show
       . assert(_ == t"Mar.14")
 
       test(m"Anniversary Showable, little-endian dot separator"):
-        import dateFormats.{endianness, separators}, endianness.littleEndian, separators.dot
-        import dateFormats.months.englishShort
+        import endianness.littleEndian, dateSeparators.dotDateSeparator
+        import monthFormats.englishShortMonths
         (Mar - 14).show
       . assert(_ == t"14.Mar")
 
     suite(m"Monthstamp"):
-      import calendars.gregorian
+      import calendars.gregorianCalendar
 
       test(m"2024 - Jan constructs a Monthstamp"):
         val ms: Monthstamp = 2024 - Jan
@@ -932,16 +932,14 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == (2025, Mar))
 
       test(m"Monthstamp Showable, big-endian dot separator"):
-        import dateFormats.{endianness, separators, years}
-        import endianness.bigEndian, separators.dot, years.full
-        import dateFormats.months.englishShort
+        import endianness.bigEndian, dateSeparators.dotDateSeparator, yearFormats.fullYears
+        import monthFormats.englishShortMonths
         (2024 - Mar).show
       . assert(_ == t"Mar.2024")
 
       test(m"Monthstamp Showable, little-endian"):
-        import dateFormats.{endianness, separators, years}
-        import endianness.littleEndian, separators.dot, years.full
-        import dateFormats.months.englishShort
+        import endianness.littleEndian, dateSeparators.dotDateSeparator, yearFormats.fullYears
+        import monthFormats.englishShortMonths
         (2024 - Mar).show
       . assert(_ == t"2024.Mar")
 
@@ -988,43 +986,43 @@ object Tests extends Suite(m"Aviation Tests"):
       val date = 2025-Apr-7
 
       test(m"european format"):
-        import dateFormats.european
+        import dateFormats.europeanDateFormat
         date.show
       . assert(_ == t"07.04.2025")
 
       test(m"american format"):
-        import dateFormats.american
+        import dateFormats.americanDateFormat
         date.show
       . assert(_ == t"04/07/2025")
 
       test(m"unitedKingdom format"):
-        import dateFormats.unitedKingdom
+        import dateFormats.unitedKingdomDateFormat
         date.show
       . assert(_ == t"07/04/2025")
 
       test(m"southEastAsia format"):
-        import dateFormats.southEastAsia
+        import dateFormats.southEastAsiaDateFormat
         date.show
       . assert(_ == t"07-04-2025")
 
       test(m"iso8601 format"):
-        import dateFormats.iso8601
+        import dateFormats.iso8601DateFormat
         date.show
       . assert(_ == t"2025-04-07")
 
       test(m"two-digit year variant"):
-        import dateFormats.endianness.bigEndian
-        import dateFormats.numerics.fixedWidth
-        import dateFormats.separators.hyphen
-        import dateFormats.years.twoDigits
+        import endianness.bigEndian
+        import dateNumerics.fixedWidthDateNumerics
+        import dateSeparators.hyphenDateSeparator
+        import yearFormats.twoDigitsYears
         date.show
       . assert(_ == t"25-04-07")
 
       test(m"variable width single-digit month"):
-        import dateFormats.endianness.bigEndian
-        import dateFormats.numerics.variableWidth
-        import dateFormats.separators.hyphen
-        import dateFormats.years.full
+        import endianness.bigEndian
+        import dateNumerics.variableWidthDateNumerics
+        import dateSeparators.hyphenDateSeparator
+        import yearFormats.fullYears
         date.show
       . assert(_ == t"2025-4-7")
 
@@ -1034,165 +1032,162 @@ object Tests extends Suite(m"Aviation Tests"):
       val midnight = Clockface(0, 0, 0)
 
       test(m"military format"):
-        import timeFormats.military
+        import timeFormats.militaryTimeFormat
         time.show
       . assert(_ == t"1430")
 
       test(m"civilian format at 14:30"):
-        import timeFormats.civilian
+        import timeFormats.civilianTimeFormat
         time.show
       . assert(_ == t"02:30 PM")
 
       test(m"civilian format at noon"):
-        import timeFormats.civilian
+        import timeFormats.civilianTimeFormat
         noon.show
       . assert(_ == t"12:00 PM")
 
       test(m"civilian format at midnight"):
-        import timeFormats.civilian
+        import timeFormats.civilianTimeFormat
         midnight.show
       . assert(_ == t"12:00 AM")
 
       test(m"associatedPress format"):
-        import timeFormats.associatedPress
+        import timeFormats.associatedPressTimeFormat
         time.show
       . assert(_ == t"2:30 p.m.")
 
       test(m"french format"):
-        import timeFormats.french
+        import timeFormats.frenchTimeFormat
         time.show
       . assert(_ == t"14h30")
 
       test(m"iso8601 time format"):
-        import timeFormats.iso8601
+        import timeFormats.iso8601TimeFormat
         time.show
       . assert(_ == t"14:30:59")
 
       test(m"ledger format"):
-        import timeFormats.ledger
+        import timeFormats.ledgerTimeFormat
         time.show
       . assert(_ == t"14.30")
 
       test(m"railway format"):
-        import timeFormats.railway
+        import timeFormats.railwayTimeFormat
         time.show
       . assert(_ == t"14:30")
 
     suite(m"Weekday name formatters"):
-      import dateFormats.weekdays
 
       test(m"english full names: Mon"):
-        weekdays.english.name(Mon)
+        weekdays.englishWeekdays.name(Mon)
       . assert(_ == t"Monday")
 
       test(m"english full names: Sun"):
-        weekdays.english.name(Sun)
+        weekdays.englishWeekdays.name(Sun)
       . assert(_ == t"Sunday")
 
       test(m"englishShort: Mon"):
-        weekdays.englishShort.name(Mon)
+        weekdays.englishShortWeekdays.name(Mon)
       . assert(_ == t"Mon")
 
       test(m"englishShort: Sun"):
-        weekdays.englishShort.name(Sun)
+        weekdays.englishShortWeekdays.name(Sun)
       . assert(_ == t"Sun")
 
       test(m"oneLetterAmbiguous: Mon"):
-        weekdays.oneLetterAmbiguous.name(Mon)
+        weekdays.oneLetterAmbiguousWeekdays.name(Mon)
       . assert(_ == t"M")
 
       test(m"oneLetterAmbiguous: Tue"):
-        weekdays.oneLetterAmbiguous.name(Tue)
+        weekdays.oneLetterAmbiguousWeekdays.name(Tue)
       . assert(_ == t"T")
 
       test(m"shortestUnambiguous: Tue"):
-        weekdays.shortestUnambiguous.name(Tue)
+        weekdays.shortestUnambiguousWeekdays.name(Tue)
       . assert(_ == t"Tu")
 
       test(m"shortestUnambiguous: Thu"):
-        weekdays.shortestUnambiguous.name(Thu)
+        weekdays.shortestUnambiguousWeekdays.name(Thu)
       . assert(_ == t"Th")
 
       test(m"twoLetter: Mon"):
-        weekdays.twoLetter.name(Mon)
+        weekdays.twoLetterWeekdays.name(Mon)
       . assert(_ == t"Mo")
 
       test(m"twoLetter: Sat"):
-        weekdays.twoLetter.name(Sat)
+        weekdays.twoLetterWeekdays.name(Sat)
       . assert(_ == t"Sa")
 
     suite(m"Month name formatters"):
-      import dateFormats.months
 
       test(m"english full names: Jan"):
-        months.english.name(Jan)
+        monthFormats.englishMonths.name(Jan)
       . assert(_ == t"January")
 
       test(m"english full names: Sep"):
-        months.english.name(Sep)
+        monthFormats.englishMonths.name(Sep)
       . assert(_ == t"September")
 
       test(m"englishShort: Jan"):
-        months.englishShort.name(Jan)
+        monthFormats.englishShortMonths.name(Jan)
       . assert(_ == t"Jan")
 
       test(m"englishShort: Sep"):
-        months.englishShort.name(Sep)
+        monthFormats.englishShortMonths.name(Sep)
       . assert(_ == t"Sep")
 
       test(m"oneLetterAmbiguous: Jan"):
-        months.oneLetterAmbiguous.name(Jan)
+        monthFormats.oneLetterAmbiguousMonths.name(Jan)
       . assert(_ == t"J")
 
       test(m"oneLetterAmbiguous: Mar"):
-        months.oneLetterAmbiguous.name(Mar)
+        monthFormats.oneLetterAmbiguousMonths.name(Mar)
       . assert(_ == t"M")
 
       test(m"numeric: Jan"):
-        months.numeric.name(Jan)
+        monthFormats.numericMonths.name(Jan)
       . assert(_ == t"1")
 
       test(m"numeric: Dec"):
-        months.numeric.name(Dec)
+        monthFormats.numericMonths.name(Dec)
       . assert(_ == t"12")
 
       test(m"twoDigit: Jan"):
-        months.twoDigit.name(Jan)
+        monthFormats.twoDigitMonths.name(Jan)
       . assert(_ == t"01")
 
       test(m"twoDigit: Dec"):
-        months.twoDigit.name(Dec)
+        monthFormats.twoDigitMonths.name(Dec)
       . assert(_ == t"12")
 
     suite(m"Meridiem formatters"):
-      import timeFormats.meridiems
 
       test(m"upper Am"):
-        meridiems.upper.text(Meridiem.Am)
+        meridiems.upperMeridiem.text(Meridiem.Am)
       . assert(_ == t"AM")
 
       test(m"upper Pm"):
-        meridiems.upper.text(Meridiem.Pm)
+        meridiems.upperMeridiem.text(Meridiem.Pm)
       . assert(_ == t"PM")
 
       test(m"lower Am"):
-        meridiems.lower.text(Meridiem.Am)
+        meridiems.lowerMeridiem.text(Meridiem.Am)
       . assert(_ == t"am")
 
       test(m"lower Pm"):
-        meridiems.lower.text(Meridiem.Pm)
+        meridiems.lowerMeridiem.text(Meridiem.Pm)
       . assert(_ == t"pm")
 
       test(m"upperPunctuated Am"):
-        meridiems.upperPunctuated.text(Meridiem.Am)
+        meridiems.upperPunctuatedMeridiem.text(Meridiem.Am)
       . assert(_ == t"A.M.")
 
       test(m"lowerPunctuated Pm"):
-        meridiems.lowerPunctuated.text(Meridiem.Pm)
+        meridiems.lowerPunctuatedMeridiem.text(Meridiem.Pm)
       . assert(_ == t"p.m.")
 
     suite(m"Date arithmetic edge cases"):
-      import calendars.gregorian
+      import calendars.gregorianCalendar
 
       test(m"Subtract a date from itself yields zero"):
         2024-Jul-15 - (2024-Jul-15)
@@ -1259,12 +1254,12 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == Sat)
 
       test(m"date is on weekend"):
-        import hebdomads.european
+        import hebdomads.europeanHebdomad
         (2025-Mar-15).weekend
       . assert(_ == true)
 
       test(m"date is not on weekend"):
-        import hebdomads.european
+        import hebdomads.europeanHebdomad
         (2025-Mar-17).weekend
       . assert(_ == false)
 
@@ -1289,32 +1284,32 @@ object Tests extends Suite(m"Aviation Tests"):
           Holiday(2025-Dec-26, t"Boxing Day") ))
 
       test(m"WorkingDays(0) on a Saturday bumps to Monday"):
-        import hebdomads.european
+        import hebdomads.europeanHebdomad
         2025-Mar-15 + WorkingDays(0)
       . assert(_ == 2025-Mar-17)
 
       test(m"WorkingDays(0) on a Sunday bumps to Monday"):
-        import hebdomads.european
+        import hebdomads.europeanHebdomad
         2025-Mar-16 + WorkingDays(0)
       . assert(_ == 2025-Mar-17)
 
       test(m"WorkingDays(0) on a holiday bumps to next working day"):
-        import hebdomads.european
+        import hebdomads.europeanHebdomad
         2025-Jan-1 + WorkingDays(0)
       . assert(_ == 2025-Jan-2)
 
       test(m"WorkingDays(0) on a normal weekday is the same day"):
-        import hebdomads.european
+        import hebdomads.europeanHebdomad
         2025-Mar-17 + WorkingDays(0)
       . assert(_ == 2025-Mar-17)
 
       test(m"WorkingDays across consecutive holidays"):
-        import hebdomads.european
+        import hebdomads.europeanHebdomad
         2025-Dec-24 + WorkingDays(2)
       . assert(_ == 2025-Dec-30)
 
     suite(m"ISO 8601 parse error cases"):
-      import instantDecodables.iso8601
+      import instantDecodables.iso8601InstantDecodable
 
       test(m"Non-digit at year start raises"):
         capture(t"abcd-01-01".decode[Instant])
@@ -1337,7 +1332,7 @@ object Tests extends Suite(m"Aviation Tests"):
           case _: TimeError =>
 
     suite(m"RFC 1123 parse error cases"):
-      import instantDecodables.rfc1123
+      import instantDecodables.rfc1123InstantDecodable
 
       test(m"Lowercase day name raises"):
         capture(t"sun, 06 Nov 1994 08:49:37 GMT".decode[Instant])
@@ -1464,7 +1459,7 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"today() with fixed clock and UTC"):
         given Clock = Clock.fixed(Instant(0L))
         given Timezone = tz"UTC"
-        given calendar: RomanCalendar = calendars.gregorian
+        given calendar: RomanCalendar = calendars.gregorianCalendar
         today()
       . assert(_ == 1970-Jan-1)
 
@@ -1540,7 +1535,7 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == 2)
 
     suite(m"Moment and Timezone"):
-      import calendars.gregorian
+      import calendars.gregorianCalendar
 
       test(m"Instant 0 in UTC has the correct date and time fields"):
         val moment = Instant(0L).in(tz"UTC")
@@ -1557,22 +1552,22 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == Timestamp(1970-Jan-1, Clockface(0, 0, 0)))
 
       test(m"Same instant in London during winter is GMT (offset 0)"):
-        val winter = t"2024-01-15T12:00:00Z".decode[Instant](using instantDecodables.iso8601)
+        val winter = t"2024-01-15T12:00:00Z".decode[Instant](using instantDecodables.iso8601InstantDecodable)
         winter.in(tz"Europe/London").time.hour
       . assert(_ == 12)
 
       test(m"Same instant in London during summer is BST (offset +1)"):
-        val summer = t"2024-07-15T12:00:00Z".decode[Instant](using instantDecodables.iso8601)
+        val summer = t"2024-07-15T12:00:00Z".decode[Instant](using instantDecodables.iso8601InstantDecodable)
         summer.in(tz"Europe/London").time.hour
       . assert(_ == 13)
 
       test(m"New York winter offset (UTC-5)"):
-        val winter = t"2024-01-15T12:00:00Z".decode[Instant](using instantDecodables.iso8601)
+        val winter = t"2024-01-15T12:00:00Z".decode[Instant](using instantDecodables.iso8601InstantDecodable)
         winter.in(tz"America/New_York").time.hour
       . assert(_ == 7)
 
       test(m"New York summer offset (UTC-4)"):
-        val summer = t"2024-07-15T12:00:00Z".decode[Instant](using instantDecodables.iso8601)
+        val summer = t"2024-07-15T12:00:00Z".decode[Instant](using instantDecodables.iso8601InstantDecodable)
         summer.in(tz"America/New_York").time.hour
       . assert(_ == 8)
 
@@ -1607,7 +1602,7 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == 12_000L)
 
       test(m"Instant in 2017 has +37 offset"):
-        val later = t"2017-06-15T00:00:00Z".decode[Instant](using instantDecodables.iso8601)
+        val later = t"2017-06-15T00:00:00Z".decode[Instant](using instantDecodables.iso8601InstantDecodable)
         LeapSeconds.tai(later.long) - later.long
       . assert(_ == 37_000L)
 
@@ -1644,27 +1639,27 @@ object Tests extends Suite(m"Aviation Tests"):
 
     suite(m"Julian calendar"):
       test(m"Year 1900 is a leap year in the Julian calendar"):
-        calendars.julian.leapYear(Year(1900))
+        calendars.julianCalendar.leapYear(Year(1900))
       . assert(_ == true)
 
       test(m"Year 2000 is a leap year in the Julian calendar"):
-        calendars.julian.leapYear(Year(2000))
+        calendars.julianCalendar.leapYear(Year(2000))
       . assert(_ == true)
 
       test(m"Year 1901 is not a leap year"):
-        calendars.julian.leapYear(Year(1901))
+        calendars.julianCalendar.leapYear(Year(1901))
       . assert(_ == false)
 
       test(m"Year 1900 has 366 days under the Julian calendar"):
-        calendars.julian.daysInYear(Year(1900))
+        calendars.julianCalendar.daysInYear(Year(1900))
       . assert(_ == 366)
 
     suite(m"Timestamp"):
-      import calendars.gregorian
+      import calendars.gregorianCalendar
 
       test(m"Timestamp Showable produces 'time, date'"):
-        import dateFormats.iso8601
-        import timeFormats.iso8601
+        import dateFormats.iso8601DateFormat
+        import timeFormats.iso8601TimeFormat
         Timestamp(2024-Jan-15, Clockface(14, 30, 59)).show
       . assert(_ == t"14:30:59, 2024-01-15")
 

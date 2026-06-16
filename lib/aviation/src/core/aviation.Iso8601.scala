@@ -63,7 +63,7 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
   import Issue.*
 
   def parse(text: Text): Instant raises TimeError =
-    import calendars.gregorian
+    import calendars.gregorianCalendar
 
     given Timezone = tz"UTC"
 
@@ -93,7 +93,7 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
       val days: Int = (week - 1)*7 + day - 1
       val jan4 = Date(year, Jan, Day(4))
 
-      import hebdomads.european
+      import hebdomads.europeanHebdomad
 
       val firstMonday = jan4 - Quanta[Mono[Days[1]]](jan4.weekday.number.n0)
       firstMonday + Quanta[Mono[Days[1]]](days)

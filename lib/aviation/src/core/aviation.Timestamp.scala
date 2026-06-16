@@ -46,7 +46,7 @@ import abstractables.instantIsAbstractable
 import errorDiagnostics.stackTracesDiagnostics
 
 object Timestamp:
-  import calendars.gregorian
+  import calendars.gregorianCalendar
 
   given showable: (Clockface is Showable, Date is Showable) => Timestamp is Showable =
     timestamp => s"${timestamp.time.show}, ${timestamp.date.show}".tt
