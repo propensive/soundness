@@ -30,11 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package honeycomb
 
-export punctuation.
-    { Formattable, Layout, Markdown, MarkdownFormatting, Parser, Prose, Serializer, Translator,
-      source }
+import zephyrine.Formatting
 
-package formatting:
-  export punctuation.formatting.unboundedMarkdownFormatting
+// Controls how an `Html` document is serialized by `emit`. `indented` lays whitespace-mode elements
+// out one per indented line (the default, matching a full page); `flatHtmlFormatting` keeps the
+// document on a single line. (`.show` of a bare node is always compact.) The bundled formattings are
+// `formatting.indentedHtmlFormatting` (the default) and `formatting.flatHtmlFormatting`.
+object HtmlFormatting:
+  def apply(indented: Boolean): HtmlFormatting = Basic(indented)
+  private case class Basic(indented: Boolean) extends HtmlFormatting
+
+  given default: HtmlFormatting = apply(indented = true)
+
+trait HtmlFormatting extends Formatting:
+  def indented: Boolean

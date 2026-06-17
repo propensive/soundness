@@ -230,15 +230,16 @@ object Html extends Tag.Container
   given streamable: (Monitor, Probate) => Document[Html] is Streamable by Text =
     emit(_).to(Stream)
 
-  def emit(document: Document[Html], flat: Boolean = false)(using Monitor, Probate)
+  def emit(document: Document[Html])(using formatting: HtmlFormatting, monitor: Monitor, probate: Probate)
   :   Iterator[Text] =
 
     val dom = document.metadata
     val producer = Producer[Text](4096)
+    val block = formatting.indented
 
     async:
-      writeHtml(producer, dom, document.metadata.doctype, 0, true, Mode.Whitespace)
-      writeHtml(producer, dom, document.root, 0, true, Mode.Whitespace)
+      writeHtml(producer, dom, document.metadata.doctype, 0, block, Mode.Whitespace)
+      writeHtml(producer, dom, document.root, 0, block, Mode.Whitespace)
       producer.finish()
 
     producer.iterator

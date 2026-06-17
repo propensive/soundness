@@ -32,12 +32,20 @@
                                                                                                   */
 package punctuation
 
-// The column width at which the Markdown `Serializer` wraps paragraph text onto further lines. The
-// default is unbounded — each paragraph stays on one line, so the output re-parses to an identical
-// AST. Provide a bounded `given` to opt into wrapping, e.g.
-// `given MarkdownWidth = MarkdownWidth.bounded(80)`.
-object MarkdownWidth:
-  given unbounded: MarkdownWidth = MarkdownWidth(Int.MaxValue)
-  def bounded(columns: Int): MarkdownWidth = MarkdownWidth(columns)
+import anticipation.*
+import vacuous.*
+import zephyrine.*
 
-case class MarkdownWidth(columns: Int)
+// Controls how a `Markdown` document is serialized. `width` is the column at which paragraph text is
+// word-wrapped; `Unset` (the default) leaves each paragraph on one line, so the output re-parses to
+// an identical AST. Use `formatting.unboundedMarkdownFormatting` (the default) or
+// `MarkdownFormatting.bounded(80)` to opt into wrapping.
+object MarkdownFormatting:
+  def apply(width: Optional[Int]): MarkdownFormatting = Basic(width)
+  private case class Basic(width: Optional[Int]) extends MarkdownFormatting
+  def bounded(columns: Int): MarkdownFormatting = apply(columns)
+
+  given unbounded: MarkdownFormatting = apply(Unset)
+
+trait MarkdownFormatting extends Formatting:
+  def width: Optional[Int]

@@ -46,24 +46,24 @@ import zephyrine.*
 // not byte-identical to whatever the parser originally consumed, but is
 // guaranteed to re-parse to an equal AST (modulo `Ordinal` `line` metadata).
 object Serializer:
-  def apply(markdown: Markdown of Layout)(using width: MarkdownWidth): Text =
+  def apply(markdown: Markdown of Layout)(using formatting: MarkdownFormatting): Text =
     Producer.collect[Text](): producer =>
-      writeDocument(Writer(producer, width.columns), markdown)
+      writeDocument(Writer(producer, formatting.width.lay(Int.MaxValue)(c => c)), markdown)
 
   @scala.annotation.targetName("applyProse")
-  def apply(markdown: Markdown of Prose)(using width: MarkdownWidth): Text =
+  def apply(markdown: Markdown of Prose)(using formatting: MarkdownFormatting): Text =
     Producer.collect[Text](): producer =>
-      flow(Writer(producer, width.columns), markdown.children, protectFirst = false)
+      flow(Writer(producer, formatting.width.lay(Int.MaxValue)(c => c)), markdown.children, protectFirst = false)
 
   // Stream a document's source incrementally; the producing code runs on a separate fiber.
   def emit(markdown: Markdown of Layout)
-    ( using width: MarkdownWidth, monitor: Monitor, probate: Probate )
+    ( using formatting: MarkdownFormatting, monitor: Monitor, probate: Probate )
   :   Iterator[Text] =
 
     val producer = Producer[Text](4096)
 
     async:
-      writeDocument(Writer(producer, width.columns), markdown)
+      writeDocument(Writer(producer, formatting.width.lay(Int.MaxValue)(c => c)), markdown)
       producer.finish()
 
     producer.iterator
