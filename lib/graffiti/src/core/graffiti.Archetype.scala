@@ -52,7 +52,7 @@ object Archetype:
   given media: [page <: Archetype] => page is Media = _ => media"text/html"(charset = "UTF-8")
 
   given streamable: [page <: Archetype] => (Monitor, Probate) => page is Streamable by Text =
-    archetype => Html.emit(archetype.document).to(Stream)
+    archetype => archetype.document.stream[Text]
 
 // The base of every page archetype. Concrete pages are built by mixing in feature traits (each a
 // subtype of `Archetype`); their only obligation is to provide `content`, the central matter.
