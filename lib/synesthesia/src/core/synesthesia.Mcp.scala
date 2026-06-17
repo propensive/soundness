@@ -58,6 +58,78 @@ object Mcp:
 
   type Cursor = Text
 
+  // Anchor givens for the MCP records derived in many places: those shared across protocol types
+  // (Icon, Annotations) and the variants the hand-written sum codecs dispatch to via `.json`/`.as`
+  // (TextContent, …). Deriving each once here lets every consumer reference it instead of
+  // re-inline-expanding the whole derivation — cutting a clean `synesthesia.core` compile by ~25%.
+  // Only genuinely multiply-shared records are anchored: anchoring rarely-shared types regresses,
+  // since each anchor still costs one derivation and enlarges the implicit-search space everywhere.
+  object Icon:
+    given (Tactic[JsonError]) => Icon is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+    given Icon is Json.Encodable = Json.EncodableDerivation.derived
+
+  object Annotations:
+    given (Tactic[JsonError]) => Annotations is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+    given Annotations is Json.Encodable = Json.EncodableDerivation.derived
+
+  object Implementation:
+    given (Tactic[JsonError]) => Implementation is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+    given Implementation is Json.Encodable = Json.EncodableDerivation.derived
+
+  object BaseMetadata:
+    given (Tactic[JsonError]) => BaseMetadata is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+    given BaseMetadata is Json.Encodable = Json.EncodableDerivation.derived
+
+  object TextContent:
+    given (Tactic[JsonError]) => TextContent is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+    given TextContent is Json.Encodable = Json.EncodableDerivation.derived
+
+  object ImageContent:
+    given (Tactic[JsonError]) => ImageContent is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+    given ImageContent is Json.Encodable = Json.EncodableDerivation.derived
+
+  object AudioContent:
+    given (Tactic[JsonError]) => AudioContent is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+    given AudioContent is Json.Encodable = Json.EncodableDerivation.derived
+
+  object ResourceLink:
+    given (Tactic[JsonError]) => ResourceLink is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+    given ResourceLink is Json.Encodable = Json.EncodableDerivation.derived
+
+  object EmbeddedResource:
+    given (Tactic[JsonError]) => EmbeddedResource is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+    given EmbeddedResource is Json.Encodable = Json.EncodableDerivation.derived
+
+  object TextResourceContents:
+    given (Tactic[JsonError]) => TextResourceContents is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+    given TextResourceContents is Json.Encodable = Json.EncodableDerivation.derived
+
+  object BlobResourceContents:
+    given (Tactic[JsonError]) => BlobResourceContents is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+    given BlobResourceContents is Json.Encodable = Json.EncodableDerivation.derived
+
 
   def send[interface <: McpServer](id: Text, server: interface, mcpInterface: Interface)
     ( dispatch: Json => Optional[Json] )
