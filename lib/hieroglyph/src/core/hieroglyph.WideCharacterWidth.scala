@@ -40,8 +40,8 @@ object WideCharacterWidth:
       val category = Character.getType(codePoint)
 
       if
-        ( category == Character.NON_SPACING_MARK || category == Character.ENCLOSING_MARK
-          || category == Character.FORMAT )
+        ( category == Character.NON_SPACING_MARK || category == Character.ENCLOSING_MARK ||
+          category == Character.FORMAT )
       then 0
       else Unicode.eastAsianWidth(codePoint).match
         case Unicode.EaWidth.Wide | Unicode.EaWidth.FullWidth => 2

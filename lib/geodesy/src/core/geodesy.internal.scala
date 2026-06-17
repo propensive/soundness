@@ -140,8 +140,8 @@ object internal:
       val dLng = math.abs(left.longitude - right.longitude)
 
       val a =
-        math.pow(math.sin(dLat/2), 2)
-        + math.cos(left.latitude)*math.cos(right.latitude)*math.pow(math.sin(dLng/2), 2)
+        math.pow(math.sin(dLat/2), 2) +
+          math.cos(left.latitude)*math.cos(right.latitude)*math.pow(math.sin(dLng/2), 2)
 
       2*math.atan2(math.sqrt(a), math.sqrt(1 - a))
 
@@ -152,6 +152,6 @@ object internal:
         math.atan2
           ( math.sin(dLng)*math.cos(right.latitude),
             math.cos(left.latitude)*math.sin(right.latitude) -
-                math.sin(left.latitude)*math.cos(right.latitude)*math.cos(dLng) )
+              math.sin(left.latitude)*math.cos(right.latitude)*math.cos(dLng) )
 
       compass.direction(Angle(result))

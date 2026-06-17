@@ -120,8 +120,8 @@ object Regex:
   def parse(parts: List[Text]): Regex raises RegexError =
     def validStart(part: Text): Boolean =
       val str = part.s
-      str.startsWith("(") || str.startsWith("[") || str.startsWith(".")
-      || (str.length >= 2 && str.charAt(0) == '\\' && "dDwWsS".indexOf(str.charAt(1)) >= 0)
+      str.startsWith("(") || str.startsWith("[") || str.startsWith(".") ||
+        (str.length >= 2 && str.charAt(0) == '\\' && "dDwWsS".indexOf(str.charAt(1)) >= 0)
 
     parts.absolve match
       case head :: tail =>
@@ -219,9 +219,9 @@ object Regex:
           val newGroup = Group(groupStart, tokenEnd, index, Nil, q, g, true, false, true)
           group(start, newGroup :: children, top, false, false)
 
-        case '\\' if !escape && !charClass && captured.has(index)
-          && index + 1 < text.s.length
-          && "dDwWsS".indexOf(text.s.charAt(index + 1)) >= 0 =>
+        case '\\' if !escape && !charClass && captured.has(index) &&
+          index + 1 < text.s.length &&
+          "dDwWsS".indexOf(text.s.charAt(index + 1)) >= 0 =>
 
           val groupStart = index
           index += 2
@@ -332,8 +332,8 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
     def recur(offset: Int): Stream[Interval] =
       if matcher.find(offset)
       then
-        Interval.zerary(matcher.start, matcher.end)
-        #:: recur((if overlap then matcher.start else matcher.end) + 1)
+        Interval.zerary(matcher.start, matcher.end) #::
+          recur((if overlap then matcher.start else matcher.end) + 1)
       else
         Stream()
 

@@ -103,9 +103,9 @@ object internal:
   def isProductType(using Quotes)(tpe: quotes.reflect.TypeRepr): Boolean =
     import quotes.reflect.*
 
-    !isSumType(tpe)
-    && (tpe <:< TypeRepr.of[Product] || tpe <:< TypeRepr.of[scala.Singleton]
-        || tpe.typeSymbol.caseFields.nonEmpty)
+    !isSumType(tpe) &&
+      (tpe <:< TypeRepr.of[Product] || tpe <:< TypeRepr.of[scala.Singleton] ||
+        tpe.typeSymbol.caseFields.nonEmpty)
 
   // The type of a variant: a `TypeRef` for a case-class variant, a `TermRef` for a singleton.
   private def variantType(using Quotes)(child: quotes.reflect.Symbol): quotes.reflect.TypeRepr =
@@ -284,10 +284,10 @@ object internal:
         . appliedTo(args.map(instanceOf) :+ instanceOf(tpe))
 
     def isCodec(tpe: TypeRepr, args: List[TypeRepr]): Boolean =
-      args.nonEmpty
-      && (Implicits.searchIgnoring(codecFunction(tpe, args))(wrappers*) match
-            case _: ImplicitSearchSuccess => true
-            case _                        => false)
+      args.nonEmpty &&
+        (Implicits.searchIgnoring(codecFunction(tpe, args))(wrappers*) match
+              case _: ImplicitSearchSuccess => true
+              case _                        => false)
 
     def fullGraph: Expr[typeclass[derivation]] =
       val reachable = scala.collection.mutable.LinkedHashMap[String, TypeRepr]()

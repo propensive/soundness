@@ -56,14 +56,14 @@ object Pax:
     while pos < data.length do
       var lengthEnd = pos
 
-      while lengthEnd < data.length
-        && data(lengthEnd) >= '0'.toByte
-        && data(lengthEnd) <= '9'.toByte
+      while lengthEnd < data.length &&
+        data(lengthEnd) >= '0'.toByte &&
+        data(lengthEnd) <= '9'.toByte
       do lengthEnd += 1
 
-      if lengthEnd == pos
-        || lengthEnd >= data.length
-        || data(lengthEnd) != ' '.toByte
+      if lengthEnd == pos ||
+        lengthEnd >= data.length ||
+        data(lengthEnd) != ' '.toByte
       then
         raise(TarError(TarError.Reason.BadPaxRecord(data)))
         pos = data.length

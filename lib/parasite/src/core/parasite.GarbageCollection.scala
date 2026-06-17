@@ -97,8 +97,8 @@ object GarbageCollection:
           case emitter: jm.NotificationEmitter =>
             val listener: jm.NotificationListener = (notification, handback) =>
               if
-                notification.nn.getType()
-                == csm.GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION
+                notification.nn.getType() ==
+                  csm.GarbageCollectionNotificationInfo.GARBAGE_COLLECTION_NOTIFICATION
               then
                 notification.nn.getUserData.nn match
                   case info: jmo.CompositeData =>
@@ -111,8 +111,8 @@ object GarbageCollection:
 
                     val memory: Map[Text, (Bytes, Bytes)] =
                       preMemory.keySet.nn.iterator.nn.asScala.map: key =>
-                        key.tt
-                        -> (preMemory.get(key).nn.getUsed.b, postMemory.get(key).nn.getUsed.b)
+                        key.tt ->
+                          (preMemory.get(key).nn.getUsed.b, postMemory.get(key).nn.getUsed.b)
 
                       .to(Map)
 

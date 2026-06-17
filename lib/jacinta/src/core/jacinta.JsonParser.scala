@@ -47,9 +47,9 @@ import Json.Ast.{Issue, Position}
 
 private[jacinta] object JsonParser:
   private[jacinta] type Raw =
-    Long | Int | Double | Bcd | String | IArray[Any]
-    | Array[Long] | Array[Int]
-    | Boolean | Json.JsonNull.type | Unset
+    Long | Int | Double | Bcd | String | IArray[Any] |
+      Array[Long] | Array[Int] |
+      Boolean | Json.JsonNull.type | Unset
 
   private inline val NumZero       = 0
   private inline val NumInt        = 1
@@ -421,9 +421,9 @@ private[jacinta] final class JsonParser:
       val mk = cursor.mark
 
       val bom =
-        cursor.more && cursor.datum(using Unsafe) == -17.toByte
-        && { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -69.toByte }
-        && { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -65.toByte }
+        cursor.more && cursor.datum(using Unsafe) == -17.toByte &&
+          { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -69.toByte } &&
+          { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -65.toByte }
 
       if bom then cursor.next() else cursor.cue(mk)
 
@@ -631,12 +631,12 @@ private[jacinta] final class JsonParser:
           val packedHigh = if len > 8 then packBytes(arr, off + 8, len - 8) else 0L
 
           val idx        = ((packedLow.toInt ^ (packedLow >>> 32).toInt) ^
-                            (packedHigh.toInt ^ (packedHigh >>> 32).toInt)) & (KeyCacheSize - 1)
+            (packedHigh.toInt ^ (packedHigh >>> 32).toInt)) & (KeyCacheSize - 1)
 
           val cached     = keyCache(idx)
 
-          if cached != null && keyCacheLow(idx) == packedLow
-            && keyCacheHigh(idx) == packedHigh
+          if cached != null && keyCacheLow(idx) == packedLow &&
+            keyCacheHigh(idx) == packedHigh
           then cached
           else
             val fresh = new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
@@ -734,10 +734,10 @@ private[jacinta] final class JsonParser:
     if pos + 5 <= bufEnd then
       val word: Long =
         (bytes(pos)     & 0xFFL)         |
-        ((bytes(pos + 1) & 0xFFL) <<  8) |
-        ((bytes(pos + 2) & 0xFFL) << 16) |
-        ((bytes(pos + 3) & 0xFFL) << 24) |
-        ((bytes(pos + 4) & 0xFFL) << 32)
+          ((bytes(pos + 1) & 0xFFL) <<  8) |
+          ((bytes(pos + 2) & 0xFFL) << 16) |
+          ((bytes(pos + 3) & 0xFFL) << 24) |
+          ((bytes(pos + 4) & 0xFFL) << 32)
 
       if word != FalseWord then errorAt(Issue.ExpectedFalse)
       pos += 5
@@ -754,9 +754,9 @@ private[jacinta] final class JsonParser:
     if pos + 4 <= bufEnd then
       val word: Int =
         (bytes(pos)     & 0xFF)         |
-        ((bytes(pos + 1) & 0xFF) <<  8) |
-        ((bytes(pos + 2) & 0xFF) << 16) |
-        ((bytes(pos + 3) & 0xFF) << 24)
+          ((bytes(pos + 1) & 0xFF) <<  8) |
+          ((bytes(pos + 2) & 0xFF) << 16) |
+          ((bytes(pos + 3) & 0xFF) << 24)
 
       if word != TrueWord then errorAt(Issue.ExpectedTrue)
       pos += 4
@@ -772,9 +772,9 @@ private[jacinta] final class JsonParser:
     if pos + 4 <= bufEnd then
       val word: Int =
         (bytes(pos)     & 0xFF)         |
-        ((bytes(pos + 1) & 0xFF) <<  8) |
-        ((bytes(pos + 2) & 0xFF) << 16) |
-        ((bytes(pos + 3) & 0xFF) << 24)
+          ((bytes(pos + 1) & 0xFF) <<  8) |
+          ((bytes(pos + 2) & 0xFF) << 16) |
+          ((bytes(pos + 3) & 0xFF) << 24)
 
       if word != NullWord then errorAt(Issue.ExpectedNull)
       pos += 4

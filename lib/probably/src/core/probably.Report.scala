@@ -629,15 +629,15 @@ class Report(using Environment)(using palette: TestPalette):
             e"P${s.benchmark.confidence: Int} ${confInt(s.benchmark)}",
 
           Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): s =>
-            e"${frequency(s.benchmark)}")
-        ::: (
+            e"${frequency(s.benchmark)}") :::
+          (
           if benchmarks.exists(_.benchmark.operationSize.present) then List(
             Column(e"$Bold(Size)", textAlign = TextAlignment.Right):
               (s: ReportLine.Bench) => s.benchmark.operationSize.lay(e""){ t => e"$t" },
             Column(e"$Bold(Rate)", textAlign = TextAlignment.Right):
               (s: ReportLine.Bench) => s.benchmark.operationRate.lay(e""){ t => e"$t" })
-          else Nil)
-        ::: comparisons.map: comparison =>
+          else Nil) :::
+          comparisons.map: comparison =>
           import Baseline.*
           val baseline = comparison.benchmark.baseline.vouch
 

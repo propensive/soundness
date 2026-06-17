@@ -72,8 +72,8 @@ private[nomenclature] object identifierRules:
     val length = text.length
 
     def identStart(char: Char): Boolean =
-      char == '_' || char.toInt >= 0x80 || (char >= 'a' && char <= 'z')
-      || (char >= 'A' && char <= 'Z')
+      char == '_' || char.toInt >= 0x80 || (char >= 'a' && char <= 'z') ||
+        (char >= 'A' && char <= 'Z')
 
     def identChar(char: Char): Boolean =
       identStart(char) || char == '-' || (char >= '0' && char <= '9')

@@ -107,8 +107,8 @@ object internal:
       case None =>
         val main: Text = segments.head
         val isStandard =
-          !main.starts(t"vnd.") && !main.starts(t"prs.")
-          && !main.starts(t"x.") && !main.starts(t"x-")
+          !main.starts(t"vnd.") && !main.starts(t"prs.") &&
+            !main.starts(t"x.") && !main.starts(t"x-")
 
         if !isStandard then Unset
         else

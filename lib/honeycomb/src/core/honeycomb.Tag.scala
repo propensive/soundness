@@ -241,9 +241,9 @@ extends Element(label, Attributes.from(presets), IArray(), foreign), Formal, Dyn
   // `t` short-circuit avoids paying the comparison chain for the overwhelming
   // majority of (non-table) tags.
   val tableLike: Boolean =
-    label.s.charAt(0) == 't'
-    && (label == t"tr" || label == t"table" || label == t"tbody"
-        || label == t"thead" || label == t"tfoot")
+    label.s.charAt(0) == 't' &&
+      (label == t"tr" || label == t"table" || label == t"tbody" ||
+        label == t"thead" || label == t"tfoot")
 
   // True iff the tag's label is exactly `"table"`. Used by the parser's
   // foster-parenting logic to detect "are we entering a table?" without

@@ -61,8 +61,8 @@ object Diagnostic:
       case Diagnostic.Resolving(name, label, children) =>
         TreeDiagram[Diagnostic](children*).render(line)
         . join
-          ( e"$headline\n\n \e[38;5;88m$Bold(■)\e[0m resolving "
-            +e"\e[38;5;208m$Italic($name)\e[0m${labelled(label)}\n",
+          ( e"$headline\n\n \e[38;5;88m$Bold(■)\e[0m resolving " +
+            e"\e[38;5;208m$Italic($name)\e[0m${labelled(label)}\n",
             e"\n",
             e"\n" )
 

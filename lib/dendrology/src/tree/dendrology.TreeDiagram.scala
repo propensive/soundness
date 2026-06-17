@@ -53,8 +53,8 @@ object TreeDiagram:
       input.zipWithIndex.to(Stream).flatMap: (item, index) =>
         val tiles: List[TreeTile] = ((if index == last then Last else Branch) :: level).reverse
 
-        (tiles, item)
-        #:: recur((if index == last then Space else Extender) :: level, getChildren(item))
+        (tiles, item) #::
+          recur((if index == last then Space else Extender) :: level, getChildren(item))
 
     new TreeDiagram(recur(Nil, roots))
 

@@ -361,8 +361,8 @@ object Html extends Tag.Container
         val mode = dom.elements(label).lay(Mode.Normal)(_.mode)
 
         val whitespace =
-          (mode == Mode.Whitespace || !nodes.exists(_.isInstanceOf[TextNode]))
-          && block
+          (mode == Mode.Whitespace || !nodes.exists(_.isInstanceOf[TextNode])) &&
+            block
 
         if !dom.elements(label).lay(false)(_.void) then
           nodes.each(writeHtml(producer, dom, _, indent + 1, whitespace, mode))
@@ -1451,8 +1451,8 @@ object Html extends Tag.Container
                       level = Level.Descend
                   else if focus.void then
                     empty()
-                  else if (content == t"a" || content == t"nobr")
-                  && (parent.label == content || stackContainsAncestor(content)) then
+                  else if (content == t"a" || content == t"nobr") &&
+                    (parent.label == content || stackContainsAncestor(content)) then
                     reset(mark)
                     close()
                   else
@@ -1788,8 +1788,9 @@ extends Node, Topical, Transportive, Dynamic:
     case Fragment(node: Element) => this == node
 
     case Element(label, attributes, children, foreign) =>
-      label == this.label && attributes.equalsAttributes(this.attributes) && foreign == this.foreign
-      && ju.Arrays.equals(children.mutable(using Unsafe), this.children.mutable(using Unsafe))
+      label == this.label && attributes.equalsAttributes(this.attributes) &&
+        foreign == this.foreign &&
+        ju.Arrays.equals(children.mutable(using Unsafe), this.children.mutable(using Unsafe))
 
     case _ =>
       false

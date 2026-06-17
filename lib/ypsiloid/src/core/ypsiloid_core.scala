@@ -75,12 +75,12 @@ extension (yaml: Yaml.Ast)
   inline def isBoolean: Boolean = yaml.isInstanceOf[Boolean]
 
   inline def isObject: Boolean =
-    yaml.isInstanceOf[Array[AnyRef]]
-    && (yaml.asInstanceOf[Array[?]].length & 1) == 0
+    yaml.isInstanceOf[Array[AnyRef]] &&
+      (yaml.asInstanceOf[Array[?]].length & 1) == 0
 
   inline def isArray: Boolean =
-    yaml.isInstanceOf[Array[AnyRef]]
-    && (yaml.asInstanceOf[Array[?]].length & 1) == 1
+    yaml.isInstanceOf[Array[AnyRef]] &&
+      (yaml.asInstanceOf[Array[?]].length & 1) == 1
 
   private def expected(yamlPrimitive: YamlPrimitive)(using Tactic[YamlError]): Unit =
     raise:

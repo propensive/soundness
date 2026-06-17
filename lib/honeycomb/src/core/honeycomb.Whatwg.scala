@@ -365,26 +365,26 @@ class Whatwg() extends Dom:
   def doctype: Doctype = Doctype("html")
 
   private type InteractivePhrasing =
-    "a" | "audio" | "button" | "embed" | "iframe" | "img" | "input" | "label" | "select"
-    | "textarea" | "video"
+    "a" | "audio" | "button" | "embed" | "iframe" | "img" | "input" | "label" | "select" |
+      "textarea" | "video"
 
   type Interactive = InteractivePhrasing | "details"
 
   type Flow =
-    Heading | Phrasing | Sectioning | "address" | "blockquote" | "details" | "dialog" | "div" | "dl"
-    | "fieldset" | "figure" | "footer" | "form" | "header" | "hr" | "main" | "menu" | "ol" | "p"
-    | "pre" | "table" | "ul" | "search"
+    Heading | Phrasing | Sectioning | "address" | "blockquote" | "details" | "dialog" | "div" |
+      "dl" | "fieldset" | "figure" | "footer" | "form" | "header" | "hr" | "main" | "menu" | "ol" |
+      "p" | "pre" | "table" | "ul" | "search"
 
   type Phrasing =
-    Embedded | InteractivePhrasing | "abbr" | "area" | "b" | "bdi" | "bdo" | "br" | "cite" | "code"
-    | "data" | "datalist" | "del" | "dfn" | "em" | "i" | "ins" | "kbd" | "link" | "map" | "mark"
-    | "meta" | "meter" | "noscript" | "output" | "progress" | "q" | "ruby" | "s" | "samp" | "script"
-    | "slot" | "small" | "span" | "strong" | "sub" | "sup" | "template" | "time" | "u" | "var"
-    | "wbr" | "selectedcontent" | "#text"
+    Embedded | InteractivePhrasing | "abbr" | "area" | "b" | "bdi" | "bdo" | "br" | "cite" |
+      "code" | "data" | "datalist" | "del" | "dfn" | "em" | "i" | "ins" | "kbd" | "link" | "map" |
+      "mark" | "meta" | "meter" | "noscript" | "output" | "progress" | "q" | "ruby" | "s" | "samp" |
+      "script" | "slot" | "small" | "span" | "strong" | "sub" | "sup" | "template" | "time" | "u" |
+      "var" | "wbr" | "selectedcontent" | "#text"
 
   type Embedded =
-    "audio" | "canvas" | "embed" | "iframe" | "img" | "object" | "picture" | "video" | "math"
-    | "svg"
+    "audio" | "canvas" | "embed" | "iframe" | "img" | "object" | "picture" | "video" | "math" |
+      "svg"
 
   type Sectioning = "article" | "aside" | "nav" | "section"
   type ScriptSupporting = "script" | "template"
@@ -409,14 +409,14 @@ class Whatwg() extends Dom:
   val Address =
     Tag.container
       [ "address",
-        "a" | "abbr" | "area" | "audio" | "b" | "bdi" | "bdo" | "blockquote" | "br" | "button"
-        | "canvas" | "cite" | "code" | "data" | "datalist" | "del" | "details" | "dfn" | "dialog"
-        | "div" | "dl" | "em" | "embed" | "fieldset" | "figure" | "form" | "hr" | "i" | "iframe"
-        | "img" | "input" | "ins" | "kbd" | "label" | "link" | "main" | "map" | "mark" | "menu"
-        | "meta" | "meter" | "noscript" | "object" | "ol" | "output" | "p" | "picture" | "pre"
-        | "progress" | "q" | "ruby" | "s" | "samp" | "script" | "select" | "slot" | "small" | "span"
-        | "strong" | "sub" | "sup" | "table" | "template" | "textarea" | "time" | "u" | "ul" | "var"
-        | "video" | "wbr", Whatwg ]()
+        "a" | "abbr" | "area" | "audio" | "b" | "bdi" | "bdo" | "blockquote" | "br" | "button" |
+          "canvas" | "cite" | "code" | "data" | "datalist" | "del" | "details" | "dfn" | "dialog" |
+          "div" | "dl" | "em" | "embed" | "fieldset" | "figure" | "form" | "hr" | "i" | "iframe" |
+          "img" | "input" | "ins" | "kbd" | "label" | "link" | "main" | "map" | "mark" | "menu" |
+          "meta" | "meter" | "noscript" | "object" | "ol" | "output" | "p" | "picture" | "pre" |
+          "progress" | "q" | "ruby" | "s" | "samp" | "script" | "select" | "slot" | "small" |
+          "span" | "strong" | "sub" | "sup" | "table" | "template" | "textarea" | "time" | "u" |
+          "ul" | "var" | "video" | "wbr", Whatwg ]()
 
   object Area extends Tag.Void("area", sci.Map(), false):
     type Topic = "area"

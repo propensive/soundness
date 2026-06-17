@@ -90,8 +90,8 @@ object NumericRange:
 
       @annotation.targetName("times")
       infix def * [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
-      :   (Min4[leftMin*rightMin, leftMin*rightMax, leftMax*rightMax, leftMax*rightMin])
-        ~ (Max4[leftMin*rightMin, leftMin*rightMax, leftMax*rightMax, leftMax*rightMin]) =
+      :   (Min4[leftMin*rightMin, leftMin*rightMax, leftMax*rightMax, leftMax*rightMin]) ~
+        (Max4[leftMin*rightMin, leftMin*rightMax, leftMax*rightMax, leftMax*rightMin]) =
 
         left*right
 
@@ -109,8 +109,8 @@ object NumericRange:
 
       @annotation.targetName("minus")
       infix def - [rightMin <: Double, rightMax <: Double](right: rightMin ~ rightMax)
-      :   ( Min[leftMin - rightMin, leftMin - rightMax]
-            ~ Max[leftMax - rightMin, leftMax - rightMax] ) =
+      :   ( Min[leftMin - rightMin, leftMin - rightMax] ~
+        Max[leftMax - rightMin, leftMax - rightMax] ) =
 
           left - right
 
@@ -140,8 +140,7 @@ object NumericRange:
         Asym
           [ rightMin*rightMax,
             Min4[leftMin/rightMin, leftMax/rightMin, leftMin/rightMax, leftMax/rightMax],
-            -1.0/0.0 ]
-        ~
+            -1.0/0.0 ] ~
           Asym
             [ rightMin*rightMax,
               Max4[leftMin/rightMin, leftMax/rightMin, leftMin/rightMax, leftMax/rightMax],

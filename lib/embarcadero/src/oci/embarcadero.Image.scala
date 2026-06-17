@@ -98,9 +98,9 @@ case class Image
   // and the manifest.
   def blobs: List[(Text, Data)] =
     val layerBlobs = layers.map: layer => (layer.digest, layer.blob)
-    (configDescriptor.digest, configBytes)
-    :: layerBlobs
-    ::: List((manifestDescriptor.digest, manifestBytes))
+    (configDescriptor.digest, configBytes) ::
+      layerBlobs :::
+      List((manifestDescriptor.digest, manifestBytes))
 
   // The complete image serialised as an OCI image-layout tar (an "oci-archive"):
   // an `oci-layout` marker, the `index.json`, and every blob under

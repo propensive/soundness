@@ -124,8 +124,8 @@ object internal:
             val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
 
             ' {
-                $expr
-                && { $array(${Expr(index)}) = (${scrutinee}.attributes -- $others).toMap; true }
+                $expr &&
+                  { $array(${Expr(index)}) = (${scrutinee}.attributes -- $others).toMap; true }
               }
 
           case head :: tail =>
@@ -157,8 +157,8 @@ object internal:
 
         val elementsChecked = elements(0):
           ' {
-              ${Expr(pattern.label)} == $scrutinee.label
-              && $scrutinee.children.length == ${Expr(pattern.children.length)}
+              ${Expr(pattern.label)} == $scrutinee.label &&
+                $scrutinee.children.length == ${Expr(pattern.children.length)}
             }
 
         '{$attributesChecked && $elementsChecked}
@@ -174,9 +174,9 @@ object internal:
             types ::= TypeRepr.of[Text]
 
             ' {
-                $expr
-                && $scrutinee.isInstanceOf[Comment]
-                && { $array(${Expr(index)}) = $scrutinee.asInstanceOf[Comment].text; true }
+                $expr &&
+                  $scrutinee.isInstanceOf[Comment] &&
+                  { $array(${Expr(index)}) = $scrutinee.asInstanceOf[Comment].text; true }
               }
 
           case TextNode("\u0000") =>

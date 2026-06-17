@@ -58,8 +58,8 @@ object Openable:
 
     def initialize(path: path, extraOptions: List[jnf.OpenOption]): jnc.FileChannel =
       val options =
-        read.options() ++ write.options() ++ dereference.options() ++ create.options()
-        ++ extraOptions
+        read.options() ++ write.options() ++ dereference.options() ++ create.options() ++
+          extraOptions
 
       import jnf.StandardOpenOption as jnfsoo
 

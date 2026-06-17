@@ -420,9 +420,9 @@ package proximities:
       val count = transform(0, 0, 0)
 
       if matches == 0 then 0.0 else
-        ( matches.toDouble/left.length + matches.toDouble/right.length
-          + (matches - count/2.0)/matches )
-        / 3
+        ( matches.toDouble/left.length + matches.toDouble/right.length +
+          (matches - count/2.0)/matches ) /
+          3
 
   given prefixProximity: (sensitivity: CaseSensitivity) => Proximity by Int = (left, right) =>
     val limit = left.length.min(right.length)

@@ -85,10 +85,10 @@ object Subcompiler:
 
             while c.exists do
               if
-                c.source == cuSource
-                && c.start >= bound.start
-                && c.end <= bound.end
-                && (c.end - c.start) < (found.end - found.start)
+                c.source == cuSource &&
+                  c.start >= bound.start &&
+                  c.end <= bound.end &&
+                  (c.end - c.start) < (found.end - found.start)
               then found = c
 
               val outer = c.outer

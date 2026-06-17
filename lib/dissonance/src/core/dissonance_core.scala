@@ -126,8 +126,8 @@ def diff[element]
   @tailrec
   def count(position: Int, offset: Int): Int =
     if
-      position < left.length && position + offset < right.length
-      && compare(left(position), right(position + offset))
+      position < left.length && position + offset < right.length &&
+        compare(left(position), right(position + offset))
     then count(position + 1, offset)
     else position
 

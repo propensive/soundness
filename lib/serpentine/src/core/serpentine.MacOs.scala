@@ -40,8 +40,8 @@ import rudiments.*
 
 object MacOs:
   type Rules =
-    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
-    & MustNotEqual["Icon\r"] & MustNotContain[":"]
+    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""] &
+      MustNotEqual["Icon\r"] & MustNotContain[":"]
 
   inline given MacOs is Nominative under Rules = !!
 

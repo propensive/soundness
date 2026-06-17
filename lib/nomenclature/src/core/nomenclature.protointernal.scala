@@ -104,8 +104,8 @@ object protointernal:
               val symbol2 = underlying(tree2)
 
               val unusable =
-                symbol1.isNoSymbol || symbol2.isNoSymbol
-                || ignored.contains(symbol1) || ignored.contains(symbol2)
+                symbol1.isNoSymbol || symbol2.isNoSymbol ||
+                  ignored.contains(symbol1) || ignored.contains(symbol2)
 
               if unusable then acc.reverse
               else collect(symbol1 :: symbol2 :: ignored, tree2 :: tree1 :: acc)

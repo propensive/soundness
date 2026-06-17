@@ -355,8 +355,8 @@ object internal:
       stripWrappers(lensTerm) match
         case Apply(applyFn, List(getLambda, setLambda))
           if
-            applyFn.symbol.exists && applyFn.symbol.owner == TypeRepr.of[Lens.type].typeSymbol
-            && applyFn.symbol.name == "apply"
+            applyFn.symbol.exists && applyFn.symbol.owner == TypeRepr.of[Lens.type].typeSymbol &&
+              applyFn.symbol.name == "apply"
         =>
           Some((getLambda, setLambda))
 

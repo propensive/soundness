@@ -157,10 +157,10 @@ case class Semver
 
   override def equals(that: Any): Boolean = that match
     case that: Semver =>
-      major         == that.major
-      && minor      == that.minor
-      && patch      == that.patch
-      && prerelease == that.prerelease
+      major         == that.major &&
+        minor      == that.minor &&
+        patch      == that.patch &&
+        prerelease == that.prerelease
 
     case _ =>
       false

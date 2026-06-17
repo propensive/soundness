@@ -544,28 +544,28 @@ object Tels extends Tels2:
 
     // Deep structural equality for Tels values.
     def equivalent(a: Tels, b: Tels): Boolean =
-      a.name == b.name
-        && a.sigil == b.sigil
-        && structEq(a.document, b.document)
-        && seqEq(a.records, b.records, recordEq)
-        && seqEq(a.scalars, b.scalars, scalarEq)
-        && seqEq(a.selects, b.selects, selectEq)
-        && seqEq(a.layers, b.layers, layerEq)
+      a.name == b.name &&
+        a.sigil == b.sigil &&
+        structEq(a.document, b.document) &&
+        seqEq(a.records, b.records, recordEq) &&
+        seqEq(a.scalars, b.scalars, scalarEq) &&
+        seqEq(a.selects, b.selects, selectEq) &&
+        seqEq(a.layers, b.layers, layerEq)
 
     private def seqEq[T](a: IArray[T], b: IArray[T], eq: (T, T) => Boolean): Boolean =
       a.length == b.length && (0 until a.length).forall: i => eq(a(i), b(i))
 
     private def structEq(a: Struct, b: Struct): Boolean =
-      seqEq(a.members, b.members, memberEq)
-        && seqEq(a.validators, b.validators, textEq)
+      seqEq(a.members, b.members, memberEq) &&
+        seqEq(a.validators, b.validators, textEq)
 
     private def textEq(a: Text, b: Text): Boolean = a == b
 
     private def memberEq(a: Member, b: Member): Boolean = (a, b) match
       case (a: Field, b: Field) =>
-        a.required == b.required && a.repeatable == b.repeatable
-          && a.keyword == b.keyword && typeEq(a.fieldType, b.fieldType)
-          && a.default == b.default && a.description == b.description
+        a.required == b.required && a.repeatable == b.repeatable &&
+          a.keyword == b.keyword && typeEq(a.fieldType, b.fieldType) &&
+          a.default == b.default && a.description == b.description
 
       case (a: SelectRef, b: SelectRef) =>
         a.required == b.required && a.repeatable == b.repeatable && a.reference == b.reference
@@ -581,26 +581,26 @@ object Tels extends Tels2:
       case _                              => false
 
     private def recordEq(a: RecordDefinition, b: RecordDefinition): Boolean =
-      a.name == b.name && seqEq(a.members, b.members, memberEq)
-        && seqEq(a.validators, b.validators, textEq)
-        && a.description == b.description
+      a.name == b.name && seqEq(a.members, b.members, memberEq) &&
+        seqEq(a.validators, b.validators, textEq) &&
+        a.description == b.description
 
     private def scalarEq(a: ScalarDefinition, b: ScalarDefinition): Boolean =
-      a.name == b.name && seqEq(a.validators, b.validators, textEq)
-        && a.description == b.description
+      a.name == b.name && seqEq(a.validators, b.validators, textEq) &&
+        a.description == b.description
 
     private def selectEq(a: SelectDefinition, b: SelectDefinition): Boolean =
-      a.name == b.name
-        && seqEq(a.variants, b.variants, (x, y) => x.keyword == y.keyword
-             && typeEq(x.variantType, y.variantType) && x.description == y.description)
-        && seqEq(a.validators, b.validators, textEq)
-        && a.description == b.description
+      a.name == b.name &&
+        seqEq(a.variants, b.variants, (x, y) => x.keyword == y.keyword &&
+          typeEq(x.variantType, y.variantType) && x.description == y.description) &&
+        seqEq(a.validators, b.validators, textEq) &&
+        a.description == b.description
 
     private def layerEq(a: Layer, b: Layer): Boolean =
-      a.name == b.name && structEq(a.overlay, b.overlay)
-        && seqEq(a.records, b.records, recordEq)
-        && seqEq(a.scalars, b.scalars, scalarEq)
-        && seqEq(a.selects, b.selects, selectEq)
+      a.name == b.name && structEq(a.overlay, b.overlay) &&
+        seqEq(a.records, b.records, recordEq) &&
+        seqEq(a.scalars, b.scalars, scalarEq) &&
+        seqEq(a.selects, b.selects, selectEq)
 
     def fromTel(tel: Tel): Tels raises TelError =
       val compounds: IArray[Tel.Compound] = tel.subtree.children.flatMap(_.compounds)

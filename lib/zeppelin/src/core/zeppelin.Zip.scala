@@ -46,9 +46,9 @@ import vacuous.*
 
 object Zip:
   type Rules =
-    MustNotContain["\\"] & MustNotContain["\""] & MustNotContain["/"] & MustNotContain[":"]
-    & MustNotContain["*"] & MustNotContain["?"] & MustNotContain["<"] & MustNotContain[">"]
-    & MustNotContain["|"] & MustNotEqual["."] & MustNotEqual[".."]
+    MustNotContain["\\"] & MustNotContain["\""] & MustNotContain["/"] & MustNotContain[":"] &
+      MustNotContain["*"] & MustNotContain["?"] & MustNotContain["<"] & MustNotContain[">"] &
+      MustNotContain["|"] & MustNotEqual["."] & MustNotEqual[".."]
 
   inline given compliant: Linux is Compliant on Zip = !!
   inline given compliant2: MacOs is Compliant on Zip = !!

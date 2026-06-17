@@ -119,9 +119,9 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
         //val jsParams =
 
         val arguments: List[Text] =
-          List(t"-d", out.generic, t"-classpath", classpath())
-          ::: commandLineArguments
-          ::: List(t"")
+          List(t"-d", out.generic, t"-classpath", classpath()) :::
+            commandLineArguments :::
+            List(t"")
 
         Log.info(CompileEvent.Running(arguments))
         setup(arguments.map(_.s).to(Array), context).map(_(1)).get

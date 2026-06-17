@@ -552,9 +552,9 @@ private final class TelParser():
       val v = TelParser.longView.get(bytes, pos).asInstanceOf[Long]
 
       val combined =
-        TelParser.matchByte(v, rA)
-        | TelParser.matchByte(v, rB)
-        | TelParser.matchByte(v, rC)
+        TelParser.matchByte(v, rA) |
+          TelParser.matchByte(v, rB) |
+          TelParser.matchByte(v, rC)
       if combined != 0L then
         pos += (java.lang.Long.numberOfTrailingZeros(combined) >>> 3)
         return
@@ -573,17 +573,17 @@ private final class TelParser():
       val v = TelParser.longView.get(bytes, pos).asInstanceOf[Long]
 
       val combined =
-        TelParser.matchByte(v, rA)
-        | TelParser.matchByte(v, rB)
-        | TelParser.matchByte(v, rC)
-        | TelParser.matchByte(v, rD)
+        TelParser.matchByte(v, rA) |
+          TelParser.matchByte(v, rB) |
+          TelParser.matchByte(v, rC) |
+          TelParser.matchByte(v, rD)
       if combined != 0L then
         pos += (java.lang.Long.numberOfTrailingZeros(combined) >>> 3)
         return
 
       pos += 8
-    while pos < bufEnd && bytes(pos) != a && bytes(pos) != b
-      && bytes(pos) != c && bytes(pos) != d
+    while pos < bufEnd && bytes(pos) != a && bytes(pos) != b &&
+      bytes(pos) != c && bytes(pos) != d
     do pos += 1
 
   // ── Errors ────────────────────────────────────────────────────────────────
@@ -1000,9 +1000,9 @@ private final class TelParser():
   // by EOL or " ". Requires four bytes of look-ahead, or three bytes at EOF.
   private def startsWithPragma(): Boolean =
     ensureLookahead(4)
-    if pos + 2 < bufEnd
-      && bytes(pos) == 't'.toByte && bytes(pos + 1) == 'e'.toByte
-      && bytes(pos + 2) == 'l'.toByte
+    if pos + 2 < bufEnd &&
+      bytes(pos) == 't'.toByte && bytes(pos + 1) == 'e'.toByte &&
+      bytes(pos + 2) == 'l'.toByte
     then
       if pos + 3 < bufEnd
       then bytes(pos + 3) == SP || bytes(pos + 3) == LF || bytes(pos + 3) == CR
@@ -1276,9 +1276,9 @@ private final class TelParser():
   // trailing spaces. Does not consume.
   private def headLineIsSeparator(): Boolean =
     ensureLookahead(3)
-    pos + 1 < bufEnd
-    && bytes(pos) == sigil && bytes(pos + 1) == sigil
-    && (pos + 2 >= bufEnd || bytes(pos + 2) == LF || bytes(pos + 2) == CR)
+    pos + 1 < bufEnd &&
+      bytes(pos) == sigil && bytes(pos + 1) == sigil &&
+      (pos + 2 >= bufEnd || bytes(pos + 2) == LF || bytes(pos + 2) == CR)
 
   // ── parseChildren ────────────────────────────────────────────────────────
 
@@ -1330,13 +1330,13 @@ private final class TelParser():
     val compoundStart = compoundScratchIx
 
     // Leading comments at this indent.
-    while !head.eof && !head.separator && !head.blank && head.indentLevels == indent
-      && isCommentBody()
+    while !head.eof && !head.separator && !head.blank && head.indentLevels == indent &&
+      isCommentBody()
     do
       // §9 E109 check — fires only if the immediately preceding line was a
       // content line (compound / tabulation) at indent ≥ this comment's.
-      if !prevLineWasBoundary && prevContentLeadingSpaces >= 0
-        && prevContentLeadingSpaces >= margin + indent * 2
+      if !prevLineWasBoundary && prevContentLeadingSpaces >= 0 &&
+        prevContentLeadingSpaces >= margin + indent * 2
       then errorAt(Reason.CommentNotPreceded, head.startLine, 1)
 
       val text = parseCommentLine()
@@ -1355,8 +1355,8 @@ private final class TelParser():
 
     // Optional tabulation header.
     val tabulation: Optional[Tel.Tabulation] =
-      if !head.eof && !head.separator && !head.blank && head.indentLevels == indent
-        && isTabulationBody()
+      if !head.eof && !head.separator && !head.blank && head.indentLevels == indent &&
+        isTabulationBody()
       then
         val ls = head.leadingSpaces
         val tab = parseTabulationLine()
@@ -1370,8 +1370,8 @@ private final class TelParser():
 
     // Compound loop.
     var keepLoop = true
-    while keepLoop && !head.eof && !head.separator && !head.blank
-      && head.indentLevels == indent
+    while keepLoop && !head.eof && !head.separator && !head.blank &&
+      head.indentLevels == indent
     do
       if isCommentBody() || isTabulationBody() then keepLoop = false
       else
@@ -1733,8 +1733,8 @@ private final class TelParser():
               else
                 ensureLookahead(3)
                 val afterSigil = if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
-                afterSigil == SP.toInt
-                && (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
+                afterSigil == SP.toInt &&
+                  (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
             if isRemark then
               // Remark terminates column validation.
               while more && peek != LF && peek != CR do { advance(); col += 1 }
@@ -2067,8 +2067,8 @@ private final class TelParser():
           val afterSigil = if pos + 1 < bufEnd then bytes(pos + 1) & 0xff else -1
 
           val softSpaceAfter =
-            afterSigil == SP.toInt
-            && (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
+            afterSigil == SP.toInt &&
+              (pos + 2 >= bufEnd || bytes(pos + 2) != SP)
           if softSpaceAfter then
             // Consume sigil + space, then read remark text until LF/CR.
             advance()  // sigil
@@ -2088,11 +2088,11 @@ private final class TelParser():
           // because we read it out into our own arena before the next
           // refill can fire.
           val runStart = pos
-          while pos < bufEnd
-            && bytes(pos) != SP
-            && bytes(pos) != LF
-            && bytes(pos) != CR
-            && (atomOpen || bytes(pos) != sigil)
+          while pos < bufEnd &&
+            bytes(pos) != SP &&
+            bytes(pos) != LF &&
+            bytes(pos) != CR &&
+            (atomOpen || bytes(pos) != sigil)
           do pos += 1
 
           val runLen = pos - runStart
@@ -2115,8 +2115,8 @@ private final class TelParser():
     // Inside the outer `hold`, the buffer byte just before the current pos
     // is still resident — peek it directly. (`pos > 0` because we have
     // consumed at least the keyword.)
-    if remark.absent && more && (peek == LF || peek == CR)
-      && pos > 0 && bytes(pos - 1) == SP
+    if remark.absent && more && (peek == LF || peek == CR) &&
+      pos > 0 && bytes(pos - 1) == SP
     then errorAt(Reason.TrailingSpaces, lineNumber, head.leadingSpaces + 1)
 
     consumeLineEnding()
