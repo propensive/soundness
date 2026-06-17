@@ -40,8 +40,9 @@ export
       Jul, Jun, LeapSeconds, Mar, May, Meridiem, minutes, Moment, Mon, Month, Months, months,
       Monthstamp, Nov, now, Oct, Period, pm, Rfc1123, RomanCalendar, Sat, seconds, Sep,
       StandardTime, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics, TimeSeparation,
-      Timespan, TimeSpecificity, Timestamp, TimestampError, Timezone, TimezoneError, today, Tue, tz,
-      Tzdb, TzdbError, Wed, Weekday, Weekdays, weeks, WorkingDays, Year, Years, years }
+      Timespan, TimeSpecificity, Timestamp, TimestampError, Timezone, TimezoneError, today, ts,
+      tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Weekday, Weekdays, weeks, WorkingDays, Year,
+      Years, years }
 
 package calendars:
   export aviation.calendars.{gregorianCalendar, julianCalendar}

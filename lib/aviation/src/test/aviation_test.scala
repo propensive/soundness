@@ -1586,6 +1586,82 @@ object Tests extends Suite(m"Aviation Tests"):
         demilitarize(tz"NotARealZone")
       . assert(_.nonEmpty)
 
+    suite(m"ts interpolator"):
+      import calendars.gregorianCalendar
+
+      test(m"A bare year produces a Year"):
+        val year: Year = ts"2024"
+        year
+      . assert(_ == Year(2024))
+
+      test(m"A year and month produces a Monthstamp"):
+        val monthstamp: Monthstamp = ts"2012-11"
+        monthstamp
+      . assert(_ == Monthstamp(Year(2012), Nov))
+
+      test(m"A calendar date produces a Date"):
+        val date: Date = ts"2020-12-31"
+        date
+      . assert(_ == 2020-Dec-31)
+
+      test(m"A zoneless date-time produces a Timestamp"):
+        val timestamp: Timestamp = ts"2023-05-28T14:30:59"
+        timestamp
+      . assert(_ == Timestamp(2023-May-28, Clockface(14, 30, 59)))
+
+      test(m"A date-time without seconds produces a Timestamp"):
+        val timestamp: Timestamp = ts"2023-05-28T14:30"
+        timestamp
+      . assert(_ == Timestamp(2023-May-28, Clockface(14, 30, 0)))
+
+      test(m"A zoned date-time with Z produces a Moment"):
+        val moment: Moment = ts"1994-11-06T08:49:37Z"
+        moment.instant
+      . assert(_ == Instant(784111777000L))
+
+      test(m"A zoned date-time with an offset produces a Moment"):
+        val moment: Moment = ts"2023-05-28T14:30:59+02:00"
+        moment.instant
+      . assert(_ == Instant(1685277059000L))
+
+      test(m"An RFC 1123 timestamp produces a Moment"):
+        val moment: Moment = ts"Sun, 06 Nov 1994 08:49:37 GMT"
+        moment.instant
+      . assert(_ == Instant(784111777000L))
+
+      test(m"A year literal does not typecheck as a Monthstamp"):
+        demilitarize:
+          val monthstamp: Monthstamp = ts"2024"
+      . assert(_.nonEmpty)
+
+      test(m"An unparseable timestamp is a compile error"):
+        demilitarize(ts"not-a-timestamp")
+      . assert(_.nonEmpty)
+
+      test(m"An empty timestamp is a compile error"):
+        demilitarize(ts"")
+      . assert(_.nonEmpty)
+
+      test(m"A month above 12 is a compile error"):
+        demilitarize(ts"2024-13-15")
+      . assert(_.nonEmpty)
+
+      test(m"A nonexistent day is a compile error"):
+        demilitarize(ts"2024-06-31")
+      . assert(_.nonEmpty)
+
+      test(m"An hour above 23 is a compile error"):
+        demilitarize(ts"2024-06-17T25:00:00")
+      . assert(_.nonEmpty)
+
+      test(m"An invalid weekday name is a compile error"):
+        demilitarize(ts"Xyz, 17 Jun 2024 14:30:45 GMT")
+      . assert(_.nonEmpty)
+
+      test(m"A substitution is a compile error"):
+        demilitarize(ts"${2024}")
+      . assert(_.nonEmpty)
+
     suite(m"TaiInstant and leap-second conversion"):
       test(m"Instant 0 (UNIX epoch) has 10-second TAI offset"):
         LeapSeconds.tai(0L) - 0L

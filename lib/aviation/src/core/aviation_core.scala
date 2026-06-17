@@ -329,8 +329,20 @@ extension (int: Int)
   def minutes: Timespan = Timespan.fixed(StandardTime.Minute, int)
   def seconds: Timespan = Timespan.fixed(StandardTime.Second, int)
 
+// The result type is decided by the literal's precision: a year, year-month, date,
+// zoneless date-time, or zoned date-time (also the result for any RFC 1123 literal).
+inline given tsInterpolator: (Year | Monthstamp | Date | Timestamp | Moment) is Interpolable:
+  transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+    ( inline insertions: Any* )
+  :   Year | Monthstamp | Date | Timestamp | Moment =
+
+    ${aviation.internal.tsInterpolator[parts]('insertions)}
+
 extension (inline context: StringContext)
   transparent inline def tz: Interpolation = interpolation[Timezone](context)
+
+  transparent inline def ts: Interpolation =
+    interpolation[Year | Monthstamp | Date | Timestamp | Moment](context)
 
 export Weekday.{Mon, Tue, Wed, Thu, Fri, Sat, Sun}
 
