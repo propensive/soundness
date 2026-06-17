@@ -56,6 +56,47 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
     . within(decode(tel))
 
+  private def validateAssign(tel: Tel, schema: Tels): Issues =
+    validate[Tel.Focus](Issues()):
+      case error: TelError =>
+        accrual + (prior.let(_.pointer.encode).or(t"#"), error)
+    . within(Tel.Type.assign(tel, schema))
+
+  // A document schema with two required scalar fields and no defaults: a document
+  // omitting both yields two `RequiredMemberAbsent` violations.
+  private val twoRequiredSchema: Tels = Tels(
+    name     = t"pair",
+    document = Tels.Struct(
+      members = IArray(
+        Tels.Field
+         ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+           t"name", Tels.Scalar(IArray(t"string")), Unset ),
+        Tels.Field
+         ( Tels.Polarity.Implicit, Tels.Polarity.Implicit,
+           t"email", Tels.Scalar(IArray(t"string")), Unset )),
+      validators = IArray.empty),
+    layers   = IArray.empty,
+    sigil    = Unset,
+    records  = IArray.empty,
+    scalars  = IArray.empty,
+    selects  = IArray.empty)
+
+  // A document schema with a single optional field: unrecognised keywords yield
+  // `UnknownKeyword` violations without any required-member errors.
+  private val optionalFieldSchema: Tels = Tels(
+    name     = t"loose",
+    document = Tels.Struct(
+      members = IArray(
+        Tels.Field
+         ( Tels.Polarity.Loose, Tels.Polarity.Implicit,
+           t"name", Tels.Scalar(IArray(t"string")), Unset )),
+      validators = IArray.empty),
+    layers   = IArray.empty,
+    sigil    = Unset,
+    records  = IArray.empty,
+    scalars  = IArray.empty,
+    selects  = IArray.empty)
+
   def run(): Unit =
     suite(m"Single-error decoding (sanity)"):
       test(m"Fully-valid record: no errors accrued"):
@@ -124,3 +165,26 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         val tel = t"width wide\nheight tall\n".read[Tel]
         validateTel(tel)(_.as[APair]).items.length
       . assert(_ > 1)
+
+    suite(m"Schema-validation accrual (E3xx)"):
+      test(m"Two missing required members accrue two errors"):
+        val doc = t"".read[Tel]
+        validateAssign(doc, twoRequiredSchema).items.length
+      . assert(_ == 2)
+
+      test(m"Both missing-member errors have reason RequiredMemberAbsent"):
+        val doc = t"".read[Tel]
+        validateAssign(doc, twoRequiredSchema).items.all:
+          case (_, err) => err.reason == TelError.Reason.RequiredMemberAbsent
+      . assert(identity)
+
+      test(m"Two unknown keywords accrue two errors"):
+        val doc = t"foo a\nbar b\n".read[Tel]
+        validateAssign(doc, optionalFieldSchema).items.length
+      . assert(_ == 2)
+
+      test(m"Both unknown-keyword errors have reason UnknownKeyword"):
+        val doc = t"foo a\nbar b\n".read[Tel]
+        validateAssign(doc, optionalFieldSchema).items.all:
+          case (_, err) => err.reason == TelError.Reason.UnknownKeyword
+      . assert(identity)
