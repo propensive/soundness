@@ -49,7 +49,7 @@ private[jacinta] object JsonParser:
   private[jacinta] type Raw =
     Long | Int | Double | Bcd | String | IArray[Any]
     | Array[Long] | Array[Int]
-    | Boolean | Null | Unset.type
+    | Boolean | Json.JsonNull.type | Unset
 
   private inline val NumZero       = 0
   private inline val NumInt        = 1
@@ -768,7 +768,7 @@ private[jacinta] final class JsonParser:
       advance()
       true
 
-  private def parseNull(): Null raises ParseError =
+  private def parseNull(): Json.JsonNull.type raises ParseError =
     if pos + 4 <= bufEnd then
       val word: Int =
         (bytes(pos)     & 0xFF)         |
@@ -778,13 +778,13 @@ private[jacinta] final class JsonParser:
 
       if word != NullWord then errorAt(Issue.ExpectedNull)
       pos += 4
-      null
+      Json.JsonNull
     else
       expect(LowerU, Issue.ExpectedNull)
       expect(LowerL, Issue.ExpectedNull)
       expect(LowerL, Issue.ExpectedNull)
       advance()
-      null
+      Json.JsonNull
 
   private def parseNumber(first: Int, negative: Boolean, bcdOnly: Boolean = false)
   :   Double | Long | Bcd raises ParseError =

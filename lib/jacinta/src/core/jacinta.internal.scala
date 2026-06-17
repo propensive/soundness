@@ -916,7 +916,7 @@ object internal:
           '{Json.Ast(Bcd.fromString(${Expr(unsigned)}, ${Expr(negative)}))}
 
         case null =>
-          '{Json.Ast(null)}
+          '{Json.Ast(Json.JsonNull)}
 
         case bcds: Array[Long] @unchecked =>
           // Number-only array literal (BCD-Long packed).

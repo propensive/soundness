@@ -91,7 +91,7 @@ trait Json3:
       def decoded(json: Json): value = inner.decoded(json)
 
 trait Json2 extends Json3:
-  given optionalEncodable: [inner <: value, value >: Unset: Mandatable to inner]
+  given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( encodable: inner is Json.Encodable )
   =>  value is Json.Encodable =
 
@@ -99,7 +99,7 @@ trait Json2 extends Json3:
       value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Json.ast(Json.Ast(Unset)))
 
 
-  given optional: [inner <: value, value >: Unset: Mandatable to inner] => Tactic[JsonError]
+  given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[JsonError]
   =>  ( decodable: => inner is Json.Decodable )
   =>  value is Json.Decodable =
 
@@ -284,7 +284,10 @@ object Json extends Json2, Dynamic:
   type JsonString  = String
   type JsonNumber  = Long | Double | Bcd | Int
   type JsonBoolean = Boolean
-  type JsonNull    = Null
+  // A distinct sentinel for a JSON `null` value, kept disjoint from the null-backed
+  // `Unset` (absent): both would otherwise be the JVM `null` and collide in `Ast`.
+  case object JsonNull
+  type JsonNull    = JsonNull.type
   type JsonObject  = IArray[Any]
   type JsonArray   = IArray[Any] | Array[Long] | Array[Int]
 
@@ -347,7 +350,7 @@ object Json extends Json2, Dynamic:
     def withPosition(json: Json): Focus = copy(position = json.locate(pointer))
 
   opaque type Ast =
-    JsonString | JsonNumber | JsonBoolean | JsonNull | JsonObject | JsonArray | Unset.type
+    JsonString | JsonNumber | JsonBoolean | JsonNull | JsonObject | JsonArray | Unset
 
   object Ast extends Format:
     def name: Text = "JSON"
@@ -465,7 +468,7 @@ object Json extends Json2, Dynamic:
 
     def apply
       ( value
-      : JsonString | JsonNumber | JsonBoolean | JsonNull | JsonObject | JsonArray | Unset.type )
+      : JsonString | JsonNumber | JsonBoolean | JsonNull | JsonObject | JsonArray | Unset )
     :   Ast =
 
       value
@@ -707,7 +710,7 @@ object Json extends Json2, Dynamic:
     Json.Encodable(Morphology.Whole): int => Json.ast(Json.Ast(int.toLong))
 
   given unitEncodable: Unit is Json.Encodable =
-    Json.Encodable(Morphology.Empty): unit => Json.ast(Json.Ast(null))
+    Json.Encodable(Morphology.Empty): unit => Json.ast(Json.Ast(JsonNull))
 
   given ordinalEncodable: Ordinal is Json.Encodable =
     Json.Encodable(Morphology.Whole): ordinal => Json.ast(Json.Ast(ordinal.n0.toLong))

@@ -73,7 +73,7 @@ extension (json: Json.Ast)
   inline def isBcd: Boolean = json.isInstanceOf[Array[Double]]
   inline def isString: Boolean = json.isInstanceOf[String]
   inline def isBoolean: Boolean = json.isInstanceOf[Boolean]
-  inline def isNull: Boolean = json.asInstanceOf[AnyRef | Null] == null
+  inline def isNull: Boolean = json.asInstanceOf[AnyRef] eq Json.JsonNull
 
   // Objects and heterogeneous arrays share a runtime representation
   // (`IArray[Any]` = `[Ljava/lang/Object;`) and are distinguished by

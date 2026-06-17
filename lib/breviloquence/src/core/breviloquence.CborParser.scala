@@ -415,7 +415,7 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
         info match
           case 20 => Cbor.Ast(false)
           case 21 => Cbor.Ast(true)
-          case 22 => Cbor.Ast(null)
+          case 22 => Cbor.Ast(Cbor.CborNull)
           case 23 => Cbor.Ast(vacuous.Unset)
           case 25 => Cbor.Ast(halfToDouble(readUInt16()))
           case 26 => Cbor.Ast(java.lang.Float.intBitsToFloat(readUInt32().toInt).toDouble)

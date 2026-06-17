@@ -56,19 +56,19 @@ import CborError.{Primitive, Reason}
 
 trait Cbor2:
   this: Cbor.type =>
-  given optionalEncodable: [inner <: value, value >: Unset: Mandatable to inner]
+  given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( encodable: inner is Encodable in Cbor )
   =>  value is Encodable in Cbor =
 
     new Encodable:
-      type Self = Optional[value]
+      type Self = value
       type Form = Cbor
 
-      def encoded(value: Optional[value]): Cbor =
+      def encoded(value: value): Cbor =
         value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(ast(Ast(Unset)))
 
 
-  given optional: [inner <: value, value >: Unset: Mandatable to inner] => Tactic[CborError]
+  given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[CborError]
   =>  ( decodable: => inner is Decodable in Cbor )
   =>  value is Decodable in Cbor = cbor =>
 
@@ -178,8 +178,11 @@ object Cbor extends Cbor2, Dynamic:
   type CborArray     = IArray[Any]
   type CborMap       = IArray[Any]
   type CborBoolean   = Boolean
-  type CborNull      = Null
-  type CborUndefined = vacuous.Unset.type
+  // Distinct sentinel for a CBOR `null`, kept disjoint from the null-backed `Unset`
+  // (CBOR `undefined`/absent): both would otherwise be the JVM `null` and collide.
+  case object CborNull
+  type CborNull      = CborNull.type
+  type CborUndefined = vacuous.Unset
 
   type CborTypes =
     CborInteger | CborFloat | CborText | CborBytes | CborArray | CborMap | CborBoolean | CborNull
@@ -374,7 +377,7 @@ object Cbor extends Cbor2, Dynamic:
   given intEncodable: Int is Encodable in Cbor = int => ast(Ast(int.toLong))
   given longEncodable: Long is Encodable in Cbor = long => ast(Ast(long))
   given booleanEncodable: Boolean is Encodable in Cbor = boolean => ast(Ast(boolean))
-  given unitEncodable: Unit is Encodable in Cbor = _ => ast(Ast(null))
+  given unitEncodable: Unit is Encodable in Cbor = _ => ast(Ast(CborNull))
   given bytesEncodable: IArray[Byte] is Encodable in Cbor = bytes => ast(Ast(bytes))
   given cborEncodable: Cbor is Encodable in Cbor = identity(_)
 

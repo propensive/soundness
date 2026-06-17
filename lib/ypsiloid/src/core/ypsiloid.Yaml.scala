@@ -59,20 +59,20 @@ import zephyrine.*
 import YamlError.Reason
 
 trait Yaml2:
-  given optionalEncodable: [inner <: value, value >: Unset: Mandatable to inner]
+  given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( encodable: inner is Encodable in Yaml )
   =>  value is Encodable in Yaml =
 
     new Encodable:
-      type Self = Optional[value]
+      type Self = value
       type Form = Yaml
 
-      def encoded(value: Optional[value]): Yaml =
+      def encoded(value: value): Yaml =
         value.let(_.asInstanceOf[inner]).let(encodable.encode(_))
         . or(Yaml.ast(Yaml.Ast(Unset)))
 
 
-  given optional: [inner <: value, value >: Unset: Mandatable to inner] => Tactic[YamlError]
+  given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[YamlError]
   =>  ( decodable: => inner is Decodable in Yaml )
   =>  value is Decodable in Yaml = yaml =>
     if yaml.root == Unset then Unset else decodable.decoded(yaml)
@@ -271,7 +271,10 @@ object Yaml extends Yaml2, Dynamic:
   type YamlInteger   = Long | Bcd
   type YamlDecimal   = Double | Bcd
   type YamlBoolean   = Boolean
-  type YamlNull      = Null
+  // Distinct sentinel for a YAML `null`, kept disjoint from the null-backed `Unset`
+  // (absent): both would otherwise be the JVM `null` and collide in `Ast`.
+  case object YamlNull
+  type YamlNull      = YamlNull.type
   type YamlSequence  = IArray[Any]
   type YamlMapping   = IArray[Any]
 
@@ -290,7 +293,7 @@ object Yaml extends Yaml2, Dynamic:
   // (e.g. a missing field in a case-class derivation).
   opaque type Ast =
     YamlString | YamlInteger | YamlDecimal | YamlBoolean | YamlNull | YamlSequence | YamlMapping
-    | Unset.type
+    | Unset
 
   // Whether `YamlParser` captures line/column/length descriptors
   // alongside the AST. The default is `Off`, matching the historic
@@ -623,12 +626,12 @@ object Yaml extends Yaml2, Dynamic:
 
     inline def apply
       ( value:
-        Long | Double | Bcd | Boolean | String | IArray[Any] | Null | Unset.type )
+        Long | Double | Bcd | Boolean | String | IArray[Any] | YamlNull.type | Unset )
     :   Yaml.Ast =
 
       value
 
-    val Null: Yaml.Ast = null
+    val Null: Yaml.Ast = YamlNull
 
     inline def Bool(value: Boolean): Yaml.Ast = value
     inline def Integer(value: Long): Yaml.Ast = value
@@ -823,7 +826,7 @@ object Yaml extends Yaml2, Dynamic:
         case _ => false
 
     def deepHash(ast: Yaml.Ast): Int = ast match
-      case null         => 0
+      case Yaml.YamlNull => 0
       case b: Boolean   => b.hashCode
       case n: Long      => n.hashCode
       case d: Double    => d.hashCode
@@ -848,7 +851,7 @@ object Yaml extends Yaml2, Dynamic:
 
         h
 
-      case _: Unset.type => 1
+      case Unset         => 1
 
   def ast(value: Yaml.Ast): Yaml = new Yaml(value)
 
@@ -1031,7 +1034,7 @@ object Yaml extends Yaml2, Dynamic:
       case _         => primitiveFault(yaml, YamlPrimitive.Str, "")
 
   given unit: Tactic[YamlError] => Unit is Decodable in Yaml = yaml =>
-    if yaml.root.asInstanceOf[AnyRef] == null then ()
+    if yaml.root.isNull then ()
     else primitiveFault(yaml, YamlPrimitive.Null, ())
 
   given iterable: [collection <: Iterable, element]
@@ -1085,7 +1088,7 @@ object Yaml extends Yaml2, Dynamic:
           val rawValue = xs(i*2 + 1).asInstanceOf[Yaml.Ast]
 
           val keyText: Text =
-            if rawKey.asInstanceOf[AnyRef] == null then t"null"
+            if rawKey.isNull then t"null"
             else rawKey.asMatchable match
               case s: String  => s.tt
               case k: Long    => k.toString.tt
@@ -1108,7 +1111,7 @@ object Yaml extends Yaml2, Dynamic:
         Map.empty
 
   given option: [value: Decodable in Yaml] => Option[value] is Decodable in Yaml = yaml =>
-    if yaml.root.isAbsent || yaml.root.asInstanceOf[AnyRef] == null then None
+    if yaml.root.isAbsent || yaml.root.isNull then None
     else Some(value.decoded(yaml))
 
   // ── Encodable givens ────────────────────────────────────────────────────
@@ -1341,7 +1344,7 @@ object Yaml extends Yaml2, Dynamic:
       yaml.as[value].asInstanceOf[value in Yaml]
 
   def primitive(ast: Yaml.Ast): YamlPrimitive =
-    if ast.asInstanceOf[AnyRef] == null then YamlPrimitive.Null
+    if ast.isNull then YamlPrimitive.Null
     else ast.asMatchable match
       case _: Boolean                   => YamlPrimitive.Bool
       case _: Long                      => YamlPrimitive.Integer

@@ -309,7 +309,7 @@ object Conformance:
       case Outcome.Passed => ()
 
   private def yamlAstToJson(yaml: Yaml.Ast): Json = yaml match
-    case Yaml.Ast.Null         => Json.ast(Json.Ast(null))
+    case Yaml.Ast.Null         => Json.ast(Json.Ast(Json.JsonNull))
     case Yaml.Ast.Bool(b)      => Json.ast(Json.Ast(b))
     case Yaml.Ast.Integer(n)   => Json.ast(Json.Ast(n))
     case Yaml.Ast.Decimal(d)   => Json.ast(Json.Ast(d))

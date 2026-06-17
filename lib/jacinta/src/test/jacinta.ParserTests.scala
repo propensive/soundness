@@ -215,7 +215,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
 
       test(m"Keyword null split across blocks"):
         Json.Ast.parse(chunks(t"null", 1, 1, 2))
-      . assert(_ == Json.Ast(null))
+      . assert(_ == Json.Ast(Json.JsonNull))
 
       test(m"Decimal number split at decimal point"):
         Json.Ast.parse(chunks(t"123.456", 3, 4))
