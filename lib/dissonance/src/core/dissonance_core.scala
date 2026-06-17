@@ -170,8 +170,3 @@ def diff[element]
           ( position - 1, deletes, rows, Par(position, rightPosition, left(position)) :: edits )
 
   trace(0, 0, Nil, Nil)
-
-
-extension (diff: Diff[Text])
-  def redraft(context: Redraft.Context = Redraft.Context.Minimal): Redraft =
-    Redraft.render(diff, context)
