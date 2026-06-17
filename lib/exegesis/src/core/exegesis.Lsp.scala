@@ -145,6 +145,10 @@ object Lsp:
 
   // Diagnostics and window messages
 
+  object Diagnostic:
+    given decodable: Tactic[JsonError] => Diagnostic is Json.Decodable =
+      Json.DecodableDerivation.derived
+
   case class Diagnostic
     ( range:    Range,
       severity: Optional[DiagnosticSeverity] = Unset,

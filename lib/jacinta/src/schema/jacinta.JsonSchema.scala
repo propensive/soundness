@@ -129,9 +129,10 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
     case entity: JsonSchema.Null    => entity.copy(optional = true)
     case entity: JsonSchema.Ref     => entity.copy(optional = true)
 
-  given optionalSchematic: [value: Schematic over JsonSchema]
-  =>  Optional[value] is Schematic over JsonSchema =
-    () => JsonSchema.optional(value.schema())
+  given optionalSchematic: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  (schematic: inner is Schematic over JsonSchema)
+  =>  value is Schematic over JsonSchema =
+    () => JsonSchema.optional(schematic.schema())
 
   given listSchematic: [value: Schematic over JsonSchema]
   =>  List[value] is Schematic over JsonSchema =

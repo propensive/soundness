@@ -47,7 +47,7 @@ extension (cbor: Cbor.Ast)
   inline def isFloat: Boolean = cbor.isInstanceOf[Double]
   inline def isTextString: Boolean = cbor.isInstanceOf[String]
   inline def isBoolean: Boolean = cbor.isInstanceOf[Boolean]
-  inline def nullary: Boolean = cbor.asInstanceOf[AnyRef | Null] == null
+  inline def nullary: Boolean = cbor.asInstanceOf[AnyRef] eq Cbor.CborNull
   inline def isTag: Boolean = cbor.isInstanceOf[Cbor.Tag]
 
   // Byte strings have runtime class `[B`; arrays/maps have `[Ljava/lang/Object;`.

@@ -166,7 +166,10 @@ object internal:
         case Right(leftDescent) =>
           topic[right] match
             case Right(rightDescent) =>
-              calculate(leftDescent, rightDescent).asType.absolve match
+              val left2 = leftDescent.asInstanceOf[List[String]]
+              val right2 = rightDescent.asInstanceOf[List[String]]
+
+              calculate(left2, right2).asType.absolve match
                 case '[type tuple <: Tuple; tuple] =>
                   '{$left.calculate($right).asInstanceOf[Path of tuple]}
 

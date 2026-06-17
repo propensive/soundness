@@ -65,8 +65,8 @@ extension (inline context: StringContext)
 // alternating key/value) from sequences (odd-length, with a trailing
 // `arrayPad` sentinel when the user-visible item count is even).
 extension (yaml: Yaml.Ast)
-  inline def isAbsent:  Boolean = yaml.asInstanceOf[AnyRef] eq Unset
-  inline def isNull:    Boolean = yaml.asInstanceOf[AnyRef | Null] == null
+  inline def isAbsent:  Boolean = yaml == Unset
+  inline def isNull:    Boolean = yaml.asInstanceOf[AnyRef] eq Yaml.YamlNull
   inline def isLong:    Boolean = yaml.isInstanceOf[Long]
   inline def isDouble:  Boolean = yaml.isInstanceOf[Double]
   inline def isBcd:     Boolean = yaml.isInstanceOf[Array[Double]]

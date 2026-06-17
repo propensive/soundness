@@ -438,7 +438,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == t"true")
 
       test(m"Construct via Json.ast with null"):
-        Json.ast(Json.Ast(null)).show
+        Json.ast(Json.Ast(Json.JsonNull)).show
       . assert(_ == t"null")
 
     suite(m"Json field/index access"):

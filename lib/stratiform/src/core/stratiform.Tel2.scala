@@ -311,15 +311,19 @@ trait Tel2:
   // containing the list elements as siblings, which the product encoder
   // recognises and flattens with the field's label.
 
-  given optionalEncodable: [value: Tel.Encodable] => Optional[value] is Tel.Encodable =
-    Tel.Encodable(Morphology.Opt(value.shape())): opt =>
-      opt.lay(Tel.empty)(_.encode)
+  given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  (encodable: inner is Tel.Encodable)
+  =>  value is Tel.Encodable =
+    Tel.Encodable(Morphology.Opt(encodable.shape())): opt =>
+      opt.let(_.asInstanceOf[inner]).lay(Tel.empty)(_.encode)
 
-  given optionalDecodable: [value: Tel.Decodable] => Tactic[TelError]
-  =>  Optional[value] is Tel.Decodable =
-    Tel.Decodable(Morphology.Opt(value.shape())): telVal =>
+  given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  Tactic[TelError]
+  =>  (decodable: => inner is Tel.Decodable)
+  =>  value is Tel.Decodable =
+    Tel.Decodable(Morphology.Opt(decodable.shape())): telVal =>
       if telVal.childCompounds.nil && telVal.atomTexts.nil then Unset
-      else value.decoded(telVal)
+      else decodable.decoded(telVal)
 
   // Collection support (aligned with `#1291`) — a `List`/`Set` encodes to a
   // Document-rooted Tel whose children are the elements' compounds; the product

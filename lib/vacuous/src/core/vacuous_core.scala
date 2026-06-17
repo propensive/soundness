@@ -48,7 +48,9 @@ inline def optimizable[value](lambda: Optional[value] => Optional[value]): Optio
 
 erased val Unsafe: Unsafe = caps.unsafe.unsafeErasedValue
 
-type Optional[value] = Unset.type | value
+export vacuous.Optional.Unset
+
+type Optional[value] = Unset | value
 
 extension [value](inline optional: Optional[value])
   inline def or(inline value: => value): value = ${vacuous.internal.optimizeOr('optional, 'value)}
@@ -66,16 +68,18 @@ extension [value](iterable: Iterable[Optional[value]])
     iterable.filter(!_.absent).map(_.vouch)
 
 extension [value](option: Option[value])
-  inline def optional: Unset.type | value = option.getOrElse(Unset)
+  inline def optional: Optional[value] = option.getOrElse(Unset)
 
 extension [value](value: value)
   def puncture(point: value): Optional[value] = if value == point then Unset else value
 
   def only[value2](partial: PartialFunction[value, value2]): Optional[value2] =
-    (partial.orElse { _ => Unset })(value)
+    if partial.isDefinedAt(value) then partial(value) else Unset
 
-  def unless(predicate: (value: value) => Boolean) = if predicate(value) then Unset else value
-  def unless(predicate: Boolean) = if predicate then Unset else value
+  def unless(predicate: (value: value) => Boolean): Optional[value] =
+    if predicate(value) then Unset else value
+
+  def unless(predicate: Boolean): Optional[value] = if predicate then Unset else value
 
 extension [value](java: ju.Optional[value])
   def optional: Optional[value] = if java.isEmpty then Unset else java.get.nn

@@ -91,9 +91,10 @@ object XPath extends Root("/"):
         val end = if slash < 0 then string.length else slash
 
         parseStep(string.substring(offset, end).nn.tt) match
-          case Left(name)       => xpath = xpath.attribute(name)
-          case Right((name, n)) => xpath = xpath.element(name, n)
-          case Unset            => abort(XPathError(XPathError.Reason.BadStep, offset))
+          case Unset => abort(XPathError(XPathError.Reason.BadStep, offset))
+          case step  => step.asInstanceOf[Either[Text, (Text, Int)]] match
+            case Left(name)       => xpath = xpath.attribute(name)
+            case Right((name, n)) => xpath = xpath.element(name, n)
 
         offset = end + 1
 

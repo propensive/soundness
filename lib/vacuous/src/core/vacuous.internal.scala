@@ -75,10 +75,10 @@ object internal:
 
     def recur(repr: TypeRepr): TypeRepr = repr match
       case OrType(left, right) =>
-        if left <:< TypeRepr.of[Unset.type] then
+        if left <:< TypeRepr.of[Unset] then
           seen = true
           recur(right)
-        else if right <:< TypeRepr.of[Unset.type] then
+        else if right <:< TypeRepr.of[Unset] then
           seen = true
           recur(left)
         else

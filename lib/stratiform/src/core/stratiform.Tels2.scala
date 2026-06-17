@@ -145,12 +145,13 @@ trait Tels2:
   given double: Double is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
   given boolean: Boolean is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
 
-  given optional: [value: Schematic over Tels.Type]
-  =>  Optional[value] is TelSchematic over Tels.Type =
+  given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  (schematic: inner is Schematic over Tels.Type)
+  =>  value is TelSchematic over Tels.Type =
     new TelSchematic:
-      type Self = Optional[value]
+      type Self = value
       type Transport = Tels.Type
-      def schema(): Tels.Type = value.schema()
+      def schema(): Tels.Type = schematic.schema()
       override def polarity: Tels.Polarity = Polarity.Loose
 
   // A `List`/`Set` field is a repeatable field whose type is the element's schema

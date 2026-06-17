@@ -1194,7 +1194,7 @@ object Tests extends Suite(m"Parasite tests"):
           val task = async:
             captured.set(monitor.stack)
           task.await()
-          captured.get().nn.contains(t"virtual")
+          captured.get().nn.vouch.contains(t"virtual")
         . assert(_ == true)
 
         test(m"Nested workers' stack reflects nesting"):
@@ -1204,7 +1204,7 @@ object Tests extends Suite(m"Parasite tests"):
               captured.set(monitor.stack)
             inner.await()
           task.await()
-          captured.get().nn.contains(t"//")
+          captured.get().nn.vouch.contains(t"//")
         . assert(_ == true)
 
       suite(m"Concurrent stream details"):

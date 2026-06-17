@@ -165,18 +165,22 @@ object internal:
       '{$self.selectField($field)}
 
     receiver(self) match
-      case (position, root) => field.value match
-        case Some(name) => position.typeSymbol.caseFields.find(_.name == name) match
-          case Some(member) =>
-            jsonType(position.memberType(member), root).asType.absolve match
-              case '[type result <: Json; result] =>
-                '{$self.selectField(${Expr(name)}).asInstanceOf[result]}
+      case (position0, root0) =>
+        val position = position0.asInstanceOf[quotes.reflect.TypeRepr]
+        val root = root0.asInstanceOf[quotes.reflect.TypeRepr]
+
+        field.value match
+          case Some(name) => position.typeSymbol.caseFields.find(_.name == name) match
+            case Some(member) =>
+              jsonType(position.memberType(member), root).asType.absolve match
+                case '[type result <: Json; result] =>
+                  '{$self.selectField(${Expr(name)}).asInstanceOf[result]}
+
+            case None =>
+              halt(m"the schema position ${position.show} has no field $name")
 
           case None =>
-            halt(m"the schema position ${position.show} has no field $name")
-
-        case None =>
-          plain
+            plain
 
       case _ =>
         plain
@@ -185,7 +189,9 @@ object internal:
     import quotes.reflect.*
 
     receiver(self) match
-      case (position, root) =>
+      case (position0, root0) =>
+        val position = position0.asInstanceOf[TypeRepr]
+        val root = root0.asInstanceOf[TypeRepr]
         val element = elementType(position)
 
         if element.absent
@@ -224,23 +230,27 @@ object internal:
             """
 
     receiver(self) match
-      case (position, root) => field.value match
-        case Some(name) => position.typeSymbol.caseFields.find(_.name == name) match
-          case Some(member) =>
-            val element = elementType(position.memberType(member))
+      case (position0, root0) =>
+        val position = position0.asInstanceOf[TypeRepr]
+        val root = root0.asInstanceOf[TypeRepr]
 
-            if element.absent
-            then halt(m"the field $name of ${position.show} is not an indexable array")
+        field.value match
+          case Some(name) => position.typeSymbol.caseFields.find(_.name == name) match
+            case Some(member) =>
+              val element = elementType(position.memberType(member))
 
-            jsonType(element.vouch, root).asType.absolve match
-              case '[type result <: Json; result] =>
-                '{$self.selectField(${Expr(name)}).selectIndex($idx).asInstanceOf[result]}
+              if element.absent
+              then halt(m"the field $name of ${position.show} is not an indexable array")
+
+              jsonType(element.vouch, root).asType.absolve match
+                case '[type result <: Json; result] =>
+                  '{$self.selectField(${Expr(name)}).selectIndex($idx).asInstanceOf[result]}
+
+            case None =>
+              halt(m"the schema position ${position.show} has no field $name")
 
           case None =>
-            halt(m"the schema position ${position.show} has no field $name")
-
-        case None =>
-          plain
+            plain
 
       case _ =>
         plain
@@ -916,7 +926,7 @@ object internal:
           '{Json.Ast(Bcd.fromString(${Expr(unsigned)}, ${Expr(negative)}))}
 
         case null =>
-          '{Json.Ast(null)}
+          '{Json.Ast(Json.JsonNull)}
 
         case bcds: Array[Long] @unchecked =>
           // Number-only array literal (BCD-Long packed).

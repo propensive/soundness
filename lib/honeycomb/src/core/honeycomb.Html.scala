@@ -1819,8 +1819,10 @@ extends Node, Topical, Transportive, Dynamic:
         val attributive = infer[value is Attributive to attribute.Topic]
 
         attributive.attribute(name, value).match
-          case Unset        => Element(label, attributes.removed(name.tt), children, foreign)
-          case (key, value) => Element(label, attributes.updated(key, value), children, foreign)
+          case Unset => Element(label, attributes.removed(name.tt), children, foreign)
+          case pair  =>
+            val (key, value) = pair.asInstanceOf[(Text, Optional[Text])]
+            Element(label, attributes.updated(key, value), children, foreign)
 
         . of[Topic]
         . over[Transport]
@@ -1830,8 +1832,10 @@ extends Node, Topical, Transportive, Dynamic:
         val attributive = infer[value is Attributive to attribute.Topic]
 
         attributive.attribute(name, value).match
-          case Unset        => Element(label, attributes.removed(name.tt), children, foreign)
-          case (key, value) => Element(label, attributes.updated(key, value), children, foreign)
+          case Unset => Element(label, attributes.removed(name.tt), children, foreign)
+          case pair  =>
+            val (key, value) = pair.asInstanceOf[(Text, Optional[Text])]
+            Element(label, attributes.updated(key, value), children, foreign)
 
         . of[Topic]
         . over[Transport]

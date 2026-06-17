@@ -46,6 +46,6 @@ extends Findable:
     case that: Testable => name == that.name && parent == that.parent
     case _              => false
 
-  override def hashCode: Int = name.hashCode + parent.hashCode
+  override def hashCode: Int = name.hashCode + parent.lay(0)(_.hashCode)
 
   val id: TestId = TestId(name, parent, codepoint)

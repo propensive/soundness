@@ -272,10 +272,10 @@ object Protobuf extends Protobuf2:
   =>  value is Encodable in Protobuf =
 
     new Encodable:
-      type Self = Optional[value]
+      type Self = value
       type Form = Protobuf
 
-      def encoded(value: Optional[value]): Protobuf =
+      def encoded(value: value): Protobuf =
         value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Absent)
 
   given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]

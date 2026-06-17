@@ -890,31 +890,31 @@ object Xml extends Tag.Container
 
         XPath.parseStep(segment) match
           case Unset => Unset
+          case step => step.asInstanceOf[Either[Text, (Text, Int)]] match
+            case Left(attrName) =>
+              xml match
+                case element: Element => attrPosition(element, data, offset, attrName)
+                case _                => Unset
 
-          case Left(attrName) =>
-            xml match
-              case element: Element => attrPosition(element, data, offset, attrName)
-              case _                => Unset
+            case Right((name, ordinal)) =>
+              xml match
+                case element: Element if i == 0 =>
+                  // First step names the document's root element.
+                  if element.label == name && ordinal == 1 then
+                    walk(element, data, offset, segments, i + 1)
+                  else
+                    Unset
 
-          case Right((name, ordinal)) =>
-            xml match
-              case element: Element if i == 0 =>
-                // First step names the document's root element.
-                if element.label == name && ordinal == 1 then
-                  walk(element, data, offset, segments, i + 1)
-                else
+                case element: Element =>
+                  descend(element, name, ordinal).let: childElementIndex =>
+                    val attrCount = data(offset + 4)
+                    val offSlot = offset + 6 + attrCount + childElementIndex
+                    val childOff = data(offSlot)
+                    val child = descendAst(element, name, ordinal).vouch
+                    walk(child, data, offset + childOff, segments, i + 1)
+
+                case _ =>
                   Unset
-
-              case element: Element =>
-                descend(element, name, ordinal).let: childElementIndex =>
-                  val attrCount = data(offset + 4)
-                  val offSlot = offset + 6 + attrCount + childElementIndex
-                  val childOff = data(offSlot)
-                  val child = descendAst(element, name, ordinal).vouch
-                  walk(child, data, offset + childOff, segments, i + 1)
-
-              case _ =>
-                Unset
 
     private def attrPosition
       ( element:  Element,
