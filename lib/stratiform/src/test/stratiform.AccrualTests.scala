@@ -219,3 +219,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"The accrued reasons span the pragma and the body"):
         validateRead(t"tel bad\ngood \n").items.map(_(1).reason).to(Set)
       . assert(_ == Set(TelError.Reason.BadVersion, TelError.Reason.TrailingSpaces))
+
+      test(m"A bad schema identifier recovers and the body still accrues"):
+        validateRead(t"tel 1.0 bad!id\ngood \n").items.map(_(1).reason).to(Set)
+      . assert(_ == Set(TelError.Reason.BadSchemaIdentifier, TelError.Reason.TrailingSpaces))

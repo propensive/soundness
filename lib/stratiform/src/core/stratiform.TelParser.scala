@@ -629,7 +629,7 @@ private final class TelParser():
     continuation
 
   private inline def recoverAt[T](reason: Reason, line: Int, column: Int)
-    (continuation: => T)
+    ( continuation: => T )
   :   T raises TelError =
 
     raise(TelError(reason, TelError.Position(line, column)))
@@ -1067,19 +1067,21 @@ private final class TelParser():
 
         val isBase256 = s.nonEmpty && s.forall: c => Character.isLetter(c) || (c >= '0' && c <= '9')
 
+        // §19.5 IgnoreSchemaId: a malformed schema identifier is dropped (Unset).
         if !isUrl && !isBase256
-        then errorAt(Reason.BadSchemaIdentifier, line, 1)
-
-        Text(s): Optional[Text]
+        then recoverAt(Reason.BadSchemaIdentifier, line, 1)(Unset)
+        else Text(s): Optional[Text]
       else
         Unset
 
     val pragmaSigil: Optional[Char] =
       if parts.length >= 4 && parts(3).length == 1 then
         val c = parts(3).charAt(0)
-        if c.isLetterOrDigit then errorAt(Reason.BadSigil, line, 1)
-        sigil = c.toByte
-        c: Optional[Char]
+        // §19.5 UseDefaultSigil: an invalid sigil is dropped, keeping the default.
+        if c.isLetterOrDigit then recoverAt(Reason.BadSigil, line, 1)(Unset)
+        else
+          sigil = c.toByte
+          c: Optional[Char]
       else
         Unset
 
@@ -1091,13 +1093,16 @@ private final class TelParser():
     // §19.5 IgnoreVersion: a malformed version falls back to (0, 0) so the rest
     // of the document is still parsed (and its defects accrued).
     val dot = s.indexOf('.')
+
     if dot <= 0 || dot == s.length - 1 then recoverAt(Reason.BadVersion, line, 1)((0, 0))
     else
       try
         val major = s.substring(0, dot).toInt
         val minor = s.substring(dot + 1).toInt
+
         if major < 0 || minor < 0 then recoverAt(Reason.BadVersion, line, 1)((0, 0))
         else (major, minor)
+
       catch case _: NumberFormatException => recoverAt(Reason.BadVersion, line, 1)((0, 0))
 
   private def splitPragmaPhrases(content: String): List[String] =
