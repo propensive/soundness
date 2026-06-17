@@ -78,6 +78,7 @@ object Checker:
     scanRawTabs(file, rawText, out)
     val stmtGroups           = Statements.extract(untpdTree, source)
     val lambdaSites          = Lambdas.extract(untpdTree, source)
+    val operatorSites        = Operators.extract(untpdTree, source)
     checkFileNaming(file, untpdTree, out)
     checkPackageRules(file, expectedModule, state.packageInfo, out)
     checkImportRules(file, imports, lines, out)
@@ -86,6 +87,7 @@ object Checker:
     checkChunkBlanks(file, stmtGroups, rawText, source, out)
     checkLambdaLayout(file, lambdaSites, out)
     checkDefnAnchors(file, Definitions.extract(untpdTree, source), out)
+    checkOperatorContinuation(file, operatorSites, out)
     var idx = 0
 
     while idx < lines.length do
@@ -1911,6 +1913,31 @@ object Checker:
           emit
             ( leadingCols + 1, "163.2",
               "no blank line is permitted before `. method` continuation at the same indent" )
+
+  // R-616: a symbolic infix operator whose operands wrap onto separate source
+  // lines must terminate the first line (616.1), and the continuation must be
+  // indented exactly two columns beyond the line the left operand starts on
+  // (616.2). The bad shapes are the operator beginning the continuation line
+  // (`left\n  ++ right`), the operator alone on its own line, and any
+  // continuation indent other than +2.
+  private def checkOperatorContinuation
+    ( file: String, ops: List[OpInfo], out: mutable.ListBuffer[Violation] )
+  :   Unit =
+
+    ops.foreach: op =>
+      if op.multiline then
+        if op.opLine != op.leftEndLine then
+          out +=
+            Violation
+              ( file, op.opLine, op.opCol, "616.1",
+                "a multi-line infix operator must terminate the first line, not begin "
+                  +"the continuation line" )
+        else if op.rightCol - 1 != op.leftIndent + 2 then
+          out +=
+            Violation
+              ( file, op.rightLine, op.rightCol, "616.2",
+                s"a multi-line infix continuation must be indented ${op.leftIndent + 2} "
+                  +s"columns (found ${op.rightCol - 1})" )
 
   private def checkReturnTypeBlank
     ( s:       State,

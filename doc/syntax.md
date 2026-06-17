@@ -495,6 +495,48 @@ determined by the indent of the *immediately preceding* code line:
 
 This applies to every wrapped chain.
 
+### Symbolic-operator line continuation
+
+When a symbolic infix operator (`++`, `&&`, `+`, `::`, `|`, …) joins two
+operands that fall on different source lines, the operator must terminate the
+first line, and the continuation must be indented two columns beyond the line
+on which the left operand begins:
+
+```scala
+left ++
+  right          // ok
+```
+
+The operator must not begin the continuation line, nor stand alone on its own
+line, nor may the continuation use any indent other than +2:
+
+```scala
+left
+++ right          // wrong — operator begins the continuation
+
+left
+  ++              // wrong — operator alone on its own line
+  right
+
+left ++
+    right          // wrong — continuation indented +4, not +2
+```
+
+A chain of same-precedence operators keeps every continuation at the same +2
+indent (it does not step deeper with each operator):
+
+```scala
+alpha ++
+  beta ++
+  gamma          // ok
+```
+
+This rule covers both symbolic value operators and symbolic infix *type*
+operators (`A | B`, `A & B`, `A *: B`). It does **not** apply to word-named
+infix operators (`is`, `raises`, `max`), to pattern alternatives (`case A |
+B`), or to `.` method selection — wrapped method chains follow the
+chain-continuation rule above.
+
 ### Multi-line method applications
 
 When a method call (or any parenthesised application) does not fit on one
@@ -933,6 +975,10 @@ scope is always preceded by a blank.
 - Symbolic-operator method names take a space before the parameter list.
 - Chain continuation: `. method` at receiver indent; blank-line-before iff
   the preceding line is more indented.
+- Symbolic-operator line continuation: when an infix operator's operands wrap,
+  the operator ends the first line and the continuation is indented +2 (a
+  same-precedence chain stays flat at +2); word-named infix, pattern
+  alternatives, and `.` selection are exempt.
 - Multi-line method applications: when the param block lives on its own
   line, use `( arg, arg )` (or all-aligned multi-line) with a space inside
   each paren; the closing bracket sits with the last argument, never alone.
