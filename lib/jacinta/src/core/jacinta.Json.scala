@@ -91,7 +91,7 @@ trait Json3:
       def decoded(json: Json): value = inner.decoded(json)
 
 trait Json2 extends Json3:
-  given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
+  given optionalEncodable: [inner <: value, value >: Unset: Mandatable to inner]
   =>  ( encodable: inner is Json.Encodable )
   =>  value is Json.Encodable =
 
@@ -99,7 +99,7 @@ trait Json2 extends Json3:
       value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Json.ast(Json.Ast(Unset)))
 
 
-  given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[JsonError]
+  given optional: [inner <: value, value >: Unset: Mandatable to inner] => Tactic[JsonError]
   =>  ( decodable: => inner is Json.Decodable )
   =>  value is Json.Decodable =
 

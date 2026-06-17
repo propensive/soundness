@@ -37,6 +37,12 @@ import language.experimental.pureFunctions
 import scala.quoted.*
 
 object Optional:
+  opaque type Unset <: Null = Null
+  val Unset: Unset = null
+
+  given unsetEquality: [value] => CanEqual[value, Unset] = CanEqual.derived
+  given equalityUnset: [value] => CanEqual[Unset, value] = CanEqual.derived
+
   inline def apply[value](value: value | Null): Optional[value] =
     if value == null then Unset else value
 

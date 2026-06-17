@@ -59,7 +59,7 @@ import zephyrine.*
 import YamlError.Reason
 
 trait Yaml2:
-  given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
+  given optionalEncodable: [inner <: value, value >: Unset: Mandatable to inner]
   =>  ( encodable: inner is Encodable in Yaml )
   =>  value is Encodable in Yaml =
 
@@ -72,10 +72,10 @@ trait Yaml2:
         . or(Yaml.ast(Yaml.Ast(Unset)))
 
 
-  given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[YamlError]
+  given optional: [inner <: value, value >: Unset: Mandatable to inner] => Tactic[YamlError]
   =>  ( decodable: => inner is Decodable in Yaml )
   =>  value is Decodable in Yaml = yaml =>
-    if yaml.root.asInstanceOf[AnyRef] eq Unset then Unset else decodable.decoded(yaml)
+    if yaml.root == Unset then Unset else decodable.decoded(yaml)
 
 
   inline given decodable: [value] => value is Decodable in Yaml = summonFrom:
@@ -244,7 +244,7 @@ trait Yaml2:
               }):
                 val encoded = contextual.encode(field).root
 
-                if !(encoded.asInstanceOf[AnyRef] eq Unset) then
+                if !(encoded == Unset) then
                   entries += Yaml.Ast.Str(key).asInstanceOf[Any]
                   entries += encoded.asInstanceOf[Any]
 

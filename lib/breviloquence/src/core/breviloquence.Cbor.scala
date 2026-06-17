@@ -56,7 +56,7 @@ import CborError.{Primitive, Reason}
 
 trait Cbor2:
   this: Cbor.type =>
-  given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
+  given optionalEncodable: [inner <: value, value >: Unset: Mandatable to inner]
   =>  ( encodable: inner is Encodable in Cbor )
   =>  value is Encodable in Cbor =
 
@@ -68,7 +68,7 @@ trait Cbor2:
         value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(ast(Ast(Unset)))
 
 
-  given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[CborError]
+  given optional: [inner <: value, value >: Unset: Mandatable to inner] => Tactic[CborError]
   =>  ( decodable: => inner is Decodable in Cbor )
   =>  value is Decodable in Cbor = cbor =>
 

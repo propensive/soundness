@@ -69,7 +69,7 @@ object Typescript:
   // A TypeScript `T?` (read as `T | undefined`) corresponds to a Scala `Optional`. The `Mandatable`
   // constraint identifies the mandatory type `inner`, so the instance applies only to genuine
   // optionals and never competes with `inner`'s instance.
-  given optional: [inner <: value, value >: Unset.type: Mandatable to inner, topic]
+  given optional: [inner <: value, value >: Unset: Mandatable to inner, topic]
   =>  ( inner is Interoperable in Typescript of topic )
   =>  ( value is Interoperable in Typescript of (topic | "undefined") ) =
     Interoperable[value, Typescript, (topic | "undefined")]()

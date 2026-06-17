@@ -267,7 +267,7 @@ object Protobuf extends Protobuf2:
   given b64Decodable: Tactic[ProtobufError] => B64 is Decodable in Protobuf =
     readFixed64(_).bits
 
-  given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
+  given optionalEncodable: [inner <: value, value >: Unset: Mandatable to inner]
   =>  ( encodable: inner is Encodable in Protobuf )
   =>  value is Encodable in Protobuf =
 
@@ -278,7 +278,7 @@ object Protobuf extends Protobuf2:
       def encoded(value: Optional[value]): Protobuf =
         value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Absent)
 
-  given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
+  given optionalDecodable: [inner <: value, value >: Unset: Mandatable to inner]
   =>  ( decodable: => inner is Decodable in Protobuf )
   =>  value is Decodable in Protobuf =
 
