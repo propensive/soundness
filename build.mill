@@ -145,8 +145,6 @@ extends BaseScalaModule, SonatypeCentralPublishModule:
     settings.scalaOptions
       :+ s"-Xplugin:${decorum.plugin.assembly().path}"
       :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
-      :+ s"-Xplugin:${frontier.plugin.assembly().path}"
-
 // Like `Component`, but not published to Maven Central. For demos, examples, and
 // other modules that are built and tested but never released.
 trait Internal(dependencies: JavaModule*) extends BaseScalaModule:
@@ -160,8 +158,6 @@ trait Internal(dependencies: JavaModule*) extends BaseScalaModule:
     settings.scalaOptions
       :+ s"-Xplugin:${decorum.plugin.assembly().path}"
       :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
-      :+ s"-Xplugin:${frontier.plugin.assembly().path}"
-
 trait Tests(dependencies: JavaModule*) extends BaseScalaModule:
   def enabled: Boolean = true
   def moduleId: String = moduleDir.last
@@ -176,8 +172,6 @@ trait Tests(dependencies: JavaModule*) extends BaseScalaModule:
     settings.scalaOptions
       :+ s"-Xplugin:${larceny.plugin.assembly().path}"
       :+ s"-Xplugin:${beneficence.plugin.assembly().path}"
-      :+ s"-Xplugin:${frontier.plugin.assembly().path}"
-
 trait Benchmarks(dependencies: PublishModule*) extends BaseScalaModule:
   def moduleId: String = moduleDir.last
   def finalMainClass = (moduleDir / ".." / "..").last + ".Benchmarks"
@@ -268,7 +262,7 @@ object groupCheck extends Module:
     "anticipation.html", "anticipation.http", "anticipation.log", "anticipation.opaque",
     "anticipation.path", "anticipation.print", "anticipation.text", "anticipation.time",
     "anticipation.url",
-    "beneficence.core", "beneficence.plugin", "frontier.plugin",
+    "beneficence.core", "beneficence.plugin",
     "proscenium.core"
   )
 
@@ -835,9 +829,8 @@ object exoskeleton extends Library:
   object test extends Tests(rig)
 
 object frontier extends Library:
-  object plugin extends BareComponent():
+  object core extends Component(dendrology.tree, escapade.core, beneficence.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
-  object core extends Component(dendrology.tree, escapade.core, beneficence.core, plugin):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, scintillate.servlet, jacinta.schema)

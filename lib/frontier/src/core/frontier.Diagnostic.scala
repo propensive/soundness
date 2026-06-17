@@ -32,86 +32,77 @@
                                                                                                   */
 package frontier
 
-import scala.collection.mutable
+import anticipation.*
+import dendrology.*
+import escapade.*
+import gossamer.*
+import proscenium.*
+import symbolism.*
+import vacuous.*
 
-// Parses the tab-separated tree the macro pickles into `Sentinel.missing`'s
-// second argument and renders the structured result as plain text. The
-// macro encodes its `seek` result (Missing/Candidate/Available/Found) so
-// the plugin can show alternative candidates at the deepest level without
-// having to re-run implicit search itself.
-object Diagnose:
-  sealed trait Node:
-    def name: String
-    def children: List[Node]
+// A format-neutral, pre-rendered diagnostic tree describing a failed implicit
+// search. Names are already rendered to `Text` (by whichever macro builds the
+// tree), so the renderer carries no compiler dependency and the same model can
+// be produced by Frontier's catch-all *and* by other macros — e.g. Wisteria's
+// generic derivation, which can attach a `label` (a field or variant name) to
+// each node.
+object Diagnostic:
+  given treeStyle: [text: Textual] => TextualTreeStyle[text] =
+    TextualTreeStyle(t"   ", t" └─", t" ├─", t" │ ")
 
-  case class Missing(name: String, children: List[Node])   extends Node
-  case class Candidate(name: String, children: List[Node]) extends Node
-  case class Available(name: String, children: List[Node]) extends Node
-  case class Found(name: String, children: List[Node])     extends Node
+  given expandable: Diagnostic is Expandable = _.children
 
-  // Parse one line of the macro's serialised tree:
-  //     <depth>\t<kind>\t<name>
-  // Returns `None` for malformed or blank lines (defensive).
-  private case class Line(depth: Int, kind: Char, name: String)
+  // Render the diagnostic as ANSI text. The root is expected to be a
+  // `Resolving` node, which supplies the "■ resolving …" headline; its
+  // children form the tree below. The default headline matches the legacy
+  // Frontier wording; callers (e.g. Wisteria) may override it.
+  def render(diagnostic: Diagnostic, headline: Text = t"contextual value not found"): Text =
+    diagnostic match
+      case Diagnostic.Resolving(name, label, children) =>
+        TreeDiagram[Diagnostic](children*).render(line)
+        . join
+          ( e"$headline\n\n \e[38;5;88m$Bold(■)\e[0m resolving "
+            +e"\e[38;5;208m$Italic($name)\e[0m${labelled(label)}\n",
+            e"\n",
+            e"\n" )
 
-  private def parseLine(line: String): Option[Line] =
-    val parts = line.split('\t')
-    if parts.length < 3 then None
-    else
-      try Some(Line(parts(0).toInt, parts(1).charAt(0), parts.drop(2).mkString("\t")))
-      catch case _: NumberFormatException => None
+        . render(termcapDefinitions.xterm256Termcap)
 
-  // Convert a single line to an empty Node of the right kind. Children are
-  // filled in as the parser walks deeper into the line stream.
-  private def emptyNode(line: Line): Option[Node] = line.kind match
-    case 'M' => Some(Missing(line.name, Nil))
-    case 'C' => Some(Candidate(line.name, Nil))
-    case 'A' => Some(Available(line.name, Nil))
-    case 'F' => Some(Found(line.name, Nil))
-    case _   => None
+      case other =>
+        render(Diagnostic.Resolving(other.name, Unset, List(other)), headline)
 
-  private def withChildren(node: Node, children: List[Node]): Node = node match
-    case _: Missing   => Missing(node.name, children)
-    case _: Candidate => Candidate(node.name, children)
-    case _: Available => Available(node.name, children)
-    case _: Found     => Found(node.name, children)
+  private def labelled(label: Optional[Text]): Teletype =
+    label.lay(e""): text =>
+      e" \e[38;5;243m($Italic($text))\e[0m"
 
-  // Parse the full serialised tree. Builds nodes top-down using a stack
-  // keyed by depth: each new line either deepens (push child onto top
-  // frame), stays at the same depth (sibling), or unwinds to a shallower
-  // frame (collapse and reattach).
-  def parse(text: String): Option[Node] =
-    val lines = text.linesIterator.toList.flatMap(parseLine)
-    if lines.isEmpty then None
-    else
-      // Stack of (current node, accumulated children, depth)
-      val frames = mutable.ArrayBuffer.empty[(Node, mutable.ArrayBuffer[Node], Int)]
-      lines.foreach: line =>
-        emptyNode(line).foreach: node =>
-          while frames.nonEmpty && frames.last._3 >= line.depth do
-            val (parentNode, parentChildren, _) = frames.remove(frames.size - 1)
-            val completed = withChildren(parentNode, parentChildren.toList)
-            if frames.nonEmpty then frames.last._2 += completed
-            else frames += ((completed, mutable.ArrayBuffer(), -1))
-          frames += ((node, mutable.ArrayBuffer.empty, line.depth))
-      while frames.size > 1 do
-        val (parentNode, parentChildren, _) = frames.remove(frames.size - 1)
-        frames.last._2 += withChildren(parentNode, parentChildren.toList)
-      val (top, topChildren, _) = frames.head
-      Some(withChildren(top, topChildren.toList))
+  private def line(node: Diagnostic): Teletype = node match
+    case Diagnostic.Found(name, label, _) =>
+      e" \e[38;5;34m$Bold(✓)\e[0m found \e[38;5;119m$Italic($name)\e[0m${labelled(label)}"
 
-  // Render a parsed Node at the requested indent. Format mirrors the
-  // macro's own tree style, just with plain characters instead of ANSI.
-  def render(node: Node, indent: String = ""): String =
-    val sb = new StringBuilder
-    renderInto(sb, node, indent, isRoot = true)
-    sb.toString
+    case Diagnostic.Requires(name, label, _) =>
+      e" \e[38;5;88m$Bold(✗)\e[0m requires \e[38;5;114m$Italic($name)\e[0m${labelled(label)}"
 
-  private def renderInto(sb: StringBuilder, node: Node, indent: String, isRoot: Boolean): Unit =
-    val marker = node match
-      case _: Missing   => "■ resolving"
-      case _: Candidate => "▪ candidate"
-      case _: Available => "▸ propose"
-      case _: Found     => "✓ found"
-    sb.append(indent).append(' ').append(marker).append(' ').append(node.name).append('\n')
-    node.children.foreach(renderInto(sb, _, indent + "  ", isRoot = false))
+    case Diagnostic.Candidate(name, label, _) =>
+      e" \e[38;5;208m$Bold(▪)\e[0m candidate \e[38;5;227m$Italic($name)\e[0m${labelled(label)}"
+
+    case Diagnostic.Propose(name, label, _) =>
+      e" \e[38;5;75m$Bold(▸)\e[0m propose \e[38;5;117m$Italic($name)\e[0m${labelled(label)}"
+
+    case Diagnostic.Resolving(name, label, _) =>
+      e" \e[38;5;88m$Bold(■)\e[0m resolving \e[38;5;208m$Italic($name)\e[0m${labelled(label)}"
+
+enum Diagnostic(val name: Text, val label: Optional[Text], val children: List[Diagnostic]):
+  case Resolving(text: Text, annotation: Optional[Text], nodes: List[Diagnostic])
+  extends Diagnostic(text, annotation, nodes)
+
+  case Candidate(text: Text, annotation: Optional[Text], nodes: List[Diagnostic])
+  extends Diagnostic(text, annotation, nodes)
+
+  case Requires(text: Text, annotation: Optional[Text], nodes: List[Diagnostic])
+  extends Diagnostic(text, annotation, nodes)
+
+  case Propose(text: Text, annotation: Optional[Text], nodes: List[Diagnostic])
+  extends Diagnostic(text, annotation, nodes)
+
+  case Found(text: Text, annotation: Optional[Text], nodes: List[Diagnostic])
+  extends Diagnostic(text, annotation, nodes)
