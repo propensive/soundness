@@ -39,6 +39,7 @@ import gossamer.*
 import honeycomb.*
 import prepositional.*
 import rudiments.*
+import spectacular.Showable
 import vacuous.*
 
 import attributives.textAttributive
@@ -114,6 +115,14 @@ object Markdown:
 
       title.lay(base): title =>
         base.title = title
+
+  // Render a Markdown document back to CommonMark source text. `.show` is the single route to the
+  // source: the output re-parses to an equal AST (modulo `line` metadata) and paragraph text is
+  // word-wrapped at the contextual `Markdown.Formatting` width. The serialization machinery lives
+  // in the internal `Serializer`, shared by the `Layout` and `Prose` instances.
+  given layoutShowable: Markdown.Formatting => (Markdown of Layout) is Showable = Serializer(_)
+
+  given proseShowable: Markdown.Formatting => (Markdown of Prose) is Showable = Serializer(_)
 
   given prose: (Markdown of Prose) is Renderable:
     type Form = Phrasing

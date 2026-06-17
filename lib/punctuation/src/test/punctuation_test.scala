@@ -65,7 +65,7 @@ object Tests extends Suite(m"Punctuation tests"):
 
     suite(m"Serializer round-trip"):
       def roundTrip(markdown: Text): Markdown of Layout =
-        Parser.parse(Parser.parse(markdown).source)
+        Parser.parse(Parser.parse(markdown).show)
 
       test(m"simple heading"):
         roundTrip(t"# Title\n").children.head
@@ -89,7 +89,7 @@ object Tests extends Suite(m"Punctuation tests"):
       test(m"fenced code block preserves content"):
         val src = t"```scala\nval x = 1\n```\n"
         val first = Parser.parse(src).children.head
-        val again = Parser.parse(Parser.parse(src).source).children.head
+        val again = Parser.parse(Parser.parse(src).show).children.head
 
         (first, again).match
           case (Layout.CodeBlock(_, a, b), Layout.CodeBlock(_, c, d)) => (a, b) == (c, d)
@@ -98,28 +98,28 @@ object Tests extends Suite(m"Punctuation tests"):
 
       test(m"link with title"):
         val src = t"See [docs](https://example.org \"Docs\") here.\n"
-        Parser.parse(Parser.parse(src).source).children.head
+        Parser.parse(Parser.parse(src).show).children.head
       . assert:
           case Layout.Paragraph(_, _, Prose.Link(t"https://example.org", t"Docs", _*), _*) => true
           case _                                                                          => false
 
       test(m"blockquote nests paragraph"):
         val src = t"> hello\n"
-        Parser.parse(Parser.parse(src).source).children.head
+        Parser.parse(Parser.parse(src).show).children.head
       . assert:
           case Layout.BlockQuote(_, Layout.Paragraph(_, Prose.Textual(t"hello"))) => true
           case _                                                                  => false
 
       test(m"bullet list with two items"):
         val src = t"- one\n- two\n"
-        Parser.parse(Parser.parse(src).source).children.head
+        Parser.parse(Parser.parse(src).show).children.head
       . assert:
           case Layout.BulletList(_, true, items*) if items.size == 2 => true
           case _                                                     => false
 
       test(m"ordered list with two items"):
         val src = t"1. one\n2. two\n"
-        Parser.parse(Parser.parse(src).source).children.head
+        Parser.parse(Parser.parse(src).show).children.head
       . assert:
           case Layout.OrderedList(_, 1, true, _, items*) if items.size == 2 => true
           case _                                                            => false
@@ -130,22 +130,25 @@ object Tests extends Suite(m"Punctuation tests"):
       val document = Parser.parse(src+t"\n")
 
       test(m"bounded width keeps every line within the limit"):
-        val wrapped = Serializer(document)(using Markdown.Formatting.bounded(20))
+        given Markdown.Formatting = Markdown.Formatting.bounded(20)
+        val wrapped = document.show
         wrapped.cut(t"\n").filter(_ != t"").all(_.length <= 20)
       . assert(_ == true)
 
       test(m"wrapping actually breaks the paragraph onto several lines"):
-        val wrapped = Serializer(document)(using Markdown.Formatting.bounded(20))
+        given Markdown.Formatting = Markdown.Formatting.bounded(20)
+        val wrapped = document.show
         wrapped.cut(t"\n").filter(_ != t"").length
       . assert(_ > 1)
 
       test(m"wrapping preserves the words and their order"):
-        val wrapped = Serializer(document)(using Markdown.Formatting.bounded(20))
+        given Markdown.Formatting = Markdown.Formatting.bounded(20)
+        val wrapped = document.show
         squash(wrapped)
       . assert(_ == squash(src))
 
       test(m"the default width never wraps"):
-        Serializer(document).cut(t"\n").filter(_ != t"").length
+        document.show.cut(t"\n").filter(_ != t"").length
       . assert(_ == 1)
 
     suite(m"Terminal renderer"):
