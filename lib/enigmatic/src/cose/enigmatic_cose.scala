@@ -35,6 +35,7 @@ package enigmatic
 import anticipation.*
 import breviloquence.*
 import contingency.*
+import prepositional.*
 import turbulence.*
 
 // `bytes.verify[Cose](pubkey)` desugars to `(bytes.verify[Cose]).apply(pubkey)`.
@@ -43,7 +44,9 @@ import turbulence.*
 final class CoseVerify[source](val source: source):
   inline def apply[K]
     ( key: K )
-    ( using verifier:   K is CoseVerifier, cborTactic: Tactic[CborError] )
+    ( using verifier: K is CoseVerifier,
+            cborTactic: Tactic[CborError],
+            readable: source is Readable to Data )
   :   Boolean raises CoseError =
 
     val bytes: Data = source.read[Data]

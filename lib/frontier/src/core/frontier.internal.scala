@@ -37,17 +37,27 @@ import scala.quoted.*
 import dotty.tools.dotc.*
 
 import anticipation.*
-import dendrology.*
 import denominative.*
-import escapade.*
 import gigantism.*
 import gossamer.*
 import proscenium.*
 import spectacular.*
-import symbolism.*
+import vacuous.*
 
 object internal:
   inline def explanation[target]: target = ${explain[target]}
+
+  // Non-transparent inline: expands in the `inlining` phase (post-typer), so
+  // its `report.errorAndAbort` is a terminal error that always reaches the
+  // user — unlike an `errorAndAbort` fired during the nested implicit search
+  // that selected the transparent `explainMissingContext` catch-all, which
+  // Dotty buffers and shadows. The catch-all returns a call to this in place
+  // of a found value.
+  inline def fail[target](message: String): target = ${failMacro[target]('message)}
+
+  def failMacro[target: Type](message: Expr[String]): Macro[target] =
+    import quotes.reflect.*
+    report.errorAndAbort(message.valueOrAbort)
 
   private object SafeInlined:
     def unapply(using Quotes)(scrutinee: quotes.reflect.ImplicitSearchFailure)
@@ -69,20 +79,16 @@ object internal:
         case _: dotty.tools.dotc.ast.untpd.SearchFailureIdent => Some(scrutinee.explanation.tt)
         case _                                                => None
 
-  given treeStyle: [text: Textual] => TextualTreeStyle[text] =
-    TextualTreeStyle(t"   ", t" └─", t" ├─", t" │ ")
-
-  private var counter = 0
-
-  private def next(): Int =
-    counter = counter + 1
-    counter
-
   def explain[target: Type]: Macro[target] =
     import quotes.reflect.*
 
-    val id = next()
-    val self = Symbol.requiredMethod("frontier.missingContext.explain")
+    // The catch-all `given`s to exclude from the diagnostic re-search so it
+    // doesn't propose (or recurse into) itself. Resolved by name and guarded
+    // against absence — the real recursion stop is the name check in `seek`.
+    val self: List[Symbol] =
+      List("frontier.context.explainMissingContext", "soundness.context.explainMissingContext")
+      . flatMap: path =>
+          try List(Symbol.requiredMethod(path)) catch case _: Throwable => Nil
 
     sealed trait Result
 
@@ -427,7 +433,7 @@ object internal:
           candidates )
 
     def seek(repr: TypeRepr, exclusions: List[Symbol], depth: Int): Result =
-      Implicits.searchIgnoring(repr)(self :: exclusions*).absolve match
+      Implicits.searchIgnoring(repr)((self ::: exclusions)*).absolve match
         case success: ImplicitSearchSuccess =>
           Found(t"${stenography.internal.name(repr)}", success.tree.asExpr)
 
@@ -454,119 +460,87 @@ object internal:
                   missing(repr, Nil)
 
 
-            case apply: Apply @unchecked => apply match case Apply(function, arguments) =>
-              def resolve(methodType: TypeRepr): Missing = methodType match
-                case PolyType(_, _, _) =>
-                  resolve(function.tpe.simplified)
+            // The `Apply @unchecked` test matches non-`Apply` trees too (the
+            // unchecked bind skips the runtime check), so a `TypeApply` — e.g.
+            // from a polymorphic given whose using-clause failed — reaches
+            // `Apply.unapply`, which throws a `MatchError`. Guard the extractor
+            // so Frontier degrades to a plain `missing` rather than crashing
+            // expansion on any tree shape it doesn't recognise.
+            case apply: Apply @unchecked =>
+              try apply match
+                case Apply(function, arguments) =>
+                  def resolve(methodType: TypeRepr): Missing = methodType match
+                    case PolyType(_, _, _) =>
+                      resolve(function.tpe.simplified)
 
-                case MethodType(_, types, more) =>
-                  val candidate =
-                    Candidate
-                      ( renderSymbol(function.symbol),
-                        function.symbol,
-                        types.map(seek(_, Nil, depth + 1)) )
+                    case MethodType(_, types, more) =>
+                      val candidate =
+                        Candidate
+                          ( renderSymbol(function.symbol),
+                            function.symbol,
+                            types.map(seek(_, Nil, depth + 1)) )
 
-                  val candidates = seek(repr, function.symbol :: exclusions, depth) match
-                    case Missing(_, _, candidates) => candidate :: candidates
-                    case _                         => Nil
+                      val candidates = seek(repr, function.symbol :: exclusions, depth) match
+                        case Missing(_, _, candidates) => candidate :: candidates
+                        case _                         => Nil
 
-                  missing(repr, dedupeCandidates(candidates))
+                      missing(repr, dedupeCandidates(candidates))
+
+                    case _ =>
+                      missing(repr, Nil)
+
+                  resolve(function.symbol.info)
 
                 case _ =>
                   missing(repr, Nil)
 
-              resolve(function.symbol.info)
+              catch case _: Throwable => missing(repr, Nil)
 
             case _ =>
               missing(repr, Nil)
 
 
-    def renderText(available: List[Available], candidates: List[Candidate]): String =
-      given Result is Expandable =
-        case Candidate(_, _, missing)          => missing
-        case Missing(_, available, candidates) => available ::: candidates
-        case Available(_, requirements)        => requirements
-        case Found(_, _)                       => Nil
+    // Convert the compiler-typed search `Result` into the format-neutral,
+    // pre-rendered `Diagnostic` model the shared renderer consumes.
+    def toDiagnostic(result: Result): Diagnostic = result match
+      case Found(name, _) =>
+        Diagnostic.Found(name, Unset, Nil)
 
-      TreeDiagram[Result]((available ::: candidates)*).render:
-        case Found(name, _) =>
-          e" \e[38;5;34m$Bold(✓)\e[0m found \e[38;5;119m$Italic($name)\e[0m"
+      case Available(name, requirements) =>
+        Diagnostic.Propose(name, Unset, requirements.map(toDiagnostic))
 
-        case Missing(name, _, _) =>
-          e" \e[38;5;88m$Bold(✗)\e[0m requires \e[38;5;114m$Italic($name)\e[0m"
+      case Candidate(name, _, missing) =>
+        Diagnostic.Candidate(name, Unset, missing.map(toDiagnostic))
 
-        case Candidate(name, _, _) =>
-          e" \e[38;5;208m$Bold(▪)\e[0m candidate \e[38;5;227m$Italic($name)\e[0m"
+      case Missing(name, available, candidates) =>
+        val children = available.map(toDiagnostic) ++ candidates.map(toDiagnostic)
+        Diagnostic.Requires(name, Unset, children)
 
-        case Available(name, _) =>
-          e" \e[38;5;75m$Bold(▸)\e[0m propose \e[38;5;117m$Italic($name)\e[0m"
+    // Build the diagnostic tree rooted at the type Frontier was asked to
+    // resolve, with its tried candidates and proposed alternatives beneath it.
+    // The catch-all fires at the *deepest* missing implicit in any using-clause
+    // chain (the inner search resolves through the catch-all first), and the
+    // chain that led there isn't available at macro-expansion time, so the
+    // root is that deepest type — Frontier reports the innermost cause.
+    def buildDiagnostic(missing: Missing): Diagnostic =
+      val children = missing.available.map(toDiagnostic) ++ missing.candidates.map(toDiagnostic)
+      Diagnostic.Resolving(missing.name, Unset, children)
 
-      . join
-        ( e"contextual value not found\n\n \e[38;5;88m$Bold(■)\e[0m resolving "
-          +e"\e[38;5;208m$Italic(${stenography.internal.name[target]})\e[0m\n",
-          e"\n",
-          e"\n" )
-
-      . render(termcapDefinitions.xterm256Termcap)
-      . s
-
-    // Detect whether the Frontier compiler plugin is wired into this
-    // compilation. When it is, the macro emits a `Sentinel.missing[T](text)`
-    // call carrying the rendered diagnostic; the plugin's post-splicing
-    // phase walks the typed tree for those calls and reports the stored
-    // text via `report.error`. When it isn't, the macro falls back to
-    // `report.errorAndAbort` so callers without the plugin still see the
-    // (deepest-only) Frontier diagnostic the plugin path generalises.
-    val frontierPluginPresent: Boolean =
-      context.base.allPhases.exists(_.phaseName == "frontier")
-
-    // Serialise the search Result tree to a tab-separated, depth-prefixed
-    // flat text the plugin can parse without depending on dendrology or
-    // escapade. Pre-order traversal: each node emits `<depth>\t<kind>\t<name>`
-    // and then its children at `depth + 1`. Kind is M/C/A/F.
-    def serializeTree(result: Result, depth: Int, builder: StringBuilder): Unit =
-      result match
-        case Found(name, _) =>
-          builder.append(depth).append('\t').append('F').append('\t')
-            .append(name.s).append('\n')
-
-        case Missing(name, available, candidates) =>
-          builder.append(depth).append('\t').append('M').append('\t')
-            .append(name.s).append('\n')
-          available.foreach(serializeTree(_, depth + 1, builder))
-          candidates.foreach(serializeTree(_, depth + 1, builder))
-
-        case Available(name, requirements) =>
-          builder.append(depth).append('\t').append('A').append('\t')
-            .append(name.s).append('\n')
-          requirements.foreach(serializeTree(_, depth + 1, builder))
-
-        case Candidate(name, _, missing) =>
-          builder.append(depth).append('\t').append('C').append('\t')
-            .append(name.s).append('\n')
-          missing.foreach(serializeTree(_, depth + 1, builder))
-
-    // Funnel any non-Found seek result through the same render/emit
-    // pipeline. `seek` is declared to return any of `Found`, `Missing`,
-    // `Candidate`, or `Available`; a bare `Candidate` escapes via the
-    // SafeInlined+TypeApply branch (#1031). Wrap such bare nodes in a
-    // synthetic `Missing` using the user's target type so the renderer
-    // and serialiser get the outer "■ resolving <target>" framing they
-    // need. `Available` doesn't escape today but the wrapping is cheap
-    // defence against future drift in `seek`.
-    def emit(m: Missing): Expr[target] =
-      val text = renderText(m.available, m.candidates)
-
-      if frontierPluginPresent then
-        val sb = new StringBuilder
-        serializeTree(m, 0, sb)
-        '{frontier.Sentinel.missing[target](${Expr(text)}, ${Expr(sb.toString)})}
-      else
-        report.errorAndAbort(text)
+    // The transparent catch-all cannot emit a terminal error from inside the
+    // nested implicit search where it fires (Dotty buffers and shadows it).
+    // Instead it returns a call to the *non-transparent* `fail`, which expands
+    // later, in the `inlining` phase, where `report.errorAndAbort` is terminal
+    // and always reaches the user.
+    def emit(missing: Missing): Expr[target] =
+      val text = Diagnostic.render(buildDiagnostic(missing)).s
+      '{frontier.internal.fail[target](${Expr(text)})}
 
     seek(TypeRepr.of[target], Nil, 1).absolve match
       case Found(_, expr) =>
-        expr.asExprOf[target]
+        // Return the resolved term at its own (precise) static type, not
+        // widened to `target`; `transparent` then surfaces the precise type to
+        // the call site.
+        expr.asInstanceOf[Expr[target]]
 
       case m: Missing =>
         emit(m)

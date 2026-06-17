@@ -30,88 +30,57 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package frontier
+package turbulence
 
-import scala.collection.mutable
+import scala.annotation.implicitNotFound
 
-// Parses the tab-separated tree the macro pickles into `Sentinel.missing`'s
-// second argument and renders the structured result as plain text. The
-// macro encodes its `seek` result (Missing/Candidate/Available/Found) so
-// the plugin can show alternative candidates at the deepest level without
-// having to re-run implicit search itself.
-object Diagnose:
-  sealed trait Node:
-    def name: String
-    def children: List[Node]
+import anticipation.*
+import hieroglyph.*
+import prepositional.*
 
-  case class Missing(name: String, children: List[Node])   extends Node
-  case class Candidate(name: String, children: List[Node]) extends Node
-  case class Available(name: String, children: List[Node]) extends Node
-  case class Found(name: String, children: List[Node])     extends Node
+// `Readable` composes a `Streamable` for the source type and an `Aggregable`
+// for the result type into a single resolvable instance, bridging with a
+// `CharDecoder`/`CharEncoder` when the two operate on different operands
+// (`Data` vs `Text`). Expressing the four pipelines as prioritised `given`s
+// (rather than a macro that summons combinations) means a missing instance is
+// an ordinary failed implicit search — so Frontier's `explainMissingContext`,
+// when in scope, lists the candidates and what each still requires.
+//
+// Priority (highest first): same-operand pipelines before the bridged ones,
+// so a directly-streamable/aggregable pairing is preferred when both apply.
 
-  // Parse one line of the macro's serialised tree:
-  //     <depth>\t<kind>\t<name>
-  // Returns `None` for malformed or blank lines (defensive).
-  private case class Line(depth: Int, kind: Char, name: String)
+trait Readable3:
+  given textToData: [source, result]
+  =>  ( streamable: source is Streamable by Text )
+  =>  ( aggregable: result is Aggregable by Data )
+  =>  ( encoder: CharEncoder )
+  =>  source is Readable to result =
+    value => aggregable.aggregate(encoder.encoded(streamable.stream(value)))
 
-  private def parseLine(line: String): Option[Line] =
-    val parts = line.split('\t')
-    if parts.length < 3 then None
-    else
-      try Some(Line(parts(0).toInt, parts(1).charAt(0), parts.drop(2).mkString("\t")))
-      catch case _: NumberFormatException => None
+trait Readable2 extends Readable3:
+  given dataToText: [source, result]
+  =>  ( streamable: source is Streamable by Data )
+  =>  ( aggregable: result is Aggregable by Text )
+  =>  ( decoder: CharDecoder )
+  =>  source is Readable to result =
+    value => aggregable.aggregate(decoder.decoded(streamable.stream(value)))
 
-  // Convert a single line to an empty Node of the right kind. Children are
-  // filled in as the parser walks deeper into the line stream.
-  private def emptyNode(line: Line): Option[Node] = line.kind match
-    case 'M' => Some(Missing(line.name, Nil))
-    case 'C' => Some(Candidate(line.name, Nil))
-    case 'A' => Some(Available(line.name, Nil))
-    case 'F' => Some(Found(line.name, Nil))
-    case _   => None
+trait Readable1 extends Readable2:
+  given textToText: [source, result]
+  =>  ( streamable: source is Streamable by Text )
+  =>  ( aggregable: result is Aggregable by Text )
+  =>  source is Readable to result =
+    value => aggregable.aggregate(streamable.stream(value))
 
-  private def withChildren(node: Node, children: List[Node]): Node = node match
-    case _: Missing   => Missing(node.name, children)
-    case _: Candidate => Candidate(node.name, children)
-    case _: Available => Available(node.name, children)
-    case _: Found     => Found(node.name, children)
+object Readable extends Readable1:
+  given dataToData: [source, result]
+  =>  ( streamable: source is Streamable by Data )
+  =>  ( aggregable: result is Aggregable by Data )
+  =>  source is Readable to result =
+    value => aggregable.aggregate(streamable.stream(value))
 
-  // Parse the full serialised tree. Builds nodes top-down using a stack
-  // keyed by depth: each new line either deepens (push child onto top
-  // frame), stays at the same depth (sibling), or unwinds to a shallower
-  // frame (collapse and reattach).
-  def parse(text: String): Option[Node] =
-    val lines = text.linesIterator.toList.flatMap(parseLine)
-    if lines.isEmpty then None
-    else
-      // Stack of (current node, accumulated children, depth)
-      val frames = mutable.ArrayBuffer.empty[(Node, mutable.ArrayBuffer[Node], Int)]
-      lines.foreach: line =>
-        emptyNode(line).foreach: node =>
-          while frames.nonEmpty && frames.last._3 >= line.depth do
-            val (parentNode, parentChildren, _) = frames.remove(frames.size - 1)
-            val completed = withChildren(parentNode, parentChildren.toList)
-            if frames.nonEmpty then frames.last._2 += completed
-            else frames += ((completed, mutable.ArrayBuffer(), -1))
-          frames += ((node, mutable.ArrayBuffer.empty, line.depth))
-      while frames.size > 1 do
-        val (parentNode, parentChildren, _) = frames.remove(frames.size - 1)
-        frames.last._2 += withChildren(parentNode, parentChildren.toList)
-      val (top, topChildren, _) = frames.head
-      Some(withChildren(top, topChildren.toList))
-
-  // Render a parsed Node at the requested indent. Format mirrors the
-  // macro's own tree style, just with plain characters instead of ANSI.
-  def render(node: Node, indent: String = ""): String =
-    val sb = new StringBuilder
-    renderInto(sb, node, indent, isRoot = true)
-    sb.toString
-
-  private def renderInto(sb: StringBuilder, node: Node, indent: String, isRoot: Boolean): Unit =
-    val marker = node match
-      case _: Missing   => "■ resolving"
-      case _: Candidate => "▪ candidate"
-      case _: Available => "▸ propose"
-      case _: Found     => "✓ found"
-    sb.append(indent).append(' ').append(marker).append(' ').append(node.name).append('\n')
-    node.children.foreach(renderInto(sb, _, indent + "  ", isRoot = false))
+@implicitNotFound("turbulence: the source cannot be read as the target type; this needs a "+
+    "`Streamable` instance for the source and an `Aggregable` instance for the target, plus a "+
+    "`CharDecoder` or `CharEncoder` if their operands (Data/Text) differ")
+trait Readable extends Typeclass, Resultant:
+  def read(value: Self): Result

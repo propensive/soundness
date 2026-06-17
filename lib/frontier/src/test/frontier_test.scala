@@ -121,9 +121,9 @@ object Tests extends Suite(m"Frontier Tests"):
     // Diagnostic-behavior tests: the catch-all fires at the deepest missing
     // implicit. With a chain `summon[Alpha]` ← `mkAlpha(using Beta)` ← `Beta?`,
     // the user sees the diagnostic for Beta, not for Alpha — the inner
-    // using-clause search triggers the catch-all first, and its `errorAndAbort`
-    // is a hard error that propagates before the outer Alpha resolution can
-    // fall back to the catch-all itself.
+    // using-clause search resolves through the catch-all first, and the chain
+    // that led there is not available at macro-expansion time, so Frontier
+    // reports the innermost cause (Beta).
 
     test(m"explainMissingContext fires for a missing using-clause implicit"):
       demilitarize:
@@ -156,8 +156,21 @@ object Tests extends Suite(m"Frontier Tests"):
       . map(_.message)
     . assert: msgs =>
         msgs.exists: m =>
-          m.contains("resolving Holder")
-          && m.contains("candidate mkHolder")
-          && m.contains("requires") && m.contains("DecimalConverter")
+          m.contains("resolving") && m.contains("DecimalConverter")
           && m.contains("decimalConverters.javaDecimalConverter")
+
+    // `read` now resolves an ordinary `Readable` instance, so a missing
+    // decoder is an ordinary failed implicit search that Frontier explains —
+    // listing the `Readable` pipelines and what each still requires.
+    test(m"explainMissingContext advises on a missing read instance"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        import turbulence.*
+        trait Widget
+        t"data".read[Widget]
+      . map(_.message)
+    . assert: msgs =>
+        msgs.exists: m =>
+          m.contains("resolving") && m.contains("Readable")
+          && m.contains("candidate") && m.contains("Aggregable")
 

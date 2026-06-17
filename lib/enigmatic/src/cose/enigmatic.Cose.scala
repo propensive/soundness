@@ -83,7 +83,9 @@ object Cose:
   // readability and tactic instances.
   inline def apply[source, key]
     ( source: source, key: key )
-    ( using auth: key is CoseAuthenticator, cborTactic: Tactic[CborError] )
+    ( using auth: key is CoseAuthenticator,
+            cborTactic: Tactic[CborError],
+            readable: source is Readable to Data )
   :   Cose in auth.Form by auth.Operand raises CoseError =
 
     val payload: Data  = source.read[Data]
