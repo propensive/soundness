@@ -37,6 +37,8 @@ import contingency.*
 import prepositional.*
 
 export urticose.internal.Ipv6
+export urticose.internal.Ipv4Subnet
+export urticose.internal.Ipv6Subnet
 export urticose.internal.Opaques.Ipv4
 export urticose.internal.Opaques.MacAddress
 export urticose.internal.Opaques.DnsLabel
@@ -50,6 +52,10 @@ type UdpPort = Port over Udp
 
 extension (inline context: StringContext)
   transparent inline def ip(): Ipv4 | Ipv6 = ${urticose.internal.ip('context)}
+
+  transparent inline def subnet(): Ipv4Subnet | Ipv6Subnet =
+    ${urticose.internal.subnet('context)}
+
   inline def mac(): MacAddress = ${urticose.internal.mac('context)}
   transparent inline def tcp(): Port = ${urticose.internal.portService('context, true)}
   transparent inline def udp(): Port = ${urticose.internal.portService('context, false)}
