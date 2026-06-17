@@ -158,6 +158,51 @@ object Tests extends Suite(m"Urticose tests"):
         capture(t"::8:abcde:abc:1234".decode[Ipv6])
       . assert(_ == IpAddressError(IpAddressError.Reason.Ipv6GroupWrongLength(t"abcde")))
 
+    suite(m"Subnet tests"):
+      test(m"Create an IPv4 subnet at compiletime"):
+        subnet"192.168.0.0/24"
+      . assert(_ == ip"192.168.0.0".subnet(24))
+
+      test(m"IPv4 subnet at compiletime masks host bits"):
+        subnet"255.123.143.0/12".show
+      . assert(_ == t"255.112.0.0/12")
+
+      test(m"Create an IPv6 subnet at compiletime"):
+        subnet"2001:db8::/32"
+      . assert(_ == ip"2001:db8::".subnet(32))
+
+      test(m"Show an IPv6 subnet"):
+        subnet"2001:db8::/32".show
+      . assert(_ == t"2001:db8::/32")
+
+      test(m"Parse an IPv4 subnet at runtime"):
+        t"10.0.0.0/8".decode[Ipv4Subnet]
+      . assert(_ == Ipv4(10, 0, 0, 0).subnet(8))
+
+      test(m"Parse an IPv6 subnet at runtime"):
+        t"2001:db8::/32".decode[Ipv6Subnet]
+      . assert(_ == Ipv6(0x2001, 0xdb8, 0, 0, 0, 0, 0, 0).subnet(32))
+
+      test(m"IPv4 subnet prefix out of range"):
+        capture(t"10.0.0.0/40".decode[Ipv4Subnet])
+      . assert(_ == IpAddressError(IpAddressError.Reason.Ipv4SubnetPrefixOutOfRange(40)))
+
+      test(m"IPv6 subnet prefix out of range"):
+        capture(t"2001:db8::/130".decode[Ipv6Subnet])
+      . assert(_ == IpAddressError(IpAddressError.Reason.Ipv6SubnetPrefixOutOfRange(130)))
+
+      test(m"Subnet prefix not numeric"):
+        capture(t"10.0.0.0/x".decode[Ipv4Subnet])
+      . assert(_ == IpAddressError(IpAddressError.Reason.SubnetPrefixNotNumeric(t"x")))
+
+      test(m"Subnet without a prefix is wrong format"):
+        capture(t"10.0.0.0".decode[Ipv4Subnet])
+      . assert(_ == IpAddressError(IpAddressError.Reason.SubnetWrongFormat(1)))
+
+      test(m"Invalid subnet prefix is compile error"):
+        demilitarize(subnet"10.0.0.0/40").map(_.message)
+      . assert(_ == List(t"[↯SN-077.9] the IP address is not valid because the prefix length 40 is not in the range 0-32"))
+
     suite(m"Email address tests"):
       import EmailAddressError.Reason.*
 

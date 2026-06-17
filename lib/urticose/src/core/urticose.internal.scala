@@ -53,6 +53,11 @@ import vacuous.*
 import IpAddressError.Reason, Reason.*
 
 object internal:
+  // Resolve `Ipv4` to the nested opaque type directly rather than via the
+  // package-level re-export; exporting `Ipv4Subnet` (whose field is typed `Ipv4`)
+  // would otherwise create a cross-file cycle through that re-export.
+  import Opaques.Ipv4
+
   private lazy val serviceNames: Map[(Boolean, Text), Int] =
     val stream =
       Optional(getClass.getResourceAsStream("/urticose/service-names-port-numbers.csv")).or:
@@ -230,8 +235,33 @@ object internal:
 
       def int: Int = ip
 
+  def subnetPrefix(text: Text, max: Int)(outOfRange: Int => Reason)
+  :     Int raises IpAddressError =
+
+    val prefix =
+      whereas:
+        case error@NumberError(_, _, _) =>
+          given diagnostics: Diagnostics = error.diagnostics
+          IpAddressError(SubnetPrefixNotNumeric(text))
+
+      . mitigate:
+          Decodable.int.decoded(text)
+
+    if !(0 <= prefix <= max) then abort(IpAddressError(outOfRange(prefix)))
+    prefix
+
   object Ipv4Subnet:
     given showable: Ipv4Subnet is Showable = subnet => t"${subnet.ipv4}/${subnet.size}"
+    given encodable: Ipv4Subnet is Encodable in Text = _.show
+    given decodable: Tactic[IpAddressError] => Ipv4Subnet is Decodable in Text = parse(_)
+
+    def parse(text: Text): Ipv4Subnet raises IpAddressError =
+      text.cut(t"/").to(List) match
+        case List(address, prefixText) =>
+          Ipv4.parse(address).subnet(subnetPrefix(prefixText, 32)(Ipv4SubnetPrefixOutOfRange(_)))
+
+        case other =>
+          abort(IpAddressError(SubnetWrongFormat(other.length)))
 
   case class Ipv4Subnet(ipv4: Ipv4, size: Int)
 
@@ -309,6 +339,39 @@ object internal:
 
   case class Ipv6(highBits: Long, lowBits: Long)
 
+  extension (ip: Ipv6)
+    def subnet(size: Int): Ipv6Subnet =
+      val high =
+        if size <= 0 then 0L
+        else if size >= 64 then ip.highBits
+        else ip.highBits & (-1L << (64 - size))
+
+      val low =
+        if size <= 64 then 0L
+        else if size >= 128 then ip.lowBits
+        else ip.lowBits & (-1L << (128 - size))
+
+      Ipv6Subnet(Ipv6(high, low), size)
+
+  object Ipv6Subnet:
+    // Reference `Ipv6.showable` by name rather than summoning `Ipv6 is Showable`
+    // implicitly: this given is completed eagerly when `Ipv6Subnet` is re-exported,
+    // and an implicit search would re-enter the (also-exported) `Ipv6` companion.
+    given showable: Ipv6Subnet is Showable = subnet =>
+      t"${Ipv6.showable.text(subnet.ipv6)}/${subnet.size}"
+    given encodable: Ipv6Subnet is Encodable in Text = _.show
+    given decodable: Tactic[IpAddressError] => Ipv6Subnet is Decodable in Text = parse(_)
+
+    def parse(text: Text): Ipv6Subnet raises IpAddressError =
+      text.cut(t"/").to(List) match
+        case List(address, prefixText) =>
+          Ipv6.parse(address).subnet(subnetPrefix(prefixText, 128)(Ipv6SubnetPrefixOutOfRange(_)))
+
+        case other =>
+          abort(IpAddressError(SubnetWrongFormat(other.length)))
+
+  case class Ipv6Subnet(ipv6: Ipv6, size: Int)
+
 
   def emailAddress(context: Expr[StringContext]): Macro[EmailAddress] = abortive:
     val text: Text = context.valueOrAbort.parts.head.tt
@@ -364,6 +427,19 @@ object internal:
       else
         val ipv6 = text.decode[Ipv6]
         '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
+
+  def subnet(context: Expr[StringContext]): Macro[Ipv4Subnet | Ipv6Subnet] =
+    val text = Text(context.valueOrAbort.parts.head)
+
+    abortive:
+      if text.cut(t"/").head.contains(t".") then
+        val subnet = Ipv4Subnet.parse(text)
+        '{Ipv4Subnet(Ipv4(${Expr(subnet.ipv4.int)}), ${Expr(subnet.size)})}
+
+      else
+        val subnet = Ipv6Subnet.parse(text)
+        val ipv6 = '{Ipv6(${Expr(subnet.ipv6.highBits)}, ${Expr(subnet.ipv6.lowBits)})}
+        '{Ipv6Subnet($ipv6, ${Expr(subnet.size)})}
 
   def mac(context: Expr[StringContext]): Macro[MacAddress] = abortive:
     val macAddress = context.valueOrAbort.parts.head.tt.decode[MacAddress]
