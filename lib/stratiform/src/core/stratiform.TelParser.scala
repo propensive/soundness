@@ -1260,7 +1260,9 @@ private final class TelParser():
       if !shallowerValid && deeperValid then deeper else shallower
 
     . or:
-      errorAt(Reason.OddIndentation, line, 1)
+      // §19.5 ShallowerIndent: round an odd indent down to the nearer level. The
+      // leading spaces are already consumed, so returning a level cannot stall.
+      recoverAt(Reason.OddIndentation, line, 1)(rel / 2)
 
   // ── Line-head fill ───────────────────────────────────────────────────────
 
@@ -1305,7 +1307,8 @@ private final class TelParser():
       val rel = spaces - margin
 
       head.indentLevels =
-        if rel < 0 then errorAt(Reason.LessThanMargin, head.startLine, 1)
+        // §19.5 AdjustMargin: a line indented less than the margin sits at level 0.
+        if rel < 0 then recoverAt(Reason.LessThanMargin, head.startLine, 1)(0)
         else if rel % 2 == 0 then rel / 2
         else recoverOddIndent(spaces, head.startLine)
 

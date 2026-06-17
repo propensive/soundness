@@ -223,3 +223,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"A bad schema identifier recovers and the body still accrues"):
         validateRead(t"tel 1.0 bad!id\ngood \n").items.map(_(1).reason).to(Set)
       . assert(_ == Set(TelError.Reason.BadSchemaIdentifier, TelError.Reason.TrailingSpaces))
+
+      test(m"Two odd-indented lines accrue two OddIndentation errors"):
+        validateRead(t"a\n b\n c\n").items.map(_(1).reason).to(List)
+      . assert(_ == List(TelError.Reason.OddIndentation, TelError.Reason.OddIndentation))
