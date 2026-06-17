@@ -45,6 +45,7 @@ import proscenium.*
 import quantitative.*
 import rudiments.*
 import sedentary.*
+import spectacular.*
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
 import vacuous.*
@@ -378,7 +379,9 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   // number path on a realistic input rather than a microcase.
   lazy val blockchainAst: Json.Ast = unsafely(Json.Ast.parse(jsonBytes6))
 
-  def printBlockchain(): Text = JsonPrinter.print(blockchainAst, false)
+  def printBlockchain(): Text =
+    given Json.Formatting = Json.Formatting(Unset, false)
+    blockchainAst.show
 
   // Example 7: a 1000-element array of small integers — the workload the
   // unboxed `Array[Long]` AST node was designed to accelerate (no per-
