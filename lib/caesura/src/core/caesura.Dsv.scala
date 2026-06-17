@@ -61,6 +61,16 @@ object Dsv extends Dsv2:
   def apply(iterable: Iterable[Text]): Dsv = new Dsv(IArray.from(iterable))
   def apply(text: Text*): Dsv = new Dsv(IArray.from(text))
 
+  // An absent cell (a short positional row, or a header column missing from the row) decodes
+  // to `Unset`; a present cell — even an empty one — decodes its inner value. The product
+  // decoder hands an empty `Dsv` to a field whose cell is absent (see `conjunction`). Sits at
+  // the same priority as the primitive cell decoders (above the generic `decoder` in `Dsv2`),
+  // and short-circuits an absent cell to `Unset` before the inner decoder would `raise` Absent.
+  given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  ( decodable: => inner is Decodable in Dsv )
+  =>  value is Decodable in Dsv =
+    row => if row.data.length == 0 then Unset else decodable.decoded(row)
+
   given encoder: [encodable: Encodable in Text] => encodable is Encodable in Dsv =
     value => Dsv(encodable.encode(value))
 
@@ -179,9 +189,15 @@ object Dsv extends Dsv2:
 
             build[derivation]:
               [field] => context =>
-                val i = row.columns.let(_.at(label)).or(count)
+                // Positional mode (`columns` Unset): read the field's span starting at `count`.
+                // Header mode: locate the field by column name; an absent column hands the field
+                // an empty `Dsv` so `Optional` fields decode to `Unset` rather than misreading by
+                // position.
+                val row2 = row.columns.lay(Dsv(row.data.drop(count))): columns =>
+                  columns.at(label).lay(Dsv(IArray[Text]())): i =>
+                    Dsv(row.data.drop(i))
+
                 count += spans(index)
-                val row2 = Dsv(row.data.drop(i))
 
                 focus(CellRef(Prim, label)):
                   contextual.decoded(row2)
