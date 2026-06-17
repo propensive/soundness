@@ -170,6 +170,16 @@ object Tests extends Suite(m"Caesura tests"):
       t"""0.1,two,three,4,five,six""".read[Sheet].rows.head.as[Bar]
     . assert(_ == Bar(0.1, Foo(t"two", t"three"), 4, Foo(t"five", t"six")))
 
+    test(m"`read[T in Dsv]` decodes a single record directly"):
+      import dsvFormats.csvFormat
+      t"""hello,world""".read[Foo in Dsv]
+    . assert(_ == Foo(t"hello", t"world"))
+
+    test(m"`read[T in Dsv]` decodes a record by headings"):
+      import dsvFormats.csvWithHeaderFormat
+      t"greeting,name\nhello,world".read[Quux in Dsv]
+    . assert(_ == Quux(t"world", t"hello"))
+
     test(m"encode case class"):
       Foo(t"hello", t"world").dsv
     . assert(_ == Dsv(t"hello", t"world"))

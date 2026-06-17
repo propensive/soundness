@@ -306,17 +306,17 @@ object Tests extends Suite(m"Ypsiloid Tests"):
           case _                        => -1
       . assert(_ == 2)
 
-    suite(m"`over Yaml` decoder shorthand"):
-      test(m"`read[T over Yaml]` resolves a value directly from text"):
-        t"{name: Alice, age: 30}".read[Person over Yaml]
+    suite(m"`in Yaml` decoder shorthand"):
+      test(m"`read[T in Yaml]` resolves a value directly from text"):
+        t"{name: Alice, age: 30}".read[Person in Yaml]
       . assert(_ == Person(t"Alice", 30))
 
-      test(m"`read[T over Yaml]` works for nested case classes"):
-        t"{inner: {n: 7}}".read[Outer over Yaml]
+      test(m"`read[T in Yaml]` works for nested case classes"):
+        t"{inner: {n: 7}}".read[Outer in Yaml]
       . assert(_ == Outer(Inner(7)))
 
-      test(m"`read[List[T] over Yaml]` decodes a sequence directly"):
-        t"[{name: Alice, age: 30}, {name: Bob, age: 25}]".read[List[Person] over Yaml]
+      test(m"`read[List[T] in Yaml]` decodes a sequence directly"):
+        t"[{name: Alice, age: 30}, {name: Bob, age: 25}]".read[List[Person] in Yaml]
       . assert(_ == List(Person(t"Alice", 30), Person(t"Bob", 25)))
 
     suite(m"Case-class derivation"):

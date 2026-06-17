@@ -322,7 +322,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == Band(List(Person(t"John", 40), Person(t"George", 58)), ringoObj, Some(paulObj)))
 
       test(m"Extract a band directly"):
-        beatles.read[Band over Json]
+        beatles.read[Band in Json]
       . assert(_ == Band(List(Person(t"John", 40), Person(t"George", 58)), ringoObj, Some(paulObj)))
 
       val paulCoproduct = test(m"Serialize a coproduct"):

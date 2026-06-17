@@ -37,6 +37,6 @@ import prepositional.*
 
 // Encodes any value with an `Encodable in Protobuf` instance to its `Protobuf` wire
 // form; `.encode` then yields the message bytes (`Data`). Decoding is
-// `bytes.read[Protobuf].as[T]` or the `bytes.read[T over Protobuf]` shorthand.
+// `bytes.read[Protobuf].as[T]` or the `bytes.read[T in Protobuf]` shorthand.
 extension [value: Encodable in Protobuf](value: value)
   def protobuf: Protobuf = value.encode

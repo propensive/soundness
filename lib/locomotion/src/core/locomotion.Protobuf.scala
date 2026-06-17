@@ -122,13 +122,13 @@ object Protobuf extends Protobuf2:
   // `bytes.read[Protobuf]` aggregates the byte stream and wraps it as a message.
   given aggregable: Protobuf is Aggregable by Data = bytes => message(bytes.read[Data])
 
-  // `bytes.read[Foo over Protobuf]` shorthand for `bytes.read[Protobuf].as[Foo]`,
-  // mirroring jacinta's `value over Json` and breviloquence's `value over Cbor`.
-  // `value over Protobuf` is just `value { type Transport = Protobuf }`, so the
+  // `bytes.read[Foo in Protobuf]` shorthand for `bytes.read[Protobuf].as[Foo]`,
+  // mirroring jacinta's `value in Json` and breviloquence's `value in Cbor`.
+  // `value in Protobuf` is just `value { type Form = Protobuf }`, so the
   // cast is a no-op at runtime.
-  given aggregableOver: [value: Decodable in Protobuf] => Tactic[ProtobufError]
-  =>  (value over Protobuf) is Aggregable by Data =
-    bytes => message(bytes.read[Data]).as[value].asInstanceOf[value over Protobuf]
+  given aggregableIn: [value: Decodable in Protobuf] => Tactic[ProtobufError]
+  =>  (value in Protobuf) is Aggregable by Data =
+    bytes => message(bytes.read[Data]).as[value].asInstanceOf[value in Protobuf]
 
   // Number-keyed optic: Protobuf fields are addressed by number, not name, so an
   // `Ordinal` selects field `n` (`Prim` = field 1). Updating parses the message's

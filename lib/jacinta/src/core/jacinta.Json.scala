@@ -810,9 +810,9 @@ object Json extends Json2, Dynamic:
 
   given aggregableDirect: [value: distillate.Decodable in Json] => Tactic[ParseError]
   =>  Tactic[JsonError]
-  =>  (value over Json) is Aggregable by Data =
+  =>  (value in Json) is Aggregable by Data =
 
-    bytes => Json(bytes.read[Json.Ast]).as[value].asInstanceOf[value over Json]
+    bytes => Json(bytes.read[Json.Ast]).as[value].asInstanceOf[value in Json]
 
 
   given showable: Formatting => Json is Showable = _.root.show

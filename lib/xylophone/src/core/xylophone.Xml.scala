@@ -520,18 +520,18 @@ object Xml extends Tag.Container
 
     text => Stream(text).read[Xml]
 
-  // `source.read[Foo over Xml]` shorthand for
+  // `source.read[Foo in Xml]` shorthand for
   // `source.read[Xml].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`
-  // for `value over Json`. The `Transport` type-tag is added by an
-  // `asInstanceOf` cast — `value over Xml` is just `value { type
-  // Transport = Xml }` so the cast is a no-op at runtime.
-  given aggregableOver: [value: Decodable in Xml] => (schema: XmlSchema)
+  // for `value in Json`. The `Form` type-tag is added by an
+  // `asInstanceOf` cast — `value in Xml` is just `value { type
+  // Form = Xml }` so the cast is a no-op at runtime.
+  given aggregableIn: [value: Decodable in Xml] => (schema: XmlSchema)
   =>  ( Tactic[ParseError], Tactic[XmlError] )
-  =>  (value over Xml) is Aggregable by Text =
+  =>  (value in Xml) is Aggregable by Text =
 
     input =>
       XmlParser.fromIterator(input.iterator).parseXml(headers0 = false).as[value]
-      . asInstanceOf[value over Xml]
+      . asInstanceOf[value in Xml]
 
   given loadable: (schema: XmlSchema) => Tactic[ParseError] => Xml is Loadable by Text = stream =>
     XmlParser.fromIterator(stream.iterator).parseXml(headers0 = true) match
