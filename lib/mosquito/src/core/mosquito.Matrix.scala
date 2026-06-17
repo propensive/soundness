@@ -172,8 +172,7 @@ object Matrix:
 
   private type Constraint[rows <: Tuple, element] =
     Tuple.Union
-      [ Tuple.Fold
-          [ rows, Zero, [left, right] =>> Tuple.Concat[left & Tuple, right & Tuple] ] &
+      [ Tuple.Fold[rows, Zero, [left, right] =>> Tuple.Concat[left & Tuple, right & Tuple]] &
         Tuple ] <:<
       element
 

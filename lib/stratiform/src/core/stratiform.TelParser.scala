@@ -555,6 +555,7 @@ private final class TelParser():
         TelParser.matchByte(v, rA) |
           TelParser.matchByte(v, rB) |
           TelParser.matchByte(v, rC)
+
       if combined != 0L then
         pos += (java.lang.Long.numberOfTrailingZeros(combined) >>> 3)
         return
@@ -577,6 +578,7 @@ private final class TelParser():
           TelParser.matchByte(v, rB) |
           TelParser.matchByte(v, rC) |
           TelParser.matchByte(v, rD)
+
       if combined != 0L then
         pos += (java.lang.Long.numberOfTrailingZeros(combined) >>> 3)
         return

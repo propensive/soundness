@@ -58,8 +58,8 @@ object Audio:
 
     val pcm: jss.AudioInputStream =
       if
-        encoding == jss.AudioFormat.Encoding.PCM_SIGNED
-        || encoding == jss.AudioFormat.Encoding.PCM_UNSIGNED
+        encoding == jss.AudioFormat.Encoding.PCM_SIGNED ||
+          encoding == jss.AudioFormat.Encoding.PCM_UNSIGNED
       then raw
       else
         val src = raw.getFormat.nn

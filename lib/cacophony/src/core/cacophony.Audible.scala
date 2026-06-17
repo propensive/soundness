@@ -67,8 +67,8 @@ trait Audible extends Typeclass:
       val encoding = raw.getFormat.nn.getEncoding.nn
 
       val pcm: jss.AudioInputStream =
-        if encoding == jss.AudioFormat.Encoding.PCM_SIGNED
-          || encoding == jss.AudioFormat.Encoding.PCM_UNSIGNED
+        if encoding == jss.AudioFormat.Encoding.PCM_SIGNED ||
+          encoding == jss.AudioFormat.Encoding.PCM_UNSIGNED
         then raw
         else
           val src = raw.getFormat.nn

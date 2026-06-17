@@ -2765,6 +2765,7 @@ private[ypsiloid] final class YamlParser:
               val needBreak =
                 lastNonBlankType == BlockLineType.MoreIndented ||
                   curType == BlockLineType.MoreIndented
+
               if lastNonBlankType == BlockLineType.None then ()
               else if blanksPending > 0 then
                 if needBreak then appendChar('\n')
@@ -3935,6 +3936,7 @@ private[ypsiloid] final class YamlParser:
       val ok = j < 0 || bytes(j) == Newline || bytes(j) == Return ||
         bytes(j) == Minus || bytes(j) == Colon ||
         bytes(j) == Question
+
       if !ok then errorAt(Issue.BlockSequenceIndicatorNotAtLineStart)
 
       parseBlockSequenceTracked
