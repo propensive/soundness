@@ -71,7 +71,15 @@ extension [bindable: Bindable](socket: bindable)
     . within:
         val bindLoop = loop:
           val connection = bindable.connect(binding)
-          daemon(bindable.transmit(binding, connection, lambda(connection)))
+
+          daemon:
+            // A reply write can lose the race with `stop()` closing the socket; the resulting
+            // `IOException` (e.g. `SocketException`/`ClosedChannelException`) is benign connection
+            // teardown. Raw Java throwables bypass the `trap` above (which routes only
+            // `fulminate.Error`), so they would otherwise escalate to the uncaught-exception
+            // handler and print.
+            try bindable.transmit(binding, connection, lambda(connection))
+            catch case _: java.io.IOException => ()
 
         val task = async(bindLoop.run())
 
