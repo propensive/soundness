@@ -44,4 +44,4 @@ extension (markdown: Markdown of Prose)
   def source: Text = Serializer(markdown)
 
 package formatting:
-  given unboundedMarkdownFormatting: MarkdownFormatting = MarkdownFormatting(Unset)
+  given unboundedMarkdownFormatting: Markdown.Formatting = Markdown.Formatting(Unset)

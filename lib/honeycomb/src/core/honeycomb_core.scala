@@ -58,8 +58,8 @@ package doms.html:
   given html4Transitional: Html4Transitional = Html4Transitional()
 
 package formatting:
-  given indentedHtmlFormatting: HtmlFormatting = HtmlFormatting(indented = true)
-  given flatHtmlFormatting: HtmlFormatting = HtmlFormatting(indented = false)
+  given indentedHtmlFormatting: Html.Formatting = Html.Formatting(indented = true)
+  given flatHtmlFormatting: Html.Formatting = Html.Formatting(indented = false)
 
 package stylesheets:
   given uncheckedClasses: [classname <: Label: ValueOf] => NotGiven[classname =:= "apply"]

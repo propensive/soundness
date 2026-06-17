@@ -315,7 +315,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       test(m"Decimal-only array uses the unboxed form and round-trips"):
         val raw = parseRaw(t"[1.5, 2.25, 3.125]")
         raw.getClass.getName == "[D"
-        && JsonPrinter.print(raw.asInstanceOf[Json.Ast], JsonFormatting(Unset, false)) == t"[1.5,2.25,3.125]"
+        && JsonPrinter.print(raw.asInstanceOf[Json.Ast], Json.Formatting(Unset, false)) == t"[1.5,2.25,3.125]"
       . assert(identity)
 
       test(m"Exponent-bearing numbers stay in the unboxed form"):
@@ -381,7 +381,7 @@ object ParserTests extends Suite(m"Jacinta JSON parser tests"):
       def parseRaw(text: Text): Any = Json.Ast.parse(IArray.from(text.s.getBytes("UTF-8").nn))
 
       test(m"Empty array round-trips via the printer"):
-        JsonPrinter.print(parseRaw(t"[]").asInstanceOf[Json.Ast], JsonFormatting(Unset, false))
+        JsonPrinter.print(parseRaw(t"[]").asInstanceOf[Json.Ast], Json.Formatting(Unset, false))
       . assert(_ == t"[]")
 
       test(m"Even-length mixed array reports its user-visible length"):

@@ -262,6 +262,11 @@ trait Yaml2:
           discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
 
 object Yaml extends Yaml2, Dynamic:
+  // Controls how a `Yaml` value is serialized. YAML's block style is fixed and round-trip-
+  // constrained, so this currently carries no options; importing `formatting.blockYamlFormatting`
+  // enables `.show` and HTTP encoding, and this is the place to add options later.
+  trait Formatting extends zephyrine.Formatting
+
   type YamlString    = String
   type YamlInteger   = Long | Bcd
   type YamlDecimal   = Double | Bcd
@@ -1298,7 +1303,7 @@ object Yaml extends Yaml2, Dynamic:
   // `Postable`/`Servable` from it); `Instantiable across HttpRequests` reads a
   // request/response body back into `Yaml`. Encoding needs a `YamlPrinter` (see
   // `printers`).
-  given abstractable: (encoder: CharEncoder, formatting: YamlFormatting)
+  given abstractable: (encoder: CharEncoder, formatting: Formatting)
   =>  Yaml is Abstractable across HttpStreams to HttpStreams.Content =
 
     new Abstractable:

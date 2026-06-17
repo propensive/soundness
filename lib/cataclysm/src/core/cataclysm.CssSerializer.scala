@@ -42,10 +42,10 @@ import zephyrine.*
 // Serializes a `Css` tree back to CSS text. Output is produced lazily through a
 // `zephyrine.Producer` (the same streaming mechanism Honeycomb uses for HTML), so
 // a large stylesheet never needs to be held in memory at once. The output style
-// is chosen by a contextual `CssFormatting` (`formatting.standardCssFormatting` or
+// is chosen by a contextual `Css.Formatting` (`formatting.standardCssFormatting` or
 // `.compact`).
 object CssSerializer:
-  def emit(css: Css)(using CssFormatting, Monitor, Probate): Iterator[Text] =
+  def emit(css: Css)(using Css.Formatting, Monitor, Probate): Iterator[Text] =
     val producer = Producer[Text](4096)
 
     async:
@@ -54,11 +54,11 @@ object CssSerializer:
 
     producer.iterator
 
-  def render(css: Css)(using CssFormatting): Text =
+  def render(css: Css)(using Css.Formatting): Text =
     Producer.collect[Text](): producer =>
       write(css)(producer.put(_))
 
-  private def write(css: Css)(put: Text => Unit)(using formatter: CssFormatting): Unit =
+  private def write(css: Css)(put: Text => Unit)(using formatter: Css.Formatting): Unit =
     def newline(indent: Int): Unit = if formatter.newlines then put(indentText(indent))
 
     def block(body: List[Css.Node], indent: Int): Unit =

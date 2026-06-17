@@ -63,6 +63,22 @@ import zephyrine.*
 
 object Xml extends Tag.Container
   ( label = "xml", admissible = Set("head", "body") ), Format:
+  // Controls how an `Xml` tree is serialized. `indent` is the whitespace unit emitted per nesting
+  // level when indenting element-only content; `Unset` (the default) keeps everything on a single
+  // line. `trailingNewline` appends a final newline. Bundled as `formatting.compactFormatting`
+  // (the default) and `formatting.indentedFormatting`.
+  object Formatting:
+    def apply(indent: Optional[Text], trailingNewline: Boolean): Formatting =
+      Basic(indent, trailingNewline)
+
+    private case class Basic(indent: Optional[Text], trailingNewline: Boolean) extends Formatting
+
+    given default: Formatting = apply(Unset, trailingNewline = false)
+
+  trait Formatting extends zephyrine.Formatting:
+    def indent: Optional[Text]
+    def trailingNewline: Boolean
+
   type Topic = "xml"
   type Transport = "head" | "body"
 
@@ -556,7 +572,7 @@ object Xml extends Tag.Container
     Tracked(xml, PositionIndex(if index == null then IArray.empty[Int] else index))
 
   def emit(document: Document[Xml])
-    ( using formatting: XmlFormatting, monitor: Monitor, probate: Probate )
+    ( using formatting: Formatting, monitor: Monitor, probate: Probate )
   :   Iterator[Text] =
 
     val producer = Producer[Text](4096)
@@ -568,7 +584,7 @@ object Xml extends Tag.Container
     producer.iterator
 
   private def writeDocument
-    ( producer: Producer[Text], formatting: XmlFormatting, document: Document[Xml] )
+    ( producer: Producer[Text], formatting: Formatting, document: Document[Xml] )
   :   Unit =
 
     writeXml(producer, formatting, document.metadata, 0)
@@ -632,10 +648,10 @@ object Xml extends Tag.Container
     if length > start then producer.put(text, start.z, length - start)
 
   // The single, spec-correct XML serializer. `emit` drives it through a streaming `Producer` and
-  // `showable` through a synchronous one, so the two never drift. When the `XmlFormatting` carries
+  // `showable` through a synchronous one, so the two never drift. When the `Formatting` carries
   // an `indent`, element-only content is laid out one child per indented line; an element that
   // contains any character data is kept inline so its text is never altered.
-  private def writeXml(producer: Producer[Text], formatting: XmlFormatting, node: Xml, depth: Int)
+  private def writeXml(producer: Producer[Text], formatting: Formatting, node: Xml, depth: Int)
   :   Unit =
 
     node match
@@ -720,7 +736,7 @@ object Xml extends Tag.Container
     case _           => false
 
   // In indented mode, emit a newline followed by `depth` indent units.
-  private def newline(producer: Producer[Text], formatting: XmlFormatting, depth: Int): Unit =
+  private def newline(producer: Producer[Text], formatting: Formatting, depth: Int): Unit =
     formatting.indent.let: unit =>
       producer.put("\n")
       var i = 0
@@ -729,7 +745,7 @@ object Xml extends Tag.Container
         producer.put(unit)
         i += 1
 
-  given showable: [xml <: Xml] => (formatting: XmlFormatting) => xml is Showable = node =>
+  given showable: [xml <: Xml] => (formatting: Formatting) => xml is Showable = node =>
     Producer.collect[Text](): producer =>
       writeXml(producer, formatting, node, 0)
       if formatting.trailingNewline then producer.put("\n")

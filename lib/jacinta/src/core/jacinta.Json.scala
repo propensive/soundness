@@ -268,6 +268,19 @@ trait Json2 extends Json3:
               discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
 
 object Json extends Json2, Dynamic:
+  // Controls how a `Json` value is serialized. `indent` is the whitespace unit per nesting level;
+  // `Unset` (the default) produces minimal, single-line JSON. `trailingNewline` appends a final
+  // newline. Bundled as `formatting.compactJsonFormatting` / `formatting.indentedJsonFormatting`.
+  object Formatting:
+    def apply(indent: Optional[Text], trailingNewline: Boolean): Formatting =
+      Basic(indent, trailingNewline)
+
+    private case class Basic(indent: Optional[Text], trailingNewline: Boolean) extends Formatting
+
+  trait Formatting extends zephyrine.Formatting:
+    def indent: Optional[Text]
+    def trailingNewline: Boolean
+
   type JsonString  = String
   type JsonNumber  = Long | Double | Bcd | Int
   type JsonBoolean = Boolean
@@ -789,7 +802,7 @@ object Json extends Json2, Dynamic:
 
 
   given jsonEncodableInText: Json is anticipation.Encodable in Text =
-    json => JsonPrinter.print(json.root, JsonFormatting(Unset, false))
+    json => JsonPrinter.print(json.root, Formatting(Unset, false))
 
   given aggregable: Tactic[ParseError] => Json is Aggregable by Data =
     bytes => Json(bytes.read[Json.Ast])
@@ -802,10 +815,10 @@ object Json extends Json2, Dynamic:
     bytes => Json(bytes.read[Json.Ast]).as[value].asInstanceOf[value over Json]
 
 
-  given showable: JsonFormatting => Json is Showable = _.root.show
+  given showable: Formatting => Json is Showable = _.root.show
 
 
-  given abstractable: (encoder: CharEncoder, formatting: JsonFormatting)
+  given abstractable: (encoder: CharEncoder, formatting: Formatting)
   =>  Json is Abstractable across HttpStreams to HttpStreams.Content =
 
     new Abstractable:

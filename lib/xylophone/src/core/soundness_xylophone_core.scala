@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export xylophone.{Xml, XmlError, XmlSchema, XmlFormatting, DynamicXmlEnabler, dynamicXmlAccess}
+export xylophone.{Xml, XmlError, XmlSchema, DynamicXmlEnabler, dynamicXmlAccess}
 
 package formatting:
   export xylophone.formatting.{compactXmlFormatting, indentedXmlFormatting}

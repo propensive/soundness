@@ -37,7 +37,7 @@ export
   . { Attribute, Attribution, Attributive, Autocomplete, Capture, Comment, Crossorigin, Doctype,
       Dom, Element, Fragment, h, HDir, Honeycomb, Html, html, Html4Transitional, HttpEquiv,
       Kind, Method, Node, Preload, Rel, Renderable, Rev, Sandbox, Shape, ClassList, Tag, Target,
-      TextNode, Unattributive, Whatwg, Wrap, HtmlFormatting }
+      TextNode, Unattributive, Whatwg, Wrap }
 
 package doms.html:
   export honeycomb.doms.html.whatwg

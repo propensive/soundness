@@ -42,11 +42,11 @@ import vacuous.*
 import zephyrine.*
 
 object JsonPrinter:
-  def print(json: Json.Ast, formatting: JsonFormatting): Text =
+  def print(json: Json.Ast, formatting: Json.Formatting): Text =
     Producer.collect[Text](): producer =>
       write(producer, json, formatting)
 
-  def emit(json: Json.Ast, formatting: JsonFormatting)(using Monitor, Probate): Iterator[Text] =
+  def emit(json: Json.Ast, formatting: Json.Formatting)(using Monitor, Probate): Iterator[Text] =
     val producer = Producer[Text](4096)
 
     async:
@@ -59,7 +59,7 @@ object JsonPrinter:
     val hex = Integer.toHexString(char.toInt).nn
     if hex.length == 1 then t"\\u000$hex" else t"\\u00$hex"
 
-  private def write(producer: Producer[Text], json: Json.Ast, formatting: JsonFormatting): Unit =
+  private def write(producer: Producer[Text], json: Json.Ast, formatting: Json.Formatting): Unit =
     def newlineIndent(level: Int): Unit = formatting.indent.let: unit =>
       producer.put("\n")
       var i = 0

@@ -130,8 +130,8 @@ given eachOptical: Each.type is Optical from Xml onto Xml = _ =>
   Optic: (origin, lambda) => updateChildElements(origin, _ => true, lambda)
 
 package formatting:
-  given compactXmlFormatting: XmlFormatting = XmlFormatting(Unset, trailingNewline = false)
+  given compactXmlFormatting: Xml.Formatting = Xml.Formatting(Unset, trailingNewline = false)
 
-  given indentedXmlFormatting: XmlFormatting =
-    XmlFormatting(Text("  "), trailingNewline = true)
+  given indentedXmlFormatting: Xml.Formatting =
+    Xml.Formatting(Text("  "), trailingNewline = true)
 

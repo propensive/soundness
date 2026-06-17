@@ -130,17 +130,17 @@ object Tests extends Suite(m"Punctuation tests"):
       val document = Parser.parse(src+t"\n")
 
       test(m"bounded width keeps every line within the limit"):
-        val wrapped = Serializer(document)(using MarkdownFormatting.bounded(20))
+        val wrapped = Serializer(document)(using Markdown.Formatting.bounded(20))
         wrapped.cut(t"\n").filter(_ != t"").all(_.length <= 20)
       . assert(_ == true)
 
       test(m"wrapping actually breaks the paragraph onto several lines"):
-        val wrapped = Serializer(document)(using MarkdownFormatting.bounded(20))
+        val wrapped = Serializer(document)(using Markdown.Formatting.bounded(20))
         wrapped.cut(t"\n").filter(_ != t"").length
       . assert(_ > 1)
 
       test(m"wrapping preserves the words and their order"):
-        val wrapped = Serializer(document)(using MarkdownFormatting.bounded(20))
+        val wrapped = Serializer(document)(using Markdown.Formatting.bounded(20))
         squash(wrapped)
       . assert(_ == squash(src))
 
