@@ -37,7 +37,7 @@ import language.experimental.pureFunctions
 import scala.quoted.*
 
 object Optional:
-  opaque type Unset <: Null = Null
+  opaque type Unset <: Matchable = Null
   val Unset: Unset = null
 
   given unsetEquality: [value] => CanEqual[value, Unset] = CanEqual.derived

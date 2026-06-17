@@ -112,18 +112,22 @@ object Stratiform:
       '{$self.selectField($field)}
 
     receiver(self) match
-      case (position, root) => field.value match
-        case Some(name) => position.typeSymbol.caseFields.find(_.name == name) match
-          case Some(member) =>
-            telType(position.memberType(member), root).asType.absolve match
-              case '[type result <: Tel; result] =>
-                '{$self.selectField(${Expr(name)}).asInstanceOf[result]}
+      case (position0, root0) =>
+        val position = position0.asInstanceOf[quotes.reflect.TypeRepr]
+        val root = root0.asInstanceOf[quotes.reflect.TypeRepr]
+
+        field.value match
+          case Some(name) => position.typeSymbol.caseFields.find(_.name == name) match
+            case Some(member) =>
+              telType(position.memberType(member), root).asType.absolve match
+                case '[type result <: Tel; result] =>
+                  '{$self.selectField(${Expr(name)}).asInstanceOf[result]}
+
+            case None =>
+              halt(m"the schema position ${position.show} has no field $name")
 
           case None =>
-            halt(m"the schema position ${position.show} has no field $name")
-
-        case None =>
-          plain
+            plain
 
       case _ =>
         plain
@@ -141,23 +145,27 @@ object Stratiform:
       '{$self.selectFieldIndex($field, $idx)}
 
     receiver(self) match
-      case (position, root) => field.value match
-        case Some(name) => position.typeSymbol.caseFields.find(_.name == name) match
-          case Some(member) =>
-            val element = elementType(position.memberType(member))
+      case (position0, root0) =>
+        val position = position0.asInstanceOf[TypeRepr]
+        val root = root0.asInstanceOf[TypeRepr]
 
-            if element.absent
-            then halt(m"the field $name of ${position.show} is not an indexable collection")
+        field.value match
+          case Some(name) => position.typeSymbol.caseFields.find(_.name == name) match
+            case Some(member) =>
+              val element = elementType(position.memberType(member))
 
-            telType(element.vouch, root).asType.absolve match
-              case '[type result <: Tel; result] =>
-                '{$self.selectRepeatedField(${Expr(name)}, $idx).asInstanceOf[result]}
+              if element.absent
+              then halt(m"the field $name of ${position.show} is not an indexable collection")
+
+              telType(element.vouch, root).asType.absolve match
+                case '[type result <: Tel; result] =>
+                  '{$self.selectRepeatedField(${Expr(name)}, $idx).asInstanceOf[result]}
+
+            case None =>
+              halt(m"the schema position ${position.show} has no field $name")
 
           case None =>
-            halt(m"the schema position ${position.show} has no field $name")
-
-        case None =>
-          plain
+            plain
 
       case _ =>
         plain
