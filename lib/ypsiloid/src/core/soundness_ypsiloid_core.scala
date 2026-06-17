@@ -32,10 +32,10 @@
                                                                                                   */
 package soundness
 
-export ypsiloid.{Yaml, YamlError, YamlParser, YamlPrimitive, YamlPrinter}
+export ypsiloid.{Yaml, YamlError, YamlParser, YamlPrimitive, YamlPrinter, YamlFormatting}
 
-package printers:
-  export ypsiloid.printers.yamlBlockPrinter
+package formatting:
+  export ypsiloid.formatting.blockYamlFormatting
 
 package discriminables:
   export ypsiloid.discriminables.{yamlByTypeDiscriminable, yamlByKindDiscriminable}

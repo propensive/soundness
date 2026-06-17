@@ -49,7 +49,7 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 
-import printers.jsonIndentedPrinter
+import formatting.indentedJsonFormatting
 import logging.silentLogging
 
 case class ContainerImage(id: Text)

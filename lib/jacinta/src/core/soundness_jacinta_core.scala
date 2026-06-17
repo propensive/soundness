@@ -35,10 +35,10 @@ package soundness
 export
   jacinta
   . { dynamicJsonAccess, DynamicJsonEnabler, Json, json, Json2, JsonError, JsonPointer,
-      JsonPrimitive, JsonPrinter, Ndjson, parserAggregable, showable }
+      JsonPrimitive, JsonPrinter, JsonFormatting, Ndjson, parserAggregable, showable }
 
-package printers:
-  export jacinta.printers.{jsonIndentedPrinter, jsonMinimalPrinter}
+package formatting:
+  export jacinta.formatting.{indentedJsonFormatting, compactJsonFormatting}
 
 package numberModes:
   export jacinta.numberModes.{fullNumberMode, bcdNumberMode, doubleNumberMode}

@@ -38,22 +38,19 @@ import anticipation.*
 import denominative.*
 import gossamer.*
 import parasite.*
+import vacuous.*
 import zephyrine.*
 
 object JsonPrinter:
-  // 64 spaces, sliced for indentation.
-  private val spaces: Text =
-    t"                                                                "
-
-  def print(json: Json.Ast, indentation: Boolean): Text =
+  def print(json: Json.Ast, formatting: JsonFormatting): Text =
     Producer.collect[Text](): producer =>
-      write(producer, json, indentation)
+      write(producer, json, formatting)
 
-  def emit(json: Json.Ast, indentation: Boolean)(using Monitor, Probate): Iterator[Text] =
+  def emit(json: Json.Ast, formatting: JsonFormatting)(using Monitor, Probate): Iterator[Text] =
     val producer = Producer[Text](4096)
 
     async:
-      write(producer, json, indentation)
+      write(producer, json, formatting)
       producer.finish()
 
     producer.iterator
@@ -62,14 +59,14 @@ object JsonPrinter:
     val hex = Integer.toHexString(char.toInt).nn
     if hex.length == 1 then t"\\u000$hex" else t"\\u00$hex"
 
-  private def write(producer: Producer[Text], json: Json.Ast, indentation: Boolean): Unit =
-    def indent(count: Int): Unit =
-      var remaining = count
+  private def write(producer: Producer[Text], json: Json.Ast, formatting: JsonFormatting): Unit =
+    def newlineIndent(level: Int): Unit = formatting.indent.let: unit =>
+      producer.put("\n")
+      var i = 0
 
-      while remaining > 0 do
-        val chunk = remaining.min(64)
-        producer.put(spaces, Prim, chunk)
-        remaining -= chunk
+      while i < level do
+        producer.put(unit)
+        i += 1
 
     // JSON string escaping (RFC 8259): the quote and backslash, the named control escapes, and any
     // other U+0000-001F control character as a `\uXXXX` reference.
@@ -108,21 +105,17 @@ object JsonPrinter:
       var index = 0
 
       while index < n do
-        if indentation then
-          producer.put("\n")
-          indent(level*2)
+        newlineIndent(level)
 
         writeString(node(index*2).asInstanceOf[String])
         producer.put(":")
-        if indentation then producer.put(" ")
+        if formatting.indent.present then producer.put(" ")
         recur(node(index*2 + 1).asInstanceOf[Json.Ast], level + 1)
 
         if index < last then producer.put(",")
         index += 1
 
-      if indentation then
-        producer.put("\n")
-        indent(level*2 - 2)
+      newlineIndent(level - 1)
 
       producer.put("}")
 
@@ -141,17 +134,13 @@ object JsonPrinter:
       var index = 0
 
       while index < n do
-        if indentation then
-          producer.put("\n")
-          indent(level*2)
+        newlineIndent(level)
 
         recur(elements(index).asInstanceOf[Json.Ast], level + 1)
         if index < last then producer.put(",")
         index += 1
 
-      if indentation then
-        producer.put("\n")
-        indent(level*2 - 2)
+      newlineIndent(level - 1)
 
       producer.put("]")
 
@@ -220,6 +209,4 @@ object JsonPrinter:
         producer.put("null")
 
     recur(json, 1)
-
-trait JsonPrinter:
-  def print(json: Json.Ast): Text
+    if formatting.trailingNewline then producer.put("\n")

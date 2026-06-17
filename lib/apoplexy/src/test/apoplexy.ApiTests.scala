@@ -40,7 +40,7 @@ import internetAccess.online
 import charEncoders.utf8Encoder
 import charDecoders.utf8Decoder
 import textSanitizers.skipSanitizer
-import printers.jsonMinimalPrinter
+import formatting.compactJsonFormatting
 import errorDiagnostics.stackTracesDiagnostics
 
 case class Credentials(username: Text, password: Text)

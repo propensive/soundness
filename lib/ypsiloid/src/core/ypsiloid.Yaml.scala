@@ -1298,7 +1298,7 @@ object Yaml extends Yaml2, Dynamic:
   // `Postable`/`Servable` from it); `Instantiable across HttpRequests` reads a
   // request/response body back into `Yaml`. Encoding needs a `YamlPrinter` (see
   // `printers`).
-  given abstractable: (encoder: CharEncoder, printer: YamlPrinter)
+  given abstractable: (encoder: CharEncoder, formatting: YamlFormatting)
   =>  Yaml is Abstractable across HttpStreams to HttpStreams.Content =
 
     new Abstractable:
@@ -1308,7 +1308,7 @@ object Yaml extends Yaml2, Dynamic:
 
       def genericize(value: Yaml): HttpStreams.Content =
         ( t"application/yaml; charset=${encoder.encoding.name}",
-          Stream(printer.print(Yaml.unseal(value)).data) )
+          Stream(YamlPrinter.print(Yaml.unseal(value)).data) )
 
   given instantiable: (Tactic[ParseError], Yaml.Tracking)
   =>  Yaml is Instantiable across HttpRequests from Text =

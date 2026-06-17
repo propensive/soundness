@@ -214,6 +214,3 @@ object YamlPrinter:
     else
       block(yaml, 0)
 
-
-trait YamlPrinter:
-  def print(yaml: Yaml.Ast): Text

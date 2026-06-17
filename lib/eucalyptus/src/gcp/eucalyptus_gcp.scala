@@ -39,7 +39,7 @@ import jacinta.*
 import prepositional.*
 import spectacular.*
 
-import printers.jsonMinimalPrinter
+import formatting.compactJsonFormatting
 
 object EucalyptusGcp
 

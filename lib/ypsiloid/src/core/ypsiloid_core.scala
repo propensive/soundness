@@ -45,11 +45,11 @@ import zephyrine.*
 
 import YamlError.Reason
 
-// Render a `Yaml` / `Yaml.Ast` to YAML text using the `YamlPrinter` in scope.
+// Render a `Yaml` / `Yaml.Ast` to YAML text using the `YamlFormatting` in scope.
 // Mirrors jacinta's `Json` / `Json.Ast` `Showable` givens. Bring a printer into
-// scope (e.g. `import printers.yamlBlockPrinter`) to enable `.show` and HTTP encoding.
-given astShowable: (printer: YamlPrinter) => Yaml.Ast is Showable = printer.print(_)
-given showable: YamlPrinter => Yaml is Showable = Yaml.unseal(_).show
+// scope (e.g. `import formatting.blockYamlFormatting`) to enable `.show` and HTTP encoding.
+given astShowable: (formatting: YamlFormatting) => Yaml.Ast is Showable = YamlPrinter.print(_)
+given showable: YamlFormatting => Yaml is Showable = Yaml.unseal(_).show
 
 extension (text: Text)
   def readAll(using Tactic[ParseError]): List[Yaml] = Yaml.parseAll(text)
@@ -158,10 +158,10 @@ extension (yaml: Yaml.Ast)
 
   def primitive: YamlPrimitive = Yaml.primitive(yaml)
 
-package printers:
+package formatting:
   // Block-style serializer. The default (and currently only) printer; flow
-  // style may be added later. Mirrors jacinta's `printers.jsonIndentedPrinter`.
-  given yamlBlockPrinter: YamlPrinter = YamlPrinter.print(_)
+  // style may be added later. Mirrors jacinta's `formatting.indentedJsonFormatting`.
+  given blockYamlFormatting: YamlFormatting = new YamlFormatting {}
 
 package discriminables:
   given yamlByTypeDiscriminable: [value] => value is Discriminable in Yaml =

@@ -40,10 +40,10 @@ import spectacular.*
 import telekinesis.*
 
 package postables:
-  given jsonPostable: (encoder: CharEncoder, printer: JsonPrinter) => Json is Postable =
+  given jsonPostable: (encoder: CharEncoder, formatting: JsonFormatting) => Json is Postable =
     Postable(media"application/json"(charset = "UTF-8"), value => Stream(value.show.data))
 
 package servables:
-  given jsonServable: (encoder: CharEncoder, printer: JsonPrinter) => Json is Servable =
+  given jsonServable: (encoder: CharEncoder, formatting: JsonFormatting) => Json is Servable =
     Servable[Json](_ => media"application/json"(charset = "UTF-8")): value =>
       Http.Body.Fixed(value.show.data)

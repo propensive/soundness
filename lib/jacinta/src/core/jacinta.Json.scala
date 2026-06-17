@@ -789,7 +789,7 @@ object Json extends Json2, Dynamic:
 
 
   given jsonEncodableInText: Json is anticipation.Encodable in Text =
-    json => JsonPrinter.print(json.root, false)
+    json => JsonPrinter.print(json.root, JsonFormatting(Unset, false))
 
   given aggregable: Tactic[ParseError] => Json is Aggregable by Data =
     bytes => Json(bytes.read[Json.Ast])
@@ -802,10 +802,10 @@ object Json extends Json2, Dynamic:
     bytes => Json(bytes.read[Json.Ast]).as[value].asInstanceOf[value over Json]
 
 
-  given showable: JsonPrinter => Json is Showable = _.root.show
+  given showable: JsonFormatting => Json is Showable = _.root.show
 
 
-  given abstractable: (encoder: CharEncoder, printer: JsonPrinter)
+  given abstractable: (encoder: CharEncoder, formatting: JsonFormatting)
   =>  Json is Abstractable across HttpStreams to HttpStreams.Content =
 
     new Abstractable:

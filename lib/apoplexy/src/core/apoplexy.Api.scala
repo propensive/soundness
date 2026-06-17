@@ -74,7 +74,7 @@ object Api:
     ( using client: HttpClient onto Origin["http" | "https"] )
   :   Http.Response =
 
-    import printers.jsonMinimalPrinter
+    import formatting.compactJsonFormatting
     import charEncoders.utf8Encoder
 
     val substituted =

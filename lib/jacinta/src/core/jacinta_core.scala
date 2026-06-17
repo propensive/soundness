@@ -50,7 +50,8 @@ import JsonError.Reason
 
 export jacinta.internal.Bcd
 
-given showable: (printer: JsonPrinter) => Json.Ast is Showable = printer.print(_)
+given showable: (formatting: JsonFormatting) => Json.Ast is Showable =
+  JsonPrinter.print(_, formatting)
 
 extension (json: Json.Ast)
   inline def isNumber: Boolean = isDouble || isLong || isBcd || isSmallBcd
@@ -238,9 +239,9 @@ extension (inline context: StringContext)
   transparent inline def j: Interpolation = interpolation[Json](context)
   transparent inline def jp: Interpolation = interpolation[JsonPointer](context)
 
-package printers:
-  given jsonIndentedPrinter: JsonPrinter = JsonPrinter.print(_, true)
-  given jsonMinimalPrinter: JsonPrinter = JsonPrinter.print(_, false)
+package formatting:
+  given indentedJsonFormatting: JsonFormatting = JsonFormatting(Text("  "), trailingNewline = false)
+  given compactJsonFormatting: JsonFormatting = JsonFormatting(Unset, trailingNewline = false)
 
 package discriminables:
   given jsonByTypeDiscriminable: [value] => value is Discriminable in Json =

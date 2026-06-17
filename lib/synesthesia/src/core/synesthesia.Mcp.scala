@@ -65,7 +65,7 @@ object Mcp:
     ( using Monitor, Probate, Online )
   :   Http.Response =
 
-    import printers.jsonMinimalPrinter
+    import formatting.compactJsonFormatting
     import charEncoders.utf8Encoder
 
     given mcpSessionId: ("mcpSessionId" is Directive of Text) = identity(_)
@@ -115,7 +115,7 @@ object Mcp:
               val input = request.body().read[Json]
 
               dispatch(input).let: json =>
-                import printers.jsonIndentedPrinter
+                import formatting.indentedJsonFormatting
 
                 Http.Response
                   ( Http.Ok,
@@ -804,7 +804,7 @@ object Mcp:
     def `tools/call`(name: Text, arguments: Json, _meta: Optional[Json]): CallTool =
       val result = spec.invokeTool(server, client, name, arguments)
 
-      import printers.jsonMinimalPrinter
+      import formatting.compactJsonFormatting
       CallTool(content = List(TextContent(result.show)), structuredContent = result)
 
     def `tools/list`(_meta: Optional[Json]): ListTools =
