@@ -356,6 +356,59 @@ type ElectricalConductivity =
 nested inside an object. Methods inside an extension block follow the same
 single/multi/heavy rules as ordinary `def`s.
 
+#### Where to put an extension so it resolves
+
+A call `value.method` finds an extension `method` through **one of two**
+scopes, and *where* the extension is declared decides which:
+
+1. **Lexical scope** — the extension is declared at, or imported into, the
+   current scope. This is how every top-level extension is reached: a consumer
+   writes `import gossamer.*` (or `import soundness.*`, whose umbrella
+   re-exports member modules) and the package-level extension comes into scope.
+
+2. **Implicit scope of the receiver type** — the extension is a member of an
+   object that belongs to the receiver type's implicit scope, in which case it
+   resolves **with no import at all**. The implicit scope of a type `T`
+   includes the companion objects of: `T` itself; for an *opaque type*, the
+   object in which it is defined; every base type of `T`; and every type
+   *argument* of `T` (so an extension on `List[Foo]` may live in `object Foo`).
+
+The practical consequence: **prefer the companion object** for an extension
+whose receiver is a concrete type *you define in this module*. Placing
+`extension (x: Foo) def bar` inside `object Foo` keeps `x.bar` resolvable
+everywhere `Foo` is, without anyone importing it — and it keeps the package's
+top level uncluttered. `dissonance.Diff`, `zephyrine.Cursor` and
+`stratiform.Tel` follow this.
+
+Keep an extension **at the top level** when:
+
+- the receiver is a *foreign* type — a primitive (`Int`, `Double`), `String`,
+  `StringContext` (every `t"…"`-style interpolator), a collection (`List`,
+  `IArray`, `Stream`), a JDK type, or a type owned by *another* module. You
+  cannot reopen a companion you don't own, so these have no companion anchor
+  here and must rely on lexical import. (Likewise, a sibling sub-module cannot
+  reopen a companion defined in another sub-module — e.g. `stratiform.binary`
+  cannot add to `stratiform.core`'s `object Tel`.)
+- the receiver is an unconstrained type parameter (`extension [value](x: value)`),
+  which has no anchor at all.
+
+Two traps when moving an extension into a companion:
+
+- **Named umbrella re-exports.** `soundness_<module>_core.scala` often lists the
+  extension by name (`export module.{ Foo, bar }`). Once `bar` lives in
+  `object Foo` it is no longer a top-level member, so drop it from that list —
+  the exported *type* `Foo` already carries its companion's extensions through
+  implicit scope.
+- **`Dynamic` companions and member clashes.** Selecting a *no-such-member* name
+  on a `Dynamic` **object** (`Foo.bar` where `object Foo extends Dynamic`) is
+  rewritten to `applyDynamic` before a `Foo.type` extension is tried, so such
+  static-style extensions must stay top-level or become plain companion
+  `def`s (see `jacinta.Json.parseTracked`). A `Dynamic` **value class** does
+  *not* have this problem — `tel.edited` still resolves to a companion
+  extension even though `class Tel extends Dynamic`. Similarly, if the
+  companion already declares a member with the extension's name, the member
+  wins; give the extension a distinct name or make it a `def`.
+
 ### Annotations
 
 An annotation appears on the line directly above the declaration it annotates,

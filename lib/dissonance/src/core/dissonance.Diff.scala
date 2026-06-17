@@ -116,6 +116,9 @@ object Diff:
     recur(lines, 1, Nil, 0, 0, 0)
 
   extension (diff: Diff[Text])
+    def redraft(context: Redraft.Context = Redraft.Context.Minimal): Redraft =
+      Redraft.render(diff, context)
+
     def serialize: Stream[Text] = diff.chunks.flatMap:
       case Chunk(left, right, dels, inss) =>
         def range(start: Int, end: Int): Text =
