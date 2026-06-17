@@ -41,7 +41,7 @@ import errorDiagnostics.stackTracesDiagnostics
 import webserverErrorPages.minimalErrorPage
 import threading.virtualThreading
 import probates.awaitProbate
-import printers.jsonMinimalPrinter
+import formatting.compactJsonFormatting
 import charEncoders.utf8Encoder
 import charDecoders.utf8Decoder
 import textSanitizers.skipSanitizer

@@ -46,16 +46,27 @@ import turbulence.*
 import vacuous.*
 
 object Css:
+  // Controls how a `Css` tree is serialized. `newlines` puts each rule and declaration on its own
+  // indented line; `spaces` adds the cosmetic spaces (after `:` and before `{`). Bundled as
+  // `formatting.standardCssFormatting` and `formatting.compactCssFormatting`.
+  object Formatting:
+    def apply(newlines: Boolean, spaces: Boolean): Formatting = Basic(newlines, spaces)
+    private case class Basic(newlines: Boolean, spaces: Boolean) extends Formatting
+
+  trait Formatting extends zephyrine.Formatting:
+    def newlines: Boolean
+    def spaces: Boolean
+
   enum Node derives CanEqual:
     case Rule(selector: SelectorList, body: List[Node])
     case Declaration(property: Text, value: Text)
     case At(name: Text, prelude: Text, body: Optional[List[Node]])
 
 
-  given streamable: (Monitor, Probate, CssFormatter) => Css is Streamable by Text =
+  given streamable: (Monitor, Probate, Formatting) => Css is Streamable by Text =
     CssSerializer.emit(_).to(Stream)
 
-  given showable: CssFormatter => Css is Showable = CssSerializer.render(_)
+  given showable: Formatting => Css is Showable = CssSerializer.render(_)
 
   // The `css"…"` interpolator: substitutions are checked against the property they
   // sit in (see `internal.expand`). Wired through `contextual` like `x"…"`/`h"…"`.

@@ -63,6 +63,22 @@ import zephyrine.*
 
 object Xml extends Tag.Container
   ( label = "xml", admissible = Set("head", "body") ), Format:
+  // Controls how an `Xml` tree is serialized. `indent` is the whitespace unit emitted per nesting
+  // level when indenting element-only content; `Unset` (the default) keeps everything on a single
+  // line. `trailingNewline` appends a final newline. Bundled as `formatting.compactFormatting`
+  // (the default) and `formatting.indentedFormatting`.
+  object Formatting:
+    def apply(indent: Optional[Text], trailingNewline: Boolean): Formatting =
+      Basic(indent, trailingNewline)
+
+    private case class Basic(indent: Optional[Text], trailingNewline: Boolean) extends Formatting
+
+    given default: Formatting = apply(Unset, trailingNewline = false)
+
+  trait Formatting extends zephyrine.Formatting:
+    def indent: Optional[Text]
+    def trailingNewline: Boolean
+
   type Topic = "xml"
   type Transport = "head" | "body"
 
@@ -555,15 +571,26 @@ object Xml extends Tag.Container
     val index = parser.rootIndex
     Tracked(xml, PositionIndex(if index == null then IArray.empty[Int] else index))
 
-  def emit(document: Document[Xml], flat: Boolean = false)(using Monitor, Probate): Iterator[Text] =
+  def emit(document: Document[Xml])
+    ( using formatting: Formatting, monitor: Monitor, probate: Probate )
+  :   Iterator[Text] =
+
     val producer = Producer[Text](4096)
 
     async:
-      writeXml(producer, document.metadata)
-      writeXml(producer, document.root)
+      writeDocument(producer, formatting, document)
       producer.finish()
 
     producer.iterator
+
+  private def writeDocument
+    ( producer: Producer[Text], formatting: Formatting, document: Document[Xml] )
+  :   Unit =
+
+    writeXml(producer, formatting, document.metadata, 0)
+    if formatting.indent.present then producer.put("\n")
+    writeXml(producer, formatting, document.root, 0)
+    if formatting.trailingNewline then producer.put("\n")
 
   // Escape text content so the result is well-formed and round-trips exactly. `&` and `<` must be
   // escaped; `>` is escaped too so the `]]>` sequence can never appear; and a carriage return is
@@ -621,75 +648,107 @@ object Xml extends Tag.Container
     if length > start then producer.put(text, start.z, length - start)
 
   // The single, spec-correct XML serializer. `emit` drives it through a streaming `Producer` and
-  // `showable` through a synchronous one, so the two never drift.
-  private def writeXml(producer: Producer[Text], node: Xml): Unit = node match
-    case Fragment(nodes*) =>
-      nodes.each(writeXml(producer, _))
+  // `showable` through a synchronous one, so the two never drift. When the `Formatting` carries
+  // an `indent`, element-only content is laid out one child per indented line; an element that
+  // contains any character data is kept inline so its text is never altered.
+  private def writeXml(producer: Producer[Text], formatting: Formatting, node: Xml, depth: Int)
+  :   Unit =
 
-    case TextNode(text) =>
-      writeEscapedText(producer, text)
+    node match
+      case Fragment(nodes*) =>
+        nodes.each(writeXml(producer, formatting, _, depth))
 
-    case Comment(comment) =>
-      producer.put("<!--")
-      producer.put(comment)
-      producer.put("-->")
+      case TextNode(text) =>
+        writeEscapedText(producer, text)
 
-    case Cdata(text) =>
-      producer.put("<![CDATA[")
-      producer.put(text)
-      producer.put("]]>")
+      case Comment(comment) =>
+        producer.put("<!--")
+        producer.put(comment)
+        producer.put("-->")
 
-    case Doctype(text) =>
-      producer.put("<!DOCTYPE ")
-      producer.put(text)
-      producer.put(">")
+      case Cdata(text) =>
+        producer.put("<![CDATA[")
+        producer.put(text)
+        producer.put("]]>")
 
-    case ProcessingInstruction(target, data) =>
-      producer.put("<?")
-      producer.put(target)
-
-      if !data.nil then
-        producer.put(" ")
-        producer.put(data)
-
-      producer.put("?>")
-
-    case Header(version, encoding, standalone) =>
-      producer.put("<?xml version=\"")
-      producer.put(version)
-      producer.put("\"")
-
-      encoding.let: encoding =>
-        producer.put(" encoding=\"")
-        producer.put(encoding)
-        producer.put("\"")
-
-      standalone.let: standalone =>
-        producer.put(if standalone then " standalone=\"yes\"" else " standalone=\"no\"")
-
-      producer.put("?>")
-
-    case Element(label, attributes, children) =>
-      producer.put("<")
-      producer.put(label)
-
-      if !attributes.nil then attributes.each: (key, value) =>
-        producer.put(" ")
-        producer.put(key)
-        producer.put("=\"")
-        writeEscapedAttribute(producer, value)
-        producer.put("\"")
-
-      if children.nil then producer.put("/>") else
+      case Doctype(text) =>
+        producer.put("<!DOCTYPE ")
+        producer.put(text)
         producer.put(">")
-        children.each(writeXml(producer, _))
-        producer.put("</")
+
+      case ProcessingInstruction(target, data) =>
+        producer.put("<?")
+        producer.put(target)
+
+        if !data.nil then
+          producer.put(" ")
+          producer.put(data)
+
+        producer.put("?>")
+
+      case Header(version, encoding, standalone) =>
+        producer.put("<?xml version=\"")
+        producer.put(version)
+        producer.put("\"")
+
+        encoding.let: encoding =>
+          producer.put(" encoding=\"")
+          producer.put(encoding)
+          producer.put("\"")
+
+        standalone.let: standalone =>
+          producer.put(if standalone then " standalone=\"yes\"" else " standalone=\"no\"")
+
+        producer.put("?>")
+
+      case Element(label, attributes, children) =>
+        producer.put("<")
         producer.put(label)
-        producer.put(">")
 
-  given showable: [xml <: Xml] => xml is Showable = node =>
+        if !attributes.nil then attributes.each: (key, value) =>
+          producer.put(" ")
+          producer.put(key)
+          producer.put("=\"")
+          writeEscapedAttribute(producer, value)
+          producer.put("\"")
+
+        if children.nil then producer.put("/>") else
+          producer.put(">")
+
+          if formatting.indent.present && !children.exists(textual) then
+            children.each: child =>
+              newline(producer, formatting, depth + 1)
+              writeXml(producer, formatting, child, depth + 1)
+
+            newline(producer, formatting, depth)
+          else
+            children.each(writeXml(producer, formatting, _, depth))
+
+          producer.put("</")
+          producer.put(label)
+          producer.put(">")
+
+  // Character data (text or CDATA) forces an element to be serialized inline, so indentation
+  // whitespace can never alter its content.
+  private def textual(node: Xml): Boolean = node match
+    case _: TextNode => true
+    case _: Cdata    => true
+    case _           => false
+
+  // In indented mode, emit a newline followed by `depth` indent units.
+  private def newline(producer: Producer[Text], formatting: Formatting, depth: Int): Unit =
+    formatting.indent.let: unit =>
+      producer.put("\n")
+      var i = 0
+
+      while i < depth do
+        producer.put(unit)
+        i += 1
+
+  given showable: [xml <: Xml] => (formatting: Formatting) => xml is Showable = node =>
     Producer.collect[Text](): producer =>
-      writeXml(producer, node)
+      writeXml(producer, formatting, node, 0)
+      if formatting.trailingNewline then producer.put("\n")
 
 
   private enum Token:

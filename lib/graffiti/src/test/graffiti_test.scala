@@ -35,7 +35,7 @@ package graffiti
 import soundness.*
 
 import doms.html.whatwg.*
-import cssFormatters.standardCssFormatter
+import formatting.standardCssFormatting
 import strategies.throwUnsafely
 import parasite.probates.awaitProbate
 import parasite.threading.virtualThreading

@@ -45,6 +45,19 @@ import attributives.textAttributive
 import doms.html.whatwg, whatwg.*
 
 object Markdown:
+  // Controls how a `Markdown` document is serialized. `width` is the column at which paragraph text
+  // is word-wrapped; `Unset` (the default) leaves each paragraph on one line. Use
+  // `formatting.unboundedMarkdownFormatting` or `Markdown.Formatting.bounded(80)`.
+  object Formatting:
+    def apply(width: Optional[Int]): Formatting = Basic(width)
+    private case class Basic(width: Optional[Int]) extends Formatting
+    def bounded(columns: Int): Formatting = apply(columns)
+
+    given unbounded: Formatting = apply(Unset)
+
+  trait Formatting extends zephyrine.Formatting:
+    def width: Optional[Int]
+
   trait Node
 
   case class LinkRef(label: Text, title: Optional[Text], destination: Text)

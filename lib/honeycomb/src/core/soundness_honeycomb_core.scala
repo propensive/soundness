@@ -43,6 +43,9 @@ package doms.html:
   export honeycomb.doms.html.whatwg
   export honeycomb.doms.html.html4Transitional
 
+package formatting:
+  export honeycomb.formatting.{indentedHtmlFormatting, flatHtmlFormatting}
+
 package attributives:
   export honeycomb.attributives.textAttributive
 

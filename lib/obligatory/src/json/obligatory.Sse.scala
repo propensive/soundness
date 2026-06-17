@@ -74,7 +74,7 @@ object Sse:
       cursor.hold(frame(cursor.mark))
 
   given jsonEncodable: Json is Encodable in Sse =
-    import printers.jsonMinimalPrinter
+    import formatting.compactJsonFormatting
     json => Sse("message", List(json.show))
 
   given textEncodable: Text is Encodable in Sse =

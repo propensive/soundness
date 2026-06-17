@@ -34,6 +34,7 @@ package punctuation
 
 import anticipation.*
 import prepositional.*
+import vacuous.Unset
 
 extension (markdown: Markdown of Layout)
   def source: Text = Serializer(markdown)
@@ -41,3 +42,6 @@ extension (markdown: Markdown of Layout)
 extension (markdown: Markdown of Prose)
   @scala.annotation.targetName("sourceProse")
   def source: Text = Serializer(markdown)
+
+package formatting:
+  given unboundedMarkdownFormatting: Markdown.Formatting = Markdown.Formatting(Unset)

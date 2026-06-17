@@ -57,6 +57,10 @@ package doms.html:
   given whatwg: Whatwg = Whatwg()
   given html4Transitional: Html4Transitional = Html4Transitional()
 
+package formatting:
+  given indentedHtmlFormatting: Html.Formatting = Html.Formatting(indented = true)
+  given flatHtmlFormatting: Html.Formatting = Html.Formatting(indented = false)
+
 package stylesheets:
   given uncheckedClasses: [classname <: Label: ValueOf] => NotGiven[classname =:= "apply"]
   =>  Attribution of classname =

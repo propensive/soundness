@@ -705,6 +705,32 @@ object Tests extends Suite(m"Xylophone tests"):
         Header(t"1.0", Unset, true).show
       . assert(_ == t"""<?xml version="1.0" standalone="yes"?>""")
 
+    suite(m"Serializer formatting"):
+      test(m"Compact is the default (no indentation, no trailing newline)"):
+        elem(t"a", elem(t"b"), elem(t"c")).show
+      . assert(_ == t"<a><b/><c/></a>")
+
+      test(m"Indented formatting lays out element children one per line"):
+        import formatting.indentedXmlFormatting
+        elem(t"a", elem(t"b"), elem(t"c")).show
+      . assert(_ == t"<a>\n  <b/>\n  <c/>\n</a>\n")
+
+      test(m"Indented formatting nests deeper levels"):
+        import formatting.indentedXmlFormatting
+        elem(t"a", elem(t"b", elem(t"c"))).show
+      . assert(_ == t"<a>\n  <b>\n    <c/>\n  </b>\n</a>\n")
+
+      test(m"Indented formatting keeps character data inline"):
+        import formatting.indentedXmlFormatting
+        elem(t"a", TextNode(t"hello")).show
+      . assert(_ == t"<a>hello</a>\n")
+
+      test(m"emit indents a document and adds the header and trailing newlines"):
+        import formatting.indentedXmlFormatting
+        val document = Document[Xml](elem(t"a", elem(t"b")), Header(t"1.0", Unset, Unset))
+        supervise(Xml.emit(document).to(List).join)
+      . assert(_ == t"<?xml version=\"1.0\"?>\n<a>\n  <b/>\n</a>\n")
+
 
     suite(m"Documents with prologs"):
       test(m"Document with comment in prolog"):

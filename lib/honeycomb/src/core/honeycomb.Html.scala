@@ -68,6 +68,18 @@ object Html extends Tag.Container
     insertable  = true,
     foreign     = false,
     boundary    = true ), Format:
+  // Controls how an `Html` document is serialized by `emit`. `indented` lays whitespace-mode
+  // elements out one per indented line (the default); `flatHtmlFormatting` keeps it on one line.
+  // (`.show` of a bare node is always compact.) Bundled as `formatting.indentedHtmlFormatting`
+  // and `formatting.flatHtmlFormatting`.
+  object Formatting:
+    def apply(indented: Boolean): Formatting = Basic(indented)
+    private case class Basic(indented: Boolean) extends Formatting
+    given default: Formatting = apply(indented = true)
+
+  trait Formatting extends zephyrine.Formatting:
+    def indented: Boolean
+
   type Topic = "html"
   type Transport = "head" | "body"
 
@@ -230,15 +242,16 @@ object Html extends Tag.Container
   given streamable: (Monitor, Probate) => Document[Html] is Streamable by Text =
     emit(_).to(Stream)
 
-  def emit(document: Document[Html], flat: Boolean = false)(using Monitor, Probate)
+  def emit(document: Document[Html])(using formatting: Formatting, monitor: Monitor, probate: Probate)
   :   Iterator[Text] =
 
     val dom = document.metadata
     val producer = Producer[Text](4096)
+    val block = formatting.indented
 
     async:
-      writeHtml(producer, dom, document.metadata.doctype, 0, true, Mode.Whitespace)
-      writeHtml(producer, dom, document.root, 0, true, Mode.Whitespace)
+      writeHtml(producer, dom, document.metadata.doctype, 0, block, Mode.Whitespace)
+      writeHtml(producer, dom, document.root, 0, block, Mode.Whitespace)
       producer.finish()
 
     producer.iterator

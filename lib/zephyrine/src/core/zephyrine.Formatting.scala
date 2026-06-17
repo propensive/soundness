@@ -30,14 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package punctuation
+package zephyrine
 
-// The column width at which the Markdown `Serializer` wraps paragraph text onto further lines. The
-// default is unbounded — each paragraph stays on one line, so the output re-parses to an identical
-// AST. Provide a bounded `given` to opt into wrapping, e.g.
-// `given MarkdownWidth = MarkdownWidth.bounded(80)`.
-object MarkdownWidth:
-  given unbounded: MarkdownWidth = MarkdownWidth(Int.MaxValue)
-  def bounded(columns: Int): MarkdownWidth = MarkdownWidth(columns)
-
-case class MarkdownWidth(columns: Int)
+// A serializer's output-formatting configuration — indentation, line wrapping, trailing newlines,
+// and the like. Each format defines its own `…Formatting` subtype carrying parameters suited to
+// that format (indentation is not a free choice everywhere — YAML forbids tab indentation, and HTML
+// and Markdown whitespace is structural), and exposes importable instances in the `formatting`
+// namespace.
+trait Formatting

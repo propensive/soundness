@@ -36,7 +36,7 @@ import soundness.*
 
 import charEncoders.utf8Encoder
 import strategies.throwUnsafely
-import printers.jsonMinimalPrinter
+import formatting.compactJsonFormatting
 
 import discriminables.jsonByKindDiscriminable
 import autopsies.contrastExpectations
@@ -746,18 +746,18 @@ object Tests extends Suite(m"Jacinta Tests"):
 
     suite(m"Json printing"):
       test(m"Minimal printer omits whitespace"):
-        import printers.jsonMinimalPrinter
+        import formatting.compactJsonFormatting
         Json.make(a = 1.json, b = 2.json).show
       . assert(_ == t"""{"a":1,"b":2}""")
 
       test(m"Indented printer adds whitespace"):
-        import printers.jsonIndentedPrinter
+        import formatting.indentedJsonFormatting
         val printed = Json.make(a = 1.json, b = 2.json).show
         printed.contains(t"\n")
       . assert(identity)
 
       test(m"Indented printer pretty-prints arrays"):
-        import printers.jsonIndentedPrinter
+        import formatting.indentedJsonFormatting
         val printed = List(1, 2, 3).json.show
         printed.contains(t"\n")
       . assert(identity)

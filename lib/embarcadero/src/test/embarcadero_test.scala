@@ -38,7 +38,7 @@ import bitumen.fromGzip
 import providers.javaStdlibProvider
 import alphabets.hexLowerCase
 import charEncoders.utf8Encoder
-import printers.jsonMinimalPrinter
+import formatting.compactJsonFormatting
 import strategies.throwUnsafely
 import Http2.*
 

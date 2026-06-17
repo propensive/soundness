@@ -42,6 +42,7 @@ import contextual.*
 import denominative.*
 import panopticon.*
 import prepositional.*
+import vacuous.Unset
 
 export xylophone.internal.Attributes
 
@@ -127,4 +128,10 @@ given ordinalOptical: [element] => Ordinal is Optical from Xml onto Xml = ordina
 
 given eachOptical: Each.type is Optical from Xml onto Xml = _ =>
   Optic: (origin, lambda) => updateChildElements(origin, _ => true, lambda)
+
+package formatting:
+  given compactXmlFormatting: Xml.Formatting = Xml.Formatting(Unset, trailingNewline = false)
+
+  given indentedXmlFormatting: Xml.Formatting =
+    Xml.Formatting(Text("  "), trailingNewline = true)
 
