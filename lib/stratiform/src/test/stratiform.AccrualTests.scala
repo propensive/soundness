@@ -231,3 +231,11 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"An over-indented line recovers and a later defect still accrues"):
         validateRead(t"parent\n        too-deep\nc \n").items.map(_(1).reason).to(Set)
       . assert(_ == Set(TelError.Reason.OverIndentation, TelError.Reason.TrailingSpaces))
+
+      test(m"Many defects across a document all accrue (LSP scenario)"):
+        validateRead(t"tel bad\nparent\n        too-deep\ntail \n").items.map(_(1).reason).to(Set)
+      . assert: reasons =>
+          reasons == Set
+           ( TelError.Reason.BadVersion,
+             TelError.Reason.OverIndentation,
+             TelError.Reason.TrailingSpaces )

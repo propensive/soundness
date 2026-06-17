@@ -1044,7 +1044,9 @@ private final class TelParser():
   :   Tel.Pragma raises TelError =
 
     val parts = splitPragmaPhrases(content)
-    if parts.head != "tel" then errorAt(Reason.PragmaNotFirst, line, 1)
+
+    // §19.5 RestartFromPragma: a non-`tel` head is recorded but parsing continues.
+    if parts.head != "tel" then recoverAt(Reason.PragmaNotFirst, line, 1)(())
 
     val version =
       if parts.length >= 2 then parseVersion(parts(1), line)
@@ -1377,9 +1379,10 @@ private final class TelParser():
     do
       // §9 E109 check — fires only if the immediately preceding line was a
       // content line (compound / tabulation) at indent ≥ this comment's.
+      // §19.5 AttachComment: record the misplacement but attach the comment.
       if !prevLineWasBoundary && prevContentLeadingSpaces >= 0 &&
         prevContentLeadingSpaces >= margin + indent * 2
-      then errorAt(Reason.CommentNotPreceded, head.startLine, 1)
+      then recoverAt(Reason.CommentNotPreceded, head.startLine, 1)(())
 
       val text = parseCommentLine()
       pushComment(Tel.Comment(text))
@@ -1786,8 +1789,10 @@ private final class TelParser():
                 val phraseWidth = runStart - phraseStart
                 val colMax = markers(columnIdx + 1) - markers(columnIdx) - 2
 
+                // §19.5 SuppressColumnAlignment: record but keep scanning (the
+                // loop self-advances and the row is re-read by parseCompoundLine).
                 if phraseWidth > colMax then
-                  errorAt(Reason.ColumnValueTooWide, lineNumber, phraseStart + 1)
+                  recoverAt(Reason.ColumnValueTooWide, lineNumber, phraseStart + 1)(())
 
               var foundIdx = -1
               var k = 1
@@ -1796,8 +1801,9 @@ private final class TelParser():
                 if markers(k) == col then foundIdx = k
                 k += 1
 
+              // §19.5 SuppressColumnAlignment: record but keep scanning.
               if foundIdx < 0 then
-                errorAt(Reason.HardSpaceWrongPosition, lineNumber, col + 1)
+                recoverAt(Reason.HardSpaceWrongPosition, lineNumber, col + 1)(())
 
               columnIdx = foundIdx
               phraseStart = col
@@ -1825,12 +1831,18 @@ private final class TelParser():
         else if head.leadingSpaces == sourceIndent then Optional(parseSourceAtom(sourceIndent))
         else Unset
 
-      // §10.4 / §11.1: at most one source / literal atom per compound.
+      // §10.4 / §11.1: at most one source / literal atom per compound. §19.5
+      // IgnoreDuplicateAtom: record the duplicate but consume (and discard) it so
+      // the cursor advances past it and parsing continues.
       if first.present && !head.eof && !head.blank then
-        if head.leadingSpaces == literalIndent
-        then errorAt(Reason.DuplicateLiteral, head.startLine, 1)
-        else if head.leadingSpaces == sourceIndent
-        then errorAt(Reason.DuplicateSource, head.startLine, 1)
+        if head.leadingSpaces == literalIndent then
+          recoverAt(Reason.DuplicateLiteral, head.startLine, 1):
+            parseLiteralAtom(literalIndent)
+            ()
+        else if head.leadingSpaces == sourceIndent then
+          recoverAt(Reason.DuplicateSource, head.startLine, 1):
+            parseSourceAtom(sourceIndent)
+            ()
 
       first
 
@@ -1982,12 +1994,14 @@ private final class TelParser():
     var done = false
 
     while !done do
-      if !more then errorAt(Reason.UnclosedLiteral, openingLine, 1)
+      // §19.5 PayloadToEof: an unterminated literal ends at EOF rather than
+      // aborting, so the rest of the document can still be parsed and accrued.
+      if !more then done = recoverAt(Reason.UnclosedLiteral, openingLine, 1)(true)
       // Read a line. Inside the literal payload, line endings are not
       // subject to the document's LF/CRLF mode (per §15 the payload is
       // verbatim, with CRLF normalised to LF). One hold per payload line so
       // the cursor can compact between lines.
-      done = inHold:
+      else done = inHold:
         val lineMk = beginMark()
 
         while
@@ -2017,14 +2031,18 @@ private final class TelParser():
 
           true
         else
-          // Payload line — must have an LF terminator; EOF here is E115.
-          if !more then errorAt(Reason.UnclosedLiteral, openingLine, 1)
-          advance()  // consume LF
-          lineNo += 1
-          if !more then documentEndsWithLf = true
-          sb.append(raw)
-          sb.append('\n')
-          false
+          // Payload line — must have an LF terminator; EOF here is E115. §19.5
+          // PayloadToEof: an unterminated final line ends the payload at EOF.
+          if !more then
+            sb.append(raw)
+            recoverAt(Reason.UnclosedLiteral, openingLine, 1)(true)
+          else
+            advance()  // consume LF
+            lineNo += 1
+            if !more then documentEndsWithLf = true
+            sb.append(raw)
+            sb.append('\n')
+            false
 
     fillHead()
     // §15: the payload is the verbatim bytes between structural LFs — CR is
@@ -2049,8 +2067,10 @@ private final class TelParser():
     // E102: a `tel` or `tel …` line at column 0 after the first non-blank
     // line is a misplaced pragma. The valid pragma was already consumed
     // earlier by parsePragma; anything matching here is a violation.
+    // §19.5 RestartFromPragma: record the misplaced pragma but parse the line as
+    // an ordinary compound (the keyword is already read; the rest follows).
     if mayBeMisplacedPragma && keyword == t"tel" then
-      errorAt(Reason.PragmaNotFirst, lineNumber, 1)
+      recoverAt(Reason.PragmaNotFirst, lineNumber, 1)(())
 
     hasConsumedNonBlankLine = true
 
