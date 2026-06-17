@@ -616,6 +616,25 @@ private final class TelParser():
 
     abort(TelError(reason, TelError.Position(line, column)))
 
+  // Recoverable-error variants of `errorHere`/`errorAt`. They `raise` the error
+  // (rather than `abort`) and continue with `continuation`, which realises the
+  // §19.5 `recoveryOf(reason)` strategy. Under the default `ThrowTactic` `raise`
+  // throws, so parsing stays fail-fast and identical to `errorHere`/`errorAt`;
+  // under a `validate`-installed `TrackTactic` the error accrues and parsing
+  // continues, so a document with several recoverable defects reports them all.
+  // The continuation MUST advance the cursor past the offending input (or the
+  // surrounding flow must), otherwise an enclosing scan loop would not progress.
+  private inline def recoverHere[T](reason: Reason)(continuation: => T): T raises TelError =
+    raise(TelError(reason, TelError.Position(lineNo, columnForCurrentBytePos())))
+    continuation
+
+  private inline def recoverAt[T](reason: Reason, line: Int, column: Int)
+    (continuation: => T)
+  :   T raises TelError =
+
+    raise(TelError(reason, TelError.Position(line, column)))
+    continuation
+
   // ── Mark / hold plumbing ──────────────────────────────────────────────────
   //
   // The streaming parser uses narrow per-leaf holds: every method that takes
@@ -975,8 +994,9 @@ private final class TelParser():
   private def consumeLineEnding(): Unit raises TelError =
     if !more then ()
     else if peek == LF then
+      // §19.5 CollapseLineEndings: accept the inconsistent ending and carry on.
       if !lineEndingsDetected then detectLineEndingMode(crBefore = false)
-      else if crlfMode then errorHere(Reason.BadLineEnding)
+      else if crlfMode then recoverHere(Reason.BadLineEnding)(())
 
       advance()
       lineNo += 1
@@ -984,10 +1004,12 @@ private final class TelParser():
     else if peek == CR then
       val next = peekNext()
 
+      // A bare CR (not followed by LF) cannot be consumed coherently, so it stays
+      // fatal; an LF-mode CR LF is recoverable (CollapseLineEndings).
       if next != LF.toInt then errorHere(Reason.BadLineEnding)
       else
         if !lineEndingsDetected then detectLineEndingMode(crBefore = true)
-        else if !crlfMode then errorHere(Reason.BadLineEnding)
+        else if !crlfMode then recoverHere(Reason.BadLineEnding)(())
 
         advance()  // CR
         advance()  // LF
@@ -2117,9 +2139,11 @@ private final class TelParser():
     // Inside the outer `hold`, the buffer byte just before the current pos
     // is still resident — peek it directly. (`pos > 0` because we have
     // consumed at least the keyword.)
+    // §19.5 StripTrailing: the keyword/atoms already exclude the trailing space,
+    // so recording the error and continuing yields the stripped line.
     if remark.absent && more && (peek == LF || peek == CR) &&
       pos > 0 && bytes(pos - 1) == SP
-    then errorAt(Reason.TrailingSpaces, lineNumber, head.leadingSpaces + 1)
+    then recoverAt(Reason.TrailingSpaces, lineNumber, head.leadingSpaces + 1)(())
 
     consumeLineEnding()
     compoundLineKeyword = keyword

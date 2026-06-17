@@ -62,6 +62,15 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
     . within(Tel.Type.assign(tel, schema))
 
+  // Parse a document under an accrual boundary: recoverable parse defects
+  // (§19.5) accrue rather than aborting on the first, because `read[Tel]` parses
+  // through the installed `TrackTactic`.
+  private def validateRead(text: Text): Issues =
+    validate[Tel.Focus](Issues()):
+      case error: TelError =>
+        accrual + (prior.let(_.pointer.encode).or(t"#"), error)
+    . within(text.read[Tel])
+
   // A document schema with two required scalar fields and no defaults: a document
   // omitting both yields two `RequiredMemberAbsent` violations.
   private val twoRequiredSchema: Tels = Tels(
@@ -188,3 +197,17 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
         validateAssign(doc, optionalFieldSchema).items.all:
           case (_, err) => err.reason == TelError.Reason.UnknownKeyword
       . assert(identity)
+
+    suite(m"Parser-recovery accrual (E1xx)"):
+      test(m"Two trailing-space lines accrue two errors"):
+        validateRead(t"good \nbad \n").items.length
+      . assert(_ == 2)
+
+      test(m"Both are TrailingSpaces errors"):
+        validateRead(t"good \nbad \n").items.all:
+          case (_, err) => err.reason == TelError.Reason.TrailingSpaces
+      . assert(identity)
+
+      test(m"A single recoverable defect still accrues one error"):
+        validateRead(t"good \nfine\n").items.length
+      . assert(_ == 1)
