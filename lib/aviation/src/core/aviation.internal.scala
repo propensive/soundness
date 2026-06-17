@@ -155,6 +155,164 @@ object internal:
     '{unsafely(Timezone(${Expr(name)}.tt))}
 
 
+  // A timestamp literal classified by its precision. The `ts"…"` macro maps each case to a
+  // distinct result type: a bare year to `Year`, a year-month to `Monthstamp`, a date to
+  // `Date`, a zoneless date-time to `Timestamp`, and a zoned date-time to `Moment`.
+  private enum TsParsed:
+    case YearOnly(year: Int)
+    case MonthOnly(year: Int, month: Int)
+    case DateOnly(jdn: Int)
+    case TimeOnly(jdn: Int, hour: Int, minute: Int, second: Int, nanos: Int)
+    case ZoneOnly(jdn: Int, hour: Int, minute: Int, second: Int, nanos: Int, zone: String)
+
+  private val monthNames: List[String] =
+    List("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+
+  // Canonical ISO 8601: a four-digit year, then optional `-MM`, optional `-DD`, optional
+  // `THH:MM` with optional `:SS` and fractional seconds, and an optional `Z`/offset zone.
+  private val IsoPattern =
+    ("""(\d{4})(?:-(\d{2})(?:-(\d{2})(?:[T ](\d{2}):(\d{2})""" +
+     """(?::(\d{2})(?:[.,](\d{1,9}))?)?(Z|[+-]\d{2}:?\d{2}|[+-]\d{2})?)?)?)?""").r
+
+  // RFC 1123, e.g. `Tue, 17 Jun 2024 14:30:45 GMT`.
+  private val RfcPattern =
+    ("""(Mon|Tue|Wed|Thu|Fri|Sat|Sun), (\d{2}) """ +
+     """(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) """ +
+     """(\d{4}) (\d{2}):(\d{2}):(\d{2}) GMT""").r
+
+  // Validate a date against the Gregorian calendar (rejecting e.g. month 13 or 31 February)
+  // and return its Julian day number, which the macro emits directly via `Date.julianDay`.
+  private def jdnOf(year: Int, month: Int, day: Int): Either[Message, Int] =
+    import calendars.gregorianCalendar
+
+    if month < 1 || month > 12 then Left(m"$month is not a valid month number")
+    else
+      val computed: Optional[Int] =
+        safely(Date(Year(year), Month.fromOrdinal(month - 1), Day(day)).jdn)
+
+      computed.lay(Left(m"$year-$month-$day is not a valid date"))(Right(_))
+
+  private def checkTime(hour: Int, minute: Int, second: Int): Either[Message, Unit] =
+    if hour > 23 then Left(m"$hour is not a valid hour")
+    else if minute > 59 then Left(m"$minute is not a valid minute")
+    else if second > 59 then Left(m"$second is not a valid number of seconds")
+    else Right(())
+
+  private def normalizeZone(zone: String): Either[Message, String] =
+    val normalized =
+      if zone == "Z" then "Z" else
+        val sign = zone.charAt(0)
+        val rest = zone.drop(1).filter(_ != ':')
+        val hours = rest.take(2)
+        val minutes = if rest.length > 2 then rest.substring(2) else "00"
+        s"$sign$hours:$minutes"
+
+    try
+      jt.ZoneId.of(normalized).nn
+      Right(normalized)
+    catch case _: Exception => Left(m"$zone is not a valid timezone offset")
+
+  private def isoTime
+    ( jdn:    Int,
+      hour:   Int,
+      minute: Int,
+      second: Int,
+      nanos:  Int,
+      zone:   String | Null )
+  :   Either[Message, TsParsed] =
+
+    checkTime(hour, minute, second).flatMap: _ =>
+      zone match
+        case null =>
+          Right(TsParsed.TimeOnly(jdn, hour, minute, second, nanos))
+
+        case zoneText: String =>
+          normalizeZone(zoneText).map: zoneName =>
+            TsParsed.ZoneOnly(jdn, hour, minute, second, nanos, zoneName)
+
+  private def parseIso(text: String): Either[Message, TsParsed] = text match
+    case IsoPattern(year, null, _, _, _, _, _, _) =>
+      Right(TsParsed.YearOnly(year.nn.toInt))
+
+    case IsoPattern(year, month, null, _, _, _, _, _) =>
+      val monthValue = month.nn.toInt
+
+      if monthValue < 1 || monthValue > 12 then Left(m"$monthValue is not a valid month number")
+      else Right(TsParsed.MonthOnly(year.nn.toInt, monthValue))
+
+    case IsoPattern(year, month, day, null, _, _, _, _) =>
+      jdnOf(year.nn.toInt, month.nn.toInt, day.nn.toInt).map(TsParsed.DateOnly(_))
+
+    case IsoPattern(year, month, day, hour, minute, second, frac, zone) =>
+      val secondValue = if second == null then 0 else second.nn.toInt
+      val nanos = if frac == null then 0 else (frac.nn + "000000000").take(9).toInt
+
+      jdnOf(year.nn.toInt, month.nn.toInt, day.nn.toInt).flatMap: jdn =>
+        isoTime(jdn, hour.nn.toInt, minute.nn.toInt, secondValue, nanos, zone)
+
+    case _ =>
+      Left(m"$text is not a valid ISO 8601 timestamp")
+
+  private def parseRfc(text: String): Either[Message, TsParsed] = text match
+    case RfcPattern(_, day, month, year, hour, minute, second) =>
+      val hourValue = hour.nn.toInt
+      val minuteValue = minute.nn.toInt
+      val secondValue = second.nn.toInt
+      val monthValue = monthNames.indexOf(month.nn) + 1
+
+      jdnOf(year.nn.toInt, monthValue, day.nn.toInt).flatMap: jdn =>
+        checkTime(hourValue, minuteValue, secondValue).map: _ =>
+          TsParsed.ZoneOnly(jdn, hourValue, minuteValue, secondValue, 0, "GMT")
+
+    case _ =>
+      Left(m"$text is not a valid RFC 1123 timestamp")
+
+  private def parseTimestamp(text: String): Either[Message, TsParsed] =
+    if text.isEmpty then Left(m"a timestamp literal cannot be empty")
+    else if text.head.isDigit then parseIso(text)
+    else if text.head.isLetter then parseRfc(text)
+    else Left(m"a timestamp must begin with a digit or a weekday name")
+
+  def tsInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]])
+  :   Macro[Year | Monthstamp | Date | Timestamp | Moment] =
+
+    import quotes.reflect.*
+
+    def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case _               => strings
+
+    val parts = recur[parts](Nil)
+
+    if parts.length != 1 then halt(m"a timestamp literal cannot contain substitutions")
+
+    parseTimestamp(parts.head) match
+      case Left(error) =>
+        halt(error)
+
+      case Right(parsed) =>
+        val result: Expr[Year | Monthstamp | Date | Timestamp | Moment] = parsed match
+          case TsParsed.YearOnly(year) =>
+            '{Year(${Expr(year)})}
+
+          case TsParsed.MonthOnly(year, month) =>
+            '{Monthstamp(Year(${Expr(year)}), Month.fromOrdinal(${Expr(month - 1)}))}
+
+          case TsParsed.DateOnly(jdn) =>
+            '{Date.julianDay(${Expr(jdn)})}
+
+          case TsParsed.TimeOnly(jdn, hour, minute, second, nanos) =>
+            '{Timestamp(Date.julianDay(${Expr(jdn)}), Clockface(Base24(${Expr(hour)}),
+                Base60(${Expr(minute)}), Base60(${Expr(second)}), ${Expr(nanos)}))}
+
+          case TsParsed.ZoneOnly(jdn, hour, minute, second, nanos, zone) =>
+            '{Timestamp(Date.julianDay(${Expr(jdn)}), Clockface(Base24(${Expr(hour)}),
+                Base60(${Expr(minute)}), Base60(${Expr(second)}), ${Expr(nanos)}))
+                .in(unsafely(Timezone(${Expr(zone)}.tt)))}
+
+        result
+
+
   def validTime(time: Expr[Double], pm: Boolean): Macro[Clockface] =
     import quotes.reflect.*
 
