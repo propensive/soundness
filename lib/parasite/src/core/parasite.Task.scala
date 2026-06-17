@@ -75,7 +75,7 @@ object Task:
       value.map(lambda)
 
   extension [result](tasks: Seq[Task[result]])
-    def sequence(using Monitor, Probate): Task[Seq[result]] incurs AsyncError =
+    def sequence(using Monitor, Probate): Task[Seq[result]] emits AsyncError =
       async(tasks.map(_.join()))
 
   extension [result](tasks: Iterable[Task[result]])
@@ -85,8 +85,8 @@ object Task:
 
       try promise.await() finally tasks.foreach(_.cancel())
 
-// A task carries the error type its body may raise as the `Error` member, refined by the `incurs`
-// alias (`Task[result] incurs error` = `Task[result] { type Error <: error }`). It is preserved to
+// A task carries the error type its body may raise as the `Error` member, refined by the `emits`
+// alias (`Task[result] emits error` = `Task[result] { type Error <: error }`). It is preserved to
 // `await`, where it is delivered through the caller's in-scope `Tactic`. `AsyncError` (cancellation
 // or timeout) is always a possible outcome, so it is added at the `await` site, not the member.
 trait Task[+result]:
@@ -108,7 +108,7 @@ trait Task[+result]:
   :   result raises AsyncError
 
   def bind[result2](lambda: result => Task[result2])(using Monitor, Probate)
-  :   Task[result2] incurs AsyncError
+  :   Task[result2] emits AsyncError
 
   def map[result2](lambda: result => result2)(using Monitor, Probate)
-  :   Task[result2] incurs AsyncError
+  :   Task[result2] emits AsyncError

@@ -97,11 +97,11 @@ def daemon[error <: Exception](using Codepoint)
 def trap(handler: PartialFunction[Error, Remedy])(using outer: Probate): Trap = Trap(handler, outer)
 
 
-// `Task[result] incurs error` = `Task[result] { type Error <: error }`. The bound (not an equality)
+// `Task[result] emits error` = `Task[result] { type Error <: error }`. The bound (not an equality)
 // keeps the error covariant: a task that can fail only with `AsyncError` is usable where one that
-// `incurs FooError` is expected, and `await`'s `raises (Error | AsyncError)` is dischargeable by a
+// `emits FooError` is expected, and `await`'s `raises (Error | AsyncError)` is dischargeable by a
 // `Tactic` for the bound. `task <: Task[?]` keeps the refinement applicable only to actual tasks.
-infix type incurs[task <: Task[?], error <: Exception] = task { type Error <: error }
+infix type emits[task <: Task[?], error <: Exception] = task { type Error <: error }
 
 
 // `error` is the union of error types the body may `raise`, inferred exactly as for synchronous
@@ -111,7 +111,7 @@ infix type incurs[task <: Task[?], error <: Exception] = task { type Error <: er
 def async[result, error <: Exception](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?=> result )
   ( using Monitor, Probate )
-:   Task[result] incurs (error | AsyncError) =
+:   Task[result] emits (error | AsyncError) =
 
   val tactic = AsyncTactic[error]()
   Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = Unset)
@@ -120,7 +120,7 @@ def async[result, error <: Exception](using Codepoint)
 def task[result, error <: Exception](using Codepoint)(name: Text)
   ( evaluate: (Worker, Tactic[error]) ?=> result )
   ( using Monitor, Probate )
-:   Task[result] incurs (error | AsyncError) =
+:   Task[result] emits (error | AsyncError) =
 
   val tactic = AsyncTactic[error]()
   Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = name)
