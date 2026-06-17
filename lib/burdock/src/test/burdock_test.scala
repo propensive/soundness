@@ -140,6 +140,49 @@ object Tests extends Suite(m"Burdock Tests"):
         manifest.contains(t"aaa")
       .assert(_ == true)
 
+    suite(m"Repackager (directory entries)"):
+      // A fat assembly contains directory entries (e.g. `com/example/`). The zeppelin reader
+      // strips their trailing slash and flags them as directories; if copied through as plain
+      // entries they would be re-emitted as zero-byte *files* (`com/example`), colliding with
+      // the real directory on extraction ("exists but is not directory"). They must be dropped.
+      val tmp: Path on Linux = temporaryDirectory[Path on Linux]
+      val inputJar: Path on Linux = tmp/t"burdock-dir-in-${Uuid().show}.jar"
+      val outputJar: Path on Linux = tmp/t"burdock-dir-out-${Uuid().show}.jar"
+
+      val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
+
+      Zipfile.write(inputJar):
+        Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifestText.data)
+        #:: Zip.Entry(t"META-INF/burdock.deps".decode[Path on Zip], t"".data)
+        #:: Zip.Entry(t"com/example".decode[Path on Zip], t"".data).copy(directory = true)
+        #:: Zip.Entry(t"com/example/Main.class".decode[Path on Zip], t"main".data)
+        #:: LazyList()
+
+      val resolve: Repackager.Resolver = _ => Unset
+      val cached: Repackager.CacheReader = _ => Unset
+
+      val summary =
+        Repackager.repackage(inputJar, outputJar, resolve, cached, t"bootstrap".data)
+
+      val entries = Zipfile.read(outputJar).entries.to(List)
+      val names: List[Text] = entries.map(_.ref.show)
+
+      test(m"the output contains no directory entries"):
+        entries.all(!_.directory)
+      .assert(_ == true)
+
+      test(m"no zero-byte slash-less package entry remains"):
+        names.contains(t"com/example")
+      .assert(_ == false)
+
+      test(m"the application's own class is kept"):
+        names.contains(t"com/example/Main.class")
+      .assert(_ == true)
+
+      test(m"the summary records the skipped directory entry"):
+        summary.directoriesSkipped
+      .assert(_ == 1)
+
     suite(m"Repackager (duplicate-safety)"):
       // A real assembly bundles burdock (its `Main-Class` is `burdock.Bootstrap`), so the
       // input already contains `burdock/Bootstrap.class`; a cached dependency may be a class

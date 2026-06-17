@@ -115,7 +115,9 @@ def repackage(): Unit = application(Nil):
           . to(List)
 
       val tmpFile: Path on Linux = inputJar.parent.vouch/t"${inputJar.name}.tmp"
-      Repackager.repackage(inputJar, tmpFile, DepsDev.mavenUrl, cached, bootstrapClass)
+
+      val summary =
+        Repackager.repackage(inputJar, tmpFile, DepsDev.mavenUrl, cached, bootstrapClass)
 
       import filesystemOptions.overwritePreexisting.enabled
       import filesystemOptions.deleteRecursively.disabled
@@ -123,6 +125,20 @@ def repackage(): Unit = application(Nil):
       import filesystemOptions.createNonexistentParents.disabled
 
       tmpFile.moveTo(inputJar)
+
+      val bytes: Long = jnf.Files.size(jnf.Paths.get(inputJar.show.s).nn)
       Out.println(m"Repackaged $inputJar")
+      Out.println(m"  input entries:          ${summary.inputEntries}")
+      Out.println(m"  directory entries skipped: ${summary.directoriesSkipped}")
+      Out.println(m"  application classes kept:  ${summary.ownKept}")
+      Out.println(m"  dependencies externalized: ${summary.externalized.length}")
+
+      summary.externalized.each: requirement =>
+        Out.println(m"    - ${requirement.text}")
+
+      Out.println(m"  dependency classes inlined: ${summary.inlined}")
+      Out.println(m"  bundled classes stripped:  ${summary.stripped}")
+      Out.println(m"  output entries:         ${summary.outputEntries}")
+      Out.println(m"  output size (bytes):    $bytes")
 
       Exit.Ok

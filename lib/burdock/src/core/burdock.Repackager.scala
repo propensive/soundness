@@ -77,6 +77,17 @@ object Repackager:
   case class UserError(detail: Message)(using Diagnostics) extends Error(detail)
   case class RepackageError(detail: Message)(using Diagnostics) extends Error(detail)
 
+  // A record of what `repackage` did, returned so the caller can report it. The core
+  // logic stays free of I/O; the command-line entry point prints this.
+  case class Summary
+    ( inputEntries:       Int,
+      directoriesSkipped: Int,
+      ownKept:            Int,
+      externalized:       List[Requirement],
+      inlined:            Int,
+      stripped:           Int,
+      outputEntries:      Int )
+
   // Resolves a dependency hash to its public URL (deps.dev), or `Unset`.
   type Resolver = Text => Optional[HttpUrl]
 
@@ -117,7 +128,7 @@ object Repackager:
   def repackage
     ( inputJar: Path on Linux, outputJar: Path on Linux, resolve: Resolver, cached: CacheReader,
       bootstrapClass: Data )
-  :   Unit raises RepackageError =
+  :   Summary raises RepackageError =
 
     whereas:
       case IoError(_, _, _, _)  => RepackageError(m"a filesystem error occurred while repackaging")
@@ -132,18 +143,29 @@ object Repackager:
         val bootstrapName: Text = t"burdock/Bootstrap.class"
         var manifestData: Optional[Data] = Unset
         var depsData: Optional[Data] = Unset
+        var inputCount: Int = 0
+        var directoriesSkipped: Int = 0
         val ownBuilder = List.newBuilder[Entry]
 
         Zipfile.read(inputJar).entries.each: entry =>
-          val name: Text = entry.ref.show
+          inputCount += 1
 
-          // The bootstrap class is force-included below, so drop any copy already bundled
-          // (an app whose `Main-Class` is `burdock.Bootstrap` bundles burdock) to avoid a
-          // duplicate entry.
-          if name == t"META-INF/MANIFEST.MF" then manifestData = entry.read[Data]
-          else if name == resource then depsData = entry.read[Data]
-          else if name == bootstrapName then ()
-          else ownBuilder += Entry(name, entry.read[Data])
+          // Directory entries (the zeppelin reader strips their trailing slash and flags
+          // them as `directory`) must never be copied into an `Entry`, which carries no
+          // directory flag and would re-emit them as zero-byte *files* — colliding with the
+          // real directory on extraction ("exists but is not directory"). A JAR needs no
+          // explicit directory entries: extractors synthesise parents on demand. `cached`
+          // already drops them.
+          if entry.directory then directoriesSkipped += 1 else
+            val name: Text = entry.ref.show
+
+            // The bootstrap class is force-included below, so drop any copy already bundled
+            // (an app whose `Main-Class` is `burdock.Bootstrap` bundles burdock) to avoid a
+            // duplicate entry.
+            if name == t"META-INF/MANIFEST.MF" then manifestData = entry.read[Data]
+            else if name == resource then depsData = entry.read[Data]
+            else if name == bootstrapName then ()
+            else ownBuilder += Entry(name, entry.read[Data])
 
         val manifest: Manifest =
           manifestData.lest(RepackageError(m"the JAR has no manifest")).read[Manifest]
@@ -189,3 +211,13 @@ object Repackager:
           Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest2.serialize)
           #:: entries.to(Stream).map: entry =>
             Zip.Entry(entry.name.decode[Path on Zip], () => Stream(entry.data))
+
+        // The output also carries the manifest entry, hence `entries.length + 1`.
+        Summary
+          ( inputEntries       = inputCount,
+            directoriesSkipped = directoriesSkipped,
+            ownKept            = keptEntries.length,
+            externalized       = requirements,
+            inlined            = inlined.length,
+            stripped           = ownEntries.length - keptEntries.length,
+            outputEntries      = entries.length + 1 )
