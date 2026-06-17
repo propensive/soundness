@@ -159,3 +159,18 @@ object Tests extends Suite(m"Frontier Tests"):
           m.contains("resolving") && m.contains("DecimalConverter")
           && m.contains("decimalConverters.javaDecimalConverter")
 
+    // `read` now resolves an ordinary `Readable` instance, so a missing
+    // decoder is an ordinary failed implicit search that Frontier explains —
+    // listing the `Readable` pipelines and what each still requires.
+    test(m"explainMissingContext advises on a missing read instance"):
+      demilitarize:
+        import frontier.context.explainMissingContext
+        import turbulence.*
+        trait Widget
+        t"data".read[Widget]
+      . map(_.message)
+    . assert: msgs =>
+        msgs.exists: m =>
+          m.contains("resolving") && m.contains("Readable")
+          && m.contains("candidate") && m.contains("Aggregable")
+

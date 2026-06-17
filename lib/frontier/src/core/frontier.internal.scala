@@ -460,28 +460,41 @@ object internal:
                   missing(repr, Nil)
 
 
-            case apply: Apply @unchecked => apply match case Apply(function, arguments) =>
-              def resolve(methodType: TypeRepr): Missing = methodType match
-                case PolyType(_, _, _) =>
-                  resolve(function.tpe.simplified)
+            // The `Apply @unchecked` test matches non-`Apply` trees too (the
+            // unchecked bind skips the runtime check), so a `TypeApply` — e.g.
+            // from a polymorphic given whose using-clause failed — reaches
+            // `Apply.unapply`, which throws a `MatchError`. Guard the extractor
+            // so Frontier degrades to a plain `missing` rather than crashing
+            // expansion on any tree shape it doesn't recognise.
+            case apply: Apply @unchecked =>
+              try apply match
+                case Apply(function, arguments) =>
+                  def resolve(methodType: TypeRepr): Missing = methodType match
+                    case PolyType(_, _, _) =>
+                      resolve(function.tpe.simplified)
 
-                case MethodType(_, types, more) =>
-                  val candidate =
-                    Candidate
-                      ( renderSymbol(function.symbol),
-                        function.symbol,
-                        types.map(seek(_, Nil, depth + 1)) )
+                    case MethodType(_, types, more) =>
+                      val candidate =
+                        Candidate
+                          ( renderSymbol(function.symbol),
+                            function.symbol,
+                            types.map(seek(_, Nil, depth + 1)) )
 
-                  val candidates = seek(repr, function.symbol :: exclusions, depth) match
-                    case Missing(_, _, candidates) => candidate :: candidates
-                    case _                         => Nil
+                      val candidates = seek(repr, function.symbol :: exclusions, depth) match
+                        case Missing(_, _, candidates) => candidate :: candidates
+                        case _                         => Nil
 
-                  missing(repr, dedupeCandidates(candidates))
+                      missing(repr, dedupeCandidates(candidates))
+
+                    case _ =>
+                      missing(repr, Nil)
+
+                  resolve(function.symbol.info)
 
                 case _ =>
                   missing(repr, Nil)
 
-              resolve(function.symbol.info)
+              catch case _: Throwable => missing(repr, Nil)
 
             case _ =>
               missing(repr, Nil)
