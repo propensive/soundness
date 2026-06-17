@@ -309,6 +309,8 @@ object Tests extends Suite(m"Caesura tests"):
         summon[DsvRedesignation].transform(t"targetPerson")
       . assert(_ == t"target person")
 
+    AccrualTests()
+
 case class Foo(one: Text, two: Text)
 case class Bar(one: Double, foo1: Foo, four: Int, foo2: Foo)
 case class Quux(name: Text, greeting: Text)

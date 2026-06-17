@@ -272,7 +272,8 @@ case class Sheet
     format:  Optional[DsvFormat]    = Unset,
     columns: Optional[IArray[Text]] = Unset ):
 
-  def as[value: Decodable in Dsv]: Stream[value] tracks CellRef = rows.map(_.as[value])
+  def as[value: Decodable in Dsv]: Stream[value] raises DsvError tracks CellRef =
+    rows.map(_.as[value])
 
   override def hashCode: Int =
     (rows.hashCode*31 + format.hashCode)*31 + columns.lay(-1): array =>
