@@ -30,53 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package locomotion
+package punctuation
 
-import anticipation.*
-import zephyrine.*
+// The column width at which the Markdown `Serializer` wraps paragraph text onto further lines. The
+// default is unbounded — each paragraph stays on one line, so the output re-parses to an identical
+// AST. Provide a bounded `given` to opt into wrapping, e.g.
+// `given MarkdownWidth = MarkdownWidth.bounded(80)`.
+object MarkdownWidth:
+  given unbounded: MarkdownWidth = MarkdownWidth(Int.MaxValue)
+  def bounded(columns: Int): MarkdownWidth = MarkdownWidth(columns)
 
-// Writes Protocol Buffers wire bytes into a `Producer[Data]`. Varints are LEB128; fixed32/fixed64
-// are little-endian; a field is its tag varint followed by the value (length-prefixed for the
-// length-delimited wire type). Drive it through `Protobuf.printed` (synchronous) or `Protobuf.emit`
-// (streaming).
-class ProtobufPrinter(out: Producer.Bytes):
-  def byte(value: Int): Unit = out.push(value.toByte)
-
-  def raw(data: Data): Unit = out.put(data)
-
-  def varint(value: Long): Unit =
-    var rest = value
-    var continue = true
-
-    while continue do
-      val septet = (rest & 0x7f).toInt
-      rest = rest >>> 7
-
-      if rest != 0 then byte(septet | 0x80) else
-        byte(septet)
-        continue = false
-
-  def fixed32(value: Int): Unit =
-    var i = 0
-
-    while i < 4 do
-      byte((value >>> (i*8)) & 0xff)
-      i += 1
-
-  def fixed64(value: Long): Unit =
-    var i = 0
-
-    while i < 8 do
-      byte(((value >>> (i*8)) & 0xff).toInt)
-      i += 1
-
-  def tag(number: Int, wireType: WireType): Unit = varint((number.toLong << 3) | wireType.id)
-
-  def field(number: Int, value: Protobuf): Unit = value match
-    case Protobuf.Absent           => ()
-    case Protobuf.Repeated(values) => values.foreach(field(number, _))
-
-    case Protobuf.Wire(wireType, bytes) =>
-      tag(number, wireType)
-      if wireType == WireType.Len then varint(bytes.length)
-      raw(bytes)
+case class MarkdownWidth(columns: Int)

@@ -556,219 +556,140 @@ object Xml extends Tag.Container
     Tracked(xml, PositionIndex(if index == null then IArray.empty[Int] else index))
 
   def emit(document: Document[Xml], flat: Boolean = false)(using Monitor, Probate): Iterator[Text] =
-
-    val emitter = Emitter[Text](4096)
+    val producer = Producer[Text](4096)
 
     async:
-      def recur(node: Xml, indent: Int): Unit =
-        node match
-          case Fragment(nodes*) => nodes.each(recur(_, indent))
+      writeXml(producer, document.metadata)
+      writeXml(producer, document.root)
+      producer.finish()
 
-          case Comment(comment) =>
-            emitter.put("<!--")
-            emitter.put(comment)
-            emitter.put("-->")
+    producer.iterator
 
-          case Cdata(text) =>
-            emitter.put("<![CDATA[")
-            emitter.put(text)
-            emitter.put("]]>")
-
-          case Doctype(text) =>
-            emitter.put("<!DOCTYPE ")
-            emitter.put(text)
-            emitter.put(">")
-
-          case ProcessingInstruction(target, data) =>
-            emitter.put("<?")
-            emitter.put(target)
-
-            if !data.nil then
-              emitter.put(" ")
-              emitter.put(data)
-
-            emitter.put("?>")
-
-          case Header(version, encoding, standalone) =>
-            emitter.put("""<?xml version="""")
-            emitter.put(version)
-            emitter.put("\"")
-
-            encoding.let: encoding =>
-              emitter.put(""" encoding="""")
-              emitter.put(encoding)
-              emitter.put("\"")
-
-            standalone.let: standalone =>
-              emitter.put(if standalone then """ standalone="yes"""" else """ standalone="no"""")
-
-            emitter.put("?>")
-
-          case TextNode(text) =>
-            var position: Int = 0
-
-            while position < text.length do
-              val amp = text.s.indexOf('&', position)
-              val lt = text.s.indexOf('<', position)
-              val next = if amp < 0 then lt else if lt < 0 then amp else amp.min(lt)
-
-              if next >= 0 then
-                emitter.put(text, position.z, next - position)
-                if next == lt then emitter.put("&lt;")
-                if next == amp then emitter.put("&amp;")
-                position = next + 1
-              else
-                emitter.put(text, position.z, text.length - position)
-                position = text.length
-
-          case Element(label, attributes, nodes) =>
-            emitter.put("<")
-            emitter.put(label)
-
-            if !attributes.nil then
-              attributes.each: (key, value) =>
-                emitter.put(" ")
-                emitter.put(key)
-                emitter.put("=\"")
-                var position: Int = 0
-
-                while position < value.length do
-                  val amp = value.s.indexOf('&', position)
-                  val quot = value.s.indexOf(Sqt, position)
-                  val next = if amp < 0 then quot else if quot < 0 then amp else amp.min(quot)
-
-                  if next >= 0 then
-                    emitter.put(value, position.z, next - position)
-                    if next == quot then emitter.put("&quot;")
-                    if next == amp then emitter.put("&amp;")
-                    position = next + 1
-                  else
-                    emitter.put(value, position.z, value.length - position)
-                    position = value.length
-
-                emitter.put("\"")
-
-            emitter.put(">")
-
-            nodes.each(recur(_, indent + 1))
-
-            emitter.put("</")
-            emitter.put(label)
-            emitter.put(">")
-
-      recur(document.metadata, 0)
-      recur(document.root, 0)
-      emitter.finish()
-
-    emitter.iterator
-
-
-  private def appendEscapedText(builder: jl.StringBuilder, text: Text): Unit =
+  // Escape text content so the result is well-formed and round-trips exactly. `&` and `<` must be
+  // escaped; `>` is escaped too so the `]]>` sequence can never appear; and a carriage return is
+  // written as a character reference so XML line-ending normalization cannot rewrite it to `\n`.
+  private def writeEscapedText(producer: Producer[Text], text: Text): Unit =
     val source = text.s
     val length = source.length
+    var start = 0
     var index = 0
+
+    inline def escape(entity: Text): Unit =
+      if index > start then producer.put(text, start.z, index - start)
+      producer.put(entity)
+      start = index + 1
 
     while index < length do
       source.charAt(index) match
-        case '<' => builder.append("&lt;")
-        case '&' => builder.append("&amp;")
-        case chr => builder.append(chr)
+        case '&'  => escape(t"&amp;")
+        case '<'  => escape(t"&lt;")
+        case '>'  => escape(t"&gt;")
+        case '\r' => escape(t"&#xD;")
+        case _    => ()
 
       index += 1
 
-  private def appendEscapedAttribute(builder: jl.StringBuilder, text: Text): Unit =
+    if length > start then producer.put(text, start.z, length - start)
+
+  // Escape an attribute value delimited by double quotes. Besides the text escapes, the delimiter
+  // and the whitespace characters tab, line feed and carriage return become character references,
+  // since attribute-value normalization would otherwise collapse literal whitespace to spaces.
+  private def writeEscapedAttribute(producer: Producer[Text], text: Text): Unit =
     val source = text.s
     val length = source.length
+    var start = 0
     var index = 0
+
+    inline def escape(entity: Text): Unit =
+      if index > start then producer.put(text, start.z, index - start)
+      producer.put(entity)
+      start = index + 1
 
     while index < length do
       source.charAt(index) match
-        case '<' => builder.append("&lt;")
-        case '&' => builder.append("&amp;")
-        case '"' => builder.append("&quot;")
-        case chr => builder.append(chr)
+        case '&'  => escape(t"&amp;")
+        case '<'  => escape(t"&lt;")
+        case '>'  => escape(t"&gt;")
+        case '"'  => escape(t"&quot;")
+        case '\t' => escape(t"&#x9;")
+        case '\n' => escape(t"&#xA;")
+        case '\r' => escape(t"&#xD;")
+        case _    => ()
 
       index += 1
 
-  private def appendXml(builder: jl.StringBuilder, node: Xml): Unit = node match
-    case fragment: Fragment =>
-      val nodes = fragment.nodes
-      var index = 0
+    if length > start then producer.put(text, start.z, length - start)
 
-      while index < nodes.length do
-        appendXml(builder, nodes(index))
-        index += 1
+  // The single, spec-correct XML serializer. `emit` drives it through a streaming `Producer` and
+  // `showable` through a synchronous one, so the two never drift.
+  private def writeXml(producer: Producer[Text], node: Xml): Unit = node match
+    case Fragment(nodes*) =>
+      nodes.each(writeXml(producer, _))
 
     case TextNode(text) =>
-      appendEscapedText(builder, text)
+      writeEscapedText(producer, text)
 
-    case Comment(text) =>
-      builder.append("<!--")
-      builder.append(text.s)
-      builder.append("-->")
+    case Comment(comment) =>
+      producer.put("<!--")
+      producer.put(comment)
+      producer.put("-->")
 
     case Cdata(text) =>
-      builder.append("<![CDATA[")
-      builder.append(text.s)
-      builder.append("]]>")
+      producer.put("<![CDATA[")
+      producer.put(text)
+      producer.put("]]>")
 
     case Doctype(text) =>
-      builder.append("<!DOCTYPE ")
-      builder.append(text.s)
-      builder.append('>')
+      producer.put("<!DOCTYPE ")
+      producer.put(text)
+      producer.put(">")
 
     case ProcessingInstruction(target, data) =>
-      builder.append("<?")
-      builder.append(target.s)
+      producer.put("<?")
+      producer.put(target)
 
-      if data.length > 0 then
-        builder.append(' ')
-        builder.append(data.s)
+      if !data.nil then
+        producer.put(" ")
+        producer.put(data)
 
-      builder.append("?>")
+      producer.put("?>")
 
     case Header(version, encoding, standalone) =>
-      builder.append("<?xml version=\"")
-      builder.append(version.s)
-      builder.append('"')
+      producer.put("<?xml version=\"")
+      producer.put(version)
+      producer.put("\"")
 
       encoding.let: encoding =>
-        builder.append(" encoding=\"")
-        builder.append(encoding.s)
-        builder.append('"')
+        producer.put(" encoding=\"")
+        producer.put(encoding)
+        producer.put("\"")
 
       standalone.let: standalone =>
-        builder.append(if standalone then " standalone=\"yes\"" else " standalone=\"no\"")
+        producer.put(if standalone then " standalone=\"yes\"" else " standalone=\"no\"")
 
-      builder.append("?>")
+      producer.put("?>")
 
-    case Element(tagname, attributes, children) =>
-      builder.append('<')
-      builder.append(tagname.s)
+    case Element(label, attributes, children) =>
+      producer.put("<")
+      producer.put(label)
 
-      if !attributes.nil then attributes.foreach: (key, value) =>
-        builder.append(' ')
-        builder.append(key.s)
-        builder.append("=\"")
-        appendEscapedAttribute(builder, value)
-        builder.append('"')
+      if !attributes.nil then attributes.each: (key, value) =>
+        producer.put(" ")
+        producer.put(key)
+        producer.put("=\"")
+        writeEscapedAttribute(producer, value)
+        producer.put("\"")
 
-      if children.nil then builder.append("/>") else
-        builder.append('>')
-        var index = 0
-
-        while index < children.length do
-          appendXml(builder, children(index))
-          index += 1
-
-        builder.append("</")
-        builder.append(tagname.s)
-        builder.append('>')
+      if children.nil then producer.put("/>") else
+        producer.put(">")
+        children.each(writeXml(producer, _))
+        producer.put("</")
+        producer.put(label)
+        producer.put(">")
 
   given showable: [xml <: Xml] => xml is Showable = node =>
-    val builder = jl.StringBuilder()
-    appendXml(builder, node)
-    builder.toString.tt
+    Producer.collect[Text](): producer =>
+      writeXml(producer, node)
 
 
   private enum Token:

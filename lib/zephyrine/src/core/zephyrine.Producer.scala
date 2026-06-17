@@ -34,103 +34,110 @@ package zephyrine
 
 import java.util.concurrent as juc
 
-import anticipation.*
+import anticipation.Data
 import denominative.*
-import rudiments.*
-import vacuous.*
 
-object Emittable:
-  inline given text: Emittable:
-    type Self = Text
-    type Source = Text
-    type Transport = Array[Char]
+// A sink into which a value of one medium is written in pieces. The same producing code can be
+// driven two ways without duplicating it: `Producer.collect` runs it synchronously and returns the
+// whole result, while `Producer.apply` (streaming) writes chunks into a bounded buffer drained
+// lazily through `iterator` — the producing code then runs on a separate fiber. Neither path
+// allocates per `put` along a contiguous run. `Operand` is the element type — `Char` for
+// `Producer[Text]`, `Byte` for `Producer[Data]` — and types the element-at-a-time `push`.
+object Producer:
+  // A byte producer: `Producer[Data]` with its element type pinned to `Byte`, the shape binary
+  // encoders (CBOR, Protobuf, …) write into. `Producer[Data](…)` / `Producer.collect[Data]` already
+  // surface this refinement; this alias names it for helper signatures.
+  type Bytes = Producer[Data] { type Operand = Byte }
 
-    def length(text: Text): Int = text.s.length
-    def produce(block: Array[Char], size: Int): Text = new String(block, 0, size).tt
-    def allocate(size: Int): Array[Char] = new Array[Char](size)
+  // Streaming: chunks are queued (with backpressure) and drained through `iterator`. The producing
+  // code must run on a separate fiber, since `put` blocks once the window is full.
+  def apply[medium](block: Int = 4096, window: Int = 2)(using addr: medium is Addressable)
+  :   Channel[medium] { type Operand = addr.Operand } =
 
+    Channel(block, window)(using addr)
 
-    inline def copy(source: Text, start: Ordinal, target: Array[Char], index: Ordinal, size: Int)
-    :   Unit =
+  // Synchronous: run `body`, accumulating directly into a builder, and return the whole value. No
+  // concurrency, no chunk buffer, and none of the streaming path's single-thread deadlock risk.
+  def collect[medium](using addressable: medium is Addressable)(hint: Int = 4096)
+    ( body: (Producer[medium] { type Operand = addressable.Operand }) => Unit )
+  :   medium =
 
-      source.s.getChars(start.n0, start.n0 + size, target, index.n0)
+    val target = addressable.blank(hint)
 
-  inline given bytes: Emittable:
-    type Self = Data
-    type Source = Data
-    type Transport = Array[Byte]
+    val producer = new Producer[medium]:
+      type Operand = addressable.Operand
 
-    def produce(block: Array[Byte], size: Int): Data =
-      java.util.Arrays.copyOfRange(block, 0, size).nn.immutable(using Unsafe)
+      def put(source: medium): Unit =
+        val size = addressable.length(source)
+        if size > 0 then addressable.clone(source, Prim, (size - 1).z)(target)
 
-    def length(bytes: Data): Int = bytes.length
-    def allocate(size: Int): Array[Byte] = new Array[Byte](size)
+      def put(source: medium, offset: Ordinal, size: Int): Unit =
+        if size > 0 then addressable.clone(source, offset, (offset.n0 + size - 1).z)(target)
 
+      def push(operand: Operand): Unit = addressable.append(target, operand)
 
-    inline def copy(source: Data, start: Ordinal, target: Array[Byte], index: Ordinal, size: Int)
-    :   Unit =
+    body(producer)
+    addressable.build(target)
 
-      System.arraycopy(source.mutable(using Unsafe), start.n0, target, index.n0, index.n0 + size)
+  final class Channel[medium](block: Int, window: Int)(using val addressable: medium is Addressable)
+  extends Producer[medium]:
 
+    type Operand = addressable.Operand
 
-trait Emittable:
-  type Self
-  type Source
-  type Transport
+    private object Done
 
-  def allocate(size: Int): Transport
-  def length(input: Source): Int
-  def produce(block: Transport, size: Int): Self
+    private val queue: juc.ArrayBlockingQueue[medium | Done.type] =
+      juc.ArrayBlockingQueue(window)
 
-  inline def copy
-    ( source: Source,
-      start:  Ordinal,
-      target: Transport,
-      index:  Ordinal,
-      size:   Int )
-  :   Unit
+    private val current: addressable.Storage = addressable.allocate(block)
+    private var index: Ordinal = Prim
 
+    private inline def free: Int = block - index.n0
 
-class Emitter[data: Emittable](block: Int = 4096, window: Int = 2):
-  private object Done
+    private inline def publish(): Unit =
+      if index != Prim then
+        queue.put(addressable.materialize(current, 0, index.n0))
+        index = Prim
 
-  private val queue: juc.ArrayBlockingQueue[data | Done.type] = juc.ArrayBlockingQueue(window)
-  private val current: data.Transport = data.allocate(block)
+    def put(source: medium): Unit = put(source, Prim, addressable.length(source))
 
-  private var index: Ordinal = Prim
+    def put(source: medium, offset: Ordinal, size: Int): Unit =
+      var done = 0
 
-  inline def free: Int = block - index.n0
+      while size - done > free do
+        addressable.copyChunk(source, offset.n0 + done, current, index.n0, free)
+        done += free
+        index = (index.n0 + free).z
+        publish()
 
-  inline def finish(): Unit =
-    publish()
-    queue.put(Done)
+      addressable.copyChunk(source, offset.n0 + done, current, index.n0, size - done)
+      index = (index.n0 + size - done).z
 
-  inline def put(input: data.Source): Unit = put(input, Prim, data.length(input))
+      if free == 0 then publish()
 
-  inline def publish(): Unit =
-    if index != Prim then
-      queue.put(data.produce(current, index.n0))
-      index = Prim
+    def push(operand: Operand): Unit =
+      addressable.storageUpdate(current, index.n0, operand)
+      index = (index.n0 + 1).z
+      if free == 0 then publish()
 
-  inline def put(source: data.Source, offset: Ordinal, size: Int): Unit =
-    var done = 0
-
-    while size - done > free do
-      data.copy(source, (offset.n0 + done).z, current, index, free)
-      done += free
-      index = (index.n0 + free).z
+    def finish(): Unit =
       publish()
+      queue.put(Done)
 
-    data.copy(source, (offset.n0 + done).z, current, index, size - done)
-    index = (index.n0 + size - done).z
+    lazy val iterator: Iterator[medium] = new Iterator[medium]:
+      private var ready: medium | Done.type = Done
 
-    if free == 0 then publish()
+      def hasNext: Boolean =
+        ready = queue.take().nn
+        ready != Done
 
-  lazy val iterator: Iterator[data] = new Iterator[data]:
-    private var ready: data | Done.type = Done
+      def next(): medium = ready.asInstanceOf[medium]
 
-    def hasNext: Boolean =
-      ready = queue.take().nn
-      ready != Done
 
-    def next(): data = ready.asInstanceOf[data]
+trait Producer[medium]:
+  type Operand
+  def put(source: medium): Unit
+  def put(source: medium, offset: Ordinal, size: Int): Unit
+
+  // Write a single element: a `Char` for `Producer[Text]`, a `Byte` for `Producer[Data]`.
+  def push(operand: Operand): Unit

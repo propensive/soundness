@@ -234,114 +234,132 @@ object Html extends Tag.Container
   :   Iterator[Text] =
 
     val dom = document.metadata
-    val emitter = Emitter[Text](4096)
+    val producer = Producer[Text](4096)
 
     async:
-      def recur(node: Html, indent: Int, block: Boolean, mode: Mode): Unit =
-        node match
-          case Fragment(nodes*) => nodes.each(recur(_, indent, block, mode))
+      writeHtml(producer, dom, document.metadata.doctype, 0, true, Mode.Whitespace)
+      writeHtml(producer, dom, document.root, 0, true, Mode.Whitespace)
+      producer.finish()
 
-          case Comment(comment) =>
-            emitter.put("<!--")
-            emitter.put(comment)
-            emitter.put("-->")
+    producer.iterator
 
-          case Doctype(text) =>
-            emitter.put("<!DOCTYPE ")
-            emitter.put(text) // FIXME: entities
-            emitter.put(">")
+  // `.show` serializes against the standard WHATWG (HTML5) DOM and without indentation, so a bare
+  // node renders correctly (void elements, escaping) even outside a `Document`. `emit` uses the
+  // document's own DOM and indents.
+  given showable: [html <: Html] => html is Showable = node =>
+    Producer.collect[Text](): producer =>
+      writeHtml(producer, doms.html.whatwg, node, 0, false, Mode.Whitespace)
 
-          case TextNode(text) =>
-            mode match
-              case Mode.Raw =>
-                emitter.put(text)
+  // HTML5 text-content escaping: `&`, `<` and `>`. Raw-text elements such as `script` and `style`
+  // use `Mode.Raw` and are written verbatim by `writeHtml`.
+  private def writeEscapedText(producer: Producer[Text], text: Text): Unit =
+    val source = text.s
+    val length = source.length
+    var start = 0
+    var index = 0
 
-              case _ =>
-                var position: Int = 0
+    inline def escape(entity: Text): Unit =
+      if index > start then producer.put(text, start.z, index - start)
+      producer.put(entity)
+      start = index + 1
 
-                while position < text.length do
-                  val amp = text.s.indexOf('&', position)
-                  val lt = text.s.indexOf('<', position)
-                  val next = if amp < 0 then lt else if lt < 0 then amp else amp.min(lt)
+    while index < length do
+      source.charAt(index) match
+        case '&' => escape(t"&amp;")
+        case '<' => escape(t"&lt;")
+        case '>' => escape(t"&gt;")
+        case _   => ()
 
-                  if next >= 0 then
-                    emitter.put(text, position.z, next - position)
-                    if next == lt then emitter.put("&lt;")
-                    if next == amp then emitter.put("&amp;")
-                    position = next + 1
-                  else
-                    emitter.put(text, position.z, text.length - position)
-                    position = text.length
+      index += 1
 
-          case Element(label, attributes, nodes, _) =>
-            if block then emitter.put(indentation, Prim, indent*2 + 1)
-            emitter.put("<")
-            emitter.put(label)
+    if length > start then producer.put(text, start.z, length - start)
 
-            if !attributes.nil then
-              attributes.each: (key, value) =>
-                emitter.put(" ")
-                emitter.put(key)
+  // HTML5 escaping for a double-quoted attribute value: `&` and the `"` delimiter. `<` and `>` are
+  // permitted literally in attribute values.
+  private def writeEscapedAttribute(producer: Producer[Text], text: Text): Unit =
+    val source = text.s
+    val length = source.length
+    var start = 0
+    var index = 0
 
-                value.let: value =>
-                  emitter.put("=\"")
-                  var position: Int = 0
+    inline def escape(entity: Text): Unit =
+      if index > start then producer.put(text, start.z, index - start)
+      producer.put(entity)
+      start = index + 1
 
-                  while position < value.length do
-                    val amp = value.s.indexOf('&', position)
-                    val quot = value.s.indexOf('\"', position)
-                    val next = if amp < 0 then quot else if quot < 0 then amp else amp.min(quot)
+    while index < length do
+      source.charAt(index) match
+        case '&' => escape(t"&amp;")
+        case '"' => escape(t"&quot;")
+        case _   => ()
 
-                    if next >= 0 then
-                      emitter.put(value, position.z, next - position)
-                      if next == quot then emitter.put("&quot;")
-                      if next == amp then emitter.put("&amp;")
-                      position = next + 1
-                    else
-                      emitter.put(value, position.z, value.length - position)
-                      position = value.length
+      index += 1
 
-                  emitter.put("\"")
+    if length > start then producer.put(text, start.z, length - start)
 
-            emitter.put(">")
+  // The single, spec-correct HTML serializer, shared by streaming `emit` and synchronous
+  // `showable` so the two cannot drift. Void elements omit their close tag; raw-text elements
+  // suppress escaping; whitespace-mode elements are indented when `block` is set.
+  private def writeHtml
+    ( producer: Producer[Text],
+      dom:      Dom,
+      node:     Html,
+      indent:   Int,
+      block:    Boolean,
+      mode:     Mode )
+  :   Unit =
 
-            val mode = dom.elements(label).lay(Mode.Normal)(_.mode)
+    node match
+      case Fragment(nodes*) =>
+        nodes.each(writeHtml(producer, dom, _, indent, block, mode))
 
-            val whitespace =
-              (mode == Mode.Whitespace || !nodes.exists(_.isInstanceOf[TextNode]))
-              && block
+      case Comment(comment) =>
+        producer.put("<!--")
+        producer.put(comment)
+        producer.put("-->")
 
-            if !dom.elements(label).lay(false)(_.void) then
-              nodes.each(recur(_, indent + 1, whitespace, mode))
+      case Doctype(text) =>
+        producer.put("<!DOCTYPE ")
+        producer.put(text) // FIXME: entities
+        producer.put(">")
 
-              if block && whitespace
-              then emitter.put(indentation, Prim, (indent*2 + 1).min(indentation.length))
+      case TextNode(text) =>
+        mode match
+          case Mode.Raw => producer.put(text)
+          case _        => writeEscapedText(producer, text)
 
-              emitter.put("</")
-              emitter.put(label)
-              emitter.put(">")
+      case Element(label, attributes, nodes, _) =>
+        if block then producer.put(indentation, Prim, indent*2 + 1)
+        producer.put("<")
+        producer.put(label)
 
-      recur(document.metadata.doctype, 0, true, Mode.Whitespace)
-      recur(document.root, 0, true, Mode.Whitespace)
-      emitter.finish()
+        if !attributes.nil then
+          attributes.each: (key, value) =>
+            producer.put(" ")
+            producer.put(key)
 
-    emitter.iterator
+            value.let: value =>
+              producer.put("=\"")
+              writeEscapedAttribute(producer, value)
+              producer.put("\"")
 
+        producer.put(">")
 
-  given showable: [html <: Html] => html is Showable =
-    case Fragment(nodes*)  => nodes.map(_.show).join
-    case TextNode(text)    => text
-    case Comment(text)     => t"<!--$text-->"
-    case Doctype(text)     => t"<!$text>"
+        val mode = dom.elements(label).lay(Mode.Normal)(_.mode)
 
-    case Element(tagname, attributes, children, _) =>
-      val tagContent = if attributes.nil then t"" else
-        attributes.map:
-          case (key, value) => value.lay(key): value => t"""$key="$value""""
+        val whitespace =
+          (mode == Mode.Whitespace || !nodes.exists(_.isInstanceOf[TextNode]))
+          && block
 
-        . join(t" ", t" ", t"")
+        if !dom.elements(label).lay(false)(_.void) then
+          nodes.each(writeHtml(producer, dom, _, indent + 1, whitespace, mode))
 
-      t"<$tagname$tagContent>${children.map(_.show).join}</$tagname>"
+          if block && whitespace
+          then producer.put(indentation, Prim, (indent*2 + 1).min(indentation.length))
+
+          producer.put("</")
+          producer.put(label)
+          producer.put(">")
 
 
   private enum Token:

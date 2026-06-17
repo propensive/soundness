@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export zephyrine.{Addressable, Cursor, Datum, Emittable, Emitter, Format, Lineation, ParseError}
+export zephyrine.{Addressable, Cursor, Datum, Format, Lineation, ParseError, Producer}

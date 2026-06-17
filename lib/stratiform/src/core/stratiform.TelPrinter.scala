@@ -35,8 +35,10 @@ package stratiform
 import scala.language.unsafeNulls
 
 import anticipation.*
+import parasite.*
 import rudiments.*
 import vacuous.*
+import zephyrine.*
 
 // Reverses the presentation parser. The printer is line-based: each
 // emission appends one or more strings to a buffer that is finally joined
@@ -47,11 +49,35 @@ import vacuous.*
 
 object TelPrinter:
   def print(document: Tel.Document): Text =
-    val buffer = scala.collection.mutable.ArrayBuffer.empty[String]
+    Producer.collect[Text](): producer =>
+      write(producer, document)
+
+  def emit(document: Tel.Document)(using Monitor, Probate): Iterator[Text] =
+    val producer = Producer[Text](4096)
+
+    async:
+      write(producer, document)
+      producer.finish()
+
+    producer.iterator
+
+  private def write(producer: Producer[Text], document: Tel.Document): Unit =
+    val newline = document.lineEndings match
+      case Tel.LineEndings.Lf   => "\n"
+      case Tel.LineEndings.Crlf => "\r\n"
+
+    var first = true
+
+    // Emit one line, inserting the document's line ending between lines but never after the last,
+    // so the joined output matches the former buffer-and-`mkString` exactly.
+    def out(text: String): Unit =
+      if first then first = false else producer.put(Text(newline))
+      producer.put(Text(text))
+
     val sigil = document.pragma.let(_.sigil.or('#')).or('#')
 
     document.interpreterDirective.let: payload =>
-      buffer += "#!" + payload.s
+      out("#!" + payload.s)
 
     document.pragma.let: pragma =>
       val parts = scala.collection.mutable.ArrayBuffer.empty[String]
@@ -59,31 +85,18 @@ object TelPrinter:
       parts += s"${pragma.version._1}.${pragma.version._2}"
       pragma.schema.let: s => parts += s.s
       pragma.sigil.let: c => parts += c.toString
-      buffer += parts.mkString(" ")
-      buffer += ""
+      out(parts.mkString(" "))
+      out("")
 
-    document.children.each(emitBlock(buffer, _, 0, sigil))
+    document.children.each(emitBlock(out, _, 0, sigil))
 
-    val newline = document.lineEndings match
-      case Tel.LineEndings.Lf   => "\n"
-      case Tel.LineEndings.Crlf => "\r\n"
-
-    Text(buffer.mkString(newline))
-
-  private def emitBlock
-    ( buffer: scala.collection.mutable.ArrayBuffer[String],
-      block: Tel.Block,
-      indent: Int,
-      sigil: Char )
-  :   Unit =
-
+  private def emitBlock(out: String => Unit, block: Tel.Block, indent: Int, sigil: Char): Unit =
     val pad = "  " * indent
 
     block.comments.each: comment =>
       val text = comment.text.s
 
-      if text.isEmpty then buffer += s"$pad$sigil"
-      else buffer += s"$pad$sigil $text"
+      if text.isEmpty then out(s"$pad$sigil") else out(s"$pad$sigil $text")
 
     block.tabulation.let: tab =>
       val line = StringBuilder()
@@ -101,18 +114,18 @@ object TelPrinter:
 
         i += 1
 
-      buffer += line.toString
+      out(line.toString)
 
-    block.compounds.each(emitCompound(buffer, _, indent, sigil))
+    block.compounds.each(emitCompound(out, _, indent, sigil))
 
     var b = 0
 
     while b < block.trailingBlankLines do
-      buffer += ""
+      out("")
       b += 1
 
   private def emitCompound
-    ( buffer:   scala.collection.mutable.ArrayBuffer[String],
+    ( out:      String => Unit,
       compound: Tel.Compound,
       indent:   Int,
       sigil:    Char )
@@ -135,25 +148,22 @@ object TelPrinter:
         line.append(text.s)
 
     compound.remark.let: remark =>
-      // Two spaces before the sigil ensure correct re-parsing regardless of
-      // whether the preceding atoms put the line into hard-space mode: in
-      // hard mode only hard spaces terminate phrases, so a single space
-      // before `#` would be absorbed as atom content instead of marking the
-      // remark introducer. §18.1 permits the serialiser to use a minimum
+      // Two spaces before the sigil ensure correct re-parsing regardless of whether the preceding
+      // atoms put the line into hard-space mode: in hard mode only hard spaces terminate phrases,
+      // so a single space before `#` would be absorbed as atom content. §18.1 permits a minimum
       // hard space before remark introducers.
       line.append("  ")
       line.append(sigil)
       line.append(' ')
       line.append(remark.s)
 
-    buffer += line.toString
+    out(line.toString)
 
     trailingAtom match
       case Tel.Atom.Source(text) =>
         val sourcePad = "  " * (indent + 2)
-        // §14 "Convention A": `text` is LF-separated with no trailing LF, so
-        // each LF-delimited segment is one source line (an empty segment is a
-        // blank line emitted with no indentation).
+        // §14 "Convention A": `text` is LF-separated with no trailing LF, so each LF-delimited
+        // segment is one source line (an empty segment is a blank line with no indentation).
         val sourceText = text.s
         var start = 0
 
@@ -161,22 +171,22 @@ object TelPrinter:
           val nl = sourceText.indexOf('\n', start)
           val end = if nl < 0 then sourceText.length else nl
           val seg = sourceText.substring(start, end)
-          buffer += (if seg.isEmpty then "" else sourcePad + seg)
+          out(if seg.isEmpty then "" else sourcePad + seg)
           if nl < 0 then start = sourceText.length + 1 else start = nl + 1
 
       case Tel.Atom.Literal(delimiter, text) =>
-        buffer += "  " * (indent + 3) + delimiter.s
+        out("  " * (indent + 3) + delimiter.s)
         val payload = text.s
         var start = 0
 
         while start <= payload.length do
           val nl = payload.indexOf('\n', start)
           val end = if nl < 0 then payload.length else nl
-          buffer += payload.substring(start, end)
+          out(payload.substring(start, end))
           if nl < 0 then start = payload.length + 1 else start = nl + 1
 
-        buffer += delimiter.s
+        out(delimiter.s)
 
       case _ => ()
 
-    compound.children.each(emitBlock(buffer, _, indent + 1, sigil))
+    compound.children.each(emitBlock(out, _, indent + 1, sigil))

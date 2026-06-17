@@ -468,7 +468,9 @@ object bitumen extends Library:
   object test extends Tests(core, galilei.core, guillotine.core)
 
 object breviloquence extends Library:
-  object core extends Component(urticose.url, panopticon.core, turbulence.core, adversaria.core):
+  object core
+      extends Component(urticose.url, panopticon.core, turbulence.core, adversaria.core,
+                       zephyrine.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, sedentary.core, eucalyptus.core)
@@ -1039,7 +1041,7 @@ object mandible extends Library:
 object locomotion extends Library:
   object core
       extends Component(turbulence.core, wisteria.core, adversaria.core, hypotenuse.core,
-        gossamer.core, spectacular.core, panopticon.core):
+        gossamer.core, spectacular.core, panopticon.core, zephyrine.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)

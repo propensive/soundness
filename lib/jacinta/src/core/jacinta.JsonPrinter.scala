@@ -35,54 +35,100 @@ package jacinta
 import scala.compiletime.*
 
 import anticipation.*
+import denominative.*
 import gossamer.*
-import rudiments.*
+import parasite.*
+import zephyrine.*
 
 object JsonPrinter:
-  def print(json: Json.Ast, indentation: Boolean): Text = Text.build:
-    def appendString(string: String): Unit =
-      append('"')
+  // 64 spaces, sliced for indentation.
+  private val spaces: Text =
+    t"                                                                "
 
-      string.iterator.each:
-        case '\"' => append(t"\\\"")
-        case '\t' => append(t"\\t")
-        case '\n' => append(t"\\n")
-        case '\r' => append(t"\\r")
-        case '\\' => append(t"\\\\")
-        case '\f' => append(t"\\f")
-        case ch   => append(ch)
+  def print(json: Json.Ast, indentation: Boolean): Text =
+    Producer.collect[Text](): producer =>
+      write(producer, json, indentation)
 
-      append('"')
+  def emit(json: Json.Ast, indentation: Boolean)(using Monitor, Probate): Iterator[Text] =
+    val producer = Producer[Text](4096)
 
-    def printObject(node: IArray[Any], indent: Int): Unit =
+    async:
+      write(producer, json, indentation)
+      producer.finish()
+
+    producer.iterator
+
+  private def unicode(char: Char): Text =
+    val hex = Integer.toHexString(char.toInt).nn
+    if hex.length == 1 then t"\\u000$hex" else t"\\u00$hex"
+
+  private def write(producer: Producer[Text], json: Json.Ast, indentation: Boolean): Unit =
+    def indent(count: Int): Unit =
+      var remaining = count
+
+      while remaining > 0 do
+        val chunk = remaining.min(64)
+        producer.put(spaces, Prim, chunk)
+        remaining -= chunk
+
+    // JSON string escaping (RFC 8259): the quote and backslash, the named control escapes, and any
+    // other U+0000-001F control character as a `\uXXXX` reference.
+    def writeString(string: String): Unit =
+      producer.put("\"")
+      val length = string.length
+      var start = 0
+      var index = 0
+
+      inline def escape(entity: Text): Unit =
+        if index > start then producer.put(string.tt, start.z, index - start)
+        producer.put(entity)
+        start = index + 1
+
+      while index < length do
+        string.charAt(index) match
+          case '"'          => escape(t"\\\"")
+          case '\\'         => escape(t"\\\\")
+          case '\b'         => escape(t"\\b")
+          case '\f'         => escape(t"\\f")
+          case '\n'         => escape(t"\\n")
+          case '\r'         => escape(t"\\r")
+          case '\t'         => escape(t"\\t")
+          case c if c < ' ' => escape(unicode(c))
+          case _            => ()
+
+        index += 1
+
+      if length > start then producer.put(string.tt, start.z, length - start)
+      producer.put("\"")
+
+    def writeObject(node: IArray[Any], level: Int): Unit =
       val n = node.length/2
-      append('{')
+      producer.put("{")
       val last = n - 1
-
       var index = 0
 
       while index < n do
         if indentation then
-          append('\n')
-          for i <- 0 until indent*2 do append(' ')
+          producer.put("\n")
+          indent(level*2)
 
-        appendString(node(index*2).asInstanceOf[String])
-        append(':')
-        if indentation then append(' ')
-        recur(node(index*2 + 1).asInstanceOf[Json.Ast], indent + 1)
+        writeString(node(index*2).asInstanceOf[String])
+        producer.put(":")
+        if indentation then producer.put(" ")
+        recur(node(index*2 + 1).asInstanceOf[Json.Ast], level + 1)
 
-        if index < last then append(',')
+        if index < last then producer.put(",")
         index += 1
 
       if indentation then
-        append('\n')
-        for i <- 0 until indent*2 - 2 do append(' ')
+        producer.put("\n")
+        indent(level*2 - 2)
 
-      append('}')
+      producer.put("}")
 
-    def printArray(elements: IArray[Any], indent: Int): Unit =
-      // Strip the sentinel pad if present (parity-padded heterogeneous
-      // arrays carry one for empty/even-length cases).
+    def writeArray(elements: IArray[Any], level: Int): Unit =
+      // Strip the sentinel pad if present (parity-padded heterogeneous arrays
+      // carry one for empty/even-length cases).
       val raw = elements.length
 
       val n =
@@ -90,90 +136,88 @@ object JsonPrinter:
         then raw - 1
         else raw
 
-      append('[')
+      producer.put("[")
       val last = n - 1
-
       var index = 0
 
       while index < n do
         if indentation then
-          append('\n')
-          for i <- 0 until indent*2 do append(' ')
+          producer.put("\n")
+          indent(level*2)
 
-        recur(elements(index).asInstanceOf[Json.Ast], indent + 1)
-        if index < last then append(',')
+        recur(elements(index).asInstanceOf[Json.Ast], level + 1)
+        if index < last then producer.put(",")
         index += 1
 
       if indentation then
-        append('\n')
-        for i <- 0 until indent*2 - 2 do append(' ')
+        producer.put("\n")
+        indent(level*2 - 2)
 
-      append(']')
+      producer.put("]")
 
-    def printBcdLongArray(bcds: Array[Long]): Unit =
+    def writeBcdLongArray(bcds: Array[Long]): Unit =
       val n = bcds.length
-      append('[')
+      producer.put("[")
       val last = n - 1
       var index = 0
 
       while index < n do
-        append(Bcd.bcdLongText(bcds(index)).tt)
-        if index < last then append(',')
+        producer.put(Bcd.bcdLongText(bcds(index)).tt)
+        if index < last then producer.put(",")
         index += 1
 
-      append(']')
+      producer.put("]")
 
-    def printSmallBcdArray(smalls: Array[Int]): Unit =
+    def writeSmallBcdArray(smalls: Array[Int]): Unit =
       val n = smalls.length
-      append('[')
+      producer.put("[")
       val last = n - 1
       var index = 0
 
       while index < n do
-        append(Bcd.bcdIntText(smalls(index)).tt)
-        if index < last then append(',')
+        producer.put(Bcd.bcdIntText(smalls(index)).tt)
+        if index < last then producer.put(",")
         index += 1
 
-      append(']')
+      producer.put("]")
 
-    def recur(json: Json.Ast, indent: Int): Unit = json.asMatchable match
+    def recur(json: Json.Ast, level: Int): Unit = json.asMatchable match
       case bcds: Array[Long] @unchecked =>
-        printBcdLongArray(bcds)
+        writeBcdLongArray(bcds)
 
       case smalls: Array[Int] @unchecked =>
-        printSmallBcdArray(smalls)
+        writeSmallBcdArray(smalls)
 
       case bcd: Array[Double] @unchecked =>
-        // High-precision number — emit the canonical JSON-number text from
-        // the BCD nibble stream directly; this preserves all digits the
-        // parser saw, in contrast to a `Double.toString` round-trip.
-        append(bcd.asInstanceOf[Bcd].text.tt)
+        // High-precision number — emit the canonical JSON-number text from the
+        // BCD nibble stream directly; this preserves all digits the parser saw,
+        // in contrast to a `Double.toString` round-trip.
+        producer.put(bcd.asInstanceOf[Bcd].text.tt)
 
       case smallBcd: Int =>
         // Small-BCD number — at most 7 nibbles packed into one Int.
-        append(Bcd.bcdIntText(smallBcd).tt)
+        producer.put(Bcd.bcdIntText(smallBcd).tt)
 
       case arr: IArray[Any] @unchecked =>
-        // Heterogeneous array or object, distinguished by length parity:
-        // even = object (alternating key/value); odd = array (with
-        // optional sentinel pad on the end).
-        if (arr.length & 1) == 0 then printObject(arr, indent)
-        else printArray(arr, indent)
+        // Heterogeneous array or object, distinguished by length parity: even =
+        // object (alternating key/value); odd = array (with optional sentinel
+        // pad on the end).
+        if (arr.length & 1) == 0 then writeObject(arr, level) else writeArray(arr, level)
 
       case long: Long =>
-        append(long.toString)
+        producer.put(long.toString.tt)
 
       case double: Double =>
-        append(double.toString)
+        producer.put(double.toString.tt)
 
       case string: String =>
-        appendString(string)
+        writeString(string)
 
       case boolean: Boolean =>
-        append(boolean.toString)
+        producer.put(boolean.toString.tt)
 
       case _ =>
-        append("null")
+        producer.put("null")
 
     recur(json, 1)
 

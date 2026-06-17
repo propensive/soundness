@@ -43,111 +43,166 @@ object Tests extends Suite(m"Zephyrine tests"):
   val bytes = Data.fill(1000)(_.toByte)
   def run(): Unit = stochastic:
 
-    suite(m"Emitter tests"):
+    suite(m"Producer tests"):
       test(m"mismatched block size"):
-        val emitter = Emitter[Text](4, 20)
-        emitter.put("one")
-        emitter.put("two")
-        emitter.finish()
-        val it = async(emitter.iterator.to(List))
+        val producer = Producer[Text](4, 20)
+        producer.put("one")
+        producer.put("two")
+        producer.finish()
+        val it = async(producer.iterator.to(List))
 
         unsafely(it.await())
       . assert(_ == List("onet", "wo"))
 
       test(m"One block, exact size, ready immediately"):
-        val emitter = Emitter[Text](4, 3)
-        emitter.put("zero")
-        emitter.iterator
-        if emitter.iterator.hasNext then emitter.iterator.next() else ""
+        val producer = Producer[Text](4, 3)
+        producer.put("zero")
+        producer.iterator
+        if producer.iterator.hasNext then producer.iterator.next() else ""
       . assert(_ == "zero")
 
       test(m"Two blocks, exact size, ready immediately"):
-        val emitter = Emitter[Text](4, 2)
-        emitter.put("zerofour")
-        emitter.iterator
+        val producer = Producer[Text](4, 2)
+        producer.put("zerofour")
+        producer.iterator
         var out = ""
-        if emitter.iterator.hasNext then out += emitter.iterator.next()
-        if emitter.iterator.hasNext then out += emitter.iterator.next()
+        if producer.iterator.hasNext then out += producer.iterator.next()
+        if producer.iterator.hasNext then out += producer.iterator.next()
         out
       . assert(_ == "zerofour")
 
       test(m"More than two blocks, ready immediately"):
-        val emitter = Emitter[Text](4, 2)
-        emitter.put("zerofoursix")
-        emitter.iterator
+        val producer = Producer[Text](4, 2)
+        producer.put("zerofoursix")
+        producer.iterator
         var out = ""
-        if emitter.iterator.hasNext then out += emitter.iterator.next()
-        if emitter.iterator.hasNext then out += emitter.iterator.next()
+        if producer.iterator.hasNext then out += producer.iterator.next()
+        if producer.iterator.hasNext then out += producer.iterator.next()
         out
       . assert(_ == "zerofour")
 
       test(m"More than two blocks, fragmented, ready immediately"):
-        val emitter = Emitter[Text](4, 2)
-        emitter.put("12")
-        emitter.put("3")
-        emitter.put("4")
-        emitter.put("5")
-        emitter.put("6")
-        emitter.put("7")
-        emitter.put("8")
-        emitter.iterator
+        val producer = Producer[Text](4, 2)
+        producer.put("12")
+        producer.put("3")
+        producer.put("4")
+        producer.put("5")
+        producer.put("6")
+        producer.put("7")
+        producer.put("8")
+        producer.iterator
         var out = ""
-        if emitter.iterator.hasNext then out += emitter.iterator.next()
-        if emitter.iterator.hasNext then out += emitter.iterator.next()
+        if producer.iterator.hasNext then out += producer.iterator.next()
+        if producer.iterator.hasNext then out += producer.iterator.next()
         out
       . assert(_ == "12345678")
 
       test(m"Single long message, with blocking"):
-        val emitter = Emitter[Text](4, 2)
-        val out = async(emitter.iterator.to(List))
-        emitter.put("12345678901234567890")
-        emitter.finish()
+        val producer = Producer[Text](4, 2)
+        val out = async(producer.iterator.to(List))
+        producer.put("12345678901234567890")
+        producer.finish()
         unsafely(out.await())
       . assert(_ == List("1234", "5678", "9012", "3456", "7890"))
 
       test(m"Single long message, with blocking; incomplete final block"):
-        val emitter = Emitter[Text](4, 2)
-        val out = async(emitter.iterator.to(List))
-        emitter.put("123456789012345678")
-        emitter.finish()
+        val producer = Producer[Text](4, 2)
+        val out = async(producer.iterator.to(List))
+        producer.put("123456789012345678")
+        producer.finish()
         unsafely(out.await())
       . assert(_ == List("1234", "5678", "9012", "3456", "78"))
 
       for i <- 0 to 30 do
         val string = (0 to i).map(_.toString).foldLeft("")(_ + _)
         test(m"String length $i, sent whole, async puts"):
-          val emitter = Emitter[Text](5, 2)
-          val producer = async:
-            emitter.put(string)
-            emitter.finish()
-          emitter.iterator.foldLeft("")(_ + _)
+          val producer = Producer[Text](5, 2)
+          val fiber = async:
+            producer.put(string)
+            producer.finish()
+          producer.iterator.foldLeft("")(_ + _)
         . assert(_ == string)
 
         test(m"String length $i, sent unitarily, async puts"):
-          val emitter = Emitter[Text](5, 2)
-          val producer = async:
+          val producer = Producer[Text](5, 2)
+          val fiber = async:
             string.tt.chars.foreach: char =>
-              emitter.put(char.toString)
-            emitter.finish()
-          emitter.iterator.foldLeft("")(_ + _)
+              producer.put(char.toString)
+            producer.finish()
+          producer.iterator.foldLeft("")(_ + _)
         . assert(_ == string)
 
         test(m"String length $i, sent whole, async reads"):
-          val emitter = Emitter[Text](5, 2)
-          val output = async(emitter.iterator.foldLeft("")(_ + _))
-          emitter.put(string)
-          emitter.finish()
+          val producer = Producer[Text](5, 2)
+          val output = async(producer.iterator.foldLeft("")(_ + _))
+          producer.put(string)
+          producer.finish()
           unsafely(output.await())
         . assert(_ == string)
 
         test(m"String length $i, sent unitarily, async reads"):
-          val emitter = Emitter[Text](5, 2)
-          val output = async(emitter.iterator.foldLeft("")(_ + _))
+          val producer = Producer[Text](5, 2)
+          val output = async(producer.iterator.foldLeft("")(_ + _))
           string.tt.chars.each: char =>
-            emitter.put(char.toString)
-          emitter.finish()
+            producer.put(char.toString)
+          producer.finish()
           unsafely(output.await())
         . assert(_ == string)
+
+      test(m"Bytes producer copies a non-zero-offset put correctly"):
+        // The second `put` lands at buffer index 3, exercising the bytes-path
+        // `arraycopy` length (a regression here over-reads the source).
+        val producer = Producer[Data](8)
+        val output = async(producer.iterator.to(List))
+        producer.put(Data.fill(3)(_.toByte))
+        producer.put(Data.fill(5)(i => (i + 10).toByte))
+        producer.finish()
+        unsafely(output.await()).flatMap(_.to(List))
+      . assert(_ == List[Byte](0, 1, 2, 10, 11, 12, 13, 14))
+
+      test(m"Synchronous text collection joins puts"):
+        Producer.collect[Text](4): producer =>
+          producer.put("hello ")
+          producer.put("world")
+      . assert(_ == "hello world")
+
+      test(m"Synchronous collection of a sub-range"):
+        Producer.collect[Text](): producer =>
+          producer.put("--hello--", 2.z, 5)
+      . assert(_ == "hello")
+
+      test(m"Synchronous bytes collection"):
+        Producer.collect[Data](): producer =>
+          producer.put(Data.fill(3)(_.toByte))
+          producer.put(Data.fill(5)(i => (i + 10).toByte))
+      . assert(_.to(List) == List[Byte](0, 1, 2, 10, 11, 12, 13, 14))
+
+      test(m"Push bytes one at a time (synchronous)"):
+        Producer.collect[Data](): producer =>
+          var i = 0
+          while i < 6 do
+            producer.push((i*2).toByte)
+            i += 1
+      . assert(_.to(List) == List[Byte](0, 2, 4, 6, 8, 10))
+
+      test(m"Push bytes across a block boundary (streaming)"):
+        val producer = Producer[Data](4)
+        val output = async(producer.iterator.to(List))
+        var i = 0
+
+        while i < 10 do
+          producer.push(i.toByte)
+          i += 1
+
+        producer.finish()
+        unsafely(output.await()).flatMap(_.to(List))
+      . assert(_ == (0 until 10).map(_.toByte).to(List))
+
+      test(m"Push chars (synchronous text)"):
+        Producer.collect[Text](): producer =>
+          producer.push('h')
+          producer.push('i')
+      . assert(_ == "hi")
 
 
 

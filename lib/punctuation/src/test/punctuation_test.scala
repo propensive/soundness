@@ -124,6 +124,30 @@ object Tests extends Suite(m"Punctuation tests"):
           case Layout.OrderedList(_, 1, true, _, items*) if items.size == 2 => true
           case _                                                            => false
 
+    suite(m"Serializer wrapping"):
+      def squash(text: Text): Text = text.cut(t"\n").join(t"").cut(t" ").join(t"")
+      val src = t"alpha beta gamma delta epsilon zeta eta theta iota kappa"
+      val document = Parser.parse(src+t"\n")
+
+      test(m"bounded width keeps every line within the limit"):
+        val wrapped = Serializer(document)(using MarkdownWidth.bounded(20))
+        wrapped.cut(t"\n").filter(_ != t"").all(_.length <= 20)
+      . assert(_ == true)
+
+      test(m"wrapping actually breaks the paragraph onto several lines"):
+        val wrapped = Serializer(document)(using MarkdownWidth.bounded(20))
+        wrapped.cut(t"\n").filter(_ != t"").length
+      . assert(_ > 1)
+
+      test(m"wrapping preserves the words and their order"):
+        val wrapped = Serializer(document)(using MarkdownWidth.bounded(20))
+        squash(wrapped)
+      . assert(_ == squash(src))
+
+      test(m"the default width never wraps"):
+        Serializer(document).cut(t"\n").filter(_ != t"").length
+      . assert(_ == 1)
+
     suite(m"Terminal renderer"):
       import hyphenations.englishHyphenation
       import termcapDefinitions.xtermTrueColorTermcap
