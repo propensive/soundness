@@ -164,6 +164,7 @@ object internal:
                                   Map
                                     ( "result".tt ->
                                       $encoder.encode(${application.asExprOf[result]}) )
+
                                 output.json
                               }
 

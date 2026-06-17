@@ -145,7 +145,7 @@ object Keyboard:
 
               case
                 ( '1' #:: ';' #:: modifiers #:: (code@('A' | 'B' | 'C' | 'D' | 'F' | 'H')) #::
-                    rest ) =>
+                  rest ) =>
 
                 Keyboard.modified(modifiers, Keyboard.navigation(code)) #:: process(rest)
 
