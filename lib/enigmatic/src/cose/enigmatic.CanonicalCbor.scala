@@ -36,11 +36,11 @@ import anticipation.*
 import breviloquence.*
 
 // Deterministic CBOR encoding per RFC 8949 §4.2.1, as required by RFC 9052 §9.
-// `CborPrinter` already emits shortest-form integers and definite-length items;
-// what's missing is map-key ordering (bytewise lexicographic order of the
+// The `Cbor.Ast` encoder already emits shortest-form integers and definite-length
+// items; what's missing is map-key ordering (bytewise lexicographic order of the
 // encoded keys).
 object CanonicalCbor:
-  def encode(ast: Cbor.Ast): Data = CborPrinter.encode(canonicalise(ast))
+  def encode(ast: Cbor.Ast): Data = canonicalise(ast).encode
 
   private def canonicalise(ast: Cbor.Ast): Cbor.Ast =
     if ast.isMap then
@@ -51,7 +51,7 @@ object CanonicalCbor:
       while index < n do
         val canonicalKey = canonicalise(ast.key(index))
         val canonicalValue = canonicalise(ast.value(index))
-        builder += ((CborPrinter.encode(canonicalKey), canonicalKey, canonicalValue))
+        builder += ((canonicalKey.encode, canonicalKey, canonicalValue))
         index += 1
 
       val sorted = builder.sortWith: (a, b) => compareBytes(a._1, b._1) < 0
