@@ -227,3 +227,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"Two odd-indented lines accrue two OddIndentation errors"):
         validateRead(t"a\n b\n c\n").items.map(_(1).reason).to(List)
       . assert(_ == List(TelError.Reason.OddIndentation, TelError.Reason.OddIndentation))
+
+      test(m"An over-indented line recovers and a later defect still accrues"):
+        validateRead(t"parent\n        too-deep\nc \n").items.map(_(1).reason).to(Set)
+      . assert(_ == Set(TelError.Reason.OverIndentation, TelError.Reason.TrailingSpaces))

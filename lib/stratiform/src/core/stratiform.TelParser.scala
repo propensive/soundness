@@ -1332,30 +1332,30 @@ private final class TelParser():
     else
       val start = blockScratchIx
 
-      while !head.eof && !head.separator && head.indentLevels == expected do
-        parseBlock(expected)  // pushes one block onto scratchBlocks
+      // A line more indented than `expected` is misplaced. Under fail-fast the
+      // first such line raises (unchanged); under a `validate` boundary we record
+      // it and recover (SkipOverIndented / ShallowerIndent) by clamping it to
+      // `expected` so `parseBlock` consumes it as a sibling — guaranteeing the
+      // cursor advances every iteration, so the parser keeps going to EOF and
+      // accrues every defect (e.g. for LSP diagnostics) without ever stalling.
+      while !head.eof && !head.separator && head.indentLevels >= expected do
+        if head.indentLevels > expected then
+          val line   = head.startLine
+          val lastIx = blockScratchIx - 1
 
-      // After consuming children at `expected`, a remaining non-blank line
-      // more indented than `expected` is an error. A document separator
-      // (always at column zero) is never over-indented, so it is excluded.
-      if !head.eof && !head.separator && head.indentLevels > expected then
-        val line = head.startLine
-        val lastIx = blockScratchIx - 1
+          val reason =
+            if lastIx < start then Reason.OverIndentation
+            else
+              val last = scratchBlocks(lastIx)
 
-        if lastIx >= start then
-          val last = scratchBlocks(lastIx)
+              if last.tabulation.present && last.compounds.nil then Reason.RowWrongIndent
+              else if last.tabulation.present || last.compounds.nil then Reason.ChildOfNonCompound
+              else Reason.OverIndentation
 
-          if last.tabulation.present && last.compounds.nil then
-            errorAt(Reason.RowWrongIndent, line, 1)
-          else if last.tabulation.present then
-            errorAt(Reason.ChildOfNonCompound, line, 1)
-          else if last.compounds.nil then
-            errorAt(Reason.ChildOfNonCompound, line, 1)
-          else
-            errorAt(Reason.OverIndentation, line, 1)
+          recoverAt(reason, line, 1)(())
+          head.indentLevels = expected
 
-        else
-          errorAt(Reason.OverIndentation, line, 1)
+        parseBlock(expected)  // pushes one block onto scratchBlocks; consumes ≥1 line
 
       takeBlocks(blockScratchIx - start)
 
