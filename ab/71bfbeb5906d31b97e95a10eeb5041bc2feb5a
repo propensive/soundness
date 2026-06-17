@@ -1,0 +1,29 @@
+{
+  "signature": "-----BEGIN SSH SIGNATURE-----\nU1NIU0lHAAAAAQAAAZcAAAAHc3NoLXJzYQAAAAMBAAEAAAGBANKeZiOgGy2ygR1XnKHjPk\nGD1dnDP8rPMDkaTfybosrPoQPXc6dnx28ZedTB+gQmW1RbBeFO4xOUWdP6MbJZbmQHko3e\n+OQAnqn8RD3zmJ4HYqG+OF1n9dS89tEG0yrlJaoMfWSm5uMK/iGeBVIAHPPPejKY41X0AP\nU/4G5o7+3Yv2JKcK/nB5vd1A0XBOnGJCOQGzOxxFAIX1t3btuEPyL04540eAOAtm6OxuMX\ntpy057iBQr89StE3OoQxU9Nxd8Qd0+6G1bqVjjdhhy+BU5D8Md3jkEyQP6Uan+nmcxA+TD\nG1m0ZNkusZqWtojXjgxqTCZqSiNO87JyyKtOpWLEeRlm9+hA7Xa8HPu8hsR+e0JhotXpLe\nxJvCBVK60ZTdzfmhCujT8GrXiRjMDMF7rHPyBaLIbUl5EuoU1yJyfu4pZdJgpxe1zHQX5I\nGGy8MXuOsJ9J2IqX9izuZINS5AsycfFX+Y1YvInzALxhAhEKjrsvyi/u3Kte/4hcoLvrbF\nwQAAAAxzb3VuZG5lc3MtY2kAAAAAAAAABnNoYTUxMgAAAZQAAAAMcnNhLXNoYTItNTEyAA\nABgDDifQ/3TRWE4UNaZNJPAiwUhjy2cRVY2lhXuyBeFTpUBd9dqSZerURFXnvT9si58/ok\nnjiqhaAkM0+EBzSSanUfefpC0DyN/is5wEvtLswoH6D5R42FT9E9YXHTquiVAJGmz5NbWf\nuiEkoyp3nFWsWYMfAfepXmsxAkCmxCl44lTcQRX3VpqafK3cnFaegeLYxBz4HazW5M1fK4\n3yAnxuEdaMz61FS50ib7YJ9b3RmpVti4As4C0NJaF7cy35rEQ3A9HtVHiWk8KgFb3a8DM/\nxQRkpHr05r2LC789uCxWNi9BxY6fjy6O1mnbOtpbUIj4U3rvbrqxxPQ70AtReMFFjPEmUO\nXMyKGe6scktYoFyglt3U7ssbOvQTfZx0cJ0453x1rM4FClirILyn4rT0UbJQYM/RnkKxrq\nabtfQ+4FjhNbvJa9GJDkdx4FLk8Cr8FXJvO8972EmZdTmEcyERZZBRQMwSrJQ9IJOzb6Fi\n/V4yqE+jvfe1TUQ6lJcGhLz4AQ==\n-----END SSH SIGNATURE-----\n",
+  "statement": {
+    "_type": "https://in-toto.io/Statement/v1",
+    "predicate": {
+      "commands": [
+        "./mill --no-daemon -j 6 --ticker false soundness.all.compile",
+        "./mill --no-daemon -j 6 --ticker false test.assembly",
+        "make ci"
+      ],
+      "commit": "ab71bfbeb5906d31b97e95a10eeb5041bc2feb5a",
+      "ranAt": "2026-06-17T10:35:43Z",
+      "ranBy": "jon.pretty@propensive.com",
+      "result": "pass",
+      "tooling": {
+        "mill": "1.1.5"
+      }
+    },
+    "predicateType": "https://soundness.dev/local-ci/v1",
+    "subject": [
+      {
+        "digest": {
+          "sha256": "e799060ba139defbf8e5ac8bcecffeb08e673b411defca9e3daeba6ab0e86b23"
+        },
+        "name": "soundness-ci-inputs"
+      }
+    ]
+  }
+}
