@@ -59,7 +59,8 @@ extension [value](value: value)
   inline def stream[element]: Stream[element] =
     ${turbulence.internal.stream[value, element]('value)}
 
-  inline def read[result]: result = ${turbulence.internal.read[value, result]('value)}
+  inline def read[result](using readable: value is Readable to result): result =
+    readable.read(value)
 
 
   def writeTo[target](target: target)[element]

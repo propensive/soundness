@@ -32,55 +32,55 @@
                                                                                                   */
 package turbulence
 
-import scala.quoted.*
+import scala.annotation.implicitNotFound
 
 import anticipation.*
-import fulminate.*
-import gigantism.*
 import hieroglyph.*
 import prepositional.*
-import vacuous.*
 
-object internal:
-  import stenography.internal.name
+// `Readable` composes a `Streamable` for the source type and an `Aggregable`
+// for the result type into a single resolvable instance, bridging with a
+// `CharDecoder`/`CharEncoder` when the two operate on different operands
+// (`Data` vs `Text`). Expressing the four pipelines as prioritised `given`s
+// (rather than a macro that summons combinations) means a missing instance is
+// an ordinary failed implicit search — so Frontier's `explainMissingContext`,
+// when in scope, lists the candidates and what each still requires.
+//
+// Priority (highest first): same-operand pipelines before the bridged ones,
+// so a directly-streamable/aggregable pairing is preferred when both apply.
 
-  def stream[source: Type, operand: Type](source: Expr[source]): Macro[Stream[operand]] =
-    import quotes.reflect.*
+trait Readable3:
+  given textToData: [source, result]
+  =>  ( streamable: source is Streamable by Text )
+  =>  ( aggregable: result is Aggregable by Data )
+  =>  ( encoder: CharEncoder )
+  =>  source is Readable to result =
+    value => aggregable.aggregate(encoder.encoded(streamable.stream(value)))
 
-    val bytes = TypeRepr.of[operand] =:= TypeRepr.of[Data]
-    val text = TypeRepr.of[operand] =:= TypeRepr.of[Text]
+trait Readable2 extends Readable3:
+  given dataToText: [source, result]
+  =>  ( streamable: source is Streamable by Data )
+  =>  ( aggregable: result is Aggregable by Text )
+  =>  ( decoder: CharDecoder )
+  =>  source is Readable to result =
+    value => aggregable.aggregate(decoder.decoded(streamable.stream(value)))
 
-    lazy val streamableData: Optional[Expr[source is Streamable by Data]] =
-      Expr.summon[source is Streamable by Data].optional
+trait Readable1 extends Readable2:
+  given textToText: [source, result]
+  =>  ( streamable: source is Streamable by Text )
+  =>  ( aggregable: result is Aggregable by Text )
+  =>  source is Readable to result =
+    value => aggregable.aggregate(streamable.stream(value))
 
-    lazy val streamable: Optional[Expr[source is Streamable by operand]] =
-      Expr.summon[source is Streamable by operand].optional
+object Readable extends Readable1:
+  given dataToData: [source, result]
+  =>  ( streamable: source is Streamable by Data )
+  =>  ( aggregable: result is Aggregable by Data )
+  =>  source is Readable to result =
+    value => aggregable.aggregate(streamable.stream(value))
 
-    lazy val streamableText: Optional[Expr[source is Streamable by Text]] =
-      Expr.summon[source is Streamable by Text].optional
-
-    lazy val decoder: Optional[Expr[CharDecoder]] = Expr.summon[CharDecoder].optional
-    lazy val encoder: Optional[Expr[CharEncoder]] = Expr.summon[CharEncoder].optional
-
-    val otherName =
-      if bytes then name[source is Streamable by Text] else name[source is Streamable by Data]
-
-    Expr.summon[source is Streamable by operand].optional.let: streamable =>
-      '{$streamable.stream($source)}
-
-    . or:
-        if text && streamableData.present then decoder.let: decoder =>
-          '{$decoder.decoded(${streamableData.vouch}.stream($source))}.absolve match
-            case '{$stream: Stream[`operand`]} => stream
-
-        . or:
-            halt(m"can not stream ${name[source]} as ${name[Text]} without a ${name[CharDecoder]}")
-
-        else if bytes && streamableText.present then encoder.let: encoder =>
-          '{$encoder.encoded(${streamableText.vouch}.stream($source))}.absolve match
-            case '{$stream: Stream[`operand`]} => stream
-
-        . or:
-            halt(m"can not stream ${name[source]} as ${name[Data]} without a ${name[CharEncoder]}")
-
-        else halt(m"no ${name[source is Streamable by operand]} (or $otherName) was found")
+@implicitNotFound("turbulence: the source cannot be read as the target type; this needs a "+
+    "`Streamable` instance for the source and an `Aggregable` instance for the target, plus a "+
+    "`CharDecoder` or `CharEncoder` if their operands (Data/Text) differ")
+trait Readable extends Typeclass, Resultant:
+  def read(value: Self): Result
