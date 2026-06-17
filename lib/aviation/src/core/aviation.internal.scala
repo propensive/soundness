@@ -172,13 +172,13 @@ object internal:
   // `THH:MM` with optional `:SS` and fractional seconds, and an optional `Z`/offset zone.
   private val IsoPattern =
     ("""(\d{4})(?:-(\d{2})(?:-(\d{2})(?:[T ](\d{2}):(\d{2})""" +
-     """(?::(\d{2})(?:[.,](\d{1,9}))?)?(Z|[+-]\d{2}:?\d{2}|[+-]\d{2})?)?)?)?""").r
+      """(?::(\d{2})(?:[.,](\d{1,9}))?)?(Z|[+-]\d{2}:?\d{2}|[+-]\d{2})?)?)?)?""").r
 
   // RFC 1123, e.g. `Tue, 17 Jun 2024 14:30:45 GMT`.
   private val RfcPattern =
     ("""(Mon|Tue|Wed|Thu|Fri|Sat|Sun), (\d{2}) """ +
-     """(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) """ +
-     """(\d{4}) (\d{2}):(\d{2}):(\d{2}) GMT""").r
+      """(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) """ +
+      """(\d{4}) (\d{2}):(\d{2}):(\d{2}) GMT""").r
 
   // Validate a date against the Gregorian calendar (rejecting e.g. month 13 or 31 February)
   // and return its Julian day number, which the macro emits directly via `Date.julianDay`.
