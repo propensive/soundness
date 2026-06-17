@@ -146,32 +146,41 @@ trait Tel2:
         Morphology.Obj(fields, fields.collect { case (label, shape) if !shape.optional => label })
       }):
         telVal =>
-          provide[Tactic[TelError]]:
-            // `@name[Tel]` / bare `@name` renames: field name -> keyword, used
-            // verbatim; an unannotated field falls back to its camel→kebab form.
-            val renames: Map[Text, Text] = relabelling[derivation, Tel]
+          provide[Foci[Tel.Focus]]:
+            provide[Tactic[TelError]]:
+              // `@name[Tel]` / bare `@name` renames: field name -> keyword, used
+              // verbatim; an unannotated field falls back to its camel→kebab form.
+              val renames: Map[Text, Text] = relabelling[derivation, Tel]
 
-            build[derivation]: [field] =>
-              ctx =>
-                val keyword: Text = renames.getOrElse(label, Tel.camelToKebab(label.s))
+              build[derivation]: [field] =>
+                ctx =>
+                  val keyword: Text = renames.getOrElse(label, Tel.camelToKebab(label.s))
 
-                // A `List`/`Set` field (`ctx.repeatable`) is encoded as repeated
-                // keyword compounds, so gather them all into a Document for the
-                // collection decoder. Every other field — scalar, nested product,
-                // `Optional`, `Map` (a single `entries` compound) — reads one match.
-                if ctx.repeatable then
-                  val compounds = telVal.childCompounds.filter(_.keyword == keyword)
+                  // Tag every error registered while decoding this field with its
+                  // keyword path, so that under a `validate[Tel.Focus]` boundary the
+                  // primitives' `raise … yet sentinel` accrue per-field rather than the
+                  // first malformed field aborting the whole record.
+                  focus({
+                    val base = prior.let(_.pointer).or(TelPath.Root)
+                    Tel.Focus(base.prepend(keyword))
+                  }):
+                    // A `List`/`Set` field (`ctx.repeatable`) is encoded as repeated
+                    // keyword compounds, so gather them all into a Document for the
+                    // collection decoder. Every other field — scalar, nested product,
+                    // `Optional`, `Map` (a single `entries` compound) — reads one match.
+                    if ctx.repeatable then
+                      val compounds = telVal.childCompounds.filter(_.keyword == keyword)
 
-                  ctx.decoded:
-                    Tel.make
-                      ( Tel.Document
-                        ( Unset, Unset, Tel.LineEndings.Lf,
-                         IArray(Tel.Block(IArray.empty, Unset, compounds, 0)) ) )
-                else
-                  val match0 = telVal.field(keyword)
+                      ctx.decoded:
+                        Tel.make
+                          ( Tel.Document
+                            ( Unset, Unset, Tel.LineEndings.Lf,
+                             IArray(Tel.Block(IArray.empty, Unset, compounds, 0)) ) )
+                    else
+                      val match0 = telVal.field(keyword)
 
-                  if match0.absent then default.or(ctx.decoded(Tel.empty))
-                  else ctx.decoded(match0.vouch)
+                      if match0.absent then default.or(ctx.decoded(Tel.empty))
+                      else ctx.decoded(match0.vouch)
 
     inline def disjunction[derivation: SumReflection]: derivation is Tel.Decodable =
       // A sum is a document whose single child compound is the chosen variant, keyed by
@@ -183,18 +192,19 @@ trait Tel2:
       // `Schematic` / `Tels.tels`.
       Tel.Decodable(Morphology.Any):
         telVal =>
-          provide[Tactic[TelError]]:
-            provide[Tactic[VariantError]]:
-              // Map the variant's kebab keyword back to the label `delegate` dispatches on.
-              val labels: Map[Text, Text] =
-                variantLabels.map: label => Tel.camelToKebab(label.s) -> label
-                . to(Map)
+          provide[Foci[Tel.Focus]]:
+            provide[Tactic[TelError]]:
+              provide[Tactic[VariantError]]:
+                // Map the variant's kebab keyword back to the label `delegate` dispatches on.
+                val labels: Map[Text, Text] =
+                  variantLabels.map: label => Tel.camelToKebab(label.s) -> label
+                  . to(Map)
 
-              val variant: Tel = Tel.make(telVal.childCompounds.head)
-              val variantKeyword: Text = labels.getOrElse(variant.keyword, variant.keyword)
+                val variant: Tel = Tel.make(telVal.childCompounds.head)
+                val variantKeyword: Text = labels.getOrElse(variant.keyword, variant.keyword)
 
-              delegate(variantKeyword): [variant <: derivation] =>
-                ctx => ctx.decoded(variant)
+                delegate(variantKeyword): [variant <: derivation] =>
+                  ctx => ctx.decoded(variant)
 
   object EncodableDerivation extends Derivable[Tel.Encodable]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -256,33 +266,55 @@ trait Tel2:
   // atom. These mirror jacinta.Json's primitive decoders but go through
   // the atom text rather than a JSON AST.
 
+  // Register a decode error and continue with `sentinel` instead of aborting, so
+  // that sibling fields of a product can each accrue their own error under a
+  // `validate[Tel.Focus]` boundary. A field with no atom (the empty `Tel` handed
+  // to a primitive by `conjunction` for an absent field) raises `Absent`; an atom
+  // that fails to parse raises `NotScalar`, distinguishing "missing" from
+  // "wrong shape". Outside a `validate` boundary the ambient `ThrowTactic` makes
+  // `raise` throw, preserving fail-fast decoding.
+  private def primitiveFault[value]
+    ( tel: Tel, expected: Text, sentinel: value )
+    ( parse: Text => Optional[value] )
+    ( using Tactic[TelError] )
+  :   value =
+
+    if tel.atomTexts.isEmpty then raise(TelError(TelError.Reason.Absent)) yet sentinel
+    else parse(tel.primaryAtom).or:
+      raise(TelError(TelError.Reason.NotScalar(tel.primaryAtom, expected))) yet sentinel
+
   given textDecodable: Tactic[TelError] => Text is Tel.Decodable =
-    Tel.Decodable(Morphology.Str)(_.primaryAtom)
+    Tel.Decodable(Morphology.Str): tel =>
+      primitiveFault(tel, t"Text", t""): atom =>
+        atom
 
   given stringDecodable: Tactic[TelError] => String is Tel.Decodable =
-    Tel.Decodable(Morphology.Str)(_.primaryAtom.s)
+    Tel.Decodable(Morphology.Str): tel =>
+      primitiveFault(tel, t"String", ""): atom =>
+        atom.s
 
   given intDecodable: Tactic[TelError] => Int is Tel.Decodable =
-    Tel.Decodable(Morphology.Whole): telVal =>
-      try telVal.primaryAtom.s.toInt
-      catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
+    Tel.Decodable(Morphology.Whole): tel =>
+      primitiveFault(tel, t"Int", 0): atom =>
+        try atom.s.toInt catch case _: NumberFormatException => Unset
 
   given longDecodable: Tactic[TelError] => Long is Tel.Decodable =
-    Tel.Decodable(Morphology.Whole): telVal =>
-      try telVal.primaryAtom.s.toLong
-      catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
+    Tel.Decodable(Morphology.Whole): tel =>
+      primitiveFault(tel, t"Long", 0L): atom =>
+        try atom.s.toLong catch case _: NumberFormatException => Unset
 
   given doubleDecodable: Tactic[TelError] => Double is Tel.Decodable =
-    Tel.Decodable(Morphology.Real): telVal =>
-      try telVal.primaryAtom.s.toDouble
-      catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
+    Tel.Decodable(Morphology.Real): tel =>
+      primitiveFault(tel, t"Double", 0.0): atom =>
+        try atom.s.toDouble catch case _: NumberFormatException => Unset
 
   given booleanDecodable: Tactic[TelError] => Boolean is Tel.Decodable =
-    Tel.Decodable(Morphology.Bool): telVal =>
-      telVal.primaryAtom.s match
-        case "true"  => true
-        case "false" => false
-        case _       => abort(TelError(TelError.Reason.BadVersion))
+    Tel.Decodable(Morphology.Bool): tel =>
+      primitiveFault(tel, t"Boolean", false): atom =>
+        atom.s match
+          case "true"  => true
+          case "false" => false
+          case _       => Unset
 
   given telDecodable: Tel is Tel.Decodable = Tel.Decodable(Morphology.Any)(identity(_))
 

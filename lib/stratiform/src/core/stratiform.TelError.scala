@@ -170,8 +170,15 @@ object TelError:
       case MembersNonContiguous     => m"compound children of the same member are not contiguous"
       case ValidatorRejected        => m"a scalar value or struct failed a named validator"
       case FlagWithContent          => m"the Flag-typed compound has atoms or compound children"
+      case Absent                   => m"a required value was absent"
 
-    def recoveryOf(reason: Reason): Recovery = reason match
+      case NotScalar(value, expected) =>
+        m"the value $value could not be parsed as $expected"
+
+    // The §19.5 recovery strategy for a parse/validation reason, or `Unset` for a
+    // decode reason (E4xx), which accrues through `Foci` rather than the parser's
+    // recovery model.
+    def recoveryOf(reason: Reason): Optional[Recovery] = reason match
       case BomPresent               => Recovery.SkipBom
       case PragmaNotFirst           => Recovery.RestartFromPragma
       case PragmaTooLong            => Recovery.AllowOversize
@@ -210,6 +217,10 @@ object TelError:
         | RequiredMemberAbsent | NonRepeatableTooMany | MembersNonContiguous
         | ValidatorRejected | FlagWithContent =>
         Recovery.IgnoreErroneousNode
+
+      // E4xx decode reasons have no parser-level recovery.
+      case Absent | NotScalar(_, _) =>
+        Unset
 
   enum Reason(val number: Int) extends Clarification:
     case BomPresent              extends Reason(101)
@@ -268,6 +279,12 @@ object TelError:
     case MembersNonContiguous    extends Reason(309)
     case ValidatorRejected       extends Reason(310)
     case FlagWithContent         extends Reason(311)
+
+    // E4xx — decode errors (mapping a TEL value onto a Scala type). Surfaced via
+    // `Foci`-based accrual at decode time, not the §19.5 parser/validation
+    // recovery model, so they carry no `Recovery` strategy.
+    case Absent                                 extends Reason(401)
+    case NotScalar(value: Text, expected: Text) extends Reason(402)
 
 case class TelError(reason: TelError.Reason, position: Optional[TelError.Position] = Unset)
   ( using Diagnostics )

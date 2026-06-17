@@ -63,6 +63,12 @@ object Tel extends Tel2:
   type Error = TelError
   val Error: TelError.type = TelError
 
+  // The focus carried by `Tel#as[T]` for multi-error accrual: a keyword path
+  // identifying the field being decoded (and, for parser-phase errors, an
+  // optional source position). Mirrors `Json.Focus` / `Yaml.Focus`.
+  case class Focus(pointer: TelPath = TelPath.Root, position: Optional[TelError.Position] = Unset)
+  derives CanEqual
+
   extension (tel: Tel)
     def edited(revision: Revision): Tel raises MutationError = revision(tel)
 
@@ -1013,7 +1019,8 @@ extends scala.Dynamic, Documentary, Topical, Original:
   type Self = Tel
   type Metadata = Tel.Metadata
 
-  inline def as[value: Decodable in Tel]: value raises TelError = value.decoded(this)
+  inline def as[value: Decodable in Tel]: value raises TelError tracks Tel.Focus =
+    value.decoded(this)
 
   // Total field access used by the schema-typed navigation macros and by
   // internal optics: an empty `Tel` for a missing field, never raising.
