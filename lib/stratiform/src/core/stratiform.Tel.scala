@@ -722,14 +722,14 @@ object Tel extends Tel2:
   given aggregable: Tactic[TelError] => Tel is Aggregable by Data =
     source => parse(concatenate(source))
 
-  // `source.read[Foo over Tel]` shorthand for
+  // `source.read[Foo in Tel]` shorthand for
   // `source.read[Tel].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`
-  // for `value over Json`. The `Transport` type-tag is added by an
-  // `asInstanceOf` cast — `value over Tel` is just
-  // `value { type Transport = Tel }` so the cast is a no-op at runtime.
-  given aggregableOver: [value: distillate.Decodable in Tel] => Tactic[TelError]
-  =>  (value over Tel) is Aggregable by Data =
-    source => parse(concatenate(source)).as[value].asInstanceOf[value over Tel]
+  // for `value in Json`. The `Form` type-tag is added by an
+  // `asInstanceOf` cast — `value in Tel` is just
+  // `value { type Form = Tel }` so the cast is a no-op at runtime.
+  given aggregableIn: [value: distillate.Decodable in Tel] => Tactic[TelError]
+  =>  (value in Tel) is Aggregable by Data =
+    source => parse(concatenate(source)).as[value].asInstanceOf[value in Tel]
 
   // `source.read[List[Tel]]` / `read[Stream[Tel]]` for a multi-document source
   // (§6.1). `List[Tel]` parses every document eagerly; `Stream[Tel]` parses

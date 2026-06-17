@@ -271,9 +271,9 @@ object Tests extends Suite(m"Stratiform Tests"):
         . to(List)
       . assert(_ == List(t"Shape2"))
 
-    suite(m"`over Tel` decoder shorthand"):
-      test(m"`read[T over Tel]` resolves a value directly from text"):
-        t"name Alice\nage 30\n".read[Tests.Person over Tel]
+    suite(m"`in Tel` decoder shorthand"):
+      test(m"`read[T in Tel]` resolves a value directly from text"):
+        t"name Alice\nage 30\n".read[Tests.Person in Tel]
       . assert(_ == Tests.Person(t"Alice", 30))
 
     suite(m"tel\"…\" interpolator"):

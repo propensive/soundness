@@ -80,14 +80,14 @@ object Tests extends Suite(m"Xylophone tests"):
           unsafely(t"""<?xml  version="1.0"?><message>hello world</message>""".load[Xml].read[Text])
       . assert(_ == t"""<?xml version="1.0"?><message>hello world</message>""")
 
-    suite(m"`over Xml` decoder shorthand"):
-      test(m"`read[T over Xml]` resolves a value directly from text"):
-        t"<Worker><name>Alice</name><age>30</age></Worker>".read[Worker over Xml]
+    suite(m"`in Xml` decoder shorthand"):
+      test(m"`read[T in Xml]` resolves a value directly from text"):
+        t"<Worker><name>Alice</name><age>30</age></Worker>".read[Worker in Xml]
       . assert(_ == Worker(t"Alice", 30))
 
-      test(m"`read[T over Xml]` works for nested case classes"):
+      test(m"`read[T in Xml]` works for nested case classes"):
         t"<Firm><name>Acme</name><ceo><name>Alice</name><age>30</age></ceo></Firm>"
-          . read[Firm over Xml]
+          . read[Firm in Xml]
       . assert(_ == Firm(t"Acme", Worker(t"Alice", 30)))
 
     test(m"extract integer"):

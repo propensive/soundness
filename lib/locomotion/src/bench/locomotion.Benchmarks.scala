@@ -216,12 +216,12 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   // body. Each operation therefore goes through a fully-qualified helper method
   // the quote simply invokes.
 
-  def decodeSmall:      Small      = Stream(bytes1).read[Small over Protobuf]
-  def decodeUsers:      Users      = Stream(bytes2).read[Users over Protobuf]
-  def decodeLogs:       Logs       = Stream(bytes3).read[Logs over Protobuf]
-  def decodeInts:       Ints       = Stream(bytes4).read[Ints over Protobuf]
-  def decodeAttributes: Attributes = Stream(bytes5).read[Attributes over Protobuf]
-  def decodeNested:     Deep1      = Stream(bytes6).read[Deep1 over Protobuf]
+  def decodeSmall:      Small      = Stream(bytes1).read[Small in Protobuf]
+  def decodeUsers:      Users      = Stream(bytes2).read[Users in Protobuf]
+  def decodeLogs:       Logs       = Stream(bytes3).read[Logs in Protobuf]
+  def decodeInts:       Ints       = Stream(bytes4).read[Ints in Protobuf]
+  def decodeAttributes: Attributes = Stream(bytes5).read[Attributes in Protobuf]
+  def decodeNested:     Deep1      = Stream(bytes6).read[Deep1 in Protobuf]
 
   def encodeSmall:      Data = value1.protobuf.encode
   def encodeUsers:      Data = value2.protobuf.encode
