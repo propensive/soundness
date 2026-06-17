@@ -172,10 +172,9 @@ object Matrix:
 
   private type Constraint[rows <: Tuple, element] =
     Tuple.Union
-      [ Tuple.Fold
-          [ rows, Zero, [left, right] =>> Tuple.Concat[left & Tuple, right & Tuple] ]
-          & Tuple ]
-    <:< element
+      [ Tuple.Fold[rows, Zero, [left, right] =>> Tuple.Concat[left & Tuple, right & Tuple]] &
+        Tuple ] <:<
+      element
 
   private type ColumnConstraint[rows <: Tuple] =
     Tuple.Union[Tuple.Map[rows, [tuple] =>> Tuple.Size[tuple & Tuple]]]
@@ -227,8 +226,8 @@ object Matrix:
       val firstColumn = java.lang.Long.numberOfTrailingZeros(columnMask)
       val secondColumn = java.lang.Long.numberOfTrailingZeros(columnMask & (columnMask - 1L))
 
-      elements(dimension*firstRow + firstColumn)*elements(dimension*secondRow + secondColumn)
-      - elements(dimension*firstRow + secondColumn)*elements(dimension*secondRow + firstColumn)
+      elements(dimension*firstRow + firstColumn)*elements(dimension*secondRow + secondColumn) -
+        elements(dimension*firstRow + secondColumn)*elements(dimension*secondRow + firstColumn)
     else
       val expansionRow = java.lang.Long.numberOfTrailingZeros(rowMask)
       val remainingRows = rowMask & ~(1L << expansionRow)

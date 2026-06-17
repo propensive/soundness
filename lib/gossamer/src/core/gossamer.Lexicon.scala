@@ -77,8 +77,8 @@ object Lexicon:
           tree.search(query, radius)
 
       . to(Set)
-      . flatten
-      ++ (if distance <= radius then Set(value) else Set())
+      . flatten ++
+        (if distance <= radius then Set(value) else Set())
 
 trait Lexicon[element]:
   def update(key: Text, value: element): Unit

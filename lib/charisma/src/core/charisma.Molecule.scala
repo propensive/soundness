@@ -75,8 +75,8 @@ object Molecule:
 
       t"${element.symbol}$number"
 
-    . join
-    + suffix
+    . join +
+      suffix
 
   def apply(element: ChemicalElement): Molecule = element.molecule
 

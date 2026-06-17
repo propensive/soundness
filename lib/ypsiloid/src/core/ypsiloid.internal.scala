@@ -458,26 +458,26 @@ object internal:
 
           case s: String =>
             ' {
-                $accept && $scrutinee.isString
-                && $scrutinee.asInstanceOf[String] == ${Expr(s)}
+                $accept && $scrutinee.isString &&
+                  $scrutinee.asInstanceOf[String] == ${Expr(s)}
               }
 
           case b: Boolean =>
             ' {
-                $accept && $scrutinee.isBoolean
-                && $scrutinee.asInstanceOf[Boolean] == ${Expr(b)}
+                $accept && $scrutinee.isBoolean &&
+                  $scrutinee.asInstanceOf[Boolean] == ${Expr(b)}
               }
 
           case l: Long =>
             ' {
-                $accept && $scrutinee.isLong
-                && $scrutinee.asInstanceOf[Long] == ${Expr(l)}
+                $accept && $scrutinee.isLong &&
+                  $scrutinee.asInstanceOf[Long] == ${Expr(l)}
               }
 
           case d: Double =>
             ' {
-                $accept && $scrutinee.isDouble
-                && $scrutinee.asInstanceOf[Double] == ${Expr(d)}
+                $accept && $scrutinee.isDouble &&
+                  $scrutinee.asInstanceOf[Double] == ${Expr(d)}
               }
 
           case null =>
@@ -620,26 +620,9 @@ object internal:
         val cardinality: Expr[Boolean] =
           if hasRest then
             ' {
-                $accept && $scrutinee.isObject
-                && {
-                  val n = $scrutinee.objectSize
-                  var keysSet = Set.empty[String]
-                  var k = 0
-
-                  while k < n do
-                    keysSet += $scrutinee.objectKey(k)
-                    k += 1
-
-                  ${Expr(literalKeys)}.forall(keysSet.contains)
-                }
-              }
-          else
-            ' {
-                $accept && $scrutinee.isObject
-                && {
-                  val n = $scrutinee.objectSize
-
-                  n == ${Expr(literalKeys.length)} && {
+                $accept && $scrutinee.isObject &&
+                  {
+                    val n = $scrutinee.objectSize
                     var keysSet = Set.empty[String]
                     var k = 0
 
@@ -649,7 +632,24 @@ object internal:
 
                     ${Expr(literalKeys)}.forall(keysSet.contains)
                   }
-                }
+              }
+          else
+            ' {
+                $accept && $scrutinee.isObject &&
+                  {
+                    val n = $scrutinee.objectSize
+
+                    n == ${Expr(literalKeys.length)} && {
+                      var keysSet = Set.empty[String]
+                      var k = 0
+
+                      while k < n do
+                        keysSet += $scrutinee.objectKey(k)
+                        k += 1
+
+                      ${Expr(literalKeys)}.forall(keysSet.contains)
+                    }
+                  }
               }
 
         var combined: Expr[Boolean] = cardinality

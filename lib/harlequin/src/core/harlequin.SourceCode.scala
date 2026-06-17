@@ -171,8 +171,8 @@ object SourceCode:
             case index => lines(xs.drop(index + 1), xs.take(index) :: acc)
 
     def quoted(text: Text): Boolean =
-      text.length > 0
-      && { val first = text.s.charAt(0); first == '"' || first == '\'' || first == '`' }
+      text.length > 0 &&
+        { val first = text.s.charAt(0); first == '"' || first == '\'' || first == '`' }
 
     // Recovering from an unterminated quoted literal at the end of the input, the
     // Scala scanner spills the literal's final character into a separate token — so

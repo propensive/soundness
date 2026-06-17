@@ -82,14 +82,14 @@ extension (json: Json.Ast)
   // Number-only arrays are stored unboxed as `Array[Double]` (`[D`),
   // a distinct runtime class.
   inline def isObject: Boolean =
-    json.isInstanceOf[Array[AnyRef]]
-    && (json.asInstanceOf[Array[?]].length & 1) == 0
+    json.isInstanceOf[Array[AnyRef]] &&
+      (json.asInstanceOf[Array[?]].length & 1) == 0
 
   inline def isArray: Boolean =
-    json.isInstanceOf[Array[Long]]
-    || json.isInstanceOf[Array[Int]]
-    || (json.isInstanceOf[Array[AnyRef]]
-        && (json.asInstanceOf[Array[?]].length & 1) == 1)
+    json.isInstanceOf[Array[Long]] ||
+      json.isInstanceOf[Array[Int]] ||
+      (json.isInstanceOf[Array[AnyRef]] &&
+        (json.asInstanceOf[Array[?]].length & 1) == 1)
 
   // True when the array is in either unboxed number-only form (BCD-packed).
   inline def isNumberArray: Boolean =

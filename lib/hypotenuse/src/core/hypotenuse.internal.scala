@@ -81,8 +81,8 @@ object internal:
 
 
     inline def apply(inline sign: Boolean, inline exponent: B16, inline mantissa: B64): F64 = F64:
-      (if sign then Long.MinValue else 0L) | ((exponent & 0xffL) << 52)
-      | (mantissa & 0xfffffffffffffL)
+      (if sign then Long.MinValue else 0L) | ((exponent & 0xffL) << 52) |
+        (mantissa & 0xfffffffffffffL)
 
     inline def apply(inline bits: B64): F64 = JDouble.longBitsToDouble(bits)
     inline def apply(inline double: Double): F64 = double
@@ -273,8 +273,8 @@ object internal:
     inline given underlying: Underlying[S64, Long] = caps.unsafe.unsafeErasedValue
 
 
-    inline given canEqual: CanEqual[S64, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
-                                    | Int | Short | Byte] =
+    inline given canEqual: CanEqual[S64, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long |
+      Int | Short | Byte] =
 
       caps.unsafe.unsafeErasedValue
 
@@ -334,8 +334,8 @@ object internal:
     inline given underlying: Underlying[S32, Int] = caps.unsafe.unsafeErasedValue
 
 
-    inline given canEqual: CanEqual[S32, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
-                                    | Int | Short | Byte] =
+    inline given canEqual: CanEqual[S32, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long |
+      Int | Short | Byte] =
 
       caps.unsafe.unsafeErasedValue
 
@@ -396,8 +396,8 @@ object internal:
 
 
     inline given canEqual: CanEqual[S16,
-                                    F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int
-                                    | Short | Byte] =
+                                    F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long | Int |
+                                      Short | Byte] =
 
       caps.unsafe.unsafeErasedValue
 
@@ -461,8 +461,8 @@ object internal:
     inline given underlying: Underlying[S8, Byte] = caps.unsafe.unsafeErasedValue
 
 
-    inline given canEqual: CanEqual[S8, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long
-                                    | Int | Short | Byte] =
+    inline given canEqual: CanEqual[S8, F64 | F32 | S64 | S32 | S16 | S8 | Float | Double | Long |
+      Int | Short | Byte] =
 
       caps.unsafe.unsafeErasedValue
 

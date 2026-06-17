@@ -42,8 +42,8 @@ object Ci:
   import environments.javaEnvironment
 
   def apply(): Boolean =
-    githubActions || gitlabCi || circleCi || travisCi || jenkins || azurePipelines || teamCity
-    || bitbucketPipelines || buildkite || appVeyor || drone || semaphore || buddy
+    githubActions || gitlabCi || circleCi || travisCi || jenkins || azurePipelines || teamCity ||
+      bitbucketPipelines || buildkite || appVeyor || drone || semaphore || buddy
 
   def githubActions: Boolean = safely(Environment.githubActions[Text]) == t"true"
   def gitlabCi: Boolean = safely(Environment.gitlabCi[Text]) == t"true"

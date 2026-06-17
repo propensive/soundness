@@ -46,10 +46,10 @@ case class Bg(color: Chroma):
   def highContrast: Fg = Fg:
     Chroma:
       if
-        ( (color.underlying&255)*0.07
-          + ((color.underlying >> 8)&255)*0.72
-          + ((color.underlying >> 16)&255)*0.21 )
-        > 128
+        ( (color.underlying&255)*0.07 +
+          ((color.underlying >> 8)&255)*0.72 +
+          ((color.underlying >> 16)&255)*0.21 ) >
+          128
       then 0
       else 16777215
 

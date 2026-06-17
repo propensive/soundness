@@ -1372,8 +1372,8 @@ object Xml extends Tag.Container
       isAsciiLetter(c) || c == '_' || c == ':' || (c > 127 && c.isLetter)
 
     protected inline def isNameChar(c: Char): Boolean =
-      isAsciiLetter(c) || isAsciiDigit(c) || c == '_' || c == '-' || c == '.' || c == ':'
-      || (c > 127 && (c == '·' || c.isLetter || c.isDigit))
+      isAsciiLetter(c) || isAsciiDigit(c) || c == '_' || c == '-' || c == '.' || c == ':' ||
+        (c > 127 && (c == '·' || c.isLetter || c.isDigit))
 
     protected inline def isWs(c: Char): Boolean =
       c == ' ' || c == '\n' || c == '\r' || c == '\t' || c == '\f'
@@ -1416,12 +1416,12 @@ object Xml extends Tag.Container
       else
         val idx =
           ((packedLow.toInt ^ (packedLow >>> 32).toInt) ^
-           (packedHigh.toInt ^ (packedHigh >>> 32).toInt)) & (TagCacheSize - 1)
+            (packedHigh.toInt ^ (packedHigh >>> 32).toInt)) & (TagCacheSize - 1)
 
         val cached = tagCache(idx)
 
-        if cached != null && tagCacheLow(idx) == packedLow
-          && tagCacheHigh(idx) == packedHigh
+        if cached != null && tagCacheLow(idx) == packedLow &&
+          tagCacheHigh(idx) == packedHigh
         then cached.nn
         else
           val fresh = slice(start)
@@ -1732,10 +1732,10 @@ object Xml extends Tag.Container
       val target = slice(nameStart)
 
       val isXmlName =
-        target.s.length == 3
-        && (target.s.charAt(0) == 'x' || target.s.charAt(0) == 'X')
-        && (target.s.charAt(1) == 'm' || target.s.charAt(1) == 'M')
-        && (target.s.charAt(2) == 'l' || target.s.charAt(2) == 'L')
+        target.s.length == 3 &&
+          (target.s.charAt(0) == 'x' || target.s.charAt(0) == 'X') &&
+          (target.s.charAt(1) == 'm' || target.s.charAt(1) == 'M') &&
+          (target.s.charAt(2) == 'l' || target.s.charAt(2) == 'L')
 
       if isXmlName then
         if !headers then fail(Issue.InvalidTag(target), nameStart)
@@ -2311,9 +2311,10 @@ object Xml extends Tag.Container
         val got = peek
 
         val matches =
-          got == expected
-          || isAsciiLetter(expected)
-            && (got == (expected | 0x20).toChar || got == (expected & ~0x20).toChar)
+          got == expected ||
+            isAsciiLetter(expected) &&
+            (got == (expected | 0x20).toChar || got == (expected & ~0x20).toChar)
+
         if !matches then fail(Issue.Unexpected(got))
         advance()
         i += 1
@@ -2458,8 +2459,8 @@ extends Node, Topical, Transportive:
     case Fragment(node: Element) => this == node
 
     case Element(label, attributes, children) =>
-      label == this.label && attributes.equalsAttributes(this.attributes)
-      && ju.Arrays.equals(children.mutable(using Unsafe), this.children.mutable(using Unsafe))
+      label == this.label && attributes.equalsAttributes(this.attributes) &&
+        ju.Arrays.equals(children.mutable(using Unsafe), this.children.mutable(using Unsafe))
 
     case _ =>
       false

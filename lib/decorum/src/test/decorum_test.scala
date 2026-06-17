@@ -792,8 +792,12 @@ object Tests extends Suite(m"Decorum Tests"):
       . assert(r => !r.contains("833.4"))
 
       test(m"Genuine heavy bracket continuation is still rejected (833.4)"):
-        rules("foo +\n  ( baz, quux )\n")
+        rules("foo bar\n  ( baz, quux )\n")
       . assert(r => r.contains("833.4"))
+
+      test(m"Heavy bracket after a symbolic operator defers to 616, not 833.4"):
+        rules("foo +\n  (baz, quux)\n")
+      . assert(r => !r.contains("833.4"))
 
       test(m"Tuple as the first line inside a quote/block is not 833.4"):
         rules("' {\n  ( baz, quux )\n")
@@ -814,3 +818,53 @@ object Tests extends Suite(m"Decorum Tests"):
       test(m"String-interpolator first body line is handled"):
         rules("val x = bar:\n  t\"a\"+b\n  more\n")
       . assert(r => !r.contains("473.8"))
+
+    suite(m"Phase 5: Infix-operator continuation"):
+
+      test(m"Single-line infix is accepted"):
+        rules("val x = alpha ++ beta\n")
+      . assert(r => !r.contains("616.1") && !r.contains("616.2"))
+
+      test(m"Operator at end of line with +2 continuation is accepted"):
+        rules("val x = alpha ++\n  beta\n")
+      . assert(r => !r.contains("616.1") && !r.contains("616.2"))
+
+      test(m"Flat +2 operator chain is accepted"):
+        rules("val x = a ++\n  b ++\n  c\n")
+      . assert(r => !r.contains("616.1") && !r.contains("616.2"))
+
+      test(m"Operator beginning the continuation line is rejected"):
+        rules("val x =\n  alpha\n  ++ beta\n")
+      . assert(_.contains("616.1"))
+
+      test(m"Operator alone on its own line is rejected"):
+        rules("val x =\n  alpha\n  ++\n  beta\n")
+      . assert(_.contains("616.1"))
+
+      test(m"Continuation not indented +2 is rejected"):
+        rules("val x =\n  alpha ++\n  beta\n")
+      . assert(_.contains("616.2"))
+
+      test(m"Symbolic infix type operator follows the same rule"):
+        rules("type T =\n  Foo\n  | Bar\n")
+      . assert(_.contains("616.1"))
+
+      test(m"Correctly-laid symbolic infix type is accepted"):
+        rules("type T =\n  Foo |\n    Bar\n")
+      . assert(r => !r.contains("616.1") && !r.contains("616.2"))
+
+      test(m"Word-named infix operator is exempt"):
+        rules("val b =\n  alpha max\n  beta\n")
+      . assert(r => !r.contains("616.1") && !r.contains("616.2"))
+
+      test(m"Pattern alternative is exempt"):
+        rules("def f(x: Any) = x match\n  case A\n  | B => 1\n")
+      . assert(r => !r.contains("616.1") && !r.contains("616.2"))
+
+      test(m"Method-selection chain is exempt"):
+        rules("val x =\n  foo\n  . bar\n")
+      . assert(r => !r.contains("616.1") && !r.contains("616.2"))
+
+      test(m"Operator-continuation expression does not trigger 315"):
+        rules("def f =\n  val a = 1\n  a == 1 ||\n    a == 2\n")
+      . assert(r => !r.contains("315"))

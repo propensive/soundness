@@ -156,9 +156,10 @@ object LayeredDagDiagram:
 
       val width: Int =
         val cols = layouts.iterator.flatMap: lay =>
-          lay.state.keys.iterator
-            ++ lay.nodeCol.values.iterator
-            ++ lay.prevNodeCol.values.iterator
+          lay.state.keys.iterator ++
+            lay.nodeCol.values.iterator ++
+            lay.prevNodeCol.values.iterator
+
         cols.maxOption.fold(1)(_ + 1)
 
       val rows = scm.ListBuffer[(List[DagTile], Map[Int, node])]()

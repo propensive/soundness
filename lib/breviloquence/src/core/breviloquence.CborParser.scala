@@ -107,23 +107,23 @@ private[breviloquence] final class CborParser(input: IArray[Byte]):
     expect(4)
     val pos = offset
     offset = pos + 4
-    ((data(pos) & 0xFFL) << 24)
-    | ((data(pos + 1) & 0xFFL) << 16)
-    | ((data(pos + 2) & 0xFFL) << 8)
-    | (data(pos + 3) & 0xFFL)
+    ((data(pos) & 0xFFL) << 24) |
+      ((data(pos + 1) & 0xFFL) << 16) |
+      ((data(pos + 2) & 0xFFL) << 8) |
+      (data(pos + 3) & 0xFFL)
 
   private inline def readUInt64(): Long raises CborError =
     expect(8)
     val pos = offset
     offset = pos + 8
-    ((data(pos) & 0xFFL) << 56)
-    | ((data(pos + 1) & 0xFFL) << 48)
-    | ((data(pos + 2) & 0xFFL) << 40)
-    | ((data(pos + 3) & 0xFFL) << 32)
-    | ((data(pos + 4) & 0xFFL) << 24)
-    | ((data(pos + 5) & 0xFFL) << 16)
-    | ((data(pos + 6) & 0xFFL) << 8)
-    | (data(pos + 7) & 0xFFL)
+    ((data(pos) & 0xFFL) << 56) |
+      ((data(pos + 1) & 0xFFL) << 48) |
+      ((data(pos + 2) & 0xFFL) << 40) |
+      ((data(pos + 3) & 0xFFL) << 32) |
+      ((data(pos + 4) & 0xFFL) << 24) |
+      ((data(pos + 5) & 0xFFL) << 16) |
+      ((data(pos + 6) & 0xFFL) << 8) |
+      (data(pos + 7) & 0xFFL)
 
   // Decodes the additional-info length field, returning the unsigned value as
   // a `Long`. A negative result means indefinite length.

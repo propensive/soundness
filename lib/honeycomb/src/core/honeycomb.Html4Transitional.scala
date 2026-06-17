@@ -166,8 +166,8 @@ object Html4Transitional:
   given typeOl: ("type" is Attribute on "ol" | "ul" | "li" of OlType) = attribute()
 
   given name: ("name" is Attribute on
-    "a" | "applet" | "button" | "form" | "iframe" | "img" | "input" | "map" | "meta" | "object"
-    | "param" | "select" | "textarea" of Name) = attribute()
+    "a" | "applet" | "button" | "form" | "iframe" | "img" | "input" | "map" | "meta" | "object" |
+      "param" | "select" | "textarea" of Name) = attribute()
 
   given value: ("value" is Attribute on "input" | "option" | "param" | "button" of Textual) =
     attribute()
@@ -289,9 +289,9 @@ object Html4Transitional:
 
   // Presentational attributes (Transitional permits)
   given align: ("align" is Attribute on
-    "applet" | "caption" | "col" | "colgroup" | "div" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"
-    | "hr" | "iframe" | "img" | "input" | "legend" | "object" | "p" | "table" | "tbody" | "td"
-    | "tfoot" | "th" | "thead" | "tr" of Align) = attribute()
+    "applet" | "caption" | "col" | "colgroup" | "div" | "h1" | "h2" | "h3" | "h4" | "h5" | "h6" |
+      "hr" | "iframe" | "img" | "input" | "legend" | "object" | "p" | "table" | "tbody" | "td" |
+      "tfoot" | "th" | "thead" | "tr" of Align) = attribute()
 
   given bgcolor: ("bgcolor" is Attribute on
     "body" | "table" | "td" | "th" | "tr" of Color) = attribute()
@@ -307,8 +307,8 @@ object Html4Transitional:
   given clear: ("clear" is Attribute on "br" of Clear) = attribute()
 
   given width: ("width" is Attribute on
-    "applet" | "col" | "colgroup" | "hr" | "iframe" | "img" | "object" | "pre" | "table" | "td"
-    | "th" of PositiveInt) = attribute()
+    "applet" | "col" | "colgroup" | "hr" | "iframe" | "img" | "object" | "pre" | "table" | "td" |
+      "th" of PositiveInt) = attribute()
 
   given height: ("height" is Attribute on
     "applet" | "iframe" | "img" | "object" | "td" | "th" of PositiveInt) = attribute()
@@ -335,8 +335,8 @@ class Html4Transitional() extends Dom:
     "tt" | "i" | "b" | "u" | "s" | "strike" | "big" | "small"
 
   type Special =
-    "a" | "img" | "applet" | "object" | "font" | "basefont" | "br" | "script" | "map" | "q"
-    | "sub" | "sup" | "span" | "bdo" | "iframe"
+    "a" | "img" | "applet" | "object" | "font" | "basefont" | "br" | "script" | "map" | "q" |
+      "sub" | "sup" | "span" | "bdo" | "iframe"
 
   type FormCtrl = "input" | "select" | "textarea" | "label" | "button"
 
@@ -345,8 +345,8 @@ class Html4Transitional() extends Dom:
   type Lists = "ul" | "ol" | "dir" | "menu"
 
   type Block =
-    Heading | Lists | "p" | "pre" | "dl" | "div" | "noscript" | "blockquote" | "form" | "hr"
-    | "table" | "fieldset" | "address" | "center" | "isindex" | "noframes"
+    Heading | Lists | "p" | "pre" | "dl" | "div" | "noscript" | "blockquote" | "form" | "hr" |
+      "table" | "fieldset" | "address" | "center" | "isindex" | "noframes"
 
   type Flow = Block | Inline
 

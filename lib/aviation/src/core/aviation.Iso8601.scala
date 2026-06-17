@@ -153,16 +153,16 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
             next() match
               case '.' | ',' =>
-                Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant
-                + fraction()*Minute
+                Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant +
+                  fraction()*Minute
 
               case ':' =>
                 val second = next() yet number(2)
 
                 next() match
                   case '.' | ',' =>
-                    Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant
-                    + fraction()*Second
+                    Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant +
+                      fraction()*Second
 
                   case _ =>
                     Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant
@@ -180,16 +180,16 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
             next() match
               case '.' | ',' =>
-                Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant
-                + fraction()*Minute
+                Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant +
+                  fraction()*Minute
 
               case d if digit =>
                 val second = number(2)
 
                 next() match
                   case '.' | ',' =>
-                    Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant
-                    + fraction()*Second
+                    Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant +
+                      fraction()*Second
 
                   case _ =>
                     Clockface(Base24(hour), Base60(minute), Base60(second)).on(date)

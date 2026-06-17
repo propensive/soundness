@@ -51,8 +51,8 @@ object Frame:
   // which never appear on the wire, and the unassigned 1012–2999 band — is a
   // protocol error.
   def validCloseCode(code: Int): Boolean =
-    (code >= 1000 && code <= 1003) || (code >= 1007 && code <= 1011)
-    || (code >= 3000 && code <= 4999)
+    (code >= 1000 && code <= 1003) || (code >= 1007 && code <= 1011) ||
+      (code >= 3000 && code <= 4999)
 
   // Decode one client frame off `cursor` — consuming exactly its bytes and
   // unmasking the payload — or `Unset` at a clean end of stream. The byte-level

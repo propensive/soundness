@@ -162,8 +162,9 @@ object internal:
                             ' {
                                 val output =
                                   Map
-                                    ( "result".tt
-                                      -> $encoder.encode(${application.asExprOf[result]}) )
+                                    ( "result".tt ->
+                                      $encoder.encode(${application.asExprOf[result]}) )
+
                                 output.json
                               }
 

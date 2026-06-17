@@ -141,9 +141,9 @@ object Blake3:
 
       words(i) =
         (bytes(o)     & 0xff)         |
-        ((bytes(o + 1) & 0xff) <<  8) |
-        ((bytes(o + 2) & 0xff) << 16) |
-        ((bytes(o + 3) & 0xff) << 24)
+          ((bytes(o + 1) & 0xff) <<  8) |
+          ((bytes(o + 2) & 0xff) << 16) |
+          ((bytes(o + 3) & 0xff) << 24)
 
       i += 1
 

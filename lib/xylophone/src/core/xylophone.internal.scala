@@ -108,10 +108,7 @@ object internal:
           scrutinee: Expr[ProcessingInstruction] )
       :   Expr[Boolean] =
 
-        ' {
-            ${Expr(pattern.target)} == $scrutinee.target
-            && ${Expr(pattern.data)} == $scrutinee.data
-          }
+        '{${Expr(pattern.target)} == $scrutinee.target && ${Expr(pattern.data)} == $scrutinee.data}
 
       def checkHeader(array: Expr[Array[Any]], pattern: Header, scrutinee: Expr[Header])
       :   Expr[Boolean] =
@@ -147,8 +144,8 @@ object internal:
             val others = Expr.ofList(pattern.attributes.keys.to(List).map(Expr(_)))
 
             ' {
-                $expr
-                && { $array(${Expr(index)}) = (${scrutinee}.attributes -- $others).toMap; true }
+                $expr &&
+                  { $array(${Expr(index)}) = (${scrutinee}.attributes -- $others).toMap; true }
               }
 
           case head :: tail =>
@@ -178,8 +175,8 @@ object internal:
 
         val elementsChecked = elements(0):
           ' {
-              ${Expr(pattern.label)} == $scrutinee.label
-              && $scrutinee.children.length == ${Expr(pattern.children.length)}
+              ${Expr(pattern.label)} == $scrutinee.label &&
+                $scrutinee.children.length == ${Expr(pattern.children.length)}
             }
 
         '{$attributesChecked && $elementsChecked}
@@ -194,8 +191,7 @@ object internal:
             types ::= TypeRepr.of[Text]
 
             ' {
-                $expr && $scrutinee.isInstanceOf[Comment]
-                &&
+                $expr && $scrutinee.isInstanceOf[Comment] &&
                   {
                     $array(${Expr(index)}) = $scrutinee.asInstanceOf[Comment].text
                     true
@@ -208,12 +204,11 @@ object internal:
             types ::= TypeRepr.of[ProcessingInstruction]
 
             ' {
-                $expr && $scrutinee.isInstanceOf[ProcessingInstruction]
-                &&
-                {
-                  $array(${Expr(index)}) = $scrutinee.asInstanceOf[ProcessingInstruction].data
-                  true
-                }
+                $expr && $scrutinee.isInstanceOf[ProcessingInstruction] &&
+                  {
+                    $array(${Expr(index)}) = $scrutinee.asInstanceOf[ProcessingInstruction].data
+                    true
+                  }
               }
 
           case Cdata("\u0000") =>
@@ -222,8 +217,8 @@ object internal:
             types ::= TypeRepr.of[Cdata]
 
             ' {
-                $expr && $scrutinee.isInstanceOf[Cdata]
-                && { $array(${Expr(index)}) = $scrutinee.asInstanceOf[Cdata].text; true }
+                $expr && $scrutinee.isInstanceOf[Cdata] &&
+                  { $array(${Expr(index)}) = $scrutinee.asInstanceOf[Cdata].text; true }
               }
 
           case TextNode("\u0000") =>

@@ -123,8 +123,8 @@ object Dot:
 
     case Statement.Node(id, attrs*) =>
       t"\"${id.key}\"" #:: (if attrs.nil then Stream() else (Stream(t"[") #:::
-          attrs.to(Stream).flatMap(tokenize(_) :+ t",").init #::: Stream(t"]"))) #:::
-          Stream(t";")
+        attrs.to(Stream).flatMap(tokenize(_) :+ t",").init #::: Stream(t"]"))) #:::
+        Stream(t";")
 
     case Statement.Edge(id, rhs, attrs*) =>
       tokenize(id) #::: tokenize(rhs)
@@ -133,10 +133,10 @@ object Dot:
       Stream(t"\"${id.key}\"", t"=", t"\"${id2.key}\"", t";")
 
     case Statement.Subgraph(id, statements*) =>
-      t"subgraph" #:: id.to(Stream).map(_.key)
-      #::: t"{"
-      #:: statements.to(Stream).flatMap(tokenize(_))
-      #::: Stream(t"}")
+      t"subgraph" #:: id.to(Stream).map(_.key) #:::
+        t"{" #::
+        statements.to(Stream).flatMap(tokenize(_)) #:::
+        Stream(t"}")
 
     case Dot.Graph(id, strict, statements*) =>
       Stream(

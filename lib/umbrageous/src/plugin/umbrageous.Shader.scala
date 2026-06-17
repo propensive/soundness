@@ -51,7 +51,7 @@ class Shader(options: List[String]) extends PluginPhase:
 
           case other =>
             report.warning(s"umbrageous: the option '$opt' is not a valid shading mapping; "+
-                "please specify a mapping of the form, '<package>:<new-prefix>'"); Nil
+              "please specify a mapping of the form, '<package>:<new-prefix>'"); Nil
 
     object transformer extends UntypedTreeMap:
       def nameToSegments(tree: Tree): List[String] = tree match

@@ -200,8 +200,8 @@ object SvgParser:
         val c = s.charAt(pos)
         val prev = if pos > 0 then s.charAt(pos - 1) else ' '
 
-        (c >= '0' && c <= '9') || c == '.' || c == 'e' || c == 'E'
-        || ((c == '-' || c == '+') && pos > start && (prev == 'e' || prev == 'E'))
+        (c >= '0' && c <= '9') || c == '.' || c == 'e' || c == 'E' ||
+          ((c == '-' || c == '+') && pos > start && (prev == 'e' || prev == 'E'))
       }
       do pos += 1
 

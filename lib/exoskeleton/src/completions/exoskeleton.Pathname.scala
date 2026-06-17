@@ -58,16 +58,16 @@ object Pathname:
 
       if argument() == t"." then argument.suggest:
         val wd: Path on Local = workingDirectory
-        suggest(t"../")
-        :: workingDirectory.children.to(List).filter(_.name.starts(t".")).map: path =>
-          val directory = safely(path.entry() == galilei.Directory).or(false)
-          suggest(if directory then path.name+t"/" else path.name)
+        suggest(t"../") ::
+          workingDirectory.children.to(List).filter(_.name.starts(t".")).map: path =>
+            val directory = safely(path.entry() == galilei.Directory).or(false)
+            suggest(if directory then path.name+t"/" else path.name)
 
       else if argument() == t".." then argument.suggest:
-        suggest(t"../")
-        :: workingDirectory.children.to(List).filter(_.name.starts(t"..")).map: path =>
-          val directory = safely(path.entry() == galilei.Directory).or(false)
-          suggest(if directory then path.name+t"/" else path.name)
+        suggest(t"../") ::
+          workingDirectory.children.to(List).filter(_.name.starts(t"..")).map: path =>
+            val directory = safely(path.entry() == galilei.Directory).or(false)
+            suggest(if directory then path.name+t"/" else path.name)
 
       else if argument().nil then argument.suggest:
         val children0 = workingDirectory.children.to(List)

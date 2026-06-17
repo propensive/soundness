@@ -58,8 +58,8 @@ object Redraft:
 
   private def marker(text: Text): Boolean =
     val s = text.s
-    s == "+" || s == "-" || s == "<" || s == ">" || s.startsWith("+ ") || s.startsWith("- ")
-    || s.startsWith("< ") || s.startsWith("> ")
+    s == "+" || s == "-" || s == "<" || s == ">" || s.startsWith("+ ") || s.startsWith("- ") ||
+      s.startsWith("< ") || s.startsWith("> ")
 
   private def needsEscape(text: Text): Boolean = marker(text) || text.s.startsWith("\\")
 

@@ -218,10 +218,10 @@ object internal:
       (1L << 61) | ((start.n0.toLong & 0x7fffffffL) << 30) | (length.toLong & 0x3fffffffL)
 
     inline def line(line: Ordinal, column: Ordinal, length: Int): Span =
-      (2L << 61)
-        | ((line.n0.toLong & 0x7fffffL) << 38)
-        | ((column.n0.toLong & 0x7ffffL) << 19)
-        | (length.toLong & 0x7ffffL)
+      (2L << 61) |
+        ((line.n0.toLong & 0x7fffffL) << 38) |
+        ((column.n0.toLong & 0x7ffffL) << 19) |
+        (length.toLong & 0x7ffffL)
 
     inline def lines(startLine: Ordinal, lineCount: Int): Span =
       (3L << 61) | ((startLine.n0.toLong & 0x7fffffffL) << 30) | (lineCount.toLong & 0x3fffffffL)
@@ -232,8 +232,8 @@ object internal:
 
       val delta = (endLine.n0 - startLine.n0).max(0)
 
-      (4L << 61)
-        | ((startLine.n0.toLong & 0x3fffffL) << 39)
-        | ((startColumn.n0.toLong & 0x3fffL) << 25)
-        | ((delta.toLong & 0x7ffL) << 14)
-        | (endColumn.n0.toLong & 0x3fffL)
+      (4L << 61) |
+        ((startLine.n0.toLong & 0x3fffffL) << 39) |
+        ((startColumn.n0.toLong & 0x3fffL) << 25) |
+        ((delta.toLong & 0x7ffL) << 14) |
+        (endColumn.n0.toLong & 0x3fffL)

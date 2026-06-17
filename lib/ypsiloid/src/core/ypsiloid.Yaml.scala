@@ -292,8 +292,8 @@ object Yaml extends Yaml2, Dynamic:
   // `null` represents a YAML null. `Unset.type` marks an absent value
   // (e.g. a missing field in a case-class derivation).
   opaque type Ast =
-    YamlString | YamlInteger | YamlDecimal | YamlBoolean | YamlNull | YamlSequence | YamlMapping
-    | Unset
+    YamlString | YamlInteger | YamlDecimal | YamlBoolean | YamlNull | YamlSequence | YamlMapping |
+      Unset
 
   // Whether `YamlParser` captures line/column/length descriptors
   // alongside the AST. The default is `Off`, matching the historic

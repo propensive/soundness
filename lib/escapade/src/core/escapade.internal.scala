@@ -86,9 +86,9 @@ object internal:
     // chars) immediately before a Markup substitution escapes the markup —
     // the trailing `\\` is consumed and the markup is treated as a no-op.
     def escapesMarkup(partIdx: Int): Boolean =
-      partIdx < insertionExprs.length
-      && parts(partIdx).endsWith("\\\\")
-      && insertionLabel(insertionExprs(partIdx)) == Some("esc")
+      partIdx < insertionExprs.length &&
+        parts(partIdx).endsWith("\\\\") &&
+        insertionLabel(insertionExprs(partIdx)) == Some("esc")
 
     def adjustedPart(partIdx: Int): String =
       if escapesMarkup(partIdx) then parts(partIdx).dropRight(2) else parts(partIdx)
@@ -212,12 +212,12 @@ object internal:
     val Background: Interval = SetBackground.subsequent(24)
 
     val Changes: B64 =
-      B64.set(SetBold) | B64.set(SetItalic) | B64.set(SetUnderline) | B64.set(Strike)
-      | B64.set(Concealed) | B64.set(SetForeground) | B64.set(SetBackground)
+      B64.set(SetBold) | B64.set(SetItalic) | B64.set(SetUnderline) | B64.set(Strike) |
+        B64.set(Concealed) | B64.set(SetForeground) | B64.set(SetBackground)
 
     val FlagChanges: B64 =
-      B64.set(SetBold) | B64.set(SetItalic) | B64.set(SetUnderline) | B64.set(Strike)
-      | B64.set(Concealed)
+      B64.set(SetBold) | B64.set(SetItalic) | B64.set(SetUnderline) | B64.set(Strike) |
+        B64.set(Concealed)
 
     val Mask: B64 =
       B64.set(Bold) | B64.set(Italic) | B64.set(Underline) | B64.set(Strike) | B64.set(Concealed)
@@ -276,8 +276,8 @@ object internal:
     final val HyperlinkChange:  Long = 1L << 61
 
     final val FlagsMask: Long =
-      FgSet | BgSet | Bold | Faint | Italic | Underline | DoubleUnderline | BlinkSlow | BlinkFast
-      | Reverse | Conceal | Strike | Overline | HyperlinkChange
+      FgSet | BgSet | Bold | Faint | Italic | Underline | DoubleUnderline | BlinkSlow | BlinkFast |
+        Reverse | Conceal | Strike | Overline | HyperlinkChange
 
     val Default: StyleWord = 0L
 

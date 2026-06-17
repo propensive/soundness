@@ -154,8 +154,8 @@ object Zipfile:
             else IArray.empty[Byte]
 
           val recordOffset =
-            if atRecorded.length == 56
-              && Zip.u32(atRecorded, 0) == (Zip.zip64EocdSig.toLong & 0xffffffffL)
+            if atRecorded.length == 56 &&
+              Zip.u32(atRecorded, 0) == (Zip.zip64EocdSig.toLong & 0xffffffffL)
             then recorded
             else eocdOffset - 20 - 56
 

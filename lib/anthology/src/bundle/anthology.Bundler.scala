@@ -86,8 +86,8 @@ object Bundler:
 
     Zipfile.write(jarfile):
       val entries =
-        Zip.Entry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest)
-        :: classpath(directory).entries.to(List).flatMap:
+        Zip.Entry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest) ::
+          classpath(directory).entries.to(List).flatMap:
           case ClasspathEntry.Directory(directory) =>
             val root = directory.decode[Path on Linux]
             root.descendants.to(List).filter: entry => !omissions(entry.name)

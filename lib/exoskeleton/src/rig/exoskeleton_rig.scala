@@ -183,9 +183,9 @@ extension (shell: Shell)
 
             val sourceScript =
               t"""for d in "$$XDG_DATA_HOME" "$$HOME/.local/share" /usr/local/share """+
-              t"""/usr/share; do [ -n "$$d" ] && """+
-              t"""[ -r "$$d/bash-completion/completions/$cmd" ] && """+
-              t""". "$$d/bash-completion/completions/$cmd" && break; done"""
+                t"""/usr/share; do [ -n "$$d" ] && """+
+                t"""[ -r "$$d/bash-completion/completions/$cmd" ] && """+
+                t""". "$$d/bash-completion/completions/$cmd" && break; done"""
 
             sh"""tmux send-keys -t ${tmux.id} '$sourceScript' C-m""".exec[Unit]()
 
@@ -232,8 +232,8 @@ extension (shell: Shell)
             // so it's registered before the first test key is sent.
             val sourceFish =
               t"""for d in $$XDG_CONFIG_HOME $$HOME/.config; """+
-              t"""test -r "$$d/fish/completions/$cmd.fish"; """+
-              t"""and source "$$d/fish/completions/$cmd.fish"; and break; end"""
+                t"""test -r "$$d/fish/completions/$cmd.fish"; """+
+                t"""and source "$$d/fish/completions/$cmd.fish"; and break; end"""
 
             sh"""tmux send-keys -t ${tmux.id} '$sourceFish' C-m""".exec[Unit]()
 

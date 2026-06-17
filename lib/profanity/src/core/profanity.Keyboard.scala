@@ -95,9 +95,9 @@ object Keyboard:
   // The `Ctrl`-modified form of a character, or the plain character if it has no
   // control form.
   def ctrlChar(char: Char): profanity.Keypress = char.toUpper match
-    case c: ( '@' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M'
-              | 'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '['
-              | '\\' | ']' | '^' | '_' ) =>
+    case c: ( '@' | 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'G' | 'H' | 'I' | 'J' | 'K' | 'L' | 'M' |
+      'N' | 'O' | 'P' | 'Q' | 'R' | 'S' | 'T' | 'U' | 'V' | 'W' | 'X' | 'Y' | 'Z' | '[' |
+      '\\' | ']' | '^' | '_' ) =>
       Ctrl(c)
 
     case _ =>
@@ -144,8 +144,8 @@ object Keyboard:
                 Keyboard.modified(modifiers, Keyboard.vt(code)) #:: process(rest)
 
               case
-                ( '1' #:: ';' #:: modifiers #:: (code@('A' | 'B' | 'C' | 'D' | 'F' | 'H'))
-                  #:: rest ) =>
+                ( '1' #:: ';' #:: modifiers #:: (code@('A' | 'B' | 'C' | 'D' | 'F' | 'H')) #::
+                  rest ) =>
 
                 Keyboard.modified(modifiers, Keyboard.navigation(code)) #:: process(rest)
 
@@ -190,8 +190,8 @@ object Keyboard:
                 case List(red, green, blue) =>
                   def decimal(hex: Text): Int = Integer.parseInt(hex.s, 16)
 
-                  TerminalInfo.BgColor(decimal(red), decimal(green), decimal(blue))
-                  #:: process(continuation)
+                  TerminalInfo.BgColor(decimal(red), decimal(green), decimal(blue)) #::
+                    process(continuation)
 
                 case _ =>
                   process(continuation)

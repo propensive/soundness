@@ -64,8 +64,8 @@ object internal:
         safely:
           val uri =
             new java.net.URI
-              ( "https://www.iana.org/assignments/service-names-port-numbers/"
-                + "service-names-port-numbers.csv" )
+              ( "https://www.iana.org/assignments/service-names-port-numbers/" +
+                "service-names-port-numbers.csv" )
 
           uri.toURL().nn.openStream().nn: ji.InputStream
 

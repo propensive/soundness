@@ -70,8 +70,8 @@ trait VersoPanel extends Archetype:
   // This feature's own rules; override to restyle the panel and its grid.
   protected def versoStyles: Css =
     val layout = VersoPanel.layoutClass
-    css"$layout { display: grid; grid-template-columns: auto 1fr; gap: ${versoGap} }"
-    + css"${VersoPanel.versoClass} { inline-size: ${versoWidth} }"
+    css"$layout { display: grid; grid-template-columns: auto 1fr; gap: ${versoGap} }" +
+      css"${VersoPanel.versoClass} { inline-size: ${versoWidth} }"
 
   protected override def frame: Html of (? <: Flow) =
     val panel = Aside(`class` = VersoPanel.versoClass)(verso)

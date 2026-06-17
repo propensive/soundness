@@ -40,8 +40,8 @@ import rudiments.*
 
 object Posix:
   type Rules =
-    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
-    & MustNotEqual["Icon\r"] & MustNotContain[":"]
+    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""] &
+      MustNotEqual["Icon\r"] & MustNotContain[":"]
 
   inline given Posix is Nominative under Rules = !!
 

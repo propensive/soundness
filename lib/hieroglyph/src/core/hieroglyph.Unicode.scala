@@ -136,8 +136,8 @@ object Unicode:
     def recur(stream: Stream[Text], map: TreeMap[CharRange, EaWidth]): TreeMap[CharRange, EaWidth] =
       stream match
         case
-          r"${Hex(from)}([0-9A-F]{4,6})\.\.${Hex(to)}([0-9A-F]{4,6});${EaWidth(w)}([AFHNW]a?).*"
-          #:: tail =>
+          r"${Hex(from)}([0-9A-F]{4,6})\.\.${Hex(to)}([0-9A-F]{4,6});${EaWidth(w)}([AFHNW]a?).*" #::
+            tail =>
           recur(tail, map.append(CharRange(from, to), w))
 
         case r"${Hex(from)}([0-9A-F]{4,6});${EaWidth(w)}([AFHNW]a?).*" #:: tail =>

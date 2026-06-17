@@ -125,10 +125,10 @@ object InlineSupport:
         // Strip one leading + one trailing space if both ends have space and
         // content is not all spaces
         val needsTrim =
-          noNewlines.length >= 2
-          && noNewlines.charAt(0) == ' '
-          && noNewlines.charAt(noNewlines.length - 1) == ' '
-          && existsNonSpace(noNewlines)
+          noNewlines.length >= 2 &&
+            noNewlines.charAt(0) == ' ' &&
+            noNewlines.charAt(noNewlines.length - 1) == ' ' &&
+            existsNonSpace(noNewlines)
 
         val stripped =
           if needsTrim then noNewlines.substring(1, noNewlines.length - 1).nn
@@ -508,9 +508,9 @@ object InlineSupport:
     isAsciiAlnum(c) || c == '_' || c == '.' || c == ':' || c == '-'
 
   private inline def isUnquotedValueChar(c: Char): Boolean =
-    c != ' ' && c != '\t' && c != '\n'
-    && c != '"' && c != '\''
-    && c != '=' && c != '<' && c != '>' && c != '`'
+    c != ' ' && c != '\t' && c != '\n' &&
+      c != '"' && c != '\'' &&
+      c != '=' && c != '<' && c != '>' && c != '`'
 
   private def parseHtmlAttribute(s: String, start: Int, end: Int): Int =
     var i = start
@@ -650,8 +650,8 @@ object InlineSupport:
     val tentativeWsEnd = skipLinkWhitespace(s, afterDest, end)
 
     val titleOpener =
-      tentativeWsEnd < end
-      && { val c = s.charAt(tentativeWsEnd); c == '"' || c == '\'' || c == '(' }
+      tentativeWsEnd < end &&
+        { val c = s.charAt(tentativeWsEnd); c == '"' || c == '\'' || c == '(' }
 
     var resultTitle: Optional[Text] = Unset
     var resultEnd: Int = -1

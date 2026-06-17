@@ -185,8 +185,8 @@ object Cbor extends Cbor2, Dynamic:
   type CborUndefined = vacuous.Unset
 
   type CborTypes =
-    CborInteger | CborFloat | CborText | CborBytes | CborArray | CborMap | CborBoolean | CborNull
-    | CborUndefined | Tag
+    CborInteger | CborFloat | CborText | CborBytes | CborArray | CborMap | CborBoolean | CborNull |
+      CborUndefined | Tag
 
   opaque type Ast = CborTypes
 
@@ -553,8 +553,8 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
       val leftTag = left.asInstanceOf[Cbor.Tag]
       val rightTag = right.asInstanceOf[Cbor.Tag]
 
-      leftTag.tag == rightTag.tag
-      && recur(leftTag.value.asInstanceOf[Cbor.Ast], rightTag.value.asInstanceOf[Cbor.Ast])
+      leftTag.tag == rightTag.tag &&
+        recur(leftTag.value.asInstanceOf[Cbor.Ast], rightTag.value.asInstanceOf[Cbor.Ast])
 
     else if left.isArray && right.isArray then
       val leftElements = left.elements
@@ -583,8 +583,8 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
 
         while index < ln && equal do
           if
-            !recur(left.key(index), right.key(index))
-            || !recur(left.value(index), right.value(index))
+            !recur(left.key(index), right.key(index)) ||
+              !recur(left.value(index), right.value(index))
           then equal = false
 
           index += 1

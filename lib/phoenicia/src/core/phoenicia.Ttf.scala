@@ -234,7 +234,7 @@ case class Ttf(data: Data):
 
           // FIXME: Understand why we need to add a `+1` here to fix an off-by-one error
           Glyph(ttf, segment.rangeOffset/2 + (char - segment.start) + segment.rangeOffset +
-              segment.delta + 1)
+            segment.delta + 1)
 
       case class Format12(length: Int, language: Int, nGroups: Int) extends Format:
         def glyph(char: Char): Glyph[ttf.type] = ???

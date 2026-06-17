@@ -42,14 +42,14 @@ import wisteria.*
 
 object internal:
   opaque type Pojo <: Object =
-    Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character
-    | java.lang.Short | java.lang.Integer | java.lang.Long | java.lang.Float | java.lang.Double
+    Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character |
+      java.lang.Short | java.lang.Integer | java.lang.Long | java.lang.Float | java.lang.Double
 
   object Pojo extends Pojo2:
     def apply
-      ( pojo: Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character
-              | java.lang.Short | java.lang.Integer | java.lang.Long | java.lang.Float
-              | java.lang.Double )
+      ( pojo: Array[Object] | String | java.lang.Boolean | java.lang.Byte | java.lang.Character |
+        java.lang.Short | java.lang.Integer | java.lang.Long | java.lang.Float |
+        java.lang.Double )
     :   Pojo =
 
       pojo
