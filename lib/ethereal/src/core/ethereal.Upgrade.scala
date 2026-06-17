@@ -74,7 +74,8 @@ object Upgrade:
     ( source: source )
     ( using environment: Environment,
             system:      System,
-            diagnostics: Diagnostics )
+            diagnostics: Diagnostics,
+            readable:    source is Readable to Data )
   :   Nothing raises UpgradeError =
 
     applyBytes(source.read[Data])
