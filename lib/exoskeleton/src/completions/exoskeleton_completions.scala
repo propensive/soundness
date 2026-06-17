@@ -137,10 +137,10 @@ package executives:
 
       arguments match
         case
-          t"{completions}" :: t"powershell" :: As[Int](cursor) :: _ :: tty
-          :: t"--"
-          :: rawLine
-          :: Nil =>
+          t"{completions}" :: t"powershell" :: As[Int](cursor) :: _ :: tty ::
+            t"--" ::
+            rawLine ::
+            Nil =>
 
           val parts0 = rawLine.cut(t" ")
           val parts = if cursor > rawLine.length then parts0 :+ t"" else parts0
@@ -165,10 +165,10 @@ package executives:
               login )
 
         case
-          t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position0) :: tty
-          :: t"--"
-          :: command
-          :: rest =>
+          t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position0) :: tty ::
+            t"--" ::
+            command ::
+            rest =>
 
             val shell = shellName match
               case t"zsh"        => Shell.Zsh

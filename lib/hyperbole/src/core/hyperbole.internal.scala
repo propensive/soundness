@@ -643,31 +643,31 @@ object internal:
           t"Declarations"     -> symbol.declarations.sortBy(_.name).map(_.name.tt),
           t"Children"         -> symbol.children.sortBy(_.name).map(_.name.tt),
 
-          t"Parameters"
-          ->  symbol.paramSymss.map(_.map(_.name.tt).join(t"(", t" ", t")")),
+          t"Parameters" ->
+            symbol.paramSymss.map(_.map(_.name.tt).join(t"(", t" ", t")")),
 
-          t"All overridden symbols"
-          ->  symbol.allOverriddenSymbols.map(_.name.tt).to(List),
+          t"All overridden symbols" ->
+            symbol.allOverriddenSymbols.map(_.name.tt).to(List),
 
-          t"Primary constructor"
-          ->  symbol.primaryConstructor.name.tt,
+          t"Primary constructor" ->
+            symbol.primaryConstructor.name.tt,
 
-          t"Case fields"
-          ->  symbol.caseFields.map: field =>
-                t"${field.name}: ${field.info.show}"
+          t"Case fields" ->
+            symbol.caseFields.map: field =>
+              t"${field.name}: ${field.info.show}"
 
-              . join(t"\n"),
+            . join(t"\n"),
 
           t"Signature"        -> symbol.signature.resultSig,
 
-          t"Module class"
-          -> (if symbol.moduleClass.exists then symbol.moduleClass.fullName else t""),
+          t"Module class" ->
+            (if symbol.moduleClass.exists then symbol.moduleClass.fullName else t""),
 
-          t"Companion class"
-          -> (if symbol.companionClass.exists then symbol.companionClass.fullName else t""),
+          t"Companion class" ->
+            (if symbol.companionClass.exists then symbol.companionClass.fullName else t""),
 
-          t"Companion module"
-          -> (if symbol.companionModule.exists then symbol.companionModule.fullName else t"") )
+          t"Companion module" ->
+            (if symbol.companionModule.exists then symbol.companionModule.fullName else t"") )
 
     TastySymbol(prefix, symbol.name, flags, properties, details)
 

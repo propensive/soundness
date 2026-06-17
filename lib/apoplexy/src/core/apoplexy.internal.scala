@@ -631,9 +631,9 @@ object Apoplexy:
     val valueRepr = TypeRepr.of[value]
 
     val raw =
-      valueRepr =:= TypeRepr.of[Http.Response]
-      || valueRepr =:= TypeRepr.of[Json]
-      || valueRepr =:= TypeRepr.of[Unit]
+      valueRepr =:= TypeRepr.of[Http.Response] ||
+        valueRepr =:= TypeRepr.of[Json] ||
+        valueRepr =:= TypeRepr.of[Unit]
 
     if !raw then
       val members = refinements(self.asTerm.tpe) ++ refinements(self.asTerm.tpe.widen)

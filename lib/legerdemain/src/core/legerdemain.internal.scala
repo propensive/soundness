@@ -50,8 +50,8 @@ object internal:
           ' {
               type keyType <: Label
               ($key: keyType, $value: valueType)
-            }
-          :: tail =>
+            } ::
+            tail =>
           Expr.summon[keyType is Parametric to (? >: valueType)].getOrElse:
             Expr.summon[keyType is Parametric].absolve match
               case Some('{$parametric: (Parametric { type Result = resultType })}) =>

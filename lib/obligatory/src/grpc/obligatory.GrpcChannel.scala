@@ -79,9 +79,9 @@ class GrpcChannel
       Http.Header(key, value)
 
     val headers =
-      Http.Header(t"content-type", t"application/grpc+proto")
-      :: Http.Header(t"te", t"trailers")
-      :: metadataHeaders
+      Http.Header(t"content-type", t"application/grpc+proto") ::
+        Http.Header(t"te", t"trailers") ::
+        metadataHeaders
 
     val body = () => Stream(GrpcFraming.encode(message))
     Http.Request(Http.Post, 2.0, host, method.path, headers, body)

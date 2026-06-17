@@ -56,8 +56,8 @@ object LeapSeconds:
     val decemberShift = n.min(127)/2
     val juneShift = decemberShift + n%2
 
-    10 + (if juneShift > 0 then ones(june >>> (64 - juneShift)) else 0)
-    + (if decemberShift > 0 then ones(december >>> (64 - decemberShift)) else 0)
+    10 + (if juneShift > 0 then ones(june >>> (64 - juneShift)) else 0) +
+      (if decemberShift > 0 then ones(december >>> (64 - decemberShift)) else 0)
 
   private inline val juneToDecember = 15897600000L
   private inline val firstLeapSecond = 94694400000L

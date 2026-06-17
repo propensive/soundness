@@ -46,7 +46,7 @@ trait FoldableRectoPanel extends RectoPanel:
   // The fold's own rules, layered over `RectoPanel`'s; override to change the fold behaviour.
   protected def foldedStyles: Css =
     val recto = RectoPanel.rectoClass
-    css"$recto { overflow: clip; max-inline-size: ${maxRectoWidth} }"
-    + css"$recto { transition: max-inline-size 0.2s }"
+    css"$recto { overflow: clip; max-inline-size: ${maxRectoWidth} }" +
+      css"$recto { transition: max-inline-size 0.2s }"
 
   protected override def styles: Css = super.styles + foldedStyles

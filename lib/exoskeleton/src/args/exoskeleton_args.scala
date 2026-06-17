@@ -113,8 +113,8 @@ package interpreters:
                 init :+ (key.copy(format = Argument.Format.CharFlag((flag.length - 2).z)), values)
               else
                 List:
-                  key.copy(format = Argument.Format.CharFlag(Prim))
-                  -> (key.copy(format = Argument.Format.FlagSuffix) :: values)
+                  key.copy(format = Argument.Format.CharFlag(Prim)) ->
+                    (key.copy(format = Argument.Format.FlagSuffix) :: values)
 
             else
               List(key -> values)

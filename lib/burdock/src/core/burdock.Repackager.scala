@@ -196,8 +196,8 @@ object Repackager:
           manifest(MainClass).lest(RepackageError(m"the JAR manifest has no Main-Class"))
 
         val manifest2: Manifest =
-          manifest - MainClass + BurdockRequire(requirements) + BurdockMain(originalMain)
-          + BurdockVerbosity(t"silent") + MainClass(fqcn"burdock.Bootstrap")
+          manifest - MainClass + BurdockRequire(requirements) + BurdockMain(originalMain) +
+            BurdockVerbosity(t"silent") + MainClass(fqcn"burdock.Bootstrap")
 
         val bootstrap: Entry = Entry(bootstrapName, bootstrapClass)
 
@@ -208,9 +208,9 @@ object Repackager:
         val entries: List[Entry] = (bootstrap :: keptEntries ++ inlined).distinctBy(_.name)
 
         Zipfile.write(outputJar):
-          Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest2.serialize)
-          #:: entries.to(Stream).map: entry =>
-            Zip.Entry(entry.name.decode[Path on Zip], () => Stream(entry.data))
+          Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest2.serialize) #::
+            entries.to(Stream).map: entry =>
+              Zip.Entry(entry.name.decode[Path on Zip], () => Stream(entry.data))
 
         // The output also carries the manifest entry, hence `entries.length + 1`.
         Summary

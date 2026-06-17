@@ -423,10 +423,10 @@ final class BlockParser:
     val deepestIsParagraph = deepest.isInstanceOf[ParagraphBuilder]
 
     val canLazyContinue =
-      deepestIsParagraph
-      && !ParserSupport.startsNonParagraphBlock(residual0, paragraphOpen = true)
-      && !ParserSupport.isBlank(residual0)
-      && !insideAnyListWithListMarker(residual0)
+      deepestIsParagraph &&
+        !ParserSupport.startsNonParagraphBlock(residual0, paragraphOpen = true) &&
+        !ParserSupport.isBlank(residual0) &&
+        !insideAnyListWithListMarker(residual0)
 
     if canLazyContinue then
       val para = deepest.asInstanceOf[ParagraphBuilder]

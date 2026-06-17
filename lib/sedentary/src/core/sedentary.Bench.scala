@@ -109,8 +109,8 @@ case class Bench()(using Classloader, Environment)(using device: BenchmarkDevice
           while d < $target2 do
             if count >= (1L << 34) then
               throw new RuntimeException(
-                "sedentary: benchmark body produced no measurable timing after 2^34 "
-                  + "iterations; suspected dead-code elimination")
+                "sedentary: benchmark body produced no measurable timing after 2^34 " +
+                  "iterations; suspected dead-code elimination")
             count *= 2L
             val t0 = jl.System.nanoTime
             var i = 0L

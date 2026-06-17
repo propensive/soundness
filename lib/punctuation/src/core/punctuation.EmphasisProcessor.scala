@@ -131,24 +131,24 @@ object EmphasisProcessor:
     isUnicodeWhitespace(nextChar) || isUnicodePunctuation(nextChar)
 
   def isUnicodeWhitespace(c: Char): Boolean =
-    c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == ''
-    || Character.getType(c) == Character.SPACE_SEPARATOR
+    c == ' ' || c == '\t' || c == '\n' || c == '\r' || c == '' ||
+      Character.getType(c) == Character.SPACE_SEPARATOR
 
   def isUnicodePunctuation(c: Char): Boolean =
     val t = Character.getType(c)
     // CommonMark §6.2: Unicode punctuation means a character in categories
     // Pc, Pd, Pe, Pf, Pi, Po, Ps, OR in any Symbol category Sc/Sk/Sm/So.
-    t == Character.CONNECTOR_PUNCTUATION
-    || t == Character.DASH_PUNCTUATION
-    || t == Character.START_PUNCTUATION
-    || t == Character.END_PUNCTUATION
-    || t == Character.INITIAL_QUOTE_PUNCTUATION
-    || t == Character.FINAL_QUOTE_PUNCTUATION
-    || t == Character.OTHER_PUNCTUATION
-    || t == Character.CURRENCY_SYMBOL
-    || t == Character.MODIFIER_SYMBOL
-    || t == Character.MATH_SYMBOL
-    || t == Character.OTHER_SYMBOL
+    t == Character.CONNECTOR_PUNCTUATION ||
+      t == Character.DASH_PUNCTUATION ||
+      t == Character.START_PUNCTUATION ||
+      t == Character.END_PUNCTUATION ||
+      t == Character.INITIAL_QUOTE_PUNCTUATION ||
+      t == Character.FINAL_QUOTE_PUNCTUATION ||
+      t == Character.OTHER_PUNCTUATION ||
+      t == Character.CURRENCY_SYMBOL ||
+      t == Character.MODIFIER_SYMBOL ||
+      t == Character.MATH_SYMBOL ||
+      t == Character.OTHER_SYMBOL
 
   // Result is bit-packed (bit 0 = canOpen, bit 1 = canClose) so the hot path
   // doesn't allocate a Tuple2 per delimiter run.
@@ -214,9 +214,9 @@ object EmphasisProcessor:
 
               case od: DelimData if od.canOpen && od.char == closer.char =>
                 val ruleOf3 =
-                  (od.canClose || closer.canOpen)
-                  && (od.length + closer.length) % 3 == 0
-                  && (od.length % 3 != 0 || closer.length % 3 != 0)
+                  (od.canClose || closer.canOpen) &&
+                    (od.length + closer.length) % 3 == 0 &&
+                    (od.length % 3 != 0 || closer.length % 3 != 0)
 
                 if !ruleOf3 then
                   val strong = od.length >= 2 && closer.length >= 2

@@ -70,8 +70,8 @@ trait Dashboard extends Archetype, Mainstay, Masthead:
   // This view's own rules; override to restyle the grid or the cards.
   protected def dashboardStyles: Css =
     val grid = Dashboard.gridClass
-    css"$grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)) }"
-    + css"$grid { gap: 1rem }"
-    + css"${Dashboard.cardClass} { padding: 1rem; border: 1px solid; border-radius: 0.5rem }"
+    css"$grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)) }" +
+      css"$grid { gap: 1rem }" +
+      css"${Dashboard.cardClass} { padding: 1rem; border: 1px solid; border-radius: 0.5rem }"
 
   protected override def styles: Css = super.styles + dashboardStyles

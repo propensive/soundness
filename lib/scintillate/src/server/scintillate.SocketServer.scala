@@ -116,8 +116,8 @@ extends RequestServable:
   // body is the unbounded remainder of the connection, so a frame reader can
   // keep receiving bytes after the handshake.
   private def isUpgrade(head: Http.Request.Head): Boolean =
-    head.headers.filter(_.key.lower == t"connection").exists(_.value.lower.contains(t"upgrade"))
-    && head.headers.exists(_.key.lower == t"upgrade")
+    head.headers.filter(_.key.lower == t"connection").exists(_.value.lower.contains(t"upgrade")) &&
+      head.headers.exists(_.key.lower == t"upgrade")
 
   // A client may withhold a request body until the server agrees to receive it
   // with an interim `100 Continue` (RFC 7231 §5.1.1).

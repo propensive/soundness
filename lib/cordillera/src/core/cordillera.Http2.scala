@@ -135,8 +135,8 @@ object Http2:
       ((data(offset) & 0xff) << 16) | ((data(offset + 1) & 0xff) << 8) | (data(offset + 2) & 0xff)
 
     private[cordillera] def uint32(data: Bytes, offset: Int): Long =
-      ((data(offset).toLong & 0xff) << 24) | ((data(offset + 1).toLong & 0xff) << 16)
-      | ((data(offset + 2).toLong & 0xff) << 8) | (data(offset + 3).toLong & 0xff)
+      ((data(offset).toLong & 0xff) << 24) | ((data(offset + 1).toLong & 0xff) << 16) |
+        ((data(offset + 2).toLong & 0xff) << 8) | (data(offset + 3).toLong & 0xff)
 
     private def writeUint24(builder: scm.ArrayBuilder[Byte], value: Int): Unit =
       builder.addOne(((value >>> 16) & 0xff).toByte)

@@ -97,8 +97,8 @@ object Rfc1123 extends Date.Format(t"RFC 1123"):
     expect(' ')
 
     val day: Int =
-      (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10)
-      + (if next() < '0' || focus > '9' then fail(Digit) yet 1 else focus - '0')
+      (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10) +
+        (if next() < '0' || focus > '9' then fail(Digit) yet 1 else focus - '0')
 
     expect(' ')
 
@@ -147,28 +147,28 @@ object Rfc1123 extends Date.Format(t"RFC 1123"):
     expect(' ')
 
     val year: Int =
-      (if next() < '0' || focus > '9' then fail(Digit) yet 2 else (focus - '0')*1000)
-      + (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*100)
-      + (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10)
-      + (if next() < '0' || focus > '9' then fail(Digit) yet 0 else focus - '0')
+      (if next() < '0' || focus > '9' then fail(Digit) yet 2 else (focus - '0')*1000) +
+        (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*100) +
+        (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10) +
+        (if next() < '0' || focus > '9' then fail(Digit) yet 0 else focus - '0')
 
     expect(' ')
 
     val hour: Int =
-      (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10)
-      + (if next() < '0' || focus > '9' then fail(Digit) yet 0 else focus - '0')
+      (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10) +
+        (if next() < '0' || focus > '9' then fail(Digit) yet 0 else focus - '0')
 
     expect(':')
 
     val minute: Int =
-      (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10)
-      + (if next() < '0' || focus > '9' then fail(Digit) yet 1 else focus - '0')
+      (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10) +
+        (if next() < '0' || focus > '9' then fail(Digit) yet 1 else focus - '0')
 
     expect(':')
 
     val second: Int =
-      (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10)
-      + (if next() < '0' || focus > '9' then fail(Digit) yet 1 else focus - '0')
+      (if next() < '0' || focus > '9' then fail(Digit) yet 0 else (focus - '0')*10) +
+        (if next() < '0' || focus > '9' then fail(Digit) yet 1 else focus - '0')
 
     expect(' ')
     expect('G')
