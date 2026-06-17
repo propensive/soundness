@@ -48,6 +48,7 @@ import panopticon.*
 import prepositional.*
 import probably.*
 import rudiments.*
+import spectacular.*
 import turbulence.*
 import vacuous.*
 import zephyrine.*
@@ -85,7 +86,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       CorpusLoader.positive.each: testcase =>
         test(m"round-trip ${testcase.stem}"):
           val first = testcase.source.read[Tel]
-          val printed = Tel.show(first)
+          val printed = first.show
           val reparsed = printed.s.tt.read[Tel]
           TelCheckTree.of(reparsed)
         . assert(_ == TelCheckTree.of(testcase.source.read[Tel]))
@@ -111,7 +112,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       CorpusLoader.positive.each: testcase =>
         test(m"streaming round-trip ${testcase.stem}"):
           val first = TelParser.parse(Cursor[Data](testcase.source))
-          val printed = Tel.show(Tel.make(first))
+          val printed = Tel.make(first).show
           val bytes: Data = summon[CharEncoder].encoded(printed)
           val reparsed = TelParser.parse(Cursor[Data](bytes))
           TelCheckTree.of(Tel.make(reparsed)) == TelCheckTree.of(Tel.make(first))
@@ -447,7 +448,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         // re-emits at the canonical two-space indent.
         val src = summon[CharEncoder].encoded(t"parent\n child Alice\n")
         val tel = Tel.parse(src, recoverSchema)
-        Tel.show(tel.document.vouch)
+        tel.document.vouch.show
       . assert(_ == t"parent\n  child Alice\n")
 
       test(m"prefers shallower on tie"):
@@ -793,21 +794,21 @@ object Tests extends Suite(m"Stratiform Tests"):
         val tel    = doc("name Alice\n")
         val ptr    = Tel.Pointer.of(t"name")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"Bob"))
-        Tel.show(result.document.vouch)
+        result.document.vouch.show
       . assert(_ == t"name Bob\n")
 
       test(m"AttachRemark adds a remark to the targeted compound"):
         val tel    = doc("name Alice\n")
         val ptr    = Tel.Pointer.of(t"name")
         val result = Mutation(tel, Mutation.Op.AttachRemark(ptr, t"primary contact"))
-        Tel.show(result.document.vouch)
+        result.document.vouch.show
       . assert(_ == t"name Alice  # primary contact\n")
 
       test(m"RemoveRemark drops a previously attached remark"):
         val tel    = doc("name Alice  # noted\n")
         val ptr    = Tel.Pointer.of(t"name")
         val result = Mutation(tel, Mutation.Op.RemoveRemark(ptr))
-        Tel.show(result.document.vouch)
+        result.document.vouch.show
       . assert(_ == t"name Alice\n")
 
       test(m"Insert appends a child compound to the parent"):
@@ -818,14 +819,14 @@ object Tests extends Suite(m"Stratiform Tests"):
                            Unset, IArray.empty)
         val ptr    = Tel.Pointer.of(t"contact")
         val result = Mutation(tel, Mutation.Op.Insert(ptr, newCompound))
-        Tel.show(result.document.vouch)
+        result.document.vouch.show
       . assert(_ == t"contact\n  name Alice\n  email alice@example.com\n")
 
       test(m"Delete removes the addressed compound"):
         val tel    = doc("name Alice\nemail alice@example.com\n")
         val ptr    = Tel.Pointer.of(t"email")
         val result = Mutation(tel, Mutation.Op.Delete(ptr))
-        Tel.show(result.document.vouch)
+        result.document.vouch.show
       . assert(_ == t"name Alice\n")
 
       test(m"InsertBefore places a new sibling before the target"):
@@ -834,7 +835,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                       (t"a", IArray(Tel.Atom.Inline(t"one", 1)), Unset, IArray.empty)
         val ptr    = Tel.Pointer.of(t"b")
         val result = Mutation(tel, Mutation.Op.InsertBefore(ptr, a))
-        Tel.show(result.document.vouch)
+        result.document.vouch.show
       . assert(_ == t"a one\nb two\n")
 
       test(m"InsertAfter places a new sibling after the target"):
@@ -843,7 +844,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                       (t"b", IArray(Tel.Atom.Inline(t"two", 1)), Unset, IArray.empty)
         val ptr    = Tel.Pointer.of(t"a")
         val result = Mutation(tel, Mutation.Op.InsertAfter(ptr, b))
-        Tel.show(result.document.vouch)
+        result.document.vouch.show
       . assert(_ == t"a one\nb two\n")
 
       test(m"Replace swaps a compound for a new one"):
@@ -853,21 +854,21 @@ object Tests extends Suite(m"Stratiform Tests"):
                             Unset, IArray.empty)
         val ptr    = Tel.Pointer.of(t"name")
         val result = Mutation(tel, Mutation.Op.Replace(ptr, replacement))
-        Tel.show(result.document.vouch)
+        result.document.vouch.show
       . assert(_ == t"name Charlie\n")
 
       test(m"SetFlag attaches a flag-typed child compound"):
         val tel    = doc("opt\n")
         val ptr    = Tel.Pointer.of(t"opt")
         val result = Mutation(tel, Mutation.Op.SetFlag(ptr, t"enabled"))
-        Tel.show(result.document.vouch)
+        result.document.vouch.show
       . assert(_ == t"opt\n  enabled\n")
 
       test(m"UnsetFlag removes a previously set flag"):
         val tel    = doc("opt\n  enabled\n")
         val ptr    = Tel.Pointer.of(t"opt")
         val result = Mutation(tel, Mutation.Op.UnsetFlag(ptr, t"enabled"))
-        Tel.show(result.document.vouch)
+        result.document.vouch.show
       . assert(_ == t"opt\n")
 
       test(m"sequenced ops apply in order"):
@@ -877,7 +878,7 @@ object Tests extends Suite(m"Stratiform Tests"):
                       ( Mutation.Op.UpdateAtom(ptr, 0, t"Bob"),
                         Mutation.Op.AttachRemark(ptr, t"note") )
         val result = Mutation(tel, ops)
-        Tel.show(result.document.vouch)
+        result.document.vouch.show
       . assert(_ == t"name Bob  # note\n")
 
       test(m"pointer with no match raises PointerNotFound"):
@@ -889,13 +890,13 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"ReorderWithinGroup moves a same-keyword sibling"):
         val tel = doc("item a\nitem b\nitem c\n")
         val op  = Mutation.Op.ReorderWithinGroup(Tel.Pointer.Empty, t"item", 0, 2)
-        Tel.show(Mutation(tel, op).document.vouch)
+        Mutation(tel, op).document.vouch.show
       . assert(_ == t"item b\nitem c\nitem a\n")
 
       test(m"ReorderWithinGroup with same old and new is a no-op"):
         val tel = doc("item a\nitem b\n")
         val op  = Mutation.Op.ReorderWithinGroup(Tel.Pointer.Empty, t"item", 1, 1)
-        Tel.show(Mutation(tel, op).document.vouch)
+        Mutation(tel, op).document.vouch.show
       . assert(_ == t"item a\nitem b\n")
 
       test(m"ReorderWithinGroup with out-of-range index raises"):
@@ -907,7 +908,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"ReorderGroups swaps contiguous member groups"):
         val tel = doc("name Alice\nname Bob\nage 30\nage 31\n")
         val op  = Mutation.Op.ReorderGroups(Tel.Pointer.Empty, t"name", t"age")
-        Tel.show(Mutation(tel, op).document.vouch)
+        Mutation(tel, op).document.vouch.show
       . assert(_ == t"age 30\nage 31\nname Alice\nname Bob\n")
 
       test(m"ReorderGroups raises when a group is missing"):
@@ -1058,7 +1059,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val original = doc("# header\nname Alice\nemail a@example.com\n")
         val lens = summon["email" is Lens from Tel onto Tel]
         val updated = lens.modify(original)(_ => Tel.scalar(t"b@example.com"))
-        Tel.show(updated.document.vouch)
+        updated.document.vouch.show
       . assert(_ == t"# header\nname Alice\nemail b@example.com\n")
 
       test(m"a multi-step Revision log round-trips through the printer"):
@@ -1069,9 +1070,9 @@ object Tests extends Suite(m"Stratiform Tests"):
            ++ Revision.at(Tel.Pointer.Empty)
                   .insert(Revision.compound(t"email", t"b@example.com")) )
 
-        val printed   = Tel.show(edited.document.vouch)
+        val printed   = edited.document.vouch.show
         val reparsed  = printed.s.tt.read[Tel]
-        Tel.show(reparsed.document.vouch)
+        reparsed.document.vouch.show
       . assert(_ == t"name Bob\nemail b@example.com\n")
 
     suite(m"Tel.modify and Lens given"):
@@ -1132,7 +1133,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"editing through an ordinal optic preserves surrounding formatting"):
         val original = doc("# header\ncontacts\n  contact alice\n  contact bob\n")
         val updated = original.lens(_.contacts(Sec) = Tel.scalar(t"carol"))
-        Tel.show(updated.document.vouch)
+        updated.document.vouch.show
       . assert(_ == t"# header\ncontacts\n  contact alice\n  contact carol\n")
 
     suite(m"Revision DSL"):
@@ -1141,7 +1142,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"single-op edit changes one atom"):
         val tel  = doc("name Alice\n")
         val edit = Revision.at(Tel.Pointer.of(t"name")).update(t"Bob")
-        Tel.show(tel.edited(edit).document.vouch)
+        tel.edited(edit).document.vouch.show
       . assert(_ == t"name Bob\n")
 
       test(m"chained edits apply in order"):
@@ -1149,7 +1150,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         val edit = Revision.at(Tel.Pointer.of(t"name")).update(t"Bob")
                 ++ Revision.at(Tel.Pointer.of(t"name")).attachRemark(t"note")
 
-        Tel.show(tel.edited(edit).document.vouch)
+        tel.edited(edit).document.vouch.show
       . assert(_ == t"name Bob  # note\n")
 
       test(m"Revision.compound helper builds an inline-atom compound"):
@@ -1162,12 +1163,12 @@ object Tests extends Suite(m"Stratiform Tests"):
         val edit = Revision.at(Tel.Pointer.of(t"b")).delete
                 ++ Revision.at(Tel.Pointer.of(t"a")).insertAfter(Revision.compound(t"c", t"3"))
 
-        Tel.show(tel.edited(edit).document.vouch)
+        tel.edited(edit).document.vouch.show
       . assert(_ == t"a 1\nc 3\n")
 
       test(m"noop edit returns the document unchanged"):
         val tel = doc("name Alice\n")
-        Tel.show(tel.edited(Revision.noop).document.vouch)
+        tel.edited(Revision.noop).document.vouch.show
       . assert(_ == t"name Alice\n")
 
     suite(m"Negative corpus (E1xx parsing)"):

@@ -40,8 +40,10 @@ import distillate.*
 import gossamer.*
 import prepositional.*
 import rudiments.*
+import spectacular.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 // Presentation model from §17 of the TEL specification. The Scala AST is
 // structurally identical to the reference implementation's AST so that
@@ -704,24 +706,24 @@ object Tel extends Tel2:
   // Parse a byte stream into a Tel value wrapping the document. Used
   // internally by the Aggregable and Loadable typeclasses; user code
   // should prefer `bytes.read[Tel]` or `text.load[Tel]`.
-  def parse(bytes: Data): Tel raises TelError =
+  private[stratiform] def parse(bytes: Data): Tel raises TelError =
     Tel(TelParser.parse(bytes))
 
   // Schema-aware parse: the parser uses the §19.5 schema-aware E107
   // recovery rule when it encounters an odd-indented line. Useful
   // when the consumer wants tolerant parsing of indentation typos
   // against a known schema.
-  def parse(bytes: Data, schema: Tels): Tel raises TelError =
+  private[stratiform] def parse(bytes: Data, schema: Tels): Tel raises TelError =
     Tel(TelParser.parse(bytes, schema))
 
   // Parse a multi-document source (§6.1) into its sequence of documents.
   // `parseAll` is eager; `parseStream` parses lazily on demand. Used internally
   // by the collection Aggregable typeclasses; user code should prefer
   // `bytes.read[List[Tel]]` or `bytes.read[Stream[Tel]]`.
-  def parseAll(bytes: Data): List[Tel] raises TelError =
+  private[stratiform] def parseAll(bytes: Data): List[Tel] raises TelError =
     TelParser.parseDocuments(bytes).map(Tel(_))
 
-  def parseStream(bytes: Data): Stream[Tel] raises TelError =
+  private[stratiform] def parseStream(bytes: Data): Stream[Tel] raises TelError =
     TelParser.parseStream(bytes).map(Tel(_))
 
   // Concatenate the chunks of a `Stream[Data]` source into a single byte array.
@@ -782,16 +784,147 @@ object Tel extends Tel2:
     val meta = Tel.Metadata(doc.interpreterDirective, doc.pragma, doc.lineEndings)
     turbulence.Document(Tel(doc): Tel, meta)
 
-  // Print the document presentation (presentation-preserving when given a
-  // Tel produced by `parse`). A Tel produced by `encode` is rooted at a
-  // Compound rather than a Document, so its children are wrapped in a Document
-  // before printing — otherwise encoded values would render as the empty Text.
-  def show(tel: Tel): Text = TelPrinter.print:
-    tel.subtree match
+  // Renders a document's presentation back to text, reversing the presentation parser. The whole
+  // line-based serialization lives in this instance so that `.show` is the single route to TEL
+  // text: each emission appends one or more lines to the producer, with the document's line ending
+  // inserted between lines but never after the last (total newlines = lines - 1; trailing
+  // blank-line counts realised by appending that many empty lines).
+  given documentShowable: Tel.Document is Showable = document =>
+    import scala.language.unsafeNulls
+
+    Producer.collect[Text](): producer =>
+      val newline = document.lineEndings match
+        case Tel.LineEndings.Lf   => "\n"
+        case Tel.LineEndings.Crlf => "\r\n"
+
+      var first = true
+
+      // Emit one line, inserting the document's line ending between lines but never after the last.
+      def out(text: String): Unit =
+        if first then first = false else producer.put(Text(newline))
+        producer.put(Text(text))
+
+      def emitCompound(compound: Tel.Compound, indent: Int, sigil: Char): Unit =
+        val pad = "  "*indent
+        val line = StringBuilder()
+        line.append(pad)
+        line.append(compound.keyword.s)
+
+        var trailingAtom: Optional[Tel.Atom] = Unset
+
+        compound.atoms.each:
+          case atom @ Tel.Atom.Source(_)     => trailingAtom = atom
+          case atom @ Tel.Atom.Literal(_, _) => trailingAtom = atom
+
+          case Tel.Atom.Inline(text, precedingSpaces) =>
+            var k = 0
+            while k < precedingSpaces do { line.append(' '); k += 1 }
+            line.append(text.s)
+
+        compound.remark.let: remark =>
+          // Two spaces before the sigil ensure correct re-parsing regardless of whether the
+          // preceding atoms put the line into hard-space mode: in hard mode only hard spaces
+          // terminate phrases, so a single space before `#` would be absorbed as atom content.
+          // §18.1 permits a minimum hard space before remark introducers.
+          line.append("  ")
+          line.append(sigil)
+          line.append(' ')
+          line.append(remark.s)
+
+        out(line.toString)
+
+        trailingAtom match
+          case Tel.Atom.Source(text) =>
+            val sourcePad = "  "*(indent + 2)
+            // §14 "Convention A": `text` is LF-separated with no trailing LF, so each LF-delimited
+            // segment is one source line (an empty segment is a blank line with no indentation).
+            val sourceText = text.s
+            var start = 0
+
+            while start <= sourceText.length do
+              val nl = sourceText.indexOf('\n', start)
+              val end = if nl < 0 then sourceText.length else nl
+              val seg = sourceText.substring(start, end)
+              out(if seg.isEmpty then "" else sourcePad + seg)
+              if nl < 0 then start = sourceText.length + 1 else start = nl + 1
+
+          case Tel.Atom.Literal(delimiter, text) =>
+            out("  "*(indent + 3) + delimiter.s)
+            val payload = text.s
+            var start = 0
+
+            while start <= payload.length do
+              val nl = payload.indexOf('\n', start)
+              val end = if nl < 0 then payload.length else nl
+              out(payload.substring(start, end))
+              if nl < 0 then start = payload.length + 1 else start = nl + 1
+
+            out(delimiter.s)
+
+          case _ => ()
+
+        compound.children.each(emitBlock(_, indent + 1, sigil))
+
+      def emitBlock(block: Tel.Block, indent: Int, sigil: Char): Unit =
+        val pad = "  "*indent
+
+        block.comments.each: comment =>
+          val text = comment.text.s
+
+          if text.isEmpty then out(s"$pad$sigil") else out(s"$pad$sigil $text")
+
+        block.tabulation.let: tab =>
+          val line = StringBuilder()
+          var i = 0
+
+          while i < tab.markerOffsets.length do
+            val targetCol = tab.markerOffsets(i)
+            while line.length < targetCol do line.append(' ')
+            line.append(sigil)
+            val heading = tab.headings(i).s
+
+            if heading.nonEmpty then
+              line.append(' ')
+              line.append(heading)
+
+            i += 1
+
+          out(line.toString)
+
+        block.compounds.each(emitCompound(_, indent, sigil))
+
+        var b = 0
+
+        while b < block.trailingBlankLines do
+          out("")
+          b += 1
+
+      val sigil = document.pragma.let(_.sigil.or('#')).or('#')
+
+      document.interpreterDirective.let: payload =>
+        out("#!" + payload.s)
+
+      document.pragma.let: pragma =>
+        val parts = scala.collection.mutable.ArrayBuffer.empty[String]
+        parts += "tel"
+        parts += s"${pragma.version._1}.${pragma.version._2}"
+        pragma.schema.let: s => parts += s.s
+        pragma.sigil.let: c => parts += c.toString
+        out(parts.mkString(" "))
+        out("")
+
+      document.children.each(emitBlock(_, 0, sigil))
+
+  // Render a `Tel` value. A `Tel` produced by `parse` is rooted at a Document and renders
+  // presentation-preservingly; one produced by `encode` is rooted at a Compound, so its children
+  // are wrapped in a Document first (otherwise encoded values would render as empty text). Composes
+  // with `documentShowable`.
+  given showable: Tel is Showable = tel =>
+    val document = tel.subtree match
       case document: Document => document
       case other              => Document(Unset, Unset, LineEndings.Lf, other.children)
 
-  def show(document: Document): Text = TelPrinter.print(document)
+    document.show
 
   // Macro-friendly factory: bypasses the private constructor so generated
   // code from the `tel"…"` interpolator can produce Tel values without

@@ -36,6 +36,7 @@ import anticipation.*
 import gesticulate.*
 import gossamer.*
 import hieroglyph.*
+import spectacular.*
 import telekinesis.*
 
 private val telMediaType: MediaType =
@@ -43,9 +44,9 @@ private val telMediaType: MediaType =
 
 package postables:
   given telPostable: (encoder: CharEncoder) => Tel is Postable =
-    Postable(telMediaType, value => Stream(encoder.encoded(Tel.show(value))))
+    Postable(telMediaType, value => Stream(encoder.encoded(value.show)))
 
 package servables:
   given telServable: (encoder: CharEncoder) => Tel is Servable =
     Servable[Tel](_ => telMediaType): value =>
-      Http.Body.Fixed(encoder.encoded(Tel.show(value)))
+      Http.Body.Fixed(encoder.encoded(value.show))
