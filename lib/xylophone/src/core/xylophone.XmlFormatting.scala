@@ -30,9 +30,24 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xylophone
 
-export xylophone.{Xml, XmlError, XmlSchema, XmlFormatting, DynamicXmlEnabler, dynamicXmlAccess}
+import anticipation.*
+import vacuous.*
+import zephyrine.*
 
-package formatting:
-  export xylophone.formatting.{compactXmlFormatting, indentedXmlFormatting}
+// Controls how an `Xml` tree is serialized. `indent` is the whitespace unit emitted per nesting
+// level when indenting element-only content; `Unset` (the default) keeps everything on a single
+// line, exactly as before. `trailingNewline` appends a final newline. The bundled formattings are
+// `formatting.compactXmlFormatting` (the default) and `formatting.indentedXmlFormatting`.
+object XmlFormatting:
+  def apply(indent: Optional[Text], trailingNewline: Boolean): XmlFormatting =
+    Basic(indent, trailingNewline)
+
+  private case class Basic(indent: Optional[Text], trailingNewline: Boolean) extends XmlFormatting
+
+  given default: XmlFormatting = apply(Unset, trailingNewline = false)
+
+trait XmlFormatting extends Formatting:
+  def indent: Optional[Text]
+  def trailingNewline: Boolean

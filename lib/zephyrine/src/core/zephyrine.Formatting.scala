@@ -30,9 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package zephyrine
 
-export xylophone.{Xml, XmlError, XmlSchema, XmlFormatting, DynamicXmlEnabler, dynamicXmlAccess}
-
-package formatting:
-  export xylophone.formatting.{compactXmlFormatting, indentedXmlFormatting}
+// A serializer's output-formatting configuration — indentation, line wrapping, trailing newlines,
+// and the like. Each format defines its own `…Formatting` subtype carrying parameters suited to
+// that format (indentation is not a free choice everywhere — YAML forbids tab indentation, and HTML
+// and Markdown whitespace is structural), and exposes importable instances in the `formatting`
+// namespace.
+trait Formatting
