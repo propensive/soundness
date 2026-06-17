@@ -211,3 +211,11 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
       test(m"A single recoverable defect still accrues one error"):
         validateRead(t"good \nfine\n").items.length
       . assert(_ == 1)
+
+      test(m"A malformed pragma version and a trailing-space line accrue together"):
+        validateRead(t"tel bad\ngood \n").items.length
+      . assert(_ == 2)
+
+      test(m"The accrued reasons span the pragma and the body"):
+        validateRead(t"tel bad\ngood \n").items.map(_(1).reason).to(Set)
+      . assert(_ == Set(TelError.Reason.BadVersion, TelError.Reason.TrailingSpaces))

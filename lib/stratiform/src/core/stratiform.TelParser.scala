@@ -871,7 +871,12 @@ private final class TelParser():
   // ── BOM ──────────────────────────────────────────────────────────────────
 
   private def checkBom(): Unit raises TelError =
-    if more && peek == BOM0 then errorHere(Reason.BomPresent)
+    if more && peek == BOM0 then
+      // §19.5 SkipBom: drop the byte-order mark and parse from the next byte.
+      recoverHere(Reason.BomPresent):
+        advance()
+        if more && peek == BOM1 then advance()
+        if more && peek == BOM2 then advance()
 
   // ── Line endings ─────────────────────────────────────────────────────────
 
@@ -944,8 +949,9 @@ private final class TelParser():
           syncTo()
           val pragmaStartAbs = cursor.position.n0
 
+          // §19.5 AllowOversize: record the cap breach but keep parsing the pragma.
           if pragmaStartAbs >= 4096 then
-            errorAt(Reason.PragmaTooLong, pragmaLine, 1)
+            recoverAt(Reason.PragmaTooLong, pragmaLine, 1)(())
 
           val pragmaMk = beginMark()
           while more && peek != LF && peek != CR do advance()
@@ -954,7 +960,7 @@ private final class TelParser():
           val pragmaEndAbs = cursor.position.n0
 
           if pragmaEndAbs > 4096 then
-            errorAt(Reason.PragmaTooLong, pragmaLine, 1)
+            recoverAt(Reason.PragmaTooLong, pragmaLine, 1)(())
 
           consumeLineEnding()
           prevLineWasBoundary = true
@@ -1044,7 +1050,9 @@ private final class TelParser():
       if parts.length >= 2 then parseVersion(parts(1), line)
       else (1, 0)
 
-    if parts.length > 4 then errorAt(Reason.ExtraPragmaContent, line, 1)
+    // §19.5 IgnoreExtraPragmaAtoms: only parts 2 and 3 are read below, so excess
+    // atoms are already ignored once the error is recorded.
+    if parts.length > 4 then recoverAt(Reason.ExtraPragmaContent, line, 1)(())
 
     val schemaText: Optional[Text] =
       if parts.length >= 3 then
@@ -1080,15 +1088,17 @@ private final class TelParser():
   private def parseVersion(s: String, line: Int)
   :   (Int, Int) raises TelError =
 
+    // §19.5 IgnoreVersion: a malformed version falls back to (0, 0) so the rest
+    // of the document is still parsed (and its defects accrued).
     val dot = s.indexOf('.')
-    if dot <= 0 || dot == s.length - 1 then errorAt(Reason.BadVersion, line, 1)
-
-    try
-      val major = s.substring(0, dot).toInt
-      val minor = s.substring(dot + 1).toInt
-      if major < 0 || minor < 0 then errorAt(Reason.BadVersion, line, 1)
-      (major, minor)
-    catch case _: NumberFormatException => errorAt(Reason.BadVersion, line, 1)
+    if dot <= 0 || dot == s.length - 1 then recoverAt(Reason.BadVersion, line, 1)((0, 0))
+    else
+      try
+        val major = s.substring(0, dot).toInt
+        val minor = s.substring(dot + 1).toInt
+        if major < 0 || minor < 0 then recoverAt(Reason.BadVersion, line, 1)((0, 0))
+        else (major, minor)
+      catch case _: NumberFormatException => recoverAt(Reason.BadVersion, line, 1)((0, 0))
 
   private def splitPragmaPhrases(content: String): List[String] =
     val parts = scala.collection.mutable.ListBuffer.empty[String]
