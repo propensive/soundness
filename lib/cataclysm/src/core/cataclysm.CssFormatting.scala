@@ -32,14 +32,16 @@
                                                                                                   */
 package cataclysm
 
+import zephyrine.Formatting
+
 // Controls how a `Css` tree is serialized. `newlines` puts each rule and
 // declaration on its own indented line; `spaces` adds the cosmetic spaces (after
-// `:` and before `{`) that aid legibility. The two bundled formatters are
-// `cssFormatters.standardCssFormatter` (both on) and `cssFormatters.compactCssFormatter` (both off).
-object CssFormatter:
-  def apply(newlines: Boolean, spaces: Boolean): CssFormatter = Basic(newlines, spaces)
-  private case class Basic(newlines: Boolean, spaces: Boolean) extends CssFormatter
+// `:` and before `{`) that aid legibility. The two bundled formattings are
+// `formatting.standardCssFormatting` (both on) and `formatting.compactCssFormatting` (both off).
+object CssFormatting:
+  def apply(newlines: Boolean, spaces: Boolean): CssFormatting = Basic(newlines, spaces)
+  private case class Basic(newlines: Boolean, spaces: Boolean) extends CssFormatting
 
-trait CssFormatter:
+trait CssFormatting extends Formatting:
   def newlines: Boolean
   def spaces: Boolean

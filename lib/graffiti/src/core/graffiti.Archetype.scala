@@ -34,7 +34,7 @@ package graffiti
 
 import anticipation.*
 import cataclysm.*
-import cataclysm.cssFormatters.standardCssFormatter
+import cataclysm.formatting.standardCssFormatting
 import gesticulate.*
 import gossamer.*
 import honeycomb.*
