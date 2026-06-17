@@ -44,6 +44,7 @@ import spectacular.*
 import symbolism.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 object Css:
   // Controls how a `Css` tree is serialized. `newlines` puts each rule and declaration on its own
@@ -63,10 +64,63 @@ object Css:
     case At(name: Text, prelude: Text, body: Optional[List[Node]])
 
 
-  given streamable: (Monitor, Probate, Formatting) => Css is Streamable by Text =
-    CssSerializer.emit(_).to(Stream)
+  given streamable: (Monitor, Probate, Formatting) => Css is Streamable by Text = css =>
+    val producer = Producer[Text](4096)
 
-  given showable: Formatting => Css is Showable = CssSerializer.render(_)
+    async:
+      write(css)(producer.put(_))
+      producer.finish()
+
+    producer.iterator.to(Stream)
+
+  given showable: Formatting => Css is Showable = css =>
+    Producer.collect[Text](): producer =>
+      write(css)(producer.put(_))
+
+  // Serializes a `Css` tree back to CSS text, driving `put` once per chunk. Shared by the
+  // `Showable` (collect) and `Streamable` (lazy producer) instances above — they differ only in
+  // how the sink is driven, so a large stylesheet never needs to be held in memory at once. The
+  // output style is chosen by the contextual `Css.Formatting`.
+  private def write(css: Css)(put: Text => Unit)(using formatter: Css.Formatting): Unit =
+    def newline(indent: Int): Unit = if formatter.newlines then put(indentText(indent))
+
+    def block(body: List[Css.Node], indent: Int): Unit =
+      put(if formatter.spaces then t" {" else t"{")
+
+      body.foreach: child =>
+        newline(indent + 1)
+        emitNode(child, indent + 1)
+
+      newline(indent)
+      put(t"}")
+
+    def emitNode(node: Css.Node, indent: Int): Unit = node match
+      case Css.Node.Rule(selector, body) =>
+        put(selector.show)
+        block(body, indent)
+
+      case Css.Node.Declaration(property, value) =>
+        put(property)
+        put(if formatter.spaces then t": " else t":")
+        put(value)
+        put(t";")
+
+      case Css.Node.At(name, prelude, body) =>
+        put(t"@$name")
+        if prelude != t"" then put(t" $prelude")
+
+        body.lay(put(t";")): nodes =>
+          block(nodes, indent)
+
+    var first = true
+
+    css.rules.foreach: child =>
+      if first then first = false else newline(0)
+      emitNode(child, 0)
+
+    if formatter.newlines then put(t"\n")
+
+  private def indentText(indent: Int): Text = ("\n" + " ".repeat(2*indent).nn).tt
 
   // The `css"…"` interpolator: substitutions are checked against the property they
   // sit in (see `internal.expand`). Wired through `contextual` like `x"…"`/`h"…"`.

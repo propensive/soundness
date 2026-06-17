@@ -604,14 +604,17 @@ object Tests extends Suite(m"Cataclysm Tests"):
       val nestedAt = nestedAtText.read[Css]
 
       def roundTrip(css: Css): Css =
-        CssSerializer.render(css)(using formatting.compactCssFormatting).read[Css]
+        import formatting.compactCssFormatting
+        css.show.read[Css]
 
       test(m"compact serialization has no spaces or newlines"):
-        CssSerializer.render(t"a { color: red }".read[Css])(using formatting.compactCssFormatting)
+        import formatting.compactCssFormatting
+        t"a { color: red }".read[Css].show
       . assert(_ == t"a{color:red;}")
 
       test(m"standard serialization indents declarations"):
-        CssSerializer.render(t"a { color: red }".read[Css])(using formatting.standardCssFormatting)
+        import formatting.standardCssFormatting
+        t"a { color: red }".read[Css].show
       . assert(_ == t"a {\n  color: red;\n}\n")
 
       test(m"a complex selector round-trips through serialization"):

@@ -41,6 +41,7 @@ import honeycomb.*
 import honeycomb.doms.html.whatwg.*
 import parasite.*
 import prepositional.*
+import spectacular.show
 import turbulence.*
 
 object Archetype:
@@ -86,7 +87,7 @@ trait Archetype:
   protected def head: Html of (? <: Metadata) = Fragment[Metadata]()
 
   // The stylesheet rendered to text for inline embedding in a `<style>` element.
-  private def stylesheet: Text = CssSerializer.render(styles)
+  private def stylesheet: Text = styles.show
 
   // The page stylesheet, as structured CSS (for serving separately, later).
   final def css: Css = styles
