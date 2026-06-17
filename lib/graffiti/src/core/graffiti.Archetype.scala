@@ -41,6 +41,7 @@ import honeycomb.*
 import honeycomb.doms.html.whatwg.*
 import parasite.*
 import prepositional.*
+import spectacular.show
 import turbulence.*
 
 object Archetype:
@@ -51,7 +52,7 @@ object Archetype:
   given media: [page <: Archetype] => page is Media = _ => media"text/html"(charset = "UTF-8")
 
   given streamable: [page <: Archetype] => (Monitor, Probate) => page is Streamable by Text =
-    archetype => Html.emit(archetype.document).to(Stream)
+    archetype => archetype.document.stream[Text]
 
 // The base of every page archetype. Concrete pages are built by mixing in feature traits (each a
 // subtype of `Archetype`); their only obligation is to provide `content`, the central matter.
@@ -86,7 +87,7 @@ trait Archetype:
   protected def head: Html of (? <: Metadata) = Fragment[Metadata]()
 
   // The stylesheet rendered to text for inline embedding in a `<style>` element.
-  private def stylesheet: Text = CssSerializer.render(styles)
+  private def stylesheet: Text = styles.show
 
   // The page stylesheet, as structured CSS (for serving separately, later).
   final def css: Css = styles

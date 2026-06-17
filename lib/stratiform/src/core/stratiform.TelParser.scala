@@ -60,7 +60,7 @@ import TelError.Reason
 //     hit), one `cursor.grab` materialisation on miss;
 //   - source / literal atom payloads built into a shared `StringBuilder`.
 
-object TelParser:
+private[stratiform] object TelParser:
 
   // Per-thread cached parser. The parser's mutable state (scratch buffers,
   // keyword cache, StringBuilder, ArrayBuffer of ancestors, etc.) is

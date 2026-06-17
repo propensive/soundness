@@ -35,17 +35,18 @@ package punctuation
 import anticipation.*
 import denominative.*
 import gossamer.*
-import parasite.*
 import prepositional.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
 import zephyrine.*
 
-// Round-trips a `Markdown` AST back into CommonMark source text. The output is
-// not byte-identical to whatever the parser originally consumed, but is
-// guaranteed to re-parse to an equal AST (modulo `Ordinal` `line` metadata).
-object Serializer:
+// Round-trips a `Markdown` AST back into CommonMark source text. The output is not byte-identical
+// to whatever the parser originally consumed, but is guaranteed to re-parse to an equal AST
+// (modulo `Ordinal` `line` metadata). This is internal machinery driving the `Markdown … is
+// Showable` instances (use `markdown.show`); it is shared by the `Layout` and `Prose` instances,
+// so it stays a single private engine rather than being inlined into each.
+private[punctuation] object Serializer:
   def apply(markdown: Markdown of Layout)(using formatting: Markdown.Formatting): Text =
     Producer.collect[Text](): producer =>
       writeDocument(Writer(producer, formatting.width.lay(Int.MaxValue)(c => c)), markdown)
@@ -54,19 +55,6 @@ object Serializer:
   def apply(markdown: Markdown of Prose)(using formatting: Markdown.Formatting): Text =
     Producer.collect[Text](): producer =>
       flow(Writer(producer, formatting.width.lay(Int.MaxValue)(c => c)), markdown.children, protectFirst = false)
-
-  // Stream a document's source incrementally; the producing code runs on a separate fiber.
-  def emit(markdown: Markdown of Layout)
-    ( using formatting: Markdown.Formatting, monitor: Monitor, probate: Probate )
-  :   Iterator[Text] =
-
-    val producer = Producer[Text](4096)
-
-    async:
-      writeDocument(Writer(producer, formatting.width.lay(Int.MaxValue)(c => c)), markdown)
-      producer.finish()
-
-    producer.iterator
 
   private def writeDocument(writer: Writer, markdown: Markdown of Layout): Unit =
     var first = true

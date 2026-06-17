@@ -195,7 +195,7 @@ class Cose
         Cbor.Ast.array(IArray[Any](protectedHeader, unprotectedAst, payload,
           Cbor.Ast.array(recipAst)))
 
-    CborPrinter.encode(Cbor.Ast(Cbor.Tag(cborTag, envelope)))
+    Cbor.Ast(Cbor.Tag(cborTag, envelope)).encode
 
 
   def verifyWith[key]

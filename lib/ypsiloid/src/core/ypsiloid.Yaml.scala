@@ -51,6 +51,7 @@ import jacinta.Bcd
 import panopticon.*
 import prepositional.*
 import rudiments.*
+import spectacular.show
 import turbulence.*
 import vacuous.*
 import wisteria.*
@@ -1304,8 +1305,8 @@ object Yaml extends Yaml2, Dynamic:
   // HTTP content-type integration. `Abstractable across HttpStreams` makes a
   // `Yaml` value usable as an HTTP request/response body (telekinesis derives
   // `Postable`/`Servable` from it); `Instantiable across HttpRequests` reads a
-  // request/response body back into `Yaml`. Encoding needs a `YamlPrinter` (see
-  // `printers`).
+  // request/response body back into `Yaml`. Encoding needs a `Yaml.Formatting` in
+  // scope (see `printers`), which drives the `Yaml.Ast` `Showable` instance.
   given abstractable: (encoder: CharEncoder, formatting: Formatting)
   =>  Yaml is Abstractable across HttpStreams to HttpStreams.Content =
 
@@ -1316,7 +1317,7 @@ object Yaml extends Yaml2, Dynamic:
 
       def genericize(value: Yaml): HttpStreams.Content =
         ( t"application/yaml; charset=${encoder.encoding.name}",
-          Stream(YamlPrinter.print(Yaml.unseal(value)).data) )
+          Stream(Yaml.unseal(value).show.data) )
 
   given instantiable: (Tactic[ParseError], Yaml.Tracking)
   =>  Yaml is Instantiable across HttpRequests from Text =

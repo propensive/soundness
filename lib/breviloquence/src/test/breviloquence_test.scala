@@ -195,33 +195,33 @@ object Tests extends Suite(m"Breviloquence Tests"):
       test(m"Round-trip integer 42"):
         val original = hex("182a")
         val ast = Cbor.Ast.parse(original)
-        hexOf(CborPrinter.encode(ast))
+        hexOf(Cbor.Ast.encodable.encoded(ast))
       . assert(_ == "182a")
 
       test(m"Round-trip [1, 2, 3]"):
         val original = hex("83010203")
         val ast = Cbor.Ast.parse(original)
-        hexOf(CborPrinter.encode(ast))
+        hexOf(Cbor.Ast.encodable.encoded(ast))
       . assert(_ == "83010203")
 
       test(m"Round-trip {a: 1, b: 2}"):
         val original = hex("a26161016162 02")
         val ast = Cbor.Ast.parse(original)
-        hexOf(CborPrinter.encode(ast))
+        hexOf(Cbor.Ast.encodable.encoded(ast))
       . assert(_ == "a2616101616202")
 
     suite(m"Diagnostic notation"):
       test(m"Render 42 as '42'"):
-        CborPrinter.diagnostic(Cbor.Ast.parse(hex("182a")))
-      . assert(_ == "42")
+        Cbor.Ast.parse(hex("182a")).show
+      . assert(_ == t"42")
 
       test(m"Render [1, 2, 3]"):
-        CborPrinter.diagnostic(Cbor.Ast.parse(hex("83010203")))
-      . assert(_ == "[1, 2, 3]")
+        Cbor.Ast.parse(hex("83010203")).show
+      . assert(_ == t"[1, 2, 3]")
 
       test(m"Render byte string as hex"):
-        CborPrinter.diagnostic(Cbor.Ast.parse(hex("4401020304")))
-      . assert(_ == "h'01020304'")
+        Cbor.Ast.parse(hex("4401020304")).show
+      . assert(_ == t"h'01020304'")
 
     suite(m"Generic derivation"):
       test(m"Encode Point(1, 2)"):
@@ -232,53 +232,53 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"Round-trip Point(3, 4)"):
         val cbor = Point(3, 4).cbor
-        val bytes = CborPrinter.encode(Cbor.unseal(cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(cbor))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[Point]
       . assert(_ == Point(3, 4))
 
       test(m"Round-trip Person(\"Ada\", 36)"):
         val cbor = Person(t"Ada", 36).cbor
-        val bytes = CborPrinter.encode(Cbor.unseal(cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(cbor))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[Person]
       . assert(_ == Person(t"Ada", 36))
 
       test(m"Round-trip Wrapper with list"):
         val original = Wrapper(List(1, 2, 3), t"hello")
         val cbor = original.cbor
-        val bytes = CborPrinter.encode(Cbor.unseal(cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(cbor))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[Wrapper] == original
       . assert(identity)
 
     suite(m"Aggregable"):
       test(m"Aggregate single-chunk Stream[Data] to Cbor"):
         val original = Point(3, 4)
-        val bytes = CborPrinter.encode(Cbor.unseal(original.cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
         Stream(bytes).read[Cbor].as[Point]
       . assert(_ == Point(3, 4))
 
       test(m"Aggregate split-chunk Stream[Data] to Cbor"):
         val original = Person(t"Ada", 36)
-        val bytes = CborPrinter.encode(Cbor.unseal(original.cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
         val half = bytes.length/2
         Stream(bytes.slice(0, half), bytes.slice(half, bytes.length)).read[Cbor].as[Person]
       . assert(_ == Person(t"Ada", 36))
 
       test(m"Aggregate single-chunk Stream[Data] to Cbor.Ast"):
         val original = Wrapper(List(1, 2, 3), t"hi")
-        val bytes = CborPrinter.encode(Cbor.unseal(original.cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
         Cbor.ast(Stream(bytes).read[Cbor.Ast]).as[Wrapper]
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
 
     suite(m"`in Cbor` decoder shorthand"):
       test(m"`read[T in Cbor]` resolves a value directly from bytes"):
         val original = Point(3, 4)
-        val bytes = CborPrinter.encode(Cbor.unseal(original.cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
         Stream(bytes).read[Point in Cbor]
       . assert(_ == Point(3, 4))
 
       test(m"`read[T in Cbor]` works for nested case classes"):
         val original = Wrapper(List(1, 2, 3), t"hi")
-        val bytes = CborPrinter.encode(Cbor.unseal(original.cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
         Stream(bytes).read[Wrapper in Cbor]
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
 
@@ -292,7 +292,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"Decode reads wire keys back into Scala fields"):
         val original = Renamed(List(10L, 20L, 30L), List(99L))
-        val bytes = CborPrinter.encode(Cbor.unseal(original.cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[Renamed]
       . assert(_ == Renamed(List(10L, 20L, 30L), List(99L)))
 
@@ -313,7 +313,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"@name variants round-trip"):
         List(CStatus.Active(5), CStatus.Removed(9), CStatus.Pending(1)).map: status =>
-          val bytes = CborPrinter.encode(Cbor.unseal((status: CStatus).cbor))
+          val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal((status: CStatus).cbor))
           Cbor.ast(Cbor.Ast.parse(bytes)).as[CStatus]
       . assert(_ == List(CStatus.Active(5), CStatus.Removed(9), CStatus.Pending(1)))
 
@@ -406,11 +406,11 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
     suite(m"Optional fields"):
       test(m"an Optional field round-trips when present"):
-        val bytes = CborPrinter.encode(Cbor.unseal(OptPerson(t"Ada", 36).cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(OptPerson(t"Ada", 36).cbor))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[OptPerson]
       . assert(_ == OptPerson(t"Ada", 36))
 
       test(m"an Optional field round-trips when unset"):
-        val bytes = CborPrinter.encode(Cbor.unseal(OptPerson(t"Eve", Unset).cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(OptPerson(t"Eve", Unset).cbor))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[OptPerson]
       . assert(_ == OptPerson(t"Eve", Unset))

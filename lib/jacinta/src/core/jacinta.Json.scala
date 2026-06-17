@@ -804,8 +804,9 @@ object Json extends Json2, Dynamic:
       Json.ast(Json.Ast.obj(IArray.from(keys.map(_.encode.s)), values))
 
 
-  given jsonEncodableInText: Json is anticipation.Encodable in Text =
-    json => JsonPrinter.print(json.root, Formatting(Unset, false))
+  given jsonEncodableInText: Json is anticipation.Encodable in Text = json =>
+    given Formatting = Formatting(Unset, false)
+    json.root.show
 
   given aggregable: Tactic[ParseError] => Json is Aggregable by Data =
     bytes => Json(bytes.read[Json.Ast])

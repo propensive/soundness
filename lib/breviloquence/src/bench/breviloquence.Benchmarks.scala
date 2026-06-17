@@ -70,7 +70,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
 
   // Helper to build CBOR bytes by hand for the benchmark corpora. Uses the
   // canonical encoder so the inputs are well-formed and deterministic.
-  def encode(ast: Cbor.Ast): IArray[Byte] = CborPrinter.encode(ast)
+  def encode(ast: Cbor.Ast): IArray[Byte] = Cbor.Ast.encodable.encoded(ast)
 
   // Corpus 1: a small object with three string-keyed entries (id, name, active).
   // Roughly 30 bytes — exercises the head-byte fast path for short strings and

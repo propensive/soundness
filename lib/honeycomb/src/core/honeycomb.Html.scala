@@ -239,12 +239,11 @@ object Html extends Tag.Container
   private val indentation: Text =
     "\n                                                                "
 
-  given streamable: (Monitor, Probate) => Document[Html] is Streamable by Text =
-    emit(_).to(Stream)
-
-  def emit(document: Document[Html])(using formatting: Formatting, monitor: Monitor, probate: Probate)
-  :   Iterator[Text] =
-
+  // Streams a document's HTML source, using the document's own DOM and the indentation from the
+  // contextual `Formatting`. The whole emission lives in this instance so `.stream` is the single
+  // route to streamed HTML; the producing code runs on a separate fiber.
+  given streamable: (Monitor, Probate) => Document[Html] is Streamable by Text = document =>
+    val formatting = summon[Formatting]
     val dom = document.metadata
     val producer = Producer[Text](4096)
     val block = formatting.indented
@@ -254,11 +253,11 @@ object Html extends Tag.Container
       writeHtml(producer, dom, document.root, 0, block, Mode.Whitespace)
       producer.finish()
 
-    producer.iterator
+    producer.iterator.to(Stream)
 
   // `.show` serializes against the standard WHATWG (HTML5) DOM and without indentation, so a bare
-  // node renders correctly (void elements, escaping) even outside a `Document`. `emit` uses the
-  // document's own DOM and indents.
+  // node renders correctly (void elements, escaping) even outside a `Document`. The `Streamable`
+  // instance above uses the document's own DOM and indents.
   given showable: [html <: Html] => html is Showable = node =>
     Producer.collect[Text](): producer =>
       writeHtml(producer, doms.html.whatwg, node, 0, false, Mode.Whitespace)

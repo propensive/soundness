@@ -47,7 +47,7 @@ import zephyrine.*
 import Yaml.Ast.Byte.*
 import Yaml.Ast.Issue
 
-object YamlParser:
+private[ypsiloid] object YamlParser:
   private val pool: ThreadLocal[YamlParser] =
     ThreadLocal.withInitial{ () => new YamlParser }.nn
 
