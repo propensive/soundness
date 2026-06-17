@@ -792,8 +792,12 @@ object Tests extends Suite(m"Decorum Tests"):
       . assert(r => !r.contains("833.4"))
 
       test(m"Genuine heavy bracket continuation is still rejected (833.4)"):
-        rules("foo +\n  ( baz, quux )\n")
+        rules("foo bar\n  ( baz, quux )\n")
       . assert(r => r.contains("833.4"))
+
+      test(m"Heavy bracket after a symbolic operator defers to 616, not 833.4"):
+        rules("foo +\n  (baz, quux)\n")
+      . assert(r => !r.contains("833.4"))
 
       test(m"Tuple as the first line inside a quote/block is not 833.4"):
         rules("' {\n  ( baz, quux )\n")
@@ -860,3 +864,7 @@ object Tests extends Suite(m"Decorum Tests"):
       test(m"Method-selection chain is exempt"):
         rules("val x =\n  foo\n  . bar\n")
       . assert(r => !r.contains("616.1") && !r.contains("616.2"))
+
+      test(m"Operator-continuation expression does not trigger 315"):
+        rules("def f =\n  val a = 1\n  a == 1 ||\n    a == 2\n")
+      . assert(r => !r.contains("315"))

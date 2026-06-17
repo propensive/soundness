@@ -941,6 +941,10 @@ object Checker:
     // construct (assignment RHS, lambda body, case body, etc.), not a
     // heavy continuation. Skip the check.
     else if BodyOpenerTerminators.contains(s.prevCodeLineLastTok) then ()
+    // If the previous line ends with a symbolic infix operator, the current
+    // `(`/`[` begins the right-hand operand of that operator — an operator
+    // continuation governed by R616, not a heavy argument block. Skip.
+    else if isSymbolicOperator(s.prevCodeLineLastTok) then ()
     // If the previous line opened a block, quote or splice (ending in `{`), the
     // current line is the first expression *inside* that scope — a tuple or
     // parenthesised value standing on its own, not an argument continuation of
@@ -2363,6 +2367,7 @@ object Checker:
         && cur.startLine > prev.endLine
         && !hasBlankLineBetween(prev.endLine, cur.startLine, content, source)
         && !startsWithContinuationOperator(content, source, cur.startLine)
+        && !endsWithContinuationOperator(content, source, prev.endLine, cur.startLine)
         then
           // Emit at `prev.endLine + 1` — the line immediately AFTER the
           // previous statement's last line. Inserting a blank line there
@@ -2415,6 +2420,52 @@ object Checker:
         else
           val c = content.charAt(i)
           "|&+-*/<>=!~^%?.:".indexOf(c) >= 0
+
+  // Symmetric to `startsWithContinuationOperator`: with R616 the operator of a
+  // wrapped expression sits at the END of the first line, so a parser-split
+  // boundary lies inside an operator chain when the previous statement's last
+  // line — or the current statement's first line (a multi-line operand
+  // expression) — ends with a symbolic infix operator. Inserting a blank line
+  // there would break the continuation, so R28 (315) must skip it.
+  private def endsWithContinuationOperator
+    ( content: String, source: SourceFile, prevEndLine: Int, curStartLine: Int )
+  :   Boolean =
+    lineEndsWithContinuationOperator(content, source, prevEndLine)
+      || lineEndsWithContinuationOperator(content, source, curStartLine)
+
+  // Trailing tokens that end a line but are NOT R616 infix continuations: a
+  // definition/assignment `=`, the case/lambda `=>`/`?=>`, a colon-block `:`,
+  // a generator `<-`, and type bounds `<:`/`>:`. A line ending in one of these
+  // opens a body or clause, not a wrapped operand.
+  private val NonContinuationTrailers: Set[String] =
+    Set("=", "=>", "?=>", ":", "<-", "<:", ">:")
+
+  private def lineEndsWithContinuationOperator
+    ( content: String, source: SourceFile, line: Int )
+  :   Boolean =
+    if line < 1 then false
+    else
+      val start =
+        try source.lineToOffset(line - 1)
+        catch case _: Throwable => -1
+      if start < 0 || start >= content.length then false
+      else
+        var i    = start
+        var last = -1
+        while i < content.length && content.charAt(i) != '\n' do
+          val c = content.charAt(i)
+          if c != ' ' && c != '\t' then last = i
+          i += 1
+        val opChars = "+-*/%&|^~<>=!?:#@"
+        if last < 0 || opChars.indexOf(content.charAt(last)) < 0 then false
+        else
+          var j = last
+          while j > start && opChars.indexOf(content.charAt(j - 1)) >= 0 do j -= 1
+          // A binary operator is whitespace-separated from its left operand;
+          // requiring that excludes suffixes like `name_=` and `xs*`/`import x.*`.
+          val precededBySpace =
+            j == start || content.charAt(j - 1) == ' ' || content.charAt(j - 1) == '\t'
+          precededBySpace && !NonContinuationTrailers.contains(content.substring(j, last + 1).nn)
 
   private def hasBlankLineBetween
     ( endLine: Int, startLine: Int, content: String, source: SourceFile ): Boolean =
