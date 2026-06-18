@@ -30,15 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package locomotion
 
-export
-  ypsiloid
-  . { Yaml, yamlConversion, YamlError, YamlPrimitive, DynamicYamlEnabler, dynamicYamlAccess, y, yp,
-      YamlPath, YamlPathError }
+import anticipation.*
+import prepositional.*
 
-package formatting:
-  export ypsiloid.formatting.blockYamlFormatting
-
-package discriminables:
-  export ypsiloid.discriminables.{yamlByTypeDiscriminable, yamlByKindDiscriminable}
+// Importing `protobufConversion.encodable` brings a scoped `Conversion` into lexical scope that
+// lets any `Encodable in Protobuf` value be supplied directly at lens-assignment positions, such
+// as `protobuf.lens(_.field = value)`, without an explicit `.protobuf`.
+object protobufConversion:
+  given encodable: [entity: Encodable in Protobuf] => Conversion[entity, Protobuf] = _.encode

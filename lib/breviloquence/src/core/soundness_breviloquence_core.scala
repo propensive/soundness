@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export breviloquence.{Cbor, Cbor2, DynamicCborEnabler, dynamicCborAccess}
+export breviloquence.{Cbor, Cbor2, cborConversion, DynamicCborEnabler, dynamicCborAccess}

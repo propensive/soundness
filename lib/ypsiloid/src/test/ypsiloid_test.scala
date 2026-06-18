@@ -1008,7 +1008,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == List("~"))
 
     suite(m"Lens"):
-      import dynamicYamlAccess.enabled
+      import dynamicYamlAccess.enabled, yamlConversion.encodable
 
       val org = Yaml.ast(NamedOuter(t"a", Inner(7)).yaml.root)
 
@@ -1018,13 +1018,13 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == NamedOuter(t"a", Inner(99)))
 
       test(m"Lens update of top-level field"):
-        val updated = org.lens(_.name = t"b".yaml)
+        val updated = org.lens(_.name = t"b")
         updated.as[NamedOuter]
       . assert(_ == NamedOuter(t"b", Inner(7)))
 
       test(m"Optical update on a sequence element"):
         val y = t"items: [10, 20, 30]".read[Yaml]
-        val updated = y.lens(_.items(Prim) = 99.yaml)
+        val updated = y.lens(_.items(Prim) = 99)
         updated.items.as[List[Int]]
       . assert(_ == List(99, 20, 30))
 
@@ -1040,16 +1040,16 @@ object Tests extends Suite(m"Ypsiloid Tests"):
 
       test(m"Each optic updates every sequence element"):
         val y = t"items: [10, 20, 30]".read[Yaml]
-        y.lens(_.items(Each) = 0.yaml).items.as[List[Int]]
+        y.lens(_.items(Each) = 0).items.as[List[Int]]
       . assert(_ == List(0, 0, 0))
 
       test(m"Filter optic updates only matching elements"):
         val y = t"items: [10, 20, 30]".read[Yaml]
-        y.lens(_.items(Filter[Yaml](_.as[Int] > 15)) = 0.yaml).items.as[List[Int]]
+        y.lens(_.items(Filter[Yaml](_.as[Int] > 15)) = 0).items.as[List[Int]]
       . assert(_ == List(10, 0, 0))
 
       test(m"Setting an absent field inserts it"):
-        org.lens(_.extra = 7.yaml).selectDynamic("extra").as[Int]
+        org.lens(_.extra = 7).selectDynamic("extra").as[Int]
       . assert(_ == 7)
 
     suite(m"Serializer roundtrip"):

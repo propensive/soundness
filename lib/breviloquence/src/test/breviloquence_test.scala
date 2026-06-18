@@ -328,7 +328,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == Person(t"Alice", 30))
 
     suite(m"Optics"):
-      import dynamicCborAccess.enabled
+      import dynamicCborAccess.enabled, cborConversion.encodable
 
       val team = Team(Person(t"John", 40), 3).cbor
       val list = Wrapper(List(1, 2, 3), t"hi").cbor
@@ -342,7 +342,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == Team(Person(t"John", 40), 5))
 
       test(m"lens sets a nested field"):
-        team.lens(_.lead.name = t"Bob".cbor).as[Team]
+        team.lens(_.lead.name = t"Bob").as[Team]
       . assert(_ == Team(Person(t"Bob", 40), 3))
 
       test(m"lens.modify transforms a field through a function"):
@@ -351,19 +351,19 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(_ == Team(Person(t"John", 40), 4))
 
       test(m"ordinal optic updates an array element"):
-        list.lens(_.values(Sec) = 9.cbor).as[Wrapper]
+        list.lens(_.values(Sec) = 9).as[Wrapper]
       . assert(_ == Wrapper(List(1, 9, 3), t"hi"))
 
       test(m"each optic updates every array element"):
-        list.lens(_.values(Each) = 0.cbor).as[Wrapper]
+        list.lens(_.values(Each) = 0).as[Wrapper]
       . assert(_ == Wrapper(List(0, 0, 0), t"hi"))
 
       test(m"filter optic updates only matching elements"):
-        list.lens(_.values(Filter[Cbor](_.as[Int] > 1)) = 0.cbor).as[Wrapper]
+        list.lens(_.values(Filter[Cbor](_.as[Int] > 1)) = 0).as[Wrapper]
       . assert(_ == Wrapper(List(1, 0, 0), t"hi"))
 
       test(m"setting an absent field inserts it"):
-        list.lens(_.extra = 7.cbor).selectDynamic("extra").as[Int]
+        list.lens(_.extra = 7).selectDynamic("extra").as[Int]
       . assert(_ == 7)
 
     suite(m"Error byte-offsets"):

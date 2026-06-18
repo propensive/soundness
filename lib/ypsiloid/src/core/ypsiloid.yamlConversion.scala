@@ -30,15 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package ypsiloid
 
-export
-  ypsiloid
-  . { Yaml, yamlConversion, YamlError, YamlPrimitive, DynamicYamlEnabler, dynamicYamlAccess, y, yp,
-      YamlPath, YamlPathError }
+import anticipation.*
+import prepositional.*
 
-package formatting:
-  export ypsiloid.formatting.blockYamlFormatting
-
-package discriminables:
-  export ypsiloid.discriminables.{yamlByTypeDiscriminable, yamlByKindDiscriminable}
+// Importing `yamlConversion.encodable` brings a scoped `Conversion` into lexical scope that lets
+// any `Encodable in Yaml` value be supplied directly at lens-assignment positions, such as
+// `yaml.lens(_.field = value)`, without an explicit `.yaml`.
+object yamlConversion:
+  given encodable: [entity: Encodable in Yaml] => Conversion[entity, Yaml] = _.encode

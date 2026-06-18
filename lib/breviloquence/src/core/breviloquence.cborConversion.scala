@@ -30,15 +30,13 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package breviloquence
 
-export
-  ypsiloid
-  . { Yaml, yamlConversion, YamlError, YamlPrimitive, DynamicYamlEnabler, dynamicYamlAccess, y, yp,
-      YamlPath, YamlPathError }
+import anticipation.*
+import prepositional.*
 
-package formatting:
-  export ypsiloid.formatting.blockYamlFormatting
-
-package discriminables:
-  export ypsiloid.discriminables.{yamlByTypeDiscriminable, yamlByKindDiscriminable}
+// Importing `cborConversion.encodable` brings a scoped `Conversion` into lexical scope that lets
+// any `Encodable in Cbor` value be supplied directly at lens-assignment positions, such as
+// `cbor.lens(_.field = value)`, without an explicit `.cbor`.
+object cborConversion:
+  given encodable: [entity: Encodable in Cbor] => Conversion[entity, Cbor] = _.encode

@@ -30,15 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package panopticon
 
-export
-  ypsiloid
-  . { Yaml, yamlConversion, YamlError, YamlPrimitive, DynamicYamlEnabler, dynamicYamlAccess, y, yp,
-      YamlPath, YamlPathError }
+import prepositional.*
 
-package formatting:
-  export ypsiloid.formatting.blockYamlFormatting
+// Evidence that a value of type `Self` may be supplied where a `Result` is required in a lens
+// assignment. The identity instance handles the usual case where the assigned value already has
+// the target type (or a subtype); format modules add instances that encode an `Encodable` value
+// into the format's value type, so that, e.g., `json.lens(_.name = "x")` accepts a bare `"x"`.
+object Coercible extends Coercible2:
+  // Any value already convertible to the target type (including a format module's
+  // `Encodable`-backed conversion, or gossamer's `String`/`Text` conversion) may be coerced.
+  given conversion: [value, target] => (conversion: Conversion[value, target])
+  =>  value is Coercible to target =
+    conversion(_)
 
-package discriminables:
-  export ypsiloid.discriminables.{yamlByTypeDiscriminable, yamlByKindDiscriminable}
+trait Coercible2:
+  // A value whose type is already the target type (or a subtype) needs no coercion.
+  given identity: [value, target >: value] => value is Coercible to target = value => value
+
+trait Coercible:
+  type Self
+  type Result
+  def coerce(value: Self): Result
