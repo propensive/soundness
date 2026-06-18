@@ -386,16 +386,19 @@ object internal:
       val calendar = summoned.getOrElse('{calendars.gregorianCalendar})
       '{unsafely($calendar.jdn($left.year, $left.month, Day($right)))}
 
-    // Identify a contextual calendar as one whose validation we can run here, or `Unset` if it is a
-    // user calendar we don't recognise (in which case compile-time validation is skipped).
-    val gregorianSymbol = strip('{calendars.gregorianCalendar}.asTerm).symbol
-    val julianSymbol = strip('{calendars.julianCalendar}.asTerm).symbol
-
+    // Identify a contextual calendar as one of this module's calendar givens (matched by leaf name,
+    // since it may be reached through the `soundness` re-export rather than its `aviation` origin;
+    // the `.calendars.` guard stops an unrelated user calendar being misidentified), or `Unset` if
+    // we don't recognise it, in which case compile-time validation is skipped.
     def recognise(expr: Expr[RomanCalendar]): Optional[RomanCalendar] =
-      strip(expr.asTerm).symbol match
-        case `gregorianSymbol` => calendars.gregorianCalendar
-        case `julianSymbol`    => calendars.julianCalendar
-        case _                 => Unset
+      val symbol = strip(expr.asTerm).symbol
+
+      if !symbol.fullName.contains(".calendars.") then Unset else symbol.name match
+        case "gregorianCalendar" => calendars.gregorianCalendar
+        case "julianCalendar"    => calendars.julianCalendar
+        case "papalCutover"      => calendars.papalCutover
+        case "britishCutover"    => calendars.britishCutover
+        case _                   => Unset
 
     // The calendar to validate against at compile time: the recognised contextual one, or the
     // Gregorian default when none is in scope.

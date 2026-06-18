@@ -30,78 +30,70 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aviation
 
-export
-  aviation
-  . { am, Anniversary, Apr, Aug, Base24, base24Extractable, Base60, base60Extractable, Calendar,
-      Chronology, Clock, Clockface, Date, DateNumerics, DateSeparation, Day, days, Dec, Duration,
-      Endianness, Feb, Fri, Hebdomad, Holiday, Holidays, Horology, hours, Instant, Iso8601, Jan,
-      Jul, Jun, LeapSeconds, Mar, May, Meridiem, minutes, Moment, Mon, Month, Months, months,
-      Monthstamp, Nov, now, Oct, Period, pm, Regime, Rfc1123, RomanCalendar, Sat, seconds, Sep,
-      StandardTime, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics, TimeSeparation,
-      Timespan, TimeSpecificity, Timestamp, TimestampError, Timezone, TimezoneError, today, ts,
-      tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Weekday, Weekdays, weeks, WorkingDays, Year,
-      Years, years }
+import anticipation.*
+import contingency.*
+import fulminate.*
+import vacuous.*
 
-package calendars:
-  export aviation.calendars.{gregorianCalendar, julianCalendar, papalCutover, britishCutover}
+// A `Regime` is the calendar in force as it changed through history: an ordered sequence of
+// segments, each handing over to the next at a Julian day number. Because the Julian day number is
+// a calendar-independent axis, a date is located in whichever segment governs it, and translation
+// across a boundary is automatic. The two-segment case is a Julian-to-Gregorian hybrid; the dates
+// that exist in neither adjacent calendar (the cutover gap, e.g. 1582-10-05..14) are rejected.
+object Regime:
+  case class Segment(from: Date, calendar: RomanCalendar)
 
-package nonexistentLeapDays:
-  export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,
-      roundUpLeapDay}
+  def apply(name: Text, segments: Segment*): Regime =
+    new Regime(name, segments.to(List).sortBy(_.from.jdn))
 
-package dateFormats:
-  export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,
-      southEastAsiaDateFormat, unitedKingdomDateFormat}
+class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(name):
+  import Regime.Segment
 
-package endianness:
-  export aviation.dateFormats.endianness.{bigEndian, littleEndian, middleEndian}
+  // Each segment paired with the inclusive upper Julian-day bound at which the next takes over. The
+  // bound is the next segment's first day: the two calendars are aligned so that the last day of
+  // one and the first day of the next share a Julian day number (Julian 1582-10-04 and Gregorian
+  // 1582-10-15 are the same day), so that shared day is valid under both — the bound is inclusive.
+  private val bounded: List[(Segment, Int)] =
+    segments.zip(segments.drop(1).map(_.from.jdn) :+ Int.MaxValue)
 
-package dateNumerics:
-  export aviation.dateFormats.numerics.{fixedWidthDateNumerics, variableWidthDateNumerics}
+  // The calendar governing a Julian day number: the latest segment to have taken effect by then.
+  private def at(date: Date): RomanCalendar =
+    bounded.filter(_(0).from.jdn <= date.jdn).lastOption.map(_(0).calendar).getOrElse:
+      segments.head.calendar
 
-package dateSeparators:
-  export aviation.dateFormats.separators.{dotDateSeparator, hyphenDateSeparator, slashDateSeparator,
-      spaceDateSeparator}
+  // The regime's Julian day number for a field date, or `Unset` if it falls in a gap between two
+  // calendars (e.g. 1582-10-10 under the Papal cutover) or is otherwise an invalid date.
+  private def locate(year: Year, month: Month, day: Day): Optional[Date] =
+    def recur(remaining: List[(Segment, Int)]): Optional[Date] = remaining match
+      case (segment, upper) :: tail =>
+        val candidate: Optional[Date] = safely(segment.calendar.jdn(year, month, day))
+        val jdn: Optional[Int] = candidate.let(_.jdn)
 
-package yearFormats:
-  export aviation.dateFormats.years.{fullYears, twoDigitsYears}
+        if jdn.present && segment.from.jdn <= jdn.vouch && jdn.vouch <= upper
+        then candidate
+        else recur(tail)
 
-package weekdays:
-  export
-    aviation.dateFormats.weekdays
-    . { englishWeekdays, englishShortWeekdays, oneLetterAmbiguousWeekdays,
-        shortestUnambiguousWeekdays, twoLetterWeekdays }
+      case Nil =>
+        Unset
 
-package monthFormats:
-  export
-    aviation.dateFormats.months
-    . { englishMonths, englishShortMonths, numericMonths, oneLetterAmbiguousMonths,
-        twoDigitMonths }
+    recur(bounded)
 
-package timeFormats:
-  export
-    aviation.timeFormats
-    . { associatedPressTimeFormat, civilianTimeFormat, frenchTimeFormat, iso8601TimeFormat,
-        ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
+  // The calendar governing a year, sampled at its midpoint (never inside a historical cutover gap).
+  private def governing(year: Year): RomanCalendar =
+    locate(year, Jun, Day(15)).let(at).or(segments.last.calendar)
 
-package hourFormats:
-  export aviation.timeFormats.hours.{twelveHourClock, twentyFourHourClock}
+  override def annual(date: Date): Year = at(date).annual(date)
+  override def mensual(date: Date): Month = at(date).mensual(date)
+  override def diurnal(date: Date): Day = at(date).diurnal(date)
 
-package meridiems:
-  export aviation.timeFormats.meridiems.{lowerMeridiem, lowerPunctuatedMeridiem, upperMeridiem,
-      upperPunctuatedMeridiem}
+  def leapYear(year: Year): Boolean = governing(year).leapYear(year)
+  def leapYearsSinceEpoch(year: Year): Int = governing(year).leapYearsSinceEpoch(year)
 
-package timeNumerics:
-  export aviation.timeFormats.numerics.{fixedWidthTimeNumerics, variableWidthTimeNumerics}
+  override def jdn(year: Year, month: Month, day: Day): Date raises TimeError =
+    val located = locate(year, month, day)
 
-package timeSeparators:
-  export aviation.timeFormats.separators.{colonTimeSeparator, dotTimeSeparator, frenchTimeSeparator,
-      noneTimeSeparator}
-
-package hebdomads:
-  export aviation.hebdomads.{europeanHebdomad, jewishHebdomad, northAmericanHebdomad}
-
-package instantDecodables:
-  export aviation.instantDecodables.{iso8601InstantDecodable, rfc1123InstantDecodable}
+    if located.present then located.vouch else
+      raise(TimeError(_.Invalid(year(), month.numerical, day(), this)))
+      Date.julianDay(0)
