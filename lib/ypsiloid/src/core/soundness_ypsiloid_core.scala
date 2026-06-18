@@ -34,8 +34,8 @@ package soundness
 
 export
   ypsiloid
-  . { Yaml, YamlError, YamlPrimitive, DynamicYamlEnabler, dynamicYamlAccess, y, yp, YamlPath,
-      YamlPathError }
+  . { Yaml, yamlConversion, YamlError, YamlPrimitive, DynamicYamlEnabler, dynamicYamlAccess, y, yp,
+      YamlPath, YamlPathError }
 
 package formatting:
   export ypsiloid.formatting.blockYamlFormatting
