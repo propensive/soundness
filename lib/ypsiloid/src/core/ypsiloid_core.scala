@@ -198,9 +198,6 @@ given astShowable: (formatting: Yaml.Formatting) => Yaml.Ast is Showable = yaml 
 
 given showable: Yaml.Formatting => Yaml is Showable = Yaml.unseal(_).show
 
-extension (text: Text)
-  def readAll(using Tactic[ParseError]): List[Yaml] = Yaml.parseAll(text)
-
 extension [entity: Encodable in Yaml](value: entity) def yaml: Yaml = value.encode
 
 extension (inline context: StringContext)

@@ -1403,6 +1403,12 @@ object Yaml extends Yaml2, Dynamic:
         case Yaml.Tracking.Off =>
           Yaml(YamlParser.parse(text))
 
+  // Multi-document reads (`---`-separated YAML) through the uniform `.read`
+  // API: `text.read[List[Yaml]]` yields one `Yaml` per document. Backed by
+  // `parseAll`, this replaces the former bespoke `Text.readAll` extension.
+  given aggregableAll: (Tactic[ParseError], Yaml.Tracking) => List[Yaml] is Aggregable by Text =
+    summon[Text is Aggregable by Text].map(parseAll(_))
+
   // HTTP content-type integration. `Abstractable across HttpStreams` makes a
   // `Yaml` value usable as an HTTP request/response body (telekinesis derives
   // `Postable`/`Servable` from it); `Instantiable across HttpRequests` reads a
