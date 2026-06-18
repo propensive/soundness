@@ -295,6 +295,21 @@ package calendars:
     def leapYear(year: Annual): Boolean = year()%4 == 0 && year()%100 != 0 || year()%400 == 0
     def leapYearsSinceEpoch(year: Year): Int = year()/4 - year()/100 + year()/400 + 1
 
+  // The Julian-to-Gregorian cutovers of the two best-known reforms, as two-segment `Regime`s. The
+  // first day of each segment is given as a Julian day number; the gap between (the dates in
+  // neither calendar) is rejected. Provided for explicit import, like the calendars above.
+  given papalCutover: Regime =
+    Regime
+      ( t"Papal",
+        Regime.Segment(Date.julianDay(Int.MinValue), julianCalendar),
+        Regime.Segment(Date.julianDay(2299161), gregorianCalendar) )
+
+  given britishCutover: Regime =
+    Regime
+      ( t"British",
+        Regime.Segment(Date.julianDay(Int.MinValue), julianCalendar),
+        Regime.Segment(Date.julianDay(2361222), gregorianCalendar) )
+
   package nonexistentLeapDays:
     given roundUpLeapDay: Anniversary.NonexistentLeapDay = year =>
       import calendars.gregorianCalendar

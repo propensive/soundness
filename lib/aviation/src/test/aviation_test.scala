@@ -148,6 +148,49 @@ object Tests extends Suite(m"Aviation Tests"):
         List(Year(1985), Year(200), Year(202), Year(1843)).map(calendars.gregorianCalendar.leapYear)
       . assert(_.all(!_))
 
+      test(m"A valid literal date compiles"):
+        demilitarize((2012-Mar-8).jdn)
+      . assert(_.isEmpty)
+
+      test(m"An impossible day-of-month literal fails to compile"):
+        demilitarize((2012-Feb-30).jdn)
+      . assert(_.nonEmpty)
+
+      test(m"A 31st of a thirty-day-month literal fails to compile"):
+        demilitarize((2012-Apr-31).jdn)
+      . assert(_.nonEmpty)
+
+      test(m"A non-leap-year 29 February literal fails to compile"):
+        demilitarize((2011-Feb-29).jdn)
+      . assert(_.nonEmpty)
+
+      test(m"A leap-year 29 February literal compiles"):
+        demilitarize((2012-Feb-29).jdn)
+      . assert(_.isEmpty)
+
+      test(m"A zero day-of-month literal fails to compile"):
+        demilitarize((2012-Mar-0).jdn)
+      . assert(_.nonEmpty)
+
+      test(m"A literal date equals its `ts` string counterpart"):
+        (2012-Mar-8)
+      . assert(_ == ts"2012-03-08")
+
+      test(m"1900-Feb-29 fails to compile under the default Gregorian calendar"):
+        demilitarize((1900-Feb-29).jdn)
+      . assert(_.nonEmpty)
+
+      test(m"1900-Feb-29 compiles under a contextual Julian calendar"):
+        demilitarize:
+          import calendars.julianCalendar
+          (1900-Feb-29).jdn
+      . assert(_.isEmpty)
+
+      test(m"A contextual Julian calendar yields the Julian Julian-day for the literal"):
+        given julian: RomanCalendar = calendars.julianCalendar
+        (1900-Feb-29).jdn
+      . assert(_ == unsafely(calendars.julianCalendar.jdn(Year(1900), Feb, Day(29))).jdn)
+
       test(m"Check recent Julian Day"):
         (2022-Dec-16).jdn
       . assert(_ == 2459930)
@@ -316,6 +359,55 @@ object Tests extends Suite(m"Aviation Tests"):
       // test(m"Read TZDB file"):
       //   Tzdb.parseFile(t"europe")
       // .assert(_ == List())
+
+    suite(m"Regime / calendar cutover tests"):
+      test(m"Papal cutover accepts the last Julian date"):
+        given papal: Regime = calendars.papalCutover
+        (1582-Oct-4).jdn
+      . assert(_ == 2299161)
+
+      test(m"Papal cutover accepts the first Gregorian date"):
+        given papal: Regime = calendars.papalCutover
+        (1582-Oct-15).jdn
+      . assert(_ == 2299161)
+
+      test(m"The last Julian day and first Gregorian day are the same day"):
+        given papal: Regime = calendars.papalCutover
+        (1582-Oct-15).jdn == (1582-Oct-4).jdn
+      . assert(_ == true)
+
+      test(m"Papal cutover rejects a gap date at compile time"):
+        demilitarize:
+          import calendars.papalCutover
+          (1582-Oct-10).jdn
+      . assert(_.nonEmpty)
+
+      test(m"Papal cutover rejects a gap date at runtime"):
+        import calendars.papalCutover
+        val day = 10
+        capture((1582-Oct-day).jdn)
+      . assert(_ == TimeError(_.Invalid(1582, 10, 10, calendars.papalCutover)))
+
+      test(m"A pre-cutover date uses the Julian calendar under the Papal regime"):
+        given papal: Regime = calendars.papalCutover
+        (1500-Mar-10).jdn
+      . assert(_ == unsafely(calendars.julianCalendar.jdn(Year(1500), Mar, Day(10))).jdn)
+
+      test(m"A post-cutover date uses the Gregorian calendar under the Papal regime"):
+        given papal: Regime = calendars.papalCutover
+        (1700-Mar-10).jdn
+      . assert(_ == unsafely(calendars.gregorianCalendar.jdn(Year(1700), Mar, Day(10))).jdn)
+
+      test(m"British cutover rejects a date in its gap at compile time"):
+        demilitarize:
+          import calendars.britishCutover
+          (1752-Sep-5).jdn
+      . assert(_.nonEmpty)
+
+      test(m"British cutover accepts the day after its gap"):
+        given british: Regime = calendars.britishCutover
+        (1752-Sep-14).jdn
+      . assert(_ == 2361222)
 
     suite(m"Decoding instants"):
       suite(m"ISO 8601"):

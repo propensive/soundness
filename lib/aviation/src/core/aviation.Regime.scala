@@ -32,44 +32,68 @@
                                                                                                   */
 package aviation
 
+import anticipation.*
 import contingency.*
-import gossamer.*
-import spectacular.*
-import symbolism.*
+import fulminate.*
+import vacuous.*
 
-object Monthstamp:
-  given showable: (months: Months, separation: DateSeparation, endianness: Endianness, years: Years)
-  =>  Monthstamp is Showable =
+// A `Regime` is the calendar in force as it changed through history: an ordered sequence of
+// segments, each handing over to the next at a Julian day number. Because the Julian day number is
+// a calendar-independent axis, a date is located in whichever segment governs it, and translation
+// across a boundary is automatic. The two-segment case is a Julian-to-Gregorian hybrid; the dates
+// that exist in neither adjacent calendar (the cutover gap, e.g. 1582-10-05..14) are rejected.
+object Regime:
+  case class Segment(from: Date, calendar: RomanCalendar)
 
-    monthstamp =>
-      endianness match
-        case Endianness.LittleEndian =>
-          t"${monthstamp.year}${separation.separator}${monthstamp.month}"
+  def apply(name: Text, segments: Segment*): Regime =
+    new Regime(name, segments.to(List).sortBy(_.from.jdn))
 
-        case _ =>
-          t"${monthstamp.month}${separation.separator}${monthstamp.year}"
+class Regime(name: Text, segments: List[Regime.Segment]) extends RomanCalendar(name):
+  import Regime.Segment
 
+  // Each segment paired with the inclusive upper Julian-day bound at which the next takes over. The
+  // bound is the next segment's first day: the two calendars are aligned so that the last day of
+  // one and the first day of the next share a Julian day number (Julian 1582-10-04 and Gregorian
+  // 1582-10-15 are the same day), so that shared day is valid under both — the bound is inclusive.
+  private val bounded: List[(Segment, Int)] =
+    segments.zip(segments.drop(1).map(_.from.jdn) :+ Int.MaxValue)
 
-  // The result-type witness and the fallback for non-operator call sites; defaults to the
-  // Gregorian calendar, preserving the historical behaviour of `monthstamp - day`.
-  given subtractable: Monthstamp is Subtractable:
-    type Result = Date
-    type Operand = Int
+  // The calendar governing a Julian day number: the latest segment to have taken effect by then.
+  private def at(date: Date): RomanCalendar =
+    bounded.filter(_(0).from.jdn <= date.jdn).lastOption.map(_(0).calendar).getOrElse:
+      segments.head.calendar
 
-    def subtract(monthstamp: Monthstamp, day: Int): Date =
-      unsafely(calendars.gregorianCalendar.jdn(monthstamp.year, monthstamp.month, Day(day)))
+  // The regime's Julian day number for a field date, or `Unset` if it falls in a gap between two
+  // calendars (e.g. 1582-10-10 under the Papal cutover) or is otherwise an invalid date.
+  private def locate(year: Year, month: Month, day: Day): Optional[Date] =
+    def recur(remaining: List[(Segment, Int)]): Optional[Date] = remaining match
+      case (segment, upper) :: tail =>
+        val candidate: Optional[Date] = safely(segment.calendar.jdn(year, month, day))
+        val jdn: Optional[Int] = candidate.let(_.jdn)
 
-  // The inline path the `-` operator prefers: when the year, month and day are all literals it
-  // validates the date at compile time against the contextually-resolved calendar (raising a
-  // compile error for e.g. `2012-Feb-30`); otherwise it falls back to a runtime check.
-  final class MonthstampSubtraction extends SubOp:
-    type Self = Monthstamp
-    type Operand = Int
-    type Result = Date
+        if jdn.present && segment.from.jdn <= jdn.vouch && jdn.vouch <= upper
+        then candidate
+        else recur(tail)
 
-    inline def op(left: Monthstamp, right: Int): Date =
-      ${aviation.internal.monthstampMinus('left, 'right)}
+      case Nil =>
+        Unset
 
-  inline given monthstampSubtraction: MonthstampSubtraction = MonthstampSubtraction()
+    recur(bounded)
 
-case class Monthstamp(year: Year, month: Month)
+  // The calendar governing a year, sampled at its midpoint (never inside a historical cutover gap).
+  private def governing(year: Year): RomanCalendar =
+    locate(year, Jun, Day(15)).let(at).or(segments.last.calendar)
+
+  override def annual(date: Date): Year = at(date).annual(date)
+  override def mensual(date: Date): Month = at(date).mensual(date)
+  override def diurnal(date: Date): Day = at(date).diurnal(date)
+
+  def leapYear(year: Year): Boolean = governing(year).leapYear(year)
+  def leapYearsSinceEpoch(year: Year): Int = governing(year).leapYearsSinceEpoch(year)
+
+  override def jdn(year: Year, month: Month, day: Day): Date raises TimeError =
+    val located = locate(year, month, day)
+
+    if located.present then located.vouch else
+      raise(TimeError(_.Invalid(year(), month.numerical, day(), this)))
+      Date.julianDay(0)
