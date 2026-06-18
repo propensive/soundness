@@ -176,6 +176,21 @@ object Tests extends Suite(m"Aviation Tests"):
         (2012-Mar-8)
       . assert(_ == ts"2012-03-08")
 
+      test(m"1900-Feb-29 fails to compile under the default Gregorian calendar"):
+        demilitarize((1900-Feb-29).jdn)
+      . assert(_.nonEmpty)
+
+      test(m"1900-Feb-29 compiles under a contextual Julian calendar"):
+        demilitarize:
+          import calendars.julianCalendar
+          (1900-Feb-29).jdn
+      . assert(_.isEmpty)
+
+      test(m"A contextual Julian calendar yields the Julian Julian-day for the literal"):
+        import calendars.julianCalendar
+        (1900-Feb-29).jdn
+      . assert(_ == unsafely(calendars.julianCalendar.jdn(Year(1900), Feb, Day(29))).jdn)
+
       test(m"Check recent Julian Day"):
         (2022-Dec-16).jdn
       . assert(_ == 2459930)

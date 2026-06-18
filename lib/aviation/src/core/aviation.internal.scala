@@ -180,17 +180,19 @@ object internal:
       """(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) """ +
       """(\d{4}) (\d{2}):(\d{2}):(\d{2}) GMT""").r
 
-  // Validate a date against the Gregorian calendar (rejecting e.g. month 13 or 31 February)
-  // and return its Julian day number, which the macro emits directly via `Date.julianDay`.
-  private def jdnOf(year: Int, month: Int, day: Int): Either[Message, Int] =
-    import calendars.gregorianCalendar
+  // Validate a date against the given calendar (rejecting e.g. month 13 or 31 February) and return
+  // its Julian day number, which the macro emits directly via `Date.julianDay`.
+  private def jdnOf(calendar: RomanCalendar, year: Int, month: Int, day: Int)
+  :   Either[Message, Int] =
 
     if month < 1 || month > 12 then Left(m"$month is not a valid month number")
     else
       val computed: Optional[Int] =
-        safely(Date(Year(year), Month.fromOrdinal(month - 1), Day(day)).jdn)
+        safely(calendar.jdn(Year(year), Month.fromOrdinal(month - 1), Day(day)).jdn)
 
-      computed.lay(Left(m"$year-$month-$day is not a valid date"))(Right(_))
+      val invalid = m"$year-$month-$day is not a valid date in the ${calendar.name} calendar"
+
+      computed.lay(Left(invalid))(Right(_))
 
   private def checkTime(hour: Int, minute: Int, second: Int): Either[Message, Unit] =
     if hour > 23 then Left(m"$hour is not a valid hour")
@@ -241,13 +243,16 @@ object internal:
       else Right(TsParsed.MonthOnly(year.nn.toInt, monthValue))
 
     case IsoPattern(year, month, day, null, _, _, _, _) =>
-      jdnOf(year.nn.toInt, month.nn.toInt, day.nn.toInt).map(TsParsed.DateOnly(_))
+      jdnOf(calendars.gregorianCalendar, year.nn.toInt, month.nn.toInt, day.nn.toInt)
+      . map(TsParsed.DateOnly(_))
 
     case IsoPattern(year, month, day, hour, minute, second, frac, zone) =>
       val secondValue = if second == null then 0 else second.nn.toInt
       val nanos = if frac == null then 0 else (frac.nn + "000000000").take(9).toInt
 
-      jdnOf(year.nn.toInt, month.nn.toInt, day.nn.toInt).flatMap: jdn =>
+      val parsed = jdnOf(calendars.gregorianCalendar, year.nn.toInt, month.nn.toInt, day.nn.toInt)
+
+      parsed.flatMap: jdn =>
         isoTime(jdn, hour.nn.toInt, minute.nn.toInt, secondValue, nanos, zone)
 
     case _ =>
@@ -260,7 +265,9 @@ object internal:
       val secondValue = second.nn.toInt
       val monthValue = monthNames.indexOf(month.nn) + 1
 
-      jdnOf(year.nn.toInt, monthValue, day.nn.toInt).flatMap: jdn =>
+      val parsed = jdnOf(calendars.gregorianCalendar, year.nn.toInt, monthValue, day.nn.toInt)
+
+      parsed.flatMap: jdn =>
         checkTime(hourValue, minuteValue, secondValue).map: _ =>
           TsParsed.ZoneOnly(jdn, hourValue, minuteValue, secondValue, 0, "GMT")
 
@@ -369,10 +376,31 @@ object internal:
         case -1      => Unset
         case ordinal => ordinal
 
+    // The calendar contextually in scope, if any. Used at runtime for the deferred check, and at
+    // compile time when we recognise it as one whose validation we can run here.
+    val summoned: Option[Expr[RomanCalendar]] = Expr.summon[RomanCalendar]
+
     // The runtime check, used whenever the operands aren't all compile-time literals; defaults to
-    // the Gregorian calendar, preserving today's behaviour.
+    // the Gregorian calendar when nothing is in scope, preserving today's behaviour.
     def runtime: Expr[Date] =
-      '{unsafely(calendars.gregorianCalendar.jdn($left.year, $left.month, Day($right)))}
+      val calendar = summoned.getOrElse('{calendars.gregorianCalendar})
+      '{unsafely($calendar.jdn($left.year, $left.month, Day($right)))}
+
+    // Identify a contextual calendar as one whose validation we can run here, or `Unset` if it is a
+    // user calendar we don't recognise (in which case compile-time validation is skipped).
+    val gregorianSymbol = strip('{calendars.gregorianCalendar}.asTerm).symbol
+    val julianSymbol = strip('{calendars.julianCalendar}.asTerm).symbol
+
+    def recognise(expr: Expr[RomanCalendar]): Optional[RomanCalendar] =
+      strip(expr.asTerm).symbol match
+        case `gregorianSymbol` => calendars.gregorianCalendar
+        case `julianSymbol`    => calendars.julianCalendar
+        case _                 => Unset
+
+    // The calendar to validate against at compile time: the recognised contextual one, or the
+    // Gregorian default when none is in scope.
+    val staticCalendar: Optional[RomanCalendar] =
+      summoned.map(recognise).getOrElse(calendars.gregorianCalendar)
 
     // Validate a literal `Monthstamp(Year(y), month)` minus a literal `day` at compile time. Note
     // the plain control flow (no `Optional.lay`/`let` around the quoted trees): wrapping inline
@@ -384,10 +412,16 @@ object internal:
         val month = monthOrdinal(monthArg)
         val day = constInt(rightTree)
 
-        if !(year.present && month.present && day.present) then runtime
-        else jdnOf(year.vouch, month.vouch + 1, day.vouch) match
-          case Right(jdn)  => '{Date.julianDay(${Expr(jdn)})}
-          case Left(error) => halt(error)
+        val literal = year.present && month.present && day.present
+
+        if !literal then runtime else staticCalendar match
+          case calendar: RomanCalendar =>
+            jdnOf(calendar, year.vouch, month.vouch + 1, day.vouch) match
+              case Right(jdn)  => '{Date.julianDay(${Expr(jdn)})}
+              case Left(error) => halt(error)
+
+          case _ =>
+            runtime
 
       case _ =>
         runtime
