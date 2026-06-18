@@ -705,6 +705,35 @@ object Json extends Json2, Dynamic:
         else if isSmallBcd then long
         else expected(JsonPrimitive.Number) yet 0L
 
+    // Low-level parsers building an `Ast` directly from input. Public reading
+    // goes through `source.read[Json]` (the `Aggregable` instances); these are
+    // the underlying engine and stay scoped to the `Ast` companion.
+    def parse(source: Data)(using mode: NumberMode): Json.Ast raises ParseError =
+      Json.Ast(JsonParser.parse(source, mode))
+
+    def parse(source: Data, holes: Boolean)(using mode: NumberMode): Json.Ast raises ParseError =
+      Json.Ast(JsonParser.parse(source, holes, mode))
+
+    def parse(input: Iterator[Data])(using mode: NumberMode): Json.Ast raises ParseError =
+      Json.Ast(JsonParser.parse(input, mode))
+
+    def parse(input: Iterator[Data], holes: Boolean)(using mode: NumberMode)
+    :   Json.Ast raises ParseError =
+
+      Json.Ast(JsonParser.parse(input, holes, mode))
+
+    def parseTracked(source: Data)(using mode: NumberMode)
+    :   (Json.Ast, Json.PositionIndex) raises ParseError =
+
+      val (raw, ints) = JsonParser.parseTracked(source, mode)
+      (Json.Ast(raw), Json.PositionIndex(ints))
+
+    def parseTracked(input: Iterator[Data])(using mode: NumberMode)
+    :   (Json.Ast, Json.PositionIndex) raises ParseError =
+
+      val (raw, ints) = JsonParser.parseTracked(input, mode)
+      (Json.Ast(raw), Json.PositionIndex(ints))
+
   def ast(value: Json.Ast): Json = new Json(value)
 
   // `object Json` extends `Dynamic`, which suppresses the universal-apply
