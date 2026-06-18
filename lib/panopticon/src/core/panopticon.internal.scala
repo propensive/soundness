@@ -309,10 +309,32 @@ object internal:
       if opts.forall(_.isDefined) then Some(opts.flatten) else None
 
 
+    def coerce[T: Type](sourceTerm: Term): Expr[T] =
+      val sourceTpe = sourceTerm.tpe.widen
+
+      if sourceTpe <:< TypeRepr.of[T] then sourceTerm.asExprOf[T]
+      else sourceTpe.asType.absolve match
+        case '[source] =>
+          val sourceExpr = sourceTerm.asExprOf[source]
+
+          Expr.summon[source is Coercible to T] match
+            case Some(coercible) => '{$coercible.coerce($sourceExpr)}
+
+            case None =>
+              halt(m"cannot coerce ${sourceTpe.show} to ${TypeRepr.of[T].show} in this assignment")
+
     def applyLeaf[T: Type](acc: Expr[T], leafTerm: Term, isCtxFn: Boolean): Expr[T] =
-      if isCtxFn
-      then '{${leafTerm.asExprOf[(T `aka` "prior") ?=> T]}(using $acc.aka["prior"])}
-      else leafTerm.asExprOf[T]
+      if isCtxFn then
+        val sourceTpe = leafTerm.tpe match
+          case AppliedType(_, List(_, result)) => result
+          case other                           => other
+
+        sourceTpe.asType.absolve match
+          case '[source] =>
+            val fn = leafTerm.asExprOf[(T `aka` "prior") ?=> source]
+            coerce[T]('{$fn(using $acc.aka["prior"])}.asTerm)
+      else
+        coerce[T](leafTerm)
 
     def emit[T: Type](origin: Expr[T], branches: List[Resolved]): Expr[T] =
       if branches.nil then origin else

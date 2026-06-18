@@ -32,87 +32,24 @@
                                                                                                   */
 package panopticon
 
-import language.dynamics
-
-import scala.quoted.*
-
-import denominative.*
 import prepositional.*
 
-object Optic:
-  transparent inline given deref: [name <: Label, product <: Product] => name is Lens from product =
-    ${panopticon.internal.lens[name, product]}
+// Evidence that a value of type `Self` may be supplied where a `Result` is required in a lens
+// assignment. The identity instance handles the usual case where the assigned value already has
+// the target type (or a subtype); format modules add instances that encode an `Encodable` value
+// into the format's value type, so that, e.g., `json.lens(_.name = "x")` accepts a bare `"x"`.
+object Coercible extends Coercible2:
+  // Any value already convertible to the target type (including a format module's
+  // `Encodable`-backed conversion, or gossamer's `String`/`Text` conversion) may be coerced.
+  given conversion: [value, target] => (conversion: Conversion[value, target])
+  =>  value is Coercible to target =
+    conversion(_)
 
-  def identity[value]: Optic from value onto value = new Optic:
-    type Origin = value
-    type Target = value
+trait Coercible2:
+  // A value whose type is already the target type (or a subtype) needs no coercion.
+  given identity: [value, target >: value] => value is Coercible to target = value => value
 
-    def modify(origin: Origin)(lambda: Target => Target): Origin = lambda(origin)
-
-
-  def apply[self, origin, target](lambda: (origin, target => target) => origin)
-  :   self is Optic from origin onto target =
-
-    new Optic:
-      type Self = self
-      type Origin = origin
-      type Target = target
-
-      def modify(origin: Origin)(lambda2: Target => Target): Origin = lambda(origin, lambda2)
-
-
-  given prim: [element]
-  =>  Prim.type is Optic from List[element] onto element =
-
-    Optic[Prim.type, List[element], element]: (origin, lambda) =>
-      origin match
-        case head :: tail => lambda(head) :: tail
-        case Nil          => Nil
-
-trait Optic extends Typeclass, Dynamic:
-  type Origin
-  type Target
-
-  def modify(origin: Origin)(lambda: Target => Target): Origin
-
-
-  def selectDynamic(name: Label)(using lens: name.type is Optic from Target)
-  :   Optic from Origin onto lens.Target =
-
-    Composable.optics.composition(this, lens)
-
-
-  def updateDynamic(name: Label)(using lens: name.type is Optic from Target)
-    [ source ]
-    ( value: (lens.Target aka "prior") ?=> source )
-    ( using coercible: source is Coercible to lens.Target )
-  :   Origin => Origin =
-
-    Composable.optics.composition(this, lens).modify(_): prior =>
-      coercible.coerce(value(using prior.aka["prior"]))
-
-
-  def update[source, target](traversal: Any, value: source)
-    ( using optical:  (? >: traversal.type) is Optical from Target onto target,
-            coercible: source is Coercible to target )
-  :   Origin => Origin =
-
-    Composable.optics.composition(this, optical.optic(traversal)).modify(_): _ =>
-      coercible.coerce(value)
-
-
-  def applyDynamic(name: Label)[operand](using lens: name.type is Optic from Target onto operand)
-    [ target, traversal ]
-    ( traversal: traversal )
-    ( using optical: (? >: traversal.type) is Optical from operand onto target )
-  :   Optic from Origin onto target =
-
-    Composable.optics.composition
-      ( Composable.optics.composition(this, lens), optical.optic(traversal) )
-
-
-  def apply[target, optic](traversal: optic)
-    ( using optical: (? >: traversal.type) is Optical from Target onto target )
-  :   Optic from Origin onto target =
-
-    Composable.optics.composition(this, optical.optic(traversal))
+trait Coercible:
+  type Self
+  type Result
+  def coerce(value: Self): Result

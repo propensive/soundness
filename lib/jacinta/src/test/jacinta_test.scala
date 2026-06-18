@@ -372,14 +372,14 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == Org("The Beatles", Entity("John", 41, List(Role("Leader")))))
 
       test(m"Lens update with optic on JSON"):
-        import dynamicJsonAccess.enabled
-        val org2 = org.lens(_.leader.roles(Prim) = Role("-").json)
+        import dynamicJsonAccess.enabled, jsonConversion.encodable
+        val org2 = org.lens(_.leader.roles(Prim) = Role("-"))
         org2.as[Org]
       . assert(_ == Org("The Beatles", Entity("John", 40, List(Role("-")))))
 
       test(m"Deeper lens update with optic on JSON"):
-        import dynamicJsonAccess.enabled
-        val org2 = org.lens(_.leader.roles(Prim).name = "-".json)
+        import dynamicJsonAccess.enabled, jsonConversion.encodable
+        val org2 = org.lens(_.leader.roles(Prim).name = "-")
         org2.as[Org]
       . assert(_ == Org("The Beatles", Entity("John", 40, List(Role("-")))))
 
@@ -397,18 +397,18 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == Org("The Beatles!", Entity("John", 40, List(Role("Leader")))))
 
       test(m"Each optic updates every array element"):
-        import dynamicJsonAccess.enabled
-        band.lens(_.leader.roles(Each).name = "x".json).as[Org]
+        import dynamicJsonAccess.enabled, jsonConversion.encodable
+        band.lens(_.leader.roles(Each).name = "x").as[Org]
       . assert(_ == Org("Q", Entity("John", 40, List(Role("x"), Role("x"), Role("x")))))
 
       test(m"Filter optic updates only matching elements"):
-        import dynamicJsonAccess.enabled
-        band.lens(_.leader.roles(Filter[Json](_.name.as[String] == "b")).name = "x".json).as[Org]
+        import dynamicJsonAccess.enabled, jsonConversion.encodable
+        band.lens(_.leader.roles(Filter[Json](_.name.as[String] == "b")).name = "x").as[Org]
       . assert(_ == Org("Q", Entity("John", 40, List(Role("a"), Role("x"), Role("c")))))
 
       test(m"Setting an absent field inserts it"):
-        import dynamicJsonAccess.enabled
-        org.lens(_.extra = 9.json).selectDynamic("extra").as[Int]
+        import dynamicJsonAccess.enabled, jsonConversion.encodable
+        org.lens(_.extra = 9).selectDynamic("extra").as[Int]
       . assert(_ == 9)
 
     suite(m"Json construction"):
