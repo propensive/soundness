@@ -232,6 +232,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       . assert(_ == Person(t"Alice", 30))
 
     suite(m"Optics"):
+      import protobufConversion.encodable
       // Protobuf is number-keyed: the `Ordinal` selects a field by number (Prim =
       // field 1). Wrapper encodes `point` at field 1 and `label` at field 2.
       def wrapper: Protobuf = Wrapper(Point(3, 4), t"origin").protobuf
@@ -241,9 +242,9 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       . assert(_ == Wrapper(Point(7, 8), t"origin"))
 
       test(m"field optic leaves other fields unchanged"):
-        wrapper.lens(_(Prim) = Point(7, 8).protobuf).as[Wrapper].label
+        wrapper.lens(_(Prim) = Point(7, 8)).as[Wrapper].label
       . assert(_ == t"origin")
 
       test(m"an absent field number is a no-op"):
-        wrapper.lens(_(Sen) = Point(7, 8).protobuf).as[Wrapper]
+        wrapper.lens(_(Sen) = Point(7, 8)).as[Wrapper]
       . assert(_ == Wrapper(Point(3, 4), t"origin"))
