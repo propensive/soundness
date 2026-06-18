@@ -45,22 +45,17 @@ object Inspectable extends Inspectable2:
   object Derivation extends Derivable[Inspectable]:
     inline def conjunction[derivation <: Product: ProductReflection]: derivation is Inspectable =
       value =>
-        fields(value): [field] => field =>
+        val rendered = fields(value): [field] => field =>
           val text = contextual.text(field)
           if tuple then text else s"$label:$text"
 
-        . mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
+        if rendered.isEmpty && !tuple then typeName
+        else rendered.mkString(if tuple then "(" else s"$typeName(", " ╱ ", ")").tt
 
     inline def disjunction[derivation: SumReflection]: derivation is Inspectable = value =>
       variant(value):
         [variant <: derivation] => variant =>
           contextual.give(variant.inspect)
-
-  inline given derived: [value] => value is Inspectable = compiletime.summonFrom:
-    case given (`value` is Encodable in Text) => _.encode
-    case given (`value` is Showable)          => _.show
-    case given Reflection[`value`]            => Derivation.derived[value]
-    case _                                    => value => ("“"+value+"”").tt
 
   given char: Char is Inspectable = char => ("'"+escape(char).s+"'").tt
   given long: Long is Inspectable = long => (long.toString+"L").tt
@@ -87,6 +82,10 @@ object Inspectable extends Inspectable2:
     case double                  => double.toString.tt
 
   given boolean: Boolean is Inspectable = boolean => if boolean then "true".tt else "false".tt
+  given unit: Unit is Inspectable = unit => "()".tt
+  given bigInt: BigInt is Inspectable = bigInt => ("BigInt("+bigInt+")").tt
+  given bigDecimal: BigDecimal is Inspectable = bigDecimal => ("BigDecimal("+bigDecimal+")").tt
+  given unset: Unset is Inspectable = unset => "○".tt
   given reflectEnum: reflect.Enum is Inspectable = _.toString.show
 
   def escape(char: Char, eEscape: Boolean = false): Text = char match
@@ -107,6 +106,16 @@ object Inspectable extends Inspectable2:
 
   given set: [element] => (inspectable: => element is Inspectable) => Set[element] is Inspectable =
     _.map(inspectable.text(_)).mkString("{", ", ", "}").tt
+
+  given map: [key, value]
+  =>  ( inspectableKey: => key is Inspectable, inspectableValue: => value is Inspectable )
+  =>  Map[key, value] is Inspectable =
+
+    entries =>
+      entries.map: (key, value) =>
+        inspectableKey.text(key).s+" → "+inspectableValue.text(value).s
+
+      . mkString("{", ", ", "}").tt
 
 
   given series: [element] => (inspectable: => element is Inspectable)
@@ -196,11 +205,21 @@ object Inspectable extends Inspectable2:
   given none: None.type is Inspectable = none => "None".tt
 
 trait Inspectable2:
-  given optional: [value] => (inspectable: => value is Inspectable)
-  =>  Optional[value] is Inspectable =
+  inline given derived: [value] => value is Inspectable = compiletime.summonFrom:
+    case given (`value` is Encodable in Text) => _.encode
+    case given (`value` is Showable)          => _.show
 
-    _.let { value => s"⸂${inspectable.text(value)}⸃".tt }.or("⸄⸅".tt)
+    case mandatable: (`value` is Mandatable) =>
+      val inspectable = compiletime.summonInline[mandatable.Result is Inspectable]
 
+      optional =>
+        optional.let: present =>
+          s"｢${inspectable.text(present.asInstanceOf[mandatable.Result])}｣".tt
+
+        . or("○".tt)
+
+    case given Reflection[`value`] => Inspectable.Derivation.derived[value]
+    case _                         => value => ("“"+value+"”").tt
 
 trait Inspectable extends Typeclass:
   def text(value: Self): Text
