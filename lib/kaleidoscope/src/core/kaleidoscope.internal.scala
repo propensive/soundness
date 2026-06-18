@@ -88,8 +88,6 @@ object internal:
 
     def unapply(scrutinee: Text)(using scanner: Scanner): Boolean =
       scanner.nextStart match
-        case Unset => Regex(List(pattern))(using Unsafe).matches(scrutinee)
-
         case index: Int =>
           val regex = Regex(List(pattern))(using Unsafe)
           val matcher = regex.javaPattern.matcher(scrutinee.s).nn
@@ -100,6 +98,9 @@ object internal:
             scanner.matchEnd = matcher.end
 
           found
+
+        case _ =>
+          Regex(List(pattern))(using Unsafe).matches(scrutinee)
 
   class RExtractor[result](parts: Seq[String]):
     def unapply(scrutinee: Text)(using scanner: Scanner): result =

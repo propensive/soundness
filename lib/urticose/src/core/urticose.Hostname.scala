@@ -65,7 +65,14 @@ object Hostname:
     val builder: TextBuilder = TextBuilder()
 
     def recur(index: Ordinal, dnsLabels: List[DnsLabel]): Hostname = text.at(index) match
-      case '.' | Unset =>
+      case char: Char if char != '.' =>
+        if char == '-' || ('A' <= char <= 'Z') || ('a' <= char <= 'z') || char.isDigit
+        then builder.append(char.toString.tt)
+        else raise(HostnameError(text, InvalidChar(char)))
+
+        recur(index + 1, dnsLabels)
+
+      case _ =>
         val label = builder()
         if label.nil then raise(HostnameError(text, EmptyDnsLabel(dnsLabels.length)))
         if label.length > 63 then raise(HostnameError(text, LongDnsLabel(label)))
@@ -78,13 +85,6 @@ object Hostname:
           then raise(HostnameError(text, LongHostname))
 
           Hostname(dnsLabels2.reverse*)
-
-      case char: Char =>
-        if char == '-' || ('A' <= char <= 'Z') || ('a' <= char <= 'z') || char.isDigit
-        then builder.append(char.toString.tt)
-        else raise(HostnameError(text, InvalidChar(char)))
-
-        recur(index + 1, dnsLabels)
 
     recur(Prim, Nil)
 

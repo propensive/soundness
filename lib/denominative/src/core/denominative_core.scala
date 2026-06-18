@@ -34,7 +34,6 @@ package denominative
 
 import anticipation.*
 import prepositional.*
-import symbolism.*
 
 final val Prim: Ordinal = Ordinal.zerary(0)
 final val Sec: Ordinal  = Ordinal.zerary(1)

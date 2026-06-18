@@ -93,7 +93,7 @@ object XPath extends Root("/"):
         parseStep(string.substring(offset, end).nn.tt) match
           case Unset => abort(XPathError(XPathError.Reason.BadStep, offset))
 
-          case step  => step.asInstanceOf[Either[Text, (Text, Int)]] match
+          case step => step.asInstanceOf[Either[Text, (Text, Int)]] match
             case Left(name)       => xpath = xpath.attribute(name)
             case Right((name, n)) => xpath = xpath.element(name, n)
 

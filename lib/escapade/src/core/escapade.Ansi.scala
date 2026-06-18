@@ -256,15 +256,15 @@ object Ansi extends Ansi2:
 
         case frame :: _ =>
           safely(text.where(_ == frame.bracket)).let(_.n0) match
-            case Unset =>
-              state.appendChars(text)
-              state
-
             case index: Int =>
               state.appendChars(text.keep(index))
               state.popFrame()
               state.last = Unset
               closures(state, text.skip(index + 1))
+
+            case _ =>
+              state.appendChars(text)
+              state
 
       catch case error: EscapeError => error match
         case EscapeError(message) => throw AnsiError(message)

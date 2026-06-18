@@ -76,7 +76,7 @@ object EmailAddress:
         buffer.append(char)
         quoted(index + 1, false)
 
-      case Unset =>
+      case _ =>
         abort(EmailAddressError(UnclosedQuote))
 
     def unquoted(index: Ordinal, dot: Boolean): (LocalPart, Ordinal) =
@@ -102,7 +102,7 @@ object EmailAddress:
 
           unquoted(index + 1, false)
 
-        case Unset =>
+        case _ =>
           abort(EmailAddressError(MissingAtSymbol))
 
     val (localPart, index) =

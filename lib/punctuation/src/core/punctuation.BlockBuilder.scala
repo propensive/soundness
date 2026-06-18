@@ -219,13 +219,13 @@ final class ParagraphBuilder(val line: Ordinal) extends LeafBuilder:
 
     while keepGoing && pos < n do
       InlineSupport.parseLinkRefDefMulti(joinedText, pos, n) match
-        case Unset =>
-          keepGoing = false
-
         case lr: InlineSupport.LinkRefDefMatch =>
           refs.add(lr.ref)
           pos = lr.end
           if pos < n && joinedText.charAt(pos) == '\n' then pos += 1
+
+        case Unset =>
+          keepGoing = false
 
     linkRefEnd = pos
 

@@ -79,10 +79,10 @@ enum Typename:
     case Top(_)          => Unset
 
   def symbol(typeSymbol: Text = "#", termSymbol: Text = "."): Text = parent match
-    case Unset      => ""
     case Type(_, _) => typeSymbol
     case Term(_, _) => termSymbol
     case Top(_)     => termSymbol
+    case _          => ""
 
   def render: Text = this match
     case Top(name)          => name

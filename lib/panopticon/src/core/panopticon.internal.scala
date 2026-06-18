@@ -296,15 +296,15 @@ object internal:
 
         case StepB(FieldStep(name), children) =>
           summonLens(name, originTpe).flatMap: lensTerm =>
-            extractTarget(lensTerm).flatMap: targetTpe =>
-              resolveAll(children, targetTpe).map: resolvedChildren =>
-                FieldR(name, lensTerm, targetTpe, resolvedChildren)
+            extractTarget(lensTerm).flatMap: targetType =>
+              resolveAll(children, targetType).map: resolvedChildren =>
+                FieldR(name, lensTerm, targetType, resolvedChildren)
 
         case StepB(TraversalStep(operand, _), children) =>
           summonOptical(operand.tpe, originTpe).flatMap: opticalTerm =>
-            extractTarget(opticalTerm).flatMap: targetTpe =>
-              resolveAll(children, targetTpe).map: resolvedChildren =>
-                TravR(operand, opticalTerm, targetTpe, resolvedChildren)
+            extractTarget(opticalTerm).flatMap: targetType =>
+              resolveAll(children, targetType).map: resolvedChildren =>
+                TravR(operand, opticalTerm, targetType, resolvedChildren)
 
       if opts.forall(_.isDefined) then Some(opts.flatten) else None
 
@@ -362,25 +362,25 @@ object internal:
 
         case _ => None
 
-    def emitFieldUpdate[T: Type]
-      ( origin:    Expr[T],
-        name:      String,
-        lensTerm:  Term,
-        targetTpe: TypeRepr,
-        children:  List[Resolved] )
-    :   Expr[T] =
+    def emitFieldUpdate[source: Type]
+      ( origin:     Expr[source],
+        name:       String,
+        lensTerm:   Term,
+        targetType: TypeRepr,
+        children:   List[Resolved] )
+    :   Expr[source] =
 
-      targetTpe.asType.absolve match
-        case '[targetT] =>
+      targetType.asType.absolve match
+        case '[target] =>
           val (lensPrelude, getTerm, doSet) = lensConstructorLambdas(lensTerm) match
             case Some((getLambda, setLambda)) =>
-              val getFn = getLambda.asExprOf[T => targetT]
-              val setFn = setLambda.asExprOf[(T, targetT) => T]
+              val getFn = getLambda.asExprOf[source => target]
+              val setFn = setLambda.asExprOf[(source, target) => source]
               val rawGet = '{$getFn($origin)}.asTerm
               val get = Term.betaReduce(rawGet).getOrElse(rawGet)
 
               val set: Term => Term = (newValue: Term) =>
-                val rawSet = '{$setFn($origin, ${newValue.asExprOf[targetT]})}.asTerm
+                val rawSet = '{$setFn($origin, ${newValue.asExprOf[target]})}.asTerm
                 Term.betaReduce(rawSet).getOrElse(rawSet)
 
               (Nil, get, set)
@@ -392,29 +392,28 @@ object internal:
                     Symbol.noSymbol )
 
               val lensDef = ValDef(lensSym, Some(lensTerm.changeOwner(lensSym)))
-              val lensExpr = Ref(lensSym)
-                . asExprOf[Lens from T onto targetT]
+              val lensExpr = Ref(lensSym).asExprOf[Lens from source onto target]
               val getRaw = '{$lensExpr($origin)}.asTerm
 
               val set: Term => Term = (newValue: Term) =>
-                val newValueExpr = newValue.asExprOf[targetT]
+                val newValueExpr = newValue.asExprOf[target]
                 '{$lensExpr.update($origin, $newValueExpr)}.asTerm
 
               (List(lensDef), getRaw, set)
 
           val inSym =
             Symbol.newVal
-              ( Symbol.spliceOwner, s"v$$$name", targetTpe, Flags.EmptyFlags,
+              ( Symbol.spliceOwner, s"v$$$name", targetType, Flags.EmptyFlags,
                 Symbol.noSymbol )
 
           val inDef   = ValDef(inSym, Some(getTerm.changeOwner(inSym)))
-          val inRef   = Ref(inSym).asExprOf[targetT]
+          val inRef   = Ref(inSym).asExprOf[target]
 
-          val updated = emit[targetT](inRef, children)
+          val updated = emit[target](inRef, children)
 
           val outSym =
             Symbol.newVal
-              ( Symbol.spliceOwner, s"v$$$name'", targetTpe, Flags.EmptyFlags,
+              ( Symbol.spliceOwner, s"v$$$name'", targetType, Flags.EmptyFlags,
                 Symbol.noSymbol )
 
           val outDef  = ValDef(outSym, Some(updated.asTerm.changeOwner(outSym)))
@@ -422,15 +421,15 @@ object internal:
 
           val rebuilt = doSet(outRef)
 
-          Block(lensPrelude ++ List(inDef, outDef), rebuilt).asExprOf[T]
+          Block(lensPrelude ++ List(inDef, outDef), rebuilt).asExprOf[source]
 
     def emitTraversalUpdate[T: Type]
-      ( origin: Expr[T], operand: Term, opticalTerm: Term, targetTpe: TypeRepr,
+      ( origin: Expr[T], operand: Term, opticalTerm: Term, targetType: TypeRepr,
         children: List[Resolved] )
     :   Expr[T] =
 
-      targetTpe.asType match
-        case '[targetT] =>
+      targetType.asType.absolve match
+        case '[target] =>
           val opticTerm = Apply(Select.unique(opticalTerm, "optic"), List(operand))
           val opticTpe = opticTerm.tpe
 
@@ -439,19 +438,19 @@ object internal:
 
           val opticDef = ValDef(opticSym, Some(opticTerm.changeOwner(opticSym)))
           val opticExpr = Ref(opticSym)
-            . asExprOf[Optic from T onto targetT]
+            . asExprOf[Optic from T onto target]
 
           val innerLambda =
             Lambda
               ( Symbol.spliceOwner,
                 MethodType(List("inner"))
-                 ( _ => List(targetTpe), _ => targetTpe ),
+                 ( _ => List(targetType), _ => targetType ),
                 (lambdaSym, args) =>
                   val innerRef = args.head.asInstanceOf[Term]
-                                  . asExprOf[targetT]
-                  emit[targetT](innerRef, children).asTerm.changeOwner(lambdaSym) )
+                                  . asExprOf[target]
+                  emit[target](innerRef, children).asTerm.changeOwner(lambdaSym) )
 
-          val innerLambdaExpr = innerLambda.asExprOf[targetT => targetT]
+          val innerLambdaExpr = innerLambda.asExprOf[target => target]
           val modifyCall = '{$opticExpr.modify($origin)($innerLambdaExpr)}.asTerm
 
           Block(List(opticDef), modifyCall).asExprOf[T]

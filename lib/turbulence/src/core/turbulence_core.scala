@@ -168,18 +168,18 @@ extension [element](stream: Stream[element])
       count match
         case 0 =>
           safely(async(stream.nil).await()) match
-            case Unset => recur(stream, Nil, 0)
             case false => recur(stream.tail, stream.head :: list, count + 1)
             case true  => Stream()
+            case _     => recur(stream, Nil, 0)
 
         case Limit =>
           list.reverse #:: recur(stream, Nil, 0)
 
         case _ =>
           safely(async(stream.nil).await(duration)) match
-            case Unset => list.reverse #:: recur(stream, Nil, 0)
             case false => recur(stream.tail, stream.head :: list, count + 1)
             case true  => Stream(list.reverse)
+            case _     => list.reverse #:: recur(stream, Nil, 0)
 
     Stream.defer(recur(stream, Nil, 0))
 

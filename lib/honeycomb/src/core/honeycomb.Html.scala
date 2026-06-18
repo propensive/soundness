@@ -1821,7 +1821,7 @@ extends Node, Topical, Transportive, Dynamic:
         attributive.attribute(name, value).match
           case Unset => Element(label, attributes.removed(name.tt), children, foreign)
 
-          case pair  =>
+          case pair =>
             val (key, value) = pair.asInstanceOf[(Text, Optional[Text])]
             Element(label, attributes.updated(key, value), children, foreign)
 
@@ -1835,7 +1835,7 @@ extends Node, Topical, Transportive, Dynamic:
         attributive.attribute(name, value).match
           case Unset => Element(label, attributes.removed(name.tt), children, foreign)
 
-          case pair  =>
+          case pair =>
             val (key, value) = pair.asInstanceOf[(Text, Optional[Text])]
             Element(label, attributes.updated(key, value), children, foreign)
 
