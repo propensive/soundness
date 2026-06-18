@@ -1993,13 +1993,16 @@ object Checker:
       out:          mutable.ListBuffer[Violation] )
   :   Unit =
 
-    siblingTypes.foreach: name =>
-      if !exports.names.contains(name) then
-        out +=
-          Violation
-            ( file, exports.firstLine, 1, "742",
-              s"`$name` is defined in the module but is not exported to the `soundness` "
-                +"package" )
+    val missing =
+      siblingTypes.filterNot(exports.names.contains).filterNot(exports.excluded.contains)
+
+    if missing.nonEmpty then
+      val listed = missing.map { name => s"`$name`" }.mkString(", ")
+      val subject = if missing.length == 1 then "module is" else "modules are"
+      out +=
+        Violation
+          ( file, exports.firstLine, 1, "742",
+            s"the $subject defined but not exported to the `soundness` package: $listed" )
 
   private def checkInterpolatorLayout
     ( file:    String,

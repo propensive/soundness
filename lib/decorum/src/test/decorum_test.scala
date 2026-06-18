@@ -932,3 +932,14 @@ object Tests extends Suite(m"Decorum Tests"):
       test(m"No violation when there are no sibling modules"):
         exportRules("export jacinta.{Json}\n", Nil)
       . assert(r => !r.contains("742"))
+
+      test(m"An `unexported:` directive suppresses the violation"):
+        exportRules
+         ("// unexported: Timestamp (clashes with aviation.Timestamp)\nexport embarcadero.{Image}\n",
+          List("Image", "Timestamp"))
+      . assert(r => !r.contains("742"))
+
+      test(m"An `unexported:` directive only suppresses the named module"):
+        exportRules
+         ("// unexported: Timestamp\nexport embarcadero.{Image}\n", List("Image", "Timestamp", "Layer"))
+      . assert(_.contains("742"))

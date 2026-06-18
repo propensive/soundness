@@ -87,9 +87,12 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
   // When `path` is a `soundness_<component>_<suffix>.scala` export surface, return
   // the names of the sibling public modules (`<component>.<Name>.scala` files in
   // the same directory, excluding any `internal` module) that R-742 requires to
-  // be re-exported. Compiler-plugin source roots (`/src/plugin/`) are excluded:
-  // their extraction helpers are deliberately unexported plugin internals. For
-  // every other file the result is empty, making the check a no-op.
+  // be re-exported. A module is included only when its file declares `Name`
+  // publicly: modules with no accessible top-level declaration (e.g. a
+  // `private[component] object`) cannot be — and need not be — re-exported.
+  // Compiler-plugin source roots (`/src/plugin/`) are excluded: their extraction
+  // helpers are deliberately unexported plugin internals. For every other file
+  // the result is empty, making the check a no-op.
   private def soundnessSiblingModules(path: String): List[String] =
     if path.contains("/src/plugin/") then Nil else
       val libParts = path.split("/lib/").nn
@@ -106,11 +109,30 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
             siblings.foreach: sibling =>
               val name = sibling.nn.getName.nn
               if name.startsWith(prefix) && name.endsWith(".scala") then
-                val mid     = name.substring(prefix.length, name.length - ".scala".length).nn
-                val module  = mid.takeWhile(_ != '.')
+                val mid    = name.substring(prefix.length, name.length - ".scala".length).nn
+                val module = mid.takeWhile(_ != '.')
                 if module.nonEmpty && !module.toLowerCase.nn.contains("internal")
+                   && declaresPublicly(sibling.nn, module)
                 then out += module
             out.to(List)
+
+  // Modifiers that may precede a public top-level declaration; `private` and
+  // `protected` are deliberately absent, so a `private[x] object Foo` line never
+  // matches the public-declaration pattern below.
+  private val PublicModifiers =
+    "(?:final|sealed|abstract|case|open|transparent|inline|erased|lazy|override|implicit)"
+
+  // Does `file` declare `module` with a publicly-accessible top-level definition?
+  // A column-0 `object`/`class`/`trait`/`enum`/`type`/`val`/`def`/`given Name`
+  // (optionally preceded by non-access modifiers) counts; a `private`/`protected`
+  // declaration does not, because the line then begins with that access modifier.
+  private def declaresPublicly(file: java.io.File, module: String): Boolean =
+    val keywords = "opaque\\s+type|object|class|trait|enum|type|val|def|given"
+    val pattern  = s"(?m)^(?:$PublicModifiers\\s+)*(?:$keywords)\\s+$module(?![A-Za-z0-9])"
+    try
+      val content = String(java.nio.file.Files.readAllBytes(file.toPath))
+      pattern.r.findFirstIn(content).isDefined
+    catch case _: Throwable => true
 
   private def position(source: SourceFile, line: Int, column: Int): SourcePosition =
     val lineStart =
