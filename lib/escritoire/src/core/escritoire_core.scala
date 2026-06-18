@@ -60,13 +60,14 @@ package columnAttenuation:
 
 package tableStyles:
   import BoxLine.*
+  import LineCharset.{Default, Rounded}
 
-  given defaultTableStyle: TableStyle = TableStyle(1, Thick, Thick, Thin, Thick, Thin, LineCharset.Default)
-  given thinRoundedTableStyle: TableStyle = TableStyle(1, Thin, Thin, Thin, Thin, Thin, LineCharset.Rounded)
-  given horizontalTableStyle: TableStyle = TableStyle(1, Thin, Thin, Thin, Blank, Blank, LineCharset.Default)
-  given midOnlyTableStyle: TableStyle = TableStyle(1, Blank, Blank, Thin, Blank, Blank, LineCharset.Default)
-  given verticalTableStyle: TableStyle = TableStyle(1, Blank, Blank, Blank, Thin, Thin, LineCharset.Default)
-  given minimalTableStyle: TableStyle = TableStyle(1, Unset, Unset, Thin, Blank, Blank, LineCharset.Default)
+  given defaultTableStyle: TableStyle = TableStyle(1, Thick, Thick, Thin, Thick, Thin, Default)
+  given thinRoundedTableStyle: TableStyle = TableStyle(1, Thin, Thin, Thin, Thin, Thin, Rounded)
+  given horizontalTableStyle: TableStyle = TableStyle(1, Thin, Thin, Thin, Blank, Blank, Default)
+  given midOnlyTableStyle: TableStyle = TableStyle(1, Blank, Blank, Thin, Blank, Blank, Default)
+  given verticalTableStyle: TableStyle = TableStyle(1, Blank, Blank, Blank, Thin, Thin, Default)
+  given minimalTableStyle: TableStyle = TableStyle(1, Unset, Unset, Thin, Blank, Blank, Default)
 
 package columnar:
   // Cumulative display width up to each char position; `widths(i)` is the width

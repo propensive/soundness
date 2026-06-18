@@ -194,12 +194,14 @@ extension [element](stream: Stream[element])
     out.stream
 
 package lineSeparation:
-  given carriageReturnLineSeparation: LineSeparation(NewlineSeq.Cr, Action.Nl, Action.Skip, Action.Nl, Action.Nl)
+  given carriageReturnLineSeparation
+  :   LineSeparation(NewlineSeq.Cr, Action.Nl, Action.Skip, Action.Nl, Action.Nl)
 
   given strictCarriageReturnLineSeparation
   :   LineSeparation(NewlineSeq.Cr, Action.Nl, Action.Lf, Action.NlLf, Action.LfNl)
 
-  given linefeedLineSeparation: LineSeparation(NewlineSeq.Lf, Action.Skip, Action.Nl, Action.Nl, Action.Nl)
+  given linefeedLineSeparation
+  :   LineSeparation(NewlineSeq.Lf, Action.Skip, Action.Nl, Action.Nl, Action.Nl)
 
   given strictLinefeedsLineSeparation
   :   LineSeparation(NewlineSeq.Lf, Action.Nl, Action.Lf, Action.NlLf, Action.LfNl)
@@ -207,7 +209,8 @@ package lineSeparation:
   given carriageReturnLinefeedLineSeparation
   :   LineSeparation(NewlineSeq.CrLf, Action.Skip, Action.Lf, Action.Nl, Action.LfNl)
 
-  given adaptiveLinefeedLineSeparation: LineSeparation(NewlineSeq.Lf, Action.Nl, Action.Nl, Action.Nl, Action.Nl)
+  given adaptiveLinefeedLineSeparation
+  :   LineSeparation(NewlineSeq.Lf, Action.Nl, Action.Nl, Action.Nl, Action.Nl)
 
   given virtualMachineLineSeparation: LineSeparation = jl.System.lineSeparator.nn match
     case "\r\n"    => carriageReturnLinefeedLineSeparation

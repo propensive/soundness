@@ -591,13 +591,19 @@ object Checker:
                       s"closing `}` of a multi-line quote/splice at column ${cols(i)} "
                         +s"does not align with its opening `{` at column ${opener.braceCol}" )
               // (d-alone) Nothing semantic before `}` on the line; only
-              // enclosing closing brackets (`)`, `}`) may trail it.
+              // enclosing closing brackets (`)`, `}`) may trail it — plus a
+              // trailing symbolic infix operator that is the last token on the
+              // line, which is an R616 operator continuation (`'{ … } ::` cons'd
+              // with an operand on the next line) and is governed by that rule.
+              val lastSemantic =
+                arr.lastIndexWhere(t => t.kind != Sort.Space && t.kind != Sort.Comment)
               val semanticBefore = firstSemantic >= 0 && firstSemantic < i
               val badAfter =
                 (i + 1 until arr.length).exists: k =>
                   val t = arr(k)
                   t.kind != Sort.Space && t.kind != Sort.Comment
                     && t.text != ")" && t.text != "}" && t.text != "=>"
+                    && !(k == lastSemantic && isSymbolicOperator(t.text))
               if semanticBefore || badAfter then
                 out +=
                   Violation

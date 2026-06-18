@@ -79,8 +79,8 @@ given astShowable: (formatting: Yaml.Formatting) => Yaml.Ast is Showable = yaml 
 
         while i < length && ok do
           val c = string.charAt(i)
-          if !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
-              || (c >= '0' && c <= '9') || c == '_' || c == '-')
+          if !((c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') ||
+            (c >= '0' && c <= '9') || c == '_' || c == '-')
           then ok = false
 
           i += 1

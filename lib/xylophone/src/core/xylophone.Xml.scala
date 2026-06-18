@@ -890,6 +890,7 @@ object Xml extends Tag.Container
 
         XPath.parseStep(segment) match
           case Unset => Unset
+
           case step => step.asInstanceOf[Either[Text, (Text, Int)]] match
             case Left(attrName) =>
               xml match

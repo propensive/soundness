@@ -402,7 +402,9 @@ extension (inline context: StringContext)
   transparent inline def jp: Interpolation = interpolation[JsonPointer](context)
 
 package formatting:
-  given indentedJsonFormatting: Json.Formatting = Json.Formatting(Text("  "), trailingNewline = false)
+  given indentedJsonFormatting: Json.Formatting =
+    Json.Formatting(Text("  "), trailingNewline = false)
+
   given compactJsonFormatting: Json.Formatting = Json.Formatting(Unset, trailingNewline = false)
 
 package discriminables:

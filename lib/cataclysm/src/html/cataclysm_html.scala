@@ -51,5 +51,6 @@ given inlineStyle: (Css.Style is Attributive to Whatwg.Css) = _ -> _.text
 // Import this to make `Tag.foo(…)` check `foo` against the in-scope `Styles`
 // stylesheet, attaching `class="foo"` or `id="foo"` accordingly.
 package cssBindings:
-  inline given checkedBinding: [name <: Label] => NotGiven[name =:= "apply"] => Attribution of name =
+  inline given checkedBinding: [name <: Label] => NotGiven[name =:= "apply"]
+  =>  Attribution of name =
     Attribution(attributeFor[name]).asInstanceOf[Attribution of name]

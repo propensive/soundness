@@ -47,30 +47,38 @@ export aviation.internal.{Date, Year, Day, Anniversary, WorkingDays}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
 package instantDecodables:
-  given iso8601InstantDecodable: Tactic[TimeError] => Instant is Decodable in Text = Iso8601.parse(_)
-  given rfc1123InstantDecodable: Tactic[TimeError] => Instant is Decodable in Text = Rfc1123.parse(_)
+  given iso8601InstantDecodable: Tactic[TimeError] => Instant is Decodable in Text =
+    Iso8601.parse(_)
+
+  given rfc1123InstantDecodable: Tactic[TimeError] => Instant is Decodable in Text =
+    Rfc1123.parse(_)
 
 package dateFormats:
   private given calendar: RomanCalendar = calendars.gregorianCalendar
 
   given europeanDateFormat: Date is Showable =
-    import endianness.littleEndian, numerics.fixedWidthDateNumerics, separators.dotDateSeparator, years.fullYears
+    import endianness.littleEndian, numerics.fixedWidthDateNumerics, separators.dotDateSeparator
+    import years.fullYears
     Date.showable.text(_)
 
   given americanDateFormat: Date is Showable =
-    import endianness.middleEndian, numerics.fixedWidthDateNumerics, separators.slashDateSeparator, years.fullYears
+    import endianness.middleEndian, numerics.fixedWidthDateNumerics, separators.slashDateSeparator
+    import years.fullYears
     Date.showable.text(_)
 
   given unitedKingdomDateFormat: Date is Showable =
-    import endianness.littleEndian, numerics.fixedWidthDateNumerics, separators.slashDateSeparator, years.fullYears
+    import endianness.littleEndian, numerics.fixedWidthDateNumerics, separators.slashDateSeparator
+    import years.fullYears
     Date.showable.text(_)
 
   given southEastAsiaDateFormat: Date is Showable =
-    import endianness.littleEndian, numerics.fixedWidthDateNumerics, separators.hyphenDateSeparator, years.fullYears
+    import endianness.littleEndian, numerics.fixedWidthDateNumerics, separators.hyphenDateSeparator
+    import years.fullYears
     Date.showable.text(_)
 
   given iso8601DateFormat: Date is Showable =
-    import endianness.bigEndian, numerics.fixedWidthDateNumerics, separators.hyphenDateSeparator, years.fullYears
+    import endianness.bigEndian, numerics.fixedWidthDateNumerics, separators.hyphenDateSeparator
+    import years.fullYears
     Date.showable.text(_)
 
   package endianness:
@@ -189,34 +197,41 @@ package dateFormats:
 
 package timeFormats:
   given militaryTimeFormat: Clockface is Showable =
-    import hours.twentyFourHourClock, numerics.fixedWidthTimeNumerics, separators.noneTimeSeparator, specificity.minutesSpecificity
+    import hours.twentyFourHourClock, numerics.fixedWidthTimeNumerics, separators.noneTimeSeparator
+    import specificity.minutesSpecificity
     Clockface.showable.text(_)
 
   given civilianTimeFormat: Clockface is Showable =
-    import hours.twelveHourClock, meridiems.upperMeridiem, numerics.fixedWidthTimeNumerics, separators.colonTimeSeparator
+    import hours.twelveHourClock, meridiems.upperMeridiem, numerics.fixedWidthTimeNumerics
+    import separators.colonTimeSeparator
     import specificity.minutesSpecificity
 
     Clockface.showable.text(_)
 
   given associatedPressTimeFormat: Clockface is Showable =
-    import hours.twelveHourClock, meridiems.lowerPunctuatedMeridiem, numerics.variableWidthTimeNumerics, separators.colonTimeSeparator
+    import hours.twelveHourClock, meridiems.lowerPunctuatedMeridiem
+    import numerics.variableWidthTimeNumerics, separators.colonTimeSeparator
     import specificity.minutesSpecificity
     Clockface.showable.text(_)
 
   given frenchTimeFormat: Clockface is Showable =
-    import hours.twentyFourHourClock, numerics.fixedWidthTimeNumerics, separators.frenchTimeSeparator, specificity.minutesSpecificity
+    import hours.twentyFourHourClock, numerics.fixedWidthTimeNumerics
+    import separators.frenchTimeSeparator, specificity.minutesSpecificity
     Clockface.showable.text(_)
 
   given iso8601TimeFormat: Clockface is Showable =
-    import hours.twentyFourHourSecondsClock, numerics.fixedWidthTimeNumerics, separators.colonTimeSeparator, specificity.secondsSpecificity
+    import hours.twentyFourHourSecondsClock, numerics.fixedWidthTimeNumerics
+    import separators.colonTimeSeparator, specificity.secondsSpecificity
     Clockface.showable.text(_)
 
   given ledgerTimeFormat: Clockface is Showable =
-    import hours.twentyFourHourClock, numerics.fixedWidthTimeNumerics, separators.dotTimeSeparator, specificity.minutesSpecificity
+    import hours.twentyFourHourClock, numerics.fixedWidthTimeNumerics, separators.dotTimeSeparator
+    import specificity.minutesSpecificity
     Clockface.showable.text(_)
 
   given railwayTimeFormat: Clockface is Showable =
-    import hours.twentyFourHourClock, numerics.fixedWidthTimeNumerics, separators.colonTimeSeparator, specificity.minutesSpecificity
+    import hours.twentyFourHourClock, numerics.fixedWidthTimeNumerics, separators.colonTimeSeparator
+    import specificity.minutesSpecificity
     Clockface.showable.text(_)
 
   package meridiems:

@@ -90,7 +90,8 @@ package keyboards:
 
     def process(stream: Stream[Char]): Stream[Int] = stream.map(_.toInt)
 
-  given standardKeyboard: (monitor: Monitor, probate: Probate) => Keyboard.Standard = Keyboard.Standard()
+  given standardKeyboard: (monitor: Monitor, probate: Probate) => Keyboard.Standard =
+    Keyboard.Standard()
 
 // The standard terminal features, each a turn-on/turn-off escape-sequence pair.
 // Import the ones a session should enable (or `terminalFeatures.*` for all);

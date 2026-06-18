@@ -748,7 +748,8 @@ object internal:
   object Attributes:
     val empty: Attributes = IArray.empty[String]
 
-    // `Attributes` is a `Text`-keyed map, so it indexes through the shared `at` (giving `Optional`).
+    // `Attributes` is a `Text`-keyed map, so it indexes through the shared `at` (giving
+    // `Optional`).
     given indexable: Attributes is Indexable:
       type Operand = Text
       type Result = Text
