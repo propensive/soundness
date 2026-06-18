@@ -39,7 +39,7 @@ export
       Io, Line, LineSeparation, load, Loadable, metronome, more, multiplex, Multiplexer,
       multiplexer, Out, parallelMap, Pistol, Pulsar, rate, read, regulate, shred, Spool, spool,
       Readable, Stdio, stream, Streamable, StreamError, StreamOutputStream, strict, take, Tap,
-      Writable, writeTo, Zlib }
+      Writable, writeTo, Zlib, framed, flow }
 
 package stdios:
   export turbulence.stdios.{muteStdio, systemStdio, virtualMachineStdio}

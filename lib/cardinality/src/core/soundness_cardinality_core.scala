@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export cardinality.{NumericRange, ~}
+export cardinality.{NumericRange, force, ~}

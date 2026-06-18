@@ -64,12 +64,46 @@ extension [value](iterable: Iterable[value])
 
       current
 
+  inline def minimize[value2](lambda: value => value2)
+    ( using commensurable: value2 is Commensurable against value2 )
+  :   Optional[value] =
+
+    if iterable.nil then Unset else
+      var current = iterable.head
+      var best = lambda(current)
+
+      iterable.tail.each: element =>
+        val next = lambda(element)
+
+        if next < best then
+          current = element
+          best = next
+
+      current
+
   inline def maximum(using commensurable: value is Commensurable against value): Optional[value] =
     if iterable.nil then Unset else
       var current = iterable.head
 
       iterable.tail.each: element =>
         if element > current then current = element
+
+      current
+
+  inline def maximize[value2](lambda: value => value2)
+    ( using commensurable: value2 is Commensurable against value2 )
+  :   Optional[value] =
+
+    if iterable.nil then Unset else
+      var current = iterable.head
+      var best = lambda(current)
+
+      iterable.tail.each: element =>
+        val next = lambda(element)
+
+        if next > best then
+          current = element
+          best = next
 
       current
 

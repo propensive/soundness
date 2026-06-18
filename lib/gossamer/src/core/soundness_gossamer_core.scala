@@ -42,7 +42,7 @@ export
       RangeError, reverse, Rtl, search, seek, SimpleTExtractor, skip, slices, snake, snip, spaced,
       starts, strip, sub, subscripts, superscripts, sysData, t, tail, text, TextBuilder, Textual,
       tr, trim, txt, uncamel, uncapitalize, unkebab, unsnake, upper, upto, urlDecode,
-      urlEncode, utf16, utf8, where, words, Writing, WritingBuilder }
+      urlEncode, utf16, utf8, where, words, Writing, WritingBuilder, a, justify, punch }
 
 package decimalConverters:
   export gossamer.decimalConverters.javaDecimalConverter

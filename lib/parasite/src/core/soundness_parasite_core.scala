@@ -39,7 +39,7 @@ export
       Interceptable, Monitor, monitor, Observation, Os, Perseverance, PlatformSupervisor, Promise,
       relent, retry, RetryError, Shutdown, sleep, snooze, supervise, Supervisor, Task, task,
       Tenacity, Threading, Timeout, Transgression, Trap, VirtualSupervisor, Worker, AsyncTactic,
-      Remedy }
+      Remedy, concurrent }
 
 package threading:
   export parasite.threading.{adaptiveThreading, platformThreading, virtualThreading}

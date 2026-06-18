@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export adversaria.{Annotated, Dereferenceable, name}
+export adversaria.{Annotated, Dereferenceable, membersOfType, name}
