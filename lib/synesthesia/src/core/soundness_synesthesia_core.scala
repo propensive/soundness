@@ -34,5 +34,5 @@ package soundness
 
 export
   synesthesia
-  . { about, Agent, Discourse, Human, Mcp, McpClient, McpError, McpServer, McpSession,
-      McpSpecification, prompt, resource, title, tool, ui }
+  . { about, agent, Agent, Discourse, human, Human, Mcp, McpClient, McpError, McpServer,
+      McpSession, McpSpecification, prompt, resource, title, tool, ui }
