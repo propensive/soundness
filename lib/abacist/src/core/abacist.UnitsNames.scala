@@ -34,7 +34,7 @@ package abacist
 
 import anticipation.*
 
-trait UnitsNames[units <: Tuple]:
+trait UnitsNames[quanta]:
   def prefix: Text = "".tt
   def separator: Text = " ".tt
   def units(): List[Text]

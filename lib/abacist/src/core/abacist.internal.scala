@@ -48,10 +48,10 @@ import vacuous.*
 object internal:
   import quantitative.internal.*
 
-  def quanta[units <: Tuple: Type](values: Expr[Seq[Int]]): Macro[Quanta[units]] =
-    val inputs: List[Expr[Int]] = values.absolve match
-      case Varargs(values) => values.to(List).reverse
-
+  // Encodes the (reversed, smallest-first) unit values against the (reversed, smallest-first)
+  // multipliers into the packed `Long` representation.
+  private def encode(using Quotes)(multipliers: List[Multiplier], values: List[Expr[Int]])
+  :   Expr[Long] =
 
     def recur(multipliers: List[Multiplier], values: List[Expr[Int]], expr: Expr[Long])
     :   Expr[Long] =
@@ -83,14 +83,39 @@ object internal:
 
             case Nil => halt:
               m"""
-                ${inputs.length} unit values were provided, but this Quanta only has
-                ${multipliers.length} units
+                ${values.length} unit values were provided, but this Quanta has fewer units
               """
 
-    '{Quanta.fromLong[units](${recur(multipliers[units].reverse, inputs, '{0L})})}
+    recur(multipliers, values, '{0L})
 
 
-  def describeQuanta[units <: Tuple: Type](count: Expr[Quanta[units]])
+  private def inputsOf(using Quotes)(values: Expr[Seq[Int]]): List[Expr[Int]] =
+    values.absolve match
+      case Varargs(values) => values.to(List).reverse
+
+
+  // Construction (`Quanta(...)`): `base` and `form` come from the expected type, so the cascade
+  // is built directly from them rather than by decomposing an opaque `Quanta` type (whose parent
+  // would dealias to `Long` within this scope).
+  def assembleParts[base <: AnyUnit: Type, form <: Divisions: Type](values: Expr[Seq[Int]])
+  :   Macro[Quanta[base] { type Form = form }] =
+
+    import quotes.reflect.*
+
+    // A bare single-unit `Quanta` (no `Form` in the expected type) leaves `form` unconstrained,
+    // so it is inferred as `Nothing`, `Any`, or its bound `Divisions`; either way the form is
+    // empty. (An `=:=` check is needed because the `'[Any]` quote pattern would match every type.)
+    val formRepr = TypeRepr.of[form]
+    val empty = List(TypeRepr.of[Nothing], TypeRepr.of[Any], TypeRepr.of[Divisions])
+    val formUnits = if empty.exists(_ =:= formRepr) then Nil else elements(formRepr)
+
+    val multipliers = multipliersOf(TypeRepr.of[base] :: formUnits)
+    val long = encode(multipliers.reverse, inputsOf(values))
+
+    '{Quanta.fromLong[Quanta[base] { type Form = form }]($long)}
+
+
+  def describeQuanta[quanta: Type](count: Expr[quanta])
   :   Macro[ListMap[Text, Long]] =
 
     def recur(slices: List[Multiplier], expr: Expr[ListMap[Text, Long]])
@@ -112,81 +137,129 @@ object internal:
                       ( ${unitPower.ref.designation}+${Expr(power)}.asInstanceOf[Text], $value ) )
                 } )
 
-    recur(multipliers[units], '{ListMap()})
+    recur(multipliers[quanta], '{ListMap()})
 
 
-  def multiplyQuanta[units <: Tuple: Type]
-    ( count: Expr[Quanta[units]], multiplier: Expr[Double], division: Boolean )
+  def multiplyQuanta[quanta: Type]
+    ( count: Expr[quanta], multiplier: Expr[Double], division: Boolean )
   :   Macro[Any] =
 
-    if division then '{Quanta.fromLong[units](($count.long/$multiplier + 0.5).toLong)}
-    else '{Quanta.fromLong[units](($count.long*$multiplier + 0.5).toLong)}
+    val long = '{$count.asInstanceOf[Long]}
+
+    if division then '{Quanta.fromLong[quanta](($long/$multiplier + 0.5).toLong)}
+    else '{Quanta.fromLong[quanta](($long*$multiplier + 0.5).toLong)}
 
 
-  def toQuantity[units <: Tuple: Type](count: Expr[Quanta[units]]): Macro[Any] =
-    val lastUnit = multipliers[units].last
+  def toQuantity[quanta: Type](count: Expr[quanta]): Macro[Any] =
+    val lastUnit = multipliers[quanta].last
     val quantityUnit = lastUnit.unitPower.ref.dimensionRef.principal
     val ratioExpr = ratio(lastUnit.unitPower.ref, quantityUnit, lastUnit.unitPower.power)
 
     quantityUnit.power(1).asType.absolve match
       case '[type quantity <: Measure; quantity] =>
-        '{Quantity[quantity]($count.long*$ratioExpr)}
+        '{Quantity[quantity]($count.asInstanceOf[Long]*$ratioExpr)}
 
 
-  def fromQuantity[quantity <: Measure: Type, units <: Tuple: Type]
+  def fromQuantity[quantity <: Measure: Type, result: Type]
     ( quantity: Expr[Quantity[quantity]] )
-  :   Macro[Quanta[units]] =
+  :   Macro[result] =
 
     import quotes.reflect.*
 
-    val lastUnit = multipliers[units].last.unitPower
+    val lastUnit = multipliers[result].last.unitPower
     val quantityUnit = readUnitPower(TypeRepr.of[quantity].dealias)
     val ratioExpr = ratio(quantityUnit.ref, lastUnit.ref, lastUnit.power)
 
-    '{($quantity.value*$ratioExpr + 0.5).toLong.asInstanceOf[Quanta[units]]}
+    '{($quantity.value*$ratioExpr + 0.5).toLong.asInstanceOf[result]}
 
 
-  def get[units <: Tuple: Type, unit <: Units[1, ? <: Dimension]: Type](value: Expr[Quanta[units]])
+  def get[quanta: Type, unit <: Units[1, ? <: Dimension]: Type]
+    ( value: Expr[quanta] )
   :   Macro[Int] =
 
     import quotes.reflect.*
 
     val lookupUnit = readUnitPower(TypeRepr.of[unit])
 
-    val multiplier: Multiplier = multipliers[units].where(_.unitPower == lookupUnit).or:
+    val multiplier: Multiplier = multipliers[quanta].where(_.unitPower == lookupUnit).or:
       halt(557, m"the Quanta does not include this unit")
 
-    '{(($value.long/${Expr(multiplier.subdivision)})%${Expr(multiplier.max)}).toInt}
+    '{(($value.asInstanceOf[Long]/${Expr(multiplier.subdivision)})%${Expr(multiplier.max)}).toInt}
+
+
+  def collapse[quanta: Type](count: Expr[quanta], length: Expr[Int]): Macro[Any] =
+    import quotes.reflect.*
+
+    val drop = length.valueOrAbort
+    val (parent, formElements) = decompose(TypeRepr.of[quanta])
+
+    if drop < 0 || drop > formElements.length then halt:
+      m"""
+        cannot collapse $drop units; this Quanta has ${formElements.length} divisions above its base
+        unit
+      """
+
+    val consCtor = TypeRepr.of[Any *: EmptyTuple].absolve match
+      case AppliedType(tycon, _) => tycon
+
+    def tupleType(elements: List[TypeRepr]): TypeRepr =
+      elements.foldRight(TypeRepr.of[EmptyTuple]): (head, tail) =>
+        consCtor.appliedTo(List(head, tail))
+
+    val remaining = formElements.dropRight(drop)
+
+    val resultType =
+      if remaining.isEmpty then parent
+      else Refinement(parent, "Form", TypeBounds(tupleType(remaining), tupleType(remaining)))
+
+    resultType.asType.absolve match
+      case '[result] => '{Quanta.fromLong[result]($count.asInstanceOf[Long])}
 
 
   private case class Multiplier(unitPower: UnitPower, subdivision: Int, max: Int)
 
-  private def multipliers[units: Type](using Quotes): List[Multiplier] =
+  private def elements(using Quotes)(tpe: quotes.reflect.TypeRepr): List[quotes.reflect.TypeRepr] =
     import quotes.reflect.*
 
-
-    def untuple[tuple: Type](dimension: Optional[DimensionRef], result: List[UnitPower])
-    :   List[UnitPower] =
-
-      TypeRepr.of[tuple].dealias.asType match
-        case '[head *: tail] =>
-          val unitPower = readUnitPower(TypeRepr.of[head])
-
-          dimension.let: current =>
-            if unitPower.ref.dimensionRef != current
-            then halt:
-              m"""
-                the Quanta type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and
-                ${current.name}
-              """
-
-          untuple[tail](unitPower.ref.dimensionRef, unitPower :: result)
-
-        case _ =>
-          result
+    tpe.dealias.asType match
+      case '[EmptyTuple]   => Nil
+      case '[head *: tail] => TypeRepr.of[head] :: elements(TypeRepr.of[tail])
+      case _               => List(tpe)
 
 
-    val cascade: List[UnitPower] = untuple[units](Unset, Nil)
+  private def decompose(using Quotes)(repr: quotes.reflect.TypeRepr)
+  :   (quotes.reflect.TypeRepr, List[quotes.reflect.TypeRepr]) =
+
+    import quotes.reflect.*
+
+    repr.dealias match
+      case Refinement(parent, "Form", info) =>
+        val form = info match
+          case TypeBounds(_, hi) => hi
+          case other             => other
+
+        (parent, elements(form))
+
+      // An unreduced `prepositional.in[Quanta[base], form]` applied alias (the `Quanta` opaque
+      // can dealias to `Long` here, so the refinement is not always recovered).
+      case AppliedType(_, List(parent, form)) =>
+        (parent, elements(form))
+
+      case other =>
+        (other, Nil)
+
+
+  // Computes the `Multiplier`s from the units in smallest-to-largest (base-first) order.
+  private def multipliersOf(using Quotes)(units: List[quotes.reflect.TypeRepr]): List[Multiplier] =
+    val cascade: List[UnitPower] = units.map(readUnitPower)
+    val dimension = cascade.head.ref.dimensionRef
+
+    cascade.tail.foreach: unitPower =>
+      if unitPower.ref.dimensionRef != dimension then halt:
+        m"""
+          the Quanta type incorrectly mixes units of ${unitPower.ref.dimensionRef.name} and
+          ${dimension.name}
+        """
 
     def recur(todo: List[UnitPower], units: List[Multiplier] = Nil): List[Multiplier] = todo match
       case Nil => units
@@ -200,3 +273,17 @@ object internal:
             Multiplier(head, (value + 0.5).toInt, value2.let(_.toInt).or(Int.MaxValue)) :: units )
 
     recur(cascade)
+
+
+  private def multipliers[quanta: Type](using Quotes): List[Multiplier] =
+    import quotes.reflect.*
+
+    val (parent, formElements) = decompose(TypeRepr.of[quanta])
+
+    // Match the application directly without dealiasing: the `Quanta` opaque type can dealias
+    // to `Long` in this scope, which would discard the base unit.
+    val base = parent match
+      case AppliedType(_, List(baseRepr)) => baseRepr
+      case _                              => halt(m"this is not a valid Quanta type")
+
+    multipliersOf(base :: formElements)

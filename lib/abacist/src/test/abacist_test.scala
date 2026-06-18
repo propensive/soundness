@@ -39,31 +39,38 @@ given decimalizer: Decimalizer = Decimalizer(3)
 object Tests extends Suite(m"Abacist Tests"):
   def run(): Unit =
     suite(m"Quanta tests"):
-      type Height = (Feet[1], Inches[1])
+      type Height = Quanta[Inches[1]] in (Feet[1])
 
       test(m"Access seconds in an HMS time"):
-        val hmsTime = Quanta[TimeSeconds](27, 18, 9)
+        val hmsTime: TimeSeconds = Quanta(27, 18, 9)
         hmsTime[Seconds]
       . assert(_ == 9)
 
       test(m"Access minutes in an HMS time"):
-        val hmsTime = Quanta[TimeSeconds](27, 18, 9)
+        val hmsTime: TimeSeconds = Quanta(27, 18, 9)
         hmsTime[Minutes]
       . assert(_ == 18)
 
       test(m"Access hours in an HMS time"):
-        val hmsTime = Quanta[TimeSeconds](27, 18, 9)
+        val hmsTime: TimeSeconds = Quanta(27, 18, 9)
         hmsTime[Hours]
       . assert(_ == 27)
 
+      type ImperialDistance = Quanta[Inches[1]] in (Feet[1], Yards[1], Miles[1])
+
       test(m"Access inches in an imperial distance"):
-        val imperialDistance = Quanta[(Miles[1], Yards[1], Feet[1], Inches[1])](1800, 4, 2, 11)
+        val imperialDistance: ImperialDistance = Quanta(1800, 4, 2, 11)
         imperialDistance[Feet]
       . assert(_ == 2)
 
       test(m"Units of different dimensions cannot be mixed"):
         demilitarize:
-          Quanta[(Miles[1], Yards[1], Seconds[1], Inches[1])](1, 2, 3)
+          (Quanta(1, 2, 3): Quanta[Inches[1]] in (Seconds[1], Yards[1], Miles[1]))
+      . assert(_.nonEmpty)
+
+      test(m"A non-unit base is rejected by the type bound"):
+        demilitarize:
+          val bad: Quanta[String] = ???
       . assert(_.nonEmpty)
 
       test(m"Convert a length to a Quanta"):
@@ -72,7 +79,7 @@ object Tests extends Suite(m"Abacist Tests"):
         (count[Feet], count[Inches])
       . assert(_ == (6, 9))
 
-      type Weight = (Stones[1], Pounds[1], Ounces[1])
+      type Weight = Quanta[Ounces[1]] in (Pounds[1], Stones[1])
 
       test(m"Convert a mass Quantity to a Quanta"):
         val weight: Quantity[Kilograms[1]] = 20.0*Kilo(Gram)
@@ -81,112 +88,128 @@ object Tests extends Suite(m"Abacist Tests"):
       . assert(_ == (3, 2, 1))
 
       test(m"Convert a Quanta to a Quantity"):
-        val weight: Quanta[Weight] = Quanta(5, 6)
+        val weight: Weight = Quanta(5, 6)
         weight.quantity
       . assert(_ == 2.438057*Kilo(Gram))
 
       test(m"Convert a Quanta to a Quantity in pounds"):
-        val weight: Quanta[Weight] = Quanta(5, 6)
+        val weight: Weight = Quanta(5, 6)
         weight.quantity.in[Pounds]
       . assert(_ == 5.375*Pound)
 
       test(m"Add two Quantas"):
-        val weight: Quanta[Weight] = Quanta(12, 9)
-        val sum: Quanta[Weight] = weight + Quanta[Weight](1)
+        val weight: Weight = Quanta(12, 9)
+        val sum: Weight = weight + Quanta(1)
         (sum[Stones], sum[Pounds], sum[Ounces])
       . assert(_ == (0, 12, 10))
 
       test(m"Add two Quantas 2"):
-        val weight: Quanta[Weight] = Quanta(12, 9)
-        val sum: Quanta[Weight] = weight + Quanta[Weight](2)
+        val weight: Weight = Quanta(12, 9)
+        val sum: Weight = weight + Quanta(2)
         (sum[Stones], sum[Pounds], sum[Ounces])
       . assert(_ == (0, 12, 11))
 
       test(m"Add two Quantas 3"):
-        val weight: Quanta[Weight] = Quanta(12, 9)
-        val sum: Quanta[Weight] = weight + Quanta[Weight](5)
+        val weight: Weight = Quanta(12, 9)
+        val sum: Weight = weight + Quanta(5)
         (sum[Stones], sum[Pounds], sum[Ounces])
       . assert(_ == (0, 12, 14))
 
       test(m"Add two Quantas 4"):
-        val weight: Quanta[Weight] = Quanta(12, 9)
-        val sum: Quanta[Weight] = weight + Quanta[Weight](7)
+        val weight: Weight = Quanta(12, 9)
+        val sum: Weight = weight + Quanta(7)
         (sum[Stones], sum[Pounds], sum[Ounces])
       . assert(_ == (0, 13, 0))
 
       test(m"Add two Quantas 5"):
-        val weight: Quanta[Weight] = Quanta(12, 9)
-        val sum: Quanta[Weight] = weight + Quanta[Weight](8)
+        val weight: Weight = Quanta(12, 9)
+        val sum: Weight = weight + Quanta(8)
         (sum[Stones], sum[Pounds], sum[Ounces])
       . assert(_ == (0, 13, 1))
 
       test(m"Subtract two Quantas 1"):
-        val weight: Quanta[Weight] = Quanta(12, 9)
-        val weight2: Quanta[Weight] = Quanta(0, 2)
+        val weight: Weight = Quanta(12, 9)
+        val weight2: Weight = Quanta(0, 2)
         val result = weight - weight2
         (result[Stones], result[Pounds], result[Ounces])
       . assert(_ == (0, 12, 7))
 
       test(m"Subtract two Quantas 2"):
-        val weight: Quanta[Weight] = Quanta(12, 9)
-        val weight2: Quanta[Weight] = Quanta(0, 2)
+        val weight: Weight = Quanta(12, 9)
+        val weight2: Weight = Quanta(0, 2)
         val result = weight2 - weight
         (result[Stones], result[Pounds], result[Ounces])
       . assert(_ == (0, -12, -7))
 
       test(m"Multiply a Quanta by a double"):
-        val weight: Quanta[Weight] = Quanta(12, 9)
+        val weight: Weight = Quanta(12, 9)
         val result = weight*2.5
         (result[Stones], result[Pounds], result[Ounces])
       . assert(_ == (2, 3, 7))
 
       test(m"Adding with double carry"):
-        val weight: Quanta[Weight] = Quanta(100, 13, 15)
-        val sum: Quanta[Weight] = weight + Quanta[Weight](1)
+        val weight: Weight = Quanta(100, 13, 15)
+        val sum: Weight = weight + Quanta(1)
         (sum[Stones], sum[Pounds], sum[Ounces])
       . assert(_ == (101, 0, 0))
 
       test(m"Collapse a weight value"):
-        val weight: Quanta[Weight] = Quanta(2, 3, 4)
+        val weight: Weight = Quanta(2, 3, 4)
         val weight2 = weight.collapse(1)
         (weight2[Pounds], weight2[Ounces])
       . assert(_ == (31, 4))
 
       test(m"Collapse a weight value 2"):
-        val weight: Quanta[Weight] = Quanta(2, 3, 4)
+        val weight: Weight = Quanta(2, 3, 4)
         val weight2 = weight.collapse(2)
         weight2[Ounces]
       . assert(_ == 500)
 
       test(m"Cannot collapse beyond last unit"):
         demilitarize:
-          val weight: Quanta[Weight] = Quanta(2, 3, 4)
+          val weight: Weight = Quanta(2, 3, 4)
           weight.collapse(3)
       . assert(_.length == 1)
 
+      suite(m"Shared base-unit supertype"):
+        type Hms = Quanta[Seconds[1]] in (Minutes[1], Hours[1])
+        type Ms = Quanta[Seconds[1]] in (Minutes[1])
+
+        test(m"Differently-divided quanta share a common base-unit supertype"):
+          val a: Hms = Quanta(0, 1, 0)
+          val b: Ms = Quanta(0, 30)
+          List[Quanta[Seconds[1]]](a, b).length
+        . assert(_ == 2)
+
+        test(m"Quanta with the same base unit but different divisions are comparable"):
+          val a: Quanta[Seconds[1]] = (Quanta(0, 1, 0): Hms)
+          val b: Quanta[Seconds[1]] = (Quanta(0, 30): Ms)
+          a > b
+        . assert(_ == true)
+
       suite(m"Showing Quanta values"):
         test(m"Show a single-unit weight"):
-          Quanta[Weight](2).show
+          (Quanta(2): Weight).show
         . assert(_ == t"2oz")
 
         test(m"Show a more complex weight"):
-          Quanta[Weight](3, 2).show
+          (Quanta(3, 2): Weight).show
         . assert(_ == t"3lb 2oz")
 
         test(m"Show a weight of three parts"):
-          Quanta[Weight](1, 3, 2).show
+          (Quanta(1, 3, 2): Weight).show
         . assert(_ == t"1st 3lb 2oz")
 
         test(m"Show with custom unit rendering"):
           given UnitsNames[Height] = () => List(t"'", t"\"")
-          Quanta[Height](5, 9).show
+          (Quanta(5, 9): Height).show
         . assert(_ == t"5' 9\"")
 
       suite(m"Aggregate tests"):
         test(m"Total of several values"):
-          List[Quanta[Weight]](Quanta(10), Quanta(1, 6), Quanta(2, 4, 1)).total
-        . assert(_ == Quanta(2, 6, 1))
+          List[Weight](Quanta(10), Quanta(1, 6), Quanta(2, 4, 1)).total
+        . assert(_ == (Quanta(2, 6, 1): Weight))
 
         test(m"Mean of several values"):
-          List[Quanta[Weight]](Quanta(10), Quanta(1, 6), Quanta(2, 4, 1)).mean
-        . assert(_ == Quanta(11, 6))
+          List[Weight](Quanta(10), Quanta(1, 6), Quanta(2, 4, 1)).mean
+        . assert(_ == (Quanta(11, 6): Weight))

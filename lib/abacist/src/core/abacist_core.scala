@@ -34,14 +34,21 @@ package abacist
 
 import scala.quoted.*
 
+import prepositional.*
 import quantitative.*
 
 export protointernal.Quanta
 
-type TimeMinutes = (Hours[1], Minutes[1])
-type TimeSeconds = (Hours[1], Minutes[1], Seconds[1])
+// The bound for a `Quanta` base unit: a single unit raised to any power.
+type AnyUnit = Units[?, ?]
+
+// The bound for a `Quanta` `Form`: a tuple of divisions, or a single division.
+type Divisions = Tuple | AnyUnit
+
+type TimeMinutes = Quanta[Minutes[1]] in (Hours[1])
+type TimeSeconds = Quanta[Seconds[1]] in (Minutes[1], Hours[1])
 
 extension [units <: Measure](inline quantity: Quantity[units])
-  inline def quanta[count <: Tuple]: Quanta[count] =
-    ${abacist.internal.fromQuantity[units, count]('quantity)}
+  inline def quanta[result]: result =
+    ${abacist.internal.fromQuantity[units, result]('quantity)}
 

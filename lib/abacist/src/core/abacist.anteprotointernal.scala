@@ -36,13 +36,13 @@ import hypotenuse.*
 
 trait anteprotointernal:
   trait Quanta2:
-    inline given commensurable: [units <: Tuple] => Quanta[units] is Commensurable:
-      type Contrast = Quanta[units]
+    given commensurable: [base <: AnyUnit, quanta <: Quanta[base]] => quanta is Commensurable:
+      type Contrast = quanta
 
 
       inline def compare
-        ( inline left:        Quanta[units],
-          inline right:       Quanta[units],
+        ( inline left:        quanta,
+          inline right:       quanta,
           inline strict:      Boolean,
           inline greaterThan: Boolean )
       :   Boolean =
