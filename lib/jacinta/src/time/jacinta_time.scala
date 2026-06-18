@@ -35,7 +35,6 @@ package jacinta
 import anticipation.*
 import aviation.*
 import contingency.*
-import prepositional.*
 
 package encodables:
   given instantJsonEncodable: Instant is Json.Encodable =

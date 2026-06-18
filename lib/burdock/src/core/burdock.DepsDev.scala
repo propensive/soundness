@@ -40,7 +40,6 @@ import fulminate.*
 import gossamer.*
 import jacinta.*
 import monotonous.*, alphabets.base64Standard, alphabets.hexLowerCase
-import prepositional.*
 import telekinesis.*
 import urticose.*
 import vacuous.*

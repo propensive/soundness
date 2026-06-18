@@ -773,6 +773,8 @@ object Tests extends Suite(m"Stratiform Tests"):
       . assert(_ == TelError.Reason.DuplicateLayerName)
 
     suite(m"Dynamic access"):
+      import dynamicTelAccess.enabled
+
       test(m"select-dynamic on encoded case class"):
         val doc = Tests.Person(t"Alice", 30).encode
         doc.name.as[Text]

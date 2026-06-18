@@ -43,7 +43,6 @@ import rudiments.*
 import vacuous.*
 
 import strategies.throwUnsafely
-import errorDiagnostics.stackTracesDiagnostics
 import Tel.given
 
 // NB: `dynamicTelAccess.enabled` is deliberately *not* imported here — verified
@@ -66,10 +65,10 @@ enum Tint derives CanEqual:
 object Tint:
   given encodable: Tint is Encodable in Text = _.toString.tt.lower
 
-def keywords(struct: Tels.Struct): List[Text] = struct.members.to(List).collect:
-  case field: Tels.Field => field.keyword
-
 object VerifyTests extends Suite(m"Stratiform verify tests"):
+  def keywords(struct: Tels.Struct): List[Text] = struct.members.to(List).collect:
+    case field: Tels.Field => field.keyword
+
   def run(): Unit =
     suite(m"Runtime verification"):
       test(m"A conformant value verifies and still decodes"):

@@ -98,7 +98,7 @@ private[bitumen] object TarFilesystem:
             Tactic[TarError] )
   :   Unit =
 
-    (entry: @unchecked) match
+    (entry: @scala.unchecked) match
       case f: Tar.Entry.File =>
         val path = absolutize(root, f.path)
         jnf.Files.createDirectories(path.javaPath.getParent)
@@ -188,31 +188,31 @@ private[bitumen] object TarFilesystem:
     . mitigate(text.decode[Relative on Tar])
 
   private def readMode(javaPath: jnf.Path)(using Tactic[IoError]): UnixMode =
-    try jnf.Files.getAttribute(javaPath, "unix:mode").nn match
-      case n: java.lang.Integer => UnixMode.from(n & 0xfff)
-      case _                     => UnixMode()
+    try (jnf.Files.getAttribute(javaPath, "unix:mode").nn: Any) match
+      case n: Int => UnixMode.from(n & 0xfff)
+      case _      => UnixMode()
     catch
       case _: UnsupportedOperationException                => UnixMode()
       case _: jnf.attribute.UserPrincipalNotFoundException => UnixMode()
 
   private def readOwner(javaPath: jnf.Path)(using Tactic[IoError]): (Int, Int) =
     try
-      val uid = jnf.Files.getAttribute(javaPath, "unix:uid").nn match
-        case n: java.lang.Integer => n
-        case _                     => 0
+      val uid = (jnf.Files.getAttribute(javaPath, "unix:uid").nn: Any) match
+        case n: Int => n
+        case _      => 0
 
-      val gid = jnf.Files.getAttribute(javaPath, "unix:gid").nn match
-        case n: java.lang.Integer => n
-        case _                     => 0
+      val gid = (jnf.Files.getAttribute(javaPath, "unix:gid").nn: Any) match
+        case n: Int => n
+        case _      => 0
 
       (uid, gid)
     catch case _: UnsupportedOperationException => (0, 0)
 
   private def readDeviceNumbers(javaPath: jnf.Path)(using Tactic[IoError]): (Int, Int) =
     try
-      val rdev = jnf.Files.getAttribute(javaPath, "unix:rdev").nn match
-        case n: java.lang.Long => n
-        case _                  => 0L
+      val rdev = (jnf.Files.getAttribute(javaPath, "unix:rdev").nn: Any) match
+        case n: Long => n
+        case _       => 0L
 
       val major = ((rdev >> 8) & 0xff).toInt
       val minor = (rdev & 0xff).toInt

@@ -224,7 +224,7 @@ final class ParagraphBuilder(val line: Ordinal) extends LeafBuilder:
           pos = lr.end
           if pos < n && joinedText.charAt(pos) == '\n' then pos += 1
 
-        case Unset =>
+        case _ =>
           keepGoing = false
 
     linkRefEnd = pos

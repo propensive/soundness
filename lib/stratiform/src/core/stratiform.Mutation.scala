@@ -261,7 +261,7 @@ object Mutation:
         IArray(target.copy(children = updated))
 
       case Op.Insert(_, _) | Op.ReorderWithinGroup(_, _, _, _) | Op.ReorderGroups(_, _, _)
-          | Op.ResizeTabulation(_, _) =>
+        | Op.ResizeTabulation(_, _) =>
         // unreachable: handled in transform's container-mode arm
         abort(MutationError(Reason.PointerNotFound))
 

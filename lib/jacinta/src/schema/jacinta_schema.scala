@@ -87,7 +87,7 @@ private def conform(schema: JsonSchema, ast: Json.Ast): Unit raises JsonError =
 
   if ast.isAbsent then (if !schema.optional then raise(JsonError(Reason.Absent))) else schema match
     case obj: JsonSchema.Object => obj.oneOf match
-      case variants: List[JsonSchema] @unchecked =>
+      case variants: List[JsonSchema] @scala.unchecked =>
         if
           !variants.exists: variant =>
             safely(conform(variant, ast)).present

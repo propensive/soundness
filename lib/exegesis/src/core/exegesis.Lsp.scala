@@ -38,7 +38,6 @@ import denominative.*
 import gossamer.*
 import jacinta.*
 import obligatory.*
-import prepositional.*
 import vacuous.*
 
 object Lsp:

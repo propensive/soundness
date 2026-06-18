@@ -197,7 +197,7 @@ object Ansi extends Ansi2:
     def initial: State = State()
 
     def parse(state: State, text: Text): State =
-      state.last match
+      (state.last: @scala.unchecked) match
         case Unset =>
           closures(state, text)
 
