@@ -39,7 +39,6 @@ import strategies.throwUnsafely
 import formatting.compactJsonFormatting
 
 import discriminables.jsonByKindDiscriminable
-import autopsies.contrastExpectations
 import errorDiagnostics.stackTracesDiagnostics
 
 case class Foo(x: Int, y: Text) derives CanEqual
@@ -1109,7 +1108,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       test(m"Capture top-level Json"):
         val scrutinee: Json = t"""{"k": 1}""".read[Json]
 
-        scrutinee match
+        (scrutinee: @unchecked) match
           case j"$x" => x
       . assert(_ == t"""{"k": 1}""".read[Json])
 

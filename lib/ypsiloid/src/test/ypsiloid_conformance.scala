@@ -50,7 +50,7 @@ import java.nio.file.{Files, Path, Paths}
 import scala.jdk.CollectionConverters.*
 
 import anticipation.Text
-import contingency.{Tactic, strategies}
+import contingency.strategies
 import hieroglyph.charEncoders
 import jacinta.Json
 import turbulence.read
@@ -102,7 +102,7 @@ object Conformance:
     else "/tmp/yaml-test-suite"
 
   def available(rootStr: String = suitePath): Boolean =
-    Files.isDirectory(Paths.get(rootStr).nn)
+    Files.isDirectory(Paths.get(rootStr))
 
   def loadTestCases(rootStr: String = suitePath): List[TestCase] =
     val root = Paths.get(rootStr).nn
@@ -308,7 +308,7 @@ object Conformance:
 
       case Outcome.Passed => ()
 
-  private def yamlAstToJson(yaml: Yaml.Ast): Json = yaml match
+  private def yamlAstToJson(yaml: Yaml.Ast): Json = (yaml: @unchecked) match
     case Yaml.Ast.Null         => Json.ast(Json.Ast(Json.JsonNull))
     case Yaml.Ast.Bool(b)      => Json.ast(Json.Ast(b))
     case Yaml.Ast.Integer(n)   => Json.ast(Json.Ast(n))
@@ -348,7 +348,7 @@ object Conformance:
       // Render as a flat JSON array.
       nums.iterator.map(d => renderAny(d)).mkString("[", ",", "]")
 
-    case items: IArray[?] =>
+    case items: IArray[?] @unchecked =>
       // JSON objects and (mixed-type) arrays share the same
       // `IArray[Any]` runtime representation in jacinta: even length is
       // an object (alternating key, value, …), odd length is an array

@@ -346,7 +346,7 @@ def cli[bus <: Matchable](using executive: Executive)
       case _ =>
         Unset
 
-    message match
+    (message: @unchecked) match
       case Unset =>
         Log.warn(DaemonLogEvent.UnrecognizedMessage)
         connection.close()

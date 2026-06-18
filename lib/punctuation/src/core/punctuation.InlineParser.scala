@@ -125,7 +125,7 @@ object InlineParser:
                 pending.append(e.decoded)
                 i = e.end
 
-              case Unset =>
+              case _ =>
                 pending.append('&')
                 i += 1
 
@@ -136,7 +136,7 @@ object InlineParser:
                 list.append(CodeData(cs.content))
                 i = cs.end
 
-              case Unset =>
+              case _ =>
                 // No matching closer: emit the entire opening backtick run as
                 // literal text (per CommonMark §6.1) so the next iteration
                 // doesn't retry parsing inside the run.
@@ -162,14 +162,14 @@ object InlineParser:
 
                 i = al.end
 
-              case Unset =>
+              case _ =>
                 InlineSupport.parseRawHtml(s, i, end) match
                   case h: InlineSupport.HtmlInlineMatch =>
                     flushPending()
                     list.append(HtmlInlineData(h.html))
                     i = h.end
 
-                  case Unset =>
+                  case _ =>
                     pending.append('<')
                     i += 1
 
@@ -259,12 +259,6 @@ object InlineParser:
     val afterClose = closePos + 1
 
     tryMatchLink(s, afterClose, end, entry, refs) match
-      case Unset =>
-        // No link match: leave bracket node in place (its data renders as the
-        // literal `[` or `![`); emit `]` as text
-        list.append(TextData(t"]"))
-        afterClose
-
       case lm: LinkResolution =>
         // Process emphasis in the bracket content (between bracket node and
         // current end of list), so emphasis WITHIN the link is wrapped first.
@@ -294,6 +288,13 @@ object InlineParser:
 
         lm.end
 
+      case _ =>
+        // No link match: leave bracket node in place (its data renders as the
+        // literal `[` or `![`); emit `]` as text
+        list.append(TextData(t"]"))
+        afterClose
+
+
   private case class LinkResolution(dest: Text, title: Optional[Text], end: Int)
 
   private def tryMatchLink
@@ -309,10 +310,8 @@ object InlineParser:
     // as a shortcut reference if defined elsewhere).
     if after < end && s.charAt(after) == '(' then
       InlineSupport.parseInlineLinkBody(s, after, end) match
-        case b: InlineSupport.InlineLinkBody =>
-          return LinkResolution(b.dest, b.title, b.end)
-
-        case Unset => ()  // fall through
+        case b: InlineSupport.InlineLinkBody => return LinkResolution(b.dest, b.title, b.end)
+        case _                               => ()  // fall through
 
     // 2. Reference forms
     val bracketContent = Text(s.substring(entry.sourceStart, after - 1).nn)
@@ -331,7 +330,8 @@ object InlineParser:
           // shortcut. The full-ref `[label]` is consumed by this attempt.
           return Unset
 
-        case Unset => ()  // fall through to shortcut
+        case _ =>
+          ()  // fall through to shortcut
 
     // 3. Shortcut reference
     val resolved = refs.lookup(bracketContent)

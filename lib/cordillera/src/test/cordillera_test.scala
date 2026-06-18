@@ -252,7 +252,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           val hpack = Hpack()
           var continue = true
 
-          while continue do reader.next() match
+          while continue do (reader.next(): @unchecked) match
             case Unset        => continue = false
             case f: Frame     => f match
               case Frame.Settings(_, false) =>

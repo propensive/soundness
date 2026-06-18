@@ -127,11 +127,8 @@ private[cataclysm] object SelectorParser:
 
       while continue do
         combinatorBetween() match
-          case Unset =>
-            continue = false
-
-          case comb: Combinator =>
-            rest.append((comb, compound()))
+          case comb: Combinator => rest.append((comb, compound()))
+          case _                => continue = false
 
       Selector(lead, head, rest.toList)
 
@@ -171,8 +168,8 @@ private[cataclysm] object SelectorParser:
       val parts = scala.collection.mutable.ListBuffer[Simple]()
 
       typeOrUniversal() match
-        case Unset          => ()
         case simple: Simple => parts.append(simple)
+        case _              => ()
 
       var continue = true
 
@@ -551,4 +548,3 @@ private[cataclysm] object SelectorParser:
       else
         buf.append(datum.asInt.toChar)
         cursor.advance()
- 

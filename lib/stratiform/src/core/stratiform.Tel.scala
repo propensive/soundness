@@ -413,8 +413,8 @@ object Tel extends Tel2:
 
             if !filled then resolveType(f.fieldType, schema) match
               case s: Scalar => f.default match
-                case t: Text           => results += Tel.Element.Value(flatStart, s, t)
-                case unset: Unset.type => recoverNode(Reason.RequiredMemberAbsent)(())
+                case t: Text => results += Tel.Element.Value(flatStart, s, t)
+                case _       => recoverNode(Reason.RequiredMemberAbsent)(())
 
               case _ => recoverNode(Reason.RequiredMemberAbsent)(())
 

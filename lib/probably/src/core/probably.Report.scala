@@ -381,7 +381,7 @@ class Report(using Environment)(using palette: TestPalette):
     def truncate(text: Text, max: Int = 800): Text =
       if text.length <= max then text else t"${text.keep(max)}…"
 
-    def describeFailure(info: Optional[Verdict.Detail]): Text = info match
+    def describeFailure(info: Optional[Verdict.Detail]): Text = (info: @unchecked) match
       case Verdict.Detail.Throws(err) =>
         truncate(t"Threw ${err.component}.${err.className}: ${err.message.text}")
 

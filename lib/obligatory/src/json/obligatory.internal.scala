@@ -66,7 +66,7 @@ object internal:
           import dynamicJsonAccess.enabled
           given Tactic[JsonError] = strategies.throwUnsafely
 
-          safely(json.method.as[Text]) match
+          (safely(json.method.as[Text]): @scala.unchecked) match
             case Unset =>
               val response = json.as[JsonRpc.Response]
 

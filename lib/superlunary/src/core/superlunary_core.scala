@@ -58,9 +58,7 @@ object embeddings:
 
       ' {
           import strategies.throwUnsafely
-
-          stageable.extract[value]
-            ( ${refs.array}(${Expr(allocation)}).asInstanceOf[refs.Transport] )
+          stageable.extract[value](${refs.array}(${Expr(allocation)}).asInstanceOf[refs.Transport])
         }
 
 
@@ -69,11 +67,8 @@ def deleteOnShutdown(directory: jnf.Path): Unit =
     if jnf.Files.exists(directory) then
       val stream = jnf.Files.walk(directory).nn
 
-      try
-        stream.sorted(ju.Comparator.reverseOrder).nn.forEach: path =>
-          try
-            val _ = jnf.Files.deleteIfExists(path.nn)
-          catch case _: Throwable => ()
+      try stream.sorted(ju.Comparator.reverseOrder).nn.forEach: path =>
+        try jnf.Files.deleteIfExists(path.nn) catch case _: Throwable => ()
       finally stream.close()
 
   jl.Runtime.getRuntime.nn.addShutdownHook(jl.Thread(runnable))

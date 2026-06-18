@@ -428,15 +428,14 @@ final class Cursor[data]
     if tailLen > 0 then tail #:: loaderStream else Stream.empty.lazyAppendedAll(loaderStream)
 
   private def loaderStream: Stream[data] =
-    if ended then Stream.empty
-    else load() match
-      case Unset =>
+    if ended then Stream.empty else load() match
+      case chunk: data @unchecked =>
+        if addressable.length(chunk) > 0 then chunk #:: loaderStream else loaderStream
+
+      case _ =>
         ended = true
         Stream.empty
 
-      case chunk: data @unchecked =>
-        if addressable.length(chunk) > 0 then chunk #:: loaderStream
-        else loaderStream
 
   // ─── unsafe direct buffer access ──────────────────────────────────────────
   //

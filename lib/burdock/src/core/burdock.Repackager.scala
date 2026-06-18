@@ -105,7 +105,7 @@ object Repackager:
     val inlined = List.newBuilder[Entry]
 
     hashes.each: hash =>
-      resolve(hash) match
+      (resolve(hash): @unchecked) match
         case url: HttpUrl =>
           requirements += Requirement(url, hash)
 

@@ -172,8 +172,8 @@ object internal:
         val atomsExpr = emitAtomsArray(c.atoms)
 
         val remarkExpr: Expr[Optional[Text]] = c.remark match
-          case unset: Unset.type => '{Unset}
-          case text: Text        => '{${Expr(text.s)}.tt: Optional[Text]}
+          case text: Text => '{${Expr(text.s)}.tt: Optional[Text]}
+          case _          => '{Unset}
 
         val childrenExpr = emitBlocks(c.children)
         '{Tel.Compound(${keywordExpr}.tt, $atomsExpr, $remarkExpr, $childrenExpr)}
@@ -182,8 +182,8 @@ object internal:
         val comments = '{IArray.from(${Expr.ofList(b.comments.toList.map(emitComment))})}
 
         val tab: Expr[Optional[Tel.Tabulation]] = b.tabulation match
-          case unset: Unset.type   => '{Unset}
-          case t: Tel.Tabulation   => '{${emitTabulation(t)}: Optional[Tel.Tabulation]}
+          case t: Tel.Tabulation => '{${emitTabulation(t)}: Optional[Tel.Tabulation]}
+          case _                 => '{Unset}
 
         val compounds =
           '{IArray.from(${Expr.ofList(b.compounds.toList.map(emitCompound))})}
@@ -195,25 +195,26 @@ object internal:
         '{IArray.from(${Expr.ofList(blocks.toList.map(emitBlock))})}
 
       val directiveExpr: Expr[Optional[Text]] = document.interpreterDirective match
-        case unset: Unset.type => '{Unset}
-        case text: Text        => '{${Expr(text.s)}.tt: Optional[Text]}
+        case text: Text => '{${Expr(text.s)}.tt: Optional[Text]}
+        case _          => '{Unset}
 
       val pragmaExpr: Expr[Optional[Tel.Pragma]] = document.pragma match
-        case unset: Unset.type =>
-          '{Unset}
-
         case p: Tel.Pragma =>
           val versionExpr = '{(${Expr(p.version._1)}, ${Expr(p.version._2)})}
 
           val schemaExpr: Expr[Optional[Text]] = p.schema match
-            case unset: Unset.type => '{Unset}
-            case text: Text        => '{${Expr(text.s)}.tt: Optional[Text]}
+            case text: Text => '{${Expr(text.s)}.tt: Optional[Text]}
+            case _          => '{Unset}
 
           val sigilExpr: Expr[Optional[Char]] = p.sigil match
-            case unset: Unset.type => '{Unset}
-            case c: Char           => '{${Expr(c)}: Optional[Char]}
+            case c: Char => '{${Expr(c)}: Optional[Char]}
+            case _       => '{Unset}
 
           '{Tel.Pragma($versionExpr, $schemaExpr, $sigilExpr): Optional[Tel.Pragma]}
+
+        case _ =>
+          '{Unset}
+
 
       val lineEndingsExpr: Expr[Tel.LineEndings] = document.lineEndings match
         case Tel.LineEndings.Lf   => '{Tel.LineEndings.Lf}

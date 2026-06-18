@@ -68,7 +68,15 @@ object settings:
     "-Wconf:origin=.*systems.java:s",
     "-Wconf:origin=.*overwritePreexisting.enabled:s",
     "-Wconf:origin=.*dynamicJsonAccess.enabled:s",
+    "-Wconf:origin=.*dynamicTelAccess.enabled:s",
+    "-Wconf:origin=.*queryParameters.arbitraryQueryParameter:s",
     "-Wconf:origin=.*CssClass.nominative:s",
+    // `frames` is deliberately `inline` so the anonymous `Iterator` expands (with the by-name
+    // `frame` thunk and the caller's `Cursor` operand-type refinement) at each call site.
+    "-Wconf:src=.*obligatory.Framable.*&msg=anonymous class:s",
+    // `whereas` applies a deliberately-partial `PartialFunction` as a total function; the unmatched
+    // exceptions are routed to the trailing `.recover`, so the match is intentionally non-exhaustive.
+    "-Wconf:src=.*synesthesia.McpServer.*&msg=match may not be exhaustive:s",
     // "-Wsafe-init",
     "-Xmax-inlines", "32",
     //"-Ycc-new",

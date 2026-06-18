@@ -412,8 +412,9 @@ object Tests extends Suite(m"Honeycombd Tests"):
           try t"<div>\nbad </span></div>".read[Html of "div"]
           catch case exception: Exception => exception
 
-        . assert:
-            case ParseError(_, Html.Position(line, _, _, _), _) => line == 2.u
+        . assert: result =>
+            (result: @unchecked) match
+              case ParseError(_, Html.Position(line, _, _, _), _) => line == 2.u
 
       suite(m"Attribute parsing depth"):
         test(m"multiple attributes preserved"):
@@ -463,15 +464,17 @@ object Tests extends Suite(m"Honeycombd Tests"):
           try t"""<img alt="a" alt="b">""".read[Html of "img"]
           catch case exception: Exception => exception
 
-        . assert:
-            case ParseError(_, _, Html.Issue.DuplicateAttribute(name)) => name == t"alt"
+        . assert: result =>
+            (result: @unchecked) match
+              case ParseError(_, _, Html.Issue.DuplicateAttribute(name)) => name == t"alt"
 
         test(m"unknown attribute on known tag"):
           try t"""<div bogus="x"></div>""".read[Html of "div"]
           catch case exception: Exception => exception
-        . assert:
-            case ParseError(_, _, Html.Issue.UnknownAttributeStart(_)) => true
-            case ParseError(_, _, Html.Issue.UnknownAttribute(_))      => true
+        . assert: result =>
+            (result: @unchecked) match
+              case ParseError(_, _, Html.Issue.UnknownAttributeStart(_)) => true
+              case ParseError(_, _, Html.Issue.UnknownAttribute(_))      => true
 
       suite(m"Position ranges"):
         def position(input: Text): Html.Position =
@@ -659,8 +662,9 @@ object Tests extends Suite(m"Honeycombd Tests"):
           try t"""<div><![CDATA[x]]></div>""".read[Html of "div"]
           catch case exception: Exception => exception
 
-        . assert:
-            case ParseError(_, _, Html.Issue.InvalidCdata) => true
+        . assert: result =>
+            (result: @unchecked) match
+              case ParseError(_, _, Html.Issue.InvalidCdata) => true
 
         test(m"SVG self-closing rect"):
           t"""<svg><rect/></svg>""".read[Html of Flow]
@@ -671,52 +675,59 @@ object Tests extends Suite(m"Honeycombd Tests"):
           try t"""<div""".read[Html of "div"]
           catch case exception: Exception => exception
 
-        . assert:
-            case ParseError(_, _, Html.Issue.ExpectedMore) => true
+        . assert: result =>
+            (result: @unchecked) match
+              case ParseError(_, _, Html.Issue.ExpectedMore) => true
 
         test(m"EOF inside attribute value"):
           try t"""<div style="ab""".read[Html of "div"]
           catch case exception: Exception => exception
 
-        . assert:
-            case ParseError(_, _, Html.Issue.ExpectedMore) => true
+        . assert: result =>
+            (result: @unchecked) match
+              case ParseError(_, _, Html.Issue.ExpectedMore) => true
 
         test(m"EOF inside comment"):
           try t"""<!-- abc""".read[Html of Flow]
           catch case exception: Exception => exception
 
-        . assert:
-            case ParseError(_, _, Html.Issue.ExpectedMore) => true
+        . assert: result =>
+            (result: @unchecked) match
+              case ParseError(_, _, Html.Issue.ExpectedMore) => true
 
         test(m"EOF inside CDATA"):
           try t"""<svg><![CDATA[abc""".read[Html of Flow]
           catch case exception: Exception => exception
 
-        . assert:
-            case ParseError(_, _, Html.Issue.ExpectedMore) => true
+        . assert: result =>
+            (result: @unchecked) match
+              case ParseError(_, _, Html.Issue.ExpectedMore) => true
 
         test(m"EOF inside closing tag"):
           try t"""<div></div""".read[Html of "div"]
           catch case exception: Exception => exception
 
-        . assert:
-            case ParseError(_, _, Html.Issue.ExpectedMore) => true
+        . assert: result =>
+            (result: @unchecked) match
+              case ParseError(_, _, Html.Issue.ExpectedMore) => true
 
         test(m"unexpected character in tag name"):
           try t"""<div@>""".read[Html of "div"]
           catch case exception: Exception => exception
-        . assert:
-            case ParseError(_, _, Html.Issue.Unexpected(_))      => true
-            case ParseError(_, _, Html.Issue.UnknownAttributeStart(_)) => true
-            case ParseError(_, _, Html.Issue.InvalidTag(_))      => true
+        . assert: result =>
+            (result: @unchecked) match
+              case ParseError(_, _, Html.Issue.Unexpected(_))      => true
+              case ParseError(_, _, Html.Issue.UnknownAttributeStart(_)) => true
+              case ParseError(_, _, Html.Issue.InvalidTag(_))      => true
 
         test(m"tag starting with digit"):
           try t"""<1div>""".read[Html of Flow]
           catch case exception: Exception => exception
-        . assert:
-            case ParseError(_, _, Html.Issue.InvalidTagStart(_)) => true
-            case ParseError(_, _, Html.Issue.InvalidTag(_))      => true
-            case ParseError(_, _, Html.Issue.Unexpected(_))      => true
+        . assert: result =>
+            (result: @unchecked) match
+              case ParseError(_, _, Html.Issue.InvalidTagStart(_)) => true
+              case ParseError(_, _, Html.Issue.InvalidTag(_))      => true
+              case ParseError(_, _, Html.Issue.Unexpected(_))      => true
 
       suite(m"Round-trip via show"):
         test(m"simple element"):

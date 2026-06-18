@@ -187,7 +187,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
           val decoder = Hpack()
           var continue = true
 
-          while continue do frameReader.next() match
+          while continue do (frameReader.next(): @unchecked) match
             case Unset        => continue = false
             case frame: Frame => continue = dispatch(frame, decoder)
 

@@ -63,7 +63,6 @@ extension (inline context: StringContext)
 private def xmlNodes(xml: Xml): IArray[Node] = xml match
   case Fragment(nodes*) => IArray.from(nodes)
   case node: Node       => IArray(node)
-  case _                => IArray[Node]()
 
 private def firstNode(xml: Xml, fallback: Node): Node =
   val nodes = xmlNodes(xml)

@@ -61,22 +61,3 @@ object SocketOption:
   case object Broadcast                      extends Udp              // SO_BROADCAST
 
 sealed trait SocketOption
-
-// Importable socket-option contributions. Each flag is a named `given` declared at its concrete
-// option type (not `SocketOption`), so the per-connection `Every[SocketOption.Tcp]` / `.Udp` /
-// `.Domain` searches collect it. Bring one into scope with, e.g.,
-// `import socketOptions.noDelaySocketOption`. Options that carry a value are factory methods whose
-// result type is the concrete option, so a
-// `given SocketOption.ReceiveBuffer = socketOptions.receiveBuffer(65536)` is likewise collected.
-package socketOptions:
-  given reuseAddressSocketOption: SocketOption.ReuseAddress.type = SocketOption.ReuseAddress
-  given reusePortSocketOption:    SocketOption.ReusePort.type    = SocketOption.ReusePort
-  given noDelaySocketOption:      SocketOption.NoDelay.type      = SocketOption.NoDelay
-  given keepAliveSocketOption:    SocketOption.KeepAlive.type    = SocketOption.KeepAlive
-  given broadcastSocketOption:    SocketOption.Broadcast.type    = SocketOption.Broadcast
-
-  def receiveBuffer(bytes: Int): SocketOption.ReceiveBuffer = SocketOption.ReceiveBuffer(bytes)
-  def sendBuffer(bytes: Int): SocketOption.SendBuffer = SocketOption.SendBuffer(bytes)
-  def linger(seconds: Optional[Int] = Unset): SocketOption.Linger = SocketOption.Linger(seconds)
-  def trafficClass(value: Int): SocketOption.TrafficClass = SocketOption.TrafficClass(value)
-  def timeout(milliseconds: Int): SocketOption.Timeout = SocketOption.Timeout(milliseconds)

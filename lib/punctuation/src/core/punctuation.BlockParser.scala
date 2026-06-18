@@ -270,10 +270,8 @@ final class BlockParser:
 
     // Bullet list marker
     ParserSupport.bulletMarker(line) match
-      case bm: BulletMarker =>
-        return openListItem(ln, Some(bm), None, line)
-
-      case Unset => ()
+      case bm: BulletMarker => return openListItem(ln, Some(bm), None, line)
+      case _                => ()
 
     // Ordered list marker
     ParserSupport.orderedMarker(line) match
@@ -282,11 +280,9 @@ final class BlockParser:
         // starts at 1
         deepest match
           case _: ParagraphBuilder if om.start != 1 => ()
+          case _                                    => return openListItem(ln, None, Some(om), line)
 
-          case _ =>
-            return openListItem(ln, None, Some(om), line)
-
-      case Unset => ()
+      case _ => ()
 
     (line, false)
 
@@ -302,10 +298,8 @@ final class BlockParser:
 
     // CommonMark: a list item with empty content cannot interrupt a paragraph
     deepest match
-      case _: ParagraphBuilder if ParserSupport.isBlank(rest) =>
-        return (line, false)
-
-      case _ => ()
+      case _: ParagraphBuilder if ParserSupport.isBlank(rest) => return (line, false)
+      case _                                                  => ()
 
     // Decide whether to reuse the open List or open a new one
     val reuseList: Boolean = deepest match
@@ -415,7 +409,7 @@ final class BlockParser:
               // the setext underline has nothing to promote, so it falls
               // through and becomes a regular line.
 
-            case Unset => ()
+            case _ => ()
 
         case _ => ()
 
@@ -469,14 +463,14 @@ final class BlockParser:
       return
 
     ParserSupport.fenceOpener(residual) match
-      case (ch: Char, count: Int, indent: Ordinal, info: Text) =>
+      case (ch: Char, count: Int, indent: (Ordinal @scala.unchecked), info: Text) =>
         closeOpenLeafForNewBlock()
         val tokens = ParserSupport.cutInfo(info).map(InlineSupport.decodeEscapesAndEntities)
         val fenced = FencedCodeBlockBuilder(ln, ch, count, indent.n0, tokens)
         openStack += fenced
         return
 
-      case Unset => ()
+      case _ => ()
 
     deepest match
       case para: ParagraphBuilder if !para.isEmpty =>
@@ -490,7 +484,7 @@ final class BlockParser:
             if maybeHeading.present then return
             // else: paragraph was all link-ref-defs; fall through.
 
-          case Unset => ()
+          case _ => ()
 
       case _ => ()
 
@@ -505,7 +499,7 @@ final class BlockParser:
         addToParent(deepest, Layout.Heading(ln, level, Prose.Textual(content)))
         return
 
-      case Unset => ()
+      case _ => ()
 
     val canStartIndentedCode = deepest match
       case _: LeafBuilder => false

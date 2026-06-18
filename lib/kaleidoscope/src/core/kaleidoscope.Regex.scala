@@ -394,11 +394,11 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
 
 
     scanner.nextStart match
-      case Unset =>
-        if !matcher.matches then None else Some(IArray.from(recur(captureGroups, Nil, 0).reverse))
-
       case index: Int =>
         if !matcher.find(index) then None else
           scanner.nextStart = matcher.start + 1
           scanner.matchEnd = matcher.end
           Some(IArray.from(recur(captureGroups, Nil, 0).reverse))
+
+      case _ =>
+        if !matcher.matches then None else Some(IArray.from(recur(captureGroups, Nil, 0).reverse))

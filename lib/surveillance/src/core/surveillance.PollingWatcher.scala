@@ -86,7 +86,7 @@ extends Watcher:
         case last: Entry =>
           if !entry.directory && last != entry then spool.put(WatchEvent.Modify(base, name))
 
-        case Unset =>
+        case _ =>
           if entry.directory then spool.put(WatchEvent.NewDirectory(base, name))
           else spool.put(WatchEvent.NewFile(base, name))
 

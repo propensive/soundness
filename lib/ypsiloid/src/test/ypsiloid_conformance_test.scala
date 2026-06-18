@@ -34,9 +34,6 @@ package ypsiloid
 
 import soundness.*
 
-import autopsies.contrastExpectations
-import errorDiagnostics.stackTracesDiagnostics
-
 object ConformanceTests:
   // Adds the YAML 1.2 test-suite cases as `test(...)` entries inside the
   // calling Suite's `run()` body. Tests that the parser currently
@@ -53,7 +50,7 @@ object ConformanceTests:
 
         results.foreach: result =>
           val classifier = if result.testCase.inScope then t"in-scope" else t"out-of-scope"
-          val firstLine = result.testCase.description.linesIterator.next.tt
+          val firstLine = result.testCase.description.linesIterator.next().tt
           val id = result.testCase.id.tt
           val name = m"`$id` $firstLine"
 
