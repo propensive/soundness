@@ -350,15 +350,6 @@ extension (inline double: Double)
   inline def am: Clockface = ${aviation.internal.validTime('double, false)}
   inline def pm: Clockface = ${aviation.internal.validTime('double, true)}
 
-extension (int: Int)
-  def years: Timespan = Timespan(StandardTime.Year, int)
-  def months: Timespan = Timespan(StandardTime.Month, int)
-  def weeks: Timespan = Timespan(StandardTime.Week, int)
-  def days: Timespan = Timespan(StandardTime.Day, int)
-  def hours: Timespan = Timespan.fixed(StandardTime.Hour, int)
-  def minutes: Timespan = Timespan.fixed(StandardTime.Minute, int)
-  def seconds: Timespan = Timespan.fixed(StandardTime.Second, int)
-
 // The result type is decided by the literal's precision: a year, year-month, date,
 // zoneless date-time, or zoned date-time (also the result for any RFC 1123 literal).
 inline given tsInterpolator: (Year | Monthstamp | Date | Timestamp | Moment) is Interpolable:

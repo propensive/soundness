@@ -260,40 +260,6 @@ object Tests extends Suite(m"Aviation Tests"):
         (date.year, date.month, date.day)
       . assert(_ == (2016, Jul, 11))
 
-      test(m"Add two periods"):
-        val period = 1.days + 2.months
-        val period2 = 3.days + 1.years
-        period + period2
-      . assert(_ == 4.days + 2.months + 1.years)
-
-      test(m"Simplify a period"):
-        (8.months + 6.months).simplify
-      . assert(_ == 1.years + 2.months)
-
-      test(m"Hours do not simplify"):
-        (1.days + 25.hours).simplify
-      . assert(_ == 25.hours + 1.days)
-
-      test(m"Minutes simplify"):
-        123.minutes.simplify
-      . assert(_ == 2.hours + 3.minutes)
-
-      test(m"Seconds simplify"):
-        123.seconds.simplify
-      . assert(_ == 2.minutes + 3.seconds)
-
-      test(m"Cascading simplification"):
-        (1.hours + 59.minutes + 59.seconds + 2.seconds).simplify
-      . assert(_ == 2.hours + 1.seconds)
-
-      test(m"Simple multiplication"):
-        (1.hours + 5.minutes)*100
-      . assert(_ == 100.hours + 500.minutes)
-
-      test(m"Simplified multiplication"):
-        ((1.hours + 5.seconds)*100).simplify
-      . assert(_ == 100.hours + 8.minutes + 20.seconds)
-
       test(m"Specify times"):
         2.01.am
       . assert(_ == Clockface(2, 1, 0))
@@ -335,26 +301,6 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"Specify datetime"):
         5.25.pm on 2018-Aug-11
       . assert(_ == Timestamp(Date(Year(2018), Aug, Day(11)), Clockface(17, 25, 0)))
-
-      test(m"Add two months to a date"):
-        2014-Nov-20 + 2.months
-      . assert(_ == 2015-Jan-20)
-
-      test(m"Add two days to a date"):
-        2014-Nov-20 + 2.days
-      . assert(_ == 2014-Nov-22)
-
-      test(m"Add one year to a date"):
-        2014-Nov-20 + 1.years
-      . assert(_ == 2015-Nov-20)
-
-      test(m"Add two years to a date"):
-        2014-Nov-20 + 2.years
-      . assert(_ == 2016-Nov-20)
-
-      test(m"Add three years to a date"):
-        2014-Nov-20 + 3.years
-      . assert(_ == 2017-Nov-20)
 
       // test(m"Read TZDB file"):
       //   Tzdb.parseFile(t"europe")
@@ -913,23 +859,6 @@ object Tests extends Suite(m"Aviation Tests"):
         Month.all.length
       . assert(_ == 12)
 
-    suite(m"Chronology defaults"):
-      test(m"standardTime ambiguousTimes default is Dilate"):
-        Chronology.standardTime.ambiguousTimes
-      . assert(_ == Chronology.AmbiguousTimes.Dilate)
-
-      test(m"standardTime monthArithmetic default is Scale"):
-        Chronology.standardTime.monthArithmetic
-      . assert(_ == Chronology.MonthArithmetic.Scale)
-
-      test(m"standardTime leapDayArithmetic default is PreferFeb28"):
-        Chronology.standardTime.leapDayArithmetic
-      . assert(_ == Chronology.LeapDayArithmetic.PreferFeb28)
-
-      test(m"already simplified span stays the same"):
-        (1.years + 2.months + 3.days).simplify
-      . assert(_ == 1.years + 2.months + 3.days)
-
     suite(m"AM/PM literal corners"):
       test(m"12.00.am is midnight"):
         12.00.am
@@ -1305,14 +1234,6 @@ object Tests extends Suite(m"Aviation Tests"):
         (2024-Jan-1) >= (2024-Jan-1)
       . assert(_ == true)
 
-      test(m"Adding a negative year"):
-        2024-Mar-15 + (-1).years
-      . assert(_ == 2023-Mar-15)
-
-      test(m"Subtracting one year via negative Timespan addition"):
-        2024-Mar-15 + (-1).years
-      . assert(_ == 2023-Mar-15)
-
       test(m"Date.addDays positive"):
         (2024-Jan-1).addDays(31)
       . assert(_ == 2024-Feb-1)
@@ -1354,20 +1275,6 @@ object Tests extends Suite(m"Aviation Tests"):
         import hebdomads.europeanHebdomad
         (2025-Mar-17).weekend
       . assert(_ == false)
-
-      test(m"Adding 1 year to Feb 29 in a leap year currently panics"):
-        try
-          val _ = 2024-Feb-29 + 1.years
-          t"no error"
-        catch case error: Throwable => t"threw ${error.getClass.getSimpleName.nn}"
-      . assert(_.starts(t"threw"))
-
-      test(m"Adding 1 month to Jan 31 currently panics"):
-        try
-          val _ = 2024-Jan-31 + 1.months
-          t"no error"
-        catch case error: Throwable => t"threw ${error.getClass.getSimpleName.nn}"
-      . assert(_.starts(t"threw"))
 
     suite(m"WorkingDays edge cases"):
       given Holidays = Holidays(List
@@ -1496,46 +1403,6 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"Duration round-trip via 60_000 ms is 60 s"):
         Duration(60_000L).value
       . assert(_ == 60.0)
-
-    suite(m"Timespan"):
-      test(m"1.years sets only the years field"):
-        val ts = 1.years
-        (ts.years, ts.months, ts.days, ts.hours, ts.minutes, ts.seconds)
-      . assert(_ == (1, 0, 0, 0, 0, 0))
-
-      test(m"3.days sets only the days field"):
-        val ts = 3.days
-        (ts.years, ts.months, ts.days, ts.hours, ts.minutes, ts.seconds)
-      . assert(_ == (0, 0, 3, 0, 0, 0))
-
-      test(m"4.hours sets only the hours field"):
-        val ts = 4.hours
-        (ts.years, ts.months, ts.days, ts.hours, ts.minutes, ts.seconds)
-      . assert(_ == (0, 0, 0, 4, 0, 0))
-
-      test(m"6.seconds sets only the seconds field"):
-        val ts = 6.seconds
-        (ts.years, ts.months, ts.days, ts.hours, ts.minutes, ts.seconds)
-      . assert(_ == (0, 0, 0, 0, 0, 6))
-
-      test(m"Timespan subtraction"):
-        (2.years + 3.months) - (1.years + 1.months)
-      . assert(_ == 1.years + 2.months)
-
-      test(m"Adding Timespans field-by-field"):
-        2.hours + 30.minutes + 15.seconds
-      . assert(_ == Timespan(0, 0, 0, 2, 30, 15))
-
-      test(m"Timespan multiplication preserves all fields"):
-        ((1.years + 2.months + 3.days)*5).simplify
-      . assert(_ == 5.years + 10.months + 15.days)
-
-      test(m"Timespan round-trip via Long nanoseconds drops Y/M/D fields"):
-        val original = 1.years + 2.months + 3.days + 4.hours + 5.minutes + 6.seconds
-        val nanos = original.generic
-        val roundTripped = summon[Timespan is Instantiable across Durations from Long].apply(nanos)
-        (roundTripped.years, roundTripped.months, roundTripped.days)
-      . assert(_ == (0, 0, 0))
 
     suite(m"Clock"):
       test(m"Clock.fixed returns the same instant"):

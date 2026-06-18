@@ -35,14 +35,13 @@ package soundness
 export
   aviation
   . { am, Anniversary, Apr, Aug, Base24, base24Extractable, Base60, base60Extractable, Calendar,
-      Chronology, Clock, Clockface, Date, DateNumerics, DateSeparation, Day, days, Dec, Duration,
-      Endianness, Feb, Fri, Hebdomad, Holiday, Holidays, Horology, hours, Instant, Iso8601, Jan,
-      Jul, Jun, LeapSeconds, Mar, May, Meridiem, minutes, Moment, Mon, Month, Months, months,
-      Monthstamp, Nov, now, Oct, Period, pm, Regime, Rfc1123, RomanCalendar, Sat, seconds, Sep,
-      StandardTime, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics, TimeSeparation,
-      Timespan, TimeSpecificity, Timestamp, TimestampError, Timezone, TimezoneError, today, ts,
-      tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Weekday, Weekdays, weeks, WorkingDays, Year,
-      Years, years }
+      Clock, Clockface, Date, DateNumerics, DateSeparation, Day, Dec, Duration, Endianness, Feb,
+      Fri, Hebdomad, Holiday, Holidays, Horology, Instant, Iso8601, Jan, Jul, Jun, LeapSeconds,
+      Mar, May, Meridiem, Moment, Mon, Month, Months, Monthstamp, Nov, now, Oct, Period, pm,
+      Regime, Rfc1123, RomanCalendar, Sat, Sep, Sun, Thu, TimeError, TimeEvent, TimeFormat,
+      TimeNumerics, TimeSeparation, TimeSpecificity, Timestamp, TimestampError, Timezone,
+      TimezoneError, today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Weekday, Weekdays,
+      WorkingDays, Year, Years }
 
 package calendars:
   export aviation.calendars.{gregorianCalendar, julianCalendar, papalCutover, britishCutover}

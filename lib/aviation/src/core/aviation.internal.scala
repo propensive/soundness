@@ -561,13 +561,6 @@ object internal:
 
         recur(date, days)
 
-    given plus: (calendar: Calendar) => Date is Addable:
-      type Result = Date
-      type Operand = Timespan
-
-      def add(date: Date, timespan: Timespan): Date = calendar.add(date, timespan)
-
-
   extension (date: Date)
     def day(using calendar: Calendar): calendar.Diurnal = calendar.diurnal(date)
 

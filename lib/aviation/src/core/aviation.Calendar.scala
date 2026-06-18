@@ -48,4 +48,3 @@ trait Calendar extends Findable:
   def diurnal(date: Date): Diurnal
   def zerothDayOfYear(year: Annual): Date
   def jdn(year: Annual, month: Mensual, day: Diurnal): Date raises TimeError
-  def add(date: Date, period: Timespan): Date
