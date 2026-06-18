@@ -868,3 +868,7 @@ object Tests extends Suite(m"Decorum Tests"):
       test(m"Operator-continuation expression does not trigger 315"):
         rules("def f =\n  val a = 1\n  a == 1 ||\n    a == 2\n")
       . assert(r => !r.contains("315"))
+
+      test(m"Trailing operator after a quote-block `}` defers to 616, not 473.6"):
+        rules("val x =\n  ' {\n      foo\n    } ::\n    tail\n")
+      . assert(r => !r.contains("473.6"))
