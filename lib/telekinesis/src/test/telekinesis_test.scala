@@ -348,6 +348,23 @@ object Tests extends Suite(m"Telekinesis tests"):
 
         . assert(_ == method)
 
+      test(m"Read payload flag through erased Http.Method type"):
+        val method: Http.Method = Http.Post
+        method.payload
+
+      . assert(_ == true)
+
+      test(m"Read payload flag for a bodyless method through erased type"):
+        val method: Http.Method = Http.Get
+        method.payload
+
+      . assert(_ == false)
+
+      test(m"Payload flag is available at the type level"):
+        valueOf[Http.Post.Payload]
+
+      . assert(_ == true)
+
       test(m"Parse HTTP/1.0 version"):
         val fixture = t"GET / HTTP/1.0\r\nHost: example.com\r\n\r\n"
         Http.Request.parse(chunks(fixture, 4096)).version
