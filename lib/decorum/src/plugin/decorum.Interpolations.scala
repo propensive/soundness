@@ -30,43 +30,70 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package iridescence
+package decorum
 
-import scala.quoted.*
+import scala.collection.mutable
 
-import anticipation.*
-import fulminate.*
+import dotty.tools.dotc.ast.untpd
+import dotty.tools.dotc.util.SourceFile
 
-object internal:
-  def rgbMacro(context: Expr[StringContext], insertions: Expr[Seq[Any]])(using Quotes)
-  :   Expr[Chroma] =
+// One string-interpolation site. `prefix` is the interpolator name (e.g. "m",
+// "tel", "t"); `openLine`/`openCol` locate the prefix character (the `m` of
+// `m"""`); `closeLine`/`closeCol` locate the first quote of the closing `"""`.
+// All positions are 1-based. `triple` is true for a `"""…"""` string (the only
+// kind that can span lines).
+case class InterpolationInfo
+  ( prefix:    String,
+    openLine:  Int,
+    openCol:   Int,
+    closeLine: Int,
+    closeCol:  Int,
+    triple:    Boolean )
 
+object Interpolations:
+  // Walk the untyped tree and emit one `InterpolationInfo` per
+  // `untpd.InterpolatedString` node. These survive in the pre-desugar
+  // `untpdTree` that Decorum reads (desugaring to `StringContext` happens
+  // later, during typing), just like `untpd.InfixOp`.
+  def extract(tree: untpd.Tree, source: SourceFile): List[InterpolationInfo] =
+    val content = String(source.content)
+    val out     = mutable.ListBuffer[InterpolationInfo]()
 
-    val parts: List[String] =
-      context.value.getOrElse:
-        halt(m"the StringContext extension method parameter does not appear to be inline")
+    def visit(t: untpd.Tree): Unit =
+      t match
+        case interp: untpd.InterpolatedString => infoFor(interp, source, content).foreach(out += _)
+        case _                                => ()
+      t.productIterator.foreach(descend(_, visit))
 
-      . parts.toList
+    visit(tree)
+    out.toList
 
-    if parts.length != 1 then halt(m"an rgb literal cannot have substitutions")
+  private def descend(x: Any, visit: untpd.Tree => Unit): Unit = x match
+    case sub: untpd.Tree  => visit(sub)
+    case it:  Iterable[?] => it.foreach(descend(_, visit))
+    case _                => ()
 
-    val raw: String = parts.head
+  private def infoFor
+    ( node: untpd.InterpolatedString, source: SourceFile, content: String )
+  :   Option[InterpolationInfo] =
 
-    val hex: String =
-      if raw.length == 7 && raw.startsWith("#") then raw.substring(1).nn
-      else raw
-
-    def isHex(ch: Char): Boolean =
-      ch.isDigit || ((ch | 32) >= 'a' && (ch | 32) <= 'f')
-
-    if hex.length != 6 || !hex.forall(isHex) then halt:
-      m"""
-        the color must be in the form ${"rgb\"#rrggbb\"".tt} or ${"rgb\"rrggbb\"".tt} where
-        rr, gg and bb are 2-digit hex values
-      """
-
-    val red = Integer.parseInt(hex.substring(0, 2), 16)
-    val green = Integer.parseInt(hex.substring(2, 4), 16)
-    val blue = Integer.parseInt(hex.substring(4, 6), 16)
-
-    '{Chroma(${Expr(red)}, ${Expr(green)}, ${Expr(blue)})}
+    val sp = node.span
+    if !sp.exists then None
+    else
+      val prefix     = node.id.toString
+      val openOffset = sp.start
+      // The node span starts at the prefix character. The opening quote(s)
+      // begin just after the prefix; a triple-quoted string opens with `"""`.
+      val quoteStart = openOffset + prefix.length
+      val triple =
+        quoteStart + 2 < content.length && content.charAt(quoteStart) == '"'
+          && content.charAt(quoteStart + 1) == '"' && content.charAt(quoteStart + 2) == '"'
+      // The closing quote run ends the span. For a triple-quoted string the
+      // closing `"""` occupies the three code units before `span.end`.
+      val closeQuoteLen = if triple then 3 else 1
+      val closeStart    = (sp.end - closeQuoteLen).max(openOffset)
+      val openLine      = source.offsetToLine(openOffset) + 1
+      val openCol       = source.column(openOffset) + 1
+      val closeLine     = source.offsetToLine(closeStart) + 1
+      val closeCol      = source.column(closeStart) + 1
+      Some(InterpolationInfo(prefix, openLine, openCol, closeLine, closeCol, triple))

@@ -847,6 +847,43 @@ the leading `:` and the return type on a heavy-signature return-type line.**
 - `m"…"` for `Message`.
 - `s"…"` and plain `"…"` only where a raw `String` is genuinely needed.
 
+### Multi-line interpolated strings
+
+The interpolators whose leading and trailing whitespace is *insignificant* —
+`m` (messages), `j` (JSON), `x` (XML), `y` (YAML) and `tel` (TEL) — lay a
+multi-line `"""…"""` string out as a block:
+
+1. the opening quotes end their line (the content begins on the *next* line);
+2. the content is indented two columns beyond the opening prefix;
+3. no content line is indented less than the first content line;
+4. the closing `"""` sits alone on its line, in the same column as the opening
+   prefix.
+
+```scala
+def message =
+  m"""
+    This is the message.
+    It spans two lines.
+  """
+```
+
+A leading `( ` before the opening quotes and a trailing `,` / `)` after the
+closing quotes are permitted — the string content simply must not share the
+opener or closer line — so the heavy-argument form stays compliant:
+
+```scala
+extends Error
+  ( m"""
+      the table required a minimum width of $minimumWidth, but only $availableWidth was available
+    """ )
+```
+
+This applies only to those five interpolators, because their whitespace does
+not affect the result. Every other interpolator (`t`, `s`, `sh`, …) and raw
+`"""` string carries significant whitespace, so the layout of their content is
+left entirely to the author — and the line-length and trailing-whitespace rules
+do not apply to the interior of any multi-line string.
+
 ### Macro quotes and splices
 
 Scala 3 macro quote (`'{ … }`, `'[ … ]`) and splice (`${ … }`) syntax
@@ -986,6 +1023,10 @@ scope is always preceded by a blank.
   layouts. The multi-line layout requires `' {` (or `$ {`) — with a
   space — alone on its line, the body indented to `{`+2, and the `}`
   alone on its line at the column of `{`.
+- Multi-line `m`/`j`/`x`/`y`/`tel` strings: opening `"""` ends its line, content
+  indented +2 from the prefix, no line less-indented than the first, closing
+  `"""` alone and aligned with the prefix. Other interpolators' and raw `"""`
+  content is left alone.
 - Keyword sequences (`if`/`then`/`else`, `for`/`yield`, `for`/`do`,
   `while`/`do`, `try`/`catch`/`finally`): broken keywords align with K₁;
   once one keyword breaks, all later keywords break (forward cascade);
