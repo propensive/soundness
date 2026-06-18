@@ -197,18 +197,18 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"Subtract dates"):
         2018-Nov-19 - (2017-Sep-1)
-      . assert(_ == Quanta[Mono[Days[1]]](444))
+      . assert(_ == (Quanta(444): Quanta[Days[1]]))
 
       test(m"Subtract days from a date"):
-        2018-Nov-19 - Quanta[Mono[Days[1]]](2)
+        2018-Nov-19 - (Quanta(2): Quanta[Days[1]])
       . assert(_ == 2018-Nov-17)
 
       test(m"Add days to a date"):
-        2018-Nov-19 + Quanta[Mono[Days[1]]](2)
+        2018-Nov-19 + (Quanta(2): Quanta[Days[1]])
       . assert(_ == 2018-Nov-21)
 
       test(m"Add days to a date, order reversed"):
-        Quanta[Mono[Days[1]]](2) + (2018-Nov-19)
+        (Quanta(2): Quanta[Days[1]]) + (2018-Nov-19)
       . assert(_ == 2018-Nov-21)
 
       test(m"Get Gregorian date"):
@@ -1191,11 +1191,11 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"Subtract a date from itself yields zero"):
         2024-Jul-15 - (2024-Jul-15)
-      . assert(_ == Quanta[Mono[Days[1]]](0))
+      . assert(_ == (Quanta(0): Quanta[Days[1]]))
 
       test(m"Cross-year date difference"):
         2025-Jan-1 - (2024-Jan-1)
-      . assert(_ == Quanta[Mono[Days[1]]](366))
+      . assert(_ == (Quanta(366): Quanta[Days[1]]))
 
       test(m"Date less-than"):
         (2024-Jan-1) < (2024-Jan-2)

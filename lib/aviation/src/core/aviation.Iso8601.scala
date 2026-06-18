@@ -95,8 +95,8 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
       import hebdomads.europeanHebdomad
 
-      val firstMonday = jan4 - Quanta[Mono[Days[1]]](jan4.weekday.number.n0)
-      firstMonday + Quanta[Mono[Days[1]]](days)
+      val firstMonday = jan4 - (Quanta(jan4.weekday.number.n0): Quanta[Days[1]])
+      firstMonday + (Quanta(days): Quanta[Days[1]])
 
     val date: Date = next() match
       case '-' =>

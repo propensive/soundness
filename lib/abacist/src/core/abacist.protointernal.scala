@@ -32,7 +32,7 @@
                                                                                                   */
 package abacist
 
-import scala.compiletime.*, ops.int.*
+import scala.compiletime.*
 
 import anticipation.*
 import gossamer.*
@@ -43,54 +43,74 @@ import spectacular.*
 import symbolism.*
 
 object protointernal extends anteprotointernal:
-  opaque type Quanta[units <: Tuple] = Long
+  opaque type Quanta[base <: AnyUnit] = Long
 
   object Quanta extends Quanta2:
-    inline given underlying: [units <: Tuple] => Underlying[Quanta[units], Long] = !!
+    inline given underlying: [base <: AnyUnit, form <: Divisions]
+    =>  Underlying[Quanta[base] in form, Long] = !!
 
-    given zeroic: [units <: Tuple] => Quanta[units] is Zeroic:
-      inline def zero: Quanta[units] = 0L
+    inline given underlyingBare: [base <: AnyUnit] => Underlying[Quanta[base], Long] = !!
 
-    given typeable: [units <: Tuple] => Typeable[Quanta[units]]:
-      def unapply(count: Any): Option[count.type & Quanta[units]] = count.asMatchable match
-        case count: Long => Some(count)
+    // Two givens with structured `Self` types (rather than a single `quanta <: Quanta[base]`)
+    // so that a `(? <: value) is Zeroic` search cannot collapse the wildcard to `Nothing`
+    // (whose `zero` would throw on the cast in `fromLong`).
+    given zeroic: [base <: AnyUnit] => Quanta[base] is Zeroic:
+      inline def zero: Quanta[base] = fromLong(0L)
+
+    given zeroic2: [base <: AnyUnit, form <: Divisions] => (Quanta[base] in form) is Zeroic:
+      inline def zero: Quanta[base] in form = fromLong(0L)
+
+    given typeable: [base <: AnyUnit, quanta <: Quanta[base]] => Typeable[quanta]:
+      def unapply(count: Any): Option[count.type & quanta] = count.asMatchable match
+        case count: Long => Some(count.asInstanceOf[count.type & quanta])
         case _           => None
 
-    def fromLong[units <: Tuple](long: Long): Quanta[units] = long
+    def fromLong[quanta](long: Long): quanta = long.asInstanceOf[quanta]
 
-    given integral: [units <: Tuple] => Integral[Quanta[units]] = summon[Integral[Long]]
+    given integral: [base <: AnyUnit, quanta <: Quanta[base]] => Integral[quanta] =
+      summon[Integral[Long]].asInstanceOf[Integral[quanta]]
 
-    inline def apply[units <: Tuple](inline values: Int*): Quanta[units] =
-      ${abacist.internal.quanta[units]('values)}
+    // `base` and `form` are taken from the expected type, e.g. `val weight: Weight =
+    // Quanta(5, 6)`, `date + Quanta(2)`, or — where no expected type is available — a type
+    // ascription such as `(Quanta(5, 6): Weight)`.
+    inline def apply[base <: AnyUnit, form <: Divisions](inline values: Int*)
+    :   Quanta[base] { type Form = form } =
 
-    given addable: [units <: Tuple] => Quanta[units] is Addable:
-      type Operand = Quanta[units]
-      type Result = Quanta[units]
+      ${abacist.internal.assembleParts[base, form]('values)}
 
-      def add(left: Quanta[units], right: Quanta[units]): Quanta[units] = left + right
+    given addable: [base <: AnyUnit, quanta <: Quanta[base]] => quanta is Addable:
+      type Operand = quanta
+      type Result = quanta
 
-    given subtractable: [units <: Tuple] => Quanta[units] is Subtractable:
-      type Operand = Quanta[units]
-      type Result = Quanta[units]
+      def add(left: quanta, right: quanta): quanta = fromLong(left.long + right.long)
 
-      def subtract(left: Quanta[units], right: Quanta[units]): Quanta[units] = left - right
+    given subtractable: [base <: AnyUnit, quanta <: Quanta[base]] => quanta is Subtractable:
+      type Operand = quanta
+      type Result = quanta
 
-    given multiplicable: [units <: Tuple] => Quanta[units] is Multiplicable:
+      def subtract(left: quanta, right: quanta): quanta = fromLong(left.long - right.long)
+
+    given multiplicable: [base <: AnyUnit, quanta <: Quanta[base]] => quanta is Multiplicable:
       type Operand = Double
-      type Result = Quanta[units]
+      type Result = quanta
 
-      def multiply(left: Quanta[units], right: Double): Quanta[units] = left.multiply(right)
+      def multiply(left: quanta, right: Double): quanta = fromLong((left.long*right + 0.5).toLong)
 
-    given divisible: [units <: Tuple] => Quanta[units] is Divisible:
+    given divisible: [base <: AnyUnit, quanta <: Quanta[base]] => quanta is Divisible:
       type Operand = Double
-      type Result = Quanta[units]
+      type Result = quanta
 
-      def divide(left: Quanta[units], right: Double): Quanta[units] = left.divide(right)
+      def divide(left: quanta, right: Double): quanta = fromLong((left.long/right + 0.5).toLong)
 
-    given negatable: [units <: Tuple] => Quanta[units] is Negatable to Quanta[units] = -_
+    given negatable: [base <: AnyUnit, quanta <: Quanta[base]] => quanta is Negatable to quanta =
+      count => fromLong(-count.long)
 
-    inline given showable: [units <: Tuple] => Quanta[units] is Showable = summonFrom:
-      case names: UnitsNames[units] =>
+    // `showable`/`distributive2` are provided as a pair each: one for refined `Quanta` types
+    // (carrying a `Form`) and one for bare single-unit types. Their structured `Self` types let
+    // `base`/`form` be unified exactly, rather than maximised to `Any` as a `quanta <: Quanta
+    // [base]` bound would be in an inline given.
+    inline def showQuanta[base <: AnyUnit, quanta <: Quanta[base]]: quanta is Showable = summonFrom:
+      case names: UnitsNames[quanta] =>
         count =>
         val nonzeroComponents = count.components.filter(_(1) != 0)
         val nonzeroUnits = nonzeroComponents.map(_(1).toString.tt).to(List)
@@ -102,37 +122,53 @@ object protointernal extends anteprotointernal:
         val nonzeroComponents = count.components.filter(_(1) != 0)
         nonzeroComponents.map { (unit, count) => count.toString+unit }.mkString(" ").tt
 
-    inline given distributive2: [units <: Tuple] => Quanta[units] is Distributive by Long =
-      distributive[units](_.components.map(_(1)).to(List)): (value, parts) =>
+    inline given showable: [base <: AnyUnit, form <: Divisions]
+    =>  (Quanta[base] in form) is Showable =
+      showQuanta[base, Quanta[base] in form]
+
+    inline given showableBare: [base <: AnyUnit] => Quanta[base] is Showable =
+      showQuanta[base, Quanta[base]]
+
+    inline def distributiveQuanta[base <: AnyUnit, quanta <: Quanta[base]]
+    :   quanta is Distributive by Long =
+
+      distributive[quanta](_.components.map(_(1)).to(List)): (value, parts) =>
         parts.zip(value.components.map(_(0))).map: (number, units) =>
           t"$number $units"
 
         . join(t", ")
 
+    inline given distributive2: [base <: AnyUnit, form <: Divisions]
+    =>  (Quanta[base] in form) is Distributive by Long =
+      distributiveQuanta[base, Quanta[base] in form]
 
-    def distributive[units <: Tuple]
-      ( parts0: Quanta[units] => List[Long] )
-      ( place0: (Quanta[units], List[Text]) => Text )
-    :   Quanta[units] is Distributive by Long =
+    inline given distributive2Bare: [base <: AnyUnit] => Quanta[base] is Distributive by Long =
+      distributiveQuanta[base, Quanta[base]]
+
+
+    def distributive[quanta]
+      ( parts0: quanta => List[Long] )
+      ( place0: (quanta, List[Text]) => Text )
+    :   quanta is Distributive by Long =
 
       new Distributive:
-        type Self = Quanta[units]
+        type Self = quanta
         type Operand = Long
-        def parts(value: Quanta[units]): List[Long] = parts0(value)
-        def place(value: Quanta[units], parts: List[Text]): Text = place0(value, parts)
+        def parts(value: quanta): List[Long] = parts0(value)
+        def place(value: quanta, parts: List[Text]): Text = place0(value, parts)
 
 
-  extension [units <: Tuple](count: Quanta[units])
+  extension [base <: AnyUnit, quanta <: Quanta[base]](count: quanta)
     def long: Long = count
 
 
-  extension [units <: Tuple](inline count: Quanta[units])
+  extension [base <: AnyUnit, quanta <: Quanta[base]](inline count: quanta)
     inline def apply[unit[power <: Nat] <: Units[power, ? <: Dimension]]: Int =
 
-      ${abacist.internal.get[units, unit[1]]('count)}
+      ${abacist.internal.get[quanta, unit[1]]('count)}
 
-    transparent inline def quantity: Any = ${abacist.internal.toQuantity[units]('count)}
-    inline def components: ListMap[Text, Long] = ${abacist.internal.describeQuanta[units]('count)}
+    transparent inline def quantity: Any = ${abacist.internal.toQuantity[quanta]('count)}
+    inline def components: ListMap[Text, Long] = ${abacist.internal.describeQuanta[quanta]('count)}
 
     transparent inline def multiply(inline multiplier: Double): Any =
       ${abacist.internal.multiplyQuanta('count, 'multiplier, false)}
@@ -141,7 +177,5 @@ object protointernal extends anteprotointernal:
       ${abacist.internal.multiplyQuanta('count, 'multiplier, true)}
 
 
-    transparent inline def collapse(length: Int)(using length.type < Tuple.Size[units] =:= true)
-    :   Quanta[Tuple.Drop[units, length.type]] =
-
-      count
+    transparent inline def collapse(inline length: Int): Any =
+      ${abacist.internal.collapse[quanta]('count, 'length)}

@@ -67,7 +67,7 @@ object Tests extends Suite(m"Baroque tests"):
     . assert(_ == t"1.00 m·s¯¹")
 
     test(m"Show a quantity value in feet and inches"):
-      type Distance = Quanta[(Yards[1], Feet[1], Inches[1])]
+      type Distance = Quanta[Inches[1]] in (Feet[1], Yards[1])
       val re: Distance = Quanta(1, 2, 0)
       val im: Distance = Quanta(2, 0, 6)
       Complex[Distance](re, im).show

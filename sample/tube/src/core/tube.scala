@@ -33,7 +33,7 @@ given Online => StationRow is Embeddable in HttpUrl by UrlFragment =
 
 given Decimalizer = Decimalizer(significantFigures = 2)
 val timezone = tz"Europe/London"
-type HoursAndMinutes = Quanta[(Hours[1], Minutes[1])]
+type HoursAndMinutes = Quanta[Minutes[1]] in (Hours[1])
 
 given quantaDecoder: Tactic[JsonError] => HoursAndMinutes is Decodable in Json =
   summon[Int is Decodable in Json].map(Quanta(_))
