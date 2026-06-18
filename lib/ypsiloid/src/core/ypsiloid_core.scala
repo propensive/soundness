@@ -36,7 +36,6 @@ import scala.compiletime.asMatchable
 
 import anticipation.*
 import contextual.*
-import contingency.*
 import denominative.*
 import gossamer.*
 import prepositional.*

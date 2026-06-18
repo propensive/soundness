@@ -731,6 +731,71 @@ object Json extends Json2, Dynamic:
   // the `Json` abstraction is a deliberate, named action.
   def unseal(json: Json): Json.Ast = json.root
 
+  // Resolves a `JsonPointer` to the source `Position` recorded in a tracked
+  // `Json`'s `PositionIndex`. Exposed uniformly as `json.locate(pointer)` /
+  // `json.locateKey(pointer)` through zephyrine's `Positionable`.
+  given positionable: Json is Positionable by JsonPointer to Json.Ast.Position =
+    new Positionable:
+      type Self    = Json
+      type Operand = JsonPointer
+      type Result  = Json.Ast.Position
+
+      def locate(value: Json, path: JsonPointer): Optional[Json.Ast.Position] =
+        value.positionIndex.let: posIndex =>
+          walkIndex(value.root, posIndex.ints, 0, path.path.descent.toIndexedSeq, 0, false)
+
+      def locateKey(value: Json, path: JsonPointer): Optional[Json.Ast.Position] =
+        value.positionIndex.let: posIndex =>
+          walkIndex(value.root, posIndex.ints, 0, path.path.descent.toIndexedSeq, 0, true)
+
+  private def walkIndex
+    ( ast:      Json.Ast,
+      data:     IArray[Int],
+      offset:   Int,
+      segments: IndexedSeq[Text],
+      i:        Int,
+      keyMode:  Boolean )
+  :   Optional[Json.Ast.Position] =
+
+    if i >= segments.length then
+      if keyMode then Unset
+      else Json.Ast.Position
+        ( line   = data(offset + 1),
+          column = data(offset + 2),
+          length = data(offset + 3) )
+    else
+      // `JsonPointer.path.descent` is stored leaf-first (Serpentine's `/`
+      // prepends), so iterate it in reverse to walk root-to-leaf.
+      val seg = segments(segments.length - 1 - i).s
+
+      if ast.isObject then
+        val k = ast.objectIndexOf(seg)
+
+        if k < 0 then Unset else
+          val entryOff = data(offset + 5 + k)
+          val isLast = i == segments.length - 1
+
+          if isLast && keyMode then
+            Json.Ast.Position
+              ( line   = data(offset + entryOff),
+                column = data(offset + entryOff + 1),
+                length = data(offset + entryOff + 2) )
+          else
+            walkIndex
+              ( ast.objectValue(k), data, offset + entryOff + 3, segments, i + 1, keyMode )
+      else if ast.isArray then
+        try
+          val k = Integer.parseInt(seg)
+
+          if k < 0 || k >= ast.arrayLength then Unset
+          else
+            val childOff = data(offset + 5 + k)
+
+            walkIndex
+              ( ast.arrayElement(k), data, offset + childOff, segments, i + 1, keyMode )
+        catch case _: NumberFormatException => Unset
+      else
+        Unset
 
   inline given interpolator: Json is Interpolable:
     type Result = Json

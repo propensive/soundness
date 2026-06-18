@@ -30,73 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ypsiloid
+package zephyrine
 
-import anticipation.*
+import prepositional.*
 import vacuous.*
 
-extension (yaml: Yaml)
-  // Walk the `PositionIndex` to find the `Position` of the node at
-  // `pointer`. Returns `Unset` if the pointer doesn't resolve to a
-  // node within this `Yaml` or if the `Yaml` was not parsed with
-  // `Yaml.Tracking.On`. Mirrors `jacinta.Json#locate`.
-  def locate(pointer: YamlPath): Optional[Yaml.Ast.Position] =
-    yaml.positionIndex.let: posIndex =>
-      walkIndex(yaml.root, posIndex.ints, 0, pointer.path.descent.toIndexedSeq, 0, false)
+// Links a parsed data type to the path type that addresses nodes within it
+// (its `Operand`, bound with `by`) and to the concrete source `Position` it
+// resolves to (its `Result`, bound with `to`) — e.g.
+// `Json is Positionable by JsonPointer to Json.Ast.Position`. The uniform
+// `value.locate(path)` / `value.locateKey(path)` extensions (defined in
+// `zephyrine_core`) dispatch through this, so every tracking-aware format
+// exposes position lookup the same way.
+trait Positionable extends Typeclass, Operable, Resultant:
+  type Result <: Format.Position
 
-  // Find the `Position` of the mapping key matching the last segment of
-  // `pointer`. Returns `Unset` for sequence-indexed leaves or paths
-  // that don't resolve.
-  def locateKey(pointer: YamlPath): Optional[Yaml.Ast.Position] =
-    yaml.positionIndex.let: posIndex =>
-      walkIndex(yaml.root, posIndex.ints, 0, pointer.path.descent.toIndexedSeq, 0, true)
-
-private def walkIndex
-  ( ast:      Yaml.Ast,
-    data:     IArray[Int],
-    offset:   Int,
-    segments: IndexedSeq[Text],
-    i:        Int,
-    keyMode:  Boolean )
-:   Optional[Yaml.Ast.Position] =
-
-  if i >= segments.length then
-    if keyMode then Unset
-    else Yaml.Ast.Position
-      ( line   = data(offset + 1),
-        column = data(offset + 2),
-        length = data(offset + 3) )
-  else
-    // `YamlPath.path.descent` is stored leaf-first (Serpentine's `/`
-    // prepends), so iterate it in reverse to walk root-to-leaf.
-    val seg = segments(segments.length - 1 - i).s
-
-    if ast.isObject then
-      val k = ast.objectIndexOf(seg)
-
-      if k < 0 then Unset
-      else
-        val entryOff = data(offset + 5 + k)
-        val isLast = i == segments.length - 1
-
-        if isLast && keyMode then
-          Yaml.Ast.Position
-            ( line   = data(offset + entryOff),
-              column = data(offset + entryOff + 1),
-              length = data(offset + entryOff + 2) )
-        else
-          walkIndex
-            ( ast.objectValue(k), data, offset + entryOff + 3, segments, i + 1, keyMode )
-    else if ast.isArray then
-      try
-        val k = Integer.parseInt(seg)
-
-        if k < 0 || k >= ast.arrayLength then Unset
-        else
-          val childOff = data(offset + 5 + k)
-
-          walkIndex
-            ( ast.arrayElement(k), data, offset + childOff, segments, i + 1, keyMode )
-      catch case _: NumberFormatException => Unset
-    else
-      Unset
+  def locate(value: Self, path: Operand): Optional[Result]
+  def locateKey(value: Self, path: Operand): Optional[Result]

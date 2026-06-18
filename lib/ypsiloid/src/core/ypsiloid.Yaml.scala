@@ -970,6 +970,73 @@ object Yaml extends Yaml2, Dynamic:
   // the `Yaml` abstraction is a deliberate, named action.
   def unseal(yaml: Yaml): Yaml.Ast = yaml.root
 
+  // Resolves a `YamlPath` to the source `Position` recorded in a tracked
+  // `Yaml`'s `PositionIndex`. Exposed uniformly as `yaml.locate(path)` /
+  // `yaml.locateKey(path)` through zephyrine's `Positionable`.
+  given positionable: Yaml is Positionable by YamlPath to Yaml.Ast.Position =
+    new Positionable:
+      type Self    = Yaml
+      type Operand = YamlPath
+      type Result  = Yaml.Ast.Position
+
+      def locate(value: Yaml, path: YamlPath): Optional[Yaml.Ast.Position] =
+        value.positionIndex.let: posIndex =>
+          walkIndex(value.root, posIndex.ints, 0, path.path.descent.toIndexedSeq, 0, false)
+
+      def locateKey(value: Yaml, path: YamlPath): Optional[Yaml.Ast.Position] =
+        value.positionIndex.let: posIndex =>
+          walkIndex(value.root, posIndex.ints, 0, path.path.descent.toIndexedSeq, 0, true)
+
+  private def walkIndex
+    ( ast:      Yaml.Ast,
+      data:     IArray[Int],
+      offset:   Int,
+      segments: IndexedSeq[Text],
+      i:        Int,
+      keyMode:  Boolean )
+  :   Optional[Yaml.Ast.Position] =
+
+    if i >= segments.length then
+      if keyMode then Unset
+      else Yaml.Ast.Position
+        ( line   = data(offset + 1),
+          column = data(offset + 2),
+          length = data(offset + 3) )
+    else
+      // `YamlPath.path.descent` is stored leaf-first (Serpentine's `/`
+      // prepends), so iterate it in reverse to walk root-to-leaf.
+      val seg = segments(segments.length - 1 - i).s
+
+      if ast.isObject then
+        val k = ast.objectIndexOf(seg)
+
+        if k < 0 then Unset
+        else
+          val entryOff = data(offset + 5 + k)
+          val isLast = i == segments.length - 1
+
+          if isLast && keyMode then
+            Yaml.Ast.Position
+              ( line   = data(offset + entryOff),
+                column = data(offset + entryOff + 1),
+                length = data(offset + entryOff + 2) )
+          else
+            walkIndex
+              ( ast.objectValue(k), data, offset + entryOff + 3, segments, i + 1, keyMode )
+      else if ast.isArray then
+        try
+          val k = Integer.parseInt(seg)
+
+          if k < 0 || k >= ast.arrayLength then Unset
+          else
+            val childOff = data(offset + 5 + k)
+
+            walkIndex
+              ( ast.arrayElement(k), data, offset + childOff, segments, i + 1, keyMode )
+        catch case _: NumberFormatException => Unset
+      else
+        Unset
+
   inline given interpolator: Yaml is Interpolable:
     type Result = Yaml
 
