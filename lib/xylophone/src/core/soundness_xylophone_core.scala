@@ -32,7 +32,12 @@
                                                                                                   */
 package soundness
 
-export xylophone.{Xml, XmlError, XmlSchema, DynamicXmlEnabler, dynamicXmlAccess}
+// `Attributive`, `Renderable` and `Tag` clash with `honeycomb`'s names in the umbrella;
+// reach xylophone's via `xylophone.Attributive` etc.
+// unexported: Attributive, Renderable, Tag
+export
+  xylophone
+  . { Xml, XmlError, XmlSchema, DynamicXmlEnabler, dynamicXmlAccess, x, xp, XPath, XPathError }
 
 package formatting:
   export xylophone.formatting.{compactXmlFormatting, indentedXmlFormatting}

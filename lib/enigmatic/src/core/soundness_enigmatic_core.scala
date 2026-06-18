@@ -39,7 +39,8 @@ export
   . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
       CipherSession, Crypto, CryptoError, Ctr, decrypt, Decryptor, Des, Divulgence,
       Dsa, Ecb, encrypt, Encryptor, Encryption, expose,
-      Hmac, hmac, InitializationVector, Iso10126, NoPadding, Ofb, Pem, PemError, PemLabel,
+      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, NoPadding, Ofb, Pem, PemError,
+      PemLabel,
       Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
       Symmetric, SymmetricKey, TripleDes }
 

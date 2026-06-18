@@ -45,16 +45,22 @@ object Checker:
   // before delegating to the tree-aware overload. The plugin should call the
   // overload below directly with the compilation unit's existing untyped
   // tree to avoid re-parsing.
-  def check(file: String, expectedModule: Option[String], rawText: String): LazyList[Violation] =
+  def check
+    ( file:           String,
+      expectedModule: Option[String],
+      rawText:        String,
+      siblingTypes:   List[String] = Nil )
+  :   LazyList[Violation] =
     val (tree, source) = Parsing.parse(file, rawText)
-    check(file, expectedModule, rawText, tree, source)
+    check(file, expectedModule, rawText, tree, source, siblingTypes)
 
   def check
     ( file:           String,
       expectedModule: Option[String],
       rawText:        String,
       untpdTree:      untpd.Tree,
-      source:         SourceFile )
+      source:         SourceFile,
+      siblingTypes:   List[String] )
   :   LazyList[Violation] =
 
     val out   = mutable.ListBuffer[Violation]()
@@ -90,6 +96,7 @@ object Checker:
     checkDefnAnchors(file, Definitions.extract(untpdTree, source), out)
     checkOperatorContinuation(file, operatorSites, out)
     checkInterpolatorLayout(file, interpolations, rawText, source, out)
+    checkSoundnessExports(file, siblingTypes, SoundnessExports.extract(untpdTree, source), out)
     var idx = 0
 
     while idx < lines.length do
@@ -1972,6 +1979,31 @@ object Checker:
   // leading `( ` before the opener and a trailing `,`/`)` after the closer are
   // permitted (the surrounding application syntax), so "alone" means the string
   // content does not share the opener/closer line.
+  // R-742: every public module in a component (a top-level definition living in
+  // its own `<component>.<Name>.scala` file, other than `internal` modules) must
+  // be re-exported into the `soundness` package. `siblingTypes` is the list of
+  // such module names found alongside the `soundness_<component>_<suffix>.scala`
+  // export surface; any name absent from the surface's `export` clauses is a
+  // violation. The list is empty for every file other than an export surface, so
+  // this check is a no-op elsewhere.
+  private def checkSoundnessExports
+    ( file:         String,
+      siblingTypes: List[String],
+      exports:      ExportInfo,
+      out:          mutable.ListBuffer[Violation] )
+  :   Unit =
+
+    val missing =
+      siblingTypes.filterNot(exports.names.contains).filterNot(exports.excluded.contains)
+
+    if missing.nonEmpty then
+      val listed = missing.map { name => s"`$name`" }.mkString(", ")
+      val subject = if missing.length == 1 then "module is" else "modules are"
+      out +=
+        Violation
+          ( file, exports.firstLine, 1, "742",
+            s"the $subject defined but not exported to the `soundness` package: $listed" )
+
   private def checkInterpolatorLayout
     ( file:    String,
       sites:   List[InterpolationInfo],

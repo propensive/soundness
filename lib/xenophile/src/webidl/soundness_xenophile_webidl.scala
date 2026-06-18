@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export xenophile.WebIdl
+export xenophile.{WebIdl, WebIdlDialect}

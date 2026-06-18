@@ -40,7 +40,7 @@ import anticipation.*
 // pass; consulted by the inline-parse pass for shortcut/collapsed/full
 // reference links. Stage 4 will populate this from `[label]: dest "title"`
 // definitions in paragraphs; for now it stays empty.
-final class LinkRefs:
+private[punctuation] final class LinkRefs:
   private val table: mutable.LinkedHashMap[Text, Markdown.LinkRef] =
     mutable.LinkedHashMap()
 

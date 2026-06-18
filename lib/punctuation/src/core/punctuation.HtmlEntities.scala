@@ -42,7 +42,7 @@ import turbulence.*
 // `entities-extra.tsv` for the HTML5 additions). Only entries with a
 // trailing semicolon are kept, since CommonMark requires the `;` terminator
 // for named entities to be valid.
-object HtmlEntities:
+private[punctuation] object HtmlEntities:
   private lazy val table: Map[String, String] =
     val builder = Map.newBuilder[String, String]
     loadInto(cp"/honeycomb/entities-html4.tsv".read[Text].s, builder)

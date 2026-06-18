@@ -51,6 +51,9 @@ object Tests extends Suite(m"Decorum Tests"):
 
   def rules(body: String): List[String] = violations(body).map(_.rule)
 
+  def exportRules(body: String, siblings: List[String]): List[String] =
+    Checker.check("<test>", Some("soundness"), stub(body), siblings).toList.map(_.rule)
+
   def run(): Unit =
     suite(m"Phase 1: Universal rules"):
 
@@ -906,3 +909,37 @@ object Tests extends Suite(m"Decorum Tests"):
       test(m"Long content line of a multi-line string is not flagged 230"):
         rules("def msg =\n  m\"\"\"\n    "+"x".repeat(110)+"\n  \"\"\"\n")
       . assert(r => !r.contains("230"))
+
+    suite(m"Phase 7: Soundness export completeness (R742)"):
+
+      test(m"Module not re-exported to soundness is rejected (742)"):
+        exportRules("export jacinta.{Json}\n", List("Json", "NumberMode"))
+      . assert(_.contains("742"))
+
+      test(m"All modules re-exported is accepted"):
+        exportRules("export jacinta.{Json, NumberMode}\n", List("Json", "NumberMode"))
+      . assert(r => !r.contains("742"))
+
+      test(m"Module exported inside a nested package counts as exported"):
+        exportRules
+         ("package formatting:\n  export jacinta.formatting.NumberMode\n", List("NumberMode"))
+      . assert(r => !r.contains("742"))
+
+      test(m"Single-selector export without braces is recognised"):
+        exportRules("export jacinta.Json\n", List("Json"))
+      . assert(r => !r.contains("742"))
+
+      test(m"No violation when there are no sibling modules"):
+        exportRules("export jacinta.{Json}\n", Nil)
+      . assert(r => !r.contains("742"))
+
+      test(m"An `unexported:` directive suppresses the violation"):
+        exportRules
+         ("// unexported: Timestamp (clashes with aviation.Timestamp)\nexport embarcadero.{Image}\n",
+          List("Image", "Timestamp"))
+      . assert(r => !r.contains("742"))
+
+      test(m"An `unexported:` directive only suppresses the named module"):
+        exportRules
+         ("// unexported: Timestamp\nexport embarcadero.{Image}\n", List("Image", "Timestamp", "Layer"))
+      . assert(_.contains("742"))

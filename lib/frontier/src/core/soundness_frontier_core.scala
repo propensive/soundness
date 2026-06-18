@@ -34,6 +34,8 @@ package soundness
 
 import frontier.*
 
+// unexported: Diagnostic (clashes with `harlequin.Diagnostic` in the umbrella; reach it via
+// `frontier.Diagnostic`)
 export frontier.Every
 
 package context:

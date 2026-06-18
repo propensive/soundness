@@ -32,4 +32,6 @@
                                                                                                   */
 package soundness
 
-export apoplexy.{OpenApi, OpenApiError}
+// unexported: Executor (clashes with `superlunary.Executor` in the umbrella; reach it via
+// `apoplexy.Executor`)
+export apoplexy.{Api, ApiError, Conformant, OpenApi, OpenApiError}
