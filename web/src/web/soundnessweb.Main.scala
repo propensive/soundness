@@ -6,7 +6,7 @@ import attributives.textAttributive
 import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
 import classloaders.scalaClassloader
-import codicils.cancel
+import probates.cancelProbate
 import environments.javaEnvironment
 import errorDiagnostics.stackTracesDiagnostics
 import httpServers.stdlibPublicHttpServer
@@ -23,7 +23,6 @@ import doms.html.whatwg.{Em as WhatwgEm, Map as _, *}
 
 private val MetaCharset = Tag.void["meta", honeycomb.Whatwg]()
 
-given Realm = realm"soundness"
 given Online = Online
 
 def page(content: Html of Flow*): Document[Html] =
@@ -41,7 +40,7 @@ def page(content: Html of Flow*): Document[Html] =
 
 @main
 def server(): Unit =
-  recover:
+  whereas:
     case AsyncError(reason) =>
       Out.println(m"There was a concurrency error")
       Exit.Fail(2).terminate()
@@ -50,7 +49,7 @@ def server(): Unit =
       Out.println(m"Could not start server")
       Exit.Fail(2).terminate()
 
-  . within:
+  . recover:
       supervise(tcp"8080".serve[Http](handle))
 
 class Service() extends JavaServlet(handle)
@@ -63,7 +62,7 @@ val sections: List[Text] =
       "construction", "prose", "declarative", "decoupled", "polymorphic" )
 
 def handle(using HttpConnection): Http.Response =
-  recover:
+  whereas:
     case error@PathError(path, reason) =>
       Http.Response(page(Aside, P(t"Path $path did not work")))
 
@@ -76,7 +75,7 @@ def handle(using HttpConnection): Http.Response =
     case HostnameError(hostname, _) =>
       Http.Response(page(Aside, P(t"Invalid Hostname: $hostname")))
 
-  . within:
+  . recover:
       request.path match
         case _ /: t"styles" /: t"soundness.css" =>
           Http.Response(Classpath / "styles" / "soundness.css")
