@@ -35,6 +35,7 @@ package caesura
 import anticipation.*
 import distillate.*
 import prepositional.*
+import vacuous.*
 import wisteria.*
 
 object Spannable extends ProductDerivable[Spannable]:
@@ -42,6 +43,13 @@ object Spannable extends ProductDerivable[Spannable]:
     () => contexts[derivation](): [field] => context => context.spans().sum
 
   given decoder: [decodable: Decodable in Text] => decodable is Spannable = () => IArray(1)
+
+  // An `Optional[T]` field spans exactly as many cells as its inner type: a present value
+  // occupies the inner span, and an absent (trailing/missing) value leaves those cells empty.
+  given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  ( spannable: inner is Spannable )
+  =>  value is Spannable =
+    () => spannable.spans()
 
 trait Spannable extends Typeclass:
   def spans(): IArray[Int]

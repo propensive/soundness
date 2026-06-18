@@ -280,6 +280,31 @@ object Tests extends Suite(m"Caesura tests"):
         t"foo,bar\nbaz,quux".read[Sheet].show
       . assert(_ == t"foo,bar\nbaz,quux")
 
+    suite(m"Optional fields"):
+      test(m"an Optional field spans one column"):
+        Spannable.derived[Greeting].spans().to(List)
+      . assert(_ == List(1, 1))
+
+      test(m"decode a present trailing Optional positionally"):
+        import dsvFormats.csvFormat
+        t"hello,world".read[Greeting in Dsv]
+      . assert(_ == Greeting(t"hello", t"world"))
+
+      test(m"a short row decodes a trailing Optional to Unset"):
+        import dsvFormats.csvFormat
+        t"hello".read[Greeting in Dsv]
+      . assert(_ == Greeting(t"hello", Unset))
+
+      test(m"decode a present Optional column by heading"):
+        import dsvFormats.csvWithHeaderFormat
+        t"word,name\nhello,world".read[Greeting in Dsv]
+      . assert(_ == Greeting(t"hello", t"world"))
+
+      test(m"a missing Optional column decodes to Unset"):
+        import dsvFormats.csvWithHeaderFormat
+        t"word\nhello".read[Greeting in Dsv]
+      . assert(_ == Greeting(t"hello", Unset))
+
     suite(m"Cell spanning"):
       test(m"a flat product spans one column per field"):
         Spannable.derived[Foo].spans().to(List)
@@ -314,3 +339,4 @@ object Tests extends Suite(m"Caesura tests"):
 case class Foo(one: Text, two: Text)
 case class Bar(one: Double, foo1: Foo, four: Int, foo2: Foo)
 case class Quux(name: Text, greeting: Text)
+case class Greeting(word: Text, name: Optional[Text])
