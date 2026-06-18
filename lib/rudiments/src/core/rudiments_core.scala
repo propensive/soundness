@@ -443,8 +443,6 @@ extension [tuple <: Tuple](tuple: tuple)
   def to[product: Mirror.ProductOf]: product = product.fromProduct(tuple)
 
 extension (erased tuple: Tuple)
-  inline def keep[nat <: Nat] = !![Tuple.Take[tuple.type, nat]]
-  inline def skip[nat <: Nat] = !![Tuple.Drop[tuple.type, nat]]
   inline def contains[element]: Boolean = indexOf[element] >= 0
   inline def indexOf[element]: Int = recurIndex[tuple.type, element](0)
 
