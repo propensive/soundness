@@ -501,8 +501,9 @@ object Tests extends Suite(m"Contingency"):
       test(m"Errors + adds a focus/error pair"):
         val errs = Errors() + (t"field", ErrorA(7))
 
-        errs(t"field").lay(-1):
-          case e: ErrorA => e.value
+        errs(t"field").lay(-1): error =>
+          (error: @unchecked) match
+            case e: ErrorA => e.value
       . assert(_ == 7)
 
       test(m"Validation with no messages renders 'no messages'"):

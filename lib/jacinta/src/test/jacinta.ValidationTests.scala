@@ -36,7 +36,6 @@ import soundness.*
 
 import charEncoders.utf8Encoder
 import strategies.throwUnsafely
-import formatting.compactJsonFormatting
 import errorDiagnostics.stackTracesDiagnostics
 
 case class VPerson(name: Text, age: Int, email: Text) derives CanEqual

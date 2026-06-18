@@ -44,9 +44,8 @@ import symbolism.*
 
 object Complex:
   inline given showable: [part: {Showable, Zeroic, Commensurable against part, Negatable to part}]
-  =>  Complex[part] is Showable =
-
-    complex =>
+  =>  Complex[part] is Showable = new:
+    def text(complex: Complex[part]): Text =
       compiletime.summonFrom:
         case distributive: (`part` is Distributive) =>
           provide[Complex[distributive.Operand] is Showable]:

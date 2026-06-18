@@ -45,7 +45,6 @@ import threading.platformThreading
 
 import strategies.throwUnsafely
 import backstops.silentBackstop
-import autopsies.contrastExpectations
 
 import Shell.*
 

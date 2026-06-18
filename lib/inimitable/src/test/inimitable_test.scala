@@ -35,7 +35,6 @@ package inimitable
 import soundness.*
 
 import errorDiagnostics.stackTracesDiagnostics
-import autopsies.contrastExpectations
 
 object Tests extends Suite(m"Inimitable Tests"):
   def run(): Unit =

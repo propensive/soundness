@@ -50,7 +50,6 @@ import distillate.*
 import fulminate.*
 import gossamer.*
 import hieroglyph.*
-import hypotenuse.*
 import parasite.*
 import prepositional.*
 import rudiments.*

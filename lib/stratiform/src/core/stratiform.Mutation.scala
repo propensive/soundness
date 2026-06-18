@@ -260,7 +260,8 @@ object Mutation:
 
         IArray(target.copy(children = updated))
 
-      case Op.Insert(_, _) =>
+      case Op.Insert(_, _) | Op.ReorderWithinGroup(_, _, _, _) | Op.ReorderGroups(_, _, _)
+          | Op.ResizeTabulation(_, _) =>
         // unreachable: handled in transform's container-mode arm
         abort(MutationError(Reason.PointerNotFound))
 
@@ -413,7 +414,7 @@ object Mutation:
     val secondRange = runRange(secondKeyword)
 
     (firstRange, secondRange) match
-      case (f: (Int, Int), s: (Int, Int)) =>
+      case (f: (Int, Int) @unchecked, s: (Int, Int) @unchecked) =>
         // Swap positions: the earlier-positioned group moves to where
         // the later one was, preserving counts.
         val (a, b) = if f._1 < s._1 then (f, s) else (s, f)

@@ -102,7 +102,7 @@ extends Rig:
       val jarfile = out.peer(name2)
       val bundle = Bundler.bundle(out, jarfile, fqcn"superlunary.Executor2")
 
-      val cmd = buildId match
+      val cmd = (buildId: @unchecked) match
         case id: Int => sh"java -Dbuild.id=$id -Dbuild.executable=$target -jar $jarfile '[]'"
         case Unset   => sh"java -Dbuild.executable=$target -jar $jarfile '[]'"
 

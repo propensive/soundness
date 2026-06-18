@@ -120,7 +120,7 @@ object internal:
       case Varargs(exprs) =>
         val (method0, _, headers) = expand(exprs)
 
-        val method = method0 match
+        val method = (method0: @unchecked) match
           case Unset                     => '{Http.Post}
           case method: Expr[Http.Method] => method
 
@@ -152,7 +152,7 @@ object internal:
       case Varargs(exprs) =>
         val (method0, _, headers) = expand(exprs)
 
-        val method = method0 match
+        val method = (method0: @unchecked) match
           case Unset                     => '{Http.Get}
           case method: Expr[Http.Method] => method
 
@@ -181,7 +181,7 @@ object internal:
           case Varargs(exprs) =>
             val (_, status, headers2) = expand(exprs.to(List))
 
-            val status2: Expr[Optional[Http.Status]] = status match
+            val status2: Expr[Optional[Http.Status]] = (status: @unchecked) match
               case Unset                   => '{Unset}
               case expr: Expr[Http.Status] => expr
 

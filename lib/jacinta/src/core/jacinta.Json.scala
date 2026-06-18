@@ -83,7 +83,7 @@ private[jacinta] trait JsonDecodable[T] extends Decodable:
 // `Json.Decodable`) so generic `as[T]` callers bounded on `Decodable in Json`
 // still resolve.
 trait Json3:
-  inline given decodableAtFocus: [value]
+  given decodableAtFocus: [value]
   =>  ( inner: value is Decodable in Json )
   =>  value is Decodable in Json at Json.Focus =
 

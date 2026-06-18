@@ -259,7 +259,7 @@ object InlineSupport:
     var title: Optional[Text] = Unset
 
     if i > beforeWs && i < n then
-      parseLinkTitle(s, i, n) match
+      (parseLinkTitle(s, i, n): @unchecked) match
         case Unset =>
           // No title: backtrack to before the whitespace to allow trailing-only
           i = beforeWs
@@ -296,7 +296,7 @@ object InlineSupport:
           buf.append(s.charAt(i + 1))
           i += 2
         else if c == '&' then
-          parseEntity(s, i, end) match
+          (parseEntity(s, i, end): @unchecked) match
             case e: EntityMatch =>
               buf.append(e.decoded); i = e.end
 
@@ -322,7 +322,7 @@ object InlineSupport:
           buf.append(s.charAt(i + 1))
           i += 2
         else if c == '&' then
-          parseEntity(s, i, end) match
+          (parseEntity(s, i, end): @unchecked) match
             case e: EntityMatch =>
               buf.append(e.decoded); i = e.end
 
@@ -364,7 +364,7 @@ object InlineSupport:
         buf.append(s.charAt(i + 1))
         i += 2
       else if c == '&' then
-        parseEntity(s, i, end) match
+        (parseEntity(s, i, end): @unchecked) match
           case e: EntityMatch => buf.append(e.decoded); i = e.end
           case Unset          => buf.append(c); i += 1
       else
@@ -388,7 +388,7 @@ object InlineSupport:
         out.append(s.charAt(i + 1))
         i += 2
       else if c == '&' then
-        parseEntity(s, i, n) match
+        (parseEntity(s, i, n): @unchecked) match
           case e: EntityMatch =>
             out.append(e.decoded); i = e.end
 
@@ -561,7 +561,7 @@ object InlineSupport:
 
     val (dest, afterDest): (Text, Int) =
       if i < end && s.charAt(i) != ')' then
-        parseLinkDestination(s, i, end) match
+        (parseLinkDestination(s, i, end): @unchecked) match
           case Unset        => return Unset
           case d: DestMatch => (d.dest, d.end)
       else
@@ -574,7 +574,7 @@ object InlineSupport:
     var title: Optional[Text] = Unset
 
     if i > beforeWs && i < end then
-      parseLinkTitle(s, i, end) match
+      (parseLinkTitle(s, i, end): @unchecked) match
         case t: TitleMatch =>
           title = Text(t.title)
           i = t.end
@@ -657,7 +657,7 @@ object InlineSupport:
     var resultEnd: Int = -1
 
     if titleOpener then
-      parseLinkTitle(s, tentativeWsEnd, end) match
+      (parseLinkTitle(s, tentativeWsEnd, end): @unchecked) match
         case t: TitleMatch =>
           val titleTrailEnd = checkLrdTrailing(s, t.end, end)
 

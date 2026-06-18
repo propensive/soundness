@@ -491,9 +491,6 @@ object internal:
 
                   resolve(function.symbol.info)
 
-                case _ =>
-                  missing(repr, Nil)
-
               catch case _: Throwable => missing(repr, Nil)
 
             case _ =>

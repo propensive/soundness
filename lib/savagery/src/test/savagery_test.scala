@@ -34,7 +34,6 @@ package savagery
 
 import soundness.*
 
-import autopsies.contrastExpectations
 import errorDiagnostics.stackTracesDiagnostics
 import iridescence.WebColors.{Red, Blue, Green, Black, White}
 import strategies.throwUnsafely
@@ -412,8 +411,6 @@ object Tests extends Suite(m"Savagery tests"):
           case lg: LinearGradient[?] =>
             lg.stops.length == 1 && lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
 
-          case _ => false
-
       test(m"Parse short hex #f00"):
         val svg =
           t"""<svg width="10" height="10"><defs><linearGradient id="g"><stop offset="0" stop-color="#f00"/></linearGradient></defs></svg>"""
@@ -422,7 +419,6 @@ object Tests extends Suite(m"Savagery tests"):
         svg.defs.head
       .assert:
           case lg: LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
-          case _                     => false
 
       test(m"Parse rgb function"):
         val svg =
@@ -432,7 +428,6 @@ object Tests extends Suite(m"Savagery tests"):
         svg.defs.head
       .assert:
           case lg: LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
-          case _                     => false
 
       test(m"Parse named color red"):
         val svg =
@@ -442,7 +437,6 @@ object Tests extends Suite(m"Savagery tests"):
         svg.defs.head
       .assert:
           case lg: LinearGradient[?] => lg.stops.head.color == Srgb(1.0, 0.0, 0.0)
-          case _                     => false
 
       test(m"Parse linear gradient with id"):
         val svg =
@@ -453,7 +447,6 @@ object Tests extends Suite(m"Savagery tests"):
         svg.defs.head
       .assert:
           case lg: LinearGradient[?] => lg.id == SvgId(t"myGrad")
-          case _                     => false
 
       test(m"Skip unknown element"):
         val svg =

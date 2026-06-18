@@ -50,7 +50,6 @@ import filesystemOptions.writeAccess.enabled
 import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.overwritePreexisting.disabled
 
 object ParserTests extends Suite(m"Jacinta JSON parser tests"):
   def run(): Unit =

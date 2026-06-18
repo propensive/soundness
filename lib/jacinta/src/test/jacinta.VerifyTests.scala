@@ -36,7 +36,6 @@ import soundness.*
 
 import charEncoders.utf8Encoder
 import strategies.throwUnsafely
-import errorDiagnostics.stackTracesDiagnostics
 
 // NB: `dynamicJsonAccess.enabled` is deliberately *not* imported here — verified
 // `Json of T` navigation must work without it.

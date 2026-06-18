@@ -63,7 +63,7 @@ object TastySymbol:
             case (key, value: Text) =>
               key -> e"${Fg(palette.outline)}($value)"
 
-            case (key, items: List[Text]) =>
+            case (key, items: List[Text] @unchecked) =>
               key -> e"${Fg(palette.outline)}(${items.join(t", ")})"
 
         . to(List)

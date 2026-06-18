@@ -191,7 +191,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
             val hpack = Hpack()
             var continue = true
 
-            while continue do reader.next() match
+            while continue do (reader.next(): @unchecked) match
               case Unset    => continue = false
 
               case f: Frame => f match

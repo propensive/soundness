@@ -49,7 +49,6 @@ import threading.platformThreading
 
 import strategies.throwUnsafely
 import backstops.silentBackstop
-import autopsies.contrastExpectations
 
 object Tests extends Suite(m"Ethereal Tests"):
   def run(): Unit =
@@ -78,7 +77,6 @@ object Tests extends Suite(m"Ethereal Tests"):
       ' {
           import executives.completions
           import interpreters.posixInterpreter
-          import environments.daemonClientEnvironment
           import systems.javaSystem
 
           cli:

@@ -402,7 +402,7 @@ object SvgParser:
       else
         abort(SvgError(SvgError.Reason.MalformedColor(c)))
     else
-      s.toLowerCase.nn match
+      (s.toLowerCase.nn: @unchecked) match
         case "red"     => Srgb(1.0, 0.0, 0.0)
         case "green"   => Srgb(0.0, 0.502, 0.0)
         case "blue"    => Srgb(0.0, 0.0, 1.0)

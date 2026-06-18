@@ -128,7 +128,7 @@ class Reader(body: () => Stream[Data], channel: Channel)(using Tactic[WebsocketE
       else extend(text, data, fin)
 
     def recur(partial: Optional[(Boolean, Data)]): Stream[Message] =
-      Frame.parse(cursor) match
+      (Frame.parse(cursor): @unchecked) match
         case Unset =>
           Stream()
 

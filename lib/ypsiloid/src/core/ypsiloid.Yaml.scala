@@ -826,7 +826,7 @@ object Yaml extends Yaml2, Dynamic:
 
         case _ => false
 
-    def deepHash(ast: Yaml.Ast): Int = ast match
+    def deepHash(ast: Yaml.Ast): Int = (ast: @unchecked) match
       case Yaml.YamlNull => 0
       case b: Boolean    => b.hashCode
       case n: Long       => n.hashCode

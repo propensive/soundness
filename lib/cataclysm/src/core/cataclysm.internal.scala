@@ -173,7 +173,7 @@ object internal:
         if has(name) || has(prelude) then
           halt(m"cataclysm: a substitution may only be a property value, not part of an at-rule")
 
-        body match
+        (body: @unchecked) match
           case Unset =>
             '{Css.Node.At(${lift(name)}, ${lift(prelude)}, Unset)}
 
