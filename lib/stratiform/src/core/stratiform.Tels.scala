@@ -298,23 +298,25 @@ object Tels extends Tels2:
   // presentation-model-driven Tel.as[T] decoder.
   object Decoder:
     extension (tel: Tel)
-      // Validate `tel` against the schema in scope and return it for
-      // chaining. Raises a TelError on the first E2xx/E3xx violation;
-      // returns the same `tel` value unchanged on success.
-      def validate(using schema: Tels): Tel raises TelError =
+      // Validate `tel` against the schema in scope and return it for chaining.
+      // Under the default fail-fast tactic this raises a TelError on the first
+      // E2xx/E3xx violation; under a `validate[Tel.Focus]` boundary the document-
+      // level violations (unknown keyword, missing required member, failed
+      // validator, flag-with-content) accrue. Returns the same `tel` on success.
+      def validate(using schema: Tels): Tel raises TelError tracks Tel.Focus =
         Tel.Type.assign(tel, schema)
         tel
 
       // Same as `validate` but also applies the registry's validators.
       def validate(using schema: Tels, validators: Tel.Validator.Registry)
-      :   Tel raises TelError =
+      :   Tel raises TelError tracks Tel.Focus =
 
         Tel.Type.assign(tel, schema, validators)
         tel
 
       // Convenience: validate-then-decode in a single call.
       inline def asValidated[value: Decodable in Tel](using schema: Tels)
-      :   value raises TelError =
+      :   value raises TelError tracks Tel.Focus =
 
         Tel.Type.assign(tel, schema)
         tel.as[value]

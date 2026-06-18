@@ -48,15 +48,71 @@ import turbulence.*
 import vacuous.*
 import wisteria.*
 
-object Dsv:
-  def apply(iterable: Iterable[Text]): Dsv = new Dsv(IArray.from(iterable))
-  def apply(text: Text*): Dsv = new Dsv(IArray.from(text))
-
+trait Dsv2:
+  // Generic fallback: any `Decodable in Text` (custom types, enums, `Uuid`, …)
+  // decodes from the row's first cell. Held at lower priority than the primitive
+  // `Decodable in Dsv` givens in `object Dsv` (which accrue errors via raise+yet)
+  // so those win for Int/Long/Double/… where a `Decodable in Text` also exists —
+  // mirroring how distillate keeps its generic instance in `Decodable2`.
   given decoder: [decodable: Decodable in Text] => decodable is Decodable in Dsv =
     value => decodable.decoded(value.data.head)
 
+object Dsv extends Dsv2:
+  def apply(iterable: Iterable[Text]): Dsv = new Dsv(IArray.from(iterable))
+  def apply(text: Text*): Dsv = new Dsv(IArray.from(text))
+
   given encoder: [encodable: Encodable in Text] => encodable is Encodable in Dsv =
     value => Dsv(encodable.encode(value))
+
+  // Primitive cell decoders. Unlike the generic `decoder` (which bottoms out in
+  // distillate's `abort`ing text decoders), these register an error and continue
+  // with a sentinel value (`raise … yet sentinel`), so that when a row is decoded
+  // into a product under a `validate[CellRef]` boundary every malformed cell is
+  // accrued rather than the first failure aborting the whole record. An absent
+  // cell (short row / missing column) is distinguished from a present-but-
+  // unparseable one. The real cell location is carried by the enclosing
+  // `focus(CellRef(…))` in the product derivation, so `DsvError` itself is built
+  // through the position-free companion `apply`.
+  private def decodeCell[value]
+    ( dsv: Dsv, expected: Text, sentinel: value )
+    ( parse: Text => Optional[value] )
+    ( using format: DsvFormat, tactic: Tactic[DsvError] )
+  :   value =
+
+    dsv.data.prim.lay(raise(DsvError(format, DsvError.Reason.Absent)) yet sentinel): cell =>
+      parse(cell).or:
+        raise(DsvError(format, DsvError.Reason.Unparseable(cell, expected))) yet sentinel
+
+  given int: (format: DsvFormat) => Tactic[DsvError] => Int is Decodable in Dsv = dsv =>
+    decodeCell(dsv, t"Int", 0): cell =>
+      try Integer.parseInt(cell.s) catch case _: NumberFormatException => Unset
+
+  given long: (format: DsvFormat) => Tactic[DsvError] => Long is Decodable in Dsv = dsv =>
+    decodeCell(dsv, t"Long", 0L): cell =>
+      try java.lang.Long.parseLong(cell.s) catch case _: NumberFormatException => Unset
+
+  given double: (format: DsvFormat) => Tactic[DsvError] => Double is Decodable in Dsv = dsv =>
+    decodeCell(dsv, t"Double", 0.0): cell =>
+      try java.lang.Double.parseDouble(cell.s) catch case _: NumberFormatException => Unset
+
+  given float: (format: DsvFormat) => Tactic[DsvError] => Float is Decodable in Dsv = dsv =>
+    decodeCell(dsv, t"Float", 0.0f): cell =>
+      try java.lang.Float.parseFloat(cell.s) catch case _: NumberFormatException => Unset
+
+  given boolean: (format: DsvFormat) => Tactic[DsvError] => Boolean is Decodable in Dsv = dsv =>
+    decodeCell(dsv, t"Boolean", false): cell =>
+      cell.s match
+        case "true"  => true
+        case "false" => false
+        case _       => Unset
+
+  given text: (format: DsvFormat) => Tactic[DsvError] => Text is Decodable in Dsv = dsv =>
+    decodeCell(dsv, t"Text", t""): cell =>
+      cell
+
+  given string: (format: DsvFormat) => Tactic[DsvError] => String is Decodable in Dsv = dsv =>
+    decodeCell(dsv, t"String", ""): cell =>
+      cell.s
 
 
   inline given decodableDerivation: [value <: Product: ProductReflection]
@@ -145,7 +201,7 @@ object Dsv:
         Dsv(cells)
 
 case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) extends Dynamic:
-  def as[cell: Decodable in Dsv]: cell = cell.decoded(this)
+  def as[cell: Decodable in Dsv]: cell raises DsvError tracks CellRef = cell.decoded(this)
 
   def header: Optional[IArray[Text]] = columns.let: map =>
     val columns = map.map(_.swap)

@@ -616,6 +616,25 @@ private final class TelParser():
 
     abort(TelError(reason, TelError.Position(line, column)))
 
+  // Recoverable-error variants of `errorHere`/`errorAt`. They `raise` the error
+  // (rather than `abort`) and continue with `continuation`, which realises the
+  // §19.5 `recoveryOf(reason)` strategy. Under the default `ThrowTactic` `raise`
+  // throws, so parsing stays fail-fast and identical to `errorHere`/`errorAt`;
+  // under a `validate`-installed `TrackTactic` the error accrues and parsing
+  // continues, so a document with several recoverable defects reports them all.
+  // The continuation MUST advance the cursor past the offending input (or the
+  // surrounding flow must), otherwise an enclosing scan loop would not progress.
+  private inline def recoverHere[T](reason: Reason)(continuation: => T): T raises TelError =
+    raise(TelError(reason, TelError.Position(lineNo, columnForCurrentBytePos())))
+    continuation
+
+  private inline def recoverAt[T](reason: Reason, line: Int, column: Int)
+    ( continuation: => T )
+  :   T raises TelError =
+
+    raise(TelError(reason, TelError.Position(line, column)))
+    continuation
+
   // ── Mark / hold plumbing ──────────────────────────────────────────────────
   //
   // The streaming parser uses narrow per-leaf holds: every method that takes
@@ -852,7 +871,12 @@ private final class TelParser():
   // ── BOM ──────────────────────────────────────────────────────────────────
 
   private def checkBom(): Unit raises TelError =
-    if more && peek == BOM0 then errorHere(Reason.BomPresent)
+    if more && peek == BOM0 then
+      // §19.5 SkipBom: drop the byte-order mark and parse from the next byte.
+      recoverHere(Reason.BomPresent):
+        advance()
+        if more && peek == BOM1 then advance()
+        if more && peek == BOM2 then advance()
 
   // ── Line endings ─────────────────────────────────────────────────────────
 
@@ -925,8 +949,9 @@ private final class TelParser():
           syncTo()
           val pragmaStartAbs = cursor.position.n0
 
+          // §19.5 AllowOversize: record the cap breach but keep parsing the pragma.
           if pragmaStartAbs >= 4096 then
-            errorAt(Reason.PragmaTooLong, pragmaLine, 1)
+            recoverAt(Reason.PragmaTooLong, pragmaLine, 1)(())
 
           val pragmaMk = beginMark()
           while more && peek != LF && peek != CR do advance()
@@ -935,7 +960,7 @@ private final class TelParser():
           val pragmaEndAbs = cursor.position.n0
 
           if pragmaEndAbs > 4096 then
-            errorAt(Reason.PragmaTooLong, pragmaLine, 1)
+            recoverAt(Reason.PragmaTooLong, pragmaLine, 1)(())
 
           consumeLineEnding()
           prevLineWasBoundary = true
@@ -975,8 +1000,9 @@ private final class TelParser():
   private def consumeLineEnding(): Unit raises TelError =
     if !more then ()
     else if peek == LF then
+      // §19.5 CollapseLineEndings: accept the inconsistent ending and carry on.
       if !lineEndingsDetected then detectLineEndingMode(crBefore = false)
-      else if crlfMode then errorHere(Reason.BadLineEnding)
+      else if crlfMode then recoverHere(Reason.BadLineEnding)(())
 
       advance()
       lineNo += 1
@@ -984,10 +1010,12 @@ private final class TelParser():
     else if peek == CR then
       val next = peekNext()
 
+      // A bare CR (not followed by LF) cannot be consumed coherently, so it stays
+      // fatal; an LF-mode CR LF is recoverable (CollapseLineEndings).
       if next != LF.toInt then errorHere(Reason.BadLineEnding)
       else
         if !lineEndingsDetected then detectLineEndingMode(crBefore = true)
-        else if !crlfMode then errorHere(Reason.BadLineEnding)
+        else if !crlfMode then recoverHere(Reason.BadLineEnding)(())
 
         advance()  // CR
         advance()  // LF
@@ -1016,13 +1044,17 @@ private final class TelParser():
   :   Tel.Pragma raises TelError =
 
     val parts = splitPragmaPhrases(content)
-    if parts.head != "tel" then errorAt(Reason.PragmaNotFirst, line, 1)
+
+    // §19.5 RestartFromPragma: a non-`tel` head is recorded but parsing continues.
+    if parts.head != "tel" then recoverAt(Reason.PragmaNotFirst, line, 1)(())
 
     val version =
       if parts.length >= 2 then parseVersion(parts(1), line)
       else (1, 0)
 
-    if parts.length > 4 then errorAt(Reason.ExtraPragmaContent, line, 1)
+    // §19.5 IgnoreExtraPragmaAtoms: only parts 2 and 3 are read below, so excess
+    // atoms are already ignored once the error is recorded.
+    if parts.length > 4 then recoverAt(Reason.ExtraPragmaContent, line, 1)(())
 
     val schemaText: Optional[Text] =
       if parts.length >= 3 then
@@ -1037,19 +1069,21 @@ private final class TelParser():
 
         val isBase256 = s.nonEmpty && s.forall: c => Character.isLetter(c) || (c >= '0' && c <= '9')
 
+        // §19.5 IgnoreSchemaId: a malformed schema identifier is dropped (Unset).
         if !isUrl && !isBase256
-        then errorAt(Reason.BadSchemaIdentifier, line, 1)
-
-        Text(s): Optional[Text]
+        then recoverAt(Reason.BadSchemaIdentifier, line, 1)(Unset)
+        else Text(s): Optional[Text]
       else
         Unset
 
     val pragmaSigil: Optional[Char] =
       if parts.length >= 4 && parts(3).length == 1 then
         val c = parts(3).charAt(0)
-        if c.isLetterOrDigit then errorAt(Reason.BadSigil, line, 1)
-        sigil = c.toByte
-        c: Optional[Char]
+        // §19.5 UseDefaultSigil: an invalid sigil is dropped, keeping the default.
+        if c.isLetterOrDigit then recoverAt(Reason.BadSigil, line, 1)(Unset)
+        else
+          sigil = c.toByte
+          c: Optional[Char]
       else
         Unset
 
@@ -1058,15 +1092,20 @@ private final class TelParser():
   private def parseVersion(s: String, line: Int)
   :   (Int, Int) raises TelError =
 
+    // §19.5 IgnoreVersion: a malformed version falls back to (0, 0) so the rest
+    // of the document is still parsed (and its defects accrued).
     val dot = s.indexOf('.')
-    if dot <= 0 || dot == s.length - 1 then errorAt(Reason.BadVersion, line, 1)
 
-    try
-      val major = s.substring(0, dot).toInt
-      val minor = s.substring(dot + 1).toInt
-      if major < 0 || minor < 0 then errorAt(Reason.BadVersion, line, 1)
-      (major, minor)
-    catch case _: NumberFormatException => errorAt(Reason.BadVersion, line, 1)
+    if dot <= 0 || dot == s.length - 1 then recoverAt(Reason.BadVersion, line, 1)((0, 0))
+    else
+      try
+        val major = s.substring(0, dot).toInt
+        val minor = s.substring(dot + 1).toInt
+
+        if major < 0 || minor < 0 then recoverAt(Reason.BadVersion, line, 1)((0, 0))
+        else (major, minor)
+
+      catch case _: NumberFormatException => recoverAt(Reason.BadVersion, line, 1)((0, 0))
 
   private def splitPragmaPhrases(content: String): List[String] =
     val parts = scala.collection.mutable.ListBuffer.empty[String]
@@ -1223,7 +1262,9 @@ private final class TelParser():
       if !shallowerValid && deeperValid then deeper else shallower
 
     . or:
-      errorAt(Reason.OddIndentation, line, 1)
+      // §19.5 ShallowerIndent: round an odd indent down to the nearer level. The
+      // leading spaces are already consumed, so returning a level cannot stall.
+      recoverAt(Reason.OddIndentation, line, 1)(rel / 2)
 
   // ── Line-head fill ───────────────────────────────────────────────────────
 
@@ -1268,7 +1309,8 @@ private final class TelParser():
       val rel = spaces - margin
 
       head.indentLevels =
-        if rel < 0 then errorAt(Reason.LessThanMargin, head.startLine, 1)
+        // §19.5 AdjustMargin: a line indented less than the margin sits at level 0.
+        if rel < 0 then recoverAt(Reason.LessThanMargin, head.startLine, 1)(0)
         else if rel % 2 == 0 then rel / 2
         else recoverOddIndent(spaces, head.startLine)
 
@@ -1292,30 +1334,30 @@ private final class TelParser():
     else
       val start = blockScratchIx
 
-      while !head.eof && !head.separator && head.indentLevels == expected do
-        parseBlock(expected)  // pushes one block onto scratchBlocks
+      // A line more indented than `expected` is misplaced. Under fail-fast the
+      // first such line raises (unchanged); under a `validate` boundary we record
+      // it and recover (SkipOverIndented / ShallowerIndent) by clamping it to
+      // `expected` so `parseBlock` consumes it as a sibling — guaranteeing the
+      // cursor advances every iteration, so the parser keeps going to EOF and
+      // accrues every defect (e.g. for LSP diagnostics) without ever stalling.
+      while !head.eof && !head.separator && head.indentLevels >= expected do
+        if head.indentLevels > expected then
+          val line   = head.startLine
+          val lastIx = blockScratchIx - 1
 
-      // After consuming children at `expected`, a remaining non-blank line
-      // more indented than `expected` is an error. A document separator
-      // (always at column zero) is never over-indented, so it is excluded.
-      if !head.eof && !head.separator && head.indentLevels > expected then
-        val line = head.startLine
-        val lastIx = blockScratchIx - 1
+          val reason =
+            if lastIx < start then Reason.OverIndentation
+            else
+              val last = scratchBlocks(lastIx)
 
-        if lastIx >= start then
-          val last = scratchBlocks(lastIx)
+              if last.tabulation.present && last.compounds.nil then Reason.RowWrongIndent
+              else if last.tabulation.present || last.compounds.nil then Reason.ChildOfNonCompound
+              else Reason.OverIndentation
 
-          if last.tabulation.present && last.compounds.nil then
-            errorAt(Reason.RowWrongIndent, line, 1)
-          else if last.tabulation.present then
-            errorAt(Reason.ChildOfNonCompound, line, 1)
-          else if last.compounds.nil then
-            errorAt(Reason.ChildOfNonCompound, line, 1)
-          else
-            errorAt(Reason.OverIndentation, line, 1)
+          recoverAt(reason, line, 1)(())
+          head.indentLevels = expected
 
-        else
-          errorAt(Reason.OverIndentation, line, 1)
+        parseBlock(expected)  // pushes one block onto scratchBlocks; consumes ≥1 line
 
       takeBlocks(blockScratchIx - start)
 
@@ -1337,9 +1379,10 @@ private final class TelParser():
     do
       // §9 E109 check — fires only if the immediately preceding line was a
       // content line (compound / tabulation) at indent ≥ this comment's.
+      // §19.5 AttachComment: record the misplacement but attach the comment.
       if !prevLineWasBoundary && prevContentLeadingSpaces >= 0 &&
         prevContentLeadingSpaces >= margin + indent * 2
-      then errorAt(Reason.CommentNotPreceded, head.startLine, 1)
+      then recoverAt(Reason.CommentNotPreceded, head.startLine, 1)(())
 
       val text = parseCommentLine()
       pushComment(Tel.Comment(text))
@@ -1746,8 +1789,10 @@ private final class TelParser():
                 val phraseWidth = runStart - phraseStart
                 val colMax = markers(columnIdx + 1) - markers(columnIdx) - 2
 
+                // §19.5 SuppressColumnAlignment: record but keep scanning (the
+                // loop self-advances and the row is re-read by parseCompoundLine).
                 if phraseWidth > colMax then
-                  errorAt(Reason.ColumnValueTooWide, lineNumber, phraseStart + 1)
+                  recoverAt(Reason.ColumnValueTooWide, lineNumber, phraseStart + 1)(())
 
               var foundIdx = -1
               var k = 1
@@ -1756,8 +1801,9 @@ private final class TelParser():
                 if markers(k) == col then foundIdx = k
                 k += 1
 
+              // §19.5 SuppressColumnAlignment: record but keep scanning.
               if foundIdx < 0 then
-                errorAt(Reason.HardSpaceWrongPosition, lineNumber, col + 1)
+                recoverAt(Reason.HardSpaceWrongPosition, lineNumber, col + 1)(())
 
               columnIdx = foundIdx
               phraseStart = col
@@ -1785,12 +1831,18 @@ private final class TelParser():
         else if head.leadingSpaces == sourceIndent then Optional(parseSourceAtom(sourceIndent))
         else Unset
 
-      // §10.4 / §11.1: at most one source / literal atom per compound.
+      // §10.4 / §11.1: at most one source / literal atom per compound. §19.5
+      // IgnoreDuplicateAtom: record the duplicate but consume (and discard) it so
+      // the cursor advances past it and parsing continues.
       if first.present && !head.eof && !head.blank then
-        if head.leadingSpaces == literalIndent
-        then errorAt(Reason.DuplicateLiteral, head.startLine, 1)
-        else if head.leadingSpaces == sourceIndent
-        then errorAt(Reason.DuplicateSource, head.startLine, 1)
+        if head.leadingSpaces == literalIndent then
+          recoverAt(Reason.DuplicateLiteral, head.startLine, 1):
+            parseLiteralAtom(literalIndent)
+            ()
+        else if head.leadingSpaces == sourceIndent then
+          recoverAt(Reason.DuplicateSource, head.startLine, 1):
+            parseSourceAtom(sourceIndent)
+            ()
 
       first
 
@@ -1942,12 +1994,14 @@ private final class TelParser():
     var done = false
 
     while !done do
-      if !more then errorAt(Reason.UnclosedLiteral, openingLine, 1)
+      // §19.5 PayloadToEof: an unterminated literal ends at EOF rather than
+      // aborting, so the rest of the document can still be parsed and accrued.
+      if !more then done = recoverAt(Reason.UnclosedLiteral, openingLine, 1)(true)
       // Read a line. Inside the literal payload, line endings are not
       // subject to the document's LF/CRLF mode (per §15 the payload is
       // verbatim, with CRLF normalised to LF). One hold per payload line so
       // the cursor can compact between lines.
-      done = inHold:
+      else done = inHold:
         val lineMk = beginMark()
 
         while
@@ -1977,14 +2031,18 @@ private final class TelParser():
 
           true
         else
-          // Payload line — must have an LF terminator; EOF here is E115.
-          if !more then errorAt(Reason.UnclosedLiteral, openingLine, 1)
-          advance()  // consume LF
-          lineNo += 1
-          if !more then documentEndsWithLf = true
-          sb.append(raw)
-          sb.append('\n')
-          false
+          // Payload line — must have an LF terminator; EOF here is E115. §19.5
+          // PayloadToEof: an unterminated final line ends the payload at EOF.
+          if !more then
+            sb.append(raw)
+            recoverAt(Reason.UnclosedLiteral, openingLine, 1)(true)
+          else
+            advance()  // consume LF
+            lineNo += 1
+            if !more then documentEndsWithLf = true
+            sb.append(raw)
+            sb.append('\n')
+            false
 
     fillHead()
     // §15: the payload is the verbatim bytes between structural LFs — CR is
@@ -2009,8 +2067,10 @@ private final class TelParser():
     // E102: a `tel` or `tel …` line at column 0 after the first non-blank
     // line is a misplaced pragma. The valid pragma was already consumed
     // earlier by parsePragma; anything matching here is a violation.
+    // §19.5 RestartFromPragma: record the misplaced pragma but parse the line as
+    // an ordinary compound (the keyword is already read; the rest follows).
     if mayBeMisplacedPragma && keyword == t"tel" then
-      errorAt(Reason.PragmaNotFirst, lineNumber, 1)
+      recoverAt(Reason.PragmaNotFirst, lineNumber, 1)(())
 
     hasConsumedNonBlankLine = true
 
@@ -2117,9 +2177,11 @@ private final class TelParser():
     // Inside the outer `hold`, the buffer byte just before the current pos
     // is still resident — peek it directly. (`pos > 0` because we have
     // consumed at least the keyword.)
+    // §19.5 StripTrailing: the keyword/atoms already exclude the trailing space,
+    // so recording the error and continuing yields the stripped line.
     if remark.absent && more && (peek == LF || peek == CR) &&
       pos > 0 && bytes(pos - 1) == SP
-    then errorAt(Reason.TrailingSpaces, lineNumber, head.leadingSpaces + 1)
+    then recoverAt(Reason.TrailingSpaces, lineNumber, head.leadingSpaces + 1)(())
 
     consumeLineEnding()
     compoundLineKeyword = keyword

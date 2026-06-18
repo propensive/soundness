@@ -32,48 +32,81 @@
                                                                                                   */
 package caesura
 
-import anticipation.*
-import denominative.*
-import fulminate.*
+import soundness.*
 
-object DsvError:
-  given communicable: Reason is Communicable =
-    case Reason.MisplacedQuote =>
-      m"a quote was found after the start of a cell"
+import strategies.throwUnsafely
+import errorDiagnostics.stackTracesDiagnostics
+import dsvFormats.csvWithHeaderFormat
 
-    case Reason.Absent =>
-      m"the cell was absent"
+case class ARecord(name: Text, age: Int, height: Int) derives CanEqual
 
-    case Reason.Unparseable(value, expected) =>
-      m"the value $value could not be parsed as $expected"
+object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
 
-  // `MisplacedQuote` is a parse-phase error; `Absent` and `Unparseable` are
-  // decode-phase errors (a cell missing from, or unparseable in, a row being
-  // decoded into a product). The latter accrue through a `Foci[CellRef]`, which
-  // carries the real cell location, so they construct via the position-free
-  // companion `apply` below.
-  enum Reason(val number: Int) extends Clarification:
-    case MisplacedQuote                          extends Reason(1)
-    case Absent                                  extends Reason(2)
-    case Unparseable(value: Text, expected: Text) extends Reason(3)
+  case class Issues(items: List[(Text, DsvError)] = Nil)(using Diagnostics)
+  extends Error(m"${items.length} decoding issues"):
+    def +(focus: Text, error: DsvError): Issues = Issues(items :+ (focus, error))
 
-  // Decode-phase constructor: the offending cell's position is carried by the
-  // accrued `CellRef` focus, not by the `DsvError` itself, so `row`/`column`/
-  // `offset` are filled with placeholders.
-  def apply(format: DsvFormat, reason: Reason)(using Diagnostics): DsvError =
-    DsvError(format, reason, Prim, Prim, 0)
+  private def validateDsv[result](dsv: Dsv)
+                                 (decode: Dsv => result raises DsvError tracks CellRef)
+  :   Issues =
+    validate[CellRef](Issues()):
+      case error: DsvError =>
+        accrual + (prior.let(_.column).or(t"#"), error)
+    . within(decode(dsv))
 
-// `row` and `column` are the 1-based position of the offending cell, and `offset`
-// is the character (UTF-16 code-unit) offset into the input at which the failure
-// was detected. A byte offset is not available here because the parser operates on
-// already-decoded `Text`, the source bytes having been discarded upstream.
-case class DsvError
-  ( format: DsvFormat, reason: DsvError.Reason, row: Ordinal, column: Ordinal, offset: Int )
-  ( using Diagnostics )
-extends Error(364, reason.number)
-  ( reason match
-      case DsvError.Reason.MisplacedQuote =>
-        m"could not parse row data at row ${row.n1}, column ${column.n1} because $reason"
+  private def row(text: Text): Dsv = text.read[Sheet].rows.head
 
-      case _ =>
-        m"could not decode the cell because $reason" )
+  def run(): Unit =
+    suite(m"Single-error decoding (sanity)"):
+      test(m"Fully-valid row: no errors accrued"):
+        validateDsv(row(t"name,age,height\nAlice,30,170"))(_.as[ARecord]).items.length
+      . assert(_ == 0)
+
+      test(m"Single unparseable cell: one error"):
+        validateDsv(row(t"name,age,height\nAlice,thirty,170"))(_.as[ARecord]).items.length
+      . assert(_ == 1)
+
+      test(m"Single missing cell: one error"):
+        validateDsv(row(t"name,age,height\nAlice,30"))(_.as[ARecord]).items.length
+      . assert(_ == 1)
+
+    suite(m"Multiple unparseable cells"):
+      test(m"Two unparseable cells accrue two errors"):
+        validateDsv(row(t"name,age,height\nAlice,thirty,tall"))(_.as[ARecord]).items.length
+      . assert(_ == 2)
+
+      test(m"Columns identify the unparseable cells"):
+        validateDsv(row(t"name,age,height\nAlice,thirty,tall"))(_.as[ARecord])
+         .items.map(_(0).s).to(Set)
+      . assert(_ == Set("age", "height"))
+
+      test(m"Each unparseable error has reason Unparseable"):
+        validateDsv(row(t"name,age,height\nAlice,thirty,tall"))(_.as[ARecord]).items.all:
+          case (_, err) => err.reason match
+            case DsvError.Reason.Unparseable(_, _) => true
+            case _                                 => false
+      . assert(identity)
+
+    suite(m"Multiple missing cells"):
+      test(m"Two missing cells accrue two errors"):
+        validateDsv(row(t"name,age,height\nAlice"))(_.as[ARecord]).items.length
+      . assert(_ == 2)
+
+      test(m"Columns identify the missing cells"):
+        validateDsv(row(t"name,age,height\nAlice"))(_.as[ARecord]).items.map(_(0).s).to(Set)
+      . assert(_ == Set("age", "height"))
+
+      test(m"Each missing-cell error has reason Absent"):
+        validateDsv(row(t"name,age,height\nAlice"))(_.as[ARecord]).items.all:
+          case (_, err) => err.reason == DsvError.Reason.Absent
+      . assert(identity)
+
+    suite(m"Missing + unparseable mixed"):
+      test(m"One unparseable plus one missing: two errors at the right columns"):
+        validateDsv(row(t"name,age,height\nAlice,thirty"))(_.as[ARecord]).items.map(_(0).s).to(Set)
+      . assert(_ == Set("age", "height"))
+
+    suite(m"Regression: does not abort on the first bad cell"):
+      test(m"Both bad cells are reported, not just the first"):
+        validateDsv(row(t"name,age,height\nAlice,bad1,bad2"))(_.as[ARecord]).items.length
+      . assert(_ > 1)

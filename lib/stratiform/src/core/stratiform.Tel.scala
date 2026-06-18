@@ -63,6 +63,12 @@ object Tel extends Tel2:
   type Error = TelError
   val Error: TelError.type = TelError
 
+  // The focus carried by `Tel#as[T]` for multi-error accrual: a keyword path
+  // identifying the field being decoded (and, for parser-phase errors, an
+  // optional source position). Mirrors `Json.Focus` / `Yaml.Focus`.
+  case class Focus(pointer: TelPath = TelPath.Root, position: Optional[TelError.Position] = Unset)
+  derives CanEqual
+
   extension (tel: Tel)
     def edited(revision: Revision): Tel raises MutationError = revision(tel)
 
@@ -123,7 +129,18 @@ object Tel extends Tel2:
     import TelError.Reason
     import Tels.*
 
-    def assign(tel: Tel, schema: Tels): Tel.Element raises TelError =
+    // Record an E2xx/E3xx validation error and continue with `continuation` —
+    // the §19.5 `IgnoreErroneousNode` recovery: discard the offending node and
+    // keep validating siblings. Under the default `ThrowTactic` `raise` throws,
+    // preserving fail-fast validation; under a `validate[Tel.Focus]` boundary's
+    // `TrackTactic` it accrues and the continuation supplies the skipped value.
+    private inline def recoverNode[value](reason: Reason)(continuation: => value)
+      ( using Tactic[TelError], Foci[Tel.Focus] )
+    :   value =
+
+      raise(TelError(reason)) yet continuation
+
+    def assign(tel: Tel, schema: Tels): Tel.Element raises TelError tracks Tel.Focus =
       val compounds: IArray[Tel.Compound] = tel.subtree.children.flatMap(_.compounds)
       val rootChildren = assignChildren(compounds, schema.document, schema)
 
@@ -133,7 +150,7 @@ object Tel extends Tel2:
       Tel.Element.Node(keywordIndex = Unset, elementType = schema.document, children = rootElements)
 
     def assign(tel: Tel, schema: Tels, validators: Tel.Validator.Registry)
-    :   Tel.Element raises TelError =
+    :   Tel.Element raises TelError tracks Tel.Focus =
 
       val element = assign(tel, schema)
       validateElement(element, validators)
@@ -141,7 +158,7 @@ object Tel extends Tel2:
 
     private def validateElement
       ( element: Tel.Element, registry: Tel.Validator.Registry )
-    :   Unit raises TelError =
+    :   Unit raises TelError tracks Tel.Focus =
 
       element match
         case Tel.Element.Value(_, scalarType, text) =>
@@ -150,7 +167,7 @@ object Tel extends Tel2:
               case Tel.Validator.Response.Valid      => ()
 
               case Tel.Validator.Response.Invalid(_) =>
-                abort(TelError(Reason.ValidatorRejected))
+                recoverNode(Reason.ValidatorRejected)(())
 
         case Tel.Element.Node(_, elementType, children) =>
           children.each(validateElement(_, registry))
@@ -164,7 +181,7 @@ object Tel extends Tel2:
                   case Tel.Validator.Response.Valid      => ()
 
                   case Tel.Validator.Response.Invalid(_) =>
-                    abort(TelError(Reason.ValidatorRejected))
+                    recoverNode(Reason.ValidatorRejected)(())
 
             case _ => ()
 
@@ -343,7 +360,7 @@ object Tel extends Tel2:
       ( compounds: IArray[Tel.Compound],
        parent:    Struct,
        schema:    Tels )
-    :   IArray[Tel.Element] raises TelError =
+    :   IArray[Tel.Element] raises TelError tracks Tel.Focus =
 
       val km = keywordMap(parent, schema)
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
@@ -352,10 +369,12 @@ object Tel extends Tel2:
       while i < compounds.length do
         val compound = compounds(i)
 
-        val entry = km.get(compound.keyword).getOrElse:
-          abort(TelError(Reason.UnknownKeyword))
+        // An unrecognised keyword is skipped (`IgnoreErroneousNode`): record it and
+        // emit no element, so remaining siblings are still validated.
+        km.get(compound.keyword) match
+          case Some(entry) => results += assignCompound(compound, entry, schema)
+          case None        => recoverNode(Reason.UnknownKeyword)(())
 
-        results += assignCompound(compound, entry, schema)
         i += 1
 
       IArray.from(results)
@@ -365,7 +384,7 @@ object Tel extends Tel2:
         atomElements:  IArray[Tel.Element],
         childElements: IArray[Tel.Element],
         schema:        Tels )
-    :   IArray[Tel.Element] raises TelError =
+    :   IArray[Tel.Element] raises TelError tracks Tel.Focus =
 
       val results = scala.collection.mutable.ArrayBuffer.empty[Tel.Element]
       results ++= atomElements
@@ -395,9 +414,9 @@ object Tel extends Tel2:
             if !filled then resolveType(f.fieldType, schema) match
               case s: Scalar => f.default match
                 case t: Text           => results += Tel.Element.Value(flatStart, s, t)
-                case unset: Unset.type => abort(TelError(Reason.RequiredMemberAbsent))
+                case unset: Unset.type => recoverNode(Reason.RequiredMemberAbsent)(())
 
-              case _ => abort(TelError(Reason.RequiredMemberAbsent))
+              case _ => recoverNode(Reason.RequiredMemberAbsent)(())
 
           case _ => ()
 
@@ -410,7 +429,7 @@ object Tel extends Tel2:
       ( compound: Tel.Compound,
        entry:    KeywordEntry,
        schema:   Tels )
-    :   Tel.Element raises TelError =
+    :   Tel.Element raises TelError tracks Tel.Focus =
 
       val resolved = resolveType(entry.entryType, schema)
 
@@ -434,12 +453,13 @@ object Tel extends Tel2:
 
         case Flag =>
           if compound.atoms.nonEmpty || compound.children.nonEmpty then
-            abort(TelError(Reason.FlagWithContent))
+            recoverNode(Reason.FlagWithContent)(())
 
           Tel.Element.Node(entry.memberIndex, Flag, IArray.empty)
 
         case _: Reference =>
-          abort(TelError(Reason.UnresolvedReference))
+          recoverNode(Reason.UnresolvedReference):
+            Tel.Element.Node(entry.memberIndex, Flag, IArray.empty)
 
   // Validator infrastructure per §21 of the TEL specification.
   object Validator:
@@ -1013,7 +1033,8 @@ extends scala.Dynamic, Documentary, Topical, Original:
   type Self = Tel
   type Metadata = Tel.Metadata
 
-  inline def as[value: Decodable in Tel]: value raises TelError = value.decoded(this)
+  inline def as[value: Decodable in Tel]: value raises TelError tracks Tel.Focus =
+    value.decoded(this)
 
   // Total field access used by the schema-typed navigation macros and by
   // internal optics: an empty `Tel` for a missing field, never raising.
