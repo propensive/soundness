@@ -46,7 +46,7 @@ case class OrderedMarker
     contentIndent: Ordinal,
     rest:          Text )
 
-object ParserSupport:
+private[punctuation] object ParserSupport:
 
   // CommonMark treats a tab as advancing to the next 4-column boundary.
   // Block-parser indent counting (`indentColumn`) returns those expanded

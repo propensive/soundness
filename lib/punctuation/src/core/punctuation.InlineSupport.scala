@@ -42,7 +42,7 @@ case class EntityMatch(decoded: String, end: Int)
 case class CodeSpanMatch(content: Text, end: Int)
 case class AutolinkMatch(link: Prose, end: Int)
 
-object InlineSupport:
+private[punctuation] object InlineSupport:
 
   // CommonMark "ASCII punctuation": !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~
   def isAsciiPunctuation(c: Char): Boolean = c match

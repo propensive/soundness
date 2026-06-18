@@ -54,7 +54,7 @@ import vacuous.*
 //   4. The leftover content goes into a leaf — heading, code block, or
 //      paragraph (start new or continue existing).
 
-final class BlockParser:
+private[punctuation] final class BlockParser:
   private val refs: LinkRefs = LinkRefs()
   private val docBuilder: DocumentBuilder = DocumentBuilder()
   private val openStack: ArrayBuffer[BlockBuilder] = ArrayBuffer(docBuilder)

@@ -44,7 +44,7 @@ import vacuous.*
 // own prefix) to the next-deeper open block. Leaves accumulate raw line
 // content and finalize to a single `Layout` value.
 
-sealed trait BlockBuilder:
+private[punctuation] sealed trait BlockBuilder:
   val line: Ordinal
 
 sealed trait LeafBuilder extends BlockBuilder:

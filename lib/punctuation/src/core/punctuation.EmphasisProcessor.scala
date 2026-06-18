@@ -115,7 +115,7 @@ final class InlineList:
       cur = n.next
       n
 
-object EmphasisProcessor:
+private[punctuation] object EmphasisProcessor:
 
   // CommonMark left-flanking: not followed by Unicode whitespace AND
   // (not followed by Unicode punctuation OR preceded by Unicode whitespace

@@ -48,7 +48,7 @@ import vacuous.*
 //      delimiters outside successfully-matched links.
 // The resulting list is then converted to a `Seq[Prose]`.
 
-object InlineParser:
+private[punctuation] object InlineParser:
 
   // Must stay in sync with the `c match` cases in `parse` below: any character
   // handled there must also be flagged here, otherwise it'll be silently
