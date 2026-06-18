@@ -37,7 +37,7 @@ export
   . { Console, CtrlChar, DismissError, Interaction, interactive, Interactivity, Keyboard,
       Keypress, LineEditor, Question, SelectMenu, Signal, SignalResponse, stdio, Canvas,
       Terminal, TerminalError, TerminalEvent, TerminalFeature, TerminalInfo, TerminalCanvas,
-      UnixSignal, WindowsSignal }
+      InlineCanvas, UnixSignal, WindowsSignal }
 
 package keyboards:
   export profanity.keyboards.{numericKeyboard, rawKeyboard, standardKeyboard}

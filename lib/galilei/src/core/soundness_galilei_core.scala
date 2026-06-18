@@ -41,7 +41,7 @@ export
       javaFile, javaPath, modified, MoveAtomically, moveInto, moveTo, open, Openable,
       OverwritePreexisting, readable, ReadAccess, size, Socket, Substantiable, Symlink, symlinkInto,
       symlinkTo, touch, TraversalOrder, UnixEntry, Volume, volume, WindowsEntry, wipe, writable,
-      WriteAccess, WriteSynchronously }
+      WriteAccess, WriteSynchronously, Device }
 
 package filesystemOptions:
   export

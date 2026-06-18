@@ -32,9 +32,12 @@
                                                                                                   */
 package soundness
 
+// unexported: Syntax (clashes with `stenography.Syntax` in the umbrella; reach it via
+// `cataclysm.Syntax`)
 export cataclysm.{Css, CssError, CssErrors, cssAggregable, SelectorList, Selector, Compound,
     Simple, Combinator, AttributeMatcher, AttributeTest, Prefix, PseudoArgument,
-    CssConvertible, Pixels, Rems, Exs, Chs, ViewportWidths,
+    CssConvertible, Outcome, PropertyDef, SyntaxMatcher, ValueToken, Pixels, Rems, Exs, Chs,
+    ViewportWidths,
     ViewportHeights, ViewportMins, ViewportMaxes, Percents, Degrees, Radians, Turns, Flexes, Px,
     Rem, Ex, Ch, Vw, Vh, Vmin, Vmax, Cm, Mm, Pt, Pc, Pct, S, Ms, Deg, Rad, Turn, Fr, css}
 

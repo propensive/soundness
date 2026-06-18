@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export xenophile.Wit
+export xenophile.{Wit, WitDialect}

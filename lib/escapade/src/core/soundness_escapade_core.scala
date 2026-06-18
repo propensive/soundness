@@ -36,7 +36,7 @@ export
   escapade
   . { Ansi, Ansi2, Bg, Bold, CharSpan, Colorable, Conceal, csi, e, Escape, escapes, Fg, Imprintable,
       Italic, Reverse, Ribbon, Strike, Stylize, Teletype, teletype, Teletypeable, TeletypeBuilder,
-      TextStyle, Underline }
+      TextStyle, Underline, Hyperlink, TerminalEscapes }
 
 package displayableTypes:
   export escapade.displayableTypes.messagePrintable

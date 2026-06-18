@@ -32,4 +32,6 @@
                                                                                                   */
 package soundness
 
+// unexported: Proxy (clashes with `vicarious.Proxy` in the umbrella; reach it via
+// `austronesian.Proxy`)
 export austronesian.{PojoError, Restorable}

@@ -35,7 +35,7 @@ package soundness
 export
   exoskeleton
   . { Application, application, Backstop, Effectful, effectful, Entrypoint, Executive, InstallError,
-      Invocation, trap }
+      Help, Invocation, trap }
 
 package backstops:
   export exoskeleton.backstops.{exceptionMessageBackstop, genericErrorMessageBackstop,

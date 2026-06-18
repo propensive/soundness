@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export burdock.{externalize, Repackager}
+export burdock.{DepsDev, externalize, Repackager}
 
 // The repackager's command-line entry point, in the `soundness` package so it can be
 // launched as `java -cp app.jar soundness.repackage` (house style requires every file to

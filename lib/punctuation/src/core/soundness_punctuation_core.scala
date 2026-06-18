@@ -32,7 +32,10 @@
                                                                                                   */
 package soundness
 
-export punctuation.{ Formattable, Layout, Markdown, Parser, Prose, Translator }
+export
+  punctuation
+  . { BlockBuilder, BlockParser, EmphasisProcessor, Formattable, HtmlEntities, InlineParser,
+      InlineSupport, Layout, LinkRefs, Markdown, Parser, ParserSupport, Prose, Translator }
 
 package formatting:
   export punctuation.formatting.unboundedMarkdownFormatting

@@ -36,4 +36,4 @@ export
   savagery
   . { Affine, Circle, Delta, Down, Ellipse, Figure, Left, LinearGradient, Orientation, Outline,
       Point, Rectangle, Right, Segment, Stop, Stroke, Svg, SvgDef, SvgError, SvgId, SvgParser,
-      Sweep, Transform, Up }
+      Sweep, Transform, Transformable, Up }
