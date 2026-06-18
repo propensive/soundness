@@ -206,8 +206,11 @@ object internal:
           '{$self.indexValue($idx)(using $tactic)}
 
         case None =>
-          halt(m"""indexing a `Json` array may raise `JsonError`; a `Tactic[JsonError]`
-                   must be in scope (e.g. via `raises JsonError`)""")
+          halt:
+            m"""
+              indexing a `Json` array may raise `JsonError`; a `Tactic[JsonError]`
+              must be in scope (e.g. via `raises JsonError`)
+            """
 
   def applied(self: Expr[Json], field: Expr[String], idx: Expr[Int]): Macro[Json] =
     import quotes.reflect.*

@@ -60,8 +60,10 @@ object internal:
       ch.isDigit || ((ch | 32) >= 'a' && (ch | 32) <= 'f')
 
     if hex.length != 6 || !hex.forall(isHex) then halt:
-      m"""the color must be in the form ${"rgb\"#rrggbb\"".tt} or ${"rgb\"rrggbb\"".tt} where
-         rr, gg and bb are 2-digit hex values"""
+      m"""
+        the color must be in the form ${"rgb\"#rrggbb\"".tt} or ${"rgb\"rrggbb\"".tt} where
+        rr, gg and bb are 2-digit hex values
+      """
 
     val red = Integer.parseInt(hex.substring(0, 2), 16)
     val green = Integer.parseInt(hex.substring(2, 4), 16)
