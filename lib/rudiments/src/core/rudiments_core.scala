@@ -132,18 +132,14 @@ extension [value <: Matchable](iterable: Iterable[value])
   transparent inline def sift[filter <: value: Typeable]: Iterable[filter] =
     iterable.flatMap(filter.unapply(_))
 
-  inline def has(value: value): Boolean = iterable.exists(_ == value)
-
   transparent inline def weave(right: Iterable[value]): Iterable[value] =
     iterable.zip(right).flatMap(Iterable(_, _))
 
-extension [element <: Matchable](iarray: IArray[element])
-  @targetName("hasIArray")
-  inline def has(value: element): Boolean = iarray.exists(_ == value)
-
-extension [element <: Matchable](array: Array[element])
-  @targetName("hasArray")
-  inline def has(value: element): Boolean = array.exists(_ == value)
+// `collection.has(value)` (value membership) for any `collection` that is
+// `Inclusive`; the queried value type is fixed by the instance's `Operand`.
+// Whether a *key/index* is present is `Indexable`'s `defines` instead.
+extension [self](self: self)(using inclusive: self is Inclusive)
+  def has(value: inclusive.Operand): Boolean = inclusive.has(self, value)
 
 // `value.where(predicate)` returns the first element satisfying `predicate`, for
 // any `value` that is `Traversable`.
@@ -331,12 +327,12 @@ extension [element](array: Array[element])
     System.arraycopy(value.asInstanceOf[Array[element]], 0, array, ordinal.n0, value.length)
 
 extension [key, value](map: sc.Map[key, value])
-  inline def has(key: key): Boolean = map.contains(key)
+  inline def defines(key: key): Boolean = map.contains(key)
   inline def bijection: Bijection[key, value] = Bijection(map.to(Map))
 
 extension [key, value](map: Map[key, value])
   def upsert(key: key, optional: Optional[value] => value): Map[key, value] =
-    map.updated(key, optional(if map.has(key) then map(key) else Unset))
+    map.updated(key, optional(if map.defines(key) then map(key) else Unset))
 
   def collate(right: Map[key, value])(merge: (value, value) => value): Map[key, value] =
     right.fuse(map)(state.updated(next(0), state.get(next(0)).fold(next(1))(merge(_, next(1)))))
@@ -378,7 +374,7 @@ extension (bytes: Data)
   def javaInputStream: ji.InputStream = new ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
 
 extension [indexable: Indexable](value: indexable)
-  inline def has(index: indexable.Operand): Boolean = indexable.contains(value, index)
+  inline def defines(index: indexable.Operand): Boolean = indexable.contains(value, index)
 
   // A single `at` that dispatches at compile time on the index type: an index statically known to
   // be confined to *this* `value` (an `Operand in value.type`, hence in range) returns a bare

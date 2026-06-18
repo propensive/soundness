@@ -232,7 +232,7 @@ object Syntax:
               if isPackage(name2) then simple else Simple(Typename.Type(typename, name2))
 
             case refined@Structural(base, members, defs) =>
-              if members.has(name) then members(name.tt) else Projection(refined, name.tt)
+              if members.defines(name) then members(name.tt) else Projection(refined, name.tt)
 
             case symbolic@Symbolic(_) =>
               Selection(symbolic, name)
@@ -259,7 +259,7 @@ object Syntax:
               if isPackage(name) then simple else Value(Typename.Term(typename, name))
 
             case refined@Structural(base, members, defs) =>
-              if members.has(name) then members(name.tt) else Projection(refined, name.tt)
+              if members.defines(name) then members(name.tt) else Projection(refined, name.tt)
 
             case symbolic@Symbolic(_) =>
               Selection(symbolic, name)

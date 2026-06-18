@@ -93,11 +93,11 @@ object Tests extends Suite(m"Rudiments Tests"):
       . assert(_ == true)
 
       test(m"Map key membership"):
-        Map(t"a" -> 1, t"b" -> 2).has(t"a")
+        Map(t"a" -> 1, t"b" -> 2).defines(t"a")
       . assert(_ == true)
 
       test(m"Map missing key"):
-        Map(t"a" -> 1, t"b" -> 2).has(t"c")
+        Map(t"a" -> 1, t"b" -> 2).defines(t"c")
       . assert(_ == false)
 
     suite(m"Confined index tests"):

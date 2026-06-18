@@ -12,6 +12,7 @@
 ┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
 ┃                                                                                                  ┃
 ┃    Soundness, version 0.54.0.                                                                    ┃
+┃                                                                                                  ┃
 ┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
 ┃                                                                                                  ┃
 ┃    The primary distribution site is:                                                             ┃
@@ -30,17 +31,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package rudiments
 
-export
-  rudiments
-  . { !!, &, all, also, and, annex, at, b, bi, Bijection, bijection, Bytes, bytes, collate, Counter,
-      DecimalConverter, Defaulting, Defaulting2, defines, Digit, each, establish, Exit, fixpoint,
-      fuse, gib,
-      give, has, immutable, Inclusive, Indexable, indexBy, intercalate, javaInputStream, kib,
-      longestTrain,
-      Loop, loop, matchable, mean, mib, mutable, Mutex, next, occupied, ordinal, pipe, place, plus,
-      prim, prior, probe, product, reflectClass, repeat, runs, runsBy, sec, segment, Segmentable,
-      sift, snapshot, state, std, sumBy, tap, ter, that, tib, to, total, tri, triple, tuple, twin,
-      typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
-      mean2, unique, limit, ult, ant, Traversable }
+import prepositional.*
+
+// A type whose values can be tested for membership of a value (the queried type
+// is its `Operand`, bound with `by` — e.g. `List[Int] is Inclusive by Int`).
+// Backs the `collection.has(value)` extension. Distinct from `Indexable`, whose
+// `defines` answers whether a *key/index* is present rather than a *value*.
+// The single `Iterable` instance fixes the queried type to the collection's
+// *exact* element type via the `Element` match type, rather than a bounded
+// `collection <: Iterable[element]` whose covariance would widen the element to
+// `Matchable` — silently accepting `map.has(key)` (a key, not a value) or
+// `list.has(wrongType)`. With the exact element, `Map`'s element is a key/value
+// pair, so `map.has(key)` is a compile error; key membership is `Indexable`'s
+// `defines`.
+object Inclusive:
+  type Element[collection] = collection match
+    case Iterable[element] => element
+
+  given iterable: [collection <: Iterable[?]] => collection is Inclusive by Element[collection] =
+    (collection, value) => collection.exists(_ == value)
+
+  given iarray: [element <: Matchable] => IArray[element] is Inclusive by element =
+    (iarray, value) => iarray.exists(_ == value)
+
+  given array: [element <: Matchable] => Array[element] is Inclusive by element =
+    (array, value) => array.exists(_ == value)
+
+trait Inclusive extends Typeclass, Operable:
+  def has(self: Self, value: Operand): Boolean

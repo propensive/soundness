@@ -46,13 +46,13 @@ object Molecule:
 
   given showable: Molecule is Showable = molecule =>
     val orderedElements =
-      if !molecule.elements.has(PeriodicTable.C)
+      if !molecule.elements.defines(PeriodicTable.C)
       then molecule.elements.to(List).sortBy(_(0).symbol)
       else
         val carbon = PeriodicTable.C -> molecule.elements(PeriodicTable.C)
 
         val hydrogen =
-          if !molecule.elements.has(PeriodicTable.H) then Nil else
+          if !molecule.elements.defines(PeriodicTable.H) then Nil else
             List(PeriodicTable.H -> molecule.elements(PeriodicTable.H))
 
         val rest =
