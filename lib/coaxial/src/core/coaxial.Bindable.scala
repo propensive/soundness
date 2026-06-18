@@ -41,13 +41,11 @@ import frontier.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
-import turbulence.*
 import urticose.*
 import vacuous.*
 
 object Bindable:
-  given domainSocket: (Tactic[StreamError], Every[SocketOption.Domain])
-  =>  DomainSocket is Bindable:
+  given domainSocket: Every[SocketOption.Domain] => DomainSocket is Bindable:
     type Binding = jnc.ServerSocketChannel
     type Output = Data
     type Input = Connection
@@ -61,25 +59,33 @@ object Bindable:
         configure(channel, summon[Every[SocketOption.Domain]].values)
         channel.bind(address)
 
-    def connect(channel: jnc.ServerSocketChannel): Connection =
-      val clientChannel: jnc.SocketChannel = channel.accept().nn
-      val in = jnc.Channels.newInputStream(clientChannel).nn
-      val out = jnc.Channels.newOutputStream(clientChannel).nn
+    def connect(channel: jnc.ServerSocketChannel): Connection raises ConnectionError =
+      try
+        val clientChannel: jnc.SocketChannel = channel.accept().nn
+        val in = jnc.Channels.newInputStream(clientChannel).nn
+        val out = jnc.Channels.newOutputStream(clientChannel).nn
 
-      Connection(in, out)
+        Connection(in, out)
+      catch case _: java.io.IOException => abort(ConnectionError(ConnectionError.Reason.Accept))
 
-    def transmit(channel: jnc.ServerSocketChannel, connection: Connection, bytes: Data): Unit =
-      connection.out.write(bytes.mutable(using Unsafe))
-      connection.out.flush()
+    def transmit(channel: jnc.ServerSocketChannel, connection: Connection, bytes: Data)
+    :   Unit raises ConnectionError =
+
+      try
+        connection.out.write(bytes.mutable(using Unsafe))
+        connection.out.flush()
+      catch case _: java.io.IOException => abort(ConnectionError(ConnectionError.Reason.Transmit))
 
     def stop(channel: jnc.ServerSocketChannel): Unit =
       channel.close()
 
-    def close(connection: Connection): Unit =
-      connection.in.close()
-      connection.out.close()
+    def close(connection: Connection): Unit raises ConnectionError =
+      try
+        connection.in.close()
+        connection.out.close()
+      catch case _: java.io.IOException => abort(ConnectionError(ConnectionError.Reason.Close))
 
-  given tcpPort: (Tactic[StreamError], Every[SocketOption.Tcp]) => TcpPort is Bindable:
+  given tcpPort: Every[SocketOption.Tcp] => TcpPort is Bindable:
     type Binding = jn.ServerSocket
     type Output = Data
     type Input = jn.Socket
@@ -93,13 +99,20 @@ object Bindable:
       configure(socket, summon[Every[SocketOption.Tcp]].values)
       socket
 
-    def connect(binding: Binding): jn.Socket = binding.accept().nn
+    def connect(binding: Binding): jn.Socket raises ConnectionError =
+      try binding.accept().nn
+      catch case _: java.io.IOException => abort(ConnectionError(ConnectionError.Reason.Accept))
 
-    def transmit(socket: jn.ServerSocket, input: Input, bytes: Data): Unit =
-      input.getOutputStream.nn.write(bytes.mutable(using Unsafe))
-      input.getOutputStream.nn.flush()
+    def transmit(socket: jn.ServerSocket, input: Input, bytes: Data): Unit raises ConnectionError =
+      try
+        input.getOutputStream.nn.write(bytes.mutable(using Unsafe))
+        input.getOutputStream.nn.flush()
+      catch case _: java.io.IOException => abort(ConnectionError(ConnectionError.Reason.Transmit))
 
-    def close(socket: jn.Socket): Unit = socket.close()
+    def close(socket: jn.Socket): Unit raises ConnectionError =
+      try socket.close()
+      catch case _: java.io.IOException => abort(ConnectionError(ConnectionError.Reason.Close))
+
     def stop(socket: jn.ServerSocket): Unit = socket.close()
 
   given udpPort: Every[SocketOption.Udp] => UdpPort is Bindable:
@@ -116,10 +129,13 @@ object Bindable:
 
       socket
 
-    def connect(binding: Binding): Packet =
+    def connect(binding: Binding): Packet raises ConnectionError =
       val array = new Array[Byte](1472)
       val packet = jn.DatagramPacket(array, 1472)
-      val socket = binding.receive(packet)
+
+      try binding.receive(packet)
+      catch case _: java.io.IOException => abort(ConnectionError(ConnectionError.Reason.Accept))
+
       val address = packet.getSocketAddress.nn.asInstanceOf[jn.InetSocketAddress]
 
       val ip = address.getAddress.nn.absolve match
@@ -139,7 +155,9 @@ object Bindable:
           ip,
           Port.unsafe[Udp](address.getPort) )
 
-    def transmit(socket: jn.DatagramSocket, input: Packet, response: UdpResponse): Unit =
+    def transmit(socket: jn.DatagramSocket, input: Packet, response: UdpResponse)
+    :   Unit raises ConnectionError =
+
       response match
         case UdpResponse.Ignore => ()
 
@@ -162,10 +180,12 @@ object Bindable:
           val packet =
             jn.DatagramPacket(data.mutable(using Unsafe), data.length, ip, input.port.number)
 
-          socket.send(packet)
+          try socket.send(packet)
+          catch
+            case _: java.io.IOException => abort(ConnectionError(ConnectionError.Reason.Transmit))
 
     def stop(binding: Binding): Unit = binding.close()
-    def close(input: Packet): Unit = ()
+    def close(input: Packet): Unit raises ConnectionError = ()
 
 trait Bindable extends Typeclass:
   type Binding
@@ -173,7 +193,7 @@ trait Bindable extends Typeclass:
   type Output
 
   def bind(socket: Self, interface: Optional[MacAddress]): Binding
-  def connect(binding: Binding): Input
-  def transmit(binding: Binding, input: Input, output: Output): Unit
-  def close(connection: Input): Unit
+  def connect(binding: Binding): Input raises ConnectionError
+  def transmit(binding: Binding, input: Input, output: Output): Unit raises ConnectionError
+  def close(connection: Input): Unit raises ConnectionError
   def stop(binding: Binding): Unit

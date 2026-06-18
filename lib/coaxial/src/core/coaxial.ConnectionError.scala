@@ -30,16 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package coaxial
 
-export
-  coaxial
-  . { Bindable, BindError, Connectable, Connection, ConnectionError, Control, DomainSocket,
-      DomainSocketEndpoint, duplex, Duplex, exchange, Ingressive, listen, Packet, Routable,
-      Serviceable, SocketOption, SocketService, Transmissible, transmit, UdpResponse }
+import fulminate.*
 
-package socketOptions:
-  export
-    coaxial.socketOptions
-    . { reuseAddressSocketOption, reusePortSocketOption, noDelaySocketOption, keepAliveSocketOption,
-        broadcastSocketOption, receiveBuffer, sendBuffer, linger, trafficClass, timeout }
+object ConnectionError:
+  enum Reason(val number: Int) extends Clarification:
+    case Accept   extends Reason(1)
+    case Transmit extends Reason(2)
+    case Close    extends Reason(3)
+
+  given communicable: Reason is Communicable =
+    case Reason.Accept   => m"a new connection could not be accepted"
+    case Reason.Transmit => m"data could not be transmitted to the connection"
+    case Reason.Close    => m"the connection could not be closed cleanly"
+
+case class ConnectionError(reason: ConnectionError.Reason)(using Diagnostics)
+extends Error(266, reason.number)(m"the connection failed because $reason")

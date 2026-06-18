@@ -62,24 +62,21 @@ extension [bindable: Bindable](socket: bindable)
     val binding = bindable.bind(socket, interface)
 
     // Each accepted connection is handled on its own daemon, so connections are served
-    // concurrently and a failure in one — a handler error or a dropped client — is
-    // isolated by the trap (it ends that connection's daemon and the loop keeps
-    // accepting) rather than tearing down the whole accept loop.
+    // concurrently and a per-connection failure — a handler error, a dropped client, or a
+    // failure to write the reply — surfaces as a raised `ConnectionError` that the trap below
+    // turns into `Remedy.Accept`, ending only that connection's daemon while the accept loop
+    // keeps running. The connection is always closed afterwards. A failure to *accept* a
+    // connection runs on the loop thread (not a daemon), so `safely` skips that iteration; on
+    // `stop()` the loop is already `Stopping`, so the interrupted `accept()` simply unwinds.
     trap:
       case _ => Remedy.Accept
 
     . within:
         val bindLoop = loop:
-          val connection = bindable.connect(binding)
-
-          daemon:
-            // A reply write can lose the race with `stop()` closing the socket; the resulting
-            // `IOException` (e.g. `SocketException`/`ClosedChannelException`) is benign connection
-            // teardown. Raw Java throwables bypass the `trap` above (which routes only
-            // `fulminate.Error`), so they would otherwise escalate to the uncaught-exception
-            // handler and print.
-            try bindable.transmit(binding, connection, lambda(connection))
-            catch case _: java.io.IOException => ()
+          safely(bindable.connect(binding)).let: connection =>
+            daemon:
+              try bindable.transmit(binding, connection, lambda(connection))
+              finally bindable.close(connection)
 
         val task = async(bindLoop.run())
 
