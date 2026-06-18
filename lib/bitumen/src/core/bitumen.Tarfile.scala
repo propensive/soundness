@@ -37,6 +37,7 @@ import contingency.*
 import denominative.*
 import distillate.*
 import fulminate.*
+import galilei.*
 import gossamer.*
 import hieroglyph.*, charEncoders.asciiEncoder
 import hypotenuse.*
@@ -58,6 +59,26 @@ object Tarfile:
     readEntries(stream.chunked(512), Map.empty, Map.empty, Unset, Unset)
 
   def from(stream: Stream[Data]): Tarfile raises TarError = Tarfile(read(stream))
+
+  def fromGzip(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
+    read(stream.decompress[Gzip])
+
+  def fromZlib(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
+    read(stream.decompress[Zlib])
+
+  def fromDeflate(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
+    read(stream.decompress[Deflate])
+
+  def from[plane <: Posix: Filesystem](root: Path on plane)
+    ( using DereferenceSymlinks,
+            TraversalOrder,
+            plane is Explorable )
+  :   Tarfile raises IoError raises TarError =
+
+    val entries: LazyList[Tar.Entry] = root.descendants.to(LazyList).map: path =>
+      TarFilesystem.entryFor(root, path)
+
+    Tarfile(entries)
 
   private def readEntries
     ( blocks:        Stream[Data],
@@ -342,6 +363,18 @@ case class Tarfile
   // Reach this externally through the `Streamable` given, i.e. `tarfile.stream[Data]`.
   private[bitumen] def blocks: LazyList[Data] =
     entries.flatMap(emitEntry) #::: LazyList(Tarfile.zeroBlock, Tarfile.zeroBlock)
+
+  // Compressed views of the archive's TAR stream.
+  def gzip: Stream[Data] = this.stream[Data].compress[Gzip]
+  def zlib: Stream[Data] = this.stream[Data].compress[Zlib]
+  def deflate: Stream[Data] = this.stream[Data].compress[Deflate]
+
+  def extractTo[plane <: Posix: Filesystem](root: Path on plane)
+    ( using CreateNonexistentParents on plane, OverwritePreexisting on plane )
+  :   Unit raises IoError raises TarError =
+
+    entries.foreach: entry =>
+      TarFilesystem.applyEntry(root, entry)
 
   private def emitEntry(entry: Tar.Entry): LazyList[Data] =
     val longNamePart: LazyList[Data] = longNameFormat match
