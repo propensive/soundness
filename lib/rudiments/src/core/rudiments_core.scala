@@ -134,9 +134,6 @@ extension [value <: Matchable](iterable: Iterable[value])
 
   inline def has(value: value): Boolean = iterable.exists(_ == value)
 
-  inline def where(inline predicate: value => Boolean): Optional[value] =
-    iterable.find(predicate).getOrElse(Unset)
-
   transparent inline def weave(right: Iterable[value]): Iterable[value] =
     iterable.zip(right).flatMap(Iterable(_, _))
 
@@ -147,6 +144,14 @@ extension [element <: Matchable](iarray: IArray[element])
 extension [element <: Matchable](array: Array[element])
   @targetName("hasArray")
   inline def has(value: element): Boolean = array.exists(_ == value)
+
+// `value.where(predicate)` returns the first element satisfying `predicate`, for
+// any `value` that is `Traversable`.
+extension [self](self: self)(using traversable: self is Traversable)
+  def where(predicate: traversable.Operand => Boolean): Optional[traversable.Operand] =
+    traversable.traverse(self).find(predicate) match
+      case Some(element) => element
+      case None          => Unset
 
 extension [value](iterator: Iterator[value])
   transparent inline def each(predicate: Ordinal aka "ordinal" ?=> value => Unit): Unit =

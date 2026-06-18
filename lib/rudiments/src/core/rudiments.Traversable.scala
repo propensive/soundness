@@ -30,15 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package rudiments
 
-export
-  rudiments
-  . { !!, &, all, also, and, annex, at, b, bi, Bijection, bijection, Bytes, bytes, collate, Counter,
-      DecimalConverter, Defaulting, Defaulting2, Digit, each, establish, Exit, fixpoint, fuse, gib,
-      give, has, immutable, Indexable, indexBy, intercalate, javaInputStream, kib, longestTrain,
-      Loop, loop, matchable, mean, mib, mutable, Mutex, next, occupied, ordinal, pipe, place, plus,
-      prim, prior, probe, product, reflectClass, repeat, runs, runsBy, sec, segment, Segmentable,
-      sift, snapshot, state, std, sumBy, tap, ter, that, tib, to, total, tri, triple, tuple, twin,
-      typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
-      mean2, unique, limit, ult, ant, Traversable }
+import prepositional.*
+
+// A type that can be traversed as a lazy sequence of its elements (its `Operand`,
+// bound with `by` — e.g. `List[Int] is Traversable by Int`). It is the basis for
+// element-oriented operations like `where` that need to visit elements in order
+// and short-circuit; `traverse` returns a `Stream` (lazy) so callers only force
+// as much as they consume.
+object Traversable:
+  given iterable: [element, collection <: Iterable[element]]
+  =>  collection is Traversable by element =
+    _.to(Stream)
+
+trait Traversable extends Typeclass, Operable:
+  def traverse(self: Self): Stream[Operand]
