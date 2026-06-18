@@ -89,6 +89,7 @@ extension (inline context: StringContext)
 package textMetrics:
   given uniformMetric: Char is Measurable = _ => 1
   given eastAsianScriptsMetric: Char is Measurable = Unicode.eastAsianWidth(_).let(_.width).or(1)
+
   given wideCharacterWidthMetric: Char is Measurable =
     char => WideCharacterWidth.width(char.toInt).max(0)
 

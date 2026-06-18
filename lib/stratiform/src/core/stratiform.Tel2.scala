@@ -344,14 +344,14 @@ trait Tel2:
   // recognises and flattens with the field's label.
 
   given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
-  =>  (encodable: inner is Tel.Encodable)
+  =>  ( encodable: inner is Tel.Encodable )
   =>  value is Tel.Encodable =
     Tel.Encodable(Morphology.Opt(encodable.shape())): opt =>
       opt.let(_.asInstanceOf[inner]).lay(Tel.empty)(_.encode)
 
   given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  Tactic[TelError]
-  =>  (decodable: => inner is Tel.Decodable)
+  =>  ( decodable: => inner is Tel.Decodable )
   =>  value is Tel.Decodable =
     Tel.Decodable(Morphology.Opt(decodable.shape())): telVal =>
       if telVal.childCompounds.nil && telVal.atomTexts.nil then Unset

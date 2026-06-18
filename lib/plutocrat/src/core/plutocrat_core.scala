@@ -36,8 +36,11 @@ import gossamer.*
 import prepositional.*
 
 package currencyStyles:
-  given localCurrencyStyle: CurrencyStyle = (code, symbol, unit, subunit) => t"$symbol$unit.$subunit"
-  given genericCurrencyStyle: CurrencyStyle = (code, symbol, unit, subunit) => t"$unit.$subunit $code"
+  given localCurrencyStyle: CurrencyStyle =
+    (code, symbol, unit, subunit) => t"$symbol$unit.$subunit"
+
+  given genericCurrencyStyle: CurrencyStyle =
+    (code, symbol, unit, subunit) => t"$unit.$subunit $code"
 
 extension (inline context: StringContext)
   inline def isin(): Isin = ${plutocrat.internal.interpolator('context)}

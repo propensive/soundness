@@ -460,7 +460,9 @@ object internal:
     def weekend(using hebdomad: Hebdomad): Boolean = weekday.weekend
 
     def anniversary: Anniversary =
-      Anniversary(calendars.gregorianCalendar.mensual(date), calendars.gregorianCalendar.diurnal(date))
+      Anniversary
+        ( calendars.gregorianCalendar.mensual(date),
+          calendars.gregorianCalendar.diurnal(date) )
 
     def jdn: Int = date
 

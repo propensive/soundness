@@ -81,7 +81,9 @@ package ordinalTextualizables:
   given zeraryOrdinal: Ordinal is Textualizable = ordinal => ""+ordinal.n0+"♯"
   given unmarkedUniaryOrdinal: Ordinal is Textualizable = ordinal => ""+ordinal.n1
   given unmarkedZeraryOrdinal: Ordinal is Textualizable = ordinal => ""+ordinal.n0
-  given intermediateOrdinal: Ordinal is Textualizable = ordinal => "⌞"+ordinal.n0+"⌟|⌞"+ordinal.n1+"⌟"
+
+  given intermediateOrdinal: Ordinal is Textualizable =
+    ordinal => "⌞"+ordinal.n0+"⌟|⌞"+ordinal.n1+"⌟"
 
   given englishOrdinal: Ordinal is Textualizable = ordinal =>
     ordinal.n1%100 match

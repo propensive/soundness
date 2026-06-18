@@ -236,7 +236,7 @@ object internal:
       def int: Int = ip
 
   def subnetPrefix(text: Text, max: Int)(outOfRange: Int => Reason)
-  :     Int raises IpAddressError =
+  :   Int raises IpAddressError =
 
     val prefix =
       whereas:
@@ -359,6 +359,7 @@ object internal:
     // and an implicit search would re-enter the (also-exported) `Ipv6` companion.
     given showable: Ipv6Subnet is Showable = subnet =>
       t"${Ipv6.showable.text(subnet.ipv6)}/${subnet.size}"
+
     given encodable: Ipv6Subnet is Encodable in Text = _.show
     given decodable: Tactic[IpAddressError] => Ipv6Subnet is Decodable in Text = parse(_)
 

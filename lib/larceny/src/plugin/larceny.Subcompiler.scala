@@ -98,6 +98,7 @@ object Subcompiler:
 
           case null =>
             var outer = position.outer
+
             while outer != null && outer != NoSourcePosition do
               position = outer.nn
               outer = position.outer

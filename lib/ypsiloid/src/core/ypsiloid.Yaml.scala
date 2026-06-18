@@ -828,10 +828,10 @@ object Yaml extends Yaml2, Dynamic:
 
     def deepHash(ast: Yaml.Ast): Int = ast match
       case Yaml.YamlNull => 0
-      case b: Boolean   => b.hashCode
-      case n: Long      => n.hashCode
-      case d: Double    => d.hashCode
-      case s: String    => s.hashCode
+      case b: Boolean    => b.hashCode
+      case n: Long       => n.hashCode
+      case d: Double     => d.hashCode
+      case s: String     => s.hashCode
 
       case b: Array[Double] @unchecked =>
         // Hash via the BigDecimal projection so a `Bcd` whose value equals

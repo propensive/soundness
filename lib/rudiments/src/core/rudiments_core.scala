@@ -375,10 +375,11 @@ extension (bytes: Data)
 extension [indexable: Indexable](value: indexable)
   inline def has(index: indexable.Operand): Boolean = indexable.contains(value, index)
 
-  // A single `at` that dispatches at compile time on the index type: an index statically known to be
-  // confined to *this* `value` (an `Operand in value.type`, hence in range) returns a bare `Result`;
-  // any other index is bounds-checked and returns `Optional`. The declared return type is `Optional`,
-  // so non-reducing (e.g. generic) call sites are safe; a confined index narrows to a bare `Result`.
+  // A single `at` that dispatches at compile time on the index type: an index statically known to
+  // be confined to *this* `value` (an `Operand in value.type`, hence in range) returns a bare
+  // `Result`; any other index is bounds-checked and returns `Optional`. The declared return type is
+  // `Optional`, so non-reducing (e.g. generic) call sites are safe; a confined index narrows to a
+  // bare `Result`.
   transparent inline def at[index](ordinal: index)(using sub: index <:< indexable.Operand)
   :   Optional[indexable.Result] =
 

@@ -47,7 +47,8 @@ import vacuous.*
 // content through Harlequin's highlighter and out via the `unnumbered` token
 // stream. Callers supply a `ScalaSyntaxPalette` to colour the tokens.
 package teletypeFormattables:
-  given scalaTeletypeFormattable: (palette: ScalaSyntaxPalette) => ("scala" is TeletypeFormattable) =
+  given scalaTeletypeFormattable: (palette: ScalaSyntaxPalette)
+  =>  ( "scala" is TeletypeFormattable ) =
     new TeletypeFormattable:
       type Self = "scala"
 

@@ -146,7 +146,7 @@ trait Tels2:
   given boolean: Boolean is TelSchematic over Tels.Type = () => Tels.Scalar(IArray.empty)
 
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
-  =>  (schematic: inner is Schematic over Tels.Type)
+  =>  ( schematic: inner is Schematic over Tels.Type )
   =>  value is TelSchematic over Tels.Type =
     new TelSchematic:
       type Self = value

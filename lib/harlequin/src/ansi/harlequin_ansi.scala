@@ -74,7 +74,8 @@ package syntaxHighlighting:
     case Token(text, Symbol, _, _)   => e"${palette.scalaSymbol}($text)"
     case Token(text, Unparsed, _, _) => e"${palette.scalaComment}($Italic($text))"
 
-  given numberedTeletypeable: (palette: ScalaSyntaxPalette) => SourceCode is Teletypeable = source =>
+  given numberedTeletypeable: (palette: ScalaSyntaxPalette)
+  =>  SourceCode is Teletypeable = source =>
     val indent = source.lastLine.show.length
     lazy val error = e"${Fg(palette.subdued)}(║)"
 

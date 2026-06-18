@@ -49,12 +49,15 @@ import zephyrine.*
 private[punctuation] object Serializer:
   def apply(markdown: Markdown of Layout)(using formatting: Markdown.Formatting): Text =
     Producer.collect[Text](): producer =>
-      writeDocument(Writer(producer, formatting.width.lay(Int.MaxValue)(c => c)), markdown)
+      writeDocument(Writer(producer, formatting.width.lay(Int.MaxValue) { c => c }), markdown)
 
   @scala.annotation.targetName("applyProse")
   def apply(markdown: Markdown of Prose)(using formatting: Markdown.Formatting): Text =
     Producer.collect[Text](): producer =>
-      flow(Writer(producer, formatting.width.lay(Int.MaxValue)(c => c)), markdown.children, protectFirst = false)
+      flow
+        ( Writer(producer, formatting.width.lay(Int.MaxValue) { c => c }),
+          markdown.children,
+          protectFirst = false )
 
   private def writeDocument(writer: Writer, markdown: Markdown of Layout): Unit =
     var first = true
