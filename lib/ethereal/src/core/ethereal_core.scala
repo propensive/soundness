@@ -47,7 +47,7 @@ import contingency.*
 import digression.*
 import distillate.*
 import escapade.*
-import eucalyptus.*
+import eucalyptus.*, eucalyptus.fanOut
 import exoskeleton.*
 import fulminate.*
 import galilei.*
@@ -496,7 +496,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
     supervise:
       import logFormats.standardLogFormat
-      given loggable: Message is Loggable = Log.route(Syslog(t"ethereal"))
+      given syslog: Logger[DaemonLogEvent, Message] = Logger(Syslog(t"ethereal"))
 
       safely(socketFile.wipe())
 

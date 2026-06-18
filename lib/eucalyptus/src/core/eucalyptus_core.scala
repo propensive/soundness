@@ -37,14 +37,12 @@ import language.experimental.pureFunctions
 import java.text as jt
 
 import anticipation.*
-import contingency.*
+import frontier.*
 import fulminate.*
 import gossamer.*
-import parasite.*, probates.cancelProbate
 import prepositional.*
 import rudiments.*
 import spectacular.*
-import turbulence.*
 
 package logFormats:
   given textLevelLogFormat: Level is Showable =
@@ -67,61 +65,28 @@ package logFormats:
 
 val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
-def mute[format](using erased Void)[result](lambda: (format is Loggable) ?=> result): result =
-  lambda(using Log.silent[format])
+// Derives the single `event is Loggable` that `Log.fine`/`info`/`warn`/`fail` summon by collecting
+// EVERY in-scope `Logger` for the event (contravariance means a `Logger[Any, Message]` is picked up
+// for any event), transcribing the event to the common `Message` carrier once, then fanning out to
+// each logger. No logger in scope ⇒ an empty `Every` ⇒ silent; many ⇒ fan-out + per-logger routing.
+given fanOut: [event]
+=>  ( every:        Every[Logger[event, Message]],
+      transcribable: event is Transcribable to Message )
+=>  event is Loggable =
 
+  (level, timestamp, event) =>
+    if !transcribable.skip(event) then
+      val message = transcribable.record(event)
+      every.values.each(_.submit(level, timestamp, message))
 
-extension (logObject: Log.type)
-  def envelop[tag, event: {Taggable by tag, Loggable as loggable}](value: tag)[result]
-    ( lambda: (event is Loggable) ?=> result )
-  :   result =
-
-    lambda(using loggable.contramap(_.tag(value)))
-
-
-  def ignore[event, message]: message transcribes event = new Transcribable:
-    type Self = event
-    type Result = message
-    override def skip(event: event): Boolean = true
-    def record(event: event): message = panic(m"`skip` should prevent this from ever running")
-
-  def silent[format]: format is Loggable = new Loggable:
-    type Self = format
-    def log(level: Level, timestamp: Long, event: format): Unit = ()
-
-
-  def route[format](using erased Void)[entry: Inscribable in format, writable: Writable by format]
-    ( target: writable )
-    ( using Monitor )
-  :   entry is Loggable =
-
-    new:
-      type Self = entry
-
-      private lazy val spool: Spool[writable.Operand] = Spool().tap: spool =>
-        val task = async(spool.stream.writeTo(target))
-
-        Os.intercept[Shutdown]:
-          spool.stop()
-          safely(task.await())
-
-      def log(level: Level, timestamp: Long, event: entry): Unit =
-        spool.put(event.format(level, timestamp))
-
+// Runs `lambda` with logging of `event` suppressed, regardless of any ambient `Logger`s. The silent
+// `event is Loggable` is supplied directly to the block, so (as an explicitly-passed given) it
+// takes precedence over the wildcard `fanOut`.
+def mute[event](using erased Void)[result](lambda: (event is Loggable) ?=> result): result =
+  val silent: event is Loggable = (level, timestamp, event) => ()
+  lambda(using silent)
 
 package logging:
-  given silentLogging: [format] => format is Loggable = Log.silent[format]
-
-
-  given stdoutLogging: [format: Printable, inscribable: Inscribable in format] => Stdio
-  =>  inscribable is Loggable =
-
-    (level, timestamp, event) =>
-      Out.println(inscribable.formatter(event, level, timestamp))
-
-
-  given stderrLogging: [inscribable: Inscribable in format, format: Printable] => Stdio
-  =>  inscribable is Loggable =
-
-    (level, timestamp, event) =>
-      Err.println(inscribable.formatter(event, level, timestamp))
+  // A silent logger; imported explicitly (`import logging.silentLogging`) it outranks the wildcard
+  // `fanOut`, suppressing all logging for the file.
+  given silentLogging: [event] => event is Loggable = (level, timestamp, event) => ()

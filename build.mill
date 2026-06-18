@@ -784,7 +784,7 @@ object ethereal extends Library:
   object test extends Tests(core, exoskeleton.rig, quantitative.units)
 
 object eucalyptus extends Library:
-  object core extends Component(turbulence.core, gossamer.core):
+  object core extends Component(turbulence.core, gossamer.core, frontier.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object syslog extends Component(guillotine.core, core):
@@ -796,8 +796,7 @@ object eucalyptus extends Library:
   object ansi extends Component(escapade.core, core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(ansi, core, syslog):
-    override def enabled = false
+  object test extends Tests(ansi, core, syslog)
 
 object exegesis extends Library:
   object core extends Component(obligatory.json):

@@ -2078,7 +2078,7 @@ object Tests extends Suite(m"Aviation Tests"):
           case _: TimestampError =>
 
     suite(m"TZDB parser"):
-      given TimeEvent is Loggable = Log.silent[TimeEvent]
+      given TimeEvent is Loggable = (level, timestamp, event) => ()
 
       test(m"parseFile on a non-existent file raises NoTzdbFile"):
         capture(Tzdb.parseFile(t"this-does-not-exist"))
