@@ -34,88 +34,38 @@ package decorum
 
 import scala.collection.mutable
 
-import dotty.tools.dotc.*, ast.tpd, core.Contexts.*, plugins.*, util.{SourceFile, SourcePosition}
-import dotty.tools.dotc.util.Spans.Span
+import dotty.tools.dotc.ast.untpd
+import dotty.tools.dotc.util.SourceFile
 
-class DecorumPhase(options: List[String]) extends PluginPhase:
-  val phaseName: String                = "decorum"
-  override val runsAfter: Set[String]  = Set("typer")
-  override val runsBefore: Set[String] = Set("pickler")
+case class ExportInfo(names: Set[String], firstLine: Int)
 
-  private val errors: Boolean   = options.contains("errors")
-  private val seen: mutable.Set[String] = mutable.Set.empty
+object SoundnessExports:
+  // Collect the simple leaf names re-exported by every top-level `export`
+  // statement in the file (including those nested inside `package x:` blocks),
+  // together with the line of the first such statement. Used by R-742 to check
+  // that each public module in a component is re-exported into `soundness`.
+  def extract(tree: untpd.Tree, source: SourceFile): ExportInfo =
+    val names     = mutable.Set[String]()
+    var firstLine = -1
 
-  private val esc: Char = 27.toChar
-  private val bel: Char = 7.toChar
-  private val gray   = s"$esc[38;2;128;128;128m"
-  private val orange = s"$esc[38;2;255;165;0m"
-  private val cyan   = s"$esc[38;2;0;200;255m"
-  private val reset  = s"$esc[0m"
+    def record(exp: untpd.Export): Unit =
+      val span = exp.span
+      if span.exists then
+        val line = source.offsetToLine(span.start) + 1
+        if firstLine < 0 || line < firstLine then firstLine = line
 
-  private def colourPrefix(rule: String, useColor: Boolean): String =
-    if useColor then
-      val hyperlink = false
-      val rendered  = rule.replace(".", s"$gray.$cyan")
-      val d         = rule.takeWhile(_ != '.')
-      val link      = if hyperlink then s"$esc]8;;https://soundness.dev/SN-$d$bel" else ""
-      val unlink    = if hyperlink then s"$esc]8;;$bel" else ""
-      s"$link$gray[$orange↯SN$gray-$cyan$rendered$gray]$reset$unlink "
-    else
-      s"[↯SN-$rule] "
+      exp.selectors.foreach: selector =>
+        val name = selector.imported.name.toString
+        if name.nonEmpty && name != "_" && name != "*" then names += name
 
-  override def transformUnit(tree: tpd.Tree)(using context: Context): tpd.Tree =
-    val source: SourceFile = context.compilationUnit.source
-    val path: String       = source.file.path
-    if seen.add(path) then
-      val text: String = String(source.content)
-      val module       = Checker.expectedModule(path)
+    def visit(t: untpd.Tree): Unit = t match
+      case pkg: untpd.PackageDef => pkg.stats.foreach(visit)
+      case exp: untpd.Export     => record(exp)
+      case _                     => ()
 
-      val useColor     =
-        try
-          import dotty.tools.dotc.config.Settings.Setting.value
-          value(context.settings.color)(using context) != "never"
-        catch case _: Throwable => false
+    visit(tree)
+    ExportInfo(names.to(Set), if firstLine < 0 then PackageLine else firstLine)
 
-      val unitTree     = context.compilationUnit.untpdTree
-      val siblingTypes = soundnessSiblingModules(path)
-      Checker.check(path, module, text, unitTree, source, siblingTypes).foreach: violation =>
-        val pos = position(source, violation.line, violation.column)
-        val msg = colourPrefix(violation.rule, useColor)+violation.message
-        if errors then report.error(msg, pos) else report.warning(msg, pos)
-    super.transformUnit(tree)
-
-  // When `path` is a `soundness_<component>_<suffix>.scala` export surface, return
-  // the names of the sibling public modules (`<component>.<Name>.scala` files in
-  // the same directory, excluding any `internal` module) that R-742 requires to
-  // be re-exported. Compiler-plugin source roots (`/src/plugin/`) are excluded:
-  // their extraction helpers are deliberately unexported plugin internals. For
-  // every other file the result is empty, making the check a no-op.
-  private def soundnessSiblingModules(path: String): List[String] =
-    if path.contains("/src/plugin/") then Nil else
-      val libParts = path.split("/lib/").nn
-      if libParts.length < 2 then Nil else
-        val component = libParts(1).nn.split("/").nn(0).nn
-        val file      = java.io.File(path)
-        val fileName  = file.getName.nn
-        if !fileName.startsWith(s"soundness_${component}_") then Nil else
-          val parent   = file.getParentFile
-          val siblings = if parent == null then null else parent.listFiles
-          if siblings == null then Nil else
-            val prefix = s"$component."
-            val out    = mutable.ListBuffer[String]()
-            siblings.foreach: sibling =>
-              val name = sibling.nn.getName.nn
-              if name.startsWith(prefix) && name.endsWith(".scala") then
-                val mid     = name.substring(prefix.length, name.length - ".scala".length).nn
-                val module  = mid.takeWhile(_ != '.')
-                if module.nonEmpty && !module.toLowerCase.nn.contains("internal")
-                then out += module
-            out.to(List)
-
-  private def position(source: SourceFile, line: Int, column: Int): SourcePosition =
-    val lineStart =
-      try source.lineToOffset((line - 1).max(0))
-      catch case _: Throwable => 0
-
-    val offset = (lineStart + (column - 1).max(0)).min(source.content.length)
-    SourcePosition(source, Span(offset))
+  // The line of the `package soundness` declaration in export-surface files;
+  // used as the fallback violation position when a surface contains no exports.
+  private val PackageLine: Int = 33
