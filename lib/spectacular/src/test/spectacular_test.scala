@@ -45,6 +45,17 @@ case class Depth0(child: Depth1, tag: Int)
 
 case class Branch(value: Int, kids: List[Branch])
 
+enum Colour:
+  case Red, Green, Blue
+
+enum Shape:
+  case Circle(radius: Int)
+  case Rectangle(width: Int, height: Int)
+
+sealed trait Animal
+case class Dog(name: Text) extends Animal
+case object Cat extends Animal
+
 class Underived(val x: Int):
   override def toString: String = "Underived("+x+")"
 
@@ -223,6 +234,106 @@ object Tests extends Suite(m"Spectacular Tests"):
       test(m"derivable field with underivable leaf falls back to toString"):
         Holder(Underived(7), 3).inspect
       . assert(_ == t"Holder(item:“Underived(7)” ╱ count:3)")
+
+    suite(m"Primitive tests"):
+      test(m"serialize boolean true"):
+        true.inspect
+      . assert(_ == t"true")
+
+      test(m"serialize boolean false"):
+        false.inspect
+      . assert(_ == t"false")
+
+      test(m"serialize byte"):
+        3.toByte.inspect
+      . assert(_ == t"3.toByte")
+
+      test(m"serialize unit"):
+        ().inspect
+      . assert(_ == t"()")
+
+      test(m"serialize BigInt"):
+        BigInt(42).inspect
+      . assert(_ == t"BigInt(42)")
+
+      test(m"serialize BigDecimal"):
+        BigDecimal("1.5").inspect
+      . assert(_ == t"BigDecimal(1.5)")
+
+    suite(m"Collection tests"):
+      test(m"serialize map"):
+        Map(1 -> 2, 3 -> 4).inspect
+      . assert(_ == t"{1 → 2, 3 → 4}")
+
+      test(m"serialize map with string values"):
+        Map(t"a" -> 1).inspect
+      . assert(_ == t"""{t"a" → 1}""")
+
+      test(m"serialize empty map"):
+        Map[Int, Int]().inspect
+      . assert(_ == t"{}")
+
+      test(m"serialize set of ints (no spurious optional wrapping)"):
+        Set(1).inspect
+      . assert(_ == t"{1}")
+
+      test(m"serialize map of ints (no spurious optional wrapping)"):
+        Map(1 -> 2).inspect
+      . assert(_ == t"{1 → 2}")
+
+      test(m"serialize vector"):
+        Vector(1, 2, 3).inspect
+      . assert(_ == t"⟨ 1 2 3 ⟩")
+
+      test(m"serialize empty list"):
+        List[Int]().inspect
+      . assert(_ == t"[]")
+
+      test(m"serialize option some"):
+        (Some(3): Option[Int]).inspect
+      . assert(_ == t"Some(3)")
+
+      test(m"serialize option none"):
+        (None: Option[Int]).inspect
+      . assert(_ == t"None")
+
+      test(m"serialize nested options in list"):
+        List(Some(1), None).inspect
+      . assert(_ == t"[Some(1), None]")
+
+    suite(m"Optional tests"):
+      test(m"serialize set optional"):
+        (5: Optional[Int]).inspect
+      . assert(_ == t"｢5｣")
+
+      test(m"serialize unset optional"):
+        (Unset: Optional[Int]).inspect
+      . assert(_ == t"○")
+
+      test(m"serialize bare Unset"):
+        Unset.inspect
+      . assert(_ == t"○")
+
+    suite(m"Sum-type derivation tests"):
+      test(m"derive sealed trait product case"):
+        (Dog(t"Rex"): Animal).inspect
+      . assert(_ == t"""Dog(name:t"Rex")""")
+
+      test(m"derive sealed trait case object (no trailing parens)"):
+        (Cat: Animal).inspect
+      . assert(_ == t"Cat")
+
+      test(m"derive case object directly"):
+        Cat.inspect
+      . assert(_ == t"Cat")
+
+      test(m"inspect simple enum case"):
+        Colour.Red.inspect
+      . assert(_ == t"Red")
+
+      test(m"inspect parameterised enum case"):
+        (Shape.Circle(5): Shape).inspect
+      . assert(_ == t"Circle(5)")
 
     suite(m"Show tests"):
       test(m"Show a string"):
