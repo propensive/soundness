@@ -99,18 +99,53 @@ object Http:
       case t"GET"     => Http.Get
       case _          => Http.Get
 
-  sealed trait Method(tracked val payload: Boolean):
+  sealed trait Method:
+    // `Payload` carries, at the type level, whether this method has a request
+    // body (e.g. `Get.Payload =:= false`, `Post.Payload =:= true`). It has no
+    // runtime accessor, so — unlike the former `tracked val payload` — it can
+    // never throw `AbstractMethodError` when read through the erased `Method`
+    // base type (issue #1307). `payload` is the safe runtime counterpart.
+    type Payload <: Boolean
+
+    def payload: Boolean = this match
+      case Get     => valueOf[Get.Payload]
+      case Head    => valueOf[Head.Payload]
+      case Post    => valueOf[Post.Payload]
+      case Put     => valueOf[Put.Payload]
+      case Delete  => valueOf[Delete.Payload]
+      case Connect => valueOf[Connect.Payload]
+      case Options => valueOf[Options.Payload]
+      case Trace   => valueOf[Trace.Payload]
+      case Patch   => valueOf[Patch.Payload]
+
     def unapply(request: Request): Boolean = request.method == this
 
-  case object Get extends Method(false)
-  case object Head extends Method(false)
-  case object Post extends Method(true)
-  case object Put extends Method(true)
-  case object Delete extends Method(false)
-  case object Connect extends Method(false)
-  case object Options extends Method(false)
-  case object Trace extends Method(false)
-  case object Patch extends Method(false)
+  case object Get extends Method:
+    type Payload = false
+
+  case object Head extends Method:
+    type Payload = false
+
+  case object Post extends Method:
+    type Payload = true
+
+  case object Put extends Method:
+    type Payload = true
+
+  case object Delete extends Method:
+    type Payload = false
+
+  case object Connect extends Method:
+    type Payload = false
+
+  case object Options extends Method:
+    type Payload = false
+
+  case object Trace extends Method:
+    type Payload = false
+
+  case object Patch extends Method:
+    type Payload = false
 
   object Status:
     private lazy val all: Map[Int, Status] =
