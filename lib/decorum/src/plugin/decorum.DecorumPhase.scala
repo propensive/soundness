@@ -76,9 +76,14 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
           value(context.settings.color)(using context) != "never"
         catch case _: Throwable => false
 
-      val unitTree     = context.compilationUnit.untpdTree
-      val siblingTypes = soundnessSiblingModules(path)
-      Checker.check(path, module, text, unitTree, source, siblingTypes).foreach: violation =>
+      val unitTree          = context.compilationUnit.untpdTree
+      val siblingTypes      = soundnessSiblingModules(path)
+      val siblingExtensions = soundnessSiblingExtensions(path)
+
+      val violations =
+        Checker.check(path, module, text, unitTree, source, siblingTypes, siblingExtensions)
+
+      violations.foreach: violation =>
         val pos = position(source, violation.line, violation.column)
         val msg = colourPrefix(violation.rule, useColor)+violation.message
         if errors then report.error(msg, pos) else report.warning(msg, pos)
@@ -115,6 +120,44 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
                    && declaresPublicly(sibling.nn, module)
                 then out += module
             out.to(List)
+
+  // When `path` is a `soundness_<component>_<suffix>.scala` export surface, return
+  // the names of the public top-level extension methods that R-742.1 requires to
+  // be re-exported. They live in the sibling `<component>_<suffix>.scala` definition
+  // files (e.g. `xylophone_core.scala`) in the same directory; their lowercase
+  // `<component>_` prefix distinguishes them from the `soundness_…` and
+  // `<other>_<component>_…` export surfaces, which begin with a different prefix.
+  // `internal` definition files are skipped. Each matching file is parsed and its
+  // top-level `extension` methods collected. For every file other than an export
+  // surface the result is empty, making the check a no-op.
+  private def soundnessSiblingExtensions(path: String): List[String] =
+    if path.contains("/src/plugin/") then Nil else
+      val libParts = path.split("/lib/").nn
+      if libParts.length < 2 then Nil else
+        val component = libParts(1).nn.split("/").nn(0).nn
+        val file      = java.io.File(path)
+        val fileName  = file.getName.nn
+        if !fileName.startsWith(s"soundness_${component}_") then Nil else
+          val parent   = file.getParentFile
+          val siblings = if parent == null then null else parent.listFiles
+          if siblings == null then Nil else
+            val prefix = s"${component}_"
+            val out    = mutable.ListBuffer[String]()
+            siblings.foreach: sibling =>
+              val name = sibling.nn.getName.nn
+              if name.startsWith(prefix) && name.endsWith(".scala")
+                 && !name.toLowerCase.nn.contains("internal")
+              then out ++= extensionMethods(sibling.nn)
+            out.distinct.to(List)
+
+  // Parse `file` and return the leaf names of its public top-level extension
+  // methods. Returns `Nil` if the file can't be read or parsed.
+  private def extensionMethods(file: java.io.File): List[String] =
+    try
+      val content        = String(java.nio.file.Files.readAllBytes(file.toPath))
+      val (tree, source) = Parsing.parse(file.getPath.nn, content)
+      Extensions.extract(tree, source)
+    catch case _: Throwable => Nil
 
   // Modifiers that may precede a public top-level declaration; `private` and
   // `protected` are deliberately absent, so a `private[x] object Foo` line never

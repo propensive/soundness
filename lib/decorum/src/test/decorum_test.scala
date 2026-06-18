@@ -54,6 +54,13 @@ object Tests extends Suite(m"Decorum Tests"):
   def exportRules(body: String, siblings: List[String]): List[String] =
     Checker.check("<test>", Some("soundness"), stub(body), siblings).toList.map(_.rule)
 
+  def extensionExportRules(body: String, extensions: List[String]): List[String] =
+    Checker.check("<test>", Some("soundness"), stub(body), Nil, extensions).toList.map(_.rule)
+
+  def extractedExtensions(body: String): List[String] =
+    val (tree, source) = Parsing.parse("<test>", stub(body))
+    Extensions.extract(tree, source)
+
   def run(): Unit =
     suite(m"Phase 1: Universal rules"):
 
@@ -943,3 +950,38 @@ object Tests extends Suite(m"Decorum Tests"):
         exportRules
          ("// unexported: Timestamp\nexport embarcadero.{Image}\n", List("Image", "Timestamp", "Layer"))
       . assert(_.contains("742"))
+
+    suite(m"Phase 7: Soundness extension-method export completeness (R742.1)"):
+
+      test(m"Extension method not re-exported to soundness is rejected (742.1)"):
+        extensionExportRules("export xylophone.{x, xp}\n", List("x", "xp", "xml"))
+      . assert(_.contains("742.1"))
+
+      test(m"All extension methods re-exported is accepted"):
+        extensionExportRules("export xylophone.{x, xp, xml}\n", List("x", "xp", "xml"))
+      . assert(r => !r.contains("742.1"))
+
+      test(m"No violation when there are no sibling extension methods"):
+        extensionExportRules("export xylophone.{x, xp}\n", Nil)
+      . assert(r => !r.contains("742.1"))
+
+      test(m"An `unexported:` directive suppresses the extension violation"):
+        extensionExportRules
+         ("// unexported: xml (clashes with honeycomb.xml)\nexport xylophone.{x}\n", List("x", "xml"))
+      . assert(r => !r.contains("742.1"))
+
+      test(m"Extract names a single-line extension method"):
+        extractedExtensions("extension (value: Text) def xml: Xml = ???\n")
+      . assert(_ == List("xml"))
+
+      test(m"Extract names every method in a multi-def extension block"):
+        extractedExtensions("extension (value: Text)\n  def a: Int = 1\n  def b: Int = 2\n")
+      . assert(_ == List("a", "b"))
+
+      test(m"Extract names a type-parameterised, context-bound extension"):
+        extractedExtensions("extension [t: Encodable in Xml](value: t)\n  def xml: Xml = ???\n")
+      . assert(_ == List("xml"))
+
+      test(m"Extract skips private extension methods"):
+        extractedExtensions("extension (value: Text)\n  def a: Int = 1\n  private def b: Int = 2\n")
+      . assert(_ == List("a"))
