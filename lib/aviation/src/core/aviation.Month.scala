@@ -63,6 +63,19 @@ object Month:
 
     def subtract(year: Int, month: Month) = new Monthstamp(Year(year), month)
 
+  // An inline-friendly counterpart so that, after inlining, `year - month` is the literal
+  // construction `Monthstamp(Year(year), month)` — letting the `Monthstamp - day` macro recover
+  // the year and month from the operand tree. The `Subtractable` above remains the result-type
+  // witness and the fallback for non-operator call sites.
+  final class MonthOfYear extends SubOp:
+    type Self = Int
+    type Operand = Month
+    type Result = Monthstamp
+
+    inline def op(left: Int, right: Month): Monthstamp = Monthstamp(Year(left), right)
+
+  inline given monthOfYearOp: MonthOfYear = MonthOfYear()
+
   given showable: (months: Months) => Month is Showable = months.name(_)
 
   given subtractable: Month is Subtractable:

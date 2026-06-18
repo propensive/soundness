@@ -50,11 +50,26 @@ object Monthstamp:
           t"${monthstamp.month}${separation.separator}${monthstamp.year}"
 
 
+  // The result-type witness and the fallback for non-operator call sites; defaults to the
+  // Gregorian calendar, preserving the historical behaviour of `monthstamp - day`.
   given subtractable: Monthstamp is Subtractable:
     type Result = Date
     type Operand = Int
 
     def subtract(monthstamp: Monthstamp, day: Int): Date =
       unsafely(calendars.gregorianCalendar.jdn(monthstamp.year, monthstamp.month, Day(day)))
+
+  // The inline path the `-` operator prefers: when the year, month and day are all literals it
+  // validates the date at compile time against the contextually-resolved calendar (raising a
+  // compile error for e.g. `2012-Feb-30`); otherwise it falls back to a runtime check.
+  final class MonthstampSubtraction extends SubOp:
+    type Self = Monthstamp
+    type Operand = Int
+    type Result = Date
+
+    inline def op(left: Monthstamp, right: Int): Date =
+      ${aviation.internal.monthstampMinus('left, 'right)}
+
+  inline given monthstampSubtraction: MonthstampSubtraction = MonthstampSubtraction()
 
 case class Monthstamp(year: Year, month: Month)

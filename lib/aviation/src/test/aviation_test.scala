@@ -148,6 +148,34 @@ object Tests extends Suite(m"Aviation Tests"):
         List(Year(1985), Year(200), Year(202), Year(1843)).map(calendars.gregorianCalendar.leapYear)
       . assert(_.all(!_))
 
+      test(m"A valid literal date compiles"):
+        demilitarize((2012-Mar-8).jdn)
+      . assert(_.isEmpty)
+
+      test(m"An impossible day-of-month literal fails to compile"):
+        demilitarize((2012-Feb-30).jdn)
+      . assert(_.nonEmpty)
+
+      test(m"A 31st of a thirty-day-month literal fails to compile"):
+        demilitarize((2012-Apr-31).jdn)
+      . assert(_.nonEmpty)
+
+      test(m"A non-leap-year 29 February literal fails to compile"):
+        demilitarize((2011-Feb-29).jdn)
+      . assert(_.nonEmpty)
+
+      test(m"A leap-year 29 February literal compiles"):
+        demilitarize((2012-Feb-29).jdn)
+      . assert(_.isEmpty)
+
+      test(m"A zero day-of-month literal fails to compile"):
+        demilitarize((2012-Mar-0).jdn)
+      . assert(_.nonEmpty)
+
+      test(m"A literal date equals its `ts` string counterpart"):
+        (2012-Mar-8)
+      . assert(_ == ts"2012-03-08")
+
       test(m"Check recent Julian Day"):
         (2022-Dec-16).jdn
       . assert(_ == 2459930)

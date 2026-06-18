@@ -313,6 +313,86 @@ object internal:
         result
 
 
+  // The inline `Monthstamp - day` operator splices here. When the year, month and day are all
+  // compile-time literals (the `2012-Mar-8` form), validate the date against the Gregorian
+  // calendar at compile time and emit its Julian day number directly. Otherwise emit the runtime
+  // check, preserving today's behaviour. (Calendar-awareness is layered on in a later step.)
+  def monthstampMinus(left: Expr[Monthstamp], right: Expr[Int]): Macro[Date] =
+    import quotes.reflect.*
+
+    // `underlyingArgument` beta-reduces the inlined operators and exposes the proxy-val bindings as
+    // part of the tree; gather every `ValDef` so proxy references can be followed to their values.
+    val leftTree = left.asTerm.underlyingArgument
+    val rightTree = right.asTerm.underlyingArgument
+
+    val collector = new TreeAccumulator[Map[Symbol, Term]]:
+      def foldTree(env: Map[Symbol, Term], tree: Tree)(owner: Symbol): Map[Symbol, Term] =
+        val env2 = tree match
+          case valDef: ValDef => valDef.rhs match
+            case Some(rhs) => env.updated(valDef.symbol, rhs)
+            case None      => env
+
+          case _ =>
+            env
+
+        foldOverTree(env2, tree)(owner)
+
+    val owner = Symbol.spliceOwner
+    val leftEnv = collector.foldTree(Map(), leftTree)(owner)
+    val env: Map[Symbol, Term] = collector.foldTree(leftEnv, rightTree)(owner)
+
+    // Matches the synthesized `asInstanceOf`/`$asInstanceOf$` casts inlining inserts.
+    object Cast:
+      def unapply(term: Term): Option[Term] = term match
+        case TypeApply(Select(body, "asInstanceOf" | "$asInstanceOf$"), _) => Some(body)
+        case _                                                             => None
+
+    // Strip the wrappers inlining inserts (`Typed`, `Block`, `Inlined`, casts) and follow proxy
+    // `Ident`s to their bound right-hand sides.
+    def strip(term: Term): Term = term match
+      case Inlined(_, _, body)                         => strip(body)
+      case Typed(body, _)                              => strip(body)
+      case Block(_, body)                              => strip(body)
+      case Cast(body)                                  => strip(body)
+      case ident: Ident if env.contains(ident.symbol)  => strip(env(ident.symbol))
+      case _                                           => term
+
+    // An `Int` constant, also peering through opaque wrappers like `Year(_)`/`Day(_)`.
+    def constInt(term: Term): Optional[Int] = strip(term) match
+      case Literal(IntConstant(value))                       => value
+      case Apply(fn, List(arg)) if fn.symbol.name == "apply" => constInt(arg)
+      case _                                                 => Unset
+
+    // The zero-based ordinal of a `Month` enum-case reference (e.g. `Mar`).
+    def monthOrdinal(term: Term): Optional[Int] =
+      monthNames.indexOf(strip(term).symbol.name) match
+        case -1      => Unset
+        case ordinal => ordinal
+
+    // The runtime check, used whenever the operands aren't all compile-time literals; defaults to
+    // the Gregorian calendar, preserving today's behaviour.
+    def runtime: Expr[Date] =
+      '{unsafely(calendars.gregorianCalendar.jdn($left.year, $left.month, Day($right)))}
+
+    // Validate a literal `Monthstamp(Year(y), month)` minus a literal `day` at compile time. Note
+    // the plain control flow (no `Optional.lay`/`let` around the quoted trees): wrapping inline
+    // `Optional` combinators around quotes crashes the compiler in `pickleQuotes`.
+    strip(leftTree) match
+      case Apply(fn, List(yearArg, monthArg))
+      if fn.symbol.name == "apply" || fn.symbol.name == "<init>" =>
+        val year = constInt(yearArg)
+        val month = monthOrdinal(monthArg)
+        val day = constInt(rightTree)
+
+        if !(year.present && month.present && day.present) then runtime
+        else jdnOf(year.vouch, month.vouch + 1, day.vouch) match
+          case Right(jdn)  => '{Date.julianDay(${Expr(jdn)})}
+          case Left(error) => halt(error)
+
+      case _ =>
+        runtime
+
+
   def validTime(time: Expr[Double], pm: Boolean): Macro[Clockface] =
     import quotes.reflect.*
 
