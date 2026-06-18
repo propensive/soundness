@@ -33,6 +33,7 @@
 package breviloquence
 
 import contingency.*, strategies.throwUnsafely
+import gossamer.t
 
 object TimingMain:
   def time(label: String, payload: IArray[Byte], iterations: Int)
@@ -63,7 +64,7 @@ object TimingMain:
     val iterations =
       if args.length > 0 then args(0).toInt else 1_000_000
 
-    println(s"Timing $iterations iterations per benchmark.")
+    println(t"Timing $iterations iterations per benchmark.")
     println()
 
     println:
