@@ -79,6 +79,7 @@ object Checker:
     val stmtGroups           = Statements.extract(untpdTree, source)
     val lambdaSites          = Lambdas.extract(untpdTree, source)
     val operatorSites        = Operators.extract(untpdTree, source)
+    val interpolations       = Interpolations.extract(untpdTree, source)
     checkFileNaming(file, untpdTree, out)
     checkPackageRules(file, expectedModule, state.packageInfo, out)
     checkImportRules(file, imports, lines, out)
@@ -88,6 +89,7 @@ object Checker:
     checkLambdaLayout(file, lambdaSites, out)
     checkDefnAnchors(file, Definitions.extract(untpdTree, source), out)
     checkOperatorContinuation(file, operatorSites, out)
+    checkInterpolatorLayout(file, interpolations, rawText, source, out)
     var idx = 0
 
     while idx < lines.length do
@@ -249,13 +251,21 @@ object Checker:
       out += Violation(s.file, lineNum, col, rule, message)
 
     val isStringContent = firstReal.exists(_.kind == Sort.Strs)
-    checkR2LineLength(visibleLen, emit)
+    // The interior (and closing) lines of a multi-line triple-quoted string are
+    // tokenised as a single `Strs` token with no leading `Space` (so
+    // `leadingWs` is empty). Their text is string content — for `sh`/raw
+    // strings the whitespace is significant, for `m`/`j`/`x`/`y`/`tel` it is
+    // prose — so R2 (line length) and R4 (trailing whitespace) must not fire on
+    // them. The R560 layout rule governs the structure of the listed
+    // interpolators instead.
+    val isStringContinuation = isStringContent && leadingWs.isEmpty
+    if !isStringContinuation then checkR2LineLength(visibleLen, emit)
     // Skip R3 inside open `(...)` blocks: continuation rows inside parameter
     // lists align under names from the opener line and may need an odd
     // number of leading spaces (e.g. under `inline commensurable` at col 18).
     if !isStringContent && s.openParens == 0 then
       checkR3IndentWidth(isBlank, leadingCols, emit)
-    checkR4TrailingWs(line, emit)
+    if !isStringContinuation then checkR4TrailingWs(line, emit)
     checkR45BodyScopeIndent(s, lineNum, isBlank, leadingCols, firstReal, emit)
     checkR31ContinuationIndent(s, lineNum, leadingCols, isBlank, firstReal, emit)
     checkR44BodyIndent(s, lineNum, isBlank, leadingCols, firstReal, emit)
@@ -1948,6 +1958,87 @@ object Checker:
               ( file, op.rightLine, op.rightCol, "616.2",
                 s"a multi-line infix continuation must be indented ${op.anchorIndent + 2} "
                   +s"columns (found ${op.rightCol - 1})" )
+
+  // Interpolators whose leading/trailing whitespace is insignificant, so a
+  // multi-line `"""…"""` may be laid out as a block (R560). Other interpolators
+  // (`t`, `s`, `sh`, …) and raw `"""` strings carry significant whitespace and
+  // are exempt — see the R2/R4 relaxation in `checkLine`.
+  private val LayoutInterpolators: Set[String] = Set("m", "j", "x", "y", "tel")
+
+  // R560: a multi-line `m`/`j`/`x`/`y`/`tel` triple-quoted string is laid out as
+  // a block — the opening quotes end their line, the content is indented two
+  // columns beyond the prefix, no content line is indented less than the first,
+  // and the closing `"""` is alone on its line aligned with the prefix. A
+  // leading `( ` before the opener and a trailing `,`/`)` after the closer are
+  // permitted (the surrounding application syntax), so "alone" means the string
+  // content does not share the opener/closer line.
+  private def checkInterpolatorLayout
+    ( file:    String,
+      sites:   List[InterpolationInfo],
+      rawText: String,
+      source:  SourceFile,
+      out:     mutable.ListBuffer[Violation] )
+  :   Unit =
+
+    val lines = rawText.split("\n", -1).nn
+    def lineText(n: Int): String = if n >= 1 && n <= lines.length then lines(n - 1).nn else ""
+    // 1-based column of the first non-space character, or 0 if the line is blank.
+    def firstCol(text: String): Int =
+      var i = 0
+      while i < text.length && (text.charAt(i) == ' ' || text.charAt(i) == '\t') do i += 1
+      if i >= text.length then 0 else i + 1
+
+    sites.foreach: info =>
+      if LayoutInterpolators.contains(info.prefix) && info.triple
+        && info.closeLine > info.openLine
+      then
+        val col      = info.openCol         // column of the prefix character
+        val expected = col + 2              // required column of the content
+        val q        = "\"\"\""
+        val openText = lineText(info.openLine)
+        val afterOpen = (info.openCol - 1) + info.prefix.length + 3
+
+        val openerEndsLine =
+          afterOpen >= openText.length || openText.substring(afterOpen).nn.trim.nn.isEmpty
+
+        if !openerEndsLine then
+          out +=
+            Violation
+              ( file, info.openLine, afterOpen + 1, "560.1",
+                s"the content of a multi-line `${info.prefix}$q` string must begin on the "
+                  +"line after the opening quotes" )
+        else
+          var first = -1
+          var ln    = info.openLine + 1
+          while ln < info.closeLine do
+            val fc = firstCol(lineText(ln))
+            if fc != 0 then
+              if first < 0 then first = fc
+              if fc < expected then
+                out +=
+                  Violation
+                    ( file, ln, fc, "560.3",
+                      s"a line of a multi-line `${info.prefix}$q` string must not be indented "
+                        +s"less than the first content line (column $expected)" )
+            ln += 1
+          if first >= 0 && first != expected then
+            out +=
+              Violation
+                ( file, info.openLine + 1, first, "560.2",
+                  s"the content of a multi-line `${info.prefix}$q` string must be indented to "
+                    +s"column $expected" )
+
+        val closeText  = lineText(info.closeLine)
+        val closeFirst = firstCol(closeText)
+        val afterClose = (info.closeCol - 1) + 3
+        val trailing   = if afterClose <= closeText.length then closeText.substring(afterClose).nn else ""
+        val trailingOk = trailing.forall(c => c == ' ' || c == '\t' || c == ',' || c == ')')
+        if closeFirst != info.closeCol || info.closeCol != col || !trailingOk then
+          out +=
+            Violation
+              ( file, info.closeLine, (if closeFirst == 0 then 1 else closeFirst), "560.4",
+                s"the closing `$q` of a multi-line `${info.prefix}$q` string must be alone on "
+                  +s"its line, aligned with the opening quotes (column $col)" )
 
   private def checkReturnTypeBlank
     ( s:       State,

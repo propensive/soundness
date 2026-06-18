@@ -872,3 +872,37 @@ object Tests extends Suite(m"Decorum Tests"):
       test(m"Trailing operator after a quote-block `}` defers to 616, not 473.6"):
         rules("val x =\n  ' {\n      foo\n    } ::\n    tail\n")
       . assert(r => !r.contains("473.6"))
+
+    suite(m"Phase 5: Multi-line interpolated strings"):
+
+      test(m"Canonical multi-line m-string is accepted"):
+        rules("def message =\n  m\"\"\"\n    line one\n    line two\n  \"\"\"\n")
+      . assert(r => !r.exists(_.startsWith("560")))
+
+      test(m"Heavy-block `( m\"\"\" )` argument form is accepted"):
+        rules("val x =\n  ( m\"\"\"\n      content here\n    \"\"\" )\n")
+      . assert(r => !r.exists(_.startsWith("560")))
+
+      test(m"Content on the opener line is rejected (560.1)"):
+        rules("def msg =\n  m\"\"\"the content\n    more\n  \"\"\"\n")
+      . assert(_.contains("560.1"))
+
+      test(m"Content not indented +2 is rejected (560.2)"):
+        rules("def msg =\n  m\"\"\"\n   content\n  \"\"\"\n")
+      . assert(_.contains("560.2"))
+
+      test(m"Under-indented content line is rejected (560.3)"):
+        rules("def msg =\n  m\"\"\"\n    first line\n  second\n  \"\"\"\n")
+      . assert(_.contains("560.3"))
+
+      test(m"Closer not aligned with opener is rejected (560.4)"):
+        rules("def msg =\n  m\"\"\"\n    content\n    \"\"\"\n")
+      . assert(_.contains("560.4"))
+
+      test(m"Other interpolators' multi-line content is exempt from 560"):
+        rules("def t1 =\n  t\"\"\"\nunindented significant content\n  \"\"\"\n")
+      . assert(r => !r.exists(_.startsWith("560")))
+
+      test(m"Long content line of a multi-line string is not flagged 230"):
+        rules("def msg =\n  m\"\"\"\n    "+"x".repeat(110)+"\n  \"\"\"\n")
+      . assert(r => !r.contains("230"))
