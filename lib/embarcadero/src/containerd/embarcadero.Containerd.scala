@@ -108,8 +108,12 @@ case class Containerd(channel: GrpcChannel):
 
     val request = CreateContainerRequest(container)
 
-    channel.unary[CreateContainerRequest, CreateContainerResponse]
-      (Containerd.createContainerMethod, request).container
+    val created =
+      channel.unary[CreateContainerRequest, CreateContainerResponse]
+        (Containerd.createContainerMethod, request).container
+
+    Log.info(DockerEvent.ContainerCreated(created.id))
+    created
 
   // A single container by id (`Containers.Get`).
   def container(id: Text)
@@ -126,6 +130,7 @@ case class Containerd(channel: GrpcChannel):
 
     val request = DeleteContainerRequest(id)
     val _ = channel.unary[DeleteContainerRequest, Empty](Containerd.deleteContainerMethod, request)
+    Log.info(DockerEvent.ContainerDeleted(id))
 
   // The namespaces known to the daemon (`Namespaces.List`).
   def namespaces(filter: Text = t"")
@@ -176,6 +181,7 @@ case class Containerd(channel: GrpcChannel):
 
     val request = DeleteImageRequest(name, sync)
     val _ = channel.unary[DeleteImageRequest, Empty](Containerd.deleteImageMethod, request)
+    Log.info(DockerEvent.ImageDeleted(name))
 
   // Create a task for a container (`Tasks.Create`): give it a root filesystem (the
   // `rootfs` mounts, e.g. from an unpacked snapshot) and optional runtime `options`,
@@ -184,6 +190,7 @@ case class Containerd(channel: GrpcChannel):
   :   CreateTaskResponse raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
 
     val request = CreateTaskRequest(containerId, rootfs, options = options)
+    Log.info(DockerEvent.TaskCreated(containerId))
     channel.unary[CreateTaskRequest, CreateTaskResponse](Containerd.createTaskMethod, request)
 
   // Start a created task (`Tasks.Start`), returning its host pid.
@@ -191,7 +198,9 @@ case class Containerd(channel: GrpcChannel):
   :   Int raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
 
     val request = StartRequest(containerId, execId)
-    channel.unary[StartRequest, StartResponse](Containerd.startTaskMethod, request).pid
+    val pid = channel.unary[StartRequest, StartResponse](Containerd.startTaskMethod, request).pid
+    Log.info(DockerEvent.TaskStarted(containerId, pid))
+    pid
 
   // Send a signal to a task (`Tasks.Kill`); `all` targets every process in the container.
   def killTask(containerId: Text, signal: Int, execId: Text = t"", all: Boolean = false)
@@ -199,6 +208,7 @@ case class Containerd(channel: GrpcChannel):
 
     val request = KillRequest(containerId, execId, signal, all)
     val _ = channel.unary[KillRequest, Empty](Containerd.killTaskMethod, request)
+    Log.info(DockerEvent.TaskKilled(containerId, signal))
 
   // Wait for a task to exit (`Tasks.Wait`), returning its exit status and time.
   def waitTask(containerId: Text, execId: Text = t"")
@@ -212,6 +222,7 @@ case class Containerd(channel: GrpcChannel):
   :   DeleteTaskResponse raises GrpcError raises Http2Error raises AsyncError raises ProtobufError =
 
     val request = DeleteTaskRequest(containerId, execId)
+    Log.info(DockerEvent.TaskDeleted(containerId))
     channel.unary[DeleteTaskRequest, DeleteTaskResponse](Containerd.deleteTaskMethod, request)
 
   // The state of a single task (`Tasks.Get`).

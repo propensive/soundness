@@ -30,18 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package embarcadero
 
-// `Timestamp` is intentionally not exported: it collides with `aviation.Timestamp` in
-// the umbrella, and callers normally reach times through `…createdAt.instant[Instant]`
-// rather than naming it. Use `embarcadero.Timestamp` directly when constructing one.
-// unexported: Timestamp
-export embarcadero.{AnyMessage, Containerd, Container, ContentDescriptor, DockerEvent,
-    CreateContainerRequest, CreateContainerResponse, CreateNamespaceRequest,
-    CreateNamespaceResponse, CreateTaskRequest, CreateTaskResponse, DeleteContainerRequest,
-    DeleteImageRequest, DeleteNamespaceRequest, DeleteTaskRequest, DeleteTaskResponse, Empty,
-    GetContainerRequest, GetContainerResponse, GetImageRequest, GetImageResponse, GetTaskRequest,
-    GetTaskResponse, ImageRecord, KillRequest, ListContainersRequest, ListContainersResponse,
-    ListImagesRequest, ListImagesResponse, ListNamespacesRequest, ListNamespacesResponse,
-    ListTasksRequest, ListTasksResponse, Mount, Namespace, Workload, ProcessStatus, Runtime,
-    StartRequest, StartResponse, VersionResponse, WaitRequest, WaitResponse}
+import anticipation.*
+import fulminate.*
+
+object DockerEvent:
+  given communicable: DockerEvent is Communicable =
+    case ContainerCreated(id)          => m"created the container $id"
+    case ContainerDeleted(id)          => m"deleted the container $id"
+    case ImageDeleted(name)            => m"deleted the image $name"
+    case TaskCreated(container)        => m"created a task for container $container"
+    case TaskStarted(container, pid)   => m"started the task for container $container as PID $pid"
+    case TaskKilled(container, signal) => m"signalled task for container $container with $signal"
+    case TaskDeleted(container)        => m"deleted the task for container $container"
+
+enum DockerEvent:
+  case ContainerCreated(id: Text)
+  case ContainerDeleted(id: Text)
+  case ImageDeleted(name: Text)
+  case TaskCreated(container: Text)
+  case TaskStarted(container: Text, pid: Int)
+  case TaskKilled(container: Text, signal: Int)
+  case TaskDeleted(container: Text)
