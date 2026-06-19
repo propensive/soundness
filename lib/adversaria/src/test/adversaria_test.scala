@@ -34,6 +34,10 @@ package adversaria
 
 import soundness.*
 
+// `unique` is also an example annotation here; this named import takes precedence
+// over `soundness.*`'s `unique` (the sole-element-of-a-`Seq` helper).
+import adversaria.unique
+
 // A sum type with `@name`-annotated variants, for `subtypeAnnotations` /
 // `variantRelabelling`. `Accept` is renamed for one type argument, `Reject` by a
 // bare `@name` (i.e. `name[Any]`), and `Defer` is unannotated.
@@ -67,7 +71,7 @@ object Tests extends Suite(m"Adversaria tests"):
 
     test(m"exclude type annotations"):
       summon[Company is Annotated by unique].annotations
-    . assert(!_.has(number(10)))
+    . assert(_ == Set())
 
     test(m"unique annotation"):
       summon[Letters is Annotated].fields
