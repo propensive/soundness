@@ -36,6 +36,11 @@ import prepositional.*
 
 object Encodable:
   given bytes: Data is Encodable in Data = identity(_)
+
+  // A `Long` encodes to its eight bytes in big-endian order.
+  given longData: Long is Encodable in Data =
+    long => IArray((56 to 0 by -8).map(long >> _).map(_.toByte)*)
+
   given int: Int is Encodable in Text = _.toString.tt
   given double: Double is Encodable in Text = _.toString.tt
   given byte: Byte is Encodable in Text = _.toString.tt
