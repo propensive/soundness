@@ -183,6 +183,10 @@ object internal:
       given showable: Port is Showable = _.number.show
       given encodable: Port is Encodable in Text = _.number.show
 
+      // `Self` is invariant in a typeclass, so the bare-`Port` instances above do not cover a
+      // transport-refined `Port over transport` (e.g. `Port over Tcp`); provide it explicitly.
+      given showableOver: [transport] => (Port over transport) is Showable = _.number.show
+
       given decodable: (Tactic[NumberError], Tactic[PortError]) => Port is Decodable in Text =
         text => apply(text.decode[Int])
 

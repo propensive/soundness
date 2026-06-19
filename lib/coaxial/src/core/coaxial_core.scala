@@ -40,26 +40,28 @@ import anticipation.*
 import contingency.*
 import parasite.*
 import rudiments.*
+import spectacular.*
 import turbulence.*
 import urticose.MacAddress
 import vacuous.*
 
 import Control.*
 
-extension [bindable: Bindable](socket: bindable)
+extension [bindable: {Bindable, Showable}](socket: bindable)
   // A default argument cannot be combined with the path-dependent `bindable.Input`/`.Output`
   // types here (default-getter synthesis fails), so the interface-less form is a separate
   // overload that delegates with `Unset`.
   def listen[input](using Monitor, Probate)[result](lambda: bindable.Input => bindable.Output)
-  :   SocketService raises BindError =
+  :   SocketService logs SocketEvent raises BindError =
 
     socket.listen(lambda)(Unset)
 
   def listen[input](using Monitor, Probate)[result](lambda: bindable.Input => bindable.Output)
     ( interface: Optional[MacAddress] )
-  :   SocketService raises BindError =
+  :   SocketService logs SocketEvent raises BindError =
 
     val binding = bindable.bind(socket, interface)
+    Log.info(SocketEvent.Listening(socket.show))
 
     // Each accepted connection is handled on its own daemon, so connections are served
     // concurrently and a per-connection failure — a handler error, a dropped client, or a
@@ -85,11 +87,13 @@ extension [bindable: Bindable](socket: bindable)
             bindLoop.stop()
             bindable.stop(binding)
             safely(task.await())
+            Log.fine(SocketEvent.Closed(socket.show))
 
 
-extension [endpoint: Serviceable as serviceable](endpoint: endpoint)
-  def transmit[message: Transmissible](input: message): Stream[Data] =
+extension [endpoint: {Serviceable as serviceable, Showable}](endpoint: endpoint)
+  def transmit[message: Transmissible](input: message): Stream[Data] logs SocketEvent =
     val connection = serviceable.connect(endpoint, Unset)
+    Log.fine(SocketEvent.Connected(endpoint.show))
 
     serviceable.transmit(connection, message.serialize(input))
     serviceable.receive(connection)
@@ -97,9 +101,10 @@ extension [endpoint: Serviceable as serviceable](endpoint: endpoint)
 
   def exchange[state](initialState: state)[message: Ingressive](initialMessage: message = Data())
     ( handle: (state: state) ?=> message => Control[state] )
-  :   state =
+  :   state logs SocketEvent =
 
     val connection = serviceable.connect(endpoint, Unset)
+    Log.fine(SocketEvent.Connected(endpoint.show))
 
     def recur(input: Stream[Data], state: state): state = input.flow(state):
       handle(using state)(message.deserialize(next)) match
@@ -117,14 +122,15 @@ extension [endpoint: Serviceable as serviceable](endpoint: endpoint)
     recur(serviceable.receive(connection), initialState).also(serviceable.close(connection))
 
 
-extension [endpoint: Routable as routable](endpoint: endpoint)
+extension [endpoint: {Routable as routable, Showable}](endpoint: endpoint)
   def transmit[transmissible: Transmissible](message: transmissible)(using Monitor)
-  :   Unit raises StreamError =
+  :   Unit logs SocketEvent raises StreamError =
 
+    Log.fine(SocketEvent.Connected(endpoint.show))
     routable.transmit(routable.connect(endpoint, Unset), transmissible.serialize(message))
 
 
-extension [endpoint: Connectable as connectable](endpoint: endpoint)
+extension [endpoint: {Connectable as connectable, Showable}](endpoint: endpoint)
   // Open a persistent, bidirectional connection for the duration of `lambda` and
   // always close it afterwards — whether `lambda` returns or throws. This is the
   // shape a multiplexing protocol such as HTTP/2 needs (concurrent reads and writes
@@ -132,11 +138,17 @@ extension [endpoint: Connectable as connectable](endpoint: endpoint)
   // connection is never half-closed. A long-lived connection that must outlive any
   // single block keeps `lambda` running (e.g. parked on its supervisor) until the
   // enclosing scope ends, at which point the loan closes the connection.
-  def duplex[result](lambda: Duplex => result): result = duplex(lambda)(Unset)
+  def duplex[result](lambda: Duplex => result): result logs SocketEvent = duplex(lambda)(Unset)
 
-  def duplex[result](lambda: Duplex => result)(interface: Optional[MacAddress]): result =
+  def duplex[result](lambda: Duplex => result)(interface: Optional[MacAddress])
+  :   result logs SocketEvent =
+
     val connection = connectable.connect(endpoint, interface)
-    try lambda(connection) finally connection.close()
+    Log.info(SocketEvent.Connected(endpoint.show))
+
+    try lambda(connection) finally
+      connection.close()
+      Log.fine(SocketEvent.Closed(endpoint.show))
 
 
 // Applies `SocketOption`s to freshly-constructed sockets and resolves a `MacAddress` to a network

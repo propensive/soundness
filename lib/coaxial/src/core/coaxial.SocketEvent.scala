@@ -30,14 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package urticose
+package coaxial
 
 import anticipation.*
-import gossamer.*
-import spectacular.*
+import fulminate.*
 
-object Endpoint:
-  given showable: [port: Showable] => Endpoint[port] is Showable = endpoint =>
-    t"${endpoint.remote}:${endpoint.port.show}"
+object SocketEvent:
+  given communicable: SocketEvent is Communicable =
+    case Listening(endpoint) => m"listening on $endpoint"
+    case Connected(endpoint) => m"connected to $endpoint"
+    case Closed(endpoint)    => m"closed the connection to $endpoint"
 
-case class Endpoint[+port](remote: Text, port: port)
+enum SocketEvent:
+  case Listening(endpoint: Text)
+  case Connected(endpoint: Text)
+  case Closed(endpoint: Text)

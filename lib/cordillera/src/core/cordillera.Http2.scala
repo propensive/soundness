@@ -41,6 +41,7 @@ import gossamer.*
 import parasite.*
 import prepositional.*
 import rudiments.*
+import spectacular.*
 import telekinesis.*
 import vacuous.*
 
@@ -323,7 +324,8 @@ object Http2:
   // A cleartext-h2c endpoint: a connectable address plus the `:authority` to send.
   // Used as the `Target` of the HTTP/2 `HttpClient` given, distinct from the
   // `DomainSocket` target telekinesis binds to its HTTP/1.1 client.
-  case class Endpoint[endpoint: Connectable as connectable](endpoint: endpoint, authority: Text):
+  case class Endpoint[endpoint: {Connectable as connectable, Showable}]
+    ( endpoint: endpoint, authority: Text ):
     // Establish a multiplexed connection whose underlying `Duplex` is closed when the
     // enclosing `supervise` scope ends, rather than being leaked. The connection (and
     // its reader/writer daemons) runs on a daemon that holds the `duplex` loan open —
