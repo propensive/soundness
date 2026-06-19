@@ -30,82 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aviation
 
-export
-  aviation
-  . { am, Anniversary, Apr, Aug, Base24, base24Extractable, Base60, base60Extractable, Calendar,
-      Clock, Clockface, CopticCalendar, CopticMonth, Date, DateNumerics, DateSeparation, Day, Dec,
-      Disambiguation, Duration, Endianness, Feb, Fri, Hebdomad, Holiday, Holidays, Horology, Hour,
-      Instant, IslamicCalendar, IslamicMonth, Iso8601, Jan, Jul, Jun, LeapSeconds, Mar, May,
-      Meridiem, Minute, Moment, Mon, Month, Months, Monthstamp, Nov, now, Oct, Period, pm, Regime,
-      Rfc1123, RomanCalendar, Sat, Sep, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics,
-      TimeSeparation, TimeSpecificity, Timespan, Timestamp, TimestampError, Timezone, TimezoneError,
-      today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Week, Weekday, Weekdays,
-      WorkingDays, Year, Years }
+import prepositional.*
+import symbolism.*
 
-package calendars:
-  export aviation.calendars.{gregorianCalendar, julianCalendar, copticCalendar, islamicCalendar,
-      papalCutover, britishCutover}
+// The twelve months of the Islamic (Hijri) calendar. `IslamicMonth` is a distinct `MonthRadix`, so
+// a span counted in Islamic months can only be added to a date read in the Islamic calendar.
+object IslamicMonth extends MonthRadix:
+  given multiply: Int is Multiplicable by IslamicMonth.type to (Timespan of IslamicMonth.type) =
+    (n, _) => Timespan(IslamicMonth, n)
 
-package nonexistentLeapDays:
-  export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,
-      roundUpLeapDay}
-
-package monthEnds:
-  export aviation.monthEnds.{clampMonthEnd, overflowMonthEnd, raiseMonthEnd}
-
-package dateFormats:
-  export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,
-      southEastAsiaDateFormat, unitedKingdomDateFormat}
-
-package endianness:
-  export aviation.dateFormats.endianness.{bigEndian, littleEndian, middleEndian}
-
-package dateNumerics:
-  export aviation.dateFormats.numerics.{fixedWidthDateNumerics, variableWidthDateNumerics}
-
-package dateSeparators:
-  export aviation.dateFormats.separators.{dotDateSeparator, hyphenDateSeparator, slashDateSeparator,
-      spaceDateSeparator}
-
-package yearFormats:
-  export aviation.dateFormats.years.{fullYears, twoDigitsYears}
-
-package weekdays:
-  export
-    aviation.dateFormats.weekdays
-    . { englishWeekdays, englishShortWeekdays, oneLetterAmbiguousWeekdays,
-        shortestUnambiguousWeekdays, twoLetterWeekdays }
-
-package monthFormats:
-  export
-    aviation.dateFormats.months
-    . { englishMonths, englishShortMonths, numericMonths, oneLetterAmbiguousMonths,
-        twoDigitMonths }
-
-package timeFormats:
-  export
-    aviation.timeFormats
-    . { associatedPressTimeFormat, civilianTimeFormat, frenchTimeFormat, iso8601TimeFormat,
-        ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
-
-package hourFormats:
-  export aviation.timeFormats.hours.{twelveHourClock, twentyFourHourClock}
-
-package meridiems:
-  export aviation.timeFormats.meridiems.{lowerMeridiem, lowerPunctuatedMeridiem, upperMeridiem,
-      upperPunctuatedMeridiem}
-
-package timeNumerics:
-  export aviation.timeFormats.numerics.{fixedWidthTimeNumerics, variableWidthTimeNumerics}
-
-package timeSeparators:
-  export aviation.timeFormats.separators.{colonTimeSeparator, dotTimeSeparator, frenchTimeSeparator,
-      noneTimeSeparator}
-
-package hebdomads:
-  export aviation.hebdomads.{europeanHebdomad, jewishHebdomad, northAmericanHebdomad}
-
-package instantDecodables:
-  export aviation.instantDecodables.{iso8601InstantDecodable, rfc1123InstantDecodable}
+enum IslamicMonth derives CanEqual:
+  case Muharram, Safar, RabiAlAwwal, RabiAlThani, JumadaAlAwwal, JumadaAlThani, Rajab, Shaban,
+    Ramadan, Shawwal, DhuAlQadah, DhuAlHijjah

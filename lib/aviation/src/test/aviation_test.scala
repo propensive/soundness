@@ -1514,10 +1514,48 @@ object Tests extends Suite(m"Aviation Tests"):
         copticCalendar.daysInYear(Year(1719))
       . assert(_ == 366)
 
-      test(m"Coptic months cannot be added to a Gregorian-context date"):
+      test(m"Islamic months cannot be added in a Coptic context"):
         demilitarize:
-          import calendars.gregorianCalendar
-          (2000-Jan-1) + 1*CopticMonth
+          unsafely(Date(Year(1716), CopticMonth.Thout, Day(1))) + 1*IslamicMonth
+      . assert(_.nonEmpty)
+
+    suite(m"Islamic calendar"):
+      import calendars.islamicCalendar
+
+      test(m"2000-01-01 Gregorian is 24 Ramadan 1420 in the Islamic calendar"):
+        val date = { import calendars.gregorianCalendar; 2000-Jan-1 }
+        ( islamicCalendar.annual(date)(),
+          islamicCalendar.mensual(date),
+          islamicCalendar.diurnal(date)() )
+      . assert(_ == (1420, IslamicMonth.Ramadan, 24))
+
+      test(m"An Islamic date round-trips through its Julian day number"):
+        val date = unsafely(Date(Year(1420), IslamicMonth.Ramadan, Day(24)))
+        ( islamicCalendar.annual(date)(),
+          islamicCalendar.mensual(date),
+          islamicCalendar.diurnal(date)() )
+      . assert(_ == (1420, IslamicMonth.Ramadan, 24))
+
+      test(m"Adding an Islamic month advances within the Islamic calendar"):
+        import monthEnds.clampMonthEnd
+        val date = unsafely(Date(Year(1420), IslamicMonth.Ramadan, Day(24)))
+        islamicCalendar.mensual(date + 1*IslamicMonth)
+      . assert(_ == IslamicMonth.Shawwal)
+
+      test(m"An Islamic month after Dhu al-Hijjah wraps to the next year"):
+        import monthEnds.clampMonthEnd
+        val date = unsafely(Date(Year(1420), IslamicMonth.DhuAlHijjah, Day(1)))
+        val result = date + 1*IslamicMonth
+        (islamicCalendar.annual(result)(), islamicCalendar.mensual(result))
+      . assert(_ == (1421, IslamicMonth.Muharram))
+
+      test(m"An Islamic leap year has 355 days"):
+        islamicCalendar.daysInYear(Year(1420))
+      . assert(_ == 355)
+
+      test(m"Coptic months cannot be added in an Islamic context"):
+        demilitarize:
+          unsafely(Date(Year(1420), IslamicMonth.Muharram, Day(1))) + 1*CopticMonth
       . assert(_.nonEmpty)
 
     suite(m"Clock"):

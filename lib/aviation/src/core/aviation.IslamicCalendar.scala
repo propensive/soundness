@@ -30,82 +30,51 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aviation
 
-export
-  aviation
-  . { am, Anniversary, Apr, Aug, Base24, base24Extractable, Base60, base60Extractable, Calendar,
-      Clock, Clockface, CopticCalendar, CopticMonth, Date, DateNumerics, DateSeparation, Day, Dec,
-      Disambiguation, Duration, Endianness, Feb, Fri, Hebdomad, Holiday, Holidays, Horology, Hour,
-      Instant, IslamicCalendar, IslamicMonth, Iso8601, Jan, Jul, Jun, LeapSeconds, Mar, May,
-      Meridiem, Minute, Moment, Mon, Month, Months, Monthstamp, Nov, now, Oct, Period, pm, Regime,
-      Rfc1123, RomanCalendar, Sat, Sep, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics,
-      TimeSeparation, TimeSpecificity, Timespan, Timestamp, TimestampError, Timezone, TimezoneError,
-      today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Week, Weekday, Weekdays,
-      WorkingDays, Year, Years }
+import anticipation.*
+import contingency.*
+import gossamer.*
 
-package calendars:
-  export aviation.calendars.{gregorianCalendar, julianCalendar, copticCalendar, islamicCalendar,
-      papalCutover, britishCutover}
+// The tabular (arithmetical) Islamic (Hijri) calendar: twelve months alternating 30 and 29 days,
+// with a 30th day added to the final month in the eleven leap years of each 30-year cycle (the
+// "Kuwaiti" leap rule). Its civil epoch, 1 Muharram 1 AH, is JDN 1948440 (16 July 622 CE, Julian).
+// Dates are the same Julian-day-number as in every other calendar; only the labelling differs.
+class IslamicCalendar() extends Calendar:
+  type Mensual = IslamicMonth
+  type MonthUnit = IslamicMonth.type
 
-package nonexistentLeapDays:
-  export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,
-      roundUpLeapDay}
+  private val epoch: Int = 1948440 // JDN of 1 Muharram 1 AH (civil)
+  val name: Text = t"Islamic"
+  def monthsInYear: Int = 12
+  def monthOrdinal(month: IslamicMonth): Int = month.ordinal
+  def monthOfOrdinal(ordinal: Int): IslamicMonth = IslamicMonth.fromOrdinal(ordinal)
 
-package monthEnds:
-  export aviation.monthEnds.{clampMonthEnd, overflowMonthEnd, raiseMonthEnd}
+  def leapYear(year: Year): Boolean = (11*year() + 14)%30 < 11
+  def daysInYear(year: Year): Int = if leapYear(year) then 355 else 354
 
-package dateFormats:
-  export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,
-      southEastAsiaDateFormat, unitedKingdomDateFormat}
+  def daysInMonth(month: IslamicMonth, year: Year): Int =
+    if month.ordinal == 11 then (if leapYear(year) then 30 else 29)
+    else if month.ordinal%2 == 0 then 30 else 29
 
-package endianness:
-  export aviation.dateFormats.endianness.{bigEndian, littleEndian, middleEndian}
+  private def daysBeforeYear(year: Int): Int = 354*(year - 1) + (3 + 11*year)/30
+  private def daysBeforeMonth(ordinal: Int): Int = (59*ordinal + 1)/2
 
-package dateNumerics:
-  export aviation.dateFormats.numerics.{fixedWidthDateNumerics, variableWidthDateNumerics}
+  def zerothDayOfYear(year: Year): Date = Date.julianDay(epoch + daysBeforeYear(year()) - 1)
 
-package dateSeparators:
-  export aviation.dateFormats.separators.{dotDateSeparator, hyphenDateSeparator, slashDateSeparator,
-      spaceDateSeparator}
+  def annual(date: Date): Year = Year((30*(date.jdn - epoch) + 10646)/10631)
 
-package yearFormats:
-  export aviation.dateFormats.years.{fullYears, twoDigitsYears}
+  private def dayOfYear(date: Date): Int = date.jdn - epoch - daysBeforeYear(annual(date)())
 
-package weekdays:
-  export
-    aviation.dateFormats.weekdays
-    . { englishWeekdays, englishShortWeekdays, oneLetterAmbiguousWeekdays,
-        shortestUnambiguousWeekdays, twoLetterWeekdays }
+  def mensual(date: Date): IslamicMonth =
+    IslamicMonth.fromOrdinal((dayOfYear(date)*2/59).min(11))
 
-package monthFormats:
-  export
-    aviation.dateFormats.months
-    . { englishMonths, englishShortMonths, numericMonths, oneLetterAmbiguousMonths,
-        twoDigitMonths }
+  def diurnal(date: Date): Day =
+    val doy = dayOfYear(date)
+    Day(doy - daysBeforeMonth((doy*2/59).min(11)) + 1)
 
-package timeFormats:
-  export
-    aviation.timeFormats
-    . { associatedPressTimeFormat, civilianTimeFormat, frenchTimeFormat, iso8601TimeFormat,
-        ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
+  def jdn(year: Year, month: IslamicMonth, day: Day): Date raises TimeError =
+    if day() < 1 || day() > daysInMonth(month, year) then
+      raise(TimeError(_.Invalid(year(), month.ordinal + 1, day(), this)))
 
-package hourFormats:
-  export aviation.timeFormats.hours.{twelveHourClock, twentyFourHourClock}
-
-package meridiems:
-  export aviation.timeFormats.meridiems.{lowerMeridiem, lowerPunctuatedMeridiem, upperMeridiem,
-      upperPunctuatedMeridiem}
-
-package timeNumerics:
-  export aviation.timeFormats.numerics.{fixedWidthTimeNumerics, variableWidthTimeNumerics}
-
-package timeSeparators:
-  export aviation.timeFormats.separators.{colonTimeSeparator, dotTimeSeparator, frenchTimeSeparator,
-      noneTimeSeparator}
-
-package hebdomads:
-  export aviation.hebdomads.{europeanHebdomad, jewishHebdomad, northAmericanHebdomad}
-
-package instantDecodables:
-  export aviation.instantDecodables.{iso8601InstantDecodable, rfc1123InstantDecodable}
+    Date.julianDay(epoch + daysBeforeYear(year()) + daysBeforeMonth(month.ordinal) + day() - 1)
