@@ -611,6 +611,134 @@ object Tests extends Suite(m"Xylophone tests"):
       . assert(_ == List("bar>"))
 
 
+    suite(m"Extractor tests"):
+      test(m"Extract a text node from an element"):
+        val scrutinee: Xml = x"<message>hello</message>"
+        scrutinee.absolve match
+          case x"<message>$text</message>" => text
+      . assert(_ == TextNode(t"hello"))
+
+      test(m"Capture a whole child element"):
+        val scrutinee: Xml = x"<a><b>1</b></a>"
+        scrutinee.absolve match
+          case x"<a>$child</a>" => child
+      . assert(_ == x"<b>1</b>")
+
+      test(m"Non-matching tag falls through to the wildcard"):
+        val scrutinee: Xml = x"<a>hello</a>"
+        scrutinee match
+          case x"<b>$text</b>" => true
+          case _               => false
+      . assert(!_)
+
+      test(m"Zero-hole literal match returns a Boolean result"):
+        val scrutinee: Xml = x"<a>hello</a>"
+        scrutinee match
+          case x"<a>hello</a>" => 1
+          case _               => 2
+      . assert(_ == 1)
+
+      test(m"Zero-hole literal mismatch falls through"):
+        val scrutinee: Xml = x"<a>hello</a>"
+        scrutinee match
+          case x"<a>goodbye</a>" => 1
+          case _                 => 2
+      . assert(_ == 2)
+
+      test(m"Capture a child element via a tag hole"):
+        val scrutinee: Xml = x"<a><b>1</b></a>"
+        scrutinee.absolve match
+          case x"<a><$element></a>" => element
+      . assert(_ == x"<b>1</b>")
+
+      test(m"Extract an attribute value and a child as a tuple"):
+        val scrutinee: Xml = x"""<a id="5"><b>1</b></a>"""
+        scrutinee.absolve match
+          case x"<a id=$value>$child</a>" => (value, child)
+      . assert(_ == (t"5", x"<b>1</b>"))
+
+      test(m"Extract comment content alongside an attribute"):
+        val scrutinee: Xml = x"""<a id="1"><!--note--></a>"""
+        scrutinee.absolve match
+          case x"<a id=$value><!--$text--></a>" => (value, text)
+      . assert(_ == (t"1", t"note"))
+
+      test(m"Extract CDATA content alongside an attribute"):
+        val scrutinee: Xml = x"""<a id="1"><![CDATA[data]]></a>"""
+        scrutinee.absolve match
+          case x"<a id=$value><![CDATA[$text]]></a>" => (value, text)
+      . assert(_ == (t"1", t"data"))
+
+      test(m"Extract from a nested element"):
+        val scrutinee: Xml = x"""<a><b id="9">deep</b></a>"""
+        scrutinee.absolve match
+          case x"<a><b id=$value>$child</b></a>" => (value, child)
+      . assert(_ == (t"9", TextNode(t"deep")))
+
+      test(m"A child-count mismatch falls through"):
+        val scrutinee: Xml = x"<a><b/><c/></a>"
+        scrutinee match
+          case x"<a>$only</a>" => true
+          case _               => false
+      . assert(!_)
+
+      test(m"Match a literal processing instruction"):
+        val scrutinee: Xml = x"<a><?foo bar?>hi</a>"
+        scrutinee.absolve match
+          case x"<a><?foo bar?>$node</a>" => node
+      . assert(_ == TextNode(t"hi"))
+
+      test(m"Capture the remaining attributes as a map"):
+        val scrutinee: Xml = x"""<a x="1" y="2">t</a>"""
+        scrutinee.absolve match
+          case x"<a $attrs>$body</a>" => (attrs, body)
+      . assert(_ == (Map(t"x" -> t"1", t"y" -> t"2"), TextNode(t"t")))
+
+      test(m"A literal attribute value that differs falls through"):
+        val scrutinee: Xml = x"""<a id="5">x</a>"""
+        scrutinee match
+          case x"""<a id="6">$body</a>""" => true
+          case _                          => false
+      . assert(!_)
+
+
+    suite(m"Compile-time extractor errors"):
+      test(m"A single text value cannot be captured on its own"):
+        demilitarize:
+          (x"""<a id="5">x</a>""": Xml).absolve match
+            case x"<a id=$value>x</a>" => value
+        . map(_.message)
+      . assert(_.exists(_.contains("single text value")))
+
+      test(m"A hole inside comment text is rejected"):
+        demilitarize:
+          (x"<a/>": Xml).absolve match
+            case x"<a><!--pre$middle-->post</a>" => middle
+        . map(_.message)
+      . assert(_.exists(_.contains("entire comment text")))
+
+      test(m"A hole inside CDATA content is rejected"):
+        demilitarize:
+          (x"<a/>": Xml).absolve match
+            case x"<a><![CDATA[pre$middle]]></a>" => middle
+        . map(_.message)
+      . assert(_.exists(_.contains("entire CDATA content")))
+
+      test(m"A DOCTYPE pattern is rejected"):
+        demilitarize:
+          (x"<a/>": Xml) match
+            case x"<!DOCTYPE html>" => 1
+            case _                  => 2
+        . map(_.message)
+      . assert(_.exists(_.contains("DOCTYPE")))
+
+      test(m"A hole in processing-instruction position is rejected"):
+        demilitarize:
+          (x"<a/>": Xml).absolve match
+            case x"<a><?$pi?></a>" => pi
+      . assert(_.nonEmpty)
+
+
     suite(m"Namespaces"):
       test(m"Element with default namespace declaration"):
         t"""<a xmlns="http://example.com"/>""".read[Xml]
