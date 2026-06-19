@@ -32,21 +32,23 @@
                                                                                                   */
 package aviation
 
-// A `TimeUnit` is a marker type used as a phantom type-parameter to record which units a
-// `Timespan` carries or a `Timestamp` is specified to. Units are namespaced here (`TimeUnit.Year`,
-// `TimeUnit.Month`, …) to avoid clashing with the package-level `Year`/`Month`/`Day` types.
+// A `Radix` is one rung of a chronology's mixed-radix positional ladder, used as a phantom
+// type-parameter to record which units a `Timespan` carries or a `Timestamp` is specified to.
+// Radices are namespaced here (`Radix.Year`, `Radix.Month`, …) to avoid clashing with the
+// package-level `Year`/`Month`/`Day` types. A chronology is then identified by the intersection of
+// the radices it governs, e.g. `Ymd = Radix.Year & Radix.Month & Radix.Day`.
 //
-// `Regular` units have a constant ratio to the unit below them within a tick family (e.g. 60 s in a
-// minute, 7 days in a week); `Irregular` units have a position-dependent length (days in a month,
+// `Regular` radices have a constant ratio to the radix below them within a tick family (60 s in a
+// minute, 7 days in a week); `Irregular` radices have a position-dependent length (days in a month,
 // weeks in a year) and so cannot be added to a bare `Instant` without a `Chronology`. The
 // `Regular`/`Irregular` split is what gates exact (physical) arithmetic from calendar arithmetic.
 //
 // Layer markers for the leap-second/DST/calendar discontinuities (Stage B) are additive supertraits
-// to be mixed in later; adding them to these units does not break existing uses.
+// to be mixed in later; adding them to these radices does not break existing uses.
 
-object TimeUnit:
-  trait Regular extends TimeUnit
-  trait Irregular extends TimeUnit
+object Radix:
+  trait Regular extends Radix
+  trait Irregular extends Radix
 
   trait Year extends Irregular
   trait Month extends Irregular
@@ -56,4 +58,4 @@ object TimeUnit:
   trait Minute extends Regular
   trait Second extends Regular
 
-trait TimeUnit
+trait Radix
