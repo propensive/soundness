@@ -81,18 +81,6 @@ extension (tel: Tel)
 
     Bintel.frame(tel.bintel(schema), signature)
 
-  // Encode this document as a complete §6.2 self-contained BinTEL byte
-  // sequence — magic + signature + embedded schema body + document root.
-  // `schemaDoc` is the schema as a TEL document, parseable under the
-  // tel-schema axiom; its signature and bintel body are embedded so that a
-  // receiver holding only the axiom can decode the result with no external
-  // schema resolution.
-  def bintelSelfContained(schemaDoc: Tel): Data raises TelError raises BintelError =
-    val axiom      = Tels.Axiom.tels
-    val schema     = Tels.Layers.compose(Tels.Reconstructor.fromTel(schemaDoc))
-    val signature  = SchemaSignature.fromDocument(schemaDoc, axiom)
-    val schemaBody = schemaDoc.bintel(axiom)
-    Bintel.frameSelfContained(signature, schemaBody, tel.bintel(schema))
 
 
 extension (element: Tel.Element)

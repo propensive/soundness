@@ -188,6 +188,17 @@ object Bintel:
     out.write(body.asInstanceOf[Array[Byte]])
     out.toByteArray.asInstanceOf[IArray[Byte]]
 
+  // §6.2 self-contained encoding of the TEL document `tel`, whose schema is given
+  // as the TEL document `schemaDoc` (parseable under the tel-schema axiom). The
+  // schema's signature and bintel body are embedded so that a receiver holding
+  // only the axiom can decode the result with no external schema resolution.
+  def selfContained(tel: Tel, schemaDoc: Tel): Data raises TelError raises BintelError =
+    val axiom      = Tels.Axiom.tels
+    val schema     = Tels.Layers.compose(Tels.Reconstructor.fromTel(schemaDoc))
+    val signature  = SchemaSignature.fromDocument(schemaDoc, axiom)
+    val schemaBody = schemaDoc.bintel(axiom)
+    frameSelfContained(signature, schemaBody, tel.bintel(schema))
+
   // §6.2 decoder. Decode a complete self-contained BinTEL document. The
   // embedded schema body is decoded under the tel-schema axiom and used to
   // reconstruct the composed schema (B12 on any failure); its signature is
