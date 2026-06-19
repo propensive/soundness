@@ -30,80 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aviation
 
-export
-  aviation
-  . { am, Anniversary, Apr, Aug, Base24, base24Extractable, Base60, base60Extractable, Calendar,
-      Clock, Clockface, Date, DateNumerics, DateSeparation, Day, Dec, Disambiguation, Duration,
-      Endianness, Feb, Fri, Hebdomad, Holiday, Holidays, Horology, Hour, Instant, Iso8601, Jan,
-      Jul, Jun, LeapSeconds, Mar, May, Meridiem, Minute, Moment, Mon, Month, Months, Monthstamp,
-      Nov, now, Oct, Period, pm, Regime, Rfc1123, RomanCalendar, Sat, Sep, Sun, Thu, TimeError,
-      TimeEvent, TimeFormat, TimeNumerics, TimeSeparation, TimeSpecificity, Timespan, Timestamp,
-      TimestampError, Timezone, TimezoneError, today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError,
-      Wed, Week, Weekday, Weekdays, WorkingDays, Year, Years }
+// A `Disambiguation` resolves a day-of-month that overflows when months or years are added to a
+// date — e.g. Jan 31 + 1 month asks for the non-existent "Feb 31". The policy (clamp to the last
+// valid day, overflow into the following month, or raise a `TimeError`) is supplied contextually;
+// there is deliberately no default given, so calendar arithmetic that *could* overflow is a compile
+// error until a policy is imported (`import monthEnds.clampMonthEnd`, etc.).
+//
+// `resolve` is given a `(year, month, day)` where `day` may exceed the month's length, and produces
+// a valid `Date`. It is total in signature: the raising policy aborts through a `Tactic[TimeError]`
+// it captures when constructed, so it does not widen the effect type of plain calendar addition.
 
-package calendars:
-  export aviation.calendars.{gregorianCalendar, julianCalendar, papalCutover, britishCutover}
-
-package nonexistentLeapDays:
-  export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,
-      roundUpLeapDay}
-
-package monthEnds:
-  export aviation.monthEnds.{clampMonthEnd, overflowMonthEnd, raiseMonthEnd}
-
-package dateFormats:
-  export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,
-      southEastAsiaDateFormat, unitedKingdomDateFormat}
-
-package endianness:
-  export aviation.dateFormats.endianness.{bigEndian, littleEndian, middleEndian}
-
-package dateNumerics:
-  export aviation.dateFormats.numerics.{fixedWidthDateNumerics, variableWidthDateNumerics}
-
-package dateSeparators:
-  export aviation.dateFormats.separators.{dotDateSeparator, hyphenDateSeparator, slashDateSeparator,
-      spaceDateSeparator}
-
-package yearFormats:
-  export aviation.dateFormats.years.{fullYears, twoDigitsYears}
-
-package weekdays:
-  export
-    aviation.dateFormats.weekdays
-    . { englishWeekdays, englishShortWeekdays, oneLetterAmbiguousWeekdays,
-        shortestUnambiguousWeekdays, twoLetterWeekdays }
-
-package monthFormats:
-  export
-    aviation.dateFormats.months
-    . { englishMonths, englishShortMonths, numericMonths, oneLetterAmbiguousMonths,
-        twoDigitMonths }
-
-package timeFormats:
-  export
-    aviation.timeFormats
-    . { associatedPressTimeFormat, civilianTimeFormat, frenchTimeFormat, iso8601TimeFormat,
-        ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
-
-package hourFormats:
-  export aviation.timeFormats.hours.{twelveHourClock, twentyFourHourClock}
-
-package meridiems:
-  export aviation.timeFormats.meridiems.{lowerMeridiem, lowerPunctuatedMeridiem, upperMeridiem,
-      upperPunctuatedMeridiem}
-
-package timeNumerics:
-  export aviation.timeFormats.numerics.{fixedWidthTimeNumerics, variableWidthTimeNumerics}
-
-package timeSeparators:
-  export aviation.timeFormats.separators.{colonTimeSeparator, dotTimeSeparator, frenchTimeSeparator,
-      noneTimeSeparator}
-
-package hebdomads:
-  export aviation.hebdomads.{europeanHebdomad, jewishHebdomad, northAmericanHebdomad}
-
-package instantDecodables:
-  export aviation.instantDecodables.{iso8601InstantDecodable, rfc1123InstantDecodable}
+trait Disambiguation:
+  def resolve(year: Year, month: Month, day: Int)(using RomanCalendar): Date

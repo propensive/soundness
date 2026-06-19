@@ -35,6 +35,7 @@ package aviation
 import scala.util.NotGiven
 
 import anticipation.*
+import contingency.*
 import prepositional.*
 import quantitative.*
 import symbolism.*
@@ -142,6 +143,33 @@ object Timespan:
         val days = span.days.toLong + span.weeks.toLong*7
         val seconds = days*86400 + span.hours.toLong*3600 + span.minutes.toLong*60
         seconds*1_000_000_000L + (span.seconds.value*1_000_000_000.0).toLong
+
+  // Adding a regular timespan (no Month/Year) to a date is a fixed number of whole days; sub-day
+  // radices do not affect a date.
+  given dateRegular: [topic <: Radix] => NotGiven[topic <:< Radix.Irregular]
+  =>  Date is Addable by (Timespan of topic) to Date =
+    (date, span) => date.addDays(span.days + span.weeks*7)
+
+  // Adding a timespan with months/years steps over to the target year-and-month (floored), resolves
+  // any day-of-month overflow per the contextual `Disambiguation`, then adds whole days.
+  given dateCalendar: [topic <: Radix]
+  =>  ( topic <:< Radix.Irregular, RomanCalendar, Disambiguation )
+  =>  Date is Addable by (Timespan of topic) to Date =
+    (date, span) =>
+      val calendar = summon[RomanCalendar]
+      val disambiguation = summon[Disambiguation]
+      val months = span.years*12 + span.months
+      val total = calendar.annual(date)()*12 + calendar.mensual(date).ordinal + months
+      val year = Year(Math.floorDiv(total, 12))
+      val month = Month.fromOrdinal(Math.floorMod(total, 12))
+      val day = calendar.diurnal(date)()
+      val length = calendar.daysInMonth(month, year)
+
+      val anchor =
+        if day <= length then unsafely(Date(year, month, Day(day)))
+        else disambiguation.resolve(year, month, day)
+
+      anchor.addDays(span.days + span.weeks*7)
 
 case class Timespan
   ( years:   Int                 = 0,

@@ -331,6 +331,22 @@ package calendars:
       import calendars.gregorianCalendar
       unsafely(Date(year, Feb, Day(29)))
 
+// Month-end overflow policies for adding months/years to a date (e.g. Jan 31 + 1 month). No default
+// is provided, so such arithmetic requires one of these to be imported.
+package monthEnds:
+  given clampMonthEnd: Disambiguation = new Disambiguation:
+    def resolve(year: Year, month: Month, day: Int)(using calendar: RomanCalendar): Date =
+      unsafely(Date(year, month, Day(day.min(calendar.daysInMonth(month, year)))))
+
+  given overflowMonthEnd: Disambiguation = new Disambiguation:
+    def resolve(year: Year, month: Month, day: Int)(using calendar: RomanCalendar): Date =
+      val max = calendar.daysInMonth(month, year)
+      unsafely(Date(year, month, Day(max))).addDays(day - max)
+
+  given raiseMonthEnd: Tactic[TimeError] => Disambiguation = new Disambiguation:
+    def resolve(year: Year, month: Month, day: Int)(using calendar: RomanCalendar): Date =
+      abort(TimeError(_.Invalid(year(), month.numerical, day, calendar)))
+
 def now()(using clock: Clock): Instant = clock()
 
 def today()(using clock: Clock, calendar: RomanCalendar, timezone: Timezone): Date =
