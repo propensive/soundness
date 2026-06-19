@@ -253,7 +253,7 @@ def cli[bus <: Matchable](using executive: Executive)
   val socketFile: Path on Local = baseDir/name/"socket"
   val clients: scc.TrieMap[Pid, Client of bus] = scc.TrieMap()
   val terminatePid: Promise[Pid] = Promise()
-  val idleTimeout = 6.0*Hour
+  val idleTimeout = Quantity[Hours[1]](6.0)
 
   def client(pid: Pid): Client of bus = clients.getOrElseUpdate(pid, Client[bus](pid))
 

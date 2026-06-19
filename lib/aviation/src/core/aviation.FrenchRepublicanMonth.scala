@@ -30,15 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package quantitative
+package aviation
 
+import anticipation.*
+import prepositional.*
+import spectacular.*
+import symbolism.*
 
-trait Units[power <: Nat, dimension <: Dimension] extends Measure
+// The twelve thirty-day months of the French Republican calendar, followed by the five or six
+// complementary days (`Sansculottides`) that fill out the year. A distinct `MonthRadix`.
+object FrenchRepublicanMonth extends MonthRadix:
+  given showable: FrenchRepublicanMonth is Showable = _.toString.tt
 
-sealed trait Metres[Power <: Nat] extends Units[Power, Distance]
-sealed trait Kilograms[Power <: Nat] extends Units[Power, Mass]
-sealed trait Candelas[Power <: Nat] extends Units[Power, Luminosity]
-sealed trait Moles[Power <: Nat] extends Units[Power, AmountOfSubstance]
-sealed trait Amperes[Power <: Nat] extends Units[Power, Current]
-sealed trait Kelvins[Power <: Nat] extends Units[Power, Heat]
-sealed trait Seconds[Power <: Nat] extends Units[Power, Time], Radix.Regular
+  given multiply: Int is Multiplicable by this.type to (Timespan of this.type) =
+    (n, _) => Timespan(this, n)
+
+enum FrenchRepublicanMonth derives CanEqual:
+  case Vendemiaire, Brumaire, Frimaire, Nivose, Pluviose, Ventose, Germinal, Floreal, Prairial,
+    Messidor, Thermidor, Fructidor, Sansculottides

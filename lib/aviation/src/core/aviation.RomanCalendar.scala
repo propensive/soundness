@@ -34,28 +34,22 @@ package aviation
 
 import anticipation.*
 import contingency.*
-import fulminate.*
 import symbolism.*
-import vacuous.*
 
 abstract class RomanCalendar(val name: Text) extends Calendar:
-  type Annual = Year
   type Mensual = Month
-  type Diurnal = Day
+  type MonthUnit = Month.type
 
-  def leapYear(year: Annual): Boolean
+  def monthsInYear(year: Year): Int = 12
+  def monthOrdinal(year: Year, month: Month): Int = month.ordinal
+  def monthOfOrdinal(year: Year, ordinal: Int): Month = Month.fromOrdinal(ordinal)
 
-  def daysInMonth(month: Mensual, year: Annual): Int = month match
+  def leapYear(year: Year): Boolean
+
+  def daysInMonth(month: Month, year: Year): Int = month match
     case Jan | Mar | May | Jul | Aug | Oct | Dec => 31
     case Apr | Jun | Sep | Nov                   => 30
     case Feb                                     => if leapYear(year) then 29 else 28
-
-  def add(date: Date, period: Timespan): Date =
-    val monthTotal = mensual(date).ordinal + period.months
-    val month2 = Month.fromOrdinal(monthTotal%12)
-    val year2: Year = Year(annual(date)() + period.years + monthTotal/12)
-
-    safely(jdn(year2, month2, diurnal(date)).addDays(period.days)).vouch
 
   def leapYearsSinceEpoch(year: Year): Int
   def daysInYear(year: Annual): Int = if leapYear(year) then 366 else 365

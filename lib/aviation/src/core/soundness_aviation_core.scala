@@ -34,22 +34,34 @@ package soundness
 
 export
   aviation
-  . { am, Anniversary, Apr, Aug, Base24, base24Extractable, Base60, base60Extractable, Calendar,
-      Chronology, Clock, Clockface, Date, DateNumerics, DateSeparation, Day, days, Dec, Duration,
-      Endianness, Feb, Fri, Hebdomad, Holiday, Holidays, Horology, hours, Instant, Iso8601, Jan,
-      Jul, Jun, LeapSeconds, Mar, May, Meridiem, minutes, Moment, Mon, Month, Months, months,
-      Monthstamp, Nov, now, Oct, Period, pm, Regime, Rfc1123, RomanCalendar, Sat, seconds, Sep,
-      StandardTime, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics, TimeSeparation,
-      Timespan, TimeSpecificity, Timestamp, TimestampError, Timezone, TimezoneError, today, ts,
-      tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Weekday, Weekdays, weeks, WorkingDays, Year,
-      Years, years }
+  . { am, AlexandrianCalendar, Anniversary, Apr, Aug, Base24, base24Extractable, Base60,
+      base60Extractable, Calendar, Clock, Clockface, CopticCalendar, CopticMonth, Date,
+      DateNumerics, DateSeparation, Day, Dec,
+      Disambiguation, Duration, Endianness, EthiopianCalendar, EthiopianMonth, Feb,
+      FrenchRepublicanCalendar, FrenchRepublicanMonth, Fri, Hebdomad, Holiday, Holidays, Horology,
+      HebrewCalendar, HebrewMonth, Hour, IndianCalendar, IndianMonth, Instant, IslamicCalendar,
+      IslamicMonth, Iso8601, Jan, Jul, Jun, LeapSeconds, Mar, May,
+      Meridiem, Minute, Moment, Mon, Month, Months, Monthstamp, Nov, now, Oct, OffsetCalendar,
+      Period, PersianCalendar, PersianMonth, pm, Regime, Rfc1123, RomanCalendar, Sat, Sep, Sun, Thu,
+      TimeError, TimeEvent, TimeFormat, TimeNumerics,
+      TimeSeparation, TimeSpecificity, Timespan, Timestamp, TimestampError, Timezone, TimezoneError,
+      today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Week, WeekDate, Weekday, Weekdays,
+      WorkingDays, Year, Years }
 
 package calendars:
-  export aviation.calendars.{gregorianCalendar, julianCalendar, papalCutover, britishCutover}
+  export aviation.calendars.{gregorianCalendar, julianCalendar, copticCalendar, ethiopianCalendar,
+      islamicCalendar, persianCalendar, indianCalendar, hebrewCalendar, frenchRepublicanCalendar,
+      buddhistCalendar, minguoCalendar, papalCutover, britishCutover}
 
 package nonexistentLeapDays:
   export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,
       roundUpLeapDay}
+
+package monthEnds:
+  export aviation.monthEnds.{clampMonthEnd, overflowMonthEnd, raiseMonthEnd}
+
+package leapSeconds:
+  export aviation.leapSeconds.{step, smear}
 
 package dateFormats:
   export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,

@@ -230,7 +230,7 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"Get Year from Date"):
         given calendar: Calendar = calendars.gregorianCalendar
         val date = 2016-Jul-11
-        calendar.annual(date)
+        calendar.annual(date)()
       . assert(_ == 2016)
 
       test(m"Check Gregorian date"):
@@ -259,40 +259,6 @@ object Tests extends Suite(m"Aviation Tests"):
         val date = 2016-Jul-11
         (date.year, date.month, date.day)
       . assert(_ == (2016, Jul, 11))
-
-      test(m"Add two periods"):
-        val period = 1.days + 2.months
-        val period2 = 3.days + 1.years
-        period + period2
-      . assert(_ == 4.days + 2.months + 1.years)
-
-      test(m"Simplify a period"):
-        (8.months + 6.months).simplify
-      . assert(_ == 1.years + 2.months)
-
-      test(m"Hours do not simplify"):
-        (1.days + 25.hours).simplify
-      . assert(_ == 25.hours + 1.days)
-
-      test(m"Minutes simplify"):
-        123.minutes.simplify
-      . assert(_ == 2.hours + 3.minutes)
-
-      test(m"Seconds simplify"):
-        123.seconds.simplify
-      . assert(_ == 2.minutes + 3.seconds)
-
-      test(m"Cascading simplification"):
-        (1.hours + 59.minutes + 59.seconds + 2.seconds).simplify
-      . assert(_ == 2.hours + 1.seconds)
-
-      test(m"Simple multiplication"):
-        (1.hours + 5.minutes)*100
-      . assert(_ == 100.hours + 500.minutes)
-
-      test(m"Simplified multiplication"):
-        ((1.hours + 5.seconds)*100).simplify
-      . assert(_ == 100.hours + 8.minutes + 20.seconds)
 
       test(m"Specify times"):
         2.01.am
@@ -335,26 +301,6 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"Specify datetime"):
         5.25.pm on 2018-Aug-11
       . assert(_ == Timestamp(Date(Year(2018), Aug, Day(11)), Clockface(17, 25, 0)))
-
-      test(m"Add two months to a date"):
-        2014-Nov-20 + 2.months
-      . assert(_ == 2015-Jan-20)
-
-      test(m"Add two days to a date"):
-        2014-Nov-20 + 2.days
-      . assert(_ == 2014-Nov-22)
-
-      test(m"Add one year to a date"):
-        2014-Nov-20 + 1.years
-      . assert(_ == 2015-Nov-20)
-
-      test(m"Add two years to a date"):
-        2014-Nov-20 + 2.years
-      . assert(_ == 2016-Nov-20)
-
-      test(m"Add three years to a date"):
-        2014-Nov-20 + 3.years
-      . assert(_ == 2017-Nov-20)
 
       // test(m"Read TZDB file"):
       //   Tzdb.parseFile(t"europe")
@@ -913,23 +859,6 @@ object Tests extends Suite(m"Aviation Tests"):
         Month.all.length
       . assert(_ == 12)
 
-    suite(m"Chronology defaults"):
-      test(m"standardTime ambiguousTimes default is Dilate"):
-        Chronology.standardTime.ambiguousTimes
-      . assert(_ == Chronology.AmbiguousTimes.Dilate)
-
-      test(m"standardTime monthArithmetic default is Scale"):
-        Chronology.standardTime.monthArithmetic
-      . assert(_ == Chronology.MonthArithmetic.Scale)
-
-      test(m"standardTime leapDayArithmetic default is PreferFeb28"):
-        Chronology.standardTime.leapDayArithmetic
-      . assert(_ == Chronology.LeapDayArithmetic.PreferFeb28)
-
-      test(m"already simplified span stays the same"):
-        (1.years + 2.months + 3.days).simplify
-      . assert(_ == 1.years + 2.months + 3.days)
-
     suite(m"AM/PM literal corners"):
       test(m"12.00.am is midnight"):
         12.00.am
@@ -1305,14 +1234,6 @@ object Tests extends Suite(m"Aviation Tests"):
         (2024-Jan-1) >= (2024-Jan-1)
       . assert(_ == true)
 
-      test(m"Adding a negative year"):
-        2024-Mar-15 + (-1).years
-      . assert(_ == 2023-Mar-15)
-
-      test(m"Subtracting one year via negative Timespan addition"):
-        2024-Mar-15 + (-1).years
-      . assert(_ == 2023-Mar-15)
-
       test(m"Date.addDays positive"):
         (2024-Jan-1).addDays(31)
       . assert(_ == 2024-Feb-1)
@@ -1354,20 +1275,6 @@ object Tests extends Suite(m"Aviation Tests"):
         import hebdomads.europeanHebdomad
         (2025-Mar-17).weekend
       . assert(_ == false)
-
-      test(m"Adding 1 year to Feb 29 in a leap year currently panics"):
-        try
-          val _ = 2024-Feb-29 + 1.years
-          t"no error"
-        catch case error: Throwable => t"threw ${error.getClass.getSimpleName.nn}"
-      . assert(_.starts(t"threw"))
-
-      test(m"Adding 1 month to Jan 31 currently panics"):
-        try
-          val _ = 2024-Jan-31 + 1.months
-          t"no error"
-        catch case error: Throwable => t"threw ${error.getClass.getSimpleName.nn}"
-      . assert(_.starts(t"threw"))
 
     suite(m"WorkingDays edge cases"):
       given Holidays = Holidays(List
@@ -1497,45 +1404,344 @@ object Tests extends Suite(m"Aviation Tests"):
         Duration(60_000L).value
       . assert(_ == 60.0)
 
-    suite(m"Timespan"):
-      test(m"1.years sets only the years field"):
-        val ts = 1.years
-        (ts.years, ts.months, ts.days, ts.hours, ts.minutes, ts.seconds)
-      . assert(_ == (1, 0, 0, 0, 0, 0))
+    suite(m"Timespan and calendar arithmetic"):
+      import calendars.gregorianCalendar
 
-      test(m"3.days sets only the days field"):
-        val ts = 3.days
-        (ts.years, ts.months, ts.days, ts.hours, ts.minutes, ts.seconds)
-      . assert(_ == (0, 0, 3, 0, 0, 0))
+      test(m"n*Radix builds a single-radix timespan"):
+        (3*Month).months
+      . assert(_ == 3)
 
-      test(m"4.hours sets only the hours field"):
-        val ts = 4.hours
-        (ts.years, ts.months, ts.days, ts.hours, ts.minutes, ts.seconds)
-      . assert(_ == (0, 0, 0, 4, 0, 0))
+      test(m"Combining timespans unions their radix counts"):
+        val span = 2*Year + 3*Month + 14*Day
+        (span.years, span.months, span.days)
+      . assert(_ == (2, 3, 14))
 
-      test(m"6.seconds sets only the seconds field"):
-        val ts = 6.seconds
-        (ts.years, ts.months, ts.days, ts.hours, ts.minutes, ts.seconds)
-      . assert(_ == (0, 0, 0, 0, 0, 6))
+      test(m"Subtracting timespans"):
+        ((5*Month) - (2*Month)).months
+      . assert(_ == 3)
 
-      test(m"Timespan subtraction"):
-        (2.years + 3.months) - (1.years + 1.months)
-      . assert(_ == 1.years + 2.months)
+      test(m"Multiplying a timespan by an integer"):
+        (3*Month*4).months
+      . assert(_ == 12)
 
-      test(m"Adding Timespans field-by-field"):
-        2.hours + 30.minutes + 15.seconds
-      . assert(_ == Timespan(0, 0, 0, 2, 30, 15))
+      test(m"Adding whole days to a date needs no policy"):
+        2024-Jan-1 + 3*Day
+      . assert(_ == 2024-Jan-4)
 
-      test(m"Timespan multiplication preserves all fields"):
-        ((1.years + 2.months + 3.days)*5).simplify
-      . assert(_ == 5.years + 10.months + 15.days)
+      test(m"Adding weeks to a date"):
+        2024-Jan-1 + 2*Week
+      . assert(_ == 2024-Jan-15)
 
-      test(m"Timespan round-trip via Long nanoseconds drops Y/M/D fields"):
-        val original = 1.years + 2.months + 3.days + 4.hours + 5.minutes + 6.seconds
-        val nanos = original.generic
-        val roundTripped = summon[Timespan is Instantiable across Durations from Long].apply(nanos)
-        (roundTripped.years, roundTripped.months, roundTripped.days)
-      . assert(_ == (0, 0, 0))
+      test(m"Adding months to a date"):
+        import monthEnds.clampMonthEnd
+        2024-Jan-15 + 2*Month
+      . assert(_ == 2024-Mar-15)
+
+      test(m"Jan 31 + 1 month clamps to Feb 29 in a leap year"):
+        import monthEnds.clampMonthEnd
+        2024-Jan-31 + 1*Month
+      . assert(_ == 2024-Feb-29)
+
+      test(m"Jan 31 + 1 month overflows to Mar 2"):
+        import monthEnds.overflowMonthEnd
+        2024-Jan-31 + 1*Month
+      . assert(_ == 2024-Mar-2)
+
+      test(m"Feb 29 + 1 year clamps to Feb 28 in a non-leap year"):
+        import monthEnds.clampMonthEnd
+        2024-Feb-29 + 1*Year
+      . assert(_ == 2025-Feb-28)
+
+      test(m"Adding a negative year"):
+        import monthEnds.clampMonthEnd
+        2024-Mar-15 + (-1)*Year
+      . assert(_ == 2023-Mar-15)
+
+      test(m"A regular timespan adds to an instant as physical seconds"):
+        Instant(0L) + (1*Hour + 30*Minute)
+      . assert(_ == Instant(5400000L))
+
+      test(m"Adding a month to a timestamp keeps the time of day"):
+        import monthEnds.clampMonthEnd
+        Timestamp(2024-Jan-31, Clockface(10, 15, 0)) + 1*Month
+      . assert(_ == Timestamp(2024-Feb-29, Clockface(10, 15, 0)))
+
+      test(m"Adding an hour across midnight carries into the next day"):
+        Timestamp(2024-Jan-1, Clockface(23, 30, 0)) + 1*Hour
+      . assert(_ == Timestamp(2024-Jan-2, Clockface(0, 30, 0)))
+
+      test(m"Adding days and hours to a timestamp"):
+        Timestamp(2024-Jan-1, Clockface(10, 0, 0)) + (2*Day + 3*Hour)
+      . assert(_ == Timestamp(2024-Jan-3, Clockface(13, 0, 0)))
+
+      test(m"Adding a day to a zoned moment ignores DST (keeps wall-clock time)"):
+        val moment = Timestamp(2024-Mar-9, Clockface(12, 0, 0)).in(tz"America/New_York")
+        (moment + 1*Day).time
+      . assert(_ == Clockface(12, 0, 0))
+
+      test(m"Adding 24 hours to a zoned moment honours DST (gains an hour)"):
+        val moment = Timestamp(2024-Mar-9, Clockface(12, 0, 0)).in(tz"America/New_York")
+        (moment + 24*Hour).time
+      . assert(_ == Clockface(13, 0, 0))
+
+    suite(m"Coptic calendar"):
+      import calendars.copticCalendar
+
+      test(m"2000-01-01 Gregorian is 22 Koiak 1716 in the Coptic calendar"):
+        val date = { import calendars.gregorianCalendar; 2000-Jan-1 }
+        (copticCalendar.annual(date)(), copticCalendar.mensual(date), copticCalendar.diurnal(date)())
+      . assert(_ == (1716, CopticMonth.Koiak, 22))
+
+      test(m"A Coptic date round-trips through its Julian day number"):
+        val date = unsafely(Date(Year(1716), CopticMonth.Koiak, Day(22)))
+        (copticCalendar.annual(date)(), copticCalendar.mensual(date), copticCalendar.diurnal(date)())
+      . assert(_ == (1716, CopticMonth.Koiak, 22))
+
+      test(m"Adding a Coptic month advances within the Coptic calendar"):
+        import monthEnds.clampMonthEnd
+        val date = unsafely(Date(Year(1716), CopticMonth.Koiak, Day(22)))
+        copticCalendar.mensual(date + 1*CopticMonth)
+      . assert(_ == CopticMonth.Tobi)
+
+      test(m"A Coptic month after Nasie wraps to the next year"):
+        import monthEnds.clampMonthEnd
+        val date = unsafely(Date(Year(1716), CopticMonth.Nasie, Day(5)))
+        val result = date + 1*CopticMonth
+        (copticCalendar.annual(result)(), copticCalendar.mensual(result))
+      . assert(_ == (1717, CopticMonth.Thout))
+
+      test(m"A Coptic leap year has 366 days"):
+        copticCalendar.daysInYear(Year(1719))
+      . assert(_ == 366)
+
+      test(m"Islamic months cannot be added in a Coptic context"):
+        demilitarize:
+          unsafely(Date(Year(1716), CopticMonth.Thout, Day(1))) + 1*IslamicMonth
+      . assert(_.nonEmpty)
+
+    suite(m"Islamic calendar"):
+      import calendars.islamicCalendar
+
+      test(m"2000-01-01 Gregorian is 24 Ramadan 1420 in the Islamic calendar"):
+        val date = { import calendars.gregorianCalendar; 2000-Jan-1 }
+        ( islamicCalendar.annual(date)(),
+          islamicCalendar.mensual(date),
+          islamicCalendar.diurnal(date)() )
+      . assert(_ == (1420, IslamicMonth.Ramadan, 24))
+
+      test(m"An Islamic date round-trips through its Julian day number"):
+        val date = unsafely(Date(Year(1420), IslamicMonth.Ramadan, Day(24)))
+        ( islamicCalendar.annual(date)(),
+          islamicCalendar.mensual(date),
+          islamicCalendar.diurnal(date)() )
+      . assert(_ == (1420, IslamicMonth.Ramadan, 24))
+
+      test(m"Adding an Islamic month advances within the Islamic calendar"):
+        import monthEnds.clampMonthEnd
+        val date = unsafely(Date(Year(1420), IslamicMonth.Ramadan, Day(24)))
+        islamicCalendar.mensual(date + 1*IslamicMonth)
+      . assert(_ == IslamicMonth.Shawwal)
+
+      test(m"An Islamic month after Dhu al-Hijjah wraps to the next year"):
+        import monthEnds.clampMonthEnd
+        val date = unsafely(Date(Year(1420), IslamicMonth.DhuAlHijjah, Day(1)))
+        val result = date + 1*IslamicMonth
+        (islamicCalendar.annual(result)(), islamicCalendar.mensual(result))
+      . assert(_ == (1421, IslamicMonth.Muharram))
+
+      test(m"An Islamic leap year has 355 days"):
+        islamicCalendar.daysInYear(Year(1420))
+      . assert(_ == 355)
+
+      test(m"Coptic months cannot be added in an Islamic context"):
+        demilitarize:
+          unsafely(Date(Year(1420), IslamicMonth.Muharram, Day(1))) + 1*CopticMonth
+      . assert(_.nonEmpty)
+
+    suite(m"Ethiopian calendar"):
+      import calendars.ethiopianCalendar
+
+      test(m"2000-01-01 Gregorian is 22 Tahsas 1992 in the Ethiopian calendar"):
+        val date = { import calendars.gregorianCalendar; 2000-Jan-1 }
+        ( ethiopianCalendar.annual(date)(),
+          ethiopianCalendar.mensual(date),
+          ethiopianCalendar.diurnal(date)() )
+      . assert(_ == (1992, EthiopianMonth.Tahsas, 22))
+
+      test(m"A month after Pagume wraps to the next Ethiopian year"):
+        import monthEnds.clampMonthEnd
+        val result = unsafely(Date(Year(1992), EthiopianMonth.Pagume, Day(5))) + 1*EthiopianMonth
+        (ethiopianCalendar.annual(result)(), ethiopianCalendar.mensual(result))
+      . assert(_ == (1993, EthiopianMonth.Meskerem))
+
+    suite(m"Persian calendar"):
+      import calendars.persianCalendar
+
+      test(m"2000-01-01 Gregorian is 11 Dey 1378 in the Persian calendar"):
+        val date = { import calendars.gregorianCalendar; 2000-Jan-1 }
+        ( persianCalendar.annual(date)(),
+          persianCalendar.mensual(date),
+          persianCalendar.diurnal(date)() )
+      . assert(_ == (1378, PersianMonth.Dey, 11))
+
+      test(m"A Persian date round-trips through its Julian day number"):
+        val date = unsafely(Date(Year(1403), PersianMonth.Farvardin, Day(1)))
+        ( persianCalendar.annual(date)(),
+          persianCalendar.mensual(date),
+          persianCalendar.diurnal(date)() )
+      . assert(_ == (1403, PersianMonth.Farvardin, 1))
+
+    suite(m"Indian National calendar"):
+      import calendars.{gregorianCalendar, indianCalendar}
+
+      test(m"1 Chaitra 1879 Saka is 22 March 1957"):
+        val date = unsafely(Date(using indianCalendar)(Year(1879), IndianMonth.Chaitra, Day(1)))
+        ( gregorianCalendar.annual(date)(),
+          gregorianCalendar.mensual(date),
+          gregorianCalendar.diurnal(date)() )
+      . assert(_ == (1957, Mar, 22))
+
+      test(m"1 Chaitra of a Gregorian-leap year starts on 21 March"):
+        val date = unsafely(Date(using indianCalendar)(Year(1942), IndianMonth.Chaitra, Day(1)))
+        ( gregorianCalendar.annual(date)(),
+          gregorianCalendar.mensual(date),
+          gregorianCalendar.diurnal(date)() )
+      . assert(_ == (2020, Mar, 21))
+
+      test(m"1 Vaishakha 1879 Saka is 21 April 1957"):
+        val date = unsafely(Date(using indianCalendar)(Year(1879), IndianMonth.Vaishakha, Day(1)))
+        ( gregorianCalendar.annual(date)(),
+          gregorianCalendar.mensual(date),
+          gregorianCalendar.diurnal(date)() )
+      . assert(_ == (1957, Apr, 21))
+
+    suite(m"Hebrew calendar"):
+      import calendars.hebrewCalendar
+
+      test(m"2000-01-01 Gregorian is 23 Tevet 5760 in the Hebrew calendar"):
+        val date = { import calendars.gregorianCalendar; 2000-Jan-1 }
+        ( hebrewCalendar.annual(date)(),
+          hebrewCalendar.mensual(date),
+          hebrewCalendar.diurnal(date)() )
+      . assert(_ == (5760, HebrewMonth.Tevet, 23))
+
+      test(m"A Hebrew date round-trips through its Julian day number"):
+        val date = unsafely(Date(Year(5784), HebrewMonth.Nisan, Day(15)))
+        ( hebrewCalendar.annual(date)(),
+          hebrewCalendar.mensual(date),
+          hebrewCalendar.diurnal(date)() )
+      . assert(_ == (5784, HebrewMonth.Nisan, 15))
+
+      test(m"5784 is a leap year with 13 months"):
+        hebrewCalendar.monthsInYear(Year(5784))
+      . assert(_ == 13)
+
+      test(m"5783 is a common year with 12 months"):
+        hebrewCalendar.monthsInYear(Year(5783))
+      . assert(_ == 12)
+
+      test(m"Adding a month from Adar I reaches Adar II in a leap year"):
+        import monthEnds.clampMonthEnd
+        val date = unsafely(Date(Year(5784), HebrewMonth.Adar, Day(1)))
+        hebrewCalendar.mensual(date + 1*HebrewMonth)
+      . assert(_ == HebrewMonth.AdarSheni)
+
+    suite(m"French Republican calendar"):
+      test(m"18 Brumaire An VIII is 9 November 1799"):
+        import calendars.{gregorianCalendar, frenchRepublicanCalendar}
+        val date =
+          unsafely(Date(using frenchRepublicanCalendar)
+              (Year(8), FrenchRepublicanMonth.Brumaire, Day(18)))
+
+        ( gregorianCalendar.annual(date)(),
+          gregorianCalendar.mensual(date),
+          gregorianCalendar.diurnal(date)() )
+      . assert(_ == (1799, Nov, 9))
+
+    suite(m"Leap-second strategies"):
+      val newYear = 1483228800000L // 2017-01-01 00:00:00 UTC, just after the 2016 leap second
+
+      test(m"Leap seconds are ignored by default"):
+        summon[LeapSeconds.Strategy].tai(newYear)
+      . assert(_ == newYear)
+
+      test(m"The step strategy counts elapsed leap seconds"):
+        import leapSeconds.step
+        summon[LeapSeconds.Strategy].tai(newYear) - newYear
+      . assert(_ == LeapSeconds.tai(newYear) - newYear)
+
+      test(m"Across the 2016 leap second the TAI offset gains one second"):
+        LeapSeconds.tai(newYear) - LeapSeconds.tai(newYear - 60000L)
+      . assert(_ == 61000L)
+
+      test(m"The smear strategy is chosen by import"):
+        import leapSeconds.smear
+        summon[LeapSeconds.Strategy].tai(newYear)
+      . assert(_ == LeapSeconds.smearTai(newYear))
+
+      test(m"Smearing matches discrete TAI far from any leap second"):
+        val midYear = 1490000000000L // 2017-03-20, no nearby leap second
+        LeapSeconds.smearTai(midYear) == LeapSeconds.tai(midYear)
+      . assert(_ == true)
+
+    suite(m"ISO-8601 week dates"):
+      import calendars.gregorianCalendar
+
+      test(m"2000-01-01 is in week-year 1999, week 52"):
+        val date = 2000-Jan-1
+        (WeekDate.weekYear(date)(), WeekDate.weekOfYear(date))
+      . assert(_ == (1999, 52))
+
+      test(m"2000-01-03 (Monday) starts week-year 2000, week 1"):
+        val date = 2000-Jan-3
+        (WeekDate.weekYear(date)(), WeekDate.weekOfYear(date))
+      . assert(_ == (2000, 1))
+
+      test(m"WeekDate(1999, 52, Sat) is 2000-01-01"):
+        WeekDate(Year(1999), 52, Sat)
+      . assert(_ == 2000-Jan-1)
+
+      test(m"A week date round-trips a date"):
+        val date = 2021-Jul-15
+        WeekDate(WeekDate.weekYear(date), WeekDate.weekOfYear(date), date.weekday) == date
+      . assert(_ == true)
+
+      test(m"2004 has 53 ISO weeks"):
+        WeekDate.weekOfYear(2004-Dec-31)
+      . assert(_ == 53)
+
+    suite(m"Year-offset calendars"):
+      test(m"2000 Gregorian is 2543 in the Buddhist calendar"):
+        import calendars.buddhistCalendar
+        val date = { import calendars.gregorianCalendar; 2000-Jun-1 }
+        buddhistCalendar.annual(date)()
+      . assert(_ == 2543)
+
+      test(m"2000 Gregorian is year 89 in the Minguo calendar"):
+        import calendars.minguoCalendar
+        val date = { import calendars.gregorianCalendar; 2000-Jun-1 }
+        minguoCalendar.annual(date)()
+      . assert(_ == 89)
+
+    suite(m"Calendar display"):
+      test(m"A Coptic date displays with its month name"):
+        import calendars.copticCalendar
+        copticCalendar.format(unsafely(Date(Year(1716), CopticMonth.Koiak, Day(22))))
+      . assert(_ == t"22 Koiak 1716")
+
+      test(m"Islamic month names are polished"):
+        IslamicMonth.RabiAlAwwal.show
+      . assert(_ == t"Rabi I")
+
+      test(m"An Islamic date displays with its month name"):
+        import calendars.islamicCalendar
+        islamicCalendar.format(unsafely(Date(Year(1445), IslamicMonth.Ramadan, Day(15))))
+      . assert(_ == t"15 Ramadan 1445")
+
+      test(m"The Hebrew leap month displays as Adar II"):
+        import calendars.hebrewCalendar
+        hebrewCalendar.format(unsafely(Date(Year(5784), HebrewMonth.AdarSheni, Day(1))))
+      . assert(_ == t"1 Adar II 5784")
 
     suite(m"Clock"):
       test(m"Clock.fixed returns the same instant"):

@@ -30,15 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package quantitative
+package aviation
 
+import anticipation.*
+import prepositional.*
+import spectacular.*
+import symbolism.*
 
-trait Units[power <: Nat, dimension <: Dimension] extends Measure
+// The thirteen months of the Coptic calendar: twelve months of 30 days plus the short epagomenal
+// month `Nasie` (5 days, or 6 in a leap year). `CopticMonth` is a distinct `MonthRadix`, so a span
+// counted in Coptic months can only be added to a date read in the Coptic calendar.
+object CopticMonth extends MonthRadix:
+  given showable: CopticMonth is Showable = _.toString.tt
 
-sealed trait Metres[Power <: Nat] extends Units[Power, Distance]
-sealed trait Kilograms[Power <: Nat] extends Units[Power, Mass]
-sealed trait Candelas[Power <: Nat] extends Units[Power, Luminosity]
-sealed trait Moles[Power <: Nat] extends Units[Power, AmountOfSubstance]
-sealed trait Amperes[Power <: Nat] extends Units[Power, Current]
-sealed trait Kelvins[Power <: Nat] extends Units[Power, Heat]
-sealed trait Seconds[Power <: Nat] extends Units[Power, Time], Radix.Regular
+  given multiplicable: Int is Multiplicable by CopticMonth.type to (Timespan of CopticMonth.type) =
+    (n, _) => Timespan(CopticMonth, n)
+
+enum CopticMonth derives CanEqual:
+  case Thout, Paopi, Hathor, Koiak, Tobi, Meshir, Paremhat, Parmouti, Pashons, Paoni, Epip, Mesori,
+    Nasie

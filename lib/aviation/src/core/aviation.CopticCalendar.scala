@@ -30,15 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package quantitative
+package aviation
 
+import anticipation.*
+import gossamer.*
 
-trait Units[power <: Nat, dimension <: Dimension] extends Measure
+// The Coptic (Alexandrian) calendar. Its epoch, 1 Thout 1 AM, is JDN 1825030 (29 August 284 CE in
+// the Julian calendar). Dates are stored as the same Julian-day-number as every other calendar;
+// only the labelling differs.
+class CopticCalendar() extends AlexandrianCalendar:
+  type Mensual = CopticMonth
+  type MonthUnit = CopticMonth.type
 
-sealed trait Metres[Power <: Nat] extends Units[Power, Distance]
-sealed trait Kilograms[Power <: Nat] extends Units[Power, Mass]
-sealed trait Candelas[Power <: Nat] extends Units[Power, Luminosity]
-sealed trait Moles[Power <: Nat] extends Units[Power, AmountOfSubstance]
-sealed trait Amperes[Power <: Nat] extends Units[Power, Current]
-sealed trait Kelvins[Power <: Nat] extends Units[Power, Heat]
-sealed trait Seconds[Power <: Nat] extends Units[Power, Time], Radix.Regular
+  def epoch: Int = 1825030
+  val name: Text = t"Coptic"
+  def monthOrdinal(year: Year, month: CopticMonth): Int = month.ordinal
+  def monthOfOrdinal(year: Year, ordinal: Int): CopticMonth = CopticMonth.fromOrdinal(ordinal)

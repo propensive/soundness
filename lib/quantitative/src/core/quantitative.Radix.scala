@@ -32,13 +32,17 @@
                                                                                                   */
 package quantitative
 
+// A `Radix` is one rung of a mixed-radix positional system over a continuum (a calendar/clock, in
+// the case of time). The marker lives here, alongside `Seconds`, so that the SI second can itself
+// be a radix — `Seconds[1] <: Radix.Regular` — and therefore appear in the phantom `Topic` of an
+// aviation `Timespan`/`Timestamp` while remaining an ordinary `Quantity` unit. Other radices (years,
+// months, weeks, days, hours, minutes) are defined in aviation and extend these markers.
+//
+// `Regular` radices have a constant ratio to the radix below them within a tick family; `Irregular`
+// radices have a position-dependent length and so cannot be added to a bare instant.
 
-trait Units[power <: Nat, dimension <: Dimension] extends Measure
+object Radix:
+  trait Regular extends Radix
+  trait Irregular extends Radix
 
-sealed trait Metres[Power <: Nat] extends Units[Power, Distance]
-sealed trait Kilograms[Power <: Nat] extends Units[Power, Mass]
-sealed trait Candelas[Power <: Nat] extends Units[Power, Luminosity]
-sealed trait Moles[Power <: Nat] extends Units[Power, AmountOfSubstance]
-sealed trait Amperes[Power <: Nat] extends Units[Power, Current]
-sealed trait Kelvins[Power <: Nat] extends Units[Power, Heat]
-sealed trait Seconds[Power <: Nat] extends Units[Power, Time], Radix.Regular
+trait Radix

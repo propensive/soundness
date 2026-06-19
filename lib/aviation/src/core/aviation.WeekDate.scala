@@ -1,5 +1,5 @@
                                                                                                   /*
-┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
 ┃                                                                                                  ┃
 ┃                                                   ╭───╮                                          ┃
 ┃                                                   │   │                                          ┃
@@ -28,41 +28,44 @@
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
 ┃                                                                                                  ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package aviation
 
-import beneficence.*
-import symbolism.*
+import contingency.*
 
-object Chronology:
-  enum AmbiguousTimes:
-    case Throw, Dilate, PreferEarlier, PreferLater
+// ISO-8601 week dates label a `Date` not by month but by (week-year, week, weekday): weeks run
+// Monday to Sunday, week 1 is the week containing 4 January (the first Thursday), and a date near
+// the year boundary may belong to the previous or next week-year. This isn't a `Calendar` (it has
+// no months); it's a labelling of a Gregorian date, so the relevant `RomanCalendar` is contextual.
+object WeekDate:
+  // ISO weekday number, Monday = 1 … Sunday = 7 (the `Weekday` enum runs Mon = 0).
+  private def isoWeekday(date: Date): Int = date.weekday.ordinal + 1
 
-  enum MonthArithmetic:
-    case Scale, Overcount, Fixed
+  // The week number a date falls in, counted within its own (Gregorian) year — possibly < 1 or
+  // greater than that year's week count, in which case it belongs to the adjacent week-year.
+  private def rawWeek(date: Date)(using calendar: RomanCalendar): Int =
+    val dayOfYear = date.jdn - calendar.zerothDayOfYear(calendar.annual(date)).jdn
+    (dayOfYear - isoWeekday(date) + 10)/7
 
-  enum LeapDayArithmetic:
-    case Throw, PreferFeb28, PreferMar1
+  // The number of ISO weeks in a week-year: 28 December always lies in the last week.
+  private def weekCount(year: Year)(using RomanCalendar): Int =
+    rawWeek(unsafely(Date(year, Dec, Day(28))))
 
-  given standardTime: Chronology[StandardTime]:
-    override def simplify(timespan: Timespan): Timespan =
-      val timespan2 = if timespan.seconds < 60 then timespan else
-        val adjust = timespan.seconds/60
-        timespan + adjust.minutes - (adjust*60).seconds
+  def weekYear(date: Date)(using calendar: RomanCalendar): Year =
+    val week = rawWeek(date)
+    val year = calendar.annual(date)
+    if week < 1 then Year(year() - 1) else if week > weekCount(year) then Year(year() + 1) else year
 
-      val timespan3 = if timespan2.minutes < 60 then timespan2 else
-        val adjust = timespan2.minutes/60
-        timespan2 + adjust.hours - (adjust*60).minutes
+  def weekOfYear(date: Date)(using calendar: RomanCalendar): Int =
+    val week = rawWeek(date)
+    val year = calendar.annual(date)
+    if week < 1 then weekCount(Year(year() - 1)) else if week > weekCount(year) then 1 else week
 
-      val result = if timespan3.months < 12 then timespan3 else
-        val adjust = timespan3.months/12
-        timespan3 + adjust.years - (adjust*12).months
+  // The `Date` for a given ISO (week-year, week, weekday): start from the Monday of week 1 (the
+  // week containing 4 January) and step forward.
+  def apply(weekYear: Year, week: Int, weekday: Weekday)(using RomanCalendar)
+  :   Date raises TimeError =
 
-      result
-
-open class Chronology[denomination]() extends Findable:
-  def ambiguousTimes: Chronology.AmbiguousTimes = Chronology.AmbiguousTimes.Dilate
-  def monthArithmetic: Chronology.MonthArithmetic = Chronology.MonthArithmetic.Scale
-  def leapDayArithmetic: Chronology.LeapDayArithmetic = Chronology.LeapDayArithmetic.PreferFeb28
-  def simplify(timespan: Timespan): Timespan = timespan
+    val jan4 = Date(weekYear, Jan, Day(4))
+    jan4.addDays(-jan4.weekday.ordinal + (week - 1)*7 + weekday.ordinal)

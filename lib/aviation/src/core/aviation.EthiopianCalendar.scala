@@ -30,15 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package quantitative
+package aviation
 
+import anticipation.*
+import gossamer.*
 
-trait Units[power <: Nat, dimension <: Dimension] extends Measure
+// The Ethiopian calendar — Alexandrian in structure (see `AlexandrianCalendar`), with its epoch,
+// 1 Mäskäräm 1 (Amete Mihret), at JDN 1724221 (29 August 8 CE in the Julian calendar), roughly
+// seven to eight years behind the Coptic reckoning.
+class EthiopianCalendar() extends AlexandrianCalendar:
+  type Mensual = EthiopianMonth
+  type MonthUnit = EthiopianMonth.type
 
-sealed trait Metres[Power <: Nat] extends Units[Power, Distance]
-sealed trait Kilograms[Power <: Nat] extends Units[Power, Mass]
-sealed trait Candelas[Power <: Nat] extends Units[Power, Luminosity]
-sealed trait Moles[Power <: Nat] extends Units[Power, AmountOfSubstance]
-sealed trait Amperes[Power <: Nat] extends Units[Power, Current]
-sealed trait Kelvins[Power <: Nat] extends Units[Power, Heat]
-sealed trait Seconds[Power <: Nat] extends Units[Power, Time], Radix.Regular
+  def epoch: Int = 1724221
+  val name: Text = t"Ethiopian"
+  def monthOrdinal(year: Year, month: EthiopianMonth): Int = month.ordinal
+  def monthOfOrdinal(year: Year, ordinal: Int): EthiopianMonth = EthiopianMonth.fromOrdinal(ordinal)

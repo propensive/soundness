@@ -107,8 +107,11 @@ object internal:
     inline def apply(): Int = day
 
 
-  object Year:
+  object Year extends Radix.Irregular:
     inline def apply(year: Int): Year = year
+
+    given multiplicable: Int is Multiplicable by Year.type to (Timespan of Year.type) =
+      (n, _) => Timespan(Year, n)
 
     given showable: Year is Showable = _.toString.tt
     given addable: Year is Addable by Int to Year = _ + _
@@ -127,8 +130,11 @@ object internal:
 
         if left == right then !strict else (left < right)^greaterThan
 
-  object Day:
+  object Day extends Radix.Regular:
     inline def apply(day: Int): Day = day
+
+    given multiplicable: Int is Multiplicable by Day.type to (Timespan of Day.type) =
+      (n, _) => Timespan(Day, n)
 
     given decodable: (Int is Decodable in Text) => Day is Decodable in Text = day =>
       Day(day.decode[Int])
@@ -560,13 +566,6 @@ object internal:
             recur(next, skipped)
 
         recur(date, days)
-
-    given plus: (calendar: Calendar) => Date is Addable:
-      type Result = Date
-      type Operand = Timespan
-
-      def add(date: Date, timespan: Timespan): Date = calendar.add(date, timespan)
-
 
   extension (date: Date)
     def day(using calendar: Calendar): calendar.Diurnal = calendar.diurnal(date)

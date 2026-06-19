@@ -30,15 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package quantitative
+package aviation
 
+// A `Disambiguation` resolves a day-of-month that overflows when months or years are added to a
+// date — e.g. Jan 31 + 1 month asks for the non-existent "Feb 31". The policy (clamp to the last
+// valid day, overflow into the following month, or raise a `TimeError`) is supplied contextually;
+// there is deliberately no default given, so calendar arithmetic that *could* overflow is a compile
+// error until a policy is imported (`import monthEnds.clampMonthEnd`, etc.).
+//
+// `resolve` is given a `(year, month, day)` where `day` may exceed the month's length, and produces
+// a valid `Date`. It is total in signature: the raising policy aborts through a `Tactic[TimeError]`
+// it captures when constructed, so it does not widen the effect type of plain calendar addition.
 
-trait Units[power <: Nat, dimension <: Dimension] extends Measure
-
-sealed trait Metres[Power <: Nat] extends Units[Power, Distance]
-sealed trait Kilograms[Power <: Nat] extends Units[Power, Mass]
-sealed trait Candelas[Power <: Nat] extends Units[Power, Luminosity]
-sealed trait Moles[Power <: Nat] extends Units[Power, AmountOfSubstance]
-sealed trait Amperes[Power <: Nat] extends Units[Power, Current]
-sealed trait Kelvins[Power <: Nat] extends Units[Power, Heat]
-sealed trait Seconds[Power <: Nat] extends Units[Power, Time], Radix.Regular
+trait Disambiguation:
+  def resolve(using calendar: Calendar)(year: Year, month: calendar.Mensual, day: Int): Date

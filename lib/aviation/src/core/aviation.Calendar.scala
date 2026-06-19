@@ -35,17 +35,36 @@ package aviation
 import anticipation.*
 import beneficence.*
 import contingency.*
+import gossamer.*
+import spectacular.*
 
 trait Calendar extends Findable:
-  type Diurnal
+  // All calendars number years and days-of-month with integers; only the month type varies (the
+  // Gregorian `Month` enum, `IslamicMonth`, `CopticMonth`, …). `MonthUnit` is that month's radix,
+  // used to dispatch calendar arithmetic to the right calendar at compile time.
+  type Annual = Year
+  type Diurnal = Day
   type Mensual
-  type Annual
+  type MonthUnit <: MonthRadix
 
   def name: Text
-  def daysInYear(year: Annual): Int
-  def annual(date: Date): Annual
+  // Year-aware to accommodate lunisolar calendars (the Hebrew calendar has 12 or 13 months, and the
+  // month↔ordinal mapping shifts between common and leap years); other calendars ignore the year.
+  def monthsInYear(year: Year): Int
+  def daysInYear(year: Year): Int
+  def daysInMonth(month: Mensual, year: Year): Int
+  def monthOrdinal(year: Year, month: Mensual): Int
+  def monthOfOrdinal(year: Year, ordinal: Int): Mensual
+  def annual(date: Date): Year
   def mensual(date: Date): Mensual
-  def diurnal(date: Date): Diurnal
-  def zerothDayOfYear(year: Annual): Date
-  def jdn(year: Annual, month: Mensual, day: Diurnal): Date raises TimeError
-  def add(date: Date, period: Timespan): Date
+  def diurnal(date: Date): Day
+  def zerothDayOfYear(year: Year): Date
+  def jdn(year: Year, month: Mensual, day: Day): Date raises TimeError
+
+  // The display name of a month. By default this is the month value's own name (the enum case name,
+  // which is already the conventional name in most calendars); calendars override it where the name
+  // needs polishing.
+  def monthName(month: Mensual): Text = month.toString.tt
+
+  // A date rendered in this calendar, as "day month-name year", e.g. "15 Ramadan 1445".
+  def format(date: Date): Text = t"${diurnal(date)()} ${monthName(mensual(date))} ${annual(date)()}"

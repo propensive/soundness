@@ -30,15 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package quantitative
+package aviation
 
+import anticipation.*
+import gossamer.*
 
-trait Units[power <: Nat, dimension <: Dimension] extends Measure
+// The French Republican calendar (1793–1805) — Alexandrian in structure, its epoch 1 Vendémiaire An
+// I at JDN 2375840 (22 September 1792). The leap rule is the arithmetical `year % 4 == 3`, which
+// matches the sextile years (An III, VII, XI) actually observed during the calendar's brief use.
+class FrenchRepublicanCalendar() extends AlexandrianCalendar:
+  type Mensual = FrenchRepublicanMonth
+  type MonthUnit = FrenchRepublicanMonth.type
 
-sealed trait Metres[Power <: Nat] extends Units[Power, Distance]
-sealed trait Kilograms[Power <: Nat] extends Units[Power, Mass]
-sealed trait Candelas[Power <: Nat] extends Units[Power, Luminosity]
-sealed trait Moles[Power <: Nat] extends Units[Power, AmountOfSubstance]
-sealed trait Amperes[Power <: Nat] extends Units[Power, Current]
-sealed trait Kelvins[Power <: Nat] extends Units[Power, Heat]
-sealed trait Seconds[Power <: Nat] extends Units[Power, Time], Radix.Regular
+  def epoch: Int = 2375840
+  val name: Text = t"French Republican"
+  def monthOrdinal(year: Year, month: FrenchRepublicanMonth): Int = month.ordinal
+
+  def monthOfOrdinal(year: Year, ordinal: Int): FrenchRepublicanMonth =
+    FrenchRepublicanMonth.fromOrdinal(ordinal)

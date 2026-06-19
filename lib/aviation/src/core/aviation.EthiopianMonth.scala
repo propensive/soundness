@@ -30,15 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package quantitative
+package aviation
 
+import anticipation.*
+import prepositional.*
+import spectacular.*
+import symbolism.*
 
-trait Units[power <: Nat, dimension <: Dimension] extends Measure
+// The thirteen months of the Ethiopian calendar: twelve of 30 days plus the short epagomenal month
+// `Pagume` (5 days, or 6 in a leap year). Structurally identical to the Coptic calendar but with a
+// distinct epoch and month names, and a distinct `MonthRadix`.
+object EthiopianMonth extends MonthRadix:
+  given showable: EthiopianMonth is Showable = _.toString.tt
 
-sealed trait Metres[Power <: Nat] extends Units[Power, Distance]
-sealed trait Kilograms[Power <: Nat] extends Units[Power, Mass]
-sealed trait Candelas[Power <: Nat] extends Units[Power, Luminosity]
-sealed trait Moles[Power <: Nat] extends Units[Power, AmountOfSubstance]
-sealed trait Amperes[Power <: Nat] extends Units[Power, Current]
-sealed trait Kelvins[Power <: Nat] extends Units[Power, Heat]
-sealed trait Seconds[Power <: Nat] extends Units[Power, Time], Radix.Regular
+  given multiply: Int is Multiplicable by this.type to (Timespan of this.type) =
+    (n, _) => Timespan(this, n)
+
+enum EthiopianMonth derives CanEqual:
+  case Meskerem, Tekemt, Hedar, Tahsas, Ter, Yekatit, Megabit, Miyazya, Genbot, Sene, Hamle, Nehase,
+    Pagume

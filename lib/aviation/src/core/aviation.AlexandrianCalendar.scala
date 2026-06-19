@@ -30,15 +30,41 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package quantitative
+package aviation
 
+import contingency.*
 
-trait Units[power <: Nat, dimension <: Dimension] extends Measure
+// The shared structure of the "wandering"/Alexandrian calendars — Coptic, Ethiopian and the French
+// Republican calendar: twelve months of 30 days followed by a short thirteenth month of 5 days (6
+// in a leap year), with a leap year every fourth year (those with `year % 4 == 3`). Subclasses
+// supply only the epoch (the JDN of their year 1, month 1, day 1), the name, and the month type.
+abstract class AlexandrianCalendar() extends Calendar:
+  def epoch: Int
 
-sealed trait Metres[Power <: Nat] extends Units[Power, Distance]
-sealed trait Kilograms[Power <: Nat] extends Units[Power, Mass]
-sealed trait Candelas[Power <: Nat] extends Units[Power, Luminosity]
-sealed trait Moles[Power <: Nat] extends Units[Power, AmountOfSubstance]
-sealed trait Amperes[Power <: Nat] extends Units[Power, Current]
-sealed trait Kelvins[Power <: Nat] extends Units[Power, Heat]
-sealed trait Seconds[Power <: Nat] extends Units[Power, Time], Radix.Regular
+  def monthsInYear(year: Year): Int = 13
+  def leapYear(year: Year): Boolean = year()%4 == 3
+  def daysInYear(year: Year): Int = if leapYear(year) then 366 else 365
+
+  def daysInMonth(month: Mensual, year: Year): Int =
+    if monthOrdinal(year, month) < 12 then 30 else if leapYear(year) then 6 else 5
+
+  def zerothDayOfYear(year: Year): Date =
+    Date.julianDay(epoch - 1 + 365*(year() - 1) + year()/4)
+
+  def annual(date: Date): Year = Year((4*(date.jdn - epoch) + 1463)/1461)
+
+  private def dayOfYear(date: Date): Int = date.jdn - zerothDayOfYear(annual(date)).jdn
+
+  def mensual(date: Date): Mensual =
+    val doy = dayOfYear(date)
+    monthOfOrdinal(annual(date), if doy > 360 then 12 else (doy - 1)/30)
+
+  def diurnal(date: Date): Day =
+    val doy = dayOfYear(date)
+    Day(doy - 30*(if doy > 360 then 12 else (doy - 1)/30))
+
+  def jdn(year: Year, month: Mensual, day: Day): Date raises TimeError =
+    if day() < 1 || day() > daysInMonth(month, year) then
+      raise(TimeError(_.Invalid(year(), monthOrdinal(year, month) + 1, day(), this)))
+
+    Date.julianDay(epoch - 1 + 365*(year() - 1) + year()/4 + 30*monthOrdinal(year, month) + day())

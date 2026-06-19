@@ -39,12 +39,33 @@ import distillate.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
+import quantitative.Radix
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 export protointernal.{Instant, Duration}
 export aviation.internal.{Date, Year, Day, Anniversary, WorkingDays}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
+
+// A `MonthRadix` is the "month" radix of some calendar (Gregorian `Month`, `IslamicMonth`,
+// `CopticMonth`, …). Each is `Irregular` and distinctly-typed, so a span counted in one calendar's
+// months can only be added to a date in that calendar — cross-calendar mixing is a compile error.
+trait MonthRadix extends Radix.Irregular
+
+// Radices not already represented by an existing companion. `Week`/`Hour`/`Minute` are `Regular`
+// (constant ratio to the radix below); `Year` is `Irregular`; months are `MonthRadix`.
+object Week extends Radix.Regular:
+  given multiplicable: Int is Multiplicable by Week.type to (Timespan of Week.type) =
+    (n, _) => Timespan(Week, n)
+
+object Hour extends Radix.Regular:
+  given multiplicable: Int is Multiplicable by Hour.type to (Timespan of Hour.type) =
+    (n, _) => Timespan(Hour, n)
+
+object Minute extends Radix.Regular:
+  given multiplicable: Int is Multiplicable by Minute.type to (Timespan of Minute.type) =
+    (n, _) => Timespan(Minute, n)
 
 package instantDecodables:
   given iso8601InstantDecodable: Tactic[TimeError] => Instant is Decodable in Text =
@@ -295,6 +316,17 @@ package calendars:
     def leapYear(year: Annual): Boolean = year()%4 == 0 && year()%100 != 0 || year()%400 == 0
     def leapYearsSinceEpoch(year: Year): Int = year()/4 - year()/100 + year()/400 + 1
 
+  given copticCalendar: CopticCalendar = CopticCalendar()
+  given ethiopianCalendar: EthiopianCalendar = EthiopianCalendar()
+  given islamicCalendar: IslamicCalendar = IslamicCalendar()
+  given persianCalendar: PersianCalendar = PersianCalendar()
+  given indianCalendar: IndianCalendar = IndianCalendar()
+  given hebrewCalendar: HebrewCalendar = HebrewCalendar()
+  given frenchRepublicanCalendar: FrenchRepublicanCalendar = FrenchRepublicanCalendar()
+
+  given buddhistCalendar: OffsetCalendar = OffsetCalendar(gregorianCalendar, 543, t"Buddhist")
+  given minguoCalendar: OffsetCalendar = OffsetCalendar(gregorianCalendar, -1911, t"Minguo")
+
   // The Julian-to-Gregorian cutovers of the two best-known reforms, as two-segment `Regime`s. The
   // first day of each segment is given as a Julian day number; the gap between (the dates in
   // neither calendar) is rejected. Provided for explicit import, like the calendars above.
@@ -323,6 +355,28 @@ package calendars:
       import calendars.gregorianCalendar
       unsafely(Date(year, Feb, Day(29)))
 
+// Leap-second strategies for converting a Unix `Instant` to a `TaiInstant`. `ignored` is the
+// ambient default; import one of these to count (`step`) or smear (`smear`) leap seconds instead.
+package leapSeconds:
+  given step: LeapSeconds.Strategy = LeapSeconds.tai(_)
+  given smear: LeapSeconds.Strategy = LeapSeconds.smearTai(_)
+
+// Month-end overflow policies for adding months/years to a date (e.g. Jan 31 + 1 month). No default
+// is provided, so such arithmetic requires one of these to be imported.
+package monthEnds:
+  given clampMonthEnd: Disambiguation = new Disambiguation:
+    def resolve(using calendar: Calendar)(year: Year, month: calendar.Mensual, day: Int): Date =
+      unsafely(Date(year, month, Day(day.min(calendar.daysInMonth(month, year)))))
+
+  given overflowMonthEnd: Disambiguation = new Disambiguation:
+    def resolve(using calendar: Calendar)(year: Year, month: calendar.Mensual, day: Int): Date =
+      val max = calendar.daysInMonth(month, year)
+      unsafely(Date(year, month, Day(max))).addDays(day - max)
+
+  given raiseMonthEnd: Tactic[TimeError] => Disambiguation = new Disambiguation:
+    def resolve(using calendar: Calendar)(year: Year, month: calendar.Mensual, day: Int): Date =
+      abort(TimeError(_.Invalid(year(), calendar.monthOrdinal(year, month) + 1, day, calendar)))
+
 def now()(using clock: Clock): Instant = clock()
 
 def today()(using clock: Clock, calendar: RomanCalendar, timezone: Timezone): Date =
@@ -349,15 +403,6 @@ enum TimeEvent:
 extension (inline double: Double)
   inline def am: Clockface = ${aviation.internal.validTime('double, false)}
   inline def pm: Clockface = ${aviation.internal.validTime('double, true)}
-
-extension (int: Int)
-  def years: Timespan = Timespan(StandardTime.Year, int)
-  def months: Timespan = Timespan(StandardTime.Month, int)
-  def weeks: Timespan = Timespan(StandardTime.Week, int)
-  def days: Timespan = Timespan(StandardTime.Day, int)
-  def hours: Timespan = Timespan.fixed(StandardTime.Hour, int)
-  def minutes: Timespan = Timespan.fixed(StandardTime.Minute, int)
-  def seconds: Timespan = Timespan.fixed(StandardTime.Second, int)
 
 // The result type is decided by the literal's precision: a year, year-month, date,
 // zoneless date-time, or zoned date-time (also the result for any RFC 1123 literal).

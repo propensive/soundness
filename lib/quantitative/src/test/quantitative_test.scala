@@ -40,6 +40,11 @@ import language.experimental.into
 given decimalizer: Decimalizer = Decimalizer(3)
 
 object Tests extends Suite(m"Quantitative Tests"):
+  // `Hour`/`Minute` are no longer Quantitative unit values (those names are now aviation radices);
+  // the tests still want them as physical quantities, so define them locally.
+  val Hour: Quantity[Hours[1]] = Quantity(1.0)
+  val Minute: Quantity[Minutes[1]] = Quantity(1.0)
+
   def run(): Unit =
     suite(m"Arithmetic tests"):
       test(m"Add two distances"):
