@@ -1404,6 +1404,63 @@ object Tests extends Suite(m"Aviation Tests"):
         Duration(60_000L).value
       . assert(_ == 60.0)
 
+    suite(m"Timespan and calendar arithmetic"):
+      import calendars.gregorianCalendar
+
+      test(m"n*Radix builds a single-radix timespan"):
+        (3*Month).months
+      . assert(_ == 3)
+
+      test(m"Combining timespans unions their radix counts"):
+        val span = 2*Year + 3*Month + 14*Day
+        (span.years, span.months, span.days)
+      . assert(_ == (2, 3, 14))
+
+      test(m"Subtracting timespans"):
+        ((5*Month) - (2*Month)).months
+      . assert(_ == 3)
+
+      test(m"Multiplying a timespan by an integer"):
+        (3*Month*4).months
+      . assert(_ == 12)
+
+      test(m"Adding whole days to a date needs no policy"):
+        2024-Jan-1 + 3*Day
+      . assert(_ == 2024-Jan-4)
+
+      test(m"Adding weeks to a date"):
+        2024-Jan-1 + 2*Week
+      . assert(_ == 2024-Jan-15)
+
+      test(m"Adding months to a date"):
+        import monthEnds.clampMonthEnd
+        2024-Jan-15 + 2*Month
+      . assert(_ == 2024-Mar-15)
+
+      test(m"Jan 31 + 1 month clamps to Feb 29 in a leap year"):
+        import monthEnds.clampMonthEnd
+        2024-Jan-31 + 1*Month
+      . assert(_ == 2024-Feb-29)
+
+      test(m"Jan 31 + 1 month overflows to Mar 2"):
+        import monthEnds.overflowMonthEnd
+        2024-Jan-31 + 1*Month
+      . assert(_ == 2024-Mar-2)
+
+      test(m"Feb 29 + 1 year clamps to Feb 28 in a non-leap year"):
+        import monthEnds.clampMonthEnd
+        2024-Feb-29 + 1*Year
+      . assert(_ == 2025-Feb-28)
+
+      test(m"Adding a negative year"):
+        import monthEnds.clampMonthEnd
+        2024-Mar-15 + (-1)*Year
+      . assert(_ == 2023-Mar-15)
+
+      test(m"A regular timespan adds to an instant as physical seconds"):
+        Instant(0L) + (1*Hour + 30*Minute)
+      . assert(_ == Instant(5400000L))
+
     suite(m"Clock"):
       test(m"Clock.fixed returns the same instant"):
         val clock = Clock.fixed(Instant(12345L))
