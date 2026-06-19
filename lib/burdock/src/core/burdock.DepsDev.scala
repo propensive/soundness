@@ -40,6 +40,7 @@ import fulminate.*
 import gossamer.*
 import jacinta.*
 import monotonous.*, alphabets.base64Standard, alphabets.hexLowerCase
+import spectacular.*
 import telekinesis.*
 import urticose.*
 import vacuous.*
@@ -58,10 +59,11 @@ object DepsDev:
 
   case class Unresolved()(using Diagnostics) extends Error(m"not a known Maven artifact")
 
-  def mavenUrl(sha256Hex: Text): Optional[HttpUrl] = safely:
+  def mavenUrl(sha256Hex: Text): Optional[HttpUrl] logs DepsEvent = safely:
     // deps.dev expects the hash base64-encoded (not hex).
     val base64: Text = sha256Hex.deserialize[Hex].serialize[Base64]
     val query: HttpUrl = url"https://api.deps.dev/v3/query?hash.type=SHA256&hash.value=$base64"
+    Log.fine(DepsEvent.Querying(sha256Hex))
     val result: QueryResult = mute[HttpEvent](query.fetch().receive[Json]).as[QueryResult]
 
     val key: VersionKey =
@@ -75,4 +77,8 @@ object DepsDev:
     val version: Text = key.version
     val jar: Text = t"$artifact-$version.jar"
 
-    t"https://repo1.maven.org/maven2/$group/$artifact/$version/$jar".decode[HttpUrl]
+    val url: HttpUrl =
+      t"https://repo1.maven.org/maven2/$group/$artifact/$version/$jar".decode[HttpUrl]
+
+    Log.info(DepsEvent.Resolved(sha256Hex, url.show))
+    url

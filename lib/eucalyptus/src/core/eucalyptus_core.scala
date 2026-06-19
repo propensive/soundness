@@ -37,14 +37,10 @@ import language.experimental.pureFunctions
 import java.text as jt
 
 import anticipation.*
-import contingency.*
 import fulminate.*
 import gossamer.*
-import parasite.*, probates.cancelProbate
 import prepositional.*
-import rudiments.*
 import spectacular.*
-import turbulence.*
 
 package logFormats:
   given textLevelLogFormat: Level is Showable =
@@ -67,61 +63,19 @@ package logFormats:
 
 val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
-def mute[format](using erased Void)[result](lambda: (format is Loggable) ?=> result): result =
-  lambda(using Log.silent[format])
-
-
-extension (logObject: Log.type)
-  def envelop[tag, event: {Taggable by tag, Loggable as loggable}](value: tag)[result]
-    ( lambda: (event is Loggable) ?=> result )
-  :   result =
-
-    lambda(using loggable.contramap(_.tag(value)))
-
-
-  def ignore[event, message]: message transcribes event = new Transcribable:
+// Runs `lambda` with logging of `event` suppressed, regardless of any ambient `Sink`s. The silent
+// `event is Loggable` is supplied directly to the block, so (as a lexically-scoped given) it takes
+// precedence over the companion-scoped `Loggable.fanOut`.
+def mute[event](using erased Void)[result](lambda: (event is Loggable) ?=> result): result =
+  val silent: event is Loggable = new Loggable:
     type Self = event
-    type Result = message
-    override def skip(event: event): Boolean = true
-    def record(event: event): message = panic(m"`skip` should prevent this from ever running")
+    def log(level: Level, timestamp: Long, event: => event): Unit = ()
 
-  def silent[format]: format is Loggable = new Loggable:
-    type Self = format
-    def log(level: Level, timestamp: Long, event: format): Unit = ()
-
-
-  def route[format](using erased Void)[entry: Inscribable in format, writable: Writable by format]
-    ( target: writable )
-    ( using Monitor )
-  :   entry is Loggable =
-
-    new:
-      type Self = entry
-
-      private lazy val spool: Spool[writable.Operand] = Spool().tap: spool =>
-        val task = async(spool.stream.writeTo(target))
-
-        Os.intercept[Shutdown]:
-          spool.stop()
-          safely(task.await())
-
-      def log(level: Level, timestamp: Long, event: entry): Unit =
-        spool.put(event.format(level, timestamp))
-
+  lambda(using silent)
 
 package logging:
-  given silentLogging: [format] => format is Loggable = Log.silent[format]
-
-
-  given stdoutLogging: [format: Printable, inscribable: Inscribable in format] => Stdio
-  =>  inscribable is Loggable =
-
-    (level, timestamp, event) =>
-      Out.println(inscribable.formatter(event, level, timestamp))
-
-
-  given stderrLogging: [inscribable: Inscribable in format, format: Printable] => Stdio
-  =>  inscribable is Loggable =
-
-    (level, timestamp, event) =>
-      Err.println(inscribable.formatter(event, level, timestamp))
+  // A silent logger; imported explicitly (`import logging.silentLogging`) it outranks the
+  // companion-scoped `Loggable.fanOut`, suppressing all logging for the file.
+  given silentLogging: [event] => event is Loggable = new Loggable:
+    type Self = event
+    def log(level: Level, timestamp: Long, event: => event): Unit = ()

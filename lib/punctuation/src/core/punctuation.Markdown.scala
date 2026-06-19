@@ -34,7 +34,7 @@ package punctuation
 
 import anticipation.*
 import denominative.*
-import frontier.*
+import gigantism.*
 import gossamer.*
 import honeycomb.*
 import prepositional.*

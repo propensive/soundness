@@ -38,10 +38,10 @@ import gossamer.*
 
 object CompileEvent:
   given communicable: CompileEvent is Communicable =
-    case Start              => m"Starting compilation"
-    case CompilerCrash      => m"Compiler crashed"
-    case Notice(diagnostic) => m"The compiler emitted a diagnostic message: $diagnostic"
-    case Running(arguments) => m"Running compiler with arguments ${arguments.join(t" ")}"
+    case Start              => m"starting compilation"
+    case CompilerCrash      => m"the compiler crashed"
+    case Notice(diagnostic) => m"the compiler emitted a diagnostic: $diagnostic"
+    case Running(arguments) => m"running the compiler with arguments ${arguments.join(t" ")}"
 
 enum CompileEvent:
   case Start

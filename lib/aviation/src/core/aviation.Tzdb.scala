@@ -72,6 +72,8 @@ object Tzdb:
     case Before(month: Month, day: Weekday, date: Int)
 
   def parseFile(name: Text): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
+    Log.fine(TimeEvent.ParseTzdb(name))
+
     val lines: Stream[Text] =
       val stream = safely(getClass.getResourceAsStream(s"/aviation/tzdb/$name").nn)
 

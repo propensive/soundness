@@ -421,7 +421,7 @@ object anticipation extends Library:
   object color extends Component(opaque, prepositional.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object log extends Component(text):
+  object log extends Component(text, gigantism.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object path extends Component(text, generic):
@@ -796,8 +796,7 @@ object eucalyptus extends Library:
   object ansi extends Component(escapade.core, core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(ansi, core, syslog):
-    override def enabled = false
+  object test extends Tests(ansi, core, syslog)
 
 object exegesis extends Library:
   object core extends Component(obligatory.json):

@@ -36,7 +36,7 @@ package soundness
 // the umbrella, and callers normally reach times through `…createdAt.instant[Instant]`
 // rather than naming it. Use `embarcadero.Timestamp` directly when constructing one.
 // unexported: Timestamp
-export embarcadero.{AnyMessage, Containerd, Container, ContentDescriptor,
+export embarcadero.{AnyMessage, Containerd, Container, ContentDescriptor, DockerEvent,
     CreateContainerRequest, CreateContainerResponse, CreateNamespaceRequest,
     CreateNamespaceResponse, CreateTaskRequest, CreateTaskResponse, DeleteContainerRequest,
     DeleteImageRequest, DeleteNamespaceRequest, DeleteTaskRequest, DeleteTaskResponse, Empty,

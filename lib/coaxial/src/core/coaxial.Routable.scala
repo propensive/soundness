@@ -35,7 +35,7 @@ package coaxial
 import java.net as jn
 
 import anticipation.*
-import frontier.*
+import gigantism.*
 import prepositional.*
 import rudiments.*
 import urticose.*

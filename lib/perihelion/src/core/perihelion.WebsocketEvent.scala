@@ -30,14 +30,17 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package urticose
+package perihelion
 
-import anticipation.*
-import gossamer.*
-import spectacular.*
+import fulminate.*
 
-object Endpoint:
-  given showable: [port: Showable] => Endpoint[port] is Showable = endpoint =>
-    t"${endpoint.remote}:${endpoint.port.show}"
+object WebsocketEvent:
+  given communicable: WebsocketEvent is Communicable =
+    case Sent(bytes)     => m"sent a $bytes-byte websocket message"
+    case Received(bytes) => m"received a $bytes-byte websocket message"
+    case Closed(code)    => m"closed the websocket connection with code $code"
 
-case class Endpoint[+port](remote: Text, port: port)
+enum WebsocketEvent:
+  case Sent(bytes: Int)
+  case Received(bytes: Int)
+  case Closed(code: Int)

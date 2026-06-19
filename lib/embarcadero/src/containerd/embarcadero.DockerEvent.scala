@@ -30,14 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package urticose
+package embarcadero
 
 import anticipation.*
-import gossamer.*
-import spectacular.*
+import fulminate.*
 
-object Endpoint:
-  given showable: [port: Showable] => Endpoint[port] is Showable = endpoint =>
-    t"${endpoint.remote}:${endpoint.port.show}"
+object DockerEvent:
+  given communicable: DockerEvent is Communicable =
+    case ContainerCreated(id)          => m"created the container $id"
+    case ContainerDeleted(id)          => m"deleted the container $id"
+    case ImageDeleted(name)            => m"deleted the image $name"
+    case TaskCreated(container)        => m"created a task for container $container"
+    case TaskStarted(container, pid)   => m"started the task for container $container as PID $pid"
+    case TaskKilled(container, signal) => m"signalled task for container $container with $signal"
+    case TaskDeleted(container)        => m"deleted the task for container $container"
 
-case class Endpoint[+port](remote: Text, port: port)
+enum DockerEvent:
+  case ContainerCreated(id: Text)
+  case ContainerDeleted(id: Text)
+  case ImageDeleted(name: Text)
+  case TaskCreated(container: Text)
+  case TaskStarted(container: Text, pid: Int)
+  case TaskKilled(container: Text, signal: Int)
+  case TaskDeleted(container: Text)

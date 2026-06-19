@@ -42,7 +42,10 @@ object Message:
   def apply(value: Text): Message = Message(List(value))
 
   given printable: Message is Printable = (message, termcap) => message.text
-  given communicable: [event: Communicable] => Message transcribes event = _.communicate
+
+  // In `Message`'s own companion (not `Communicable`'s) so it is in implicit scope when resolving
+  // `Message is Transcribable to carrier` — letting `Loggable.fanOut` log a bare `Message`.
+  given communicable: Message is Communicable = identity(_)
 
 
   transparent inline def apply[tuple <: Tuple](inline messages: tuple, done: List[Message])

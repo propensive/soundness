@@ -35,7 +35,7 @@ package profanity
 import ambience.*
 import anticipation.*
 import contingency.*
-import frontier.*
+import gigantism.*
 import gossamer.*
 import parasite.*
 import turbulence.*

@@ -38,10 +38,10 @@ import telekinesis.*
 
 object HttpServerEvent:
   given communicable: HttpServerEvent is Communicable =
-    case Received(request)            => m"Received request $request"
-    case Processed(request, duration) => m"Processed request $request in ${duration}ms"
-    case BrokenStream(length)         => m"Sending response was aborted after $length"
-    case ConnectionFailed(error)      => m"The connection handler failed: ${error.message}"
+    case Received(request)            => m"received the request $request"
+    case Processed(request, duration) => m"processed the request $request in ${duration}ms"
+    case BrokenStream(length)         => m"sending the response was aborted after $length"
+    case ConnectionFailed(error)      => m"the connection handler failed: ${error.message}"
 
 enum HttpServerEvent:
   case Received(request: Http.Request)

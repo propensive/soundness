@@ -112,7 +112,7 @@ case class Javac(options: List[JavacOption]):
 
       catch case suc.NonFatal(error) =>
         Javac.refresh()
-        Log.warn(CompileEvent.CompilerCrash)
+        Log.fail(CompileEvent.CompilerCrash)
         process.put(CompileResult.Crash(error.stackTrace))
 
     process

@@ -37,7 +37,7 @@ import java.nio.channels as jnc
 import java.nio.file as jnf
 
 import anticipation.*
-import frontier.*
+import gigantism.*
 import prepositional.*
 import urticose.*
 import vacuous.*

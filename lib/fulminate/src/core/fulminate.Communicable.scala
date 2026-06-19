@@ -35,7 +35,6 @@ package fulminate
 import scala.quoted.*
 
 import anticipation.*
-import prepositional.*
 
 object Communicable:
   given text: Text is Communicable = text =>
@@ -47,7 +46,6 @@ object Communicable:
   given char: Char is Communicable = char => Message(char.toString.tt)
   given int: Int is Communicable = int => Message(int.toString.tt)
   given long: Long is Communicable = long => Message(long.toString.tt)
-  given message: Message is Communicable = identity(_)
 
   given textualizable: [text: Textualizable] => text is Communicable =
     value => Message(value.textual)
@@ -61,6 +59,14 @@ object Communicable:
   given listMessage: List[Message] is Communicable =
     messages => Message(List.fill(messages.size)("\n - ".tt) ::: List("".tt), messages)
 
-trait Communicable extends Typeclass:
+// A `Communicable` is a `Transcribable to Message`: converting a value to a `Message` is exactly
+// how a loggable event is transcribed onto the common carrier. This lets `Loggable.fanOut` resolve
+// `event is Transcribable to carrier` from the event's own `Communicable` (carrier = `Message`),
+// with no separate bridge given and no need to name `Message` in `anticipation`.
+trait Communicable extends Transcribable:
+  type Result = Message
   def message(value: Self): Message
-  def contramap[self](lambda: self => Self): self is Communicable = value => message(lambda(value))
+  def record(value: Self): Message = message(value)
+
+  override def contramap[self](lambda: self => Self): self is Communicable =
+    value => message(lambda(value))

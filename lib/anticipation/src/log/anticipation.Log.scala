@@ -35,14 +35,16 @@ package anticipation
 import language.experimental.into
 
 object Log:
-  def fine[loggable: Loggable](message: loggable): Unit =
+  // `message` is by-name: with no sink in scope (or none accepting the level), `Loggable.fanOut`
+  // never forces it, so the logged value is not even constructed.
+  def fine[loggable: Loggable](message: => loggable): Unit =
     loggable.log(Level.Fine, System.currentTimeMillis, message)
 
-  def info[loggable: Loggable](message: loggable): Unit =
+  def info[loggable: Loggable](message: => loggable): Unit =
     loggable.log(Level.Info, System.currentTimeMillis, message)
 
-  def warn[loggable: Loggable](message: loggable): Unit =
+  def warn[loggable: Loggable](message: => loggable): Unit =
     loggable.log(Level.Warn, System.currentTimeMillis, message)
 
-  def fail[loggable: Loggable](message: loggable): Unit =
+  def fail[loggable: Loggable](message: => loggable): Unit =
     loggable.log(Level.Fail, System.currentTimeMillis, message)

@@ -30,14 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package urticose
+package zeppelin
 
 import anticipation.*
-import gossamer.*
-import spectacular.*
+import fulminate.*
 
-object Endpoint:
-  given showable: [port: Showable] => Endpoint[port] is Showable = endpoint =>
-    t"${endpoint.remote}:${endpoint.port.show}"
+object ZipEvent:
+  given communicable: ZipEvent is Communicable =
+    case Wrote(path, entries) => m"wrote $entries entries to the zip archive $path"
+    case Read(path, entries)  => m"read $entries entries from the zip archive $path"
 
-case class Endpoint[+port](remote: Text, port: port)
+enum ZipEvent:
+  case Wrote(path: Text, entries: Int)
+  case Read(path: Text, entries: Int)

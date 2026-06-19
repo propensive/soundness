@@ -30,14 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package urticose
+package burdock
 
 import anticipation.*
-import gossamer.*
-import spectacular.*
+import fulminate.*
 
-object Endpoint:
-  given showable: [port: Showable] => Endpoint[port] is Showable = endpoint =>
-    t"${endpoint.remote}:${endpoint.port.show}"
+object DepsEvent:
+  given communicable: DepsEvent is Communicable =
+    case Querying(hash)      => m"querying deps.dev for the artifact with hash $hash"
+    case Resolved(hash, url) => m"resolved hash $hash to $url"
 
-case class Endpoint[+port](remote: Text, port: port)
+enum DepsEvent:
+  case Querying(hash: Text)
+  case Resolved(hash: Text, url: Text)

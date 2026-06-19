@@ -30,12 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package eucalyptus
+package hellenism
 
 import anticipation.*
-import parasite.*
-import prepositional.*
+import fulminate.*
 
-package logging:
-  given syslogLogging: [message: Inscribable in Text] => Monitor => message is Loggable =
-    Log.route[Text](Syslog())
+object ClasspathEvent:
+  given communicable: ClasspathEvent is Communicable =
+    case ResourceLoaded(path)  => m"loaded the classpath resource $path"
+    case ResourceMissing(path) => m"the classpath resource $path was not found"
+
+enum ClasspathEvent:
+  case ResourceLoaded(path: Text)
+  case ResourceMissing(path: Text)

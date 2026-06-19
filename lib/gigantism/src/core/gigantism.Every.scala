@@ -30,14 +30,63 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package urticose
+package gigantism
 
-import anticipation.*
-import gossamer.*
-import spectacular.*
+import scala.quoted.*
 
-object Endpoint:
-  given showable: [port: Showable] => Endpoint[port] is Showable = endpoint =>
-    t"${endpoint.remote}:${endpoint.port.show}"
+import dotty.tools.dotc.*
 
-case class Endpoint[+port](remote: Text, port: port)
+inline def every[value]: Every[value] = ${Every.summonAll[value]}
+
+object Every:
+  transparent inline given default: [value] => Every[value] = ${summonAll[value]}
+
+  // Collects every given instance of `value` visible at the use site into an `Every`, including
+  // mutually-ambiguous instances (the public reflection API surfaces ambiguity only as a failure;
+  // recovering both alternatives needs the compiler-internal `AmbiguousImplicits`). Defined here in
+  // the companion rather than a `gigantism.internal` object, which a wildcard `import gigantism.*`
+  // would shadow over a consumer's own `internal`.
+  def summonAll[value: Type]: Macro[Every[value]] =
+    import quotes.reflect.*
+
+    given context: core.Contexts.Context = quotes.asInstanceOf[runtime.impl.QuotesImpl].ctx
+
+    def underlying(tree: Term): Symbol = tree match
+      case Inlined(_, _, body) => underlying(body)
+      case Apply(fun, _)       => underlying(fun)
+      case TypeApply(fun, _)   => underlying(fun)
+      case Block(_, expr)      => underlying(expr)
+      case Typed(expr, _)      => underlying(expr)
+      case other               => other.symbol
+
+    def collect(ignored: List[Symbol], acc: List[Expr[value]]): List[Expr[value]] =
+      Implicits.searchIgnoring(TypeRepr.of[value])(ignored*).absolve match
+        case success: ImplicitSearchSuccess =>
+          val symbol = underlying(success.tree)
+
+          if symbol.isNoSymbol || ignored.contains(symbol) then acc.reverse
+          else collect(symbol :: ignored, success.tree.asExprOf[value] :: acc)
+
+        case failure: ImplicitSearchFailure =>
+          failure.asInstanceOf[ast.tpd.Tree].tpe match
+            case ambiguous: typer.Implicits.AmbiguousImplicits =>
+              val tree1 = ambiguous.alt1.tree.asInstanceOf[Term]
+              val tree2 = ambiguous.alt2.tree.asInstanceOf[Term]
+              val symbol1 = underlying(tree1)
+              val symbol2 = underlying(tree2)
+
+              val unusable =
+                symbol1.isNoSymbol || symbol2.isNoSymbol ||
+                  ignored.contains(symbol1) || ignored.contains(symbol2)
+
+              if unusable then acc.reverse
+              else collect
+                ( symbol1 :: symbol2 :: ignored,
+                  tree2.asExprOf[value] :: tree1.asExprOf[value] :: acc )
+
+            case _ =>
+              acc.reverse
+
+    '{Every[value](${Expr.ofList(collect(Nil, Nil))})}
+
+case class Every[+value](values: List[value])

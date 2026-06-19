@@ -39,22 +39,22 @@ import profanity.*
 
 object DaemonLogEvent:
   given communicable: DaemonLogEvent is Communicable =
-    case WriteExecutable(location) => m"Writing executable to $location"
-    case Shutdown                  => m"Shutting down"
-    case Termination               => m"Terminating client connection"
-    case IdleTimeout               => m"Shutting down after idle timeout"
-    case Failure                   => m"A failure occurred"
-    case NewCli                    => m"Instantiating a new CLI"
-    case UnrecognizedMessage       => m"Unrecognized message"
+    case WriteExecutable(location) => m"writing the executable to $location"
+    case Shutdown                  => m"shutting down"
+    case Termination               => m"terminating the client connection"
+    case IdleTimeout               => m"shutting down after an idle timeout"
+    case Failure                   => m"the connection handler failed"
+    case NewCli                    => m"instantiating a new CLI"
+    case UnrecognizedMessage       => m"received an unrecognized message"
 
     case ReceivedSignal(signal) => signal match
-      case unix: UnixSignal       => m"Received signal $unix"
-      case windows: WindowsSignal => m"Received signal $windows"
+      case unix: UnixSignal       => m"received signal $unix"
+      case windows: WindowsSignal => m"received signal $windows"
 
-    case ExitStatusRequest(pid)    => m"Exit status requested from $pid"
-    case CloseConnection(pid)      => m"Connection closed from $pid"
-    case StderrRequest(pid)        => m"STDERR requested from $pid"
-    case Init(pid)                 => m"Initializing $pid"
+    case ExitStatusRequest(pid)    => m"exit status requested from $pid"
+    case CloseConnection(pid)      => m"closing the connection from $pid"
+    case StderrRequest(pid)        => m"stderr requested from $pid"
+    case Init(pid)                 => m"initialising $pid"
 
 enum DaemonLogEvent:
   case WriteExecutable(location: Text)

@@ -33,6 +33,7 @@
 package frontier
 
 import soundness.{every as _, *}
+import gigantism.every
 
 object Tests extends Suite(m"Frontier Tests"):
   trait Plug

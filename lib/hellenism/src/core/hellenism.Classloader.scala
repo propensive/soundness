@@ -64,8 +64,14 @@ class Classloader(val java: ClassLoader) extends Findable:
   def classpath: Optional[Classpath] = urlClassloader.let(Classpath(_))
   def on(name: Text): Optional[Class[?]] = Optional(Class.forName(name.s, true, java))
 
-  def apply(path: Text): Optional[Data] =
-    Optional(java.getResourceAsStream(path.s)).let(_.readAllBytes().nn.immutable(using Unsafe))
+  def apply(path: Text): Optional[Data] logs ClasspathEvent =
+    Optional(java.getResourceAsStream(path.s)).let: stream =>
+      Log.fine(ClasspathEvent.ResourceLoaded(path))
+      stream.readAllBytes().nn.immutable(using Unsafe)
 
-  private[hellenism] def inputStream(path: Text)(using Tactic[ClasspathError]): ji.InputStream =
-    Optional(java.getResourceAsStream(path.s)).lest(ClasspathError(path))
+  private[hellenism] def inputStream(path: Text)(using Tactic[ClasspathError])
+  :   ji.InputStream logs ClasspathEvent =
+
+    Optional(java.getResourceAsStream(path.s)).lest:
+      Log.warn(ClasspathEvent.ResourceMissing(path))
+      ClasspathError(path)

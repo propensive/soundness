@@ -83,10 +83,14 @@ class Channel():
   private[perihelion] def enqueue(frame: Data): Unit = spool.put(frame)
   private[perihelion] def stream: Stream[Data] = spool.stream
 
-  def send(message: Message): Unit = Message.transmissible.serialize(message).each(spool.put(_))
+  def send(message: Message): Unit logs WebsocketEvent =
+    Log.fine(WebsocketEvent.Sent(message.bytes.length))
+    Message.transmissible.serialize(message).each(spool.put(_))
+
   def stop(): Unit = spool.stop()
 
-  def close(code: Int = 1000): Unit =
+  def close(code: Int = 1000): Unit logs WebsocketEvent =
+    Log.info(WebsocketEvent.Closed(code))
     spool.put(Frame.Close(code, Data()).encode)
     spool.stop()
 
@@ -194,6 +198,8 @@ class Websocket[message, state]
   val channel: Channel = Channel()
 
   private def loop(messages: Stream[Message], state: state): state = messages.flow(close(state)):
+    Log.fine(WebsocketEvent.Received(next.bytes.length))
+
     handle(using state)(decode(next)) match
       case Continue(state2) =>
         loop(more, state2.or(state))

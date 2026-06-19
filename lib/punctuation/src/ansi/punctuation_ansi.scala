@@ -34,7 +34,7 @@ package punctuation
 
 import anticipation.*
 import escapade.*
-import frontier.*
+import gigantism.*
 import gossamer.*
 import harlequin.*
 import polysyllabic.*

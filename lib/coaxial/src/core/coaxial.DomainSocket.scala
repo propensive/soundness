@@ -34,8 +34,11 @@ package coaxial
 
 import anticipation.*
 import prepositional.*
+import spectacular.*
 
 object DomainSocket:
+  given showable: DomainSocket is Showable = _.address
+
   def apply[path: Abstractable across Paths to Text](path: path): DomainSocket =
     DomainSocket(path.generic)
 

@@ -30,14 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package urticose
+package cordillera
 
 import anticipation.*
-import gossamer.*
-import spectacular.*
+import fulminate.*
 
-object Endpoint:
-  given showable: [port: Showable] => Endpoint[port] is Showable = endpoint =>
-    t"${endpoint.remote}:${endpoint.port.show}"
+object Http2Event:
+  given communicable: Http2Event is Communicable =
+    case RequestSent(authority) => m"sending an HTTP/2 request to $authority"
+    case GoAway(lastStream)     => m"received GOAWAY; the last processed stream was $lastStream"
 
-case class Endpoint[+port](remote: Text, port: port)
+enum Http2Event:
+  case RequestSent(authority: Text)
+  case GoAway(lastStream: Int)

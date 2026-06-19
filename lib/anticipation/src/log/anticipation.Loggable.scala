@@ -34,20 +34,38 @@ package anticipation
 
 import language.experimental.into
 
+import gigantism.Every
 import prepositional.*
 
 object Loggable:
-  given transcribable: [input: Loggable, output: Transcribable to input] => output is Loggable =
-    (level, timestamp, event) =>
-      if !output.skip(event)
-      then input.log(level, timestamp, output.record(event))
+  // Derives the single `event is Loggable` that `Log.fine`/`info`/`warn`/`fail` summon: transcribe
+  // the event to a common `carrier` once, then fan out to EVERY in-scope `Sink` for that carrier
+  // (contravariance means a `Sink[Any, carrier]` is collected for any event). No sink in scope ⇒ an
+  // empty `Every` ⇒ silent; many ⇒ fan-out with per-sink routing. Living in `Loggable`'s companion
+  // keeps it in implicit scope, so no import is needed at the use site.
+  given fanOut: [event, carrier]
+  =>  ( transcribable: event is Transcribable to carrier, sinks: Every[Sink[event, carrier]] )
+  =>  event is Loggable =
+
+    new Loggable:
+      type Self = event
+
+      def log(level: Level, timestamp: Long, value: => event): Unit =
+        // Force and transcribe the event only if some sink would record it at this level; otherwise
+        // (including no sinks at all) the by-name `value` is never evaluated.
+        if sinks.values.exists(_.accepts(level)) then
+          if !transcribable.skip(value) then
+            val message = transcribable.record(value)
+
+            sinks.values.foreach: sink =>
+              if sink.accepts(level) then sink.submit(level, timestamp, message)
 
 trait Loggable extends Typeclass:
   loggable =>
-    def log(level: Level, timestamp: Long, event: Self): Unit
+    def log(level: Level, timestamp: Long, event: => Self): Unit
 
     def contramap[self2](lambda: self2 => Self): self2 is Loggable = new Loggable:
       type Self = self2
 
-      def log(level: Level, timestamp: Long, event: Self): Unit =
+      def log(level: Level, timestamp: Long, event: => Self): Unit =
         loggable.log(level, timestamp, lambda(event))

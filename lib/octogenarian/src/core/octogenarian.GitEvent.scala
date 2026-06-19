@@ -40,7 +40,7 @@ object GitEvent:
   given execEvent: GitEvent transcribes ExecEvent = GitEvent.Exec(_)
 
   given communicable: GitEvent is Communicable =
-    case Exec(reason) => m"The Git operation did not execute successfully: $reason"
+    case Exec(reason) => m"the git operation did not execute: $reason"
 
 enum GitEvent:
   case Exec(event: ExecEvent)

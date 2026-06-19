@@ -88,9 +88,9 @@ class Job[+exec <: Label, result](process: java.lang.Process) extends ProcessRef
     then computable.compute(process)
     else contingency.abort(AsyncError(AsyncError.Reason.Timeout))
 
-  def exitStatus(): Exit = process.waitFor() match
-    case 0     => Exit.Ok
-    case other => Exit.Fail(other)
+  def exitStatus(): Exit logs ExecEvent = process.waitFor() match
+    case 0     => Log.fine(ExecEvent.ProcessExit(pid, 0)); Exit.Ok
+    case other => Log.warn(ExecEvent.ProcessExit(pid, other)); Exit.Fail(other)
 
   def abort(): Unit logs ExecEvent =
     Log.info(ExecEvent.AbortProcess(pid))

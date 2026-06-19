@@ -222,6 +222,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           val containerd = Containerd(endpoint, t"example")
@@ -242,6 +243,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           val containerd = Containerd(endpoint, t"example")
@@ -261,6 +263,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           val container = Containerd(endpoint, t"example").container(t"gamma")
@@ -280,6 +283,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           Containerd(endpoint, t"example").namespaces().map(ns => (ns.name, ns.labels))
@@ -301,6 +305,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
 
@@ -323,6 +328,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           val created = Containerd(endpoint, t"example").createContainer(container)
@@ -338,6 +344,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           val rootfs = List(Mount(t"overlay", t"overlay", t"/", List(t"lowerdir=/a")))
@@ -357,6 +364,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           case class Loopback(duplex: Duplex)
           given (Loopback is Connectable) = (loopback, _) => loopback.duplex
+          given (Loopback is Showable) = _ => t"loopback"
 
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           Containerd(endpoint, t"example").tasks().map(task => (task.containerId, task.pid, task.state))

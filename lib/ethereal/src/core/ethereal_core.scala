@@ -477,7 +477,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
         catch
           case exception: Exception =>
-            Log.warn(DaemonLogEvent.Failure)
+            Log.fail(DaemonLogEvent.Failure)
             clientState.exitPromise.fulfill(handler.handle(exception)(using stdio))
 
         finally
@@ -496,7 +496,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
     supervise:
       import logFormats.standardLogFormat
-      given loggable: Message is Loggable = Log.route(Syslog(t"ethereal"))
+      given syslog: Logger[DaemonLogEvent, Message] = Logger(Syslog(t"ethereal"))
 
       safely(socketFile.wipe())
 
