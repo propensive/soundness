@@ -1461,6 +1461,19 @@ object Tests extends Suite(m"Aviation Tests"):
         Instant(0L) + (1*Hour + 30*Minute)
       . assert(_ == Instant(5400000L))
 
+      test(m"Adding a month to a timestamp keeps the time of day"):
+        import monthEnds.clampMonthEnd
+        Timestamp(2024-Jan-31, Clockface(10, 15, 0)) + 1*Month
+      . assert(_ == Timestamp(2024-Feb-29, Clockface(10, 15, 0)))
+
+      test(m"Adding an hour across midnight carries into the next day"):
+        Timestamp(2024-Jan-1, Clockface(23, 30, 0)) + 1*Hour
+      . assert(_ == Timestamp(2024-Jan-2, Clockface(0, 30, 0)))
+
+      test(m"Adding days and hours to a timestamp"):
+        Timestamp(2024-Jan-1, Clockface(10, 0, 0)) + (2*Day + 3*Hour)
+      . assert(_ == Timestamp(2024-Jan-3, Clockface(13, 0, 0)))
+
     suite(m"Clock"):
       test(m"Clock.fixed returns the same instant"):
         val clock = Clock.fixed(Instant(12345L))

@@ -180,6 +180,35 @@ object Timespan:
   =>  Instant is Subtractable by (Timespan of topic) to Instant =
     (instant, span) => instant - physicalSeconds(span)
 
+  // Adding a timespan to a (zoneless) timestamp applies the date/calendar part to the date (reusing
+  // the `Date` instance, hence its calendar/disambiguation requirements) and rolls the sub-day part
+  // through the clock, carrying whole days into the date.
+  given timestampAdd: [topic <: Radix] => (dates: Date is Addable by (Timespan of topic) to Date)
+  =>  Timestamp is Addable by (Timespan of topic) to Timestamp =
+    (timestamp, span) =>
+      val nanos = 1_000_000_000L
+      val dayNanos = 86400L*nanos
+      val time = timestamp.time
+      val timeNanos = (time.hour*3600L + time.minute*60L + time.second)*nanos + time.nanos
+
+      val spanNanos =
+        (span.hours.toLong*3600 + span.minutes.toLong*60)*nanos +
+          (span.seconds.value*nanos.toDouble).toLong
+
+      val total = timeNanos + spanNanos
+      val carry = Math.floorDiv(total, dayNanos).toInt
+      val rem = Math.floorMod(total, dayNanos)
+      val date = dates.add(timestamp.date, span).addDays(carry)
+
+      val clockface =
+        Clockface
+          ( (rem/(3600L*nanos)).toInt.asInstanceOf[Base24],
+            ((rem/(60L*nanos))%60).toInt.asInstanceOf[Base60],
+            ((rem/nanos)%60).toInt.asInstanceOf[Base60],
+            (rem%nanos).toInt )
+
+      Timestamp(date, clockface)
+
 case class Timespan
   ( years:   Int                 = 0,
     months:  Int                 = 0,
