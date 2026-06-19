@@ -41,6 +41,7 @@ import hieroglyph.*
 import prepositional.*
 import quantitative.Radix
 import spectacular.*
+import symbolism.*
 import vacuous.*
 
 export protointernal.{Instant, Duration}
@@ -50,9 +51,17 @@ export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 // Radices not already represented by an existing companion (`Year`/`Month`/`Day`). `Week`, `Day`,
 // `Hour` and `Minute` are `Regular` (constant ratio to the radix below); `Month`/`Year` are
 // `Irregular` and live on their own companions.
-object Week extends Radix.Regular
-object Hour extends Radix.Regular
-object Minute extends Radix.Regular
+object Week extends Radix.Regular:
+  given multiplicable: Int is Multiplicable by Week.type to (Timespan of Week.type) =
+    (n, _) => Timespan(Week, n)
+
+object Hour extends Radix.Regular:
+  given multiplicable: Int is Multiplicable by Hour.type to (Timespan of Hour.type) =
+    (n, _) => Timespan(Hour, n)
+
+object Minute extends Radix.Regular:
+  given multiplicable: Int is Multiplicable by Minute.type to (Timespan of Minute.type) =
+    (n, _) => Timespan(Minute, n)
 
 package instantDecodables:
   given iso8601InstantDecodable: Tactic[TimeError] => Instant is Decodable in Text =

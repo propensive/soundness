@@ -53,23 +53,17 @@ import symbolism.*
 // `Instantiable across Durations` — usable anywhere a duration `Quantity` is.
 
 object Timespan:
-  given year: Int is Multiplicable by Year.type to (Timespan of Year.type) =
-    (n, _) => Timespan(years = n).asInstanceOf[Timespan of Year.type]
-
-  given month: Int is Multiplicable by Month.type to (Timespan of Month.type) =
-    (n, _) => Timespan(months = n).asInstanceOf[Timespan of Month.type]
-
-  given week: Int is Multiplicable by Week.type to (Timespan of Week.type) =
-    (n, _) => Timespan(weeks = n).asInstanceOf[Timespan of Week.type]
-
-  given day: Int is Multiplicable by Day.type to (Timespan of Day.type) =
-    (n, _) => Timespan(days = n).asInstanceOf[Timespan of Day.type]
-
-  given hour: Int is Multiplicable by Hour.type to (Timespan of Hour.type) =
-    (n, _) => Timespan(hours = n).asInstanceOf[Timespan of Hour.type]
-
-  given minute: Int is Multiplicable by Minute.type to (Timespan of Minute.type) =
-    (n, _) => Timespan(minutes = n).asInstanceOf[Timespan of Minute.type]
+  // `n*Radix` builds a single-radix timespan (e.g. `3*Month : Timespan of Month.type`). The
+  // `Int is Multiplicable by <radix>.type` givens live on each radix's companion object so they are
+  // in implicit scope at the `n*Radix` call site; this builder backs them.
+  def apply[radix <: Radix](unit: radix, n: Int): Timespan of radix = unit match
+    case Year   => Timespan(years = n).asInstanceOf[Timespan of radix]
+    case Month  => Timespan(months = n).asInstanceOf[Timespan of radix]
+    case Week   => Timespan(weeks = n).asInstanceOf[Timespan of radix]
+    case Day    => Timespan(days = n).asInstanceOf[Timespan of radix]
+    case Hour   => Timespan(hours = n).asInstanceOf[Timespan of radix]
+    case Minute => Timespan(minutes = n).asInstanceOf[Timespan of radix]
+    case _      => Timespan().asInstanceOf[Timespan of radix]
 
   given addable: [left <: Radix, right <: Radix]
   =>  (Timespan of left) is Addable by (Timespan of right) to (Timespan of (left & right)) =
@@ -170,6 +164,21 @@ object Timespan:
         else disambiguation.resolve(year, month, day)
 
       anchor.addDays(span.days + span.weeks*7)
+
+  private def physicalSeconds(span: Timespan): Quantity[Seconds[1]] =
+    val days = span.days.toLong + span.weeks.toLong*7
+    val whole = days*86400 + span.hours.toLong*3600 + span.minutes.toLong*60
+    Quantity[Seconds[1]](whole.toDouble) + span.seconds
+
+  // A regular timespan (no Month/Year) is a fixed physical duration, so it adds to/subtracts from a
+  // bare `Instant`; an irregular span cannot (it needs a calendar — add it to a date instead).
+  given instantPlus: [topic <: Radix] => NotGiven[topic <:< Radix.Irregular]
+  =>  Instant is Addable by (Timespan of topic) to Instant =
+    (instant, span) => instant + physicalSeconds(span)
+
+  given instantMinus: [topic <: Radix] => NotGiven[topic <:< Radix.Irregular]
+  =>  Instant is Subtractable by (Timespan of topic) to Instant =
+    (instant, span) => instant - physicalSeconds(span)
 
 case class Timespan
   ( years:   Int                 = 0,

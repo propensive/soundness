@@ -219,7 +219,7 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
         if next() == ':' then next()
         val minute = number(2)
         val offset = Quantity[Hours[1]](hour) + Quantity[Minutes[1]](minute)
-        if negate then instant - offset else instant + offset
+        if negate then instant + offset else instant - offset
 
       case _ =>
         abort(TimeError(_.Format(text, Iso8601, index)(Timezone)))

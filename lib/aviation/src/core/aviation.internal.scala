@@ -110,6 +110,9 @@ object internal:
   object Year extends Radix.Irregular:
     inline def apply(year: Int): Year = year
 
+    given multiplicable: Int is Multiplicable by Year.type to (Timespan of Year.type) =
+      (n, _) => Timespan(Year, n)
+
     given showable: Year is Showable = _.toString.tt
     given addable: Year is Addable by Int to Year = _ + _
     given subtractable: Year is Subtractable by Int to Year = _ - _
@@ -129,6 +132,9 @@ object internal:
 
   object Day extends Radix.Regular:
     inline def apply(day: Int): Day = day
+
+    given multiplicable: Int is Multiplicable by Day.type to (Timespan of Day.type) =
+      (n, _) => Timespan(Day, n)
 
     given decodable: (Int is Decodable in Text) => Day is Decodable in Text = day =>
       Day(day.decode[Int])
