@@ -32,6 +32,9 @@
                                                                                                   */
 package soundness
 
+// unexported: literal, contains, indexOf, subtypes (compile-time / type-level
+// helpers for macro authors, reached via `import rudiments.*`, not end-user API)
+
 export
   rudiments
   . { !!, &, all, also, and, annex, at, b, bi, Bijection, bijection, Bytes, bytes, collate, Counter,
