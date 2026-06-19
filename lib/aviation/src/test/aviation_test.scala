@@ -1658,6 +1658,32 @@ object Tests extends Suite(m"Aviation Tests"):
           gregorianCalendar.diurnal(date)() )
       . assert(_ == (1799, Nov, 9))
 
+    suite(m"Leap-second strategies"):
+      val newYear = 1483228800000L // 2017-01-01 00:00:00 UTC, just after the 2016 leap second
+
+      test(m"Leap seconds are ignored by default"):
+        summon[LeapSeconds.Strategy].tai(newYear)
+      . assert(_ == newYear)
+
+      test(m"The step strategy counts elapsed leap seconds"):
+        import leapSeconds.step
+        summon[LeapSeconds.Strategy].tai(newYear) - newYear
+      . assert(_ == LeapSeconds.tai(newYear) - newYear)
+
+      test(m"Across the 2016 leap second the TAI offset gains one second"):
+        LeapSeconds.tai(newYear) - LeapSeconds.tai(newYear - 60000L)
+      . assert(_ == 61000L)
+
+      test(m"The smear strategy is chosen by import"):
+        import leapSeconds.smear
+        summon[LeapSeconds.Strategy].tai(newYear)
+      . assert(_ == LeapSeconds.smearTai(newYear))
+
+      test(m"Smearing matches discrete TAI far from any leap second"):
+        val midYear = 1490000000000L // 2017-03-20, no nearby leap second
+        LeapSeconds.smearTai(midYear) == LeapSeconds.tai(midYear)
+      . assert(_ == true)
+
     suite(m"ISO-8601 week dates"):
       import calendars.gregorianCalendar
 

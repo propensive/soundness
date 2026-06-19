@@ -60,6 +60,9 @@ package nonexistentLeapDays:
 package monthEnds:
   export aviation.monthEnds.{clampMonthEnd, overflowMonthEnd, raiseMonthEnd}
 
+package leapSeconds:
+  export aviation.leapSeconds.{step, smear}
+
 package dateFormats:
   export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,
       southEastAsiaDateFormat, unitedKingdomDateFormat}

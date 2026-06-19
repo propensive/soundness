@@ -355,6 +355,12 @@ package calendars:
       import calendars.gregorianCalendar
       unsafely(Date(year, Feb, Day(29)))
 
+// Leap-second strategies for converting a Unix `Instant` to a `TaiInstant`. `ignored` is the
+// ambient default; import one of these to count (`step`) or smear (`smear`) leap seconds instead.
+package leapSeconds:
+  given step: LeapSeconds.Strategy = LeapSeconds.tai(_)
+  given smear: LeapSeconds.Strategy = LeapSeconds.smearTai(_)
+
 // Month-end overflow policies for adding months/years to a date (e.g. Jan 31 + 1 month). No default
 // is provided, so such arithmetic requires one of these to be imported.
 package monthEnds:

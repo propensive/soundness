@@ -32,7 +32,6 @@
                                                                                                   */
 package aviation
 
-import anticipation.*
 import contingency.*
 
 // ISO-8601 week dates label a `Date` not by month but by (week-year, week, weekday): weeks run

@@ -159,7 +159,7 @@ object protointernal:
     @targetName("to")
     infix def ~ (that: into[Instant]): Period = Period(instant, that)
 
-    def tai: TaiInstant = LeapSeconds.tai(instant)
+    def tai(using strategy: LeapSeconds.Strategy): TaiInstant = strategy.tai(instant)
 
     infix def in (using RomanCalendar)(timezone: Timezone): Moment =
       val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn

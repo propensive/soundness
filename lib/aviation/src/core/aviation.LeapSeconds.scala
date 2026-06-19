@@ -74,3 +74,30 @@ object LeapSeconds:
   def tai(unixTime: Long): Long =
     val n = ((unixTime - firstOffset)/halfYear).toInt
     unixTime + before(if unixTime >= leapSecond(n - 2) then n else n - 1)*1000L
+
+  // Smeared TAI: rather than inserting a discrete leap second, spread it linearly over the 24 hours
+  // centred on the leap instant (Google's "smear"), so the offset is continuous and there is no
+  // 23:59:60. Outside a smear window this agrees with `tai`. Bisection locates the leap instant
+  // where the discrete offset steps.
+  def smearTai(unixTime: Long): Long =
+    val window = 43200000L // 12 hours
+    val low = tai(unixTime - window) - (unixTime - window)
+    val high = tai(unixTime + window) - (unixTime + window)
+
+    if low == high then unixTime + low else
+      var lo = unixTime - window
+      var hi = unixTime + window
+
+      while hi - lo > 1 do
+        val mid = (lo + hi)/2
+        if tai(mid) - mid == low then lo = mid else hi = mid
+
+      unixTime + low + (high - low)*(unixTime - (hi - window))/(2*window)
+
+  // How leap seconds are accounted for when converting a (Unix) `Instant` to a `TaiInstant`. The
+  // ambient default is `ignored` (future leap seconds are unknowable); `import leapSeconds.step` or
+  // `leapSeconds.smear` opts into counting or smearing them.
+  trait Strategy:
+    def tai(unixMillis: Long): Long
+
+  given ignored: Strategy = unix => unix
