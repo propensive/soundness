@@ -236,6 +236,8 @@ extension [textual: Textual](text: textual)
     case Ltr => if text.starts(affix) then text.skip(affix.length) else text
     case Rtl => if text.ends(affix) then text.skip(affix.length, Rtl) else text
 
+given traversable: Text is Traversable by Char = text => Stream(text.chars*)
+
 extension [textual: Textual { type Result = Char }](text: textual)
   inline def lower: textual = textual.map(text)(_.toLower)
   inline def upper: textual = textual.map(text)(_.toUpper)
