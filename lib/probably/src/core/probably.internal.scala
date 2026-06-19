@@ -72,10 +72,13 @@ object internal:
           case Inlined(_, _, predicate) => lift(predicate.asExpr)
 
           case Block(List(DefDef(a, _, _, Some(expression))), Closure(Ident(b), _)) if a == b =>
+            // Only lift when one side of the `==` is exactly the lambda parameter, so the other
+            // side (the expected value) is a closed term safe to splice. A projection such as
+            // `_.field == x` matches neither case and yields no contrast.
             expression match
-              case Apply(Select(Ident(_), "=="), List(term)) => Some(term.asExpr)
-              case Apply(Select(term, "=="), List(Ident(_))) => Some(term.asExpr)
-              case other                                     => None
+              case Apply(Select(Ident(`a`), "=="), List(term)) => Some(term.asExpr)
+              case Apply(Select(term, "=="), List(Ident(`a`))) => Some(term.asExpr)
+              case other                                       => None
 
           case other =>
             None
@@ -89,8 +92,32 @@ object internal:
           case Some('{type analyse; $autopsy: (Autopsy { type Analyse = analyse })}) =>
             TypeRepr.of[analyse].literal[Boolean]
 
+        // The non-contrast assertion, used whenever contrast expectations are disabled or no
+        // `Contrastable` instance can be derived for the expected value's type (e.g. when the
+        // test body carries an effect type, or the type is otherwise not contrastable).
+        val plain: Expr[result] =
+          ' {
+              assertion[test, test, report, result]
+                ( $runner,
+                  $test,
+                  $predicate,
+                  $action,
+                  Contrastable.nothing[test],
+                  None,
+                  $inclusion,
+                  $inclusion2,
+                  Decomposable.any[test],
+                  $aspirationalExpr )
+            }
+
         if analyse.or(false) then exp match
-          case Some('{type testType >: test; $expr: testType}) =>
+          // Only emit the contrast path when a `Contrastable` can actually be derived for the
+          // expected value's type; `Expr.summon` is used purely to test derivability, while the
+          // instance itself is summoned by `infer` *inside* the quote so its captured givens stay
+          // in scope at the splice site.
+          case Some('{type testType >: test; $expr: testType})
+            if Expr.summon[testType is Contrastable].isDefined =>
+
             val decomposable: Expr[testType is Decomposable] =
               Expr.summon[testType is Decomposable].getOrElse('{Decomposable.any[testType]})
 
@@ -112,34 +139,9 @@ object internal:
               }
 
           case _ =>
-            ' {
-                assertion[test, test, report, result]
-                  ( $runner,
-                    $test,
-                    $predicate,
-                    $action,
-                    Contrastable.nothing[test],
-                    None,
-                    $inclusion,
-                    $inclusion2,
-                    Decomposable.any[test],
-                    $aspirationalExpr )
-              }
+            plain
 
-        else
-          ' {
-              assertion[test, test, report, result]
-                ( $runner,
-                  $test,
-                  $predicate,
-                  $action,
-                  Contrastable.nothing[test],
-                  None,
-                  $inclusion,
-                  $inclusion2,
-                  Decomposable.any[test],
-                  $aspirationalExpr )
-            }
+        else plain
 
 
   def check[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[test] =
