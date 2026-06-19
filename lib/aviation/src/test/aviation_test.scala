@@ -1658,6 +1658,32 @@ object Tests extends Suite(m"Aviation Tests"):
           gregorianCalendar.diurnal(date)() )
       . assert(_ == (1799, Nov, 9))
 
+    suite(m"ISO-8601 week dates"):
+      import calendars.gregorianCalendar
+
+      test(m"2000-01-01 is in week-year 1999, week 52"):
+        val date = 2000-Jan-1
+        (WeekDate.weekYear(date)(), WeekDate.weekOfYear(date))
+      . assert(_ == (1999, 52))
+
+      test(m"2000-01-03 (Monday) starts week-year 2000, week 1"):
+        val date = 2000-Jan-3
+        (WeekDate.weekYear(date)(), WeekDate.weekOfYear(date))
+      . assert(_ == (2000, 1))
+
+      test(m"WeekDate(1999, 52, Sat) is 2000-01-01"):
+        WeekDate(Year(1999), 52, Sat)
+      . assert(_ == 2000-Jan-1)
+
+      test(m"A week date round-trips a date"):
+        val date = 2021-Jul-15
+        WeekDate(WeekDate.weekYear(date), WeekDate.weekOfYear(date), date.weekday) == date
+      . assert(_ == true)
+
+      test(m"2004 has 53 ISO weeks"):
+        WeekDate.weekOfYear(2004-Dec-31)
+      . assert(_ == 53)
+
     suite(m"Year-offset calendars"):
       test(m"2000 Gregorian is 2543 in the Buddhist calendar"):
         import calendars.buddhistCalendar

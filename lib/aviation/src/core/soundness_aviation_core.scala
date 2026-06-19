@@ -45,7 +45,7 @@ export
       Period, PersianCalendar, PersianMonth, pm, Regime, Rfc1123, RomanCalendar, Sat, Sep, Sun, Thu,
       TimeError, TimeEvent, TimeFormat, TimeNumerics,
       TimeSeparation, TimeSpecificity, Timespan, Timestamp, TimestampError, Timezone, TimezoneError,
-      today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Week, Weekday, Weekdays,
+      today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Week, WeekDate, Weekday, Weekdays,
       WorkingDays, Year, Years }
 
 package calendars:
