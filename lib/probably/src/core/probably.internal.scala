@@ -89,44 +89,10 @@ object internal:
           case Some('{type analyse; $autopsy: (Autopsy { type Analyse = analyse })}) =>
             TypeRepr.of[analyse].literal[Boolean]
 
-        if analyse.or(false) then exp match
-          case Some('{type testType >: test; $expr: testType}) =>
-            val decomposable: Expr[testType is Decomposable] =
-              Expr.summon[testType is Decomposable].getOrElse('{Decomposable.any[testType]})
-
-            ' {
-                given decompose: testType is Decomposable = $decomposable
-                val contrast = infer[testType is Contrastable]
-
-                assertion[testType, test, report, result]
-                  ( $runner,
-                    $test,
-                    $predicate,
-                    $action,
-                    contrast,
-                    Some($expr),
-                    $inclusion,
-                    $inclusion2,
-                    decompose,
-                    $aspirationalExpr )
-              }
-
-          case _ =>
-            ' {
-                assertion[test, test, report, result]
-                  ( $runner,
-                    $test,
-                    $predicate,
-                    $action,
-                    Contrastable.nothing[test],
-                    None,
-                    $inclusion,
-                    $inclusion2,
-                    Decomposable.any[test],
-                    $aspirationalExpr )
-              }
-
-        else
+        // The non-contrast assertion, used whenever contrast expectations are disabled or no
+        // `Contrastable` instance can be derived for the expected value's type (e.g. when the
+        // test body carries an effect type, or the type is otherwise not contrastable).
+        val plain: Expr[result] =
           ' {
               assertion[test, test, report, result]
                 ( $runner,
@@ -140,6 +106,37 @@ object internal:
                   Decomposable.any[test],
                   $aspirationalExpr )
             }
+
+        if analyse.or(false) then exp match
+          case Some('{type testType >: test; $expr: testType}) =>
+            Expr.summon[testType is Contrastable] match
+              case Some(contrast) =>
+                val decomposable: Expr[testType is Decomposable] =
+                  Expr.summon[testType is Decomposable].getOrElse('{Decomposable.any[testType]})
+
+                ' {
+                    given decompose: testType is Decomposable = $decomposable
+
+                    assertion[testType, test, report, result]
+                      ( $runner,
+                        $test,
+                        $predicate,
+                        $action,
+                        $contrast,
+                        Some($expr),
+                        $inclusion,
+                        $inclusion2,
+                        decompose,
+                        $aspirationalExpr )
+                  }
+
+              case None =>
+                plain
+
+          case _ =>
+            plain
+
+        else plain
 
 
   def check[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[test] =
