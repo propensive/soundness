@@ -32,5 +32,9 @@
                                                                                                   */
 package probably
 
+object Autopsy:
+  given contrastByDefault: Autopsy:
+    type Analyse = true
+
 trait Autopsy:
   type Analyse <: Boolean
