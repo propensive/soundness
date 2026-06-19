@@ -35,5 +35,11 @@ package anticipation
 // A destination for log messages of a given `carrier` type. `eucalyptus.Logger` is the concrete
 // implementation; abstracting it here lets `Loggable.fanOut` collect every in-scope sink (via
 // `gigantism.Every`) without `anticipation.log` depending on the logging runtime.
+//
+// `accepts` reports whether the sink would record an event at the given level (e.g. against a level
+// threshold). `Loggable.fanOut` consults it *before* forcing or transcribing the (by-name) event,
+// so that when no sink accepts — in particular when there are no sinks at all — the logged value is
+// never even constructed, and logging a disabled event costs nothing.
 trait Sink[-eventType, carrier]:
+  def accepts(level: Level): Boolean
   def submit(level: Level, timestamp: Long, message: carrier): Unit

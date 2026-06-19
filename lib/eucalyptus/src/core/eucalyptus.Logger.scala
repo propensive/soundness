@@ -102,5 +102,7 @@ class Logger[-eventType, loggingType] private
   ( threshold: Level, enqueue: (loggingType, Level, Long) => Unit )
 extends Sink[eventType, loggingType]:
 
+  def accepts(level: Level): Boolean = level.ordinal >= threshold.ordinal
+
   def submit(level: Level, timestamp: Long, message: loggingType): Unit =
-    if level.ordinal >= threshold.ordinal then enqueue(message, level, timestamp)
+    enqueue(message, level, timestamp)

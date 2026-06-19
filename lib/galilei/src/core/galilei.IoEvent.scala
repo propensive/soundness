@@ -32,12 +32,27 @@
                                                                                                   */
 package galilei
 
+import anticipation.*
 import fulminate.*
 import guillotine.*
 
 object IoEvent:
-  given IoEvent is Communicable =
-    case Exec(event) => event.communicate
+  given communicable: IoEvent is Communicable =
+    case Exec(event)           => event.communicate
+    case Create(path)          => m"created $path"
+    case Delete(path)          => m"deleted $path"
+    case Move(from, to)        => m"moved $from to $to"
+    case Copy(from, to)        => m"copied $from to $to"
+    case HardLink(from, to)    => m"hard-linked $from to $to"
+    case Symlink(link, target) => m"symlinked $link to $target"
+    case Touch(path)           => m"touched $path"
 
 enum IoEvent:
   case Exec(event: ExecEvent)
+  case Create(path: Text)
+  case Delete(path: Text)
+  case Move(from: Text, to: Text)
+  case Copy(from: Text, to: Text)
+  case HardLink(from: Text, to: Text)
+  case Symlink(link: Text, target: Text)
+  case Touch(path: Text)

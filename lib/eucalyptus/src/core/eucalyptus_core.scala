@@ -67,10 +67,15 @@ val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 // `event is Loggable` is supplied directly to the block, so (as a lexically-scoped given) it takes
 // precedence over the companion-scoped `Loggable.fanOut`.
 def mute[event](using erased Void)[result](lambda: (event is Loggable) ?=> result): result =
-  val silent: event is Loggable = (level, timestamp, event) => ()
+  val silent: event is Loggable = new Loggable:
+    type Self = event
+    def log(level: Level, timestamp: Long, event: => event): Unit = ()
+
   lambda(using silent)
 
 package logging:
   // A silent logger; imported explicitly (`import logging.silentLogging`) it outranks the
   // companion-scoped `Loggable.fanOut`, suppressing all logging for the file.
-  given silentLogging: [event] => event is Loggable = (level, timestamp, event) => ()
+  given silentLogging: [event] => event is Loggable = new Loggable:
+    type Self = event
+    def log(level: Level, timestamp: Long, event: => event): Unit = ()

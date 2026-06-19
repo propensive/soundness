@@ -109,18 +109,20 @@ extension [plane: Filesystem](path: Path on plane)
 
 
   def delete()(using deleteRecursively: DeleteRecursively on plane)
-  :   Path on plane raises IoError =
+  :   Path on plane logs IoEvent raises IoError =
 
     protect(Operation.Delete):
       deleteRecursively.conditionally(path)(jnf.Files.delete(path.javaPath))
 
+    Log.info(IoEvent.Delete(path.show))
     path
 
 
   def wipe()(using deleteRecursively: DeleteRecursively on plane)(using io: Tactic[IoError])
-  :   Path on plane raises IoError =
+  :   Path on plane logs IoEvent raises IoError =
 
     deleteRecursively.conditionally(path)(jnf.Files.deleteIfExists(javaPath))
+    Log.info(IoEvent.Delete(path.show))
     path
 
 
@@ -132,12 +134,13 @@ extension [plane: Filesystem](path: Path on plane)
   def hardLinkTo(destination: Path on plane)
     ( using overwritePreexisting:     OverwritePreexisting on plane,
             createNonexistentParents: CreateNonexistentParents on plane )
-  :   Path on plane raises IoError =
+  :   Path on plane logs IoEvent raises IoError =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
         jnf.Files.createLink(destination.javaPath, path.javaPath)
 
+    Log.info(IoEvent.HardLink(path.show, destination.show))
     destination
 
 
@@ -161,12 +164,13 @@ extension [plane: Filesystem](path: Path on plane)
     ( using overwritePreexisting:     OverwritePreexisting on plane,
             dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on plane )
-  :   Path on plane raises IoError =
+  :   Path on plane logs IoEvent raises IoError =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
         jnf.Files.copy(path.javaPath, destination.javaPath, dereferenceSymlinks.options()*)
 
+    Log.info(IoEvent.Copy(path.show, destination.show))
     destination
 
 
@@ -188,7 +192,7 @@ extension [plane: Filesystem](path: Path on plane)
             moveAtomically:           MoveAtomically,
             dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on plane )
-  :   Path on plane raises IoError =
+  :   Path on plane logs IoEvent raises IoError =
 
     val options: Seq[jnf.CopyOption] = dereferenceSymlinks.options() ++ moveAtomically.options()
 
@@ -196,6 +200,7 @@ extension [plane: Filesystem](path: Path on plane)
       overwritePreexisting(destination):
         jnf.Files.move(path.javaPath, destination.javaPath, options*)
 
+    Log.info(IoEvent.Move(path.show, destination.show))
     destination
 
 
@@ -214,12 +219,13 @@ extension [plane: Filesystem](path: Path on plane)
   def symlinkTo(destination: Path on plane)
     ( using overwritePreexisting:     OverwritePreexisting on plane,
             createNonexistentParents: CreateNonexistentParents on plane )
-  :   Path on plane raises IoError =
+  :   Path on plane logs IoEvent raises IoError =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
         jnf.Files.createSymbolicLink(destination.javaPath, path.javaPath)
 
+    Log.info(IoEvent.Symlink(destination.show, path.show))
     destination
 
 
@@ -248,11 +254,16 @@ extension [plane: Filesystem](path: Path on plane)
   def hidden(): Boolean raises IoError =
     protect(Operation.Metadata)(jnf.Files.isHidden(path.javaPath))
 
-  def touch(): Unit raises IoError = protect(Operation.Metadata):
-    jnf.Files.setLastModifiedTime
-      ( path.javaPath, jnfa.FileTime.fromMillis(java.lang.System.currentTimeMillis) )
+  def touch(): Unit logs IoEvent raises IoError =
+    protect(Operation.Metadata):
+      jnf.Files.setLastModifiedTime
+        ( path.javaPath, jnfa.FileTime.fromMillis(java.lang.System.currentTimeMillis) )
 
-  def create[entry: Creatable on plane](): entry.Result = entry.create(path)
+    Log.fine(IoEvent.Touch(path.show))
+
+  def create[entry: Creatable on plane](): entry.Result logs IoEvent =
+    Log.info(IoEvent.Create(path.show))
+    entry.create(path)
 
 extension (path: Path on Windows)
   def created[instant: Instantiable across Instants from Long](): instant raises IoError =
