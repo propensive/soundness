@@ -1484,6 +1484,42 @@ object Tests extends Suite(m"Aviation Tests"):
         (moment + 24*Hour).time
       . assert(_ == Clockface(13, 0, 0))
 
+    suite(m"Coptic calendar"):
+      import calendars.copticCalendar
+
+      test(m"2000-01-01 Gregorian is 22 Koiak 1716 in the Coptic calendar"):
+        val date = { import calendars.gregorianCalendar; 2000-Jan-1 }
+        (copticCalendar.annual(date)(), copticCalendar.mensual(date), copticCalendar.diurnal(date)())
+      . assert(_ == (1716, CopticMonth.Koiak, 22))
+
+      test(m"A Coptic date round-trips through its Julian day number"):
+        val date = unsafely(Date(Year(1716), CopticMonth.Koiak, Day(22)))
+        (copticCalendar.annual(date)(), copticCalendar.mensual(date), copticCalendar.diurnal(date)())
+      . assert(_ == (1716, CopticMonth.Koiak, 22))
+
+      test(m"Adding a Coptic month advances within the Coptic calendar"):
+        import monthEnds.clampMonthEnd
+        val date = unsafely(Date(Year(1716), CopticMonth.Koiak, Day(22)))
+        copticCalendar.mensual(date + 1*CopticMonth)
+      . assert(_ == CopticMonth.Tobi)
+
+      test(m"A Coptic month after Nasie wraps to the next year"):
+        import monthEnds.clampMonthEnd
+        val date = unsafely(Date(Year(1716), CopticMonth.Nasie, Day(5)))
+        val result = date + 1*CopticMonth
+        (copticCalendar.annual(result)(), copticCalendar.mensual(result))
+      . assert(_ == (1717, CopticMonth.Thout))
+
+      test(m"A Coptic leap year has 366 days"):
+        copticCalendar.daysInYear(Year(1719))
+      . assert(_ == 366)
+
+      test(m"Coptic months cannot be added to a Gregorian-context date"):
+        demilitarize:
+          import calendars.gregorianCalendar
+          (2000-Jan-1) + 1*CopticMonth
+      . assert(_.nonEmpty)
+
     suite(m"Clock"):
       test(m"Clock.fixed returns the same instant"):
         val clock = Clock.fixed(Instant(12345L))

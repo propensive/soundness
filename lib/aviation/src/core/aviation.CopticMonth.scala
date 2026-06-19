@@ -30,82 +30,18 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aviation
 
-export
-  aviation
-  . { am, Anniversary, Apr, Aug, Base24, base24Extractable, Base60, base60Extractable, Calendar,
-      Clock, Clockface, CopticCalendar, CopticMonth, Date, DateNumerics, DateSeparation, Day, Dec,
-      Disambiguation, Duration,
-      Endianness, Feb, Fri, Hebdomad, Holiday, Holidays, Horology, Hour, Instant, Iso8601, Jan,
-      Jul, Jun, LeapSeconds, Mar, May, Meridiem, Minute, Moment, Mon, Month, Months, Monthstamp,
-      Nov, now, Oct, Period, pm, Regime, Rfc1123, RomanCalendar, Sat, Sep, Sun, Thu, TimeError,
-      TimeEvent, TimeFormat, TimeNumerics, TimeSeparation, TimeSpecificity, Timespan, Timestamp,
-      TimestampError, Timezone, TimezoneError, today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError,
-      Wed, Week, Weekday, Weekdays, WorkingDays, Year, Years }
+import prepositional.*
+import symbolism.*
 
-package calendars:
-  export aviation.calendars.{gregorianCalendar, julianCalendar, copticCalendar, papalCutover,
-      britishCutover}
+// The thirteen months of the Coptic calendar: twelve months of 30 days plus the short epagomenal
+// month `Nasie` (5 days, or 6 in a leap year). `CopticMonth` is a distinct `MonthRadix`, so a span
+// counted in Coptic months can only be added to a date read in the Coptic calendar.
+object CopticMonth extends MonthRadix:
+  given multiplicable: Int is Multiplicable by CopticMonth.type to (Timespan of CopticMonth.type) =
+    (n, _) => Timespan(CopticMonth, n)
 
-package nonexistentLeapDays:
-  export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,
-      roundUpLeapDay}
-
-package monthEnds:
-  export aviation.monthEnds.{clampMonthEnd, overflowMonthEnd, raiseMonthEnd}
-
-package dateFormats:
-  export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,
-      southEastAsiaDateFormat, unitedKingdomDateFormat}
-
-package endianness:
-  export aviation.dateFormats.endianness.{bigEndian, littleEndian, middleEndian}
-
-package dateNumerics:
-  export aviation.dateFormats.numerics.{fixedWidthDateNumerics, variableWidthDateNumerics}
-
-package dateSeparators:
-  export aviation.dateFormats.separators.{dotDateSeparator, hyphenDateSeparator, slashDateSeparator,
-      spaceDateSeparator}
-
-package yearFormats:
-  export aviation.dateFormats.years.{fullYears, twoDigitsYears}
-
-package weekdays:
-  export
-    aviation.dateFormats.weekdays
-    . { englishWeekdays, englishShortWeekdays, oneLetterAmbiguousWeekdays,
-        shortestUnambiguousWeekdays, twoLetterWeekdays }
-
-package monthFormats:
-  export
-    aviation.dateFormats.months
-    . { englishMonths, englishShortMonths, numericMonths, oneLetterAmbiguousMonths,
-        twoDigitMonths }
-
-package timeFormats:
-  export
-    aviation.timeFormats
-    . { associatedPressTimeFormat, civilianTimeFormat, frenchTimeFormat, iso8601TimeFormat,
-        ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
-
-package hourFormats:
-  export aviation.timeFormats.hours.{twelveHourClock, twentyFourHourClock}
-
-package meridiems:
-  export aviation.timeFormats.meridiems.{lowerMeridiem, lowerPunctuatedMeridiem, upperMeridiem,
-      upperPunctuatedMeridiem}
-
-package timeNumerics:
-  export aviation.timeFormats.numerics.{fixedWidthTimeNumerics, variableWidthTimeNumerics}
-
-package timeSeparators:
-  export aviation.timeFormats.separators.{colonTimeSeparator, dotTimeSeparator, frenchTimeSeparator,
-      noneTimeSeparator}
-
-package hebdomads:
-  export aviation.hebdomads.{europeanHebdomad, jewishHebdomad, northAmericanHebdomad}
-
-package instantDecodables:
-  export aviation.instantDecodables.{iso8601InstantDecodable, rfc1123InstantDecodable}
+enum CopticMonth derives CanEqual:
+  case Thout, Paopi, Hathor, Koiak, Tobi, Meshir, Paremhat, Parmouti, Pashons, Paoni, Epip, Mesori,
+    Nasie

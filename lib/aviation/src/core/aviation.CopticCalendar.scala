@@ -30,82 +30,49 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aviation
 
-export
-  aviation
-  . { am, Anniversary, Apr, Aug, Base24, base24Extractable, Base60, base60Extractable, Calendar,
-      Clock, Clockface, CopticCalendar, CopticMonth, Date, DateNumerics, DateSeparation, Day, Dec,
-      Disambiguation, Duration,
-      Endianness, Feb, Fri, Hebdomad, Holiday, Holidays, Horology, Hour, Instant, Iso8601, Jan,
-      Jul, Jun, LeapSeconds, Mar, May, Meridiem, Minute, Moment, Mon, Month, Months, Monthstamp,
-      Nov, now, Oct, Period, pm, Regime, Rfc1123, RomanCalendar, Sat, Sep, Sun, Thu, TimeError,
-      TimeEvent, TimeFormat, TimeNumerics, TimeSeparation, TimeSpecificity, Timespan, Timestamp,
-      TimestampError, Timezone, TimezoneError, today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError,
-      Wed, Week, Weekday, Weekdays, WorkingDays, Year, Years }
+import anticipation.*
+import contingency.*
+import gossamer.*
 
-package calendars:
-  export aviation.calendars.{gregorianCalendar, julianCalendar, copticCalendar, papalCutover,
-      britishCutover}
+// The Coptic (Alexandrian) calendar: thirteen months — twelve of 30 days plus a short month of 5
+// days (6 in a leap year) — with a leap year every fourth year (those with `year % 4 == 3`). Its
+// epoch, 1 Thout 1 AM, is JDN 1825030 (29 August 284 CE in the Julian calendar). Dates are stored
+// as the same Julian-day-number as every other calendar; only the labelling differs.
+class CopticCalendar() extends Calendar:
+  type Mensual = CopticMonth
+  type MonthUnit = CopticMonth.type
 
-package nonexistentLeapDays:
-  export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,
-      roundUpLeapDay}
+  private val epoch: Int = 1825030 // JDN of 1 Thout 1 AM (29 August 284 CE, Julian)
+  val name: Text = t"Coptic"
+  def monthsInYear: Int = 13
+  def monthOrdinal(month: CopticMonth): Int = month.ordinal
+  def monthOfOrdinal(ordinal: Int): CopticMonth = CopticMonth.fromOrdinal(ordinal)
 
-package monthEnds:
-  export aviation.monthEnds.{clampMonthEnd, overflowMonthEnd, raiseMonthEnd}
+  def leapYear(year: Year): Boolean = year()%4 == 3
+  def daysInYear(year: Year): Int = if leapYear(year) then 366 else 365
 
-package dateFormats:
-  export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,
-      southEastAsiaDateFormat, unitedKingdomDateFormat}
+  def daysInMonth(month: CopticMonth, year: Year): Int =
+    if month.ordinal < 12 then 30 else if leapYear(year) then 6 else 5
 
-package endianness:
-  export aviation.dateFormats.endianness.{bigEndian, littleEndian, middleEndian}
+  def zerothDayOfYear(year: Year): Date =
+    Date.julianDay(epoch - 1 + 365*(year() - 1) + year()/4)
 
-package dateNumerics:
-  export aviation.dateFormats.numerics.{fixedWidthDateNumerics, variableWidthDateNumerics}
+  def annual(date: Date): Year = Year((4*(date.jdn - epoch) + 1463)/1461)
 
-package dateSeparators:
-  export aviation.dateFormats.separators.{dotDateSeparator, hyphenDateSeparator, slashDateSeparator,
-      spaceDateSeparator}
+  private def dayOfYear(date: Date): Int = date.jdn - zerothDayOfYear(annual(date)).jdn
 
-package yearFormats:
-  export aviation.dateFormats.years.{fullYears, twoDigitsYears}
+  def mensual(date: Date): CopticMonth =
+    val doy = dayOfYear(date)
+    CopticMonth.fromOrdinal(if doy > 360 then 12 else (doy - 1)/30)
 
-package weekdays:
-  export
-    aviation.dateFormats.weekdays
-    . { englishWeekdays, englishShortWeekdays, oneLetterAmbiguousWeekdays,
-        shortestUnambiguousWeekdays, twoLetterWeekdays }
+  def diurnal(date: Date): Day =
+    val doy = dayOfYear(date)
+    Day(doy - 30*(if doy > 360 then 12 else (doy - 1)/30))
 
-package monthFormats:
-  export
-    aviation.dateFormats.months
-    . { englishMonths, englishShortMonths, numericMonths, oneLetterAmbiguousMonths,
-        twoDigitMonths }
+  def jdn(year: Year, month: CopticMonth, day: Day): Date raises TimeError =
+    if day() < 1 || day() > daysInMonth(month, year) then
+      raise(TimeError(_.Invalid(year(), month.ordinal + 1, day(), this)))
 
-package timeFormats:
-  export
-    aviation.timeFormats
-    . { associatedPressTimeFormat, civilianTimeFormat, frenchTimeFormat, iso8601TimeFormat,
-        ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
-
-package hourFormats:
-  export aviation.timeFormats.hours.{twelveHourClock, twentyFourHourClock}
-
-package meridiems:
-  export aviation.timeFormats.meridiems.{lowerMeridiem, lowerPunctuatedMeridiem, upperMeridiem,
-      upperPunctuatedMeridiem}
-
-package timeNumerics:
-  export aviation.timeFormats.numerics.{fixedWidthTimeNumerics, variableWidthTimeNumerics}
-
-package timeSeparators:
-  export aviation.timeFormats.separators.{colonTimeSeparator, dotTimeSeparator, frenchTimeSeparator,
-      noneTimeSeparator}
-
-package hebdomads:
-  export aviation.hebdomads.{europeanHebdomad, jewishHebdomad, northAmericanHebdomad}
-
-package instantDecodables:
-  export aviation.instantDecodables.{iso8601InstantDecodable, rfc1123InstantDecodable}
+    Date.julianDay(epoch - 1 + 365*(year() - 1) + year()/4 + 30*month.ordinal + day())

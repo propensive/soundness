@@ -57,13 +57,13 @@ object Timespan:
   // `Int is Multiplicable by <radix>.type` givens live on each radix's companion object so they are
   // in implicit scope at the `n*Radix` call site; this builder backs them.
   def apply[radix <: Radix](unit: radix, n: Int): Timespan of radix = unit match
-    case Year   => Timespan(years = n).asInstanceOf[Timespan of radix]
-    case Month  => Timespan(months = n).asInstanceOf[Timespan of radix]
-    case Week   => Timespan(weeks = n).asInstanceOf[Timespan of radix]
-    case Day    => Timespan(days = n).asInstanceOf[Timespan of radix]
-    case Hour   => Timespan(hours = n).asInstanceOf[Timespan of radix]
-    case Minute => Timespan(minutes = n).asInstanceOf[Timespan of radix]
-    case _      => Timespan().asInstanceOf[Timespan of radix]
+    case Year          => Timespan(years = n).asInstanceOf[Timespan of radix]
+    case _: MonthRadix => Timespan(months = n).asInstanceOf[Timespan of radix]
+    case Week          => Timespan(weeks = n).asInstanceOf[Timespan of radix]
+    case Day           => Timespan(days = n).asInstanceOf[Timespan of radix]
+    case Hour          => Timespan(hours = n).asInstanceOf[Timespan of radix]
+    case Minute        => Timespan(minutes = n).asInstanceOf[Timespan of radix]
+    case _             => Timespan().asInstanceOf[Timespan of radix]
 
   given addable: [left <: Radix, right <: Radix]
   =>  (Timespan of left) is Addable by (Timespan of right) to (Timespan of (left & right)) =

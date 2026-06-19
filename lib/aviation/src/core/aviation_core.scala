@@ -316,6 +316,8 @@ package calendars:
     def leapYear(year: Annual): Boolean = year()%4 == 0 && year()%100 != 0 || year()%400 == 0
     def leapYearsSinceEpoch(year: Year): Int = year()/4 - year()/100 + year()/400 + 1
 
+  given copticCalendar: CopticCalendar = CopticCalendar()
+
   // The Julian-to-Gregorian cutovers of the two best-known reforms, as two-segment `Regime`s. The
   // first day of each segment is given as a Julian day number; the gap between (the dates in
   // neither calendar) is rejected. Provided for explicit import, like the calendars above.
