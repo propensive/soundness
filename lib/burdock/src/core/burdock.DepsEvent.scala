@@ -33,52 +33,13 @@
 package burdock
 
 import anticipation.*
-import contingency.*
-import distillate.*
-import eucalyptus.*
 import fulminate.*
-import gossamer.*
-import jacinta.*
-import monotonous.*, alphabets.base64Standard, alphabets.hexLowerCase
-import spectacular.*
-import telekinesis.*
-import urticose.*
-import vacuous.*
 
-import internetAccess.online
+object DepsEvent:
+  given communicable: DepsEvent is Communicable =
+    case Querying(hash)      => m"querying deps.dev for the artifact with hash $hash"
+    case Resolved(hash, url) => m"resolved hash $hash to $url"
 
-// Resolves a dependency's content hash to its public download URL using Google's
-// deps.dev ("Open Source Insights") Query API. Returns `Unset` for anything
-// deps.dev does not know as a Maven artifact — the caller then inlines the
-// dependency's classes from the local Burdock cache instead.
-object DepsDev:
-  case class VersionKey(system: Text, name: Text, version: Text)
-  case class Version(versionKey: VersionKey)
-  case class Result(version: Version)
-  case class QueryResult(results: List[Result])
-
-  case class Unresolved()(using Diagnostics) extends Error(m"not a known Maven artifact")
-
-  def mavenUrl(sha256Hex: Text): Optional[HttpUrl] logs DepsEvent = safely:
-    // deps.dev expects the hash base64-encoded (not hex).
-    val base64: Text = sha256Hex.deserialize[Hex].serialize[Base64]
-    val query: HttpUrl = url"https://api.deps.dev/v3/query?hash.type=SHA256&hash.value=$base64"
-    Log.fine(DepsEvent.Querying(sha256Hex))
-    val result: QueryResult = mute[HttpEvent](query.fetch().receive[Json]).as[QueryResult]
-
-    val key: VersionKey =
-      result.results.map(_.version.versionKey).find(_.system == t"MAVEN")
-      . getOrElse(abort(Unresolved()))
-
-    // `name` is `group:artifact`; the Maven Central path uses `/` for the group.
-    val parts: List[Text] = key.name.cut(t":")
-    val group: Text = parts.head.cut(t".").join(t"/")
-    val artifact: Text = parts.last
-    val version: Text = key.version
-    val jar: Text = t"$artifact-$version.jar"
-
-    val url: HttpUrl =
-      t"https://repo1.maven.org/maven2/$group/$artifact/$version/$jar".decode[HttpUrl]
-
-    Log.info(DepsEvent.Resolved(sha256Hex, url.show))
-    url
+enum DepsEvent:
+  case Querying(hash: Text)
+  case Resolved(hash: Text, url: Text)
