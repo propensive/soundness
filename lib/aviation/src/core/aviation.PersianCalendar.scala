@@ -30,85 +30,70 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aviation
 
-export
-  aviation
-  . { am, AlexandrianCalendar, Anniversary, Apr, Aug, Base24, base24Extractable, Base60,
-      base60Extractable, Calendar, Clock, Clockface, CopticCalendar, CopticMonth, Date,
-      DateNumerics, DateSeparation, Day, Dec,
-      Disambiguation, Duration, Endianness, EthiopianCalendar, EthiopianMonth, Feb,
-      FrenchRepublicanCalendar, FrenchRepublicanMonth, Fri, Hebdomad, Holiday, Holidays, Horology,
-      Hour, Instant, IslamicCalendar, IslamicMonth, Iso8601, Jan, Jul, Jun, LeapSeconds, Mar, May,
-      Meridiem, Minute, Moment, Mon, Month, Months, Monthstamp, Nov, now, Oct, Period,
-      PersianCalendar, PersianMonth, pm, Regime, Rfc1123, RomanCalendar, Sat, Sep, Sun, Thu,
-      TimeError, TimeEvent, TimeFormat, TimeNumerics,
-      TimeSeparation, TimeSpecificity, Timespan, Timestamp, TimestampError, Timezone, TimezoneError,
-      today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Week, Weekday, Weekdays,
-      WorkingDays, Year, Years }
+import java.lang.Math.{floorDiv, floorMod}
 
-package calendars:
-  export aviation.calendars.{gregorianCalendar, julianCalendar, copticCalendar, ethiopianCalendar,
-      islamicCalendar, persianCalendar, frenchRepublicanCalendar, papalCutover, britishCutover}
+import anticipation.*
+import contingency.*
+import gossamer.*
 
-package nonexistentLeapDays:
-  export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,
-      roundUpLeapDay}
+// The Persian (Solar Hijri) calendar, using the arithmetical 2820-year cycle (Birashk's algorithm)
+// as a deterministic approximation of the official, observational calendar (true vernal equinox at
+// the 52.5°E meridian); the two can differ by a day around some equinoxes. Months 1–6 have 31 days,
+// 7–11 have 30, and Esfand has 29 (30 in a leap year). Epoch: 1 Farvardin 1 = JDN 1948321.
+class PersianCalendar() extends Calendar:
+  type Mensual = PersianMonth
+  type MonthUnit = PersianMonth.type
 
-package monthEnds:
-  export aviation.monthEnds.{clampMonthEnd, overflowMonthEnd, raiseMonthEnd}
+  private val epoch: Int = 1948321
+  val name: Text = t"Persian"
+  def monthsInYear: Int = 12
+  def monthOrdinal(month: PersianMonth): Int = month.ordinal
+  def monthOfOrdinal(ordinal: Int): PersianMonth = PersianMonth.fromOrdinal(ordinal)
 
-package dateFormats:
-  export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,
-      southEastAsiaDateFormat, unitedKingdomDateFormat}
+  def leapYear(year: Year): Boolean = ((floorMod(year() - 474, 2820) + 512)*682)%2816 < 682
+  def daysInYear(year: Year): Int = if leapYear(year) then 366 else 365
 
-package endianness:
-  export aviation.dateFormats.endianness.{bigEndian, littleEndian, middleEndian}
+  def daysInMonth(month: PersianMonth, year: Year): Int =
+    if month.ordinal < 6 then 31 else if month.ordinal < 11 then 30
+    else if leapYear(year) then 30 else 29
 
-package dateNumerics:
-  export aviation.dateFormats.numerics.{fixedWidthDateNumerics, variableWidthDateNumerics}
+  // The JDN of (year, monthOrdinal, day) by Birashk's arithmetic.
+  private def toJulianDay(year: Int, monthOrdinal: Int, day: Int): Int =
+    val base = year - (if year >= 0 then 474 else 473)
+    val cyclic = 474 + floorMod(base, 2820)
+    val before = if monthOrdinal <= 6 then monthOrdinal*31 else monthOrdinal*30 + 6
+    val cyclicDays = (cyclic*682 - 110)/2816 + (cyclic - 1)*365
+    val cycleDays = floorDiv(base, 2820)*1029983
+    day + before + cyclicDays + cycleDays + epoch - 1
 
-package dateSeparators:
-  export aviation.dateFormats.separators.{dotDateSeparator, hyphenDateSeparator, slashDateSeparator,
-      spaceDateSeparator}
+  def zerothDayOfYear(year: Year): Date = Date.julianDay(toJulianDay(year(), 0, 0))
 
-package yearFormats:
-  export aviation.dateFormats.years.{fullYears, twoDigitsYears}
+  def annual(date: Date): Year =
+    val depoch = date.jdn - toJulianDay(475, 0, 1)
+    val cycle = floorDiv(depoch, 1029983)
+    val yearInCycle = floorMod(depoch, 1029983)
 
-package weekdays:
-  export
-    aviation.dateFormats.weekdays
-    . { englishWeekdays, englishShortWeekdays, oneLetterAmbiguousWeekdays,
-        shortestUnambiguousWeekdays, twoLetterWeekdays }
+    val offset =
+      if yearInCycle == 1029982 then 2820 else
+        val a = yearInCycle/366
+        val b = yearInCycle%366
+        (2134*a + 2816*b + 2815)/1028522 + a + 1
 
-package monthFormats:
-  export
-    aviation.dateFormats.months
-    . { englishMonths, englishShortMonths, numericMonths, oneLetterAmbiguousMonths,
-        twoDigitMonths }
+    Year(offset + 2820*cycle + 474)
 
-package timeFormats:
-  export
-    aviation.timeFormats
-    . { associatedPressTimeFormat, civilianTimeFormat, frenchTimeFormat, iso8601TimeFormat,
-        ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
+  private def dayOfYear(date: Date): Int = date.jdn - toJulianDay(annual(date)(), 0, 1) + 1
 
-package hourFormats:
-  export aviation.timeFormats.hours.{twelveHourClock, twentyFourHourClock}
+  def mensual(date: Date): PersianMonth =
+    val doy = dayOfYear(date)
+    PersianMonth.fromOrdinal(if doy <= 186 then (doy - 1)/31 else (doy - 187)/30 + 6)
 
-package meridiems:
-  export aviation.timeFormats.meridiems.{lowerMeridiem, lowerPunctuatedMeridiem, upperMeridiem,
-      upperPunctuatedMeridiem}
+  def diurnal(date: Date): Day =
+    Day(date.jdn - toJulianDay(annual(date)(), monthOrdinal(mensual(date)), 1) + 1)
 
-package timeNumerics:
-  export aviation.timeFormats.numerics.{fixedWidthTimeNumerics, variableWidthTimeNumerics}
+  def jdn(year: Year, month: PersianMonth, day: Day): Date raises TimeError =
+    if day() < 1 || day() > daysInMonth(month, year) then
+      raise(TimeError(_.Invalid(year(), month.ordinal + 1, day(), this)))
 
-package timeSeparators:
-  export aviation.timeFormats.separators.{colonTimeSeparator, dotTimeSeparator, frenchTimeSeparator,
-      noneTimeSeparator}
-
-package hebdomads:
-  export aviation.hebdomads.{europeanHebdomad, jewishHebdomad, northAmericanHebdomad}
-
-package instantDecodables:
-  export aviation.instantDecodables.{iso8601InstantDecodable, rfc1123InstantDecodable}
+    Date.julianDay(toJulianDay(year(), month.ordinal, day()))

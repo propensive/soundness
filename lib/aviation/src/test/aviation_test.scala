@@ -1574,6 +1574,23 @@ object Tests extends Suite(m"Aviation Tests"):
         (ethiopianCalendar.annual(result)(), ethiopianCalendar.mensual(result))
       . assert(_ == (1993, EthiopianMonth.Meskerem))
 
+    suite(m"Persian calendar"):
+      import calendars.persianCalendar
+
+      test(m"2000-01-01 Gregorian is 11 Dey 1378 in the Persian calendar"):
+        val date = { import calendars.gregorianCalendar; 2000-Jan-1 }
+        ( persianCalendar.annual(date)(),
+          persianCalendar.mensual(date),
+          persianCalendar.diurnal(date)() )
+      . assert(_ == (1378, PersianMonth.Dey, 11))
+
+      test(m"A Persian date round-trips through its Julian day number"):
+        val date = unsafely(Date(Year(1403), PersianMonth.Farvardin, Day(1)))
+        ( persianCalendar.annual(date)(),
+          persianCalendar.mensual(date),
+          persianCalendar.diurnal(date)() )
+      . assert(_ == (1403, PersianMonth.Farvardin, 1))
+
     suite(m"French Republican calendar"):
       test(m"18 Brumaire An VIII is 9 November 1799"):
         import calendars.{gregorianCalendar, frenchRepublicanCalendar}
