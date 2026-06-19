@@ -36,6 +36,7 @@ import anticipation.*
 import contextual.*
 import contingency.*
 import distillate.*
+import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
@@ -397,8 +398,12 @@ given base24Extractable: [text <: Text] => (Text is Extractable to Int)
   case _                      => Unset
 
 
+object TimeEvent:
+  given communicable: TimeEvent is Communicable =
+    case ParseTzdb(name) => m"parsing the timezone database file $name"
+
 enum TimeEvent:
-  case ParseStart
+  case ParseTzdb(name: Text)
 
 extension (inline double: Double)
   inline def am: Clockface = ${aviation.internal.validTime('double, false)}
