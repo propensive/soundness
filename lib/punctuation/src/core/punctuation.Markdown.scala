@@ -101,7 +101,7 @@ object Markdown:
     case Prose.Strong(children*)   => Strong(children.map(phrasing(_))*)
     case Prose.Softbreak           => "\n"
     case Prose.Linebreak           => Fragment(Br, "\n")
-    case Prose.HtmlInline(content) => Comment(s"[CDATA[$content]]")
+    case Prose.HtmlInline(content) => Comment(t"[CDATA[$content]]")
 
     case Prose.Link(destination, title, content*) =>
       val destination2 = url(destination)
@@ -193,7 +193,7 @@ object Markdown:
           Hr
 
         case Layout.HtmlBlock(line, content) =>
-          Comment(s"[CDATA[$content]]")
+          Comment(t"[CDATA[$content]]")
 
         case Layout.Heading(line, level, content*) =>
           level match

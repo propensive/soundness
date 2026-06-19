@@ -144,6 +144,6 @@ extends DecimalConverter:
     else if double.isNaN then
       nan
     else if double.isNegInfinity then
-      s"$minusSign$infinity".tt
+      t"$minusSign$infinity"
     else
       infinity

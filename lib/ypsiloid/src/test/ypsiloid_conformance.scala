@@ -51,6 +51,7 @@ import scala.jdk.CollectionConverters.*
 
 import anticipation.Text
 import contingency.strategies
+import gossamer.t
 import hieroglyph.charEncoders
 import jacinta.Json
 import turbulence.read
@@ -259,8 +260,8 @@ object Conformance:
 
     val inScopeFailures = inScopeResults.filterNot(_.passed)
     if inScopeFailures.nonEmpty then
-      println(s"In-scope failures (${inScopeFailures.length.min(maxFailuresShown)}"
-            + s" of ${inScopeFailures.length} shown):")
+      val shown = inScopeFailures.length.min(maxFailuresShown)
+      println(t"In-scope failures ($shown of ${inScopeFailures.length} shown):")
       inScopeFailures.take(maxFailuresShown).foreach: result =>
         printFailure(result)
 
@@ -270,19 +271,19 @@ object Conformance:
         val matching = outFailures.filter(_.testCase.tags.contains(tag))
         if matching.nonEmpty then
           println()
-          println(s"== Out-of-scope tag '$tag' (${matching.length} failing):")
+          println(t"== Out-of-scope tag '$tag' (${matching.length} failing):")
           matching.foreach: r =>
             val descShort = r.testCase.description.linesIterator.next().take(60)
             val tagsShort = r.testCase.tags.toList.sorted.mkString("{", ",", "}")
-            println(s"  ${r.testCase.id} $tagsShort  $descShort")
+            println(t"  ${r.testCase.id} $tagsShort  $descShort")
             r.outcome match
               case Outcome.Mismatch(actual, expected) =>
-                println(s"    expected: ${expected.take(120)}")
-                println(s"    actual:   ${actual.take(120)}")
+                println(t"    expected: ${expected.take(120)}")
+                println(t"    actual:   ${actual.take(120)}")
               case Outcome.ShouldHaveErrored =>
-                println(s"    (should have errored)")
+                println(t"    (should have errored)")
               case Outcome.UnexpectedError(msg) =>
-                println(s"    error: ${msg.take(120)}")
+                println(t"    error: ${msg.take(120)}")
               case Outcome.Passed => ()
 
     if inScopeFailures.nonEmpty then System.exit(1)
@@ -296,15 +297,15 @@ object Conformance:
                     else result.testCase.tags.toList.sorted.mkString(" {", ",", "}")
     result.outcome match
       case Outcome.Mismatch(actual, expected) =>
-        println(s"  ${result.testCase.id} [$descShort]$tagsShort")
-        println(s"    expected: ${expected.take(120)}")
-        println(s"    actual:   ${actual.take(120)}")
+        println(t"  ${result.testCase.id} [$descShort]$tagsShort")
+        println(t"    expected: ${expected.take(120)}")
+        println(t"    actual:   ${actual.take(120)}")
 
       case Outcome.ShouldHaveErrored =>
-        println(s"  ${result.testCase.id} [$descShort]$tagsShort: should have errored")
+        println(t"  ${result.testCase.id} [$descShort]$tagsShort: should have errored")
 
       case Outcome.UnexpectedError(msg) =>
-        println(s"  ${result.testCase.id} [$descShort]$tagsShort: unexpected error: " + msg)
+        println(t"  ${result.testCase.id} [$descShort]$tagsShort: unexpected error: $msg")
 
       case Outcome.Passed => ()
 
