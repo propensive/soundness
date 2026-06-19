@@ -32,46 +32,14 @@
                                                                                                   */
 package hellenism
 
-import java.io as ji
-import java.net as jn
-
 import anticipation.*
-import beneficence.*
-import contingency.*
-import rudiments.*
-import vacuous.*
+import fulminate.*
 
-object Classloader:
-  def threadContext: Classloader = new Classloader(Thread.currentThread.nn.getContextClassLoader.nn)
-  inline def apply[template <: AnyKind]: Classloader = ClassRef[template].classloader
+object ClasspathEvent:
+  given communicable: ClasspathEvent is Communicable =
+    case ResourceLoaded(path)  => m"loaded the classpath resource $path"
+    case ResourceMissing(path) => m"the classpath resource $path was not found"
 
-class Classloader(val java: ClassLoader) extends Findable:
-  type Plane = Classpath
-
-  def parent: Optional[Classloader] = Optional(java.getParent).let(new Classloader(_))
-
-  def use[result](block: => result): result =
-    val classloader0 = Thread.currentThread.nn.getContextClassLoader().nn
-    val thread = Thread.currentThread.nn
-
-    try thread.setContextClassLoader(java) yet block
-    finally thread.setContextClassLoader(classloader0)
-
-  protected def urlClassloader: Optional[jn.URLClassLoader] = java match
-    case java: jn.URLClassLoader => java
-    case _                       => parent.let(_.urlClassloader)
-
-  def classpath: Optional[Classpath] = urlClassloader.let(Classpath(_))
-  def on(name: Text): Optional[Class[?]] = Optional(Class.forName(name.s, true, java))
-
-  def apply(path: Text): Optional[Data] logs ClasspathEvent =
-    Optional(java.getResourceAsStream(path.s)).let: stream =>
-      Log.fine(ClasspathEvent.ResourceLoaded(path))
-      stream.readAllBytes().nn.immutable(using Unsafe)
-
-  private[hellenism] def inputStream(path: Text)(using Tactic[ClasspathError])
-  :   ji.InputStream logs ClasspathEvent =
-
-    Optional(java.getResourceAsStream(path.s)).lest:
-      Log.warn(ClasspathEvent.ResourceMissing(path))
-      ClasspathError(path)
+enum ClasspathEvent:
+  case ResourceLoaded(path: Text)
+  case ResourceMissing(path: Text)
