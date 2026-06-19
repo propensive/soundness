@@ -296,7 +296,7 @@ object CliEvent:
   given execEvent: CliEvent transcribes ExecEvent = CliEvent.Exec(_)
 
   given communicable: CliEvent is Communicable =
-    case Exec(event)          => m"exeution error: $event"
+    case Exec(event)          => m"execution error: $event"
     case Installing(location) => m"installing to $location"
 
 enum CliEvent:

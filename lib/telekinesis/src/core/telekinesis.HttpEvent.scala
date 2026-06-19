@@ -38,9 +38,9 @@ import urticose.*
 
 object HttpEvent:
   given communicable: HttpEvent is Communicable =
-    case Response(status)           => m"Received response with status $status"
-    case Request(preview)           => m"Request [$preview]"
-    case Send(method, url, headers) => m"Send $method request to $url"
+    case Response(status)           => m"received a response with status $status"
+    case Request(preview)           => m"request [$preview]"
+    case Send(method, url, headers) => m"sending a $method request to $url"
 
 enum HttpEvent:
   case Response(status: Http.Status)
