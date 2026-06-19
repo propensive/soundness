@@ -44,5 +44,5 @@ class EthiopianCalendar() extends AlexandrianCalendar:
 
   def epoch: Int = 1724221
   val name: Text = t"Ethiopian"
-  def monthOrdinal(month: EthiopianMonth): Int = month.ordinal
-  def monthOfOrdinal(ordinal: Int): EthiopianMonth = EthiopianMonth.fromOrdinal(ordinal)
+  def monthOrdinal(year: Year, month: EthiopianMonth): Int = month.ordinal
+  def monthOfOrdinal(year: Year, ordinal: Int): EthiopianMonth = EthiopianMonth.fromOrdinal(ordinal)

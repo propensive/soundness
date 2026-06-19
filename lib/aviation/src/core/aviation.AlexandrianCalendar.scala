@@ -41,12 +41,12 @@ import contingency.*
 abstract class AlexandrianCalendar() extends Calendar:
   def epoch: Int
 
-  def monthsInYear: Int = 13
+  def monthsInYear(year: Year): Int = 13
   def leapYear(year: Year): Boolean = year()%4 == 3
   def daysInYear(year: Year): Int = if leapYear(year) then 366 else 365
 
   def daysInMonth(month: Mensual, year: Year): Int =
-    if monthOrdinal(month) < 12 then 30 else if leapYear(year) then 6 else 5
+    if monthOrdinal(year, month) < 12 then 30 else if leapYear(year) then 6 else 5
 
   def zerothDayOfYear(year: Year): Date =
     Date.julianDay(epoch - 1 + 365*(year() - 1) + year()/4)
@@ -57,7 +57,7 @@ abstract class AlexandrianCalendar() extends Calendar:
 
   def mensual(date: Date): Mensual =
     val doy = dayOfYear(date)
-    monthOfOrdinal(if doy > 360 then 12 else (doy - 1)/30)
+    monthOfOrdinal(annual(date), if doy > 360 then 12 else (doy - 1)/30)
 
   def diurnal(date: Date): Day =
     val doy = dayOfYear(date)
@@ -65,6 +65,6 @@ abstract class AlexandrianCalendar() extends Calendar:
 
   def jdn(year: Year, month: Mensual, day: Day): Date raises TimeError =
     if day() < 1 || day() > daysInMonth(month, year) then
-      raise(TimeError(_.Invalid(year(), monthOrdinal(month) + 1, day(), this)))
+      raise(TimeError(_.Invalid(year(), monthOrdinal(year, month) + 1, day(), this)))
 
-    Date.julianDay(epoch - 1 + 365*(year() - 1) + year()/4 + 30*monthOrdinal(month) + day())
+    Date.julianDay(epoch - 1 + 365*(year() - 1) + year()/4 + 30*monthOrdinal(year, month) + day())

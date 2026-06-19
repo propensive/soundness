@@ -46,11 +46,13 @@ trait Calendar extends Findable:
   type MonthUnit <: MonthRadix
 
   def name: Text
-  def monthsInYear: Int
+  // Year-aware to accommodate lunisolar calendars (the Hebrew calendar has 12 or 13 months, and the
+  // month↔ordinal mapping shifts between common and leap years); other calendars ignore the year.
+  def monthsInYear(year: Year): Int
   def daysInYear(year: Year): Int
   def daysInMonth(month: Mensual, year: Year): Int
-  def monthOrdinal(month: Mensual): Int
-  def monthOfOrdinal(ordinal: Int): Mensual
+  def monthOrdinal(year: Year, month: Mensual): Int
+  def monthOfOrdinal(year: Year, ordinal: Int): Mensual
   def annual(date: Date): Year
   def mensual(date: Date): Mensual
   def diurnal(date: Date): Day

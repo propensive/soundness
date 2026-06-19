@@ -151,16 +151,28 @@ object Timespan:
     ( using calendar: Calendar, disambiguation: Disambiguation )
   :   Date =
 
-    val n = calendar.monthsInYear
-    val base = calendar.annual(date)()*n + calendar.monthOrdinal(calendar.mensual(date))
-    val total = base + addYears*n + addMonths
-    val year = Year(Math.floorDiv(total, n))
-    val month = calendar.monthOfOrdinal(Math.floorMod(total, n))
-    val day = calendar.diurnal(date)()
-    val length = calendar.daysInMonth(month, year)
+    // Advance whole years (keeping the same month), then step the months one at a time, wrapping at
+    // each year's own month count — so calendars with a variable number of months (Hebrew) work.
+    var year = calendar.annual(date)() + addYears
+    var ordinal = calendar.monthOrdinal(Year(year), calendar.mensual(date))
+    var remaining = addMonths
 
-    if day <= length then unsafely(Date(year, month, Day(day)))
-    else disambiguation.resolve(year, month, day)
+    while remaining > 0 do
+      ordinal += 1
+      if ordinal >= calendar.monthsInYear(Year(year)) then { ordinal = 0; year += 1 }
+      remaining -= 1
+
+    while remaining < 0 do
+      ordinal -= 1
+      if ordinal < 0 then { year -= 1; ordinal = calendar.monthsInYear(Year(year)) - 1 }
+      remaining += 1
+
+    val month = calendar.monthOfOrdinal(Year(year), ordinal)
+    val day = calendar.diurnal(date)()
+    val length = calendar.daysInMonth(month, Year(year))
+
+    if day <= length then unsafely(Date(Year(year), month, Day(day)))
+    else disambiguation.resolve(Year(year), month, day)
 
   // A span with a year but no month advances whole years in any calendar (resolving Feb-29-style
   // overflow), then adds whole days.

@@ -46,9 +46,9 @@ class IslamicCalendar() extends Calendar:
 
   private val epoch: Int = 1948440 // JDN of 1 Muharram 1 AH (civil)
   val name: Text = t"Islamic"
-  def monthsInYear: Int = 12
-  def monthOrdinal(month: IslamicMonth): Int = month.ordinal
-  def monthOfOrdinal(ordinal: Int): IslamicMonth = IslamicMonth.fromOrdinal(ordinal)
+  def monthsInYear(year: Year): Int = 12
+  def monthOrdinal(year: Year, month: IslamicMonth): Int = month.ordinal
+  def monthOfOrdinal(year: Year, ordinal: Int): IslamicMonth = IslamicMonth.fromOrdinal(ordinal)
 
   def leapYear(year: Year): Boolean = (11*year() + 14)%30 < 11
   def daysInYear(year: Year): Int = if leapYear(year) then 355 else 354

@@ -44,5 +44,5 @@ class CopticCalendar() extends AlexandrianCalendar:
 
   def epoch: Int = 1825030
   val name: Text = t"Coptic"
-  def monthOrdinal(month: CopticMonth): Int = month.ordinal
-  def monthOfOrdinal(ordinal: Int): CopticMonth = CopticMonth.fromOrdinal(ordinal)
+  def monthOrdinal(year: Year, month: CopticMonth): Int = month.ordinal
+  def monthOfOrdinal(year: Year, ordinal: Int): CopticMonth = CopticMonth.fromOrdinal(ordinal)

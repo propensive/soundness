@@ -32,26 +32,16 @@
                                                                                                   */
 package aviation
 
-import anticipation.*
-import contingency.*
+import prepositional.*
+import symbolism.*
 
-// A calendar that shares another's months and days but renumbers its years by a constant offset —
-// e.g. the Thai/Buddhist calendar (Gregorian + 543) or the Minguo/Republic-of-China calendar
-// (Gregorian − 1911), sharing the base's `Month` radix and differing only in the year number.
-class OffsetCalendar(base: RomanCalendar, offset: Int, val name: Text) extends Calendar:
-  type Mensual = Month
-  type MonthUnit = Month.type
+// The months of the Hebrew calendar, in civil-year order (beginning at Tishrei). In a common year
+// `AdarSheni` (Adar II) does not occur and `Adar` is the sole Adar; in a leap year `Adar` is Adar I
+// and `AdarSheni` follows it. A distinct `MonthRadix`.
+object HebrewMonth extends MonthRadix:
+  given multiply: Int is Multiplicable by this.type to (Timespan of this.type) =
+    (n, _) => Timespan(this, n)
 
-  def monthsInYear(year: Year): Int = 12
-  def monthOrdinal(year: Year, month: Month): Int = month.ordinal
-  def monthOfOrdinal(year: Year, ordinal: Int): Month = Month.fromOrdinal(ordinal)
-
-  def daysInYear(year: Year): Int = base.daysInYear(Year(year() - offset))
-  def daysInMonth(month: Month, year: Year): Int = base.daysInMonth(month, Year(year() - offset))
-  def annual(date: Date): Year = Year(base.annual(date)() + offset)
-  def mensual(date: Date): Month = base.mensual(date)
-  def diurnal(date: Date): Day = base.diurnal(date)
-  def zerothDayOfYear(year: Year): Date = base.zerothDayOfYear(Year(year() - offset))
-
-  def jdn(year: Year, month: Month, day: Day): Date raises TimeError =
-    base.jdn(Year(year() - offset), month, day)
+enum HebrewMonth derives CanEqual:
+  case Tishrei, Cheshvan, Kislev, Tevet, Shevat, Adar, AdarSheni, Nisan, Iyar, Sivan, Tammuz, Av,
+    Elul

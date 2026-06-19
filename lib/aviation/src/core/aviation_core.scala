@@ -321,6 +321,7 @@ package calendars:
   given islamicCalendar: IslamicCalendar = IslamicCalendar()
   given persianCalendar: PersianCalendar = PersianCalendar()
   given indianCalendar: IndianCalendar = IndianCalendar()
+  given hebrewCalendar: HebrewCalendar = HebrewCalendar()
   given frenchRepublicanCalendar: FrenchRepublicanCalendar = FrenchRepublicanCalendar()
 
   given buddhistCalendar: OffsetCalendar = OffsetCalendar(gregorianCalendar, 543, t"Buddhist")
@@ -368,7 +369,7 @@ package monthEnds:
 
   given raiseMonthEnd: Tactic[TimeError] => Disambiguation = new Disambiguation:
     def resolve(using calendar: Calendar)(year: Year, month: calendar.Mensual, day: Int): Date =
-      abort(TimeError(_.Invalid(year(), calendar.monthOrdinal(month) + 1, day, calendar)))
+      abort(TimeError(_.Invalid(year(), calendar.monthOrdinal(year, month) + 1, day, calendar)))
 
 def now()(using clock: Clock): Instant = clock()
 

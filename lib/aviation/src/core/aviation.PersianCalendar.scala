@@ -48,9 +48,9 @@ class PersianCalendar() extends Calendar:
 
   private val epoch: Int = 1948321
   val name: Text = t"Persian"
-  def monthsInYear: Int = 12
-  def monthOrdinal(month: PersianMonth): Int = month.ordinal
-  def monthOfOrdinal(ordinal: Int): PersianMonth = PersianMonth.fromOrdinal(ordinal)
+  def monthsInYear(year: Year): Int = 12
+  def monthOrdinal(year: Year, month: PersianMonth): Int = month.ordinal
+  def monthOfOrdinal(year: Year, ordinal: Int): PersianMonth = PersianMonth.fromOrdinal(ordinal)
 
   def leapYear(year: Year): Boolean = ((floorMod(year() - 474, 2820) + 512)*682)%2816 < 682
   def daysInYear(year: Year): Int = if leapYear(year) then 366 else 365
@@ -90,7 +90,7 @@ class PersianCalendar() extends Calendar:
     PersianMonth.fromOrdinal(if doy <= 186 then (doy - 1)/31 else (doy - 187)/30 + 6)
 
   def diurnal(date: Date): Day =
-    Day(date.jdn - toJulianDay(annual(date)(), monthOrdinal(mensual(date)), 1) + 1)
+    Day(date.jdn - toJulianDay(annual(date)(), mensual(date).ordinal, 1) + 1)
 
   def jdn(year: Year, month: PersianMonth, day: Day): Date raises TimeError =
     if day() < 1 || day() > daysInMonth(month, year) then

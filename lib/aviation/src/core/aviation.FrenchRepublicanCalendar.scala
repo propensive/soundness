@@ -44,7 +44,7 @@ class FrenchRepublicanCalendar() extends AlexandrianCalendar:
 
   def epoch: Int = 2375840
   val name: Text = t"French Republican"
-  def monthOrdinal(month: FrenchRepublicanMonth): Int = month.ordinal
+  def monthOrdinal(year: Year, month: FrenchRepublicanMonth): Int = month.ordinal
 
-  def monthOfOrdinal(ordinal: Int): FrenchRepublicanMonth =
+  def monthOfOrdinal(year: Year, ordinal: Int): FrenchRepublicanMonth =
     FrenchRepublicanMonth.fromOrdinal(ordinal)

@@ -45,9 +45,9 @@ class IndianCalendar() extends Calendar:
   type MonthUnit = IndianMonth.type
 
   val name: Text = t"Indian National"
-  def monthsInYear: Int = 12
-  def monthOrdinal(month: IndianMonth): Int = month.ordinal
-  def monthOfOrdinal(ordinal: Int): IndianMonth = IndianMonth.fromOrdinal(ordinal)
+  def monthsInYear(year: Year): Int = 12
+  def monthOrdinal(year: Year, month: IndianMonth): Int = month.ordinal
+  def monthOfOrdinal(year: Year, ordinal: Int): IndianMonth = IndianMonth.fromOrdinal(ordinal)
 
   private def gregorianLeap(gregorian: Int): Boolean =
     gregorian%4 == 0 && gregorian%100 != 0 || gregorian%400 == 0
@@ -90,7 +90,7 @@ class IndianCalendar() extends Calendar:
 
   def diurnal(date: Date): Day =
     val saka = annual(date)()
-    val before = daysBeforeMonth(monthOrdinal(mensual(date)), leapYear(Year(saka)))
+    val before = daysBeforeMonth(mensual(date).ordinal, leapYear(Year(saka)))
     Day(date.jdn - yearStart(saka) - before + 1)
 
   def jdn(year: Year, month: IndianMonth, day: Day): Date raises TimeError =

@@ -1615,6 +1615,37 @@ object Tests extends Suite(m"Aviation Tests"):
           gregorianCalendar.diurnal(date)() )
       . assert(_ == (1957, Apr, 21))
 
+    suite(m"Hebrew calendar"):
+      import calendars.hebrewCalendar
+
+      test(m"2000-01-01 Gregorian is 23 Tevet 5760 in the Hebrew calendar"):
+        val date = { import calendars.gregorianCalendar; 2000-Jan-1 }
+        ( hebrewCalendar.annual(date)(),
+          hebrewCalendar.mensual(date),
+          hebrewCalendar.diurnal(date)() )
+      . assert(_ == (5760, HebrewMonth.Tevet, 23))
+
+      test(m"A Hebrew date round-trips through its Julian day number"):
+        val date = unsafely(Date(Year(5784), HebrewMonth.Nisan, Day(15)))
+        ( hebrewCalendar.annual(date)(),
+          hebrewCalendar.mensual(date),
+          hebrewCalendar.diurnal(date)() )
+      . assert(_ == (5784, HebrewMonth.Nisan, 15))
+
+      test(m"5784 is a leap year with 13 months"):
+        hebrewCalendar.monthsInYear(Year(5784))
+      . assert(_ == 13)
+
+      test(m"5783 is a common year with 12 months"):
+        hebrewCalendar.monthsInYear(Year(5783))
+      . assert(_ == 12)
+
+      test(m"Adding a month from Adar I reaches Adar II in a leap year"):
+        import monthEnds.clampMonthEnd
+        val date = unsafely(Date(Year(5784), HebrewMonth.Adar, Day(1)))
+        hebrewCalendar.mensual(date + 1*HebrewMonth)
+      . assert(_ == HebrewMonth.AdarSheni)
+
     suite(m"French Republican calendar"):
       test(m"18 Brumaire An VIII is 9 November 1799"):
         import calendars.{gregorianCalendar, frenchRepublicanCalendar}

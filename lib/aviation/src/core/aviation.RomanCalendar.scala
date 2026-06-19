@@ -40,9 +40,9 @@ abstract class RomanCalendar(val name: Text) extends Calendar:
   type Mensual = Month
   type MonthUnit = Month.type
 
-  def monthsInYear: Int = 12
-  def monthOrdinal(month: Month): Int = month.ordinal
-  def monthOfOrdinal(ordinal: Int): Month = Month.fromOrdinal(ordinal)
+  def monthsInYear(year: Year): Int = 12
+  def monthOrdinal(year: Year, month: Month): Int = month.ordinal
+  def monthOfOrdinal(year: Year, ordinal: Int): Month = Month.fromOrdinal(ordinal)
 
   def leapYear(year: Year): Boolean
 
