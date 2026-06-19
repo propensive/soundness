@@ -72,10 +72,13 @@ object internal:
           case Inlined(_, _, predicate) => lift(predicate.asExpr)
 
           case Block(List(DefDef(a, _, _, Some(expression))), Closure(Ident(b), _)) if a == b =>
+            // Only lift when one side of the `==` is exactly the lambda parameter, so the other
+            // side (the expected value) is a closed term safe to splice. A projection such as
+            // `_.field == x` matches neither case and yields no contrast.
             expression match
-              case Apply(Select(Ident(_), "=="), List(term)) => Some(term.asExpr)
-              case Apply(Select(term, "=="), List(Ident(_))) => Some(term.asExpr)
-              case other                                     => None
+              case Apply(Select(Ident(`a`), "=="), List(term)) => Some(term.asExpr)
+              case Apply(Select(term, "=="), List(Ident(`a`))) => Some(term.asExpr)
+              case other                                       => None
 
           case other =>
             None
@@ -108,30 +111,32 @@ object internal:
             }
 
         if analyse.or(false) then exp match
-          case Some('{type testType >: test; $expr: testType}) =>
-            Expr.summon[testType is Contrastable] match
-              case Some(contrast) =>
-                val decomposable: Expr[testType is Decomposable] =
-                  Expr.summon[testType is Decomposable].getOrElse('{Decomposable.any[testType]})
+          // Only emit the contrast path when a `Contrastable` can actually be derived for the
+          // expected value's type; `Expr.summon` is used purely to test derivability, while the
+          // instance itself is summoned by `infer` *inside* the quote so its captured givens stay
+          // in scope at the splice site.
+          case Some('{type testType >: test; $expr: testType})
+            if Expr.summon[testType is Contrastable].isDefined =>
 
-                ' {
-                    given decompose: testType is Decomposable = $decomposable
+            val decomposable: Expr[testType is Decomposable] =
+              Expr.summon[testType is Decomposable].getOrElse('{Decomposable.any[testType]})
 
-                    assertion[testType, test, report, result]
-                      ( $runner,
-                        $test,
-                        $predicate,
-                        $action,
-                        $contrast,
-                        Some($expr),
-                        $inclusion,
-                        $inclusion2,
-                        decompose,
-                        $aspirationalExpr )
-                  }
+            ' {
+                given decompose: testType is Decomposable = $decomposable
+                val contrast = infer[testType is Contrastable]
 
-              case None =>
-                plain
+                assertion[testType, test, report, result]
+                  ( $runner,
+                    $test,
+                    $predicate,
+                    $action,
+                    contrast,
+                    Some($expr),
+                    $inclusion,
+                    $inclusion2,
+                    decompose,
+                    $aspirationalExpr )
+              }
 
           case _ =>
             plain
