@@ -41,8 +41,10 @@ object HttpEvent:
     case Response(status)           => m"received a response with status $status"
     case Request(preview)           => m"request [$preview]"
     case Send(method, url, headers) => m"sending a $method request to $url"
+    case Redirect(from, to)         => m"following a redirect from $from to $to"
 
 enum HttpEvent:
   case Response(status: Http.Status)
   case Request(preview: Text)
   case Send(method: Http.Method, url: into[HttpUrl], headers: Seq[Http.Header])
+  case Redirect(from: Text, to: Text)

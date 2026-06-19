@@ -199,10 +199,13 @@ extends RequestServable:
 
           val connection = new HttpConnection(request, ssl.present, port, respond)
           Log.fine(HttpServerEvent.Received(request))
+          val started = System.currentTimeMillis
 
           connection.respond:
             try handler(using connection)
             catch case throwable: Throwable => errorPage.handle(throwable, connection)
+
+          Log.info(HttpServerEvent.Processed(request, System.currentTimeMillis - started))
 
           if upgraded || !keep then false else
             // Drain any body the handler did not consume so the cursor reaches the
@@ -250,7 +253,7 @@ extends RequestServable:
     // response) is logged and accepted, isolating it to that connection: the server
     // keeps accepting, and the error neither escalates nor is dumped to stderr.
     trap:
-      case error => Log.warn(HttpServerEvent.ConnectionFailed(error)); Remedy.Accept
+      case error => Log.fail(HttpServerEvent.ConnectionFailed(error)); Remedy.Accept
 
     . within:
         val acceptLoop = loop:

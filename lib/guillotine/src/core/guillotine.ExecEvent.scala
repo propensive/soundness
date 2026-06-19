@@ -43,9 +43,11 @@ object ExecEvent:
     case PipelineStart(commands) => m"starting the pipeline ${commands.map(_.show).join(t" ")}"
     case KillProcess(pid)        => m"killed the process with PID $pid"
     case ProcessStart(command)   => m"starting the process $command"
+    case ProcessExit(pid, code)  => m"the process with PID $pid exited with code $code"
 
 enum ExecEvent:
   case ProcessStart(command: Command)
   case AbortProcess(pid: Pid)
   case PipelineStart(commands: Seq[Command])
   case KillProcess(pid: Pid)
+  case ProcessExit(pid: Pid, code: Int)

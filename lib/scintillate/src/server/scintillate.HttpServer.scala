@@ -73,7 +73,7 @@ extends RequestServable:
 
 
       catch case NonFatal(exception) =>
-        Log.warn(HttpServerEvent.ConnectionFailed(fulminate.Error(exception)))
+        Log.fail(HttpServerEvent.ConnectionFailed(fulminate.Error(exception)))
 
     def startServer(): com.sun.net.httpserver.HttpServer raises ServerError =
       try

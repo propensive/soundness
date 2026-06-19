@@ -53,6 +53,16 @@ import urticose.*
 import vacuous.*
 
 object HttpClient:
+  // Log a received response at a level reflecting its status: a server error is a `Fail`, a client
+  // error a `Warn`, and anything else (informational, success, redirect) routine `Fine` detail.
+  private def logResponse(response: Http.Response): Http.Response =
+    response.status.category match
+      case Http.Status.Category.ServerError => Log.fail(HttpEvent.Response(response.status))
+      case Http.Status.Category.ClientError => Log.warn(HttpEvent.Response(response.status))
+      case _                                => Log.fine(HttpEvent.Response(response.status))
+
+    response
+
   // Build the underlying Java client with redirect-following disabled — the
   // redirect-following telekinesis given runs its own loop so it can honour
   // `HttpRedirection` exactly. Java's `NORMAL` policy has its own hard-coded
@@ -175,7 +185,8 @@ object HttpClient:
       val url = httpRequest.on(origin)
       Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
 
-      backend.request(url.show, httpRequest.method, httpRequest.textHeaders, httpRequest.body)
+      logResponse:
+        backend.request(url.show, httpRequest.method, httpRequest.textHeaders, httpRequest.body)
 
   given http: Tactic[ConnectError]
   =>  Online
@@ -207,6 +218,7 @@ object HttpClient:
               safely(response.body.stream.each { _ => () })
 
               val nextUri = uri.resolve(jn.URI.create(header.value.s).nn).nn
+              Log.fine(HttpEvent.Redirect(uri.toString.tt, nextUri.toString.tt))
               val nextMethod = redirectMethod(code, method)
 
               val nextBody: () => Stream[Data] =
@@ -214,7 +226,8 @@ object HttpClient:
 
               loop(nextUri, nextMethod, nextBody, remaining - 1)
 
-      loop(jn.URI.create(url.show.s).nn, httpRequest.method, httpRequest.body, redirection.value)
+      logResponse:
+        loop(jn.URI.create(url.show.s).nn, httpRequest.method, httpRequest.body, redirection.value)
 
 trait HttpClient extends Targetable:
   def request(request: Http.Request, target: Target): Http.Response logs HttpEvent

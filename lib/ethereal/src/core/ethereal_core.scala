@@ -477,7 +477,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
         catch
           case exception: Exception =>
-            Log.warn(DaemonLogEvent.Failure)
+            Log.fail(DaemonLogEvent.Failure)
             clientState.exitPromise.fulfill(handler.handle(exception)(using stdio))
 
         finally
