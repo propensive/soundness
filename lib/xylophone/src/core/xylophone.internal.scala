@@ -113,7 +113,15 @@ object internal:
       def checkHeader(array: Expr[Array[Any]], pattern: Header, scrutinee: Expr[Header])
       :   Expr[Boolean] =
 
-        '{${Expr(pattern.version)} == $scrutinee.version} // FIXME: Check encoding/standalone too
+        val encoding: Expr[Boolean] =
+          if pattern.encoding == Unset then '{$scrutinee.encoding == Unset}
+          else '{$scrutinee.encoding == ${Expr(pattern.encoding.asInstanceOf[Text])}}
+
+        val standalone: Expr[Boolean] =
+          if pattern.standalone == Unset then '{$scrutinee.standalone == Unset}
+          else '{$scrutinee.standalone == ${Expr(pattern.standalone.asInstanceOf[Boolean])}}
+
+        '{${Expr(pattern.version)} == $scrutinee.version && $encoding && $standalone}
 
       def checkFragment(array: Expr[Array[Any]], pattern: Fragment, scrutinee: Expr[Fragment])
       :   Expr[Boolean] =
@@ -186,8 +194,10 @@ object internal:
 
         pattern match
           case Comment("\u0000") =>
+            // Comment, CDATA and processing-instruction holes are not emitted
+            // by the parser's callback, so they have no `holes`/`iterator`
+            // entry; only `index` advances to address the `extracts` slot.
             index += 1
-            iterator.next()
             types ::= TypeRepr.of[Text]
 
             ' {
@@ -200,21 +210,16 @@ object internal:
 
           case ProcessingInstruction("\u0000", t"") =>
             index += 1
-            iterator.next()
             types ::= TypeRepr.of[ProcessingInstruction]
 
             ' {
                 $expr && $scrutinee.isInstanceOf[ProcessingInstruction] &&
-                  {
-                    $array(${Expr(index)}) = $scrutinee.asInstanceOf[ProcessingInstruction].data
-                    true
-                  }
+                  { $array(${Expr(index)}) = $scrutinee; true }
               }
 
           case Cdata("\u0000") =>
             index += 1
-            iterator.next()
-            types ::= TypeRepr.of[Cdata]
+            types ::= TypeRepr.of[Text]
 
             ' {
                 $expr && $scrutinee.isInstanceOf[Cdata] &&
@@ -294,14 +299,20 @@ object internal:
             halt(m"DOCTYPE patterns are not supported in extractors")
 
 
+      // Every `$`-substitution in the pattern is one captured value, whether or
+      // not the parser emitted a structural `Hole` for it (comment/CDATA/PI
+      // holes are not captured). `holes.size` undercounts those, so the slot
+      // count is the number of string parts minus one.
+      val holeCount = parts.length - 1
+
       val result: Expr[Extrapolation[Xml]] =
         ' {
-            val extracts = new Array[Any](${Expr(holes.size)})
+            val extracts = new Array[Any](${Expr(holeCount)})
             val matches: Boolean = ${descend('extracts, xml, scrutinee, '{true})}
 
             $ {
-                if holes.size == 0 then '{matches}
-                else if holes.size == 1
+                if holeCount == 0 then '{matches}
+                else if holeCount == 1
                 then '{if !matches then None else Some(extracts(0).asInstanceOf[Xml])}
                 else '{if !matches then None else Some(Tuple.fromArray(extracts))}
               }
@@ -314,6 +325,13 @@ object internal:
           types.head.asType.absolve match
             case '[type result <: Xml; result] =>
               '{$result.asInstanceOf[Option[result]]}
+
+            case _ =>
+              halt:
+                m"""
+                  a single text value cannot be captured on its own; capture it together with
+                  another value (so the result is a tuple), or capture the enclosing node
+                """
 
         case _ =>
           AppliedType(defn.TupleClass(types.length).info.typeSymbol.typeRef, types.reverse)
