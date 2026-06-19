@@ -209,6 +209,21 @@ object Timespan:
 
       Timestamp(date, clockface)
 
+  // Adding a timespan to a zoned `Moment` splits at the day boundary: the calendar/day part
+  // advances the wall-clock (so a day "ignores" DST — same local time next day), while the sub-day
+  // part is applied physically through the timezone (so hours/minutes/seconds "honour" DST).
+  given momentAdd: [topic <: Radix]
+  =>  ( Timestamp is Addable by (Timespan of topic) to Timestamp, RomanCalendar )
+  =>  Moment is Addable by (Timespan of topic) to Moment =
+    (moment, span) =>
+      val timestamps = summon[Timestamp is Addable by (Timespan of topic) to Timestamp]
+      val dateSpan = Timespan(span.years, span.months, span.weeks, span.days)
+      val subSpan = Timespan(hours = span.hours, minutes = span.minutes, seconds = span.seconds)
+      val wall = timestamps.add(moment.timestamp, dateSpan.asInstanceOf[Timespan of topic])
+      val zoned = Moment(wall.date, wall.time, moment.timezone)
+
+      (zoned.instant + physicalSeconds(subSpan)).in(moment.timezone)
+
 case class Timespan
   ( years:   Int                 = 0,
     months:  Int                 = 0,

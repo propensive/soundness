@@ -1474,6 +1474,16 @@ object Tests extends Suite(m"Aviation Tests"):
         Timestamp(2024-Jan-1, Clockface(10, 0, 0)) + (2*Day + 3*Hour)
       . assert(_ == Timestamp(2024-Jan-3, Clockface(13, 0, 0)))
 
+      test(m"Adding a day to a zoned moment ignores DST (keeps wall-clock time)"):
+        val moment = Timestamp(2024-Mar-9, Clockface(12, 0, 0)).in(tz"America/New_York")
+        (moment + 1*Day).time
+      . assert(_ == Clockface(12, 0, 0))
+
+      test(m"Adding 24 hours to a zoned moment honours DST (gains an hour)"):
+        val moment = Timestamp(2024-Mar-9, Clockface(12, 0, 0)).in(tz"America/New_York")
+        (moment + 24*Hour).time
+      . assert(_ == Clockface(13, 0, 0))
+
     suite(m"Clock"):
       test(m"Clock.fixed returns the same instant"):
         val clock = Clock.fixed(Instant(12345L))
