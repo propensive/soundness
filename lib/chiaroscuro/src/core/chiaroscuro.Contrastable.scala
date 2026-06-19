@@ -91,7 +91,7 @@ object Contrastable:
     given int: Int is Contrastable.Foundation = long.juxtaposition(_, _)
     given short: Short is Contrastable.Foundation = long.juxtaposition(_, _)
     given byte: Byte is Contrastable.Foundation = long.juxtaposition(_, _)
-    given float: Byte is Contrastable.Foundation = long.juxtaposition(_, _)
+    given float: Float is Contrastable.Foundation = double.juxtaposition(_, _)
 
     given set: [element: Showable] => Set[element] is Contrastable.Foundation =
       (left, right) =>
