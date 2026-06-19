@@ -144,26 +144,39 @@ object Timespan:
   =>  Date is Addable by (Timespan of topic) to Date =
     (date, span) => date.addDays(span.days + span.weeks*7)
 
-  // Adding a timespan with months/years steps over to the target year-and-month (floored), resolves
-  // any day-of-month overflow per the contextual `Disambiguation`, then adds whole days.
-  given dateCalendar: [topic <: Radix]
-  =>  ( topic <:< Radix.Irregular, RomanCalendar, Disambiguation )
+  // The shared year+month step: advance to the target year-and-month (floored division, so negative
+  // spans behave) using the calendar's `monthsInYear`, then resolve any day-of-month overflow per
+  // the contextual `Disambiguation`.
+  private def anchorMonth(date: Date, addYears: Int, addMonths: Int)
+    ( using calendar: Calendar, disambiguation: Disambiguation )
+  :   Date =
+
+    val n = calendar.monthsInYear
+    val base = calendar.annual(date)()*n + calendar.monthOrdinal(calendar.mensual(date))
+    val total = base + addYears*n + addMonths
+    val year = Year(Math.floorDiv(total, n))
+    val month = calendar.monthOfOrdinal(Math.floorMod(total, n))
+    val day = calendar.diurnal(date)()
+    val length = calendar.daysInMonth(month, year)
+
+    if day <= length then unsafely(Date(year, month, Day(day)))
+    else disambiguation.resolve(year, month, day)
+
+  // A span with a year but no month advances whole years in any calendar (resolving Feb-29-style
+  // overflow), then adds whole days.
+  given dateYear: [topic <: Radix]
+  =>  ( topic <:< Radix.Irregular, NotGiven[topic <:< MonthRadix], Calendar, Disambiguation )
   =>  Date is Addable by (Timespan of topic) to Date =
-    (date, span) =>
-      val calendar = summon[RomanCalendar]
-      val disambiguation = summon[Disambiguation]
-      val months = span.years*12 + span.months
-      val total = calendar.annual(date)()*12 + calendar.mensual(date).ordinal + months
-      val year = Year(Math.floorDiv(total, 12))
-      val month = Month.fromOrdinal(Math.floorMod(total, 12))
-      val day = calendar.diurnal(date)()
-      val length = calendar.daysInMonth(month, year)
+    (date, span) => anchorMonth(date, span.years, 0).addDays(span.days + span.weeks*7)
 
-      val anchor =
-        if day <= length then unsafely(Date(year, month, Day(day)))
-        else disambiguation.resolve(year, month, day)
+  // A span counted in some calendar's months: the in-scope `Calendar` must govern that month radix
+  // (`topic <:< calendar.MonthUnit`), so a span's months can only be added to a date in the same
+  // calendar — mixing calendars is a compile error.
+  given dateMonths[topic <: Radix]
+    ( using calendar: Calendar, ev: topic <:< calendar.MonthUnit, disambiguation: Disambiguation )
+  :   (Date is Addable by (Timespan of topic) to Date) =
 
-      anchor.addDays(span.days + span.weeks*7)
+    (date, span) => anchorMonth(date, span.years, span.months).addDays(span.days + span.weeks*7)
 
   private def physicalSeconds(span: Timespan): Quantity[Seconds[1]] =
     val days = span.days.toLong + span.weeks.toLong*7

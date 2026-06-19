@@ -37,14 +37,22 @@ import beneficence.*
 import contingency.*
 
 trait Calendar extends Findable:
-  type Diurnal
+  // All calendars number years and days-of-month with integers; only the month type varies (the
+  // Gregorian `Month` enum, `IslamicMonth`, `CopticMonth`, …). `MonthUnit` is that month's radix,
+  // used to dispatch calendar arithmetic to the right calendar at compile time.
+  type Annual = Year
+  type Diurnal = Day
   type Mensual
-  type Annual
+  type MonthUnit <: MonthRadix
 
   def name: Text
-  def daysInYear(year: Annual): Int
-  def annual(date: Date): Annual
+  def monthsInYear: Int
+  def daysInYear(year: Year): Int
+  def daysInMonth(month: Mensual, year: Year): Int
+  def monthOrdinal(month: Mensual): Int
+  def monthOfOrdinal(ordinal: Int): Mensual
+  def annual(date: Date): Year
   def mensual(date: Date): Mensual
-  def diurnal(date: Date): Diurnal
-  def zerothDayOfYear(year: Annual): Date
-  def jdn(year: Annual, month: Mensual, day: Diurnal): Date raises TimeError
+  def diurnal(date: Date): Day
+  def zerothDayOfYear(year: Year): Date
+  def jdn(year: Year, month: Mensual, day: Day): Date raises TimeError

@@ -48,9 +48,13 @@ export protointernal.{Instant, Duration}
 export aviation.internal.{Date, Year, Day, Anniversary, WorkingDays}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
-// Radices not already represented by an existing companion (`Year`/`Month`/`Day`). `Week`, `Day`,
-// `Hour` and `Minute` are `Regular` (constant ratio to the radix below); `Month`/`Year` are
-// `Irregular` and live on their own companions.
+// A `MonthRadix` is the "month" radix of some calendar (Gregorian `Month`, `IslamicMonth`,
+// `CopticMonth`, …). Each is `Irregular` and distinctly-typed, so a span counted in one calendar's
+// months can only be added to a date in that calendar — cross-calendar mixing is a compile error.
+trait MonthRadix extends Radix.Irregular
+
+// Radices not already represented by an existing companion. `Week`/`Hour`/`Minute` are `Regular`
+// (constant ratio to the radix below); `Year` is `Irregular`; months are `MonthRadix`.
 object Week extends Radix.Regular:
   given multiplicable: Int is Multiplicable by Week.type to (Timespan of Week.type) =
     (n, _) => Timespan(Week, n)
@@ -344,17 +348,17 @@ package calendars:
 // is provided, so such arithmetic requires one of these to be imported.
 package monthEnds:
   given clampMonthEnd: Disambiguation = new Disambiguation:
-    def resolve(year: Year, month: Month, day: Int)(using calendar: RomanCalendar): Date =
+    def resolve(using calendar: Calendar)(year: Year, month: calendar.Mensual, day: Int): Date =
       unsafely(Date(year, month, Day(day.min(calendar.daysInMonth(month, year)))))
 
   given overflowMonthEnd: Disambiguation = new Disambiguation:
-    def resolve(year: Year, month: Month, day: Int)(using calendar: RomanCalendar): Date =
+    def resolve(using calendar: Calendar)(year: Year, month: calendar.Mensual, day: Int): Date =
       val max = calendar.daysInMonth(month, year)
       unsafely(Date(year, month, Day(max))).addDays(day - max)
 
   given raiseMonthEnd: Tactic[TimeError] => Disambiguation = new Disambiguation:
-    def resolve(year: Year, month: Month, day: Int)(using calendar: RomanCalendar): Date =
-      abort(TimeError(_.Invalid(year(), month.numerical, day, calendar)))
+    def resolve(using calendar: Calendar)(year: Year, month: calendar.Mensual, day: Int): Date =
+      abort(TimeError(_.Invalid(year(), calendar.monthOrdinal(month) + 1, day, calendar)))
 
 def now()(using clock: Clock): Instant = clock()
 

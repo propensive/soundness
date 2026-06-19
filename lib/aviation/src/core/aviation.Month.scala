@@ -36,11 +36,10 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import prepositional.*
-import quantitative.Radix
 import spectacular.*
 import symbolism.*
 
-object Month extends Radix.Irregular:
+object Month extends MonthRadix:
   val all: IArray[Month] = IArray(Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec)
 
   given multiplicable: Int is Multiplicable by Month.type to (Timespan of Month.type) =

@@ -43,4 +43,4 @@ package aviation
 // it captures when constructed, so it does not widen the effect type of plain calendar addition.
 
 trait Disambiguation:
-  def resolve(year: Year, month: Month, day: Int)(using RomanCalendar): Date
+  def resolve(using calendar: Calendar)(year: Year, month: calendar.Mensual, day: Int): Date

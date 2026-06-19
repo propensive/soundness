@@ -37,13 +37,16 @@ import contingency.*
 import symbolism.*
 
 abstract class RomanCalendar(val name: Text) extends Calendar:
-  type Annual = Year
   type Mensual = Month
-  type Diurnal = Day
+  type MonthUnit = Month.type
 
-  def leapYear(year: Annual): Boolean
+  def monthsInYear: Int = 12
+  def monthOrdinal(month: Month): Int = month.ordinal
+  def monthOfOrdinal(ordinal: Int): Month = Month.fromOrdinal(ordinal)
 
-  def daysInMonth(month: Mensual, year: Annual): Int = month match
+  def leapYear(year: Year): Boolean
+
+  def daysInMonth(month: Month, year: Year): Int = month match
     case Jan | Mar | May | Jul | Aug | Oct | Dec => 31
     case Apr | Jun | Sep | Nov                   => 30
     case Feb                                     => if leapYear(year) then 29 else 28
