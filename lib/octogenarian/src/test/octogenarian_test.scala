@@ -39,7 +39,7 @@ import soundness.*
 // `target` are still package-level extensions on `NoteRef`; bring them in
 // explicitly so they win on specificity against Turbulence's generic `read`
 // brought in via `soundness.*`.
-import octogenarian.{read, namespace, target}
+import octogenarian.{content, namespace, target}
 
 import systems.javaSystem
 import temporaryDirectories.systemTemporaryDirectory
@@ -1172,19 +1172,19 @@ object Tests extends Suite(m"Octogenarian Tests"):
         (hash / t"foo").target == hash
       .assert(_ == true)
 
-      test(m"(commit / namespace).read[Text] returns the note body"):
+      test(m"(commit / namespace).content[Text] returns the note body"):
         val worktree = freshWorktree()
         given GitRepo = worktree.repo
         val hash = commitFile(worktree, t"a", t"a\n", t"first")
         worktree.repo.notes.add(hash, t"hello", ref = GitRefs.notes(t"greeting"))
-        (hash / t"greeting").read[Text]
+        (hash / t"greeting").content[Text]
       .assert(_ == t"hello")
 
-      test(m"read aborts NoteNotFound when no note exists"):
+      test(m"content aborts NoteNotFound when no note exists"):
         val worktree = freshWorktree()
         given GitRepo = worktree.repo
         val hash = commitFile(worktree, t"a", t"a\n", t"first")
-        capture[GitError]((hash / t"missing").read[Text]).reason
+        capture[GitError]((hash / t"missing").content[Text]).reason
       .assert(_ == GitError.Reason.NoteNotFound)
 
       test(m"namespace validation rejects an invalid segment"):
