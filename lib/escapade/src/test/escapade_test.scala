@@ -566,16 +566,16 @@ object Tests extends Suite(m"Escapade tests"):
         e"hello".contains('e')
       . assert(_ == true)
 
-      test(m"locate substring (Ltr)"):
-        e"hello world".locate(t"world")
+      test(m"offsetOf substring (Ltr)"):
+        e"hello world".offsetOf(t"world")
       . assert(_ == Sept)
 
-      test(m"locate missing returns Unset"):
-        e"hello".locate(t"world")
+      test(m"offsetOf missing returns Unset"):
+        e"hello".offsetOf(t"world")
       . assert(_ == Unset)
 
-      test(m"locate substring Rtl finds last occurrence"):
-        e"abcabc".locate(t"a", Rtl)
+      test(m"offsetOf substring Rtl finds last occurrence"):
+        e"abcabc".offsetOf(t"a", Rtl)
       . assert(_ == Quat)
 
       test(m"starts with prefix"):

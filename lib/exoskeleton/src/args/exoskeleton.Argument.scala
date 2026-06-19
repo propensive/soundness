@@ -66,18 +66,18 @@ case class Argument
     case Argument.Format.CharFlag(index) => suggestion // FIXME
 
     case Argument.Format.EqualityPrefix =>
-      suggestion.copy(core = suggestion.core+t"="+value.after(value.locate("=").or(Prim)))
+      suggestion.copy(core = suggestion.core+t"="+value.after(value.offsetOf("=").or(Prim)))
 
     case Argument.Format.EqualitySuffix =>
-      val suggestion2 = suggestion.copy(prefix = value.before(value.locate("=").or(Prim))+t"=")
+      val suggestion2 = suggestion.copy(prefix = value.before(value.offsetOf("=").or(Prim))+t"=")
       suggestion2
 
   def apply(): Text = format match
     case Argument.Format.Full            => value
     case Argument.Format.FlagSuffix      => value.skip(2)
     case Argument.Format.CharFlag(index) => t"-${value.at(index + 1).or('-')}"
-    case Argument.Format.EqualityPrefix  => value.before(value.locate("=").or(Prim))
-    case Argument.Format.EqualitySuffix  => value.after(value.locate("=").or(Prim))
+    case Argument.Format.EqualityPrefix  => value.before(value.offsetOf("=").or(Prim))
+    case Argument.Format.EqualitySuffix  => value.after(value.offsetOf("=").or(Prim))
 
   def prefix: Optional[Text] = cursor.let(value.keep(_))
   def suffix: Optional[Text] = cursor.let(value.skip(_))
@@ -86,16 +86,16 @@ case class Argument
     case Argument.Format.Full            => true
     case Argument.Format.FlagSuffix      => ordinal > Sec
     case Argument.Format.CharFlag(index) => ordinal - 2 == index
-    case Argument.Format.EqualityPrefix  => value.locate("=").or(Prim) > ordinal
-    case Argument.Format.EqualitySuffix  => value.locate("=").or(Prim) < ordinal
+    case Argument.Format.EqualityPrefix  => value.offsetOf("=").or(Prim) > ordinal
+    case Argument.Format.EqualitySuffix  => value.offsetOf("=").or(Prim) < ordinal
 
   def suggest(using cli: Cli)(update: (List[Suggestion] aka "prior") ?=> List[Suggestion]) =
     val (prefix, suffix) = format match
       case Argument.Format.Full            => (t"", t"")
       case Argument.Format.FlagSuffix      => (value.keep(2), t"")
       case Argument.Format.CharFlag(index) => (value.before(index + 1), value.after(index + 1))
-      case Argument.Format.EqualityPrefix  => (t"", value.after(value.locate("=").or(Prim)))
-      case Argument.Format.EqualitySuffix  => (value.before(value.locate("=").or(Prim)), t"")
+      case Argument.Format.EqualityPrefix  => (t"", value.after(value.offsetOf("=").or(Prim)))
+      case Argument.Format.EqualitySuffix  => (value.before(value.offsetOf("=").or(Prim)), t"")
 
     cli.suggest(this, update, prefix, suffix)
 

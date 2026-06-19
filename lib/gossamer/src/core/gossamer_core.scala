@@ -210,12 +210,11 @@ extension [textual: Textual](text: textual)
           ( 'text, 'start, 'lambda, '{compiletime.summonInline[textual is Textual]} )
       }
 
-  // `locate` finds the first occurrence of a pattern: the matched text for a regex,
-  // or the index (`Ordinal`) of a substring. It is distinct from the generic
-  // `Traversable` `seek`/`where`, which act on individual elements via a predicate.
-  def locate(regex: Regex): Optional[textual] = regex.seek(textual.text(text)).let(text.segment(_))
-
-  def locate(substring: Text, bidi: Bidi = Ltr): Optional[Ordinal] = bidi match
+  // `offsetOf` returns the index (`Ordinal`) at which `substring` first occurs. It
+  // is distinct from the generic `Traversable` `seek`/`where`, which act on
+  // individual elements via a predicate, and from `Textual.indexOf`, the codec-
+  // level primitive it delegates to. For regex matches, use `search`.
+  def offsetOf(substring: Text, bidi: Bidi = Ltr): Optional[Ordinal] = bidi match
     case Ltr => textual.indexOf(text, substring)
     case Rtl => if substring.nil then Unset else textual.lastIndexOf(text, substring)
 
