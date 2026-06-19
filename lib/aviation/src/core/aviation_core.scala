@@ -320,6 +320,7 @@ package calendars:
   given ethiopianCalendar: EthiopianCalendar = EthiopianCalendar()
   given islamicCalendar: IslamicCalendar = IslamicCalendar()
   given persianCalendar: PersianCalendar = PersianCalendar()
+  given indianCalendar: IndianCalendar = IndianCalendar()
   given frenchRepublicanCalendar: FrenchRepublicanCalendar = FrenchRepublicanCalendar()
 
   // The Julian-to-Gregorian cutovers of the two best-known reforms, as two-segment `Regime`s. The

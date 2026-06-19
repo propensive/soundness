@@ -1591,6 +1591,30 @@ object Tests extends Suite(m"Aviation Tests"):
           persianCalendar.diurnal(date)() )
       . assert(_ == (1403, PersianMonth.Farvardin, 1))
 
+    suite(m"Indian National calendar"):
+      import calendars.{gregorianCalendar, indianCalendar}
+
+      test(m"1 Chaitra 1879 Saka is 22 March 1957"):
+        val date = unsafely(Date(using indianCalendar)(Year(1879), IndianMonth.Chaitra, Day(1)))
+        ( gregorianCalendar.annual(date)(),
+          gregorianCalendar.mensual(date),
+          gregorianCalendar.diurnal(date)() )
+      . assert(_ == (1957, Mar, 22))
+
+      test(m"1 Chaitra of a Gregorian-leap year starts on 21 March"):
+        val date = unsafely(Date(using indianCalendar)(Year(1942), IndianMonth.Chaitra, Day(1)))
+        ( gregorianCalendar.annual(date)(),
+          gregorianCalendar.mensual(date),
+          gregorianCalendar.diurnal(date)() )
+      . assert(_ == (2020, Mar, 21))
+
+      test(m"1 Vaishakha 1879 Saka is 21 April 1957"):
+        val date = unsafely(Date(using indianCalendar)(Year(1879), IndianMonth.Vaishakha, Day(1)))
+        ( gregorianCalendar.annual(date)(),
+          gregorianCalendar.mensual(date),
+          gregorianCalendar.diurnal(date)() )
+      . assert(_ == (1957, Apr, 21))
+
     suite(m"French Republican calendar"):
       test(m"18 Brumaire An VIII is 9 November 1799"):
         import calendars.{gregorianCalendar, frenchRepublicanCalendar}
