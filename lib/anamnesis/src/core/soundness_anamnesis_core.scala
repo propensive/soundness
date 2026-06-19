@@ -32,4 +32,5 @@
                                                                                                   */
 package soundness
 
-export anamnesis.{Database, DataError, Entity, every, Listable, Referenceable}
+export anamnesis.{Database, DataError, Entity, every, Listable, Referenceable, assign, lookup,
+    reference, store, unassign}

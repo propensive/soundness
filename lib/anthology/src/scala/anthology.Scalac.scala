@@ -80,7 +80,7 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
     object reporter extends Reporter, UniqueMessagePositions, HideNonSensicalMessages:
       def doReport(diagnostic: Diagnostic)(using dtdc.Contexts.Context): Unit =
         Log.fine(CompileEvent.Notice(diagnostic.toString.tt))
-        scalacProcess.put(Notice(diagnostic))
+        scalacProcess.put(notice(diagnostic))
 
     val callbackApi = new dtdi.CompilerCallback {}
 

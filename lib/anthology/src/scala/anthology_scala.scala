@@ -129,23 +129,22 @@ object scalacOptions:
       val betterFors = Scalac.Option[3.6](t"-language:experimental.betterFors")
 
 
-extension (companion: Notice.type)
-  def apply(diagnostic: Diagnostic): Notice =
-    val importance: Importance = Importance.fromOrdinal(diagnostic.level)
-    val file: Text = diagnostic.position.map(_.nn.source.nn.name.nn.tt).nn.orElse(t"unknown").nn
-    val message: Text = diagnostic.message.tt
+private[anthology] def notice(diagnostic: Diagnostic): Notice =
+  val importance: Importance = Importance.fromOrdinal(diagnostic.level)
+  val file: Text = diagnostic.position.map(_.nn.source.nn.name.nn.tt).nn.orElse(t"unknown").nn
+  val message: Text = diagnostic.message.tt
 
-    diagnostic.position.map: position =>
-      position.nn.pipe: position =>
-        val span =
-          Span.region
-            ( position.startLine.nn.z,
-              position.startColumn.nn.z,
-              position.endLine.nn.z,
-              position.endColumn.nn.z )
+  diagnostic.position.map: position =>
+    position.nn.pipe: position =>
+      val span =
+        Span.region
+          ( position.startLine.nn.z,
+            position.startColumn.nn.z,
+            position.endLine.nn.z,
+            position.endColumn.nn.z )
 
-        Notice(importance, file, message, span)
+      Notice(importance, file, message, span)
 
-    . nn
-    . orElse(Notice(importance, file, message, Unset))
-    . nn
+  . nn
+  . orElse(Notice(importance, file, message, Unset))
+  . nn
