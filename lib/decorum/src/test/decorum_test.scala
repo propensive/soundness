@@ -985,3 +985,7 @@ object Tests extends Suite(m"Decorum Tests"):
       test(m"Extract skips private extension methods"):
         extractedExtensions("extension (value: Text)\n  def a: Int = 1\n  private def b: Int = 2\n")
       . assert(_ == List("a"))
+
+      test(m"Extract skips qualified-private extension methods"):
+        extractedExtensions("extension (value: Text)\n  def a: Int = 1\n  private[decorum] def b = 2\n")
+      . assert(_ == List("a"))

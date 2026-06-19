@@ -63,8 +63,12 @@ object SoundnessExports:
         if firstLine < 0 || line < firstLine then firstLine = line
 
       exp.selectors.foreach: selector =>
-        val name = selector.imported.name.toString
-        if name.nonEmpty && name != "_" && name != "*" then names += name
+        // Skip the wildcard selector (`export foo.*`) via `isWildcard`, not by
+        // name: a backtick-quoted `` `*` `` exports the *multiplication operator*,
+        // whose leaf name is also "*", and must be recorded.
+        if !selector.isWildcard then
+          val name = selector.imported.name.toString
+          if name.nonEmpty && name != "_" then names += name
 
     def visit(t: untpd.Tree): Unit = t match
       case pkg: untpd.PackageDef => pkg.stats.foreach(visit)

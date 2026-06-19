@@ -43,7 +43,7 @@ extension (char: Char)
   def whitespace: Boolean = Character.isWhitespace(char)
   def control: Boolean = Character.isISOControl(char)
   def printable: Boolean = !control && !whitespace
-  def name: Optional[Text] = Unicode.name(char)
+  def designation: Optional[Text] = Unicode.name(char)
 
 package charDecoders:
   given utf8Decoder: TextSanitizer => CharDecoder = CharDecoder.unapply("UTF-8".tt).get
@@ -78,7 +78,7 @@ package textSanitizers:
 package communication:
   given unicodeCharNamesCommunicable: Char is Communicable = char => Message:
     val name =
-      char.name.let { text => Unicode.smallCaps(text.s.toLowerCase.nn.tt) }.or("unknown".tt)
+      char.designation.let { text => Unicode.smallCaps(text.s.toLowerCase.nn.tt) }.or("unknown".tt)
 
     if char.printable then s"$name [$char]".tt else name
 

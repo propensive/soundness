@@ -43,8 +43,9 @@ object Extensions:
   // `extension` block. Such methods are re-exported into `soundness` by their
   // simple name (just like any other public member), so R-742.1 needs the list
   // of names a component's export surface is expected to carry. Methods marked
-  // `private`/`protected` are package-internal and neither can nor need to be
-  // re-exported, so they are skipped.
+  // `private`/`protected` — including qualified forms like `private[foo]`, which
+  // carry a `privateWithin` but not always the bare `Private` flag — are
+  // package-internal and neither can nor need to be re-exported, so skip them.
   def extract(tree: untpd.Tree, source: SourceFile): List[String] =
     val out = mutable.ListBuffer[String]()
 
@@ -52,7 +53,8 @@ object Extensions:
       case ext: untpd.ExtMethods =>
         ext.methods.foreach:
           case method: untpd.DefDef
-              if !method.mods.flags.isOneOf(Flags.Private | Flags.Protected) =>
+              if !method.mods.flags.isOneOf(Flags.Private | Flags.Protected)
+                 && method.mods.privateWithin.isEmpty =>
             val name = method.name.toString
             if name.nonEmpty then out += name
           case _ =>
