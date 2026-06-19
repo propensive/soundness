@@ -1723,6 +1723,26 @@ object Tests extends Suite(m"Aviation Tests"):
         minguoCalendar.annual(date)()
       . assert(_ == 89)
 
+    suite(m"Calendar display"):
+      test(m"A Coptic date displays with its month name"):
+        import calendars.copticCalendar
+        copticCalendar.format(unsafely(Date(Year(1716), CopticMonth.Koiak, Day(22))))
+      . assert(_ == t"22 Koiak 1716")
+
+      test(m"Islamic month names are polished"):
+        IslamicMonth.RabiAlAwwal.show
+      . assert(_ == t"Rabi I")
+
+      test(m"An Islamic date displays with its month name"):
+        import calendars.islamicCalendar
+        islamicCalendar.format(unsafely(Date(Year(1445), IslamicMonth.Ramadan, Day(15))))
+      . assert(_ == t"15 Ramadan 1445")
+
+      test(m"The Hebrew leap month displays as Adar II"):
+        import calendars.hebrewCalendar
+        hebrewCalendar.format(unsafely(Date(Year(5784), HebrewMonth.AdarSheni, Day(1))))
+      . assert(_ == t"1 Adar II 5784")
+
     suite(m"Clock"):
       test(m"Clock.fixed returns the same instant"):
         val clock = Clock.fixed(Instant(12345L))

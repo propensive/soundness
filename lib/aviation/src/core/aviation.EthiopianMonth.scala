@@ -32,13 +32,17 @@
                                                                                                   */
 package aviation
 
+import anticipation.*
 import prepositional.*
+import spectacular.*
 import symbolism.*
 
 // The thirteen months of the Ethiopian calendar: twelve of 30 days plus the short epagomenal month
 // `Pagume` (5 days, or 6 in a leap year). Structurally identical to the Coptic calendar but with a
 // distinct epoch and month names, and a distinct `MonthRadix`.
 object EthiopianMonth extends MonthRadix:
+  given showable: EthiopianMonth is Showable = _.toString.tt
+
   given multiply: Int is Multiplicable by this.type to (Timespan of this.type) =
     (n, _) => Timespan(this, n)
 

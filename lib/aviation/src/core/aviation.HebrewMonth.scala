@@ -32,13 +32,20 @@
                                                                                                   */
 package aviation
 
+import anticipation.*
+import gossamer.*
 import prepositional.*
+import spectacular.*
 import symbolism.*
 
 // The months of the Hebrew calendar, in civil-year order (beginning at Tishrei). In a common year
 // `AdarSheni` (Adar II) does not occur and `Adar` is the sole Adar; in a leap year `Adar` is Adar I
 // and `AdarSheni` follows it. A distinct `MonthRadix`.
 object HebrewMonth extends MonthRadix:
+  given showable: HebrewMonth is Showable =
+    case AdarSheni => t"Adar II"
+    case month     => month.toString.tt
+
   given multiply: Int is Multiplicable by this.type to (Timespan of this.type) =
     (n, _) => Timespan(this, n)
 

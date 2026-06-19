@@ -35,6 +35,8 @@ package aviation
 import anticipation.*
 import beneficence.*
 import contingency.*
+import gossamer.*
+import spectacular.*
 
 trait Calendar extends Findable:
   // All calendars number years and days-of-month with integers; only the month type varies (the
@@ -58,3 +60,11 @@ trait Calendar extends Findable:
   def diurnal(date: Date): Day
   def zerothDayOfYear(year: Year): Date
   def jdn(year: Year, month: Mensual, day: Day): Date raises TimeError
+
+  // The display name of a month. By default this is the month value's own name (the enum case name,
+  // which is already the conventional name in most calendars); calendars override it where the name
+  // needs polishing.
+  def monthName(month: Mensual): Text = month.toString.tt
+
+  // A date rendered in this calendar, as "day month-name year", e.g. "15 Ramadan 1445".
+  def format(date: Date): Text = t"${diurnal(date)()} ${monthName(mensual(date))} ${annual(date)()}"

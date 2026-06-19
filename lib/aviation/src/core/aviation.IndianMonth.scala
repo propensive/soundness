@@ -32,12 +32,16 @@
                                                                                                   */
 package aviation
 
+import anticipation.*
 import prepositional.*
+import spectacular.*
 import symbolism.*
 
 // The twelve months of the Indian national (Saka) calendar. Chaitra has 30 days (31 in a leap
 // year), the next five months have 31 days, and the last six have 30. A distinct `MonthRadix`.
 object IndianMonth extends MonthRadix:
+  given showable: IndianMonth is Showable = _.toString.tt
+
   given multiply: Int is Multiplicable by this.type to (Timespan of this.type) =
     (n, _) => Timespan(this, n)
 

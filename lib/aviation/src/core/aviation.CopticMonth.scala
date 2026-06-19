@@ -32,13 +32,17 @@
                                                                                                   */
 package aviation
 
+import anticipation.*
 import prepositional.*
+import spectacular.*
 import symbolism.*
 
 // The thirteen months of the Coptic calendar: twelve months of 30 days plus the short epagomenal
 // month `Nasie` (5 days, or 6 in a leap year). `CopticMonth` is a distinct `MonthRadix`, so a span
 // counted in Coptic months can only be added to a date read in the Coptic calendar.
 object CopticMonth extends MonthRadix:
+  given showable: CopticMonth is Showable = _.toString.tt
+
   given multiplicable: Int is Multiplicable by CopticMonth.type to (Timespan of CopticMonth.type) =
     (n, _) => Timespan(CopticMonth, n)
 

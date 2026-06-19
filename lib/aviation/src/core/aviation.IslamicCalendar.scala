@@ -35,6 +35,7 @@ package aviation
 import anticipation.*
 import contingency.*
 import gossamer.*
+import spectacular.*
 
 // The tabular (arithmetical) Islamic (Hijri) calendar: twelve months alternating 30 and 29 days,
 // with a 30th day added to the final month in the eleven leap years of each 30-year cycle (the
@@ -49,6 +50,7 @@ class IslamicCalendar() extends Calendar:
   def monthsInYear(year: Year): Int = 12
   def monthOrdinal(year: Year, month: IslamicMonth): Int = month.ordinal
   def monthOfOrdinal(year: Year, ordinal: Int): IslamicMonth = IslamicMonth.fromOrdinal(ordinal)
+  override def monthName(month: IslamicMonth): Text = month.show
 
   def leapYear(year: Year): Boolean = (11*year() + 14)%30 < 11
   def daysInYear(year: Year): Int = if leapYear(year) then 355 else 354

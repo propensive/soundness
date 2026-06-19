@@ -32,12 +32,16 @@
                                                                                                   */
 package aviation
 
+import anticipation.*
 import prepositional.*
+import spectacular.*
 import symbolism.*
 
 // The twelve thirty-day months of the French Republican calendar, followed by the five or six
 // complementary days (`Sansculottides`) that fill out the year. A distinct `MonthRadix`.
 object FrenchRepublicanMonth extends MonthRadix:
+  given showable: FrenchRepublicanMonth is Showable = _.toString.tt
+
   given multiply: Int is Multiplicable by this.type to (Timespan of this.type) =
     (n, _) => Timespan(this, n)
 
