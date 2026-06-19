@@ -41,4 +41,4 @@ sealed trait Candelas[Power <: Nat] extends Units[Power, Luminosity]
 sealed trait Moles[Power <: Nat] extends Units[Power, AmountOfSubstance]
 sealed trait Amperes[Power <: Nat] extends Units[Power, Current]
 sealed trait Kelvins[Power <: Nat] extends Units[Power, Heat]
-sealed trait Seconds[Power <: Nat] extends Units[Power, Time]
+sealed trait Seconds[Power <: Nat] extends Units[Power, Time], Radix.Regular

@@ -107,7 +107,7 @@ object internal:
     inline def apply(): Int = day
 
 
-  object Year:
+  object Year extends Radix.Irregular:
     inline def apply(year: Int): Year = year
 
     given showable: Year is Showable = _.toString.tt
@@ -127,7 +127,7 @@ object internal:
 
         if left == right then !strict else (left < right)^greaterThan
 
-  object Day:
+  object Day extends Radix.Regular:
     inline def apply(day: Int): Day = day
 
     given decodable: (Int is Decodable in Text) => Day is Decodable in Text = day =>

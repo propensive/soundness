@@ -30,32 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package aviation
+package quantitative
 
-// A `Radix` is one rung of a chronology's mixed-radix positional ladder, used as a phantom
-// type-parameter to record which units a `Timespan` carries or a `Timestamp` is specified to.
-// Radices are namespaced here (`Radix.Year`, `Radix.Month`, …) to avoid clashing with the
-// package-level `Year`/`Month`/`Day` types. A chronology is then identified by the intersection of
-// the radices it governs, e.g. `Ymd = Radix.Year & Radix.Month & Radix.Day`.
+// A `Radix` is one rung of a mixed-radix positional system over a continuum (a calendar/clock, in
+// the case of time). The marker lives here, alongside `Seconds`, so that the SI second can itself
+// be a radix — `Seconds[1] <: Radix.Regular` — and therefore appear in the phantom `Topic` of an
+// aviation `Timespan`/`Timestamp` while remaining an ordinary `Quantity` unit. Other radices (years,
+// months, weeks, days, hours, minutes) are defined in aviation and extend these markers.
 //
-// `Regular` radices have a constant ratio to the radix below them within a tick family (60 s in a
-// minute, 7 days in a week); `Irregular` radices have a position-dependent length (days in a month,
-// weeks in a year) and so cannot be added to a bare `Instant` without a `Chronology`. The
-// `Regular`/`Irregular` split is what gates exact (physical) arithmetic from calendar arithmetic.
-//
-// Layer markers for the leap-second/DST/calendar discontinuities (Stage B) are additive supertraits
-// to be mixed in later; adding them to these radices does not break existing uses.
+// `Regular` radices have a constant ratio to the radix below them within a tick family; `Irregular`
+// radices have a position-dependent length and so cannot be added to a bare instant.
 
 object Radix:
   trait Regular extends Radix
   trait Irregular extends Radix
-
-  trait Year extends Irregular
-  trait Month extends Irregular
-  trait Week extends Regular
-  trait Day extends Regular
-  trait Hour extends Regular
-  trait Minute extends Regular
-  trait Second extends Regular
 
 trait Radix

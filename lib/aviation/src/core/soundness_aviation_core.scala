@@ -36,12 +36,12 @@ export
   aviation
   . { am, Anniversary, Apr, Aug, Base24, base24Extractable, Base60, base60Extractable, Calendar,
       Clock, Clockface, Date, DateNumerics, DateSeparation, Day, Dec, Duration, Endianness, Feb,
-      Fri, Hebdomad, Holiday, Holidays, Horology, Instant, Iso8601, Jan, Jul, Jun, LeapSeconds,
-      Mar, May, Meridiem, Moment, Mon, Month, Months, Monthstamp, Nov, now, Oct, Period, pm,
-      Regime, Rfc1123, RomanCalendar, Sat, Sep, Sun, Thu, TimeError, TimeEvent, TimeFormat,
-      TimeNumerics, TimeSeparation, TimeSpecificity, Timestamp, TimestampError, Timezone,
-      TimezoneError, today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Weekday, Weekdays,
-      WorkingDays, Year, Years }
+      Fri, Hebdomad, Holiday, Holidays, Horology, Hour, Instant, Iso8601, Jan, Jul, Jun,
+      LeapSeconds, Mar, May, Meridiem, Minute, Moment, Mon, Month, Months, Monthstamp, Nov, now,
+      Oct, Period, pm, Regime, Rfc1123, RomanCalendar, Sat, Sep, Sun, Thu, TimeError, TimeEvent,
+      TimeFormat, TimeNumerics, TimeSeparation, TimeSpecificity, Timespan, Timestamp,
+      TimestampError, Timezone, TimezoneError, today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError,
+      Wed, Week, Weekday, Weekdays, WorkingDays, Year, Years }
 
 package calendars:
   export aviation.calendars.{gregorianCalendar, julianCalendar, papalCutover, britishCutover}

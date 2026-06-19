@@ -36,10 +36,11 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import prepositional.*
+import quantitative.Radix
 import spectacular.*
 import symbolism.*
 
-object Month:
+object Month extends Radix.Irregular:
   val all: IArray[Month] = IArray(Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec)
 
   def apply(index: Int): Month raises TimeError =

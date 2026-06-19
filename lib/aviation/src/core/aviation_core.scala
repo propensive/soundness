@@ -39,12 +39,20 @@ import distillate.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
+import quantitative.Radix
 import spectacular.*
 import vacuous.*
 
 export protointernal.{Instant, Duration}
 export aviation.internal.{Date, Year, Day, Anniversary, WorkingDays}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
+
+// Radices not already represented by an existing companion (`Year`/`Month`/`Day`). `Week`, `Day`,
+// `Hour` and `Minute` are `Regular` (constant ratio to the radix below); `Month`/`Year` are
+// `Irregular` and live on their own companions.
+object Week extends Radix.Regular
+object Hour extends Radix.Regular
+object Minute extends Radix.Regular
 
 package instantDecodables:
   given iso8601InstantDecodable: Tactic[TimeError] => Instant is Decodable in Text =
