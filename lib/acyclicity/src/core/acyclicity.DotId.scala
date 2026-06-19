@@ -33,10 +33,12 @@
 package acyclicity
 
 import nomenclature.*
+import prepositional.*
+import rudiments.*
 
-object Graph:
-  def apply(id: Name[DotId], statements: Dot.Statement*): Dot =
-    Dot.Graph(Some(id), false, statements*)
+// The naming plane for GraphViz DOT identifiers: `Name[DotId]` is used for node
+// identifiers, edge endpoints, assignment targets and (sub)graph names alike.
+object DotId:
+  inline given nominative: DotId is Nominative under DotIdentifier["a valid DOT identifier"] = !!
 
-  def strict(id: Name[DotId], statements: Dot.Statement*): Dot =
-    Dot.Graph(Some(id), true, statements*)
+sealed trait DotId

@@ -32,60 +32,41 @@
                                                                                                   */
 package acyclicity
 
-import language.dynamics
-
 import anticipation.*
-import contextual.*
 import denominative.*
 import gossamer.*
+import nomenclature.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
 
 object Dot:
-  case class Target(directed: Boolean, dest: Ref | Statement.Subgraph, link: Option[Target])
+  case class Target(directed: Boolean, dest: Name[DotId] | Statement.Subgraph, link: Option[Target])
   case class Property(key: Text, value: Text)
 
-  object Attachment:
-    // FIXME: This needs to include the port
-    given showable: Attachment is Showable = _.id.key
-
-  case class Attachment(id: Id, compass: Option[CompassPoint] = None)
-
-  object Ref:
-    def apply(key: Text): Ref = Ref(Id(key))
-
-    given interpolable: Ref is Interpolable:
-      inline def interpolate[parts <: Tuple, origins <: Tuple]
-        ( inline insertions: Any* )
-      :   Ref =
-
-        ${acyclicity.internal.refInterpolator[parts]('insertions)}
-
-  case class Ref(id: Id, port: Option[Attachment] = None):
+  // The DOT graph DSL is built from `Name[DotId]` identifiers. An identifier acts
+  // as an edge endpoint (`a -- b`, `a --> b`), an assignment left-hand side
+  // (`a := b`) or a node declaration carrying attributes (`a("color" -> "red")`).
+  extension (id: Name[DotId])
     @targetName("joinTo")
-    infix def -- (dest: Ref | Statement.Subgraph): Dot.Statement.Edge =
-      Dot.Statement.Edge(this, Target(false, dest, None))
+    infix def -- (dest: Name[DotId] | Statement.Subgraph): Statement.Edge =
+      Statement.Edge(id, Target(false, dest, None))
 
     @targetName("mapTo")
-    infix def --> (dest: Ref | Statement.Subgraph): Dot.Statement.Edge =
-      Dot.Statement.Edge(this, Target(true, dest, None))
-
-  case class Id(key: Text) extends Dynamic:
-    def applyDynamicNamed(method: "apply")(attrs: (String, Text)*) =
-      Statement.Node(this, attrs.map { (k, v) => Property(k.show, v) }*)
+    infix def --> (dest: Name[DotId] | Statement.Subgraph): Statement.Edge =
+      Statement.Edge(id, Target(true, dest, None))
 
     @targetName("assign")
-    infix def := (id: Id): Statement.Assignment = Statement.Assignment(this, id)
+    infix def := (id2: Name[DotId]): Statement.Assignment = Statement.Assignment(id, id2)
 
-  enum CompassPoint:
-    case North, South, East, West, NorthEast, NorthWest, SouthEast, SouthWest
+    def apply(attributes: (Text, Text)*): Statement.Node =
+      Statement.Node(id, attributes.map { (key, value) => Property(key, value) }*)
 
   enum Statement:
-    case Node(id: Id, attrs: Property*)
-    case Edge(id: Ref, rhs: Target, attrs: Property*)
-    case Assignment(id: Id, id2: Id)
-    case Subgraph(id: Option[Id], statements: Statement*)
+    case Node(id: Name[DotId], attrs: Property*)
+    case Edge(id: Name[DotId], rhs: Target, attrs: Property*)
+    case Assignment(id: Name[DotId], id2: Name[DotId])
+    case Subgraph(id: Option[Name[DotId]], statements: Statement*)
 
   def serialize(tokens: Stream[Text]): Text = Text.build:
     var level: Int = 0
@@ -113,27 +94,31 @@ object Dot:
       case t";" => newline()
       case word => whitespace(); append(word)
 
-  private def tokenize(graph: Ref | Dot | Target | Statement | Property): Stream[Text] = graph match
-    case Ref(id, port)        => Stream(port.fold(t"\"${id.key}\"") { p => t"\"${id.key}:$p\"" })
+  private def tokenize(graph: Dot | Target | Statement | Property): Stream[Text] = graph match
     case Property(key, value) => Stream(t"$key=\"$value\"")
 
     case Target(directed, dest, link) =>
       val operator = if directed then t"->" else t"--"
-      operator #:: tokenize(dest) #::: link.to(Stream).flatMap(tokenize(_)) #::: Stream(t";")
+
+      val destTokens = (dest: @unchecked) match
+        case subgraph: Statement.Subgraph => tokenize(subgraph)
+        case id: Text                     => Stream(t"\"$id\"")
+
+      operator #:: destTokens #::: link.to(Stream).flatMap(tokenize(_)) #::: Stream(t";")
 
     case Statement.Node(id, attrs*) =>
-      t"\"${id.key}\"" #:: (if attrs.nil then Stream() else (Stream(t"[") #:::
+      t"\"${id: Text}\"" #:: (if attrs.nil then Stream() else (Stream(t"[") #:::
         attrs.to(Stream).flatMap(tokenize(_) :+ t",").init #::: Stream(t"]"))) #:::
         Stream(t";")
 
     case Statement.Edge(id, rhs, attrs*) =>
-      tokenize(id) #::: tokenize(rhs)
+      Stream(t"\"${id: Text}\"") #::: tokenize(rhs)
 
     case Statement.Assignment(id, id2) =>
-      Stream(t"\"${id.key}\"", t"=", t"\"${id2.key}\"", t";")
+      Stream(t"\"${id: Text}\"", t"=", t"\"${id2: Text}\"", t";")
 
     case Statement.Subgraph(id, statements*) =>
-      t"subgraph" #:: id.to(Stream).map(_.key) #:::
+      t"subgraph" #:: id.to(Stream).map { name => name: Text } #:::
         t"{" #::
         statements.to(Stream).flatMap(tokenize(_)) #:::
         Stream(t"}")
@@ -142,7 +127,7 @@ object Dot:
       Stream(
         if strict then Stream(t"strict") else Stream(),
         Stream(t"graph"),
-        id.to(Stream).map(_.key), Stream(t"{"),
+        id.to(Stream).map { name => name: Text }, Stream(t"{"),
         statements.flatMap(tokenize(_)), Stream(t"}")
       ).flatten
 
@@ -150,15 +135,15 @@ object Dot:
       Stream(
         if strict then Stream(t"strict") else Stream(),
         Stream(t"digraph"),
-        id.to(Stream).map(_.key),
+        id.to(Stream).map { name => name: Text },
         Stream(t"{"),
         statements.flatMap(tokenize(_)),
         Stream(t"}")
       ).flatten
 
 enum Dot:
-  case Graph(id: Option[Dot.Id], strict: Boolean, statements: Dot.Statement*)
-  case Digraph(id: Option[Dot.Id], strict: Boolean, statements: Dot.Statement*)
+  case Graph(id: Option[Name[DotId]], strict: Boolean, statements: Dot.Statement*)
+  case Digraph(id: Option[Name[DotId]], strict: Boolean, statements: Dot.Statement*)
 
   def serialize: Text = Dot.serialize(Dot.tokenize(this))
 

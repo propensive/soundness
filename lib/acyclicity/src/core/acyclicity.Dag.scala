@@ -37,7 +37,10 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 import denominative.*
+import nomenclature.*
 import rudiments.*
+
+import Dot.*
 
 object Dag:
   @targetName("apply2")
@@ -53,7 +56,11 @@ object Dag:
   def apply[node](nodes: (node, Set[node])*): Dag[node] = Dag(Map(nodes*))
 
   extension (dag: Dag[Text])
-    def dot: Dot = Digraph(dag.edges.to(List).map(Dot.Ref(_) --> Dot.Ref(_))*)
+    def dot: Dot = unsafely:
+      val edges = dag.edges.to(List).map: (a, b) =>
+        Name[DotId](a) --> Name[DotId](b)
+
+      Dot.Digraph(None, false, edges*)
 
 case class Dag[node] private[acyclicity](edgeMap: Map[node, Set[node]] = Map()):
   private val reachableCache: scm.HashMap[node, Set[node]] = scm.HashMap()
