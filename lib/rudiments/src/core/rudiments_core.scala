@@ -141,13 +141,26 @@ extension [value <: Matchable](iterable: Iterable[value])
 extension [self](self: self)(using inclusive: self is Inclusive)
   def has(value: inclusive.Operand): Boolean = inclusive.has(self, value)
 
-// `value.where(predicate)` returns the first element satisfying `predicate`, for
-// any `value` that is `Traversable`.
+// Element-oriented queries over any `Traversable` value. `seek` returns the first
+// element satisfying a predicate; `where` returns the *index* (`Ordinal`) of the
+// first element satisfying a predicate, or — in its single-argument form — of the
+// first element equal to a given value. (`where` returns indices uniformly, like
+// the equivalents for `Text`.)
 extension [self](self: self)(using traversable: self is Traversable)
-  def where(predicate: traversable.Operand => Boolean): Optional[traversable.Operand] =
+  def seek(predicate: traversable.Operand => Boolean): Optional[traversable.Operand] =
     traversable.traverse(self).find(predicate) match
       case Some(element) => element
       case None          => Unset
+
+  def where(predicate: traversable.Operand => Boolean): Optional[Ordinal] =
+    traversable.traverse(self).zipWithIndex.find((element, _) => predicate(element)) match
+      case Some((_, index)) => index.z
+      case None             => Unset
+
+  def where(value: traversable.Operand): Optional[Ordinal] =
+    traversable.traverse(self).zipWithIndex.find((element, _) => value == element) match
+      case Some((_, index)) => index.z
+      case None             => Unset
 
 extension [value](iterator: Iterator[value])
   transparent inline def each(predicate: Ordinal aka "ordinal" ?=> value => Unit): Unit =

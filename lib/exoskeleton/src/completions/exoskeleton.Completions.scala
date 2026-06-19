@@ -216,7 +216,7 @@ object Completions:
       case StreamError(_)      => InstallError(InstallError.Reason.Io)
 
     . mitigate:
-        dirs.where { dir => dir.exists() && dir.writable() }.let: dir =>
+        dirs.seek { dir => dir.exists() && dir.writable() }.let: dir =>
           val path = dir/scriptName
 
           if path.exists()

@@ -53,6 +53,6 @@ case class Commandline
 
     cli.register(flag, discoverable)
 
-    parameters.where { (key, _) => flag.matches(key) }.let: (_, operands) =>
+    parameters.seek { (key, _) => flag.matches(key) }.let: (_, operands) =>
       cli.present(flag)
       safely(operand.interpret(operands))
