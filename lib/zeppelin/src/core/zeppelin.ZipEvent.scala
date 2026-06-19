@@ -30,6 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package zeppelin
 
-export zeppelin.{Zip, ZipError, ZipEvent, Zipfile}
+import anticipation.*
+import fulminate.*
+
+object ZipEvent:
+  given communicable: ZipEvent is Communicable =
+    case Wrote(path, entries) => m"wrote $entries entries to the zip archive $path"
+    case Read(path, entries)  => m"read $entries entries from the zip archive $path"
+
+enum ZipEvent:
+  case Wrote(path: Text, entries: Int)
+  case Read(path: Text, entries: Int)

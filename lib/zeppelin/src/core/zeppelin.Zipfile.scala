@@ -61,7 +61,7 @@ object Zipfile:
 
   def write[path: Abstractable across Paths to Text]
     (path: path, prefix: Optional[Data] = Unset)(entries: Iterable[Zip.Entry])
-  :   Unit raises ZipError =
+  :   Unit logs ZipEvent raises ZipError =
 
     checkDuplicates(entries)
     val out = ji.FileOutputStream(ji.File(path.generic.s))
@@ -70,8 +70,14 @@ object Zipfile:
       out.write(chunk.mutable(using Unsafe))
     finally out.close()
 
-  def read[path: Abstractable across Paths to Text](path: path): Zipfile raises ZipError =
-    parse(FileSource(path.generic))
+    Log.info(ZipEvent.Wrote(path.generic, entries.size))
+
+  def read[path: Abstractable across Paths to Text](path: path)
+  :   Zipfile logs ZipEvent raises ZipError =
+
+    val zipfile = parse(FileSource(path.generic))
+    Log.info(ZipEvent.Read(path.generic, zipfile.entries.size))
+    zipfile
 
   def read(data: Data): Zipfile raises ZipError = parse(DataSource(data))
 
