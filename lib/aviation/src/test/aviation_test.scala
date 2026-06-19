@@ -1627,6 +1627,19 @@ object Tests extends Suite(m"Aviation Tests"):
           gregorianCalendar.diurnal(date)() )
       . assert(_ == (1799, Nov, 9))
 
+    suite(m"Year-offset calendars"):
+      test(m"2000 Gregorian is 2543 in the Buddhist calendar"):
+        import calendars.buddhistCalendar
+        val date = { import calendars.gregorianCalendar; 2000-Jun-1 }
+        buddhistCalendar.annual(date)()
+      . assert(_ == 2543)
+
+      test(m"2000 Gregorian is year 89 in the Minguo calendar"):
+        import calendars.minguoCalendar
+        val date = { import calendars.gregorianCalendar; 2000-Jun-1 }
+        minguoCalendar.annual(date)()
+      . assert(_ == 89)
+
     suite(m"Clock"):
       test(m"Clock.fixed returns the same instant"):
         val clock = Clock.fixed(Instant(12345L))

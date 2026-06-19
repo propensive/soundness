@@ -323,6 +323,9 @@ package calendars:
   given indianCalendar: IndianCalendar = IndianCalendar()
   given frenchRepublicanCalendar: FrenchRepublicanCalendar = FrenchRepublicanCalendar()
 
+  given buddhistCalendar: OffsetCalendar = OffsetCalendar(gregorianCalendar, 543, t"Buddhist")
+  given minguoCalendar: OffsetCalendar = OffsetCalendar(gregorianCalendar, -1911, t"Minguo")
+
   // The Julian-to-Gregorian cutovers of the two best-known reforms, as two-segment `Regime`s. The
   // first day of each segment is given as a Julian day number; the gap between (the dates in
   // neither calendar) is rejected. Provided for explicit import, like the calendars above.
