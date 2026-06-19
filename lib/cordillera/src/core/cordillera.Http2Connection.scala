@@ -119,7 +119,8 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
         if !ack then send(Frame.Ping(opaque, ack = true))
         true
 
-      case Frame.GoAway(_, _, _) =>
+      case Frame.GoAway(lastStreamId, _, _) =>
+        Log.warn(Http2Event.GoAway(lastStreamId))
         false
 
       case Frame.Headers(id, block, endStream, _) =>
@@ -222,6 +223,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
   def fetch(request: Http.Request, scheme: Text, authority: Text)
   :   (Http2Stream, Http.Response) raises Http2Error raises AsyncError =
 
+    Log.fine(Http2Event.RequestSent(authority))
     val headerBlock = PseudoHeaders.request(request, scheme, authority)
     val chunks = request.body().to(List)
 

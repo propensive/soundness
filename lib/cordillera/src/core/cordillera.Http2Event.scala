@@ -30,7 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package cordillera
 
-export cordillera.{Http2, Hpack, HpackEntry, HpackTable, Huffman, Http2Connection, Http2Stream,
-    Http2Error, Http2Event, FrameReader, PseudoHeaders}
+import anticipation.*
+import fulminate.*
+
+object Http2Event:
+  given communicable: Http2Event is Communicable =
+    case RequestSent(authority) => m"sending an HTTP/2 request to $authority"
+    case GoAway(lastStream)     => m"received GOAWAY; the last processed stream was $lastStream"
+
+enum Http2Event:
+  case RequestSent(authority: Text)
+  case GoAway(lastStream: Int)
