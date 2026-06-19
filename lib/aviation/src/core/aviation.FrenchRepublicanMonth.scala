@@ -32,17 +32,15 @@
                                                                                                   */
 package aviation
 
-import anticipation.*
-import gossamer.*
+import prepositional.*
+import symbolism.*
 
-// The Coptic (Alexandrian) calendar. Its epoch, 1 Thout 1 AM, is JDN 1825030 (29 August 284 CE in
-// the Julian calendar). Dates are stored as the same Julian-day-number as every other calendar;
-// only the labelling differs.
-class CopticCalendar() extends AlexandrianCalendar:
-  type Mensual = CopticMonth
-  type MonthUnit = CopticMonth.type
+// The twelve thirty-day months of the French Republican calendar, followed by the five or six
+// complementary days (`Sansculottides`) that fill out the year. A distinct `MonthRadix`.
+object FrenchRepublicanMonth extends MonthRadix:
+  given multiply: Int is Multiplicable by this.type to (Timespan of this.type) =
+    (n, _) => Timespan(this, n)
 
-  def epoch: Int = 1825030
-  val name: Text = t"Coptic"
-  def monthOrdinal(month: CopticMonth): Int = month.ordinal
-  def monthOfOrdinal(ordinal: Int): CopticMonth = CopticMonth.fromOrdinal(ordinal)
+enum FrenchRepublicanMonth derives CanEqual:
+  case Vendemiaire, Brumaire, Frimaire, Nivose, Pluviose, Ventose, Germinal, Floreal, Prairial,
+    Messidor, Thermidor, Fructidor, Sansculottides

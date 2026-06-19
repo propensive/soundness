@@ -317,7 +317,9 @@ package calendars:
     def leapYearsSinceEpoch(year: Year): Int = year()/4 - year()/100 + year()/400 + 1
 
   given copticCalendar: CopticCalendar = CopticCalendar()
+  given ethiopianCalendar: EthiopianCalendar = EthiopianCalendar()
   given islamicCalendar: IslamicCalendar = IslamicCalendar()
+  given frenchRepublicanCalendar: FrenchRepublicanCalendar = FrenchRepublicanCalendar()
 
   // The Julian-to-Gregorian cutovers of the two best-known reforms, as two-segment `Regime`s. The
   // first day of each segment is given as a Julian day number; the gap between (the dates in

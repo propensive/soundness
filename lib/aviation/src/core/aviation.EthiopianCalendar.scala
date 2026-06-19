@@ -35,14 +35,14 @@ package aviation
 import anticipation.*
 import gossamer.*
 
-// The Coptic (Alexandrian) calendar. Its epoch, 1 Thout 1 AM, is JDN 1825030 (29 August 284 CE in
-// the Julian calendar). Dates are stored as the same Julian-day-number as every other calendar;
-// only the labelling differs.
-class CopticCalendar() extends AlexandrianCalendar:
-  type Mensual = CopticMonth
-  type MonthUnit = CopticMonth.type
+// The Ethiopian calendar — Alexandrian in structure (see `AlexandrianCalendar`), with its epoch,
+// 1 Mäskäräm 1 (Amete Mihret), at JDN 1724221 (29 August 8 CE in the Julian calendar), roughly
+// seven to eight years behind the Coptic reckoning.
+class EthiopianCalendar() extends AlexandrianCalendar:
+  type Mensual = EthiopianMonth
+  type MonthUnit = EthiopianMonth.type
 
-  def epoch: Int = 1825030
-  val name: Text = t"Coptic"
-  def monthOrdinal(month: CopticMonth): Int = month.ordinal
-  def monthOfOrdinal(ordinal: Int): CopticMonth = CopticMonth.fromOrdinal(ordinal)
+  def epoch: Int = 1724221
+  val name: Text = t"Ethiopian"
+  def monthOrdinal(month: EthiopianMonth): Int = month.ordinal
+  def monthOfOrdinal(ordinal: Int): EthiopianMonth = EthiopianMonth.fromOrdinal(ordinal)

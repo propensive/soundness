@@ -32,17 +32,39 @@
                                                                                                   */
 package aviation
 
-import anticipation.*
-import gossamer.*
+import contingency.*
 
-// The Coptic (Alexandrian) calendar. Its epoch, 1 Thout 1 AM, is JDN 1825030 (29 August 284 CE in
-// the Julian calendar). Dates are stored as the same Julian-day-number as every other calendar;
-// only the labelling differs.
-class CopticCalendar() extends AlexandrianCalendar:
-  type Mensual = CopticMonth
-  type MonthUnit = CopticMonth.type
+// The shared structure of the "wandering"/Alexandrian calendars — Coptic, Ethiopian and the French
+// Republican calendar: twelve months of 30 days followed by a short thirteenth month of 5 days (6
+// in a leap year), with a leap year every fourth year (those with `year % 4 == 3`). Subclasses
+// supply only the epoch (the JDN of their year 1, month 1, day 1), the name, and the month type.
+abstract class AlexandrianCalendar() extends Calendar:
+  def epoch: Int
 
-  def epoch: Int = 1825030
-  val name: Text = t"Coptic"
-  def monthOrdinal(month: CopticMonth): Int = month.ordinal
-  def monthOfOrdinal(ordinal: Int): CopticMonth = CopticMonth.fromOrdinal(ordinal)
+  def monthsInYear: Int = 13
+  def leapYear(year: Year): Boolean = year()%4 == 3
+  def daysInYear(year: Year): Int = if leapYear(year) then 366 else 365
+
+  def daysInMonth(month: Mensual, year: Year): Int =
+    if monthOrdinal(month) < 12 then 30 else if leapYear(year) then 6 else 5
+
+  def zerothDayOfYear(year: Year): Date =
+    Date.julianDay(epoch - 1 + 365*(year() - 1) + year()/4)
+
+  def annual(date: Date): Year = Year((4*(date.jdn - epoch) + 1463)/1461)
+
+  private def dayOfYear(date: Date): Int = date.jdn - zerothDayOfYear(annual(date)).jdn
+
+  def mensual(date: Date): Mensual =
+    val doy = dayOfYear(date)
+    monthOfOrdinal(if doy > 360 then 12 else (doy - 1)/30)
+
+  def diurnal(date: Date): Day =
+    val doy = dayOfYear(date)
+    Day(doy - 30*(if doy > 360 then 12 else (doy - 1)/30))
+
+  def jdn(year: Year, month: Mensual, day: Day): Date raises TimeError =
+    if day() < 1 || day() > daysInMonth(month, year) then
+      raise(TimeError(_.Invalid(year(), monthOrdinal(month) + 1, day(), this)))
+
+    Date.julianDay(epoch - 1 + 365*(year() - 1) + year()/4 + 30*monthOrdinal(month) + day())

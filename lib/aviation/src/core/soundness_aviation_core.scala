@@ -34,10 +34,12 @@ package soundness
 
 export
   aviation
-  . { am, Anniversary, Apr, Aug, Base24, base24Extractable, Base60, base60Extractable, Calendar,
-      Clock, Clockface, CopticCalendar, CopticMonth, Date, DateNumerics, DateSeparation, Day, Dec,
-      Disambiguation, Duration, Endianness, Feb, Fri, Hebdomad, Holiday, Holidays, Horology, Hour,
-      Instant, IslamicCalendar, IslamicMonth, Iso8601, Jan, Jul, Jun, LeapSeconds, Mar, May,
+  . { am, AlexandrianCalendar, Anniversary, Apr, Aug, Base24, base24Extractable, Base60,
+      base60Extractable, Calendar, Clock, Clockface, CopticCalendar, CopticMonth, Date,
+      DateNumerics, DateSeparation, Day, Dec,
+      Disambiguation, Duration, Endianness, EthiopianCalendar, EthiopianMonth, Feb,
+      FrenchRepublicanCalendar, FrenchRepublicanMonth, Fri, Hebdomad, Holiday, Holidays, Horology,
+      Hour, Instant, IslamicCalendar, IslamicMonth, Iso8601, Jan, Jul, Jun, LeapSeconds, Mar, May,
       Meridiem, Minute, Moment, Mon, Month, Months, Monthstamp, Nov, now, Oct, Period, pm, Regime,
       Rfc1123, RomanCalendar, Sat, Sep, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics,
       TimeSeparation, TimeSpecificity, Timespan, Timestamp, TimestampError, Timezone, TimezoneError,
@@ -45,8 +47,8 @@ export
       WorkingDays, Year, Years }
 
 package calendars:
-  export aviation.calendars.{gregorianCalendar, julianCalendar, copticCalendar, islamicCalendar,
-      papalCutover, britishCutover}
+  export aviation.calendars.{gregorianCalendar, julianCalendar, copticCalendar, ethiopianCalendar,
+      islamicCalendar, frenchRepublicanCalendar, papalCutover, britishCutover}
 
 package nonexistentLeapDays:
   export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,

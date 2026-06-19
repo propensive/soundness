@@ -35,14 +35,16 @@ package aviation
 import anticipation.*
 import gossamer.*
 
-// The Coptic (Alexandrian) calendar. Its epoch, 1 Thout 1 AM, is JDN 1825030 (29 August 284 CE in
-// the Julian calendar). Dates are stored as the same Julian-day-number as every other calendar;
-// only the labelling differs.
-class CopticCalendar() extends AlexandrianCalendar:
-  type Mensual = CopticMonth
-  type MonthUnit = CopticMonth.type
+// The French Republican calendar (1793–1805) — Alexandrian in structure, its epoch 1 Vendémiaire An
+// I at JDN 2375840 (22 September 1792). The leap rule is the arithmetical `year % 4 == 3`, which
+// matches the sextile years (An III, VII, XI) actually observed during the calendar's brief use.
+class FrenchRepublicanCalendar() extends AlexandrianCalendar:
+  type Mensual = FrenchRepublicanMonth
+  type MonthUnit = FrenchRepublicanMonth.type
 
-  def epoch: Int = 1825030
-  val name: Text = t"Coptic"
-  def monthOrdinal(month: CopticMonth): Int = month.ordinal
-  def monthOfOrdinal(ordinal: Int): CopticMonth = CopticMonth.fromOrdinal(ordinal)
+  def epoch: Int = 2375840
+  val name: Text = t"French Republican"
+  def monthOrdinal(month: FrenchRepublicanMonth): Int = month.ordinal
+
+  def monthOfOrdinal(ordinal: Int): FrenchRepublicanMonth =
+    FrenchRepublicanMonth.fromOrdinal(ordinal)

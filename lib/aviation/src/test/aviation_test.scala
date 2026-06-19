@@ -1558,6 +1558,34 @@ object Tests extends Suite(m"Aviation Tests"):
           unsafely(Date(Year(1420), IslamicMonth.Muharram, Day(1))) + 1*CopticMonth
       . assert(_.nonEmpty)
 
+    suite(m"Ethiopian calendar"):
+      import calendars.ethiopianCalendar
+
+      test(m"2000-01-01 Gregorian is 22 Tahsas 1992 in the Ethiopian calendar"):
+        val date = { import calendars.gregorianCalendar; 2000-Jan-1 }
+        ( ethiopianCalendar.annual(date)(),
+          ethiopianCalendar.mensual(date),
+          ethiopianCalendar.diurnal(date)() )
+      . assert(_ == (1992, EthiopianMonth.Tahsas, 22))
+
+      test(m"A month after Pagume wraps to the next Ethiopian year"):
+        import monthEnds.clampMonthEnd
+        val result = unsafely(Date(Year(1992), EthiopianMonth.Pagume, Day(5))) + 1*EthiopianMonth
+        (ethiopianCalendar.annual(result)(), ethiopianCalendar.mensual(result))
+      . assert(_ == (1993, EthiopianMonth.Meskerem))
+
+    suite(m"French Republican calendar"):
+      test(m"18 Brumaire An VIII is 9 November 1799"):
+        import calendars.{gregorianCalendar, frenchRepublicanCalendar}
+        val date =
+          unsafely(Date(using frenchRepublicanCalendar)
+              (Year(8), FrenchRepublicanMonth.Brumaire, Day(18)))
+
+        ( gregorianCalendar.annual(date)(),
+          gregorianCalendar.mensual(date),
+          gregorianCalendar.diurnal(date)() )
+      . assert(_ == (1799, Nov, 9))
+
     suite(m"Clock"):
       test(m"Clock.fixed returns the same instant"):
         val clock = Clock.fixed(Instant(12345L))
