@@ -33,6 +33,7 @@
                                                                                                   */
 package rudiments
 
+import anticipation.*
 import prepositional.*
 
 // A type whose values can be tested for membership of a value (the queried type
@@ -58,6 +59,10 @@ object Inclusive:
 
   given array: [element <: Matchable] => Array[element] is Inclusive by element =
     (array, value) => array.exists(_ == value)
+
+  // `Text` (opaque over `String`) is not an `Iterable`, so it needs its own
+  // instance for `text.has(char)`; substring containment is `subsumes` instead.
+  given text: Text is Inclusive by Char = (text, char) => text.s.indexOf(char.toInt) >= 0
 
 trait Inclusive extends Typeclass, Operable:
   def has(self: Self, value: Operand): Boolean

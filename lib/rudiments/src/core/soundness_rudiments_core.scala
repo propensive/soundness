@@ -43,4 +43,4 @@ export
       prim, prior, probe, product, reflectClass, repeat, runs, runsBy, sec, segment, Segmentable,
       sift, snapshot, state, std, sumBy, tap, ter, that, tib, to, total, tri, triple, tuple, twin,
       typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
-      mean2, unique, limit, ult, ant, pen, Traversable, seek, where }
+      mean2, unique, limit, ult, ant, pen, Traversable, seek, where, subsumes }

@@ -158,6 +158,16 @@ extension [self](self: self)(using traversable: self is Traversable)
       case Some((_, index)) => index.z
       case None             => Unset
 
+  // `subsumes` tests whether `subsequence` occurs as a contiguous run of elements
+  // within `self` — a substring, for `Text`. The empty subsequence is always
+  // present. (Element membership, by contrast, is `has` via `Inclusive`.)
+  def subsumes(subsequence: self): Boolean =
+    val whole = Vector.from(traversable.traverse(self))
+    val part  = Vector.from(traversable.traverse(subsequence))
+    val last  = whole.length - part.length
+    part.isEmpty || whole.indices.exists: start =>
+      start <= last && part.indices.forall(offset => whole(start + offset) == part(offset))
+
 extension [value](iterator: Iterator[value])
   transparent inline def each(predicate: Ordinal aka "ordinal" ?=> value => Unit): Unit =
     var ordinal: Ordinal = Prim

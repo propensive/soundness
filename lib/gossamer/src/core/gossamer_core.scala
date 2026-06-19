@@ -474,9 +474,6 @@ package proximities:
       if span == 0 then 0.0 else levenshteinProximity.distance(left, right).toDouble/span
 
 extension (text: Text)
-  inline def has(substring: Text): Boolean = text.contains(substring)
-  inline def has(char: Char): Boolean = text.contains(char)
-
   def sub(from: Text, to: Text): Text =
     text.subPattern(jur.Pattern.compile(jur.Pattern.quote(from.s)).nn, to, Int.MaxValue)
 
