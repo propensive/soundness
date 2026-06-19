@@ -548,12 +548,12 @@ object Tests extends Suite(m"Gossamer Tests"):
       . assert(_ == Quin)
 
       test(m"Index satisfying predicate starting at result"):
-        t"oh, Hello World".where(_.isUpper, Quin)
+        t"oh, Hello World".pinpoint(_.isUpper, Quin)
 
       . assert(_ == Quin)
 
       test(m"Index satisfying predicate starting after result"):
-        t"oh, Hello World".where(_.isUpper, Sen)
+        t"oh, Hello World".pinpoint(_.isUpper, Sen)
 
       . assert(_ == 10.z)
 

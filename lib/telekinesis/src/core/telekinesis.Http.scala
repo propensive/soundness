@@ -490,7 +490,7 @@ object Http:
       Url[scheme](origin, target)
 
     private lazy val queryText: Text =
-      target.seek(t"?").lay(t""): ordinal => target.skip(ordinal.n0 + 1)
+      target.locate(t"?").lay(t""): ordinal => target.skip(ordinal.n0 + 1)
 
     lazy val query: Query =
       contentType.let(_.base.show) match
@@ -501,7 +501,7 @@ object Http:
           queryText.decode[Query]
 
     lazy val location: Text =
-      target.seek(t"?").lay(target): ordinal => target.keep(ordinal.n0)
+      target.locate(t"?").lay(target): ordinal => target.keep(ordinal.n0)
 
     object headers extends Dynamic:
       def selectDynamic(name: Label)

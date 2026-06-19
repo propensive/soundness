@@ -32,6 +32,7 @@
                                                                                                   */
 package rudiments
 
+import anticipation.*
 import prepositional.*
 
 // A type that can be traversed as a lazy sequence of its elements (its `Operand`,
@@ -43,6 +44,11 @@ object Traversable:
   given iterable: [element, collection <: Iterable[element]]
   =>  collection is Traversable by element =
     _.to(Stream)
+
+  // `Text` (opaque over `String`) is not an `Iterable`, so it needs its own instance;
+  // placing it here (the typeclass companion) keeps it in implicit scope for
+  // `Text is Traversable` without an explicit `import`, unlike a top-level given.
+  given text: Text is Traversable by Char = text => Stream(text.s.toCharArray.nn*)
 
 trait Traversable extends Typeclass, Operable:
   def traverse(self: Self): Stream[Operand]

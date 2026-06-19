@@ -143,9 +143,10 @@ extension [self](self: self)(using inclusive: self is Inclusive)
 
 // Element-oriented queries over any `Traversable` value. `seek` returns the first
 // element satisfying a predicate; `where` returns the *index* (`Ordinal`) of the
-// first element satisfying a predicate, or — in its single-argument form — of the
-// first element equal to a given value. (`where` returns indices uniformly, like
-// the equivalents for `Text`.)
+// first element satisfying a predicate. (A value-taking overload of `where` is
+// deliberately omitted: a path-dependent `traversable.Operand` makes it ambiguous
+// with the predicate form for any lambda argument, so `where(_ == value)` is the
+// idiom for locating a specific element.)
 extension [self](self: self)(using traversable: self is Traversable)
   def seek(predicate: traversable.Operand => Boolean): Optional[traversable.Operand] =
     traversable.traverse(self).find(predicate) match
@@ -154,11 +155,6 @@ extension [self](self: self)(using traversable: self is Traversable)
 
   def where(predicate: traversable.Operand => Boolean): Optional[Ordinal] =
     traversable.traverse(self).zipWithIndex.find((element, _) => predicate(element)) match
-      case Some((_, index)) => index.z
-      case None             => Unset
-
-  def where(value: traversable.Operand): Optional[Ordinal] =
-    traversable.traverse(self).zipWithIndex.find((element, _) => value == element) match
       case Some((_, index)) => index.z
       case None             => Unset
 

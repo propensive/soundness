@@ -38,7 +38,7 @@ import scala.quoted.*
 import anticipation.*
 import fulminate.*
 import gigantism.*
-import gossamer.{where as _, *}
+import gossamer.*
 import hieroglyph.*
 import quantitative.*
 import rudiments.*

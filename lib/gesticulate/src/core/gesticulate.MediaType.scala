@@ -38,7 +38,7 @@ import anticipation.*
 import contextual.*
 import contingency.*
 import distillate.*
-import gossamer.{where as _, *}
+import gossamer.*
 import prepositional.*
 import rudiments.*
 import spectacular.*

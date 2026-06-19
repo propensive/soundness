@@ -42,7 +42,7 @@ import digression.idempotent
 import distillate.*
 import fulminate.*
 import galilei.*
-import gossamer.{where as _, *}
+import gossamer.*
 import guillotine.*
 import hieroglyph.*
 import nomenclature.*
