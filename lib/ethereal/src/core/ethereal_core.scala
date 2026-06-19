@@ -47,7 +47,7 @@ import contingency.*
 import digression.*
 import distillate.*
 import escapade.*
-import eucalyptus.*, eucalyptus.fanOut
+import eucalyptus.*
 import exoskeleton.*
 import fulminate.*
 import galilei.*

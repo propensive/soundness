@@ -99,7 +99,8 @@ object Logger:
       Os.intercept[Shutdown](spool.stop())
 
 class Logger[-eventType, loggingType] private
-  ( threshold: Level, enqueue: (loggingType, Level, Long) => Unit ):
+  ( threshold: Level, enqueue: (loggingType, Level, Long) => Unit )
+extends Sink[eventType, loggingType]:
 
   def submit(level: Level, timestamp: Long, message: loggingType): Unit =
     if level.ordinal >= threshold.ordinal then enqueue(message, level, timestamp)

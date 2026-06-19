@@ -30,64 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package coaxial
+package gigantism
 
-import java.net as jn
+inline def every[value]: Every[value] = ${internal.every[value]}
 
-import anticipation.*
-import gigantism.*
-import prepositional.*
-import rudiments.*
-import urticose.*
-import vacuous.*
+object Every:
+  transparent inline given default: [value] => Every[value] = ${internal.every[value]}
 
-object Routable:
-  given udpEndpoint: Every[SocketOption.Udp] => Endpoint[UdpPort] is Routable:
-    case class Connection(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
-
-    def connect(endpoint: Endpoint[UdpPort], interface: Optional[MacAddress]): Connection =
-      val address = jn.InetAddress.getByName(endpoint.remote.s).nn
-      val socket = jn.DatagramSocket()
-      configure(socket, summon[Every[SocketOption.Udp]].values)
-
-      interface.let(interfaceFor(_)).let: nic =>
-        socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
-
-      Connection(address, endpoint.port.number, socket)
-
-    def transmit(connection: Connection, input: Stream[Data]): Unit =
-      input.each: bytes =>
-        val packet =
-          jn.DatagramPacket
-            ( bytes.mutable(using Unsafe), bytes.length, connection.address, connection.port )
-
-        connection.socket.send(packet)
-
-  given udpPort: Every[SocketOption.Udp] => UdpPort is Routable:
-    case class Connection(port: Int, socket: jn.DatagramSocket)
-
-    def connect(port: UdpPort, interface: Optional[MacAddress]): Connection =
-      val socket = jn.DatagramSocket()
-      configure(socket, summon[Every[SocketOption.Udp]].values)
-
-      interface.let(interfaceFor(_)).let: nic =>
-        socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
-
-      Connection(port.number, socket)
-
-    def transmit(connection: Connection, input: Stream[Data]): Unit =
-      input.each: bytes =>
-        val packet =
-          jn.DatagramPacket
-            ( bytes.mutable(using Unsafe),
-              bytes.length,
-              jn.InetAddress.getLocalHost.nn,
-              connection.port )
-
-        connection.socket.send(packet)
-
-trait Routable extends Typeclass:
-  type Connection
-
-  def connect(endpoint: Self, interface: Optional[MacAddress]): Connection
-  def transmit(connection: Connection, input: Stream[Data]): Unit
+case class Every[+value](values: List[value])

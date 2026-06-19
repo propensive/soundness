@@ -37,7 +37,7 @@ import java.nio.channels as jnc
 
 import anticipation.*
 import contingency.*
-import frontier.*
+import gigantism.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*

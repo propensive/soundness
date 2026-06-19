@@ -37,11 +37,9 @@ import language.experimental.pureFunctions
 import java.text as jt
 
 import anticipation.*
-import frontier.*
 import fulminate.*
 import gossamer.*
 import prepositional.*
-import rudiments.*
 import spectacular.*
 
 package logFormats:
@@ -65,28 +63,14 @@ package logFormats:
 
 val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
-// Derives the single `event is Loggable` that `Log.fine`/`info`/`warn`/`fail` summon by collecting
-// EVERY in-scope `Logger` for the event (contravariance means a `Logger[Any, Message]` is picked up
-// for any event), transcribing the event to the common `Message` carrier once, then fanning out to
-// each logger. No logger in scope ⇒ an empty `Every` ⇒ silent; many ⇒ fan-out + per-logger routing.
-given fanOut: [event]
-=>  ( every:        Every[Logger[event, Message]],
-      transcribable: event is Transcribable to Message )
-=>  event is Loggable =
-
-  (level, timestamp, event) =>
-    if !transcribable.skip(event) then
-      val message = transcribable.record(event)
-      every.values.each(_.submit(level, timestamp, message))
-
-// Runs `lambda` with logging of `event` suppressed, regardless of any ambient `Logger`s. The silent
-// `event is Loggable` is supplied directly to the block, so (as an explicitly-passed given) it
-// takes precedence over the wildcard `fanOut`.
+// Runs `lambda` with logging of `event` suppressed, regardless of any ambient `Sink`s. The silent
+// `event is Loggable` is supplied directly to the block, so (as a lexically-scoped given) it takes
+// precedence over the companion-scoped `Loggable.fanOut`.
 def mute[event](using erased Void)[result](lambda: (event is Loggable) ?=> result): result =
   val silent: event is Loggable = (level, timestamp, event) => ()
   lambda(using silent)
 
 package logging:
-  // A silent logger; imported explicitly (`import logging.silentLogging`) it outranks the wildcard
-  // `fanOut`, suppressing all logging for the file.
+  // A silent logger; imported explicitly (`import logging.silentLogging`) it outranks the
+  // companion-scoped `Loggable.fanOut`, suppressing all logging for the file.
   given silentLogging: [event] => event is Loggable = (level, timestamp, event) => ()

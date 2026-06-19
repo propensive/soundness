@@ -30,64 +30,10 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package coaxial
+package anticipation
 
-import java.net as jn
-
-import anticipation.*
-import gigantism.*
-import prepositional.*
-import rudiments.*
-import urticose.*
-import vacuous.*
-
-object Routable:
-  given udpEndpoint: Every[SocketOption.Udp] => Endpoint[UdpPort] is Routable:
-    case class Connection(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
-
-    def connect(endpoint: Endpoint[UdpPort], interface: Optional[MacAddress]): Connection =
-      val address = jn.InetAddress.getByName(endpoint.remote.s).nn
-      val socket = jn.DatagramSocket()
-      configure(socket, summon[Every[SocketOption.Udp]].values)
-
-      interface.let(interfaceFor(_)).let: nic =>
-        socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
-
-      Connection(address, endpoint.port.number, socket)
-
-    def transmit(connection: Connection, input: Stream[Data]): Unit =
-      input.each: bytes =>
-        val packet =
-          jn.DatagramPacket
-            ( bytes.mutable(using Unsafe), bytes.length, connection.address, connection.port )
-
-        connection.socket.send(packet)
-
-  given udpPort: Every[SocketOption.Udp] => UdpPort is Routable:
-    case class Connection(port: Int, socket: jn.DatagramSocket)
-
-    def connect(port: UdpPort, interface: Optional[MacAddress]): Connection =
-      val socket = jn.DatagramSocket()
-      configure(socket, summon[Every[SocketOption.Udp]].values)
-
-      interface.let(interfaceFor(_)).let: nic =>
-        socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
-
-      Connection(port.number, socket)
-
-    def transmit(connection: Connection, input: Stream[Data]): Unit =
-      input.each: bytes =>
-        val packet =
-          jn.DatagramPacket
-            ( bytes.mutable(using Unsafe),
-              bytes.length,
-              jn.InetAddress.getLocalHost.nn,
-              connection.port )
-
-        connection.socket.send(packet)
-
-trait Routable extends Typeclass:
-  type Connection
-
-  def connect(endpoint: Self, interface: Optional[MacAddress]): Connection
-  def transmit(connection: Connection, input: Stream[Data]): Unit
+// A destination for log messages of a given `carrier` type. `eucalyptus.Logger` is the concrete
+// implementation; abstracting it here lets `Loggable.fanOut` collect every in-scope sink (via
+// `gigantism.Every`) without `anticipation.log` depending on the logging runtime.
+trait Sink[-eventType, carrier]:
+  def submit(level: Level, timestamp: Long, message: carrier): Unit
