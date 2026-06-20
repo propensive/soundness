@@ -39,6 +39,7 @@ import zephyrine.*
 // are little-endian; a field is its tag varint followed by the value (length-prefixed for the
 // length-delimited wire type). Drive it through `Protobuf.printed` (synchronous) or `Protobuf.emit`
 // (streaming).
+@unexported
 class ProtobufPrinter(out: Producer.Bytes):
   def byte(value: Int): Unit = out.push(value.toByte)
 
