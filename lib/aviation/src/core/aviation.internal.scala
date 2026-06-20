@@ -55,11 +55,17 @@ import symbolism.*
 import vacuous.*
 
 object internal:
-  opaque type Date = Int
+  opaque type Date = Long
   opaque type Year = Int
   opaque type Day = Int
   opaque type WorkingDays = Int
   opaque type Anniversary = Short
+
+  // A `Date` is packed into the same millisecond-since-JDN-epoch grid the `Timestamp` point uses,
+  // with the time-of-day clamped to zero — so a `Date` is exactly a day-precision `Timestamp`.
+  // `jdn`/`julianDay` recover and build the Julian day number; the calendar layer only ever sees
+  // that `Int` JDN, so it is unaffected by this representation.
+  private final val MillisPerDay: Long = 86_400_000L
 
 
   extension (anniversary: Anniversary)
@@ -463,8 +469,8 @@ object internal:
         halt(735, m"expected a literal double value")
 
   object Date:
-    inline given underlying: Underlying[Date, Int] = !!
-    def julianDay(day: Int): Date = day
+    inline given underlying: Underlying[Date, Long] = !!
+    def julianDay(day: Int): Date = day.toLong*MillisPerDay
 
     def apply(using calendar: Calendar)
       ( year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal )
@@ -477,16 +483,16 @@ object internal:
       type Issue: Communicable
 
     given subtractable: Date is Subtractable by Date to Quanta[Days[1]] = (end, start) =>
-      (Quanta(end - start): Quanta[Days[1]])
+      (Quanta(((end - start)/MillisPerDay).toInt): Quanta[Days[1]])
 
     given subtractable2: Date is Subtractable by Quanta[Days[1]] to Date = (end, start) =>
-      end - start[Days]
+      end.addDays(-start[Days])
 
     given addable: Date is Addable by Quanta[Days[1]] to Date = (left, right) =>
-      left + right[Days]
+      left.addDays(right[Days])
 
     given addable2: Quanta[Days[1]] is Addable by Date to Date = (left, right) =>
-      left[Days] + right
+      right.addDays(left[Days])
 
     given showable: (Endianness, DateNumerics, DateSeparation, Years) => Date is Showable = date =>
       import DateNumerics.*, Years.*
@@ -544,7 +550,7 @@ object internal:
 
         if left == right then !strict else (left < right)^greaterThan
 
-    given ordering: Ordering[Date] = Ordering.Int
+    given ordering: Ordering[Date] = Ordering.Long
 
     given plus2: Holidays => (hebdomad: Hebdomad) => Date is Addable:
       type Operand = WorkingDays
@@ -554,10 +560,10 @@ object internal:
         def recur(current: Date, count: Int): Date =
           if count == 0 then
             if current.weekend || summon[Holidays].holiday(current).present
-            then recur(current + 1, 0)
+            then recur(current.addDays(1), 0)
             else current
           else
-            val next = current.jdn + count
+            val next = current.addDays(count)
             val holidays = summon[Holidays].between(current, next)
             val weekends = Weekday.all.to(List).filter(_.weekend)
             val weekendDays = weekends.map(Weekday.count(current, next, _)).sum
@@ -580,15 +586,15 @@ object internal:
         ( calendars.gregorianCalendar.mensual(date),
           calendars.gregorianCalendar.diurnal(date) )
 
-    def jdn: Int = date
+    def jdn: Int = Math.floorDiv(date, MillisPerDay).toInt
 
     def monthstamp(using calendar: RomanCalendar): Monthstamp =
       Monthstamp(calendar.annual(date), calendar.mensual(date))
 
     def yearDay(using calendar: Calendar): Int =
-      date - calendar.zerothDayOfYear(calendar.annual(date))
+      date.jdn - calendar.zerothDayOfYear(calendar.annual(date)).jdn
 
-    def addDays(count: Int): Date = date + count
+    def addDays(count: Int): Date = date + count.toLong*MillisPerDay
 
     @targetName("gt")
     infix def > (right: Date): Boolean = date > right
