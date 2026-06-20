@@ -32,6 +32,4 @@
                                                                                                   */
 package soundness
 
-// `lensFold` is deliberately not exported into the umbrella.
-// unexported: lensFold
 export panopticon.{Coercible, Composable, compose, Each, Filter, Lens, lens, Optic, Optical}

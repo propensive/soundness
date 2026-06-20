@@ -81,8 +81,6 @@ extension (tel: Tel)
 
     Bintel.frame(tel.bintel(schema), signature)
 
-
-
 extension (element: Tel.Element)
   // Encode a pre-assigned semantic-model element to BinTEL body bytes.
   // The schema supplies the member layout needed for §7.2 canonical

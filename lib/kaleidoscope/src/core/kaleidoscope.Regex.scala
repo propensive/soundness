@@ -112,8 +112,7 @@ object Regex:
 
 
   def apply(parts: Seq[String])(using erased Unsafe): Regex =
-    import strategies.throwUnsafely
-    parse(parts.to(List).map(_.tt))
+    strategies.throwUnsafely.give(parse(parts.to(List).map(_.tt)))
 
   def apply(text: Text): Regex raises RegexError = parse(List(text))
 

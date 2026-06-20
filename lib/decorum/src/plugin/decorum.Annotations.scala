@@ -72,6 +72,33 @@ object Annotations:
         case _ => ()
     out.toSet
 
+  // Collect the simple names of every definition annotated `@unexported`. R-742
+  // and R-742.1 skip these: they are deliberately not re-exported into the
+  // `soundness` umbrella (a name clash with another component, or a compile-time/
+  // internal helper). The annotation is read by name only, so its optional
+  // `reason` argument is ignored here.
+  def unexported(tree: untpd.Tree): Set[String] =
+    val out = mutable.Set[String]()
+    walk(tree): t =>
+      t match
+        case d: untpd.MemberDef if d.mods.annotations.exists(mentionsUnexported) =>
+          val name = d.name.toString
+          if name.nonEmpty then out += name
+        case _ => ()
+    out.to(Set)
+
+  // Does this annotation tree name the `unexported` annotation? Untyped
+  // annotations are `New`/`Apply` trees around the annotation type's `Ident`
+  // (or `Select`); we just look for the leaf name anywhere within.
+  private def mentionsUnexported(annotation: untpd.Tree): Boolean =
+    var found = false
+    walk(annotation): t =>
+      t match
+        case untpd.Ident(name)     => if name.toString == "unexported" then found = true
+        case untpd.Select(_, name) => if name.toString == "unexported" then found = true
+        case _                     => ()
+    found
+
   // Generic untyped-tree pre-order traversal driven off `productIterator`,
   // so we don't need to enumerate every tree shape. We descend into any
   // field that is itself a `Tree`, and into any `Iterable` recursively

@@ -35,7 +35,6 @@ package soundness
 // `as` (decode an HTTP request body, via the `Acceptable` typeclass) clashes in
 // the umbrella with distillate's generic `Decodable`-based `as`; reach this one
 // via `scintillate.as`.
-// unexported: as
 export
   scintillate
   . { Acceptable, basicAuth, cookie, HttpConnection, HttpServer, HttpServerEvent, NoCache, NotFound,

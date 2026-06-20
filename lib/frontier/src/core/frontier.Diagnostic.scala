@@ -46,6 +46,8 @@ import vacuous.*
 // be produced by Frontier's catch-all *and* by other macros — e.g. Wisteria's
 // generic derivation, which can attach a `label` (a field or variant name) to
 // each node.
+// Not exported: clashes with harlequin.Diagnostic in the umbrella; reach it via frontier.Diagnostic
+@unexported
 object Diagnostic:
   given treeStyle: [text: Textual] => TextualTreeStyle[text] =
     TextualTreeStyle(t"   ", t" └─", t" ├─", t" │ ")

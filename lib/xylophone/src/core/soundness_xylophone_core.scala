@@ -34,7 +34,6 @@ package soundness
 
 // `Attributive`, `Renderable` and `Tag` clash with `honeycomb`'s names in the umbrella;
 // reach xylophone's via `xylophone.Attributive` etc.
-// unexported: Attributive, Renderable, Tag
 export
   xylophone
   . { Xml, xml, XmlError, XmlSchema, DynamicXmlEnabler, dynamicXmlAccess, x, xp, XPath,

@@ -154,7 +154,7 @@ extension [self](self: self)(using traversable: self is Traversable)
       case None          => Unset
 
   def where(predicate: traversable.Operand => Boolean): Optional[Ordinal] =
-    traversable.traverse(self).zipWithIndex.find((element, _) => predicate(element)) match
+    traversable.traverse(self).zipWithIndex.find { (element, _) => predicate(element) } match
       case Some((_, index)) => index.z
       case None             => Unset
 
@@ -165,8 +165,10 @@ extension [self](self: self)(using traversable: self is Traversable)
     val whole = Vector.from(traversable.traverse(self))
     val part  = Vector.from(traversable.traverse(subsequence))
     val last  = whole.length - part.length
+
     part.isEmpty || whole.indices.exists: start =>
-      start <= last && part.indices.forall(offset => whole(start + offset) == part(offset))
+      start <= last && part.indices.forall: offset =>
+        whole(start + offset) == part(offset)
 
 extension [value](iterator: Iterator[value])
   transparent inline def each(predicate: Ordinal aka "ordinal" ?=> value => Unit): Unit =
@@ -458,9 +460,12 @@ extension [tuple <: Tuple](tuple: tuple)
   def to[product: Mirror.ProductOf]: product = product.fromProduct(tuple)
 
 extension (erased tuple: Tuple)
+  @unexported
   inline def contains[element]: Boolean = indexOf[element] >= 0
+  @unexported
   inline def indexOf[element]: Int = recurIndex[tuple.type, element](0)
 
+  @unexported
   transparent inline def subtypes[supertype]: Tuple = recurSubtypes[tuple.type, supertype, Zero]
 
   private transparent inline def recurSubtypes[tuple <: Tuple, supertype, done <: Tuple]: Tuple =
@@ -479,6 +484,7 @@ extension (erased tuple: Tuple)
       case _: (other *: tail)   => recurIndex[tail, element](index + 1)
 
 extension (using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
+  @unexported
   inline def literal
     [ primitive
       <:  Boolean | Byte | Short | Int | Long | Float | Double | Char | String | Unit | Null ]

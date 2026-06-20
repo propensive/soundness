@@ -37,17 +37,9 @@ import scala.collection.mutable
 import dotty.tools.dotc.ast.untpd
 import dotty.tools.dotc.util.SourceFile
 
-case class ExportInfo(names: Set[String], excluded: Set[String], firstLine: Int)
+case class ExportInfo(names: Set[String], firstLine: Int)
 
 object SoundnessExports:
-  // A directive comment, `// unexported: Foo, Bar`, marks modules that are
-  // deliberately not re-exported into `soundness` (typically because the simple
-  // name already belongs to another component's surface). R-742 treats these as
-  // satisfied. The capture stops at end of line or an opening parenthesis, so a
-  // trailing justification (`// unexported: Foo (clashes with bar.Foo)`) is fine.
-  private val ExcludeDirective = "(?m)//\\s*unexported:\\s*([^\\n(]+)".r
-  private val Identifier       = "[A-Za-z][A-Za-z0-9]*".r
-
   // Collect the simple leaf names re-exported by every top-level `export`
   // statement in the file (including those nested inside `package x:` blocks),
   // together with the line of the first such statement. Used by R-742 to check
@@ -77,12 +69,7 @@ object SoundnessExports:
 
     visit(tree)
 
-    val content  = String(source.content)
-    val excluded = mutable.Set[String]()
-    ExcludeDirective.findAllMatchIn(content).foreach: directive =>
-      Identifier.findAllIn(directive.group(1).nn).foreach(excluded += _)
-
-    ExportInfo(names.to(Set), excluded.to(Set), if firstLine < 0 then PackageLine else firstLine)
+    ExportInfo(names.to(Set), if firstLine < 0 then PackageLine else firstLine)
 
   // The line of the `package soundness` declaration in export-surface files;
   // used as the fallback violation position when a surface contains no exports.

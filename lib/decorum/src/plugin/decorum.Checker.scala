@@ -50,10 +50,11 @@ object Checker:
       expectedModule:   Option[String],
       rawText:          String,
       siblingTypes:     List[String] = Nil,
-      siblingExtensions: List[String] = Nil )
+      siblingExtensions: List[String] = Nil,
+      unexported:       Set[String] = Set.empty )
   :   LazyList[Violation] =
     val (tree, source) = Parsing.parse(file, rawText)
-    check(file, expectedModule, rawText, tree, source, siblingTypes, siblingExtensions)
+    check(file, expectedModule, rawText, tree, source, siblingTypes, siblingExtensions, unexported)
 
   def check
     ( file:             String,
@@ -62,7 +63,8 @@ object Checker:
       untpdTree:        untpd.Tree,
       source:           SourceFile,
       siblingTypes:     List[String],
-      siblingExtensions: List[String] )
+      siblingExtensions: List[String],
+      unexported:       Set[String] )
   :   LazyList[Violation] =
 
     val out   = mutable.ListBuffer[Violation]()
@@ -99,8 +101,8 @@ object Checker:
     checkOperatorContinuation(file, operatorSites, out)
     checkInterpolatorLayout(file, interpolations, rawText, source, out)
     val soundnessExports = SoundnessExports.extract(untpdTree, source)
-    checkSoundnessExports(file, siblingTypes, soundnessExports, out)
-    checkSoundnessExtensionExports(file, siblingExtensions, soundnessExports, out)
+    checkSoundnessExports(file, siblingTypes, soundnessExports, unexported, out)
+    checkSoundnessExtensionExports(file, siblingExtensions, soundnessExports, unexported, out)
     var idx = 0
 
     while idx < lines.length do
@@ -1994,11 +1996,12 @@ object Checker:
     ( file:         String,
       siblingTypes: List[String],
       exports:      ExportInfo,
+      unexported:   Set[String],
       out:          mutable.ListBuffer[Violation] )
   :   Unit =
 
     val missing =
-      siblingTypes.filterNot(exports.names.contains).filterNot(exports.excluded.contains)
+      siblingTypes.filterNot(exports.names.contains).filterNot(unexported.contains)
 
     if missing.nonEmpty then
       val listed = missing.map { name => s"`$name`" }.mkString(", ")
@@ -2013,17 +2016,18 @@ object Checker:
   // its leaf name. `siblingExtensions` is the list of such method names found in
   // the `<component>_<suffix>.scala` definition files alongside the export
   // surface; any name absent from the surface's `export` clauses (and not marked
-  // `// unexported:`) is a violation. The list is empty for every file other
-  // than an export surface, so this check is a no-op elsewhere.
+  // `@unexported`) is a violation. The list is empty for every file other than an
+  // export surface, so this check is a no-op elsewhere.
   private def checkSoundnessExtensionExports
     ( file:              String,
       siblingExtensions: List[String],
       exports:           ExportInfo,
+      unexported:        Set[String],
       out:               mutable.ListBuffer[Violation] )
   :   Unit =
 
     val missing =
-      siblingExtensions.filterNot(exports.names.contains).filterNot(exports.excluded.contains)
+      siblingExtensions.filterNot(exports.names.contains).filterNot(unexported.contains)
 
     if missing.nonEmpty then
       val listed  = missing.map { name => s"`$name`" }.mkString(", ")

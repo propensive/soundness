@@ -100,6 +100,17 @@ object settings:
 
   val scalaOptionsCC = scalaOptions ++ Seq("-Ycc-new")
 
+  // Override `-Xmax-inlines` to `limit`, replacing any existing setting rather
+  // than appending a second one (which the compiler reports as "Option
+  // -Xmax-inlines was updated"). The base stays 32 everywhere else.
+  def maxInlines(options: Seq[String], limit: String): Seq[String] =
+    def strip(remaining: List[String]): List[String] = remaining match
+      case "-Xmax-inlines" :: _ :: rest => strip(rest)
+      case other :: rest                => other :: strip(rest)
+      case Nil                          => Nil
+
+    strip(options.to(List)) ++ Seq("-Xmax-inlines", limit)
+
 trait BaseScalaModule extends ScalaModule:
   override def scalaVersion = settings.scalaVersion
   override def scalacOptions = settings.scalaOptions
@@ -652,11 +663,11 @@ object embarcadero extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object containerd extends Component(obligatory.grpc, cordillera.core, coaxial.core, locomotion.core, anticipation.time):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium",
-        "-Xmax-inlines", "64")
+      settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef",
+        "-Yimports:java.lang,scala,proscenium"), "64")
   object test extends Tests(oci, containerd, aviation.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Xmax-inlines", "64")
+      settings.maxInlines(super.scalacOptions(), "64")
 
 object enigmatic extends Library:
   object core extends Component(gastronomy.core):
@@ -801,18 +812,18 @@ object eucalyptus extends Library:
 object exegesis extends Library:
   object core extends Component(obligatory.json):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium",
-        "-Xmax-inlines", "48")
+      settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef",
+        "-Yimports:java.lang,scala,proscenium"), "48")
 
   object demo extends Internal(core, ethereal.core, exoskeleton.completions):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium",
-        "-Xmax-inlines", "48")
+      settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef",
+        "-Yimports:java.lang,scala,proscenium"), "48")
     override def mainClass: Task.Simple[Option[String]] = Some("exegesis.lsp")
 
   object test extends Tests(core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Xmax-inlines", "48")
+      settings.maxInlines(super.scalacOptions(), "48")
 
 object exoskeleton extends Library:
   object args extends Component(escapade.core, profanity.core, ambience.core, quantitative.units):
@@ -1337,8 +1348,8 @@ object symbolism extends Library:
 object synesthesia extends Library:
   object core extends Component(obligatory.json):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium",
-        "-Xmax-inlines", "48")
+      settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef",
+        "-Yimports:java.lang,scala,proscenium"), "48")
 
   object test extends Tests(core)
 

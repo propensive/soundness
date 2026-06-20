@@ -51,15 +51,24 @@ object Tests extends Suite(m"Decorum Tests"):
 
   def rules(body: String): List[String] = violations(body).map(_.rule)
 
-  def exportRules(body: String, siblings: List[String]): List[String] =
-    Checker.check("<test>", Some("soundness"), stub(body), siblings).toList.map(_.rule)
+  def exportRules
+     (body: String, siblings: List[String], unexported: Set[String] = Set.empty)
+  :   List[String] =
+    Checker.check("<test>", Some("soundness"), stub(body), siblings, Nil, unexported).toList.map(_.rule)
 
-  def extensionExportRules(body: String, extensions: List[String]): List[String] =
-    Checker.check("<test>", Some("soundness"), stub(body), Nil, extensions).toList.map(_.rule)
+  def extensionExportRules
+     (body: String, extensions: List[String], unexported: Set[String] = Set.empty)
+  :   List[String] =
+    Checker.check("<test>", Some("soundness"), stub(body), Nil, extensions, unexported).toList
+      .map(_.rule)
 
   def extractedExtensions(body: String): List[String] =
     val (tree, source) = Parsing.parse("<test>", stub(body))
     Extensions.extract(tree, source)
+
+  def extractedUnexported(body: String): Set[String] =
+    val (tree, source) = Parsing.parse("<test>", stub(body))
+    Annotations.unexported(tree)
 
   def run(): Unit =
     suite(m"Phase 1: Universal rules"):
@@ -940,15 +949,13 @@ object Tests extends Suite(m"Decorum Tests"):
         exportRules("export jacinta.{Json}\n", Nil)
       . assert(r => !r.contains("742"))
 
-      test(m"An `unexported:` directive suppresses the violation"):
-        exportRules
-         ("// unexported: Timestamp (clashes with aviation.Timestamp)\nexport embarcadero.{Image}\n",
-          List("Image", "Timestamp"))
+      test(m"An `@unexported` module suppresses the violation"):
+        exportRules("export embarcadero.{Image}\n", List("Image", "Timestamp"), Set("Timestamp"))
       . assert(r => !r.contains("742"))
 
-      test(m"An `unexported:` directive only suppresses the named module"):
+      test(m"An `@unexported` module only suppresses the named module"):
         exportRules
-         ("// unexported: Timestamp\nexport embarcadero.{Image}\n", List("Image", "Timestamp", "Layer"))
+         ("export embarcadero.{Image}\n", List("Image", "Timestamp", "Layer"), Set("Timestamp"))
       . assert(_.contains("742"))
 
     suite(m"Phase 7: Soundness extension-method export completeness (R742.1)"):
@@ -965,9 +972,8 @@ object Tests extends Suite(m"Decorum Tests"):
         extensionExportRules("export xylophone.{x, xp}\n", Nil)
       . assert(r => !r.contains("742.1"))
 
-      test(m"An `unexported:` directive suppresses the extension violation"):
-        extensionExportRules
-         ("// unexported: xml (clashes with honeycomb.xml)\nexport xylophone.{x}\n", List("x", "xml"))
+      test(m"An `@unexported` extension method suppresses the extension violation"):
+        extensionExportRules("export xylophone.{x}\n", List("x", "xml"), Set("xml"))
       . assert(r => !r.contains("742.1"))
 
       test(m"Extract names a single-line extension method"):
@@ -989,3 +995,21 @@ object Tests extends Suite(m"Decorum Tests"):
       test(m"Extract skips qualified-private extension methods"):
         extractedExtensions("extension (value: Text)\n  def a: Int = 1\n  private[decorum] def b = 2\n")
       . assert(_ == List("a"))
+
+    suite(m"Phase 7: @unexported annotation extraction"):
+
+      test(m"@unexported on an object is detected"):
+        extractedUnexported("@unexported\nobject Timestamp\n")
+      . assert(_ == Set("Timestamp"))
+
+      test(m"@unexported on a trait is detected"):
+        extractedUnexported("@unexported\ntrait Executor\n")
+      . assert(_ == Set("Executor"))
+
+      test(m"@unexported on an extension method is detected"):
+        extractedUnexported("extension (x: Int)\n  @unexported def apply(y: Int): Int = y\n")
+      . assert(_ == Set("apply"))
+
+      test(m"unannotated definitions are not collected"):
+        extractedUnexported("object Foo\nextension (x: Int) def bar: Int = x\n")
+      . assert(_ == Set())
