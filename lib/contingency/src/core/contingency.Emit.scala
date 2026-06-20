@@ -34,20 +34,20 @@ package contingency
 
 import language.experimental.pureFunctions
 
+import beneficence.*
 import fulminate.*
 
-// A `Tactic` is an `Emit` that can additionally `abort`: a value-replacing abnormal exit. `raises
-// error` (`Tactic[error] ?=>`) is therefore the stronger obligation than `emits error`; code with a
-// `Tactic` can satisfy either, but a fire-and-forget context offering only an `Emit` cannot supply
-// the `abort` half. See [[Emit]].
-trait Tactic[-error <: Exception] extends Emit[error]:
-  private inline def tactic: this.type = this
-  def abort(error: Diagnostics ?=> error): Nothing
-  def certify(): Unit
+// The capability to *emit* an error of type `error` as a side-effect: `record` reports it but does
+// not, of itself, abort — control may continue (whether it actually does is the implementation's
+// choice). `Tactic` adds the value-replacing `abort`. `raise` needs only an `Emit`; `abort` needs a
+// full `Tactic`. So `emits error` (`Emit[error] ?=>`) is the weaker obligation than `raises error`
+// (`Tactic[error] ?=>`), and a `Tactic` in scope discharges either.
+trait Emit[-error <: Exception] extends Findable:
+  private inline def emitter: this.type = this
+  def diagnostics: Diagnostics
+  def record(error: Diagnostics ?=> error): Unit
 
-  override def contramap[error2 <: Exception](lambda: error2 => error): Tactic[error2] =
-    new Tactic[error2]:
-      def diagnostics: Diagnostics = tactic.diagnostics
-      def record(error: Diagnostics ?=> error2): Unit = tactic.record(lambda(error))
-      def abort(error: Diagnostics ?=> error2): Nothing = tactic.abort(lambda(error))
-      def certify(): Unit = tactic.certify()
+  def contramap[error2 <: Exception](lambda: error2 => error): Emit[error2] =
+    new Emit[error2]:
+      def diagnostics: Diagnostics = emitter.diagnostics
+      def record(error: Diagnostics ?=> error2): Unit = emitter.record(lambda(error))

@@ -77,10 +77,10 @@ def certify[error <: Exception: Tactic](): Unit = error.certify()
 
 def raise[exception <: Exception]
   ( error: Diagnostics ?=> exception )
-  ( using tactic: Tactic[exception] )
+  ( using emitter: Emit[exception] )
 :   Unit =
 
-  tactic.record(error)
+  emitter.record(error)
 
 
 def abort[success, exception <: Exception: Tactic](error: Diagnostics ?=> exception): Nothing =
