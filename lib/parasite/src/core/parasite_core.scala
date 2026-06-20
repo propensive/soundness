@@ -98,11 +98,17 @@ def daemon[error <: Exception](using Codepoint)
 def trap(handler: PartialFunction[Error, Remedy])(using outer: Probate): Trap = Trap(handler, outer)
 
 
-// `Task[result] emits error` = `Task[result] { type Error <: error }`. The bound (not an equality)
-// keeps the error covariant: a task that can fail only with `AsyncError` is usable where one that
-// `emits FooError` is expected, and `await`'s `raises (Error | AsyncError)` is dischargeable by a
-// `Tactic` for the bound. `task <: Task[?]` keeps the refinement applicable only to actual tasks.
-infix type emits[task <: Task[?], error <: Exception] = task { type Error <: error }
+// `X emits error` is the one concept "X can produce these errors as an out-of-band side-channel",
+// reified two ways. For a `Task`, it is the `Error`-member bound `Task[result] { type Error <: error }`:
+// the bound (not an equality) keeps the error covariant, so a task failing only with `AsyncError` is
+// usable where one that `emits FooError` is expected, and `await`'s `raises (Error | AsyncError)`
+// converts the emission to a value-replacing exit in the caller's scope. For anything else it is the
+// side-effect obligation `Emit[error] ?=> X` — the weaker sibling of `raises error`
+// (`Tactic[error] ?=>`). The `Task` branch reduces to a refinement (not a context function), so it is
+// clear of the match-type-in-return-position erasure crash documented on `raising`.
+infix type emits[left, error <: Exception] = left match
+  case Task[?] => left { type Error <: error }
+  case _       => Emit[error] ?=> left
 
 
 // `error` is the union of error types the body may `raise`, inferred exactly as for synchronous
