@@ -2077,6 +2077,32 @@ object Tests extends Suite(m"Aviation Tests"):
       . matches:
           case _: TimestampError =>
 
+      test(m"Timestamp difference decomposes into days/hours/minutes/seconds"):
+        val a = Timestamp(2024-Jan-10, Clockface(8, 0, 0))
+        val b = Timestamp(2024-Jan-12, Clockface(11, 30, 15))
+        val span = b - a
+        (span.days, span.hours, span.minutes, span.seconds.value)
+      . assert(_ == (2, 3, 30, 15.0))
+
+      test(m"Timestamp difference of equal timestamps is zero"):
+        val a = Timestamp(2024-Jan-10, Clockface(8, 0, 0))
+        val span = a - a
+        (span.days, span.hours, span.minutes, span.seconds.value)
+      . assert(_ == (0, 0, 0, 0.0))
+
+      test(m"Timestamp difference is sign-consistent when negative"):
+        val a = Timestamp(2024-Jan-10, Clockface(8, 0, 0))
+        val b = Timestamp(2024-Jan-12, Clockface(11, 30, 15))
+        val span = a - b
+        (span.days, span.hours, span.minutes, span.seconds.value)
+      . assert(_ == (-2, -3, -30, -15.0))
+
+      test(m"a Date is a Timestamp (usable where a Timestamp is expected)"):
+        def jdnOf(timestamp: Timestamp): Int = timestamp.jdn
+        val date: Date = 2024-Jan-15
+        jdnOf(date) == date.jdn
+      . assert(_ == true)
+
     suite(m"TZDB parser"):
       given TimeEvent is Loggable = new Loggable:
         type Self = TimeEvent

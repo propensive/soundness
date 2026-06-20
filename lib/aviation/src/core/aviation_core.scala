@@ -46,7 +46,8 @@ import symbolism.*
 import vacuous.*
 
 export protointernal.{Instant, Duration}
-export aviation.internal.{Date, Year, Day, Anniversary, WorkingDays}
+export aviation.internal.{Year, Day, Anniversary, WorkingDays}
+export aviation.timestampInternal.{Timestamp, Date}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
 // A `MonthRadix` is the "month" radix of some calendar (Gregorian `Month`, `IslamicMonth`,
@@ -68,6 +69,13 @@ object Minute extends Radix.Regular:
   given multiplicable: Int is Multiplicable by Minute.type to (Timespan of Minute.type) =
     (n, _) => Timespan(Minute, n)
 
+// Phantom precision markers for `Timestamp in <unit>` (the `Form` type member). `Day`, `Year` and
+// `Month` already exist as types and double as markers; the sub-day units exist only as radix
+// objects, so these traits give them a type to name. They are erased — purely type-level tags.
+trait Hour
+trait Minute
+trait Second
+
 package instantDecodables:
   given iso8601InstantDecodable: Tactic[TimeError] => Instant is Decodable in Text =
     Iso8601.parse(_)
@@ -81,27 +89,27 @@ package dateFormats:
   given europeanDateFormat: Date is Showable =
     import endianness.littleEndian, numerics.fixedWidthDateNumerics, separators.dotDateSeparator
     import years.fullYears
-    Date.showable.text(_)
+    Timestamp.dateShowable.text(_)
 
   given americanDateFormat: Date is Showable =
     import endianness.middleEndian, numerics.fixedWidthDateNumerics, separators.slashDateSeparator
     import years.fullYears
-    Date.showable.text(_)
+    Timestamp.dateShowable.text(_)
 
   given unitedKingdomDateFormat: Date is Showable =
     import endianness.littleEndian, numerics.fixedWidthDateNumerics, separators.slashDateSeparator
     import years.fullYears
-    Date.showable.text(_)
+    Timestamp.dateShowable.text(_)
 
   given southEastAsiaDateFormat: Date is Showable =
     import endianness.littleEndian, numerics.fixedWidthDateNumerics, separators.hyphenDateSeparator
     import years.fullYears
-    Date.showable.text(_)
+    Timestamp.dateShowable.text(_)
 
   given iso8601DateFormat: Date is Showable =
     import endianness.bigEndian, numerics.fixedWidthDateNumerics, separators.hyphenDateSeparator
     import years.fullYears
-    Date.showable.text(_)
+    Timestamp.dateShowable.text(_)
 
   package endianness:
     given bigEndian: Endianness = Endianness.BigEndian
