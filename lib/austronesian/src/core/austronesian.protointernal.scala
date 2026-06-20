@@ -32,15 +32,10 @@
                                                                                                   */
 package austronesian
 
-import scala.quoted.*
-
 import anticipation.*
 import contingency.*
 import distillate.*
-import fulminate.*
-import gigantism.*
 import gossamer.*
-import hellenism.*
 import prepositional.*
 import wisteria.*
 
@@ -79,50 +74,3 @@ object protointernal:
 
       case other =>
         provide[Tactic[PojoError]](abort(PojoError()))
-
-  def isolated[result: Type](classloader: Expr[Classloader], invoke: Expr[result]): Macro[result] =
-    import quotes.reflect.*
-
-    invoke.asTerm match
-      case term => ()
-
-    '{???}
-
-
-  def proxy
-    ( className:   Expr[Text],
-      methodName:  Expr[String],
-      arguments:   Expr[Seq[Any]],
-      classloader: Expr[Classloader],
-      singleton:   Expr[Boolean] )
-  :   Macro[Any] =
-
-    import quotes.reflect.*
-
-    val arguments2: IArray[Expr[Pojo]] = arguments.absolve match
-      case Varargs(arguments) => IArray.from(arguments).map:
-        case '{$argument: argument} =>
-
-          val encodable = Expr.summon[argument is Encodable in Pojo].getOrElse:
-            halt
-              ( 30,
-                m"${TypeRepr.of[argument].show} is not encodable as a standard library parameter" )
-
-          '{$encodable.encoded($argument)}
-
-        case _ =>
-          panic(m"unmatched argument")
-
-    if singleton.valueOrAbort then
-      ' {
-          val javaClass = Class.forName($className.s+"$", true, $classloader.java).nn
-          val instance = javaClass.getField("MODULE$").nn.get(null).nn
-          val method = javaClass.getMethod($methodName, classOf[Object]).nn
-          method.invoke(instance, null)
-        }
-    else
-      ' {
-          val javaClass = Class.forName($className.s, true, $classloader.java).nn
-          val method = javaClass.getMethod($methodName).nn
-          method.invoke(null, null)
-        }

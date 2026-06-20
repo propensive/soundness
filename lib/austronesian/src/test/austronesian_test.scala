@@ -34,61 +34,39 @@ package austronesian
 
 import soundness.*
 
-sealed trait Something
-case class Person(name: Text, age: Int) extends Something
-case class Group(persons: List[Person], size: Int) extends Something
-case class Colors(colors: Series[Color]) extends Something
+case class Person(name: Text, age: Int)
+case class Group(persons: List[Person], size: Int)
 
 enum Color:
   case Red, Green, Blue
 
 object Tests extends Suite(m"Austronesian tests"):
-  def run(): Unit = ()
-    // test(m"Serialize a case class")(Person("John", 30).pojo)
-    // . assert(_ === Pojo(Array("John", 30: java.lang.Integer)))
+  def run(): Unit =
+    test(m"Serialize a case class")(Person("John", 30).pojo)
+    . assert(_ === Pojo(Array("John", 30: java.lang.Integer)))
 
-    // test(m"Serialize a list of longs")(List(1L, 99L, 203L).pojo)
-    // . assert(_ === Pojo(Array[Object](1L: java.lang.Long, 99L: java.lang.Long, 203L: java.lang.Long)))
+    test(m"Serialize a list of longs")(List(1L, 99L, 203L).pojo)
+    . assert(_ === Pojo(Array[Object](1L: java.lang.Long, 99L: java.lang.Long, 203L: java.lang.Long)))
 
-    // test(m"Serialize a list of case classes")(List(Person("John", 12), Person("Jane", 93)).pojo)
-    // . assert(_ === Pojo(Array(Array("John", 12: java.lang.Integer), Array("Jane", 93: java.lang.Integer))))
+    test(m"Serialize a list of case classes")(List(Person("John", 12), Person("Jane", 93)).pojo)
+    . assert(_ === Pojo(Array(Array("John", 12: java.lang.Integer), Array("Jane", 93: java.lang.Integer))))
 
-    // test(m"Serialize a nested case class structure"):
-    //   Group(List(Person("John", 30), Person("Jane", 25)), 2).pojo
-    // . assert(_ === Pojo(Array(Array(Array("John", 30), Array("Jane", 25)), 2: java.lang.Integer)))
+    test(m"Serialize a nested case class structure"):
+      Group(List(Person("John", 30), Person("Jane", 25)), 2).pojo
+    . assert(_ === Pojo(Array(Array(Array("John", 30), Array("Jane", 25)), 2: java.lang.Integer)))
 
-    // val group = Group(List(Person("John", 30), Person("Jane", 25)), 2)
+    val group = Group(List(Person("John", 30), Person("Jane", 25)), 2)
 
-    // test(m"Roundtrip a nested case class"):
-    //   unsafely(group.pojo.decode[Group])
-    // . assert(_ == group)
+    test(m"Roundtrip a nested case class"):
+      unsafely(group.pojo.decode[Group])
+    . assert(_ == group)
 
-    // test(m"Encode an enum"):
-    //   val color: Color = Color.Green
-    //   color.pojo
-    // . assert(_ === Pojo(Array("Green", Array[Any]())))
+    test(m"Encode an enum"):
+      val color: Color = Color.Green
+      color.pojo
+    . assert(_ === Pojo(Array("Green", Array[Any]())))
 
-    // test(m"Roundtrip an enum"):
-    //   val color: Color = Color.Green
-    //   unsafely(color.pojo.decode[Color])
-    // . assert(_ == Color.Green)
-
-    // val data = List
-    //             (Person(t"Jim", 19),
-    //              Group(persons = List(Person(t"Jane", 25), Person(t"John", 30)), size = 2),
-    //              Colors(Series(Color.Red, Color.Green)))
-
-    // test(m"Roundtrip a complex datatype"):
-    //   recover:
-    //     case VariantError(_, _, _) => println("variant")
-    //     case PojoError()           => println("pojo")
-
-    //   . within:
-    //       unsafely(data.pojo.decode[List[Something]])
-
-    // . assert()
-
-    // suite(m"Proxy testing"):
-    //   test(m"Invoke the macro"):
-    //     println(summon[Person is Restorable])
-    //   . assert()
+    test(m"Roundtrip an enum"):
+      val color: Color = Color.Green
+      unsafely(color.pojo.decode[Color])
+    . assert(_ == Color.Green)

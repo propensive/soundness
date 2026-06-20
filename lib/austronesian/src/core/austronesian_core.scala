@@ -33,18 +33,9 @@
 package austronesian
 
 import anticipation.*
-import hellenism.*
 import prepositional.*
 
 export austronesian.internal.Pojo
 
 extension [entity: Encodable in Pojo](value: entity) inline def pojo: Pojo = entity.encoded(value)
-
-extension (classloader: Classloader)
-  inline def isolate[ResultType](inline invoke: ResultType): ResultType =
-    ${protointernal.isolated('classloader, 'invoke)}
-
-extension (context: StringContext)
-  def o(): Proxy = Proxy(context.parts.head.tt, true)
-  def c(): Proxy = Proxy(context.parts.head.tt, false)
 
