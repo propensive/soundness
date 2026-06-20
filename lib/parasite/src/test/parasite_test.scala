@@ -43,6 +43,7 @@ import errorDiagnostics.emptyDiagnostics
 
 import threading.virtualThreading
 import probates.cancelProbate
+import Async.nominative
 
 case class FooError(value: Int)(using Diagnostics) extends Error(m"foo failed with $value")
 case class BarError(label: Text)(using Diagnostics) extends Error(m"bar failed: $label")
@@ -319,10 +320,10 @@ object Tests extends Suite(m"Parasite tests"):
 
         test(m"Task with name has name reflected"):
           val gate = Promise[Unit]()
-          val captured = juca.AtomicReference[Optional[Text]](Unset)
-          val t = task(t"named")(captured.set(monitor.name))
+          val captured = juca.AtomicReference[Optional[Name[Async]]](Unset)
+          val t = task(n"named")(captured.set(monitor.name))
           t.await()
-          captured.get().nn
+          captured.get().nn.vouch
         . assert(_ == t"named")
 
       suite(m"Task error handling"):
@@ -1206,6 +1207,21 @@ object Tests extends Suite(m"Parasite tests"):
           task.await()
           captured.get().nn.vouch.contains(t"//")
         . assert(_ == true)
+
+      suite(m"Async names"):
+        test(m"A valid name is accepted at compiletime"):
+          val name: Name[Async] = n"worker"
+          name
+        . assert(_ == t"worker")
+
+        test(m"A name containing a separator is not a valid Async name"):
+          demilitarize:
+            val name: Name[Async] = n"bad/name"
+        . assert(_.nonEmpty)
+
+        test(m"Constructing an invalid Async name raises NameError"):
+          capture[NameError](Name[Async](t"bad/name")).message.show
+        . assert(_ == t"the name bad/name is not valid because it must match [A-Za-z][A-Za-z0-9_-]*")
 
       suite(m"Concurrent stream details"):
         test(m"Concurrent stream preserves head element with delays"):

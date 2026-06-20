@@ -39,8 +39,10 @@ import java.lang as jl
 import java.util.concurrent.atomic as juca
 
 import anticipation.*
+import nomenclature.*
 import prepositional.*
 
+import Async.nominative
 import abstractables.instantAbstractable
 
 object Timeout:
@@ -50,7 +52,7 @@ object Timeout:
 
     val timeout = timeout0.generic/1_000_000L
 
-    def process(expiry: juca.AtomicLong): Task[Unit] = task("timeout".tt):
+    def process(expiry: juca.AtomicLong): Task[Unit] = task(n"timeout"):
       while jl.System.currentTimeMillis < expiry.get()
       do sleep(expiry.get())
 

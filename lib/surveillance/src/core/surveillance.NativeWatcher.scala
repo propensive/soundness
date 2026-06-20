@@ -40,7 +40,8 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 import denominative.*
-import parasite.*, threading.platformThreading
+import nomenclature.n
+import parasite.*, threading.platformThreading, Async.nominative
 import rudiments.*
 import spectacular.*
 import turbulence.*
@@ -58,7 +59,7 @@ object NativeWatcher extends Watcher:
       pollLoop.stop()
       try watchService.close() catch case _: ji.IOException => ()
 
-    val async: Optional[Task[Unit]] = safely(supervise(task("surveillance".tt)(pollLoop.run())))
+    val async: Optional[Task[Unit]] = safely(supervise(task(n"surveillance")(pollLoop.run())))
 
   private val serviceMutex: Mutex = Mutex()
   private val watchesMutex: Mutex = Mutex()

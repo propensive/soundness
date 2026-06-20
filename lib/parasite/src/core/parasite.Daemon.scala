@@ -35,8 +35,8 @@ package parasite
 import language.experimental.into
 import language.experimental.pureFunctions
 
-import anticipation.*
 import digression.*
+import nomenclature.*
 import vacuous.*
 
 object Daemon:
@@ -48,7 +48,7 @@ object Daemon:
 
     new Worker(codepoint, monitor, probate) with Daemon:
       type Result = Unit
-      def name: Optional[Text] = Unset
+      def name: Optional[Name[Async]] = Unset
       def daemon: Boolean = true
       def evaluate(worker: Worker): Result = evaluate0(worker)
 

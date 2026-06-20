@@ -44,11 +44,13 @@ import anticipation.*
 import contingency.*
 import digression.*
 import fulminate.*
+import nomenclature.*
 import prepositional.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
 
+import Async.nominative
 import AsyncError.Reason
 import Fulfillment.*
 import beneficence.*
@@ -65,7 +67,7 @@ sealed trait Monitor extends Resultant, Findable:
   protected[parasite] def addWorker(worker: Worker): Unit =
     workersRef.updateAndGet(_.nn + worker)
 
-  def name: Optional[Text]
+  def name: Optional[Name[Async]]
   def chain: Optional[Chain]
   def stack: Text
   def daemon: Boolean
@@ -86,7 +88,7 @@ sealed abstract class Supervisor() extends Monitor:
   val promise: Promise[Unit] = Promise()
   val daemon: Boolean = true
 
-  def name: Text
+  def name: Name[Async]
   def fork(name: Optional[Text])(block: => Unit): Thread
   def supervisor: Supervisor = this
   def stack: Text = name+":".tt
@@ -94,20 +96,20 @@ sealed abstract class Supervisor() extends Monitor:
   def shutdown(): Unit = workers.each(_.cancel())
 
 object VirtualSupervisor extends Supervisor():
-  def name: Text = "virtual".tt
+  def name: Name[Async] = n"virtual"
 
   def fork(name: Optional[Text])(block: => Unit): Thread =
     Thread.ofVirtual().nn.start{ () => block }.nn
 
 object AdaptiveSupervisor extends Supervisor():
-  def name: Text = "adaptive".tt
+  def name: Name[Async] = n"adaptive"
 
   def fork(name: Optional[Text])(block: => Unit): Thread =
     try VirtualSupervisor.fork(name)(block) catch case error: Throwable =>
       PlatformSupervisor.fork(name)(block)
 
 object PlatformSupervisor extends Supervisor():
-  def name: Text = "platform".tt
+  def name: Name[Async] = n"platform"
 
   def fork(name: Optional[Text])(block: => Unit): Thread =
     val runnable: Runnable = () => block

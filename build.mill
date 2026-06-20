@@ -71,6 +71,7 @@ object settings:
     "-Wconf:origin=.*dynamicTelAccess.enabled:s",
     "-Wconf:origin=.*queryParameters.arbitraryQueryParameter:s",
     "-Wconf:origin=.*CssClass.nominative:s",
+    "-Wconf:origin=.*Async.nominative:s",
     // `frames` is deliberately `inline` so the anonymous `Iterator` expands (with the by-name
     // `frame` thunk and the caller's `Cursor` operand-type refinement) at each call site.
     "-Wconf:src=.*obligatory.Framable.*&msg=anonymous class:s",
