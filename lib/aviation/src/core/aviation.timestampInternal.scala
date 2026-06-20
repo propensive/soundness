@@ -41,7 +41,9 @@ import fulminate.*
 import gossamer.t
 import kaleidoscope.*
 import prepositional.*
+import quantitative.*
 import spectacular.*
+import symbolism.*
 
 // `Timestamp` lives in its own representation object (distinct from `object internal`, which holds
 // `Date`/`Year`/`Day`) so that, although it shares `Date`'s underlying `Long`, the two are
@@ -53,6 +55,11 @@ import spectacular.*
 object timestampInternal:
   opaque type Timestamp = Long
 
+  private def underlying(timestamp: Timestamp): Long = timestamp
+
+  // The shape of a `Timestamp - Timestamp` difference: a regular span of days/hours/mins/seconds.
+  type Difference = Timespan of (aviation.internal.Day.type & Hour.type & Minute.type & Seconds[1])
+
   object Timestamp:
     def apply(date: Date, time: Clockface): Timestamp =
       date.jdn.toLong*aviation.internal.MillisPerDay +
@@ -61,6 +68,21 @@ object timestampInternal:
 
     given showable: (Clockface is Showable, Date is Showable) => Timestamp is Showable =
       timestamp => t"${timestamp.time.show}, ${timestamp.date.show}"
+
+    // The civil difference of two timestamps, decomposed into days/hours/minutes/seconds by
+    // truncated (sign-consistent) division. Nominal, calendar-free; mirrors `Date - Date`.
+    given subtractable: (Timestamp is Subtractable by Timestamp to Difference) =
+      (a, b) =>
+        val diff = underlying(a) - underlying(b)
+        val days = (diff/aviation.internal.MillisPerDay).toInt
+        val afterDays = diff%aviation.internal.MillisPerDay
+        val hours = (afterDays/3_600_000L).toInt
+        val afterHours = afterDays%3_600_000L
+        val minutes = (afterHours/60_000L).toInt
+        val seconds = (afterHours%60_000L)/1000.0
+
+        Timespan(days = days, hours = hours, minutes = minutes, seconds = Quantity(seconds))
+        . asInstanceOf[Difference]
 
     given decodable: Tactic[TimestampError] => Timestamp is Decodable in Text = text =>
       import calendars.gregorianCalendar
