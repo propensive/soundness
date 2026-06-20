@@ -317,6 +317,48 @@ object internal:
         '{Whereas[typeLambda]($handler)}
 
 
+  def trapBuild(handler: Expr[PartialFunction[Exception, Unit]])(using Quotes): Expr[Trap[?]] =
+    import quotes.reflect.*
+
+    val errors = mapping[Exception](handler.asTerm)
+    val emits = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Emit].appliedTo(_))
+    val functionType = defn.FunctionClass(errors.size, true).typeRef
+
+    val typeLambda =
+      TypeLambda
+        ( List("result"),
+          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
+          typeLambda => functionType.appliedTo(emits :+ typeLambda.param(0)) )
+
+    typeLambda.asType.absolve match
+      case '[type typeLambda[_]; typeLambda] =>
+        '{Trap[typeLambda]($handler)}
+
+
+  def trapWithin[context[_]: Type, result: Type]
+    ( trap: Expr[Trap[context]], body: Expr[context[result]], diagnostics: Expr[Diagnostics] )
+    ( using Quotes )
+  :   Expr[result] =
+
+    import quotes.reflect.*
+
+    val emits = unwrap(trap.asTerm) match
+      case Apply(_, List(Inlined(_, _, matches))) =>
+        val partialFunction = matches.asExprOf[PartialFunction[Exception, Unit]]
+
+        mapping[Exception](matches).keys.map: errorType =>
+          errorType.typeRef.asType.absolve match
+            case '[type errorType <: Exception; errorType] =>
+              val handler = '{(error: errorType) => $partialFunction(error)}
+              '{Emit.handle[errorType]($handler)(using $diagnostics)}.asTerm
+
+      case _ =>
+        halt(648, m"argument to `trap` should be a partial function implemented as match cases")
+
+    val method = TypeRepr.of[context[result]].typeSymbol.declaredMethod("apply").head
+    body.asTerm.select(method).appliedToArgs(emits.to(List)).asExprOf[result]
+
+
   def mitigateBody[context[_]: Type, result: Type]
     ( w: Expr[Whereas[context]], body: Expr[context[result]] )
     ( using Quotes )

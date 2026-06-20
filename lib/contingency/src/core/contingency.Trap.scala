@@ -30,18 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package contingency
 
-export
-  contingency
-  . { abort, abortive, accrual, amalgamate, AmalgamateTactic, Attempt, attempt, AttemptTactic,
-      capture, certify, dare, defer, Deferred, EitherTactic, Emit, Errors, ExpectationError, Fatal,
-      Foci, focus, HaltTactic, lest, Mitigable, mitigates, OptionalTactic, Pointer, raise, raises,
-      safely, survive, Tactic, throwErrors, ThrowTactic, track, TrackFoci, Tracking, tracks,
-      TrackTactic, trap, Trap, Unchecked, unsafely, Validate, validate, Validation, whereas,
-      Whereas }
+import language.experimental.pureFunctions
 
-package strategies:
-  export
-    contingency.strategies
-    . { fatalErrors, mitigation, throwSafely, throwUnsafely, uncheckedErrors }
+import fulminate.*
+
+object Trap:
+  extension [lambda[_]](inline trap: Trap[lambda])
+    inline def within[result](inline body: lambda[result])(using diagnostics: Diagnostics): result =
+      ${contingency.internal.trapWithin[lambda, result]('trap, 'body, 'diagnostics)}
+
+// Captures a typed error handler. `trap { case FooError(n) => … }` records, at compile time, which
+// error types the cases cover (encoded in `lambda`); `.within { … }` then injects one
+// handler-backed `Emit` per covered type into the block, so an `emit`/`raise` of a covered error
+// runs its case body as a side-effect, while any *uncovered* (or *re-emitted*) error stays a free
+// `Emit` requirement and propagates outward as `emits …`. The case bodies return `Unit`.
+class Trap[lambda[_]](val handler: PartialFunction[Exception, Unit])

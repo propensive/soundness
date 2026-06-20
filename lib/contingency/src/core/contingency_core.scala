@@ -240,3 +240,7 @@ def defer[result, error <: Exception](body: Tactic[error] ?=> result)
 
 transparent inline def whereas(inline handler: PartialFunction[Exception, Any]): Whereas[?] =
   ${contingency.internal.whereas('handler)}
+
+
+transparent inline def trap(inline handler: PartialFunction[Exception, Unit]): Trap[?] =
+  ${contingency.internal.trapBuild('handler)}

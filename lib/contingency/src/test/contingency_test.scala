@@ -201,6 +201,43 @@ object Tests extends Suite(m"Contingency"):
         capture[ErrorA](raisedStatement).value
       . assert(_ == 1)
 
+    suite(m"trap / within"):
+      test(m"A handled error runs its case body in place"):
+        var caught = 0
+        trap:
+          case ErrorA(n) => caught = n
+        . within:
+            raise(ErrorA(42))
+
+        caught
+      . assert(_ == 42)
+
+      test(m"Control returns after a handled emit (record, not abort)"):
+        var steps = 0
+        trap:
+          case ErrorA(_) => ()
+        . within:
+            raise(ErrorA(1))
+            steps += 1
+            raise(ErrorA(2))
+            steps += 1
+
+        steps
+      . assert(_ == 2)
+
+      test(m"A case may re-emit a different error to an outer trap"):
+        var outer = 0
+        trap:
+          case ErrorB(n) => outer = n
+        . within:
+            trap:
+              case ErrorA(n) => raise(ErrorB(n + 1))
+            . within:
+                raise(ErrorA(10))
+
+        outer
+      . assert(_ == 11)
+
     suite(m"safely / unsafely"):
       test(m"safely returns the value when no error is raised"):
         safely(succeed(t"present"))

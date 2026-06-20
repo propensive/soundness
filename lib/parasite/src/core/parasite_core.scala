@@ -92,20 +92,22 @@ def daemon[error <: Exception](using Codepoint)
     evaluate(using worker, tactic)
 
 
-// Establishes a trap over a region of asynchronous work: `trap { case … => … }.within { … }`. The
-// handler maps an escaped error to a `Remedy`; the enclosing `Probate` (the default for unmatched
-// or rejected errors) is captured so traps chain outwards to the supervision root.
-def trap(handler: PartialFunction[Error, Remedy])(using outer: Probate): Trap = Trap(handler, outer)
+// Contains *thrown* exceptions escaping a region of fire-and-forget work:
+// `contain { case … => … }.within { … }`. The handler maps an escaped exception to a `Remedy`; the
+// enclosing `Probate` (the default for unmatched or rejected errors) is captured so containments
+// chain outwards to the supervision root. Distinct from the typed `trap` (declared emitted errors).
+def contain(handler: PartialFunction[Error, Remedy])(using outer: Probate): Containment =
+  Containment(handler, outer)
 
 
 // `X emits error` is the one concept "X can produce these errors as an out-of-band side-channel",
-// reified two ways. For a `Task`, it is the `Error`-member bound `Task[result] { type Error <: error }`:
-// the bound (not an equality) keeps the error covariant, so a task failing only with `AsyncError` is
-// usable where one that `emits FooError` is expected, and `await`'s `raises (Error | AsyncError)`
-// converts the emission to a value-replacing exit in the caller's scope. For anything else it is the
-// side-effect obligation `Emit[error] ?=> X` — the weaker sibling of `raises error`
-// (`Tactic[error] ?=>`). The `Task` branch reduces to a refinement (not a context function), so it is
-// clear of the match-type-in-return-position erasure crash documented on `raising`.
+// reified two ways. For a `Task`, it is the bound `Task[result] { type Error <: e }` on its member;
+// the bound (not an equality) keeps the error covariant, so a task failing only with `AsyncError`
+// is usable where `emits FooError` is expected, and `await`'s `raises (Error | AsyncError)` simply
+// converts the emission to a value-replacing exit in the caller's scope. For anything else it is
+// the side-effect obligation `Emit[error] ?=> X` — the weaker sibling of `raises error`
+// (`Tactic[error] ?=>`). The `Task` branch reduces to a refinement, not a context function, so it
+// avoids the match-type-in-return-position erasure crash documented on `raising`.
 infix type emits[left, error <: Exception] = left match
   case Task[?] => left { type Error <: error }
   case _       => Emit[error] ?=> left

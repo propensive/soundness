@@ -173,7 +173,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
   // isolated to this connection — it neither escalates nor leaves a request awaiter
   // hanging — rather than being swallowed or escaping the daemon.
   private val (writer, reader): (Daemon, Daemon) =
-    trap:
+    contain:
       case _ => tearDown(); Remedy.Accept
 
     . within:

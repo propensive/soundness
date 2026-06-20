@@ -36,11 +36,12 @@ import language.experimental.pureFunctions
 
 import fulminate.*
 
-// A `Probate` that handles errors escaping fire-and-forget workers spawned within its region. Its
-// child-fate policy (`cleanup`) is delegated unchanged to the enclosing probate; only the failure
-// branch (`trap`) is overridden. A handled error whose remedy is `Reject` — like one the handler
-// does not match — bubbles to the enclosing trap, so traps compose as they nest lexically.
-class Trap(handler: PartialFunction[Error, Remedy], outer: Probate) extends Probate:
+// A `Probate` that contains *thrown* exceptions escaping fire-and-forget workers spawned within its
+// region — a catch-all distinct from the typed `contingency.trap`, which handles declared *emitted*
+// errors. Its child-fate policy (`cleanup`) is delegated unchanged to the enclosing probate; only
+// the failure branch (`trap`) is overridden. A handled error whose remedy is `Reject` — like one
+// the handler does not match — bubbles to the enclosing containment, so they compose as they nest.
+class Containment(handler: PartialFunction[Error, Remedy], outer: Probate) extends Probate:
   def cleanup(worker: Worker): Unit = outer.cleanup(worker)
 
   override def trap(worker: Worker, error: Error): Remedy =
@@ -50,6 +51,6 @@ class Trap(handler: PartialFunction[Error, Remedy], outer: Probate) extends Prob
       case Remedy.Escalate(other) => outer.trap(worker, other)
     else outer.trap(worker, error)
 
-  // Installs this trap as the `Probate` in scope for `body`; daemons and abandoned tasks spawned
-  // within it route their escaped errors here.
+  // Installs this containment as the `Probate` in scope for `body`; daemons and abandoned tasks
+  // spawned within it route their escaped exceptions here.
   def within[result](body: Probate ?=> result): result = body(using this)
