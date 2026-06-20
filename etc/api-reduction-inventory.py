@@ -207,7 +207,26 @@ A("|---|---|---|---|")
 for name, mod, kind, pub, path in sorted(c3, key=lambda r:(not r[3], r[1])):
     A(f"| `{name}` | {mod} | {kind} | {yn(pub)} |")
 
-# C2
+A("\n### C3 triage outcome (the role-suffix heuristic over-captures — verified by hand)\n")
+A("- **KEEP (false positives — public framework or user-facing, not backing engines):** "
+  "`wisteria.{Derivation,ProductDerivation,SumDerivation}` (the derivation framework users "
+  "`extends`), `gossamer.{Builder,TextBuilder,AsciiBuilder}` + `escapade.TeletypeBuilder` "
+  "(user-instantiated builders), `punctuation.{Parser,Renderer}` and `savagery.SvgParser` "
+  "(documented public entry points), `hieroglyph.{CharDecoder,CharEncoder}` (these *are* the "
+  "summoned typeclass, named in `using` clauses across modules), `decorum.Tokenizer`, "
+  "`cordillera.FrameReader` (plain utilities, no typeclass).")
+A("- **GENUINE but already `private[module]`** (not in the `soundness` surface — legitimately "
+  "separate, often thread-local-pooled engines reached from several factory methods; folding "
+  "them away buys nothing): `jacinta.JsonParser`, `ypsiloid.YamlParser`, `stratiform.TelParser`, "
+  "`breviloquence.CborParser`, the cataclysm parsers/tokenizer, the punctuation internal "
+  "cascade (`BlockParser`/`InlineParser`/`BlockBuilder`/`Serializer`), `beneficence.GivensWriter`.")
+A("- **ELIMINATED from the surface:** `locomotion.{ProtobufParser,ProtobufPrinter}` — pure "
+  "codec engines used only inside the Protobuf typeclass givens, yet exported. Marked "
+  "`@unexported` and dropped from the `soundness` export (kept public, *not* "
+  "`private[locomotion]`: a private modifier leaks into the inferred type of the public "
+  "Protobuf givens and breaks downstream `List` derivation). Net: two fewer top-level names "
+  "in `soundness`.\n")
+
 A("\n## C3b — nested derivation objects (generically summoned; need not be named)\n")
 A("These `object …Derivation extends Derivable/…` instances back a typeclass "
   "and are reached only via derivation — candidates to make anonymous/private.\n")

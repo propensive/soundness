@@ -4,7 +4,7 @@ Generated read-only from the `soundness_*` re-export files and `module.TypeName.
 
 - modules scanned: 126
 - distinct public identifiers exported into `soundness`: 2789
-- top-level type declarations (incl. tests): 1375
+- top-level type declarations (incl. tests): 1377
 
 
 **Reading the tables (heuristic output — confirm before acting):**
@@ -57,8 +57,6 @@ Generated read-only from the `soundness_*` re-export files and `module.TypeName.
 | `TextBuilder` | gossamer | class | exported |
 | `CharDecoder` | hieroglyph | object | exported |
 | `CharEncoder` | hieroglyph | object | exported |
-| `ProtobufParser` | locomotion | class | exported |
-| `ProtobufPrinter` | locomotion | class | exported |
 | `Parser` | punctuation | object | exported |
 | `Renderer` | punctuation | object | exported |
 | `SvgParser` | savagery | object | exported |
@@ -72,12 +70,21 @@ Generated read-only from the `soundness_*` re-export files and `module.TypeName.
 | `SyntaxParser` | cataclysm | ? | internal |
 | `ValueTokenizer` | cataclysm | ? | internal |
 | `JsonParser` | jacinta | type | internal |
+| `ProtobufParser` | locomotion | ? | internal |
+| `ProtobufPrinter` | locomotion | ? | internal |
 | `BlockBuilder` | punctuation | trait | internal |
 | `BlockParser` | punctuation | ? | internal |
 | `InlineParser` | punctuation | ? | internal |
 | `Serializer` | punctuation | class | internal |
 | `TelParser` | stratiform | ? | internal |
 | `YamlParser` | ypsiloid | ? | internal |
+
+### C3 triage outcome (the role-suffix heuristic over-captures — verified by hand)
+
+- **KEEP (false positives — public framework or user-facing, not backing engines):** `wisteria.{Derivation,ProductDerivation,SumDerivation}` (the derivation framework users `extends`), `gossamer.{Builder,TextBuilder,AsciiBuilder}` + `escapade.TeletypeBuilder` (user-instantiated builders), `punctuation.{Parser,Renderer}` and `savagery.SvgParser` (documented public entry points), `hieroglyph.{CharDecoder,CharEncoder}` (these *are* the summoned typeclass, named in `using` clauses across modules), `decorum.Tokenizer`, `cordillera.FrameReader` (plain utilities, no typeclass).
+- **GENUINE but already `private[module]`** (not in the `soundness` surface — legitimately separate, often thread-local-pooled engines reached from several factory methods; folding them away buys nothing): `jacinta.JsonParser`, `ypsiloid.YamlParser`, `stratiform.TelParser`, `breviloquence.CborParser`, the cataclysm parsers/tokenizer, the punctuation internal cascade (`BlockParser`/`InlineParser`/`BlockBuilder`/`Serializer`), `beneficence.GivensWriter`.
+- **ELIMINATED from the surface:** `locomotion.{ProtobufParser,ProtobufPrinter}` — pure codec engines used only inside the Protobuf typeclass givens, yet exported. Marked `@unexported` and dropped from the `soundness` export (kept public, *not* `private[locomotion]`: a private modifier leaks into the inferred type of the public Protobuf givens and breaks downstream `List` derivation). Net: two fewer top-level names in `soundness`.
+
 
 ## C3b — nested derivation objects (generically summoned; need not be named)
 
@@ -186,6 +193,8 @@ These `object …Derivation extends Derivable/…` instances back a typeclass an
 | `CoseVerifier` | enigmatic | `Cose.Verifier` | object | exported | yes |
 | `CryptoError` | enigmatic | `Crypto.Error` | object | exported | yes |
 | `HmacCipher` | enigmatic | `Hmac.Cipher` | object | exported | yes |
+| `PemError` | enigmatic | `Pem.Error` | object | exported | yes |
+| `PemLabel` | enigmatic | `Pem.Label` | object | exported | yes |
 | `SymmetricKey` | enigmatic | `Symmetric.Key` | object | exported | yes |
 | `ColumnAlignment` | escritoire | `Column.Alignment` | object | exported | yes |
 | `UpgradeError` | ethereal | `Upgrade.Error` | object | exported | yes |
@@ -297,7 +306,7 @@ These `object …Derivation extends Derivable/…` instances back a typeclass an
 | `ZipError` | zeppelin | `Zip.Error` | object | exported | yes |
 | `ZipEvent` | zeppelin | `Zip.Event` | object | exported | yes |
 
-_(161 strong; 488 total exported multi-word)_
+_(163 strong; 490 total exported multi-word)_
 
 
 ## Pilot (enigmatic) — done, and gotchas for the fix step
