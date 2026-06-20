@@ -88,7 +88,14 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
       violations.foreach: violation =>
         val pos = position(source, violation.line, violation.column)
         val msg = colourPrefix(violation.rule, useColor)+violation.message
-        if errors then report.error(msg, pos) else report.warning(msg, pos)
+
+        // Rendering a diagnostic at `pos` exercises the compiler's own message
+        // renderer, which can throw on a pathological position (e.g. one mapping
+        // into an empty or truncated source). A house-style check must never abort
+        // the build because of that: fall back to a position-less diagnostic.
+        try if errors then report.error(msg, pos) else report.warning(msg, pos)
+        catch case _: Throwable =>
+          if errors then report.error(msg) else report.warning(msg)
     super.transformUnit(tree)
 
   // When `path` is a `soundness_<component>_<suffix>.scala` export surface, return

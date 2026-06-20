@@ -94,26 +94,26 @@ object Tests extends Suite(m"Stratiform Tests"):
       CorpusLoader.positive.each: testcase =>
         test(m"streaming parses ${testcase.stem}"):
           val cursor = Cursor[Data](testcase.source)
-          val doc = TelParser.parse(cursor)
+          val doc = Tel.Parser.parse(cursor)
           TelCheckTree.of(Tel.make(doc))
         . assert(_ == CheckFormat.parse(testcase.check).tree)
 
-    suite(m"Streaming parser — parity with TelParser"):
+    suite(m"Streaming parser — parity with Tel.Parser"):
       CorpusLoader.positive.each: testcase =>
-        test(m"streaming matches TelParser on ${testcase.stem}"):
+        test(m"streaming matches Tel.Parser on ${testcase.stem}"):
           val a = TelCheckTree.of(testcase.source.read[Tel])
           val b = TelCheckTree.of(Tel.make(
-            TelParser.parse(Cursor[Data](testcase.source))))
+            Tel.Parser.parse(Cursor[Data](testcase.source))))
           a == b
         . assert(identity)
 
     suite(m"Streaming parser — round-trip"):
       CorpusLoader.positive.each: testcase =>
         test(m"streaming round-trip ${testcase.stem}"):
-          val first = TelParser.parse(Cursor[Data](testcase.source))
+          val first = Tel.Parser.parse(Cursor[Data](testcase.source))
           val printed = Tel.make(first).show
           val bytes: Data = summon[CharEncoder].encoded(printed)
-          val reparsed = TelParser.parse(Cursor[Data](bytes))
+          val reparsed = Tel.Parser.parse(Cursor[Data](bytes))
           TelCheckTree.of(Tel.make(reparsed)) == TelCheckTree.of(Tel.make(first))
         . assert(identity)
 
@@ -123,7 +123,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         if codes.nonEmpty && codes.forall(_ < 200) then
           test(m"streaming raises an expected E1xx error on ${testcase.stem}"):
             codes.contains:
-              capture[TelError](TelParser.parse(Cursor[Data](testcase.source)))
+              capture[TelError](Tel.Parser.parse(Cursor[Data](testcase.source)))
               .reason.number
           . assert(_ == true)
 
@@ -142,11 +142,11 @@ object Tests extends Suite(m"Stratiform Tests"):
       CorpusLoader.positive.each: testcase =>
         test(m"all chunk sizes parse identically on ${testcase.stem}"):
           val baseline = TelCheckTree.of(Tel.make(
-            TelParser.parse(Cursor[Data](testcase.source))))
+            Tel.Parser.parse(Cursor[Data](testcase.source))))
           val sizes = List(1, 7, 64, 1024, testcase.source.length.max(1))
           sizes.forall: n =>
             val tree = TelCheckTree.of(Tel.make(
-              TelParser.parse(chunkedCursor(testcase.source, n))))
+              Tel.Parser.parse(chunkedCursor(testcase.source, n))))
             tree == baseline
         . assert(identity)
 

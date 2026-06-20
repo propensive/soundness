@@ -42,6 +42,7 @@ import ProtobufError.Reason
 // Reads Protocol Buffers wire bytes. `fields` parses a whole message payload into a
 // number-keyed map of (one or more) raw wire values, preserving repeats and unknown
 // fields — the structure the message decoder looks fields up in by number.
+@unexported
 class ProtobufParser(data: Data):
   private var pos: Int = 0
 
