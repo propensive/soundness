@@ -481,7 +481,7 @@ object internal:
 
       builder.finish(negative)
 
-    // Incremental builder used by `JsonParser` to assemble a `Bcd` one nibble
+    // Incremental builder used by `Json.Parser` to assemble a `Bcd` one nibble
     // at a time as it overflows the in-Long fast path. Keeps a growing
     // `Array[Double]` of completed words and a current 52-bit nibble buffer.
     final class Builder:

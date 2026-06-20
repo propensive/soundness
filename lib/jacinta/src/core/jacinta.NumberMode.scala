@@ -35,7 +35,7 @@ package jacinta
 object NumberMode:
   given default: NumberMode = Full
 
-// Selects how `JsonParser` handles JSON numbers that exceed the in-Long
+// Selects how `Json.Parser` handles JSON numbers that exceed the in-Long
 // 15-nibble fast path. Numbers that fit the fast path are unaffected and
 // continue to be emitted as a numerically-decoded `Long` (integers) or
 // `Double` (floats); the mode only changes the >15-nibble path.
