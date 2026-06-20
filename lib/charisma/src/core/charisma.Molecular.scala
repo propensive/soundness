@@ -61,4 +61,4 @@ trait Molecular extends Formulable:
   def `unary_+`: Molecule = molecule.copy(charge = molecule.charge + 1)
 
   def ion(charge: Int): Molecule = molecule.copy(charge = charge)
-  def as(state: Optional[PhysicalState]): Molecule = molecule.copy(state = state)
+  def inState(state: Optional[PhysicalState]): Molecule = molecule.copy(state = state)

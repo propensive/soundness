@@ -41,7 +41,7 @@ object Holidays:
   def apply(holidays: Iterable[Holiday]): Holidays = new Holidays:
     private val store: SortedMap[Date, Holiday] = holidays.bi.map(_.date -> _).to(SortedMap)
 
-    def holiday(date: Date): Optional[Holiday] = if store.has(date) then store(date) else Unset
+    def holiday(date: Date): Optional[Holiday] = if store.defines(date) then store(date) else Unset
 
     def between(start: Date, end: Date): List[Holiday] =
       store.iteratorFrom(start).map(_(1)).takeWhile(_.date < end).to(List)

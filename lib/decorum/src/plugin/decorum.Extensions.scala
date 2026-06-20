@@ -35,55 +35,42 @@ package decorum
 import scala.collection.mutable
 
 import dotty.tools.dotc.ast.untpd
+import dotty.tools.dotc.core.Flags
 import dotty.tools.dotc.util.SourceFile
 
-case class ExportInfo(names: Set[String], excluded: Set[String], firstLine: Int)
+object Extensions:
+  // Collect the leaf names of every public method declared in a top-level
+  // `extension` block. Such methods are re-exported into `soundness` by their
+  // simple name (just like any other public member), so R-742.1 needs the list
+  // of names a component's export surface is expected to carry. Methods marked
+  // `private`/`protected` — including qualified forms like `private[foo]`, which
+  // carry a `privateWithin` but not always the bare `Private` flag — are
+  // package-internal and neither can nor need to be re-exported, so skip them.
+  def extract(tree: untpd.Tree, source: SourceFile): List[String] =
+    val out = mutable.ListBuffer[String]()
 
-object SoundnessExports:
-  // A directive comment, `// unexported: Foo, Bar`, marks modules that are
-  // deliberately not re-exported into `soundness` (typically because the simple
-  // name already belongs to another component's surface). R-742 treats these as
-  // satisfied. The capture stops at end of line or an opening parenthesis, so a
-  // trailing justification (`// unexported: Foo (clashes with bar.Foo)`) is fine.
-  private val ExcludeDirective = "(?m)//\\s*unexported:\\s*([^\\n(]+)".r
-  private val Identifier       = "[A-Za-z][A-Za-z0-9]*".r
+    walk(tree):
+      case ext: untpd.ExtMethods =>
+        ext.methods.foreach:
+          case method: untpd.DefDef
+              if !method.mods.flags.isOneOf(Flags.Private | Flags.Protected)
+                 && method.mods.privateWithin.isEmpty =>
+            val name = method.name.toString
+            if name.nonEmpty then out += name
+          case _ =>
+            ()
+      case _ =>
+        ()
 
-  // Collect the simple leaf names re-exported by every top-level `export`
-  // statement in the file (including those nested inside `package x:` blocks),
-  // together with the line of the first such statement. Used by R-742 to check
-  // that each public module in a component is re-exported into `soundness`.
-  def extract(tree: untpd.Tree, source: SourceFile): ExportInfo =
-    val names     = mutable.Set[String]()
-    var firstLine = -1
+    out.distinct.toList
 
-    def record(exp: untpd.Export): Unit =
-      val span = exp.span
-      if span.exists then
-        val line = source.offsetToLine(span.start) + 1
-        if firstLine < 0 || line < firstLine then firstLine = line
+  // Generic untyped-tree pre-order traversal driven off `productIterator`,
+  // mirroring the helper in `Definitions` and `Comprehensions`.
+  private def walk(t: untpd.Tree)(visit: untpd.Tree => Unit): Unit =
+    visit(t)
+    t.productIterator.foreach(descend(_, visit))
 
-      exp.selectors.foreach: selector =>
-        // Skip the wildcard selector (`export foo.*`) via `isWildcard`, not by
-        // name: a backtick-quoted `` `*` `` exports the *multiplication operator*,
-        // whose leaf name is also "*", and must be recorded.
-        if !selector.isWildcard then
-          val name = selector.imported.name.toString
-          if name.nonEmpty && name != "_" then names += name
-
-    def visit(t: untpd.Tree): Unit = t match
-      case pkg: untpd.PackageDef => pkg.stats.foreach(visit)
-      case exp: untpd.Export     => record(exp)
-      case _                     => ()
-
-    visit(tree)
-
-    val content  = String(source.content)
-    val excluded = mutable.Set[String]()
-    ExcludeDirective.findAllMatchIn(content).foreach: directive =>
-      Identifier.findAllIn(directive.group(1).nn).foreach(excluded += _)
-
-    ExportInfo(names.to(Set), excluded.to(Set), if firstLine < 0 then PackageLine else firstLine)
-
-  // The line of the `package soundness` declaration in export-surface files;
-  // used as the fallback violation position when a surface contains no exports.
-  private val PackageLine: Int = 33
+  private def descend(x: Any, visit: untpd.Tree => Unit): Unit = x match
+    case sub: untpd.Tree  => walk(sub)(visit)
+    case it:  Iterable[?] => it.foreach(descend(_, visit))
+    case _                => ()

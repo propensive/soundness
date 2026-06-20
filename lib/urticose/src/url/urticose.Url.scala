@@ -65,7 +65,7 @@ object Url:
     value =>
       import UrlError.Expectation.*
 
-      safely(value.where(_ == ':')).asMatchable match
+      safely(value.pinpoint(_ == ':')).asMatchable match
         case Zerary(colon) =>
           val text = value.before(colon)
           val scheme = Scheme(text)
@@ -83,7 +83,7 @@ object Url:
 
               . mitigate:
                   val authEnd = safely:
-                    value.where(c => c == '/' || c == '?' || c == '#', colon + 3)
+                    value.pinpoint(c => c == '/' || c == '?' || c == '#', colon + 3)
 
                   . or(value.limit)
                   val hostname = value.segment((colon + 3) till authEnd)
@@ -92,9 +92,9 @@ object Url:
             else
               (colon + 1, Unset)
 
-          safely(value.where(_ == '?', pathStart)).asMatchable match
+          safely(value.pinpoint(_ == '?', pathStart)).asMatchable match
             case Zerary(qmark) =>
-              safely(value.where(_ == '#', qmark + 1)).asMatchable match
+              safely(value.pinpoint(_ == '#', qmark + 1)).asMatchable match
                 case Zerary(hash) =>
                   Url
                     ( Origin(scheme, auth),
@@ -109,7 +109,7 @@ object Url:
                       value.after(qmark),
                       Unset )
 
-            case _ => safely(value.where(_ == '#', pathStart)).asMatchable match
+            case _ => safely(value.pinpoint(_ == '#', pathStart)).asMatchable match
               case Zerary(hash) =>
                 Url
                   ( Origin(scheme, auth),

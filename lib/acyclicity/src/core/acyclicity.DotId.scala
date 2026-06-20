@@ -30,60 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package decorum
+package acyclicity
 
-import scala.collection.mutable
+import nomenclature.*
+import prepositional.*
+import rudiments.*
 
-import dotty.tools.dotc.ast.untpd
-import dotty.tools.dotc.util.SourceFile
+// The naming plane for GraphViz DOT identifiers: `Name[DotId]` is used for node
+// identifiers, edge endpoints, assignment targets and (sub)graph names alike.
+object DotId:
+  inline given nominative: DotId is Nominative under DotIdentifier["a valid DOT identifier"] = !!
 
-case class ExportInfo(names: Set[String], excluded: Set[String], firstLine: Int)
-
-object SoundnessExports:
-  // A directive comment, `// unexported: Foo, Bar`, marks modules that are
-  // deliberately not re-exported into `soundness` (typically because the simple
-  // name already belongs to another component's surface). R-742 treats these as
-  // satisfied. The capture stops at end of line or an opening parenthesis, so a
-  // trailing justification (`// unexported: Foo (clashes with bar.Foo)`) is fine.
-  private val ExcludeDirective = "(?m)//\\s*unexported:\\s*([^\\n(]+)".r
-  private val Identifier       = "[A-Za-z][A-Za-z0-9]*".r
-
-  // Collect the simple leaf names re-exported by every top-level `export`
-  // statement in the file (including those nested inside `package x:` blocks),
-  // together with the line of the first such statement. Used by R-742 to check
-  // that each public module in a component is re-exported into `soundness`.
-  def extract(tree: untpd.Tree, source: SourceFile): ExportInfo =
-    val names     = mutable.Set[String]()
-    var firstLine = -1
-
-    def record(exp: untpd.Export): Unit =
-      val span = exp.span
-      if span.exists then
-        val line = source.offsetToLine(span.start) + 1
-        if firstLine < 0 || line < firstLine then firstLine = line
-
-      exp.selectors.foreach: selector =>
-        // Skip the wildcard selector (`export foo.*`) via `isWildcard`, not by
-        // name: a backtick-quoted `` `*` `` exports the *multiplication operator*,
-        // whose leaf name is also "*", and must be recorded.
-        if !selector.isWildcard then
-          val name = selector.imported.name.toString
-          if name.nonEmpty && name != "_" then names += name
-
-    def visit(t: untpd.Tree): Unit = t match
-      case pkg: untpd.PackageDef => pkg.stats.foreach(visit)
-      case exp: untpd.Export     => record(exp)
-      case _                     => ()
-
-    visit(tree)
-
-    val content  = String(source.content)
-    val excluded = mutable.Set[String]()
-    ExcludeDirective.findAllMatchIn(content).foreach: directive =>
-      Identifier.findAllIn(directive.group(1).nn).foreach(excluded += _)
-
-    ExportInfo(names.to(Set), excluded.to(Set), if firstLine < 0 then PackageLine else firstLine)
-
-  // The line of the `package soundness` declaration in export-surface files;
-  // used as the fallback violation position when a surface contains no exports.
-  private val PackageLine: Int = 33
+sealed trait DotId

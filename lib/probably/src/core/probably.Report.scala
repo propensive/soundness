@@ -104,7 +104,7 @@ class Report(using Environment)(using palette: TestPalette):
       tests = tests.updated(testId, reportLine)
 
     def getOrElseUpdate(testId: TestId, reportLine: => ReportLine): ReportLine = mutex:
-      if !tests.has(testId) then tests = tests.updated(testId, reportLine)
+      if !tests.defines(testId) then tests = tests.updated(testId, reportLine)
       tests(testId)
 
   enum ReportLine:

@@ -35,7 +35,8 @@ package nomenclature
 import anticipation.*
 import fulminate.*
 import gossamer.*
+import rudiments.*
 
-object MustNotContain extends Rule({ text => m"must not contain $text"}, !_.has(_))
+object MustNotContain extends Rule({ text => m"must not contain $text"}, !_.subsumes(_))
 
 sealed trait MustNotContain[text <: Label] extends Check[text]

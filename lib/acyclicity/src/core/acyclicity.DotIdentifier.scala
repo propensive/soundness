@@ -32,35 +32,16 @@
                                                                                                   */
 package acyclicity
 
-import scala.quoted.*
-
 import anticipation.*
 import fulminate.*
-import gigantism.*
-import rudiments.*
-import vacuous.*
+import nomenclature.*
 
-object internal:
-  def refInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[Dot.Ref] =
-    import quotes.reflect.*
+// A name usable as a GraphViz DOT identifier. Because identifiers are always
+// emitted as double-quoted strings, the rule is permissive: any non-empty text
+// that contains neither a double-quote nor a newline (so it serializes safely
+// without escaping). The `description` type parameter is the phrasing used in
+// error messages.
+object DotIdentifier
+extends Rule({ description => m"must be $description" }, { (name, _) => dotIdentifierValid(name) })
 
-    def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
-      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
-      case _               => strings
-
-    val parts = recur[parts](Nil)
-    if parts.length != 1 then halt(m"a node literal cannot have substitutions")
-
-    val pieces: List[String] = parts.head.split(":", -1).nn.iterator.map(_.nn).toList
-
-    pieces match
-      case List(id) =>
-        '{Dot.Ref(Dot.Id(${Expr(id)}.tt))}
-
-      case List(id, port) =>
-        '{Dot.Ref(
-            Dot.Id(${Expr(id)}.tt),
-            Some(Dot.Attachment(Dot.Id(${Expr(port)}.tt))))}
-
-      case _ =>
-        halt(m"not a valid node ID")
+sealed trait DotIdentifier[description <: Label] extends Check[description]

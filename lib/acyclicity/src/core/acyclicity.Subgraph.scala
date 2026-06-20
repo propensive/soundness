@@ -32,8 +32,10 @@
                                                                                                   */
 package acyclicity
 
+import nomenclature.*
+
 object Subgraph:
-  def apply(id: Dot.Id, statements: Dot.Statement*): Dot.Statement.Subgraph =
+  def apply(id: Name[DotId], statements: Dot.Statement*): Dot.Statement.Subgraph =
     Dot.Statement.Subgraph(Some(id), statements*)
 
   def apply(statements: Dot.Statement*): Dot.Statement.Subgraph =

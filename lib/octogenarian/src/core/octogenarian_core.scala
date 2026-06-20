@@ -75,8 +75,9 @@ extension (noteRef: NoteRef)
 
   // Fetch the note body via `git notes show` on the implicit `GitRepo` and
   // decode it as `value`.  Aborts with `GitError(NoteNotFound)` if no note
-  // is attached.
-  def read[value: Decodable in Text]
+  // is attached. (Named `content`, not `read`, to avoid colliding with
+  // turbulence's `Readable` `read`: a `NoteRef` is a `Path`, which is readable.)
+  def content[value: Decodable in Text]
     ( using repo:    GitRepo,
             command: GitCommand,
             wd:      WorkingDirectory,

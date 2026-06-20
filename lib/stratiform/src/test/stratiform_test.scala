@@ -1890,7 +1890,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       val dataDoc = t"name Alice\n"
 
       def selfContained(): Data =
-        dataDoc.read[Tel].bintelSelfContained(schemaDoc.read[Tel])
+        Bintel.selfContained(dataDoc.read[Tel], schemaDoc.read[Tel])
 
       test(m"self-contained document begins with the B2 C4 B5 BC magic"):
         selfContained().slice(0, 4).toSeq

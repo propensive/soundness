@@ -46,21 +46,23 @@ object Checker:
   // overload below directly with the compilation unit's existing untyped
   // tree to avoid re-parsing.
   def check
-    ( file:           String,
-      expectedModule: Option[String],
-      rawText:        String,
-      siblingTypes:   List[String] = Nil )
+    ( file:             String,
+      expectedModule:   Option[String],
+      rawText:          String,
+      siblingTypes:     List[String] = Nil,
+      siblingExtensions: List[String] = Nil )
   :   LazyList[Violation] =
     val (tree, source) = Parsing.parse(file, rawText)
-    check(file, expectedModule, rawText, tree, source, siblingTypes)
+    check(file, expectedModule, rawText, tree, source, siblingTypes, siblingExtensions)
 
   def check
-    ( file:           String,
-      expectedModule: Option[String],
-      rawText:        String,
-      untpdTree:      untpd.Tree,
-      source:         SourceFile,
-      siblingTypes:   List[String] )
+    ( file:             String,
+      expectedModule:   Option[String],
+      rawText:          String,
+      untpdTree:        untpd.Tree,
+      source:           SourceFile,
+      siblingTypes:     List[String],
+      siblingExtensions: List[String] )
   :   LazyList[Violation] =
 
     val out   = mutable.ListBuffer[Violation]()
@@ -96,7 +98,9 @@ object Checker:
     checkDefnAnchors(file, Definitions.extract(untpdTree, source), out)
     checkOperatorContinuation(file, operatorSites, out)
     checkInterpolatorLayout(file, interpolations, rawText, source, out)
-    checkSoundnessExports(file, siblingTypes, SoundnessExports.extract(untpdTree, source), out)
+    val soundnessExports = SoundnessExports.extract(untpdTree, source)
+    checkSoundnessExports(file, siblingTypes, soundnessExports, out)
+    checkSoundnessExtensionExports(file, siblingExtensions, soundnessExports, out)
     var idx = 0
 
     while idx < lines.length do
@@ -2002,6 +2006,31 @@ object Checker:
       out +=
         Violation
           ( file, exports.firstLine, 1, "742",
+            s"the $subject defined but not exported to the `soundness` package: $listed" )
+
+  // R-742.1: every public top-level extension method in a component must, like
+  // its public modules (R-742), be re-exported into the `soundness` package by
+  // its leaf name. `siblingExtensions` is the list of such method names found in
+  // the `<component>_<suffix>.scala` definition files alongside the export
+  // surface; any name absent from the surface's `export` clauses (and not marked
+  // `// unexported:`) is a violation. The list is empty for every file other
+  // than an export surface, so this check is a no-op elsewhere.
+  private def checkSoundnessExtensionExports
+    ( file:              String,
+      siblingExtensions: List[String],
+      exports:           ExportInfo,
+      out:               mutable.ListBuffer[Violation] )
+  :   Unit =
+
+    val missing =
+      siblingExtensions.filterNot(exports.names.contains).filterNot(exports.excluded.contains)
+
+    if missing.nonEmpty then
+      val listed  = missing.map { name => s"`$name`" }.mkString(", ")
+      val subject = if missing.length == 1 then "extension method is" else "extension methods are"
+      out +=
+        Violation
+          ( file, exports.firstLine, 1, "742.1",
             s"the $subject defined but not exported to the `soundness` package: $listed" )
 
   private def checkInterpolatorLayout

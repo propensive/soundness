@@ -30,60 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package decorum
+package zephyrine
 
-import scala.collection.mutable
+import prepositional.*
+import vacuous.*
 
-import dotty.tools.dotc.ast.untpd
-import dotty.tools.dotc.util.SourceFile
+// Links a parsed data type to the path type that addresses nodes within it
+// (its `Operand`, bound with `by`) and to the concrete source `Position` it
+// resolves to (its `Result`, bound with `to`) — e.g.
+// `Json is Positionable by JsonPointer to Json.Ast.Position`. The uniform
+// `value.locate(path)` / `value.locateKey(path)` extensions (defined in
+// `zephyrine_core`) dispatch through this, so every tracking-aware format
+// exposes position lookup the same way.
+trait Positionable extends Typeclass, Operable, Resultant:
+  type Result <: Format.Position
 
-case class ExportInfo(names: Set[String], excluded: Set[String], firstLine: Int)
-
-object SoundnessExports:
-  // A directive comment, `// unexported: Foo, Bar`, marks modules that are
-  // deliberately not re-exported into `soundness` (typically because the simple
-  // name already belongs to another component's surface). R-742 treats these as
-  // satisfied. The capture stops at end of line or an opening parenthesis, so a
-  // trailing justification (`// unexported: Foo (clashes with bar.Foo)`) is fine.
-  private val ExcludeDirective = "(?m)//\\s*unexported:\\s*([^\\n(]+)".r
-  private val Identifier       = "[A-Za-z][A-Za-z0-9]*".r
-
-  // Collect the simple leaf names re-exported by every top-level `export`
-  // statement in the file (including those nested inside `package x:` blocks),
-  // together with the line of the first such statement. Used by R-742 to check
-  // that each public module in a component is re-exported into `soundness`.
-  def extract(tree: untpd.Tree, source: SourceFile): ExportInfo =
-    val names     = mutable.Set[String]()
-    var firstLine = -1
-
-    def record(exp: untpd.Export): Unit =
-      val span = exp.span
-      if span.exists then
-        val line = source.offsetToLine(span.start) + 1
-        if firstLine < 0 || line < firstLine then firstLine = line
-
-      exp.selectors.foreach: selector =>
-        // Skip the wildcard selector (`export foo.*`) via `isWildcard`, not by
-        // name: a backtick-quoted `` `*` `` exports the *multiplication operator*,
-        // whose leaf name is also "*", and must be recorded.
-        if !selector.isWildcard then
-          val name = selector.imported.name.toString
-          if name.nonEmpty && name != "_" then names += name
-
-    def visit(t: untpd.Tree): Unit = t match
-      case pkg: untpd.PackageDef => pkg.stats.foreach(visit)
-      case exp: untpd.Export     => record(exp)
-      case _                     => ()
-
-    visit(tree)
-
-    val content  = String(source.content)
-    val excluded = mutable.Set[String]()
-    ExcludeDirective.findAllMatchIn(content).foreach: directive =>
-      Identifier.findAllIn(directive.group(1).nn).foreach(excluded += _)
-
-    ExportInfo(names.to(Set), excluded.to(Set), if firstLine < 0 then PackageLine else firstLine)
-
-  // The line of the `package soundness` declaration in export-surface files;
-  // used as the fallback violation position when a surface contains no exports.
-  private val PackageLine: Int = 33
+  def locate(value: Self, path: Operand): Optional[Result]
+  def locateKey(value: Self, path: Operand): Optional[Result]

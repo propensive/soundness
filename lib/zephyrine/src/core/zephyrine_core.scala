@@ -32,7 +32,22 @@
                                                                                                   */
 package zephyrine
 
+import vacuous.*
+
 export zephyrine.internal.Datum
+
+extension [value](value: value)(using positionable: value is Positionable)
+  // Locate the source `Position` of the node addressed by `path` within
+  // `value`, or `Unset` if the path doesn't resolve (or the value carries no
+  // position tracking). The path type is fixed by the value's `Positionable`
+  // instance (e.g. a `Json` is located by a `JsonPointer`).
+  def locate(path: positionable.Operand): Optional[positionable.Result] =
+    positionable.locate(value, path)
+
+  // As `locate`, but for the position of the object/mapping *key* matching the
+  // final path segment (rather than its value).
+  def locateKey(path: positionable.Operand): Optional[positionable.Result] =
+    positionable.locateKey(value, path)
 
 package lineation:
   inline given linefeedChars: Lineation:

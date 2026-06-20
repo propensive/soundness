@@ -346,7 +346,7 @@ object abacist extends Library:
   object test extends Tests(core)
 
 object acyclicity extends Library:
-  object core extends Component(gossamer.core):
+  object core extends Component(gossamer.core, nomenclature.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)

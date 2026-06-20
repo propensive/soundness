@@ -37,7 +37,8 @@ package soundness
 // unexported: Attributive, Renderable, Tag
 export
   xylophone
-  . { Xml, XmlError, XmlSchema, DynamicXmlEnabler, dynamicXmlAccess, x, xp, XPath, XPathError }
+  . { Xml, xml, XmlError, XmlSchema, DynamicXmlEnabler, dynamicXmlAccess, x, xp, XPath,
+      XPathError }
 
 package formatting:
   export xylophone.formatting.{compactXmlFormatting, indentedXmlFormatting}

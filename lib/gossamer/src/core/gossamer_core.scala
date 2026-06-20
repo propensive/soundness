@@ -210,9 +210,11 @@ extension [textual: Textual](text: textual)
           ( 'text, 'start, 'lambda, '{compiletime.summonInline[textual is Textual]} )
       }
 
-  def seek(regex: Regex): Optional[textual] = regex.seek(textual.text(text)).let(text.segment(_))
-
-  def seek(substring: Text, bidi: Bidi = Ltr): Optional[Ordinal] = bidi match
+  // `offsetOf` returns the index (`Ordinal`) at which `substring` first occurs. It
+  // is distinct from the generic `Traversable` `seek`/`where`, which act on
+  // individual elements via a predicate, and from `Textual.indexOf`, the codec-
+  // level primitive it delegates to. For regex matches, use `search`.
+  def offsetOf(substring: Text, bidi: Bidi = Ltr): Optional[Ordinal] = bidi match
     case Ltr => textual.indexOf(text, substring)
     case Rtl => if substring.nil then Unset else textual.lastIndexOf(text, substring)
 
@@ -262,14 +264,14 @@ extension [textual: Textual { type Result = Char }](text: textual)
   def skip(predicate: Char => Boolean): textual = text.skip(predicate, Ltr)
 
   def skip(predicate: Char => Boolean, bidi: Bidi): textual = bidi match
-    case Ltr => text.where(!predicate(_)).lay(textual.empty)(text.from(_))
-    case Rtl => text.where(!predicate(_), bidi = Rtl).lay(textual.empty)(text.upto(_))
+    case Ltr => text.pinpoint(!predicate(_)).lay(textual.empty)(text.from(_))
+    case Rtl => text.pinpoint(!predicate(_), bidi = Rtl).lay(textual.empty)(text.upto(_))
 
   def keep(predicate: Char => Boolean): textual = text.keep(predicate, Ltr)
 
   def keep(predicate: Char => Boolean, bidi: Bidi): textual = bidi match
-    case Ltr => text.where(!predicate(_)).lay(text)(text.before(_))
-    case Rtl => text.where(!predicate(_), bidi = Rtl).lay(text)(text.after(_))
+    case Ltr => text.pinpoint(!predicate(_)).lay(text)(text.before(_))
+    case Rtl => text.pinpoint(!predicate(_), bidi = Rtl).lay(text)(text.after(_))
 
   def capitalize: textual = textual.concat(text.keep(1).upper, text.after(Prim))
   def uncapitalize: textual = textual.concat(text.keep(1).lower, text.after(Prim))
@@ -277,13 +279,13 @@ extension [textual: Textual { type Result = Char }](text: textual)
   def contains(char: Char): Boolean = textual.indexOf(text, char.show).present
 
   inline def trim: textual =
-    val start = text.where(!_.isWhitespace).or(text.limit - 1)
-    val end = text.where(!_.isWhitespace, bidi = Rtl).or(Prim)
+    val start = text.pinpoint(!_.isWhitespace).or(text.limit - 1)
+    val end = text.pinpoint(!_.isWhitespace, bidi = Rtl).or(Prim)
     text.segment(start thru end)
 
   def trim(bidi: Bidi): textual = text.skip(_.isWhitespace, bidi)
 
-  def where(predicate: Char => Boolean, start: Optional[Ordinal] = Unset, bidi: Bidi = Ltr)
+  def pinpoint(predicate: Char => Boolean, start: Optional[Ordinal] = Unset, bidi: Bidi = Ltr)
   :   Optional[Ordinal] =
 
     val step: Int = bidi match
@@ -302,15 +304,15 @@ extension [textual: Textual { type Result = Char }](text: textual)
     recur(first)
 
   def before(predicate: Char => Boolean): textual =
-    val end: Ordinal = text.where(predicate).or(text.limit - 1)
+    val end: Ordinal = text.pinpoint(predicate).or(text.limit - 1)
     text.before(end)
 
   def upto(predicate: Char => Boolean): textual =
-    val end: Ordinal = text.where(predicate).or(text.limit - 1)
+    val end: Ordinal = text.pinpoint(predicate).or(text.limit - 1)
     text.upto(end)
 
   def snip(predicate: Char => Boolean, index: Ordinal = Prim): Optional[(textual, textual)] =
-    text.where(predicate, index).let(_.n0).let(text.snip(_))
+    text.pinpoint(predicate, index).let(_.n0).let(text.snip(_))
 
   def tr(lambda: Char => Char): textual = textual.map(text)(lambda)
 
@@ -329,7 +331,7 @@ extension [textual: Textual { type Result = Char }](text: textual)
 
     recur(Prim, 0)
 
-  def blank: Boolean = text.where(!_.isWhitespace).absent
+  def blank: Boolean = text.pinpoint(!_.isWhitespace).absent
 
   def pad(length: Int, bidi: Bidi = Ltr, char: Char = ' ')(using Text is Measurable): textual =
     val current = text.plain.metrics
@@ -368,7 +370,7 @@ extension [textual: Textual { type Result = Char }](text: textual)
 
   def uncamel: List[textual] =
     def recur(text: textual): List[textual] =
-      text.where(_.isUpper, Sec).lay(List(text.lower)): index =>
+      text.pinpoint(_.isUpper, Sec).lay(List(text.lower)): index =>
         text.before(index).lower :: recur(text.from(index))
 
     recur(text)
@@ -471,9 +473,6 @@ package proximities:
       if span == 0 then 0.0 else levenshteinProximity.distance(left, right).toDouble/span
 
 extension (text: Text)
-  inline def has(substring: Text): Boolean = text.contains(substring)
-  inline def has(char: Char): Boolean = text.contains(char)
-
   def sub(from: Text, to: Text): Text =
     text.subPattern(jur.Pattern.compile(jur.Pattern.quote(from.s)).nn, to, Int.MaxValue)
 

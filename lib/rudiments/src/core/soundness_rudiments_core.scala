@@ -32,12 +32,18 @@
                                                                                                   */
 package soundness
 
+// unexported: literal, contains, indexOf, subtypes (compile-time / type-level
+// helpers for macro authors, reached via `import rudiments.*`, not end-user API)
+
 export
   rudiments
   . { !!, &, all, also, and, annex, at, b, bi, Bijection, bijection, Bytes, bytes, collate, Counter,
-      DecimalConverter, Defaulting, Defaulting2, Digit, each, establish, Exit, fixpoint, fuse, gib,
-      give, has, immutable, Indexable, indexBy, intercalate, javaInputStream, kib, longestTrain,
+      DecimalConverter, Defaulting, Defaulting2, defines, Digit, each, establish, Exit, fixpoint,
+      fuse, gib,
+      give, has, immutable, Inclusive, Indexable, indexBy, intercalate, javaInputStream, kib,
+      longestTrain,
       Loop, loop, matchable, mean, mib, mutable, Mutex, next, occupied, ordinal, pipe, place, plus,
       prim, prior, probe, product, reflectClass, repeat, runs, runsBy, sec, segment, Segmentable,
       sift, snapshot, state, std, sumBy, tap, ter, that, tib, to, total, tri, triple, tuple, twin,
-      typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet }
+      typed, typeName, unit, unwind, upsert, variance, waive, weave, when, yet, upon, context,
+      mean2, unique, limit, ult, ant, pen, Traversable, seek, where, subsumes }

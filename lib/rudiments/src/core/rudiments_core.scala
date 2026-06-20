@@ -132,21 +132,41 @@ extension [value <: Matchable](iterable: Iterable[value])
   transparent inline def sift[filter <: value: Typeable]: Iterable[filter] =
     iterable.flatMap(filter.unapply(_))
 
-  inline def has(value: value): Boolean = iterable.exists(_ == value)
-
-  inline def where(inline predicate: value => Boolean): Optional[value] =
-    iterable.find(predicate).getOrElse(Unset)
-
   transparent inline def weave(right: Iterable[value]): Iterable[value] =
     iterable.zip(right).flatMap(Iterable(_, _))
 
-extension [element <: Matchable](iarray: IArray[element])
-  @targetName("hasIArray")
-  inline def has(value: element): Boolean = iarray.exists(_ == value)
+// `collection.has(value)` (value membership) for any `collection` that is
+// `Inclusive`; the queried value type is fixed by the instance's `Operand`.
+// Whether a *key/index* is present is `Indexable`'s `defines` instead.
+extension [self](self: self)(using inclusive: self is Inclusive)
+  def has(value: inclusive.Operand): Boolean = inclusive.has(self, value)
 
-extension [element <: Matchable](array: Array[element])
-  @targetName("hasArray")
-  inline def has(value: element): Boolean = array.exists(_ == value)
+// Element-oriented queries over any `Traversable` value. `seek` returns the first
+// element satisfying a predicate; `where` returns the *index* (`Ordinal`) of the
+// first element satisfying a predicate. (A value-taking overload of `where` is
+// deliberately omitted: a path-dependent `traversable.Operand` makes it ambiguous
+// with the predicate form for any lambda argument, so `where(_ == value)` is the
+// idiom for locating a specific element.)
+extension [self](self: self)(using traversable: self is Traversable)
+  def seek(predicate: traversable.Operand => Boolean): Optional[traversable.Operand] =
+    traversable.traverse(self).find(predicate) match
+      case Some(element) => element
+      case None          => Unset
+
+  def where(predicate: traversable.Operand => Boolean): Optional[Ordinal] =
+    traversable.traverse(self).zipWithIndex.find((element, _) => predicate(element)) match
+      case Some((_, index)) => index.z
+      case None             => Unset
+
+  // `subsumes` tests whether `subsequence` occurs as a contiguous run of elements
+  // within `self` — a substring, for `Text`. The empty subsequence is always
+  // present. (Element membership, by contrast, is `has` via `Inclusive`.)
+  def subsumes(subsequence: self): Boolean =
+    val whole = Vector.from(traversable.traverse(self))
+    val part  = Vector.from(traversable.traverse(subsequence))
+    val last  = whole.length - part.length
+    part.isEmpty || whole.indices.exists: start =>
+      start <= last && part.indices.forall(offset => whole(start + offset) == part(offset))
 
 extension [value](iterator: Iterator[value])
   transparent inline def each(predicate: Ordinal aka "ordinal" ?=> value => Unit): Unit =
@@ -326,12 +346,12 @@ extension [element](array: Array[element])
     System.arraycopy(value.asInstanceOf[Array[element]], 0, array, ordinal.n0, value.length)
 
 extension [key, value](map: sc.Map[key, value])
-  inline def has(key: key): Boolean = map.contains(key)
+  inline def defines(key: key): Boolean = map.contains(key)
   inline def bijection: Bijection[key, value] = Bijection(map.to(Map))
 
 extension [key, value](map: Map[key, value])
   def upsert(key: key, optional: Optional[value] => value): Map[key, value] =
-    map.updated(key, optional(if map.has(key) then map(key) else Unset))
+    map.updated(key, optional(if map.defines(key) then map(key) else Unset))
 
   def collate(right: Map[key, value])(merge: (value, value) => value): Map[key, value] =
     right.fuse(map)(state.updated(next(0), state.get(next(0)).fold(next(1))(merge(_, next(1)))))
@@ -373,7 +393,7 @@ extension (bytes: Data)
   def javaInputStream: ji.InputStream = new ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
 
 extension [indexable: Indexable](value: indexable)
-  inline def has(index: indexable.Operand): Boolean = indexable.contains(value, index)
+  inline def defines(index: indexable.Operand): Boolean = indexable.contains(value, index)
 
   // A single `at` that dispatches at compile time on the index type: an index statically known to
   // be confined to *this* `value` (an `Operand in value.type`, hence in range) returns a bare
@@ -438,8 +458,6 @@ extension [tuple <: Tuple](tuple: tuple)
   def to[product: Mirror.ProductOf]: product = product.fromProduct(tuple)
 
 extension (erased tuple: Tuple)
-  inline def keep[nat <: Nat] = !![Tuple.Take[tuple.type, nat]]
-  inline def skip[nat <: Nat] = !![Tuple.Drop[tuple.type, nat]]
   inline def contains[element]: Boolean = indexOf[element] >= 0
   inline def indexOf[element]: Int = recurIndex[tuple.type, element](0)
 

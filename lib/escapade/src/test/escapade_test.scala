@@ -566,16 +566,16 @@ object Tests extends Suite(m"Escapade tests"):
         e"hello".contains('e')
       . assert(_ == true)
 
-      test(m"seek substring (Ltr)"):
-        e"hello world".seek(t"world")
+      test(m"offsetOf substring (Ltr)"):
+        e"hello world".offsetOf(t"world")
       . assert(_ == Sept)
 
-      test(m"seek missing returns Unset"):
-        e"hello".seek(t"world")
+      test(m"offsetOf missing returns Unset"):
+        e"hello".offsetOf(t"world")
       . assert(_ == Unset)
 
-      test(m"seek substring Rtl finds last occurrence"):
-        e"abcabc".seek(t"a", Rtl)
+      test(m"offsetOf substring Rtl finds last occurrence"):
+        e"abcabc".offsetOf(t"a", Rtl)
       . assert(_ == Quat)
 
       test(m"starts with prefix"):
@@ -602,8 +602,8 @@ object Tests extends Suite(m"Escapade tests"):
         e"hello".count(_ == 'l')
       . assert(_ == 2)
 
-      test(m"where finds first matching index"):
-        e"hello".where(_ == 'l')
+      test(m"pinpoint finds first matching index"):
+        e"hello".pinpoint(_ == 'l')
       . assert(_ == Ter)
 
       test(m"before predicate"):

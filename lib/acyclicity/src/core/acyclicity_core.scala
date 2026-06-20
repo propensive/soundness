@@ -32,16 +32,18 @@
                                                                                                   */
 package acyclicity
 
-import contextual.*
+import anticipation.*
 import denominative.*
 import rudiments.*
-import spectacular.*
 
-extension (inline stringContext: StringContext)
-  transparent inline def ref: Interpolation = interpolation[Dot.Ref](stringContext)
+// The membership test for the `DotIdentifier` rule: a DOT identifier is any
+// non-empty text containing neither a double-quote nor a newline.
+private[acyclicity] def dotIdentifierValid(name: Text): Boolean =
+  val text = name.s
 
-extension (stringContext: StringContext)
-  def id(): Dot.Id = Dot.Id(stringContext.parts.head.show)
+  text.length > 0 && (0 until text.length).forall: index =>
+    val char = text.charAt(index)
+    char != '"' && char != '\n'
 
 extension [node](start: node)
   def explore(dependencies: node => Iterable[node]): Dag[node] =

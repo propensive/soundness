@@ -32,6 +32,11 @@
                                                                                                   */
 package acyclicity
 
+import nomenclature.*
+
 object Graph:
-  def apply(id: Dot.Id, statements: Dot.Statement*): Dot = Dot.Graph(Some(id), false, statements*)
-  def strict(id: Dot.Id, statements: Dot.Statement*): Dot = Dot.Graph(Some(id), true, statements*)
+  def apply(id: Name[DotId], statements: Dot.Statement*): Dot =
+    Dot.Graph(Some(id), false, statements*)
+
+  def strict(id: Name[DotId], statements: Dot.Statement*): Dot =
+    Dot.Graph(Some(id), true, statements*)

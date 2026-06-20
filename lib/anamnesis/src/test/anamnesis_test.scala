@@ -67,7 +67,7 @@ object Tests extends Suite(m"Anamnesis tests"):
 
     test(m"Can add an item"):
       red.store()
-      alpha.assign(red.ref())
+      alpha.assign(red.reference())
 
     . assert()
 
@@ -97,6 +97,6 @@ object Tests extends Suite(m"Anamnesis tests"):
 
     test(m"Can't insert a pencil onto a shelf"):
       demilitarize:
-        top.store().assign(red.ref())
+        top.store().assign(red.reference())
 
     . assert(_.nonEmpty)

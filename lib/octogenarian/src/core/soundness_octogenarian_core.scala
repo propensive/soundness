@@ -37,7 +37,7 @@ export
   . { ChangeKind, Commit, FastForward, FileDiff, Git, GitBranch, GitCommand, GitError, GitEvent,
       GitHash, GitPathStatus, GitProcess, GitRefError, GitRefs, GitRepo, GitStatus, GitTag, Hunk,
       Note, NoteRef, Notes, Patch, Progress, ReflogEntry, Refspec, Remote, ResetMode, SshUrl,
-      Worktree }
+      Worktree, target, namespace, content }
 
 package gitCommands:
   export octogenarian.gitCommands.environmentDefaultGitCommand

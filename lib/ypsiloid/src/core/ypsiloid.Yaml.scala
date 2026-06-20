@@ -132,7 +132,7 @@ trait Yaml2:
                 case derivationDefault: Default[`derivation`] =>
                   val reason =
                     if yaml.root.isAbsent then Reason.Absent
-                    else Reason.NotType(primitive(yaml.root), YamlPrimitive.Mapping)
+                    else Reason.NotType(Yaml.primitive(yaml.root), YamlPrimitive.Mapping)
 
                   raise(YamlError(reason)) yet derivationDefault()
 
@@ -854,6 +854,107 @@ object Yaml extends Yaml2, Dynamic:
 
       case Unset         => 1
 
+    // AST predicates and accessors mirroring Jacinta's `Json.Ast` extensions.
+    // They live in the `Ast` companion so they are in scope wherever a
+    // `Yaml.Ast` is used, without being top-level (and out of the `soundness`
+    // umbrella, where their generic names would clash). `isObject` / `isArray`
+    // distinguish mappings (even-length flat array of alternating key/value)
+    // from sequences (odd-length, with a trailing `arrayPad` sentinel when the
+    // user-visible item count is even).
+    extension (yaml: Yaml.Ast)
+      inline def isAbsent:  Boolean = yaml == Unset
+      inline def isNull:    Boolean = yaml.asInstanceOf[AnyRef] eq Yaml.YamlNull
+      inline def isLong:    Boolean = yaml.isInstanceOf[Long]
+      inline def isDouble:  Boolean = yaml.isInstanceOf[Double]
+      inline def isBcd:     Boolean = yaml.isInstanceOf[Array[Double]]
+      inline def isNumber:  Boolean = isLong || isDouble || isBcd
+      inline def isString:  Boolean = yaml.isInstanceOf[String]
+      inline def isBoolean: Boolean = yaml.isInstanceOf[Boolean]
+
+      inline def isObject: Boolean =
+        yaml.isInstanceOf[Array[AnyRef]] &&
+          (yaml.asInstanceOf[Array[?]].length & 1) == 0
+
+      inline def isArray: Boolean =
+        yaml.isInstanceOf[Array[AnyRef]] &&
+          (yaml.asInstanceOf[Array[?]].length & 1) == 1
+
+      private def expected(yamlPrimitive: YamlPrimitive)(using Tactic[YamlError]): Unit =
+        raise:
+          YamlError(if isAbsent then Reason.Absent else Reason.NotType(primitive, yamlPrimitive))
+
+      inline def arrayLength: Int = Yaml.Ast.sequenceLength(yaml.asInstanceOf[IArray[Any]])
+
+      inline def arrayElement(index: Int): Yaml.Ast =
+        yaml.asInstanceOf[IArray[Yaml.Ast]](index)
+
+      inline def objectSize: Int = yaml.asInstanceOf[IArray[Any]].length/2
+
+      inline def objectKey(index: Int): String =
+        yaml.asInstanceOf[IArray[Any]](index*2).asInstanceOf[String]
+
+      inline def objectValue(index: Int): Yaml.Ast =
+        yaml.asInstanceOf[IArray[Any]](index*2 + 1).asInstanceOf[Yaml.Ast]
+
+      // Linear scan for a key — returns the pair-indexed position (i.e.
+      // `objectKey(result)` retrieves the key, `objectValue(result)` the
+      // value) or `-1` if the key is absent. Only string-typed keys match.
+      def objectIndexOf(key: String): Int =
+        if !isObject then -1 else
+          val arr = yaml.asInstanceOf[Array[?]]
+          val len = arr.length
+          var i = 0
+          var hit = -1
+
+          while i < len && hit < 0 do
+            arr(i) match
+              case s: String if s == key => hit = i/2
+              case _                     => ()
+
+            i += 2
+
+          hit
+
+      def array(using Tactic[YamlError]): IArray[Yaml.Ast] =
+        if isArray then
+          val full = yaml.asInstanceOf[IArray[Yaml.Ast]]
+          val n = arrayLength
+
+          if n == full.length then full
+          else IArray.tabulate(n)(full(_))
+        else
+          expected(YamlPrimitive.Sequence) yet IArray[Yaml.Ast]()
+
+      def double(using Tactic[YamlError]): Double = yaml.asInstanceOf[Matchable] match
+        case value: Double                   => value
+        case value: Long                     => value.toDouble
+        case value: Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd].toDouble
+        case _                               => expected(YamlPrimitive.Decimal) yet 0.0
+
+      def long(using Tactic[YamlError]): Long = yaml.asInstanceOf[Matchable] match
+        case value: Long                     => value
+        case value: Double                   => value.toLong
+        case value: Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd].toLong.or(0L)
+        case _                               => expected(YamlPrimitive.Integer) yet 0L
+
+      def bcd(using Tactic[YamlError]): jacinta.Bcd = yaml.asInstanceOf[Matchable] match
+        case value: Array[Double] @unchecked => value.asInstanceOf[jacinta.Bcd]
+        case value: Long                     => jacinta.Bcd(BigDecimal(value))
+        case value: Double                   => jacinta.Bcd(BigDecimal(value))
+
+        case _ =>
+          expected(YamlPrimitive.Decimal) yet jacinta.Bcd(BigDecimal(0))
+
+      def string(using Tactic[YamlError]): Text =
+        if isString then yaml.asInstanceOf[String].tt
+        else expected(YamlPrimitive.Str) yet t""
+
+      def boolean(using Tactic[YamlError]): Boolean =
+        if isBoolean then yaml.asInstanceOf[Boolean]
+        else expected(YamlPrimitive.Bool) yet false
+
+      def primitive: YamlPrimitive = Yaml.primitive(yaml)
+
   def ast(value: Yaml.Ast): Yaml = new Yaml(value)
 
   // `object Yaml` extends `Dynamic`, which suppresses the universal-apply
@@ -868,6 +969,73 @@ object Yaml extends Yaml2, Dynamic:
   // field on `class Yaml` is package-private so that breaking through
   // the `Yaml` abstraction is a deliberate, named action.
   def unseal(yaml: Yaml): Yaml.Ast = yaml.root
+
+  // Resolves a `YamlPath` to the source `Position` recorded in a tracked
+  // `Yaml`'s `PositionIndex`. Exposed uniformly as `yaml.locate(path)` /
+  // `yaml.locateKey(path)` through zephyrine's `Positionable`.
+  given positionable: Yaml is Positionable by YamlPath to Yaml.Ast.Position =
+    new Positionable:
+      type Self    = Yaml
+      type Operand = YamlPath
+      type Result  = Yaml.Ast.Position
+
+      def locate(value: Yaml, path: YamlPath): Optional[Yaml.Ast.Position] =
+        value.positionIndex.let: posIndex =>
+          walkIndex(value.root, posIndex.ints, 0, path.path.descent.toIndexedSeq, 0, false)
+
+      def locateKey(value: Yaml, path: YamlPath): Optional[Yaml.Ast.Position] =
+        value.positionIndex.let: posIndex =>
+          walkIndex(value.root, posIndex.ints, 0, path.path.descent.toIndexedSeq, 0, true)
+
+  private def walkIndex
+    ( ast:      Yaml.Ast,
+      data:     IArray[Int],
+      offset:   Int,
+      segments: IndexedSeq[Text],
+      i:        Int,
+      keyMode:  Boolean )
+  :   Optional[Yaml.Ast.Position] =
+
+    if i >= segments.length then
+      if keyMode then Unset
+      else Yaml.Ast.Position
+        ( line   = data(offset + 1),
+          column = data(offset + 2),
+          length = data(offset + 3) )
+    else
+      // `YamlPath.path.descent` is stored leaf-first (Serpentine's `/`
+      // prepends), so iterate it in reverse to walk root-to-leaf.
+      val seg = segments(segments.length - 1 - i).s
+
+      if ast.isObject then
+        val k = ast.objectIndexOf(seg)
+
+        if k < 0 then Unset
+        else
+          val entryOff = data(offset + 5 + k)
+          val isLast = i == segments.length - 1
+
+          if isLast && keyMode then
+            Yaml.Ast.Position
+              ( line   = data(offset + entryOff),
+                column = data(offset + entryOff + 1),
+                length = data(offset + entryOff + 2) )
+          else
+            walkIndex
+              ( ast.objectValue(k), data, offset + entryOff + 3, segments, i + 1, keyMode )
+      else if ast.isArray then
+        try
+          val k = Integer.parseInt(seg)
+
+          if k < 0 || k >= ast.arrayLength then Unset
+          else
+            val childOff = data(offset + 5 + k)
+
+            walkIndex
+              ( ast.arrayElement(k), data, offset + childOff, segments, i + 1, keyMode )
+        catch case _: NumberFormatException => Unset
+      else
+        Unset
 
   inline given interpolator: Yaml is Interpolable:
     type Result = Yaml
@@ -1301,6 +1469,12 @@ object Yaml extends Yaml2, Dynamic:
 
         case Yaml.Tracking.Off =>
           Yaml(YamlParser.parse(text))
+
+  // Multi-document reads (`---`-separated YAML) through the uniform `.read`
+  // API: `text.read[List[Yaml]]` yields one `Yaml` per document. Backed by
+  // `parseAll`, this replaces the former bespoke `Text.readAll` extension.
+  given aggregableAll: (Tactic[ParseError], Yaml.Tracking) => List[Yaml] is Aggregable by Text =
+    summon[Text is Aggregable by Text].map(parseAll(_))
 
   // HTTP content-type integration. `Abstractable across HttpStreams` makes a
   // `Yaml` value usable as an HTTP request/response body (telekinesis derives

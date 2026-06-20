@@ -38,7 +38,7 @@ import scala.quoted.*
 import anticipation.*
 import fulminate.*
 import gigantism.*
-import gossamer.{where as _, *}
+import gossamer.*
 import hieroglyph.*
 import quantitative.*
 import rudiments.*
@@ -181,7 +181,7 @@ object internal:
 
     val lookupUnit = readUnitPower(TypeRepr.of[unit])
 
-    val multiplier: Multiplier = multipliers[quanta].where(_.unitPower == lookupUnit).or:
+    val multiplier: Multiplier = multipliers[quanta].seek(_.unitPower == lookupUnit).or:
       halt(557, m"the Quanta does not include this unit")
 
     '{(($value.asInstanceOf[Long]/${Expr(multiplier.subdivision)})%${Expr(multiplier.max)}).toInt}

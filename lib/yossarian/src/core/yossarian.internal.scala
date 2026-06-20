@@ -111,7 +111,7 @@ object internal:
 
       sb.text
 
-    def find(text: Text): Optional[Screen[styling]] = line.render.seek(text).let: ordinal =>
+    def find(text: Text): Optional[Screen[styling]] = line.render.offsetOf(text).let: ordinal =>
       val index = ordinal.n0
 
       new Screen

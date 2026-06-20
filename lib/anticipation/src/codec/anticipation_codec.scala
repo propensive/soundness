@@ -49,6 +49,3 @@ type Data = IArray[Byte]
 
 extension [encodable: Encodable in Data](value: encodable)
   def bytestream: Data = encodable.encode(value)
-
-extension (long: Long)
-  def bytes: Data = IArray((56 to 0 by -8).map(long >> _).map(_.toByte)*)
