@@ -1002,8 +1002,8 @@ object Tests extends Suite(m"Decorum Tests"):
         extractedUnexported("@unexported\nobject Timestamp\n")
       . assert(_ == Set("Timestamp"))
 
-      test(m"@unexported with a reason argument is detected"):
-        extractedUnexported("@unexported(\"clashes with superlunary.Executor\")\ntrait Executor\n")
+      test(m"@unexported on a trait is detected"):
+        extractedUnexported("@unexported\ntrait Executor\n")
       . assert(_ == Set("Executor"))
 
       test(m"@unexported on an extension method is detected"):

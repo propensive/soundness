@@ -38,7 +38,7 @@ import anticipation.*
 import prepositional.*
 import typonym.*
 
-@unexported()
+@unexported
 object Tag:
   def root(children: Set[Text]): Tag =
     new Tag("#root", Attributes.empty, children):

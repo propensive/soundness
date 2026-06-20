@@ -71,8 +71,8 @@ type Label = String & Singleton
 // its simple name clashes with another component's in that package, or it is a
 // compile-time/internal helper reached via the component's own import. Decorum's
 // SN-742/SN-742.1 export rules read this annotation and skip the annotated
-// definition; the optional `reason` documents why.
-final class unexported(reason: String = "") extends StaticAnnotation
+// definition.
+final class unexported() extends StaticAnnotation
 
 @targetName("partialFn")
 infix type ~> [-domain, +range] = PartialFunction[domain, range]

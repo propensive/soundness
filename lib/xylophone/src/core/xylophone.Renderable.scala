@@ -34,6 +34,6 @@ package xylophone
 
 import prepositional.*
 
-@unexported()
+@unexported
 trait Renderable extends Typeclass, Formal:
   def render(value: Self): Xml of Form

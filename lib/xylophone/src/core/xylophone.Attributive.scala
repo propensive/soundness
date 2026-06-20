@@ -36,7 +36,7 @@ import anticipation.*
 import prepositional.*
 import vacuous.*
 
-@unexported()
+@unexported
 object Attributive:
   sealed trait Textual
 

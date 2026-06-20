@@ -36,7 +36,8 @@ import anticipation.*
 import locomotion.field
 import prepositional.*
 
-@unexported("collides with aviation.Timestamp in the umbrella; reach it via embarcadero.Timestamp")
+// Not exported: collides with aviation.Timestamp; reach it via embarcadero.Timestamp
+@unexported
 object Timestamp:
   // Build a protobuf timestamp from any instant type — e.g. Aviation's `Instant` —
   // through anticipation's generic time abstraction, so no dependency on a specific

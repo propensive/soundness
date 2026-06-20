@@ -37,7 +37,7 @@ import denominative.*
 import stenography.*
 import vacuous.*
 
-@unexported()
+@unexported
 object Completion:
   enum Kind:
     case Term, Method, Given, Extension, Type, Module, Package
