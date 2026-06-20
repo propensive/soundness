@@ -100,15 +100,6 @@ object internal:
 
       inline def encoded(value: Byte): Pojo = java.lang.Byte.valueOf(value).nn
 
-    // Check whether these should be kept, or the `inline given` below
-    // given list: [list <: List, element: Encodable in Pojo]
-    // => list[element] is Encodable in Pojo =
-    //   list => IArray.from(list.map(_.encode))
-
-    // given series: [series <: Series, element: Encodable in Pojo]
-    // => series[element] is Encodable in Pojo =
-    //   series => IArray.from(series.map(_.encode))
-
     given list: [collection <: Iterable, element: Encodable in Pojo]
     =>  collection[element] is Encodable in Pojo =
 
