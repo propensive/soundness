@@ -32,9 +32,13 @@
                                                                                                   */
 package soundness
 
+// unexported: apply (the bit/byte `Double`/`Long`/`Int`/`Short` companion
+// constructors collide with quantitative's top-level `apply` in the `soundness`
+// package; reach them via `import hypotenuse.*`)
+
 export
   hypotenuse
-  . { %%, **, /-, <, <=, >, >=, abs, acos, apply, asin, atan, B16, B32, B64, B8, base32, bin,
+  . { %%, **, /-, <, <=, >, >=, abs, acos, asin, atan, B16, B32, B64, B8, base32, bin,
       binary, bits, ceiling, CheckOverflow, Commensurable, cos, cosh, decrement, DivisionByZero,
       DivisionError, erf, euler, exp, expm1, exponent, F32, F64, finite, floor, gcd, goldenRatio,
       hex, hyp, increment, infinite, int, lcm, ln, log10, log1p, long, mantissa, nan, octal,
