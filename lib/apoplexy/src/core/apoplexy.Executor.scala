@@ -37,5 +37,6 @@ import telekinesis.*
 // The transport seam: turns an `Api.Request` into a raw HTTP response. The
 // production given (requiring `Online`) sends a real request; tests provide a
 // recording implementation that returns canned responses without any network.
+@unexported("clashes with superlunary.Executor in the umbrella; reach it via apoplexy.Executor")
 trait Executor:
   def execute(request: Api.Request): Http.Response

@@ -417,15 +417,22 @@ extension (long: Long)
   def lcm(right: Long): Long = long*right/long.gcd(right)
 
 extension (doubleObject: Double.type)
+  @unexported
   inline def apply(long: Long): Double = JDouble.longBitsToDouble(long)
 
 extension (shortObject: Short.type)
+  @unexported
   def apply(bits: B16): Short = bits.asInstanceOf[Short]
+
+  @unexported
 
   def apply(bytes: IArray[Byte]): Short = (((bytes(0) & 0xFF) << 8) | (bytes(1) & 0xff)).toShort
 
 extension (intObject: Int.type)
+  @unexported
   def apply(bits: B32): Int = bits.asInstanceOf[Int]
+
+  @unexported
 
   def apply(bytes: IArray[Byte]): Int =
     var int: Int = (bytes(0) & 0xFF).toInt
@@ -439,7 +446,10 @@ extension (intObject: Int.type)
     int
 
 extension (longObject: Long.type)
+  @unexported
   def apply(bits: B64): Long = bits.asInstanceOf[Long]
+
+  @unexported
 
   def apply(bytes: IArray[Byte]): Long =
     var long: Long = (bytes(0) & 0xFF).toLong

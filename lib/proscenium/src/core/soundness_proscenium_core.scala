@@ -64,7 +64,7 @@ export scala.annotation.unchecked.{uncheckedCaptures, uncheckedStable, unchecked
 export scala.LazyList as Stream
 export scala.DummyImplicit as Void
 
-export proscenium.{`~>`, Label, Mono, Nat, Zero}
+export proscenium.{`~>`, Label, Mono, Nat, unexported, Zero}
 
 transparent inline def infer[context]: context = compiletime.summonInline[context]
 

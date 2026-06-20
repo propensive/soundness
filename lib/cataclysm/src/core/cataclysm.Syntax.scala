@@ -39,6 +39,7 @@ import vacuous.*
 // property's permitted values are described. A `Syntax` is the parsed form of a
 // grammar string such as `<line-width> || <line-style> || <color>`; it is what a
 // later step matches a concrete value against.
+@unexported("clashes with stenography.Syntax in the umbrella; reach it via cataclysm.Syntax")
 enum Syntax derives CanEqual:
   case Keyword(name: Text)                          // a literal identifier, e.g. `auto`
   case Literal(token: Text)                         // a literal token, e.g. `/` `,` or quoted `'+'`

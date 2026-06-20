@@ -79,9 +79,11 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
       val unitTree          = context.compilationUnit.untpdTree
       val siblingTypes      = soundnessSiblingModules(path)
       val siblingExtensions = soundnessSiblingExtensions(path)
+      val unexported        = soundnessUnexported(path)
 
       val violations =
-        Checker.check(path, module, text, unitTree, source, siblingTypes, siblingExtensions)
+        Checker.check
+          ( path, module, text, unitTree, source, siblingTypes, siblingExtensions, unexported )
 
       violations.foreach: violation =>
         val pos = position(source, violation.line, violation.column)
@@ -158,6 +160,39 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
       val (tree, source) = Parsing.parse(file.getPath.nn, content)
       Extensions.extract(tree, source)
     catch case _: Throwable => Nil
+
+  // When `path` is a `soundness_<component>_<suffix>.scala` export surface, return
+  // the simple names of every sibling definition annotated `@unexported` — both in
+  // the `<component>.<Name>.scala` module files and the `<component>_<suffix>.scala`
+  // definition files in the same directory. R-742 and R-742.1 treat these names as
+  // deliberately excluded from the `soundness` umbrella. Empty for every other file.
+  private def soundnessUnexported(path: String): Set[String] =
+    if path.contains("/src/plugin/") then Set.empty else
+      val libParts = path.split("/lib/").nn
+      if libParts.length < 2 then Set.empty else
+        val component = libParts(1).nn.split("/").nn(0).nn
+        val file      = java.io.File(path)
+        val fileName  = file.getName.nn
+        if !fileName.startsWith(s"soundness_${component}_") then Set.empty else
+          val parent   = file.getParentFile
+          val siblings = if parent == null then null else parent.listFiles
+          if siblings == null then Set.empty else
+            val out = mutable.Set[String]()
+            siblings.foreach: sibling =>
+              val name = sibling.nn.getName.nn
+              if (name.startsWith(s"$component.") || name.startsWith(s"${component}_"))
+                 && name.endsWith(".scala")
+              then out ++= unexportedNames(sibling.nn)
+            out.to(Set)
+
+  // Parse `file` and return the simple names of definitions it annotates
+  // `@unexported`. Returns the empty set if the file can't be read or parsed.
+  private def unexportedNames(file: java.io.File): Set[String] =
+    try
+      val content        = String(java.nio.file.Files.readAllBytes(file.toPath))
+      val (tree, source) = Parsing.parse(file.getPath.nn, content)
+      Annotations.unexported(tree)
+    catch case _: Throwable => Set.empty
 
   // Modifiers that may precede a public top-level declaration; `private` and
   // `protected` are deliberately absent, so a `private[x] object Foo` line never

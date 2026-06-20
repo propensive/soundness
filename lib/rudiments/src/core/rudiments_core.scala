@@ -458,8 +458,12 @@ extension [tuple <: Tuple](tuple: tuple)
   def to[product: Mirror.ProductOf]: product = product.fromProduct(tuple)
 
 extension (erased tuple: Tuple)
+  @unexported
   inline def contains[element]: Boolean = indexOf[element] >= 0
+  @unexported
   inline def indexOf[element]: Int = recurIndex[tuple.type, element](0)
+
+  @unexported
 
   transparent inline def subtypes[supertype]: Tuple = recurSubtypes[tuple.type, supertype, Zero]
 
@@ -479,6 +483,7 @@ extension (erased tuple: Tuple)
       case _: (other *: tail)   => recurIndex[tail, element](index + 1)
 
 extension (using quotes: Quotes)(repr: quotes.reflect.TypeRepr)
+  @unexported
   inline def literal
     [ primitive
       <:  Boolean | Byte | Short | Int | Long | Float | Double | Char | String | Unit | Null ]

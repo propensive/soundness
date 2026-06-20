@@ -32,8 +32,6 @@
                                                                                                   */
 package soundness
 
-// unexported: Syntax (clashes with `stenography.Syntax` in the umbrella; reach it via
-// `cataclysm.Syntax`)
 export cataclysm.{Css, CssError, CssErrors, cssAggregable, SelectorList, Selector, Compound,
     Simple, Combinator, AttributeMatcher, AttributeTest, Prefix, PseudoArgument,
     CssConvertible, Outcome, PropertyDef, SyntaxMatcher, ValueToken, Pixels, Rems, Exs, Chs,

@@ -34,8 +34,5 @@ package soundness
 
 import frontier.*
 
-// unexported: Diagnostic (clashes with `harlequin.Diagnostic` in the umbrella; reach it via
-// `frontier.Diagnostic`)
-
 package context:
   transparent inline given explainMissingContext: [any] => any = internal.explanation[any]

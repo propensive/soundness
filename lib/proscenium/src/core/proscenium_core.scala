@@ -66,6 +66,14 @@ export Conversion.into
 type Nat = Int & Singleton
 type Label = String & Singleton
 
+// Marks a top-level definition (a module, an extension method, …) that is
+// deliberately *not* re-exported into the `soundness` umbrella — typically because
+// its simple name clashes with another component's in that package, or it is a
+// compile-time/internal helper reached via the component's own import. Decorum's
+// SN-742/SN-742.1 export rules read this annotation and skip the annotated
+// definition; the optional `reason` documents why.
+final class unexported(reason: String = "") extends StaticAnnotation
+
 @targetName("partialFn")
 infix type ~> [-domain, +range] = PartialFunction[domain, range]
 

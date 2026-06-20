@@ -128,6 +128,7 @@ def basicAuth(validate: (Text, Text) => Boolean, realm: Text)(response: => Http.
 inline def request: Http.Request = infer[Http.Request]
 
 extension (request: Http.Request)
+  @unexported
   def as[body: Acceptable]: body = body.accept(request)
 
 package webserverErrorPages:
