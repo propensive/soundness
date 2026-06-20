@@ -45,7 +45,7 @@ import vacuous.*
 // Compile-time machinery for the `tel"…"` interpolator and extractor.
 // Mirrors jacinta.internal in shape: the static parts of a StringContext
 // are joined with a marker character, parsed at compile time using the
-// runtime TelParser, and the parsed AST is rebuilt as an Expr[Tel] with
+// runtime Tel.Parser, and the parsed AST is rebuilt as an Expr[Tel] with
 // the marker positions filled by runtime hole values.
 //
 // Phase-2 scope: hole substitution is supported only at the atom-text
@@ -100,7 +100,7 @@ object internal:
         override def abort(error: Diagnostics ?=> TelError): Nothing =
           halt(m"the tel\"…\" literal is invalid: ${error.message}")
 
-      TelParser.parse(data)
+      Tel.Parser.parse(data)
 
     abortive:
       var holeIndex: Int = 0
@@ -256,7 +256,7 @@ object internal:
         override def abort(error: Diagnostics ?=> TelError): Nothing =
           halt(m"the tel\"…\" pattern is invalid: ${error.message}")
 
-      TelParser.parse(IArray.from(source.getBytes("UTF-8").nn.iterator))
+      Tel.Parser.parse(IArray.from(source.getBytes("UTF-8").nn.iterator))
 
     // At runtime the matcher re-parses the assembled pattern source from
     // an embedded byte literal. We could emit the pre-parsed AST as an
@@ -270,7 +270,7 @@ object internal:
     val matchResult: Expr[Option[List[Tel]]] =
       ' {
           val pattern: Tel.Document =
-            contingency.unsafely(TelParser.parse($patternBytesExpr))
+            contingency.unsafely(Tel.Parser.parse($patternBytesExpr))
 
           stratiform.internal.matchDocument(pattern, $scrutinee, $markerExpr)
         }
