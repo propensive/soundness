@@ -36,8 +36,6 @@ import scala.quoted.*
 
 import dotty.tools.dotc.*
 
-inline def every[value]: Every[value] = ${Every.summonAll[value]}
-
 object Every:
   transparent inline given default: [value] => Every[value] = ${summonAll[value]}
 

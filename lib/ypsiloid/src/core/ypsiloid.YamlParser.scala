@@ -226,12 +226,8 @@ private[ypsiloid] final class YamlParser:
   // `Cursor[Data]` constructor resolution ambiguous. Local-import-per-
   // branch is the workaround established by jacinta #1147.
   private def makeCursor(input: Data): Cursor[Data] =
-    if tracking then
-      import zephyrine.lineation.linefeedByte
-      Cursor[Data](input)
-    else
-      import Lineation.untrackedData
-      Cursor[Data](input)
+    if tracking then zephyrine.lineation.linefeedByte.give(Cursor[Data](input))
+    else Lineation.untrackedData.give(Cursor[Data](input))
 
   private def resetParserState(): Unit =
     syncFrom()

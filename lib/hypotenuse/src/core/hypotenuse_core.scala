@@ -425,7 +425,6 @@ extension (shortObject: Short.type)
   def apply(bits: B16): Short = bits.asInstanceOf[Short]
 
   @unexported
-
   def apply(bytes: IArray[Byte]): Short = (((bytes(0) & 0xFF) << 8) | (bytes(1) & 0xff)).toShort
 
 extension (intObject: Int.type)
@@ -433,7 +432,6 @@ extension (intObject: Int.type)
   def apply(bits: B32): Int = bits.asInstanceOf[Int]
 
   @unexported
-
   def apply(bytes: IArray[Byte]): Int =
     var int: Int = (bytes(0) & 0xFF).toInt
     int <<= 8
@@ -450,7 +448,6 @@ extension (longObject: Long.type)
   def apply(bits: B64): Long = bits.asInstanceOf[Long]
 
   @unexported
-
   def apply(bytes: IArray[Byte]): Long =
     var long: Long = (bytes(0) & 0xFF).toLong
     long <<= 8

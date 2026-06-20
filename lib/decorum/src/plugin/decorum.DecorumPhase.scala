@@ -79,7 +79,7 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
       val unitTree          = context.compilationUnit.untpdTree
       val siblingTypes      = soundnessSiblingModules(path)
       val siblingExtensions = soundnessSiblingExtensions(path)
-      val unexported        = soundnessUnexported(path)
+      val unexported        = soundnessUnexported(path) ++ soundnessSiblingSurfaceExports(path)
 
       val violations =
         Checker.check
@@ -192,6 +192,38 @@ class DecorumPhase(options: List[String]) extends PluginPhase:
       val content        = String(java.nio.file.Files.readAllBytes(file.toPath))
       val (tree, source) = Parsing.parse(file.getPath.nn, content)
       Annotations.unexported(tree)
+    catch case _: Throwable => Set.empty
+
+  // When `path` is an export surface, return the export names from the *other*
+  // `soundness_<component>_<suffix>.scala` surfaces in the same directory. A
+  // component split across several surfaces (e.g. breviloquence's `core`/`parser`)
+  // re-exports each module from exactly one of them; a module exported by a sibling
+  // surface is therefore not missing from this one. Empty for non-surface files.
+  private def soundnessSiblingSurfaceExports(path: String): Set[String] =
+    if path.contains("/src/plugin/") then Set.empty else
+      val libParts = path.split("/lib/").nn
+      if libParts.length < 2 then Set.empty else
+        val component = libParts(1).nn.split("/").nn(0).nn
+        val file      = java.io.File(path)
+        val fileName  = file.getName.nn
+        if !fileName.startsWith(s"soundness_${component}_") then Set.empty else
+          val parent   = file.getParentFile
+          val siblings = if parent == null then null else parent.listFiles
+          if siblings == null then Set.empty else
+            val out = mutable.Set[String]()
+            siblings.foreach: sibling =>
+              val name = sibling.nn.getName.nn
+              if name != fileName && name.startsWith(s"soundness_${component}_")
+                 && name.endsWith(".scala")
+              then out ++= surfaceExportNames(sibling.nn)
+            out.to(Set)
+
+  // Parse an export-surface `file` and return the simple names it re-exports.
+  private def surfaceExportNames(file: java.io.File): Set[String] =
+    try
+      val content        = String(java.nio.file.Files.readAllBytes(file.toPath))
+      val (tree, source) = Parsing.parse(file.getPath.nn, content)
+      SoundnessExports.extract(tree, source).names
     catch case _: Throwable => Set.empty
 
   // Modifiers that may precede a public top-level declaration; `private` and

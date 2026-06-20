@@ -36,6 +36,8 @@ import scala.quoted.*
 
 type Macro[result] = Quotes ?=> Expr[result]
 
+inline def every[value]: Every[value] = ${Every.summonAll[value]}
+
 inline def metaprogramming(using quotes: Quotes): Metaprogramming(quotes) =
   Metaprogramming(quotes)
 
