@@ -213,6 +213,7 @@ object soundness extends ScalaModule:
     denominative.core, digression.core, diuretic.core, fulminate.core,
     hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core, gossamer.core,
     inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
+    nomenclature.lexicon,
     parasite.core, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
     prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
     typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core)
@@ -1093,11 +1094,14 @@ object urticose extends Library:
   object test extends Tests(core, url)
 
 object nomenclature extends Library:
-  object core extends Component(gossamer.core, turbulence.core):
+  object core extends Component(gossamer.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, hellenism.core)
+  object lexicon extends Component(core, turbulence.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core, lexicon, hellenism.core)
 
 object octogenarian extends Library:
   object core extends Component(galilei.core, urticose.core, enigmatic.core, anticipation.url,
@@ -1133,7 +1137,8 @@ object panopticon extends Library:
   object bench extends Benchmarks(core, quantitative.units)
 
 object parasite extends Library:
-  object core extends Component(digression.core, mercator.core, anticipation.time):
+  object core extends Component(digression.core, mercator.core, anticipation.time,
+      nomenclature.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, quantitative.units)
