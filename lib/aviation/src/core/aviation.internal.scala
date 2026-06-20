@@ -36,15 +36,12 @@ import java.time as jt
 
 import scala.quoted.*
 
-import abacist.*
 import anticipation.*
 import contingency.*
-import denominative.*
 import distillate.*
 import fulminate.*
 import gigantism.*
 import gossamer.*
-import hieroglyph.*
 import hypotenuse.*
 import kaleidoscope.*
 import prepositional.*
@@ -55,7 +52,6 @@ import symbolism.*
 import vacuous.*
 
 object internal:
-  opaque type Date = Long
   opaque type Year = Int
   opaque type Day = Int
   opaque type WorkingDays = Int
@@ -468,142 +464,3 @@ object internal:
       case _ =>
         halt(735, m"expected a literal double value")
 
-  object Date:
-    inline given underlying: Underlying[Date, Long] = !!
-    def julianDay(day: Int): Date = day.toLong*MillisPerDay
-
-    def apply(using calendar: Calendar)
-      ( year: calendar.Annual, month: calendar.Mensual, day: calendar.Diurnal )
-    :   Date raises TimeError =
-
-      calendar.jdn(year, month, day)
-
-
-    trait Format(val name: Text):
-      type Issue: Communicable
-
-    given subtractable: Date is Subtractable by Date to Quanta[Days[1]] = (end, start) =>
-      (Quanta(((end - start)/MillisPerDay).toInt): Quanta[Days[1]])
-
-    given subtractable2: Date is Subtractable by Quanta[Days[1]] to Date = (end, start) =>
-      end.addDays(-start[Days])
-
-    given addable: Date is Addable by Quanta[Days[1]] to Date = (left, right) =>
-      left.addDays(right[Days])
-
-    given addable2: Quanta[Days[1]] is Addable by Date to Date = (left, right) =>
-      right.addDays(left[Days])
-
-    given showable: (Endianness, DateNumerics, DateSeparation, Years) => Date is Showable = date =>
-      import DateNumerics.*, Years.*
-      import textMetrics.uniformMetric
-
-      given calendar: RomanCalendar = calendars.gregorianCalendar
-
-      def pad(n: Int): Text = (n%100).show.pad(2, Rtl, '0')
-
-      val year: Text = summon[Years] match
-        case TwoDigitYear => pad(date.year)
-        case FullYear     => date.year.show
-
-      val month: Text = summon[DateNumerics] match
-        case FixedWidth    => pad(date.month.numerical)
-        case VariableWidth => date.month.numerical.show
-
-      val day: Text = summon[DateNumerics] match
-        case FixedWidth    => pad(date.day)
-        case VariableWidth => date.day.show
-
-      summon[Endianness].match
-        case Endianness.LittleEndian => List(day, month, year)
-        case Endianness.MiddleEndian => List(month, day, year)
-        case Endianness.BigEndian    => List(year, month, day)
-
-      . join(summon[DateSeparation].separator)
-
-    given decoder: Tactic[TimeError] => Date is Decodable in Text = value =>
-      import calendars.gregorianCalendar
-
-      value.cut(t"-").to(List) match
-        case As[Int](year) :: As[Int](month) :: As[Int](day) :: Nil => Date(year, Month(month), day)
-
-        case cnt =>
-          abort(TimeError(_.Format(value, Iso8601, Prim)(Iso8601.Issue.Digit)))
-
-    given encodable: RomanCalendar => Date is Encodable in Text = date =>
-      import hieroglyph.textMetrics.uniformMetric
-
-      List
-        ( date.year.toString.tt,
-          date.month.numerical.toString.tt.pad(2, Rtl, '0'),
-          date.day.toString.tt.pad(2, Rtl, '0') )
-
-      . join(t"-")
-
-    inline given orderable: Date is Orderable:
-      inline def compare
-        ( inline left:        Date,
-          inline right:       Date,
-          inline strict:      Boolean,
-          inline greaterThan: Boolean )
-      :   Boolean =
-
-        if left == right then !strict else (left < right)^greaterThan
-
-    given ordering: Ordering[Date] = Ordering.Long
-
-    given plus2: Holidays => (hebdomad: Hebdomad) => Date is Addable:
-      type Operand = WorkingDays
-      type Result = Date
-
-      def add(date: Date, days: WorkingDays): Date =
-        def recur(current: Date, count: Int): Date =
-          if count == 0 then
-            if current.weekend || summon[Holidays].holiday(current).present
-            then recur(current.addDays(1), 0)
-            else current
-          else
-            val next = current.addDays(count)
-            val holidays = summon[Holidays].between(current, next)
-            val weekends = Weekday.all.to(List).filter(_.weekend)
-            val weekendDays = weekends.map(Weekday.count(current, next, _)).sum
-            val weekdayHolidays = holidays.filter(!_.date.weekend).length
-            val skipped = weekdayHolidays + weekendDays
-            recur(next, skipped)
-
-        recur(date, days)
-
-  extension (date: Date)
-    def day(using calendar: Calendar): calendar.Diurnal = calendar.diurnal(date)
-
-    def month(using calendar: Calendar): calendar.Mensual = calendar.mensual(date)
-    def year(using calendar: Calendar): calendar.Annual = calendar.annual(date)
-    def weekday: Weekday = Weekday.fromOrdinal(jdn%7)
-    def weekend(using hebdomad: Hebdomad): Boolean = weekday.weekend
-
-    def anniversary: Anniversary =
-      Anniversary
-        ( calendars.gregorianCalendar.mensual(date),
-          calendars.gregorianCalendar.diurnal(date) )
-
-    def jdn: Int = Math.floorDiv(date, MillisPerDay).toInt
-
-    def monthstamp(using calendar: RomanCalendar): Monthstamp =
-      Monthstamp(calendar.annual(date), calendar.mensual(date))
-
-    def yearDay(using calendar: Calendar): Int =
-      date.jdn - calendar.zerothDayOfYear(calendar.annual(date)).jdn
-
-    def addDays(count: Int): Date = date + count.toLong*MillisPerDay
-
-    @targetName("gt")
-    infix def > (right: Date): Boolean = date > right
-
-    @targetName("lt")
-    infix def < (right: Date): Boolean = date < right
-
-    @targetName("lte")
-    infix def <= (right: Date): Boolean = date <= right
-
-    @targetName("gte")
-    infix def >= (right: Date): Boolean = date >= right

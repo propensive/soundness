@@ -2097,6 +2097,12 @@ object Tests extends Suite(m"Aviation Tests"):
         (span.days, span.hours, span.minutes, span.seconds.value)
       . assert(_ == (-2, -3, -30, -15.0))
 
+      test(m"a Date is a Timestamp (usable where a Timestamp is expected)"):
+        def jdnOf(timestamp: Timestamp): Int = timestamp.jdn
+        val date: Date = 2024-Jan-15
+        jdnOf(date) == date.jdn
+      . assert(_ == true)
+
     suite(m"TZDB parser"):
       given TimeEvent is Loggable = new Loggable:
         type Self = TimeEvent
