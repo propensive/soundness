@@ -154,12 +154,12 @@ object Conformance:
     val outcome: Outcome =
       if testCase.isError then
         try
-          YamlParser.parseAll(Text(testCase.yamlText))
+          Yaml.Parser.parseAll(Text(testCase.yamlText))
           Outcome.ShouldHaveErrored
         catch case _: Throwable => Outcome.Passed
       else
         try
-          val docs = YamlParser.parseAll(Text(testCase.yamlText))
+          val docs = Yaml.Parser.parseAll(Text(testCase.yamlText))
           testCase.expectedJson match
             case None => Outcome.Passed
             case Some(expectedText) if expectedText.trim.nn.isEmpty =>

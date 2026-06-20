@@ -51,12 +51,12 @@ import zephyrine.*
 // Modelled on jacinta.internal — and structurally near-identical — but
 // uses a *sentinel-string* hole marker instead of a null-byte parser
 // hole mode. The macro joins parts with `MarkerString`, parses the
-// result via `YamlParser`, and recognises occurrences of
+// result via `Yaml.Parser`, and recognises occurrences of
 // `Str(MarkerString)` in the resulting AST as placeholders. This
 // avoids any parser change.
 //
-// Errors reported by `YamlParser` carry `(offset, length)` on the
-// `ParseError.position` (set by `YamlParser.errorAt`); a custom
+// Errors reported by `Yaml.Parser` carry `(offset, length)` on the
+// `ParseError.position` (set by `Yaml.Parser.errorAt`); a custom
 // `HaltTactic` translates those positions back through the
 // part-origins map to source-file ranges, so diagnostics highlight
 // the exact bad span in the user's `y"…"` template.
@@ -221,7 +221,7 @@ object internal:
             val length = pe.position.length.or(0)
             halt(pe.labelled, translateOffset(off, length))
 
-      YamlParser.parse(source.tt)
+      Yaml.Parser.parse(source.tt)
 
     abortive:
 
@@ -426,7 +426,7 @@ object internal:
 
       val ast: Yaml.Ast =
         given diagnostics: Diagnostics = Diagnostics.omit
-        YamlParser.parse(source.tt)
+        Yaml.Parser.parse(source.tt)
 
       var nextHole: Int = 0
       var types: List[TypeRepr] = Nil
