@@ -56,17 +56,16 @@ import vacuous.*
 
 object internal:
   opaque type Date = Long
-  opaque type Timestamp = Long
   opaque type Year = Int
   opaque type Day = Int
   opaque type WorkingDays = Int
   opaque type Anniversary = Short
 
-  // A `Date` is packed into the same millisecond-since-JDN-epoch grid the `Timestamp` point uses,
-  // with the time-of-day clamped to zero — so a `Date` is exactly a day-precision `Timestamp`.
-  // `jdn`/`julianDay` recover and build the Julian day number; the calendar layer only ever sees
-  // that `Int` JDN, so it is unaffected by this representation.
-  private final val MillisPerDay: Long = 86_400_000L
+  // A `Date` is packed into the same millisecond-since-JDN-epoch grid the `Timestamp` point uses
+  // (see `object timestampInternal`), with the time-of-day clamped to zero — so a `Date` is exactly
+  // a day-precision `Timestamp`. `jdn`/`julianDay` recover and build the Julian day number; the
+  // calendar layer only ever sees that `Int` JDN, so it is unaffected by this representation.
+  private[aviation] final val MillisPerDay: Long = 86_400_000L
 
 
   extension (anniversary: Anniversary)
@@ -608,52 +607,3 @@ object internal:
 
     @targetName("gte")
     infix def >= (right: Date): Boolean = date >= right
-
-  // A `Timestamp` is a zoneless point on the same millisecond-since-JDN-epoch grid as `Date`: a
-  // packed `jdn*MillisPerDay + msOfDay`. A `Date` is exactly a `Timestamp` whose time-of-day is
-  // zero. It carries no timezone or absolute-instant meaning — grounding to an `Instant` is a
-  // `Moment`'s job.
-  object Timestamp:
-    def apply(date: Date, time: Clockface): Timestamp =
-      date + (time.hour*3600L + time.minute*60L + time.second)*1000L + time.nanos/1_000_000L
-
-    given showable: (Clockface is Showable, Date is Showable) => Timestamp is Showable =
-      timestamp => t"${timestamp.time.show}, ${timestamp.date.show}"
-
-    given decodable: Tactic[TimestampError] => Timestamp is Decodable in Text = text =>
-      import calendars.gregorianCalendar
-      import errorDiagnostics.stackTracesDiagnostics
-
-      text match
-        case r"$yr(\d{4})-$mn(\d{2})-$dy(\d{2})[ T]$hr(\d{2}):$mi(\d{2}):$sc(\d{2})" =>
-          whereas:
-            case NumberError(_, _, _) => TimestampError(text, TimestampError.Reason.BadNumber)
-            case TimeError(_)         => TimestampError(text, TimestampError.Reason.BadTime)
-
-          . mitigate:
-              Timestamp
-                ( Date(yr.decode[Year], Month(mn.decode[Int]), Day(dy.decode[Int])),
-                  Clockface
-                    ( Base24(hr.decode[Int]),
-                      Base60(mi.decode[Int]),
-                      Base60(sc.decode[Int]) ) )
-
-        case value =>
-          abort(TimestampError(value, TimestampError.Reason.BadFormat))
-
-  extension (timestamp: Timestamp)
-    def date: Date = timestamp - Math.floorMod(timestamp, MillisPerDay)
-
-    def time: Clockface =
-      val ms = Math.floorMod(timestamp, MillisPerDay)
-
-      Clockface
-        ( Base24((ms/3_600_000L).toInt),
-          Base60(((ms%3_600_000L)/60_000L).toInt),
-          Base60(((ms%60_000L)/1000L).toInt),
-          ((ms%1000L)*1_000_000L).toInt )
-
-    def hour: Int = timestamp.time.hour
-    def minute: Int = timestamp.time.minute
-    def second: Int = timestamp.time.second
-    def in(timezone: Timezone): Moment = Moment(timestamp.date, timestamp.time, timezone)

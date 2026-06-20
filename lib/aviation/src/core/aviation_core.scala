@@ -32,8 +32,6 @@
                                                                                                   */
 package aviation
 
-import java.time as jt
-
 import anticipation.*
 import contextual.*
 import contingency.*
@@ -48,7 +46,8 @@ import symbolism.*
 import vacuous.*
 
 export protointernal.{Instant, Duration}
-export aviation.internal.{Date, Timestamp, Year, Day, Anniversary, WorkingDays}
+export aviation.internal.{Date, Year, Day, Anniversary, WorkingDays}
+export aviation.timestampInternal.Timestamp
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
 // A `MonthRadix` is the "month" radix of some calendar (Gregorian `Month`, `IslamicMonth`,
@@ -69,31 +68,6 @@ object Hour extends Radix.Regular:
 object Minute extends Radix.Regular:
   given multiplicable: Int is Multiplicable by Minute.type to (Timespan of Minute.type) =
     (n, _) => Timespan(Minute, n)
-
-// Grounding a zoneless `Timestamp` to an `Instant` (and the `java.time` bridge) lives here rather
-// than in `object internal`, where `Timestamp`/`Date`/`Year`/`Day` all share the same underlying
-// representation and these accessors would be ambiguous; out here the opaque types are distinct.
-extension (timestamp: Timestamp)
-  def year(using calendar: Calendar): calendar.Annual = timestamp.date.year
-  def month(using calendar: Calendar): calendar.Mensual = timestamp.date.month
-  def day(using calendar: Calendar): calendar.Diurnal = timestamp.date.day
-  def monthstamp(using RomanCalendar): Monthstamp = timestamp.date.monthstamp
-
-  def stdlib(using RomanCalendar): jt.LocalDateTime =
-    jt.LocalDateTime.of
-      ( timestamp.date.year(),
-        timestamp.date.month.numerical,
-        timestamp.date.day(),
-        timestamp.time.hour,
-        timestamp.time.minute,
-        timestamp.time.second,
-        timestamp.time.nanos )
-
-    . nn
-
-  def instant(using timezone: Timezone, calendar: RomanCalendar): Instant =
-    import abstractables.instantAbstractable
-    Instant(timestamp.stdlib.atZone(timezone.stdlib).nn.toInstant.nn.toEpochMilli())
 
 package instantDecodables:
   given iso8601InstantDecodable: Tactic[TimeError] => Instant is Decodable in Text =

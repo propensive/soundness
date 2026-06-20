@@ -30,90 +30,92 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aviation
 
-export
-  aviation
-  . { am, AlexandrianCalendar, Anniversary, Apr, Aug, Base24, base24Extractable, Base60,
-      base60Extractable, Calendar, Clock, Clockface, CopticCalendar, CopticMonth, Date,
-      DateNumerics, DateSeparation, Day, Dec,
-      Disambiguation, Duration, Endianness, EthiopianCalendar, EthiopianMonth, Feb,
-      FrenchRepublicanCalendar, FrenchRepublicanMonth, Fri, Hebdomad, Holiday, Holidays, Horology,
-      HebrewCalendar, HebrewMonth, Hour, IndianCalendar, IndianMonth, Instant, IslamicCalendar,
-      IslamicMonth, Iso8601, Jan, Jul, Jun, LeapSeconds, Mar, May,
-      Meridiem, Minute, Moment, Mon, Month, Months, Monthstamp, Nov, now, Oct, OffsetCalendar,
-      Period, PersianCalendar, PersianMonth, pm, Regime, Rfc1123, RomanCalendar, Sat, Sep, Sun, Thu,
-      TimeError, TimeEvent, TimeFormat, TimeNumerics,
-      TimeSeparation, TimeSpecificity, Timespan, Timestamp, TimestampError, Timezone, TimezoneError,
-      today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Week, WeekDate, Weekday, Weekdays,
-      WorkingDays, Year, Years }
+import java.time as jt
 
-package calendars:
-  export aviation.calendars.{gregorianCalendar, julianCalendar, copticCalendar, ethiopianCalendar,
-      islamicCalendar, persianCalendar, indianCalendar, hebrewCalendar, frenchRepublicanCalendar,
-      buddhistCalendar, minguoCalendar, papalCutover, britishCutover}
+import anticipation.*
+import contingency.*
+import distillate.*
+import fulminate.*
+import gossamer.t
+import kaleidoscope.*
+import prepositional.*
+import spectacular.*
 
-package nonexistentLeapDays:
-  export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,
-      roundUpLeapDay}
+// `Timestamp` lives in its own representation object (distinct from `object internal`, which holds
+// `Date`/`Year`/`Day`) so that, although it shares `Date`'s underlying `Long`, the two are
+// *distinct* opaque types everywhere outside this object — otherwise their identically-named
+// accessors would collide after erasure. A `Timestamp` is a zoneless point on the JDN-epoch grid,
+// packed as `jdn*MillisPerDay + msOfDay`; a `Date` is exactly a `Timestamp` whose time-of-day is
+// zero. It carries no timezone or absolute-instant meaning — grounding to an `Instant` is a
+// `Moment`'s job.
+object timestampInternal:
+  opaque type Timestamp = Long
 
-package monthEnds:
-  export aviation.monthEnds.{clampMonthEnd, overflowMonthEnd, raiseMonthEnd}
+  object Timestamp:
+    def apply(date: Date, time: Clockface): Timestamp =
+      date.jdn.toLong*aviation.internal.MillisPerDay +
+        (time.hour*3600L + time.minute*60L + time.second)*1000L +
+        time.nanos/1_000_000L
 
-package leapSeconds:
-  export aviation.leapSeconds.{step, smear}
+    given showable: (Clockface is Showable, Date is Showable) => Timestamp is Showable =
+      timestamp => t"${timestamp.time.show}, ${timestamp.date.show}"
 
-package dateFormats:
-  export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,
-      southEastAsiaDateFormat, unitedKingdomDateFormat}
+    given decodable: Tactic[TimestampError] => Timestamp is Decodable in Text = text =>
+      import calendars.gregorianCalendar
+      import errorDiagnostics.stackTracesDiagnostics
 
-package endianness:
-  export aviation.dateFormats.endianness.{bigEndian, littleEndian, middleEndian}
+      text match
+        case r"$yr(\d{4})-$mn(\d{2})-$dy(\d{2})[ T]$hr(\d{2}):$mi(\d{2}):$sc(\d{2})" =>
+          whereas:
+            case NumberError(_, _, _) => TimestampError(text, TimestampError.Reason.BadNumber)
+            case TimeError(_)         => TimestampError(text, TimestampError.Reason.BadTime)
 
-package dateNumerics:
-  export aviation.dateFormats.numerics.{fixedWidthDateNumerics, variableWidthDateNumerics}
+          . mitigate:
+              Timestamp
+                ( Date(yr.decode[Year], Month(mn.decode[Int]), Day(dy.decode[Int])),
+                  Clockface
+                    ( Base24(hr.decode[Int]),
+                      Base60(mi.decode[Int]),
+                      Base60(sc.decode[Int]) ) )
 
-package dateSeparators:
-  export aviation.dateFormats.separators.{dotDateSeparator, hyphenDateSeparator, slashDateSeparator,
-      spaceDateSeparator}
+        case value =>
+          abort(TimestampError(value, TimestampError.Reason.BadFormat))
 
-package yearFormats:
-  export aviation.dateFormats.years.{fullYears, twoDigitsYears}
+  extension (timestamp: Timestamp)
+    def date: Date = Date.julianDay(Math.floorDiv(timestamp, aviation.internal.MillisPerDay).toInt)
 
-package weekdays:
-  export
-    aviation.dateFormats.weekdays
-    . { englishWeekdays, englishShortWeekdays, oneLetterAmbiguousWeekdays,
-        shortestUnambiguousWeekdays, twoLetterWeekdays }
+    def time: Clockface =
+      val ms = Math.floorMod(timestamp, aviation.internal.MillisPerDay)
 
-package monthFormats:
-  export
-    aviation.dateFormats.months
-    . { englishMonths, englishShortMonths, numericMonths, oneLetterAmbiguousMonths,
-        twoDigitMonths }
+      Clockface
+        ( Base24((ms/3_600_000L).toInt),
+          Base60(((ms%3_600_000L)/60_000L).toInt),
+          Base60(((ms%60_000L)/1000L).toInt),
+          ((ms%1000L)*1_000_000L).toInt )
 
-package timeFormats:
-  export
-    aviation.timeFormats
-    . { associatedPressTimeFormat, civilianTimeFormat, frenchTimeFormat, iso8601TimeFormat,
-        ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
+    def year(using calendar: Calendar): calendar.Annual = timestamp.date.year
+    def month(using calendar: Calendar): calendar.Mensual = timestamp.date.month
+    def day(using calendar: Calendar): calendar.Diurnal = timestamp.date.day
+    def monthstamp(using RomanCalendar): Monthstamp = timestamp.date.monthstamp
+    def hour: Int = timestamp.time.hour
+    def minute: Int = timestamp.time.minute
+    def second: Int = timestamp.time.second
+    def in(timezone: Timezone): Moment = Moment(timestamp.date, timestamp.time, timezone)
 
-package hourFormats:
-  export aviation.timeFormats.hours.{twelveHourClock, twentyFourHourClock}
+    def stdlib(using RomanCalendar): jt.LocalDateTime =
+      jt.LocalDateTime.of
+        ( timestamp.date.year(),
+          timestamp.date.month.numerical,
+          timestamp.date.day(),
+          timestamp.time.hour,
+          timestamp.time.minute,
+          timestamp.time.second,
+          timestamp.time.nanos )
 
-package meridiems:
-  export aviation.timeFormats.meridiems.{lowerMeridiem, lowerPunctuatedMeridiem, upperMeridiem,
-      upperPunctuatedMeridiem}
+      . nn
 
-package timeNumerics:
-  export aviation.timeFormats.numerics.{fixedWidthTimeNumerics, variableWidthTimeNumerics}
-
-package timeSeparators:
-  export aviation.timeFormats.separators.{colonTimeSeparator, dotTimeSeparator, frenchTimeSeparator,
-      noneTimeSeparator}
-
-package hebdomads:
-  export aviation.hebdomads.{europeanHebdomad, jewishHebdomad, northAmericanHebdomad}
-
-package instantDecodables:
-  export aviation.instantDecodables.{iso8601InstantDecodable, rfc1123InstantDecodable}
+    def instant(using timezone: Timezone, calendar: RomanCalendar): Instant =
+      import abstractables.instantAbstractable
+      Instant(timestamp.stdlib.atZone(timezone.stdlib).nn.toInstant.nn.toEpochMilli())
