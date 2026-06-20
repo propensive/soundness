@@ -34,6 +34,8 @@ package wisteria
 
 import soundness.*
 
+import scala.language.dynamics
+
 object Tests extends Suite(m"Wisteria tests"):
 
   // ===== Typeclass: Presentation =====
@@ -228,6 +230,18 @@ object Tests extends Suite(m"Wisteria tests"):
   sealed trait Shape
   case class Circle(radius: Int) extends Shape
   case class Square(side: Int) extends Shape
+
+  // ===== Specific overrides =====
+
+  trait Codec:
+    type Self
+    type Form
+
+  type Json
+  type CodecJson = [self] =>> self is Codec in Json
+
+  case class Employee(name: Text, age: Int)
+  case class Company(ceo: Employee, cto: Employee)
 
   // ===== Tests =====
 
@@ -471,3 +485,33 @@ object Tests extends Suite(m"Wisteria tests"):
           case class Bag(items: List[java.io.File])
           Readable.derived[Bag]
       . assert(_.nonEmpty)
+
+    suite(m"Specific override detection"):
+      val nameCodec: Text is Codec in Json = new Codec:
+        type Self = Text
+        type Form = Json
+
+      val ageCodec: Int is Codec in Json = new Codec:
+        type Self = Int
+        type Form = Json
+
+      test(m"No Specific in scope yields no override paths"):
+        wisteria.internal.overridePaths[CodecJson, Company]
+      . assert(_ == Nil)
+
+      test(m"A Specific in scope yields its override paths"):
+        given (Company is Specific over (Codec in Json)) =
+          specifically:
+            case root.cto.name() => nameCodec
+            case root.ceo.age()  => ageCodec
+
+        wisteria.internal.overridePaths[CodecJson, Company].to(Set)
+      . assert(_ == Set(t"cto.name", t"ceo.age"))
+
+      test(m"A Specific for a different typeclass is ignored"):
+        given (Company is Specific over (Codec in Json)) =
+          specifically:
+            case root.cto.name() => nameCodec
+
+        wisteria.internal.overridePaths[Eq, Company]
+      . assert(_ == Nil)

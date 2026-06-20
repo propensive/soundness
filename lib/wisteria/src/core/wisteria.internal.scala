@@ -58,6 +58,99 @@ object internal:
   // emitted alongside it are in scope.
   inline def field[typeclass[_], elem]: typeclass[elem] = ${fieldInstance[typeclass, elem]}
 
+  // ---- vicarious.Specific integration ----
+
+  // Inline accessor (for tests / tooling): the dotted paths overridden by an in-scope
+  // `derivation is Specific over typeclass`, or `Nil` if there is none.
+  inline def overridePaths[typeclass[_], derivation]: List[Text] =
+    ${overridePathsMacro[typeclass, derivation]}
+
+  def overridePathsMacro[typeclass[_]: Type, derivation: Type]: Macro[List[Text]] =
+    Expr.ofList(specificOverrides[typeclass, derivation].keys.toList.map { k => '{${Expr(k)}.tt} })
+
+  // The override set for `derivation` and `typeclass`: the path→instance-term pairs from an
+  // in-scope `derivation is Specific over typeclass` (read from the expanded given's `instances`
+  // map) — or empty if no such `Specific` is in scope. A `Specific` whose `Transport` is for a
+  // different typeclass (its `Transport { type Self = X }` is not `typeclass[X]`) is ignored.
+  def specificOverrides[typeclass[_]: Type, derivation: Type](using Quotes)
+  :   Map[String, quotes.reflect.Term] =
+
+    import quotes.reflect.*
+
+    val self = TypeRepr.of[derivation]
+    val specificType = Refinement(TypeRepr.of[vicarious.Specific], "Self", TypeBounds(self, self))
+
+    Implicits.search(specificType) match
+      case success: ImplicitSearchSuccess =>
+        if transportMatches[typeclass](success.tree.tpe) then readOverrides(success.tree) else Map()
+
+      case _ =>
+        Map()
+
+  // Whether the `Specific`'s `Transport`, applied at a sample type, yields `typeclass[sample]` — so
+  // the override targets this typeclass and not some other.
+  private def transportMatches[typeclass[_]: Type](using Quotes)(specific: quotes.reflect.TypeRepr)
+  :   Boolean =
+
+    import quotes.reflect.*
+    val sample = TypeRepr.of[Any]
+
+    def member(repr: TypeRepr, name: String): Option[TypeRepr] = repr match
+      case Refinement(_, `name`, TypeBounds(lo, _)) => Some(lo)
+      case Refinement(parent, _, _)                 => member(parent, name)
+      case _                                        => None
+
+    member(specific.widen.dealias, "Transport") match
+      case Some(transport) =>
+        Refinement(transport, "Self", TypeBounds(sample, sample)) =:=
+          TypeRepr.of[typeclass].appliedTo(sample)
+
+      case None =>
+        false
+
+  // Reads the path→instance-term pairs from an in-scope `Specific` given's expanded
+  // `instances = Map(("path", instance), …)` body. Available for a given defined in the current
+  // compilation run (the usual case: the override is defined where the derivation is requested).
+  private def readOverrides(using Quotes)(tree: quotes.reflect.Term)
+  :   Map[String, quotes.reflect.Term] =
+
+    import quotes.reflect.*
+
+    def givenSymbol(term: Term): Symbol = term match
+      case Inlined(_, _, body) => givenSymbol(body)
+      case Typed(expr, _)      => givenSymbol(expr)
+      case Block(_, expr)      => givenSymbol(expr)
+      case other               => other.symbol
+
+    val rhs = givenSymbol(tree).tree match
+      case valDef: ValDef => valDef.rhs
+      case _              => None
+
+    val pairs = scala.collection.mutable.LinkedHashMap[String, Term]()
+
+    // Inline expansion wraps each tuple element in `Inlined`/`Typed`; strip those to reach the
+    // string-literal path and the instance term.
+    def unwrap(tree: Tree): Tree = tree match
+      case Inlined(_, _, body) => unwrap(body)
+      case Typed(expr, _)      => unwrap(expr)
+      case Block(Nil, expr)    => unwrap(expr)
+      case other               => other
+
+    val accumulator = new TreeAccumulator[Unit]:
+      def foldTree(state: Unit, tree: Tree)(owner: Symbol): Unit =
+        tree match
+          case Apply(_, List(key, value)) => unwrap(key) match
+            case Literal(StringConstant(path)) => pairs(path) = unwrap(value).asInstanceOf[Term]
+            case _                             => ()
+
+          case _ =>
+            ()
+
+        foldOverTree(state, tree)(owner)
+
+    rhs.foreach(accumulator.foldTree((), _)(Symbol.spliceOwner))
+    pairs.to(Map)
+
   // A marker that `resolvableNonStructural` injects (as a synthetic `given`) into a probe's
   // implicit scope, so the derivation macro can detect that implicit search has re-entered it for
   // this exact instance type. Never instantiated at runtime.
