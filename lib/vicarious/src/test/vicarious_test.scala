@@ -34,5 +34,53 @@ package vicarious
 
 import soundness.*
 
+import scala.language.dynamics
+
 object Tests extends Suite(m"Vicarious Tests"):
-  def run(): Unit = ()
+  trait Codec:
+    type Self
+    type Form
+
+  type Json
+
+  case class Person(name: String, age: Int)
+  case class Org(ceo: Person, cto: Person)
+
+  def run(): Unit =
+    val nameCodec: String is Codec in Json =
+      new Codec:
+        type Self = String
+        type Form = Json
+
+    val ageCodec: Int is Codec in Json =
+      new Codec:
+        type Self = Int
+        type Form = Json
+
+    val orgSpecific: Org is Specific over (Codec in Json) =
+      specifically:
+        case root.cto.name() => nameCodec
+        case root.ceo.age()  => ageCodec
+
+    suite(m"Specific builder tests"):
+      test(m"Specific records the overridden paths"):
+        orgSpecific.instances.keySet
+      . assert(_ == Set("cto.name", "ceo.age"))
+
+      test(m"Specific stores the instance for a path"):
+        orgSpecific.instances("cto.name").asInstanceOf[AnyRef] eq nameCodec
+      . assert(identity(_))
+
+      test(m"An invalid field path does not compile"):
+        demilitarize:
+          val bad: Org is Specific over (Codec in Json) =
+            specifically:
+              case root.cto.invalid() => nameCodec
+      . assert(_.nonEmpty)
+
+      test(m"An instance of the wrong type does not compile"):
+        demilitarize:
+          val bad: Org is Specific over (Codec in Json) =
+            specifically:
+              case root.cto.name() => ageCodec
+      . assert(_.nonEmpty)
