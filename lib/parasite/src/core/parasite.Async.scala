@@ -30,28 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package parasite
 
-export
-  parasite
-  . { AdaptiveSupervisor, async, Async, AsyncError, cancel, Chain, Probate, Daemon, daemon, delay,
-      Destruction, Fault, Fulfillment, GarbageCollection, Heap, hibernate, Hook, intercept,
-      Interceptable, Monitor, monitor, Observation, Os, Perseverance, PlatformSupervisor, Promise,
-      relent, retry, RetryError, Shutdown, sleep, snooze, supervise, Supervisor, Task, task,
-      Tenacity, Threading, Timeout, Transgression, Trap, VirtualSupervisor, Worker, AsyncTactic,
-      Remedy, concurrent }
+import nomenclature.*
+import prepositional.*
+import rudiments.*
 
-package threading:
-  export parasite.threading.{adaptiveThreading, platformThreading, virtualThreading}
+// The naming plane for parasite's nested async structures (supervisors, workers,
+// tasks, daemons): `Name[Async]`. A name must start with a letter and otherwise
+// contain only letters, digits, hyphens and underscores. This forbids every
+// separator the composed `stack` path relies on (`:`, `/`, `@`, `.`), all
+// whitespace, and the empty string, so a name can never corrupt the stack or a
+// JVM thread name derived from it.
+object Async:
+  type Rules = MustMatch["[A-Za-z][A-Za-z0-9_-]*"]
+  inline given nominative: Async is Nominative under Rules = !!
 
-package probates:
-  export parasite.probates.{awaitProbate, cancelProbate, failProbate, panicProbate}
-
-package supervisors:
-  export parasite.supervisors.globalSupervisor
-
-package retryTenacities:
-  export
-    parasite.retryTenacities
-    . { exponentialFiveTimesTenacity, exponentialForeverTenacity, exponentialTenTimesTenacity,
-        fixedNoDelayFiveTimesTenacity, fixedNoDelayForeverTenacity, fixedNoDelayTenTimesTenacity }
+sealed trait Async

@@ -32,26 +32,4 @@
                                                                                                   */
 package soundness
 
-export
-  parasite
-  . { AdaptiveSupervisor, async, Async, AsyncError, cancel, Chain, Probate, Daemon, daemon, delay,
-      Destruction, Fault, Fulfillment, GarbageCollection, Heap, hibernate, Hook, intercept,
-      Interceptable, Monitor, monitor, Observation, Os, Perseverance, PlatformSupervisor, Promise,
-      relent, retry, RetryError, Shutdown, sleep, snooze, supervise, Supervisor, Task, task,
-      Tenacity, Threading, Timeout, Transgression, Trap, VirtualSupervisor, Worker, AsyncTactic,
-      Remedy, concurrent }
-
-package threading:
-  export parasite.threading.{adaptiveThreading, platformThreading, virtualThreading}
-
-package probates:
-  export parasite.probates.{awaitProbate, cancelProbate, failProbate, panicProbate}
-
-package supervisors:
-  export parasite.supervisors.globalSupervisor
-
-package retryTenacities:
-  export
-    parasite.retryTenacities
-    . { exponentialFiveTimesTenacity, exponentialForeverTenacity, exponentialTenTimesTenacity,
-        fixedNoDelayFiveTimesTenacity, fixedNoDelayForeverTenacity, fixedNoDelayTenTimesTenacity }
+export nomenclature.{Moniker, MonikerError, Vocabulary}

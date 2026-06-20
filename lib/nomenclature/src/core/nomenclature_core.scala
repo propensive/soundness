@@ -35,7 +35,6 @@ package nomenclature
 import anticipation.*
 
 export nomenclature.internal.Name
-export nomenclature.Moniker.Moniker
 
 extension (inline context: StringContext)
   transparent inline def n: Any = ${protointernal.extractor('context)}

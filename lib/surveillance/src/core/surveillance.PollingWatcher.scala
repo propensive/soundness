@@ -39,7 +39,8 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 import denominative.*
-import parasite.*, threading.platformThreading
+import nomenclature.n
+import parasite.*, threading.platformThreading, Async.nominative
 import prepositional.*
 import rudiments.*
 import spectacular.*
@@ -109,7 +110,7 @@ extends Watcher:
 
     val async: Optional[Task[Unit]] = safely:
       supervise:
-        task("surveillance-poll".tt):
+        task(n"surveillance-poll"):
           try
             while true do
               snooze(interval)

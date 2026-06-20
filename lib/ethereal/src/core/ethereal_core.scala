@@ -57,7 +57,7 @@ import hellenism.*, classloaders.threadContextClassloader
 import hieroglyph.*, charEncoders.utf8Encoder, charDecoders.utf8Decoder
 import textSanitizers.strictSanitizer
 import nomenclature.*
-import parasite.*
+import parasite.*, Async.nominative
 import prepositional.*
 import profanity.*
 import quantitative.*
@@ -524,7 +524,7 @@ def cli[bus <: Matchable](using executive: Executive)
       val pidValue = Process().pid.value.show
       pidFile.open(pidValue.writeTo(_))
 
-      task(t"pid-watcher"):
+      task(n"pid-watcher"):
         safely:
           List[Path on Local](socketFile, buildFile, pidFile).watch: watcher =>
             watcher.stream.each:

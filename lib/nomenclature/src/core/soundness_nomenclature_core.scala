@@ -34,7 +34,7 @@ package soundness
 
 export
   nomenclature
-  . { Check, CssClass, CssIdentifier, disintersect, DomId, DomIdentifier, Moniker, MonikerError,
+  . { Check, CssClass, CssIdentifier, disintersect, DomId, DomIdentifier,
       MustContain, MustEnd, MustMatch, MustNotContain, MustNotEnd, MustNotEqual, MustNotMatch,
       MustNotStart, MustStart, n, Name, NameError, NameExtractor, Nominative, Required, Rule,
-      staticCompanion, Vocabulary }
+      staticCompanion }

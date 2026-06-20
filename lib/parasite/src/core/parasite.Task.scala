@@ -39,21 +39,22 @@ import anticipation.*
 import contingency.*
 import digression.*
 import mercator.*
+import nomenclature.*
 import prepositional.*
 import vacuous.*
 
 object Task:
-  def apply[result, error <: Exception](evaluate: Worker => result, name: Optional[Text])
+  def apply[result, error <: Exception](evaluate: Worker => result, name: Optional[Name[Async]])
     ( using monitor: Monitor, codepoint: Codepoint, probate: Probate )
   :   Task[result] { type Error = error } =
 
     inline def evaluate0: Worker => result = evaluate
-    inline def name0: Optional[Text] = name
+    inline def name0: Optional[Name[Async]] = name
 
     new Worker(codepoint, monitor, probate) with Task[result]:
       type Result = result
       type Error = error
-      def name: Optional[Text] = name0
+      def name: Optional[Name[Async]] = name0
       def daemon: Boolean = false
       def evaluate(worker: Worker): Result = evaluate0(worker)
 

@@ -49,7 +49,8 @@ import contingency.*
 import digression.*
 import gossamer.*
 import hellenism.*
-import parasite.*
+import nomenclature.n
+import parasite.*, Async.nominative
 import prepositional.*
 import rudiments.*
 
@@ -137,7 +138,7 @@ case class Scalac[version <: Scalac.Versions](options: List[Scalac.Option[versio
           dtdu.SourceFile.virtual(name.s, content.s)
 
         scalacProcess.put:
-          task(t"scalac"):
+          task(n"scalac"):
             try
               Scalac.compiler().newRun.tap: run =>
                 run.compileSources(sourceFiles)

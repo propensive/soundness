@@ -42,6 +42,7 @@ import contingency.*
 import denominative.*
 import digression.*
 import fulminate.*
+import nomenclature.*
 import prepositional.*
 import symbolism.*
 import vacuous.*
@@ -117,7 +118,7 @@ def async[result, error <: Exception](using Codepoint)
   Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = Unset)
 
 
-def task[result, error <: Exception](using Codepoint)(name: Text)
+def task[result, error <: Exception](using Codepoint)(name: Name[Async])
   ( evaluate: (Worker, Tactic[error]) ?=> result )
   ( using Monitor, Probate )
 :   Task[result] emits (error | AsyncError) =
