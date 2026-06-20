@@ -243,6 +243,23 @@ object Tests extends Suite(m"Wisteria tests"):
   case class Employee(name: Text, age: Int)
   case class Company(ceo: Employee, cto: Employee)
 
+  // A Self-based typeclass with a product derivation, to observe overrides end-to-end.
+  trait Display:
+    type Self
+    def display(value: Self): Text
+
+  object Display extends ProductDerivable[Display]:
+    given (Text is Display) = identity(_)
+    given (Int is Display) = _.toString.tt
+
+    inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display = value =>
+      fields(value):
+        [field] => field => contextual.display(field)
+      .mkString(",").tt
+
+  extension [value](value: value)
+    def display(using display: value is Display): Text = display.display(value)
+
   // ===== Tests =====
 
   def run(): Unit =
@@ -515,3 +532,29 @@ object Tests extends Suite(m"Wisteria tests"):
 
         wisteria.internal.overridePaths[Eq, Company]
       . assert(_ == Nil)
+
+    suite(m"Specific override in derivation"):
+      val company = Company(Employee(t"al", 30), Employee(t"bo", 40))
+      val shout: Text is Display = _.upper
+      val doubled: Int is Display = n => (n*2).toString.tt
+
+      test(m"Without a Specific, all fields use default instances"):
+        Display.derived[Company].display(company)
+      . assert(_ == t"al,30,bo,40")
+
+      test(m"A Specific overrides one field path along its spine only"):
+        given (Company is Specific over Display) =
+          specifically:
+            case root.cto.name() => shout
+
+        Display.derived[Company].display(company)
+      . assert(_ == t"al,30,BO,40")
+
+      test(m"Overrides at distinct spines stay independent"):
+        given (Company is Specific over Display) =
+          specifically:
+            case root.ceo.name() => shout
+            case root.cto.age()  => doubled
+
+        Display.derived[Company].display(company)
+      . assert(_ == t"AL,30,bo,80")

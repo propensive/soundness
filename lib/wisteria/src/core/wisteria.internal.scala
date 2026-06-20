@@ -68,45 +68,102 @@ object internal:
   def overridePathsMacro[typeclass[_]: Type, derivation: Type]: Macro[List[Text]] =
     Expr.ofList(specificOverrides[typeclass, derivation].keys.toList.map { k => '{${Expr(k)}.tt} })
 
-  // The override set for `derivation` and `typeclass`: the path→instance-term pairs from an
-  // in-scope `derivation is Specific over typeclass` (read from the expanded given's `instances`
-  // map) — or empty if no such `Specific` is in scope. A `Specific` whose `Transport` is for a
-  // different typeclass (its `Transport { type Self = X }` is not `typeclass[X]`) is ignored.
   def specificOverrides[typeclass[_]: Type, derivation: Type](using Quotes)
   :   Map[String, quotes.reflect.Term] =
 
     import quotes.reflect.*
+    specificOverridesRepr(TypeRepr.of[typeclass], TypeRepr.of[derivation])
 
-    val self = TypeRepr.of[derivation]
-    val specificType = Refinement(TypeRepr.of[vicarious.Specific], "Self", TypeBounds(self, self))
+  // The override set for `root` and the typeclass `typeclassConstructor`: the path→instance-term
+  // pairs from an in-scope `root is Specific over typeclass` (read from the expanded given's
+  // `instances` map) — or empty if no such `Specific` is in scope. A `Specific` whose `Transport`
+  // is for a different typeclass (`Transport { type Self = X }` is not `typeclass[X]`) is ignored.
+  private def specificOverridesRepr(using Quotes)
+    ( typeclassConstructor: quotes.reflect.TypeRepr, root: quotes.reflect.TypeRepr )
+  :   Map[String, quotes.reflect.Term] =
+
+    import quotes.reflect.*
+
+    val specificType = Refinement(TypeRepr.of[vicarious.Specific], "Self", TypeBounds(root, root))
 
     Implicits.search(specificType) match
       case success: ImplicitSearchSuccess =>
-        if transportMatches[typeclass](success.tree.tpe) then readOverrides(success.tree) else Map()
+        if transportMatches(typeclassConstructor, success.tree.tpe) then readOverrides(success.tree)
+        else Map()
 
       case _ =>
         Map()
 
+  // The value of refinement type member `name` in `repr` (walking refinement layers), if present.
+  private def refinementMember(using Quotes)(repr: quotes.reflect.TypeRepr, name: String)
+  :   Option[quotes.reflect.TypeRepr] =
+
+    import quotes.reflect.*
+
+    repr match
+      case Refinement(_, `name`, TypeBounds(low, _)) =>
+        Some(low)
+
+      case Refinement(parent, _, _) =>
+        refinementMember(parent, name)
+
+      case AndType(left, right) =>
+        refinementMember(left, name).orElse(refinementMember(right, name))
+
+      case _ =>
+        None
+
   // Whether the `Specific`'s `Transport`, applied at a sample type, yields `typeclass[sample]` — so
   // the override targets this typeclass and not some other.
-  private def transportMatches[typeclass[_]: Type](using Quotes)(specific: quotes.reflect.TypeRepr)
+  private def transportMatches(using Quotes)
+    ( typeclassConstructor: quotes.reflect.TypeRepr, specific: quotes.reflect.TypeRepr )
   :   Boolean =
 
     import quotes.reflect.*
     val sample = TypeRepr.of[Any]
 
-    def member(repr: TypeRepr, name: String): Option[TypeRepr] = repr match
-      case Refinement(_, `name`, TypeBounds(lo, _)) => Some(lo)
-      case Refinement(parent, _, _)                 => member(parent, name)
-      case _                                        => None
-
-    member(specific.widen.dealias, "Transport") match
+    refinementMember(specific.widen.dealias, "Transport") match
       case Some(transport) =>
         Refinement(transport, "Self", TypeBounds(sample, sample)) =:=
-          TypeRepr.of[typeclass].appliedTo(sample)
+          typeclassConstructor.appliedTo(sample)
 
       case None =>
         false
+
+  // ---- Path-specialised field resolution (the "spine") ----
+
+  // A path-carrier type `field { type VRoot = root; type VPath = path }` — a phantom refinement
+  // threading the override root and dotted path down the derivation so type-keyed field resolution
+  // can distinguish, say, the `cto` employee from the `ceo` employee.
+  private def carrierType(using Quotes)
+    ( field: quotes.reflect.TypeRepr, root: quotes.reflect.TypeRepr, path: String )
+  :   quotes.reflect.TypeRepr =
+
+    import quotes.reflect.*
+    val pathType = ConstantType(StringConstant(path))
+
+    val withRoot = Refinement(field, "VRoot", TypeBounds(root, root))
+    Refinement(withRoot, "VPath", TypeBounds(pathType, pathType))
+
+  // The override context for deriving `derivation`: its root type, its dotted path so far, and the
+  // override set — read from a `VRoot`/`VPath` carrier if present (a deeper spine type), else from
+  // an in-scope `Specific` for `derivation` itself (root, path ""). `None` when none applies.
+  private def overrideContext(using Quotes)
+    ( typeclassConstructor: quotes.reflect.TypeRepr, derivation: quotes.reflect.TypeRepr )
+  :   Option[(quotes.reflect.TypeRepr, String, Map[String, quotes.reflect.Term])] =
+
+    import quotes.reflect.*
+
+    (refinementMember(derivation, "VRoot"), refinementMember(derivation, "VPath")) match
+      case (Some(root), Some(ConstantType(StringConstant(path)))) =>
+        Some((root, path, specificOverridesRepr(typeclassConstructor, root)))
+
+      case _ =>
+        // `derivation` may be `T & Product` (added by `derivedOne`); strip to the bare type so the
+        // `Specific` search keys on `T`.
+        val base = productType(derivation)
+        val overrides = specificOverridesRepr(typeclassConstructor, base)
+        if overrides.isEmpty then None else Some((base, "", overrides))
 
   // Reads the path→instance-term pairs from an in-scope `Specific` given's expanded
   // `instances = Map(("path", instance), …)` body. Available for a given defined in the current
@@ -370,6 +427,12 @@ object internal:
     val wrappers = wrappersOf[typeclass]
     val instanceTpe = typeclassConstructor.appliedTo(TypeRepr.of[derivation])
 
+    // Whether an in-scope `Specific` overrides any path of `derivation` for this typeclass. When it
+    // does, product spines are specialised (path-carrier siblings); otherwise the graph is built
+    // exactly as before — no per-type override probing, no behaviour change.
+    val specific =
+      specificOverridesRepr(typeclassConstructor, TypeRepr.of[derivation].dealias).nonEmpty
+
     def instanceOf(tpe: TypeRepr): TypeRepr = typeclassConstructor.appliedTo(tpe)
 
     def codecFunction(tpe: TypeRepr, args: List[TypeRepr]): TypeRepr =
@@ -413,12 +476,34 @@ object internal:
               tpe.typeSymbol.children.foreach: child =>
                 visit(variantWith(child, tpe), false)
           else if isProductType(tpe) then
-            if isRoot || !resolvableNonStructural(typeclassConstructor, tpe) then
+            // A path-carrier (a specialised spine type) is always derived; else probe as before.
+            val carrier = specific && refinementMember(tpe, "VRoot").isDefined
+
+            if isRoot || carrier || !resolvableNonStructural(typeclassConstructor, tpe) then
               reachable(key) = tpe
               val product = productType(tpe)
+              val context = if specific then overrideContext(typeclassConstructor, tpe) else None
 
-              product.typeSymbol.caseFields.foreach: field =>
-                visit(product.memberType(field), false)
+              context match
+                case Some((root, parentPath, overrides)) =>
+                  // Spine field → specialised carrier sibling; overridden leaf → no sibling (the
+                  // instance term is spliced at the field site); else a shared default sibling.
+                  product.typeSymbol.caseFields.foreach: field =>
+                    val fieldType = product.memberType(field)
+
+                    val childPath =
+                      if parentPath.isEmpty then field.name else parentPath+"."+field.name
+
+                    if overrides.contains(childPath) then
+                      ()
+                    else if overrides.keySet.exists(_.startsWith(childPath+".")) then
+                      visit(carrierType(fieldType, root, childPath), false)
+                    else
+                      visit(fieldType, false)
+
+                case None =>
+                  product.typeSymbol.caseFields.foreach: field =>
+                    visit(product.memberType(field), false)
 
       val rootType = TypeRepr.of[derivation].dealias
       visit(rootType, isRoot = true)
@@ -594,15 +679,18 @@ object internal:
     val lambdaTerm = lambda.asTerm
 
     val arguments: List[Expr[Any]] = symbol.caseFields.zipWithIndex.map: (field, index) =>
+      val fieldName = field.name
+
       tpe.memberType(field).asType.absolve match
         case '[field] =>
           val indexExpr = Expr(index)
-          val nameExpr = Expr(field.name)
+          val nameExpr = Expr(fieldName)
           val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
           val label = '{$nameExpr.tt.aka["label"]}
           val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
+          val instance = specificFieldInstance[typeclass, derivation, field](fieldName)
 
-          sharedInstance[typeclass, field](index): (reference, contextual) =>
+          sharedInstance[typeclass, field](index, instance): (reference, contextual) =>
             applyLambda[field](lambdaTerm, reference, List(contextual, default, label, fieldIndex))
 
           . asExpr
@@ -619,10 +707,12 @@ object internal:
     val lambdaTerm = lambda.asTerm
 
     val results: List[Expr[result]] = tpe.typeSymbol.caseFields.zipWithIndex.map: (field, index) =>
+      val fieldName = field.name
+
       tpe.memberType(field).asType.absolve match
         case '[field] =>
           val indexExpr = Expr(index)
-          val nameExpr = Expr(field.name)
+          val nameExpr = Expr(fieldName)
           val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
           val label = '{$nameExpr.tt.aka["label"]}
 
@@ -631,8 +721,9 @@ object internal:
 
           val dereference = '{$accessor.aka["dereference"]}
           val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
+          val instance = specificFieldInstance[typeclass, derivation, field](fieldName)
 
-          sharedInstance[typeclass, field](index): (reference, contextual) =>
+          sharedInstance[typeclass, field](index, instance): (reference, contextual) =>
             val arguments = List(contextual, default, label, dereference, fieldIndex)
             applyLambda[field](lambdaTerm, reference, arguments)
 
@@ -650,15 +741,18 @@ object internal:
     val lambdaTerm = lambda.asTerm
 
     val results: List[Expr[result]] = tpe.typeSymbol.caseFields.zipWithIndex.map: (field, index) =>
+      val fieldName = field.name
+
       tpe.memberType(field).asType.absolve match
         case '[field] =>
           val indexExpr = Expr(index)
-          val nameExpr = Expr(field.name)
+          val nameExpr = Expr(fieldName)
 
           val fieldValue: Expr[Any] =
             '{$product.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[field]}
 
-          val contextual = '{${resolveField[typeclass, field]}.aka["contextual"]}
+          val instance = specificFieldInstance[typeclass, derivation, field](fieldName)
+          val contextual = '{$instance.aka["contextual"]}
           val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
           val label = '{$nameExpr.tt.aka["label"]}
           val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
@@ -706,17 +800,20 @@ object internal:
     val tupleFunction = MethodType(List("tuple"))(_ => List(tupleType), _ => constructorTuple)
 
     symbol.caseFields.zipWithIndex.foreach: (field, index) =>
+      val fieldName = field.name
+
       tpe.memberType(field).asType.absolve match
         case '[field] =>
           val indexExpr = Expr(index)
-          val nameExpr = Expr(field.name)
+          val nameExpr = Expr(fieldName)
           val fieldType = TypeRepr.of[field]
           val valueFunction = MethodType(List("value"))(_ => List(fieldType), _ => constructorTuple)
 
           val outer = Lambda(Symbol.spliceOwner, tupleFunction, { (owner, parameters) =>
             val tupleRef = parameters.head.asInstanceOf[Term]
-            val contextValue: Expr[Any] = resolveField[typeclass, field]
-            val contextual = '{${resolveField[typeclass, field]}.aka["contextual"]}
+            val instance = specificFieldInstance[typeclass, derivation, field](fieldName)
+            val contextValue: Expr[Any] = instance
+            val contextual = '{$instance.aka["contextual"]}
             val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
             val label = '{$nameExpr.tt.aka["label"]}
             val fieldIndex = '{$indexExpr.asInstanceOf[Int & FieldIndex[field]].aka["index"]}
@@ -774,6 +871,31 @@ object internal:
   private def resolveField[typeclass[_]: Type, field: Type](using Quotes): Expr[typeclass[field]] =
     '{wisteria.internal.field[typeclass, field]}
 
+  // The typeclass instance for a field of `derivation`, honoring an in-scope `Specific`: an
+  // override instance, a path-specialised sibling (resolved at a carrier type), or — with no
+  // `Specific` in scope — exactly `resolveField`, so the common path is unchanged.
+  private def specificFieldInstance[typeclass[_]: Type, derivation: Type, field: Type]
+    (fieldName: String)(using Quotes)
+  :   Expr[typeclass[field]] =
+
+    import quotes.reflect.*
+
+    overrideContext(TypeRepr.of[typeclass], TypeRepr.of[derivation]) match
+      case None =>
+        resolveField[typeclass, field]
+
+      case Some((root, parentPath, overrides)) =>
+        val childPath = if parentPath.isEmpty then fieldName else parentPath+"."+fieldName
+
+        if overrides.contains(childPath) then
+          overrides(childPath).asExprOf[typeclass[field]]
+        else if overrides.keySet.exists(_.startsWith(childPath+".")) then
+          carrierType(TypeRepr.of[field], root, childPath).asType.absolve match
+            case '[carrier] =>
+              '{wisteria.internal.field[typeclass, carrier].asInstanceOf[typeclass[field]]}
+        else
+          resolveField[typeclass, field]
+
   // Binds a field/variant's resolved instance to a single val, so the lambda's value argument and
   // its `"contextual"` context argument share one instance instead of resolving it twice. Without
   // that sharing each use re-emits — and, absent dedup, re-derives — the whole sub-instance,
@@ -781,7 +903,7 @@ object internal:
   // derivation. `build(ref, contextual)` produces the applied term given the shared ref and its
   // `"contextual"`-tagged view; the result is wrapped in a block that introduces the val.
   private def sharedInstance[typeclass[_]: Type, field: Type](using Quotes)
-    ( index: Int )
+    ( index: Int, instance: Expr[typeclass[field]] )
     ( build: (Expr[typeclass[field]], Expr[Any]) => quotes.reflect.Term )
   :   quotes.reflect.Term =
 
@@ -798,7 +920,7 @@ object internal:
     val reference = Ref(symbol).asExprOf[typeclass[field]]
     val applied = build(reference, '{$reference.aka["contextual"]})
 
-    Block(List(ValDef(symbol, Some(resolveField[typeclass, field].asTerm))), applied)
+    Block(List(ValDef(symbol, Some(instance.asTerm))), applied)
 
   def getDefault[product: Type, field: Type](index: Expr[Int]): Macro[Optional[field]] =
     import quotes.reflect.*
