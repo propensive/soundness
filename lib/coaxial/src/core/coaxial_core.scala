@@ -77,6 +77,10 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
         val bindLoop = loop:
           safely(bindable.connect(binding)).let: connection =>
             daemon:
+              // A connection failure aborts just this handler; throw it to the enclosing
+              // `contain`, which closes the connection and carries on accepting others.
+              given Tactic[ConnectionError] = AsyncTactic()
+
               try bindable.transmit(binding, connection, lambda(connection))
               finally bindable.close(connection)
 

@@ -78,18 +78,19 @@ package retryTenacities:
 
 transparent inline def monitor: Monitor = infer[Monitor]
 
-// Like `async`, but fire-and-forget: a daemon is never joined, so a raised error cannot surface at
-// a join. The body runs with an `AsyncTactic[error]`; a raised error fails the worker and is routed
-// to the nearest `trap` (and escalated if unhandled) rather than tracked in the return type.
-def daemon[error <: Exception](using Codepoint)
-  ( evaluate: (Worker, Tactic[error]) ?=> Unit )
+// Like `async`, but fire-and-forget: a daemon is never joined, so an error cannot surface at a
+// join. The body is `emits`-typed — it may only *emit* (not `abort`), since there is no value an
+// error could replace and no caller to receive it. Each emit resolves an `Emit` from the call
+// site's lexical scope (typically a `trap`-injected one, captured into the worker's closure); an
+// unhandled emit is a compile error that propagates as `emits …`. A genuine *thrown* exception
+// still fails the worker and reaches the nearest `contain`/`Probate`.
+def daemon(using Codepoint)
+  ( evaluate: Worker ?=> Unit )
   ( using Monitor, Probate )
 :   Daemon =
 
-  val tactic = AsyncTactic[error]()
-
   Daemon: worker =>
-    evaluate(using worker, tactic)
+    evaluate(using worker)
 
 
 // Contains *thrown* exceptions escaping a region of fire-and-forget work:
