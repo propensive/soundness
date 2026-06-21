@@ -44,7 +44,11 @@ object Daemon:
     ( using monitor: Monitor, codepoint: Codepoint, probate: Probate )
   :   Daemon =
 
-    inline def evaluate0: Worker => Unit = evaluate
+    // The worker closes over `evaluate`, which would make the worker (and the supervision tree that
+    // retains it) capture-tracked. Whether the body may capture a stack-scoped error tactic is
+    // enforced at the `daemon`/`async` entry points; here the closure is laundered to pure so the
+    // worker can be stored and awaited without threading `^` through the whole supervisor.
+    val evaluate0: Worker -> Unit = caps.unsafe.unsafeAssumePure(evaluate)
 
     new Worker(codepoint, monitor, probate) with Daemon:
       type Result = Unit

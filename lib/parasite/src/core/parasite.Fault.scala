@@ -40,8 +40,11 @@ import java.util.concurrent.atomic as juca
 import rudiments.*
 
 object Fault:
+  // The registered handlers are effectful callbacks held in a global registry; the runtime invokes
+  // them and never lets them escape, so they are laundered to pure `Fault -> Unit` for storage
+  // rather than making the registry (and everything that touches it) capture-tracked.
   private object Handler extends Thread.UncaughtExceptionHandler:
-    val tasks: juca.AtomicReference[Set[Fault => Unit]] = juca.AtomicReference(Set())
+    val tasks: juca.AtomicReference[Set[Fault -> Unit]] = juca.AtomicReference(Set())
 
     def uncaughtException(thread: Thread | Null, throwable: Throwable | Null): Unit =
       val fault: Fault = Fault(thread.nn, Error(throwable.nn))
@@ -54,7 +57,7 @@ object Fault:
     type Target = Os.type
 
     def register(value: Os.type, action: Fault => Unit): () => Unit =
-      val handle: Fault => Unit = action(_)
+      val handle: Fault -> Unit = caps.unsafe.unsafeAssumePure(action(_))
       handler.tasks.updateAndGet(_.nn + handle)
 
       () => handler.tasks.updateAndGet(_.nn - handle)

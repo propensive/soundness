@@ -48,7 +48,10 @@ object Task:
     ( using monitor: Monitor, codepoint: Codepoint, probate: Probate )
   :   Task[result] { type Error = error } =
 
-    inline def evaluate0: Worker => result = evaluate
+    // See `Daemon.apply`: the body closure is laundered to pure so the worker (and the supervisor
+    // that retains it) need not be capture-tracked; the body's own capture is checked at `async`/
+    // `task`.
+    val evaluate0: Worker -> result = caps.unsafe.unsafeAssumePure(evaluate)
     inline def name0: Optional[Name[Async]] = name
 
     new Worker(codepoint, monitor, probate) with Task[result]:
@@ -72,7 +75,7 @@ object Task:
 
     def point[value](value: value): Task[value] = async(value)
 
-    def apply[value, value2](value: Task[value])(lambda: value -> value2): Task[value2] =
+    def apply[value, value2](value: Task[value])(lambda: value => value2): Task[value2] =
       value.map(lambda)
 
   extension [result](tasks: Seq[Task[result]])

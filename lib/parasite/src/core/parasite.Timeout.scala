@@ -48,7 +48,7 @@ import abstractables.instantAbstractable
 object Timeout:
   def apply[duration: Abstractable across Durations to Long](timeout0: duration)(action: => Unit)
     ( using Monitor, Probate )
-  :   Timeout =
+  :   Timeout^{action} =
 
     val timeout = timeout0.generic/1_000_000L
 

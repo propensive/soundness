@@ -112,7 +112,7 @@ object PlatformSupervisor extends Supervisor():
   def name: Name[Async] = n"platform"
 
   def fork(name: Optional[Text])(block: => Unit): Thread =
-    val runnable: Runnable = () => block
+    val runnable: Runnable^ = () => block
 
     new Thread(runnable).tap: thread =>
       name.let(_.s).let(thread.setName(_))
@@ -141,11 +141,11 @@ abstract class Worker(frame: Codepoint, parent: Monitor, probate: Probate) exten
     state
 
   def stack: Text =
-    val ref = name.lay(frame.text.s)(_.s+"@"+frame.text.s)
+    val ref = name.lay((frame.text: Text).s)(name => (name: Text).s+"@"+(frame.text: Text).s)
 
     parent match
-      case supervisor: Supervisor => (supervisor.name.s+"://"+ref).tt
-      case submonitor: Worker     => (submonitor.stack.s+"//"+ref).tt
+      case supervisor: Supervisor => ((supervisor.name: Text).s+"://"+ref).tt
+      case submonitor: Worker     => ((submonitor.stack: Text).s+"//"+ref).tt
 
   def relent(): Unit =
     relents += 1
@@ -189,7 +189,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, probate: Probate) exten
 
     if state2 == Cancelled then thread.join()
 
-  def result()(using cancel: Tactic[AsyncError]): Result =
+  def result()(using cancel: Tactic[AsyncError]^): Result =
     state.updateAndGet:
       case null                        => abort(AsyncError(Reason.Incomplete))
       case Initializing                => abort(AsyncError(Reason.Incomplete))
@@ -228,7 +228,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, probate: Probate) exten
   // `Tactic[error | AsyncError]`. `error` is reconstructed by an unchecked cast that is sound for
   // any failure raised through the body's `AsyncTactic` (the only typed-error path); a genuinely
   // unchecked throwable from the body flows through as the raw `join` would have rethrown it.
-  def deliver[error <: Exception]()(using Tactic[error | AsyncError]): Result =
+  def deliver[error <: Exception]()(using Tactic[error | AsyncError]^): Result =
     promise.attend()
     thread.join()
     fulfilment()
@@ -236,7 +236,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, probate: Probate) exten
 
   def deliver[error <: Exception, abstractable: Abstractable across Durations to Long]
     ( duration: abstractable )
-    ( using Tactic[error | AsyncError] )
+    ( using Tactic[error | AsyncError]^ )
   :   Result =
 
     promise.attend(duration)
@@ -245,7 +245,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, probate: Probate) exten
     fulfilment()
 
 
-  private def fulfilment[error <: Exception]()(using Tactic[error | AsyncError]): Result =
+  private def fulfilment[error <: Exception]()(using Tactic[error | AsyncError]^): Result =
     state.updateAndGet:
       case Completed(duration, result) => Delivered(duration, result)
       case Delivered(duration, result) => Delivered(duration, result)

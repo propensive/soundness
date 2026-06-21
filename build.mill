@@ -1149,7 +1149,7 @@ object parasite extends Library:
   object core extends Component(digression.core, mercator.core, anticipation.time,
       nomenclature.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, quantitative.units)
 
 object perihelion extends Library:
