@@ -533,7 +533,7 @@ object caduceus extends Library:
 object caesura extends Library:
   object core extends Component(turbulence.core, escritoire.core, panopticon.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(
@@ -1064,7 +1064,7 @@ object locomotion extends Library:
       extends Component(turbulence.core, wisteria.core, adversaria.core, hypotenuse.core,
         gossamer.core, spectacular.core, panopticon.core, zephyrine.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(mvn"com.google.protobuf:protobuf-java:4.29.3")

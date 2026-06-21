@@ -167,7 +167,7 @@ object Dsv extends Dsv2:
     . join(format.delimiter.show)
 
   object DecodableDerivation extends ProductDerivable[Decodable in Dsv]:
-    class DsvProductDecoder[derivation](lambda: Dsv => derivation)
+    class DsvProductDecoder[derivation](lambda: Dsv -> derivation)
     extends Decodable:
       type Self = derivation
       type Form = Dsv
