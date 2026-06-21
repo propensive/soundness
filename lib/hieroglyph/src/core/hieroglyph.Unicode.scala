@@ -62,15 +62,14 @@ object Unicode:
 
   object EaWidth:
     def unapply(code: Text): Option[EaWidth] =
-      code.s.only:
-        case "N"  => Neutral
-        case "W"  => Wide
-        case "A"  => Ambiguous
-        case "H"  => HalfWidth
-        case "F"  => FullWidth
-        case "Na" => Narrow
-
-      . option
+      code.s match
+        case "N"  => Some(Neutral)
+        case "W"  => Some(Wide)
+        case "A"  => Some(Ambiguous)
+        case "H"  => Some(HalfWidth)
+        case "F"  => Some(FullWidth)
+        case "Na" => Some(Narrow)
+        case _    => None
 
   enum EaWidth:
     case Neutral, Narrow, Wide, Ambiguous, FullWidth, HalfWidth
