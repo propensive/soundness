@@ -44,26 +44,33 @@ import symbolism.*
 import vacuous.*
 
 object Writable:
-  given outputStreamData: [output <: ji.OutputStream] => (streamCut: Tactic[StreamError])
+  // A write failure `raise`s a typed `StreamError`, so the obligation is discharged by an `Emit`
+  // from the scope where the `Writable` is summoned (a `trap`-injected one, or one propagated as
+  // `emits StreamError`). `Emit` rather than `Tactic`: a writer only reports a cut, never `abort`s.
+  given outputStreamData: [output <: ji.OutputStream] => (streamCut: Emit[StreamError])
   =>  output is Writable by Data =
 
     (outputStream, stream) =>
-      stream.each: bytes =>
-        outputStream.write(bytes.mutable(using Unsafe))
-        outputStream.flush()
+      @tailrec
+      def recur(total: Bytes, todo: Stream[Data]): Unit =
+        todo.flow(close(outputStream, total)):
+          val array = next.mutable(using Unsafe)
+          if write(outputStream, array, total) then recur(total + array.length.b, more)
 
-      outputStream.close()
+      recur(0.b, stream)
 
 
-  given outputStreamText: (streamCut: Tactic[StreamError], encoder: CharEncoder)
+  given outputStreamText: (streamCut: Emit[StreamError], encoder: CharEncoder)
   =>  ji.OutputStream is Writable by Text =
 
     (outputStream, stream) =>
-      stream.each: text =>
-        outputStream.write(encoder.encode(text).mutable(using Unsafe))
-        outputStream.flush()
+      @tailrec
+      def recur(total: Bytes, todo: Stream[Text]): Unit =
+        todo.flow(close(outputStream, total)):
+          val array = encoder.encode(next).mutable(using Unsafe)
+          if write(outputStream, array, total) then recur(total + array.length.b, more)
 
-      outputStream.close()
+      recur(0.b, stream)
 
 
   given decodingAdapter: [writable: Writable by Text] => (decoder: CharDecoder)
@@ -78,7 +85,7 @@ object Writable:
     (target, stream) => writable.write(target, encoder.encoded(stream))
 
 
-  given channel: Tactic[StreamError]
+  given channel: Emit[StreamError]
   =>  jn.channels.WritableByteChannel is Writable by Data =
 
     (channel, stream) =>
@@ -91,6 +98,21 @@ object Writable:
           else recur(total + count.b, if next.hasRemaining then todo else more)
 
       recur(0.b, stream.map { bytes => jn.ByteBuffer.wrap(bytes.mutable(using Unsafe)).nn })
+
+  // Writes one chunk to an `OutputStream`, `raise`-ing a `StreamError` (and returning `false`) on
+  // an `IOException` so the caller stops; `true` means continue.
+  private def write(outputStream: ji.OutputStream, array: Array[Byte], total: Bytes)
+    ( using Emit[StreamError] )
+  :   Boolean =
+
+    try
+      outputStream.write(array)
+      outputStream.flush()
+      true
+    catch case _: ji.IOException => raise(StreamError(total)) yet false
+
+  private def close(outputStream: ji.OutputStream, total: Bytes)(using Emit[StreamError]): Unit =
+    try outputStream.close() catch case _: ji.IOException => raise(StreamError(total))
 
 trait Writable extends Typeclass, Operable:
   def write(target: Self, stream: Stream[Operand]): Unit

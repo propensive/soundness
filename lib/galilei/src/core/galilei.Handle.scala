@@ -39,6 +39,6 @@ import turbulence.*
 
 object Handle:
   given streamable: Tactic[StreamError] => Handle is Streamable by Data = _.reader()
-  given writable: Tactic[StreamError] => Handle is Writable by Data = _.writer(_)
+  given writable: Emit[StreamError] => Handle is Writable by Data = _.writer(_)
 
 class Handle(val reader: () => Stream[Data], val writer: Stream[Data] => Unit)
