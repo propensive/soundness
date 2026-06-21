@@ -382,10 +382,10 @@ object internal:
         case Some(s) => '{Text(${Expr(s)})}
         case None    => halt(m"fuzzy case patterns must be a string literal or `t\"…\"` literal")
 
-    val nonWildcardThunks: List[Expr[() => result]] = nonWildcard.map: cd =>
+    val nonWildcardThunks = nonWildcard.map: cd =>
       '{() => ${cd.rhs.asExprOf[result]}}
 
-    val wildcardThunk: Option[Expr[() => result]] = wildcard.map: cd =>
+    val wildcardThunk = wildcard.map: cd =>
       val matchTerm = Match(text.asTerm, List(cd))
       '{() => ${matchTerm.asExprOf[result]}}
 

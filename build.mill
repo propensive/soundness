@@ -913,7 +913,7 @@ object gnossienne extends Library:
 object gossamer extends Library:
   object core extends Component(mercator.core, hieroglyph.core, contextual.core, spectacular.core, hypotenuse.core, distillate.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, serpentine.core)
 
 object graffiti extends Library:
