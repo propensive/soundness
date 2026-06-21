@@ -985,6 +985,30 @@ object Tests extends Suite(m"Aviation Tests"):
         (2024 - Mar).show
       . assert(_ == t"2024.Mar")
 
+      test(m"Adding months to a Monthstamp stays a Monthstamp"):
+        val ms: Monthstamp = (2024 - Jan) + 2*Month
+        (ms.year(), ms.month)
+      . assert(_ == (2024, Mar))
+
+      test(m"Adding months rolls over the year"):
+        val ms = (2024 - Nov) + 3*Month
+        (ms.year(), ms.month)
+      . assert(_ == (2025, Feb))
+
+      test(m"Subtracting months rolls back across the year"):
+        val ms = (2024 - Mar) - 5*Month
+        (ms.year(), ms.month)
+      . assert(_ == (2023, Oct))
+
+      test(m"Adding a year to a Monthstamp"):
+        val ms = (2024 - Jun) + 1*Year
+        (ms.year(), ms.month)
+      . assert(_ == (2025, Jun))
+
+      test(m"Month arithmetic round-trips"):
+        ((2024 - Jan) + 7*Month) - 7*Month
+      . assert(_ == 2024 - Jan)
+
     suite(m"Holidays methods"):
       val holidays = Holidays(List
         ( Holiday(2025-Jan-1, t"New Year's Day"),

@@ -252,6 +252,45 @@ object timestampInternal:
 
         recur(date, days())
 
+    // `Monthstamp` (= `Timestamp in Month`) givens. Like `Date`'s, they live here so they're in the
+    // implicit scope of the underlying `Timestamp`, not in the transparent alias's companion.
+    given monthstampShowable
+        : (Months, DateSeparation, Endianness, Years) => Monthstamp is Showable =
+
+      monthstamp =>
+        summon[Endianness] match
+          case Endianness.LittleEndian =>
+            t"${monthstamp.year}${summon[DateSeparation].separator}${monthstamp.month}"
+
+          case _ =>
+            t"${monthstamp.month}${summon[DateSeparation].separator}${monthstamp.year}"
+
+    // `monthstamp - dayOfMonth` → the `Date` of that day; the result-type witness and runtime
+    // fallback for the `2012-Mar - 8` operator.
+    given monthstampSubtractable: Monthstamp is Subtractable:
+      type Result = Date
+      type Operand = Int
+
+      def subtract(monthstamp: Monthstamp, day: Int): Date =
+        unsafely(calendars.gregorianCalendar.jdn(monthstamp.year, monthstamp.month, Day(day)))
+
+    inline given monthstampSubtraction: Monthstamp.MonthstampSubtraction =
+      Monthstamp.MonthstampSubtraction()
+
+    // Form-preserving month arithmetic: only whole months/years apply (finer components ignored), so
+    // the result stays month-precise.
+    given monthstampAddable: [topic <: Radix]
+    =>  (Monthstamp is Addable by (Timespan of topic) to Monthstamp) =
+      (monthstamp, span) => monthstampShift(monthstamp, span.years*12 + span.months)
+
+    given monthstampTimespanSubtractable: [topic <: Radix]
+    =>  (Monthstamp is Subtractable by (Timespan of topic) to Monthstamp) =
+      (monthstamp, span) => monthstampShift(monthstamp, -(span.years*12 + span.months))
+
+    private def monthstampShift(monthstamp: Monthstamp, months: Int): Monthstamp =
+      val total = monthstamp.year()*12 + monthstamp.month.ordinal + months
+      Monthstamp(Year(Math.floorDiv(total, 12)), Month.fromOrdinal(Math.floorMod(total, 12)))
+
   object Date:
     def julianDay(day: Int): Date = (day.toLong*aviation.internal.MillisPerDay).asInstanceOf[Date]
 
@@ -333,3 +372,9 @@ object timestampInternal:
   extension (date: Date)
     def addDays(count: Int): Date =
       (underlying(date) + count.toLong*aviation.internal.MillisPerDay).asInstanceOf[Date]
+
+  // Calendar-free (Gregorian) accessors for a `Monthstamp`, matching the `Month` enum it is tagged
+  // with — so `monthstamp.year`/`.month` need no calendar in scope.
+  extension (monthstamp: Monthstamp)
+    def year: Year = calendars.gregorianCalendar.annual(monthstamp.date)
+    def month: Month = calendars.gregorianCalendar.mensual(monthstamp.date)

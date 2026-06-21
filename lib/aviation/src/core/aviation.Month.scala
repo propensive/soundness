@@ -64,7 +64,7 @@ object Month extends MonthRadix:
     type Result = Monthstamp
     type Operand = Month
 
-    def subtract(year: Int, month: Month) = new Monthstamp(Year(year), month)
+    def subtract(year: Int, month: Month) = Monthstamp(Year(year), month)
 
   // An inline-friendly counterpart so that, after inlining, `year - month` is the literal
   // construction `Monthstamp(Year(year), month)` — letting the `Monthstamp - day` macro recover
