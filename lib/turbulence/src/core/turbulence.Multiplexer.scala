@@ -59,15 +59,15 @@ case class Multiplexer[key, element]()(using Monitor):
       pump(key, stream.tail)
 
   // Each source is drained by its own daemon. If one fails (the source stream throws),
-  // a trap removes its key — so the consumer sees that source end rather than blocking
-  // forever on a `Removal` the failed pump never enqueued — and isolates the failure to
-  // that source rather than letting it escape.
+  // a containment removes its key — so the consumer sees that source end rather than
+  // blocking forever on a `Removal` the failed pump never enqueued — and isolates the
+  // failure to that source rather than letting it escape.
   def add(key: key, stream: Stream[element]): Unit =
     active(key) =
-      trap:
+      contain:
         case _ => remove(key); Remedy.Accept
 
-      . within(daemon(pump(key, stream)))
+      . protect(daemon(pump(key, stream)))
 
   private def remove(key: key): Unit = if !active.nil then queue.put(Removal(key))
 

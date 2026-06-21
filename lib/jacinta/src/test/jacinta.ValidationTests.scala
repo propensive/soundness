@@ -53,7 +53,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
   :   Issues =
     validate[Json.Focus](Issues()):
       case error: JsonError => accrual + (prior.let(_.pointer.encode).or(t"#"), error)
-    . within(decode(json))
+    . protect(decode(json))
 
   def run(): Unit =
     suite(m"Single-error decoding (sanity)"):
@@ -172,7 +172,7 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
             accrual + ( prior.let(_.pointer.encode).or(t"#"),
                         position.let(_.line),
                         position.let(_.column) )
-        . within(decode(json)).items
+        . protect(decode(json)).items
 
       test(m"Missing field reports a position on a tracked Json"):
         val source = t"""{"name": "Alice"}"""

@@ -78,31 +78,40 @@ package retryTenacities:
 
 transparent inline def monitor: Monitor = infer[Monitor]
 
-// Like `async`, but fire-and-forget: a daemon is never joined, so a raised error cannot surface at
-// a join. The body runs with an `AsyncTactic[error]`; a raised error fails the worker and is routed
-// to the nearest `trap` (and escalated if unhandled) rather than tracked in the return type.
-def daemon[error <: Exception](using Codepoint)
-  ( evaluate: (Worker, Tactic[error]) ?=> Unit )
+// Like `async`, but fire-and-forget: a daemon is never joined, so an error cannot surface at a
+// join. The body is `emits`-typed — it may only *emit* (not `abort`), since there is no value an
+// error could replace and no caller to receive it. Each emit resolves an `Emit` from the call
+// site's lexical scope (typically a `trap`-injected one, captured into the worker's closure); an
+// unhandled emit is a compile error that propagates as `emits …`. A genuine *thrown* exception
+// still fails the worker and reaches the nearest `contain`/`Probate`.
+def daemon(using Codepoint)
+  ( evaluate: Worker ?=> Unit )
   ( using Monitor, Probate )
 :   Daemon =
 
-  val tactic = AsyncTactic[error]()
-
   Daemon: worker =>
-    evaluate(using worker, tactic)
+    evaluate(using worker)
 
 
-// Establishes a trap over a region of asynchronous work: `trap { case … => … }.within { … }`. The
-// handler maps an escaped error to a `Remedy`; the enclosing `Probate` (the default for unmatched
-// or rejected errors) is captured so traps chain outwards to the supervision root.
-def trap(handler: PartialFunction[Error, Remedy])(using outer: Probate): Trap = Trap(handler, outer)
+// Contains *thrown* exceptions escaping a region of fire-and-forget work:
+// `contain { case … => … }.within { … }`. The handler maps an escaped exception to a `Remedy`; the
+// enclosing `Probate` (the default for unmatched or rejected errors) is captured so containments
+// chain outwards to the supervision root. Distinct from the typed `trap` (declared emitted errors).
+def contain(handler: PartialFunction[Error, Remedy])(using outer: Probate): Containment =
+  Containment(handler, outer)
 
 
-// `Task[result] emits error` = `Task[result] { type Error <: error }`. The bound (not an equality)
-// keeps the error covariant: a task that can fail only with `AsyncError` is usable where one that
-// `emits FooError` is expected, and `await`'s `raises (Error | AsyncError)` is dischargeable by a
-// `Tactic` for the bound. `task <: Task[?]` keeps the refinement applicable only to actual tasks.
-infix type emits[task <: Task[?], error <: Exception] = task { type Error <: error }
+// `X emits error` is the one concept "X can produce these errors as an out-of-band side-channel",
+// reified two ways. For a `Task`, it is the bound `Task[result] { type Error <: e }` on its member;
+// the bound (not an equality) keeps the error covariant, so a task failing only with `AsyncError`
+// is usable where `emits FooError` is expected, and `await`'s `raises (Error | AsyncError)` simply
+// converts the emission to a value-replacing exit in the caller's scope. For anything else it is
+// the side-effect obligation `Emit[error] ?=> X` — the weaker sibling of `raises error`
+// (`Tactic[error] ?=>`). The `Task` branch reduces to a refinement, not a context function, so it
+// avoids the match-type-in-return-position erasure crash documented on `raising`.
+infix type emits[left, error <: Exception] = left match
+  case Task[?] => left { type Error <: error }
+  case _       => Emit[error] ?=> left
 
 
 // `error` is the union of error types the body may `raise`, inferred exactly as for synchronous

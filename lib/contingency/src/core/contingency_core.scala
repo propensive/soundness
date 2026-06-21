@@ -77,10 +77,10 @@ def certify[error <: Exception: Tactic](): Unit = error.certify()
 
 def raise[exception <: Exception]
   ( error: Diagnostics ?=> exception )
-  ( using tactic: Tactic[exception] )
+  ( using emitter: Emit[exception] )
 :   Unit =
 
-  tactic.record(error)
+  emitter.record(error)
 
 
 def abort[success, exception <: Exception: Tactic](error: Diagnostics ?=> exception): Nothing =
@@ -240,3 +240,7 @@ def defer[result, error <: Exception](body: Tactic[error] ?=> result)
 
 transparent inline def whereas(inline handler: PartialFunction[Exception, Any]): Whereas[?] =
   ${contingency.internal.whereas('handler)}
+
+
+transparent inline def handle(inline handler: PartialFunction[Exception, Unit]): Handler[?] =
+  ${contingency.internal.handleBuild('handler)}

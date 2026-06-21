@@ -59,7 +59,7 @@ object FocusTests extends Suite(m"Ypsiloid focus + position tests"):
         accrual + ( prior.let(_.pointer.encode).or(t"#"),
                     position.let(_.line),
                     position.let(_.column) )
-    . within(decode(yaml)).items
+    . protect(decode(yaml)).items
 
   def run(): Unit =
     suite(m"Pointer-only focus (untracked Yaml)"):

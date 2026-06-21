@@ -30,26 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package parasite
+package contingency
 
 import language.experimental.pureFunctions
 
 import fulminate.*
 
-// A `Probate` that handles errors escaping fire-and-forget workers spawned within its region. Its
-// child-fate policy (`cleanup`) is delegated unchanged to the enclosing probate; only the failure
-// branch (`trap`) is overridden. A handled error whose remedy is `Reject` — like one the handler
-// does not match — bubbles to the enclosing trap, so traps compose as they nest lexically.
-class Trap(handler: PartialFunction[Error, Remedy], outer: Probate) extends Probate:
-  def cleanup(worker: Worker): Unit = outer.cleanup(worker)
+object Handler:
+  extension [lambda[_]](inline handler: Handler[lambda])
+    inline def protect[result](inline body: lambda[result])(using diagnostics: Diagnostics)
+    :   result =
 
-  override def trap(worker: Worker, error: Error): Remedy =
-    if handler.isDefinedAt(error) then handler(error) match
-      case Remedy.Accept          => Remedy.Accept
-      case Remedy.Reject          => outer.trap(worker, error)
-      case Remedy.Escalate(other) => outer.trap(worker, other)
-    else outer.trap(worker, error)
+      ${contingency.internal.protectBody[lambda, result]('handler, 'body, 'diagnostics)}
 
-  // Installs this trap as the `Probate` in scope for `body`; daemons and abandoned tasks spawned
-  // within it route their escaped errors here.
-  def within[result](body: Probate ?=> result): result = body(using this)
+// Captures a typed error handler. `handle { case FooError(n) => … }` records, at compile time, the
+// error types the cases cover (in `lambda`); `.protect { … }` then injects one
+// handler-backed `Emit` per covered type into the block, so an `emit`/`raise` of a covered error
+// runs its case body as a side-effect, while any *uncovered* (or *re-emitted*) error stays a free
+// `Emit` requirement and propagates outward as `emits …`. The case bodies return `Unit`.
+class Handler[lambda[_]](val handler: PartialFunction[Exception, Unit])

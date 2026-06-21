@@ -34,17 +34,18 @@ package contingency
 
 import language.experimental.pureFunctions
 
-import beneficence.*
 import fulminate.*
 
-trait Tactic[-error <: Exception] extends Findable:
+// A `Tactic` is an `Emit` that can additionally `abort`: a value-replacing abnormal exit. `raises
+// error` (`Tactic[error] ?=>`) is therefore the stronger obligation than `emits error`; code with a
+// `Tactic` can satisfy either, but a fire-and-forget context offering only an `Emit` cannot supply
+// the `abort` half. See [[Emit]].
+trait Tactic[-error <: Exception] extends Emit[error]:
   private inline def tactic: this.type = this
-  def diagnostics: Diagnostics
-  def record(error: Diagnostics ?=> error): Unit
   def abort(error: Diagnostics ?=> error): Nothing
   def certify(): Unit
 
-  def contramap[error2 <: Exception](lambda: error2 => error): Tactic[error2] =
+  override def contramap[error2 <: Exception](lambda: error2 => error): Tactic[error2] =
     new Tactic[error2]:
       def diagnostics: Diagnostics = tactic.diagnostics
       def record(error: Diagnostics ?=> error2): Unit = tactic.record(lambda(error))

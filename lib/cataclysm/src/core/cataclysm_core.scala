@@ -55,7 +55,7 @@ given cssAggregable: (Tactic[CssErrors], Diagnostics) => Css is Aggregable by Te
   track[Text](CssErrors(Nil)):
     case error: CssError => accrual + error
 
-  . within:
+  . protect:
       CssParser.parse(source.iterator)
 
 // The class and id names referenced anywhere in a stylesheet, including inside

@@ -52,7 +52,7 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
     validate[Yaml.Focus](Issues()):
       case error: YamlError =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
-    . within(decode(yaml))
+    . protect(decode(yaml))
 
   def run(): Unit =
     suite(m"Single-error decoding (sanity)"):

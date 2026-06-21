@@ -30,15 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package parasite
 
-import anticipation.*
-import contingency.*
-import prepositional.*
-import turbulence.*
+import language.experimental.pureFunctions
 
-object Handle:
-  given streamable: Tactic[StreamError] => Handle is Streamable by Data = _.reader()
-  given writable: Emit[StreamError] => Handle is Writable by Data = _.writer(_)
+import fulminate.*
 
-class Handle(val reader: () => Stream[Data], val writer: Stream[Data] => Unit)
+// A `Probate` that contains *thrown* exceptions escaping fire-and-forget workers spawned within its
+// region — a catch-all distinct from the typed `contingency.trap`, which handles declared *emitted*
+// errors. Its child-fate policy (`cleanup`) is delegated unchanged to the enclosing probate; only
+// the failure branch (`trap`) is overridden. A handled error whose remedy is `Reject` — like one
+// the handler does not match — bubbles to the enclosing containment, so they compose as they nest.
+class Containment(handler: PartialFunction[Error, Remedy], outer: Probate) extends Probate:
+  def cleanup(worker: Worker): Unit = outer.cleanup(worker)
+
+  override def trap(worker: Worker, error: Error): Remedy =
+    if handler.isDefinedAt(error) then handler(error) match
+      case Remedy.Accept          => Remedy.Accept
+      case Remedy.Reject          => outer.trap(worker, error)
+      case Remedy.Escalate(other) => outer.trap(worker, other)
+    else outer.trap(worker, error)
+
+  // Installs this containment as the `Probate` in scope for `body`; daemons and abandoned tasks
+  // spawned within it route their escaped exceptions here.
+  def protect[result](body: Probate ?=> result): result = body(using this)

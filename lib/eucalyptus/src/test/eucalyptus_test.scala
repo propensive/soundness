@@ -34,6 +34,7 @@ package eucalyptus
 
 import soundness.*
 
+import errorDiagnostics.stackTracesDiagnostics
 import logFormats.untimestampedLogFormat
 import probates.cancelProbate
 import strategies.throwUnsafely
@@ -52,12 +53,12 @@ object Tests extends Suite(m"Eucalyptus tests"):
   object Capture:
     given writable: Capture is Writable by Text = (capture, stream) => stream.each(capture.queue.put)
 
-  // A `Writable` that consumes each line then throws, to exercise the `onError` path.
-  class Boom() extends Exception("boom")
+  // A `Writable` that `raise`s a `StreamError` for each line, to exercise the typed `handle` path.
   case class Failing()
 
   object Failing:
-    given writable: Failing is Writable by Text = (failing, stream) => stream.each(_ => throw Boom())
+    given writable: Emit[StreamError] => Failing is Writable by Text =
+      (failing, stream) => stream.each(_ => raise(StreamError(0.b)))
 
   def run(): Unit = supervise:
     test(m"A Warn-threshold logger drops Fine and Info but keeps Warn and Fail"):
@@ -81,10 +82,14 @@ object Tests extends Suite(m"Eucalyptus tests"):
 
     . assert(_ == List(t"[INFO] hello\n", t"[INFO] hello\n"))
 
-    test(m"A write failure is reported to onError"):
+    test(m"A write failure is handled by an enclosing handler"):
       val errors: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
-      given Logger[Any, Message] = Logger(Failing(), onError = error => errors.put(error.getMessage.nn.tt))
-      Log.info(m"trigger")
-      errors.take()
 
-    . assert(_ == t"boom")
+      handle:
+        case StreamError(_) => errors.put(t"cut")
+      . protect:
+          given Logger[Any, Message] = Logger(Failing())
+          Log.info(m"trigger")
+          errors.take()
+
+    . assert(_ == t"cut")

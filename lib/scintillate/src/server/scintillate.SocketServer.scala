@@ -252,10 +252,10 @@ extends RequestServable:
     // A failure in a per-connection daemon (anything not already turned into an HTTP
     // response) is logged and accepted, isolating it to that connection: the server
     // keeps accepting, and the error neither escalates nor is dumped to stderr.
-    trap:
+    contain:
       case error => Log.fail(HttpServerEvent.ConnectionFailed(error)); Remedy.Accept
 
-    . within:
+    . protect:
         val acceptLoop = loop:
           safely(serverSocket.accept().nn).let: socket =>
             daemon:

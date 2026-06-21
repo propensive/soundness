@@ -201,6 +201,43 @@ object Tests extends Suite(m"Contingency"):
         capture[ErrorA](raisedStatement).value
       . assert(_ == 1)
 
+    suite(m"handle / protect"):
+      test(m"A handled error runs its case body in place"):
+        var caught = 0
+        handle:
+          case ErrorA(n) => caught = n
+        . protect:
+            raise(ErrorA(42))
+
+        caught
+      . assert(_ == 42)
+
+      test(m"Control returns after a handled emit (record, not abort)"):
+        var steps = 0
+        handle:
+          case ErrorA(_) => ()
+        . protect:
+            raise(ErrorA(1))
+            steps += 1
+            raise(ErrorA(2))
+            steps += 1
+
+        steps
+      . assert(_ == 2)
+
+      test(m"A case may re-emit a different error to an outer handler"):
+        var outer = 0
+        handle:
+          case ErrorB(n) => outer = n
+        . protect:
+            handle:
+              case ErrorA(n) => raise(ErrorB(n + 1))
+            . protect:
+                raise(ErrorA(10))
+
+        outer
+      . assert(_ == 11)
+
     suite(m"safely / unsafely"):
       test(m"safely returns the value when no error is raised"):
         safely(succeed(t"present"))
@@ -460,7 +497,7 @@ object Tests extends Suite(m"Contingency"):
         . recover:
             track[Pointer](Accumulated(Nil)):
               case ErrorA(n) => Accumulated(accrual.values :+ n)
-            . within:
+            . protect:
                 raise(ErrorA(1))
                 raise(ErrorA(2))
                 List.empty[Int]
@@ -477,7 +514,7 @@ object Tests extends Suite(m"Contingency"):
       test(m"validate yields the accrual when errors are raised"):
         val v: Accumulated = validate[Pointer](Accumulated(Nil)):
           case ErrorA(n) => Accumulated(accrual.values :+ n)
-        . within:
+        . protect:
             raise(ErrorA(7))
             raise(ErrorA(8))
         v.values

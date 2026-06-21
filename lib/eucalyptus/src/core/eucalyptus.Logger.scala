@@ -50,13 +50,10 @@ object Logger:
   // the same resource instead of leaking a fresh thread per log call.
   private val registry: juc.ConcurrentHashMap[Codepoint, Spool[?]] = juc.ConcurrentHashMap()
 
-  def emitToStderr(error: Exception): Unit = System.err.nn.println(error.getMessage)
-
   def apply[eventType, loggingType, format, target]
     ( destination: target,
-      level:       Level             = Level.Info,
-      name:        Optional[Text]    = Unset,
-      onError:     Exception => Unit = emitToStderr )
+      level:       Level          = Level.Info,
+      name:        Optional[Text] = Unset )
     ( using inscribable: loggingType is Inscribable in format,
             writable:    target is Writable by format,
             monitor:     Monitor,
@@ -66,7 +63,7 @@ object Logger:
 
     val spool: Spool[format] =
       registry
-      . computeIfAbsent(codepoint, _ => establish[format, target](destination, onError))
+      . computeIfAbsent(codepoint, _ => establish[format, target](destination))
       . nn
       . asInstanceOf[Spool[format]]
 
@@ -75,28 +72,28 @@ object Logger:
 
     new Logger(level, enqueue)
 
-  // The write runs in a fire-and-forget daemon. Whether a write failure surfaces as a thrown
-  // exception is decided by the `Tactic` baked into the (caller-summoned) `Writable`; any exception
-  // that does escape the write is reported to `onError`, after which the write is re-established (a
-  // fresh `spool.stream` resumes taking from the same queue) so one failure does not permanently
-  // silence the logger.
+  // The write runs in a fire-and-forget daemon. A write failure `raise`s a `StreamError`, discharged
+  // by the `Emit` captured when the caller summoned the `Writable` — typically a `handle` enclosing
+  // the `Logger(…)` construction. Because that handler runs in place and control returns, the write
+  // is simply re-established (a fresh `spool.stream` resumes from the same queue) so one failure
+  // does not permanently silence the logger. The loop ends only once the spool is stopped.
   private def establish[format, target]
-    ( destination: target, onError: Exception => Unit )
+    ( destination: target )
     ( using writable:  target is Writable by format,
             monitor:   Monitor,
             codepoint: Codepoint,
             probate:   Probate )
   :   Spool[format] =
 
+    val stopped: juc.atomic.AtomicBoolean = juc.atomic.AtomicBoolean(false)
+
     Spool[format]().tap: spool =>
       daemon:
-        def loop(): Unit =
-          try spool.stream.writeTo(destination)
-          catch case error: Exception => onError(error); loop()
+        while !stopped.get() do spool.stream.writeTo(destination)
 
-        loop()
-
-      Os.intercept[Shutdown](spool.stop())
+      Os.intercept[Shutdown]:
+        stopped.set(true)
+        spool.stop()
 
 class Logger[-eventType, loggingType] private
   ( threshold: Level, enqueue: (loggingType, Level, Long) => Unit )

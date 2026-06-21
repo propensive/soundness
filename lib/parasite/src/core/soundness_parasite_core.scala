@@ -38,8 +38,8 @@ export
       Destruction, Fault, Fulfillment, GarbageCollection, Heap, hibernate, Hook, intercept,
       Interceptable, Monitor, monitor, Observation, Os, Perseverance, PlatformSupervisor, Promise,
       relent, retry, RetryError, Shutdown, sleep, snooze, supervise, Supervisor, Task, task,
-      Tenacity, Threading, Timeout, Transgression, Trap, VirtualSupervisor, Worker, AsyncTactic,
-      Remedy, concurrent }
+      Tenacity, Threading, Timeout, Transgression, contain, Containment, VirtualSupervisor, Worker,
+      AsyncTactic, Remedy, concurrent }
 
 package threading:
   export parasite.threading.{adaptiveThreading, platformThreading, virtualThreading}

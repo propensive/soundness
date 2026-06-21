@@ -70,13 +70,17 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
     // keeps running. The connection is always closed afterwards. A failure to *accept* a
     // connection runs on the loop thread (not a daemon), so `safely` skips that iteration; on
     // `stop()` the loop is already `Stopping`, so the interrupted `accept()` simply unwinds.
-    trap:
+    contain:
       case _ => Remedy.Accept
 
-    . within:
+    . protect:
         val bindLoop = loop:
           safely(bindable.connect(binding)).let: connection =>
             daemon:
+              // A connection failure aborts just this handler; throw it to the enclosing
+              // `contain`, which closes the connection and carries on accepting others.
+              given Tactic[ConnectionError] = AsyncTactic()
+
               try bindable.transmit(binding, connection, lambda(connection))
               finally bindable.close(connection)
 

@@ -173,10 +173,10 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
   // isolated to this connection — it neither escalates nor leaves a request awaiter
   // hanging — rather than being swallowed or escaping the daemon.
   private val (writer, reader): (Daemon, Daemon) =
-    trap:
+    contain:
       case _ => tearDown(); Remedy.Accept
 
-    . within:
+    . protect:
         val writer = daemon:
           duplex.send(Stream(connectionPreface))
 
@@ -184,6 +184,10 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
             duplex.send(Stream(frame.serialize))
 
         val reader = daemon:
+          // A protocol error tears down just this connection; throw it to the enclosing
+          // `contain`, which runs `tearDown()` and stops the reader.
+          given Tactic[Http2Error] = AsyncTactic()
+
           val frameReader = FrameReader(duplex.stream.iterator)
           val decoder = Hpack()
           var continue = true

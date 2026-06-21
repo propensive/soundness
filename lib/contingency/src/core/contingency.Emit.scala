@@ -30,15 +30,34 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package contingency
 
-import anticipation.*
-import contingency.*
-import prepositional.*
-import turbulence.*
+import language.experimental.pureFunctions
 
-object Handle:
-  given streamable: Tactic[StreamError] => Handle is Streamable by Data = _.reader()
-  given writable: Emit[StreamError] => Handle is Writable by Data = _.writer(_)
+import beneficence.*
+import fulminate.*
 
-class Handle(val reader: () => Stream[Data], val writer: Stream[Data] => Unit)
+object Emit:
+  // Builds an `Emit` whose `record` simply runs `handler` as a side-effect at the emit point — the
+  // basis of `handle`, where each covered error type gets an `Emit` backed by its case body.
+  def apply[error <: Exception](handler: error => Unit)(using diagnostics0: Diagnostics)
+  :   Emit[error] =
+
+    new Emit[error]:
+      def diagnostics: Diagnostics = diagnostics0
+      def record(error: Diagnostics ?=> error): Unit = handler(error(using diagnostics0))
+
+// The capability to *emit* an error of type `error` as a side-effect: `record` reports it but does
+// not, of itself, abort — control may continue (whether it actually does is the implementation's
+// choice). `Tactic` adds the value-replacing `abort`. `raise` needs only an `Emit`; `abort` needs a
+// full `Tactic`. So `emits error` (`Emit[error] ?=>`) is the weaker obligation than `raises error`
+// (`Tactic[error] ?=>`), and a `Tactic` in scope discharges either.
+trait Emit[-error <: Exception] extends Findable:
+  private inline def emitter: this.type = this
+  def diagnostics: Diagnostics
+  def record(error: Diagnostics ?=> error): Unit
+
+  def contramap[error2 <: Exception](lambda: error2 => error): Emit[error2] =
+    new Emit[error2]:
+      def diagnostics: Diagnostics = emitter.diagnostics
+      def record(error: Diagnostics ?=> error2): Unit = emitter.record(lambda(error))

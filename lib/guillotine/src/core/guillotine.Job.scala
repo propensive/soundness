@@ -54,7 +54,7 @@ object Job:
     (process, stream) => process.stdin(stream)
 
 
-  given writableText: [command <: Label, result] => Tactic[StreamError]
+  given writableText: [command <: Label, result] => Emit[StreamError]
   =>  Job[command, result] is Writable by Text =
 
     (process, stream) => process.stdin(stream.map(_.sysData))
