@@ -1875,6 +1875,57 @@ object Tests extends Suite(m"Aviation Tests"):
         ts.instant.in(tz"Europe/London").time.hour
       . assert(_ == 12)
 
+      // On 2024-10-27 London clocks go back at 02:00 BST, so 01:30 local occurs twice: first at
+      // 00:30 UTC (BST), then again at 01:30 UTC (GMT).
+      test(m"DST fall-back: earlier overlap occurrence round-trips through London"):
+        import instantDecodables.iso8601InstantDecodable
+        val earlier = t"2024-10-27T00:30:00Z".decode[Instant]
+        earlier.in(tz"Europe/London").instant == earlier
+      . assert(_ == true)
+
+      test(m"DST fall-back: later overlap occurrence round-trips through London"):
+        import instantDecodables.iso8601InstantDecodable
+        val later = t"2024-10-27T01:30:00Z".decode[Instant]
+        later.in(tz"Europe/London").instant == later
+      . assert(_ == true)
+
+      test(m"DST fall-back: later overlap occurrence is flagged Second"):
+        import instantDecodables.iso8601InstantDecodable
+        t"2024-10-27T01:30:00Z".decode[Instant].in(tz"Europe/London").occurrence
+      . assert(_ == Occurrence.Second)
+
+      test(m"DST fall-back: earlier overlap occurrence is flagged First"):
+        import instantDecodables.iso8601InstantDecodable
+        t"2024-10-27T00:30:00Z".decode[Instant].in(tz"Europe/London").occurrence
+      . assert(_ == Occurrence.First)
+
+      test(m"The two overlap occurrences ground one hour apart"):
+        val london = tz"Europe/London"
+        val clock = Clockface(1, 30, 0)
+        val earlier = Moment(2024-Oct-27, clock, london).instant
+        val later = Moment(2024-Oct-27, clock, london, Occurrence.Second).instant
+        later.long - earlier.long
+      . assert(_ == 3600000L)
+
+      // On 2024-03-31 London clocks jump 01:00 GMT → 02:00 BST, so 01:30 local never happens.
+      test(m"Spring-forward gap pushes forward by default"):
+        import instantDecodables.iso8601InstantDecodable
+        val grounded = Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant
+        grounded == t"2024-03-31T01:30:00Z".decode[Instant]
+      . assert(_ == true)
+
+      test(m"Spring-forward gap can push backward"):
+        import instantDecodables.iso8601InstantDecodable
+        import gapPolicies.pushBackward
+        val grounded = Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant
+        grounded == t"2024-03-31T00:30:00Z".decode[Instant]
+      . assert(_ == true)
+
+      test(m"Spring-forward gap can be rejected"):
+        import gapPolicies.rejectGap
+        capture(Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant)
+      . assert(_ == TimeError(_.Gap))
+
       test(m"Timezone(t\"NotARealZone\") raises TimezoneError"):
         capture(Timezone(t"NotARealZone"))
       . matches:

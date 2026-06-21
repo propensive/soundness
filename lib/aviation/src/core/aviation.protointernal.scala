@@ -162,7 +162,8 @@ object protointernal:
     def tai(using strategy: LeapSeconds.Strategy): TaiInstant = strategy.tai(instant)
 
     infix def in (using RomanCalendar)(timezone: Timezone): Moment =
-      val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(jt.ZoneId.of(timezone.name.s)).nn
+      val zone = jt.ZoneId.of(timezone.name.s).nn
+      val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(zone).nn
 
       val date = zonedTime.getMonthValue.absolve match
         case Month(month) =>
@@ -171,7 +172,16 @@ object protointernal:
       val time = (zonedTime.getHour, zonedTime.getMinute, zonedTime.getSecond).absolve match
         case (Base24(hour), Base60(minute), Base60(second)) => Clockface(hour, minute, second)
 
-      Moment(date, time, timezone)
+      // During a fall-back overlap the same wall-clock time occurs twice; if this instant uses the
+      // post-transition (later) offset, it is the second occurrence — record that so grounding the
+      // `Moment` back to an `Instant` round-trips instead of silently picking the earlier offset.
+      val transition = zone.getRules.nn.getTransition(zonedTime.toLocalDateTime.nn)
+
+      val laterOffset =
+        transition != null && transition.nn.isOverlap &&
+          zonedTime.getOffset.nn.getTotalSeconds == transition.nn.getOffsetAfter.nn.getTotalSeconds
+
+      Moment(date, time, timezone, if laterOffset then Occurrence.Second else Occurrence.First)
 
     def timestamp(using calendar: RomanCalendar, timezone: Timezone): Timestamp =
       in(timezone).timestamp
