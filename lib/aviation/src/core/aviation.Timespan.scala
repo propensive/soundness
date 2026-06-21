@@ -286,8 +286,9 @@ object Timespan:
   // Adding a timespan to a zoned `Moment` splits at the day boundary: the calendar/day part
   // advances the wall-clock (so a day "ignores" DST — same local time next day), while the sub-day
   // part is applied physically through the timezone (so hours/minutes/seconds "honour" DST).
+  // Whether the sub-day part counts leap seconds is set by `LeapMode` (default `Lenient`).
   given momentAdd: [topic <: Radix]
-  =>  ( Timestamp is Addable by (Timespan of topic) to Timestamp, RomanCalendar )
+  =>  ( Timestamp is Addable by (Timespan of topic) to Timestamp, RomanCalendar, LeapMode )
   =>  Moment is Addable by (Timespan of topic) to Moment =
     (moment, span) =>
       val timestamps = summon[Timestamp is Addable by (Timespan of topic) to Timestamp]
@@ -295,8 +296,13 @@ object Timespan:
       val subSpan = Timespan(hours = span.hours, minutes = span.minutes, seconds = span.seconds)
       val wall = timestamps.add(moment.timestamp, dateSpan.asInstanceOf[Timespan of topic])
       val zoned = Moment(wall.date, wall.time, moment.timezone)
+      val seconds = physicalSeconds(subSpan)
 
-      (zoned.instant + physicalSeconds(subSpan)).in(moment.timezone)
+      val advanced = summon[LeapMode] match
+        case LeapMode.Lenient => zoned.instant + seconds
+        case LeapMode.Exact   => (zoned.instant.over[Tai] + seconds).over[Posix]
+
+      advanced.in(moment.timezone)
 
 case class Timespan
   ( years:   Int                 = 0,

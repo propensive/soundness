@@ -38,6 +38,14 @@ object LeapSeconds:
   // Bits represent leap seconds in years from 1972 (MSB) to 2035 (LSB). Leap seconds will be
   // abolished after 2035, so a 64-bit integer is just sufficient to store all possible leap
   // seconds, including those which have not yet been determined.
+  //
+  // Edge behaviour outside that range. Before 1972 the table contributes nothing, so `before`/`tai`
+  // report a constant TAI−UTC offset of +10 s; this is an approximation — the true historical
+  // offset was sub-integer and drifting, which this integer-second model does not represent. After
+  // 2035 the bits run out and the offset saturates at its final value (37 s), reflecting the
+  // planned abolition of leap seconds: no further leaps are counted. Negative leap seconds (a
+  // second removed, not inserted) have never occurred and cannot be encoded — `addLeapSecond` only
+  // ORs bits in, so the offset is monotonically non-decreasing.
   //                            1972    1980    1988    1996    2004    2012    2020    2028   2035
   //                               ↓       ↓       ↓       ↓       ↓       ↓       ↓       ↓      ↓
   private var june:     Long = bin"1000000001110100000011100100000000000000100100000000000000000000"

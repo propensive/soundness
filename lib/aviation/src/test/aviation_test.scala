@@ -136,6 +136,20 @@ object Tests extends Suite(m"Aviation Tests"):
         LeapSeconds.during(Year(2100), false)
       . assert(_ == 37)
 
+      test(m"The TAI offset before 1972 is a constant +10 seconds"):
+        LeapSeconds.tai(0L) - 0L
+      . assert(_ == 10000L)
+
+      test(m"No further leap seconds are counted after 2035"):
+        val a = LeapSeconds.tai(2_500_000_000_000L) - 2_500_000_000_000L
+        val b = LeapSeconds.tai(2_600_000_000_000L) - 2_600_000_000_000L
+        a == b
+      . assert(_ == true)
+
+      test(m"TAI conversion round-trips a far-future instant"):
+        LeapSeconds.untai(LeapSeconds.tai(2_500_000_000_000L))
+      . assert(_ == 2_500_000_000_000L)
+
     suite(m"Gregorian Calendar Tests"):
       test(m"2000 is a leap year"):
         calendars.gregorianCalendar.leapYear(Year(2000))
@@ -2006,6 +2020,27 @@ object Tests extends Suite(m"Aviation Tests"):
         (later - earlier).value
       . assert(_ == 3600.0)
 
+    // A leap second was inserted at 2016-12-31T23:59:60 UTC, so 23:00 + 2h crosses it.
+    suite(m"Leap-exact moment arithmetic"):
+      import calendars.gregorianCalendar
+
+      test(m"Lenient addition ignores a crossed leap second"):
+        val start = Moment(2016-Dec-31, Clockface(23, 0, 0), tz"UTC")
+        (start + 2*Hour).instant
+      . assert(_ == Moment(2017-Jan-1, Clockface(1, 0, 0), tz"UTC").instant)
+
+      test(m"Exact addition counts a crossed leap second"):
+        import leapModes.exact
+        val start = Moment(2016-Dec-31, Clockface(23, 0, 0), tz"UTC")
+        (start + 2*Hour).instant
+      . assert(_ == Moment(2017-Jan-1, Clockface(0, 59, 59), tz"UTC").instant)
+
+      test(m"Exact and lenient agree when no leap second is crossed"):
+        import leapModes.exact
+        val start = Moment(2024-Jun-1, Clockface(12, 0, 0), tz"UTC")
+        (start + 2*Hour).instant
+      . assert(_ == Moment(2024-Jun-1, Clockface(14, 0, 0), tz"UTC").instant)
+
     suite(m"Moment and Timezone"):
       import calendars.gregorianCalendar
 
@@ -2048,6 +2083,22 @@ object Tests extends Suite(m"Aviation Tests"):
         val ts = Timestamp(2024-Jan-15, Clockface(12, 0, 0))
         ts.instant.in(tz"Europe/London").time.hour
       . assert(_ == 12)
+
+      test(m"Timestamp.instant agrees with Moment.instant in a DST gap"):
+        val london = tz"Europe/London"
+        given Timezone = london
+        val viaTimestamp = Timestamp(2024-Mar-31, Clockface(1, 30, 0)).instant
+        val viaMoment = Moment(2024-Mar-31, Clockface(1, 30, 0), london).instant
+        viaTimestamp == viaMoment
+      . assert(_ == true)
+
+      test(m"Timestamp.instant honours a non-default GapPolicy"):
+        import instantDecodables.iso8601InstantDecodable
+        import gapPolicies.pushBackward
+        given Timezone = tz"Europe/London"
+        val grounded = Timestamp(2024-Mar-31, Clockface(1, 30, 0)).instant
+        grounded == t"2024-03-31T00:30:00Z".decode[Instant over Posix]
+      . assert(_ == true)
 
       // On 2024-10-27 London clocks go back at 02:00 BST, so 01:30 local occurs twice: first at
       // 00:30 UTC (BST), then again at 01:30 UTC (GMT).
