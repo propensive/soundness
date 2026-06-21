@@ -102,7 +102,7 @@ object Inspectable extends Inspectable2:
     case char =>
       if char < 128 && char >= 32
       then char.toString.tt
-      else String.format("\\u%04x", char.toInt).nn.tt
+      else String.format("\\u%04x", Integer.valueOf(char.toInt)).nn.tt
 
   given set: [element] => (inspectable: => element is Inspectable) => Set[element] is Inspectable =
     _.map(inspectable.text(_)).mkString("{", ", ", "}").tt

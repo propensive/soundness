@@ -719,7 +719,7 @@ object internal:
           val default = '{Default(wisteria.internal.default[derivation, field]($indexExpr))}
           val label = '{$nameExpr.tt.aka["label"]}
 
-          val accessor: Expr[derivation => field] =
+          val accessor: Expr[derivation -> field] =
             '{value => value.asInstanceOf[Product].productElement($indexExpr).asInstanceOf[field]}
 
           val dereference = '{$accessor.aka["dereference"]}

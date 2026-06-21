@@ -45,7 +45,7 @@ object Irrefutable:
     irrefutable.contramap(_.tt)
 
 
-  given textString: [text <: Text] => text is Irrefutable to String = _.s
+  given textString: [text <: Text] => text is Irrefutable to String = txt => (txt: Text).s
   given ident: [result] => result is Irrefutable to result = identity(_)
   given byteShort: Byte is Irrefutable to Short = _.toShort
   given byteInt: Byte is Irrefutable to Int = _.toInt

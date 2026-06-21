@@ -36,7 +36,7 @@ import anticipation.*
 import prepositional.*
 
 object Identifiable:
-  def apply[ident](encoder: Text => Text, decoder: Text => Text): ident is Identifiable =
+  def apply[ident](encoder: Text -> Text, decoder: Text -> Text): ident is Identifiable =
     new Identifiable:
       type Self = ident
       def encode(text: Text): Text = encoder(text)

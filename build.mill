@@ -656,7 +656,7 @@ object dissonance extends Library:
 object distillate extends Library:
   object core extends Component(digression.core, inimitable.core, wisteria.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, urticose.url)
 
 object diuretic extends Library:
@@ -969,7 +969,7 @@ object honeycomb extends Library:
 object hieroglyph extends Library:
   object core extends Component(kaleidoscope.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object hyperbole extends Library:
@@ -1294,7 +1294,7 @@ object serpentine extends Library:
 object spectacular extends Library:
   object core extends Component(stenography.core, inimitable.core, wisteria.core, digression.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object stenography extends Library:
