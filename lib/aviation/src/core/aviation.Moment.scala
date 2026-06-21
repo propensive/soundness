@@ -35,7 +35,10 @@ package aviation
 import java.time as jt
 
 import anticipation.*
+import gossamer.*
+import hieroglyph.*, textMetrics.uniformMetric
 import prepositional.*
+import spectacular.*
 
 import abstractables.instantAbstractable
 
@@ -43,11 +46,32 @@ object Moment:
   given generic: RomanCalendar => Moment is Abstractable across Instants to Long =
     _.instant.generic
 
+  // An ISO-8601 zoned date-time, e.g. `2016-12-31T23:59:60+00:00`. An inserted leap second renders
+  // as the 61st second (`:60`); the offset is the zone's offset at this moment's instant.
+  given showable: (RomanCalendar, GapPolicy) => Moment is Showable = moment =>
+    def pad(value: Int, width: Int): Text = value.show.pad(width, Bidi.Rtl, '0')
+
+    val second = moment.leap match
+      case Leap.None     => moment.time.second: Int
+      case Leap.Inserted => 60
+
+    val rules = jt.ZoneId.of(moment.timezone.name.s).nn.getRules.nn
+    val offset = rules.getOffset(jt.Instant.ofEpochMilli(moment.instant.long)).nn.getId.nn
+
+    val year = pad(moment.date.year(), 4)
+    val month = pad(moment.date.month.numerical, 2)
+    val day = pad(moment.date.day(), 2)
+    val hour = pad(moment.time.hour, 2)
+    val minute = pad(moment.time.minute, 2)
+
+    t"$year-$month-${day}T$hour:$minute:${pad(second, 2)}${offset.tt}"
+
 case class Moment
   ( date:       Date,
     time:       Clockface,
     timezone:   Timezone,
-    occurrence: Occurrence = Occurrence.First ):
+    occurrence: Occurrence = Occurrence.First,
+    leap:       Leap       = Leap.None ):
 
   def instant(using calendar: RomanCalendar, gap: GapPolicy): Instant =
     val ldt =
@@ -64,18 +88,31 @@ case class Moment
 
     def at(offset: jt.ZoneOffset): Instant = Instant(ldt.toInstant(offset).nn.toEpochMilli)
 
-    rules.getTransition(ldt) match
-      case null       => at(rules.getOffset(ldt).nn)
+    val base =
+      rules.getTransition(ldt) match
+        case null       => at(rules.getOffset(ldt).nn)
 
-      case transition =>
-        val before = transition.getOffsetBefore.nn
-        val after = transition.getOffsetAfter.nn
+        case transition =>
+          val before = transition.getOffsetBefore.nn
+          val after = transition.getOffsetAfter.nn
 
-        // A gap (the wall-clock time was skipped) is resolved by the contextual policy; an overlap
-        // (the wall-clock time occurs twice) is resolved by the stored `occurrence`.
-        if transition.isGap then gap.resolve(at(before), at(after))
-        else occurrence match
-          case Occurrence.First  => at(before)
-          case Occurrence.Second => at(after)
+          // A gap (the wall-clock time was skipped) is resolved by the contextual policy; an
+          // overlap (the wall-clock time occurs twice) is resolved by the stored `occurrence`.
+          if transition.isGap then gap.resolve(at(before), at(after))
+          else occurrence match
+            case Occurrence.First  => at(before)
+            case Occurrence.Second => at(after)
+
+    // An inserted leap second is stored as `:59`; on the (leap-free) Unix line it shares the next
+    // second's instant, so grounding it advances by one second.
+    leap match
+      case Leap.None     => base
+      case Leap.Inserted => Instant(base.long + 1000L)
+
+  // The absolute SI instant, counting leap seconds per the contextual strategy. For an inserted
+  // leap second the TAI value is exactly one SI second before the following second's.
+  def tai(using RomanCalendar, GapPolicy, LeapSeconds.Strategy): TaiInstant = leap match
+    case Leap.None     => instant.tai
+    case Leap.Inserted => TaiInstant(instant.tai.long - 1000L)
 
   def timestamp: Timestamp = Timestamp(date, time)

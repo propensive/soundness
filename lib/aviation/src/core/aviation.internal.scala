@@ -231,12 +231,22 @@ object internal:
       zone:   String | Null )
   :   Either[Message, TsParsed] =
 
-    checkTime(hour, minute, second).flatMap: _ =>
-      zone match
-        case null =>
-          Right(TsParsed.TimeOnly(jdn, hour, minute, second, nanos))
+    zone match
+      case null =>
+        // A leap second (`:60`) can't be represented zonelessly — it only exists relative to UTC.
+        checkTime(hour, minute, second).map: _ =>
+          TsParsed.TimeOnly(jdn, hour, minute, second, nanos)
 
-        case zoneText: String =>
+      case zoneText: String =>
+        // A leap second is valid only at `:59:60`; it is stored as `:60` for the macro to detect.
+        val timeCheck =
+          if second == 60 then
+            if minute == 59 then checkTime(hour, 59, 59)
+            else Left(m"a leap second can only occur at :59:60")
+          else
+            checkTime(hour, minute, second)
+
+        timeCheck.flatMap: _ =>
           normalizeZone(zoneText).map: zoneName =>
             TsParsed.ZoneOnly(jdn, hour, minute, second, nanos, zoneName)
 
@@ -321,9 +331,15 @@ object internal:
                 Base60(${Expr(minute)}), Base60(${Expr(second)}), ${Expr(nanos)}))}
 
           case TsParsed.ZoneOnly(jdn, hour, minute, second, nanos, zone) =>
-            '{Timestamp(Date.julianDay(${Expr(jdn)}), Clockface(Base24(${Expr(hour)}),
-                Base60(${Expr(minute)}), Base60(${Expr(second)}), ${Expr(nanos)}))
-                .in(unsafely(Timezone(${Expr(zone)}.tt)))}
+            // A leap second is stored as `:60`; build the moment at `:59` and flag it `Inserted`.
+            if second == 60 then
+              '{Timestamp(Date.julianDay(${Expr(jdn)}), Clockface(Base24(${Expr(hour)}),
+                  Base60(${Expr(minute)}), Base60(59), ${Expr(nanos)}))
+                  .in(unsafely(Timezone(${Expr(zone)}.tt))).copy(leap = Leap.Inserted)}
+            else
+              '{Timestamp(Date.julianDay(${Expr(jdn)}), Clockface(Base24(${Expr(hour)}),
+                  Base60(${Expr(minute)}), Base60(${Expr(second)}), ${Expr(nanos)}))
+                  .in(unsafely(Timezone(${Expr(zone)}.tt)))}
 
         result
 

@@ -141,6 +141,15 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
       case _ =>
         fail(Digit) yet 2000-Jan-1
 
+    // A `:60` second is a leap second; on the (leap-free) Unix line it collapses onto the next
+    // second (`23:59:60` ≡ the following `00:00:00`), so store `:59` and add one second.
+    def clockInstant(hour: Int, minute: Int, second: Int): Instant =
+      if second == 60 then
+        Clockface(Base24(hour), Base60(minute), Base60(59)).on(date).instant +
+          Quantity[Seconds[1]](1.0)
+      else
+        Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant
+
     val instant: Instant = next() match
       case '\u0000' => Clockface(Base24(0), Base60(0), Base60(0)).on(date).instant
 
@@ -165,12 +174,12 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
                       fraction()*Second
 
                   case _ =>
-                    Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant
+                    clockInstant(hour, minute, second)
 
               case d if digit =>
                 val second = number(2)
                 next()
-                Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant
+                clockInstant(hour, minute, second)
 
               case _ =>
                 Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant
@@ -192,8 +201,7 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
                       fraction()*Second
 
                   case _ =>
-                    Clockface(Base24(hour), Base60(minute), Base60(second)).on(date)
-                    . instant
+                    clockInstant(hour, minute, second)
 
               case _ =>
                 Clockface(Base24(hour), Base60(minute), Base60(0)).on(date).instant

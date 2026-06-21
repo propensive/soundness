@@ -45,7 +45,7 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-export protointernal.{Instant, Duration}
+export protointernal.{Instant, Duration, TaiInstant}
 export aviation.internal.{Year, Day, Anniversary, WorkingDays}
 export aviation.timestampInternal.{Timestamp, Date}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
@@ -368,7 +368,10 @@ package calendars:
 // ambient default; import one of these to count (`step`) or smear (`smear`) leap seconds instead.
 package leapSeconds:
   given step: LeapSeconds.Strategy = LeapSeconds.tai(_)
-  given smear: LeapSeconds.Strategy = LeapSeconds.smearTai(_)
+
+  given smear: LeapSeconds.Reversible:
+    def tai(unixMillis: Long): Long = LeapSeconds.smearTai(unixMillis)
+    def unix(taiMillis: Long): Long = LeapSeconds.unsmearTai(taiMillis)
 
 // Overrides for the spring-forward DST gap, used to ground a `Moment` whose wall-clock time doesn't
 // exist. The ambient default is `GapPolicy.pushForward` (matching `java.time`); import one of these
@@ -428,6 +431,12 @@ enum TimeEvent:
 // always `First`, and grounding ignores it.
 enum Occurrence derives CanEqual:
   case First, Second
+
+// Whether a `Moment` is the leap second inserted at the end of some UTC days (`23:59:60`). A
+// `Clockface` second is a `Base60` (0–59), so an inserted leap second is stored as `:59` with this
+// flag set; only a `Moment` grounds or renders it as the 61st second. `None` is every other moment.
+enum Leap derives CanEqual:
+  case None, Inserted
 
 extension (inline double: Double)
   inline def am: Clockface = ${aviation.internal.validTime('double, false)}
