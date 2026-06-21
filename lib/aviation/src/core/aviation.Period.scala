@@ -63,6 +63,19 @@ object Period:
 
       recur(period.start, Nil)
 
+    // Iterate the points of the period at `step` intervals: `start`, `start + step`, … while still
+    // before `finish` (half-open, so `finish` itself is excluded). Lazy, so `.take(n)` is cheap.
+    def by[step](step: step)
+      ( using addable: point is Addable by step to point, order: Ordering[point] )
+    :   LazyList[point] =
+
+      def recur(current: point): LazyList[point] =
+        if !order.lt(current, period.finish) then LazyList.empty else
+          val next = current + step
+          if !order.gt(next, current) then LazyList(current) else current #:: recur(next)
+
+      recur(period.start)
+
 // A range between two points of the same type — an `Instant over X`, a `Timestamp`, or a `Moment`.
 // `duration` is the points' difference, whose type follows the point: a `Duration` for an
 // `Instant over X` (in that timeline's seconds), a `Timespan` for a `Timestamp`/`Moment`. (Ordering

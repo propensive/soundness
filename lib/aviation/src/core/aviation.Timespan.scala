@@ -38,7 +38,6 @@ import anticipation.*
 import contextual.*
 import contingency.*
 import distillate.*
-import fulminate.*
 import gossamer.*
 import prepositional.*
 import quantitative.*
@@ -243,13 +242,15 @@ object Timespan:
     val whole = days*86400 + span.hours.toLong*3600 + span.minutes.toLong*60
     Quantity[Seconds[1]](whole.toDouble) + span.seconds
 
-  // A regular timespan (no Month/Year) is a fixed physical duration, so it adds to/subtracts from an
-  // `Instant` (on any timeline); an irregular span cannot (it needs a calendar — add it to a date).
-  given instantPlus: [transport, topic <: Radix] => NotGiven[topic <:< Radix.Irregular]
+  // A regular timespan (no Month/Year) is a fixed physical duration, so it adds to/subtracts from
+  // an `Instant` (on any timeline); an irregular span cannot (it needs a calendar — add to a date).
+  given instantPlus: [transport, topic <: Radix]
+  =>  ( NotGiven[topic <:< Radix.Irregular], transport is Resolution )
   =>  (Instant over transport) is Addable by (Timespan of topic) to (Instant over transport) =
     (instant, span) => instant + physicalSeconds(span)
 
-  given instantMinus: [transport, topic <: Radix] => NotGiven[topic <:< Radix.Irregular]
+  given instantMinus: [transport, topic <: Radix]
+  =>  ( NotGiven[topic <:< Radix.Irregular], transport is Resolution )
   =>  (Instant over transport) is Subtractable by (Timespan of topic) to (Instant over transport) =
     (instant, span) => instant - physicalSeconds(span)
 

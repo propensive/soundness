@@ -77,9 +77,11 @@ object protointernal:
     def Min[transport]: Instant over transport = Long.MinValue.asInstanceOf[Instant over transport]
     def Max[transport]: Instant over transport = Long.MaxValue.asInstanceOf[Instant over transport]
 
-    // Construct in an explicit chronometry (grounding code uses `Instant.of[Posix]`).
-    def of[transport](millis: Long): Instant over transport =
-      millis.asInstanceOf[Instant over transport]
+    // Construct in an explicit chronometry from its raw tick value (grounding code uses
+    // `Instant.of[Posix]` with epoch milliseconds; `monotonic` uses `Instant.of[Monotonic]` with
+    // nanoseconds).
+    def of[transport](ticks: Long): Instant over transport =
+      ticks.asInstanceOf[Instant over transport]
 
     // Construct in the import-selected default chronometry.
     def apply(millis: Long)(using ambient: Chronometry.Ambient): Instant over ambient.Transport =
@@ -116,21 +118,30 @@ object protointernal:
       Ordering.Long.asInstanceOf[Ordering[Instant over transport]]
 
 
+    // Arithmetic converts a `Duration` (seconds) to the timeline's own ticks via its `Resolution`,
+    // so it works whatever the resolution (milliseconds for `Posix`/`Tai`, nanoseconds for
+    // `Monotonic`).
+    private def ticks(seconds: Double, resolution: Long): Long =
+      (seconds*1_000_000_000.0/resolution).toLong
+
     given plus: [transport, units <: Measure: Normalizable to Seconds[1]]
+    =>  ( resolution: transport is Resolution )
     =>  (Instant over transport) is Addable by Quantity[units] to (Instant over transport) =
       (instant, duration) =>
-        Instant.of(raw(instant) + (duration.normalize.value*1000.0).toLong)
+        Instant.of(raw(instant) + ticks(duration.normalize.value, resolution.nanos))
 
-    // The difference of two instants on the same timeline is a `Duration` measured in that
-    // timeline's seconds; subtracting across timelines is a type error (convert with `.over`).
+    // The difference of two instants on the same timeline is a `Duration` in seconds; subtracting
+    // across timelines is a type error (convert with `.over`).
     given minus: [transport]
+    =>  ( resolution: transport is Resolution )
     =>  (Instant over transport) is Subtractable by (Instant over transport) to Duration =
-      (left, right) => Quantity((raw(left) - raw(right))/1000.0)
+      (left, right) => Quantity((raw(left) - raw(right))*resolution.nanos/1_000_000_000.0)
 
     given minusDuration: [transport, units <: Measure: Normalizable to Seconds[1]]
+    =>  ( resolution: transport is Resolution )
     =>  (Instant over transport) is Subtractable by Quantity[units] to (Instant over transport) =
       (instant, duration) =>
-        Instant.of(raw(instant) - (duration.normalize.value*1000.0).toLong)
+        Instant.of(raw(instant) - ticks(duration.normalize.value, resolution.nanos))
 
 
   extension [transport](instant: Instant over transport)
@@ -173,6 +184,9 @@ object protointernal:
       in(summon[Timezone]).timestamp
 
 
-  extension (duration: into[Duration])
-    def from[transport](instant: Instant over transport): Period[Instant over transport] =
-      Period(instant, Instant.plus.add(instant, duration))
+  extension (duration: Duration)
+    def from[transport](instant: Instant over transport)(using resolution: transport is Resolution)
+    :   Period[Instant over transport] =
+
+      val ticks = (duration.value*1_000_000_000.0/resolution.nanos).toLong
+      Period(instant, Instant.of(raw(instant) + ticks))

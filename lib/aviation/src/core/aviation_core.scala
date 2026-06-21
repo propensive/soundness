@@ -77,10 +77,13 @@ trait Minute
 trait Second
 
 // Phantom chronometry markers for `Instant over <chronometry>` (the `Transport` type member): which
-// timeline an instant's `Long` counts on. `Tai` is atomic time; `Posix` is leap-free Unix time.
-// Each is interpreted by a `Chronometry` given. Purely type-level tags.
+// timeline an instant's `Long` counts on. `Tai` is atomic time; `Posix` is leap-free Unix time;
+// `Monotonic` is a `System.nanoTime` reading (nanosecond resolution, arbitrary origin). `Tai` and
+// `Posix` have a `Chronometry` (so they ground/convert); `Monotonic` does not — with no fixed
+// relation to wall-clock time it only measures elapsed time. Purely type-level tags.
 trait Tai
 trait Posix
+trait Monotonic
 
 package instantDecodables:
   given iso8601InstantDecodable: Tactic[TimeError] => (Instant over Posix) is Decodable in Text =
@@ -442,6 +445,11 @@ package monthEnds:
       abort(TimeError(_.Invalid(year(), calendar.monthOrdinal(year, month) + 1, day, calendar)))
 
 def now()(using clock: Clock): Instant over Posix = clock()
+
+// A reading of the monotonic system clock (`System.nanoTime`), for measuring elapsed time. It has
+// an arbitrary origin, so it can only be compared/subtracted with other `Monotonic` readings, never
+// grounded to a calendar instant.
+def monotonic(): Instant over Monotonic = Instant.of[Monotonic](System.nanoTime)
 
 def today()(using clock: Clock, calendar: RomanCalendar, timezone: Timezone): Date =
   (now() in timezone).date
