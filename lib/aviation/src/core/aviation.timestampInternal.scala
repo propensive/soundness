@@ -195,6 +195,21 @@ object timestampInternal:
 
     given dateOrdering: Ordering[Date] = Ordering.Long.asInstanceOf[Ordering[Date]]
 
+    // `Orderable`'s `Self` is invariant, so `Date` (above) and `Timestamp` each need their own
+    // instance even though the comparison is identical.
+    inline given timestampOrderable: Timestamp is Orderable:
+      inline def compare
+        ( inline left:        Timestamp,
+          inline right:       Timestamp,
+          inline strict:      Boolean,
+          inline greaterThan: Boolean )
+      :   Boolean =
+
+        if left == right then !strict else (left < right)^greaterThan
+
+    given timestampOrdering: Ordering[Timestamp] =
+      Ordering.Long.asInstanceOf[Ordering[Timestamp]]
+
     given dateWorkingDays: Holidays => (hebdomad: Hebdomad) => Date is Addable:
       type Operand = WorkingDays
       type Result = Date
@@ -280,18 +295,21 @@ object timestampInternal:
       import abstractables.instantAbstractable
       Instant(timestamp.stdlib.atZone(timezone.stdlib).nn.toInstant.nn.toEpochMilli())
 
+  // Comparisons are defined on `Timestamp` (the whole grid is monotonic); `Date`, being a
+  // `Timestamp in Day`, inherits them.
+  extension (timestamp: Timestamp)
+    @targetName("gt")
+    infix def > (right: Timestamp): Boolean = underlying(timestamp) > underlying(right)
+
+    @targetName("lt")
+    infix def < (right: Timestamp): Boolean = underlying(timestamp) < underlying(right)
+
+    @targetName("lte")
+    infix def <= (right: Timestamp): Boolean = underlying(timestamp) <= underlying(right)
+
+    @targetName("gte")
+    infix def >= (right: Timestamp): Boolean = underlying(timestamp) >= underlying(right)
+
   extension (date: Date)
     def addDays(count: Int): Date =
       (underlying(date) + count.toLong*aviation.internal.MillisPerDay).asInstanceOf[Date]
-
-    @targetName("gt")
-    infix def > (right: Date): Boolean = underlying(date) > underlying(right)
-
-    @targetName("lt")
-    infix def < (right: Date): Boolean = underlying(date) < underlying(right)
-
-    @targetName("lte")
-    infix def <= (right: Date): Boolean = underlying(date) <= underlying(right)
-
-    @targetName("gte")
-    infix def >= (right: Date): Boolean = underlying(date) >= underlying(right)

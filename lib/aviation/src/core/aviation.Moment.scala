@@ -37,6 +37,7 @@ import java.time as jt
 import anticipation.*
 import gossamer.*
 import hieroglyph.*, textMetrics.uniformMetric
+import hypotenuse.*
 import prepositional.*
 import spectacular.*
 
@@ -45,6 +46,13 @@ import abstractables.instantAbstractable
 object Moment:
   given generic: RomanCalendar => Moment is Abstractable across Instants to Long =
     _.instant.generic
+
+  // Moments order by their grounded instant (so a `Second`-occurrence overlap sorts after the
+  // `First`, and zones are compared on absolute time), hence the `RomanCalendar`/`GapPolicy` need.
+  given orderable: (RomanCalendar, GapPolicy) => Moment is Orderable =
+    summon[Instant is Orderable].contramap(_.instant)
+
+  given ordering: (RomanCalendar, GapPolicy) => Ordering[Moment] = Ordering.by(_.instant.long)
 
   // An ISO-8601 zoned date-time, e.g. `2016-12-31T23:59:60+00:00`. An inserted leap second renders
   // as the 61st second (`:60`); the offset is the zone's offset at this moment's instant.

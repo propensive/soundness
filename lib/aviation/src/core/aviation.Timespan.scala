@@ -36,8 +36,12 @@ import scala.util.NotGiven
 
 import anticipation.*
 import contingency.*
+import distillate.*
+import fulminate.*
+import gossamer.*
 import prepositional.*
 import quantitative.*
+import spectacular.*
 import symbolism.*
 
 // A `Timespan` is a duration expressed as a vector of radix counts (`Year`/`Month`/`Week`/`Day`/
@@ -64,6 +68,49 @@ object Timespan:
     case Hour          => Timespan(hours = n).asInstanceOf[Timespan of radix]
     case Minute        => Timespan(minutes = n).asInstanceOf[Timespan of radix]
     case _             => Timespan().asInstanceOf[Timespan of radix]
+
+  // ISO-8601 duration text, e.g. `P1Y2M3DT4H5M6S`. Zero components are omitted; the all-zero span
+  // is `PT0S`. Fractional seconds render with a decimal point.
+  private def renderDuration(span: Timespan): Text =
+    def part(value: Int, unit: Text): Text = if value == 0 then t"" else t"$value$unit"
+
+    val seconds = span.seconds.value
+
+    val secondsText =
+      if seconds == 0.0 then t""
+      else if seconds == seconds.toLong.toDouble then t"${seconds.toLong}S"
+      else t"${seconds.toString.tt}S"
+
+    val date =
+      List(part(span.years, t"Y"), part(span.months, t"M"), part(span.weeks, t"W"),
+          part(span.days, t"D")).join
+
+    val time = List(part(span.hours, t"H"), part(span.minutes, t"M"), secondsText).join
+
+    if date == t"" && time == t"" then t"PT0S"
+    else if time == t"" then t"P$date"
+    else t"P${date}T$time"
+
+  given showable: Timespan is Showable = renderDuration(_)
+  given encodable: Timespan is Encodable in Text = renderDuration(_)
+
+  // Parse an ISO-8601 duration. `M` is months before the `T`, minutes after it. The whole string
+  // must match, and at least one component must be present (so bare `P`/`PT` are rejected).
+  private val DurationPattern =
+    ("""P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?""" +
+      """(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?""").r
+
+  given decodable: Tactic[TimeError] => Timespan is Decodable in Text = text =>
+    def int(group: String | Null): Int = if group == null then 0 else group.nn.toInt
+    def double(group: String | Null): Double = if group == null then 0.0 else group.nn.toDouble
+
+    text.s match
+      case DurationPattern(y, mo, w, d, h, mi, s)
+      if List(y, mo, w, d, h, mi, s).exists(_ != null) =>
+        Timespan(int(y), int(mo), int(w), int(d), int(h), int(mi), Quantity(double(s)))
+
+      case _ =>
+        abort(TimeError(_.Unknown(text, t"duration")))
 
   given addable: [left <: Radix, right <: Radix]
   =>  (Timespan of left) is Addable by (Timespan of right) to (Timespan of (left & right)) =
