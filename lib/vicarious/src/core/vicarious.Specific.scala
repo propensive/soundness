@@ -32,22 +32,18 @@
                                                                                                   */
 package vicarious
 
-import language.dynamics
+object Specific:
+  // A partial function of field-path cases — `case root.cto.joined() => instance` — matched on the
+  // path proxy. Built via the top-level `specifically` builder.
+  type Cases[key] = PartialFunction[Proxy[key, Any, Nat], Any]
 
-import beneficence.Findable
-
-object Proxy:
-  transparent inline given derived: [key, value] => Proxy[key, value, 0] =
-    ${internal.proxy[key, value]}
-
-// `index` is the runtime witness of the type-level `id` (the flattened path index), so navigation
-// and pattern-matching work for a proxy whose `id` is statically abstract (`Nat`) — e.g. the
-// scrutinee of a `case root.cto.joined() => …` pattern, whose `id` cannot be read via `ValueOf`.
-class Proxy[key, value, +id <: Nat](index: Int) extends Selectable, Dynamic, Findable:
-  transparent inline def selectDynamic(key: String): value | Proxy[key, value, Nat] =
-    ${internal.dereference[key, value, id]('key)}
-
-
-  def id: Int = index
-  inline def apply()(using catalog: Catalog[key, value]): value = catalog.values(index)
-  inline def unapply(scrutinee: Proxy[key, value, Nat]): Boolean = scrutinee.id == index
+// A `key is Specific over typeclass` instance records per-field-path exceptions for a generic
+// derivation: for one or more flattened field paths of `key`, the typeclass instance that should be
+// used at that exact path instead of the one a generic derivation would otherwise resolve. The
+// paths are validated, and each instance type-checked against the path's field type, at the
+// definition site (via the `Proxy` path-DSL); `instances` maps each dotted path (e.g. "cto.joined")
+// to the (type-erased) instance, which a Wisteria derivation reads and re-types at the field site.
+trait Specific:
+  type Self
+  type Transport
+  def instances: Map[String, Any]

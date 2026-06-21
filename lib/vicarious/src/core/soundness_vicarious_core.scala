@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export vicarious.{Catalog, catalog, Proxy}
+export vicarious.{Catalog, catalog, Proxy, Specific, root, specifically}

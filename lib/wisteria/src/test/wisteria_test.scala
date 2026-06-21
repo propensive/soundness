@@ -34,6 +34,8 @@ package wisteria
 
 import soundness.*
 
+import scala.language.dynamics
+
 object Tests extends Suite(m"Wisteria tests"):
 
   // ===== Typeclass: Presentation =====
@@ -228,6 +230,44 @@ object Tests extends Suite(m"Wisteria tests"):
   sealed trait Shape
   case class Circle(radius: Int) extends Shape
   case class Square(side: Int) extends Shape
+
+  // ===== Specific overrides =====
+
+  trait Codec:
+    type Self
+    type Form
+
+  type Json
+  type CodecJson = [self] =>> self is Codec in Json
+
+  case class Employee(name: Text, age: Int)
+  case class Company(ceo: Employee, cto: Employee)
+
+  sealed trait Contact
+  case class Email(address: Text) extends Contact
+  case class Phone(number: Text) extends Contact
+  case class Account(holder: Text, contact: Contact)
+
+  // A Self-based typeclass with product + sum derivation, to observe overrides end-to-end.
+  trait Display:
+    type Self
+    def display(value: Self): Text
+
+  object Display extends Derivable[Display]:
+    given (Text is Display) = identity(_)
+    given (Int is Display) = _.toString.tt
+
+    inline def conjunction[derivation <: Product: ProductReflection]: derivation is Display = value =>
+      fields(value):
+        [field] => field => contextual.display(field)
+      .mkString(",").tt
+
+    inline def disjunction[derivation: SumReflection]: derivation is Display = value =>
+      variant(value):
+        [variant <: derivation] => variant => contextual.display(variant)
+
+  extension [value](value: value)
+    def display(using display: value is Display): Text = display.display(value)
 
   // ===== Tests =====
 
@@ -471,3 +511,119 @@ object Tests extends Suite(m"Wisteria tests"):
           case class Bag(items: List[java.io.File])
           Readable.derived[Bag]
       . assert(_.nonEmpty)
+
+    suite(m"Specific override detection"):
+      val nameCodec: Text is Codec in Json = new Codec:
+        type Self = Text
+        type Form = Json
+
+      val ageCodec: Int is Codec in Json = new Codec:
+        type Self = Int
+        type Form = Json
+
+      test(m"No Specific in scope yields no override paths"):
+        wisteria.internal.overridePaths[CodecJson, Company]
+      . assert(_ == Nil)
+
+      test(m"A Specific in scope yields its override paths"):
+        given (Company is Specific over (Codec in Json)) =
+          specifically:
+            case root.cto.name() => nameCodec
+            case root.ceo.age()  => ageCodec
+
+        wisteria.internal.overridePaths[CodecJson, Company].to(Set)
+      . assert(_ == Set(t"cto.name", t"ceo.age"))
+
+      test(m"A Specific for a different typeclass is ignored"):
+        given (Company is Specific over (Codec in Json)) =
+          specifically:
+            case root.cto.name() => nameCodec
+
+        wisteria.internal.overridePaths[Eq, Company]
+      . assert(_ == Nil)
+
+    suite(m"Specific override in derivation"):
+      val company = Company(Employee(t"al", 30), Employee(t"bo", 40))
+      val shout: Text is Display = _.upper
+      val doubled: Int is Display = n => (n*2).toString.tt
+
+      test(m"Without a Specific, all fields use default instances"):
+        Display.derived[Company].display(company)
+      . assert(_ == t"al,30,bo,40")
+
+      test(m"A Specific overrides one field path along its spine only"):
+        given (Company is Specific over Display) =
+          specifically:
+            case root.cto.name() => shout
+
+        Display.derived[Company].display(company)
+      . assert(_ == t"al,30,BO,40")
+
+      test(m"Overrides at distinct spines stay independent"):
+        given (Company is Specific over Display) =
+          specifically:
+            case root.ceo.name() => shout
+            case root.cto.age()  => doubled
+
+        Display.derived[Company].display(company)
+      . assert(_ == t"AL,30,bo,80")
+
+      test(m"A whole non-leaf field can be overridden with a custom instance"):
+        val terse: Employee is Display = e => t"<${e.name}>"
+
+        given (Company is Specific over Display) =
+          specifically:
+            case root.cto() => terse
+
+        Display.derived[Company].display(company)
+      . assert(_ == t"al,30,<bo>")
+
+      test(m"A local element given is picked up by re-derivation"):
+        given Employee is Display = e => t"E(${e.name})"
+        Display.derived[Company].display(company)
+      . assert(_ == t"E(al),E(bo)")
+
+      test(m"a sum field's variant is overridden via a local given + re-derive"):
+        val maskedEmail: Email is Display = e => t"<hidden>"
+        val account = Account(t"ann", Email(t"ann@example.com"))
+
+        given (Account is Specific over Display) =
+          specifically:
+            case root.contact() =>
+              given Email is Display = maskedEmail
+              Display.derived[Contact]
+
+        Display.derived[Account].display(account)
+      . assert(_ == t"ann,<hidden>")
+
+      test(m"the same override leaves other variants on their defaults"):
+        val maskedEmail: Email is Display = e => t"<hidden>"
+        val account = Account(t"bob", Phone(t"555-1234"))
+
+        given (Account is Specific over Display) =
+          specifically:
+            case root.contact() =>
+              given Email is Display = maskedEmail
+              Display.derived[Contact]
+
+        Display.derived[Account].display(account)
+      . assert(_ == t"bob,555-1234")
+
+      test(m"a nested Specific specialises one branch of a component"):
+        // `Account.contact` uses a `Contact` whose `Email` variant has its `address` masked, while
+        // a top-level `Account` derivation leaves other `Contact`s alone.
+        val masked: Text is Display = _ => t"***"
+        val account = Account(t"ann", Email(t"ann@example.com"))
+
+        given (Account is Specific over Display) =
+          specifically:
+            case root.contact() =>
+              given (Email is Specific over Display) =
+                specifically:
+                  case root.address() => masked
+
+              given Email is Display = Display.derived[Email]
+              Display.derived[Contact]
+
+        Display.derived[Account].display(account)
+      . assert(_ == t"ann,***")

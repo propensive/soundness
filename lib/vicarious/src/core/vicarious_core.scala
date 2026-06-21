@@ -32,9 +32,27 @@
                                                                                                   */
 package vicarious
 
+import denominative.*
+import prepositional.*
+
 
 inline def catalog[key](key: key)[value](inline lambda: [field] => (field: field) => value)
   ( using classTag: ClassTag[value] )
 :   Catalog[key, value] =
 
   ${vicarious.internal.catalog[key, value]('lambda, 'key, 'classTag)}
+
+// The root proxy of a `Specific` definition's field-path cases, e.g. `root.cto.joined` in
+// `specifically: { case root.cto.joined() => instance }`. Resolves to the proxy the builder
+// provides as a `"root"`-tagged context value, so no explicit binder is needed.
+inline def root[key](using proxy: Proxy[key, Any, 0] aka "root"): Proxy[key, Any, 0] = proxy()
+
+// Build a `key is Specific over transport` from field-path cases — e.g.
+// `specifically: { case root.cto.joined() => instance }`. `key` and `transport` are driven by the
+// expected type (`Org is Specific over (Encodable in Json)`); the macro reads each case's path (the
+// proxy in the pattern) and checks its body against that path's field type.
+transparent inline def specifically[key, transport]
+  ( inline lambda: (Proxy[key, Any, 0] aka "root") ?=> Specific.Cases[key] )
+:   key is Specific over transport =
+
+  ${vicarious.internal.specific[key, transport]('lambda)}

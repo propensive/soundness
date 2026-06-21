@@ -47,14 +47,14 @@ object Catalog:
 
       Catalog(IArray.tabulate(catalog.size): index =>
         partialFunction.applyOrElse
-          ( Proxy[key, value, index.type](), _ => catalog.values(index) ))
+          ( Proxy[key, value, index.type](index), _ => catalog.values(index) ))
 
 //case class Catalog[key, value](values: Map[Text, value]):
 case class Catalog[key, value: ClassTag](values: IArray[value]) extends Findable:
   def size: Int = values.length
 
   inline def apply(accessor: (`*`: Proxy[key, value, 0]) ?=> Proxy[key, value, ?]): value =
-    values(accessor(using Proxy()).id.vouch)
+    values(accessor(using Proxy(0)).id.vouch)
 
   def map[value2: ClassTag](lambda: value => value2): Catalog[key, value2] =
     Catalog(values.map(lambda))

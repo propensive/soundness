@@ -34,6 +34,8 @@ package jacinta
 
 import soundness.*
 
+import scala.language.dynamics
+
 import charEncoders.utf8Encoder
 import strategies.throwUnsafely
 import formatting.compactJsonFormatting
@@ -91,6 +93,11 @@ case class Org(name: String, leader: Entity)
 enum Animal:
   case Dog(name: Text)
   case Cat(name: Text)
+
+case class Worker(name: Text, age: Int) derives CanEqual
+case class Firm(boss: Worker, deputy: Worker) derives CanEqual
+
+case class Crew(lead: Worker, members: List[Worker]) derives CanEqual
 
 object Tests extends Suite(m"Jacinta Tests"):
   def run(): Unit =
@@ -1170,6 +1177,34 @@ object Tests extends Suite(m"Jacinta Tests"):
           jp"#/foo~2bar"
         . map(_.focus)
       . assert(_ == List("~"))
+
+    suite(m"Specific per-path overrides"):
+      val firm = Firm(Worker(t"ann", 30), Worker(t"bob", 40))
+      val shout: Text is Json.Encodable = Json.Encodable(Morphology.Str): text => Json(text.upper)
+
+      test(m"Without a Specific, all fields use default encoders"):
+        firm.json.show
+      . assert(_ == t"""{"boss":{"name":"ann","age":30},"deputy":{"name":"bob","age":40}}""")
+
+      test(m"A Specific overrides one field path along its spine only"):
+        given (Firm is Specific over Json.Encodable) =
+          specifically:
+            case root.deputy.name() => shout
+
+        firm.json.show
+      . assert(_ == t"""{"boss":{"name":"ann","age":30},"deputy":{"name":"BOB","age":40}}""")
+
+      test(m"a collection element is overridden via a local given + re-derive"):
+        val nameOnly: Worker is Json.Encodable = Json.Encodable(Morphology.Str): w => Json(w.name)
+
+        given (Crew is Specific over Json.Encodable) =
+          specifically:
+            case root.members() =>
+              given Worker is Json.Encodable = nameOnly
+              summon[List[Worker] is Json.Encodable]
+
+        Crew(Worker(t"al", 30), List(Worker(t"bo", 40), Worker(t"cy", 50))).json.show
+      . assert(_ == t"""{"lead":{"name":"al","age":30},"members":["bo","cy"]}""")
 
     ValidationTests()
     PositionTests()
