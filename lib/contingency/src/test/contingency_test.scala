@@ -201,6 +201,30 @@ object Tests extends Suite(m"Contingency"):
         capture[ErrorA](raisedStatement).value
       . assert(_ == 1)
 
+    suite(m"recover / mitigate (leading)"):
+      test(m"recover substitutes a value for a raised error"):
+        recover:
+          case ErrorA(n) => s"recovered:$n"
+        . protect(failA(7))
+      . assert(_ == "recovered:7")
+
+      test(m"recover passes through the body value when no error"):
+        recover:
+          case ErrorA(_) => "recovered"
+        . protect(succeedStr("ok"))
+      . assert(_ == "ok")
+
+      test(m"mitigate translates an inner error to an outer type"):
+        recover:
+          case ErrorB(n) => n
+        . protect:
+            mitigate:
+              case ErrorA(n) => ErrorB(n + 100)
+            . protect:
+                raise(ErrorA(5))
+                0
+      . assert(_ == 105)
+
     suite(m"handle / protect"):
       test(m"A handled error runs its case body in place"):
         var caught = 0

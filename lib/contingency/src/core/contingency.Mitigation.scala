@@ -30,18 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package contingency
 
-export
-  contingency
-  . { abort, abortive, accrual, Accrual, accrue, amalgamate, AmalgamateTactic, Attempt, attempt,
-      AttemptTactic, capture, certify, dare, defer, Deferred, EitherTactic, Emit, Errors,
-      ExpectationError, Fatal, Foci, focus, HaltTactic, handle, Handler, lest, Mitigable, mitigate,
-      Mitigation, mitigates, OptionalTactic, Pointer, raise, raises, recover, Recovery, safely,
-      survive, Tactic, throwErrors, ThrowTactic, track, TrackFoci, Tracking, tracks, TrackTactic,
-      Unchecked, unsafely, Validate, validate, Validation, whereas, Whereas }
+import language.experimental.pureFunctions
 
-package strategies:
-  export
-    contingency.strategies
-    . { fatalErrors, mitigation, throwSafely, throwUnsafely, uncheckedErrors }
+// Captures a `mitigate` handler: cases that map each covered error type to a *replacement error* of
+// another type. `mitigate { case FooError(n) => BarError(n) }.protect { … }` runs the block and
+// translates a covered error into the case body's error, which then propagates (`raises BarError`).
+object Mitigation:
+  extension [lambda[_]](inline mitigation: Mitigation[lambda])
+    inline def protect[result](inline body: lambda[result]): result =
+      ${contingency.internal.mitigateBody[lambda, result]('mitigation, 'body)}
+
+class Mitigation[lambda[_]](val handler: PartialFunction[Exception, Any])

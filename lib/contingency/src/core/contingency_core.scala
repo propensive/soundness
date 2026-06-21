@@ -242,5 +242,21 @@ transparent inline def whereas(inline handler: PartialFunction[Exception, Any]):
   ${contingency.internal.whereas('handler)}
 
 
+transparent inline def recover(inline handler: PartialFunction[Exception, Any]): Recovery[?] =
+  ${contingency.internal.recoverBuild('handler)}
+
+
+transparent inline def mitigate(inline handler: PartialFunction[Exception, Any]): Mitigation[?] =
+  ${contingency.internal.mitigateBuild('handler)}
+
+
+transparent inline def accrue[accrual <: Exception](initial: accrual)
+  ( combine: (accrual, Exception) => accrual )
+  ( inline handler: PartialFunction[Exception, Any] )
+:   Accrual[accrual, ?] =
+
+  ${contingency.internal.accrueBuild[accrual]('initial, 'combine, 'handler)}
+
+
 transparent inline def handle(inline handler: PartialFunction[Exception, Unit]): Handler[?] =
   ${contingency.internal.handleBuild('handler)}

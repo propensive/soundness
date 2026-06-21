@@ -30,18 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package contingency
 
-export
-  contingency
-  . { abort, abortive, accrual, Accrual, accrue, amalgamate, AmalgamateTactic, Attempt, attempt,
-      AttemptTactic, capture, certify, dare, defer, Deferred, EitherTactic, Emit, Errors,
-      ExpectationError, Fatal, Foci, focus, HaltTactic, handle, Handler, lest, Mitigable, mitigate,
-      Mitigation, mitigates, OptionalTactic, Pointer, raise, raises, recover, Recovery, safely,
-      survive, Tactic, throwErrors, ThrowTactic, track, TrackFoci, Tracking, tracks, TrackTactic,
-      Unchecked, unsafely, Validate, validate, Validation, whereas, Whereas }
+import language.experimental.pureFunctions
 
-package strategies:
-  export
-    contingency.strategies
-    . { fatalErrors, mitigation, throwSafely, throwUnsafely, uncheckedErrors }
+import fulminate.*
+
+// Captures an `accrue` handler together with its initial accrual and combining function. Unlike
+// `recover`/`mitigate`, the block may raise *several* covered errors; each is folded into the
+// accrual via `combine`, and if anything accrued, `.protect` aborts the enclosing `Tactic[accrual]`
+// with the accumulated error. `accrue(initial)(combine) { case … => … }.protect { … }`.
+object Accrual:
+  extension [accrual <: Exception, lambda[_]](inline accrual: Accrual[accrual, lambda])
+    inline def protect[result](inline body: lambda[result])
+      ( using outer: Tactic[accrual], diagnostics: Diagnostics )
+    :   result =
+
+      $ {
+          contingency.internal.accrueBody[accrual, lambda, result]
+            ( 'accrual,
+              '{accrual.initial},
+              '{accrual.combine},
+              'body,
+              'outer,
+              'diagnostics )
+        }
+
+class Accrual[accrual <: Exception, lambda[_]]
+  ( val handler: PartialFunction[Exception, Any],
+    val initial: accrual,
+    val combine: (accrual, Exception) => accrual )

@@ -30,18 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package contingency
 
-export
-  contingency
-  . { abort, abortive, accrual, Accrual, accrue, amalgamate, AmalgamateTactic, Attempt, attempt,
-      AttemptTactic, capture, certify, dare, defer, Deferred, EitherTactic, Emit, Errors,
-      ExpectationError, Fatal, Foci, focus, HaltTactic, handle, Handler, lest, Mitigable, mitigate,
-      Mitigation, mitigates, OptionalTactic, Pointer, raise, raises, recover, Recovery, safely,
-      survive, Tactic, throwErrors, ThrowTactic, track, TrackFoci, Tracking, tracks, TrackTactic,
-      Unchecked, unsafely, Validate, validate, Validation, whereas, Whereas }
+import language.experimental.pureFunctions
 
-package strategies:
-  export
-    contingency.strategies
-    . { fatalErrors, mitigation, throwSafely, throwUnsafely, uncheckedErrors }
+// Captures a `recover` handler: cases that map each covered error type to a *replacement value* of
+// the protected block's result type. `recover { case FooError(n) => fallback }.protect { … }` runs
+// the block and, on the first covered error, escapes with the case body's value instead.
+object Recovery:
+  extension [lambda[_]](inline recovery: Recovery[lambda])
+    inline def protect[result](inline body: lambda[result]): result =
+      ${contingency.internal.recoverBody[lambda, result]('recovery, 'body)}
+
+class Recovery[lambda[_]](val handler: PartialFunction[Exception, Any])
