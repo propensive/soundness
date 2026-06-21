@@ -69,7 +69,7 @@ object Accrual:
 
   extension [accrual <: Exception, lambda[_]](inline accrual: Accrual[accrual, lambda])
     inline def protect[result](inline body: lambda[result])
-      ( using outer: Tactic[accrual], diagnostics: Diagnostics )
+      ( using outer: Tactic[accrual]^, diagnostics: Diagnostics )
     :   result =
 
       $ {

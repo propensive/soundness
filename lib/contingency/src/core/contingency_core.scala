@@ -51,10 +51,11 @@ package strategies:
     ThrowTactic()
 
 
-  given mitigation: [error <: Exception: Tactic, error2 <: Exception: Mitigable to error]
+  given mitigation: [error <: Exception, error2 <: Exception: Mitigable to error]
+  =>  (tactic: Tactic[error]^)
   =>  ( Tactic[error2]^ ) =
 
-    error.contramap(error2.mitigate(_))
+    tactic.contramap(error2.mitigate(_))
 
 
   given fatalErrors: [exception <: Exception: Fatal] => Tactic[exception]:
@@ -79,7 +80,7 @@ package strategies:
 
     def certify(): Unit = ()
 
-def certify[error <: Exception: Tactic](): Unit = error.certify()
+def certify[error <: Exception](using tactic: Tactic[error]^)(): Unit = tactic.certify()
 
 
 def raise[exception <: Exception]
@@ -90,8 +91,11 @@ def raise[exception <: Exception]
   emitter.record(error)
 
 
-def abort[success, exception <: Exception: Tactic](error: Diagnostics ?=> exception): Nothing =
-  exception.abort(error)
+def abort[success, exception <: Exception](error: Diagnostics ?=> exception)
+  ( using tactic: Tactic[exception]^ )
+:   Nothing =
+
+  tactic.abort(error)
 
 
 def safely[error <: Exception](using erased Void)[success]
@@ -128,7 +132,7 @@ def throwErrors[error <: Exception](using CanThrow[error])[success]
 
 def capture[error <: Exception: ClassTag](using erased Void)[success]
   ( block: Tactic[error]^ ?=> success )
-  ( using Tactic[ExpectationError[success]], Diagnostics )
+  ( using Tactic[ExpectationError[success]]^, Diagnostics )
 :   error =
 
   try
@@ -232,7 +236,7 @@ extension [element](sequence: Iterable[element])
 
 
 extension [value](optional: Optional[value])
-  def lest[success, error <: Exception: Tactic](error: Diagnostics ?=> error): value =
+  def lest[success, error <: Exception](error: Diagnostics ?=> error)(using Tactic[error]^): value =
     optional.or(abort(error))
 
 
