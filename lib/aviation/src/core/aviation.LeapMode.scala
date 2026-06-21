@@ -30,100 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aviation
 
-export
-  aviation
-  . { am, AlexandrianCalendar, Anniversary, Apr, Aug, Base24, base24Extractable, Base60,
-      base60Extractable, Calendar, Chronometry, Clock, Clockface, CopticCalendar, CopticMonth, Date,
-      DateNumerics, DateSeparation, Day, Dec, dur,
-      Disambiguation, Duration, Endianness, EthiopianCalendar, EthiopianMonth, Feb,
-      FrenchRepublicanCalendar, FrenchRepublicanMonth, Fri, Hebdomad, Holiday, Holidays, Horology,
-      HebrewCalendar, HebrewMonth, Hour, IndianCalendar, IndianMonth, Instant, IslamicCalendar,
-      GapPolicy, IslamicMonth, Iso8601, Jan, Jul, Jun, Leap, LeapMode, LeapSeconds, Mar, May,
-      Meridiem, Minute, Moment, Mon, monotonic, Monotonic, Month, Months, Monthstamp, Nov, now,
-      Occurrence, Oct, OffsetCalendar, OrdinalCalendar, Period, PersianCalendar, PersianMonth, pm,
-      Posix, Regime, Resolution, Rfc1123, RomanCalendar, Tai,
-      Sat, Sep, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics,
-      TimeSeparation, TimeSpecificity, Timespan, Timestamp, TimestampError, Timezone, TimezoneError,
-      today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Week, WeekDate, Weekday, Weekdays,
-      WorkingDays, Year, Years }
+// Whether adding a sub-day `Timespan` to a `Moment` counts leap seconds. `Lenient` (the default)
+// adds the duration on the leap-free POSIX line, so "two hours later" is two hours of wall-clock,
+// and a leap second crossed in between is invisible. `Exact` adds the same duration as real SI
+// seconds (routing through the TAI timeline), so crossing an inserted leap second shifts the
+// wall-clock result back by that second. The two agree except across one of the ~27 historical leap
+// instants. Import `leapModes.exact` to switch from `Lenient`.
+object LeapMode:
+  given lenient: LeapMode = LeapMode.Lenient
 
-package calendars:
-  export aviation.calendars.{gregorianCalendar, julianCalendar, copticCalendar, ethiopianCalendar,
-      islamicCalendar, persianCalendar, indianCalendar, hebrewCalendar, frenchRepublicanCalendar,
-      buddhistCalendar, minguoCalendar, ordinalCalendar, papalCutover, britishCutover}
-
-package nonexistentLeapDays:
-  export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,
-      roundUpLeapDay}
-
-package monthEnds:
-  export aviation.monthEnds.{clampMonthEnd, overflowMonthEnd, raiseMonthEnd}
-
-package gapPolicies:
-  export aviation.gapPolicies.{pushBackward, rejectGap}
-
-package leapModes:
-  export aviation.leapModes.exact
-
-package chronometries:
-  export aviation.chronometries.{posix, atomic}
-
-package dateFormats:
-  export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,
-      southEastAsiaDateFormat, unitedKingdomDateFormat}
-
-package endianness:
-  export aviation.dateFormats.endianness.{bigEndian, littleEndian, middleEndian}
-
-package dateNumerics:
-  export aviation.dateFormats.numerics.{fixedWidthDateNumerics, variableWidthDateNumerics}
-
-package dateSeparators:
-  export aviation.dateFormats.separators.{dotDateSeparator, hyphenDateSeparator, slashDateSeparator,
-      spaceDateSeparator}
-
-package yearFormats:
-  export aviation.dateFormats.years.{fullYears, twoDigitsYears}
-
-package weekdays:
-  export
-    aviation.dateFormats.weekdays
-    . { englishWeekdays, englishShortWeekdays, oneLetterAmbiguousWeekdays,
-        shortestUnambiguousWeekdays, twoLetterWeekdays }
-
-package monthFormats:
-  export
-    aviation.dateFormats.months
-    . { englishMonths, englishShortMonths, numericMonths, oneLetterAmbiguousMonths,
-        twoDigitMonths }
-
-package timeFormats:
-  export
-    aviation.timeFormats
-    . { associatedPressTimeFormat, civilianTimeFormat, frenchTimeFormat, iso8601TimeFormat,
-        ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
-
-package timespanFormats:
-  export aviation.timespanFormats.relativeTimespan
-
-package hourFormats:
-  export aviation.timeFormats.hours.{twelveHourClock, twentyFourHourClock}
-
-package meridiems:
-  export aviation.timeFormats.meridiems.{lowerMeridiem, lowerPunctuatedMeridiem, upperMeridiem,
-      upperPunctuatedMeridiem}
-
-package timeNumerics:
-  export aviation.timeFormats.numerics.{fixedWidthTimeNumerics, variableWidthTimeNumerics}
-
-package timeSeparators:
-  export aviation.timeFormats.separators.{colonTimeSeparator, dotTimeSeparator, frenchTimeSeparator,
-      noneTimeSeparator}
-
-package hebdomads:
-  export aviation.hebdomads.{europeanHebdomad, jewishHebdomad, northAmericanHebdomad}
-
-package instantDecodables:
-  export aviation.instantDecodables.{iso8601InstantDecodable, rfc1123InstantDecodable}
+enum LeapMode:
+  case Lenient, Exact

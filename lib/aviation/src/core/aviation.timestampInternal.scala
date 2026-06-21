@@ -351,8 +351,11 @@ object timestampInternal:
 
       . nn
 
-    def instant(using timezone: Timezone, calendar: RomanCalendar): Instant over Posix =
-      Instant.of[Posix](timestamp.stdlib.atZone(timezone.stdlib).nn.toInstant.nn.toEpochMilli())
+    // Grounding goes through `Moment`, the single civil↔absolute bridge, so a `Timestamp` honours
+    // the same `GapPolicy` as a `Moment` (a bare wall-clock time carries no overlap selector, so it
+    // grounds at the earlier offset — `Occurrence.First`).
+    def instant(using Timezone, RomanCalendar, GapPolicy): Instant over Posix =
+      timestamp.in(summon[Timezone]).instant
 
   // Comparisons are defined on `Timestamp` (the whole grid is monotonic); `Date`, being a
   // `Timestamp in Day`, inherits them.

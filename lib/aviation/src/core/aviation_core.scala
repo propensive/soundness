@@ -428,6 +428,12 @@ package gapPolicies:
   given rejectGap: Tactic[TimeError] => GapPolicy =
     (_, _) => abort(TimeError(_.Gap))
 
+// Switch sub-day `Moment` arithmetic to count leap seconds (the default `LeapMode.Lenient` works on
+// the leap-free POSIX line). Import `leapModes.exact` so adding a duration that crosses an inserted
+// leap second advances by that many real SI seconds.
+package leapModes:
+  given exact: LeapMode = LeapMode.Exact
+
 // Month-end overflow policies for adding months/years to a date (e.g. Jan 31 + 1 month). No default
 // is provided, so such arithmetic requires one of these to be imported.
 package monthEnds:
