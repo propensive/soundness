@@ -36,14 +36,16 @@ import language.experimental.pureFunctions
 
 import fulminate.*
 
-object Trap:
-  extension [lambda[_]](inline trap: Trap[lambda])
-    inline def within[result](inline body: lambda[result])(using diagnostics: Diagnostics): result =
-      ${contingency.internal.trapWithin[lambda, result]('trap, 'body, 'diagnostics)}
+object Handler:
+  extension [lambda[_]](inline handler: Handler[lambda])
+    inline def protect[result](inline body: lambda[result])(using diagnostics: Diagnostics)
+    :   result =
 
-// Captures a typed error handler. `trap { case FooError(n) => … }` records, at compile time, which
-// error types the cases cover (encoded in `lambda`); `.within { … }` then injects one
+      ${contingency.internal.protectBody[lambda, result]('handler, 'body, 'diagnostics)}
+
+// Captures a typed error handler. `handle { case FooError(n) => … }` records, at compile time, the
+// error types the cases cover (in `lambda`); `.protect { … }` then injects one
 // handler-backed `Emit` per covered type into the block, so an `emit`/`raise` of a covered error
 // runs its case body as a side-effect, while any *uncovered* (or *re-emitted*) error stays a free
 // `Emit` requirement and propagates outward as `emits …`. The case bodies return `Unit`.
-class Trap[lambda[_]](val handler: PartialFunction[Exception, Unit])
+class Handler[lambda[_]](val handler: PartialFunction[Exception, Unit])

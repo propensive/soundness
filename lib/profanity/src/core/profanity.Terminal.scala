@@ -107,7 +107,7 @@ extends Interactivity[TerminalEvent]:
     contain:
       case _ => events.stop(); Remedy.Accept
 
-    . within:
+    . protect:
         daemon:
           keyboard.process(In.stream[Char]).each:
             case resize@TerminalInfo.WindowSize(rows2, columns2) =>

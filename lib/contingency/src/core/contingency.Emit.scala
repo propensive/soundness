@@ -39,8 +39,8 @@ import fulminate.*
 
 object Emit:
   // Builds an `Emit` whose `record` simply runs `handler` as a side-effect at the emit point — the
-  // basis of a typed `trap`, where each handled error type gets an `Emit` backed by its case body.
-  def handle[error <: Exception](handler: error => Unit)(using diagnostics0: Diagnostics)
+  // basis of `handle`, where each covered error type gets an `Emit` backed by its case body.
+  def apply[error <: Exception](handler: error => Unit)(using diagnostics0: Diagnostics)
   :   Emit[error] =
 
     new Emit[error]:

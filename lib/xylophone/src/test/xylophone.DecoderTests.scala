@@ -60,7 +60,7 @@ object DefaultPersonScope:
     val xml = x"<root><company>Acme</company></root>"
     validate[Xml.Focus](XmlIssues()):
       case error: XmlError => accrual + (prior.let(_.path.encode).or(t"#"), error)
-    . within(xml.as[DContact]).items.map(_(0).s).to(Set)
+    . protect(xml.as[DContact]).items.map(_(0).s).to(Set)
 
 case class DDrawing(shape: DShape, label: Text) derives CanEqual
 
@@ -77,7 +77,7 @@ object DefaultShapeScope:
     val xml = x"<Triangle><foo>bar</foo></Triangle>"
     val accrued = validate[Xml.Focus](XmlIssues()):
       case error: XmlError => accrual + (prior.let(_.path.encode).or(t"#"), error)
-    . within(xml.as[DShape])
+    . protect(xml.as[DShape])
 
     (accrued.items.map(_(0).s).to(Set), accrued.items.length)
 
@@ -88,7 +88,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
   :   XmlIssues =
     validate[Xml.Focus](XmlIssues()):
       case error: XmlError => accrual + (prior.let(_.path.encode).or(t"#"), error)
-    . within(decode(xml))
+    . protect(decode(xml))
 
   def run(): Unit =
     given XmlSchema = XmlSchema.Freeform
@@ -235,7 +235,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
             accrual + ( prior.let(_.path.encode).or(t"#"),
                         position.let(_.line.n1),
                         position.let(_.column.n1) )
-        . within(decode(tracked)).items
+        . protect(decode(tracked)).items
 
       test(m"Missing-field error on a tracked Xml reports the parent's position"):
         val source = t"<root>\n  <name>Alice</name>\n  <age>30</age>\n</root>"
@@ -254,7 +254,7 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
           validate[Xml.Focus](Tagged()):
             case error: XmlError =>
               accrual + prior.let(_.position).let(_.line.n1)
-          . within(xml.as[DPerson]).items
+          . protect(xml.as[DPerson]).items
 
         lines.forall(_ == Unset)
       . assert(identity)

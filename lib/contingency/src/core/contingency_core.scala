@@ -242,5 +242,5 @@ transparent inline def whereas(inline handler: PartialFunction[Exception, Any]):
   ${contingency.internal.whereas('handler)}
 
 
-transparent inline def trap(inline handler: PartialFunction[Exception, Unit]): Trap[?] =
-  ${contingency.internal.trapBuild('handler)}
+transparent inline def handle(inline handler: PartialFunction[Exception, Unit]): Handler[?] =
+  ${contingency.internal.handleBuild('handler)}

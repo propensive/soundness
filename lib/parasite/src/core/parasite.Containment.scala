@@ -53,4 +53,4 @@ class Containment(handler: PartialFunction[Error, Remedy], outer: Probate) exten
 
   // Installs this containment as the `Probate` in scope for `body`; daemons and abandoned tasks
   // spawned within it route their escaped exceptions here.
-  def within[result](body: Probate ?=> result): result = body(using this)
+  def protect[result](body: Probate ?=> result): result = body(using this)

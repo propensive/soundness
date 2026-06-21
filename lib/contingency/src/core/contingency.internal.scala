@@ -317,7 +317,7 @@ object internal:
         '{Whereas[typeLambda]($handler)}
 
 
-  def trapBuild(handler: Expr[PartialFunction[Exception, Unit]])(using Quotes): Expr[Trap[?]] =
+  def handleBuild(handler: Expr[PartialFunction[Exception, Unit]])(using Quotes): Expr[Handler[?]] =
     import quotes.reflect.*
 
     val errors = mapping[Exception](handler.asTerm)
@@ -332,17 +332,17 @@ object internal:
 
     typeLambda.asType.absolve match
       case '[type typeLambda[_]; typeLambda] =>
-        '{Trap[typeLambda]($handler)}
+        '{Handler[typeLambda]($handler)}
 
 
-  def trapWithin[context[_]: Type, result: Type]
-    ( trap: Expr[Trap[context]], body: Expr[context[result]], diagnostics: Expr[Diagnostics] )
+  def protectBody[context[_]: Type, result: Type]
+    ( handler: Expr[Handler[context]], body: Expr[context[result]], diagnostics: Expr[Diagnostics] )
     ( using Quotes )
   :   Expr[result] =
 
     import quotes.reflect.*
 
-    val emits = unwrap(trap.asTerm) match
+    val emits = unwrap(handler.asTerm) match
       case Apply(_, List(Inlined(_, _, matches))) =>
         val partialFunction = matches.asExprOf[PartialFunction[Exception, Unit]]
 
@@ -350,10 +350,10 @@ object internal:
           errorType.typeRef.asType.absolve match
             case '[type errorType <: Exception; errorType] =>
               val handler = '{(error: errorType) => $partialFunction(error)}
-              '{Emit.handle[errorType]($handler)(using $diagnostics)}.asTerm
+              '{Emit($handler)(using $diagnostics)}.asTerm
 
       case _ =>
-        halt(648, m"argument to `trap` should be a partial function implemented as match cases")
+        halt(648, m"argument to `handle` should be a partial function implemented as match cases")
 
     val method = TypeRepr.of[context[result]].typeSymbol.declaredMethod("apply").head
     body.asTerm.select(method).appliedToArgs(emits.to(List)).asExprOf[result]

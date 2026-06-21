@@ -73,10 +73,10 @@ object Logger:
     new Logger(level, enqueue)
 
   // The write runs in a fire-and-forget daemon. A write failure `raise`s a `StreamError`, discharged
-  // by the `Emit` captured when the caller summoned the `Writable` — typically a `trap` enclosing
+  // by the `Emit` captured when the caller summoned the `Writable` — typically a `handle` enclosing
   // the `Logger(…)` construction. Because that handler runs in place and control returns, the write
-  // is simply re-established (a fresh `spool.stream` resumes from the same queue) so one failure does
-  // not permanently silence the logger. The loop ends only once the spool is stopped.
+  // is simply re-established (a fresh `spool.stream` resumes from the same queue) so one failure
+  // does not permanently silence the logger. The loop ends only once the spool is stopped.
   private def establish[format, target]
     ( destination: target )
     ( using writable:  target is Writable by format,

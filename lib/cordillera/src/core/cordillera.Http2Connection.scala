@@ -176,7 +176,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
     contain:
       case _ => tearDown(); Remedy.Accept
 
-    . within:
+    . protect:
         val writer = daemon:
           duplex.send(Stream(connectionPreface))
 

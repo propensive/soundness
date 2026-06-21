@@ -54,13 +54,13 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     validate[Tel.Focus](Issues()):
       case error: TelError =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
-    . within(decode(tel))
+    . protect(decode(tel))
 
   private def validateAssign(tel: Tel, schema: Tels): Issues =
     validate[Tel.Focus](Issues()):
       case error: TelError =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
-    . within(Tel.Type.assign(tel, schema))
+    . protect(Tel.Type.assign(tel, schema))
 
   // Parse a document under an accrual boundary: recoverable parse defects
   // (§19.5) accrue rather than aborting on the first, because `read[Tel]` parses
@@ -69,7 +69,7 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     validate[Tel.Focus](Issues()):
       case error: TelError =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
-    . within(text.read[Tel])
+    . protect(text.read[Tel])
 
   // A document schema with two required scalar fields and no defaults: a document
   // omitting both yields two `RequiredMemberAbsent` violations.

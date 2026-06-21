@@ -73,7 +73,7 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
     contain:
       case _ => Remedy.Accept
 
-    . within:
+    . protect:
         val bindLoop = loop:
           safely(bindable.connect(binding)).let: connection =>
             daemon:

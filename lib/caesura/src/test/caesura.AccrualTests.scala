@@ -52,7 +52,7 @@ object AccrualTests extends Suite(m"Caesura multi-error accrual tests"):
     validate[CellRef](Issues()):
       case error: DsvError =>
         accrual + (prior.let(_.column).or(t"#"), error)
-    . within(decode(dsv))
+    . protect(decode(dsv))
 
   private def row(text: Text): Dsv = text.read[Sheet].rows.head
 

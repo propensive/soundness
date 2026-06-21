@@ -67,7 +67,7 @@ case class Multiplexer[key, element]()(using Monitor):
       contain:
         case _ => remove(key); Remedy.Accept
 
-      . within(daemon(pump(key, stream)))
+      . protect(daemon(pump(key, stream)))
 
   private def remove(key: key): Unit = if !active.nil then queue.put(Removal(key))
 

@@ -53,7 +53,7 @@ object Tests extends Suite(m"Eucalyptus tests"):
   object Capture:
     given writable: Capture is Writable by Text = (capture, stream) => stream.each(capture.queue.put)
 
-  // A `Writable` that `raise`s a `StreamError` for each line, to exercise the typed `trap` path.
+  // A `Writable` that `raise`s a `StreamError` for each line, to exercise the typed `handle` path.
   case class Failing()
 
   object Failing:
@@ -82,12 +82,12 @@ object Tests extends Suite(m"Eucalyptus tests"):
 
     . assert(_ == List(t"[INFO] hello\n", t"[INFO] hello\n"))
 
-    test(m"A write failure is handled by an enclosing trap"):
+    test(m"A write failure is handled by an enclosing handler"):
       val errors: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
 
-      trap:
+      handle:
         case StreamError(_) => errors.put(t"cut")
-      . within:
+      . protect:
           given Logger[Any, Message] = Logger(Failing())
           Log.info(m"trigger")
           errors.take()

@@ -1479,25 +1479,25 @@ object Tests extends Suite(m"Parasite tests"):
           capture[FooError](make(true).await()).value
         . assert(_ == 1)
 
-      suite(m"Asynchronous error traps"):
-        test(m"A trap handles a daemon's emitted error"):
+      suite(m"Asynchronous error handlers"):
+        test(m"A handler handles a daemon's emitted error"):
           val caught = juca.AtomicInteger(0)
 
-          trap:
+          handle:
             case FooError(n) => caught.set(n)
-          . within:
+          . protect:
               daemon(raise(FooError(5))).attend()
 
           caught.get()
         . assert(_ == 5)
 
-        test(m"A successful daemon never invokes the trap"):
+        test(m"A successful daemon never invokes the handler"):
           val trapped = juca.AtomicBoolean(false)
           val ran = juca.AtomicBoolean(false)
 
-          trap:
+          handle:
             case FooError(_) => trapped.set(true)
-          . within:
+          . protect:
               daemon:
                 if false then raise(FooError(0))
                 ran.set(true)
@@ -1507,29 +1507,29 @@ object Tests extends Suite(m"Parasite tests"):
           (ran.get(), trapped.get())
         . assert(_ == (true, false))
 
-        test(m"An error uncovered by an inner trap is handled by the outer trap"):
+        test(m"An error uncovered by an inner handler is handled by the outer handler"):
           val caught = juca.AtomicReference[Text](t"none")
 
-          trap:
+          handle:
             case BarError(s) => caught.set(s)
-          . within:
-              trap:
+          . protect:
+              handle:
                 case FooError(_) => caught.set(t"foo")
-              . within:
+              . protect:
                   daemon(raise(BarError(t"outer"))).attend()
 
           caught.get()
         . assert(_ == t"outer")
 
-        test(m"A case may re-emit a different error to the enclosing trap"):
+        test(m"A case may re-emit a different error to the enclosing handler"):
           val caught = juca.AtomicReference[Text](t"none")
 
-          trap:
+          handle:
             case BarError(s) => caught.set(s)
-          . within:
-              trap:
+          . protect:
+              handle:
                 case FooError(_) => raise(BarError(t"swapped"))
-              . within:
+              . protect:
                   daemon(raise(FooError(9))).attend()
 
           caught.get()

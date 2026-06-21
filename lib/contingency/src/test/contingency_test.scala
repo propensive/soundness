@@ -201,12 +201,12 @@ object Tests extends Suite(m"Contingency"):
         capture[ErrorA](raisedStatement).value
       . assert(_ == 1)
 
-    suite(m"trap / within"):
+    suite(m"handle / protect"):
       test(m"A handled error runs its case body in place"):
         var caught = 0
-        trap:
+        handle:
           case ErrorA(n) => caught = n
-        . within:
+        . protect:
             raise(ErrorA(42))
 
         caught
@@ -214,9 +214,9 @@ object Tests extends Suite(m"Contingency"):
 
       test(m"Control returns after a handled emit (record, not abort)"):
         var steps = 0
-        trap:
+        handle:
           case ErrorA(_) => ()
-        . within:
+        . protect:
             raise(ErrorA(1))
             steps += 1
             raise(ErrorA(2))
@@ -225,14 +225,14 @@ object Tests extends Suite(m"Contingency"):
         steps
       . assert(_ == 2)
 
-      test(m"A case may re-emit a different error to an outer trap"):
+      test(m"A case may re-emit a different error to an outer handler"):
         var outer = 0
-        trap:
+        handle:
           case ErrorB(n) => outer = n
-        . within:
-            trap:
+        . protect:
+            handle:
               case ErrorA(n) => raise(ErrorB(n + 1))
-            . within:
+            . protect:
                 raise(ErrorA(10))
 
         outer
@@ -497,7 +497,7 @@ object Tests extends Suite(m"Contingency"):
         . recover:
             track[Pointer](Accumulated(Nil)):
               case ErrorA(n) => Accumulated(accrual.values :+ n)
-            . within:
+            . protect:
                 raise(ErrorA(1))
                 raise(ErrorA(2))
                 List.empty[Int]
@@ -514,7 +514,7 @@ object Tests extends Suite(m"Contingency"):
       test(m"validate yields the accrual when errors are raised"):
         val v: Accumulated = validate[Pointer](Accumulated(Nil)):
           case ErrorA(n) => Accumulated(accrual.values :+ n)
-        . within:
+        . protect:
             raise(ErrorA(7))
             raise(ErrorA(8))
         v.values

@@ -36,10 +36,9 @@ export
   contingency
   . { abort, abortive, accrual, amalgamate, AmalgamateTactic, Attempt, attempt, AttemptTactic,
       capture, certify, dare, defer, Deferred, EitherTactic, Emit, Errors, ExpectationError, Fatal,
-      Foci, focus, HaltTactic, lest, Mitigable, mitigates, OptionalTactic, Pointer, raise, raises,
-      safely, survive, Tactic, throwErrors, ThrowTactic, track, TrackFoci, Tracking, tracks,
-      TrackTactic, trap, Trap, Unchecked, unsafely, Validate, validate, Validation, whereas,
-      Whereas }
+      Foci, focus, HaltTactic, handle, Handler, lest, Mitigable, mitigates, OptionalTactic, Pointer,
+      raise, raises, safely, survive, Tactic, throwErrors, ThrowTactic, track, TrackFoci, Tracking,
+      tracks, TrackTactic, Unchecked, unsafely, Validate, validate, Validation, whereas, Whereas }
 
 package strategies:
   export

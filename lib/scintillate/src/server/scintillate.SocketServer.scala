@@ -255,7 +255,7 @@ extends RequestServable:
     contain:
       case error => Log.fail(HttpServerEvent.ConnectionFailed(error)); Remedy.Accept
 
-    . within:
+    . protect:
         val acceptLoop = loop:
           safely(serverSocket.accept().nn).let: socket =>
             daemon:
