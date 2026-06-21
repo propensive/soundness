@@ -558,7 +558,7 @@ object capricious extends Library:
 object cardinality extends Library:
   object core extends Component(fulminate.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object cataclysm extends Library:
@@ -594,7 +594,7 @@ object coaxial extends Library:
 object contextual extends Library:
   object core extends Component(rudiments.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object cordillera extends Library:
@@ -983,7 +983,7 @@ object hyperbole extends Library:
 object hypotenuse extends Library:
   object core extends Component(cardinality.core, anticipation.opaque, contingency.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, quantitative.units, abacist.core)
 
 object imperial extends Library:
@@ -1001,7 +1001,7 @@ object inimitable extends Library:
 object iridescence extends Library:
   object core extends Component(contextual.core, anticipation.color, hypotenuse.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object jacinta extends Library:
@@ -1034,7 +1034,7 @@ object jacinta extends Library:
 object kaleidoscope extends Library:
   object core extends Component(contingency.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object larceny extends Library:
@@ -1072,7 +1072,7 @@ object locomotion extends Library:
 object mercator extends Library:
   object core extends Component(fulminate.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object metamorphose extends Library:
@@ -1300,7 +1300,7 @@ object spectacular extends Library:
 object stenography extends Library:
   object core extends Component(rudiments.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object test extends Tests(core)
@@ -1458,14 +1458,14 @@ object vexillology extends Library:
 object vicarious extends Library:
   object core extends Component(rudiments.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object wisteria extends Library:
   object core extends Component(contingency.core, vicarious.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object xenophile extends Library:
