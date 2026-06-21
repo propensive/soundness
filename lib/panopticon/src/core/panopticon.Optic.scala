@@ -50,7 +50,7 @@ object Optic:
     def modify(origin: Origin)(lambda: Target => Target): Origin = lambda(origin)
 
 
-  def apply[self, origin, target](lambda: (origin, target => target) => origin)
+  def apply[self, origin, target](lambda: (origin, target => target) -> origin)
   :   self is Optic from origin onto target =
 
     new Optic:

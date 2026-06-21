@@ -44,7 +44,7 @@ import vacuous.*
 
 object internal:
   def applyFold[value]
-    ( v: value, lambdas: Seq[(Optic from value onto value) => value => value] )
+    ( v: value, lambdas: Seq[(Optic from value onto value) -> value -> value] )
   :   value =
 
     lambdas.foldLeft(v): (acc, lambda) =>
@@ -81,14 +81,14 @@ object internal:
 
   def fuse[value: Type]
     ( valueExpr:   Expr[value],
-      lambdasExpr: Expr[Seq[(Optic from value onto value) => value => value]] )
+      lambdasExpr: Expr[Seq[(Optic from value onto value) -> value -> value]] )
     ( using Quotes )
   :   Expr[value] =
 
     import quotes.reflect.*
 
     def fallback: Expr[value] =
-      '{panopticon.internal.applyFold[value]($valueExpr, $lambdasExpr)}
+      '{panopticon.internal.applyFold($valueExpr, $lambdasExpr)}
 
     sealed trait Step
     case class FieldStep(name: String) extends Step

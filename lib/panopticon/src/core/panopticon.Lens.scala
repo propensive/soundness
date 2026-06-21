@@ -37,7 +37,7 @@ import language.dynamics
 import prepositional.*
 
 object Lens:
-  def apply[self, origin, target](get: origin => target, set: (origin, target) => origin)
+  def apply[self, origin, target](get: origin -> target, set: (origin, target) -> origin)
   :   self is Lens from origin onto target =
 
     new Lens:

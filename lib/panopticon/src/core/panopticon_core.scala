@@ -35,11 +35,11 @@ package panopticon
 import prepositional.*
 
 extension [value](value: value)
-  inline def lens(inline lambdas: (Optic from value onto value => value => value)*): value =
+  inline def lens(inline lambdas: ((Optic from value onto value) -> value -> value)*): value =
     ${panopticon.internal.fuse[value]('value, 'lambdas)}
 
   private[panopticon] def lensFold
-    ( lambdas: (Optic from value onto value => value => value)* )
+    ( lambdas: ((Optic from value onto value) -> value -> value)* )
   :   value =
 
     lambdas.foldLeft(value): (value, lambda) =>
