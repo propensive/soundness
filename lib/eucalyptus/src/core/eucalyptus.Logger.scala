@@ -72,11 +72,11 @@ object Logger:
 
     new Logger(level, enqueue)
 
-  // The write runs in a fire-and-forget daemon. A write failure `raise`s a `StreamError`, discharged
-  // by the `Emit` captured when the caller summoned the `Writable` — typically a `handle` enclosing
-  // the `Logger(…)` construction. Because that handler runs in place and control returns, the write
-  // is simply re-established (a fresh `spool.stream` resumes from the same queue) so one failure
-  // does not permanently silence the logger. The loop ends only once the spool is stopped.
+  // The write runs in a fire-and-forget daemon. A daemon body is hygienic — it cannot capture an
+  // enclosing handler to discharge a write failure — so it handles its own errors: a `StreamError`
+  // ends the current stream, and the loop re-establishes a fresh `spool.stream` from the same queue,
+  // so one failure does not permanently silence the logger. The loop ends only once the spool is
+  // stopped.
   private def establish[format, target]
     ( destination: target )
     ( using writable:  target is Writable by format,
@@ -89,7 +89,9 @@ object Logger:
 
     Spool[format]().tap: spool =>
       daemon:
-        while !stopped.get() do spool.stream.writeTo(destination)
+        while !stopped.get() do
+          try spool.stream.writeTo(destination)
+          catch case _: StreamError => ()
 
       Os.intercept[Shutdown]:
         stopped.set(true)

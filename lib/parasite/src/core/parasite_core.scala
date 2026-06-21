@@ -78,19 +78,23 @@ package retryTenacities:
 
 transparent inline def monitor: Monitor = infer[Monitor]
 
-// Like `async`, but fire-and-forget: a daemon is never joined, so an error cannot surface at a
-// join. The body is `emits`-typed — it may only *emit* (not `abort`), since there is no value an
-// error could replace and no caller to receive it. Each emit resolves an `Emit` from the call
-// site's lexical scope (typically a `trap`-injected one, captured into the worker's closure); an
-// unhandled emit is a compile error that propagates as `emits …`. A genuine *thrown* exception
-// still fails the worker and reaches the nearest `contain`/`Probate`.
-def daemon(using Codepoint)
-  ( evaluate: Worker ?=> Unit )
+// Like `async`, but fire-and-forget: a daemon is never joined, so an error cannot surface at a join.
+// The body runs on a worker thread that outlives the call, so — unlike `async`, which is awaited
+// within the capturing scope — it must be *hygienic*: it may not capture any capability from an
+// enclosing scope (a `boundary.Label`, a `using`-block file handle, …) whose lifetime could end
+// before the worker. This is expressed by the pure context-function arrow `?->{}`: capturing a plain
+// value is fine, and the body may freely *open and own* its own capabilities, but it may not close
+// over an outer one. So, like `async`, the daemon supplies its own label-free `AsyncTactic` rather
+// than letting the body capture an ambient `Emit`; a raised error fails the worker and reaches the
+// nearest `contain`/`Probate`.
+def daemon[error <: Exception](using Codepoint)
+  ( evaluate: (Worker, Tactic[error]) ?->{} Unit )
   ( using Monitor, Probate )
 :   Daemon =
 
+  val tactic = AsyncTactic[error]()
   Daemon: worker =>
-    evaluate(using worker)
+    evaluate(using worker, tactic)
 
 
 // Contains *thrown* exceptions escaping a region of fire-and-forget work:
