@@ -104,7 +104,7 @@ extends Interactivity[TerminalEvent]:
   // the event spool is stopped so the session consuming `events.stream` sees the input end
   // and can exit cleanly, rather than blocking forever on a pump that has silently died.
   val pumpInput: Daemon =
-    trap:
+    contain:
       case _ => events.stop(); Remedy.Accept
 
     . within:
