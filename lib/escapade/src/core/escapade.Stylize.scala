@@ -35,4 +35,4 @@ package escapade
 import language.experimental.pureFunctions
 
 object Stylize:
-  def apply(lambda: TextStyle -> TextStyle): Ansi.Input.Markup = Ansi.Input.Markup(lambda)
+  def apply(lambda: TextStyle => TextStyle): Ansi.Input.Markup = Ansi.Input.Markup(lambda)
