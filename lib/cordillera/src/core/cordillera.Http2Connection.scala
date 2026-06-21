@@ -184,6 +184,10 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
             duplex.send(Stream(frame.serialize))
 
         val reader = daemon:
+          // A protocol error tears down just this connection; throw it to the enclosing
+          // `contain`, which runs `tearDown()` and stops the reader.
+          given Tactic[Http2Error] = AsyncTactic()
+
           val frameReader = FrameReader(duplex.stream.iterator)
           val decoder = Hpack()
           var continue = true
