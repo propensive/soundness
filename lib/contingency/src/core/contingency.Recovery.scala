@@ -34,10 +34,29 @@ package contingency
 
 import language.experimental.pureFunctions
 
+import scala.util.boundary
+
+import fulminate.*
+
 // Captures a `recover` handler: cases that map each covered error type to a *replacement value* of
 // the protected block's result type. `recover { case FooError(n) => fallback }.protect { … }` runs
 // the block and, on the first covered error, escapes with the case body's value instead.
 object Recovery:
+  // A case body's recovered value, escaping the block via `boundary`.
+  final case class Escape[+result](value: result) extends Exception:
+    override def fillInStackTrace(): Throwable = this
+
+  class EscapeTactic[result](label: boundary.Label[result]) extends Tactic[Escape[result]]:
+    def diagnostics: Diagnostics = Diagnostics.omit
+
+    def record(error: Diagnostics ?=> Escape[result]): Unit =
+      boundary.break(error(using diagnostics).value)(using label)
+
+    def abort(error: Diagnostics ?=> Escape[result]): Nothing =
+      boundary.break(error(using diagnostics).value)(using label)
+
+    def certify(): Unit = ()
+
   extension [lambda[_]](inline recovery: Recovery[lambda])
     inline def protect[result](inline body: lambda[result]): result =
       ${contingency.internal.recoverBody[lambda, result]('recovery, 'body)}

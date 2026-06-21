@@ -34,6 +34,10 @@ package contingency
 
 import language.experimental.pureFunctions
 
+import java.util.concurrent.atomic as juca
+
+import scala.language.unsafeNulls
+
 import fulminate.*
 
 // Captures an `accrue` handler together with its initial accrual and combining function. Unlike
@@ -41,6 +45,28 @@ import fulminate.*
 // accrual via `combine`, and if anything accrued, `.protect` aborts the enclosing `Tactic[accrual]`
 // with the accumulated error. `accrue(initial)(combine) { case … => … }.protect { … }`.
 object Accrual:
+  // The `Tactic` injected into an `accrue` block: each covered error is folded into the accrual
+  // rather than escaping; `accumulated`/`changed` report the result to `.protect`.
+  class AccrueTactic[error <: Exception, accrual <: Exception]
+    ( initial: accrual, combine: (accrual, Exception) => accrual )
+    ( using val diagnostics: Diagnostics )
+  extends Tactic[error]:
+
+    private val ref: juca.AtomicReference[accrual] = juca.AtomicReference(initial)
+
+    def record(error: Diagnostics ?=> error): Unit =
+      ref.updateAndGet: curr => combine(curr.nn, error(using diagnostics))
+
+    def abort(error: Diagnostics ?=> error): Nothing =
+      import scala.unsafeExceptions.canThrowAny
+      record(error)
+      throw accumulated
+
+    def certify(): Unit = ()
+
+    def accumulated: accrual = ref.get().nn
+    def changed: Boolean = ref.get().nn != initial
+
   extension [accrual <: Exception, lambda[_]](inline accrual: Accrual[accrual, lambda])
     inline def protect[result](inline body: lambda[result])
       ( using outer: Tactic[accrual], diagnostics: Diagnostics )

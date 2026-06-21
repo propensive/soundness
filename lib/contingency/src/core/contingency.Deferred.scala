@@ -34,73 +34,7 @@ package contingency
 
 import language.experimental.pureFunctions
 
-import java.util.concurrent.atomic as juca
-
-import scala.language.unsafeNulls
-import scala.util.boundary
-
-import fulminate.*
-
-
+// Holds an unevaluated `Tactic[error] ?=> result` body; `apply()` re-evaluates it under whichever
+// `Tactic[error]` is in scope at the call, allowing late binding to different error handlers.
 final class Deferred[result, error <: Exception](body: Tactic[error] ?=> result):
   def apply()(using Tactic[error]): result = body
-
-object Whereas:
-  final case class Escape[+result](value: result) extends Exception:
-    override def fillInStackTrace(): Throwable = this
-
-
-  class AccrueTactic[error <: Exception, accrual <: Exception]
-    ( initial: accrual, combine: (accrual, Exception) => accrual )
-    ( using val diagnostics: Diagnostics )
-  extends Tactic[error]:
-
-    private val ref: juca.AtomicReference[accrual] = juca.AtomicReference(initial)
-
-    def record(error: Diagnostics ?=> error): Unit =
-      ref.updateAndGet: curr => combine(curr.nn, error(using diagnostics))
-
-    def abort(error: Diagnostics ?=> error): Nothing =
-      import scala.unsafeExceptions.canThrowAny
-      record(error)
-      throw accumulated
-
-    def certify(): Unit = ()
-
-    def accumulated: accrual = ref.get().nn
-    def changed: Boolean = ref.get().nn != initial
-
-
-  class EscapeTactic[result](label: boundary.Label[result]) extends Tactic[Escape[result]]:
-    def diagnostics: Diagnostics = Diagnostics.omit
-
-    def record(error: Diagnostics ?=> Escape[result]): Unit =
-      boundary.break(error(using diagnostics).value)(using label)
-
-    def abort(error: Diagnostics ?=> Escape[result]): Nothing =
-      boundary.break(error(using diagnostics).value)(using label)
-
-    def certify(): Unit = ()
-
-
-  extension [lambda[_]](inline w: Whereas[lambda])
-
-    inline def mitigate[result](inline body: lambda[result]): result =
-      ${contingency.internal.mitigateBody[lambda, result]('w, 'body)}
-
-    inline def recover[result](inline body: lambda[result]): result =
-      ${contingency.internal.recoverBody[lambda, result]('w, 'body)}
-
-    inline def accrue[accrual <: Exception, result](initial: accrual)
-      ( combine: (accrual, Exception) => accrual )
-      ( inline body: lambda[result] )
-      ( using outer: Tactic[accrual], diagnostics: Diagnostics )
-    :   result =
-
-      $ {
-          contingency.internal.accrueBody[accrual, lambda, result]
-            ( 'w, 'initial, 'combine, 'body, 'outer, 'diagnostics )
-        }
-
-
-class Whereas[lambda[_]](val handler: PartialFunction[Exception, Any])

@@ -238,10 +238,6 @@ def defer[result, error <: Exception](body: Tactic[error] ?=> result)
   Deferred(body)
 
 
-transparent inline def whereas(inline handler: PartialFunction[Exception, Any]): Whereas[?] =
-  ${contingency.internal.whereas('handler)}
-
-
 transparent inline def recover(inline handler: PartialFunction[Exception, Any]): Recovery[?] =
   ${contingency.internal.recoverBuild('handler)}
 

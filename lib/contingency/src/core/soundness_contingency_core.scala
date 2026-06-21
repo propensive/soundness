@@ -39,7 +39,7 @@ export
       ExpectationError, Fatal, Foci, focus, HaltTactic, handle, Handler, lest, Mitigable, mitigate,
       Mitigation, mitigates, OptionalTactic, Pointer, raise, raises, recover, Recovery, safely,
       survive, Tactic, throwErrors, ThrowTactic, track, TrackFoci, Tracking, tracks, TrackTactic,
-      Unchecked, unsafely, Validate, validate, Validation, whereas, Whereas }
+      Unchecked, unsafely, Validate, validate, Validation }
 
 package strategies:
   export

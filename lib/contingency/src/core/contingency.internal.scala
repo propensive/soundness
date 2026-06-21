@@ -296,27 +296,6 @@ object internal:
       }
 
 
-  def whereas(handler: Expr[PartialFunction[Exception, Any]])
-    ( using Quotes )
-  :   Expr[Whereas[?]] =
-
-    import quotes.reflect.*
-
-    val errors = mapping[Exception](handler.asTerm)
-    val tactics = errors.keys.to(List).map(_.typeRef).map(TypeRepr.of[Tactic].appliedTo(_))
-    val functionType = defn.FunctionClass(errors.size, true).typeRef
-
-    val typeLambda =
-      TypeLambda
-        ( List("result"),
-          void => List(TypeBounds(TypeRepr.of[Nothing], TypeRepr.of[Any])),
-          typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)) )
-
-    typeLambda.asType.absolve match
-      case '[type typeLambda[_]; typeLambda] =>
-        '{Whereas[typeLambda]($handler)}
-
-
   // The type lambda `[result] => (Tactic[E1], …, Tactic[En]) ?=> result` capturing the handled
   // error types of a `recover`/`mitigate`/`accrue` handler, so `.protect` injects one tactic each.
   private def tacticLambda(using Quotes)(handler: Expr[PartialFunction[Exception, Any]])
@@ -334,7 +313,9 @@ object internal:
         typeLambda => functionType.appliedTo(tactics :+ typeLambda.param(0)) )
 
 
-  def recoverBuild(handler: Expr[PartialFunction[Exception, Any]])(using Quotes): Expr[Recovery[?]] =
+  def recoverBuild(handler: Expr[PartialFunction[Exception, Any]])(using Quotes)
+  :   Expr[Recovery[?]] =
+
     tacticLambda(handler).asType.absolve match
       case '[type typeLambda[_]; typeLambda] => '{Recovery[typeLambda]($handler)}
 
@@ -424,7 +405,7 @@ object internal:
                       m"There is no available handler for ${TypeRepr.of[errorType].show}" )
 
       case _ =>
-        halt(648, m"argument to `whereas` should be a partial function implemented as match cases")
+        halt(648, m"argument to `mitigate` should be a partial function written as match cases")
 
     val method = TypeRepr.of[context[result]].typeSymbol.declaredMethod("apply").head
     body.asTerm.select(method).appliedToArgs(tactics.to(List)).asExprOf[result]
@@ -439,7 +420,7 @@ object internal:
 
     ' {
         scala.util.boundary[result]: label ?=>
-          val tactic: Tactic[Whereas.Escape[result]] = Whereas.EscapeTactic(label)
+          val tactic: Tactic[Recovery.Escape[result]] = Recovery.EscapeTactic(label)
 
           $ {
               import quotes.reflect.*
@@ -451,7 +432,7 @@ object internal:
                   halt
                     ( 29,
                       m"""
-                        argument to `whereas` should be a partial function implemented as match
+                        argument to `recover` should be a partial function implemented as match
                         cases
                       """ )
 
@@ -460,7 +441,7 @@ object internal:
               val tactics = mapping[Exception](partialFunction).map: (_, _) =>
                 ' {
                     tactic.contramap: error =>
-                      Whereas.Escape[result]($pfExpr(error).asInstanceOf[result])
+                      Recovery.Escape[result]($pfExpr(error).asInstanceOf[result])
                   }
 
                 . asTerm
@@ -491,8 +472,8 @@ object internal:
         halt(114, m"argument to `accrue` should be a partial function implemented as match cases")
 
     ' {
-        val acc: Whereas.AccrueTactic[Exception, accrual] =
-          Whereas.AccrueTactic[Exception, accrual]($initial, $combine)(using $diagnostics)
+        val acc: Accrual.AccrueTactic[Exception, accrual] =
+          Accrual.AccrueTactic[Exception, accrual]($initial, $combine)(using $diagnostics)
 
         val outcome: Either[accrual, result] =
           try Right:
