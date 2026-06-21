@@ -35,7 +35,7 @@ package symbolism
 import prepositional.*
 
 object Negatable:
-  def apply[operand, result](lambda: operand => result): operand is Negatable to result =
+  def apply[operand, result](lambda: operand -> result): operand is Negatable to result =
     new Negatable:
       type Self = operand
       type Result = result
