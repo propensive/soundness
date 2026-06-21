@@ -35,15 +35,16 @@ package soundness
 export
   aviation
   . { am, AlexandrianCalendar, Anniversary, Apr, Aug, Base24, base24Extractable, Base60,
-      base60Extractable, Calendar, Clock, Clockface, CopticCalendar, CopticMonth, Date,
+      base60Extractable, Calendar, Chronometry, Clock, Clockface, CopticCalendar, CopticMonth, Date,
       DateNumerics, DateSeparation, Day, Dec, dur,
       Disambiguation, Duration, Endianness, EthiopianCalendar, EthiopianMonth, Feb,
       FrenchRepublicanCalendar, FrenchRepublicanMonth, Fri, Hebdomad, Holiday, Holidays, Horology,
       HebrewCalendar, HebrewMonth, Hour, IndianCalendar, IndianMonth, Instant, IslamicCalendar,
       GapPolicy, IslamicMonth, Iso8601, Jan, Jul, Jun, Leap, LeapSeconds, Mar, May,
       Meridiem, Minute, Moment, Mon, Month, Months, Monthstamp, Nov, now, Occurrence, Oct,
-      OffsetCalendar, Period, PersianCalendar, PersianMonth, pm, Regime, Rfc1123, RomanCalendar,
-      Sat, Sep, Sun, Thu, TaiInstant, TimeError, TimeEvent, TimeFormat, TimeNumerics,
+      OffsetCalendar, Period, PersianCalendar, PersianMonth, pm, Posix, Regime, Rfc1123,
+      RomanCalendar, Tai,
+      Sat, Sep, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics,
       TimeSeparation, TimeSpecificity, Timespan, Timestamp, TimestampError, Timezone, TimezoneError,
       today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Week, WeekDate, Weekday, Weekdays,
       WorkingDays, Year, Years }
@@ -63,8 +64,8 @@ package monthEnds:
 package gapPolicies:
   export aviation.gapPolicies.{pushBackward, rejectGap}
 
-package leapSeconds:
-  export aviation.leapSeconds.{step, smear}
+package chronometries:
+  export aviation.chronometries.{posix, atomic}
 
 package dateFormats:
   export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,

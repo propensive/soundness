@@ -242,14 +242,14 @@ object Timespan:
     val whole = days*86400 + span.hours.toLong*3600 + span.minutes.toLong*60
     Quantity[Seconds[1]](whole.toDouble) + span.seconds
 
-  // A regular timespan (no Month/Year) is a fixed physical duration, so it adds to/subtracts from a
-  // bare `Instant`; an irregular span cannot (it needs a calendar — add it to a date instead).
-  given instantPlus: [topic <: Radix] => NotGiven[topic <:< Radix.Irregular]
-  =>  Instant is Addable by (Timespan of topic) to Instant =
+  // A regular timespan (no Month/Year) is a fixed physical duration, so it adds to/subtracts from an
+  // `Instant` (on any timeline); an irregular span cannot (it needs a calendar — add it to a date).
+  given instantPlus: [transport, topic <: Radix] => NotGiven[topic <:< Radix.Irregular]
+  =>  (Instant over transport) is Addable by (Timespan of topic) to (Instant over transport) =
     (instant, span) => instant + physicalSeconds(span)
 
-  given instantMinus: [topic <: Radix] => NotGiven[topic <:< Radix.Irregular]
-  =>  Instant is Subtractable by (Timespan of topic) to Instant =
+  given instantMinus: [transport, topic <: Radix] => NotGiven[topic <:< Radix.Irregular]
+  =>  (Instant over transport) is Subtractable by (Timespan of topic) to (Instant over transport) =
     (instant, span) => instant - physicalSeconds(span)
 
   // Adding a timespan to a (zoneless) timestamp applies the date/calendar part to the date (reusing

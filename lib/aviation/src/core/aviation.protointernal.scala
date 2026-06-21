@@ -43,104 +43,14 @@ import rudiments.*
 import symbolism.*
 
 object protointernal:
+  // An `Instant` is an absolute point in time, stored as a `Long` whose interpretation — which
+  // timeline it counts on (Unix/POSIX, TAI, …) — is the phantom `Transport` set by `over`. So
+  // `Instant over Posix` and `Instant over Tai` are distinct types over the same grid; a
+  // `Chronometry` given converts between them (through TAI). The unrefined `Instant` is abstract in
+  // its chronometry and is rarely used directly.
   opaque type Instant = Long
-  opaque type TaiInstant = Long
 
-  object TaiInstant:
-    def apply(taiMillis: Long): TaiInstant = taiMillis
-
-    extension (tai: TaiInstant)
-      def long: Long = tai
-
-      // The inverse of `Instant.tai`: recover the Unix `Instant` from this `TaiInstant`. Only a
-      // `Reversible` strategy (e.g. `smear`) can do this; `step` is not reversible.
-      def instant(using strategy: LeapSeconds.Reversible): Instant = strategy.unix(tai)
-
-    inline given underlying: Underlying[TaiInstant, Long] = !!
-
-
-    given generic
-    :   protointernal.TaiInstant is Abstractable & Instantiable across Instants to Long from Long =
-
-      new Abstractable with Instantiable:
-        type Self = protointernal.TaiInstant
-        type Origin = Long
-        type Result = Long
-        type Domain = Instants
-        def apply(long: Long): protointernal.TaiInstant = long
-        def genericize(instant: protointernal.TaiInstant): Long = instant
-
-  object InstantSubtractable:
-    given instant: Instant is InstantSubtractable to Duration = new InstantSubtractable:
-      type Self = Instant
-      type Result = Duration
-
-      def subtract(left: Instant, right: Instant): Duration = Quantity((left - right)/1000.0)
-
-
-    given duration: [units <: Measure: Normalizable to Seconds[1]]
-    =>  Quantity[units] is InstantSubtractable to Instant =
-
-      new InstantSubtractable:
-        type Self = Quantity[units]
-        type Result = Instant
-
-        def subtract(left: Instant, right: Quantity[units]): Instant =
-          left - (right.normalize.value*1000.0).toLong
-
-  trait InstantSubtractable extends Typeclass, Resultant:
-    def subtract(left: Instant, right: Self): Result
-
-  object Instant:
-    final val Min: Instant = Long.MinValue
-    final val Max: Instant = Long.MaxValue
-
-    def apply[instant: Abstractable across Instants to Long](instant: instant): Instant =
-      instant.generic
-
-    inline given underlying: Underlying[Instant, Long] = !!
-
-
-    given generic
-    :   protointernal.Instant is Abstractable & Instantiable across Instants to Long from Long =
-
-      new Abstractable with Instantiable:
-        type Self = protointernal.Instant
-        type Result = Long
-        type Origin = Long
-        type Domain = Instants
-        def apply(long: Long): protointernal.Instant = long
-        def genericize(instant: protointernal.Instant): Long = instant
-
-
-    inline given orderable: Instant is Orderable:
-      inline def compare
-        ( inline left:        Instant,
-          inline right:       Instant,
-          inline strict:      Boolean,
-          inline greaterThan: Boolean )
-      :   Boolean =
-
-        if left.long == right.long then !strict else (left.long < right.long) ^ greaterThan
-
-    given ordering: Ordering[Instant] = Ordering.Long
-
-
-    given plus: [units <: Measure: Normalizable to Seconds[1]]
-    =>  Instant is Addable by Quantity[units] to Instant = new Addable:
-
-      type Self = Instant
-      type Operand = Quantity[units]
-      type Result = Instant
-
-      def add(instant: Instant, duration: Quantity[units]): Instant =
-        instant + (duration.normalize.value*1000.0).toLong
-
-
-    given minus: [operand: InstantSubtractable]
-    =>  Instant is Subtractable by operand to operand.Result =
-
-      operand.subtract(_, _)
+  private def raw(instant: Instant): Long = instant
 
   type Duration = Quantity[Seconds[1]]
 
@@ -163,16 +73,81 @@ object protointernal:
         def genericize(duration: Quantity[units]): Long =
           (duration.normalize.value*1_000_000_000L).toLong
 
+  object Instant:
+    def Min[transport]: Instant over transport = Long.MinValue.asInstanceOf[Instant over transport]
+    def Max[transport]: Instant over transport = Long.MaxValue.asInstanceOf[Instant over transport]
 
-  extension (instant: into[Instant])
+    // Construct in an explicit chronometry (grounding code uses `Instant.of[Posix]`).
+    def of[transport](millis: Long): Instant over transport =
+      millis.asInstanceOf[Instant over transport]
+
+    // Construct in the import-selected default chronometry.
+    def apply(millis: Long)(using ambient: Chronometry.Ambient): Instant over ambient.Transport =
+      millis.asInstanceOf[Instant over ambient.Transport]
+
+    inline given underlying: [transport] => Underlying[Instant over transport, Long] = !!
+
+
+    // Generic interop: an instant on any timeline abstracts to/from an epoch `Long` (the `Long` is
+    // tagged with the transport, not reinterpreted — conversion between timelines is `.over`).
+    given generic: [transport]
+    =>  (Instant over transport) is Abstractable & Instantiable across Instants to Long from Long =
+
+      new Abstractable with Instantiable:
+        type Self = Instant over transport
+        type Origin = Long
+        type Result = Long
+        type Domain = Instants
+        def apply(long: Long): Self = long.asInstanceOf[Self]
+        def genericize(instant: Self): Long = raw(instant)
+
+
+    inline given orderable: [transport] => (Instant over transport) is Orderable:
+      inline def compare
+        ( inline left:        Instant over transport,
+          inline right:       Instant over transport,
+          inline strict:      Boolean,
+          inline greaterThan: Boolean )
+      :   Boolean =
+
+        if left.long == right.long then !strict else (left.long < right.long) ^ greaterThan
+
+    given ordering: [transport] => Ordering[Instant over transport] =
+      Ordering.Long.asInstanceOf[Ordering[Instant over transport]]
+
+
+    given plus: [transport, units <: Measure: Normalizable to Seconds[1]]
+    =>  (Instant over transport) is Addable by Quantity[units] to (Instant over transport) =
+      (instant, duration) =>
+        Instant.of(raw(instant) + (duration.normalize.value*1000.0).toLong)
+
+    // The difference of two instants on the same timeline is a `Duration` measured in that
+    // timeline's seconds; subtracting across timelines is a type error (convert with `.over` first).
+    given minus: [transport]
+    =>  (Instant over transport) is Subtractable by (Instant over transport) to Duration =
+      (left, right) => Quantity((raw(left) - raw(right))/1000.0)
+
+    given minusDuration: [transport, units <: Measure: Normalizable to Seconds[1]]
+    =>  (Instant over transport) is Subtractable by Quantity[units] to (Instant over transport) =
+      (instant, duration) =>
+        Instant.of(raw(instant) - (duration.normalize.value*1000.0).toLong)
+
+
+  extension [transport](instant: Instant over transport)
+    def long: Long = raw(instant)
+
+    // Re-interpret this instant on another timeline, composing through TAI.
+    def over[target](using from: transport is Chronometry, to: target is Chronometry)
+    :   Instant over target =
+      Instant.of(to.fromTai(from.toTai(raw(instant))))
+
     @targetName("to")
-    infix def ~ (that: into[Instant]): Period = Period(instant, that)
+    infix def ~ (that: Instant over transport): Period[transport] = Period(instant, that)
 
-    def tai(using strategy: LeapSeconds.Strategy): TaiInstant = strategy.tai(instant)
-
-    infix def in (using RomanCalendar)(timezone: Timezone): Moment =
+    infix def in (using RomanCalendar, transport is Chronometry)(timezone: Timezone): Moment =
+      val unix = instant.over[Posix].long
       val zone = jt.ZoneId.of(timezone.name.s).nn
-      val zonedTime = jt.Instant.ofEpochMilli(instant).nn.atZone(zone).nn
+      val zonedTime = jt.Instant.ofEpochMilli(unix).nn.atZone(zone).nn
 
       val date = zonedTime.getMonthValue.absolve match
         case Month(month) =>
@@ -192,11 +167,10 @@ object protointernal:
 
       Moment(date, time, timezone, if laterOffset then Occurrence.Second else Occurrence.First)
 
-    def timestamp(using calendar: RomanCalendar, timezone: Timezone): Timestamp =
-      in(timezone).timestamp
-
-    def long: Long = instant
+    def timestamp(using RomanCalendar, transport is Chronometry, Timezone): Timestamp =
+      in(summon[Timezone]).timestamp
 
 
   extension (duration: into[Duration])
-    def from(instant: into[Instant]): Period = Period(instant, Instant.plus.add(instant, duration))
+    def from[transport](instant: Instant over transport): Period[transport] =
+      Period(instant, Instant.plus.add(instant, duration))

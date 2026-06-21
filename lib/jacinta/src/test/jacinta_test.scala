@@ -854,6 +854,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       import decodables.instantJsonDecodable
       import decodables.durationJsonDecodable
       import aviation.*
+      import chronometries.posix
       import abstractables.instantAbstractable
 
       test(m"Encode an Instant as a Long"):
@@ -861,11 +862,11 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == t"1700000000000")
 
       test(m"Decode an Instant from a Long"):
-        t"1700000000000".read[Json].as[Instant].long
+        t"1700000000000".read[Json].as[Instant over Posix].long
       . assert(_ == 1700000000000L)
 
       test(m"Round-trip an Instant"):
-        Instant(1234567890L).json.as[Instant].long
+        Instant(1234567890L).json.as[Instant over Posix].long
       . assert(_ == 1234567890L)
 
       test(m"Encode a Duration as a Long of milliseconds"):

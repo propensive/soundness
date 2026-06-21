@@ -291,9 +291,8 @@ object timestampInternal:
 
       . nn
 
-    def instant(using timezone: Timezone, calendar: RomanCalendar): Instant =
-      import abstractables.instantAbstractable
-      Instant(timestamp.stdlib.atZone(timezone.stdlib).nn.toInstant.nn.toEpochMilli())
+    def instant(using timezone: Timezone, calendar: RomanCalendar): Instant over Posix =
+      Instant.of[Posix](timestamp.stdlib.atZone(timezone.stdlib).nn.toInstant.nn.toEpochMilli())
 
   // Comparisons are defined on `Timestamp` (the whole grid is monotonic); `Date`, being a
   // `Timestamp in Day`, inherits them.

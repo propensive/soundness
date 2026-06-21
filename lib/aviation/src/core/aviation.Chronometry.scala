@@ -30,35 +30,39 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package stratiform
+package aviation
 
-import anticipation.*
-import aviation.*
-import contingency.*
 import prepositional.*
 
-// Aviation integration: encode TEL atom values to/from Aviation's
-// Instant and Duration types. Mirroring jacinta.time, the codecs are
-// scoped to package objects so they're imported explicitly and don't
-// clash with project-wide default encodings.
+// A `Chronometry` interprets the underlying `Long` of an `Instant over X`: which timeline `X`
+// counts on, expressed as a conversion to and from TAI (International Atomic Time) — the one
+// strictly-linear scale, counting every SI second with no discontinuities. Conversions between any
+// two chronometries compose through TAI. Each chronometry is a distinct marker type (`Tai`,
+// `Posix`, …); the phantom `X` in `Instant over X` tags an instant with its chronometry at the type
+// level, so instants on different timelines never mix without an explicit `.over[…]` conversion.
+//
+// (v1 works in milliseconds; sub-millisecond timelines such as `Monotonic` or nanosecond clocks are
+// a later extension, where the conversion's working unit becomes part of the chronometry.)
+object Chronometry:
+  // The default chronometry for instants that don't state one — selected by importing one of the
+  // `chronometries.*` givens (e.g. `import chronometries.posix`). It names the marker type so a
+  // constructed `Instant` takes that chronometry at the type level.
+  trait Ambient:
+    type Transport
+    def chronometry: Transport is Chronometry
 
-package encodables:
-  given instantTelEncodable: (Instant over Posix) is Tel.Encodable =
-    Tel.Encodable(Morphology.Whole): instant => Tel.scalar(instant.long.toString.tt)
+  // TAI itself: the identity interpretation.
+  given tai: Tai is Chronometry:
+    def toTai(value: Long): Long = value
+    def fromTai(tai: Long): Long = tai
 
-  given durationTelEncodable: Duration is Tel.Encodable =
-    Tel.Encodable(Morphology.Whole): duration =>
-      Tel.scalar((duration.value*1000).toLong.toString.tt)
+  // Unix/POSIX time: leap seconds aren't counted, so the offset from TAI grows by one second at
+  // each leap. `fromTai` is the (table-driven) inverse; a TAI value inside an inserted leap second
+  // has no Unix preimage and maps to the following second by convention.
+  given posix: Posix is Chronometry:
+    def toTai(value: Long): Long = LeapSeconds.tai(value)
+    def fromTai(tai: Long): Long = LeapSeconds.untai(tai)
 
-package decodables:
-  given instantTelDecodable: Tactic[TelError]
-  =>  (Instant over Posix) is Tel.Decodable =
-    Tel.Decodable(Morphology.Whole): tel =>
-      try Instant.of[Posix](tel.primaryAtom.s.toLong)
-      catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
-
-  given durationTelDecodable: Tactic[TelError]
-  =>  Duration is Tel.Decodable =
-    Tel.Decodable(Morphology.Whole): tel =>
-      try Duration(tel.primaryAtom.s.toLong)
-      catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
+trait Chronometry extends Typeclass:
+  def toTai(value: Long): Long
+  def fromTai(tai: Long): Long

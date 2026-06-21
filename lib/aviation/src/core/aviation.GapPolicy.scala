@@ -32,6 +32,8 @@
                                                                                                   */
 package aviation
 
+import prepositional.*
+
 // A `GapPolicy` resolves a spring-forward DST gap — a wall-clock time that never occurs because the
 // clocks jump forward over it (e.g. 02:30 when 02:00 becomes 03:00). Grounding such a `Moment` to
 // an `Instant` is ambiguous: it can be nudged into the new offset (`forward`, the instant you get
@@ -48,4 +50,4 @@ object GapPolicy:
   given pushForward: GapPolicy = (forward, _) => forward
 
 trait GapPolicy:
-  def resolve(forward: Instant, backward: Instant): Instant
+  def resolve(forward: Instant over Posix, backward: Instant over Posix): Instant over Posix

@@ -94,6 +94,19 @@ object LeapSeconds:
 
       unixTime + low + (high - low)*(unixTime - (hi - window))/(2*window)
 
+  // The inverse of `tai` (the discrete step): recover Unix time from a TAI value. `tai` is strictly
+  // increasing but skips the inserted leap second, so a TAI value inside that second has no Unix
+  // preimage; the closest-match binary search maps it to the following second by convention.
+  def untai(taiMillis: Long): Long =
+    var lo = taiMillis - 100000L
+    var hi = taiMillis + 100000L
+
+    while hi - lo > 1 do
+      val mid = lo + (hi - lo)/2
+      if tai(mid) < taiMillis then lo = mid else hi = mid
+
+    if taiMillis - tai(lo) <= tai(hi) - taiMillis then lo else hi
+
   // The inverse of `smearTai`: recover the Unix time from a smeared-TAI value. `smearTai` is
   // strictly increasing (its slope is 1 ± 1/86400), so it is invertible; and the TAI−UTC offset is
   // well under 100 seconds (and fixed after 2035), so the Unix time lies in a narrow band around
@@ -108,18 +121,3 @@ object LeapSeconds:
       if smearTai(mid) < taiMillis then lo = mid else hi = mid
 
     if taiMillis - smearTai(lo) <= smearTai(hi) - taiMillis then lo else hi
-
-  // How leap seconds are accounted for when converting a (Unix) `Instant` to a `TaiInstant`. The
-  // ambient default is `ignored` (future leap seconds are unknowable); `import leapSeconds.step` or
-  // `leapSeconds.smear` opts into counting or smearing them. A `Reversible` strategy also defines
-  // the inverse `TaiInstant`→`Instant` conversion; the discrete `step` has no inverse (the inserted
-  // second has no Unix preimage), so it is a plain `Strategy`.
-  trait Strategy:
-    def tai(unixMillis: Long): Long
-
-  trait Reversible extends Strategy:
-    def unix(taiMillis: Long): Long
-
-  given ignored: Reversible:
-    def tai(unixMillis: Long): Long = unixMillis
-    def unix(taiMillis: Long): Long = taiMillis

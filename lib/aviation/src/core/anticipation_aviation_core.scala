@@ -37,15 +37,9 @@ import prepositional.*
 import quantitative.*
 
 package interfaces.instants:
-  given aviationInstant
-  :   protointernal.Instant is Abstractable & Instantiable across Instants to Long from Long =
-
-    new Abstractable with Instantiable:
-      type Self = protointernal.Instant
-      type Origin = Long
-      type Result = Long
-      type Domain = Instants
-      export protointernal.Instant.generic.{genericize, apply}
+  given aviationInstant: [transport]
+  =>  (Instant over transport) is Abstractable & Instantiable across Instants to Long from Long =
+    Instant.generic[transport]
 
 package interfaces.durations:
   given aviationDuration: [units <: Measure: Normalizable to Seconds[1]]
