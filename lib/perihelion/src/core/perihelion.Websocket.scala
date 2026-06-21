@@ -222,10 +222,10 @@ class Websocket[message, state]
     state
 
   val task: Task[state] = async:
-    whereas:
+    recover:
       case error: WebsocketError =>
         safely(channel.close(error.reason.closeCode))
         initial
 
-    . recover:
+    . protect:
         loop(Reader(() => request.body(), channel).messages, initial)

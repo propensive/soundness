@@ -72,11 +72,11 @@ def disassemble(using codepoint: Codepoint)(code0: Quotes ?=> Expr[Any])(using T
 
   given compiler: staging.Compiler = staging.Compiler.make(classloader.java)(using settings)
 
-  whereas:
+  mitigate:
     case IoError(_, _, _, _) => BytecodeError(BytecodeError.Reason.ClassfileMissing)
     case StreamError(_)      => BytecodeError(BytecodeError.Reason.ClassfileUnreadable)
 
-  . mitigate:
+  . protect:
       val file: Path on Linux = out/"Generated$$Code$$From$$Quoted.class"
       val code: Quotes ?=> Expr[Unit] = '{def _code(): Unit = $code0}
       staging.run(code)

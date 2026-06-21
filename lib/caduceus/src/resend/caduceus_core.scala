@@ -101,14 +101,14 @@ package couriers:
 
       def error = CourierError(envelope.from, envelope.to.head, envelope.subject)
 
-      whereas:
+      mitigate:
         case ConnectError(reason)     => Out.println(reason.communicate) yet error
         case ParseError(_, _, reason) => Out.println(reason.describe) yet error
         case HttpError(status, _)     => Out.println(status.communicate) yet error
         case JsonError(reason)        => Out.println(reason.communicate) yet error
         case MediaTypeError(_, _)     => error
 
-      . mitigate:
+      . protect:
           url"https://api.resend.com/emails".submit
             ( Http.Post, authorization = Auth.Bearer(apiKey.key) )
             ( request.json )

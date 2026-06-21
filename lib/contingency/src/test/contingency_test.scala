@@ -63,117 +63,93 @@ object Tests extends Suite(m"Contingency"):
     "fallback"
 
   def run(): Unit =
-    suite(m"whereas / recover / mitigate / accrue"):
+    suite(m"recover / mitigate / accrue"):
       test(m"Ensure varargs parameter is handled exhaustively"):
         demilitarize:
-          whereas:
+          recover:
             case VarargsError(arguments) => ()
-          . recover(action())
+          . protect(action())
 
       . assert(_.nonEmpty)
 
       test(m"Varargs are handled safely"):
-        whereas:
+        recover:
           case VarargsError(arguments*) => ()
-        . recover(action())
+        . protect(action())
       . assert()
 
-      test(m"Recover substitutes a value for a raised error"):
-        whereas:
+      test(m"recover substitutes a value for a raised error"):
+        recover:
           case ErrorA(n) => s"recovered:$n"
-        . recover(failA(7))
+        . protect(failA(7))
       . assert(_ == "recovered:7")
 
-      test(m"Recover passes through body value when no error"):
-        whereas:
+      test(m"recover passes through the body value when no error"):
+        recover:
           case ErrorA(_) => "recovered"
-        . recover(succeedStr("ok"))
+        . protect(succeedStr("ok"))
       . assert(_ == "ok")
 
-      test(m"Recover handles the correct case among alternatives"):
-        whereas:
+      test(m"recover handles the correct case among alternatives"):
+        recover:
           case ErrorA(n) => s"a:$n"
           case ErrorB(n) => s"b:$n"
-        . recover(failB(3))
+        . protect(failB(3))
       . assert(_ == "b:3")
 
-      test(m"Mitigate transforms an inner error to an outer type"):
-        whereas:
+      test(m"mitigate transforms an inner error to an outer type"):
+        recover:
           case ErrorB(n) => n
-        . recover:
-            whereas:
+        . protect:
+            mitigate:
               case ErrorA(n) => ErrorB(n + 100)
-            . mitigate:
+            . protect:
                 raise(ErrorA(5))
                 0
       . assert(_ == 105)
 
       test(m"Mitigation chain: A becomes B becomes C"):
-        whereas:
+        recover:
           case ErrorC(n) => n
-        . recover:
-            whereas:
+        . protect:
+            mitigate:
               case ErrorB(n) => ErrorC(n + 10)
-            . mitigate:
-                whereas:
+            . protect:
+                mitigate:
                   case ErrorA(n) => ErrorB(n + 1)
-                . mitigate:
+                . protect:
                     raise(ErrorA(4))
                     0
       . assert(_ == 15)
 
-      test(m"Accrue collects multiple raises into the outer recovery"):
-        whereas:
-          case Accumulated(values) => values
-        . recover:
-            whereas:
-              case ErrorA(_) => ()
-            . accrue(Accumulated(Nil)):
-                (sum, ex) => ex match
-                  case ErrorA(n) => Accumulated(sum.values :+ n)
-                  case _         => sum
-            . and:
-                raise(ErrorA(1))
-                raise(ErrorA(2))
-                List.empty[Int]
+      test(m"accrue folds multiple raises into one accrual error"):
+        capture[Accumulated]:
+          accrue(Accumulated(Nil)) { (sum, ex) => ex match
+            case ErrorA(n) => Accumulated(sum.values :+ n)
+            case _         => sum
+          } { case ErrorA(_) => () }
+          . protect:
+              raise(ErrorA(1))
+              raise(ErrorA(2))
+              ()
+
+        . values
       . assert(_ == List(1, 2))
 
-      test(m"Accrue passes the body value through when nothing raised"):
-        whereas:
-          case Accumulated(_) => "error"
-        . recover:
-            whereas { case ErrorA(_) => () }.accrue(Accumulated(Nil))((sum, _) => sum):
-              "clean"
-      . assert(_ == "clean")
-
-      test(m"whereas.recover should compile inside `inline def` (see #534)"):
+      test(m"recover compiles inside an `inline def` (see #534)"):
         demilitarize:
           inline def inlineRecover: String =
-            whereas:
+            recover:
               case ErrorA(n) => s"recovered:$n"
-            . recover(failA(7))
+            . protect(failA(7))
           inlineRecover
       . aspire(_.isEmpty)
 
-      test(m"whereas.mitigate should compile inside `inline def` (see #534)"):
-        demilitarize:
-          inline def inlineMitigate: Int =
-            whereas:
-              case ErrorB(n) => n
-            . recover:
-                whereas:
-                  case ErrorA(n) => ErrorB(n + 100)
-                . mitigate:
-                    raise(ErrorA(5))
-                    0
-          inlineMitigate
-      . aspire(_.isEmpty)
-
-      test(m"whereas.recover works inside `inline def` via a non-inline helper"):
+      test(m"recover works inside an `inline def` via a non-inline helper"):
         def helperRecover: String =
-          whereas:
+          recover:
             case ErrorA(n) => s"recovered:$n"
-          . recover(failA(7))
+          . protect(failA(7))
 
         inline def inlineRecover: String = helperRecover
         inlineRecover
@@ -181,9 +157,9 @@ object Tests extends Suite(m"Contingency"):
 
     suite(m"raise / abort / raises type"):
       test(m"Method with raises is callable under an in-scope Tactic"):
-        whereas:
+        recover:
           case ErrorA(_) => t"unused"
-        . recover(succeed(t"hello"))
+        . protect(succeed(t"hello"))
       . assert(_ == t"hello")
 
       test(m"val without ascription gets the result type, not Tactic ?=> T"):
@@ -403,9 +379,9 @@ object Tests extends Suite(m"Contingency"):
       test(m"defer holds the unapplied body; apply() runs it under the in-scope tactic"):
         def failing(n: Int): String raises ErrorA = raise(ErrorA(n)) yet "fallback"
 
-        whereas:
+        recover:
           case ErrorA(n) => s"recovered:$n"
-        . recover:
+        . protect:
             val held = contingency.defer(failing(7))
             held()
       . assert(_ == "recovered:7")
@@ -416,9 +392,9 @@ object Tests extends Suite(m"Contingency"):
           counter += 1
           counter
 
-        whereas:
+        recover:
           case ErrorA(_) => -1
-        . recover:
+        . protect:
             val held = contingency.defer(increment())
             held()
             held()
@@ -426,9 +402,9 @@ object Tests extends Suite(m"Contingency"):
       . assert(_ == 3)
 
       test(m"defer of a plain value is identity-with-wrapping"):
-        whereas:
+        recover:
           case ErrorA(n) => n
-        . recover:
+        . protect:
             contingency.defer(17)()
       . assert(_ == 17)
 
@@ -492,9 +468,9 @@ object Tests extends Suite(m"Contingency"):
       . assert(_ == 30)
 
       test(m"track collects accrued errors into accrual"):
-        whereas:
+        recover:
           case Accumulated(values) => values
-        . recover:
+        . protect:
             track[Pointer](Accumulated(Nil)):
               case ErrorA(n) => Accumulated(accrual.values :+ n)
             . protect:
@@ -611,14 +587,14 @@ object Tests extends Suite(m"Contingency"):
         try { inner.record(ErrorA(5)); -1 } catch case e: ErrorB => e.value
       . assert(_ == 105)
 
-    suite(m"Whereas internals"):
-      test(m"Whereas.Escape carries a value and has no stack trace"):
-        val e = Whereas.Escape(t"payload")
+    suite(m"Recovery and Accrual internals"):
+      test(m"Recovery.Escape carries a value and has no stack trace"):
+        val e = Recovery.Escape(t"payload")
         e.value == t"payload" && e.fillInStackTrace() == e
       . assert(_ == true)
 
-      test(m"Whereas.AccrueTactic.changed is false before any record"):
-        val acc = Whereas.AccrueTactic[ErrorA, Accumulated]
+      test(m"Accrual.AccrueTactic.changed is false before any record"):
+        val acc = Accrual.AccrueTactic[ErrorA, Accumulated]
           (Accumulated(Nil), (sum, ex) => ex match
             case ErrorA(n) => Accumulated(sum.values :+ n)
             case _         => sum)
@@ -626,8 +602,8 @@ object Tests extends Suite(m"Contingency"):
         acc.changed
       . assert(_ == false)
 
-      test(m"Whereas.AccrueTactic.accumulated reflects records"):
-        val acc = Whereas.AccrueTactic[ErrorA, Accumulated]
+      test(m"Accrual.AccrueTactic.accumulated reflects records"):
+        val acc = Accrual.AccrueTactic[ErrorA, Accumulated]
           (Accumulated(Nil), (sum, ex) => ex match
             case ErrorA(n) => Accumulated(sum.values :+ n)
             case _         => sum)

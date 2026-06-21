@@ -52,7 +52,7 @@ extends RequestServable:
 
     def handle(exchange: csnh.HttpExchange | Null): Unit =
       try
-        whereas:
+        recover:
           case StreamError(length) =>
             Log.warn(HttpServerEvent.BrokenStream(length))
 
@@ -64,7 +64,7 @@ extends RequestServable:
               exchange.nn.close()
             catch case NonFatal(_) => ()
 
-        . recover:
+        . protect:
             val connection = HttpConnection(exchange.nn)
 
             connection.respond:

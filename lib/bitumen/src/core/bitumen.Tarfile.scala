@@ -306,10 +306,10 @@ object Tarfile:
   private def decodePath(text: Text): TarRef raises TarError =
     import errorDiagnostics.emptyDiagnostics
 
-    whereas:
+    mitigate:
       case PathError(_, _) => TarError(TarError.Reason.BadName(text))
 
-    . mitigate(text.decode[Relative on Tar])
+    . protect(text.decode[Relative on Tar])
 
   private val structuralPaxKeys: Set[Text] = Set(t"path", t"linkpath", t"uname", t"gname")
 

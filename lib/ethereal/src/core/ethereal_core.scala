@@ -94,7 +94,7 @@ def cli[bus <: Matchable](using executive: Executive)
   import stdios.virtualMachineStdio
 
   val name: Text =
-    whereas:
+    recover:
       case PropertyError(_) =>
         val jarFile: Path on Linux = System.properties.java.`class`.path[Text]().pipe: jarFile =>
           safely(jarFile.decode[Path on Linux]).or:
@@ -174,7 +174,7 @@ def cli[bus <: Matchable](using executive: Executive)
               if localRunner.exists() then localRunner.open(_.stream[Data].read[Data])
               else if cacheRunner.exists() then cacheRunner.open(_.stream[Data].read[Data])
               else
-                whereas:
+                mitigate:
                   case RunnerError(detail) =>
                     Out.println(detail.text)
                     Exit.Fail(1).terminate()
@@ -187,7 +187,7 @@ def cli[bus <: Matchable](using executive: Executive)
                     Out.println(e"The runner stub download was interrupted")
                     Exit.Fail(1).terminate()
 
-                . mitigate:
+                . protect:
                     import filesystemOptions.overwritePreexisting.disabled
                     Out.println(e"Downloading $runnerName from runners-${Runners.version}")
                     val bytes: Data = Runners.download(platformLabel)
@@ -220,12 +220,12 @@ def cli[bus <: Matchable](using executive: Executive)
 
                   raw
 
-            whereas:
+            mitigate:
               case AssemblyError(_) =>
                 Out.println(e"Runner binary does not contain the ETHRCFG\\x02 magic marker")
                 Exit.Fail(1).terminate()
 
-            . mitigate:
+            . protect:
                 Assembler.assemble
                   ( runnerBytes, jarFile, path, platformLabel, buildId, javaMinimum,
                    javaPreferred, jdk, publicKey )
@@ -234,7 +234,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
             Exit.Ok.terminate()
 
-    . recover(System.properties.ethereal.name[Text]())
+    . protect(System.properties.ethereal.name[Text]())
 
   val userId: Optional[Int] = safely(System.properties.ethereal.user.id[Int]())
   val userName: Optional[Text] = safely(System.properties.ethereal.user.name[Text]())

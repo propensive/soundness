@@ -130,7 +130,7 @@ object Repackager:
       bootstrapClass: Data )
   :   Summary raises RepackageError =
 
-    whereas:
+    mitigate:
       case IoError(_, _, _, _)  => RepackageError(m"a filesystem error occurred while repackaging")
       case StreamError(_)       => RepackageError(m"a stream error occurred while repackaging")
       case ZipError(reason)     => RepackageError(m"the JAR could not be read or written ($reason)")
@@ -138,7 +138,7 @@ object Repackager:
       case NumberError(_, _, _) => RepackageError(m"the manifest contained malformed data")
       case FqcnError(_, _)      => RepackageError(m"the Main-Class is not a valid class name")
 
-    . mitigate:
+    . protect:
         val resource: Text = burdock.internal.ResourcePath.tt
         val bootstrapName: Text = t"burdock/Bootstrap.class"
         var manifestData: Optional[Data] = Unset

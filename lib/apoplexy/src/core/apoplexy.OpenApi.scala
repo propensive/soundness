@@ -285,13 +285,13 @@ object OpenApi:
   given aggregable: Tactic[OpenApiError] => OpenApi is Aggregable by Text =
     summon[Text is Aggregable by Text].map: text =>
       val document =
-        whereas:
+        mitigate:
           case ParseError(_, _, _)    => OpenApiError(OpenApiError.Reason.Malformed)
           case JsonError(_)           => OpenApiError(OpenApiError.Reason.Malformed)
           case YamlError(_)           => OpenApiError(OpenApiError.Reason.Malformed)
           case JsonPointerError(_, _) => OpenApiError(OpenApiError.Reason.Malformed)
 
-        . mitigate:
+        . protect:
             if text.trim.starts(t"{") || text.trim.starts(t"[")
             then text.decode[Json].as[OpenApi]
             else text.decode[Yaml].as[OpenApi]

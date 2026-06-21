@@ -42,13 +42,13 @@ extension (shell: Shell)
     ( using WorkingDirectory, Enclave.Tool, Monitor, TemporaryDirectory )
   :   result raises TmuxError logs ExecEvent =
 
-    whereas:
+    mitigate:
       case ExecError(_, _, _)   => TmuxError(TmuxError.Reason.ExecFailed)
       case NumberError(_, _, _) => TmuxError(TmuxError.Reason.SessionDied)
       case IoError(_, _, _, _)  => TmuxError(TmuxError.Reason.ExecFailed)
       case StreamError(_)       => TmuxError(TmuxError.Reason.ExecFailed)
 
-    . mitigate:
+    . protect:
         given tmux: Tmux = Tmux(Uuid().show, summon[WorkingDirectory], width, height, shell)
 
         val path = summon[Enclave.Tool].path.parent.vouch.encode

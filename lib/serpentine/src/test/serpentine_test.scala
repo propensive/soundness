@@ -110,10 +110,10 @@ object Tests extends Suite(m"internal Benchmarks"):
       test(m"Construct a path with a label of a bad type is not permitted"):
         demilitarize:
           var dir: Char = 'x'
-          whereas:
+          recover:
             case NameError(_, _, _) => ()
 
-          . recover:
+          . protect:
               val path = (% / dir / "baz")
         .map(_.message)
 

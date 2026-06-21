@@ -134,10 +134,10 @@ object Bintel:
     val sigLenDecoded =
       import errorDiagnostics.emptyDiagnostics
 
-      whereas:
+      mitigate:
         case _: VarintError => BintelError(BintelError.Reason.VarintError)
 
-      . mitigate(Varint.decode(data, magic.length))
+      . protect(Varint.decode(data, magic.length))
 
     val sigLength = sigLenDecoded.value.toInt
 
@@ -218,10 +218,10 @@ object Bintel:
       i += 1
 
     def varint(at: Int) =
-      whereas:
+      mitigate:
         case _: VarintError => BintelError(BintelError.Reason.VarintError)
 
-      . mitigate(Varint.decode(data, at))
+      . protect(Varint.decode(data, at))
 
     val sigLenD   = varint(magicSelfContained.length)
     val sigStart  = sigLenD.next
@@ -244,11 +244,11 @@ object Bintel:
     // Decode + reconstruct the embedded schema and recompute its signature;
     // any structural failure here is B12.
     val (composed, recomputed) =
-      whereas:
+      mitigate:
         case _: TelError    => BintelError(BintelError.Reason.EmbeddedSchemaUndecodable)
         case _: BintelError => BintelError(BintelError.Reason.EmbeddedSchemaUndecodable)
 
-      . mitigate:
+      . protect:
           val schemaRoot = decode(schemaBody, axiom).asInstanceOf[Tel.Element.Node]
           val baseTels   = Tels.SemanticReconstructor.fromElement(schemaRoot)
           val sig        = SchemaSignature.fromElement(schemaRoot, axiom)
@@ -355,10 +355,10 @@ object Bintel:
     if cursor.offset >= cursor.data.length
     then abort(BintelError(BintelError.Reason.UnexpectedEoi))
 
-    whereas:
+    mitigate:
       case _: VarintError => BintelError(BintelError.Reason.VarintError)
 
-    . mitigate:
+    . protect:
         val decoded = Varint.decode(cursor.data, cursor.offset)
         cursor.offset = decoded.next
         decoded.value

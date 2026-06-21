@@ -121,12 +121,12 @@ object internal:
         val bytes = text.cut(t".")
 
         if bytes.length == 4 then
-          whereas:
+          mitigate:
             case error@NumberError(text, _, _) =>
               given diagnostics: Diagnostics = error.diagnostics
               IpAddressError(Ipv4ByteNotNumeric(text))
 
-          . mitigate:
+          . protect:
               bytes.map(Decodable.int.decoded(_)).pipe: bytes =>
                 for byte <- bytes do
                   if !(0 <= byte <= 255)
@@ -243,12 +243,12 @@ object internal:
   :   Int raises IpAddressError =
 
     val prefix =
-      whereas:
+      mitigate:
         case error@NumberError(_, _, _) =>
           given diagnostics: Diagnostics = error.diagnostics
           IpAddressError(SubnetPrefixNotNumeric(text))
 
-      . mitigate:
+      . protect:
           Decodable.int.decoded(text)
 
     if !(0 <= prefix <= max) then abort(IpAddressError(outOfRange(prefix)))

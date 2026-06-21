@@ -102,7 +102,7 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
 
 
   def handle(request: jsh.HttpServletRequest, response: jsh.HttpServletResponse): Unit =
-    whereas:
+    recover:
       case error @ StreamError(_) =>
         error.printStackTrace(System.out)
 
@@ -110,7 +110,7 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
         error.printStackTrace(System.out)
         try response.setStatus(400) catch case NonFatal(_) => ()
 
-    . recover:
+    . protect:
         val connection = makeConnection(request, response)
         connection.respond(handle(using connection))
 

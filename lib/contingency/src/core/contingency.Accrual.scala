@@ -30,95 +30,59 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package jacinta
+package contingency
 
-import scala.annotation.*
+import language.experimental.pureFunctions
 
-import anticipation.*
-import contingency.*
-import prepositional.*
-import telekinesis.*
-import urticose.*
-import vacuous.*
-import wisteria.*
-import zephyrine.*
-import JsonError.Reason
+import java.util.concurrent.atomic as juca
 
-package jsonPointerRegistries:
-  given standaloneRegistry: JsonPointer.Registry:
-    protected def lookup(url: HttpUrl): Optional[Json] = Unset
+import scala.language.unsafeNulls
 
-  given fetchingRegistry: (Online, HttpEvent is Loggable, HttpClient) => JsonPointer.Registry:
-    protected def lookup(url: HttpUrl): Optional[Json] =
-      recover:
-        case VariantError(_, _, _) => Unset
-        case ConnectError(_)       => Unset
-        case HttpError(_, _)       => Unset
-        case ParseError(_, _, _)   => Unset
-        case JsonError(_)          => Unset
+import fulminate.*
 
-      . protect(url.fetch().receive[Json])
+// Captures an `accrue` handler together with its initial accrual and combining function. Unlike
+// `recover`/`mitigate`, the block may raise *several* covered errors; each is folded into the
+// accrual via `combine`, and if anything accrued, `.protect` aborts the enclosing `Tactic[accrual]`
+// with the accumulated error. `accrue(initial)(combine) { case … => … }.protect { … }`.
+object Accrual:
+  // The `Tactic` injected into an `accrue` block: each covered error is folded into the accrual
+  // rather than escaping; `accumulated`/`changed` report the result to `.protect`.
+  class AccrueTactic[error <: Exception, accrual <: Exception]
+    ( initial: accrual, combine: (accrual, Exception) => accrual )
+    ( using val diagnostics: Diagnostics )
+  extends Tactic[error]:
 
+    private val ref: juca.AtomicReference[accrual] = juca.AtomicReference(initial)
 
-extension (json: Json)
-  // Runtime-checks `json` against the schema for `topic`, then re-types it as a
-  // schema-typed `Json of topic from topic`. The phantom `Topic` records the
-  // current position within the schema (initially the root, `topic`) and `Origin`
-  // records the root schema itself, so that the `Dynamic` navigation macros can
-  // resolve fields and array indices against `topic` at compile time — with no
-  // `dynamicJsonAccess.enabled` import required.
-  //
-  // The conformance check walks `schematic.schema(): JsonSchema` against the
-  // value, raising `JsonError` on the first structural mismatch (wrong type, or a
-  // required field absent).
-  def verify[topic](using decodable: topic is Json.Decodable)
-  :   (Json of topic from topic) raises JsonError =
+    def record(error: Diagnostics ?=> error): Unit =
+      ref.updateAndGet: curr => combine(curr.nn, error(using diagnostics))
 
-    conform(JsonSchema.reify(decodable.shape()), json.root)
-    json.asInstanceOf[Json of topic from topic]
+    def abort(error: Diagnostics ?=> error): Nothing =
+      import scala.unsafeExceptions.canThrowAny
+      record(error)
+      throw accumulated
 
+    def certify(): Unit = ()
 
-// Checks that a `Json.Ast` node conforms to a `JsonSchema`. An absent node is
-// permitted only where the schema is optional; otherwise each variant checks the
-// node's primitive type and recurses into object properties / array items.
-private def conform(schema: JsonSchema, ast: Json.Ast): Unit raises JsonError =
-  inline def mismatch(expected: JsonPrimitive): Unit =
-    raise(JsonError(Reason.NotType(ast.primitive, expected)))
+    def accumulated: accrual = ref.get().nn
+    def changed: Boolean = ref.get().nn != initial
 
-  if ast.isAbsent then (if !schema.optional then raise(JsonError(Reason.Absent))) else schema match
-    case obj: JsonSchema.Object => obj.oneOf match
-      case variants: List[JsonSchema] @scala.unchecked =>
-        if
-          !variants.exists: variant =>
-            safely(conform(variant, ast)).present
-        then
-          mismatch(JsonPrimitive.Object)
+  extension [accrual <: Exception, lambda[_]](inline accrual: Accrual[accrual, lambda])
+    inline def protect[result](inline body: lambda[result])
+      ( using outer: Tactic[accrual], diagnostics: Diagnostics )
+    :   result =
 
-      case _ =>
-        if !ast.isObject then mismatch(JsonPrimitive.Object) else
-          val absent = Json.Ast(Unset)
+      $ {
+          contingency.internal.accrueBody[accrual, lambda, result]
+            ( 'accrual,
+              '{accrual.initial},
+              '{accrual.combine},
+              'body,
+              'outer,
+              'diagnostics )
+        }
 
-          for (key, property) <- obj.properties do
-            val index = ast.objectIndexOf(key.s)
-            conform(property, if index < 0 then absent else ast.objectValue(index))
-
-    case array: JsonSchema.Array =>
-      if !ast.isArray then mismatch(JsonPrimitive.Array)
-      else if array.items.present then
-        val items = array.items.vouch
-        var index = 0
-        val length = ast.arrayLength
-
-        while index < length do
-          conform(items, ast.arrayElement(index))
-          index += 1
-
-    case _: JsonSchema.String  => if !ast.isString  then mismatch(JsonPrimitive.String)
-    case _: JsonSchema.Number  => if !ast.isNumber  then mismatch(JsonPrimitive.Number)
-    case _: JsonSchema.Integer => if !ast.isNumber  then mismatch(JsonPrimitive.Number)
-    case _: JsonSchema.Boolean => if !ast.isBoolean then mismatch(JsonPrimitive.Boolean)
-    case _: JsonSchema.Null    => if !ast.isNull    then mismatch(JsonPrimitive.Null)
-
-    // A `$ref` cannot be resolved without the root schema document, which is not
-    // yet threaded through; such nodes are left unchecked for now.
-    case _: JsonSchema.Ref => ()
+class Accrual[accrual <: Exception, lambda[_]]
+  ( val handler: PartialFunction[Exception, Any],
+    val initial: accrual,
+    val combine: (accrual, Exception) => accrual )

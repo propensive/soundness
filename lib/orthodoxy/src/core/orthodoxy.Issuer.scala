@@ -75,7 +75,7 @@ class Issuer
 
     request.path match
       case OAuthPath =>
-        whereas:
+        mitigate:
           case error@PathError(reason, path) =>
             OAuthError(OAuthError.Reason.Other)
 
@@ -97,7 +97,7 @@ class Issuer
           case error@JsonError(reason) =>
             OAuthError(OAuthError.Reason.InvalidJsonResponse)
 
-        . mitigate:
+        . protect:
             store(session).let: state =>
               val code: Text = request.query.code
 

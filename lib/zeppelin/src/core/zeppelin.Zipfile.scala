@@ -246,11 +246,11 @@ object Zipfile:
       val ref: Path on Zip =
         import errorDiagnostics.emptyDiagnostics
 
-        whereas:
+        mitigate:
           case PathError(_, _)    => ZipError(ZipError.Reason.InvalidName(cleanName))
           case NameError(_, _, _) => ZipError(ZipError.Reason.InvalidName(cleanName))
 
-        . mitigate:
+        . protect:
           // `decode` performs no per-segment validation, so check each name component
           // against `Zip.Rules` (which also forbids the `.`/`..` traversal segments) to
           // make `InvalidName` reachable and reject Zip-Slip / path-traversing entry names.
