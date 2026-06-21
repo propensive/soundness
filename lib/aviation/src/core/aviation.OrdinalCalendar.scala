@@ -32,50 +32,40 @@
                                                                                                   */
 package aviation
 
-import prepositional.*
-import rudiments.*
-import symbolism.*
-import vacuous.*
+import anticipation.*
+import contingency.*
+import gossamer.*
 
-object Period:
-  // Membership is half-open: a point is in the period when `start <= point < finish` (so `finish`
-  // belongs to the next period, not this one). Use it as `period.has(point)`.
-  given inclusive: [point] => (order: Ordering[point]) => (Period[point] is Inclusive by point) =
-    (period, point) => order.lteq(period.start, point) && order.lt(point, period.finish)
+// A calendar with no months: a date is a year plus a day-of-year (1–366) — the ISO-8601 "ordinal
+// date" form, e.g. day 247 of 2024. Year boundaries are delegated to the Gregorian calendar; the
+// single vestigial "month" (`Annus`) spans the whole year, so `diurnal` is the day-of-year.
+object OrdinalCalendar extends Calendar:
+  object Annus extends MonthRadix
+  type Mensual = Annus.type
+  type MonthUnit = Annus.type
 
-  // Split a period into consecutive `length`-long segments. The step is whatever the point can be
-  // advanced by — a `Duration` or `Timespan` for an `Instant over X`, a `Timespan` for a
-  // `Timestamp`/`Moment` (irregular spans pull in their `Calendar`/`Disambiguation`). When `length`
-  // doesn't divide the period exactly, `partial` decides whether the short final segment is kept.
-  extension [point](period: Period[point])
-    def segments[step](length: step, partial: Boolean = true)
-      ( using addable: point is Addable by step to point, order: Ordering[point] )
-    :   List[Period[point]] =
+  private def base: RomanCalendar = calendars.gregorianCalendar
 
-      @scala.annotation.tailrec
-      def recur(current: point, acc: List[Period[point]]): List[Period[point]] =
-        if !order.gt(period.finish, current) then acc.reverse else
-          val next = current + length
+  def name: Text = t"Ordinal"
+  def monthsInYear(year: Year): Int = 1
+  def daysInYear(year: Year): Int = base.daysInYear(year)
+  def daysInMonth(month: Annus.type, year: Year): Int = base.daysInYear(year)
+  def monthOrdinal(year: Year, month: Annus.type): Int = 0
+  def monthOfOrdinal(year: Year, ordinal: Int): Annus.type = Annus
+  def annual(date: Date): Year = base.annual(date)
+  def mensual(date: Date): Annus.type = Annus
+  def zerothDayOfYear(year: Year): Date = base.zerothDayOfYear(year)
 
-          if !order.gt(next, current) || order.gt(next, period.finish)
-          then (if partial then Period(current, period.finish) :: acc else acc).reverse
-          else recur(next, Period(current, next) :: acc)
+  def diurnal(date: Date): Day = Day(date.jdn - base.zerothDayOfYear(base.annual(date)).jdn)
 
-      recur(period.start, Nil)
+  def jdn(year: Year, month: Annus.type, day: Day): Date raises TimeError =
+    if day() < 1 || day() > base.daysInYear(year) then
+      raise(TimeError(_.Invalid(year(), 1, day(), this)))
+      base.zerothDayOfYear(year).addDays(1)
+    else
+      base.zerothDayOfYear(year).addDays(day())
 
-// A range between two points of the same type — an `Instant over X`, a `Timestamp`, or a `Moment`.
-// `duration` is the points' difference, whose type follows the point: a `Duration` for an
-// `Instant over X` (in that timeline's seconds), a `Timespan` for a `Timestamp`/`Moment`. (Ordering
-// uses the non-inline `Ordering`, since the point is abstract here.)
-case class Period[point](start: point, finish: point):
-  def duration(using subtractable: point is Subtractable by point): subtractable.Result =
-    subtractable.subtract(finish, start)
+  // Construct directly from a year and a day-of-year, without the vestigial month.
+  def apply(year: Year, dayOfYear: Int): Date raises TimeError = jdn(year, Annus, Day(dayOfYear))
 
-  def intersect(period: Period[point])(using order: Ordering[point]): Optional[Period[point]] =
-    val start2 = order.max(period.start, start)
-    val finish2 = order.min(period.finish, finish)
-    if order.gteq(start2, finish2) then Unset else Period(start2, finish2)
-
-  def union(period: Period[point])(using order: Ordering[point]): Set[Period[point]] =
-    if intersect(period).absent then Set(this, period)
-    else Set(Period(order.min(start, period.start), order.max(finish, period.finish)))
+  override def format(date: Date): Text = t"${annual(date)()}-${diurnal(date)()}"

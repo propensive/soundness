@@ -677,6 +677,26 @@ object Tests extends Suite(m"Aviation Tests"):
             2025-Aug-11 + WorkingDays(5)
           . assert(_ == 2025-Aug-18)
 
+          test(m"One working day before Tuesday is Monday"):
+            import hebdomads.europeanHebdomad
+            2025-Aug-19 - WorkingDays(1)
+          . assert(_ == 2025-Aug-18)
+
+          test(m"One working day before Monday is the previous Friday"):
+            import hebdomads.europeanHebdomad
+            2025-Aug-18 - WorkingDays(1)
+          . assert(_ == 2025-Aug-15)
+
+          test(m"One working day before a post-holiday Tuesday skips the holiday and weekend"):
+            import hebdomads.europeanHebdomad
+            2025-Aug-26 - WorkingDays(1)
+          . assert(_ == 2025-Aug-22)
+
+          test(m"Adding then subtracting the same working days round-trips"):
+            import hebdomads.europeanHebdomad
+            (2025-Aug-18 + WorkingDays(4)) - WorkingDays(4)
+          . assert(_ == 2025-Aug-18)
+
           test(m"Check one working days after a Friday is Monday"):
             import hebdomads.europeanHebdomad
             2025-Apr-11 + WorkingDays(1)
@@ -964,6 +984,59 @@ object Tests extends Suite(m"Aviation Tests"):
         import monthFormats.englishShortMonths
         (2024 - Mar).show
       . assert(_ == t"2024.Mar")
+
+      test(m"Adding months to a Monthstamp stays a Monthstamp"):
+        val ms: Monthstamp = (2024 - Jan) + 2*Month
+        (ms.year(), ms.month)
+      . assert(_ == (2024, Mar))
+
+      test(m"Adding months rolls over the year"):
+        val ms = (2024 - Nov) + 3*Month
+        (ms.year(), ms.month)
+      . assert(_ == (2025, Feb))
+
+      test(m"Subtracting months rolls back across the year"):
+        val ms = (2024 - Mar) - 5*Month
+        (ms.year(), ms.month)
+      . assert(_ == (2023, Oct))
+
+      test(m"Adding a year to a Monthstamp"):
+        val ms = (2024 - Jun) + 1*Year
+        (ms.year(), ms.month)
+      . assert(_ == (2025, Jun))
+
+      test(m"Month arithmetic round-trips"):
+        ((2024 - Jan) + 7*Month) - 7*Month
+      . assert(_ == 2024 - Jan)
+
+    suite(m"Ordinal dates"):
+      import calendars.gregorianCalendar
+      import calendars.ordinalCalendar
+
+      test(m"Day 1 is the 1st of January"):
+        OrdinalCalendar(Year(2024), 1)
+      . assert(_ == 2024-Jan-1)
+
+      test(m"Day 247 of leap-year 2024 is the 3rd of September"):
+        OrdinalCalendar(Year(2024), 247)
+      . assert(_ == 2024-Sep-3)
+
+      test(m"Day 60 of common-year 2023 is the 1st of March"):
+        OrdinalCalendar(Year(2023), 60)
+      . assert(_ == 2023-Mar-1)
+
+      test(m"The day-of-year reads back from a date"):
+        (2024-Sep-3).day(using ordinalCalendar)()
+      . assert(_ == 247)
+
+      test(m"The year reads back from a date"):
+        (2024-Sep-3).year(using ordinalCalendar)()
+      . assert(_ == 2024)
+
+      test(m"Day 366 in a common year is rejected"):
+        capture(OrdinalCalendar(Year(2023), 366))
+      . matches:
+          case _: TimeError =>
 
     suite(m"Holidays methods"):
       val holidays = Holidays(List
@@ -1835,6 +1908,22 @@ object Tests extends Suite(m"Aviation Tests"):
         val b = Instant(2000L) ~ Instant(3000L)
         a.union(b).size
       . assert(_ == 2)
+
+      test(m"Period.has is true for a point inside"):
+        (Instant(0L) ~ Instant(1000L)).has(Instant(500L))
+      . assert(_ == true)
+
+      test(m"Period.has includes the start"):
+        (Instant(0L) ~ Instant(1000L)).has(Instant(0L))
+      . assert(_ == true)
+
+      test(m"Period.has excludes the finish"):
+        (Instant(0L) ~ Instant(1000L)).has(Instant(1000L))
+      . assert(_ == false)
+
+      test(m"Period.has is false for a point outside"):
+        (Instant(0L) ~ Instant(1000L)).has(Instant(2000L))
+      . assert(_ == false)
 
     suite(m"Period segments"):
       import calendars.gregorianCalendar

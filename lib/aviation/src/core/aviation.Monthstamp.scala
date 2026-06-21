@@ -33,31 +33,17 @@
 package aviation
 
 import contingency.*
-import gossamer.*
-import spectacular.*
 import symbolism.*
 
+// A `Monthstamp` is a month-precise `Timestamp` — the first instant of a (Gregorian) month, tagged
+// with `Month` precision. Construction clamps to the 1st, so same-month stamps are equal;
+// whole-month/year arithmetic stays month-precise, and `monthstamp - dayOfMonth` is that day's
+// `Date` (the `2012-Mar - 8` form). The `type Monthstamp` alias and its givens/accessors live in
+// `timestampInternal` (the implicit scope of `Timestamp in Month`); this object holds only the
+// factory and the compile-time `-` operator.
 object Monthstamp:
-  given showable: (months: Months, separation: DateSeparation, endianness: Endianness, years: Years)
-  =>  Monthstamp is Showable =
-
-    monthstamp =>
-      endianness match
-        case Endianness.LittleEndian =>
-          t"${monthstamp.year}${separation.separator}${monthstamp.month}"
-
-        case _ =>
-          t"${monthstamp.month}${separation.separator}${monthstamp.year}"
-
-
-  // The result-type witness and the fallback for non-operator call sites; defaults to the
-  // Gregorian calendar, preserving the historical behaviour of `monthstamp - day`.
-  given subtractable: Monthstamp is Subtractable:
-    type Result = Date
-    type Operand = Int
-
-    def subtract(monthstamp: Monthstamp, day: Int): Date =
-      unsafely(calendars.gregorianCalendar.jdn(monthstamp.year, monthstamp.month, Day(day)))
+  def apply(year: Year, month: Month): Monthstamp =
+    unsafely(calendars.gregorianCalendar.jdn(year, month, Day(1))).asInstanceOf[Monthstamp]
 
   // The inline path the `-` operator prefers: when the year, month and day are all literals it
   // validates the date at compile time against the contextually-resolved calendar (raising a
@@ -69,7 +55,3 @@ object Monthstamp:
 
     inline def op(left: Monthstamp, right: Int): Date =
       ${aviation.internal.monthstampMinus('left, 'right)}
-
-  inline given monthstampSubtraction: MonthstampSubtraction = MonthstampSubtraction()
-
-case class Monthstamp(year: Year, month: Month)

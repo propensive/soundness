@@ -42,7 +42,8 @@ export
       HebrewCalendar, HebrewMonth, Hour, IndianCalendar, IndianMonth, Instant, IslamicCalendar,
       GapPolicy, IslamicMonth, Iso8601, Jan, Jul, Jun, Leap, LeapSeconds, Mar, May,
       Meridiem, Minute, Moment, Mon, Month, Months, Monthstamp, Nov, now, Occurrence, Oct,
-      OffsetCalendar, Period, PersianCalendar, PersianMonth, pm, Posix, Regime, Rfc1123,
+      OffsetCalendar, OrdinalCalendar, Period, PersianCalendar, PersianMonth, pm, Posix, Regime,
+      Rfc1123,
       RomanCalendar, Tai,
       Sat, Sep, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics,
       TimeSeparation, TimeSpecificity, Timespan, Timestamp, TimestampError, Timezone, TimezoneError,
@@ -52,7 +53,7 @@ export
 package calendars:
   export aviation.calendars.{gregorianCalendar, julianCalendar, copticCalendar, ethiopianCalendar,
       islamicCalendar, persianCalendar, indianCalendar, hebrewCalendar, frenchRepublicanCalendar,
-      buddhistCalendar, minguoCalendar, papalCutover, britishCutover}
+      buddhistCalendar, minguoCalendar, ordinalCalendar, papalCutover, britishCutover}
 
 package nonexistentLeapDays:
   export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,

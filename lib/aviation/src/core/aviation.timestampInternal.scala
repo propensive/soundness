@@ -66,6 +66,9 @@ object timestampInternal:
   // A `Date` is a day-precise `Timestamp` (time-of-day clamped to zero).
   type Date = Timestamp in Day
 
+  // A `Monthstamp` is a month-precise `Timestamp` (clamped to the 1st of the month).
+  type Monthstamp = Timestamp in Month
+
   private def underlying(timestamp: Timestamp): Long = timestamp
 
   // The shape of a `Timestamp - Timestamp` difference: a regular span of days/hours/mins/seconds.
@@ -231,6 +234,63 @@ object timestampInternal:
 
         recur(date, days())
 
+    given dateWorkingDaysSubtractable: Holidays => (hebdomad: Hebdomad) => Date is Subtractable:
+      type Operand = WorkingDays
+      type Result = Date
+
+      def subtract(date: Date, days: WorkingDays): Date =
+        def recur(current: Date, count: Int): Date =
+          if count == 0 then
+            if current.weekend || summon[Holidays].holiday(current).present
+            then recur(current.addDays(-1), 0)
+            else current
+          else
+            val previous = current.addDays(-count)
+            val holidays = summon[Holidays].between(previous, current)
+            val weekends = Weekday.all.to(List).filter(_.weekend)
+            val weekendDays = weekends.map(Weekday.count(previous, current, _)).sum
+            val weekdayHolidays = holidays.filter(!_.date.weekend).length
+            val skipped = weekdayHolidays + weekendDays
+            recur(previous, skipped)
+
+        recur(date, days())
+
+    // `Monthstamp` (= `Timestamp in Month`) givens. Like `Date`'s, they live here so they're in the
+    // implicit scope of the underlying `Timestamp`, not in the transparent alias's companion.
+    given monthShowable: (Months, DateSeparation, Endianness, Years) => Monthstamp is Showable =
+      monthstamp =>
+        val separator = summon[DateSeparation].separator
+
+        summon[Endianness] match
+          case Endianness.LittleEndian => t"${monthstamp.year}$separator${monthstamp.month}"
+          case _                       => t"${monthstamp.month}$separator${monthstamp.year}"
+
+    // `monthstamp - dayOfMonth` → the `Date` of that day; the result-type witness and runtime
+    // fallback for the `2012-Mar - 8` operator.
+    given monthstampSubtractable: Monthstamp is Subtractable:
+      type Result = Date
+      type Operand = Int
+
+      def subtract(monthstamp: Monthstamp, day: Int): Date =
+        unsafely(calendars.gregorianCalendar.jdn(monthstamp.year, monthstamp.month, Day(day)))
+
+    inline given monthstampSubtraction: Monthstamp.MonthstampSubtraction =
+      Monthstamp.MonthstampSubtraction()
+
+    // Form-preserving month arithmetic: only whole months/years apply (finer components are
+    // ignored), so the result stays month-precise.
+    given monthstampAddable: [topic <: Radix]
+    =>  Monthstamp is Addable by (Timespan of topic) to Monthstamp =
+      (monthstamp, span) => monthstampShift(monthstamp, span.years*12 + span.months)
+
+    given monthstampTimespanSubtractable: [topic <: Radix]
+    =>  Monthstamp is Subtractable by (Timespan of topic) to Monthstamp =
+      (monthstamp, span) => monthstampShift(monthstamp, -(span.years*12 + span.months))
+
+    private def monthstampShift(monthstamp: Monthstamp, months: Int): Monthstamp =
+      val total = monthstamp.year()*12 + monthstamp.month.ordinal + months
+      Monthstamp(Year(Math.floorDiv(total, 12)), Month.fromOrdinal(Math.floorMod(total, 12)))
+
   object Date:
     def julianDay(day: Int): Date = (day.toLong*aviation.internal.MillisPerDay).asInstanceOf[Date]
 
@@ -312,3 +372,9 @@ object timestampInternal:
   extension (date: Date)
     def addDays(count: Int): Date =
       (underlying(date) + count.toLong*aviation.internal.MillisPerDay).asInstanceOf[Date]
+
+  // Calendar-free (Gregorian) accessors for a `Monthstamp`, matching the `Month` enum it is tagged
+  // with — so `monthstamp.year`/`.month` need no calendar in scope.
+  extension (monthstamp: Monthstamp)
+    def year: Year = calendars.gregorianCalendar.annual(monthstamp.date)
+    def month: Month = calendars.gregorianCalendar.mensual(monthstamp.date)
