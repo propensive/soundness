@@ -34,7 +34,7 @@ package cosmopolite
 
 import anticipation.*
 
-transparent trait Language(val code: Text):
+transparent trait Language(val code: Text) extends scala.caps.Pure:
   type Code
 
   def apply[value](value: Locale[Code] ?=> value): Polyglot[value, Code] =

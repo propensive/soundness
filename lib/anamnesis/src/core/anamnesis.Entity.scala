@@ -34,6 +34,6 @@ package anamnesis
 
 import prepositional.*
 
-trait Entity extends Operable:
+trait Entity extends Operable, scala.caps.Pure:
   def ref: Operand
   def reference: Reference[this.type] = ref.asInstanceOf[Reference[this.type]]

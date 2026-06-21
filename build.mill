@@ -390,7 +390,7 @@ object ambience extends Library:
 object anamnesis extends Library:
   object core extends Component(distillate.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object anthology extends Library:
@@ -546,7 +546,7 @@ object caesura extends Library:
 object camouflage extends Library:
   object core extends Component(parasite.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object capricious extends Library:
@@ -614,7 +614,7 @@ object contingency extends Library:
 object cosmopolite extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def enabled = false
 
