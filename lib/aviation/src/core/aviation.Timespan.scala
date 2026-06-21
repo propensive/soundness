@@ -92,7 +92,8 @@ object Timespan:
     else if time == t"" then t"P$date"
     else t"P${date}T$time"
 
-  given showable: Timespan is Showable = renderDuration(_)
+  // The ISO-8601 duration is the encoded (machine) form; a human-readable `Showable` is opt-in via
+  // `import timespanFormats.relativeTimespan`.
   given encodable: Timespan is Encodable in Text = renderDuration(_)
 
   // Runtime parse of an ISO-8601 duration; shares `parseDuration` with the `dur"…"` interpolator.

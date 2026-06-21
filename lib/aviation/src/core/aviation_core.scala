@@ -322,6 +322,36 @@ package timeFormats:
     given noneTimeSeparator: TimeSeparation = () => t""
     given frenchTimeSeparator: TimeSeparation = () => t"h"
 
+// A human-readable, relative rendering of a `Timespan`, in place of the default ISO-8601 duration:
+// "in 18 minutes", "in 1 hour and 6 seconds", "8 minutes ago", "12 hours and 38 minutes ago", and
+// "just now" for a zero span. Only the non-zero components are shown (coarsest first); the sign
+// chooses "in …" / "… ago". `import timespanFormats.relativeTimespan` to use it.
+package timespanFormats:
+  given relativeTimespan: Timespan is Showable = timespan =>
+    val fields: List[(Long, Text, Text)] =
+      List
+        ( (timespan.years.toLong,         t"year",   t"years"),
+          (timespan.months.toLong,        t"month",  t"months"),
+          (timespan.weeks.toLong,         t"week",   t"weeks"),
+          (timespan.days.toLong,          t"day",    t"days"),
+          (timespan.hours.toLong,         t"hour",   t"hours"),
+          (timespan.minutes.toLong,       t"minute", t"minutes"),
+          (timespan.seconds.value.toLong, t"second", t"seconds") )
+
+    val nonZero = fields.filter(_._1 != 0)
+
+    if nonZero.isEmpty then t"just now" else
+      val rendered = nonZero.map: field =>
+        val magnitude = field._1.abs
+        t"$magnitude ${if magnitude == 1 then field._2 else field._3}"
+
+      val joined =
+        rendered match
+          case List(one) => one
+          case many      => t"${many.init.join(t", ")} and ${many.last}"
+
+      if nonZero.head._1 < 0 then t"$joined ago" else t"in $joined"
+
 package calendars:
   given julianCalendar: RomanCalendar(t"Julian"):
     def leapYear(year: Annual): Boolean = year()%4 == 0
@@ -370,8 +400,8 @@ package calendars:
       import calendars.gregorianCalendar
       unsafely(Date(year, Feb, Day(29)))
 
-// The default interpretation of an `Instant`'s `Long` (used by `Instant(…)`, decoding, etc.). Import
-// one of these to choose the timeline bare instants count on; convert explicitly with `.over[…]`.
+// The default interpretation of an `Instant`'s `Long` (used by `Instant(…)`, decoding, etc.).
+// Import one of these to choose the timeline bare instants count on; convert with `.over[…]`.
 package chronometries:
   given posix: (Chronometry.Ambient { type Transport = Posix }) =
     new Chronometry.Ambient:
