@@ -35,6 +35,7 @@ package aviation
 import scala.util.NotGiven
 
 import anticipation.*
+import contextual.*
 import contingency.*
 import distillate.*
 import fulminate.*
@@ -94,23 +95,22 @@ object Timespan:
   given showable: Timespan is Showable = renderDuration(_)
   given encodable: Timespan is Encodable in Text = renderDuration(_)
 
-  // Parse an ISO-8601 duration. `M` is months before the `T`, minutes after it. The whole string
-  // must match, and at least one component must be present (so bare `P`/`PT` are rejected).
-  private val DurationPattern =
-    ("""P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?""" +
-      """(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?""").r
-
+  // Runtime parse of an ISO-8601 duration; shares `parseDuration` with the `dur"…"` interpolator.
   given decodable: Tactic[TimeError] => Timespan is Decodable in Text = text =>
-    def int(group: String | Null): Int = if group == null then 0 else group.nn.toInt
-    def double(group: String | Null): Double = if group == null then 0.0 else group.nn.toDouble
+    aviation.internal.parseDuration(text.s) match
+      case Right((years, months, weeks, days, hours, minutes, seconds)) =>
+        Timespan(years, months, weeks, days, hours, minutes, Quantity(seconds))
 
-    text.s match
-      case DurationPattern(y, mo, w, d, h, mi, s)
-      if List(y, mo, w, d, h, mi, s).exists(_ != null) =>
-        Timespan(int(y), int(mo), int(w), int(d), int(h), int(mi), Quantity(double(s)))
-
-      case _ =>
+      case Left(_) =>
         abort(TimeError(_.Unknown(text, t"duration")))
+
+  // Compile-time `dur"P1Y2M3DT4H5M6S"` literal, validated by the same parser.
+  given interpolable: Timespan is Interpolable:
+    inline def interpolate[parts <: Tuple, origins <: Tuple]
+      ( inline insertions: Any* )
+    :   Timespan =
+
+      ${aviation.internal.durInterpolator[parts]('insertions)}
 
   given addable: [left <: Radix, right <: Radix]
   =>  (Timespan of left) is Addable by (Timespan of right) to (Timespan of (left & right)) =

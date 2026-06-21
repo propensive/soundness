@@ -2134,6 +2134,23 @@ object Tests extends Suite(m"Aviation Tests"):
         capture(t"P".decode[Timespan])
       . assert(_ == TimeError(_.Unknown(t"P", t"duration")))
 
+      test(m"A dur literal parses a duration at compile time"):
+        dur"P1Y2M3DT4H5M6S"
+      . assert(_ == Timespan(years = 1, months = 2, days = 3, hours = 4, minutes = 5,
+            seconds = Quantity(6.0)))
+
+      test(m"A dur literal accepts PT0S"):
+        dur"PT0S"
+      . assert(_ == Timespan())
+
+      test(m"A malformed dur literal is a compile error"):
+        demilitarize(dur"P1X")
+      . assert(_.nonEmpty)
+
+      test(m"A dur literal with a substitution is a compile error"):
+        demilitarize(dur"${1}")
+      . assert(_.nonEmpty)
+
     suite(m"Horology sexagesimal"):
       val horology = Horology.sexagesimal
 

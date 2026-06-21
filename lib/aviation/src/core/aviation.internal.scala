@@ -298,6 +298,25 @@ object internal:
     else if text.head.isLetter then parseRfc(text)
     else Left(m"a timestamp must begin with a digit or a weekday name")
 
+  // ISO-8601 duration. `M` is months before the `T`, minutes after it. The whole string must match,
+  // with at least one component, so bare `P`/`PT` are rejected. Shared by the runtime `Timespan`
+  // decoder and the compile-time `dur"…"` interpolator.
+  private val DurationPattern =
+    ("""P(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)W)?(?:(\d+)D)?""" +
+      """(?:T(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?""").r
+
+  def parseDuration(text: String): Either[Message, (Int, Int, Int, Int, Int, Int, Double)] =
+    def int(group: String | Null): Int = if group == null then 0 else group.nn.toInt
+    def double(group: String | Null): Double = if group == null then 0.0 else group.nn.toDouble
+
+    text match
+      case DurationPattern(y, mo, w, d, h, mi, s)
+      if List(y, mo, w, d, h, mi, s).exists(_ != null) =>
+        Right((int(y), int(mo), int(w), int(d), int(h), int(mi), double(s)))
+
+      case _ =>
+        Left(m"$text is not a valid ISO 8601 duration")
+
   def tsInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]])
   :   Macro[Year | Monthstamp | Date | Timestamp | Moment] =
 
@@ -342,6 +361,26 @@ object internal:
                   .in(unsafely(Timezone(${Expr(zone)}.tt)))}
 
         result
+
+
+  def durInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[Timespan] =
+    import quotes.reflect.*
+
+    def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case _               => strings
+
+    val parts = recur[parts](Nil)
+
+    if parts.length != 1 then halt(m"a duration literal cannot contain substitutions")
+
+    parseDuration(parts.head) match
+      case Left(error) =>
+        halt(error)
+
+      case Right((years, months, weeks, days, hours, minutes, seconds)) =>
+        '{ Timespan(${Expr(years)}, ${Expr(months)}, ${Expr(weeks)}, ${Expr(days)},
+              ${Expr(hours)}, ${Expr(minutes)}, Quantity(${Expr(seconds)})) }
 
 
   // The inline `Monthstamp - day` operator splices here. When the year, month and day are all
