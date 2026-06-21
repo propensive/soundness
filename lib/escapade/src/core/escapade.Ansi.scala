@@ -61,7 +61,7 @@ trait Ansi2:
     TeletypeSubstitution[value](teletype)
 
 object Ansi extends Ansi2:
-  type Transform = TextStyle => TextStyle
+  type Transform = TextStyle -> TextStyle
 
   def strip(txt: Text): Text = txt.sub(t"""\e\\[?.*?[\\@-~]""", t"")
 
