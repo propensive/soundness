@@ -50,11 +50,10 @@ import vacuous.*
 
 export rudiments.internal.{Bytes, Digit}
 
-// TODO(capture-checking): `fixpoint` does not yet type-check under capture checking — the
+// TODO(capture-checking, #1412): `fixpoint` does not yet type-check under capture checking — the
 // recursive context function `fn(using recurrence(fn(_)))` trips "Reference `recur` is not
 // included in the allowed capture set". It is currently unused anywhere in the codebase, so it is
-// commented out while a capture-correct formulation is found. See the Soundness issue tracking the
-// capture-checking rollout.
+// commented out while a capture-correct formulation is found.
 //def fixpoint[value](initial: value)(fn: (recur: (value => value)) ?=> (value => value)): value =
 //  def recurrence(fn: (recur: value => value) ?=> value => value): value => value =
 //    fn(using recurrence(fn(_)))
@@ -190,6 +189,10 @@ extension [value](iterables: Iterable[Iterable[value]])
     if iterables.nil then Iterable() else iterables.reduceLeft(_ ++ between ++ _)
 
 extension [value](iterable: Iterable[value])
+  // The `Result` of each numeric typeclass below is bound as an inferred type parameter (e.g.
+  // `to result` + `result =:= value`) rather than referenced path-dependently (`addable.Result =:=
+  // value`). Under capture checking the path-dependent form fails at the cross-package `export`
+  // forwarder (#1411); binding it as a type parameter keeps call sites unchanged.
   transparent inline def total[result]
     ( using addable:  value is Addable by value to result,
             equality: result =:= value )
@@ -285,6 +288,9 @@ extension [value](iterable: Iterable[value])
       lambda(using ordinal.aka["ordinal"])(value)
       ordinal += 1
 
+  // The explicit `Iterable[Tuple]` return type is load-bearing under capture checking: without it
+  // the inferred type pickled into the cross-package `export` forwarder carries a malformed capture
+  // set and crashes the compiler (#1410). `transparent` still refines the type at each call site.
   transparent inline def annex[right](lambda: value => right): Iterable[Tuple] =
     iterable.map: item =>
       inline !![value] match
