@@ -1958,6 +1958,45 @@ object Tests extends Suite(m"Aviation Tests"):
         period.segments(6*Hour).length
       . assert(_ == 4)
 
+    suite(m"Point ranges"):
+      import calendars.gregorianCalendar
+
+      test(m"by iterates a period's points at a step"):
+        (Instant(0L) ~ Instant(3_600_000L)).by(15*Minute).map(_.long).to(List)
+      . assert(_ == List(0L, 900_000L, 1_800_000L, 2_700_000L))
+
+      test(m"by excludes the finish (half-open)"):
+        (Instant(0L) ~ Instant(1000L)).by(Quantity[Seconds[1]](1.0)).map(_.long).to(List)
+      . assert(_ == List(0L))
+
+      test(m"by over a Date period yields each date"):
+        Period(2024-Jan-1, 2024-Jan-5).by(1*Day).to(List)
+      . assert(_ == List(2024-Jan-1, 2024-Jan-2, 2024-Jan-3, 2024-Jan-4))
+
+      test(m"by is lazy, so a vast range can be sampled cheaply"):
+        Period(2024-Jan-1, 2030-Jan-1).by(1*Day).take(3).to(List)
+      . assert(_ == List(2024-Jan-1, 2024-Jan-2, 2024-Jan-3))
+
+    suite(m"Monotonic clock"):
+      test(m"A Posix instant ticks in milliseconds"):
+        (Instant(0L) + 1*Second).long
+      . assert(_ == 1000L)
+
+      test(m"A monotonic instant ticks in nanoseconds"):
+        val t0 = monotonic()
+        (t0 + 1*Second).long - t0.long
+      . assert(_ == 1_000_000_000L)
+
+      test(m"The difference of two monotonic readings is a Duration in seconds"):
+        val t0 = monotonic()
+        ((t0 + 90*Second) - t0).value
+      . assert(_ == 90.0)
+
+      test(m"Monotonic readings are ordered"):
+        val t0 = monotonic()
+        (t0 + 1*Second) > t0
+      . assert(_ == true)
+
     suite(m"Moment subtraction"):
       import calendars.gregorianCalendar
 

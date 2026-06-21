@@ -32,20 +32,22 @@
                                                                                                   */
 package aviation
 
-import beneficence.*
 import prepositional.*
-import symbolism.*
 
-// A `Clock` reads the wall clock, which is Unix/POSIX time, so it produces `Instant over Posix`.
-object Clock:
-  given current: Clock:
-    def apply(): Instant over Posix = Instant.of[Posix](System.currentTimeMillis)
+// How many nanoseconds one unit of an `Instant over X`'s underlying `Long` represents. Millisecond
+// timelines (`Posix`, `Tai`) tick every 1_000_000 ns; `Monotonic` (a `System.nanoTime` reading)
+// ticks every nanosecond. Instant arithmetic uses this to convert between a `Duration` (in seconds)
+// and the timeline's own ticks, so adding "one second" advances the right number of ticks whatever
+// the resolution.
+object Resolution:
+  given posix: Posix is Resolution:
+    def nanos: Long = 1_000_000L
 
-  def fixed(instant: Instant over Posix): Clock = new Clock():
-    def apply(): Instant over Posix = instant
+  given tai: Tai is Resolution:
+    def nanos: Long = 1_000_000L
 
-  def offset(diff: into[Duration]): Clock = new Clock():
-    def apply(): Instant over Posix = Instant.of[Posix](System.currentTimeMillis) + diff
+  given monotonic: Monotonic is Resolution:
+    def nanos: Long = 1L
 
-abstract class Clock() extends Findable:
-  def apply(): Instant over Posix
+trait Resolution extends Typeclass:
+  def nanos: Long
