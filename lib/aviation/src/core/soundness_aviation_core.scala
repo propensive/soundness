@@ -102,6 +102,9 @@ package timeFormats:
     . { associatedPressTimeFormat, civilianTimeFormat, frenchTimeFormat, iso8601TimeFormat,
         ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
 
+package timespanFormats:
+  export aviation.timespanFormats.relativeTimespan
+
 package hourFormats:
   export aviation.timeFormats.hours.{twelveHourClock, twentyFourHourClock}
 

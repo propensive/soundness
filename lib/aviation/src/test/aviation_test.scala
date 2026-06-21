@@ -2150,17 +2150,17 @@ object Tests extends Suite(m"Aviation Tests"):
         List(later, earlier).sorted == List(earlier, later)
       . assert(_ == true)
 
-      test(m"A Timespan renders as an ISO-8601 duration"):
+      test(m"A Timespan encodes as an ISO-8601 duration"):
         Timespan(years = 1, months = 2, days = 3, hours = 4, minutes = 5, seconds = Quantity(6.0))
-        . show
+        . encode
       . assert(_ == t"P1Y2M3DT4H5M6S")
 
-      test(m"A zero Timespan renders as PT0S"):
-        Timespan().show
+      test(m"A zero Timespan encodes as PT0S"):
+        Timespan().encode
       . assert(_ == t"PT0S")
 
-      test(m"Fractional seconds render with a decimal point"):
-        Timespan(seconds = Quantity(1.5)).show
+      test(m"Fractional seconds encode with a decimal point"):
+        Timespan(seconds = Quantity(1.5)).encode
       . assert(_ == t"PT1.5S")
 
       test(m"An ISO-8601 duration parses to a Timespan"):
@@ -2170,7 +2170,7 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"A week-and-time duration round-trips through text"):
         val span = Timespan(weeks = 2, hours = 12, minutes = 30)
-        span.show.decode[Timespan] == span
+        span.encode.decode[Timespan] == span
       . assert(_ == true)
 
       test(m"A bare P is not a valid duration"):
@@ -2193,6 +2193,37 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"A dur literal with a substitution is a compile error"):
         demilitarize(dur"${1}")
       . assert(_.nonEmpty)
+
+    suite(m"Relative timespan formatting"):
+      import timespanFormats.relativeTimespan
+
+      test(m"A future single component reads as \"in …\""):
+        Timespan(minutes = 18).show
+      . assert(_ == t"in 18 minutes")
+
+      test(m"A future two-component span joins with \"and\""):
+        Timespan(hours = 1, seconds = Quantity(6.0)).show
+      . assert(_ == t"in 1 hour and 6 seconds")
+
+      test(m"A past single component reads as \"… ago\""):
+        Timespan(minutes = -8).show
+      . assert(_ == t"8 minutes ago")
+
+      test(m"A past two-component span reads as \"… ago\""):
+        Timespan(hours = -12, minutes = -38).show
+      . assert(_ == t"12 hours and 38 minutes ago")
+
+      test(m"A singular component is not pluralised"):
+        Timespan(hours = 1).show
+      . assert(_ == t"in 1 hour")
+
+      test(m"Three components use commas and a final \"and\""):
+        Timespan(hours = 2, minutes = 5, seconds = Quantity(3.0)).show
+      . assert(_ == t"in 2 hours, 5 minutes and 3 seconds")
+
+      test(m"A zero timespan reads as \"just now\""):
+        Timespan().show
+      . assert(_ == t"just now")
 
     suite(m"Horology sexagesimal"):
       val horology = Horology.sexagesimal
