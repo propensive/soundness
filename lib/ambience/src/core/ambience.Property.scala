@@ -110,7 +110,9 @@ object Property:
 
 
   given javaClassVersion: ("java.runtime.version" is Property of Int) =
-    given Tactic[NumberError] = strategies.throwUnsafely
+    // `throwUnsafely` captures the universal `canThrowAny`; laundered to a pure given, since this
+    // unchecked-throw tactic merely throws (it does not retain a stack-scoped capability).
+    given Tactic[NumberError] = caps.unsafe.unsafeAssumePure(strategies.throwUnsafely)
     Property(_.decode[Int])
 
 

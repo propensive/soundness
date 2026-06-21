@@ -369,7 +369,7 @@ object abacist extends Library:
 object acyclicity extends Library:
   object core extends Component(gossamer.core, nomenclature.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object adversaria extends Library:
@@ -384,7 +384,7 @@ object adversaria extends Library:
 object ambience extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object anamnesis extends Library:
@@ -576,7 +576,7 @@ object cataclysm extends Library:
 object charisma extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object chiaroscuro extends Library:
@@ -1078,7 +1078,7 @@ object mercator extends Library:
 object metamorphose extends Library:
   object core extends Component(contingency.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object monotonous extends Library:
@@ -1090,7 +1090,7 @@ object monotonous extends Library:
 object mosquito extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(quantitative.units, core, baroque.core)
 
 object urticose extends Library:
@@ -1452,7 +1452,7 @@ object vacuous extends Library:
 object vexillology extends Library:
   object core extends Component(hypotenuse.core, distillate.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object vicarious extends Library:
