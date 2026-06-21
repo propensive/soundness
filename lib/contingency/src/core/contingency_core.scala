@@ -98,26 +98,32 @@ def abort[success, exception <: Exception](error: Diagnostics ?=> exception)
   tactic.abort(error)
 
 
+// The block's `Diagnostics`, `OptionalTactic` and `CanThrow` are provided in a single context-
+// function layer rather than two (`… ?=> CanThrow ?=> success`). Under capture checking a second
+// layer would be a `CanThrow ?=> success` arrow that closes over the scoped `OptionalTactic`, and
+// that arrow's capture set cannot be reconciled with the block's expected type (the tactic is
+// created inside `safely`, after the block value). Collapsing the layers makes the block's result
+// the plain `success` value, which retains nothing.
 def safely[error <: Exception](using erased Void)[success]
-  ( block: (Diagnostics, OptionalTactic[error, success]^) ?=> CanThrow[Exception] ?=> success )
+  ( block: (Diagnostics, OptionalTactic[error, success]^, CanThrow[Exception]) ?=> success )
 :   Optional[success] =
 
   try boundary: label ?=>
-    block(using Diagnostics.omit, OptionalTactic(label))
+    block(using Diagnostics.omit, OptionalTactic(label), summon[CanThrow[Exception]])
   catch case error: Exception => Unset
 
 
 def unsafely[error <: Exception](using erased Void)[success]
-  ( block: (erased Unsafe) ?=> ThrowTactic[error, success]^ ?=> CanThrow[Exception] ?=> success )
+  ( block: (erased Unsafe) ?=> (ThrowTactic[error, success]^, CanThrow[Exception]) ?=> success )
 :   success =
 
-  // The `CanThrow[Exception]` that constructs the injected `ThrowTactic` (and discharges the
-  // block's own `CanThrow`) comes from the enclosing `try`, not from the universal `canThrowAny`. A
-  // `try` grants a *local* control capability scoped to its body, so — unlike `canThrowAny`, whose
-  // `any` a top-level definition may not retain — it leaves no capture in `unsafely`'s type. The
-  // `catch` rethrows, preserving the original fire-and-forget propagation semantics.
+  // The injected `ThrowTactic` and the block's `CanThrow` are provided in a single context-function
+  // layer (see `safely`: a separate `CanThrow ?=> success` arrow would close over the scoped tactic
+  // and fail capture checking). The `CanThrow[Exception]` comes from the enclosing `try`, not the
+  // universal `canThrowAny`, so it leaves no capture in `unsafely`'s type; the `catch` rethrows,
+  // preserving the original fire-and-forget propagation semantics.
   boundary: label ?=>
-    try block(using Unsafe)(using ThrowTactic())
+    try block(using Unsafe)(using ThrowTactic(), summon[CanThrow[Exception]])
     catch case error: Exception =>
       import unsafeExceptions.canThrowAny
       throw error
@@ -242,11 +248,11 @@ extension [value](optional: Optional[value])
 
   def dare[error <: Exception](using erased Void)[success]
     ( block
-    : (Diagnostics, OptionalTactic[error, success]^) ?=> CanThrow[Exception] ?=> value => success )
+    : (Diagnostics, OptionalTactic[error, success]^, CanThrow[Exception]) ?=> value => success )
   :   Optional[success] =
 
     try boundary: label ?=>
-      optional.let(block(using Diagnostics.omit, OptionalTactic(label)))
+      optional.let(block(using Diagnostics.omit, OptionalTactic(label), summon[CanThrow[Exception]]))
     catch case error: Exception => Unset
 
 
