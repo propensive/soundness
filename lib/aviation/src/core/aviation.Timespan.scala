@@ -35,9 +35,14 @@ package aviation
 import scala.util.NotGiven
 
 import anticipation.*
+import contextual.*
 import contingency.*
+import distillate.*
+import fulminate.*
+import gossamer.*
 import prepositional.*
 import quantitative.*
+import spectacular.*
 import symbolism.*
 
 // A `Timespan` is a duration expressed as a vector of radix counts (`Year`/`Month`/`Week`/`Day`/
@@ -64,6 +69,48 @@ object Timespan:
     case Hour          => Timespan(hours = n).asInstanceOf[Timespan of radix]
     case Minute        => Timespan(minutes = n).asInstanceOf[Timespan of radix]
     case _             => Timespan().asInstanceOf[Timespan of radix]
+
+  // ISO-8601 duration text, e.g. `P1Y2M3DT4H5M6S`. Zero components are omitted; the all-zero span
+  // is `PT0S`. Fractional seconds render with a decimal point.
+  private def renderDuration(span: Timespan): Text =
+    def part(value: Int, unit: Text): Text = if value == 0 then t"" else t"$value$unit"
+
+    val seconds = span.seconds.value
+
+    val secondsText =
+      if seconds == 0.0 then t""
+      else if seconds == seconds.toLong.toDouble then t"${seconds.toLong}S"
+      else t"${seconds.toString.tt}S"
+
+    val date =
+      List(part(span.years, t"Y"), part(span.months, t"M"), part(span.weeks, t"W"),
+          part(span.days, t"D")).join
+
+    val time = List(part(span.hours, t"H"), part(span.minutes, t"M"), secondsText).join
+
+    if date == t"" && time == t"" then t"PT0S"
+    else if time == t"" then t"P$date"
+    else t"P${date}T$time"
+
+  given showable: Timespan is Showable = renderDuration(_)
+  given encodable: Timespan is Encodable in Text = renderDuration(_)
+
+  // Runtime parse of an ISO-8601 duration; shares `parseDuration` with the `dur"…"` interpolator.
+  given decodable: Tactic[TimeError] => Timespan is Decodable in Text = text =>
+    aviation.internal.parseDuration(text.s) match
+      case Right((years, months, weeks, days, hours, minutes, seconds)) =>
+        Timespan(years, months, weeks, days, hours, minutes, Quantity(seconds))
+
+      case Left(_) =>
+        abort(TimeError(_.Unknown(text, t"duration")))
+
+  // Compile-time `dur"P1Y2M3DT4H5M6S"` literal, validated by the same parser.
+  given interpolable: Timespan is Interpolable:
+    inline def interpolate[parts <: Tuple, origins <: Tuple]
+      ( inline insertions: Any* )
+    :   Timespan =
+
+      ${aviation.internal.durInterpolator[parts]('insertions)}
 
   given addable: [left <: Radix, right <: Radix]
   =>  (Timespan of left) is Addable by (Timespan of right) to (Timespan of (left & right)) =

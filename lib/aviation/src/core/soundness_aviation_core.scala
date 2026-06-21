@@ -36,7 +36,7 @@ export
   aviation
   . { am, AlexandrianCalendar, Anniversary, Apr, Aug, Base24, base24Extractable, Base60,
       base60Extractable, Calendar, Clock, Clockface, CopticCalendar, CopticMonth, Date,
-      DateNumerics, DateSeparation, Day, Dec,
+      DateNumerics, DateSeparation, Day, Dec, dur,
       Disambiguation, Duration, Endianness, EthiopianCalendar, EthiopianMonth, Feb,
       FrenchRepublicanCalendar, FrenchRepublicanMonth, Fri, Hebdomad, Holiday, Holidays, Horology,
       HebrewCalendar, HebrewMonth, Hour, IndianCalendar, IndianMonth, Instant, IslamicCalendar,

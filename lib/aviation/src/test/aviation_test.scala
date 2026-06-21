@@ -2086,6 +2086,71 @@ object Tests extends Suite(m"Aviation Tests"):
         nextSecond.tai.long - leapMoment.tai.long
       . assert(_ == 1000L)
 
+    suite(m"Ordering and ISO-8601 durations"):
+      import calendars.gregorianCalendar
+
+      test(m"Timestamps sort chronologically"):
+        val a = Timestamp(2020-Jan-1, Clockface(0, 0, 0))
+        val b = Timestamp(2020-Jan-1, Clockface(12, 0, 0))
+        val c = Timestamp(2021-Jan-1, Clockface(0, 0, 0))
+        List(c, a, b).sorted == List(a, b, c)
+      . assert(_ == true)
+
+      test(m"A Timestamp compares with < to a later Timestamp"):
+        Timestamp(2020-Jan-1, Clockface(0, 0, 0)) < Timestamp(2020-Jan-1, Clockface(0, 0, 1))
+      . assert(_ == true)
+
+      test(m"Moments sort by their grounded instant"):
+        val tz = tz"Europe/London"
+        val earlier = Moment(2024-Oct-27, Clockface(1, 30, 0), tz, Occurrence.First)
+        val later = Moment(2024-Oct-27, Clockface(1, 30, 0), tz, Occurrence.Second)
+        List(later, earlier).sorted == List(earlier, later)
+      . assert(_ == true)
+
+      test(m"A Timespan renders as an ISO-8601 duration"):
+        Timespan(years = 1, months = 2, days = 3, hours = 4, minutes = 5, seconds = Quantity(6.0))
+        . show
+      . assert(_ == t"P1Y2M3DT4H5M6S")
+
+      test(m"A zero Timespan renders as PT0S"):
+        Timespan().show
+      . assert(_ == t"PT0S")
+
+      test(m"Fractional seconds render with a decimal point"):
+        Timespan(seconds = Quantity(1.5)).show
+      . assert(_ == t"PT1.5S")
+
+      test(m"An ISO-8601 duration parses to a Timespan"):
+        t"P1Y2M3DT4H5M6S".decode[Timespan]
+      . assert(_ == Timespan(years = 1, months = 2, days = 3, hours = 4, minutes = 5,
+            seconds = Quantity(6.0)))
+
+      test(m"A week-and-time duration round-trips through text"):
+        val span = Timespan(weeks = 2, hours = 12, minutes = 30)
+        span.show.decode[Timespan] == span
+      . assert(_ == true)
+
+      test(m"A bare P is not a valid duration"):
+        capture(t"P".decode[Timespan])
+      . assert(_ == TimeError(_.Unknown(t"P", t"duration")))
+
+      test(m"A dur literal parses a duration at compile time"):
+        dur"P1Y2M3DT4H5M6S"
+      . assert(_ == Timespan(years = 1, months = 2, days = 3, hours = 4, minutes = 5,
+            seconds = Quantity(6.0)))
+
+      test(m"A dur literal accepts PT0S"):
+        dur"PT0S"
+      . assert(_ == Timespan())
+
+      test(m"A malformed dur literal is a compile error"):
+        demilitarize(dur"P1X")
+      . assert(_.nonEmpty)
+
+      test(m"A dur literal with a substitution is a compile error"):
+        demilitarize(dur"${1}")
+      . assert(_.nonEmpty)
+
     suite(m"Horology sexagesimal"):
       val horology = Horology.sexagesimal
 

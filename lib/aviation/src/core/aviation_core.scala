@@ -454,6 +454,8 @@ inline given tsInterpolator: (Year | Monthstamp | Date | Timestamp | Moment) is 
 extension (inline context: StringContext)
   transparent inline def tz: Interpolation = interpolation[Timezone](context)
 
+  transparent inline def dur: Interpolation = interpolation[Timespan](context)
+
   transparent inline def ts: Interpolation =
     interpolation[Year | Monthstamp | Date | Timestamp | Moment](context)
 
