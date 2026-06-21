@@ -56,15 +56,3 @@ transparent inline def specifically[key, transport]
 :   key is Specific over transport =
 
   ${vicarious.internal.specific[key, transport]('lambda)}
-
-// Specialize a generic derivation: re-derive `target` for the typeclass `transport`, but with the
-// given component instances installed for their own types — `specialized[Contact](customEmail)`
-// re-derives the `Contact` codec using `customEmail` (an `Email is …`) for `Email`, defaults
-// elsewhere. Used to customize a sum or collection field from the RHS of a `specifically` case
-// (`case root.contact() => specialized[Contact](customEmail)`), keeping variant selection in value
-// space rather than the path. `transport` is driven by the expected type.
-transparent inline def specialized[target, transport <: { type Self }]
-  ( inline overrides: transport* )
-:   target is transport =
-
-  ${vicarious.internal.specialized[target, transport]('overrides)}

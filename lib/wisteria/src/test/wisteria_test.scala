@@ -583,24 +583,47 @@ object Tests extends Suite(m"Wisteria tests"):
         Display.derived[Company].display(company)
       . assert(_ == t"E(al),E(bo)")
 
-      test(m"specialized re-derives a sum with one variant overridden"):
+      test(m"a sum field's variant is overridden via a local given + re-derive"):
         val maskedEmail: Email is Display = e => t"<hidden>"
         val account = Account(t"ann", Email(t"ann@example.com"))
 
         given (Account is Specific over Display) =
           specifically:
-            case root.contact() => specialized[Contact, Display](maskedEmail)
+            case root.contact() =>
+              given Email is Display = maskedEmail
+              Display.derived[Contact]
 
         Display.derived[Account].display(account)
       . assert(_ == t"ann,<hidden>")
 
-      test(m"specialized leaves other variants on their defaults"):
+      test(m"the same override leaves other variants on their defaults"):
         val maskedEmail: Email is Display = e => t"<hidden>"
         val account = Account(t"bob", Phone(t"555-1234"))
 
         given (Account is Specific over Display) =
           specifically:
-            case root.contact() => specialized[Contact, Display](maskedEmail)
+            case root.contact() =>
+              given Email is Display = maskedEmail
+              Display.derived[Contact]
 
         Display.derived[Account].display(account)
       . assert(_ == t"bob,555-1234")
+
+      test(m"a nested Specific specialises one branch of a component"):
+        // `Account.contact` uses a `Contact` whose `Email` variant has its `address` masked, while
+        // a top-level `Account` derivation leaves other `Contact`s alone.
+        val masked: Text is Display = _ => t"***"
+        val account = Account(t"ann", Email(t"ann@example.com"))
+
+        given (Account is Specific over Display) =
+          specifically:
+            case root.contact() =>
+              given (Email is Specific over Display) =
+                specifically:
+                  case root.address() => masked
+
+              given Email is Display = Display.derived[Email]
+              Display.derived[Contact]
+
+        Display.derived[Account].display(account)
+      . assert(_ == t"ann,***")

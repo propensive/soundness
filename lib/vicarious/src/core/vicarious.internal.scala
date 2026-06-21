@@ -114,34 +114,6 @@ object internal:
       case '[type id <: Nat; id] => '{Proxy[key, value, id](${Expr(target)})}
 
 
-  // Re-derives `target is transport` with each override instance installed as a `given` for its own
-  // type, so the (generic) derivation picks it up for that component. Emits a block of the override
-  // givens followed by a `summonInline` of the instance — deferring resolution to the splice site
-  // where the givens are in scope, exactly the "local given + re-derive" idiom, packaged.
-  def specialized[target: Type, transport <: { type Self }: Type](overrides: Expr[Seq[transport]])
-  :   Macro[target is transport] =
-
-    import quotes.reflect.*
-
-    val instances = overrides.absolve match
-      case Varargs(instances) => instances.toList
-
-    // Nest a `given` per override (each typed as the override's precise `component is transport`),
-    // then `summonInline` the target inside — so the re-derivation resolves each component to its
-    // override. Nested quotes let the compiler own the given symbols (a hand-built `given` val
-    // breaks the re-derivation's later traversal).
-    def build(remaining: List[Expr[transport]])(using Quotes): Expr[target is transport] =
-      remaining match
-        case Nil =>
-          '{compiletime.summonInline[target is transport]}
-
-        case head :: tail =>
-          head.asTerm.tpe.widen.asType.absolve match
-            case '[component] =>
-              '{given local: component = ${head.asExprOf[component]}; ${build(tail)}}
-
-    build(instances)
-
   // Builds a `key is Specific over transport` from a partial function of field-path cases. Reads
   // each `case root.a.b() => instance` from the lambda's tree: the proxy in the pattern carries the
   // path's flattened index in its type, giving the dotted path and the field type to check the
