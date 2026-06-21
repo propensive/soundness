@@ -44,14 +44,14 @@ trait Decodable2:
   given generic: [value] => value is Decodable in value = identity(_)
 
 object Decodable extends Decodable2:
-  given int: (number: Tactic[NumberError]) => Int is Decodable in Text = text =>
+  given int: (number: Tactic[NumberError]^) => Int is Decodable in Text = text =>
     try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       abort(NumberError(text, Int, NumberError.Reason.Unparseable))
 
-  given fqcn: Tactic[FqcnError] => Fqcn is Decodable in Text = Fqcn(_)
-  given uuid: Tactic[UuidError] => Uuid is Decodable in Text = Uuid.parse(_)
+  given fqcn: (Tactic[FqcnError]^) => Fqcn is Decodable in Text = Fqcn(_)
+  given uuid: (Tactic[UuidError]^) => Uuid is Decodable in Text = Uuid.parse(_)
 
-  given byte: Tactic[NumberError] => Byte is Decodable in Text = text =>
+  given byte: (Tactic[NumberError]^) => Byte is Decodable in Text = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       abort(NumberError(text, Byte, NumberError.Reason.Unparseable))
 
@@ -59,7 +59,7 @@ object Decodable extends Decodable2:
     then abort(NumberError(text, Byte, NumberError.Reason.OutOfRange))
     else int.toByte
 
-  given short: Tactic[NumberError] => Short is Decodable in Text = text =>
+  given short: (Tactic[NumberError]^) => Short is Decodable in Text = text =>
     val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
       abort(NumberError(text, Short, NumberError.Reason.Unparseable))
 
@@ -67,15 +67,15 @@ object Decodable extends Decodable2:
     then abort(NumberError(text, Short, NumberError.Reason.OutOfRange))
     else int.toShort
 
-  given long: Tactic[NumberError] => Long is Decodable in Text = text =>
+  given long: (Tactic[NumberError]^) => Long is Decodable in Text = text =>
     try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
       abort(NumberError(text, Long, NumberError.Reason.Unparseable))
 
-  given double: Tactic[NumberError] => Double is Decodable in Text = text =>
+  given double: (Tactic[NumberError]^) => Double is Decodable in Text = text =>
     try java.lang.Double.parseDouble(text.s) catch case _: NumberFormatException =>
       abort(NumberError(text, Double, NumberError.Reason.Unparseable))
 
-  given float: Tactic[NumberError] => Float is Decodable in Text = text =>
+  given float: (Tactic[NumberError]^) => Float is Decodable in Text = text =>
     try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
       abort(NumberError(text, Float, NumberError.Reason.Unparseable))
 
@@ -83,7 +83,7 @@ object Decodable extends Decodable2:
 
 
   given enumeration: [enumeration <: reflect.Enum: {Enumerable, Identifiable as identifiable}]
-  =>  Tactic[VariantError]
+  =>  (Tactic[VariantError]^)
   =>  enumeration is Decodable in Text = value =>
 
     enumeration.value(identifiable.decode(value)).or:
