@@ -1978,6 +1978,29 @@ object Tests extends Suite(m"Aviation Tests"):
         moment.instant
       . assert(_ == Instant(784111777000L))
 
+      test(m"A zoned leap second produces a Moment flagged Inserted"):
+        val moment: Moment = ts"2016-12-31T23:59:60Z"
+        moment.leap
+      . assert(_ == Leap.Inserted)
+
+      test(m"A zoned leap second grounds to the following second"):
+        val moment: Moment = ts"2016-12-31T23:59:60Z"
+        moment.instant
+      . assert(_ == Instant(1483228800000L))
+
+      test(m"A zoned leap second renders as :60"):
+        val moment: Moment = ts"2016-12-31T23:59:60Z"
+        moment.show
+      . assert(_ == t"2016-12-31T23:59:60Z")
+
+      test(m"A zoneless leap second is a compile error"):
+        demilitarize(ts"2016-12-31T23:59:60")
+      . assert(_.nonEmpty)
+
+      test(m"A leap second not at :59 is a compile error"):
+        demilitarize(ts"2016-12-31T23:30:60Z")
+      . assert(_.nonEmpty)
+
       test(m"A year literal does not typecheck as a Monthstamp"):
         demilitarize:
           val monthstamp: Monthstamp = ts"2024"
