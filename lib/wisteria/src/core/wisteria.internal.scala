@@ -66,21 +66,24 @@ object internal:
     ${overridePathsMacro[typeclass, derivation]}
 
   def overridePathsMacro[typeclass[_]: Type, derivation: Type]: Macro[List[Text]] =
-    Expr.ofList(specificOverrides[typeclass, derivation].keys.toList.map { k => '{${Expr(k)}.tt} })
-
-  def specificOverrides[typeclass[_]: Type, derivation: Type](using Quotes)
-  :   Map[String, quotes.reflect.Term] =
-
     import quotes.reflect.*
-    specificOverridesRepr(TypeRepr.of[typeclass], TypeRepr.of[derivation])
 
-  // The override set for `root` and the typeclass `typeclassConstructor`: the path→instance-term
-  // pairs from an in-scope `root is Specific over typeclass` (read from the expanded given's
-  // `instances` map) — or empty if no such `Specific` is in scope. A `Specific` whose `Transport`
-  // is for a different typeclass (`Transport { type Self = X }` is not `typeclass[X]`) is ignored.
+    val paths = specificOverridesRepr(TypeRepr.of[typeclass], TypeRepr.of[derivation]) match
+      case Some((_, keys)) => keys.toList
+      case None            => Nil
+
+    Expr.ofList(paths.map { k => '{${Expr(k)}.tt} })
+
+  // The override set for `root` and the typeclass `typeclassConstructor`: a reference to the
+  // in-scope `root is Specific over typeclass` given and the dotted paths it overrides — or `None`
+  // if no such `Specific` is in scope. A `Specific` whose `Transport` is for a different typeclass
+  // (`Transport { type Self = X }` is not `typeclass[X]`) is ignored. Only the override paths
+  // (string constants) are read from the given's tree; the override *values* are taken at runtime
+  // from the given's `instances` map, never by re-splicing their trees (which would move lambdas
+  // across owners and crash the inliner).
   private def specificOverridesRepr(using Quotes)
     ( typeclassConstructor: quotes.reflect.TypeRepr, root: quotes.reflect.TypeRepr )
-  :   Map[String, quotes.reflect.Term] =
+  :   Option[(quotes.reflect.Term, Set[String])] =
 
     import quotes.reflect.*
 
@@ -88,11 +91,12 @@ object internal:
 
     Implicits.search(specificType) match
       case success: ImplicitSearchSuccess =>
-        if transportMatches(typeclassConstructor, success.tree.tpe) then readOverrides(success.tree)
-        else Map()
+        if transportMatches(typeclassConstructor, success.tree.tpe)
+        then Some((success.tree, readKeys(success.tree)))
+        else None
 
       case _ =>
-        Map()
+        None
 
   // The value of refinement type member `name` in `repr` (walking refinement layers), if present.
   private def refinementMember(using Quotes)(repr: quotes.reflect.TypeRepr, name: String)
@@ -145,32 +149,34 @@ object internal:
     val withRoot = Refinement(field, "VRoot", TypeBounds(root, root))
     Refinement(withRoot, "VPath", TypeBounds(pathType, pathType))
 
-  // The override context for deriving `derivation`: its root type, its dotted path so far, and the
-  // override set — read from a `VRoot`/`VPath` carrier if present (a deeper spine type), else from
-  // an in-scope `Specific` for `derivation` itself (root, path ""). `None` when none applies.
+  // The override context for deriving `derivation`: the root type, the dotted path so far, a
+  // reference to the in-scope `Specific` given, and the overridden paths — from a `VRoot`/`VPath`
+  // carrier if present (a deeper spine type), else from an in-scope `Specific` for `derivation`
+  // itself (root, path ""). `None` when no override applies.
   private def overrideContext(using Quotes)
     ( typeclassConstructor: quotes.reflect.TypeRepr, derivation: quotes.reflect.TypeRepr )
-  :   Option[(quotes.reflect.TypeRepr, String, Map[String, quotes.reflect.Term])] =
+  :   Option[(quotes.reflect.TypeRepr, String, quotes.reflect.Term, Set[String])] =
 
     import quotes.reflect.*
 
     (refinementMember(derivation, "VRoot"), refinementMember(derivation, "VPath")) match
       case (Some(root), Some(ConstantType(StringConstant(path)))) =>
-        Some((root, path, specificOverridesRepr(typeclassConstructor, root)))
+        specificOverridesRepr(typeclassConstructor, root).map: (given_, keys) =>
+          (root, path, given_, keys)
 
       case _ =>
         // `derivation` may be `T & Product` (added by `derivedOne`); strip to the bare type so the
         // `Specific` search keys on `T`.
         val base = productType(derivation)
-        val overrides = specificOverridesRepr(typeclassConstructor, base)
-        if overrides.isEmpty then None else Some((base, "", overrides))
 
-  // Reads the path→instance-term pairs from an in-scope `Specific` given's expanded
+        specificOverridesRepr(typeclassConstructor, base).map: (given_, keys) =>
+          (base, "", given_, keys)
+
+  // Reads the override paths (the string-literal keys) from an in-scope `Specific` given's expanded
   // `instances = Map(("path", instance), …)` body. Available for a given defined in the current
   // compilation run (the usual case: the override is defined where the derivation is requested).
-  private def readOverrides(using Quotes)(tree: quotes.reflect.Term)
-  :   Map[String, quotes.reflect.Term] =
-
+  // Only the keys are read; the values stay in the runtime map.
+  private def readKeys(using Quotes)(tree: quotes.reflect.Term): Set[String] =
     import quotes.reflect.*
 
     def givenSymbol(term: Term): Symbol = term match
@@ -183,10 +189,10 @@ object internal:
       case valDef: ValDef => valDef.rhs
       case _              => None
 
-    val pairs = scala.collection.mutable.LinkedHashMap[String, Term]()
+    val keys = scala.collection.mutable.LinkedHashSet[String]()
 
     // Inline expansion wraps each tuple element in `Inlined`/`Typed`; strip those to reach the
-    // string-literal path and the instance term.
+    // string-literal path key.
     def unwrap(tree: Tree): Tree = tree match
       case Inlined(_, _, body) => unwrap(body)
       case Typed(expr, _)      => unwrap(expr)
@@ -196,8 +202,8 @@ object internal:
     val accumulator = new TreeAccumulator[Unit]:
       def foldTree(state: Unit, tree: Tree)(owner: Symbol): Unit =
         tree match
-          case Apply(_, List(key, value)) => unwrap(key) match
-            case Literal(StringConstant(path)) => pairs(path) = unwrap(value).asInstanceOf[Term]
+          case Apply(_, List(key, _)) => unwrap(key) match
+            case Literal(StringConstant(path)) => keys += path
             case _                             => ()
 
           case _ =>
@@ -206,7 +212,7 @@ object internal:
         foldOverTree(state, tree)(owner)
 
     rhs.foreach(accumulator.foldTree((), _)(Symbol.spliceOwner))
-    pairs.to(Map)
+    keys.to(Set)
 
   // A marker that `resolvableNonStructural` injects (as a synthetic `given`) into a probe's
   // implicit scope, so the derivation macro can detect that implicit search has re-entered it for
@@ -431,7 +437,7 @@ object internal:
     // does, product spines are specialised (path-carrier siblings); otherwise the graph is built
     // exactly as before — no per-type override probing, no behaviour change.
     val specific =
-      specificOverridesRepr(typeclassConstructor, TypeRepr.of[derivation].dealias).nonEmpty
+      specificOverridesRepr(typeclassConstructor, TypeRepr.of[derivation].dealias).isDefined
 
     def instanceOf(tpe: TypeRepr): TypeRepr = typeclassConstructor.appliedTo(tpe)
 
@@ -485,18 +491,18 @@ object internal:
               val context = if specific then overrideContext(typeclassConstructor, tpe) else None
 
               context match
-                case Some((root, parentPath, overrides)) =>
+                case Some((root, parentPath, _, keys)) =>
                   // Spine field → specialised carrier sibling; overridden leaf → no sibling (the
-                  // instance term is spliced at the field site); else a shared default sibling.
+                  // value comes from the given's runtime map); else a shared default sibling.
                   product.typeSymbol.caseFields.foreach: field =>
                     val fieldType = product.memberType(field)
 
                     val childPath =
                       if parentPath.isEmpty then field.name else parentPath+"."+field.name
 
-                    if overrides.contains(childPath) then
+                    if keys.contains(childPath) then
                       ()
-                    else if overrides.keySet.exists(_.startsWith(childPath+".")) then
+                    else if keys.exists(_.startsWith(childPath+".")) then
                       visit(carrierType(fieldType, root, childPath), false)
                     else
                       visit(fieldType, false)
@@ -884,12 +890,15 @@ object internal:
       case None =>
         resolveField[typeclass, field]
 
-      case Some((root, parentPath, overrides)) =>
+      case Some((root, parentPath, given_, keys)) =>
         val childPath = if parentPath.isEmpty then fieldName else parentPath+"."+fieldName
 
-        if overrides.contains(childPath) then
-          overrides(childPath).asExprOf[typeclass[field]]
-        else if overrides.keySet.exists(_.startsWith(childPath+".")) then
+        if keys.contains(childPath) then
+          // Take the override's value from the given's runtime `instances` map (cast to the field's
+          // type) — never re-splice its tree.
+          val specific = given_.asExprOf[vicarious.Specific]
+          '{$specific.instances(${Expr(childPath)}).asInstanceOf[typeclass[field]]}
+        else if keys.exists(_.startsWith(childPath+".")) then
           carrierType(TypeRepr.of[field], root, childPath).asType.absolve match
             case '[carrier] =>
               '{wisteria.internal.field[typeclass, carrier].asInstanceOf[typeclass[field]]}

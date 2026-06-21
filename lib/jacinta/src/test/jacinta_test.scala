@@ -97,6 +97,8 @@ enum Animal:
 case class Worker(name: Text, age: Int) derives CanEqual
 case class Firm(boss: Worker, deputy: Worker) derives CanEqual
 
+case class Crew(lead: Worker, members: List[Worker]) derives CanEqual
+
 object Tests extends Suite(m"Jacinta Tests"):
   def run(): Unit =
     suite(m"Parsing tests"):
@@ -1191,6 +1193,16 @@ object Tests extends Suite(m"Jacinta Tests"):
 
         firm.json.show
       . assert(_ == t"""{"boss":{"name":"ann","age":30},"deputy":{"name":"BOB","age":40}}""")
+
+      test(m"specialized overrides the element of a collection-typed field"):
+        val nameOnly: Worker is Json.Encodable = Json.Encodable(Morphology.Str): w => Json(w.name)
+
+        given (Crew is Specific over Json.Encodable) =
+          specifically:
+            case root.members() => specialized[List[Worker], Json.Encodable](nameOnly)
+
+        Crew(Worker(t"al", 30), List(Worker(t"bo", 40), Worker(t"cy", 50))).json.show
+      . assert(_ == t"""{"lead":{"name":"al","age":30},"members":["bo","cy"]}""")
 
     ValidationTests()
     PositionTests()
