@@ -47,6 +47,15 @@ object protointernal:
   opaque type TaiInstant = Long
 
   object TaiInstant:
+    def apply(taiMillis: Long): TaiInstant = taiMillis
+
+    extension (tai: TaiInstant)
+      def long: Long = tai
+
+      // The inverse of `Instant.tai`: recover the Unix `Instant` from this `TaiInstant`. Only a
+      // `Reversible` strategy (e.g. `smear`) can do this; `step` is not reversible.
+      def instant(using strategy: LeapSeconds.Reversible): Instant = strategy.unix(tai)
+
     inline given underlying: Underlying[TaiInstant, Long] = !!
 
 

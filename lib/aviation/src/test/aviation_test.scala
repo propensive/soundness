@@ -382,9 +382,9 @@ object Tests extends Suite(m"Aviation Tests"):
           t"2020-12-31".decode[Instant]
         . assert(_ == Instant(1609372800000L))
 
-        // test(m"ISO 8601 leap second accepted as next second"):
-        //   t"2016-12-31T23:59:60Z".decode[Instant]
-        // . assert(_ == Instant(1483228800000L))
+        test(m"ISO 8601 leap second accepted as next second"):
+          t"2016-12-31T23:59:60Z".decode[Instant]
+        . assert(_ == Instant(1483228800000L))
 
         test(m"Month-only format"):
           t"2012-11".decode[Instant]
@@ -2012,6 +2012,9 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_.nonEmpty)
 
     suite(m"TaiInstant and leap-second conversion"):
+      import calendars.gregorianCalendar
+      import instantDecodables.iso8601InstantDecodable
+
       test(m"Instant 0 (UNIX epoch) has 10-second TAI offset"):
         LeapSeconds.tai(0L) - 0L
       . assert(_ == 10_000L)
@@ -2030,6 +2033,35 @@ object Tests extends Suite(m"Aviation Tests"):
         val later = t"2017-06-15T00:00:00Z".decode[Instant](using instantDecodables.iso8601InstantDecodable)
         LeapSeconds.tai(later.long) - later.long
       . assert(_ == 37_000L)
+
+      test(m"Instant.tai counts leap seconds under the step strategy"):
+        import leapSeconds.step
+        val later = t"2017-06-15T00:00:00Z".decode[Instant]
+        later.tai.long - later.long
+      . assert(_ == 37_000L)
+
+      test(m"TaiInstant.instant inverts Instant.tai under the smear strategy"):
+        import leapSeconds.smear
+        val instant = t"2017-06-15T00:00:00Z".decode[Instant]
+        instant.tai.instant == instant
+      . assert(_ == true)
+
+      test(m"unsmearTai inverts smearTai across a leap window"):
+        val nearLeap = 1483228800000L
+        LeapSeconds.unsmearTai(LeapSeconds.smearTai(nearLeap)) == nearLeap
+      . assert(_ == true)
+
+      test(m"An inserted leap second grounds to the following second"):
+        val leapMoment = Moment(2016-Dec-31, Clockface(23, 59, 59), tz"UTC", leap = Leap.Inserted)
+        leapMoment.instant == t"2017-01-01T00:00:00Z".decode[Instant]
+      . assert(_ == true)
+
+      test(m"An inserted leap second's TAI is one second before the following second"):
+        import leapSeconds.step
+        val leapMoment = Moment(2016-Dec-31, Clockface(23, 59, 59), tz"UTC", leap = Leap.Inserted)
+        val nextSecond = Moment(2017-Jan-1, Clockface(0, 0, 0), tz"UTC")
+        nextSecond.tai.long - leapMoment.tai.long
+      . assert(_ == 1000L)
 
     suite(m"Horology sexagesimal"):
       val horology = Horology.sexagesimal
