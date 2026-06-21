@@ -65,10 +65,10 @@ object Pem:
       case index =>
         val joined: Text = lines.tail.take(index).join
 
-        whereas:
+        mitigate:
           case SerializationError(_, _) => PemError(PemError.Reason.BadBase64)
 
-        . mitigate(Pem(label, joined.deserialize[Base64]))
+        . protect(Pem(label, joined.deserialize[Base64]))
 
 case class Pem(label: PemLabel, data: Data):
   def serialize: Text =

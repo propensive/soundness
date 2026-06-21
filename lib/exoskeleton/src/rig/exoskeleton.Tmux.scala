@@ -42,10 +42,10 @@ object Tmux:
 
     import logging.silentLogging
 
-    whereas:
+    mitigate:
       case ExecError(_, _, _) => TmuxError(TmuxError.Reason.ExecFailed)
 
-    . mitigate:
+    . protect:
         keypresses.each:
           case text: Text => sh"tmux send-keys -t ${tmux.id} '$text'".exec[Unit]()
           case char: Char => sh"tmux send-keys -t ${tmux.id} '$char'".exec[Unit]()
@@ -54,11 +54,11 @@ object Tmux:
   def screenshot()(using tmux: Tmux)(using WorkingDirectory): Screenshot raises TmuxError =
     import logging.silentLogging
 
-    whereas:
+    mitigate:
       case ExecError(_, _, _)   => TmuxError(TmuxError.Reason.SessionDied)
       case NumberError(_, _, _) => TmuxError(TmuxError.Reason.SessionDied)
 
-    . mitigate:
+    . protect:
         val content = IArray.from(sh"tmux capture-pane -pt ${tmux.id}".exec[List[Text]]())
         val cx = sh"tmux display-message -pt ${tmux.id} '#{cursor_x}'".exec[Text]()
         val cy = sh"tmux display-message -pt ${tmux.id} '#{cursor_y}'".exec[Text]()

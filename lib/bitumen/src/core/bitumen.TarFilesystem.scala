@@ -174,18 +174,18 @@ private[bitumen] object TarFilesystem:
       if fullText.startsWith(prefix) then fullText.substring(prefix.length).nn.tt
       else fullText.tt
 
-    whereas:
+    mitigate:
       case PathError(_, _) => TarError(TarError.Reason.BadName(relText))
 
-    . mitigate(relText.decode[Relative on Posix])
+    . protect(relText.decode[Relative on Posix])
 
   private def decodePath(text: Text)(using Tactic[TarError]): TarRef =
     import errorDiagnostics.emptyDiagnostics
 
-    whereas:
+    mitigate:
       case PathError(_, _) => TarError(TarError.Reason.BadName(text))
 
-    . mitigate(text.decode[Relative on Tar])
+    . protect(text.decode[Relative on Tar])
 
   private def readMode(javaPath: jnf.Path)(using Tactic[IoError]): UnixMode =
     try (jnf.Files.getAttribute(javaPath, "unix:mode").nn: Any) match

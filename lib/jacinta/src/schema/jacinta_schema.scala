@@ -50,14 +50,14 @@ package jsonPointerRegistries:
 
   given fetchingRegistry: (Online, HttpEvent is Loggable, HttpClient) => JsonPointer.Registry:
     protected def lookup(url: HttpUrl): Optional[Json] =
-      whereas:
+      recover:
         case VariantError(_, _, _) => Unset
         case ConnectError(_)       => Unset
         case HttpError(_, _)       => Unset
         case ParseError(_, _, _)   => Unset
         case JsonError(_)          => Unset
 
-      . recover(url.fetch().receive[Json])
+      . protect(url.fetch().receive[Json])
 
 
 extension (json: Json)

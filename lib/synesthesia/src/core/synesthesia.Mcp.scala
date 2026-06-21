@@ -144,7 +144,7 @@ object Mcp:
     given mcpProtocolVersion: ("mcpProtocolVersion" is Directive of Text) = identity(_)
     given lastEventId: ("lastEventId" is Directive of Text) = identity(_)
 
-    whereas:
+    recover:
       case error: ParseError =>
         Http.Response(Http.Ok):
           JsonRpc.error(-32700, t"Parse error: ${error.message}".show).json
@@ -157,7 +157,7 @@ object Mcp:
 
         . mcpSessionId = id
 
-    . recover:
+    . protect:
         try
           request.method match
             case Http.Options =>

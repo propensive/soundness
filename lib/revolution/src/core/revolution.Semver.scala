@@ -88,10 +88,10 @@ object Semver:
           val build3: List[Text | Long] = build2.map: element =>
             safely(element.decode[Long]).or(element)
 
-          whereas:
+          mitigate:
             case NumberError(_, _, _) => SemverError(text, SemverError.Reason.BadFormat)
 
-          . mitigate:
+          . protect:
               val major2 = major.decode[Long]
 
               if major.starts(t"0") && major2 != 0

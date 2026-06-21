@@ -103,11 +103,11 @@ object timestampInternal:
 
       text match
         case r"$yr(\d{4})-$mn(\d{2})-$dy(\d{2})[ T]$hr(\d{2}):$mi(\d{2}):$sc(\d{2})" =>
-          whereas:
+          mitigate:
             case NumberError(_, _, _) => TimestampError(text, TimestampError.Reason.BadNumber)
             case TimeError(_)         => TimestampError(text, TimestampError.Reason.BadTime)
 
-          . mitigate:
+          . protect:
               Timestamp
                 ( Date(Year(yr.decode[Int]), Month(mn.decode[Int]), Day(dy.decode[Int])),
                   Clockface

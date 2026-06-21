@@ -87,7 +87,7 @@ object Packager:
       case _ =>
         ()
 
-    whereas:
+    mitigate:
       case HttpError(_, _)       => PackageError(m"A runner stub could not be downloaded")
       case ConnectError(_)       => PackageError(m"Could not connect to download a runner stub")
       case UrlError(_, _, _)     => PackageError(m"A runner stub URL is invalid")
@@ -96,7 +96,7 @@ object Packager:
       case StreamError(_)        => PackageError(m"A stream error occurred during packaging")
       case PathError(_, _)       => PackageError(m"A path could not be resolved during packaging")
 
-    . mitigate:
+    . protect:
         val jdk: Boolean = config.java.bundle == Packaging.Bundle.Jdk
 
         val publicKey: Data =

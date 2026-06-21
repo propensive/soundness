@@ -153,7 +153,7 @@ extends RequestServable:
     // Handle one request off the cursor; return whether to keep the connection
     // alive for a further request.
     def serveRequest(cursor: Cursor[Data]): Boolean =
-      whereas:
+      recover:
         case error: HttpRequestError =>
           val response = Http.Response(errorStatus(error.reason))() + closeHeader
           safely(writeAll(out, Http.Response.serialize(response)))
@@ -166,7 +166,7 @@ extends RequestServable:
           safely(writeAll(out, Http.Response.serialize(response)))
           false
 
-      . recover:
+      . protect:
           val head = Http.Request.parseHead(cursor)
           val upgrade = isUpgrade(head)
 
@@ -224,11 +224,11 @@ extends RequestServable:
     // A stream error tearing down the connection is logged and ends it; any other
     // unexpected failure is left to propagate out of the per-connection daemon, where
     // the `trap` installed in `handle` logs it and isolates it to this connection.
-    whereas:
+    recover:
       case StreamError(length) =>
         Log.warn(HttpServerEvent.BrokenStream(length))
 
-    . recover:
+    . protect:
         val cursor = Cursor[Data](Streamable.inputStream.stream(in).filter(_.nonEmpty).iterator)
 
         var continue = true

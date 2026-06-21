@@ -70,12 +70,12 @@ trait McpServer():
   def serve(using this.type is McpSpecification, Monitor, Probate, Online, Http.Request)
   :   Http.Response =
 
-    whereas:
+    recover:
       case error @ JsonRpcError(_) =>
         import hieroglyph.charEncoders.utf8Encoder
         Http.Response(Unfulfilled(t"JSON-RPC error: ${error.message.text}"))
 
-    . recover:
+    . protect:
         val sessionId = request.headers.mcpSessionId.prim.or(Uuid().encode)
         val interface: Mcp.Interface = Mcp.Interface(sessionId, this)
         Mcp.send(sessionId, this, interface)(JsonRpc.serve(interface))

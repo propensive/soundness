@@ -79,13 +79,13 @@ object Installer:
     ( using Environment, System )
   :   List[Path on Linux] logs DaemonLogEvent raises InstallError =
 
-    whereas:
+    mitigate:
       case PathError(_, _)     => InstallError(InstallError.Reason.Environment)
       case EnvironmentError(_) => InstallError(InstallError.Reason.Environment)
       case IoError(_, _, _, _) => InstallError(InstallError.Reason.Io)
       case NameError(_, _, _)  => InstallError(InstallError.Reason.Io)
 
-    . mitigate:
+    . protect:
         val paths: List[Path on Linux] = Environment.path
 
         val preferences: List[Path on Linux] =
@@ -113,7 +113,7 @@ object Installer:
     import workingDirectories.javaWorkingDirectory
     import systems.javaSystem
 
-    whereas:
+    mitigate:
       case PathError(_, _)      => InstallError(InstallError.Reason.Environment)
       case PropertyError(_)     => InstallError(InstallError.Reason.Environment)
       case NumberError(_, _, _) => InstallError(InstallError.Reason.Environment)
@@ -122,7 +122,7 @@ object Installer:
       case ExecError(_, _, _)   => InstallError(InstallError.Reason.Io)
       case StreamError(_)       => InstallError(InstallError.Reason.Io)
 
-    . mitigate:
+    . protect:
         val command: Text = service.script
         val scriptPath = mute[ExecEvent](sh"sh -c 'command -v $command'".exec[Text]())
 

@@ -66,12 +66,12 @@ import termcaps.environmentTermcap
 // It takes no arguments — it self-locates the application JAR it is running from and
 // rewrites it in place (see `Repackager.repackage`).
 def repackage(): Unit = application(Nil):
-  whereas:
+  recover:
     case error: Error =>
       Err.println(error.message)
       Exit.Fail(1)
 
-  . recover:
+  . protect:
       val loader: ClassLoader = summon[Classloader].java
 
       // Self-locate the application JAR: the classpath entry holding the

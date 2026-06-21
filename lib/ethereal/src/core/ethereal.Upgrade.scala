@@ -87,14 +87,14 @@ object Upgrade:
             diagnostics: Diagnostics )
   :   Nothing raises UpgradeError =
 
-    whereas:
+    mitigate:
       case PathError(_, _)     => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
       case PropertyError(_)    => UpgradeError(UpgradeError.Reason.CannotResolveLauncher)
       case IoError(_, _, _, _) => UpgradeError(UpgradeError.Reason.CannotWritePending)
       case NameError(_, _, _)  => UpgradeError(UpgradeError.Reason.CannotWritePending)
       case StreamError(_)      => UpgradeError(UpgradeError.Reason.CannotReadSource)
 
-    . mitigate:
+    . protect:
         val name: Text = System.properties.ethereal.name[Text]()
 
         val dataHome: Path on Linux =

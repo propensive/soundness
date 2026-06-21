@@ -118,12 +118,12 @@ object Creatable:
       def create(path: Path on Plane): Path on Plane = path.also:
         createNonexistentParents(path):
           overwritePreexisting(path):
-            whereas:
+            mitigate:
               case ExecError(_, _, _) =>
                 import errorDiagnostics.stackTracesDiagnostics
                 IoError(path, IoError.Operation.Create, IoError.Reason.Unsupported)
 
-            . mitigate:
+            . protect:
                 sh"mkfifo $path"() match
                   case Exit.Ok => ()
 
