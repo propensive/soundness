@@ -374,6 +374,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       // millis; Aviation's own `Instant` abstractable/instantiable instances are found
       // via its companion, so `embarcadero` needs no dependency on Aviation.
       import abstractables.instantAbstractable
+      import chronometries.posix
       val moment = Instant(1_700_000_001_000L)
 
       test(m"a Container timestamp round-trips and converts to an Aviation Instant"):
