@@ -379,5 +379,5 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       test(m"a Container timestamp round-trips and converts to an Aviation Instant"):
         val container = Container(t"svc", createdAt = embarcadero.Timestamp.of(moment))
         val restored = Stream(container.protobuf.encode).read[Container in Protobuf]
-        restored.createdAt.instant[Instant]
+        restored.createdAt.instant[Instant over Posix]
       . assert(_ == moment)

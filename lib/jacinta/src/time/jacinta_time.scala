@@ -35,19 +35,19 @@ package jacinta
 import anticipation.*
 import aviation.*
 import contingency.*
+import prepositional.*
 
 package encodables:
-  given instantJsonEncodable: Instant is Json.Encodable =
+  given instantJsonEncodable: (Instant over Posix) is Json.Encodable =
     Json.Encodable(Morphology.Whole): instant => Json(instant.long)
 
   given durationJsonEncodable: Duration is Json.Encodable =
     Json.Encodable(Morphology.Whole): duration => Json((duration.value*1000).toLong)
 
 package decodables:
-  given instantJsonDecodable: Tactic[JsonError] => Instant is Json.Decodable =
+  given instantJsonDecodable: Tactic[JsonError] => (Instant over Posix) is Json.Decodable =
     Json.Decodable(Morphology.Whole): json =>
-      import abstractables.instantAbstractable
-      Instant(json.as[Long])
+      Instant.of[Posix](json.as[Long])
 
   given durationJsonDecodable: Tactic[JsonError] => Duration is Json.Decodable =
     Json.Decodable(Morphology.Whole): json => Duration(json.as[Long])

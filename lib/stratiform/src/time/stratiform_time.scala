@@ -35,6 +35,7 @@ package stratiform
 import anticipation.*
 import aviation.*
 import contingency.*
+import prepositional.*
 
 // Aviation integration: encode TEL atom values to/from Aviation's
 // Instant and Duration types. Mirroring jacinta.time, the codecs are
@@ -42,7 +43,7 @@ import contingency.*
 // clash with project-wide default encodings.
 
 package encodables:
-  given instantTelEncodable: Instant is Tel.Encodable =
+  given instantTelEncodable: (Instant over Posix) is Tel.Encodable =
     Tel.Encodable(Morphology.Whole): instant => Tel.scalar(instant.long.toString.tt)
 
   given durationTelEncodable: Duration is Tel.Encodable =
@@ -51,11 +52,9 @@ package encodables:
 
 package decodables:
   given instantTelDecodable: Tactic[TelError]
-  =>  Instant is Tel.Decodable =
+  =>  (Instant over Posix) is Tel.Decodable =
     Tel.Decodable(Morphology.Whole): tel =>
-      import abstractables.instantAbstractable
-
-      try Instant(tel.primaryAtom.s.toLong)
+      try Instant.of[Posix](tel.primaryAtom.s.toLong)
       catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
 
   given durationTelDecodable: Tactic[TelError]
