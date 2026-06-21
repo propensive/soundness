@@ -69,7 +69,7 @@ object MediaType:
     def name: Text = t"type"
     def serialize(mediaType: MediaType): Text = mediaType.show
 
-  def unapply(value: Text): Option[MediaType] = safely(Some(Media.parse(value))).or(None)
+  def unapply(value: Text): Option[MediaType] = safely(Media.parse(value)).let(Some(_)).or(None)
 
   inline given interpolable: MediaType is Interpolable:
     transparent inline def interpolate[parts <: Tuple, origins <: Tuple]

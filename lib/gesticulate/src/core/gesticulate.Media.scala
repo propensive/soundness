@@ -89,7 +89,7 @@ object Media:
       case CborSeq => t"cbor-seq"
       case other   => other.toString.tt.uncamel.kebab
 
-  def parse(string: Text)(using Tactic[MediaTypeError]): MediaType =
+  def parse(string: Text)(using Tactic[MediaTypeError]^): MediaType =
     def parseParams(ps: List[Text]): List[(Text, Text)] =
       if ps == List("")
       then raise(MediaTypeError(string, MediaTypeError.Reason.MissingParam))
