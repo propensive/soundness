@@ -925,7 +925,7 @@ object graffiti extends Library:
 object guillotine extends Library:
   object core extends Component(turbulence.core, ambience.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, galilei.core)
 
 object hallucination extends Library:

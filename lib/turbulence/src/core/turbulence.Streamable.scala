@@ -63,7 +63,7 @@ object Streamable:
 
     Stream.defer(recur(0L.b))
 
-  given reader: [input <: ji.Reader] => Tactic[StreamError] => input is Streamable by Char =
+  given reader: [input <: ji.Reader] => (Tactic[StreamError]^) => input is Streamable by Char =
     reader =>
       def recur(count: Bytes): Stream[Char] =
         try reader.read() match
@@ -76,7 +76,7 @@ object Streamable:
       Stream.defer(recur(0L.b))
 
 
-  given bufferedReader: [input <: ji.BufferedReader] => Tactic[StreamError]
+  given bufferedReader: [input <: ji.BufferedReader] => (Tactic[StreamError]^)
   =>  input is Streamable by Line =
 
     reader =>
@@ -91,13 +91,13 @@ object Streamable:
       Stream.defer(recur(0L.b))
 
 
-  given inputStream: [input <: ji.InputStream] => Tactic[StreamError]
+  given inputStream: [input <: ji.InputStream] => (Tactic[StreamError]^)
   =>  input is Streamable by Data =
 
     channel.contramap(jn.channels.Channels.newChannel(_).nn)
 
 
-  given channel: Tactic[StreamError] => jn.channels.ReadableByteChannel is Streamable by Data =
+  given channel: (Tactic[StreamError]^) => jn.channels.ReadableByteChannel is Streamable by Data =
     channel =>
       val buffer: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
 

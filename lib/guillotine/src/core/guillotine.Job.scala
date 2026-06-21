@@ -100,7 +100,7 @@ class Job[+exec <: Label, result](process: java.lang.Process) extends ProcessRef
     Log.warn(ExecEvent.KillProcess(pid))
     process.destroyForcibly()
 
-  def process(using Tactic[PidError]) = Process(pid)
+  def process(using Tactic[PidError]^) = Process(pid)
 
   def startTime[instant: Instantiable across Instants from Long]: Optional[instant] =
     try
