@@ -37,6 +37,7 @@ import contingency.*
 import denominative.*
 import fulminate.*
 import gossamer.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -55,7 +56,7 @@ object Rfc1123 extends Date.Format(t"RFC 1123"):
     case Expect(char: Char)
     case Digit
 
-  def parse(text: Text): Instant raises TimeError =
+  def parse(text: Text): Instant over Posix raises TimeError =
     import Rfc1123.Issue.*
     import Weekday.*
 

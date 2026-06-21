@@ -37,6 +37,7 @@ import soundness.*
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import abstractables.instantAbstractable
+import chronometries.posix
 
 object Tests extends Suite(m"Aviation Tests"):
   def run(): Unit =
@@ -359,205 +360,205 @@ object Tests extends Suite(m"Aviation Tests"):
       suite(m"ISO 8601"):
         import instantDecodables.iso8601InstantDecodable
         test(m"with Z suffix (UTC)"):
-          t"1994-11-06T08:49:37Z".decode[Instant]
+          t"1994-11-06T08:49:37Z".decode[Instant over Posix]
         . assert(_ == Instant(784111777000L))
 
         test(m"with positive timezone offset"):
-          t"1994-11-06T09:49:37+01:00".decode[Instant]
+          t"1994-11-06T09:49:37+01:00".decode[Instant over Posix]
         . assert(_ == Instant(784111777000L))
 
         test(m"with negative timezone offset"):
-          t"1994-11-06T03:49:37-05:00".decode[Instant]
+          t"1994-11-06T03:49:37-05:00".decode[Instant over Posix]
         . assert(_ == Instant(784111777000L))
 
         test(m"with fractional seconds (.123)"):
-          t"2020-02-29T12:34:56.123Z".decode[Instant]
+          t"2020-02-29T12:34:56.123Z".decode[Instant over Posix]
         . assert(_ == Instant(1582979696123L))
 
         test(m"with nanosecond precision (.123456789)"):
-          t"2020-02-29T12:34:56.123456789Z".decode[Instant]
+          t"2020-02-29T12:34:56.123456789Z".decode[Instant over Posix]
         . assert(_ == Instant(1582979696123L))
 
         test(m"date-only format (midnight UTC)"):
-          t"2020-12-31".decode[Instant]
+          t"2020-12-31".decode[Instant over Posix]
         . assert(_ == Instant(1609372800000L))
 
         test(m"ISO 8601 leap second accepted as next second"):
-          t"2016-12-31T23:59:60Z".decode[Instant]
+          t"2016-12-31T23:59:60Z".decode[Instant over Posix]
         . assert(_ == Instant(1483228800000L))
 
         test(m"Month-only format"):
-          t"2012-11".decode[Instant]
+          t"2012-11".decode[Instant over Posix]
         . assert(_ == Instant(1351728000000L))
 
         test(m"ISO 8601 with timezone offset and fractional seconds"):
-          t"2023-03-25T10:15:30.456+02:00".decode[Instant]
+          t"2023-03-25T10:15:30.456+02:00".decode[Instant over Posix]
         . assert(_ == Instant(1679732130456L))
 
         test(m"Calendar date, full time, Z"):
-          t"2023-05-28T14:30:59Z".decode[Instant]
+          t"2023-05-28T14:30:59Z".decode[Instant over Posix]
         . assert(_ == Instant(1685284259000L))
 
         test(m"Calendar date, basic format, full time, Z"):
-          t"20230528T143059Z".decode[Instant]
+          t"20230528T143059Z".decode[Instant over Posix]
         . assert(_ == Instant(1685284259000L))
 
         test(m"Calendar date, full time, offset +00:00"):
-          t"2023-05-28T14:30:59+00:00".decode[Instant]
+          t"2023-05-28T14:30:59+00:00".decode[Instant over Posix]
         . assert(_ == Instant(1685284259000L))
 
         test(m"Calendar date, full time, offset +02:00"):
-          t"2023-05-28T14:30:59+02:00".decode[Instant]
+          t"2023-05-28T14:30:59+02:00".decode[Instant over Posix]
         . assert(_ == Instant(1685277059000L))
 
         test(m"Calendar date, full time, offset -05:00"):
-          t"2023-05-28T14:30:59-05:00".decode[Instant]
+          t"2023-05-28T14:30:59-05:00".decode[Instant over Posix]
         . assert(_ == Instant(1685302259000L))
 
         test(m"Calendar date, fractional seconds, Z"):
-          t"2023-05-28T14:30:59.123Z".decode[Instant]
+          t"2023-05-28T14:30:59.123Z".decode[Instant over Posix]
         . assert(_ == Instant(1685284259123L))
 
         test(m"Calendar date, comma as decimal separator, Z"):
-          t"2023-05-28T14:30:59,123Z".decode[Instant]
+          t"2023-05-28T14:30:59,123Z".decode[Instant over Posix]
         . assert(_ == Instant(1685284259123L))
 
         test(m"Calendar date, hours and minutes, Z"):
-          t"2023-05-28T14:30Z".decode[Instant]
+          t"2023-05-28T14:30Z".decode[Instant over Posix]
         . assert(_ == Instant(1685284200000L))
 
         test(m"Calendar date, hour only, Z"):
-          t"2023-05-28T14Z".decode[Instant]
+          t"2023-05-28T14Z".decode[Instant over Posix]
         . assert(_ == Instant(1685282400000L))
 
         test(m"Week date, Sunday of week 21, full time, Z"):
-          t"2023-W21-7T14:30:59Z".decode[Instant]
+          t"2023-W21-7T14:30:59Z".decode[Instant over Posix]
         . assert(_ == Instant(1685284259000L))
 
         test(m"Week date, Monday of week 21, full time, Z"):
-          t"2023-W21-1T14:30:59Z".decode[Instant]
+          t"2023-W21-1T14:30:59Z".decode[Instant over Posix]
         . assert(_ == Instant(1684765859000L))
 
         test(m"Week date, basic format, Sunday of week 21, full time, Z"):
-          t"2023W217T143059Z".decode[Instant]
+          t"2023W217T143059Z".decode[Instant over Posix]
         . assert(_ == Instant(1685284259000L))
 
         test(m"Start of UNIX epoch"):
-          t"1970-01-01T00:00:00Z".decode[Instant]
+          t"1970-01-01T00:00:00Z".decode[Instant over Posix]
         . assert(_ == Instant(0L))
 
         test(m"Leap day 2020"):
-          t"2020-02-29T12:00:00Z".decode[Instant]
+          t"2020-02-29T12:00:00Z".decode[Instant over Posix]
         . assert(_ == Instant(1582977600000L))
 
         test(m"End of 1999"):
-          t"1999-12-31T23:59:59Z".decode[Instant]
+          t"1999-12-31T23:59:59Z".decode[Instant over Posix]
         . assert(_ == Instant(946684799000L))
 
         test(m"Start of 2000"):
-          t"2000-01-01T00:00:00Z".decode[Instant]
+          t"2000-01-01T00:00:00Z".decode[Instant over Posix]
         . assert(_ == Instant(946684800000L))
 
         test(m"Far future 2199"):
-          t"2199-12-31T23:59:59Z".decode[Instant]
+          t"2199-12-31T23:59:59Z".decode[Instant over Posix]
         . assert(_ == Instant(7258118399000L))
 
         test(m"Far past 1800"):
-          t"1800-01-01T00:00:00Z".decode[Instant]
+          t"1800-01-01T00:00:00Z".decode[Instant over Posix]
         . assert(_ == Instant(-5364662400000L))
 
         test(m"Middle of the day"):
-          t"2023-06-15T12:00:00Z".decode[Instant]
+          t"2023-06-15T12:00:00Z".decode[Instant over Posix]
         . assert(_ == Instant(1686830400000L))
 
         test(m"New Year 2023"):
-          t"2023-01-01T00:00:00Z".decode[Instant]
+          t"2023-01-01T00:00:00Z".decode[Instant over Posix]
         . assert(_ == Instant(1672531200000L))
 
         test(m"DST change irrelevant (UTC)"):
-          t"2021-03-28T01:30:00Z".decode[Instant]
+          t"2021-03-28T01:30:00Z".decode[Instant over Posix]
         . assert(_ == Instant(1616895000000L))
 
         test(m"Millisecond rounding test"):
-          t"2022-11-15T23:59:59Z".decode[Instant]
+          t"2022-11-15T23:59:59Z".decode[Instant over Posix]
         . assert(_ == Instant(1668556799000L))
 
       suite(m"RFC 1123"):
         import instantDecodables.rfc1123InstantDecodable
         test(m"basic with GMT timezone"):
-          t"Sun, 06 Nov 1994 08:49:37 GMT".decode[Instant]
+          t"Sun, 06 Nov 1994 08:49:37 GMT".decode[Instant over Posix]
         . assert(_ == Instant(784111777000L))
 
         test(m"with unusual day of week (consistency check)"):
-          t"Tue, 01 Jan 2019 00:00:00 GMT".decode[Instant]
+          t"Tue, 01 Jan 2019 00:00:00 GMT".decode[Instant over Posix]
         . assert(_ == Instant(1546300800000L))
 
         test(m"Standard RFC1123 date with full weekday and month names"):
-          t"Sun, 06 Nov 1994 08:49:37 GMT".decode[Instant]
+          t"Sun, 06 Nov 1994 08:49:37 GMT".decode[Instant over Posix]
         . assert(_ == Instant(784111777000L))
 
         test(m"Leap day in a leap year"):
-          t"Mon, 29 Feb 2016 12:00:00 GMT".decode[Instant]
+          t"Mon, 29 Feb 2016 12:00:00 GMT".decode[Instant over Posix]
         . assert(_ == Instant(1456747200000L))
 
         test(m"Epoch start date"):
-          t"Thu, 01 Jan 1970 00:00:00 GMT".decode[Instant]
+          t"Thu, 01 Jan 1970 00:00:00 GMT".decode[Instant over Posix]
         . assert(_ == Instant(0L))
 
         test(m"Last second before Y2K"):
-          t"Fri, 31 Dec 1999 23:59:59 GMT".decode[Instant]
+          t"Fri, 31 Dec 1999 23:59:59 GMT".decode[Instant over Posix]
         . assert(_ == Instant(946684799000L))
 
         test(m"First second of Y2K"):
-          t"Sat, 01 Jan 2000 00:00:00 GMT".decode[Instant]
+          t"Sat, 01 Jan 2000 00:00:00 GMT".decode[Instant over Posix]
         . assert(_ == Instant(946684800000L))
 
         test(m"Date with single-digit day"):
-          capture(t"Wed, 3 Jul 2002 17:45:00 GMT".decode[Instant])
+          capture(t"Wed, 3 Jul 2002 17:45:00 GMT".decode[Instant over Posix])
         . assert(_ == TimeError(_.Format(t"Wed, 3 Jul 2002 17:45:00 GMT", Rfc1123, Prim + 6)(Rfc1123.Issue.Digit)))
 
         test(m"Date with single-digit hour, minute, and second"):
-          t"Tue, 02 Mar 2021 07:08:09 GMT".decode[Instant]
+          t"Tue, 02 Mar 2021 07:08:09 GMT".decode[Instant over Posix]
         . assert(_ == Instant(1614668889000L))
 
         test(m"Date with correct day of week (Monday)"):
-          t"Mon, 15 Aug 2022 18:30:00 GMT".decode[Instant]
+          t"Mon, 15 Aug 2022 18:30:00 GMT".decode[Instant over Posix]
         . assert(_ == Instant(1660588200000L))
 
         test(m"Incorrect weekday (should be Sunday, not Monday)"):
-          t"Mon, 31 Dec 2006 23:59:59 GMT".decode[Instant]
+          t"Mon, 31 Dec 2006 23:59:59 GMT".decode[Instant over Posix]
         . assert(_ == Instant(1167609599000L))
 
         test(m"Date around DST end (should be in UTC, so no DST effect)"):
-          t"Sun, 01 Nov 2020 01:30:00 GMT".decode[Instant]
+          t"Sun, 01 Nov 2020 01:30:00 GMT".decode[Instant over Posix]
         . assert(_ == Instant(1604194200000L))
 
         test(m"Far future date (2100)"):
-          t"Fri, 01 Jan 2100 00:00:00 GMT".decode[Instant]
+          t"Fri, 01 Jan 2100 00:00:00 GMT".decode[Instant over Posix]
         . assert(_ == Instant(4102444800000L))
 
         test(m"Far past date (1900)"):
-          t"Mon, 01 Jan 1900 00:00:00 GMT".decode[Instant]
+          t"Mon, 01 Jan 1900 00:00:00 GMT".decode[Instant over Posix]
         . assert(_ == Instant(-2208988800000L))
 
         test(m"Time with 2-digit hour 23"):
-          t"Wed, 08 Sep 2021 23:00:00 GMT".decode[Instant]
+          t"Wed, 08 Sep 2021 23:00:00 GMT".decode[Instant over Posix]
         . assert(_ == Instant(1631142000000L))
 
         test(m"Midday exactly (12:00:00)"):
-          t"Sat, 25 Dec 2021 12:00:00 GMT".decode[Instant]
+          t"Sat, 25 Dec 2021 12:00:00 GMT".decode[Instant over Posix]
         . assert(_ == Instant(1640433600000L))
 
         test(m"New Year's Eve (2022)"):
-          t"Sat, 31 Dec 2022 23:59:59 GMT".decode[Instant]
+          t"Sat, 31 Dec 2022 23:59:59 GMT".decode[Instant over Posix]
         . assert(_ == Instant(1672531199000L))
 
         test(m"Short month name test (Jan)"):
-          t"Sun, 01 Jan 2023 00:00:00 GMT".decode[Instant]
+          t"Sun, 01 Jan 2023 00:00:00 GMT".decode[Instant over Posix]
         . assert(_ == Instant(1672531200000L))
 
         test(m"Minimum valid time (00:00:00)"):
-          t"Sun, 10 Oct 2021 00:00:00 GMT".decode[Instant]
+          t"Sun, 10 Oct 2021 00:00:00 GMT".decode[Instant over Posix]
         . assert(_ == Instant(1633824000000L))
 
       suite(m"Working days tests"):
@@ -1311,22 +1312,22 @@ object Tests extends Suite(m"Aviation Tests"):
       import instantDecodables.iso8601InstantDecodable
 
       test(m"Non-digit at year start raises"):
-        capture(t"abcd-01-01".decode[Instant])
+        capture(t"abcd-01-01".decode[Instant over Posix])
       . matches:
           case _: TimeError =>
 
       test(m"Truncated year raises"):
-        capture(t"20".decode[Instant])
+        capture(t"20".decode[Instant over Posix])
       . matches:
           case _: TimeError =>
 
       test(m"Trailing junk after seconds raises"):
-        capture(t"2024-01-01T12:00:00garbage".decode[Instant])
+        capture(t"2024-01-01T12:00:00garbage".decode[Instant over Posix])
       . matches:
           case _: TimeError =>
 
       test(m"Bad week-date letter raises"):
-        capture(t"2024-X21-1".decode[Instant])
+        capture(t"2024-X21-1".decode[Instant over Posix])
       . matches:
           case _: TimeError =>
 
@@ -1334,22 +1335,22 @@ object Tests extends Suite(m"Aviation Tests"):
       import instantDecodables.rfc1123InstantDecodable
 
       test(m"Lowercase day name raises"):
-        capture(t"sun, 06 Nov 1994 08:49:37 GMT".decode[Instant])
+        capture(t"sun, 06 Nov 1994 08:49:37 GMT".decode[Instant over Posix])
       . matches:
           case _: TimeError =>
 
       test(m"Wrong month abbreviation raises"):
-        capture(t"Sun, 06 Jux 1994 08:49:37 GMT".decode[Instant])
+        capture(t"Sun, 06 Jux 1994 08:49:37 GMT".decode[Instant over Posix])
       . matches:
           case _: TimeError =>
 
       test(m"Missing trailing GMT raises"):
-        capture(t"Sun, 06 Nov 1994 08:49:37".decode[Instant])
+        capture(t"Sun, 06 Nov 1994 08:49:37".decode[Instant over Posix])
       . matches:
           case _: TimeError =>
 
       test(m"Truncated input raises"):
-        capture(t"Sun, ".decode[Instant])
+        capture(t"Sun, ".decode[Instant over Posix])
       . matches:
           case _: TimeError =>
 
@@ -1658,26 +1659,29 @@ object Tests extends Suite(m"Aviation Tests"):
           gregorianCalendar.diurnal(date)() )
       . assert(_ == (1799, Nov, 9))
 
-    suite(m"Leap-second strategies"):
+    suite(m"Chronometry conversions"):
       val newYear = 1483228800000L // 2017-01-01 00:00:00 UTC, just after the 2016 leap second
 
-      test(m"Leap seconds are ignored by default"):
-        summon[LeapSeconds.Strategy].tai(newYear)
-      . assert(_ == newYear)
-
-      test(m"The step strategy counts elapsed leap seconds"):
-        import leapSeconds.step
-        summon[LeapSeconds.Strategy].tai(newYear) - newYear
+      test(m"Converting a POSIX instant to TAI counts elapsed leap seconds"):
+        Instant(newYear).over[Tai].long - newYear
       . assert(_ == LeapSeconds.tai(newYear) - newYear)
 
       test(m"Across the 2016 leap second the TAI offset gains one second"):
         LeapSeconds.tai(newYear) - LeapSeconds.tai(newYear - 60000L)
       . assert(_ == 61000L)
 
-      test(m"The smear strategy is chosen by import"):
-        import leapSeconds.smear
-        summon[LeapSeconds.Strategy].tai(newYear)
-      . assert(_ == LeapSeconds.smearTai(newYear))
+      test(m"A POSIX instant round-trips through TAI"):
+        val instant = Instant(newYear)
+        instant.over[Tai].over[Posix] == instant
+      . assert(_ == true)
+
+      test(m"Subtracting instants on different timelines is a compile error"):
+        demilitarize(Instant(newYear).over[Tai] - Instant(newYear))
+      . assert(_.nonEmpty)
+
+      test(m"untai inverts the discrete step"):
+        LeapSeconds.untai(LeapSeconds.tai(newYear)) == newYear
+      . assert(_ == true)
 
       test(m"Smearing matches discrete TAI far from any leap second"):
         val midYear = 1490000000000L // 2017-03-20, no nearby leap second
@@ -1764,7 +1768,7 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"Clock.offset reflects an offset"):
         val before = java.lang.System.currentTimeMillis
         val clock = Clock.offset(60*Second)
-        val result: Instant = clock()
+        val result = clock()
         val after = java.lang.System.currentTimeMillis
         result.long >= (before + 60_000L) && result.long <= (after + 60_001L)
       . assert(_ == true)
@@ -1850,22 +1854,22 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == Timestamp(1970-Jan-1, Clockface(0, 0, 0)))
 
       test(m"Same instant in London during winter is GMT (offset 0)"):
-        val winter = t"2024-01-15T12:00:00Z".decode[Instant](using instantDecodables.iso8601InstantDecodable)
+        val winter = t"2024-01-15T12:00:00Z".decode[Instant over Posix](using instantDecodables.iso8601InstantDecodable)
         winter.in(tz"Europe/London").time.hour
       . assert(_ == 12)
 
       test(m"Same instant in London during summer is BST (offset +1)"):
-        val summer = t"2024-07-15T12:00:00Z".decode[Instant](using instantDecodables.iso8601InstantDecodable)
+        val summer = t"2024-07-15T12:00:00Z".decode[Instant over Posix](using instantDecodables.iso8601InstantDecodable)
         summer.in(tz"Europe/London").time.hour
       . assert(_ == 13)
 
       test(m"New York winter offset (UTC-5)"):
-        val winter = t"2024-01-15T12:00:00Z".decode[Instant](using instantDecodables.iso8601InstantDecodable)
+        val winter = t"2024-01-15T12:00:00Z".decode[Instant over Posix](using instantDecodables.iso8601InstantDecodable)
         winter.in(tz"America/New_York").time.hour
       . assert(_ == 7)
 
       test(m"New York summer offset (UTC-4)"):
-        val summer = t"2024-07-15T12:00:00Z".decode[Instant](using instantDecodables.iso8601InstantDecodable)
+        val summer = t"2024-07-15T12:00:00Z".decode[Instant over Posix](using instantDecodables.iso8601InstantDecodable)
         summer.in(tz"America/New_York").time.hour
       . assert(_ == 8)
 
@@ -1879,24 +1883,24 @@ object Tests extends Suite(m"Aviation Tests"):
       // 00:30 UTC (BST), then again at 01:30 UTC (GMT).
       test(m"DST fall-back: earlier overlap occurrence round-trips through London"):
         import instantDecodables.iso8601InstantDecodable
-        val earlier = t"2024-10-27T00:30:00Z".decode[Instant]
+        val earlier = t"2024-10-27T00:30:00Z".decode[Instant over Posix]
         earlier.in(tz"Europe/London").instant == earlier
       . assert(_ == true)
 
       test(m"DST fall-back: later overlap occurrence round-trips through London"):
         import instantDecodables.iso8601InstantDecodable
-        val later = t"2024-10-27T01:30:00Z".decode[Instant]
+        val later = t"2024-10-27T01:30:00Z".decode[Instant over Posix]
         later.in(tz"Europe/London").instant == later
       . assert(_ == true)
 
       test(m"DST fall-back: later overlap occurrence is flagged Second"):
         import instantDecodables.iso8601InstantDecodable
-        t"2024-10-27T01:30:00Z".decode[Instant].in(tz"Europe/London").occurrence
+        t"2024-10-27T01:30:00Z".decode[Instant over Posix].in(tz"Europe/London").occurrence
       . assert(_ == Occurrence.Second)
 
       test(m"DST fall-back: earlier overlap occurrence is flagged First"):
         import instantDecodables.iso8601InstantDecodable
-        t"2024-10-27T00:30:00Z".decode[Instant].in(tz"Europe/London").occurrence
+        t"2024-10-27T00:30:00Z".decode[Instant over Posix].in(tz"Europe/London").occurrence
       . assert(_ == Occurrence.First)
 
       test(m"The two overlap occurrences ground one hour apart"):
@@ -1911,14 +1915,14 @@ object Tests extends Suite(m"Aviation Tests"):
       test(m"Spring-forward gap pushes forward by default"):
         import instantDecodables.iso8601InstantDecodable
         val grounded = Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant
-        grounded == t"2024-03-31T01:30:00Z".decode[Instant]
+        grounded == t"2024-03-31T01:30:00Z".decode[Instant over Posix]
       . assert(_ == true)
 
       test(m"Spring-forward gap can push backward"):
         import instantDecodables.iso8601InstantDecodable
         import gapPolicies.pushBackward
         val grounded = Moment(2024-Mar-31, Clockface(1, 30, 0), tz"Europe/London").instant
-        grounded == t"2024-03-31T00:30:00Z".decode[Instant]
+        grounded == t"2024-03-31T00:30:00Z".decode[Instant over Posix]
       . assert(_ == true)
 
       test(m"Spring-forward gap can be rejected"):
@@ -2034,7 +2038,7 @@ object Tests extends Suite(m"Aviation Tests"):
         demilitarize(ts"${2024}")
       . assert(_.nonEmpty)
 
-    suite(m"TaiInstant and leap-second conversion"):
+    suite(m"Atomic time (TAI) conversion"):
       import calendars.gregorianCalendar
       import instantDecodables.iso8601InstantDecodable
 
@@ -2053,20 +2057,18 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_ == 12_000L)
 
       test(m"Instant in 2017 has +37 offset"):
-        val later = t"2017-06-15T00:00:00Z".decode[Instant](using instantDecodables.iso8601InstantDecodable)
+        val later = t"2017-06-15T00:00:00Z".decode[Instant over Posix](using instantDecodables.iso8601InstantDecodable)
         LeapSeconds.tai(later.long) - later.long
       . assert(_ == 37_000L)
 
-      test(m"Instant.tai counts leap seconds under the step strategy"):
-        import leapSeconds.step
-        val later = t"2017-06-15T00:00:00Z".decode[Instant]
-        later.tai.long - later.long
+      test(m"Instant.over[Tai] counts leap seconds"):
+        val later = t"2017-06-15T00:00:00Z".decode[Instant over Posix]
+        later.over[Tai].long - later.long
       . assert(_ == 37_000L)
 
-      test(m"TaiInstant.instant inverts Instant.tai under the smear strategy"):
-        import leapSeconds.smear
-        val instant = t"2017-06-15T00:00:00Z".decode[Instant]
-        instant.tai.instant == instant
+      test(m"An instant round-trips through TAI and back to POSIX"):
+        val instant = t"2017-06-15T00:00:00Z".decode[Instant over Posix]
+        instant.over[Tai].over[Posix] == instant
       . assert(_ == true)
 
       test(m"unsmearTai inverts smearTai across a leap window"):
@@ -2076,11 +2078,10 @@ object Tests extends Suite(m"Aviation Tests"):
 
       test(m"An inserted leap second grounds to the following second"):
         val leapMoment = Moment(2016-Dec-31, Clockface(23, 59, 59), tz"UTC", leap = Leap.Inserted)
-        leapMoment.instant == t"2017-01-01T00:00:00Z".decode[Instant]
+        leapMoment.instant == t"2017-01-01T00:00:00Z".decode[Instant over Posix]
       . assert(_ == true)
 
       test(m"An inserted leap second's TAI is one second before the following second"):
-        import leapSeconds.step
         val leapMoment = Moment(2016-Dec-31, Clockface(23, 59, 59), tz"UTC", leap = Leap.Inserted)
         val nextSecond = Moment(2017-Jan-1, Clockface(0, 0, 0), tz"UTC")
         nextSecond.tai.long - leapMoment.tai.long

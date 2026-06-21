@@ -50,7 +50,7 @@ object Moment:
   // Moments order by their grounded instant (so a `Second`-occurrence overlap sorts after the
   // `First`, and zones are compared on absolute time), hence the `RomanCalendar`/`GapPolicy` need.
   given orderable: (RomanCalendar, GapPolicy) => Moment is Orderable =
-    summon[Instant is Orderable].contramap(_.instant)
+    summon[(Instant over Posix) is Orderable].contramap(_.instant)
 
   given ordering: (RomanCalendar, GapPolicy) => Ordering[Moment] = Ordering.by(_.instant.long)
 
@@ -81,7 +81,8 @@ case class Moment
     occurrence: Occurrence = Occurrence.First,
     leap:       Leap       = Leap.None ):
 
-  def instant(using calendar: RomanCalendar, gap: GapPolicy): Instant =
+  // A `Moment` grounds to the Unix/POSIX timeline (`java.time` works in epoch milliseconds).
+  def instant(using calendar: RomanCalendar, gap: GapPolicy): Instant over Posix =
     val ldt =
       jt.LocalDateTime.of
         ( date.year(),
@@ -94,7 +95,8 @@ case class Moment
 
     val rules = jt.ZoneId.of(timezone.name.s).nn.getRules.nn
 
-    def at(offset: jt.ZoneOffset): Instant = Instant(ldt.toInstant(offset).nn.toEpochMilli)
+    def at(offset: jt.ZoneOffset): Instant over Posix =
+      Instant.of[Posix](ldt.toInstant(offset).nn.toEpochMilli)
 
     val base =
       rules.getTransition(ldt) match
@@ -115,12 +117,12 @@ case class Moment
     // second's instant, so grounding it advances by one second.
     leap match
       case Leap.None     => base
-      case Leap.Inserted => Instant(base.long + 1000L)
+      case Leap.Inserted => Instant.of[Posix](base.long + 1000L)
 
-  // The absolute SI instant, counting leap seconds per the contextual strategy. For an inserted
-  // leap second the TAI value is exactly one SI second before the following second's.
-  def tai(using RomanCalendar, GapPolicy, LeapSeconds.Strategy): TaiInstant = leap match
-    case Leap.None     => instant.tai
-    case Leap.Inserted => TaiInstant(instant.tai.long - 1000L)
+  // The absolute SI instant on the atomic (TAI) timeline. For an inserted leap second the TAI value
+  // is exactly one SI second before the following second's.
+  def tai(using RomanCalendar, GapPolicy): Instant over Tai = leap match
+    case Leap.None     => instant.over[Tai]
+    case Leap.Inserted => Instant.of[Tai](instant.over[Tai].long - 1000L)
 
   def timestamp: Timestamp = Timestamp(date, time)

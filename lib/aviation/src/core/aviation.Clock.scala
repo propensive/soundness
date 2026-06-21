@@ -33,20 +33,21 @@
 package aviation
 
 import anticipation.*
+import prepositional.*
 import symbolism.*
 
-import abstractables.instantAbstractable
 import beneficence.*
 
+// A `Clock` reads the wall clock, which is Unix/POSIX time, so it produces `Instant over Posix`.
 object Clock:
   given current: Clock:
-    def apply(): Instant = Instant(System.currentTimeMillis)
+    def apply(): Instant over Posix = Instant.of[Posix](System.currentTimeMillis)
 
-  def fixed(instant: into[Instant]): Clock = new Clock():
-    def apply(): Instant = instant
+  def fixed(instant: Instant over Posix): Clock = new Clock():
+    def apply(): Instant over Posix = instant
 
   def offset(diff: into[Duration]): Clock = new Clock():
-    def apply(): Instant = Instant(System.currentTimeMillis) + diff
+    def apply(): Instant over Posix = Instant.of[Posix](System.currentTimeMillis) + diff
 
 abstract class Clock() extends Findable:
-  def apply(): Instant
+  def apply(): Instant over Posix

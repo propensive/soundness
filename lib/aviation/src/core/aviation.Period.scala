@@ -33,17 +33,20 @@
 package aviation
 
 import hypotenuse.*
+import prepositional.*
 import symbolism.*
 import vacuous.*
 
-case class Period(start: into[Instant], finish: into[Instant]):
-  def duration = finish - start
+// A range between two instants on the same timeline; its `duration` is measured in that timeline's
+// seconds (so a `Period[Tai]` counts SI seconds, a `Period[Posix]` POSIX seconds).
+case class Period[transport](start: Instant over transport, finish: Instant over transport):
+  def duration: Duration = finish - start
 
-  def intersect(period: Period): Optional[Period] =
+  def intersect(period: Period[transport]): Optional[Period[transport]] =
     val start2 = period.start.max(start)
     val finish2 = period.finish.min(finish)
     if start2 >= finish2 then Unset else Period(start2, finish2)
 
-  def union(period: Period): Set[Period] =
+  def union(period: Period[transport]): Set[Period[transport]] =
     if intersect(period).absent then Set(this, period)
     else Set(Period(start.min(period.start), finish.max(period.finish)))

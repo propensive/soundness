@@ -45,7 +45,7 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
-export protointernal.{Instant, Duration, TaiInstant}
+export protointernal.{Instant, Duration}
 export aviation.internal.{Year, Day, Anniversary, WorkingDays}
 export aviation.timestampInternal.{Timestamp, Date}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
@@ -76,11 +76,17 @@ trait Hour
 trait Minute
 trait Second
 
+// Phantom chronometry markers for `Instant over <chronometry>` (the `Transport` type member): which
+// timeline an instant's `Long` counts on. `Tai` is atomic time; `Posix` is leap-free Unix time.
+// Each is interpreted by a `Chronometry` given. Purely type-level tags.
+trait Tai
+trait Posix
+
 package instantDecodables:
-  given iso8601InstantDecodable: Tactic[TimeError] => Instant is Decodable in Text =
+  given iso8601InstantDecodable: Tactic[TimeError] => (Instant over Posix) is Decodable in Text =
     Iso8601.parse(_)
 
-  given rfc1123InstantDecodable: Tactic[TimeError] => Instant is Decodable in Text =
+  given rfc1123InstantDecodable: Tactic[TimeError] => (Instant over Posix) is Decodable in Text =
     Rfc1123.parse(_)
 
 package dateFormats:
@@ -364,14 +370,18 @@ package calendars:
       import calendars.gregorianCalendar
       unsafely(Date(year, Feb, Day(29)))
 
-// Leap-second strategies for converting a Unix `Instant` to a `TaiInstant`. `ignored` is the
-// ambient default; import one of these to count (`step`) or smear (`smear`) leap seconds instead.
-package leapSeconds:
-  given step: LeapSeconds.Strategy = LeapSeconds.tai(_)
+// The default interpretation of an `Instant`'s `Long` (used by `Instant(…)`, decoding, etc.). Import
+// one of these to choose the timeline bare instants count on; convert explicitly with `.over[…]`.
+package chronometries:
+  given posix: (Chronometry.Ambient { type Transport = Posix }) =
+    new Chronometry.Ambient:
+      type Transport = Posix
+      def chronometry: Posix is Chronometry = Chronometry.posix
 
-  given smear: LeapSeconds.Reversible:
-    def tai(unixMillis: Long): Long = LeapSeconds.smearTai(unixMillis)
-    def unix(taiMillis: Long): Long = LeapSeconds.unsmearTai(taiMillis)
+  given atomic: (Chronometry.Ambient { type Transport = Tai }) =
+    new Chronometry.Ambient:
+      type Transport = Tai
+      def chronometry: Tai is Chronometry = Chronometry.tai
 
 // Overrides for the spring-forward DST gap, used to ground a `Moment` whose wall-clock time doesn't
 // exist. The ambient default is `GapPolicy.pushForward` (matching `java.time`); import one of these
@@ -398,7 +408,7 @@ package monthEnds:
     def resolve(using calendar: Calendar)(year: Year, month: calendar.Mensual, day: Int): Date =
       abort(TimeError(_.Invalid(year(), calendar.monthOrdinal(year, month) + 1, day, calendar)))
 
-def now()(using clock: Clock): Instant = clock()
+def now()(using clock: Clock): Instant over Posix = clock()
 
 def today()(using clock: Clock, calendar: RomanCalendar, timezone: Timezone): Date =
   (now() in timezone).date
