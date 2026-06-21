@@ -677,6 +677,26 @@ object Tests extends Suite(m"Aviation Tests"):
             2025-Aug-11 + WorkingDays(5)
           . assert(_ == 2025-Aug-18)
 
+          test(m"One working day before Tuesday is Monday"):
+            import hebdomads.europeanHebdomad
+            2025-Aug-19 - WorkingDays(1)
+          . assert(_ == 2025-Aug-18)
+
+          test(m"One working day before Monday is the previous Friday"):
+            import hebdomads.europeanHebdomad
+            2025-Aug-18 - WorkingDays(1)
+          . assert(_ == 2025-Aug-15)
+
+          test(m"One working day before a post-holiday Tuesday skips the holiday and weekend"):
+            import hebdomads.europeanHebdomad
+            2025-Aug-26 - WorkingDays(1)
+          . assert(_ == 2025-Aug-22)
+
+          test(m"Adding then subtracting the same working days round-trips"):
+            import hebdomads.europeanHebdomad
+            (2025-Aug-18 + WorkingDays(4)) - WorkingDays(4)
+          . assert(_ == 2025-Aug-18)
+
           test(m"Check one working days after a Friday is Monday"):
             import hebdomads.europeanHebdomad
             2025-Apr-11 + WorkingDays(1)
@@ -1835,6 +1855,22 @@ object Tests extends Suite(m"Aviation Tests"):
         val b = Instant(2000L) ~ Instant(3000L)
         a.union(b).size
       . assert(_ == 2)
+
+      test(m"Period.has is true for a point inside"):
+        (Instant(0L) ~ Instant(1000L)).has(Instant(500L))
+      . assert(_ == true)
+
+      test(m"Period.has includes the start"):
+        (Instant(0L) ~ Instant(1000L)).has(Instant(0L))
+      . assert(_ == true)
+
+      test(m"Period.has excludes the finish"):
+        (Instant(0L) ~ Instant(1000L)).has(Instant(1000L))
+      . assert(_ == false)
+
+      test(m"Period.has is false for a point outside"):
+        (Instant(0L) ~ Instant(1000L)).has(Instant(2000L))
+      . assert(_ == false)
 
     suite(m"Period segments"):
       import calendars.gregorianCalendar

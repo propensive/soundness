@@ -231,6 +231,27 @@ object timestampInternal:
 
         recur(date, days())
 
+    given dateWorkingDaysSubtractable: Holidays => (hebdomad: Hebdomad) => Date is Subtractable:
+      type Operand = WorkingDays
+      type Result = Date
+
+      def subtract(date: Date, days: WorkingDays): Date =
+        def recur(current: Date, count: Int): Date =
+          if count == 0 then
+            if current.weekend || summon[Holidays].holiday(current).present
+            then recur(current.addDays(-1), 0)
+            else current
+          else
+            val previous = current.addDays(-count)
+            val holidays = summon[Holidays].between(previous, current)
+            val weekends = Weekday.all.to(List).filter(_.weekend)
+            val weekendDays = weekends.map(Weekday.count(previous, current, _)).sum
+            val weekdayHolidays = holidays.filter(!_.date.weekend).length
+            val skipped = weekdayHolidays + weekendDays
+            recur(previous, skipped)
+
+        recur(date, days())
+
   object Date:
     def julianDay(day: Int): Date = (day.toLong*aviation.internal.MillisPerDay).asInstanceOf[Date]
 

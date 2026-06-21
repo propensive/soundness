@@ -33,10 +33,16 @@
 package aviation
 
 import prepositional.*
+import rudiments.*
 import symbolism.*
 import vacuous.*
 
 object Period:
+  // Membership is half-open: a point is in the period when `start <= point < finish` (so `finish`
+  // belongs to the next period, not this one). Use it as `period.has(point)`.
+  given inclusive: [point] => (order: Ordering[point]) => (Period[point] is Inclusive by point) =
+    (period, point) => order.lteq(period.start, point) && order.lt(point, period.finish)
+
   // Split a period into consecutive `length`-long segments. The step is whatever the point can be
   // advanced by — a `Duration` or `Timespan` for an `Instant over X`, a `Timespan` for a
   // `Timestamp`/`Moment` (irregular spans pull in their `Calendar`/`Disambiguation`). When `length`
