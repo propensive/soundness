@@ -243,12 +243,17 @@ object Tests extends Suite(m"Wisteria tests"):
   case class Employee(name: Text, age: Int)
   case class Company(ceo: Employee, cto: Employee)
 
-  // A Self-based typeclass with a product derivation, to observe overrides end-to-end.
+  sealed trait Contact
+  case class Email(address: Text) extends Contact
+  case class Phone(number: Text) extends Contact
+  case class Account(holder: Text, contact: Contact)
+
+  // A Self-based typeclass with product + sum derivation, to observe overrides end-to-end.
   trait Display:
     type Self
     def display(value: Self): Text
 
-  object Display extends ProductDerivable[Display]:
+  object Display extends Derivable[Display]:
     given (Text is Display) = identity(_)
     given (Int is Display) = _.toString.tt
 
@@ -256,6 +261,10 @@ object Tests extends Suite(m"Wisteria tests"):
       fields(value):
         [field] => field => contextual.display(field)
       .mkString(",").tt
+
+    inline def disjunction[derivation: SumReflection]: derivation is Display = value =>
+      variant(value):
+        [variant <: derivation] => variant => contextual.display(variant)
 
   extension [value](value: value)
     def display(using display: value is Display): Text = display.display(value)
@@ -558,3 +567,40 @@ object Tests extends Suite(m"Wisteria tests"):
 
         Display.derived[Company].display(company)
       . assert(_ == t"AL,30,bo,80")
+
+      test(m"A whole non-leaf field can be overridden with a custom instance"):
+        val terse: Employee is Display = e => t"<${e.name}>"
+
+        given (Company is Specific over Display) =
+          specifically:
+            case root.cto() => terse
+
+        Display.derived[Company].display(company)
+      . assert(_ == t"al,30,<bo>")
+
+      test(m"A local element given is picked up by re-derivation"):
+        given Employee is Display = e => t"E(${e.name})"
+        Display.derived[Company].display(company)
+      . assert(_ == t"E(al),E(bo)")
+
+      test(m"specialized re-derives a sum with one variant overridden"):
+        val maskedEmail: Email is Display = e => t"<hidden>"
+        val account = Account(t"ann", Email(t"ann@example.com"))
+
+        given (Account is Specific over Display) =
+          specifically:
+            case root.contact() => specialized[Contact, Display](maskedEmail)
+
+        Display.derived[Account].display(account)
+      . assert(_ == t"ann,<hidden>")
+
+      test(m"specialized leaves other variants on their defaults"):
+        val maskedEmail: Email is Display = e => t"<hidden>"
+        val account = Account(t"bob", Phone(t"555-1234"))
+
+        given (Account is Specific over Display) =
+          specifically:
+            case root.contact() => specialized[Contact, Display](maskedEmail)
+
+        Display.derived[Account].display(account)
+      . assert(_ == t"bob,555-1234")
