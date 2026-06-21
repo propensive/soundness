@@ -384,7 +384,7 @@ object adversaria extends Library:
 object ambience extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
-      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
 
 object anamnesis extends Library:
