@@ -1009,6 +1009,35 @@ object Tests extends Suite(m"Aviation Tests"):
         ((2024 - Jan) + 7*Month) - 7*Month
       . assert(_ == 2024 - Jan)
 
+    suite(m"Ordinal dates"):
+      import calendars.gregorianCalendar
+      import calendars.ordinalCalendar
+
+      test(m"Day 1 is the 1st of January"):
+        OrdinalCalendar(Year(2024), 1)
+      . assert(_ == 2024-Jan-1)
+
+      test(m"Day 247 of leap-year 2024 is the 3rd of September"):
+        OrdinalCalendar(Year(2024), 247)
+      . assert(_ == 2024-Sep-3)
+
+      test(m"Day 60 of common-year 2023 is the 1st of March"):
+        OrdinalCalendar(Year(2023), 60)
+      . assert(_ == 2023-Mar-1)
+
+      test(m"The day-of-year reads back from a date"):
+        (2024-Sep-3).day(using ordinalCalendar)()
+      . assert(_ == 247)
+
+      test(m"The year reads back from a date"):
+        (2024-Sep-3).year(using ordinalCalendar)()
+      . assert(_ == 2024)
+
+      test(m"Day 366 in a common year is rejected"):
+        capture(OrdinalCalendar(Year(2023), 366))
+      . matches:
+          case _: TimeError =>
+
     suite(m"Holidays methods"):
       val holidays = Holidays(List
         ( Holiday(2025-Jan-1, t"New Year's Day"),

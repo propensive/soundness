@@ -47,7 +47,7 @@ import vacuous.*
 
 export protointernal.{Instant, Duration}
 export aviation.internal.{Year, Day, Anniversary, WorkingDays}
-export aviation.timestampInternal.{Timestamp, Date}
+export aviation.timestampInternal.{Timestamp, Date, Monthstamp}
 export Month.{Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec}
 
 // A `MonthRadix` is the "month" radix of some calendar (Gregorian `Month`, `IslamicMonth`,
@@ -371,6 +371,9 @@ package calendars:
 
   given buddhistCalendar: OffsetCalendar = OffsetCalendar(gregorianCalendar, 543, t"Buddhist")
   given minguoCalendar: OffsetCalendar = OffsetCalendar(gregorianCalendar, -1911, t"Minguo")
+
+  // Year + day-of-year (no months); construct with `OrdinalCalendar(year, dayOfYear)`.
+  given ordinalCalendar: OrdinalCalendar.type = OrdinalCalendar
 
   // The Julian-to-Gregorian cutovers of the two best-known reforms, as two-segment `Regime`s. The
   // first day of each segment is given as a Julian day number; the gap between (the dates in

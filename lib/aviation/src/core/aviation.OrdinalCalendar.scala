@@ -32,26 +32,40 @@
                                                                                                   */
 package aviation
 
+import anticipation.*
 import contingency.*
-import symbolism.*
+import gossamer.*
 
-// A `Monthstamp` is a month-precise `Timestamp` — the first instant of a (Gregorian) month, tagged
-// with `Month` precision. Construction clamps to the 1st, so same-month stamps are equal;
-// whole-month/year arithmetic stays month-precise, and `monthstamp - dayOfMonth` is that day's
-// `Date` (the `2012-Mar - 8` form). The `type Monthstamp` alias and its givens/accessors live in
-// `timestampInternal` (the implicit scope of `Timestamp in Month`); this object holds only the
-// factory and the compile-time `-` operator.
-object Monthstamp:
-  def apply(year: Year, month: Month): Monthstamp =
-    unsafely(calendars.gregorianCalendar.jdn(year, month, Day(1))).asInstanceOf[Monthstamp]
+// A calendar with no months: a date is a year plus a day-of-year (1–366) — the ISO-8601 "ordinal
+// date" form, e.g. day 247 of 2024. Year boundaries are delegated to the Gregorian calendar; the
+// single vestigial "month" (`Annus`) spans the whole year, so `diurnal` is the day-of-year.
+object OrdinalCalendar extends Calendar:
+  object Annus extends MonthRadix
+  type Mensual = Annus.type
+  type MonthUnit = Annus.type
 
-  // The inline path the `-` operator prefers: when the year, month and day are all literals it
-  // validates the date at compile time against the contextually-resolved calendar (raising a
-  // compile error for e.g. `2012-Feb-30`); otherwise it falls back to a runtime check.
-  final class MonthstampSubtraction extends SubOp:
-    type Self = Monthstamp
-    type Operand = Int
-    type Result = Date
+  private def base: RomanCalendar = calendars.gregorianCalendar
 
-    inline def op(left: Monthstamp, right: Int): Date =
-      ${aviation.internal.monthstampMinus('left, 'right)}
+  def name: Text = t"Ordinal"
+  def monthsInYear(year: Year): Int = 1
+  def daysInYear(year: Year): Int = base.daysInYear(year)
+  def daysInMonth(month: Annus.type, year: Year): Int = base.daysInYear(year)
+  def monthOrdinal(year: Year, month: Annus.type): Int = 0
+  def monthOfOrdinal(year: Year, ordinal: Int): Annus.type = Annus
+  def annual(date: Date): Year = base.annual(date)
+  def mensual(date: Date): Annus.type = Annus
+  def zerothDayOfYear(year: Year): Date = base.zerothDayOfYear(year)
+
+  def diurnal(date: Date): Day = Day(date.jdn - base.zerothDayOfYear(base.annual(date)).jdn)
+
+  def jdn(year: Year, month: Annus.type, day: Day): Date raises TimeError =
+    if day() < 1 || day() > base.daysInYear(year) then
+      raise(TimeError(_.Invalid(year(), 1, day(), this)))
+      base.zerothDayOfYear(year).addDays(1)
+    else
+      base.zerothDayOfYear(year).addDays(day())
+
+  // Construct directly from a year and a day-of-year, without the vestigial month.
+  def apply(year: Year, dayOfYear: Int): Date raises TimeError = jdn(year, Annus, Day(dayOfYear))
+
+  override def format(date: Date): Text = t"${annual(date)()}-${diurnal(date)()}"

@@ -66,6 +66,9 @@ object timestampInternal:
   // A `Date` is a day-precise `Timestamp` (time-of-day clamped to zero).
   type Date = Timestamp in Day
 
+  // A `Monthstamp` is a month-precise `Timestamp` (clamped to the 1st of the month).
+  type Monthstamp = Timestamp in Month
+
   private def underlying(timestamp: Timestamp): Long = timestamp
 
   // The shape of a `Timestamp - Timestamp` difference: a regular span of days/hours/mins/seconds.
@@ -254,16 +257,13 @@ object timestampInternal:
 
     // `Monthstamp` (= `Timestamp in Month`) givens. Like `Date`'s, they live here so they're in the
     // implicit scope of the underlying `Timestamp`, not in the transparent alias's companion.
-    given monthstampShowable
-        : (Months, DateSeparation, Endianness, Years) => Monthstamp is Showable =
-
+    given monthShowable: (Months, DateSeparation, Endianness, Years) => Monthstamp is Showable =
       monthstamp =>
-        summon[Endianness] match
-          case Endianness.LittleEndian =>
-            t"${monthstamp.year}${summon[DateSeparation].separator}${monthstamp.month}"
+        val separator = summon[DateSeparation].separator
 
-          case _ =>
-            t"${monthstamp.month}${summon[DateSeparation].separator}${monthstamp.year}"
+        summon[Endianness] match
+          case Endianness.LittleEndian => t"${monthstamp.year}$separator${monthstamp.month}"
+          case _                       => t"${monthstamp.month}$separator${monthstamp.year}"
 
     // `monthstamp - dayOfMonth` → the `Date` of that day; the result-type witness and runtime
     // fallback for the `2012-Mar - 8` operator.
@@ -277,14 +277,14 @@ object timestampInternal:
     inline given monthstampSubtraction: Monthstamp.MonthstampSubtraction =
       Monthstamp.MonthstampSubtraction()
 
-    // Form-preserving month arithmetic: only whole months/years apply (finer components ignored), so
-    // the result stays month-precise.
+    // Form-preserving month arithmetic: only whole months/years apply (finer components are
+    // ignored), so the result stays month-precise.
     given monthstampAddable: [topic <: Radix]
-    =>  (Monthstamp is Addable by (Timespan of topic) to Monthstamp) =
+    =>  Monthstamp is Addable by (Timespan of topic) to Monthstamp =
       (monthstamp, span) => monthstampShift(monthstamp, span.years*12 + span.months)
 
     given monthstampTimespanSubtractable: [topic <: Radix]
-    =>  (Monthstamp is Subtractable by (Timespan of topic) to Monthstamp) =
+    =>  Monthstamp is Subtractable by (Timespan of topic) to Monthstamp =
       (monthstamp, span) => monthstampShift(monthstamp, -(span.years*12 + span.months))
 
     private def monthstampShift(monthstamp: Monthstamp, months: Int): Monthstamp =
