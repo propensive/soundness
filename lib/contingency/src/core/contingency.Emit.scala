@@ -41,7 +41,7 @@ object Emit:
   // Builds an `Emit` whose `record` simply runs `handler` as a side-effect at the emit point — the
   // basis of `handle`, where each covered error type gets an `Emit` backed by its case body.
   def apply[error <: Exception](handler: error => Unit)(using diagnostics0: Diagnostics)
-  :   Emit[error] =
+  :   Emit[error]^{handler} =
 
     new Emit[error]:
       def diagnostics: Diagnostics = diagnostics0
@@ -52,12 +52,20 @@ object Emit:
 // choice). `Tactic` adds the value-replacing `abort`. `raise` needs only an `Emit`; `abort` needs a
 // full `Tactic`. So `emits error` (`Emit[error] ?=>`) is the weaker obligation than `raises error`
 // (`Tactic[error] ?=>`), and a `Tactic` in scope discharges either.
+// An `Emit` is an ordinary (capture-pure) trait, so a bare `Emit[error]` is a *pure* emitter and a
+// capturing one is written `Emit[error]^`. The boundary-based tactics close over a stack
+// `boundary.Label` (so they are `Emit[error]^{label}`), whereas a throwing or handler-backed
+// emitter captures only an effect-polymorphic lambda (or nothing). Combinators that retain the
+// receiver and a user lambda — `contramap`, `Emit.apply` — annotate their result with that capture
+// set, exactly as `LzyList.map` returns `^{xs, f}`.
 trait Emit[-error <: Exception] extends Findable:
   private inline def emitter: this.type = this
   def diagnostics: Diagnostics
   def record(error: Diagnostics ?=> error): Unit
 
-  def contramap[error2 <: Exception](lambda: error2 => error): Emit[error2] =
+  def contramap[error2 <: Exception](lambda: error2 => error)
+  :   Emit[error2]^{this, lambda} =
+
     new Emit[error2]:
       def diagnostics: Diagnostics = emitter.diagnostics
       def record(error: Diagnostics ?=> error2): Unit = emitter.record(lambda(error))

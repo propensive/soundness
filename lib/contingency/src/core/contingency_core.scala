@@ -44,15 +44,15 @@ import prepositional.*
 import vacuous.*
 
 package strategies:
-  given throwUnsafely: [success] => ThrowTactic[Exception, success] =
+  given throwUnsafely: [success] => (ThrowTactic[Exception, success]^) =
     ThrowTactic()(using unsafeExceptions.canThrowAny)
 
-  given throwSafely: [error <: Exception: CanThrow, success] => ThrowTactic[error, success] =
+  given throwSafely: [error <: Exception: CanThrow, success] => (ThrowTactic[error, success]^) =
     ThrowTactic()
 
 
   given mitigation: [error <: Exception: Tactic, error2 <: Exception: Mitigable to error]
-  =>  Tactic[error2] =
+  =>  ( Tactic[error2]^ ) =
 
     error.contramap(error2.mitigate(_))
 
@@ -64,12 +64,19 @@ package strategies:
     def abort(error: Diagnostics ?=> exception): Nothing = exception.status(error).terminate()
     def certify(): Unit = ()
 
+  // `canThrowAny` is imported method-locally rather than held as a `given` field, so this tactic
+  // does not *capture* the `CanThrow` control capability — it merely uses it to `throw` in place.
   given uncheckedErrors: [error <: Exception] => (erased error is Unchecked) => Tactic[error]:
     given diagnostics: Diagnostics = errorDiagnostics.stackTracesDiagnostics
-    given canThrow: CanThrow[Exception] = unsafeExceptions.canThrowAny
 
-    def record(error: Diagnostics ?=> error): Unit = throw error
-    def abort(error: Diagnostics ?=> error): Nothing = throw error
+    def record(error: Diagnostics ?=> error): Unit =
+      import unsafeExceptions.canThrowAny
+      throw error
+
+    def abort(error: Diagnostics ?=> error): Nothing =
+      import unsafeExceptions.canThrowAny
+      throw error
+
     def certify(): Unit = ()
 
 def certify[error <: Exception: Tactic](): Unit = error.certify()
@@ -77,7 +84,7 @@ def certify[error <: Exception: Tactic](): Unit = error.certify()
 
 def raise[exception <: Exception]
   ( error: Diagnostics ?=> exception )
-  ( using emitter: Emit[exception] )
+  ( using emitter: Emit[exception]^ )
 :   Unit =
 
   emitter.record(error)
@@ -88,7 +95,7 @@ def abort[success, exception <: Exception: Tactic](error: Diagnostics ?=> except
 
 
 def safely[error <: Exception](using erased Void)[success]
-  ( block: (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=> success )
+  ( block: (Diagnostics, OptionalTactic[error, success]^) ?=> CanThrow[Exception] ?=> success )
 :   Optional[success] =
 
   try boundary: label ?=>
@@ -97,23 +104,30 @@ def safely[error <: Exception](using erased Void)[success]
 
 
 def unsafely[error <: Exception](using erased Void)[success]
-  ( block: (erased Unsafe) ?=> ThrowTactic[error, success] ?=> CanThrow[Exception] ?=> success )
+  ( block: (erased Unsafe) ?=> ThrowTactic[error, success]^ ?=> CanThrow[Exception] ?=> success )
 :   success =
 
+  // The `CanThrow[Exception]` that constructs the injected `ThrowTactic` (and discharges the
+  // block's own `CanThrow`) comes from the enclosing `try`, not from the universal `canThrowAny`. A
+  // `try` grants a *local* control capability scoped to its body, so — unlike `canThrowAny`, whose
+  // `any` a top-level definition may not retain — it leaves no capture in `unsafely`'s type. The
+  // `catch` rethrows, preserving the original fire-and-forget propagation semantics.
   boundary: label ?=>
-    import unsafeExceptions.canThrowAny
-    block(using Unsafe)(using ThrowTactic())
+    try block(using Unsafe)(using ThrowTactic())
+    catch case error: Exception =>
+      import unsafeExceptions.canThrowAny
+      throw error
 
 
 def throwErrors[error <: Exception](using CanThrow[error])[success]
-  ( block: ThrowTactic[error, success] ?=> success )
+  ( block: ThrowTactic[error, success]^ ?=> success )
 :   success =
 
   block(using ThrowTactic())
 
 
 def capture[error <: Exception: ClassTag](using erased Void)[success]
-  ( block: Tactic[error] ?=> success )
+  ( block: Tactic[error]^ ?=> success )
   ( using Tactic[ExpectationError[success]], Diagnostics )
 :   error =
 
@@ -131,7 +145,7 @@ def capture[error <: Exception: ClassTag](using erased Void)[success]
 
 
 def attempt[error <: Exception](using erased Void)[success]
-  ( block: AttemptTactic[error, success] ?=> success )
+  ( block: AttemptTactic[error, success]^ ?=> success )
   ( using Diagnostics )
 :   Attempt[success, error] =
 
@@ -140,7 +154,7 @@ def attempt[error <: Exception](using erased Void)[success]
 
 
 def amalgamate[error <: Exception](using erased Void)[success]
-  ( block: AmalgamateTactic[error, success] ?=> success )
+  ( block: AmalgamateTactic[error, success]^ ?=> success )
   ( using Diagnostics )
 :   success | error =
 
@@ -149,7 +163,7 @@ def amalgamate[error <: Exception](using erased Void)[success]
 
 
 def abortive[error <: Error](using Quotes)[success]
-  ( block: Diagnostics ?=> HaltTactic[error, success] ?=> success )
+  ( block: Diagnostics ?=> HaltTactic[error, success]^ ?=> success )
 :   success =
 
   given haltTactic: HaltTactic[error, success]()
@@ -157,7 +171,7 @@ def abortive[error <: Error](using Quotes)[success]
   block
 
 
-infix type raises [success, error <: Exception] = Tactic[error] ?=> success
+infix type raises [success, error <: Exception] = Tactic[error]^ ?=> success
 
 // `raising` cannot replace `raises` until a Scala 3 compiler bug is fixed: when this match type
 // appears in a method's return type and reduces to a context function, PostTyper attaches
@@ -224,7 +238,7 @@ extension [value](optional: Optional[value])
 
   def dare[error <: Exception](using erased Void)[success]
     ( block
-    : (Diagnostics, OptionalTactic[error, success]) ?=> CanThrow[Exception] ?=> value => success )
+    : (Diagnostics, OptionalTactic[error, success]^) ?=> CanThrow[Exception] ?=> value => success )
   :   Optional[success] =
 
     try boundary: label ?=>
@@ -232,8 +246,8 @@ extension [value](optional: Optional[value])
     catch case error: Exception => Unset
 
 
-def defer[result, error <: Exception](body: Tactic[error] ?=> result)
-:   Deferred[result, error] =
+def defer[result, error <: Exception](body: Tactic[error]^ ?=> result)
+:   Deferred[result, error]^{body} =
 
   Deferred(body)
 
