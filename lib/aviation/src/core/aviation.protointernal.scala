@@ -122,7 +122,7 @@ object protointernal:
         Instant.of(raw(instant) + (duration.normalize.value*1000.0).toLong)
 
     // The difference of two instants on the same timeline is a `Duration` measured in that
-    // timeline's seconds; subtracting across timelines is a type error (convert with `.over` first).
+    // timeline's seconds; subtracting across timelines is a type error (convert with `.over`).
     given minus: [transport]
     =>  (Instant over transport) is Subtractable by (Instant over transport) to Duration =
       (left, right) => Quantity((raw(left) - raw(right))/1000.0)
@@ -139,10 +139,12 @@ object protointernal:
     // Re-interpret this instant on another timeline, composing through TAI.
     def over[target](using from: transport is Chronometry, to: target is Chronometry)
     :   Instant over target =
+
       Instant.of(to.fromTai(from.toTai(raw(instant))))
 
     @targetName("to")
-    infix def ~ (that: Instant over transport): Period[transport] = Period(instant, that)
+    infix def ~ (that: Instant over transport): Period[Instant over transport] =
+      Period(instant, that)
 
     infix def in (using RomanCalendar, transport is Chronometry)(timezone: Timezone): Moment =
       val unix = instant.over[Posix].long
@@ -172,5 +174,5 @@ object protointernal:
 
 
   extension (duration: into[Duration])
-    def from[transport](instant: Instant over transport): Period[transport] =
+    def from[transport](instant: Instant over transport): Period[Instant over transport] =
       Period(instant, Instant.plus.add(instant, duration))

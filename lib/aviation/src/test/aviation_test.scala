@@ -1836,6 +1836,48 @@ object Tests extends Suite(m"Aviation Tests"):
         a.union(b).size
       . assert(_ == 2)
 
+    suite(m"Period segments"):
+      import calendars.gregorianCalendar
+
+      test(m"An evenly-divisible period splits into equal segments"):
+        (Instant(0L) ~ Instant(3_600_000L)).segments(15*Minute).length
+      . assert(_ == 4)
+
+      test(m"Segment boundaries are consecutive"):
+        (Instant(0L) ~ Instant(3_600_000L)).segments(15*Minute).map(_.start.long)
+      . assert(_ == List(0L, 900_000L, 1_800_000L, 2_700_000L))
+
+      test(m"A remainder is kept as a short final segment when partial is true"):
+        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute, partial = true).length
+      . assert(_ == 3)
+
+      test(m"A remainder is dropped when partial is false"):
+        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute, partial = false).length
+      . assert(_ == 2)
+
+      test(m"The final partial segment ends at the period's finish"):
+        (Instant(0L) ~ Instant(3_600_000L)).segments(25*Minute).last.finish.long
+      . assert(_ == 3_600_000L)
+
+      test(m"A period can be split by a Duration"):
+        (Instant(0L) ~ Instant(3_600_000L)).segments(Quantity[Seconds[1]](1200.0)).length
+      . assert(_ == 3)
+
+      test(m"A Timestamp period splits by a Timespan"):
+        val period = Period(Timestamp(2024-Jan-1, Clockface(0, 0, 0)),
+            Timestamp(2024-Jan-2, Clockface(0, 0, 0)))
+        period.segments(6*Hour).length
+      . assert(_ == 4)
+
+    suite(m"Moment subtraction"):
+      import calendars.gregorianCalendar
+
+      test(m"Subtracting two moments gives the physical duration between them"):
+        val later = Moment(2024-Jan-1, Clockface(1, 0, 0), tz"UTC")
+        val earlier = Moment(2024-Jan-1, Clockface(0, 0, 0), tz"UTC")
+        (later - earlier).value
+      . assert(_ == 3600.0)
+
     suite(m"Moment and Timezone"):
       import calendars.gregorianCalendar
 

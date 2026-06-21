@@ -32,21 +32,44 @@
                                                                                                   */
 package aviation
 
-import hypotenuse.*
 import prepositional.*
 import symbolism.*
 import vacuous.*
 
-// A range between two instants on the same timeline; its `duration` is measured in that timeline's
-// seconds (so a `Period[Tai]` counts SI seconds, a `Period[Posix]` POSIX seconds).
-case class Period[transport](start: Instant over transport, finish: Instant over transport):
-  def duration: Duration = finish - start
+object Period:
+  // Split a period into consecutive `length`-long segments. The step is whatever the point can be
+  // advanced by — a `Duration` or `Timespan` for an `Instant over X`, a `Timespan` for a
+  // `Timestamp`/`Moment` (irregular spans pull in their `Calendar`/`Disambiguation`). When `length`
+  // doesn't divide the period exactly, `partial` decides whether the short final segment is kept.
+  extension [point](period: Period[point])
+    def segments[step](length: step, partial: Boolean = true)
+      ( using addable: point is Addable by step to point, order: Ordering[point] )
+    :   List[Period[point]] =
 
-  def intersect(period: Period[transport]): Optional[Period[transport]] =
-    val start2 = period.start.max(start)
-    val finish2 = period.finish.min(finish)
-    if start2 >= finish2 then Unset else Period(start2, finish2)
+      @scala.annotation.tailrec
+      def recur(current: point, acc: List[Period[point]]): List[Period[point]] =
+        if !order.gt(period.finish, current) then acc.reverse else
+          val next = current + length
 
-  def union(period: Period[transport]): Set[Period[transport]] =
+          if !order.gt(next, current) || order.gt(next, period.finish)
+          then (if partial then Period(current, period.finish) :: acc else acc).reverse
+          else recur(next, Period(current, next) :: acc)
+
+      recur(period.start, Nil)
+
+// A range between two points of the same type — an `Instant over X`, a `Timestamp`, or a `Moment`.
+// `duration` is the points' difference, whose type follows the point: a `Duration` for an
+// `Instant over X` (in that timeline's seconds), a `Timespan` for a `Timestamp`/`Moment`. (Ordering
+// uses the non-inline `Ordering`, since the point is abstract here.)
+case class Period[point](start: point, finish: point):
+  def duration(using subtractable: point is Subtractable by point): subtractable.Result =
+    subtractable.subtract(finish, start)
+
+  def intersect(period: Period[point])(using order: Ordering[point]): Optional[Period[point]] =
+    val start2 = order.max(period.start, start)
+    val finish2 = order.min(period.finish, finish)
+    if order.gteq(start2, finish2) then Unset else Period(start2, finish2)
+
+  def union(period: Period[point])(using order: Ordering[point]): Set[Period[point]] =
     if intersect(period).absent then Set(this, period)
-    else Set(Period(start.min(period.start), finish.max(period.finish)))
+    else Set(Period(order.min(start, period.start), order.max(finish, period.finish)))
