@@ -64,7 +64,7 @@ trait Loggable extends Typeclass:
   loggable =>
     def log(level: Level, timestamp: Long, event: => Self): Unit
 
-    def contramap[self2](lambda: self2 => Self): self2 is Loggable = new Loggable:
+    def contramap[self2](lambda: self2 -> Self): self2 is Loggable = new Loggable:
       type Self = self2
 
       def log(level: Level, timestamp: Long, event: => Self): Unit =

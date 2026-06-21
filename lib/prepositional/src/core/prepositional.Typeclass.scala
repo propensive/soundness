@@ -34,5 +34,12 @@ package prepositional
 
 import beneficence.Findable
 
-trait Typeclass extends Findable:
+import scala.caps.Pure
+
+// `Typeclass` instances are pure values: they hold no capabilities, so under capture
+// checking `this` contributes nothing to a capture set. This lets combinators like
+// `contramap` return a fresh instance closing over the receiver while still typing as a
+// pure typeclass. Capability-bearing abstractions (`Emit`/`Tactic`) extend `Findable`
+// directly instead, so they remain capture-tracked.
+trait Typeclass extends Findable, Pure:
   type Self
