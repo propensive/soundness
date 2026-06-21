@@ -40,10 +40,10 @@ export
       Disambiguation, Duration, Endianness, EthiopianCalendar, EthiopianMonth, Feb,
       FrenchRepublicanCalendar, FrenchRepublicanMonth, Fri, Hebdomad, Holiday, Holidays, Horology,
       HebrewCalendar, HebrewMonth, Hour, IndianCalendar, IndianMonth, Instant, IslamicCalendar,
-      IslamicMonth, Iso8601, Jan, Jul, Jun, LeapSeconds, Mar, May,
-      Meridiem, Minute, Moment, Mon, Month, Months, Monthstamp, Nov, now, Oct, OffsetCalendar,
-      Period, PersianCalendar, PersianMonth, pm, Regime, Rfc1123, RomanCalendar, Sat, Sep, Sun, Thu,
-      TimeError, TimeEvent, TimeFormat, TimeNumerics,
+      GapPolicy, IslamicMonth, Iso8601, Jan, Jul, Jun, LeapSeconds, Mar, May,
+      Meridiem, Minute, Moment, Mon, Month, Months, Monthstamp, Nov, now, Occurrence, Oct,
+      OffsetCalendar, Period, PersianCalendar, PersianMonth, pm, Regime, Rfc1123, RomanCalendar,
+      Sat, Sep, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics,
       TimeSeparation, TimeSpecificity, Timespan, Timestamp, TimestampError, Timezone, TimezoneError,
       today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Week, WeekDate, Weekday, Weekdays,
       WorkingDays, Year, Years }
@@ -59,6 +59,9 @@ package nonexistentLeapDays:
 
 package monthEnds:
   export aviation.monthEnds.{clampMonthEnd, overflowMonthEnd, raiseMonthEnd}
+
+package gapPolicies:
+  export aviation.gapPolicies.{pushBackward, rejectGap}
 
 package leapSeconds:
   export aviation.leapSeconds.{step, smear}

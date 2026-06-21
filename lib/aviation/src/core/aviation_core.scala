@@ -370,6 +370,15 @@ package leapSeconds:
   given step: LeapSeconds.Strategy = LeapSeconds.tai(_)
   given smear: LeapSeconds.Strategy = LeapSeconds.smearTai(_)
 
+// Overrides for the spring-forward DST gap, used to ground a `Moment` whose wall-clock time doesn't
+// exist. The ambient default is `GapPolicy.pushForward` (matching `java.time`); import one of these
+// to push the other way or to reject the gap.
+package gapPolicies:
+  given pushBackward: GapPolicy = (_, backward) => backward
+
+  given rejectGap: Tactic[TimeError] => GapPolicy =
+    (_, _) => abort(TimeError(_.Gap))
+
 // Month-end overflow policies for adding months/years to a date (e.g. Jan 31 + 1 month). No default
 // is provided, so such arithmetic requires one of these to be imported.
 package monthEnds:
@@ -412,6 +421,13 @@ object TimeEvent:
 
 enum TimeEvent:
   case ParseTzdb(name: Text)
+
+// Which occurrence of a wall-clock time a `Moment` denotes during a fall-back DST overlap, where
+// the same local time happens twice (clocks go back). `First` is the earlier instant (under the
+// offset before the transition); `Second` is the later one (after it). For unambiguous times it is
+// always `First`, and grounding ignores it.
+enum Occurrence derives CanEqual:
+  case First, Second
 
 extension (inline double: Double)
   inline def am: Clockface = ${aviation.internal.validTime('double, false)}

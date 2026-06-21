@@ -32,50 +32,20 @@
                                                                                                   */
 package aviation
 
-import java.time as jt
+// A `GapPolicy` resolves a spring-forward DST gap — a wall-clock time that never occurs because the
+// clocks jump forward over it (e.g. 02:30 when 02:00 becomes 03:00). Grounding such a `Moment` to
+// an `Instant` is ambiguous: it can be nudged into the new offset (`forward`, the instant you get
+// by keeping the pre-transition offset on the same wall-clock, which lands just after the gap) or
+// held in the old offset (`backward`, just before the gap), or rejected. The policy is supplied
+// contextually; unlike `Disambiguation` there is a default (`pushForward`, matching `java.time`),
+// so grounding stays total and non-breaking. Import `gapPolicies.pushBackward` /
+// `gapPolicies.rejectGap` to override it.
+//
+// `resolve` receives the two candidate instants and returns one (or aborts). The rejecting policy
+// captures a `Tactic[TimeError]` when constructed, so it doesn't widen grounding's effect type.
 
-import anticipation.*
-import prepositional.*
+object GapPolicy:
+  given pushForward: GapPolicy = (forward, _) => forward
 
-import abstractables.instantAbstractable
-
-object Moment:
-  given generic: RomanCalendar => Moment is Abstractable across Instants to Long =
-    _.instant.generic
-
-case class Moment
-  ( date:       Date,
-    time:       Clockface,
-    timezone:   Timezone,
-    occurrence: Occurrence = Occurrence.First ):
-
-  def instant(using calendar: RomanCalendar, gap: GapPolicy): Instant =
-    val ldt =
-      jt.LocalDateTime.of
-        ( date.year(),
-          date.month.numerical,
-          date.day(),
-          time.hour,
-          time.minute,
-          time.second,
-          time.nanos ).nn
-
-    val rules = jt.ZoneId.of(timezone.name.s).nn.getRules.nn
-
-    def at(offset: jt.ZoneOffset): Instant = Instant(ldt.toInstant(offset).nn.toEpochMilli)
-
-    rules.getTransition(ldt) match
-      case null       => at(rules.getOffset(ldt).nn)
-
-      case transition =>
-        val before = transition.getOffsetBefore.nn
-        val after = transition.getOffsetAfter.nn
-
-        // A gap (the wall-clock time was skipped) is resolved by the contextual policy; an overlap
-        // (the wall-clock time occurs twice) is resolved by the stored `occurrence`.
-        if transition.isGap then gap.resolve(at(before), at(after))
-        else occurrence match
-          case Occurrence.First  => at(before)
-          case Occurrence.Second => at(after)
-
-  def timestamp: Timestamp = Timestamp(date, time)
+trait GapPolicy:
+  def resolve(forward: Instant, backward: Instant): Instant
