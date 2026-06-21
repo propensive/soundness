@@ -94,9 +94,12 @@ extension [element](stream: Stream[element])
   def deduplicate: Stream[element] =
     def recur(last: element, stream: Stream[element]): Stream[element] =
       stream.flow(Stream()):
-        if last == next then recur(last, more) else next #:: recur(next, more)
+        val head = next.asInstanceOf[element]
+        if last == head then recur(last, more) else head #:: recur(head, more)
 
-    stream.flow(Stream())(next #:: recur(next, more))
+    stream.flow(Stream()):
+      val head = next.asInstanceOf[element]
+      head #:: recur(head, more)
 
 
   inline def flow[result](inline termination: => result)
@@ -271,9 +274,11 @@ extension (bytes: Data)
 extension (stream: Stream[Data])
   def discard(bytes: Bytes): Stream[Data] =
     def recur(stream: Stream[Data], count: Bytes): Stream[Data] = stream.flow(Stream()):
-      if next.bytes < count
-      then recur(more, count - next.bytes)
-      else next.drop(count.long.toInt) #:: more
+      val head = next.asInstanceOf[Data]
+
+      if head.bytes < count
+      then recur(more, count - head.bytes)
+      else head.drop(count.long.toInt) #:: more
 
     recur(stream, bytes)
 
@@ -345,8 +350,10 @@ extension (stream: Stream[Data])
   def take(bytes: Bytes): Stream[Data] =
     def recur(stream: Stream[Data], count: Bytes): Stream[Data] =
       stream.flow(Stream()):
-        if next.bytes < count then next #:: recur(more, count - next.bytes)
-        else Stream(next.take(count.long.toInt))
+        val head = next.asInstanceOf[Data]
+
+        if head.bytes < count then head #:: recur(more, count - head.bytes)
+        else Stream(head.take(count.long.toInt))
 
     recur(stream, bytes)
 

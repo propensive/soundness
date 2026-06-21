@@ -54,7 +54,7 @@ object Writable:
       @tailrec
       def recur(total: Bytes, todo: Stream[Data]): Unit =
         todo.flow(close(outputStream, total)):
-          val array = next.mutable(using Unsafe)
+          val array = next.asInstanceOf[Array[Byte]]
           if write(outputStream, array, total) then recur(total + array.length.b, more)
 
       recur(0.b, stream)
@@ -67,7 +67,7 @@ object Writable:
       @tailrec
       def recur(total: Bytes, todo: Stream[Text]): Unit =
         todo.flow(close(outputStream, total)):
-          val array = encoder.encode(next).mutable(using Unsafe)
+          val array = encoder.encode(next.asInstanceOf[Text]).asInstanceOf[Array[Byte]]
           if write(outputStream, array, total) then recur(total + array.length.b, more)
 
       recur(0.b, stream)

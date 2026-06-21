@@ -36,7 +36,7 @@ import java.util.concurrent as juc
 
 
 object Spool:
-  private object Termination
+  private object Termination extends scala.caps.Pure
 
 class Spool[item]():
   private val queue: juc.LinkedBlockingQueue[item | Spool.Termination.type] =
@@ -45,10 +45,9 @@ class Spool[item]():
   def put(item: item): Unit = queue.put(item)
   def stop(): Unit = queue.put(Spool.Termination)
 
-  def stream: Stream[item] =
-    Stream.continually(queue.take().nn).takeWhile(_ != Spool.Termination)
-    . asInstanceOf[Stream[item]]
+  @scala.annotation.nowarn("msg=match may not be exhaustive")
+  def stream: Stream[item] = queue.take().nn match
+    case Spool.Termination => Stream()
+    case value             => value.asInstanceOf[item] #:: stream
 
-  def iterator: Iterator[item] =
-    Iterator.continually(queue.take().nn).takeWhile(_ != Spool.Termination)
-    . asInstanceOf[Iterator[item]]
+  def iterator: Iterator[item] = stream.iterator

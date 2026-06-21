@@ -1382,7 +1382,7 @@ object telekinesis extends Library:
 object turbulence extends Library:
   object core extends Component(hieroglyph.core, parasite.core, capricious.core, stenography.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object typonym extends Library:

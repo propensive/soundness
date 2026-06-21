@@ -36,7 +36,6 @@ import java.io as ji
 import java.util.zip as juz
 
 import anticipation.*
-import contingency.*
 import rudiments.*
 import vacuous.*
 
@@ -63,6 +62,16 @@ object Gzip:
       recur(stream)
 
     def decompress(stream: Stream[Data]): Stream[Data] =
-      unsafely(juz.GZIPInputStream(stream.inputStream).stream[Data])
+      val in = juz.GZIPInputStream(stream.inputStream)
+      val buffer: Array[Byte] = new Array(4096)
+
+      def recur(): Stream[Data] =
+        val count = in.read(buffer)
+
+        if count < 0 then Stream()
+        else if count == 0 then recur()
+        else buffer.slice(0, count).immutable(using Unsafe) #:: recur()
+
+      recur()
 
 sealed trait Gzip extends Compressor
