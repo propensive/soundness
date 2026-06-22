@@ -35,6 +35,7 @@ package aviation
 import anticipation.*
 import contextual.*
 import contingency.*
+import cosmopolite.{Locale, en}
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -330,7 +331,7 @@ package timeFormats:
 // "just now" for a zero span. Only the non-zero components are shown (coarsest first); the sign
 // chooses "in …" / "… ago". `import timespanFormats.relativeTimespan` to use it.
 package timespanFormats:
-  given relativeTimespan: Timespan is Showable = timespan =>
+  given relativeTimespan: Locale[en] => Timespan is Showable = timespan =>
     val fields: List[(Long, Text, Text)] =
       List
         ( (timespan.years.toLong,         t"year",   t"years"),

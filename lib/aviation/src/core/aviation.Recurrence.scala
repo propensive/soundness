@@ -34,6 +34,7 @@ package aviation
 
 import anticipation.*
 import contingency.*
+import cosmopolite.{Locale, en}
 import distillate.*
 import gossamer.*
 import prepositional.*
@@ -71,8 +72,10 @@ object Recurrence:
       t"R$number/${recurrence.start.encode}/${period.encode}"
 
   // A plain-English description, e.g. "every 2 weeks, 5 times from <start>". `.encode` is the ISO
-  // wire form; `.show` is for people.
-  given showable: [point: Showable, span <: Timespan] => (Recurrence of point by span) is Showable =
+  // wire form; `.show` is for people. Gated on `Locale[en]` so other languages can supply their own.
+  given showable: [point: Showable, span <: Timespan] => Locale[en]
+  =>  (Recurrence of point by span) is Showable =
+
     recurrence =>
       val period: Timespan = recurrence.period
       val cadence = t"every ${aviation.internal.durationPhrase(period)}"

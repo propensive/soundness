@@ -34,6 +34,7 @@ package aviation
 
 import anticipation.*
 import contingency.*
+import cosmopolite.{Locale, en}
 import distillate.*
 import gossamer.*
 import prepositional.*
@@ -191,7 +192,7 @@ object Rrule:
     else if n < 0 then t"${aviation.internal.englishOrdinal(-n)}-to-last"
     else aviation.internal.englishOrdinal(n)
 
-  given showable: [point] => (Months, Weekdays) => Rrule[point] is Showable = rule =>
+  given showable: [point] => (Months, Weekdays, Locale[en]) => Rrule[point] is Showable = rule =>
     val join = aviation.internal.joinAnd
 
     val cadence =

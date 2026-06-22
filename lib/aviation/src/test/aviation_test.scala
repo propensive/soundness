@@ -2214,6 +2214,7 @@ object Tests extends Suite(m"Aviation Tests"):
     suite(m"Recurrence descriptions"):
       import monthFormats.englishMonths
       import weekdays.englishWeekdays
+      given Locale[en] = Locale(en)
 
       test(m"An rrule reads as plain English"):
         Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
@@ -2241,6 +2242,19 @@ object Tests extends Suite(m"Aviation Tests"):
         import dateFormats.iso8601DateFormat
         Recurrence(2024-Jan-1, 2*Week, 5).show
       . assert(_ == t"every 2 weeks, 5 times from 2024-01-01")
+
+    suite(m"Locale gating"):
+      import monthFormats.englishMonths
+      import weekdays.englishWeekdays
+
+      test(m"An English description needs a Locale[en] in scope"):
+        demilitarize(Rrule(2024-Jan-1, Frequency.Daily).show)
+      . assert(_.nonEmpty)
+
+      test(m"With a Locale[en] in scope, the description compiles"):
+        given Locale[en] = Locale(en)
+        demilitarize(Rrule(2024-Jan-1, Frequency.Daily).show)
+      . assert(_.isEmpty)
 
     suite(m"Moment subtraction"):
       import calendars.gregorianCalendar
@@ -2606,6 +2620,7 @@ object Tests extends Suite(m"Aviation Tests"):
 
     suite(m"Relative timespan formatting"):
       import timespanFormats.relativeTimespan
+      given Locale[en] = Locale(en)
 
       test(m"A future single component reads as \"in …\""):
         Timespan(minutes = 18).show
