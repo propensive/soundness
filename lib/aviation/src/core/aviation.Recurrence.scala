@@ -52,6 +52,7 @@ import vacuous.*
 object Recurrence:
   def apply[point, span](start: point, period: span, repetitions: Optional[Int] = Unset)
   :   Recurrence of point by span =
+
     Impl(start, period, repetitions)
 
   private case class Impl[point, span](start: point, period: span, repetitions: Optional[Int])
@@ -59,18 +60,19 @@ object Recurrence:
     type Topic = point
     type Operand = span
 
-  given encodable: [point: Encodable in Text, span: Encodable in Text]
+  given encodable: [point: Encodable in Text, span <: Timespan]
   =>  (Recurrence of point by span) is Encodable in Text =
 
     recurrence =>
       val number = recurrence.repetitions.lay(t""): repetitions =>
         repetitions.show
 
-      t"R$number/${recurrence.start.encode}/${recurrence.period.encode}"
+      val period: Timespan = recurrence.period
+      t"R$number/${recurrence.start.encode}/${period.encode}"
 
   // Parsing erases the period's static radix set, so the caller names the period type they expect
   // (e.g. `decode[Recurrence of Timestamp by (Timespan of Month.type)]`); the parsed duration is
-  // tagged with it. A mismatched topic mis-reads the duration, so name the one the data actually uses.
+  // tagged with it. A mismatched topic mis-reads the duration, so name the one the data uses.
   given decodable: [point: Decodable in Text, topic <: Radix]
   =>  ( Tactic[RecurrenceError], Tactic[TimeError] )
   =>  (Recurrence of point by (Timespan of topic)) is Decodable in Text =

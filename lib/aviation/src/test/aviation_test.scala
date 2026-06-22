@@ -2044,6 +2044,28 @@ object Tests extends Suite(m"Aviation Tests"):
         t"R3/2024-01-01/P1M".decode[Recurrence of Date by (Timespan of Month.type)].occurrences.to(List)
       . assert(_ == List(2024-Jan-1, 2024-Feb-1, 2024-Mar-1))
 
+      test(m"A rec literal builds a date recurrence at compile time"):
+        import monthEnds.clampMonthEnd
+        rec"R3/2024-01-01/P1M".occurrences.to(List)
+      . assert(_ == List(2024-Jan-1, 2024-Feb-1, 2024-Mar-1))
+
+      test(m"A rec literal with a time builds a Timestamp recurrence"):
+        import monthEnds.clampMonthEnd
+        rec"R2/2024-01-01T09:00:00/P1D".occurrences.to(List).length
+      . assert(_ == 2)
+
+      test(m"A bounded rec literal round-trips its encoding"):
+        rec"R5/2024-06-01/P1D".encode
+      . assert(_ == t"R5/2024-06-01/P1D")
+
+      test(m"An unbounded rec literal has no repetition count"):
+        rec"R/2024-01-01/P1M".repetitions
+      . assert(_ == Unset)
+
+      test(m"A rec literal with an invalid date fails to compile"):
+        demilitarize(rec"R5/2024-02-30/P1M")
+      . assert(_.nonEmpty)
+
     suite(m"Moment subtraction"):
       import calendars.gregorianCalendar
 
