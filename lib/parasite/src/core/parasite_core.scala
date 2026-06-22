@@ -92,7 +92,7 @@ transparent inline def monitor: Monitor = infer[Monitor]
 def daemon[error <: Exception](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?->{} Unit )
   ( using Monitor )
-:   Daemon^ =
+:   Daemon =
 
   val tactic = AsyncTactic[error]()
   Daemon: worker =>
@@ -128,7 +128,7 @@ infix type emits[left, error <: Exception] = left match
 def async[result, error <: Exception](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?=> result )
   ( using monitor: Monitor )
-:   (Task[result] emits (error | AsyncError))^ =
+:   Task[result] emits (error | AsyncError) =
 
   val tactic = AsyncTactic[error]()
   Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = Unset)
@@ -137,7 +137,7 @@ def async[result, error <: Exception](using Codepoint)
 def task[result, error <: Exception](using Codepoint)(name: Name[Async])
   ( evaluate: (Worker, Tactic[error]) ?=> result )
   ( using monitor: Monitor )
-:   (Task[result] emits (error | AsyncError))^ =
+:   Task[result] emits (error | AsyncError) =
 
   val tactic = AsyncTactic[error]()
   Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = name)

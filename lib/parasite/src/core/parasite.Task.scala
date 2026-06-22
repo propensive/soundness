@@ -46,28 +46,31 @@ import vacuous.*
 object Task:
   def apply[result, error <: Exception](evaluate: Worker => result, name: Optional[Name[Async]])
     ( using monitor: Monitor, codepoint: Codepoint )
-  :   (Task[result] { type Error = error })^ =
+  :   Task[result] { type Error = error } =
 
     // The body closure may capture stack-scoped capabilities (an error tactic, a `boundary.Label`);
-    // that capture is checked at the `async`/`task` entry point. Here it is laundered to pure so
-    // the worker need not track the *body*'s captures. The constructed worker is a fresh capability
-    // whose hidden set includes `monitor`, so the handle cannot escape its `supervise` scope.
+    // that capture is checked at the `async`/`task` entry point and laundered to pure here. A `Task`
+    // is itself a `Worker` (a capability), but task handles are freely shared and collected (e.g.
+    // `Seq[Task].sequence`), which a tracked `Task^` could not be — so the handle is laundered to a
+    // pure `Task` too. The worker remains a supervised child of `monitor`; only the *handle*'s static
+    // capture is dropped (the effect capabilities `Tactic`/`Emit` it may use are still tracked).
     val evaluate0: Worker -> result = caps.unsafe.unsafeAssumePure(evaluate)
     inline def name0: Optional[Name[Async]] = name
 
-    new Worker(codepoint, monitor) with Task[result]:
-      type Result = result
-      type Error = error
-      def name: Optional[Name[Async]] = name0
-      def daemon: Boolean = false
-      def evaluate(worker: Worker): Result = evaluate0(worker)
+    caps.unsafe.unsafeAssumePure:
+      new Worker(codepoint, monitor) with Task[result]:
+        type Result = result
+        type Error = error
+        def name: Optional[Name[Async]] = name0
+        def daemon: Boolean = false
+        def evaluate(worker: Worker): Result = evaluate0(worker)
 
-      def await(): result raises (error | AsyncError) = deliver[error]()
+        def await(): result raises (error | AsyncError) = deliver[error]()
 
-      def await[duration: Abstractable across Durations to Long](duration: duration)
-      :   result raises (error | AsyncError) =
+        def await[duration: Abstractable across Durations to Long](duration: duration)
+        :   result raises (error | AsyncError) =
 
-        deliver[error, duration](duration)
+          deliver[error, duration](duration)
 
 
   // `mercator.Monad[Task]` abstracts over `Task` as a *pure* type constructor, but a `Task` is a
@@ -85,7 +88,7 @@ object Task:
         caps.unsafe.unsafeAssumePure(value.map(lambda))
 
   extension [result](tasks: Seq[Task[result]])
-    def sequence(using Monitor): (Task[Seq[result]] emits AsyncError)^ =
+    def sequence(using Monitor): Task[Seq[result]] emits AsyncError =
       async(tasks.map(_.join()))
 
   extension [result](tasks: Iterable[Task[result]])
@@ -121,7 +124,7 @@ trait Task[+result]:
   :   result raises AsyncError
 
   def bind[result2](lambda: result => Task[result2])(using Monitor)
-  :   (Task[result2] emits AsyncError)^
+  :   Task[result2] emits AsyncError
 
   def map[result2](lambda: result => result2)(using Monitor)
-  :   (Task[result2] emits AsyncError)^
+  :   Task[result2] emits AsyncError

@@ -210,13 +210,13 @@ abstract class Worker(frame: Codepoint, parent: Monitor^) extends Monitor:
 
 
   def map[result2](lambda: Result => result2)(using Monitor)
-  :   (Task[result2] emits AsyncError)^ =
+  :   Task[result2] emits AsyncError =
 
     async(lambda(join()))
 
 
   def bind[result2](lambda: Result => Task[result2])(using Monitor)
-  :   (Task[result2] emits AsyncError)^ =
+  :   Task[result2] emits AsyncError =
 
     async(lambda(join()).join())
 
