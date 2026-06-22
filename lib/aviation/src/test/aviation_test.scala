@@ -2186,6 +2186,21 @@ object Tests extends Suite(m"Aviation Tests"):
         Rrule(2024-Jan-1, Frequency.Yearly, byYearDay = List(-1), count = 1).occurrences.to(List)
       . assert(_ == List(2024-Dec-31))
 
+      test(m"Yearly byWeekNo with byDay selects that weekday of the ISO week"):
+        Rrule(2024-Jan-1, Frequency.Yearly, byWeekNo = List(20), byDay = List(WeekdayOrdinal(Mon)),
+            count = 1).occurrences.to(List)
+      . assert(_ == List(2024-May-13))
+
+      test(m"Yearly byWeekNo defaults to the start's weekday"):
+        Rrule(2024-Jan-1, Frequency.Yearly, byWeekNo = List(20), count = 1).occurrences.to(List)
+      . assert(_ == List(2024-May-13))
+
+      test(m"byWeekNo round-trips through RFC 5545"):
+        val rule = Rrule(2024-Jan-1, Frequency.Yearly, byWeekNo = List(20, -1),
+            byDay = List(WeekdayOrdinal(Mon)))
+        Rrule.parse(rule.encode, 2024-Jan-1).encode == rule.encode
+      . assert(_ == true)
+
       test(m"A Moment rule grounds its occurrences in the timezone"):
         Rrule(Moment(2024-Jan-1, Clockface(9, 0, 0), tz"Europe/London"), Frequency.Daily, count = 2)
         . occurrences.to(List).map(_.date)

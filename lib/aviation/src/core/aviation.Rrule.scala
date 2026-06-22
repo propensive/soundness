@@ -49,10 +49,10 @@ case class WeekdayOrdinal(weekday: Weekday, ordinal: Optional[Int] = Unset)
 // Occurrences expand each `frequency`×`interval` period and apply the `by*` anchors; invalid dates
 // (e.g. Feb 30) are skipped and the day-of-month re-anchors to `start`, so `Monthly` from Jan 31
 // yields Jan 31, Mar 31, May 31, … (RFC behaviour, deliberately unlike `Recurrence`'s drift). The
-// engine expands every `frequency` (`Secondly`…`Yearly`) with `byMonth`, `byMonthDay`, `byDay`,
-// `byYearDay`, `byHour`, `byMinute`, `bySecond` and `bySetPos`. A `Rrule[Date]` yields dates, a
-// `Rrule[Timestamp]` yields zoneless date-times (expanded by `byHour`/…), and a `Rrule[Moment]`
-// grounds each in the start's timezone. (`byWeekNo` is not yet expanded.)
+// engine expands every `frequency` (`Secondly`…`Yearly`) with all the `by*` anchors — `byMonth`,
+// `byWeekNo`, `byYearDay`, `byMonthDay`, `byDay`, `byHour`, `byMinute`, `bySecond` and `bySetPos`. A
+// `Rrule[Date]` yields dates, a `Rrule[Timestamp]` yields zoneless date-times (expanded by
+// `byHour`/…), and a `Rrule[Moment]` grounds each in the start's timezone.
 object Rrule:
   given dateRecurrent: (RomanCalendar, Ordering[Date])
   =>  ( Rrule[Date] is Recurrent { type Topic = Date } ) =
@@ -100,6 +100,7 @@ object Rrule:
         part(rule.count.present, t"COUNT=${rule.count.vouch}") ++
         part(rule.until.present, t"UNTIL=${rule.until.vouch.encode}") ++
         part(rule.byMonth.nonEmpty, t"BYMONTH=${rule.byMonth.map(_.numerical.show).join(t",")}") ++
+        part(rule.byWeekNo.nonEmpty, t"BYWEEKNO=${rule.byWeekNo.map(_.show).join(t",")}") ++
         part(rule.byYearDay.nonEmpty, t"BYYEARDAY=${rule.byYearDay.map(_.show).join(t",")}") ++
         part(rule.byMonthDay.nonEmpty, t"BYMONTHDAY=${rule.byMonthDay.map(_.show).join(t",")}") ++
         part(rule.byDay.nonEmpty, t"BYDAY=${rule.byDay.map(renderDay).join(t",")}") ++
@@ -134,6 +135,7 @@ object Rrule:
         field(t"BYMONTHDAY").lay(Nil)(ints(_, text)),
         field(t"BYDAY").lay(Nil) { value => value.cut(t",").to(List).map(dayOf(_, text)) },
         field(t"BYYEARDAY").lay(Nil)(ints(_, text)),
+        field(t"BYWEEKNO").lay(Nil)(ints(_, text)),
         field(t"BYHOUR").lay(Nil)(ints(_, text)),
         field(t"BYMINUTE").lay(Nil)(ints(_, text)),
         field(t"BYSECOND").lay(Nil)(ints(_, text)),
@@ -294,6 +296,25 @@ object Rrule:
   private def yearDayDates(year: Int, rule: Rrule[?])(using RomanCalendar): List[Date] =
     rule.byYearDay.flatMap { day => list(yearDay(year, day)) }.filter(monthAllowed(_, rule))
 
+  // The `byWeekNo` dates within a week-year (ISO weeks, Monday-based): for each selected week number
+  // (negatives count back from the year's last week), the `byDay` weekdays — or the start's weekday —
+  // of that week, filtered by `byMonth`.
+  private def weekNoDates(year: Int, start: Date, rule: Rrule[?])(using RomanCalendar): List[Date] =
+    val count = WeekDate.weekOfYear(unsafely(Date(Year(year), Month.Dec, Day(28))))
+    val weekdays = if rule.byDay.nonEmpty then rule.byDay.map(_.weekday) else List(start.weekday)
+
+    val weeks =
+      rule.byWeekNo.map { week => if week > 0 then week else count + week + 1 }
+        .filter { week => week >= 1 && week <= count }
+
+    val dates =
+      for
+        week    <- weeks
+        weekday <- weekdays
+      yield safely(WeekDate(Year(year), week, weekday))
+
+    dates.flatMap(list).filter(monthAllowed(_, rule))
+
   // The ascending stream of dates matching the rule, starting at or after `start` (COUNT/UNTIL are
   // applied later, on the point stream). Each period is expanded independently and concatenated;
   // since periods are ascending and disjoint, the result is ascending.
@@ -303,6 +324,7 @@ object Rrule:
         LazyList.iterate(yearOf(start))(_ + rule.interval).flatMap: year =>
           val candidates =
             if rule.byYearDay.nonEmpty then yearDayDates(year, rule)
+            else if rule.byWeekNo.nonEmpty then weekNoDates(year, start, rule)
             else yearMonths(year, start, rule).flatMap(expandMonth(year, _, start, rule))
 
           setPos(candidates.distinct.sortBy(_.jdn), rule.bySetPos)
@@ -437,6 +459,7 @@ case class Rrule[point]
     byMonthDay: List[Int]            = Nil,
     byDay:      List[WeekdayOrdinal] = Nil,
     byYearDay:  List[Int]            = Nil,
+    byWeekNo:   List[Int]            = Nil,
     byHour:     List[Int]            = Nil,
     byMinute:   List[Int]            = Nil,
     bySecond:   List[Int]            = Nil,
