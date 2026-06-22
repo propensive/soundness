@@ -44,7 +44,7 @@ import fulminate.*
 // probate; only the failure branch (`trap`) is overridden. A handled error whose remedy is
 // `Reject` — like one the handler does not match — bubbles to the enclosing scope, so containments
 // compose as they nest.
-class Containment(handler: PartialFunction[Error, Remedy], parent: Monitor^)
+class Containment(handler: PartialFunction[Error, Remedy]^, parent: Monitor^)
 extends caps.ExclusiveCapability:
   val probate: Probate^ = new Probate:
     def cleanup(worker: Worker): Unit = parent.probate.cleanup(worker)

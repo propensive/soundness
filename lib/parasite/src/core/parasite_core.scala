@@ -104,7 +104,7 @@ def daemon[error <: Exception](using Codepoint)
 // containment is a child supervision scope of the enclosing `Monitor`, so unmatched or rejected
 // errors chain outwards to the parent scope's probate, up to the root. Distinct from the typed
 // `trap` (declared emitted errors).
-def contain(handler: PartialFunction[Error, Remedy])(using parent: Monitor): Containment^ =
+def contain(handler: PartialFunction[Error, Remedy]^)(using parent: Monitor): Containment^ =
   Containment(handler, parent)
 
 
