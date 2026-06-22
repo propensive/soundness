@@ -80,6 +80,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             import systems.javaSystem
             import threading.virtualThreading
             import strategies.throwUnsafely
+            import probates.cancelProbate
 
             cli:
               supervise:
