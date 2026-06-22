@@ -78,7 +78,7 @@ package retryTenacities:
   given fixedNoDelayFiveTimesTenacity: Tenacity = Tenacity.fixed(0L).limit(5)
   given fixedNoDelayTenTimesTenacity: Tenacity = Tenacity.fixed(0L).limit(10)
 
-transparent inline def monitor: Monitor = infer[Monitor]
+transparent inline def monitor: Monitor^ = infer[Monitor^]
 
 // Like `async`, but fire-and-forget: a daemon is never joined, so an error cannot surface at a join.
 // The body runs on a worker thread that outlives the call, so — unlike `async`, which is awaited
@@ -91,7 +91,7 @@ transparent inline def monitor: Monitor = infer[Monitor]
 // nearest `contain`/`Probate`.
 def daemon[error <: Exception](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?->{} Unit )
-  ( using Monitor )
+  ( using Monitor^ )
 :   Daemon =
 
   val tactic = AsyncTactic[error]()
@@ -104,7 +104,7 @@ def daemon[error <: Exception](using Codepoint)
 // containment is a child supervision scope of the enclosing `Monitor`, so unmatched or rejected
 // errors chain outwards to the parent scope's probate, up to the root. Distinct from the typed
 // `trap` (declared emitted errors).
-def contain(handler: PartialFunction[Error, Remedy]^)(using parent: Monitor): Containment^ =
+def contain(handler: PartialFunction[Error, Remedy]^)(using parent: Monitor^): Containment^ =
   Containment(handler, parent)
 
 
@@ -127,7 +127,7 @@ infix type emits[left, error <: Exception] = left match
 // worker's `Failed` outcome instead of trying to break a stack-confined `boundary` across threads.
 def async[result, error <: Exception](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?=> result )
-  ( using monitor: Monitor )
+  ( using monitor: Monitor^ )
 :   Task[result] emits (error | AsyncError) =
 
   val tactic = AsyncTactic[error]()
@@ -136,7 +136,7 @@ def async[result, error <: Exception](using Codepoint)
 
 def task[result, error <: Exception](using Codepoint)(name: Name[Async])
   ( evaluate: (Worker, Tactic[error]) ?=> result )
-  ( using monitor: Monitor )
+  ( using monitor: Monitor^ )
 :   Task[result] emits (error | AsyncError) =
 
   val tactic = AsyncTactic[error]()
@@ -144,30 +144,30 @@ def task[result, error <: Exception](using Codepoint)(name: Name[Async])
 
 
 def relent[result]()(using Worker): Unit = monitor.relent()
-def cancel[result]()(using Monitor): Unit = monitor.cancel()
+def cancel[result]()(using Monitor^): Unit = monitor.cancel()
 
 
-def snooze[duration: Abstractable across Durations to Long](duration: duration)(using Monitor)
+def snooze[duration: Abstractable across Durations to Long](duration: duration)(using Monitor^)
 :   Unit =
 
   monitor.snooze(duration)
 
 
-def delay[generic: Abstractable across Durations to Long](duration: generic)(using Monitor): Unit =
+def delay[generic: Abstractable across Durations to Long](duration: generic)(using Monitor^): Unit =
   hibernate(jl.System.currentTimeMillis + duration.generic/1_000_000L)
 
-def sleep[instant: Abstractable across Instants to Long](instant: instant)(using Monitor): Unit =
+def sleep[instant: Abstractable across Instants to Long](instant: instant)(using Monitor^): Unit =
   monitor.snooze((instant.generic - jl.System.currentTimeMillis)*1_000_000L)
 
 
-def hibernate[instant: Abstractable across Instants to Long](instant: instant)(using Monitor)
+def hibernate[instant: Abstractable across Instants to Long](instant: instant)(using Monitor^)
 :   Unit =
 
   while instant.generic > jl.System.currentTimeMillis do sleep(instant.generic)
 
 
 extension [result](stream: Stream[result])
-  def concurrent(using Monitor): Stream[result] raises AsyncError =
+  def concurrent(using Monitor^): Stream[result] raises AsyncError =
     if async(stream.nil).await() then Stream() else stream.head #:: stream.tail.concurrent
 
 

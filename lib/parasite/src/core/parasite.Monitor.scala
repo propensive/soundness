@@ -179,7 +179,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^) extends Monitor:
   def apply(): Optional[Result] = promise()
   def relentlessness: Double = (jl.System.currentTimeMillis - startTime).toDouble/relents
 
-  def delegate(lambda: Monitor => Unit): Unit = state.updateAndGet: state =>
+  def delegate(lambda: Monitor^ => Unit): Unit = state.updateAndGet: state =>
     workers.each: child => if child.daemon then child.cancel() else lambda(child)
     state
 
@@ -209,13 +209,13 @@ abstract class Worker(frame: Codepoint, parent: Monitor^) extends Monitor:
     if Thread.interrupted() || state.get() == Cancelled then throw new InterruptedException()
 
 
-  def map[result2](lambda: Result => result2)(using Monitor)
+  def map[result2](lambda: Result => result2)(using Monitor^)
   :   Task[result2] emits AsyncError =
 
     async(lambda(join()))
 
 
-  def bind[result2](lambda: Result => Task[result2])(using Monitor)
+  def bind[result2](lambda: Result => Task[result2])(using Monitor^)
   :   Task[result2] emits AsyncError =
 
     async(lambda(join()).join())

@@ -52,8 +52,10 @@ extension [value](value: value)
   def tabulation[text: Textual](using tabular: value is Tabular[text]): Tabulation[text] =
     tabular.tabulate(value)
 
-package columnAttenuation:
-  given failAttenuation: Tactic[TableError] => Attenuation =
+// A `Capability` object: `failAttenuation` captures the ambient `Tactic`, so its `Attenuation` value
+// is capturing (`Attenuation^`), which the compiler only permits as a field of a `Capability`.
+object columnAttenuation extends caps.ExclusiveCapability:
+  given failAttenuation: Tactic[TableError] => (Attenuation^) =
     (minimum, available) => raise(TableError(minimum, available))
 
   given ignoreAttenuation: Attenuation = (minimum, available) => ()
