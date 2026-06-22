@@ -30,101 +30,93 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aviation
 
-export
-  aviation
-  . { am, AlexandrianCalendar, Anniversary, Apr, Aug, Base24, base24Extractable, Base60,
-      base60Extractable, Calendar, Chronometry, Clock, Clockface, CopticCalendar, CopticMonth, Date,
-      DateNumerics, DateSeparation, Day, Dec, dur,
-      Disambiguation, Duration, Endianness, EthiopianCalendar, EthiopianMonth, Feb,
-      FrenchRepublicanCalendar, FrenchRepublicanMonth, Fri, Hebdomad, Holiday, Holidays, Horology,
-      HebrewCalendar, HebrewMonth, Hour, IndianCalendar, IndianMonth, Instant, IslamicCalendar,
-      GapPolicy, IslamicMonth, Iso8601, Jan, Jul, Jun, Leap, LeapMode, LeapSeconds, Mar, May,
-      Meridiem, Minute, Moment, Mon, monotonic, Monotonic, Month, Months, Monthstamp, Nov, now,
-      Occurrence, Oct, OffsetCalendar, OrdinalCalendar, Period, PersianCalendar, PersianMonth, pm,
-      Posix, rec, Recurrence, RecurrenceError, recInterpolator, RecurrenceLiteral, Regime,
-      Resolution, Rfc1123, RomanCalendar, Tai,
-      Sat, Sep, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics,
-      TimeSeparation, TimeSpecificity, Timespan, Timestamp, TimestampError, Timezone, TimezoneError,
-      today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Week, WeekDate, Weekday, Weekdays,
-      WorkingDays, Year, Years }
+import anticipation.*
+import contingency.*
+import distillate.*
+import gossamer.*
+import prepositional.*
+import quantitative.*
+import spectacular.*
+import symbolism.*
+import vacuous.*
 
-package calendars:
-  export aviation.calendars.{gregorianCalendar, julianCalendar, copticCalendar, ethiopianCalendar,
-      islamicCalendar, persianCalendar, indianCalendar, hebrewCalendar, frenchRepublicanCalendar,
-      buddhistCalendar, minguoCalendar, ordinalCalendar, papalCutover, britishCutover}
+// A recurrent event in the ISO 8601 "repeating interval" form `R[n]/<start>/<period>`: an event at
+// `start` that repeats every `period` (an ISO duration). `repetitions` is the count of occurrences
+// (`Unset` is unbounded, ISO's `R/`); the occurrences are `start`, `start + period`,
+// `start + 2·period`, … The period's type is preserved so it adds correctly — `1*Month` honours
+// calendar months, `8*Hour` is a fixed physical span — so a recurrence is typed by its point
+// (`Topic`, via `of`) and its period (`Operand`, via `by`): a `Recurrence of Date by (Timespan of
+// Month.type)`.
+object Recurrence:
+  def apply[point, span](start: point, period: span, repetitions: Optional[Int] = Unset)
+  :   Recurrence of point by span =
 
-package nonexistentLeapDays:
-  export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,
-      roundUpLeapDay}
+    Impl(start, period, repetitions)
 
-package monthEnds:
-  export aviation.monthEnds.{clampMonthEnd, overflowMonthEnd, raiseMonthEnd}
+  private case class Impl[point, span](start: point, period: span, repetitions: Optional[Int])
+  extends Recurrence:
+    type Topic = point
+    type Operand = span
 
-package gapPolicies:
-  export aviation.gapPolicies.{pushBackward, rejectGap}
+  given encodable: [point: Encodable in Text, span <: Timespan]
+  =>  (Recurrence of point by span) is Encodable in Text =
 
-package leapModes:
-  export aviation.leapModes.exact
+    recurrence =>
+      val number = recurrence.repetitions.lay(t""): repetitions =>
+        repetitions.show
 
-package chronometries:
-  export aviation.chronometries.{posix, atomic}
+      val period: Timespan = recurrence.period
+      t"R$number/${recurrence.start.encode}/${period.encode}"
 
-package dateFormats:
-  export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,
-      southEastAsiaDateFormat, unitedKingdomDateFormat}
+  // Parsing erases the period's static radix set, so the caller names the period type they expect
+  // (e.g. `decode[Recurrence of Timestamp by (Timespan of Month.type)]`); the parsed duration is
+  // tagged with it. A mismatched topic mis-reads the duration, so name the one the data uses.
+  given decodable: [point: Decodable in Text, topic <: Radix]
+  =>  ( Tactic[RecurrenceError], Tactic[TimeError] )
+  =>  (Recurrence of point by (Timespan of topic)) is Decodable in Text =
 
-package endianness:
-  export aviation.dateFormats.endianness.{bigEndian, littleEndian, middleEndian}
+    text =>
+      text.cut(t"/").to(List) match
+        case List(repeats, start, period) =>
+          val repetitions =
+            if repeats == t"R" then Unset else
+              val digits = repeats.skip(1).s
 
-package dateNumerics:
-  export aviation.dateFormats.numerics.{fixedWidthDateNumerics, variableWidthDateNumerics}
+              if repeats.starts(t"R") && digits.nonEmpty && digits.forall(_.isDigit)
+              then digits.toInt
+              else abort(RecurrenceError(text))
 
-package dateSeparators:
-  export aviation.dateFormats.separators.{dotDateSeparator, hyphenDateSeparator, slashDateSeparator,
-      spaceDateSeparator}
+          val span = period.decode[Timespan].asInstanceOf[Timespan of topic]
 
-package yearFormats:
-  export aviation.dateFormats.years.{fullYears, twoDigitsYears}
+          Recurrence(start.decode[point], span, repetitions)
 
-package weekdays:
-  export
-    aviation.dateFormats.weekdays
-    . { englishWeekdays, englishShortWeekdays, oneLetterAmbiguousWeekdays,
-        shortestUnambiguousWeekdays, twoLetterWeekdays }
+        case _ =>
+          abort(RecurrenceError(text))
 
-package monthFormats:
-  export
-    aviation.dateFormats.months
-    . { englishMonths, englishShortMonths, numericMonths, oneLetterAmbiguousMonths,
-        twoDigitMonths }
+  extension [point, span](recurrence: Recurrence of point by span)
+    // The occurrences, lazily: `start`, `start + period`, … bounded by `repetitions` if it is set,
+    // otherwise an infinite stream (consume it with `until`/`within` or `.take`).
+    def occurrences(using addable: point is Addable by span to point): LazyList[point] =
+      val all = LazyList.iterate(recurrence.start)(addable.add(_, recurrence.period))
+      recurrence.repetitions.lay(all)(all.take(_))
 
-package timeFormats:
-  export
-    aviation.timeFormats
-    . { associatedPressTimeFormat, civilianTimeFormat, frenchTimeFormat, iso8601TimeFormat,
-        ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
+    // The occurrences strictly before `limit` — terminates even for an unbounded recurrence.
+    def until(limit: point)
+      ( using addable: point is Addable by span to point, order: Ordering[point] )
+    :   LazyList[point] =
 
-package timespanFormats:
-  export aviation.timespanFormats.relativeTimespan
+      occurrences.takeWhile(order.lt(_, limit))
 
-package hourFormats:
-  export aviation.timeFormats.hours.{twelveHourClock, twentyFourHourClock}
+    // The occurrences falling within a `Period` (half-open: `start <= point < finish`).
+    def within(window: Period[point])
+      ( using addable: point is Addable by span to point, order: Ordering[point] )
+    :   LazyList[point] =
 
-package meridiems:
-  export aviation.timeFormats.meridiems.{lowerMeridiem, lowerPunctuatedMeridiem, upperMeridiem,
-      upperPunctuatedMeridiem}
+      occurrences.dropWhile(order.lt(_, window.start)).takeWhile(order.lt(_, window.finish))
 
-package timeNumerics:
-  export aviation.timeFormats.numerics.{fixedWidthTimeNumerics, variableWidthTimeNumerics}
-
-package timeSeparators:
-  export aviation.timeFormats.separators.{colonTimeSeparator, dotTimeSeparator, frenchTimeSeparator,
-      noneTimeSeparator}
-
-package hebdomads:
-  export aviation.hebdomads.{europeanHebdomad, jewishHebdomad, northAmericanHebdomad}
-
-package instantDecodables:
-  export aviation.instantDecodables.{iso8601InstantDecodable, rfc1123InstantDecodable}
+trait Recurrence extends Topical, Operable:
+  def start: Topic
+  def period: Operand
+  def repetitions: Optional[Int]

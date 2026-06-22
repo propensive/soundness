@@ -383,6 +383,75 @@ object internal:
               ${Expr(hours)}, ${Expr(minutes)}, Quantity(${Expr(seconds)})) }
 
 
+  // Compile-time `rec"R[n]/<start>/<period>"` literal — an ISO 8601 repeating interval. The start
+  // is parsed by the timestamp parser (so its precise `Date`/`Timestamp`/`Moment` type flows out
+  // via the transparent inline), and the period by the duration parser, tagged with the Gregorian
+  // month radix so its calendar components add correctly.
+  def recInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[RecurrenceLiteral] =
+    import quotes.reflect.*
+
+    def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case _               => strings
+
+    val parts = recur[parts](Nil)
+
+    if parts.length != 1 then halt(m"a recurrence literal cannot contain substitutions")
+
+    parts.head.tt.cut(t"/").to(List).map(_.s) match
+      case List(repeats, start, period) =>
+        val repetitions: Option[Int] =
+          if repeats == "R" then None
+          else if repeats.startsWith("R") && repeats.length > 1 && repeats.drop(1).forall(_.isDigit)
+          then Some(repeats.drop(1).toInt)
+          else halt(m"$repeats is not a valid repetition count (expected `R` or `Rn`)")
+
+        val periodExpr: Expr[Timespan of Month.type] = parseDuration(period) match
+          case Left(error) =>
+            halt(error)
+
+          case Right((y, mo, w, d, h, mi, s)) =>
+            '{Timespan(${Expr(y)}, ${Expr(mo)}, ${Expr(w)}, ${Expr(d)}, ${Expr(h)}, ${Expr(mi)},
+                  Quantity(${Expr(s)})).asInstanceOf[Timespan of Month.type]}
+
+        def build[point: Type](startExpr: Expr[point])
+        :   Expr[Recurrence of point by (Timespan of Month.type)] =
+
+          repetitions match
+            case None =>
+              '{Recurrence[point, Timespan of Month.type]($startExpr, $periodExpr)}
+
+            case Some(n) =>
+              '{Recurrence[point, Timespan of Month.type]($startExpr, $periodExpr, ${Expr(n)})}
+
+        parseTimestamp(start) match
+          case Left(error) =>
+            halt(error)
+
+          case Right(TsParsed.DateOnly(jdn)) =>
+            build('{Date.julianDay(${Expr(jdn)})})
+
+          case Right(TsParsed.TimeOnly(jdn, hour, minute, second, nanos)) =>
+            build('{Timestamp(Date.julianDay(${Expr(jdn)}), Clockface(Base24(${Expr(hour)}),
+                Base60(${Expr(minute)}), Base60(${Expr(second)}), ${Expr(nanos)}))})
+
+          case Right(TsParsed.ZoneOnly(jdn, hour, minute, second, nanos, zone)) =>
+            if second == 60 then
+              build('{Timestamp(Date.julianDay(${Expr(jdn)}), Clockface(Base24(${Expr(hour)}),
+                  Base60(${Expr(minute)}), Base60(59), ${Expr(nanos)}))
+                  .in(unsafely(Timezone(${Expr(zone)}.tt))).copy(leap = Leap.Inserted)})
+            else
+              build('{Timestamp(Date.julianDay(${Expr(jdn)}), Clockface(Base24(${Expr(hour)}),
+                  Base60(${Expr(minute)}), Base60(${Expr(second)}), ${Expr(nanos)}))
+                  .in(unsafely(Timezone(${Expr(zone)}.tt)))})
+
+          case Right(_) =>
+            halt(m"a recurrence must start at a date or date-time, not a bare year or month")
+
+      case _ =>
+        halt(m"a recurrence literal must have the form `R[n]/<start>/<period>`")
+
+
   // The inline `Monthstamp - day` operator splices here. When the year, month and day are all
   // compile-time literals (the `2012-Mar-8` form), validate the date against the Gregorian
   // calendar at compile time and emit its Julian day number directly. Otherwise emit the runtime

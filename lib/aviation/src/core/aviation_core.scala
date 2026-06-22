@@ -508,6 +508,20 @@ inline given tsInterpolator: (Year | Monthstamp | Date | Timestamp | Moment) is 
 
     ${aviation.internal.tsInterpolator[parts]('insertions)}
 
+// The result of a `rec"…"` literal: an ISO 8601 repeating interval whose start type follows the
+// literal's precision (the period is tagged with the Gregorian month radix so it adds correctly).
+type RecurrenceLiteral =
+  (Recurrence of Date by (Timespan of Month.type)) |
+    (Recurrence of Timestamp by (Timespan of Month.type)) |
+    (Recurrence of Moment by (Timespan of Month.type))
+
+inline given recInterpolator: RecurrenceLiteral is Interpolable:
+  transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+    ( inline insertions: Any* )
+  :   RecurrenceLiteral =
+
+    ${aviation.internal.recInterpolator[parts]('insertions)}
+
 extension (inline context: StringContext)
   transparent inline def tz: Interpolation = interpolation[Timezone](context)
 
@@ -515,6 +529,8 @@ extension (inline context: StringContext)
 
   transparent inline def ts: Interpolation =
     interpolation[Year | Monthstamp | Date | Timestamp | Moment](context)
+
+  transparent inline def rec: Interpolation = interpolation[RecurrenceLiteral](context)
 
 export Weekday.{Mon, Tue, Wed, Thu, Fri, Sat, Sun}
 
