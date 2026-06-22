@@ -49,8 +49,10 @@ case class WeekdayOrdinal(weekday: Weekday, ordinal: Optional[Int] = Unset)
 // Occurrences expand each `frequency`×`interval` period and apply the `by*` anchors; invalid dates
 // (e.g. Feb 30) are skipped and the day-of-month re-anchors to `start`, so `Monthly` from Jan 31
 // yields Jan 31, Mar 31, May 31, … (RFC behaviour, deliberately unlike `Recurrence`'s drift). The
-// engine currently expands `Daily`…`Yearly` with `byMonth`, `byMonthDay`, `byDay` and `bySetPos`;
-// sub-day frequencies and `byYearDay`/`byWeekNo`/`byHour`/… are not yet expanded.
+// engine expands every `frequency` (`Secondly`…`Yearly`) with `byMonth`, `byMonthDay`, `byDay`,
+// `byYearDay`, `byHour`, `byMinute`, `bySecond` and `bySetPos`. A `Rrule[Date]` yields dates, a
+// `Rrule[Timestamp]` yields zoneless date-times (expanded by `byHour`/…), and a `Rrule[Moment]`
+// grounds each in the start's timezone. (`byWeekNo` is not yet expanded.)
 object Rrule:
   given dateRecurrent: (RomanCalendar, Ordering[Date])
   =>  ( Rrule[Date] is Recurrent { type Topic = Date } ) =
@@ -58,9 +60,14 @@ object Rrule:
 
   given timestampRecurrent: (RomanCalendar, Ordering[Timestamp])
   =>  ( Rrule[Timestamp] is Recurrent { type Topic = Timestamp } ) =
+    rule => bounded(civil(rule.start, rule), rule.until, rule.count)
+
+  given momentRecurrent: (RomanCalendar, Ordering[Moment])
+  =>  ( Rrule[Moment] is Recurrent { type Topic = Moment } ) =
     rule =>
-      val stamps = dates(rule.start.date, rule).map(Timestamp(_, rule.start.time))
-      bounded(stamps, rule.until, rule.count)
+      val zone = rule.start.timezone
+      val starting = Timestamp(rule.start.date, rule.start.time)
+      bounded(civil(starting, rule).map(_.in(zone)), rule.until, rule.count)
 
   // Apply COUNT (take) and UNTIL (inclusive upper bound) to a generated, ascending stream.
   private def bounded[point](stream: LazyList[point], until: Optional[point], count: Optional[Int])
@@ -93,8 +100,12 @@ object Rrule:
         part(rule.count.present, t"COUNT=${rule.count.vouch}") ++
         part(rule.until.present, t"UNTIL=${rule.until.vouch.encode}") ++
         part(rule.byMonth.nonEmpty, t"BYMONTH=${rule.byMonth.map(_.numerical.show).join(t",")}") ++
+        part(rule.byYearDay.nonEmpty, t"BYYEARDAY=${rule.byYearDay.map(_.show).join(t",")}") ++
         part(rule.byMonthDay.nonEmpty, t"BYMONTHDAY=${rule.byMonthDay.map(_.show).join(t",")}") ++
         part(rule.byDay.nonEmpty, t"BYDAY=${rule.byDay.map(renderDay).join(t",")}") ++
+        part(rule.byHour.nonEmpty, t"BYHOUR=${rule.byHour.map(_.show).join(t",")}") ++
+        part(rule.byMinute.nonEmpty, t"BYMINUTE=${rule.byMinute.map(_.show).join(t",")}") ++
+        part(rule.bySecond.nonEmpty, t"BYSECOND=${rule.bySecond.map(_.show).join(t",")}") ++
         part(rule.bySetPos.nonEmpty, t"BYSETPOS=${rule.bySetPos.map(_.show).join(t",")}") ++
         part(rule.weekStart != Weekday.Mon, t"WKST=${code(rule.weekStart)}")
 
@@ -122,6 +133,10 @@ object Rrule:
         field(t"BYMONTH").lay(Nil)(ints(_, text).map { n => Month.fromOrdinal(n - 1) }),
         field(t"BYMONTHDAY").lay(Nil)(ints(_, text)),
         field(t"BYDAY").lay(Nil) { value => value.cut(t",").to(List).map(dayOf(_, text)) },
+        field(t"BYYEARDAY").lay(Nil)(ints(_, text)),
+        field(t"BYHOUR").lay(Nil)(ints(_, text)),
+        field(t"BYMINUTE").lay(Nil)(ints(_, text)),
+        field(t"BYSECOND").lay(Nil)(ints(_, text)),
         field(t"BYSETPOS").lay(Nil)(ints(_, text)),
         field(t"WKST").lay(Weekday.Mon)(weekdayOf(_, text)) )
 
@@ -225,6 +240,60 @@ object Rrule:
   private def dayOf(date: Date)(using calendar: RomanCalendar): Int = date.day(using calendar)()
   private def list(date: Optional[Date]): List[Date] = date.lay(Nil)(List(_))
 
+  // The ascending stream of zoneless date-times. A sub-day frequency steps the clock and filters by
+  // the `by*` limits; a date-level frequency expands the date stream and then the time-of-day via
+  // `byHour`/`byMinute`/`bySecond` (defaulting to the start's time).
+  private def civil(start: Timestamp, rule: Rrule[?])(using RomanCalendar): LazyList[Timestamp] =
+    rule.frequency match
+      case Frequency.Hourly | Frequency.Minutely | Frequency.Secondly =>
+        val step = rule.frequency match
+          case Frequency.Hourly   => rule.interval*3600
+          case Frequency.Minutely => rule.interval*60
+          case _                  => rule.interval
+
+        LazyList.iterate(start)(addSeconds(_, step)).filter(subDayMatch(_, rule))
+
+      case _ =>
+        dates(start.date, rule).flatMap(expandTimes(_, start, rule)).dropWhile(_ < start)
+
+  // Expand a date into the times-of-day the rule selects (the `byHour`/`byMinute`/`bySecond` cross
+  // product, each defaulting to the start's component).
+  private def expandTimes(date: Date, start: Timestamp, rule: Rrule[?]): List[Timestamp] =
+    val hours = if rule.byHour.nonEmpty then rule.byHour.sorted else List(start.hour)
+    val minutes = if rule.byMinute.nonEmpty then rule.byMinute.sorted else List(start.minute)
+    val seconds = if rule.bySecond.nonEmpty then rule.bySecond.sorted else List(start.second)
+
+    for
+      hour   <- hours
+      minute <- minutes
+      second <- seconds
+    yield Timestamp(date, Clockface(Base24(hour), Base60(minute), Base60(second)))
+
+  // Step a zoneless timestamp by `n` wall-clock seconds, carrying whole days into the date.
+  private def addSeconds(timestamp: Timestamp, n: Int)(using RomanCalendar): Timestamp =
+    val total = timestamp.hour*3600 + timestamp.minute*60 + timestamp.second + n
+    val seconds = Math.floorMod(total, 86400)
+    val nanos = timestamp.time.nanos
+    val time = Clockface(Base24(seconds/3600), Base60(seconds%3600/60), Base60(seconds%60), nanos)
+
+    Timestamp(timestamp.date.addDays(Math.floorDiv(total, 86400)), time)
+
+  private def subDayMatch(timestamp: Timestamp, rule: Rrule[?])(using RomanCalendar): Boolean =
+    dailyMatch(timestamp.date, rule) &&
+      (rule.byHour.isEmpty || rule.byHour.contains(timestamp.hour)) &&
+      (rule.byMinute.isEmpty || rule.byMinute.contains(timestamp.minute)) &&
+      (rule.bySecond.isEmpty || rule.bySecond.contains(timestamp.second))
+
+  // The date that is the `n`th day of `year` (negative counts back from the end).
+  private def yearDay(year: Int, n: Int)(using calendar: RomanCalendar): Optional[Date] =
+    val total = calendar.daysInYear(Year(year))
+    val index = if n > 0 then n else total + n + 1
+    if index < 1 || index > total then Unset else date(year, 1, 1).let(_.addDays(index - 1))
+
+  // The `byYearDay` dates within a year, filtered by `byMonth`.
+  private def yearDayDates(year: Int, rule: Rrule[?])(using RomanCalendar): List[Date] =
+    rule.byYearDay.flatMap { day => list(yearDay(year, day)) }.filter(monthAllowed(_, rule))
+
   // The ascending stream of dates matching the rule, starting at or after `start` (COUNT/UNTIL are
   // applied later, on the point stream). Each period is expanded independently and concatenated;
   // since periods are ascending and disjoint, the result is ascending.
@@ -232,8 +301,11 @@ object Rrule:
     val raw: LazyList[Date] = rule.frequency match
       case Frequency.Yearly =>
         LazyList.iterate(yearOf(start))(_ + rule.interval).flatMap: year =>
-          yearMonths(year, start, rule).flatMap: month =>
-            setPos(expandMonth(year, month, start, rule), rule.bySetPos)
+          val candidates =
+            if rule.byYearDay.nonEmpty then yearDayDates(year, rule)
+            else yearMonths(year, start, rule).flatMap(expandMonth(year, _, start, rule))
+
+          setPos(candidates.distinct.sortBy(_.jdn), rule.bySetPos)
 
       case Frequency.Monthly =>
         months(start, rule.interval).flatMap: (year, month) =>
@@ -364,5 +436,9 @@ case class Rrule[point]
     byMonth:    List[Month]          = Nil,
     byMonthDay: List[Int]            = Nil,
     byDay:      List[WeekdayOrdinal] = Nil,
+    byYearDay:  List[Int]            = Nil,
+    byHour:     List[Int]            = Nil,
+    byMinute:   List[Int]            = Nil,
+    bySecond:   List[Int]            = Nil,
     bySetPos:   List[Int]            = Nil,
     weekStart:  Weekday              = Weekday.Mon )
