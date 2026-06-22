@@ -46,8 +46,11 @@ class Spool[item]():
   def stop(): Unit = queue.put(Spool.Termination)
 
   @scala.annotation.nowarn("msg=match may not be exhaustive")
-  def stream: Stream[item] = queue.take().nn match
-    case Spool.Termination => Stream()
-    case value             => value.asInstanceOf[item] #:: stream
+  def stream: Stream[item] =
+    def pull(): Stream[item] = queue.take().nn match
+      case Spool.Termination => Stream()
+      case value             => value.asInstanceOf[item] #:: pull()
+
+    Stream().lazyAppendedAll(pull())
 
   def iterator: Iterator[item] = stream.iterator
