@@ -75,6 +75,15 @@ package textSanitizers:
   given skipSanitizer: TextSanitizer = (position, encoding) => Unset
   given substituteSanitizer: TextSanitizer = (position, encoding) => '?'
 
+  given accrueSanitizer
+  :   (Tactic[CharDecodeError], Foci[CharDecoder.Focus]) => TextSanitizer =
+
+    (position, encoding) =>
+      focus(CharDecoder.Focus(position)):
+        raise(CharDecodeError(position, encoding))
+
+      '?'
+
 package communication:
   given unicodeCharNamesCommunicable: Char is Communicable = char => Message:
     val name =

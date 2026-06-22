@@ -40,6 +40,11 @@ import strategies.throwUnsafely
 import textMetrics.eastAsianScriptsMetric
 import errorDiagnostics.stackTracesDiagnostics
 
+case class DecodeIssues(items: List[(Int, CharDecodeError)] = Nil)(using Diagnostics)
+extends Error(m"${items.length} decoding issues"):
+  def +(position: Int, error: CharDecodeError): DecodeIssues =
+    DecodeIssues(items :+ (position, error))
+
 object Tests extends Suite(m"Hieroglyph tests"):
   def run(): Unit =
     val japanese = t"平ぱ記動テ使村方島おゃぎむ万離ワ学つス携"
@@ -93,6 +98,44 @@ object Tests extends Suite(m"Hieroglyph tests"):
         given CharEncoder = enc"UTF-8".encoder
         capture[CharDecodeError](charDecoders.utf8Decoder.decoded(t"café".data.dropRight(1)))
       . assert(_ == CharDecodeError(4, enc"UTF-8"))
+
+    suite(m"Accruing decode errors"):
+      val badUtf8 = Data(45, -62, 49, 48)
+      val worseUtf8 = Data(45, -62, 49, -62, 48)
+
+      test(m"Valid UTF-8 accrues no errors"):
+        validate[CharDecoder.Focus](DecodeIssues()):
+          case error: CharDecodeError => accrual + (prior.let(_.position).or(0), error)
+        . protect:
+            import textSanitizers.accrueSanitizer
+            charDecoders.utf8Decoder.decoded(japaneseData)
+      . assert(_.items.length == 0)
+
+      test(m"A single bad sequence accrues one error"):
+        validate[CharDecoder.Focus](DecodeIssues()):
+          case error: CharDecodeError => accrual + (prior.let(_.position).or(0), error)
+        . protect:
+            import textSanitizers.accrueSanitizer
+            charDecoders.utf8Decoder.decoded(badUtf8)
+      . assert(_.items == List((1, CharDecodeError(1, enc"UTF-8"))))
+
+      test(m"Both bad sequences accrue (decoding does not stop at the first)"):
+        validate[CharDecoder.Focus](DecodeIssues()):
+          case error: CharDecodeError => accrual + (prior.let(_.position).or(0), error)
+        . protect:
+            import textSanitizers.accrueSanitizer
+            charDecoders.utf8Decoder.decoded(worseUtf8)
+      . assert(_.items == List((1, CharDecodeError(1, enc"UTF-8")), (3, CharDecodeError(3, enc"UTF-8"))))
+
+      test(m"Decoded text substitutes the replacement character at each error"):
+        var text: Text = t""
+        validate[CharDecoder.Focus](DecodeIssues()):
+          case error: CharDecodeError => accrual + (prior.let(_.position).or(0), error)
+        . protect:
+            import textSanitizers.accrueSanitizer
+            text = charDecoders.utf8Decoder.decoded(worseUtf8)
+        text
+      . assert(_ == t"-?1?0")
 
     suite(m"Compile-time tests"):
       test(m"Check that an invalid encoding produces an error"):
