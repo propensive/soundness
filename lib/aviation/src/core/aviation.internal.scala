@@ -317,6 +317,40 @@ object internal:
       case _ =>
         Left(m"$text is not a valid ISO 8601 duration")
 
+  // Plain-English helpers shared by the recurrence `Showable`s.
+  def englishOrdinal(n: Int): Text =
+    val suffix =
+      if (n%100)/10 == 1 then t"th"
+      else n%10 match
+        case 1 => t"st"
+        case 2 => t"nd"
+        case 3 => t"rd"
+        case _ => t"th"
+
+    t"$n$suffix"
+
+  // Join with commas and a final "and": "a", "a and b", "a, b and c".
+  def joinAnd(items: List[Text]): Text = items match
+    case Nil        => t""
+    case List(item) => item
+    case _          => t"${items.init.join(t", ")} and ${items.last}"
+
+  // A duration in plain English: "2 weeks", "1 month", "1 day and 12 hours".
+  def durationPhrase(span: Timespan): Text =
+    def text(n: Int, singular: Text): List[Text] =
+      if n == 0 then Nil else if n == 1 then List(t"1 $singular") else List(t"$n ${singular}s")
+
+    val seconds = span.seconds.value
+
+    val parts =
+      text(span.years, t"year") ++ text(span.months, t"month") ++ text(span.weeks, t"week") ++
+        text(span.days, t"day") ++ text(span.hours, t"hour") ++ text(span.minutes, t"minute") ++
+        (if seconds == 0.0 then Nil
+         else if seconds == 1.0 then List(t"1 second")
+         else List(t"${seconds.toLong} seconds"))
+
+    if parts.isEmpty then t"no time" else joinAnd(parts)
+
   def tsInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]])
   :   Macro[Year | Monthstamp | Date | Timestamp | Moment] =
 

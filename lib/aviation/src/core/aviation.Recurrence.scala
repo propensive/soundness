@@ -70,6 +70,18 @@ object Recurrence:
       val period: Timespan = recurrence.period
       t"R$number/${recurrence.start.encode}/${period.encode}"
 
+  // A plain-English description, e.g. "every 2 weeks, 5 times from <start>". `.encode` is the ISO
+  // wire form; `.show` is for people.
+  given showable: [point: Showable, span <: Timespan] => (Recurrence of point by span) is Showable =
+    recurrence =>
+      val period: Timespan = recurrence.period
+      val cadence = t"every ${aviation.internal.durationPhrase(period)}"
+
+      val number =
+        if recurrence.repetitions.absent then t"" else t", ${recurrence.repetitions.vouch} times"
+
+      t"$cadence$number from ${recurrence.start.show}"
+
   // Parsing erases the period's static radix set, so the caller names the period type they expect
   // (e.g. `decode[Recurrence of Timestamp by (Timespan of Month.type)]`); the parsed duration is
   // tagged with it. A mismatched topic mis-reads the duration, so name the one the data uses.
@@ -95,26 +107,15 @@ object Recurrence:
         case _ =>
           abort(RecurrenceError(text))
 
-  extension [point, span](recurrence: Recurrence of point by span)
-    // The occurrences, lazily: `start`, `start + period`, … bounded by `repetitions` if it is set,
-    // otherwise an infinite stream (consume it with `until`/`within` or `.take`).
-    def occurrences(using addable: point is Addable by span to point): LazyList[point] =
-      val all = LazyList.iterate(recurrence.start)(addable.add(_, recurrence.period))
-      recurrence.repetitions.lay(all)(all.take(_))
+  // A `Recurrence` is `Recurrent`: its occurrences are `start`, `start + period`, … bounded by
+  // `repetitions` if set, otherwise infinite. The `Addable` it needs is captured here, so generic
+  // `Recurrent` code (`occurrences`/`until`/`within`) works on a `Recurrence`.
+  given recurrent: [point, span] => (addable: point is Addable by span to point)
+  =>  ( (Recurrence of point by span) is Recurrent { type Topic = point } ) =
 
-    // The occurrences strictly before `limit` — terminates even for an unbounded recurrence.
-    def until(limit: point)
-      ( using addable: point is Addable by span to point, order: Ordering[point] )
-    :   LazyList[point] =
-
-      occurrences.takeWhile(order.lt(_, limit))
-
-    // The occurrences falling within a `Period` (half-open: `start <= point < finish`).
-    def within(window: Period[point])
-      ( using addable: point is Addable by span to point, order: Ordering[point] )
-    :   LazyList[point] =
-
-      occurrences.dropWhile(order.lt(_, window.start)).takeWhile(order.lt(_, window.finish))
+    series =>
+      val all = LazyList.iterate(series.start)(addable.add(_, series.period))
+      series.repetitions.lay(all)(all.take(_))
 
 trait Recurrence extends Topical, Operable:
   def start: Topic

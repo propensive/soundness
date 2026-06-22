@@ -2066,6 +2066,128 @@ object Tests extends Suite(m"Aviation Tests"):
         demilitarize(rec"R5/2024-02-30/P1M")
       . assert(_.nonEmpty)
 
+    suite(m"Rrule expansion"):
+      import calendars.gregorianCalendar
+
+      test(m"Monthly on the 15th yields the 15th of each month"):
+        Rrule(2024-Jan-15, Frequency.Monthly, count = 4).occurrences.to(List)
+      . assert(_ == List(2024-Jan-15, 2024-Feb-15, 2024-Mar-15, 2024-Apr-15))
+
+      test(m"Monthly from the 31st skips months without a 31st (no drift)"):
+        Rrule(2024-Jan-31, Frequency.Monthly, count = 3).occurrences.to(List)
+      . assert(_ == List(2024-Jan-31, 2024-Mar-31, 2024-May-31))
+
+      test(m"The 3rd Monday of each month"):
+        Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3)), count = 2)
+        . occurrences.to(List)
+      . assert(_ == List(2024-Jan-15, 2024-Feb-19))
+
+      test(m"The last Friday of each month"):
+        Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Fri, -1)), count = 2)
+        . occurrences.to(List)
+      . assert(_ == List(2024-Jan-26, 2024-Feb-23))
+
+      test(m"Thanksgiving: the 4th Thursday of November each year"):
+        Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov), byDay = List(WeekdayOrdinal(Thu, 4)),
+            count = 2).occurrences.to(List)
+      . assert(_ == List(2024-Nov-28, 2025-Nov-27))
+
+      test(m"Weekly on Monday, Wednesday and Friday"):
+        Rrule(2024-Jan-1, Frequency.Weekly, byDay = List(WeekdayOrdinal(Mon), WeekdayOrdinal(Wed),
+            WeekdayOrdinal(Fri)), count = 4).occurrences.to(List)
+      . assert(_ == List(2024-Jan-1, 2024-Jan-3, 2024-Jan-5, 2024-Jan-8))
+
+      test(m"Every other week on the start's weekday"):
+        Rrule(2024-Jan-1, Frequency.Weekly, interval = 2, count = 3).occurrences.to(List)
+      . assert(_ == List(2024-Jan-1, 2024-Jan-15, 2024-Jan-29))
+
+      test(m"Daily every third day"):
+        Rrule(2024-Jan-1, Frequency.Daily, interval = 3, count = 3).occurrences.to(List)
+      . assert(_ == List(2024-Jan-1, 2024-Jan-4, 2024-Jan-7))
+
+      test(m"The last weekday of the month via BYSETPOS"):
+        Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon), WeekdayOrdinal(Tue),
+            WeekdayOrdinal(Wed), WeekdayOrdinal(Thu), WeekdayOrdinal(Fri)), bySetPos = List(-1),
+            count = 2).occurrences.to(List)
+      . assert(_ == List(2024-Jan-31, 2024-Feb-29))
+
+      test(m"UNTIL bounds the occurrences inclusively"):
+        Rrule(2024-Jan-1, Frequency.Monthly, until = 2024-Mar-1).occurrences.to(List)
+      . assert(_ == List(2024-Jan-1, 2024-Feb-1, 2024-Mar-1))
+
+      test(m"A yearly rule repeats the start's date"):
+        Rrule(2024-Feb-29, Frequency.Yearly, count = 2).occurrences.to(List)
+      . assert(_ == List(2024-Feb-29, 2028-Feb-29))
+
+    suite(m"Rrule RFC 5545 text"):
+      import calendars.gregorianCalendar
+
+      test(m"An rrule renders as an RFC 5545 rule string"):
+        Rrule(2024-Jan-1, Frequency.Monthly, interval = 2, count = 10,
+            byDay = List(WeekdayOrdinal(Mon, 3))).encode
+      . assert(_ == t"FREQ=MONTHLY;INTERVAL=2;COUNT=10;BYDAY=3MO")
+
+      test(m"An rrule round-trips through its RFC 5545 string"):
+        val rule = Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
+            byDay = List(WeekdayOrdinal(Thu, 4)))
+        Rrule.parse(rule.encode, 2024-Jan-1).encode == rule.encode
+      . assert(_ == true)
+
+      test(m"A parsed rrule generates the right occurrences"):
+        Rrule.parse(t"FREQ=MONTHLY;BYDAY=-1FR", 2024-Jan-1).occurrences.take(2).to(List)
+      . assert(_ == List(2024-Jan-26, 2024-Feb-23))
+
+      test(m"An invalid rrule string raises RruleError"):
+        capture(Rrule.parse(t"FREQ=FORTNIGHTLY", 2024-Jan-1))
+      . matches:
+          case _: RruleError =>
+
+    suite(m"RecurrenceSet"):
+      import calendars.gregorianCalendar
+
+      test(m"A set unions a rule and rdates, minus exdates"):
+        val weekly = Rrule(2024-Jan-1, Frequency.Weekly, count = 4)
+        RecurrenceSet(include = List(weekly.occurrences), rdates = List(2024-Jan-10),
+            exdates = List(2024-Jan-15)).occurrences.to(List)
+      . assert(_ == List(2024-Jan-1, 2024-Jan-8, 2024-Jan-10, 2024-Jan-22))
+
+      test(m"A set merges two rules into one ascending stream"):
+        val a = Rrule(2024-Jan-1, Frequency.Weekly, count = 2)
+        val b = Rrule(2024-Jan-3, Frequency.Weekly, count = 2)
+        RecurrenceSet(include = List(a.occurrences, b.occurrences)).occurrences.to(List)
+      . assert(_ == List(2024-Jan-1, 2024-Jan-3, 2024-Jan-8, 2024-Jan-10))
+
+    suite(m"Recurrence descriptions"):
+      import monthFormats.englishMonths
+      import weekdays.englishWeekdays
+
+      test(m"An rrule reads as plain English"):
+        Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
+      . assert(_ == t"every month on the 3rd Monday")
+
+      test(m"A yearly rule names the month and weekday"):
+        Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
+            byDay = List(WeekdayOrdinal(Thu, 4))).show
+      . assert(_ == t"every year on the 4th Thursday of November")
+
+      test(m"A multi-weekday weekly rule with a count"):
+        Rrule(2024-Jan-1, Frequency.Weekly, byDay = List(WeekdayOrdinal(Mon), WeekdayOrdinal(Wed),
+            WeekdayOrdinal(Fri)), count = 10).show
+      . assert(_ == t"every week on Monday, Wednesday and Friday, 10 times")
+
+      test(m"The last day of the month"):
+        Rrule(2024-Jan-1, Frequency.Monthly, byMonthDay = List(-1)).show
+      . assert(_ == t"every month on the last day")
+
+      test(m"An interval reads as 'every N units'"):
+        Rrule(2024-Jan-1, Frequency.Daily, interval = 3).show
+      . assert(_ == t"every 3 days")
+
+      test(m"A Recurrence reads as plain English"):
+        import dateFormats.iso8601DateFormat
+        Recurrence(2024-Jan-1, 2*Week, 5).show
+      . assert(_ == t"every 2 weeks, 5 times from 2024-01-01")
+
     suite(m"Moment subtraction"):
       import calendars.gregorianCalendar
 
