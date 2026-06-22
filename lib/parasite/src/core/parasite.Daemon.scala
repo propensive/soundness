@@ -42,12 +42,12 @@ import vacuous.*
 object Daemon:
   def apply(evaluate: Worker => Unit)
     ( using monitor: Monitor, codepoint: Codepoint )
-  :   Daemon^{monitor} =
+  :   Daemon^ =
 
     // The body closure may capture a stack-scoped error tactic; that is enforced at the `daemon`/
     // `async` entry point. Here it is laundered to pure so the worker need not track the *body*'s
-    // captures — the worker is still scope-tracked through its `parent`, so the returned handle
-    // captures `{monitor}` and cannot escape `supervise`.
+    // captures. The constructed worker is a fresh capability whose hidden set includes `monitor`,
+    // so the handle cannot escape the `supervise` scope that owns `monitor`.
     val evaluate0: Worker -> Unit = caps.unsafe.unsafeAssumePure(evaluate)
 
     new Worker(codepoint, monitor) with Daemon:

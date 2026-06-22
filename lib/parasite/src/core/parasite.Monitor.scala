@@ -60,22 +60,31 @@ sealed trait Monitor extends Resultant, Findable, caps.ExclusiveCapability:
   self: Monitor^ =>
   val promise: Promise[Result]
 
-  // The supervision scope owns its child-fate/error-trap policy. Because every child `Worker` reaches
-  // its `probate` *through* its parent monitor (`Worker#probate = parent.probate`), a worker's whole
-  // capture set reduces to `{parent}` — which is what lets the worker registry below be typed as
-  // `Set[Worker^{this}]` (a worker captured by *this* monitor) without laundering. A `contain` region
-  // overrides the policy by spawning under a child scope (`Containment`) whose `probate` differs.
-  // The capture is tied to `{this}` (not a `fresh` per-call result), so a scope's probate is part of
-  // *its* footprint — which is what keeps a worker's footprint down to `{parent}`.
+  // The supervision scope owns its child-fate/error-trap policy. Every child `Worker` reaches its
+  // `probate` *through* its parent monitor (`Worker#probate = parent.probate`); the capture is tied
+  // to `{this}` (not a `fresh` per-call result) so a scope's probate is part of *its* footprint. A
+  // `contain` region overrides this by spawning under a child `Subscope` with its own policy.
   def probate: Probate^{this}
 
-  protected[parasite] val workersRef: (juca.AtomicReference[Set[Worker^{this}]])^{this} =
-    juca.AtomicReference[Set[Worker^{this}]](Set())
+  // The live children of this scope. A supervision registry is a *mutable capability collection*
+  // whose contents are fresh worker identities created over time; tracking that precisely is the
+  // "growing capture set" case that capture checking currently delegates to mutation/separation
+  // tracking (still under development), and separation checking itself rejects the aliasing a
+  // supervisor needs (a worker is held at once by its thread, its parent's registry, and its
+  // caller's handle). So this collection is kept untracked: workers are stored boxed as pure
+  // `Worker`, with the `^` dropped at the `addWorker`/`remove` boundary. This is the single capture
+  // escape in the supervision core; sound here because the registry is private bookkeeping that
+  // never leaks a worker's captures outward, and a worker's lifetime is bounded by this very scope.
+  protected[parasite] val workersRef: juca.AtomicReference[Set[Worker^{}]] =
+    juca.AtomicReference[Set[Worker^{}]](Set())
 
-  protected[parasite] def workers: Set[Worker^{this}] = workersRef.get().nn
+  protected[parasite] def workers: Set[Worker^{}] = workersRef.get().nn
 
-  protected[parasite] def addWorker(worker: Worker^{this}): Unit =
-    workersRef.updateAndGet(_.nn + worker)
+  protected[parasite] def addWorker(worker: Worker^): Unit =
+    workersRef.updateAndGet(_.nn + caps.unsafe.unsafeAssumePure(worker))
+
+  protected[parasite] def remove(monitor: Worker^): Unit =
+    workersRef.updateAndGet(_.nn - caps.unsafe.unsafeAssumePure(monitor))
 
   def name: Optional[Name[Async]]
   def chain: Optional[Chain]
@@ -84,13 +93,12 @@ sealed trait Monitor extends Resultant, Findable, caps.ExclusiveCapability:
   def attend(): Unit = promise.attend()
   def ready: Boolean = promise.ready
   def cancel(): Unit
-  def remove(monitor: Worker^{this}): Unit = workersRef.updateAndGet(_.nn - monitor)
   def supervisor: Supervisor
 
   def snooze[generic: Abstractable across Durations to Long](duration: generic): Unit =
     jucl.LockSupport.parkNanos(duration.generic)
 
-// The thread-forking strategy. DECOUPLED from `Monitor` (see capture-checking-capabilities handover):
+// The thread-forking strategy. DECOUPLED from `Monitor` (see capture-checking-capabilities notes):
 // the global strategy singletons (`PlatformSupervisor` etc.) are plain values, NOT capabilities, so
 // they can be referenced anywhere; the supervision tree (capability-tracked `Monitor`s) is rooted
 // locally per `supervise` block by a `Root`.
@@ -151,7 +159,7 @@ object PlatformSupervisor extends Supervisor:
       thread.start()
 
 abstract class Worker(frame: Codepoint, parent: Monitor^) extends Monitor:
-  self: Worker^{parent} =>
+  self: Worker^ =>
   private val state: juca.AtomicReference[Fulfillment[Result]] =
     juca.AtomicReference(Fulfillment.Initializing)
 
@@ -160,8 +168,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^) extends Monitor:
   private val startTime: Long = jl.System.currentTimeMillis
   val promise: Promise[Result] = Promise()
 
-  // A worker's policy is its parent scope's policy, so the worker captures only `{parent}` — see the
-  // note on `Monitor#probate`.
+  // A worker's policy is its parent scope's policy — see the note on `Monitor#probate`.
   def probate: Probate^{this} = parent.probate
 
   parent.addWorker(this)
@@ -202,14 +209,14 @@ abstract class Worker(frame: Codepoint, parent: Monitor^) extends Monitor:
     if Thread.interrupted() || state.get() == Cancelled then throw new InterruptedException()
 
 
-  def map[result2](lambda: Result => result2)(using Monitor, Probate)
-  :   Task[result2] emits AsyncError =
+  def map[result2](lambda: Result => result2)(using Monitor)
+  :   (Task[result2] emits AsyncError)^ =
 
     async(lambda(join()))
 
 
-  def bind[result2](lambda: Result => Task[result2])(using Monitor, Probate)
-  :   Task[result2] emits AsyncError =
+  def bind[result2](lambda: Result => Task[result2])(using Monitor)
+  :   (Task[result2] emits AsyncError)^ =
 
     async(lambda(join()).join())
 

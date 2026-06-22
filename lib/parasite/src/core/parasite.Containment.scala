@@ -40,8 +40,8 @@ import fulminate.*
 // catch-all distinct from the typed `contingency.trap`, which handles declared *emitted* errors. It
 // holds the error-trap `probate` policy and, in `protect`, runs the body under a child supervision
 // `Subscope` carrying that policy: workers spawned within `protect` capture the subscope as their
-// parent and so reach this `probate`. Child-fate (`cleanup`) is delegated unchanged to the enclosing
-// scope's probate; only the failure branch (`trap`) is overridden. A handled error whose remedy is
+// parent and so reach this `probate`. Child-fate (`cleanup`) is delegated to the enclosing scope's
+// probate; only the failure branch (`trap`) is overridden. A handled error whose remedy is
 // `Reject` — like one the handler does not match — bubbles to the enclosing scope, so containments
 // compose as they nest.
 class Containment(handler: PartialFunction[Error, Remedy], parent: Monitor^)

@@ -46,12 +46,12 @@ import vacuous.*
 object Task:
   def apply[result, error <: Exception](evaluate: Worker => result, name: Optional[Name[Async]])
     ( using monitor: Monitor, codepoint: Codepoint )
-  :   (Task[result] { type Error = error })^{monitor} =
+  :   (Task[result] { type Error = error })^ =
 
     // The body closure may capture stack-scoped capabilities (an error tactic, a `boundary.Label`);
-    // that capture is checked at the `async`/`task` entry point. Here it is laundered to pure so the
-    // worker need not track the *body*'s captures — the worker is still scope-tracked through its
-    // `parent` monitor, so the returned handle captures `{monitor}` and cannot escape `supervise`.
+    // that capture is checked at the `async`/`task` entry point. Here it is laundered to pure so
+    // the worker need not track the *body*'s captures. The constructed worker is a fresh capability
+    // whose hidden set includes `monitor`, so the handle cannot escape its `supervise` scope.
     val evaluate0: Worker -> result = caps.unsafe.unsafeAssumePure(evaluate)
     inline def name0: Optional[Name[Async]] = name
 
@@ -70,23 +70,31 @@ object Task:
         deliver[error, duration](duration)
 
 
-  given monad: (Monitor, Probate, Tactic[AsyncError]) => Monad[Task] = new Monad[Task]:
-    def bind[value, value2](value: Task[value])(lambda: value => Task[value2]): Task[value2] =
-      value.bind(lambda)
+  // `mercator.Monad[Task]` abstracts over `Task` as a *pure* type constructor, but a `Task` is a
+  // capability (a `Worker`), so the scope-capturing handles produced by `async`/`bind`/`map` are
+  // boxed to the pure `Task` the `Monad` interface demands. The capture is recoverable bookkeeping
+  // here — the tasks are bound and awaited within the same `Monitor` scope this given requires.
+  given monad: Monitor => Monad[Task] = caps.unsafe.unsafeAssumePure:
+    new Monad[Task]:
+      def bind[value, value2](value: Task[value])(lambda: value => Task[value2]): Task[value2] =
+        caps.unsafe.unsafeAssumePure(value.bind(lambda))
 
-    def point[value](value: value): Task[value] = async(value)
+      def point[value](value: value): Task[value] = caps.unsafe.unsafeAssumePure(async(value))
 
-    def apply[value, value2](value: Task[value])(lambda: value => value2): Task[value2] =
-      value.map(lambda)
+      def apply[value, value2](value: Task[value])(lambda: value => value2): Task[value2] =
+        caps.unsafe.unsafeAssumePure(value.map(lambda))
 
   extension [result](tasks: Seq[Task[result]])
-    def sequence(using Monitor, Probate): Task[Seq[result]] emits AsyncError =
+    def sequence(using Monitor): (Task[Seq[result]] emits AsyncError)^ =
       async(tasks.map(_.join()))
 
   extension [result](tasks: Iterable[Task[result]])
-    def race()(using Monitor, Probate): result raises AsyncError =
+    def race()(using Monitor): result raises AsyncError =
       val promise: Promise[result] = Promise()
-      tasks.foreach(_.map(promise.offer(_)))
+
+      tasks.foreach: task =>
+        task.map(promise.offer(_))
+        ()
 
       try promise.await() finally tasks.foreach(_.cancel())
 
@@ -112,8 +120,8 @@ trait Task[+result]:
   protected[parasite] def join[duration: Abstractable across Durations to Long](duration: duration)
   :   result raises AsyncError
 
-  def bind[result2](lambda: result => Task[result2])(using Monitor, Probate)
-  :   Task[result2] emits AsyncError
+  def bind[result2](lambda: result => Task[result2])(using Monitor)
+  :   (Task[result2] emits AsyncError)^
 
-  def map[result2](lambda: result => result2)(using Monitor, Probate)
-  :   Task[result2] emits AsyncError
+  def map[result2](lambda: result => result2)(using Monitor)
+  :   (Task[result2] emits AsyncError)^

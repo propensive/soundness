@@ -55,7 +55,9 @@ package threading:
   given virtualThreading: Threading = () => VirtualSupervisor
   given adaptiveThreading: Threading = () => AdaptiveSupervisor
 
-package probates:
+// A `Capability` object: its members are capability-typed givens (a `Probate` is a capability, and
+// `failProbate` captures a `Tactic`), which the compiler only permits as fields of a `Capability`.
+object probates extends caps.ExclusiveCapability:
   given awaitProbate: Probate = _.delegate(_.attend())
   given cancelProbate: Probate = _.delegate(_.cancel())
 
@@ -90,7 +92,7 @@ transparent inline def monitor: Monitor = infer[Monitor]
 def daemon[error <: Exception](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?->{} Unit )
   ( using Monitor )
-:   Daemon =
+:   Daemon^ =
 
   val tactic = AsyncTactic[error]()
   Daemon: worker =>
@@ -100,9 +102,9 @@ def daemon[error <: Exception](using Codepoint)
 // Contains *thrown* exceptions escaping a region of fire-and-forget work:
 // `contain { case … => … }.protect { … }`. The handler maps an escaped exception to a `Remedy`; the
 // containment is a child supervision scope of the enclosing `Monitor`, so unmatched or rejected
-// errors chain outwards to the parent scope's probate, up to the supervision root. Distinct from the
-// typed `trap` (declared emitted errors).
-def contain(handler: PartialFunction[Error, Remedy])(using parent: Monitor): Containment^{parent} =
+// errors chain outwards to the parent scope's probate, up to the root. Distinct from the typed
+// `trap` (declared emitted errors).
+def contain(handler: PartialFunction[Error, Remedy])(using parent: Monitor): Containment^ =
   Containment(handler, parent)
 
 
@@ -126,7 +128,7 @@ infix type emits[left, error <: Exception] = left match
 def async[result, error <: Exception](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?=> result )
   ( using monitor: Monitor )
-:   (Task[result] emits (error | AsyncError))^{monitor} =
+:   (Task[result] emits (error | AsyncError))^ =
 
   val tactic = AsyncTactic[error]()
   Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = Unset)
@@ -135,7 +137,7 @@ def async[result, error <: Exception](using Codepoint)
 def task[result, error <: Exception](using Codepoint)(name: Name[Async])
   ( evaluate: (Worker, Tactic[error]) ?=> result )
   ( using monitor: Monitor )
-:   (Task[result] emits (error | AsyncError))^{monitor} =
+:   (Task[result] emits (error | AsyncError))^ =
 
   val tactic = AsyncTactic[error]()
   Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = name)
