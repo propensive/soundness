@@ -32,8 +32,6 @@
                                                                                                   */
 package aviation
 
-import prepositional.*
-
 // An iCalendar recurrence set: the union of one or more recurrences' occurrence streams (`include`,
 // e.g. each `rrule.occurrences`) plus explicit extra dates (`rdates`, RFC 5545 `RDATE`), minus
 // excluded dates (`exdates`, `EXDATE`). It is itself `Recurrent` — the streams are merged into one

@@ -2157,6 +2157,37 @@ object Tests extends Suite(m"Aviation Tests"):
         RecurrenceSet(include = List(a.occurrences, b.occurrences)).occurrences.to(List)
       . assert(_ == List(2024-Jan-1, 2024-Jan-3, 2024-Jan-8, 2024-Jan-10))
 
+    suite(m"Recurrence descriptions"):
+      import monthFormats.englishMonths
+      import weekdays.englishWeekdays
+
+      test(m"An rrule reads as plain English"):
+        Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
+      . assert(_ == t"every month on the 3rd Monday")
+
+      test(m"A yearly rule names the month and weekday"):
+        Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
+            byDay = List(WeekdayOrdinal(Thu, 4))).show
+      . assert(_ == t"every year on the 4th Thursday of November")
+
+      test(m"A multi-weekday weekly rule with a count"):
+        Rrule(2024-Jan-1, Frequency.Weekly, byDay = List(WeekdayOrdinal(Mon), WeekdayOrdinal(Wed),
+            WeekdayOrdinal(Fri)), count = 10).show
+      . assert(_ == t"every week on Monday, Wednesday and Friday, 10 times")
+
+      test(m"The last day of the month"):
+        Rrule(2024-Jan-1, Frequency.Monthly, byMonthDay = List(-1)).show
+      . assert(_ == t"every month on the last day")
+
+      test(m"An interval reads as 'every N units'"):
+        Rrule(2024-Jan-1, Frequency.Daily, interval = 3).show
+      . assert(_ == t"every 3 days")
+
+      test(m"A Recurrence reads as plain English"):
+        import dateFormats.iso8601DateFormat
+        Recurrence(2024-Jan-1, 2*Week, 5).show
+      . assert(_ == t"every 2 weeks, 5 times from 2024-01-01")
+
     suite(m"Moment subtraction"):
       import calendars.gregorianCalendar
 

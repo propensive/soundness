@@ -156,6 +156,68 @@ object Rrule:
     val prefix = string.dropRight(2)
     WeekdayOrdinal(weekday, if prefix.isEmpty then Unset else intOf(prefix.tt, context))
 
+  // ── plain-English description ────────────────────────────────────────────────────────────────
+  // `.encode` is the RFC 5545 wire form; `.show` describes the rule in English, e.g. "every month
+  // on the 3rd Monday" or "every year on the 4th Thursday of November".
+
+  private def unitName(frequency: Frequency, plural: Boolean): Text = frequency match
+    case Frequency.Secondly => if plural then t"seconds" else t"second"
+    case Frequency.Minutely => if plural then t"minutes" else t"minute"
+    case Frequency.Hourly   => if plural then t"hours" else t"hour"
+    case Frequency.Daily    => if plural then t"days" else t"day"
+    case Frequency.Weekly   => if plural then t"weeks" else t"week"
+    case Frequency.Monthly  => if plural then t"months" else t"month"
+    case Frequency.Yearly   => if plural then t"years" else t"year"
+
+  private def ordinalWord(n: Int): Text =
+    if n == -1 then t"last"
+    else if n < 0 then t"${aviation.internal.englishOrdinal(-n)}-to-last"
+    else aviation.internal.englishOrdinal(n)
+
+  given showable: [point] => (Months, Weekdays) => Rrule[point] is Showable = rule =>
+    val join = aviation.internal.joinAnd
+
+    val cadence =
+      if rule.interval == 1 then t"every ${unitName(rule.frequency, false)}"
+      else t"every ${rule.interval} ${unitName(rule.frequency, true)}"
+
+    val byDayText: Optional[Text] =
+      if rule.byDay.isEmpty then Unset else
+        val hasOrdinal = rule.byDay.exists(_.ordinal.present)
+
+        val entries = rule.byDay.map: entry =>
+          if entry.ordinal.absent then entry.weekday.show
+          else t"${ordinalWord(entry.ordinal.vouch)} ${entry.weekday.show}"
+
+        t"on ${if hasOrdinal then t"the " else t""}${join(entries)}"
+
+    val byMonthDayText: Optional[Text] =
+      if rule.byMonthDay.isEmpty then Unset
+      else t"on the ${join(rule.byMonthDay.map(monthDayWord))}"
+
+    val onText: Optional[Text] = if rule.byDay.nonEmpty then byDayText else byMonthDayText
+
+    val monthText: Optional[Text] =
+      if rule.byMonth.isEmpty then Unset else
+        val names = join(rule.byMonth.map(_.show))
+        if onText.present then t"of $names" else t"in $names"
+
+    val setPosText: Optional[Text] =
+      if rule.bySetPos.isEmpty then Unset else t"taking the ${join(rule.bySetPos.map(ordinalWord))}"
+
+    val countText = if rule.count.absent then t"" else t", ${rule.count.vouch} times"
+
+    val clauses =
+      List(cadence) ++ onText.lay(Nil)(List(_)) ++ monthText.lay(Nil)(List(_)) ++
+        setPosText.lay(Nil)(List(_))
+
+    t"${clauses.join(t" ")}$countText"
+
+  private def monthDayWord(day: Int): Text =
+    if day == -1 then t"last day"
+    else if day < 0 then t"${aviation.internal.englishOrdinal(-day)}-to-last day"
+    else aviation.internal.englishOrdinal(day)
+
   // ── the expansion engine (Gregorian) ────────────────────────────────────────────────────────
 
   private def yearOf(date: Date)(using calendar: RomanCalendar): Int = date.year(using calendar)()
@@ -213,19 +275,20 @@ object Rrule:
   :   List[Date] =
 
     val byDayDates: Optional[List[Date]] =
-      if rule.byDay.isEmpty then Unset else rule.byDay.flatMap:
-        case WeekdayOrdinal(weekday, Unset)    => weekdaysOfMonth(year, month, weekday)
-        case WeekdayOrdinal(weekday, ord: Int) => list(nthWeekday(year, month, weekday, ord))
+      if rule.byDay.isEmpty then Unset else rule.byDay.flatMap: entry =>
+        if entry.ordinal.absent then weekdaysOfMonth(year, month, entry.weekday)
+        else list(nthWeekday(year, month, entry.weekday, entry.ordinal.vouch))
 
     val byMonthDayDates: Optional[List[Date]] =
       if rule.byMonthDay.isEmpty then Unset else rule.byMonthDay.flatMap: day =>
         list(monthDay(year, month, day))
 
-    val candidates = (byDayDates, byMonthDayDates) match
-      case (days: List[Date], monthDays: List[Date]) => days.filter(monthDays.contains)
-      case (days: List[Date], _)                     => days
-      case (_, monthDays: List[Date])                => monthDays
-      case _                                         => list(monthDay(year, month, dayOf(start)))
+    val candidates =
+      if byDayDates.present && byMonthDayDates.present
+      then byDayDates.vouch.filter(byMonthDayDates.vouch.contains)
+      else if byDayDates.present then byDayDates.vouch
+      else if byMonthDayDates.present then byMonthDayDates.vouch
+      else list(monthDay(year, month, dayOf(start)))
 
     candidates.distinct.sortBy(_.jdn)
 
