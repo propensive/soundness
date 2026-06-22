@@ -37,7 +37,7 @@ import language.experimental.pureFunctions
 
 import fulminate.*
 
-trait Probate:
+trait Probate extends caps.ExclusiveCapability:
   // The fate of an unfinished child when its parent completes (await it, cancel it, …).
   def cleanup(worker: Worker): Unit
 

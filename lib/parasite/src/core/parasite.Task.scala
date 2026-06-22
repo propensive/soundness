@@ -69,7 +69,7 @@ object Task:
         deliver[error, duration](duration)
 
 
-  given monad: (Monitor, Probate, Tactic[AsyncError]) => Monad[Task]:
+  given monad: (Monitor, Probate, Tactic[AsyncError]) => Monad[Task] = new Monad[Task]:
     def bind[value, value2](value: Task[value])(lambda: value => Task[value2]): Task[value2] =
       value.bind(lambda)
 

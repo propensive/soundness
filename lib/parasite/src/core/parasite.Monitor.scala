@@ -56,7 +56,8 @@ import Fulfillment.*
 import beneficence.*
 import unsafeExceptions.canThrowAny
 
-sealed trait Monitor extends Resultant, Findable:
+sealed trait Monitor extends Resultant, Findable, caps.ExclusiveCapability:
+  self: Monitor^ =>
   val promise: Promise[Result]
 
   protected[parasite] val workersRef: juca.AtomicReference[Set[Worker]] =
@@ -80,35 +81,41 @@ sealed trait Monitor extends Resultant, Findable:
   def snooze[generic: Abstractable across Durations to Long](duration: generic): Unit =
     jucl.LockSupport.parkNanos(duration.generic)
 
-sealed abstract class Supervisor() extends Monitor:
+// The thread-forking strategy. DECOUPLED from `Monitor` (see capture-checking-capabilities handover):
+// the global strategy singletons (`PlatformSupervisor` etc.) are plain values, NOT capabilities, so
+// they can be referenced anywhere; the supervision tree (capability-tracked `Monitor`s) is rooted
+// locally per `supervise` block by a `Root`.
+trait Supervisor:
+  def name: Name[Async]
+  def fork(name: Optional[Text])(block: => Unit): Thread
+
+// The local root of a supervision tree, created by `supervise`. A `Monitor` (hence a capability),
+// but its lifetime is the `supervise` block, so it does not escape as a global capability.
+class Root(val supervisor: Supervisor) extends Monitor:
   type Result = Unit
 
   def chain: Optional[Chain] = Unset
-
   val promise: Promise[Unit] = Promise()
   val daemon: Boolean = true
-
-  def name: Name[Async]
-  def fork(name: Optional[Text])(block: => Unit): Thread
-  def supervisor: Supervisor = this
-  def stack: Text = name+":".tt
+  def name: Optional[Name[Async]] = supervisor.name
+  def stack: Text = supervisor.name+":".tt
   def cancel(): Unit = ()
   def shutdown(): Unit = workers.each(_.cancel())
 
-object VirtualSupervisor extends Supervisor():
+object VirtualSupervisor extends Supervisor:
   def name: Name[Async] = n"virtual"
 
   def fork(name: Optional[Text])(block: => Unit): Thread =
     Thread.ofVirtual().nn.start{ () => block }.nn
 
-object AdaptiveSupervisor extends Supervisor():
+object AdaptiveSupervisor extends Supervisor:
   def name: Name[Async] = n"adaptive"
 
   def fork(name: Optional[Text])(block: => Unit): Thread =
     try VirtualSupervisor.fork(name)(block) catch case error: Throwable =>
       PlatformSupervisor.fork(name)(block)
 
-object PlatformSupervisor extends Supervisor():
+object PlatformSupervisor extends Supervisor:
   def name: Name[Async] = n"platform"
 
   def fork(name: Optional[Text])(block: => Unit): Thread =
@@ -118,8 +125,8 @@ object PlatformSupervisor extends Supervisor():
       name.let(_.s).let(thread.setName(_))
       thread.start()
 
-abstract class Worker(frame: Codepoint, parent: Monitor, probate: Probate) extends Monitor:
-  self =>
+abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) extends Monitor:
+  self: Worker^ =>
   private val state: juca.AtomicReference[Fulfillment[Result]] =
     juca.AtomicReference(Fulfillment.Initializing)
 
@@ -136,7 +143,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor, probate: Probate) exten
   def apply(): Optional[Result] = promise()
   def relentlessness: Double = (jl.System.currentTimeMillis - startTime).toDouble/relents
 
-  def delegate(lambda: Monitor -> Unit): Unit = state.updateAndGet: state =>
+  def delegate(lambda: Monitor => Unit): Unit = state.updateAndGet: state =>
     workers.each: child => if child.daemon then child.cancel() else lambda(child)
     state
 
@@ -144,8 +151,9 @@ abstract class Worker(frame: Codepoint, parent: Monitor, probate: Probate) exten
     val ref = name.lay((frame.text: Text).s)(name => (name: Text).s+"@"+(frame.text: Text).s)
 
     parent match
-      case supervisor: Supervisor => ((supervisor.name: Text).s+"://"+ref).tt
-      case submonitor: Worker     => ((submonitor.stack: Text).s+"//"+ref).tt
+      case root: Root         => ((root.supervisor.name: Text).s+"://"+ref).tt
+      case submonitor: Worker => ((submonitor.stack: Text).s+"//"+ref).tt
+      case _                  => ref.tt
 
   def relent(): Unit =
     relents += 1

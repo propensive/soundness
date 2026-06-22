@@ -62,11 +62,11 @@ package probates:
   given panicProbate: Probate = _.delegate: child =>
     if !child.ready then fulminate.panic(m"asynchronous child task did not complete")
 
-  given failProbate: Tactic[AsyncError] => Probate = _.delegate: child =>
+  given failProbate: Tactic[AsyncError] => (Probate^) = _.delegate: child =>
     if !child.ready then raise(AsyncError(AsyncError.Reason.Incomplete))
 
 package supervisors:
-  given globalSupervisor: Supervisor = PlatformSupervisor.supervisor
+  given globalSupervisor: Supervisor = PlatformSupervisor
 
 package retryTenacities:
   given exponentialForeverTenacity: Tenacity = Tenacity.exponential(10L, 1.2)
@@ -171,7 +171,7 @@ extension [result](stream: Stream[result])
 def supervise[result](block: Monitor ?=> result)(using threading: Threading, codepoint: Codepoint)
 :   result raises AsyncError =
 
-  block(using threading.supervisor())
+  block(using Root(threading.supervisor()))
 
 
 def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> value)
