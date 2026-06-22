@@ -94,13 +94,14 @@ package weekdays:
   export
     aviation.dateFormats.weekdays
     . { englishWeekdays, englishShortWeekdays, oneLetterAmbiguousWeekdays,
-        shortestUnambiguousWeekdays, twoLetterWeekdays }
+        shortestUnambiguousWeekdays, twoLetterWeekdays, frenchWeekdays, germanWeekdays,
+        spanishWeekdays }
 
 package monthFormats:
   export
     aviation.dateFormats.months
     . { englishMonths, englishShortMonths, numericMonths, oneLetterAmbiguousMonths,
-        twoDigitMonths }
+        twoDigitMonths, frenchMonths, germanMonths, spanishMonths }
 
 package timeFormats:
   export
@@ -109,7 +110,7 @@ package timeFormats:
         ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
 
 package timespanFormats:
-  export aviation.timespanFormats.relativeTimespan
+  export aviation.timespanFormats.{englishRelative, frenchRelative, germanRelative, spanishRelative}
 
 package hourFormats:
   export aviation.timeFormats.hours.{twelveHourClock, twentyFourHourClock}

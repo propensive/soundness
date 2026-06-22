@@ -459,7 +459,7 @@ object austronesian extends Library:
   object test extends Tests(core)
 
 object aviation extends Library:
-  object core extends Component(abacist.core, quantitative.units):
+  object core extends Component(abacist.core, quantitative.units, cosmopolite.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)

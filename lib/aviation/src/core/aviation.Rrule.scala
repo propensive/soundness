@@ -34,6 +34,7 @@ package aviation
 
 import anticipation.*
 import contingency.*
+import cosmopolite.{Locale, en, fr, de, es}
 import distillate.*
 import gossamer.*
 import prepositional.*
@@ -50,7 +51,7 @@ case class WeekdayOrdinal(weekday: Weekday, ordinal: Optional[Int] = Unset)
 // (e.g. Feb 30) are skipped and the day-of-month re-anchors to `start`, so `Monthly` from Jan 31
 // yields Jan 31, Mar 31, May 31, … (RFC behaviour, deliberately unlike `Recurrence`'s drift). The
 // engine expands every `frequency` (`Secondly`…`Yearly`) with all the `by*` anchors — `byMonth`,
-// `byWeekNo`, `byYearDay`, `byMonthDay`, `byDay`, `byHour`, `byMinute`, `bySecond` and `bySetPos`. A
+// `byWeekNo`, `byYearDay`, `byMonthDay`, `byDay`, `byHour`, `byMinute`, `bySecond`, `bySetPos`. A
 // `Rrule[Date]` yields dates, a `Rrule[Timestamp]` yields zoneless date-times (expanded by
 // `byHour`/…), and a `Rrule[Moment]` grounds each in the start's timezone.
 object Rrule:
@@ -173,67 +174,21 @@ object Rrule:
     val prefix = string.dropRight(2)
     WeekdayOrdinal(weekday, if prefix.isEmpty then Unset else intOf(prefix.tt, context))
 
-  // ── plain-English description ────────────────────────────────────────────────────────────────
-  // `.encode` is the RFC 5545 wire form; `.show` describes the rule in English, e.g. "every month
-  // on the 3rd Monday" or "every year on the 4th Thursday of November".
+  // ── natural-language description ─────────────────────────────────────────────────────────────
+  // `.encode` is the RFC 5545 wire form; `.show` describes the rule in prose, e.g. "every month on
+  // the 3rd Monday". Each language is a `Vernacular`, gated on its `Locale`.
 
-  private def unitName(frequency: Frequency, plural: Boolean): Text = frequency match
-    case Frequency.Secondly => if plural then t"seconds" else t"second"
-    case Frequency.Minutely => if plural then t"minutes" else t"minute"
-    case Frequency.Hourly   => if plural then t"hours" else t"hour"
-    case Frequency.Daily    => if plural then t"days" else t"day"
-    case Frequency.Weekly   => if plural then t"weeks" else t"week"
-    case Frequency.Monthly  => if plural then t"months" else t"month"
-    case Frequency.Yearly   => if plural then t"years" else t"year"
+  given englishShowable: [point] => (Months, Weekdays, Locale[en]) => Rrule[point] is Showable =
+    Vernacular.english.rrule(_)
 
-  private def ordinalWord(n: Int): Text =
-    if n == -1 then t"last"
-    else if n < 0 then t"${aviation.internal.englishOrdinal(-n)}-to-last"
-    else aviation.internal.englishOrdinal(n)
+  given frenchShowable: [point] => (Months, Weekdays, Locale[fr]) => Rrule[point] is Showable =
+    Vernacular.french.rrule(_)
 
-  given showable: [point] => (Months, Weekdays) => Rrule[point] is Showable = rule =>
-    val join = aviation.internal.joinAnd
+  given germanShowable: [point] => (Months, Weekdays, Locale[de]) => Rrule[point] is Showable =
+    Vernacular.german.rrule(_)
 
-    val cadence =
-      if rule.interval == 1 then t"every ${unitName(rule.frequency, false)}"
-      else t"every ${rule.interval} ${unitName(rule.frequency, true)}"
-
-    val byDayText: Optional[Text] =
-      if rule.byDay.isEmpty then Unset else
-        val hasOrdinal = rule.byDay.exists(_.ordinal.present)
-
-        val entries = rule.byDay.map: entry =>
-          if entry.ordinal.absent then entry.weekday.show
-          else t"${ordinalWord(entry.ordinal.vouch)} ${entry.weekday.show}"
-
-        t"on ${if hasOrdinal then t"the " else t""}${join(entries)}"
-
-    val byMonthDayText: Optional[Text] =
-      if rule.byMonthDay.isEmpty then Unset
-      else t"on the ${join(rule.byMonthDay.map(monthDayWord))}"
-
-    val onText: Optional[Text] = if rule.byDay.nonEmpty then byDayText else byMonthDayText
-
-    val monthText: Optional[Text] =
-      if rule.byMonth.isEmpty then Unset else
-        val names = join(rule.byMonth.map(_.show))
-        if onText.present then t"of $names" else t"in $names"
-
-    val setPosText: Optional[Text] =
-      if rule.bySetPos.isEmpty then Unset else t"taking the ${join(rule.bySetPos.map(ordinalWord))}"
-
-    val countText = if rule.count.absent then t"" else t", ${rule.count.vouch} times"
-
-    val clauses =
-      List(cadence) ++ onText.lay(Nil)(List(_)) ++ monthText.lay(Nil)(List(_)) ++
-        setPosText.lay(Nil)(List(_))
-
-    t"${clauses.join(t" ")}$countText"
-
-  private def monthDayWord(day: Int): Text =
-    if day == -1 then t"last day"
-    else if day < 0 then t"${aviation.internal.englishOrdinal(-day)}-to-last day"
-    else aviation.internal.englishOrdinal(day)
+  given spanishShowable: [point] => (Months, Weekdays, Locale[es]) => Rrule[point] is Showable =
+    Vernacular.spanish.rrule(_)
 
   // ── the expansion engine (Gregorian) ────────────────────────────────────────────────────────
 
@@ -297,15 +252,15 @@ object Rrule:
     rule.byYearDay.flatMap { day => list(yearDay(year, day)) }.filter(monthAllowed(_, rule))
 
   // The `byWeekNo` dates within a week-year (ISO weeks, Monday-based): for each selected week number
-  // (negatives count back from the year's last week), the `byDay` weekdays — or the start's weekday —
-  // of that week, filtered by `byMonth`.
+  // (negatives count back from the last week), the `byDay` weekdays — or the start's weekday — of
+  // that week, filtered by `byMonth`.
   private def weekNoDates(year: Int, start: Date, rule: Rrule[?])(using RomanCalendar): List[Date] =
     val count = WeekDate.weekOfYear(unsafely(Date(Year(year), Month.Dec, Day(28))))
     val weekdays = if rule.byDay.nonEmpty then rule.byDay.map(_.weekday) else List(start.weekday)
 
     val weeks =
-      rule.byWeekNo.map { week => if week > 0 then week else count + week + 1 }
-        .filter { week => week >= 1 && week <= count }
+      rule.byWeekNo.map(week => if week > 0 then week else count + week + 1)
+        .filter(week => week >= 1 && week <= count)
 
     val dates =
       for
