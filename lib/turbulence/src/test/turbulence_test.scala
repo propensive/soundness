@@ -125,6 +125,17 @@ object Tests extends Suite(m"Turbulence tests"):
             summon[CharDecoder]
       . assert(_.exists(_.message.contains("outlives its scope")))
 
+      test(m"A fire-and-forget daemon body cannot capture an enclosing boundary tactic"):
+        // `daemon`'s body is a pure `?->{}` context function: capturing the boundary tactic that
+        // `attempt` provides would let the worker `break` an unwound boundary. `async` (awaited in
+        // scope) may capture it; `daemon` may not.
+        demilitarize:
+          import probates.cancelProbate
+          supervise:
+            attempt[StreamError]: tactic ?=>
+              daemon(tactic.record(StreamError(0L.b)))
+      . assert(_.exists(_.message.contains("cannot flow into capture set")))
+
       test(m"Stream Data"):
         qbf.stream[Data].reduce(_ ++ _).to(List)
       . assert(_ == qbfData.to(List))
