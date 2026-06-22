@@ -37,7 +37,11 @@ import language.experimental.pureFunctions
 
 import fulminate.*
 
-trait Probate extends caps.ExclusiveCapability:
+// `Probate` is an ordinary trait, NOT a capability: most probates (`awaitProbate`, …) capture nothing,
+// so a `given … : Probate` stays pure and `import probates.…` does not capture a global. A `Probate`
+// instance may still capture a capability where needed (e.g. `failProbate` closes over a `Tactic`),
+// written `Probate^` — exactly as any ordinary class captures (`Logger^{fs}`).
+trait Probate:
   // The fate of an unfinished child when its parent completes (await it, cancel it, …).
   def cleanup(worker: Worker): Unit
 

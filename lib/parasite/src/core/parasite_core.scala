@@ -55,15 +55,14 @@ package threading:
   given virtualThreading: Threading = () => VirtualSupervisor
   given adaptiveThreading: Threading = () => AdaptiveSupervisor
 
-// A `Capability` object: its members are capability-typed givens (a `Probate` is a capability, and
-// `failProbate` captures a `Tactic`), which the compiler only permits as fields of a `Capability`.
-object probates extends caps.ExclusiveCapability:
+package probates:
   given awaitProbate: Probate = _.delegate(_.attend())
   given cancelProbate: Probate = _.delegate(_.cancel())
 
   given panicProbate: Probate = _.delegate: child =>
     if !child.ready then fulminate.panic(m"asynchronous child task did not complete")
 
+  // The only capturing probate: its instance closes over the ambient `Tactic`, so it is `Probate^`.
   given failProbate: Tactic[AsyncError] => (Probate^) = _.delegate: child =>
     if !child.ready then raise(AsyncError(AsyncError.Reason.Incomplete))
 
@@ -91,7 +90,7 @@ transparent inline def monitor: Monitor^ = infer[Monitor^]
 // nearest `contain`/`Probate`.
 def daemon[error <: Exception](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?->{} Unit )
-  ( using Monitor^ )
+  ( using Monitor^, Probate^ )
 :   Daemon =
 
   val tactic = AsyncTactic[error]()
@@ -104,8 +103,8 @@ def daemon[error <: Exception](using Codepoint)
 // containment is a child supervision scope of the enclosing `Monitor`, so unmatched or rejected
 // errors chain outwards to the parent scope's probate, up to the root. Distinct from the typed
 // `trap` (declared emitted errors).
-def contain(handler: PartialFunction[Error, Remedy]^)(using parent: Monitor^): Containment^ =
-  Containment(handler, parent)
+def contain(handler: PartialFunction[Error, Remedy]^)(using outer: Probate^): Containment^ =
+  Containment(handler, outer)
 
 
 // `X emits error` is the one concept "X can produce these errors as an out-of-band side-channel",
@@ -127,7 +126,7 @@ infix type emits[left, error <: Exception] = left match
 // worker's `Failed` outcome instead of trying to break a stack-confined `boundary` across threads.
 def async[result, error <: Exception](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?=> result )
-  ( using monitor: Monitor^ )
+  ( using monitor: Monitor^, probate: Probate^ )
 :   Task[result] emits (error | AsyncError) =
 
   val tactic = AsyncTactic[error]()
@@ -136,7 +135,7 @@ def async[result, error <: Exception](using Codepoint)
 
 def task[result, error <: Exception](using Codepoint)(name: Name[Async])
   ( evaluate: (Worker, Tactic[error]) ?=> result )
-  ( using monitor: Monitor^ )
+  ( using monitor: Monitor^, probate: Probate^ )
 :   Task[result] emits (error | AsyncError) =
 
   val tactic = AsyncTactic[error]()
@@ -167,15 +166,14 @@ def hibernate[instant: Abstractable across Instants to Long](instant: instant)(u
 
 
 extension [result](stream: Stream[result])
-  def concurrent(using Monitor^): Stream[result] raises AsyncError =
+  def concurrent(using Monitor^, Probate^): Stream[result] raises AsyncError =
     if async(stream.nil).await() then Stream() else stream.head #:: stream.tail.concurrent
 
 
-def supervise[result](block: Monitor ?=> result)
-  ( using threading: Threading, probate: Probate, codepoint: Codepoint )
+def supervise[result](block: Monitor ?=> result)(using threading: Threading, codepoint: Codepoint)
 :   result raises AsyncError =
 
-  block(using Root(threading.supervisor(), probate))
+  block(using Root(threading.supervisor()))
 
 
 def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> value)

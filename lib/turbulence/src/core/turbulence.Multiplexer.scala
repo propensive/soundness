@@ -41,6 +41,8 @@ import denominative.*
 import parasite.*
 import rudiments.*
 
+import probates.awaitProbate
+
 case class Multiplexer[key, element]()(using Monitor):
   private case class Removal(key: key)
 

@@ -60,12 +60,6 @@ sealed trait Monitor extends Resultant, Findable, caps.ExclusiveCapability:
   self: Monitor^ =>
   val promise: Promise[Result]
 
-  // The supervision scope owns its child-fate/error-trap policy. Every child `Worker` reaches its
-  // `probate` *through* its parent monitor (`Worker#probate = parent.probate`); the capture is tied
-  // to `{this}` (not a `fresh` per-call result) so a scope's probate is part of *its* footprint. A
-  // `contain` region overrides this by spawning under a child `Subscope` with its own policy.
-  def probate: Probate^{this}
-
   // The live children of this scope. A supervision registry is a *mutable capability collection*
   // whose contents are fresh worker identities created over time; tracking that precisely is the
   // "growing capture set" case that capture checking currently delegates to mutation/separation
@@ -108,10 +102,9 @@ trait Supervisor:
 
 // The local root of a supervision tree, created by `supervise`. A `Monitor` (hence a capability),
 // but its lifetime is the `supervise` block, so it does not escape as a global capability.
-class Root(val supervisor: Supervisor, rootProbate: Probate^) extends Monitor:
+class Root(val supervisor: Supervisor) extends Monitor:
   type Result = Unit
 
-  val probate: Probate^{this} = rootProbate
   def chain: Optional[Chain] = Unset
   val promise: Promise[Unit] = Promise()
   val daemon: Boolean = true
@@ -119,21 +112,6 @@ class Root(val supervisor: Supervisor, rootProbate: Probate^) extends Monitor:
   def stack: Text = supervisor.name+":".tt
   def cancel(): Unit = ()
   def shutdown(): Unit = workers.each(_.cancel())
-
-// A nested supervision scope that overrides the inherited cleanup/error-trap policy for a region
-// (see `Containment`), while delegating naming and thread-forking to its `parent`. Defined here,
-// alongside `Root` and `Worker`, because `Monitor` is sealed.
-class Subscope(parent: Monitor^, subProbate: Probate^) extends Monitor:
-  type Result = Unit
-
-  val probate: Probate^{this} = subProbate
-  val promise: Promise[Unit] = Promise()
-  def chain: Optional[Chain] = parent.chain
-  val daemon: Boolean = true
-  def name: Optional[Name[Async]] = parent.name
-  def stack: Text = parent.stack
-  def supervisor: Supervisor = parent.supervisor
-  def cancel(): Unit = workers.each(_.cancel())
 
 object VirtualSupervisor extends Supervisor:
   def name: Name[Async] = n"virtual"
@@ -158,7 +136,7 @@ object PlatformSupervisor extends Supervisor:
       name.let(_.s).let(thread.setName(_))
       thread.start()
 
-abstract class Worker(frame: Codepoint, parent: Monitor^) extends Monitor:
+abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) extends Monitor:
   self: Worker^ =>
   private val state: juca.AtomicReference[Fulfillment[Result]] =
     juca.AtomicReference(Fulfillment.Initializing)
@@ -167,9 +145,6 @@ abstract class Worker(frame: Codepoint, parent: Monitor^) extends Monitor:
 
   private val startTime: Long = jl.System.currentTimeMillis
   val promise: Promise[Result] = Promise()
-
-  // A worker's policy is its parent scope's policy — see the note on `Monitor#probate`.
-  def probate: Probate^{this} = parent.probate
 
   parent.addWorker(this)
 
@@ -209,13 +184,13 @@ abstract class Worker(frame: Codepoint, parent: Monitor^) extends Monitor:
     if Thread.interrupted() || state.get() == Cancelled then throw new InterruptedException()
 
 
-  def map[result2](lambda: Result => result2)(using Monitor^)
+  def map[result2](lambda: Result => result2)(using Monitor^, Probate^)
   :   Task[result2] emits AsyncError =
 
     async(lambda(join()))
 
 
-  def bind[result2](lambda: Result => Task[result2])(using Monitor^)
+  def bind[result2](lambda: Result => Task[result2])(using Monitor^, Probate^)
   :   Task[result2] emits AsyncError =
 
     async(lambda(join()).join())

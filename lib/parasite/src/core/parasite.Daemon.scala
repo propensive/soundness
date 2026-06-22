@@ -41,7 +41,7 @@ import vacuous.*
 
 object Daemon:
   def apply(evaluate: Worker => Unit)
-    ( using monitor: Monitor^, codepoint: Codepoint )
+    ( using monitor: Monitor^, codepoint: Codepoint, probate: Probate^ )
   :   Daemon =
 
     // The body closure may capture a stack-scoped error tactic; that is enforced at the `daemon`/
@@ -51,7 +51,7 @@ object Daemon:
     val evaluate0: Worker -> Unit = caps.unsafe.unsafeAssumePure(evaluate)
 
     caps.unsafe.unsafeAssumePure:
-      new Worker(codepoint, monitor) with Daemon:
+      new Worker(codepoint, monitor, probate) with Daemon:
         type Result = Unit
         def name: Optional[Name[Async]] = Unset
         def daemon: Boolean = true
