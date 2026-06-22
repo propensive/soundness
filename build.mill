@@ -696,7 +696,7 @@ object enigmatic extends Library:
 object escapade extends Library:
   object csi extends Component(gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object core extends Component(csi, anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core, escritoire.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -807,10 +807,10 @@ object ethereal extends Library:
 object eucalyptus extends Library:
   object core extends Component(turbulence.core, gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object syslog extends Component(guillotine.core, core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object gcp extends Component(jacinta.core, core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -1311,7 +1311,7 @@ object stratiform extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object base256 extends Component(gossamer.core, contingency.core, fulminate.core, anticipation.codec, vacuous.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object binary extends Component(core, base256, gastronomy.core, ulysses.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
