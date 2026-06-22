@@ -725,5 +725,38 @@ object Tests extends Suite(m"Urticose tests"):
         try socket.getLocalPort finally socket.close()
       . assert(_ > 0)
 
+    suite(m"Network interface tests"):
+      test(m"Enumerate the machine's network interfaces"):
+        NetworkInterface.all()
+      . assert(_.nonEmpty)
+
+      test(m"There is a loopback interface"):
+        NetworkInterface.all().exists(_.loopback)
+      . assert(_ == true)
+
+      test(m"An interface can be looked up by its name"):
+        val interface = NetworkInterface.all().head
+        NetworkInterface.byName(interface.name).let(_.name)
+      . assert(_ == NetworkInterface.all().head.name)
+
+      test(m"An interface can be looked up by its index"):
+        val interface = NetworkInterface.all().head
+        NetworkInterface.byIndex(interface.index).let(_.index)
+      . assert(_ == NetworkInterface.all().head.index)
+
+      test(m"Looking up a nonexistent interface name yields Unset"):
+        NetworkInterface.byName(t"definitely-not-an-interface")
+      . assert(_ == Unset)
+
+      test(m"An interface's addresses partition into IPv4 and IPv6"):
+        val interface = NetworkInterface.all().head
+        interface.ipv4.length + interface.ipv6.length
+      . assert(_ == NetworkInterface.all().head.addresses.length)
+
+      test(m"The loopback interface can be found by its address"):
+        val loopback = NetworkInterface.all().filter(_.loopback).head
+        NetworkInterface.byAddress(loopback.addresses.head.address).let(_.loopback)
+      . assert(_ == true)
+
 object example:
   val com = Hostname(DnsLabel(t"example"), DnsLabel(t"com"))
