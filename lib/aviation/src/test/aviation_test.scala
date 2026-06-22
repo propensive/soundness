@@ -2157,6 +2157,45 @@ object Tests extends Suite(m"Aviation Tests"):
         RecurrenceSet(include = List(a.occurrences, b.occurrences)).occurrences.to(List)
       . assert(_ == List(2024-Jan-1, 2024-Jan-3, 2024-Jan-8, 2024-Jan-10))
 
+    suite(m"Rrule sub-day, time and zones"):
+      import calendars.gregorianCalendar
+
+      test(m"An hourly rule steps the clock"):
+        Rrule(Timestamp(2024-Jan-1, Clockface(0, 0, 0)), Frequency.Hourly, interval = 6, count = 3)
+        . occurrences.to(List)
+      . assert(_ == List(Timestamp(2024-Jan-1, Clockface(0, 0, 0)),
+            Timestamp(2024-Jan-1, Clockface(6, 0, 0)), Timestamp(2024-Jan-1, Clockface(12, 0, 0))))
+
+      test(m"An hourly rule carries into the next day"):
+        Rrule(Timestamp(2024-Jan-1, Clockface(22, 0, 0)), Frequency.Hourly, interval = 3, count = 2)
+        . occurrences.to(List)
+      . assert(_ == List(Timestamp(2024-Jan-1, Clockface(22, 0, 0)),
+            Timestamp(2024-Jan-2, Clockface(1, 0, 0))))
+
+      test(m"A daily rule with byHour expands to several times a day"):
+        Rrule(Timestamp(2024-Jan-1, Clockface(0, 0, 0)), Frequency.Daily, byHour = List(9, 17),
+            count = 3).occurrences.to(List)
+      . assert(_ == List(Timestamp(2024-Jan-1, Clockface(9, 0, 0)),
+            Timestamp(2024-Jan-1, Clockface(17, 0, 0)), Timestamp(2024-Jan-2, Clockface(9, 0, 0))))
+
+      test(m"Yearly byYearDay selects the day of the year"):
+        Rrule(2024-Jan-1, Frequency.Yearly, byYearDay = List(100), count = 1).occurrences.to(List)
+      . assert(_ == List(2024-Apr-9))
+
+      test(m"Yearly byYearDay counts back from the end"):
+        Rrule(2024-Jan-1, Frequency.Yearly, byYearDay = List(-1), count = 1).occurrences.to(List)
+      . assert(_ == List(2024-Dec-31))
+
+      test(m"A Moment rule grounds its occurrences in the timezone"):
+        Rrule(Moment(2024-Jan-1, Clockface(9, 0, 0), tz"Europe/London"), Frequency.Daily, count = 2)
+        . occurrences.to(List).map(_.date)
+      . assert(_ == List(2024-Jan-1, 2024-Jan-2))
+
+      test(m"Sub-day and time fields round-trip through RFC 5545"):
+        val rule = Rrule(2024-Jan-1, Frequency.Daily, byHour = List(9, 17), byMinute = List(30))
+        Rrule.parse(rule.encode, 2024-Jan-1).encode == rule.encode
+      . assert(_ == true)
+
     suite(m"Recurrence descriptions"):
       import monthFormats.englishMonths
       import weekdays.englishWeekdays
