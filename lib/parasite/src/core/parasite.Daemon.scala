@@ -41,16 +41,16 @@ import vacuous.*
 
 object Daemon:
   def apply(evaluate: Worker => Unit)
-    ( using monitor: Monitor, codepoint: Codepoint, probate: Probate )
-  :   Daemon =
+    ( using monitor: Monitor, codepoint: Codepoint )
+  :   Daemon^{monitor} =
 
-    // The worker closes over `evaluate`, which would make the worker (and the supervision tree that
-    // retains it) capture-tracked. Whether the body may capture a stack-scoped error tactic is
-    // enforced at the `daemon`/`async` entry points; here the closure is laundered to pure so the
-    // worker can be stored and awaited without threading `^` through the whole supervisor.
+    // The body closure may capture a stack-scoped error tactic; that is enforced at the `daemon`/
+    // `async` entry point. Here it is laundered to pure so the worker need not track the *body*'s
+    // captures — the worker is still scope-tracked through its `parent`, so the returned handle
+    // captures `{monitor}` and cannot escape `supervise`.
     val evaluate0: Worker -> Unit = caps.unsafe.unsafeAssumePure(evaluate)
 
-    new Worker(codepoint, monitor, probate) with Daemon:
+    new Worker(codepoint, monitor) with Daemon:
       type Result = Unit
       def name: Optional[Name[Async]] = Unset
       def daemon: Boolean = true

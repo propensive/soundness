@@ -45,16 +45,17 @@ import vacuous.*
 
 object Task:
   def apply[result, error <: Exception](evaluate: Worker => result, name: Optional[Name[Async]])
-    ( using monitor: Monitor, codepoint: Codepoint, probate: Probate )
-  :   Task[result] { type Error = error } =
+    ( using monitor: Monitor, codepoint: Codepoint )
+  :   (Task[result] { type Error = error })^{monitor} =
 
-    // See `Daemon.apply`: the body closure is laundered to pure so the worker (and the supervisor
-    // that retains it) need not be capture-tracked; the body's own capture is checked at `async`/
-    // `task`.
+    // The body closure may capture stack-scoped capabilities (an error tactic, a `boundary.Label`);
+    // that capture is checked at the `async`/`task` entry point. Here it is laundered to pure so the
+    // worker need not track the *body*'s captures — the worker is still scope-tracked through its
+    // `parent` monitor, so the returned handle captures `{monitor}` and cannot escape `supervise`.
     val evaluate0: Worker -> result = caps.unsafe.unsafeAssumePure(evaluate)
     inline def name0: Optional[Name[Async]] = name
 
-    new Worker(codepoint, monitor, probate) with Task[result]:
+    new Worker(codepoint, monitor) with Task[result]:
       type Result = result
       type Error = error
       def name: Optional[Name[Async]] = name0

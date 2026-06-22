@@ -89,7 +89,7 @@ transparent inline def monitor: Monitor = infer[Monitor]
 // nearest `contain`/`Probate`.
 def daemon[error <: Exception](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?->{} Unit )
-  ( using Monitor, Probate )
+  ( using Monitor )
 :   Daemon =
 
   val tactic = AsyncTactic[error]()
@@ -98,11 +98,12 @@ def daemon[error <: Exception](using Codepoint)
 
 
 // Contains *thrown* exceptions escaping a region of fire-and-forget work:
-// `contain { case … => … }.within { … }`. The handler maps an escaped exception to a `Remedy`; the
-// enclosing `Probate` (the default for unmatched or rejected errors) is captured so containments
-// chain outwards to the supervision root. Distinct from the typed `trap` (declared emitted errors).
-def contain(handler: PartialFunction[Error, Remedy])(using outer: Probate): Containment =
-  Containment(handler, outer)
+// `contain { case … => … }.protect { … }`. The handler maps an escaped exception to a `Remedy`; the
+// containment is a child supervision scope of the enclosing `Monitor`, so unmatched or rejected
+// errors chain outwards to the parent scope's probate, up to the supervision root. Distinct from the
+// typed `trap` (declared emitted errors).
+def contain(handler: PartialFunction[Error, Remedy])(using parent: Monitor): Containment^{parent} =
+  Containment(handler, parent)
 
 
 // `X emits error` is the one concept "X can produce these errors as an out-of-band side-channel",
@@ -124,8 +125,8 @@ infix type emits[left, error <: Exception] = left match
 // worker's `Failed` outcome instead of trying to break a stack-confined `boundary` across threads.
 def async[result, error <: Exception](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?=> result )
-  ( using Monitor, Probate )
-:   Task[result] emits (error | AsyncError) =
+  ( using monitor: Monitor )
+:   (Task[result] emits (error | AsyncError))^{monitor} =
 
   val tactic = AsyncTactic[error]()
   Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = Unset)
@@ -133,8 +134,8 @@ def async[result, error <: Exception](using Codepoint)
 
 def task[result, error <: Exception](using Codepoint)(name: Name[Async])
   ( evaluate: (Worker, Tactic[error]) ?=> result )
-  ( using Monitor, Probate )
-:   Task[result] emits (error | AsyncError) =
+  ( using monitor: Monitor )
+:   (Task[result] emits (error | AsyncError))^{monitor} =
 
   val tactic = AsyncTactic[error]()
   Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = name)
@@ -164,14 +165,15 @@ def hibernate[instant: Abstractable across Instants to Long](instant: instant)(u
 
 
 extension [result](stream: Stream[result])
-  def concurrent(using Monitor, Probate): Stream[result] raises AsyncError =
+  def concurrent(using Monitor): Stream[result] raises AsyncError =
     if async(stream.nil).await() then Stream() else stream.head #:: stream.tail.concurrent
 
 
-def supervise[result](block: Monitor ?=> result)(using threading: Threading, codepoint: Codepoint)
+def supervise[result](block: Monitor ?=> result)
+  ( using threading: Threading, probate: Probate, codepoint: Codepoint )
 :   result raises AsyncError =
 
-  block(using Root(threading.supervisor()))
+  block(using Root(threading.supervisor(), probate))
 
 
 def retry[value](evaluate: (surrender: () => Nothing, persevere: () => Nothing) ?=> value)
