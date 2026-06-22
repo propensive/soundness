@@ -78,108 +78,104 @@ object Tests extends Suite(m"Ethereal Tests"):
             import executives.completions
             import interpreters.posixInterpreter
             import systems.javaSystem
-            import threading.virtualThreading
-            import strategies.throwUnsafely
-            import probates.cancelProbate
 
             cli:
-              supervise:
-                arguments match
-                  case Nil =>
-                    execute(Out.print(t"ready") yet Exit.Ok)
+              arguments match
+                case Nil =>
+                  execute(Out.print(t"ready") yet Exit.Ok)
 
-                  case Argument("args") :: arguments =>
-                    execute:
-                      Out.print(arguments.map(_()).join(t"\n")) yet Exit.Ok
+                case Argument("args") :: arguments =>
+                  execute:
+                    Out.print(arguments.map(_()).join(t"\n")) yet Exit.Ok
 
-                  case Argument("lines") :: arguments =>
-                    execute:
-                      Out.print(arguments.map(_()).join(t"\n") + t"\n") yet Exit.Ok
+                case Argument("lines") :: arguments =>
+                  execute:
+                    Out.print(arguments.map(_()).join(t"\n") + t"\n") yet Exit.Ok
 
-                  case Argument("echo") :: text :: Nil =>
-                    execute(Out.print(text()) yet Exit.Ok)
+                case Argument("echo") :: text :: Nil =>
+                  execute(Out.print(text()) yet Exit.Ok)
 
-                  case Argument("exit") :: Argument(As[Int](status)) :: Nil =>
-                    execute(Exit.Fail(status))
+                case Argument("exit") :: Argument(As[Int](status)) :: Nil =>
+                  execute(Exit.Fail(status))
 
-                  case Argument("stderr") :: text :: Nil =>
-                    execute(Err.println(text()) yet Exit.Ok)
+                case Argument("stderr") :: text :: Nil =>
+                  execute(Err.println(text()) yet Exit.Ok)
 
-                  case Argument("sleep") :: Argument(As[Int](seconds)) :: Nil =>
-                    execute:
-                      snooze(seconds*Second) yet Exit.Ok
+                case Argument("sleep") :: Argument(As[Int](seconds)) :: Nil =>
+                  execute:
+                    snooze(seconds*Second) yet Exit.Ok
 
-                  case Argument("env") :: Argument(variable) :: Nil =>
-                    execute:
-                      Out.print(Environment[Text](variable)) yet Exit.Ok
+                case Argument("env") :: Argument(variable) :: Nil =>
+                  execute:
+                    Out.print(Environment[Text](variable)) yet Exit.Ok
 
-                  case Argument("pid") :: Nil =>
-                    execute:
-                      Out.print(Process().pid.value.show) yet Exit.Ok
+                case Argument("pid") :: Nil =>
+                  execute:
+                    Out.print(Process().pid.value.show) yet Exit.Ok
 
-                  case Argument("pwd") :: Nil =>
-                    execute:
-                      Out.print(workingDirectory[Path on Local].encode) yet Exit.Ok
+                case Argument("pwd") :: Nil =>
+                  execute:
+                    Out.print(workingDirectory[Path on Local].encode) yet Exit.Ok
 
-                  case Argument("cat") :: Nil =>
-                    execute:
-                      val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
-                      val line: Text = reader.readLine().nn.tt
-                      Out.print(line) yet Exit.Ok
+                case Argument("cat") :: Nil =>
+                  execute:
+                    val reader = ji.BufferedReader(ji.InputStreamReader(summon[Stdio].in))
+                    val line: Text = reader.readLine().nn.tt
+                    Out.print(line) yet Exit.Ok
 
-                  case Argument("signal") :: Nil =>
-                    execute:
-                      val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
+                case Argument("signal") :: Nil =>
+                  execute:
+                    val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
 
-                      trap:
-                        case sig: UnixSignal =>
-                          received.offer(sig.shortName)
-                          SignalResponse.Accept
+                    trap:
+                      case sig: UnixSignal =>
+                        received.offer(sig.shortName)
+                        SignalResponse.Accept
 
-                        case sig: WindowsSignal =>
-                          received.offer(sig.shortName)
-                          SignalResponse.Accept
+                      case sig: WindowsSignal =>
+                        received.offer(sig.shortName)
+                        SignalResponse.Accept
 
-                      val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
-                      val text: Text = if raw == null then t"(timeout)" else raw
-                      Out.print(text) yet Exit.Ok
+                    val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
+                    val text: Text = if raw == null then t"(timeout)" else raw
+                    Out.print(text) yet Exit.Ok
 
-                  case Argument("trap-reject") :: Nil =>
-                    execute:
-                      trap { case _: UnixSignal => SignalResponse.Reject }
-                      snooze(5*Second) yet Exit.Ok
+                case Argument("trap-reject") :: Nil =>
+                  execute:
+                    trap { case _: UnixSignal => SignalResponse.Reject }
+                    snooze(5*Second) yet Exit.Ok
 
-                  case Argument("trap-defer") :: Nil =>
-                    execute:
-                      val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
+                case Argument("trap-defer") :: Nil =>
+                  execute:
+                    val received: juc.LinkedBlockingQueue[Text] = juc.LinkedBlockingQueue()
 
-                      trap:
-                        case Signal.Int =>
-                          received.offer(t"outer")
-                          SignalResponse.Accept
+                    trap:
+                      case Signal.Int =>
+                        received.offer(t"outer")
+                        SignalResponse.Accept
 
-                      trap { case _: UnixSignal => SignalResponse.Defer }
+                    trap { case _: UnixSignal => SignalResponse.Defer }
 
-                      val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
-                      val text: Text = if raw == null then t"(timeout)" else raw
-                      Out.print(text) yet Exit.Ok
+                    val raw: Text | Null = received.poll(2L, juc.TimeUnit.SECONDS)
+                    val text: Text = if raw == null then t"(timeout)" else raw
+                    Out.print(text) yet Exit.Ok
 
-                  case Argument("trap-undefined") :: Nil =>
-                    execute:
-                      trap { case Signal.Winch => SignalResponse.Accept }
-                      snooze(5*Second) yet Exit.Ok
+                case Argument("trap-undefined") :: Nil =>
+                  execute:
+                    trap { case Signal.Winch => SignalResponse.Accept }
+                    snooze(5*Second) yet Exit.Ok
 
-                  case Argument("trap-slow") :: Nil =>
-                    execute:
-                      trap:
-                        case _: UnixSignal =>
-                          snooze(2*Second)
-                          SignalResponse.Accept
+                case Argument("trap-slow") :: Nil =>
+                  execute:
+                    trap:
+                      case _: UnixSignal =>
+                        snooze(2*Second)
+                        SignalResponse.Accept
 
-                      snooze(5*Second) yet Exit.Ok
+                    snooze(5*Second) yet Exit.Ok
 
-                  case _ =>
-                    execute(Exit.Fail(1))
+                case _ =>
+                  execute(Exit.Fail(1))
 
             t"finished"
           }

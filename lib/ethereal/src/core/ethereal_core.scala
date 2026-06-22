@@ -81,7 +81,7 @@ given daemonLogEvent: Message transcribes DaemonLogEvent = _.communicate
 def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus] = service
 
 def cli[bus <: Matchable](using executive: Executive)
-  ( block: (DaemonService[bus], executive.Interface, Environment) ?=> executive.Return )
+  ( block: (DaemonService[bus], executive.Interface, Environment, Monitor) ?=> executive.Return )
   ( using interpreter: Interpreter,
           threading:   Threading,
           handler:     Backstop )
@@ -439,7 +439,7 @@ def cli[bus <: Matchable](using executive: Executive)
         // executive can produce a tree; others yield `Unset` and `service.help()` falls back.
         lazy val helpValue: Optional[Help] =
           executive.help(name, environment, () => directory, stdio, login):
-            (interface: executive.Interface) ?=> block(using service, interface, environment)
+            (interface: executive.Interface) ?=> block(using service, interface, environment, summon[Monitor])
 
         lazy val service: DaemonService[bus] =
           DaemonService[bus]
@@ -468,7 +468,7 @@ def cli[bus <: Matchable](using executive: Executive)
           clientState.invocation.offer(cli)
 
           if cli.proceed then
-            val result = block(using service, cli, environment)
+            val result = block(using service, cli, environment, summon[Monitor])
             val exitStatus: Exit = executive.process(cli)(result)
 
             clientState.exitPromise.fulfill(exitStatus)

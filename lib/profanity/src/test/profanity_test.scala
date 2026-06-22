@@ -58,64 +58,61 @@ object Tests extends Suite(m"Profanity Tests"):
             import executives.completions
             import interpreters.posixInterpreter
             import probates.cancelProbate
-            import threading.virtualThreading
-            import strategies.throwUnsafely
 
             cli:
-              supervise:
-                arguments match
-                  case Argument("echo") :: Nil =>
-                    execute:
-                      interactive: terminal ?=>
-                        Out.println(t"READY")
-                        val iter = terminal.eventIterator()
-                        var done = false
-                        while !done && iter.hasNext do iter.next() match
-                          case Keypress.CharKey(c) =>
-                            Out.println(t"GOT:$c")
-                            done = true
-                          case _ =>
-                        Exit.Ok
+              arguments match
+                case Argument("echo") :: Nil =>
+                  execute:
+                    interactive: terminal ?=>
+                      Out.println(t"READY")
+                      val iter = terminal.eventIterator()
+                      var done = false
+                      while !done && iter.hasNext do iter.next() match
+                        case Keypress.CharKey(c) =>
+                          Out.println(t"GOT:$c")
+                          done = true
+                        case _ =>
+                      Exit.Ok
 
-                  case Argument("line-editor") :: Nil =>
-                    execute:
-                      interactive: terminal ?=>
-                        Out.println(t"READY")
-                        LineEditor().ask: result =>
-                          Out.println(t"RESULT:$result")
-                        Exit.Ok
+                case Argument("line-editor") :: Nil =>
+                  execute:
+                    interactive: terminal ?=>
+                      Out.println(t"READY")
+                      LineEditor().ask: result =>
+                        Out.println(t"RESULT:$result")
+                      Exit.Ok
 
-                  case Argument("line-editor-sized") :: Argument(w) :: Argument(h) :: Nil =>
-                    execute:
-                      interactive: terminal ?=>
-                        terminal.columns = w.decode[Int]
-                        terminal.rows = h.decode[Int]
-                        Out.println(t"READY")
-                        LineEditor().ask: result =>
-                          Out.println(t"RESULT:$result")
-                        Exit.Ok
+                case Argument("line-editor-sized") :: Argument(w) :: Argument(h) :: Nil =>
+                  execute:
+                    interactive: terminal ?=>
+                      terminal.columns = w.decode[Int]
+                      terminal.rows = h.decode[Int]
+                      Out.println(t"READY")
+                      LineEditor().ask: result =>
+                        Out.println(t"RESULT:$result")
+                      Exit.Ok
 
-                  case Argument("select-menu") :: Nil =>
-                    execute:
-                      interactive: terminal ?=>
-                        Out.println(t"READY")
-                        SelectMenu(List(t"alpha", t"beta", t"gamma"), t"alpha").ask: result =>
-                          Out.println(t"RESULT:$result")
-                        Exit.Ok
+                case Argument("select-menu") :: Nil =>
+                  execute:
+                    interactive: terminal ?=>
+                      Out.println(t"READY")
+                      SelectMenu(List(t"alpha", t"beta", t"gamma"), t"alpha").ask: result =>
+                        Out.println(t"RESULT:$result")
+                      Exit.Ok
 
-                  case Argument("select-menu-long-sized") :: Argument(w) :: Argument(h) :: Nil =>
-                    execute:
-                      interactive: terminal ?=>
-                        terminal.columns = w.decode[Int]
-                        terminal.rows = h.decode[Int]
-                        Out.println(t"READY")
-                        val opts = List(t"first", t"averyverylongoptionnamethatwraps", t"third")
-                        SelectMenu(opts, t"first").ask: result =>
-                          Out.println(t"RESULT:$result")
-                        Exit.Ok
+                case Argument("select-menu-long-sized") :: Argument(w) :: Argument(h) :: Nil =>
+                  execute:
+                    interactive: terminal ?=>
+                      terminal.columns = w.decode[Int]
+                      terminal.rows = h.decode[Int]
+                      Out.println(t"READY")
+                      val opts = List(t"first", t"averyverylongoptionnamethatwraps", t"third")
+                      SelectMenu(opts, t"first").ask: result =>
+                        Out.println(t"RESULT:$result")
+                      Exit.Ok
 
-                  case _ =>
-                    execute(Exit.Fail(1))
+                case _ =>
+                  execute(Exit.Fail(1))
 
             t"finished"
           }
