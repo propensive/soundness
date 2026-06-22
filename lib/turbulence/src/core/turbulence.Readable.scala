@@ -61,7 +61,7 @@ trait Readable2 extends Readable3:
   given dataToText: [source, result]
   =>  ( streamable: source is Streamable by Data )
   =>  ( aggregable: result is Aggregable by Text )
-  =>  ( decoder: CharDecoder )
+  =>  ( decoder: CharDecoder^ )
   =>  source is Readable to result =
     value => aggregable.aggregate(decoder.decoded(streamable.stream(value)))
 

@@ -54,7 +54,7 @@ object Aggregable:
         index += bytes.length
         source = source.tail
 
-  given bytesText: (decoder: CharDecoder) => Text is Aggregable by Data =
+  given bytesText: (decoder: CharDecoder^) => Text is Aggregable by Data =
     bytesData.map(decoder.decoded)
 
   given textText: Text is Aggregable by Text = source0 =>

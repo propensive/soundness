@@ -46,16 +46,20 @@ extension (char: Char)
   def designation: Optional[Text] = Unicode.name(char)
 
 package charDecoders:
-  given utf8Decoder: TextSanitizer => CharDecoder = CharDecoder.unapply("UTF-8".tt).get
-  given utf16Decoder: TextSanitizer => CharDecoder = CharDecoder.unapply("UTF-16".tt).get
+  given utf8Decoder: (sanitizer: TextSanitizer^) => (CharDecoder^{sanitizer}) =
+    CharDecoder.unapply("UTF-8".tt).get
 
-  given utf16LeDecoder: TextSanitizer => CharDecoder =
+  given utf16Decoder: (sanitizer: TextSanitizer^) => (CharDecoder^{sanitizer}) =
+    CharDecoder.unapply("UTF-16".tt).get
+
+  given utf16LeDecoder: (sanitizer: TextSanitizer^) => (CharDecoder^{sanitizer}) =
     CharDecoder.unapply("UTF-16LE".tt).get
 
-  given utf16BeDecoder: TextSanitizer => CharDecoder =
+  given utf16BeDecoder: (sanitizer: TextSanitizer^) => (CharDecoder^{sanitizer}) =
     CharDecoder.unapply("UTF-16BE".tt).get
 
-  given asciiDecoder: TextSanitizer => CharDecoder = CharDecoder.unapply("ASCII".tt).get
+  given asciiDecoder: (sanitizer: TextSanitizer^) => (CharDecoder^{sanitizer}) =
+    CharDecoder.unapply("ASCII".tt).get
 
   given iso88591Decoder: CharDecoder =
     CharDecoder.unapply("ISO-8859-1".tt)(using textSanitizers.skipSanitizer).get
@@ -69,7 +73,7 @@ package charEncoders:
   given iso88591Encoder: CharEncoder = CharEncoder.unapply("ISO-8859-1".tt).get
 
 package textSanitizers:
-  given strictSanitizer: Tactic[CharDecodeError] => TextSanitizer = (position, encoding) =>
+  given strictSanitizer: (Tactic[CharDecodeError]^) => (TextSanitizer^) = (position, encoding) =>
     abort(CharDecodeError(position, encoding))
 
   given skipSanitizer: TextSanitizer = (position, encoding) => Unset
