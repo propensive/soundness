@@ -165,7 +165,11 @@ object Teletypeable:
           innerLines = BoxLine.Blank,
           charset    = LineCharset.Default )
 
-    given attenuation: Attenuation = columnAttenuation.ignoreAttenuation
+    // A no-op attenuation, constructed directly rather than via
+    // `columnAttenuation.ignoreAttenuation`: the latter is a member of escritoire's
+    // `columnAttenuation` *capability* object, so referencing it would capture that
+    // capability even though ignoring attenuation is pure.
+    given attenuation: Attenuation = (_, _) => ()
 
     val grid = scaffold.tabulate(rows).grid(200)
     val dataOnly = grid.copy(sections = grid.sections.tail)
