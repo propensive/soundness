@@ -45,4 +45,19 @@ object pl extends Language(t"pl"):
 
 trait pl
 
+object fr extends Language(t"fr"):
+  type Code = fr
+
+trait fr
+
+object de extends Language(t"de"):
+  type Code = de
+
+trait de
+
+object es extends Language(t"es"):
+  type Code = es
+
+trait es
+
 infix type via [value, language] = Locale[language] ?=> value

@@ -41,8 +41,11 @@ import prepositional.*
 object Locale:
   given encodable: [language] => Locale[language] is Encodable in Text = _.language.code
 
-  given decodable: Locale[en & pl] is Decodable in Text =
+  given decodable: Locale[en & pl & fr & de & es] is Decodable in Text =
     case t"pl" => Locale(pl)
+    case t"fr" => Locale(fr)
+    case t"de" => Locale(de)
+    case t"es" => Locale(es)
     case _     => Locale(en)
 
 case class Locale[-language](language: Language) extends Findable

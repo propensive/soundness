@@ -34,7 +34,7 @@ package aviation
 
 import anticipation.*
 import contingency.*
-import cosmopolite.{Locale, en}
+import cosmopolite.{Locale, en, fr, de, es}
 import distillate.*
 import gossamer.*
 import prepositional.*
@@ -71,19 +71,23 @@ object Recurrence:
       val period: Timespan = recurrence.period
       t"R$number/${recurrence.start.encode}/${period.encode}"
 
-  // A plain-English description, e.g. "every 2 weeks, 5 times from <start>". `.encode` is the ISO
-  // wire form; `.show` is for people. Gated on `Locale[en]` so other languages can supply their own.
-  given showable: [point: Showable, span <: Timespan] => Locale[en]
+  // A natural-language description, e.g. "every 2 weeks, 5 times from <start>". `.encode` is the
+  // ISO wire form; `.show` is for people. Each language is a `Vernacular`, gated on its `Locale`.
+  given englishShowable: [point: Showable, span <: Timespan] => Locale[en]
   =>  (Recurrence of point by span) is Showable =
+    r => Vernacular.english.recurrence(r.period, r.repetitions, r.start.show)
 
-    recurrence =>
-      val period: Timespan = recurrence.period
-      val cadence = t"every ${aviation.internal.durationPhrase(period)}"
+  given frenchShowable: [point: Showable, span <: Timespan] => Locale[fr]
+  =>  (Recurrence of point by span) is Showable =
+    r => Vernacular.french.recurrence(r.period, r.repetitions, r.start.show)
 
-      val number =
-        if recurrence.repetitions.absent then t"" else t", ${recurrence.repetitions.vouch} times"
+  given germanShowable: [point: Showable, span <: Timespan] => Locale[de]
+  =>  (Recurrence of point by span) is Showable =
+    r => Vernacular.german.recurrence(r.period, r.repetitions, r.start.show)
 
-      t"$cadence$number from ${recurrence.start.show}"
+  given spanishShowable: [point: Showable, span <: Timespan] => Locale[es]
+  =>  (Recurrence of point by span) is Showable =
+    r => Vernacular.spanish.recurrence(r.period, r.repetitions, r.start.show)
 
   // Parsing erases the period's static radix set, so the caller names the period type they expect
   // (e.g. `decode[Recurrence of Timestamp by (Timespan of Month.type)]`); the parsed duration is

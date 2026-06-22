@@ -35,7 +35,7 @@ package aviation
 import anticipation.*
 import contextual.*
 import contingency.*
-import cosmopolite.{Locale, en}
+import cosmopolite.{Locale, en, fr, de, es}
 import distillate.*
 import fulminate.*
 import gossamer.*
@@ -186,6 +186,33 @@ package dateFormats:
       case Weekday.Sat => t"Sa"
       case Weekday.Sun => t"Su"
 
+    given frenchWeekdays: Weekdays =
+      case Weekday.Mon => t"lundi"
+      case Weekday.Tue => t"mardi"
+      case Weekday.Wed => t"mercredi"
+      case Weekday.Thu => t"jeudi"
+      case Weekday.Fri => t"vendredi"
+      case Weekday.Sat => t"samedi"
+      case Weekday.Sun => t"dimanche"
+
+    given germanWeekdays: Weekdays =
+      case Weekday.Mon => t"Montag"
+      case Weekday.Tue => t"Dienstag"
+      case Weekday.Wed => t"Mittwoch"
+      case Weekday.Thu => t"Donnerstag"
+      case Weekday.Fri => t"Freitag"
+      case Weekday.Sat => t"Samstag"
+      case Weekday.Sun => t"Sonntag"
+
+    given spanishWeekdays: Weekdays =
+      case Weekday.Mon => t"lunes"
+      case Weekday.Tue => t"martes"
+      case Weekday.Wed => t"miércoles"
+      case Weekday.Thu => t"jueves"
+      case Weekday.Fri => t"viernes"
+      case Weekday.Sat => t"sábado"
+      case Weekday.Sun => t"domingo"
+
   package months:
     given englishMonths: Months =
       case Jan => t"January"
@@ -214,6 +241,48 @@ package dateFormats:
       case Oct => t"Oct"
       case Nov => t"Nov"
       case Dec => t"Dec"
+
+    given frenchMonths: Months =
+      case Jan => t"janvier"
+      case Feb => t"février"
+      case Mar => t"mars"
+      case Apr => t"avril"
+      case May => t"mai"
+      case Jun => t"juin"
+      case Jul => t"juillet"
+      case Aug => t"août"
+      case Sep => t"septembre"
+      case Oct => t"octobre"
+      case Nov => t"novembre"
+      case Dec => t"décembre"
+
+    given germanMonths: Months =
+      case Jan => t"Januar"
+      case Feb => t"Februar"
+      case Mar => t"März"
+      case Apr => t"April"
+      case May => t"Mai"
+      case Jun => t"Juni"
+      case Jul => t"Juli"
+      case Aug => t"August"
+      case Sep => t"September"
+      case Oct => t"Oktober"
+      case Nov => t"November"
+      case Dec => t"Dezember"
+
+    given spanishMonths: Months =
+      case Jan => t"enero"
+      case Feb => t"febrero"
+      case Mar => t"marzo"
+      case Apr => t"abril"
+      case May => t"mayo"
+      case Jun => t"junio"
+      case Jul => t"julio"
+      case Aug => t"agosto"
+      case Sep => t"septiembre"
+      case Oct => t"octubre"
+      case Nov => t"noviembre"
+      case Dec => t"diciembre"
 
     given oneLetterAmbiguousMonths: Months =
       case Jan => t"J"
@@ -327,34 +396,15 @@ package timeFormats:
     given frenchTimeSeparator: TimeSeparation = () => t"h"
 
 // A human-readable, relative rendering of a `Timespan`, in place of the default ISO-8601 duration:
-// "in 18 minutes", "in 1 hour and 6 seconds", "8 minutes ago", "12 hours and 38 minutes ago", and
-// "just now" for a zero span. Only the non-zero components are shown (coarsest first); the sign
-// chooses "in …" / "… ago". `import timespanFormats.relativeTimespan` to use it.
+// "in 18 minutes", "8 minutes ago", "just now", and their French/German/Spanish equivalents. Only
+// the non-zero components are shown (coarsest first); the sign chooses the future/past form. Import
+// the variant for the language(s) you want (e.g. `timespanFormats.frenchRelative`); the in-scope
+// `Locale` selects which applies.
 package timespanFormats:
-  given relativeTimespan: Locale[en] => Timespan is Showable = timespan =>
-    val fields: List[(Long, Text, Text)] =
-      List
-        ( (timespan.years.toLong,         t"year",   t"years"),
-          (timespan.months.toLong,        t"month",  t"months"),
-          (timespan.weeks.toLong,         t"week",   t"weeks"),
-          (timespan.days.toLong,          t"day",    t"days"),
-          (timespan.hours.toLong,         t"hour",   t"hours"),
-          (timespan.minutes.toLong,       t"minute", t"minutes"),
-          (timespan.seconds.value.toLong, t"second", t"seconds") )
-
-    val nonZero = fields.filter(_._1 != 0)
-
-    if nonZero.isEmpty then t"just now" else
-      val rendered = nonZero.map: field =>
-        val magnitude = field._1.abs
-        t"$magnitude ${if magnitude == 1 then field._2 else field._3}"
-
-      val joined =
-        rendered match
-          case List(one) => one
-          case many      => t"${many.init.join(t", ")} and ${many.last}"
-
-      if nonZero.head._1 < 0 then t"$joined ago" else t"in $joined"
+  given englishRelative: Locale[en] => Timespan is Showable = Vernacular.english.relativeTimespan(_)
+  given frenchRelative: Locale[fr] => Timespan is Showable = Vernacular.french.relativeTimespan(_)
+  given germanRelative: Locale[de] => Timespan is Showable = Vernacular.german.relativeTimespan(_)
+  given spanishRelative: Locale[es] => Timespan is Showable = Vernacular.spanish.relativeTimespan(_)
 
 package calendars:
   given julianCalendar: RomanCalendar(t"Julian"):

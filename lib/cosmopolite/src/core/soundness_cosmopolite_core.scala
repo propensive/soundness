@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export cosmopolite.{en, Language, Locale, pl, Polyglot, via}
+export cosmopolite.{de, en, es, fr, Language, Locale, pl, Polyglot, via}

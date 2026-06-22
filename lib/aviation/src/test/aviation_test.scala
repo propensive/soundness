@@ -2243,6 +2243,72 @@ object Tests extends Suite(m"Aviation Tests"):
         Recurrence(2024-Jan-1, 2*Week, 5).show
       . assert(_ == t"every 2 weeks, 5 times from 2024-01-01")
 
+    suite(m"French descriptions"):
+      given Locale[fr] = Locale(fr)
+      import monthFormats.frenchMonths
+      import weekdays.frenchWeekdays
+      import timespanFormats.frenchRelative
+
+      test(m"The 3rd Monday of each month, in French"):
+        Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
+      . assert(_ == t"tous les mois le 3e lundi")
+
+      test(m"Thanksgiving, in French"):
+        Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
+            byDay = List(WeekdayOrdinal(Thu, 4))).show
+      . assert(_ == t"tous les ans le 4e jeudi de novembre")
+
+      test(m"A relative timespan, in French"):
+        Timespan(minutes = 18).show
+      . assert(_ == t"dans 18 minutes")
+
+      test(m"A recurrence, in French"):
+        import dateFormats.iso8601DateFormat
+        Recurrence(2024-Jan-1, 2*Week, 5).show
+      . assert(_ == t"toutes les 2 semaines, 5 fois à partir du 2024-01-01")
+
+    suite(m"German descriptions"):
+      given Locale[de] = Locale(de)
+      import monthFormats.germanMonths
+      import weekdays.germanWeekdays
+      import timespanFormats.germanRelative
+
+      test(m"The 3rd Monday of each month, in German"):
+        Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
+      . assert(_ == t"jeden Monat am 3. Montag")
+
+      test(m"Thanksgiving, in German"):
+        Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
+            byDay = List(WeekdayOrdinal(Thu, 4))).show
+      . assert(_ == t"jedes Jahr am 4. Donnerstag im November")
+
+      test(m"A relative timespan, in German"):
+        Timespan(minutes = 18).show
+      . assert(_ == t"in 18 Minuten")
+
+    suite(m"Spanish descriptions"):
+      given Locale[es] = Locale(es)
+      import monthFormats.spanishMonths
+      import weekdays.spanishWeekdays
+      import timespanFormats.spanishRelative
+
+      test(m"The 3rd Monday of each month, in Spanish"):
+        Rrule(2024-Jan-1, Frequency.Monthly, byDay = List(WeekdayOrdinal(Mon, 3))).show
+      . assert(_ == t"cada mes el tercer lunes")
+
+      test(m"Thanksgiving, in Spanish"):
+        Rrule(2024-Jan-1, Frequency.Yearly, byMonth = List(Nov),
+            byDay = List(WeekdayOrdinal(Thu, 4))).show
+      . assert(_ == t"cada año el cuarto jueves de noviembre")
+
+      test(m"A future relative timespan, in Spanish"):
+        Timespan(minutes = 18).show
+      . assert(_ == t"en 18 minutos")
+
+      test(m"A past relative timespan, in Spanish"):
+        Timespan(minutes = -18).show
+      . assert(_ == t"hace 18 minutos")
+
     suite(m"Locale gating"):
       import monthFormats.englishMonths
       import weekdays.englishWeekdays
@@ -2619,7 +2685,7 @@ object Tests extends Suite(m"Aviation Tests"):
       . assert(_.nonEmpty)
 
     suite(m"Relative timespan formatting"):
-      import timespanFormats.relativeTimespan
+      import timespanFormats.englishRelative
       given Locale[en] = Locale(en)
 
       test(m"A future single component reads as \"in …\""):
