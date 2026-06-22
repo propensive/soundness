@@ -116,6 +116,15 @@ object Tests extends Suite(m"Turbulence tests"):
         qbf.stream[Text].join
       . assert(_ == qbf)
 
+      test(m"A decoder built inside `attempt` cannot escape the boundary's scope"):
+        // A `CharDecoder` summoned under `strictSanitizer` captures the ambient decode tactic; the
+        // one `attempt` provides is a boundary tactic, so letting the decoder escape the block would
+        // mean decoding (and `break`ing) across an unwound boundary. Capture checking rejects it.
+        demilitarize:
+          attempt[CharDecodeError]:
+            summon[CharDecoder]
+      . assert(_.exists(_.message.contains("outlives its scope")))
+
       test(m"Stream Data"):
         qbf.stream[Data].reduce(_ ++ _).to(List)
       . assert(_ == qbfData.to(List))
