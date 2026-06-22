@@ -2011,6 +2011,39 @@ object Tests extends Suite(m"Aviation Tests"):
         (t0 + 1*Second) > t0
       . assert(_ == true)
 
+    suite(m"Recurrence"):
+      import calendars.gregorianCalendar
+
+      test(m"A bounded daily recurrence yields its occurrences"):
+        Recurrence(2024-Jan-1, 1*Day, 3).occurrences.to(List)
+      . assert(_ == List(2024-Jan-1, 2024-Jan-2, 2024-Jan-3))
+
+      test(m"A monthly recurrence advances by calendar months"):
+        import monthEnds.clampMonthEnd
+        Recurrence(2024-Jan-15, 1*Month, 4).occurrences.to(List)
+      . assert(_ == List(2024-Jan-15, 2024-Feb-15, 2024-Mar-15, 2024-Apr-15))
+
+      test(m"An unbounded recurrence is bounded by until"):
+        Recurrence(2024-Jan-1, 1*Week).until(2024-Jan-22).to(List)
+      . assert(_ == List(2024-Jan-1, 2024-Jan-8, 2024-Jan-15))
+
+      test(m"within filters occurrences to a window"):
+        Recurrence(2024-Jan-1, 1*Week).within(Period(2024-Jan-5, 2024-Jan-20)).to(List)
+      . assert(_ == List(2024-Jan-8, 2024-Jan-15))
+
+      test(m"A bounded recurrence renders in ISO 8601 repeating-interval form"):
+        Recurrence(2024-Jan-1, 1*Day, 5).encode
+      . assert(_ == t"R5/2024-01-01/P1D")
+
+      test(m"An unbounded recurrence renders with a bare R"):
+        Recurrence(2024-Jan-1, 1*Day).encode
+      . assert(_ == t"R/2024-01-01/P1D")
+
+      test(m"A recurrence round-trips from ISO 8601"):
+        import monthEnds.clampMonthEnd
+        t"R3/2024-01-01/P1M".decode[Recurrence of Date by (Timespan of Month.type)].occurrences.to(List)
+      . assert(_ == List(2024-Jan-1, 2024-Feb-1, 2024-Mar-1))
+
     suite(m"Moment subtraction"):
       import calendars.gregorianCalendar
 
