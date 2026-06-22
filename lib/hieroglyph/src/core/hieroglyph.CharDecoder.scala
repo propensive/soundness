@@ -43,6 +43,8 @@ import rudiments.*
 import vacuous.*
 
 object CharDecoder:
+  case class Focus(position: Int) derives CanEqual
+
   def system(using TextSanitizer): CharDecoder =
     unapply(jnc.Charset.defaultCharset.nn.displayName.nn.tt).get
 

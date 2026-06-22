@@ -40,7 +40,8 @@ export
       WideCharacterWidth, whitespace, control, designation, printable, unicode }
 
 package textSanitizers:
-  export hieroglyph.textSanitizers.{skipSanitizer, strictSanitizer, substituteSanitizer}
+  export hieroglyph.textSanitizers.{skipSanitizer, strictSanitizer, substituteSanitizer,
+      accrueSanitizer}
 
 package textMetrics:
   export hieroglyph.textMetrics.{eastAsianScriptsMetric, wideCharacterWidthMetric, uniformMetric}
