@@ -30,103 +30,44 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aviation
 
-export
-  aviation
-  . { am, AlexandrianCalendar, Anniversary, Apr, Aug, Base24, base24Extractable, Base60,
-      base60Extractable, Calendar, Chronometry, Clock, Clockface, CopticCalendar, CopticMonth, Date,
-      DateNumerics, DateSeparation, Day, Dec, dur,
-      Disambiguation, Duration, Endianness, EthiopianCalendar, EthiopianMonth, Feb,
-      FrenchRepublicanCalendar, FrenchRepublicanMonth, Frequency, Fri, Hebdomad, Holiday, Holidays,
-      Horology,
-      HebrewCalendar, HebrewMonth, Hour, IndianCalendar, IndianMonth, Instant, IslamicCalendar,
-      GapPolicy, IslamicMonth, Iso8601, Jan, Jul, Jun, Leap, LeapMode, LeapSeconds, Mar, May,
-      Meridiem, Minute, Moment, Mon, monotonic, Monotonic, Month, Months, Monthstamp, Nov, now,
-      Occurrence, Oct, OffsetCalendar, OrdinalCalendar, Period, PersianCalendar, PersianMonth, pm,
-      following, occurrences, Posix, rec, Recurrence, RecurrenceError, recInterpolator,
-      RecurrenceLiteral, RecurrenceSet, Recurrent, Regime, Resolution, Rfc1123, RomanCalendar,
-      Rrule, RruleError, Tai, until, WeekdayOrdinal, within,
-      Sat, Sep, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics,
-      TimeSeparation, TimeSpecificity, Timespan, Timestamp, TimestampError, Timezone, TimezoneError,
-      today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Week, WeekDate, Weekday, Weekdays,
-      WorkingDays, Year, Years }
+import prepositional.*
 
-package calendars:
-  export aviation.calendars.{gregorianCalendar, julianCalendar, copticCalendar, ethiopianCalendar,
-      islamicCalendar, persianCalendar, indianCalendar, hebrewCalendar, frenchRepublicanCalendar,
-      buddhistCalendar, minguoCalendar, ordinalCalendar, papalCutover, britishCutover}
+// An iCalendar recurrence set: the union of one or more recurrences' occurrence streams (`include`,
+// e.g. each `rrule.occurrences`) plus explicit extra dates (`rdates`, RFC 5545 `RDATE`), minus
+// excluded dates (`exdates`, `EXDATE`). It is itself `Recurrent` — the streams are merged into one
+// ascending, de-duplicated stream with the exclusions removed — so it composes uniformly with any
+// other `Recurrent`.
+object RecurrenceSet:
+  given recurrent: [point] => Ordering[point]
+  =>  ( RecurrenceSet[point] is Recurrent { type Topic = point } ) =
 
-package nonexistentLeapDays:
-  export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,
-      roundUpLeapDay}
+    set =>
+      val excluded = set.exdates.to(Set)
+      val streams = set.include :+ LazyList.from(set.rdates.sorted)
+      dedup(merge(streams)).filterNot(excluded.contains)
 
-package monthEnds:
-  export aviation.monthEnds.{clampMonthEnd, overflowMonthEnd, raiseMonthEnd}
+  // Lazily merge ascending streams into one ascending stream (repeatedly emit the least head).
+  private def merge[point](streams: List[LazyList[point]])(using order: Ordering[point])
+  :   LazyList[point] =
 
-package gapPolicies:
-  export aviation.gapPolicies.{pushBackward, rejectGap}
+    streams.filter(_.nonEmpty) match
+      case Nil => LazyList.empty
 
-package leapModes:
-  export aviation.leapModes.exact
+      case nonEmpty =>
+        val index = nonEmpty.indices.minBy(nonEmpty(_).head)
+        val chosen = nonEmpty(index)
 
-package chronometries:
-  export aviation.chronometries.{posix, atomic}
+        chosen.head #:: merge(nonEmpty.updated(index, chosen.tail))
 
-package dateFormats:
-  export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,
-      southEastAsiaDateFormat, unitedKingdomDateFormat}
+  // Drop duplicates from an ascending stream (equal values are adjacent).
+  private def dedup[point](stream: LazyList[point])(using order: Ordering[point]): LazyList[point] =
+    stream match
+      case head #:: tail => head #:: dedup(tail.dropWhile(order.equiv(_, head)))
+      case _             => LazyList.empty
 
-package endianness:
-  export aviation.dateFormats.endianness.{bigEndian, littleEndian, middleEndian}
-
-package dateNumerics:
-  export aviation.dateFormats.numerics.{fixedWidthDateNumerics, variableWidthDateNumerics}
-
-package dateSeparators:
-  export aviation.dateFormats.separators.{dotDateSeparator, hyphenDateSeparator, slashDateSeparator,
-      spaceDateSeparator}
-
-package yearFormats:
-  export aviation.dateFormats.years.{fullYears, twoDigitsYears}
-
-package weekdays:
-  export
-    aviation.dateFormats.weekdays
-    . { englishWeekdays, englishShortWeekdays, oneLetterAmbiguousWeekdays,
-        shortestUnambiguousWeekdays, twoLetterWeekdays }
-
-package monthFormats:
-  export
-    aviation.dateFormats.months
-    . { englishMonths, englishShortMonths, numericMonths, oneLetterAmbiguousMonths,
-        twoDigitMonths }
-
-package timeFormats:
-  export
-    aviation.timeFormats
-    . { associatedPressTimeFormat, civilianTimeFormat, frenchTimeFormat, iso8601TimeFormat,
-        ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
-
-package timespanFormats:
-  export aviation.timespanFormats.relativeTimespan
-
-package hourFormats:
-  export aviation.timeFormats.hours.{twelveHourClock, twentyFourHourClock}
-
-package meridiems:
-  export aviation.timeFormats.meridiems.{lowerMeridiem, lowerPunctuatedMeridiem, upperMeridiem,
-      upperPunctuatedMeridiem}
-
-package timeNumerics:
-  export aviation.timeFormats.numerics.{fixedWidthTimeNumerics, variableWidthTimeNumerics}
-
-package timeSeparators:
-  export aviation.timeFormats.separators.{colonTimeSeparator, dotTimeSeparator, frenchTimeSeparator,
-      noneTimeSeparator}
-
-package hebdomads:
-  export aviation.hebdomads.{europeanHebdomad, jewishHebdomad, northAmericanHebdomad}
-
-package instantDecodables:
-  export aviation.instantDecodables.{iso8601InstantDecodable, rfc1123InstantDecodable}
+case class RecurrenceSet[point]
+  ( include: List[LazyList[point]] = Nil,
+    rdates:  List[point]           = Nil,
+    exdates: List[point]           = Nil )
