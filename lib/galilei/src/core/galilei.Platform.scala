@@ -40,7 +40,7 @@ import inimitable.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
-import turbulence.{Aggregable, Readable}
+import turbulence.Readable
 import vacuous.*
 
 import IoError.Operation
@@ -55,16 +55,19 @@ object Platform:
 
   // Read a path in its entirety as a single, direct operation: the whole file is read into memory
   // at once, holding no handle and needing no scope — unlike streaming a path, which must be
-  // `open`ed and consumed within a scope. Placing it here (rather than as a `read` extension, which
-  // would be ambiguous with turbulence's generic one) makes `path.read[…]` resolve through
-  // turbulence's `read` with no extra import for any `Path on <platform>`.
-  given pathReadable: [plane <: Platform: Filesystem, result: Aggregable by Data as aggregable]
+  // `open`ed and consumed within a scope. The whole `Data` is handed to a `Data is Readable to
+  // result`, which decodes it directly when a direct instance exists (e.g. `Text`/`Data`) and
+  // otherwise falls back to composing `Streamable` with `Aggregable`. Placing it here (rather than
+  // as a `read` extension, which would be ambiguous with turbulence's generic one) makes
+  // `path.read[…]` resolve through turbulence's `read` with no extra import for any `Path on …`.
+  given pathReadable: [plane <: Platform: Filesystem, result]
+  =>  ( readable: Data is Readable to result )
   =>  Tactic[IoError]
   =>  (Path on plane) is Readable to result =
     path =>
       val bytes: Data = path.protect(Operation.Read):
         jnf.Files.readAllBytes(path.javaPath).nn.immutable(using Unsafe)
 
-      aggregable.aggregate(Stream(bytes))
+      readable.read(bytes)
 
 trait Platform
