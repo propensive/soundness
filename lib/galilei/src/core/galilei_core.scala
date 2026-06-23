@@ -45,6 +45,7 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import symbolism.*
+import turbulence.{Aggregable, Readable, Streamable}
 import vacuous.*
 
 import IoError.{Operation, Reason}
@@ -63,6 +64,19 @@ extension [target: Openable](value: target)
 
     target.open(value, lambda, options)
 
+// Read a path in its entirety as a single, direct operation: the whole file is read into memory
+// at once, holding no handle and needing no scope — unlike streaming a path, which must be `open`ed
+// and consumed within a scope. Provided as a `Readable` (reached via `path.read[…]`) rather than an
+// extension, because a `read` extension would be ambiguous with turbulence's generic one; reaching
+// it needs `import galilei.pathReadable`.
+given pathReadable: [plane: Filesystem, result: Aggregable by Data as aggregable] => Tactic[IoError]
+=>  (Path on plane) is Readable to result =
+  path =>
+    val bytes: Data = path.protect(Operation.Read):
+      jnf.Files.readAllBytes(path.javaPath).nn.immutable(using Unsafe)
+
+    aggregable.aggregate(Stream(bytes))
+
 package filesystemTraversal:
   given preOrderTraversal: TraversalOrder = TraversalOrder.PreOrder
   given postOrderTraversal: TraversalOrder = TraversalOrder.PostOrder
@@ -71,6 +85,13 @@ extension [plane: Filesystem](path: Path on plane)
 
   inline def children(using explorable: plane is Explorable): Stream[Path on plane] =
     explorable.children(path)
+
+  // Write `content` to the file in its entirety as a single, direct operation: the whole file is
+  // written at once, holding no handle and needing no scope — unlike streaming to a path, which
+  // must be `open`ed and consumed within a scope.
+  def write[content: Streamable by Data as streamable](content: content): Unit raises IoError =
+    val bytes: Data = summon[Data is Aggregable by Data].aggregate(streamable.stream(content))
+    protect(Operation.Write)(jnf.Files.write(javaPath, bytes.mutable(using Unsafe)))
 
   private[galilei] def protect[result](operation: Operation)(block: => result)
   :   result raises IoError =
