@@ -816,7 +816,7 @@ object eucalyptus extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object ansi extends Component(escapade.core, core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(ansi, core, syslog)
 
 object exegesis extends Library:
@@ -860,7 +860,7 @@ object frontier extends Library:
   object core extends Component(dendrology.tree, escapade.core, beneficence.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, scintillate.servlet, jacinta.schema)
 
 object fulminate extends Library:
