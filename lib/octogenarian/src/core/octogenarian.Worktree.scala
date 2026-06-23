@@ -52,7 +52,8 @@ import GitError.Reason.*
 
 object Worktree:
   def apply[abstractable: Abstractable across Paths to Text](path: abstractable)
-  :   Worktree raises PathError raises NameError raises GitError raises IoError =
+    ( using Tactic[PathError], Tactic[NameError], Tactic[GitError], Tactic[IoError] )
+  :   Worktree =
 
     unsafely(path.generic.decode[Path on Linux]).pipe: path =>
       if !path.exists() then abort(GitError(RepoDoesNotExist))
@@ -139,16 +140,19 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
     GitBranch.unsafe(sh"$git $repoOptions branch --show-current".exec[String]().tt.trim)
 
 
-  def makeBranch(branch: GitBranch)(using GitCommand, WorkingDirectory)
-  :   Unit logs GitEvent raises ExecError raises GitError =
+  def makeBranch(branch: GitBranch)
+    ( using GitCommand, WorkingDirectory, Tactic[ExecError], Tactic[GitError] )
+  :   Unit logs GitEvent =
 
     sh"$git $repoOptions checkout -b $branch".exec[Exit]() match
       case Exit.Ok => ()
       case failure => abort(GitError(BranchFailed))
 
 
-  def add[path: Abstractable across Paths to Text](file: path)(using GitCommand, WorkingDirectory)
-  :   Unit logs GitEvent raises PathError raises NameError raises ExecError raises GitError =
+  def add[path: Abstractable across Paths to Text](file: path)
+    ( using GitCommand, WorkingDirectory, Tactic[PathError], Tactic[NameError], Tactic[ExecError],
+            Tactic[GitError] )
+  :   Unit logs GitEvent =
 
     val relativePath =
       safely(this.path.toward(file.generic.decode[Path on Linux])).or:
@@ -171,8 +175,9 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
 
 
   def unstage[path: Abstractable across Paths to Text](file: path)
-    ( using GitCommand, WorkingDirectory )
-  :   Unit logs GitEvent raises PathError raises NameError raises ExecError raises GitError =
+    ( using GitCommand, WorkingDirectory, Tactic[PathError], Tactic[NameError], Tactic[ExecError],
+            Tactic[GitError] )
+  :   Unit logs GitEvent =
 
     val relativePath =
       safely(this.path.toward(file.generic.decode[Path on Linux])).or:
@@ -187,8 +192,9 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
     [ fromPath: Abstractable across Paths to Text,
       toPath:   Abstractable across Paths to Text ]
     ( from: fromPath, to: toPath )
-    ( using GitCommand, WorkingDirectory )
-  :   Unit logs GitEvent raises PathError raises NameError raises ExecError raises GitError =
+    ( using GitCommand, WorkingDirectory, Tactic[PathError], Tactic[NameError], Tactic[ExecError],
+            Tactic[GitError] )
+  :   Unit logs GitEvent =
 
     val fromRel = safely(this.path.toward(from.generic.decode[Path on Linux])).or:
       abort(GitError(MvFailed))
@@ -280,7 +286,7 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
             Tactic[GitError],
             Tactic[ExecError],
             (Path on Linux) is Decodable in Text )
-  :   Worktree logs GitEvent raises NameError raises PathError =
+  :   Worktree raises NameError raises PathError logs GitEvent =
 
     val target: Path on Linux =
       try newPath.generic.decode[Path on Linux]
