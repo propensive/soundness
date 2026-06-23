@@ -1204,7 +1204,7 @@ object probably extends Library:
 
   object cli extends Component(core):
     override def scalacOptions = Task:
-      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object coverage extends Component(dendrology.tree):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
