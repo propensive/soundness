@@ -1054,7 +1054,7 @@ object legerdemain extends Library:
 object mandible extends Library:
   object core extends Component(hyperbole.core, galilei.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
   object test extends Tests(core, revolution.core, quantitative.units)
