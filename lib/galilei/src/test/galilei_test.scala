@@ -36,7 +36,6 @@ import soundness.*
 
 object Tests extends Suite(m"Galilei tests"):
   def run(): Unit =
-    import galilei.pathReadable
     import charEncoders.utf8Encoder
     import charDecoders.utf8Decoder
     import textSanitizers.skipSanitizer

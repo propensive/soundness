@@ -30,15 +30,33 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package galilei
+
+import scala.quoted.*
 
 import anticipation.*
 import contingency.*
+import distillate.*
+import fulminate.*
+import gigantism.*
 import prepositional.*
+import serpentine.*
+import vacuous.*
 
-// The platform `Radical` instances (POSIX/Linux/macOS/Windows-drive/local roots) live with the
-// OS platform types in galilei; `Radical` itself is generic path-algebra and stays here.
-trait Radical extends Typeclass, Planar:
-  def decode(text: Text): Self raises PathError
-  def length(text: Text): Int raises PathError
-  def encode(self: Self): Text
+object internal:
+  // The platform-aware `p"…"` literal macro: it decodes the string as a POSIX path, falling back to
+  // a Windows path. It lives here with the OS platform types (`Posix`/`Windows`/`Drive`), whose
+  // `Radical` givens it needs at expansion time; the generic compile-time path helpers stay in
+  // `serpentine.internal`.
+  def path(context: Expr[StringContext]): Macro[Path] =
+    val name: String = context.valueOrAbort.parts.head
+
+    safely(name.tt.decode[Path on Posix]).let: path =>
+      '{Path[Posix, %.type, Tuple](${Expr(path.root)}, ${Expr.ofList(path.descent.map(Expr(_)))})}
+
+    . or:
+        safely(name.tt.decode[Path on Windows]).let: path =>
+          val varargs = Expr.ofList(path.descent.map(Expr(_)))
+          '{Path[Windows, Drive, Tuple](${Expr(path.root)}, $varargs)}
+
+        . or(halt(66, m"The path ${name} is not a valid Windows or POSIX path"))

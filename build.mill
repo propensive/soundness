@@ -1052,7 +1052,7 @@ object legerdemain extends Library:
     override def enabled = false
 
 object mandible extends Library:
-  object core extends Component(hyperbole.core):
+  object core extends Component(hyperbole.core, galilei.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
@@ -1288,8 +1288,10 @@ object serpentine extends Library:
   object core extends Component(nomenclature.core, ambience.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
-  object test extends Tests(core)
-  object bench extends Benchmarks(core, quantitative.units)
+  // The platform types (`Linux`, `Windows`, …) that the path-algebra tests exercise now live in
+  // galilei, so the tests depend on it for a concrete `Filesystem` to test against.
+  object test extends Tests(core, galilei.core)
+  object bench extends Benchmarks(core, galilei.core, quantitative.units)
 
 object spectacular extends Library:
   object core extends Component(stenography.core, inimitable.core, wisteria.core, digression.core):
@@ -1328,7 +1330,9 @@ object stratiform extends Library:
   object bench extends Benchmarks(core, quantitative.units, hellenism.core, ambience.core)
 
 object superlunary extends Library:
-  object core extends Component(jacinta.core, gastronomy.core, anthology.scala, austronesian.core):
+  object core
+      extends Component
+              (jacinta.core, gastronomy.core, anthology.scala, austronesian.core, galilei.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
     def mvnDeps = Seq(

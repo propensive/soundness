@@ -37,6 +37,7 @@ import java.util.zip as juz
 
 import anticipation.*
 import contingency.*
+import galilei.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*

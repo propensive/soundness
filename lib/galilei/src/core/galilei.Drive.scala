@@ -30,15 +30,23 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package galilei
 
-import anticipation.*
-import contingency.*
+import gossamer.*
 import prepositional.*
+import serpentine.*
 
-// The platform `Radical` instances (POSIX/Linux/macOS/Windows-drive/local roots) live with the
-// OS platform types in galilei; `Radical` itself is generic path-algebra and stays here.
-trait Radical extends Typeclass, Planar:
-  def decode(text: Text): Self raises PathError
-  def length(text: Text): Int raises PathError
-  def encode(self: Self): Text
+object Drive:
+  def apply(letter: Char): Drive = new Drive(letter)
+  def unapply(drive: Drive): Some[Char] = Some(drive.letter)
+
+  given submissible: Drive is Submissible on Windows = _ => ()
+
+class Drive(val letter: Char) extends Root(t"$letter:\\"):
+  type Plane = Windows
+
+  override def equals(that: Any): Boolean = that.absolve match
+    case drive: Drive => letter == drive.letter
+    case _            => false
+
+  override def hashCode: Int = letter.hashCode

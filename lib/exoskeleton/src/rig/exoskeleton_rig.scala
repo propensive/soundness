@@ -131,7 +131,14 @@ extension (shell: Shell)
             import filesystemOptions.dereferenceSymlinks.enabled
             import charEncoders.utf8Encoder
 
-            val file: Path on Linux = unsafely(temporaryDirectory/t"exoskeleton-${Uuid()}.ps1")
+            // `temporaryDirectory`'s inline `summonFrom` can't resolve the platform `Instantiable`
+            // in this context (the platform `Radical` now lives in galilei's plane companions), so
+            // build the trusted temp path through the directly-resolvable `Instantiable` instead.
+            val tmpDir: Path on Linux =
+              summon[(Path on Linux) is Instantiable across Paths from Paths.Trusted]
+              . apply(Paths.Trusted(summon[TemporaryDirectory].directory()))
+
+            val file: Path on Linux = unsafely(tmpDir/t"exoskeleton-${Uuid()}.ps1")
             file.open(psScript.tt.writeTo(_))
             psFile = file
             t"POWERSHELL_UPDATECHECK=Off pwsh -NoLogo -NoExit -File ${file.encode}"

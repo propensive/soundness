@@ -35,6 +35,7 @@ package superlunary
 import anthology.*
 import anticipation.*
 import austronesian.*
+import galilei.*
 import gossamer.*
 import hellenism.*
 import prepositional.*

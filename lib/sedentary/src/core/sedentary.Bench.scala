@@ -34,6 +34,7 @@ package sedentary
 
 import java.lang as jl
 
+import galilei.*
 import scala.quoted.*
 
 import ambience.*

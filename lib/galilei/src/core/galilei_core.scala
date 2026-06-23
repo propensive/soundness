@@ -45,13 +45,16 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import symbolism.*
-import turbulence.{Aggregable, Readable, Streamable}
+import turbulence.{Aggregable, Streamable}
 import vacuous.*
 
 import IoError.{Operation, Reason}
 
 final val C: Drive = Drive('C')
 final val D: Drive = Drive('D')
+
+extension (inline context: StringContext)
+  transparent inline def p(): Path = ${galilei.internal.path('context)}
 
 
 extension [target: Substantiable](value: target)
@@ -63,19 +66,6 @@ extension [target: Openable](value: target)
   :   result =
 
     target.open(value, lambda, options)
-
-// Read a path in its entirety as a single, direct operation: the whole file is read into memory
-// at once, holding no handle and needing no scope — unlike streaming a path, which must be `open`ed
-// and consumed within a scope. Provided as a `Readable` (reached via `path.read[…]`) rather than an
-// extension, because a `read` extension would be ambiguous with turbulence's generic one; reaching
-// it needs `import galilei.pathReadable`.
-given pathReadable: [plane: Filesystem, result: Aggregable by Data as aggregable] => Tactic[IoError]
-=>  (Path on plane) is Readable to result =
-  path =>
-    val bytes: Data = path.protect(Operation.Read):
-      jnf.Files.readAllBytes(path.javaPath).nn.immutable(using Unsafe)
-
-    aggregable.aggregate(Stream(bytes))
 
 package filesystemTraversal:
   given preOrderTraversal: TraversalOrder = TraversalOrder.PreOrder

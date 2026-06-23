@@ -30,15 +30,41 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package galilei
+
+import java.nio.file as jnf
 
 import anticipation.*
 import contingency.*
+import inimitable.*
 import prepositional.*
+import rudiments.*
+import serpentine.*
+import turbulence.{Aggregable, Readable}
+import vacuous.*
 
-// The platform `Radical` instances (POSIX/Linux/macOS/Windows-drive/local roots) live with the
-// OS platform types in galilei; `Radical` itself is generic path-algebra and stays here.
-trait Radical extends Typeclass, Planar:
-  def decode(text: Text): Self raises PathError
-  def length(text: Text): Int raises PathError
-  def encode(self: Self): Text
+import IoError.Operation
+
+// `Platform` is the common base of galilei's OS filesystem platform types (`Posix`/`Linux`/`MacOs`/
+// `Windows`/`Local`). It exists so that givens placed in its companion — notably the whole-file
+// `Readable` instance — are in the implicit scope of every `Path on <platform>`, making
+// `path.read` discoverable without an explicit import.
+object Platform:
+  given uuid: [uuid <: Uuid, filesystem <: Platform] => uuid is Admissible on filesystem =
+    Admissible.unchecked[uuid, filesystem]
+
+  // Read a path in its entirety as a single, direct operation: the whole file is read into memory
+  // at once, holding no handle and needing no scope — unlike streaming a path, which must be
+  // `open`ed and consumed within a scope. Placing it here (rather than as a `read` extension, which
+  // would be ambiguous with turbulence's generic one) makes `path.read[…]` resolve through
+  // turbulence's `read` with no extra import for any `Path on <platform>`.
+  given pathReadable: [plane <: Platform: Filesystem, result: Aggregable by Data as aggregable]
+  =>  Tactic[IoError]
+  =>  (Path on plane) is Readable to result =
+    path =>
+      val bytes: Data = path.protect(Operation.Read):
+        jnf.Files.readAllBytes(path.javaPath).nn.immutable(using Unsafe)
+
+      aggregable.aggregate(Stream(bytes))
+
+trait Platform

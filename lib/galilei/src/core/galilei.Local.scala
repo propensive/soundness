@@ -30,28 +30,48 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package galilei
 
+import ambience.*
 import anticipation.*
+import contingency.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
+import serpentine.*
+import spectacular.*
 
-object Posix:
-  type Rules =
-    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""] &
-      MustNotEqual["Icon\r"] & MustNotContain[":"]
+object Local:
+  // Note that Mac OS rules subsume Linux rules
+  type Rules = Windows.Rules & MacOs.Rules
 
-  inline given Posix is Nominative under Rules = !!
+  inline given nominative: Local is Nominative under Rules = !!
 
-  given filesystem: Posix is Filesystem:
-    type UniqueRoot = true
+  inline given pathOnLocal: (Path on Local) is Representative of Paths = !!
 
-    val name: Text = "POSIX"
-    val separator: Text = t"/"
+  given filesystem: System => Local is Filesystem:
+    type UniqueRoot = false
+
+    val name: Text = System.properties.os.name().show
+    val separator: Text = System.properties.file.separator().show
     val self: Text = t"."
     val parent: Text = t".."
 
-trait Posix:
-  type UniqueRoot = true
+  given radical: (%.type | Drive) is Radical:
+    type Plane = Local
+
+    def length(text: Text): 1 | 3 raises PathError =
+      if text.starts(t"/") then 1 else if text.s(1) == ':' && text.s(2) == '\\' then 3
+      else abort(PathError(_.InvalidRoot))
+
+    def decode(text: Text): %.type | Drive raises PathError =
+      length(text) match
+        case 1 => %
+        case 3 => Drive(text.s(0).lest(PathError(_.InvalidRoot)))
+
+    def encode(root: %.type | Drive): Text = root match
+      case Drive(letter) => t"$letter:\\"
+      case %             => t"/"
+
+sealed trait Local extends Platform

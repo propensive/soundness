@@ -30,22 +30,42 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package galilei
 
+import anticipation.*
+import contingency.*
 import gossamer.*
+import nomenclature.*
 import prepositional.*
+import rudiments.*
+import serpentine.*
 
-object Drive:
-  def apply(letter: Char): Drive = new Drive(letter)
-  def unapply(drive: Drive): Some[Char] = Some(drive.letter)
+object Posix:
+  type Rules =
+    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""] &
+      MustNotEqual["Icon\r"] & MustNotContain[":"]
 
-  given Drive is Submissible on Windows = _ => ()
+  inline given Posix is Nominative under Rules = !!
 
-class Drive(val letter: Char) extends Root(t"$letter:\\"):
-  type Plane = Windows
+  given filesystem: Posix is Filesystem:
+    type UniqueRoot = true
 
-  override def equals(that: Any): Boolean = that.absolve match
-    case drive: Drive => letter == drive.letter
-    case _            => false
+    val name: Text = "POSIX"
+    val separator: Text = t"/"
+    val self: Text = t"."
+    val parent: Text = t".."
 
-  override def hashCode: Int = letter.hashCode
+  given radical: %.type is Radical:
+    type Plane = Posix
+
+    def length(text: Text): Int raises PathError = 1
+
+    def decode(text: Text): %.type raises PathError =
+      if text.starts(t"/") then % else abort(PathError(_.InvalidRoot))
+
+    def encode(root: %.type): Text = t"/"
+
+  given submissible: %.type is Submissible on Posix = _ => ()
+
+trait Posix extends Platform:
+  type UniqueRoot = true

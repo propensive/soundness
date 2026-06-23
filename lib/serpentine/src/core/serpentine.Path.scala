@@ -47,10 +47,8 @@ import symbolism.*
 import vacuous.*
 
 object Path:
-  inline given pathOnLinux: (Path on Linux) is Representative of Paths = !!
-  inline given pathOnWindows: (Path on Windows) is Representative of Paths = !!
-  inline given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!
-  inline given pathOnLocal: (Path on Local) is Representative of Paths = !!
+  // Platform `Representative` instances (`Path on Linux`, …) live with the OS platform types in
+  // galilei; the generic `Path` algebra stays here.
 
   @targetName("Root")
   object % extends Path(t"/"):

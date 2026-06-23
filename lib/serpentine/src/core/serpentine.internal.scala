@@ -35,27 +35,15 @@ package serpentine
 import scala.quoted.*
 
 import anticipation.*
-import contingency.*
 import denominative.*
-import distillate.*
 import fulminate.*
 import gigantism.*
 import prepositional.*
 import vacuous.*
 
 object internal:
-  def path(context: Expr[StringContext]): Macro[Path] =
-    val name: String = context.valueOrAbort.parts.head
-
-    safely(name.tt.decode[Path on Posix]).let: path =>
-      '{Path[Posix, %.type, Tuple](${Expr(path.root)}, ${Expr.ofList(path.descent.map(Expr(_)))})}
-
-    . or:
-        safely(name.tt.decode[Path on Windows]).let: path =>
-          val varargs = Expr.ofList(path.descent.map(Expr(_)))
-          '{Path[Windows, Drive, Tuple](${Expr(path.root)}, $varargs)}
-
-        . or(halt(66, m"The path ${name} is not a valid Windows or POSIX path"))
+  // The platform-aware `p"…"` literal macro (which decodes POSIX/Windows paths) lives in galilei
+  // with the OS platform types; the generic compile-time path helpers below stay here.
 
   private def plane[path <: Path: Type](using Quotes): Optional[quotes.reflect.Symbol] =
     import quotes.reflect.*
