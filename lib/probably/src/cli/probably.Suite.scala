@@ -91,7 +91,7 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
       ???
 
   given runner: Runner[Report] = runner0
-  given testable: Testable = this
+  given testable: (Testable^) = this
 
   def run(): Unit
 
