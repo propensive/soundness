@@ -39,6 +39,7 @@ import java.nio.file as jnf
 
 import ambience.*
 import anticipation.*
+import beneficence.*
 import contingency.*
 import fulminate.*
 import guillotine.*
@@ -51,7 +52,7 @@ object Creatable:
   =>  ( createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
         tactic:                   Tactic[IoError] )
-  =>  Directory is Creatable on plane to (Path on plane) =
+  =>  ( (Directory is Creatable on plane to (Path on plane))^ ) =
 
     new Creatable:
       type Self = Directory
@@ -69,7 +70,7 @@ object Creatable:
   =>  ( createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
         tactic:                   Tactic[IoError] )
-  =>  Socket is Creatable to Socket =
+  =>  ( (Socket is Creatable to Socket)^ ) =
 
     new Creatable:
       type Plane = plane
@@ -89,7 +90,7 @@ object Creatable:
   =>  ( createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
         tactic:                   Tactic[IoError] )
-  =>  File is Creatable on plane to (Path on plane) =
+  =>  ( (File is Creatable on plane to (Path on plane))^ ) =
 
     new Creatable:
       type Plane = plane
@@ -108,7 +109,7 @@ object Creatable:
         working:                  WorkingDirectory,
         tactic:                   Tactic[IoError],
         loggable:                 ExecEvent is Loggable )
-  =>  Fifo is Creatable to (Path on plane) =
+  =>  ( (Fifo is Creatable to (Path on plane))^ ) =
 
     new Creatable:
       type Self = Fifo
@@ -131,5 +132,6 @@ object Creatable:
                     raise
                       ( IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied) )
 
-trait Creatable extends Typeclass, Resultant, Planar:
+trait Creatable extends Findable, Resultant, Planar:
+  type Self
   def create(path: Path on Plane): Result

@@ -34,10 +34,11 @@ package galilei
 
 import java.nio.file as jnf
 
+import contingency.*
 import prepositional.*
 import serpentine.*
 
 trait CreateNonexistent extends Planar:
-  def apply(path: Path on Plane)(operation: => Unit): Unit
-  def error(path: Path on Plane, operation: IoError.Operation): Nothing
+  def apply(path: Path on Plane)(operation: => Unit): Unit raises IoError
+  def error(path: Path on Plane, operation: IoError.Operation): Nothing raises IoError
   def options(): List[jnf.OpenOption]

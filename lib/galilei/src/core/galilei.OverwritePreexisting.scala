@@ -33,8 +33,9 @@
 package galilei
 
 import beneficence.*
+import contingency.*
 import prepositional.*
 import serpentine.*
 
 trait OverwritePreexisting extends Planar, Findable:
-  def apply[ResultType](path: Path on Plane)(operation: => ResultType): ResultType
+  def apply[ResultType](path: Path on Plane)(operation: => ResultType): ResultType raises IoError

@@ -42,3 +42,4 @@ object Handle:
   given writable: Emit[StreamError] => Handle is Writable by Data = _.writer(_)
 
 class Handle(val reader: () => Stream[Data], val writer: Stream[Data] => Unit)
+extends caps.ExclusiveCapability
