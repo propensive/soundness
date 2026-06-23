@@ -954,7 +954,7 @@ object harlequin extends Library:
 object hellenism extends Library:
   object core extends Component(anticipation.url, galilei.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, turbulence.core)
 
 object honeycomb extends Library:

@@ -128,18 +128,24 @@ object Classpath extends Root(t""):
 
     result.toSet
 
+  // Defined here, rather than inline in `Classpath#classloader`, so the anonymous
+  // `URLClassLoader` subclass carries no outer reference to a `Classpath` instance and so
+  // does not spuriously capture it under capture checking.
+  private[hellenism] def delegatingClassloader(urls: Array[jn.URL | Null], parent: ClassLoader)
+  :   jn.URLClassLoader =
+
+    new jn.URLClassLoader(urls, parent):
+      override def loadClass(name: String | Null, resolve: Boolean): Class[?] | Null =
+        try findClass(name) catch case error: ClassNotFoundException =>
+          super.loadClass(name, resolve)
+
 
 trait Classpath:
   def entries: List[ClasspathEntry]
   private def array: Array[jn.URL | Null] = Array.from(entries.map(_.javaUrl))
 
   def classloader(parent: Classloader = classloaders.platformClassloader): Classloader =
-    val javaClassloader = new jn.URLClassLoader(array, parent.java):
-      override def loadClass(name: String | Null, resolve: Boolean): Class[?] | Null =
-        try findClass(name) catch case error: ClassNotFoundException =>
-          super.loadClass(name, resolve)
-
-    new Classloader(javaClassloader)
+    new Classloader(Classpath.delegatingClassloader(array, parent.java))
 
   def classloader: Classloader =
     val urls = entries.flatMap:

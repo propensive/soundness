@@ -44,7 +44,7 @@ import serpentine.*
 import vacuous.*
 
 object internal extends Hellenism2:
-  opaque type ClassRef = Class[?]
+  opaque type ClassRef <: Class[?] = Class[?]
 
   object ClassRef:
     def apply(javaClass: Class[?]): ClassRef = javaClass
