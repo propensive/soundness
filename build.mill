@@ -975,7 +975,7 @@ object hieroglyph extends Library:
 object hyperbole extends Library:
   object core extends Component(harlequin.ansi, escritoire.core, dendrology.tree):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
   object test extends Tests(core, quantitative.units, mandible.core)
