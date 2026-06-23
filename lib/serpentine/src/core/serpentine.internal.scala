@@ -183,17 +183,9 @@ object internal:
   private def tuple(elements: List[String])(using Quotes): quotes.reflect.TypeRepr =
     import quotes.reflect.*
 
-    elements.map: string =>
-      ConstantType(StringConstant(string)).asType
-
-    . foldLeft(Type.of[EmptyTuple]: Type[? <: Tuple]): (tuple, element) =>
-        tuple.absolve match
-          case '[type tuple <: Tuple; tuple] => element.absolve match
-            case '[element] => Type.of[element *: tuple]
-
-    . absolve
-    . match
-      case '[type tuple <: Tuple; tuple] => TypeRepr.of[tuple]
+    elements.foldLeft(TypeRepr.of[EmptyTuple]): (tuple, string) =>
+      (ConstantType(StringConstant(string)).asType, tuple.asType) match
+        case ('[element], '[type tuple <: Tuple; tuple]) => TypeRepr.of[element *: tuple]
 
 
   private def calculate(left: List[String], right: List[String])(using Quotes)

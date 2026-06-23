@@ -52,12 +52,12 @@ object Classpath extends Root(t""):
 
   inline given nominative: Classpath is Nominative under Rules = !!
 
-  given radical: Tactic[PathError] => Classpath.type is Radical:
+  given radical: Classpath.type is Radical:
     type Plane = Classpath
 
-    def length(text: Text): Int = 1
+    def length(text: Text): Int raises PathError = 1
 
-    def decode(text: Text): Classpath.type =
+    def decode(text: Text): Classpath.type raises PathError =
       if text.starts(t"/") then Classpath else abort(PathError(_.InvalidRoot))
 
     def encode(root: Classpath.type): Text = t""

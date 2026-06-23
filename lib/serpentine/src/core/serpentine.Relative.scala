@@ -63,7 +63,7 @@ object Relative:
       type Limit = limit
 
 
-  private def conversion[from, to](fn: from => to) =
+  private def conversion[from, to](fn: from -> to) =
     new Conversion[from, to]:
       def apply(from: from): to = fn(from)
 

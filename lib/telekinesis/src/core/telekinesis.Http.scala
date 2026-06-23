@@ -484,7 +484,9 @@ object Http:
 
     inline def request: this.type = this
 
-    lazy val path: Path on Www under %.type = location.decode[Path on Www under %.type]
+    // `Www`'s `Radical` always succeeds, so decoding the path cannot fail.
+    lazy val path: Path on Www under %.type =
+      unsafely(location.decode[Path on Www under %.type])
 
     def on[scheme <: "http" | "https"](origin: Origin[scheme]): HttpUrl =
       Url[scheme](origin, target)
