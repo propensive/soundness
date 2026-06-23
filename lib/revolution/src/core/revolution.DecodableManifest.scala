@@ -38,10 +38,10 @@ import digression.*
 import prepositional.*
 
 object DecodableManifest:
-  given mainClass: Tactic[FqcnError] => ("Main-Class" is DecodableManifest of Fqcn) = Fqcn(_)
+  given mainClass: (Tactic[FqcnError]^) => ("Main-Class" is DecodableManifest of Fqcn) = Fqcn(_)
   given createdBy: ("Created-By" is DecodableManifest of Text) = identity(_)
 
-trait DecodableManifest extends Topical:
+trait DecodableManifest extends Typeclass, Topical:
   type Self <: Label
 
   def decoded(text: Text): Topic

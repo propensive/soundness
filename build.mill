@@ -1243,7 +1243,7 @@ object quantitative extends Library:
 object revolution extends Library:
   object core extends Component(serpentine.core, turbulence.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object rudiments extends Library:
