@@ -209,7 +209,13 @@ object protointernal:
   def constant[text <: String: Type](using Quotes): text =
     import quotes.reflect.*
 
-    TypeRepr.of[text].asMatchable.absolve match
+    // Capture checking can wrap a singleton string type in an `@caps.internal.inferred`
+    // `AnnotatedType`; strip any such annotations before reading the constant.
+    def strip(repr: TypeRepr): TypeRepr = repr.asMatchable match
+      case AnnotatedType(underlying, _) => strip(underlying)
+      case other                        => other
+
+    strip(TypeRepr.of[text].dealias).asMatchable.absolve match
       case ConstantType(StringConstant(value)) => value.tt.asInstanceOf[text]
 
   def companion[companion: Typeable](using Quotes)(symbol: quotes.reflect.Symbol): companion =
