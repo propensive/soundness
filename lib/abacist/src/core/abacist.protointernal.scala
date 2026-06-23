@@ -147,8 +147,8 @@ object protointernal extends anteprotointernal:
 
 
     def distributive[quanta]
-      ( parts0: quanta => List[Long] )
-      ( place0: (quanta, List[Text]) => Text )
+      ( parts0: quanta -> List[Long] )
+      ( place0: (quanta, List[Text]) -> Text )
     :   quanta is Distributive by Long =
 
       new Distributive:
