@@ -38,9 +38,9 @@ import vacuous.*
 
 object Unpackable:
   given iarray: [pack: Debufferable] => ClassTag[pack] => IArray[pack] is Unpackable:
-    type Wrap[Type] = Int => Type
+    type Wrap[Type] = Int -> Type
 
-    def unpack(buffer: Buffer): Int => IArray[pack] = count =>
+    def unpack(buffer: Buffer): Int -> IArray[pack] = count =>
       val array = new Array[pack](count)
 
       array.indices.each: index =>
