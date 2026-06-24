@@ -1503,7 +1503,7 @@ object querencia extends Library:
 object xylophone extends Library:
   object core extends Component(zephyrine.core, adversaria.core, typonym.core, hellenism.core, urticose.core, wisteria.core, panopticon.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(mvn"org.scala-lang.modules::scala-xml:2.4.0")
