@@ -1562,7 +1562,7 @@ object zeppelin extends Library:
 object ziggurat extends Library:
   object core extends Component(hellenism.core, monotonous.core, turbulence.core, gastronomy.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object packager
       extends Component(core, guillotine.core, galilei.core, eucalyptus.core, ethereal.core,
                        telekinesis.core):
