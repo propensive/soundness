@@ -570,7 +570,7 @@ object cataclysm extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object html extends Component(core, honeycomb.core, gigantism.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, html)
 
 object charisma extends Library:
@@ -940,7 +940,7 @@ object hallucination extends Library:
 object harlequin extends Library:
   object core extends Component(anthology.scala, stenography.core, hellenism.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object ansi extends Component(core, escapade.core):
@@ -1162,7 +1162,7 @@ object perihelion extends Library:
 object phoenicia extends Library:
   object core extends Component(quantitative.units, polaris.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object plutocrat extends Library:
