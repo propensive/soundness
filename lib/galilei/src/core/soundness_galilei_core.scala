@@ -34,9 +34,10 @@ package soundness
 
 export
   galilei
-  . { accessed, BlockDevice, C, CharDevice, children, CopyAttributes, copyInto, copyTo, Creatable,
-      create, created, CreateNonexistent, CreateNonexistentParents, D, delete, DeleteRecursively,
-      DereferenceSymlinks, descendants, Device, Directory, Dos, Drive, Entry, entry, executable,
+  . { accessed, append, BlockDevice, C, CharDevice, children, CopyAttributes, copyInto, copyTo,
+      Creatable, create, created, CreateNonexistent, CreateNonexistentParents, D, delete,
+      DeleteRecursively, DereferenceSymlinks, descendants, Device, Directory, Dos, Drive, Entry,
+      entry, executable,
       exists, Explorable, Fifo, File, FilesystemAttribute, Handle, hardLinks, hardLinkTo, hidden,
       IoError, IoEvent, javaFile, javaPath, Linux, Local, MacOs, modified, MoveAtomically, moveInto,
       moveTo, open, Openable, OverwritePreexisting, p, Platform, Posix, readable, ReadAccess, size,
