@@ -844,7 +844,7 @@ object exoskeleton extends Library:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object completions extends Component(core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
 
   object rig extends Internal(completions, superlunary.core, ethereal.core, anthology.bundle, quantitative.units):
     override def scalacOptions = Task:

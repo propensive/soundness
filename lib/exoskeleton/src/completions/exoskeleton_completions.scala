@@ -137,7 +137,7 @@ package executives:
 
       arguments match
         case
-          t"{completions}" :: t"powershell" :: As[Int](cursor) :: _ :: tty ::
+          t"{completions}" :: t"powershell" :: As.Int(cursor) :: _ :: tty ::
             t"--" ::
             rawLine ::
             Nil =>
@@ -165,7 +165,7 @@ package executives:
               login )
 
         case
-          t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position0) :: tty ::
+          t"{completions}" :: shellName :: As.Int(focus0) :: As.Int(position0) :: tty ::
             t"--" ::
             command ::
             rest =>
