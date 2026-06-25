@@ -383,10 +383,14 @@ extension [value](list: List[value])
 extension [element](sequence: Seq[element])
   def runs: List[List[element]] = runsBy(identity)
 
-  inline def prim: Optional[element] = if sequence.nil then Unset else sequence.head
-  inline def sec: Optional[element] = if sequence.length < 2 then Unset else sequence(1)
-  inline def ter: Optional[element] = if sequence.length < 3 then Unset else sequence(2)
-  inline def unique: Optional[element] = if sequence.length == 1 then sequence.head else Unset
+  // Deliberately NOT `inline`: an `inline def` returning the union `Optional[element]` re-infers the
+  // expanded body's type at each call site, where capture checking stamps a fresh `^` capture
+  // variable on the union — which is spurious (and an error) when `element` is a pure type such as
+  // `Text`. A plain method keeps the declared `Optional[element]` result and stays capture-clean.
+  def prim: Optional[element] = if sequence.nil then Unset else sequence.head
+  def sec: Optional[element] = if sequence.length < 2 then Unset else sequence(1)
+  def ter: Optional[element] = if sequence.length < 3 then Unset else sequence(2)
+  def unique: Optional[element] = if sequence.length == 1 then sequence.head else Unset
 
   def runsBy(lambda: element => Any): List[List[element]] =
     @tailrec

@@ -68,7 +68,9 @@ extension [value](iterable: Iterable[Optional[value]])
     iterable.filter(!_.absent).map(_.vouch)
 
 extension [value](option: Option[value])
-  inline def optional: Optional[value] = option.getOrElse(Unset)
+  // Not `inline`: inlining a union `Optional[value]` result re-infers it per call site, where capture
+  // checking stamps a spurious `^` when `value` is (or contains) a pure type such as `Text`.
+  def optional: Optional[value] = option.getOrElse(Unset)
 
 extension [value](value: value)
   def puncture(point: value): Optional[value] = if value == point then Unset else value

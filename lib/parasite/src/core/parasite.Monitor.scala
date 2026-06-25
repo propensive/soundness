@@ -109,7 +109,7 @@ class Root(val supervisor: Supervisor) extends Monitor:
   val promise: Promise[Unit] = Promise()
   val daemon: Boolean = true
   def name: Optional[Name[Async]] = supervisor.name
-  def stack: Text = supervisor.name+":".tt
+  def stack: Text = (supervisor.name.s+":").tt
   def cancel(): Unit = ()
   def shutdown(): Unit = workers.each(_.cancel())
 
