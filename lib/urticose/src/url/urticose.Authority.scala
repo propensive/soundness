@@ -56,8 +56,12 @@ object Authority:
   =>  Authority is Decodable in Text =
     parse(_)
 
+  // The error capabilities are taken as an eager `using` clause rather than a chained `raises`
+  // result, so the nested `parsePort`/`parseHostPort` helpers may capture them; a `raises` chain
+  // makes each a context-function result that an enclosing helper literal cannot capture under CC.
   private def parse(value: Text)
-  :   Authority raises HostnameError raises IpAddressError raises UrlError =
+      (using Tactic[HostnameError], Tactic[IpAddressError], Tactic[UrlError])
+  :   Authority =
 
     import UrlError.{Expectation, Reason}, Expectation.*, Reason.*
 
