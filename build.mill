@@ -1129,7 +1129,7 @@ object orthodoxy extends Library:
 object obligatory extends Library:
   object core extends Component(zephyrine.core, gossamer.core, contingency.core, anticipation.codec, fulminate.core, prepositional.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object json extends Component(core, scintillate.server, hyperbole.core, eucalyptus.core, revolution.core, jacinta.schema, jacinta.http):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")

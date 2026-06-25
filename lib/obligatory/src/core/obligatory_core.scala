@@ -34,8 +34,8 @@ package obligatory
 
 import prepositional.*
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
+extension [element](stream: Iterator[element]^)
+  def frames[frame](using framable: element is Framable by frame): Iterator[element]^{stream} =
     framable.frames(stream)
 
 case class rpc() extends StaticAnnotation
