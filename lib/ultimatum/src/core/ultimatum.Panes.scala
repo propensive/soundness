@@ -39,12 +39,24 @@ package ultimatum
 // re-derives its tree; when the container is bound into a running form, a
 // mutation also wakes the event loop so the change is shown immediately (even
 // from a background task).
+// Panes themselves are pure (a pane tree captures nothing), so `Panes` need not be a capability. Its
+// one effectful field is the installed repaint callback.
 class Panes(initial: Pane*):
   private var series: Series[Pane] = initial.to(Series)
 
-  // Installed by the running form so a mutation requests a repaint; a no-op until
-  // the container is bound.
-  private[ultimatum] var onChange: () => Unit = () => ()
+  // Installed by the running form so a mutation requests a repaint; a no-op until the container is
+  // bound. Typed as a *pure* function so a pane tree (and `Panes`) captures nothing and can be freely
+  // collected and traversed; the installed callback genuinely captures the running form's event loop,
+  // reconciled in `bindWake`.
+  private var onChange: () -> Unit = () => ()
+
+  // Install the running form's repaint trigger. The callback captures the form's event loop, which
+  // outlives this assignment, so it escapes into the long-lived container — a growing capture set
+  // that capture checking cannot yet track. The escape is sound by construction: `onChange` is
+  // re-bound on every `run` (so it never references a finished form) and is only ever called from
+  // within a mutation while that form is live. Hence the single, localised `unsafeAssumePure`.
+  private[ultimatum] def bindWake(wake: () => Unit): Unit =
+    onChange = caps.unsafe.unsafeAssumePure(wake)
 
   def contents: Series[Pane] = series
   def size: Int = series.length

@@ -51,7 +51,7 @@ def panel
     maxWidth:  Optional[Int] = Unset,
     minHeight: Int           = 0,
     maxHeight: Optional[Int] = Unset )
-  ( content: Extent ?=> Unit )
+  ( content: Extent ?-> Unit )
 :   Pane =
 
   val sizing = Sizing(fraction, minWidth, maxWidth, minHeight, maxHeight)
@@ -206,10 +206,15 @@ def paint(root: Canvas, pane: Pane): Unit =
 
   val placement = pane.frame.arrange(Rect(0, 0, root.width, height))
 
-  pane.leaves.zip(placement.cells).each: pair =>
-    val extent = FlowExtent(root, pair._2)
+  // An explicit iterator loop rather than `.each`: the per-cell closure constructs a `FlowExtent`
+  // over the `root` canvas (a capability), and capture checking rejects that fresh capability
+  // leaking out through the `.each` lambda's inferred parameter type.
+  val cells = pane.leaves.zip(placement.cells).iterator
+  while cells.hasNext do
+    val (leaf, rect) = cells.next()
+    val extent = FlowExtent(root, rect)
 
-    pair._1 match
+    leaf match
       case Pane.Leaf(_, content)   => content(extent)
       case Pane.Widget(_, widget)  => widget.render(extent, false)
       case _                       => ()
