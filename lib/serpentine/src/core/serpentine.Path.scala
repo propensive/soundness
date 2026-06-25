@@ -47,10 +47,8 @@ import symbolism.*
 import vacuous.*
 
 object Path:
-  inline given pathOnLinux: (Path on Linux) is Representative of Paths = !!
-  inline given pathOnWindows: (Path on Windows) is Representative of Paths = !!
-  inline given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!
-  inline given pathOnLocal: (Path on Local) is Representative of Paths = !!
+  // Platform `Representative` instances (`Path on Linux`, …) live with the OS platform types in
+  // galilei; the generic `Path` algebra stays here.
 
   @targetName("Root")
   object % extends Path(t"/"):
@@ -59,6 +57,7 @@ object Path:
 
 
   given decodable: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
+  =>  (Tactic[PathError]^)
   =>  (Path on filesystem) is Decodable in Text =
 
     text =>
@@ -70,6 +69,7 @@ object Path:
 
 
   given decodable2: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
+  =>  (Tactic[PathError]^)
   =>  (Path on filesystem under root) is Decodable in Text =
 
     text =>
@@ -88,12 +88,16 @@ object Path:
   =>  ( radical: Tactic[PathError] ?=> Radical on filesystem )
   =>  (Path on filesystem) is Instantiable across Paths from Paths.Trusted =
 
-    given Radical on filesystem = radical(using strategies.throwUnsafely)
+    // The input is already-trusted path data, so decoding it cannot fail; supply a
+    // throwing `Tactic` so both the `Radical` and the `decode` stay total.
+    given Tactic[PathError] = strategies.throwUnsafely
+    given Radical on filesystem = radical
     _.text.decode[Path on filesystem]
 
 
   given instantiable: [filesystem: Filesystem]
   =>  Radical on filesystem
+  =>  (Tactic[PathError]^)
   =>  (Path on filesystem) is Instantiable across Paths from Text =
 
     _.decode[Path on filesystem]
@@ -131,7 +135,7 @@ object Path:
     _.encode
 
 
-  private def conversion[from, to](lambda: from => to): Conversion[from, to] = lambda(_)
+  private def conversion[from, to](lambda: from -> to): Conversion[from, to] = lambda(_)
 
 
   inline given convert: [topic, root, filesystem, path <: Path of topic under root]
@@ -142,6 +146,7 @@ object Path:
 
   transparent inline given quotient: [filesystem, root, path <: Path on filesystem under root]
   =>  ( radical: root is Radical on filesystem )
+  =>  (Tactic[PathError]^)
   =>  path is Quotient =
 
     ( path =>
@@ -221,7 +226,12 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
       summonFrom:
         case limit: (Limit is Submissible on `filesystem`)                 => limit.check(root)
-        case radical: (Limit is Radical on `filesystem`)                   => radical.decode(root)
+
+        // `root` already belongs to a valid `Path`, so re-validating it cannot fail in
+        // practice; decode it totally (a genuine mismatch throws) so `on` stays total
+        // and usable from `Conversion`.
+        case radical: (Limit is Radical on `filesystem`) =>
+          radical.decode(root)(using strategies.throwUnsafely)
 
         case filesystem: (`filesystem` is (Filesystem { type UniqueRoot = true })) =>
           infer[Plane is (Filesystem { type UniqueRoot = true })]

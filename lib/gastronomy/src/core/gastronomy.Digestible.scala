@@ -130,7 +130,7 @@ trait Digestible extends Typeclass:
 
     def digest(digestion: Digestion, value: Self): Unit
 
-  def contramap[self2](lambda: self2 => Self): self2 is Digestible = new Digestible:
+  def contramap[self2](lambda: self2 -> Self): self2 is Digestible = new Digestible:
     type Self = self2
 
     def digest(digestion: Digestion, value: Self): Unit =

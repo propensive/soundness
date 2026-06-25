@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import denominative.*
 import distillate.*
+import galilei.*
 import gossamer.*
 import hieroglyph.*, charEncoders.asciiEncoder, textMetrics.uniformMetric
 import hypotenuse.*, arithmeticOptions.overflow.unchecked
@@ -291,7 +292,7 @@ object Tar:
           if sparse.segments.length > 4 then array(482) = 1.toByte
           array.place(formatLong(sparse.realSize, 12), 483.z)
 
-      val total = array.iterator.map(_.bits.u8.u32).reduce(_ + _)
+      val total = array.iterator.map(_.toInt & 0xff).sum.bits.u32
       array.place(format(total, 8), 148.z)
 
     def serialize: LazyList[Data] = this match

@@ -41,7 +41,7 @@ object Emit:
   // Builds an `Emit` whose `record` simply runs `handler` as a side-effect at the emit point — the
   // basis of `handle`, where each covered error type gets an `Emit` backed by its case body.
   def apply[error <: Exception](handler: error => Unit)(using diagnostics0: Diagnostics)
-  :   Emit[error]^{handler} =
+  :   Emit[error]^ =
 
     new Emit[error]:
       def diagnostics: Diagnostics = diagnostics0
@@ -58,13 +58,13 @@ object Emit:
 // emitter captures only an effect-polymorphic lambda (or nothing). Combinators that retain the
 // receiver and a user lambda — `contramap`, `Emit.apply` — annotate their result with that capture
 // set, exactly as `LzyList.map` returns `^{xs, f}`.
-trait Emit[-error <: Exception] extends Findable:
+trait Emit[-error <: Exception] extends Findable, caps.ExclusiveCapability:
   private inline def emitter: this.type = this
   def diagnostics: Diagnostics
   def record(error: Diagnostics ?=> error): Unit
 
   def contramap[error2 <: Exception](lambda: error2 => error)
-  :   Emit[error2]^{this, lambda} =
+  :   Emit[error2]^ =
 
     new Emit[error2]:
       def diagnostics: Diagnostics = emitter.diagnostics

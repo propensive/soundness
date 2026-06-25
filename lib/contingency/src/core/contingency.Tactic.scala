@@ -46,7 +46,7 @@ trait Tactic[-error <: Exception] extends Emit[error]:
   def certify(): Unit
 
   override def contramap[error2 <: Exception](lambda: error2 => error)
-  :   Tactic[error2]^{this, lambda} =
+  :   Tactic[error2]^ =
 
     new Tactic[error2]:
       def diagnostics: Diagnostics = tactic.diagnostics

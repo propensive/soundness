@@ -73,6 +73,14 @@ trait Readable1 extends Readable2:
     value => aggregable.aggregate(streamable.stream(value))
 
 object Readable extends Readable1:
+  // Direct, whole-`Data` instances: when the entire content is already in hand as one `Data`,
+  // decode it in a single step rather than wrapping it in a one-element `Stream` and aggregating.
+  // These are concrete (`Self = Data`), so they take precedence over the generic composed pipelines
+  // by specificity — a whole-file `path.read[Text]` is then a genuinely direct read.
+  given dataData: Data is Readable to Data = identity(_)
+
+  given dataText: (decoder: CharDecoder^) => Data is Readable to Text = decoder.decoded(_)
+
   given dataToData: [source, result]
   =>  ( streamable: source is Streamable by Data )
   =>  ( aggregable: result is Aggregable by Data )

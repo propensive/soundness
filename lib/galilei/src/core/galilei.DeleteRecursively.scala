@@ -33,8 +33,10 @@
 package galilei
 
 import beneficence.*
+import contingency.*
 import prepositional.*
 import serpentine.*
 
 trait DeleteRecursively extends Planar, Findable:
-  def conditionally[ResultType](path: Path on Plane)(operation: => ResultType): ResultType
+  def conditionally[ResultType](path: Path on Plane)(operation: => ResultType)
+  :   ResultType raises IoError

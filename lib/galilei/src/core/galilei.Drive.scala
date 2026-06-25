@@ -32,14 +32,21 @@
                                                                                                   */
 package galilei
 
-import anticipation.*
-import contingency.*
+import gossamer.*
 import prepositional.*
-import turbulence.*
+import serpentine.*
 
-object Handle:
-  given streamable: Tactic[StreamError] => Handle is Streamable by Data = _.reader()
-  given writable: Emit[StreamError] => Handle is Writable by Data = _.writer(_)
+object Drive:
+  def apply(letter: Char): Drive = new Drive(letter)
+  def unapply(drive: Drive): Some[Char] = Some(drive.letter)
 
-class Handle(val reader: () => Stream[Data], val writer: Stream[Data] => Unit)
-extends caps.ExclusiveCapability
+  given submissible: Drive is Submissible on Windows = _ => ()
+
+class Drive(val letter: Char) extends Root(t"$letter:\\"):
+  type Plane = Windows
+
+  override def equals(that: Any): Boolean = that.absolve match
+    case drive: Drive => letter == drive.letter
+    case _            => false
+
+  override def hashCode: Int = letter.hashCode

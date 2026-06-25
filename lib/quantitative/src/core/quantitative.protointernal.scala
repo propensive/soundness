@@ -101,10 +101,16 @@ trait protointernal:
   def readUnitPower(using Quotes)(typeRepr: quotes.reflect.TypeRepr): UnitPower =
     import quotes.reflect.*
 
-    typeRepr.asMatchable.absolve match
-      case AppliedType(unit, List(constantType)) => constantType.asMatchable.absolve match
+    // Capture checking can wrap inferred types in `@caps.internal.inferred` `AnnotatedType`s, which
+    // these structural matches don't expect; strip annotations (and dealias) before each match.
+    def strip(repr: TypeRepr): TypeRepr = repr.dealias.asMatchable match
+      case AnnotatedType(underlying, _) => strip(underlying)
+      case other                        => other
+
+    strip(typeRepr).asMatchable.absolve match
+      case AppliedType(unit, List(constantType)) => strip(constantType).asMatchable.absolve match
         case ConstantType(constant) => constant.absolve match
-          case IntConstant(power) => unit.asMatchable.absolve match
+          case IntConstant(power) => strip(unit).asMatchable.absolve match
             case unit@TypeRef(_, _) =>
               UnitPower(UnitRef(unit.asType, unit.show), power)
 

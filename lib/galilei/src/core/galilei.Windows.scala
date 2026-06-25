@@ -30,24 +30,48 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package galilei
 
 import anticipation.*
+import contingency.*
+import denominative.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
+import serpentine.*
+import vacuous.*
 
-object Linux:
-  type Rules = MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""]
+object Windows:
+  type Rules =
+    MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"] &
+      MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"] &
+      MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "] &
+      MustNotMatch["(?i)CON(\\.[^.]+)?"] & MustNotMatch["(?i)PRN(\\.[^.]+)?"] &
+      MustNotMatch["(?i)AUX(\\.[^.]+)?"] & MustNotMatch["(?i)NUL(\\.[^.]+)?"] &
+      MustNotMatch["(?i)COM[0-9](\\.[^.]+)?"] & MustNotMatch["(?i)LPT[0-9](\\.[^.]+)?"]
 
-  inline given nominative: Linux is Nominative under Rules = !!
+  inline given Windows is Nominative under Rules = !!
 
-  given filesystem: Linux is Filesystem:
-    type UniqueRoot = true
-    val name: Text = "Linux"
-    val separator: Text = t"/"
-    val self: Text = t"."
-    val parent: Text = t".."
+  inline given pathOnWindows: (Path on Windows) is Representative of Paths = !!
 
-trait Linux extends Posix
+  given filesystem: Windows is Filesystem:
+    type UniqueRoot = false
+
+    val name: Text = "Windows"
+    val separator: Text = "\\"
+    val self: Text = "."
+    val parent: Text = ".."
+
+  given radical: Drive is Radical:
+    type Plane = Windows
+
+    def decode(text: Text): Drive raises PathError =
+      if text.length >= 3 && text.at(Sec) == ':' && text.at(Ter) == '\\'
+      then Drive(text.at(Prim).vouch)
+      else abort(PathError(_.InvalidRoot))
+
+    def length(text: Text): Int raises PathError = 3
+    def encode(drive: Drive): Text = t"${drive.letter}:\\"
+
+sealed trait Windows extends Platform

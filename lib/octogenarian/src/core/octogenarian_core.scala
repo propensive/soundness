@@ -44,9 +44,10 @@ import prepositional.*
 import serpentine.*
 
 package gitCommands:
-  given environmentDefaultGitCommand: (WorkingDirectory, GitEvent is Loggable)
+  given environmentDefaultGitCommand: ( WorkingDirectory, GitEvent is Loggable, Tactic[NameError],
+                                        Tactic[PathError], Tactic[IoError], Tactic[ExecError] )
   =>  (Path on Linux) is Instantiable across Paths from Text
-  =>  GitCommand raises NameError raises PathError raises IoError raises ExecError =
+  =>  GitCommand =
 
     val path: Path on Linux = sh"which git"()
     GitCommand(path.encode)

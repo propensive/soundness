@@ -37,6 +37,7 @@ import java.nio as jn
 
 import anticipation.*
 import contingency.*
+import hieroglyph.*
 import prepositional.*
 import rudiments.*
 import symbolism.*
@@ -45,6 +46,12 @@ import vacuous.*
 object Streamable:
   given bytes: Data is Streamable by Data = Stream(_)
   given text: [textual <: Text] => textual is Streamable by Text = Stream(_)
+
+  // The encoder-bridged counterpart of `Aggregable`'s `bytesText` (`Text is Aggregable by Data`),
+  // so a `Text` can be streamed as `Data` directly — e.g. written to a file with `path.write`.
+  given textData: (encoder: CharEncoder) => Text is Streamable by Data =
+    text => encoder.encoded(Stream(text))
+
   given stream: [element] => Stream[element] is Streamable by element = identity(_)
 
   given inCharReader: (stdio: Stdio) => In.type is Streamable by Char = in =>

@@ -32,14 +32,31 @@
                                                                                                   */
 package galilei
 
+import scala.quoted.*
+
 import anticipation.*
 import contingency.*
+import distillate.*
+import fulminate.*
+import gigantism.*
 import prepositional.*
-import turbulence.*
+import serpentine.*
+import vacuous.*
 
-object Handle:
-  given streamable: Tactic[StreamError] => Handle is Streamable by Data = _.reader()
-  given writable: Emit[StreamError] => Handle is Writable by Data = _.writer(_)
+object internal:
+  // The platform-aware `p"…"` literal macro: it decodes the string as a POSIX path, falling back to
+  // a Windows path. It lives here with the OS platform types (`Posix`/`Windows`/`Drive`), whose
+  // `Radical` givens it needs at expansion time; the generic compile-time path helpers stay in
+  // `serpentine.internal`.
+  def path(context: Expr[StringContext]): Macro[Path] =
+    val name: String = context.valueOrAbort.parts.head
 
-class Handle(val reader: () => Stream[Data], val writer: Stream[Data] => Unit)
-extends caps.ExclusiveCapability
+    safely(name.tt.decode[Path on Posix]).let: path =>
+      '{Path[Posix, %.type, Tuple](${Expr(path.root)}, ${Expr.ofList(path.descent.map(Expr(_)))})}
+
+    . or:
+        safely(name.tt.decode[Path on Windows]).let: path =>
+          val varargs = Expr.ofList(path.descent.map(Expr(_)))
+          '{Path[Windows, Drive, Tuple](${Expr(path.root)}, $varargs)}
+
+        . or(halt(66, m"The path ${name} is not a valid Windows or POSIX path"))

@@ -30,15 +30,43 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package galilei
 
+import anticipation.*
+import contingency.*
+import gossamer.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
+import serpentine.*
 
-object Dos:
-  type Rules = MustMatch["[^.]{1,8}(\\.[^.]{1,3})?"] & MustNotContain[" "] & MustMatch["[!-~]*"]
+object MacOs:
+  type Rules =
+    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""] &
+      MustNotEqual["Icon\r"] & MustNotContain[":"]
 
-  inline given Dos is Nominative under Rules = !!
+  inline given MacOs is Nominative under Rules = !!
 
-sealed trait Dos
+  inline given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!
+
+  given filesystem: MacOs is Filesystem:
+    type UniqueRoot = true
+
+    val name: Text = "Mac OS"
+    val separator: Text = t"/"
+    val self: Text = t"."
+    val parent: Text = t".."
+
+  given radical: %.type is Radical:
+    type Plane = MacOs
+
+    def length(text: Text): Int raises PathError = 1
+
+    def decode(text: Text): %.type raises PathError =
+      if text.starts(t"/") then % else abort(PathError(_.InvalidRoot))
+
+    def encode(root: %.type): Text = t"/"
+
+  given submissible: %.type is Submissible on MacOs = _ => ()
+
+sealed trait MacOs extends Posix

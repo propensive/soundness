@@ -32,14 +32,42 @@
                                                                                                   */
 package galilei
 
+import java.nio.file as jnf
+
 import anticipation.*
 import contingency.*
+import inimitable.*
 import prepositional.*
-import turbulence.*
+import rudiments.*
+import serpentine.*
+import turbulence.Readable
+import vacuous.*
 
-object Handle:
-  given streamable: Tactic[StreamError] => Handle is Streamable by Data = _.reader()
-  given writable: Emit[StreamError] => Handle is Writable by Data = _.writer(_)
+import IoError.Operation
 
-class Handle(val reader: () => Stream[Data], val writer: Stream[Data] => Unit)
-extends caps.ExclusiveCapability
+// `Platform` is the common base of galilei's OS filesystem platform types (`Posix`/`Linux`/`MacOs`/
+// `Windows`/`Local`). It exists so that givens placed in its companion — notably the whole-file
+// `Readable` instance — are in the implicit scope of every `Path on <platform>`, making
+// `path.read` discoverable without an explicit import.
+object Platform:
+  given uuid: [uuid <: Uuid, filesystem <: Platform] => uuid is Admissible on filesystem =
+    Admissible.unchecked[uuid, filesystem]
+
+  // Read a path in its entirety as a single, direct operation: the whole file is read into memory
+  // at once, holding no handle and needing no scope — unlike streaming a path, which must be
+  // `open`ed and consumed within a scope. The whole `Data` is handed to a `Data is Readable to
+  // result`, which decodes it directly when a direct instance exists (e.g. `Text`/`Data`) and
+  // otherwise falls back to composing `Streamable` with `Aggregable`. Placing it here (rather than
+  // as a `read` extension, which would be ambiguous with turbulence's generic one) makes
+  // `path.read[…]` resolve through turbulence's `read` with no extra import for any `Path on …`.
+  given pathReadable: [plane <: Platform: Filesystem, result]
+  =>  ( readable: Data is Readable to result )
+  =>  Tactic[IoError]
+  =>  (Path on plane) is Readable to result =
+    path =>
+      val bytes: Data = path.protect(Operation.Read):
+        jnf.Files.readAllBytes(path.javaPath).nn.immutable(using Unsafe)
+
+      readable.read(bytes)
+
+trait Platform

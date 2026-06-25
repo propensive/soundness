@@ -30,27 +30,15 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package galilei
 
-import anticipation.*
-import gossamer.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
 
-object MacOs:
-  type Rules =
-    MustNotContain["/"] & MustNotEqual["."] & MustNotEqual[".."] & MustNotEqual[""] &
-      MustNotEqual["Icon\r"] & MustNotContain[":"]
+object Dos:
+  type Rules = MustMatch["[^.]{1,8}(\\.[^.]{1,3})?"] & MustNotContain[" "] & MustMatch["[!-~]*"]
 
-  inline given MacOs is Nominative under Rules = !!
+  inline given Dos is Nominative under Rules = !!
 
-  given filesystem: MacOs is Filesystem:
-    type UniqueRoot = true
-
-    val name: Text = "Mac OS"
-    val separator: Text = t"/"
-    val self: Text = t"."
-    val parent: Text = t".."
-
-sealed trait MacOs extends Posix
+sealed trait Dos

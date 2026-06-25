@@ -35,7 +35,7 @@ package ziggurat
 import anticipation.*
 import contingency.*
 import distillate.*
-import galilei.*
+import galilei.*, galilei.Platform.pathReadable
 import gossamer.*
 import hellenism.*
 import hieroglyph.*
@@ -48,13 +48,9 @@ import vacuous.*
 import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
 import classloaders.threadContextClassloader
-import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
-import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.overwritePreexisting.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
 import textSanitizers.skipSanitizer
 
 object Xeq:
@@ -163,9 +159,7 @@ object Xeq:
   private def write(output: Path on Linux, data: Data): Unit = unsafely:
     output.create[File]()
 
-    output.open: handle =>
-      Stream(data).writeTo(handle)
-
+    output.write(data)
     output.executable() = true
 
 
@@ -187,7 +181,7 @@ object Xeq:
             if withoutPrefix.ends(ExeSuffix) then withoutPrefix.skip(ExeSuffix.length, Rtl)
             else withoutPrefix
 
-          val data: Data = path.open(_.read[Data])
+          val data: Data = path.read[Data]
           val gzip = !label.starts(t"windows")
           Payload(label, data, gzip)
 
@@ -195,7 +189,7 @@ object Xeq:
 
     val dataPayload: Optional[Payload] =
       if dataPath.exists() then
-        val bytes: Data = dataPath.open(_.stream[Data].read[Data])
+        val bytes: Data = dataPath.read[Data]
         Payload(DataName, bytes, gzip = false)
       else
         Unset
@@ -213,11 +207,11 @@ object Xeq:
   private def onlineLauncherMain(output: Text, jar: Text, manifest: Text, baseUrl: Text): Unit =
     unsafely:
       val outputPath: Path on Linux = output.decode[Path on Linux]
-      val jarData: Data = jar.decode[Path on Linux].open(_.stream[Data].read[Data])
+      val jarData: Data = jar.decode[Path on Linux].read[Data]
       val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
 
       val entries: List[(Text, Text, Text)] =
-        manifest.decode[Path on Linux].open(_.read[Text]).cut(t"\n").map(_.trim)
+        manifest.decode[Path on Linux].read[Text].cut(t"\n").map(_.trim)
         . filter(_ != t"")
         . map: line =>
             val fields: List[Text] = line.cut(t"\t").to(List)

@@ -47,22 +47,27 @@ import abstractables.instantAbstractable
 
 object Timeout:
   def apply[duration: Abstractable across Durations to Long](timeout0: duration)(action: => Unit)
-    ( using Monitor, Probate )
-  :   Timeout^{action} =
+    ( using Monitor^, Probate^ )
+  :   Timeout^ =
 
     val timeout = timeout0.generic/1_000_000L
 
-    def process(expiry: juca.AtomicLong): Task[Unit] = task(n"timeout"):
-      while jl.System.currentTimeMillis < expiry.get()
-      do sleep(expiry.get())
+    // The timeout's own watchdog task is supervised bookkeeping recreated on each `reset`; its
+    // handle is held only to cancel it, never returned, so it is laundered to pure to avoid
+    // threading a per-call `fresh` result through the stored `makeProcess` factory.
+    def process(expiry: juca.AtomicLong): Task[Unit] = caps.unsafe.unsafeAssumePure:
+      task(n"timeout"):
+        while jl.System.currentTimeMillis < expiry.get()
+        do sleep(expiry.get())
 
-      expiry.set(Long.MinValue)
-      action
+        expiry.set(Long.MinValue)
+        action
 
     new Timeout(timeout, process)
 
 
-class Timeout private(duration: Long, makeProcess: juca.AtomicLong => Task[Unit]):
+class Timeout private(duration: Long, makeProcess: (juca.AtomicLong => Task[Unit])^)
+extends caps.ExclusiveCapability:
   private val expiry: juca.AtomicLong = juca.AtomicLong(jl.System.currentTimeMillis + duration)
 
   private var process: Task[Unit] = makeProcess(expiry)

@@ -30,30 +30,16 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package serpentine
+package anticipation
 
-import anticipation.*
-import nomenclature.*
+import galilei.*
 import prepositional.*
 import rudiments.*
+import serpentine.*
 
-object Windows:
-  type Rules =
-    MustNotContain["\\"] & MustNotContain["/"] & MustNotContain[":"] &
-      MustNotContain["*"] & MustNotContain["?"] & MustNotContain["\""] & MustNotContain["<"] &
-      MustNotContain[">"] & MustNotContain["|"] & MustNotEnd["."] & MustNotEnd[" "] &
-      MustNotMatch["(?i)CON(\\.[^.]+)?"] & MustNotMatch["(?i)PRN(\\.[^.]+)?"] &
-      MustNotMatch["(?i)AUX(\\.[^.]+)?"] & MustNotMatch["(?i)NUL(\\.[^.]+)?"] &
-      MustNotMatch["(?i)COM[0-9](\\.[^.]+)?"] & MustNotMatch["(?i)LPT[0-9](\\.[^.]+)?"]
-
-  inline given Windows is Nominative under Rules = !!
-
-  given filesystem: Windows is Filesystem:
-    type UniqueRoot = false
-
-    val name: Text = "Windows"
-    val separator: Text = "\\"
-    val self: Text = "."
-    val parent: Text = ".."
-
-sealed trait Windows
+package interfaces.paths:
+  inline given pathOnLinux: (Path on Linux) is Representative of Paths = !!
+  inline given pathOnWindows: (Path on Windows) is Representative of Paths = !!
+  inline given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!
+  inline given pathOnLocal: (Path on Local) is Representative of Paths = !!
+  inline given pathOnPosix: (Path on Posix) is Representative of Paths = !!

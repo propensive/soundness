@@ -192,7 +192,11 @@ extension [element](stream: Stream[element])
     val out: Spool[element2] = Spool()
 
     async:
-      stream.map: element => async(out.put(lambda(element)))
+      stream.each: element =>
+        // Fan out: each element is mapped on its own supervised worker that puts the result into the
+        // spool. (`each`, not `map`: the source must be drained to actually spawn the workers.)
+        async(out.put(lambda(element)))
+        ()
 
     out.stream
 
@@ -225,7 +229,7 @@ extension (obj: Stream.type)
   def multiplex[element](streams: Stream[element]*)(using Monitor): Stream[element] =
     multiplexer(streams*).stream
 
-  def multiplexer[element](streams: Stream[element]*)(using Monitor): Multiplexer[Any, element] =
+  def multiplexer[element](streams: Stream[element]*)(using Monitor): Multiplexer[Any, element]^ =
     Multiplexer[Any, element]().tap: multiplexer =>
       streams.zipWithIndex.each: (stream, index) =>
         multiplexer.add(index, stream)
@@ -237,15 +241,22 @@ extension (obj: Stream.type)
   def metronome[generic: Abstractable across Durations to Long](duration: generic)(using Monitor)
   :   Stream[Unit] =
 
+    val spool: Spool[Unit] = Spool()
     val startTime: Long = jl.System.currentTimeMillis
 
-    def recur(iteration: Int): Stream[Unit] =
-      try
+    // Ticking requires the `Monitor` (to `sleep`), which a pure lazy `Stream` cannot itself capture,
+    // so it runs as a supervised task that pushes ticks into a `Spool`. When the scope is torn down a
+    // cancelled `sleep` raises `AsyncError`; the spool is then stopped so the consumer's stream ends.
+    async:
+      @tailrec
+      def recur(iteration: Int): Unit =
         sleep(startTime + duration.generic/1_000_000L*iteration)
-        () #:: recur(iteration + 1)
-      catch case error: AsyncError => Stream()
+        spool.put(())
+        recur(iteration + 1)
 
-    recur(0)
+      try recur(0) catch case _: AsyncError => spool.stop()
+
+    spool.stream
 
 
 extension (bytes: Data)

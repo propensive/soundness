@@ -80,7 +80,7 @@ object Git:
             (Path on Linux) is Decodable in Text,
             Tactic[ExecError] )
     ( using command: GitCommand )
-  :   Worktree logs GitEvent raises NameError =
+  :   Worktree raises NameError logs GitEvent =
 
     try
       throwErrors[PathError | IoError]:
@@ -103,7 +103,7 @@ object Git:
             (Path on Linux) is Decodable in Text,
             Tactic[ExecError] )
     ( using command: GitCommand )
-  :   GitRepo logs GitEvent raises NameError =
+  :   GitRepo raises NameError logs GitEvent =
 
     try
       throwErrors[PathError | IoError]:
@@ -126,7 +126,7 @@ object Git:
             Tactic[GitError],
             Tactic[ExecError],
             WorkingDirectory )
-  :   GitProcess[Worktree] logs GitEvent raises NameError =
+  :   GitProcess[Worktree] raises NameError logs GitEvent =
 
     val sourceText = inline source match
       case source: SshUrl => source.text
@@ -149,7 +149,7 @@ object Git:
             (Path on Linux) is Decodable in Text,
             Tactic[ExecError],
             GitCommand )
-  :   GitProcess[Worktree] logs GitEvent raises PathError raises NameError raises GitError =
+  :   GitProcess[Worktree] raises PathError raises NameError raises GitError logs GitEvent =
 
     val sourceText = inline source match
       case source: SshUrl => source.text
@@ -171,7 +171,7 @@ object Git:
             (Path on Linux) is Decodable in Text,
             Tactic[ExecError],
             GitCommand )
-  :   GitProcess[GitRepo] logs GitEvent raises PathError raises NameError raises GitError =
+  :   GitProcess[GitRepo] raises PathError raises NameError raises GitError logs GitEvent =
 
     val sourceText = inline source match
       case source: SshUrl => source.text
@@ -190,7 +190,7 @@ object Git:
     ( using gitError:         Tactic[GitError],
             exec:             Tactic[ExecError],
             workingDirectory: WorkingDirectory )
-  :   GitProcess[Worktree] logs GitEvent raises NameError =
+  :   GitProcess[Worktree] raises NameError logs GitEvent =
 
     val worktree = init(targetPath)
     val fetch = worktree.repo.fetch(1, source, commit)
@@ -210,9 +210,11 @@ object Git:
             WorkingDirectory,
             (Path on Linux) is Decodable in Text,
             Tactic[ExecError],
+            Tactic[PathError],
+            Tactic[NameError],
             GitCommand )
     ( using gitError: Tactic[GitError] )
-  :   GitProcess[Worktree] logs GitEvent raises PathError raises NameError =
+  :   GitProcess[Worktree] logs GitEvent =
 
     val target: Path on Linux =
       try targetPath.generic.decode[Path on Linux]
@@ -243,9 +245,11 @@ object Git:
             WorkingDirectory,
             (Path on Linux) is Decodable in Text,
             Tactic[ExecError],
+            Tactic[PathError],
+            Tactic[NameError],
             GitCommand )
     ( using gitError: Tactic[GitError] )
-  :   GitProcess[GitRepo] logs GitEvent raises PathError raises NameError =
+  :   GitProcess[GitRepo] logs GitEvent =
 
     val target: Path on Linux =
       try targetPath.generic.decode[Path on Linux]
