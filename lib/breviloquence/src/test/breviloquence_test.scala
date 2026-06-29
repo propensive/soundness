@@ -40,6 +40,10 @@ import errorDiagnostics.stackTracesDiagnostics
 case class Point(x: Int, y: Int) derives CanEqual
 case class Person(name: Text, age: Int) derives CanEqual
 case class Wrapper(values: List[Int], label: Text) derives CanEqual
+
+// Recursion through a collection (#1429) and a generic product used over a recursive type.
+case class Tree(value: Text, children: List[Tree]) derives CanEqual
+case class Boxed[value](value: value) derives CanEqual
 case class Team(lead: Person, size: Int) derives CanEqual
 case class OptPerson(name: Text, age: Optional[Int]) derives CanEqual
 case class Renamed
@@ -247,6 +251,18 @@ object Tests extends Suite(m"Breviloquence Tests"):
         val cbor = original.cbor
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(cbor))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[Wrapper] == original
+      . assert(identity)
+
+      val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+
+      test(m"Round-trip a type recursive through a List"):
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(tree.cbor))
+        Cbor.ast(Cbor.Ast.parse(bytes)).as[Tree] == tree
+      . assert(identity)
+
+      test(m"A generic product over a recursive type stays structurally derived"):
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(Boxed(tree).cbor))
+        Cbor.ast(Cbor.Ast.parse(bytes)).as[Boxed[Tree]] == Boxed(tree)
       . assert(identity)
 
     suite(m"Aggregable"):
