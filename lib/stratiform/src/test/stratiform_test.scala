@@ -67,6 +67,12 @@ object Tests extends Suite(m"Stratiform Tests"):
   case class PersonAge(name: Text, age: Int) derives CanEqual
   case class Team(name: Text, members: List[Person]) derives CanEqual
 
+  // Recursion through a collection (#1429), direct recursion via Optional, and a generic product
+  // used over a recursive type (which must stay structurally derived, not mis-read as a codec).
+  case class Tree(value: Text, children: List[Tree]) derives CanEqual
+  case class TreeOpt(value: Text, child: Optional[TreeOpt]) derives CanEqual
+  case class Boxed[value](value: value) derives CanEqual
+
   enum Shape2 derives CanEqual:
     case Circle(radius: Int)
     case Rectangle(width: Int, height: Int)
@@ -251,6 +257,27 @@ object Tests extends Suite(m"Stratiform Tests"):
         val shape: Tests.Shape2 = Tests.Shape2.Dot
         shape.encode.as[Tests.Shape2]
       . assert(_ == Tests.Shape2.Dot)
+
+      val tree =
+        Tests.Tree(t"root", List(Tests.Tree(t"a", Nil),
+            Tests.Tree(t"b", List(Tests.Tree(t"c", Nil)))))
+
+      test(m"a type recursive through a List round-trips"):
+        tree.encode.as[Tests.Tree]
+      . assert(_ == tree)
+
+      test(m"a directly-recursive type via Optional round-trips"):
+        val value = Tests.TreeOpt(t"a", Tests.TreeOpt(t"b", Unset))
+        value.encode.as[Tests.TreeOpt]
+      . assert(_ == Tests.TreeOpt(t"a", Tests.TreeOpt(t"b", Unset)))
+
+      test(m"a generic product over a recursive type stays structurally derived"):
+        Tests.Boxed(tree).encode.as[Tests.Boxed[Tests.Tree]]
+      . assert(_ == Tests.Boxed(tree))
+
+      test(m"a decoder for a collection of a recursive type summons at the top level"):
+        summon[List[Tests.Tree] is Tel.Decodable]
+      . assert(_ != null)
 
     suite(m"sum-type schema derivation"):
       test(m"a sum derives a select with one variant per case"):

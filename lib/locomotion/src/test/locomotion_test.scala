@@ -66,6 +66,10 @@ case class Fixed(@field(5) value: B32) derives CanEqual
 case class Labels(@field(1) entries: Map[Text, Text]) derives CanEqual
 case class Counts(@field(1) counts: Map[Text, Int]) derives CanEqual
 
+// Recursion through a collection (#1429) and a generic product used over a recursive type.
+case class Tree(@field(1) value: Text, @field(2) children: List[Tree]) derives CanEqual
+case class Boxed[value](@field(1) value: value) derives CanEqual
+
 object Tests extends Suite(m"Locomotion Protobuf Tests"):
   def run(): Unit =
     def wire[value: Encodable in Protobuf](value: value): List[Int] =
@@ -131,6 +135,16 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       test(m"empty repeated field writes nothing"):
         wire(Tags(Nil))
       . assert(_ == Nil)
+
+      val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+
+      test(m"a type recursive through a List round-trips"):
+        Stream(tree.protobuf.encode).read[Protobuf].as[Tree]
+      . assert(_ == tree)
+
+      test(m"a generic product over a recursive type stays structurally derived"):
+        Stream(Boxed(tree).protobuf.encode).read[Protobuf].as[Boxed[Tree]]
+      . assert(_ == Boxed(tree))
 
     suite(m"Optional presence"):
       test(m"a set optional round-trips"):

@@ -99,6 +99,13 @@ case class Firm(boss: Worker, deputy: Worker) derives CanEqual
 
 case class Crew(lead: Worker, members: List[Worker]) derives CanEqual
 
+// Recursion through a collection (#1429), direct recursion, recursion through a map, and a generic
+// product used over a recursive type (which must stay structurally derived, not mis-read as a codec).
+case class Tree(value: Text, children: List[Tree]) derives CanEqual
+case class TreeOpt(value: Text, child: Optional[TreeOpt]) derives CanEqual
+case class Forest(trees: Map[Text, Tree]) derives CanEqual
+case class Boxed[value](value: value) derives CanEqual
+
 object Tests extends Suite(m"Jacinta Tests"):
   def run(): Unit =
     suite(m"Parsing tests"):
@@ -417,6 +424,38 @@ object Tests extends Suite(m"Jacinta Tests"):
         import dynamicJsonAccess.enabled, jsonConversion.encodable
         org.lens(_.extra = 9).selectDynamic("extra").as[Int]
       . assert(_ == 9)
+
+    suite(m"Recursive derivation tests"):
+      val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+
+      val treeJson =
+        t"""{"value":"root","children":[{"value":"a","children":[]},{"value":"b","children":[{"value":"c","children":[]}]}]}"""
+
+      test(m"Derive and encode a tree recursive through a List"):
+        tree.json.show
+      . assert(_ == treeJson)
+
+      test(m"Derive and decode a tree recursive through a List"):
+        treeJson.read[Json].as[Tree]
+      . assert(_ == tree)
+
+      test(m"Round-trip a directly-recursive type via Optional"):
+        val value = TreeOpt(t"a", TreeOpt(t"b", Unset))
+        value.json.show.read[Json].as[TreeOpt]
+      . assert(_ == TreeOpt(t"a", TreeOpt(t"b", Unset)))
+
+      test(m"Round-trip recursion through a Map value"):
+        val forest = Forest(Map(t"x" -> Tree(t"x", Nil), t"y" -> tree))
+        forest.json.show.read[Json].as[Forest]
+      . assert(_ == Forest(Map(t"x" -> Tree(t"x", Nil), t"y" -> tree)))
+
+      test(m"A generic product over a recursive type stays structurally derived"):
+        Boxed(tree).json.show.read[Json].as[Boxed[Tree]]
+      . assert(_ == Boxed(tree))
+
+      test(m"Summon a decoder for a collection of a recursive type at the top level"):
+        summon[List[Tree] is Decodable in Json]
+      . assert(_ != null)
 
     suite(m"Json construction"):
       test(m"Json.make with one field"):

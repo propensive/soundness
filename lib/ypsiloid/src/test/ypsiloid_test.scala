@@ -56,6 +56,10 @@ enum YStatus derives CanEqual:
   @name(t"gone")     case Removed(at: Int)
                      case Pending(at: Int)
 
+// Recursion through a collection (#1429) and a generic product used over a recursive type.
+case class Tree(value: Text, children: List[Tree]) derives CanEqual
+case class Boxed[value](value: value) derives CanEqual
+
 object Tests extends Suite(m"Ypsiloid Tests"):
   def run(): Unit =
     suite(m"Plain scalar parsing"):
@@ -720,6 +724,16 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       test(m"Round-trip a list of case classes"):
         List(Person(t"A", 1), Person(t"B", 2)).yaml.as[List[Person]]
       . assert(_ == List(Person(t"A", 1), Person(t"B", 2)))
+
+      val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+
+      test(m"Round-trip a type recursive through a List"):
+        tree.yaml.as[Tree]
+      . assert(_ == tree)
+
+      test(m"A generic product over a recursive type stays structurally derived"):
+        Boxed(tree).yaml.as[Boxed[Tree]]
+      . assert(_ == Boxed(tree))
 
       test(m"Encoded case class produces a Yaml.Ast.Mapping"):
         Person(t"Alice", 30).yaml.root match
