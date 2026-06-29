@@ -37,6 +37,9 @@ import soundness.*
 case class Person(name: Text, age: Int)
 case class Group(persons: List[Person], size: Int)
 
+// Recursion through a collection (#1431).
+case class Tree(value: Text, children: List[Tree]) derives CanEqual
+
 enum Color:
   case Red, Green, Blue
 
@@ -70,3 +73,9 @@ object Tests extends Suite(m"Austronesian tests"):
       val color: Color = Color.Green
       unsafely(color.pojo.decode[Color])
     . assert(_ == Color.Green)
+
+    val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+
+    test(m"Roundtrip a type recursive through a List"):
+      unsafely(tree.pojo.decode[Tree])
+    . assert(_ == tree)
