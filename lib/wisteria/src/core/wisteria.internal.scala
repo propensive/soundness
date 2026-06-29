@@ -349,22 +349,26 @@ object internal:
 
     Select(selfTerm, method).appliedToType(TypeRepr.of(using elem)).asExpr
 
-  // Whether `tree` (the result of an implicit search) is the re-entry sentinel — i.e. the search
-  // fell through to the derivation macro, which bailed. Unwraps the layers an implicit resolution
-  // may add.
-  private def isSentinel(using Quotes)(tree: quotes.reflect.Term): Boolean =
+  // The symbol the resolved given ultimately refers to — the head of the application/inlining the
+  // implicit search produced. Unwraps the layers an implicit resolution may add.
+  private def rootSymbol(using Quotes)(tree: quotes.reflect.Term): quotes.reflect.Symbol =
     import quotes.reflect.*
-    val sentinel = Symbol.requiredMethod("wisteria.internal.reentrySentinel")
 
-    def loop(term: Term): Boolean = term match
+    def loop(term: Term): Symbol = term match
       case Inlined(_, _, body) => loop(body)
       case TypeApply(fun, _)   => loop(fun)
       case Apply(fun, _)       => loop(fun)
       case Typed(expr, _)      => loop(expr)
       case Block(_, expr)      => loop(expr)
-      case other               => other.symbol == sentinel
+      case other               => other.symbol
 
     loop(tree)
+
+  // Whether `tree` (the result of an implicit search) is the re-entry sentinel — i.e. the search
+  // fell through to the derivation macro, which bailed.
+  private def isSentinel(using Quotes)(tree: quotes.reflect.Term): Boolean =
+    import quotes.reflect.*
+    rootSymbol(tree) == Symbol.requiredMethod("wisteria.internal.reentrySentinel")
 
   // Does `typeclass[tpe]` resolve to a *non-derivation* instance — a handwritten codec, a leaf, or
   // a bridge resolution such as `Encodable in Text` → JSON? We run the compiler's own implicit
@@ -379,25 +383,43 @@ object internal:
     ( typeclassConstructor: quotes.reflect.TypeRepr, tpe: quotes.reflect.TypeRepr )
   :   Boolean =
 
+    inferWith(typeclassConstructor.appliedTo(tpe), Nil).let(!isSentinel(_)).or(false)
+
+  // Runs the compiler's implicit search for `instance` in a context augmented with synthetic
+  // `given`s: always a `Reentrant[instance]` (so the derivation macro, reached only as a last
+  // resort, self-bails to `reentrySentinel` rather than recursing), plus one `given` for each type
+  // in `extraGivens`. Returns the resolved tree on success (including a sentinel tree), `Unset`
+  // otherwise (no match, or an ambiguity, which `inferImplicit` reports as a non-success result).
+  // This is the one place wisteria reaches into `dotty.tools.dotc`: there is no public API to
+  // search with extra givens injected.
+  private def inferWith(using Quotes)
+    ( instance: quotes.reflect.TypeRepr, extraGivens: List[quotes.reflect.TypeRepr] )
+  :   Optional[quotes.reflect.Term] =
+
     import quotes.reflect.*
     import dotty.tools.dotc as dotc
 
     given context: dotc.core.Contexts.Context =
       quotes.asInstanceOf[runtime.impl.QuotesImpl].ctx
 
-    val instance = typeclassConstructor.appliedTo(tpe)
-    val reentrant = TypeRepr.of[Reentrant].appliedTo(instance)
-
-    val marker =
+    def syntheticGiven(name: String, info: TypeRepr): dotc.core.Symbols.Symbol =
       dotc.core.Symbols.newSymbol
         ( context.owner,
-          dotc.core.Names.termName("$wisteriaReentrant"),
+          dotc.core.Names.termName(name),
           dotc.core.Flags.Given,
-          reentrant.asInstanceOf[dotc.core.Types.Type],
+          info.asInstanceOf[dotc.core.Types.Type],
           dotc.core.Symbols.NoSymbol,
           dotc.util.Spans.NoCoord )
 
-    val augmented = context.fresh.setScope(dotc.core.Scopes.newScopeWith(marker))
+    val reentrant = TypeRepr.of[Reentrant].appliedTo(instance)
+
+    val elementGivens =
+      extraGivens.zipWithIndex.map: (tpe, index) =>
+        syntheticGiven("$wisteriaGiven$"+index, tpe)
+
+    val markers = syntheticGiven("$wisteriaReentrant", reentrant) :: elementGivens
+
+    val augmented = context.fresh.setScope(dotc.core.Scopes.newScopeWith(markers*))
 
     val result =
       new dotc.typer.Typer(0).inferImplicit
@@ -407,11 +429,8 @@ object internal:
         ( using augmented )
 
     result match
-      case success: dotc.typer.Implicits.SearchSuccess =>
-        !isSentinel(success.tree.asInstanceOf[Term])
-
-      case _ =>
-        false
+      case success: dotc.typer.Implicits.SearchSuccess => success.tree.asInstanceOf[Term]
+      case _                                           => Unset
 
   // Derives `typeclass[derivation]` by emitting a block of mutually-recursive synthetic
   // `given lazy val`s — one per distinct product/sum type reachable from `derivation` that a
@@ -445,6 +464,23 @@ object internal:
               case _: ImplicitSearchSuccess => true
               case _                        => false)
 
+    // A fallback for codecs whose given carries capability parameters beyond the element instances
+    // (a decoder's `Factory`/`Tactic`/`Foci`, …), which `isCodec`'s single-shape `codecFunction`
+    // search cannot express. We resolve the *applied* instance (`typeclass[F[args]]`) with a
+    // synthetic `given typeclass[arg]` injected per type-arg — so the codec's (by-name) element
+    // parameter is satisfiable without deriving the element (re-entering this very type would
+    // diverge) — while its other capabilities resolve from the ambient scope. A `Reentrant` marker
+    // makes the catch-all derivation self-bail to the sentinel; a genuine codec resolves to a more
+    // specific given. It is a codec iff the search lands on a non-sentinel given that is not one of
+    // the derivation's own wrappers. Used only in `visit` (never the root `.apply` branch, which
+    // needs the contextual-function shape).
+    def codecProbe(tpe: TypeRepr, args: List[TypeRepr]): Boolean =
+      args.nonEmpty && inferWith(instanceOf(tpe), args.map(instanceOf)).let: tree =>
+
+        !isSentinel(tree) && !wrappers.contains(rootSymbol(tree))
+
+      . or(false)
+
     def fullGraph: Expr[typeclass[derivation]] =
       val reachable = scala.collection.mutable.LinkedHashMap[String, TypeRepr]()
       val seen = scala.collection.mutable.HashSet[String]()
@@ -462,13 +498,16 @@ object internal:
           seen += key
           val args = tpe.typeArgs
 
-          // `resolvableNonStructural` is asked ONLY about product/sum types — and only those reach
-          // it, never codecs or leaves. The probe bails fast at the type's own `deriveGraph` (its
-          // `Reentrant` marker is injected), so it never recurses into fields. Probing a codec
-          // instead (e.g. `Map[K, V]` whose `isCodec` we failed to recognise) would let the search
-          // descend through the codec into its elements' full derivations — for a deep graph that
-          // explodes. Such a type simply isn't made a sibling here; it resolves at the field site.
-          if isCodec(tpe, args) then args.foreach(visit(_, false))
+          // A codec is recognised by the fast `isCodec` (single contextual-function shape) or, for
+          // codecs with extra capability parameters (decoders' `Factory`/`Tactic`/`Foci`), the
+          // `codecProbe` fallback; either way its element types are followed so a structural
+          // element wrapped in a collection still becomes a shared sibling (the recursion-through-
+          // a-collection case). Only a non-codec product/sum reaches `resolvableNonStructural`,
+          // which bails at the type's own `deriveGraph` (its `Reentrant` marker is injected) so it
+          // never recurses into fields. A codec the probe still cannot recognise (e.g. `Map[K, V]`
+          // whose key uses a different typeclass) is simply not made a sibling here; it resolves at
+          // the field site.
+          if isCodec(tpe, args) || codecProbe(tpe, args) then args.foreach(visit(_, false))
           else if isSumType(tpe) then
             if isRoot || !resolvableNonStructural(typeclassConstructor, tpe) then
               reachable(key) = tpe
