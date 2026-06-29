@@ -147,15 +147,19 @@ object internal:
       inline def decoded(value: Pojo): Boolean = value.asInstanceOf[Boolean]
 
 
-    inline given collection
-    :   [ collection <: Iterable, element: Decodable in Pojo ]
-    =>  Tactic[PojoError]
-    =>  ( factory: scala.collection.Factory[element, collection[element]] )
+    // The element decoder is taken by-name (not as a context bound) so that a type recursive
+    // through a collection (`case class Tree(…, children: List[Tree])`) derives: wisteria's
+    // `deriveGraph` recognises this single-by-name-element codec shape and ties the recursion
+    // through a lazy sibling instead of structurally sum-deriving `List` (issue #1431).
+    given collection: [collection <: Iterable, element]
+    =>  ( factory: scala.collection.Factory[element, collection[element]],
+          tactic:  Tactic[PojoError] )
+    =>  ( decodable: => element is Decodable in Pojo )
     =>  collection[element] is Decodable in Pojo =
 
       case array: Array[Pojo @unchecked] =>
         factory.newBuilder.pipe: builder =>
-          array.iterator.each(builder += _.decode)
+          array.iterator.each(builder += decodable.decoded(_))
           builder.result()
 
       case other =>
