@@ -533,7 +533,7 @@ object Checker:
 
   // Walk a line's tokens to maintain the quote/splice brace stack and to
   // enforce the multi-line quote/splice layout (rule 473.2–473.6, see
-  // §5 "Macro quotes and splices" in doc/syntax.md).
+  // §5 "Macro quotes and splices" in doc/standards/syntax.md).
   //
   // A multi-line quote/splice is one where the matching `}` lives on a
   // later line; we recognise the opener at `{` time by requiring `' {`
