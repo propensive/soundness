@@ -1,57 +1,80 @@
-Soundness tutorials should be written in English prose, using American English spelling. Always write "runtime" and "compiletime" as single words, never as "run time", "run-time", "compile time" or "compile-time".
+# Writing Soundness Documentation
 
-The flow should be paced appropriately for a listener who is being introduced to new concepts. A basic understanding of the subject matter can be presumed, though complex or esoteric details must be explained in detail. Anything requiring a moderate or complex explanation sholud be linked to external resources such as Wikipedia. Terms and phrases
-should be limited to those which familiar to both British and American readers. In general, we need to explain Soundness implementations in depth, whereas we're not required to explain the concepts Soundness implements, but we should give enough of an explanation to explain the motivation behind Soundness's design.
+The documents in `doc/modules/` are tutorials, each introducing one feature of
+Soundness — a capability that may span several internal modules — to a reader meeting
+it for the first time. This guide sets out how to write them: who they address, the
+voice they use, and the conventions they follow.
 
-Draw attention to typesafety and compile-time checking that's performed by Soundness, as well as drawing occasional attention to how these fit with Soundness's general design philosophy. Explain the design ideas behind the API, and draw particular attention to ideas which may be unconventional.
+## Audience and scope
 
-The text should be written in markdown. Code should be written in backticks. Specific names of terms and types should be written in backticks. Block-level code samples should be written in triple backticks, in idiomatic Soundness Scala, formatted according to the style described in syntax.md.
+Assume a reader with a basic understanding of Scala and of the subject at hand, but
+pace the prose for someone meeting Soundness's treatment of it for the first time.
 
-Code samples should be complete (including imports as necessary, but wildcard imports are fine), and should follow on from each other. That is, terms with the same name should mean the same thing, but there should not be multiple assignments to the same identifier.
+Explain Soundness's own implementations in depth. The concepts Soundness builds on —
+JSON, regular expressions, time zones — need not be taught from scratch, but give
+enough of each to motivate the design that follows. Link complex or esoteric
+background to an external resource, such as Wikipedia, rather than explaining it
+inline.
 
-The document structure should start with up to three introductory paragraphs giving an overview of the scope of the subqect matter, before going into detail on the different topics. Foundational details and the most commonly used features should be prioritized, while implementation details and esoteric features should be deprioritized. In the prose, refer to the project as "Soundness" rather than the internal module names.
+Limit terms and phrases to those familiar to both British and American readers.
 
-The writing style should use Classic Style, as described by Steven Pinker. Classic Style is described as:
+## Voice: Classic Style
 
-- Avoid first-person pronouns: I, me, my, mine
-- Write as if you are showing the reader something in the world.
-- The writer’s role is to point to something true or interesting and help the reader see it clearly.
-- Treat writing as a conversation between equals.
-- The reader is intelligent and capable, not a subordinate being lectured to.
-- Assume truth exists and can be perceived clearly.
-- The prose proceeds as if the subject can be directly understood and described.
-- Aim for clarity above all else.
-- Success is measured by whether the reader can effortlessly grasp the point.
-- Use simple, direct phrasing.
-- Prefer the straightforward expression over ornate, inflated, or overly technical wording.
-- Project confidence.
-- State things plainly rather than hedging excessively or apologizing for your claims.
-- Hide the machinery of writing.
-- Avoid drawing attention to the act of writing itself ("In this essay I will argue...", "It is
-  important to note that...").
-- Present, don’t announce.
-- Deliver the idea itself rather than talking about your intention to deliver it.
-- Minimize self-reference and meta-discussion.
-- Avoid excessive references to yourself, the paper, the section, or the argument structure unless
-  genuinely useful.
-- Prefer concrete imagery and examples.
-- Abstract ideas should often be grounded in tangible illustrations.
-- Maintain an unobstructed style.
-- Remove clutter, jargon, throat-clearing, and unnecessary qualifiers.
-- Use elegant variation in rhythm and sentence structure.
-- Classic style should feel natural and graceful, not robotic or monotonous.
-- Revise until prose feels effortless.
-- Good classic prose appears easy and natural, even if heavily edited.
-- Sound like someone who understands the subject thoroughly.
-- The voice should feel calm, knowledgeable, and unstrained.
-- Guide the reader’s attention deliberately.
-- Structure sentences so the reader naturally focuses on the important part. Pinker compares this to
-  directing a viewer’s gaze.
-- Avoid bureaucratic/formalistic prose
-- Avoid academic hedging and overqualification
-- Avoid excessive passive voice
-- Avoid unnecessary jargon
-- Avoid pretentious diction
-- Avoid "Throat-clearing" introductions
-- Avoid signposting every structural move ("Firstly...", "In conclusion...")
-- Avoid rhetorical questions, and other devices that rely on context the reader may not share to be read as intended; state the point directly instead.
+Write in Classic Style, as described by Steven Pinker: the writer shows the reader
+something true or interesting in the world and helps them see it clearly, as a
+conversation between equals. The reader is intelligent and capable. Truth can be
+perceived and described plainly, and success is measured by whether the reader grasps
+the point without effort.
+
+- **Show, don't announce.** Present the idea itself, not your intention to present it.
+  Avoid throat-clearing ("In this section…", "It is important to note that…") and
+  signposting ("Firstly…", "In conclusion…").
+- **Stay out of view.** Avoid first-person pronouns and meta-discussion of the writing,
+  the document, or its structure.
+- **Be plain and direct.** Prefer straightforward phrasing over ornate, inflated, or
+  needlessly technical wording. Cut clutter, hedging, and unnecessary qualifiers.
+- **Project confidence.** State things plainly rather than hedging or apologising;
+  avoid academic over-qualification.
+- **Ground the abstract.** Reach for concrete imagery and examples to anchor abstract
+  ideas.
+- **Guide the reader's gaze.** Structure each sentence so attention falls naturally on
+  what matters most.
+- **Sound like someone who knows the subject.** The voice is calm, knowledgeable, and
+  unstrained; the prose feels effortless even when heavily revised.
+- **Avoid devices that depend on shared context.** State the point directly rather than
+  through rhetorical questions or allusion. Avoid bureaucratic prose, excessive passive
+  voice, and pretentious diction.
+
+## Emphasis
+
+Draw attention to the typesafety and compiletime checking Soundness performs, and
+explain the design ideas behind each API — especially those that may be unconventional.
+Occasionally connect these to Soundness's general design philosophy, so the reader sees
+not just how a feature works but why it is shaped as it is.
+
+## Language and spelling
+
+Use American English spelling. Always write "runtime" and "compiletime" as single
+words, never as "run time", "run-time", "compile time", or "compile-time".
+
+## Document structure
+
+Begin with a `## Title`, then up to three introductory paragraphs giving an overview of
+the subject's scope. Within these, an `### About` section gives the overview and an
+`### On <topic>` section motivates the design. After the introduction, cover the
+individual topics in their own `###` sections.
+
+Prioritise foundational details and the most commonly used features; deprioritise
+implementation details and esoteric features. In the prose, refer to the project as
+"Soundness", never by an internal module name.
+
+## Code samples
+
+Write code in idiomatic Soundness Scala, formatted according to `syntax.md`. Use inline
+backticks for code, and for the specific names of terms and types; use triple-backtick
+blocks for block-level samples.
+
+Samples should be complete — including imports where necessary, though wildcard imports
+are fine — and should follow on from one another: a term with a given name means the
+same thing throughout a document, and a single identifier is never assigned more than
+once.
