@@ -393,6 +393,79 @@ object Tests extends Suite(m"Ultimatum Tests"):
         String(bytes.toByteArray.nn, "UTF-8").tt
       . assert(_ == t"\e[?25l\e[1;1H\e[0J\e[1;1H\e[2Kab \r\n\e[2Kcd \r\e[1;1H\e[?25h")
 
+      // With `bottomDocked`, a resize never switches to top-anchoring: the block stays
+      // docked and its rows are cleared at the bottom (row 3), not the top-left corner.
+      test(m"bottomDocked keeps the block docked across a resize"):
+        import inlineAnchoring.bottomDocked
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = InlineRoot(3, 4)
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        bytes.reset()
+        root.invalidate()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[3;1H\e[0J\e[3;1H\e[2Kab \r\n\e[2Kcd \r\e[3;1H\e[?25h")
+
+      // With `topAnchored`, the very first frame is pinned to rows 1..h (no bottom dock,
+      // no scroll into scrollback).
+      test(m"topAnchored pins the first frame to the top rows"):
+        import inlineAnchoring.topAnchored
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = InlineRoot(3, 4)
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[1;1H\e[2Kab \r\n\e[2Kcd \r\e[1;1H\e[?25h")
+
+      // With `fullscreen`, the first present enters the alternate screen buffer.
+      test(m"fullscreen enters the alternate screen on the first present"):
+        import inlineAnchoring.fullscreen
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = InlineRoot(3, 4)
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?1049h\e[?25l\e[1;1H\e[2Kab \r\n\e[2Kcd \r\e[1;1H\e[?25h")
+
+      // ...and leaves it again on finish, restoring the pre-session screen.
+      test(m"fullscreen leaves the alternate screen on finish"):
+        import inlineAnchoring.fullscreen
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = InlineRoot(3, 4)
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        bytes.reset()
+        root.finish()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[3;1H\r\n\e[?25h\e[?1049l")
+
+      // With `keepTop`, a shrink holds the top row and clears below (row 4), rather than
+      // re-docking down and clearing the row it vacated above.
+      test(m"keepTop clears below the block on a shrink, holding the top"):
+        import inlineShrink.keepTop
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = InlineRoot(3, 4)
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        bytes.reset()
+        root.reframe(3, 1); root.move(Prim, Prim); root.put(t"ef"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[3;1H\e[2Kef \r\n\e[2K\e[3;1H\e[?25h")
+
+      // With `clampToScreen`, a growing block grows upward in place; it never scrolls the
+      // screen into scrollback (no `\e[9999B`).
+      test(m"clampToScreen grows without scrolling into scrollback"):
+        import inlineGrowth.clampToScreen
+        val (bytes, stdio) = capturing()
+        given Stdio = stdio
+        val root = InlineRoot(3, 4)
+        root.reframe(3, 1); root.move(Prim, Prim); root.put(t"a"); root.flush()
+        bytes.reset()
+        root.reframe(3, 2); root.move(Prim, Prim); root.put(t"ab\ncd"); root.flush()
+        String(bytes.toByteArray.nn, "UTF-8").tt
+      . assert(_ == t"\e[?25l\e[3;1H\e[2Kab \r\n\e[2Kcd \r\e[3;1H\e[?25h")
+
     suite(m"Dynamic panes"):
       def cell(): Pane = panel()(())
 

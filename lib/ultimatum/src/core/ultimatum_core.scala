@@ -152,7 +152,12 @@ def border
 // height; in `Inline` mode it renders a variable-height block at the cursor
 // without the alternate buffer, leaving scrollback intact.
 def form(mode: Mode = Mode.Fullscreen)(pane: Pane)
-  ( using terminal: Terminal, monitor: Monitor, probate: Probate )
+  ( using terminal: Terminal,
+          monitor:   Monitor,
+          probate:   Probate,
+          anchoring: InlineAnchoring,
+          growth:    InlineGrowth,
+          shrink:    InlineShrink )
 :   Unit =
 
   // A container mutation wakes the loop by putting a redraw event on the spool.
@@ -220,7 +225,13 @@ def paint(root: Canvas, pane: Pane): Unit =
 
 // Present `pane` as a static, variable-height block inline at the cursor, leaving
 // the cursor on a fresh line below it.
-def layout(pane: Pane)(using terminal: Terminal): Unit =
+def layout(pane: Pane)
+  ( using terminal:  Terminal,
+          anchoring: InlineAnchoring,
+          growth:    InlineGrowth,
+          shrink:    InlineShrink )
+:   Unit =
+
   val root = InlineRoot(terminal)
   paint(root, pane)
   root.finish()
