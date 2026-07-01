@@ -42,33 +42,55 @@ import turbulence.*
 
 object InlineRoot:
   // The root for inline mode over a real terminal: width and the height clamp are
-  // read live, so a resize is reflected on the next frame.
-  def apply(terminal: Terminal): InlineRoot =
-    new InlineRoot(() => terminal.knownColumns, () => terminal.knownRows)(using terminal.stdio)
+  // read live, so a resize is reflected on the next frame. The rendering policy is
+  // read from context (`InlineAnchoring`/`InlineGrowth`/`InlineShrink`), so it is
+  // fixed at the caller's site rather than inside the library.
+  def apply(terminal: Terminal)
+    ( using anchoring: InlineAnchoring, growth: InlineGrowth, shrink: InlineShrink )
+  :   InlineRoot =
 
-  def apply(width: Int, height: Int)(using Stdio): InlineRoot =
+    new InlineRoot(() => terminal.knownColumns, () => terminal.knownRows)
+      ( using terminal.stdio, anchoring, growth, shrink )
+
+  def apply(width: Int, height: Int)
+    ( using Stdio, InlineAnchoring, InlineGrowth, InlineShrink )
+  :   InlineRoot =
+
     new InlineRoot(() => width, () => height)
 
 // The root `Canvas` for INLINE mode: panels composite into its character grid
 // (inherited from `GridSurface`), and `flush` presents the grid with ABSOLUTE row
 // addressing (`cup`) so a redraw always lands in the same place and never drifts —
 // the property a relative, cursor-tracking present loses the moment a resize reflows
-// the lines already on screen. There are two anchorings: on launch the block is
-// BOTTOM-docked, so it appears inline immediately beneath the shell command (growing
-// by scrolling content into scrollback, shrinking by clearing the rows it vacates
-// above). On the first resize it switches to TOP-anchored — pinned to rows 1..height
-// — because a bottom-docked block leaves a gap (and strands a ghost) when the
-// terminal grows taller, whereas a top-anchored one is simply overdrawn in place. A
-// top-anchored resize clears the whole screen first (the block relocates here and the
-// terminal may have moved the old one); otherwise each row is cleared in place.
-// `widthFn`/`heightFn` supply the live terminal columns and rows, re-read every
-// frame; an oversize block is clamped to the terminal height.
-class InlineRoot(widthFn: () => Int, heightFn: () => Int)(using Stdio)
+// the lines already on screen. Anchoring, growth and shrink are each governed by a
+// contextual policy (`InlineAnchoring`/`InlineGrowth`/`InlineShrink`); the defaults
+// reproduce the historic behaviour. Under the default `TopAfterResize` anchoring the
+// block is BOTTOM-docked on launch (appearing inline beneath the shell command) and
+// switches to TOP-anchored — pinned to rows 1..height — on the first resize, because
+// a bottom-docked block leaves a gap (and strands a ghost) when the terminal grows
+// taller, whereas a top-anchored one is simply overdrawn in place. A top-anchored
+// resize clears the whole screen first (the block relocates here and the terminal may
+// have moved the old one); otherwise each row is cleared in place. `Fullscreen`
+// additionally wraps the session in the alternate screen buffer. `widthFn`/`heightFn`
+// supply the live terminal columns and rows, re-read every frame; an oversize block
+// is clamped to the terminal height.
+class InlineRoot(widthFn: () => Int, heightFn: () => Int)
+  ( using stdio:     Stdio,
+          anchoring: InlineAnchoring,
+          growth:    InlineGrowth,
+          shrink:    InlineShrink )
 extends GridSurface(widthFn(), 0):
   private var presentedRows: Int = 0
   private var presentedColumns: Int = 0
   private var invalidated: Boolean = false
-  private var topAnchored: Boolean = false
+
+  // Start top-anchored only when the policy pins the block from the first frame;
+  // `TopAfterResize` starts bottom-docked and flips on the first `invalidate`.
+  private var topAnchored: Boolean = anchoring match
+    case InlineAnchoring.TopAnchored | InlineAnchoring.Fullscreen      => true
+    case InlineAnchoring.BottomDocked | InlineAnchoring.TopAfterResize => false
+
+  private var started: Boolean = false
   private var caretColumn: Int = 0
   private var caretRow: Int = 0
   private var caretVisible: Boolean = true
@@ -83,12 +105,12 @@ extends GridSurface(widthFn(), 0):
   // so a focused editor shows it and a focused menu keeps it hidden.
   def cursor(visible: Boolean): Unit = caretVisible = visible
 
-  // Mark the next present as a resize repaint, and switch to top-anchoring (the first
-  // resize trips this). The driver calls it on every `WindowSize` event (a width-only
-  // resize counts too).
+  // Mark the next present as a resize repaint. Under `TopAfterResize` the first resize
+  // also switches to top-anchoring; the other anchorings keep their fixed reference.
+  // The driver calls it on every `WindowSize` event (a width-only resize counts too).
   def invalidate(): Unit =
     invalidated = true
-    topAnchored = true
+    if anchoring == InlineAnchoring.TopAfterResize then topAnchored = true
 
   // Record the caret's block-local target; `flush` positions the hardware cursor at
   // the corresponding absolute screen cell.
@@ -108,6 +130,11 @@ extends GridSurface(widthFn(), 0):
     // interleave between our escapes and corrupt the redraw.
     val frame = StringBuilder()
     def emit(text: Text): Unit = frame.append(text.s)
+
+    // `Fullscreen` takes over the alternate screen buffer for the session: enter it on
+    // the first present (restored by `finish`), so the block owns a blank screen.
+    if anchoring == InlineAnchoring.Fullscreen && !started then emit(t"\e[?1049h")
+    started = true
 
     emit(csi.dectcem(false))
 
@@ -130,15 +157,28 @@ extends GridSurface(widthFn(), 0):
           val cleared = (presentedRows*wrap).max(h)
           emit(csi.cup((rows - cleared + 1).max(1), 1))
           emit(csi.ed(0))
+          (rows - h + 1).max(1)
         else if h > presentedRows then
-          // Grow in place: scroll the screen up so the extra rows are free at the
-          // bottom, pushing the content above into scrollback. `cud` to the bottom
-          // first, since only a `\n` on the bottom line scrolls.
-          emit(csi.cud(9999))
-          emit(t"\r")
-          emit(t"\n"*(h - presentedRows))
+          // Grow beyond the previous height. `ScrollIntoScrollback` scrolls the screen
+          // up so the extra rows are free at the bottom, pushing the content above into
+          // scrollback (`cud` to the bottom first, since only a `\n` on the bottom line
+          // scrolls); `ClampToScreen` instead grows upward in place, overwriting the
+          // rows above without touching scrollback.
+          growth match
+            case InlineGrowth.ScrollIntoScrollback =>
+              emit(csi.cud(9999))
+              emit(t"\r")
+              emit(t"\n"*(h - presentedRows))
 
-        (rows - h + 1).max(1)
+            case InlineGrowth.ClampToScreen =>
+              ()
+
+          (rows - h + 1).max(1)
+        else if presentedRows > h && shrink == InlineShrink.KeepTop then
+          // Hold the top row where the taller block began, rather than re-docking down.
+          (rows - presentedRows + 1).max(1)
+        else
+          (rows - h + 1).max(1)
 
     // Draw the block from its absolute `top` down, clipping each row to the live width
     // so it can never wrap (a wrapped row would scroll the screen and break addressing).
@@ -161,10 +201,12 @@ extends GridSurface(widthFn(), 0):
       if r < h - 1 then emit(t"\n")
       r += 1
 
-    // Shrink: clear the rows a taller previous block vacated — below the block when
-    // top-anchored, above it when bottom-docked (a resize already cleared them).
+    // Shrink: clear the rows a taller previous block vacated. Clearing happens BELOW
+    // the block when top-anchored or when `KeepTop` holds the top in place; when
+    // bottom-docked under `RedockBottom` the block re-docks down and the vacated rows
+    // above are cleared instead (a resize already cleared them).
     if !resized && presentedRows > h then
-      if topAnchored then
+      if topAnchored || shrink == InlineShrink.KeepTop then
         var k = h
 
         while k < presentedRows do
@@ -192,8 +234,11 @@ extends GridSurface(widthFn(), 0):
 
   // On exit, drop the cursor onto a fresh line below the block and re-show it, so
   // subsequent output continues after the rendered block (like a submitted prompt).
+  // A `Fullscreen` session leaves the alternate screen buffer, restoring what was
+  // there before it started.
   def finish(): Unit =
     val below = if topAnchored then (presentedRows + 1).min(heightFn()) else heightFn()
     Out.print(csi.cup(below.max(1), 1))
     Out.print(t"\r\n")
     Out.print(csi.dectcem(true))
+    if anchoring == InlineAnchoring.Fullscreen && started then Out.print(t"\e[?1049l")
