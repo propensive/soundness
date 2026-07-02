@@ -141,8 +141,9 @@ object Assembler:
     val isWindows: Boolean = platformLabel.starts(t"windows")
     val patched: Data = patch(runner, buildId, javaMinimum, javaPreferred, jdk, publicKey)
 
-    output.open: file =>
-      Stream(patched).writeTo(file)
+    output.open
+      ( file => Stream(patched).writeTo(file),
+        List(jnio.file.StandardOpenOption.TRUNCATE_EXISTING) )
 
     if platformLabel.starts(t"macos") then
       if !isWindows then output.executable() = true
