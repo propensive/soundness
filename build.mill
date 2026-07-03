@@ -1484,7 +1484,11 @@ object xenophile extends Library:
   object webidl extends Component(core, hypotenuse.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(typescript, native, wit, webidl)
+  object wasm extends Component(core, wit, hypotenuse.core, anticipation.codec, distillate.core,
+    gossamer.core, prepositional.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(typescript, native, wit, webidl, wasm)
 
 object querencia extends Library:
   object core extends Component(xenophile.webidl, honeycomb.core, hypotenuse.core, gossamer.core,
