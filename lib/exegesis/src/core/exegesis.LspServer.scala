@@ -123,6 +123,13 @@ trait LspServer() extends Lsp:
 
     Nil
 
+  def prepareCallHierarchy(uri: Text, position: Position): List[CallHierarchyItem] = Nil
+  def incomingCalls(item: CallHierarchyItem): List[CallHierarchyIncomingCall] = Nil
+  def outgoingCalls(item: CallHierarchyItem): List[CallHierarchyOutgoingCall] = Nil
+  def prepareTypeHierarchy(uri: Text, position: Position): List[TypeHierarchyItem] = Nil
+  def supertypes(item: TypeHierarchyItem): List[TypeHierarchyItem] = Nil
+  def subtypes(item: TypeHierarchyItem): List[TypeHierarchyItem] = Nil
+
   // The current contents of an open document, if any.
   def document(uri: Text): Optional[TextDocumentItem] = documents.at(uri)
 
@@ -289,6 +296,28 @@ trait LspServer() extends Lsp:
   :   List[TextEdit] =
 
     willSaveWaitUntil(textDocument, reason)
+
+  def `textDocument/prepareCallHierarchy`(textDocument: TextDocumentIdentifier, position: Position)
+  :   List[CallHierarchyItem] =
+
+    prepareCallHierarchy(textDocument.uri, position)
+
+  def `callHierarchy/incomingCalls`(item: CallHierarchyItem): List[CallHierarchyIncomingCall] =
+    incomingCalls(item)
+
+  def `callHierarchy/outgoingCalls`(item: CallHierarchyItem): List[CallHierarchyOutgoingCall] =
+    outgoingCalls(item)
+
+  def `textDocument/prepareTypeHierarchy`(textDocument: TextDocumentIdentifier, position: Position)
+  :   List[TypeHierarchyItem] =
+
+    prepareTypeHierarchy(textDocument.uri, position)
+
+  def `typeHierarchy/supertypes`(item: TypeHierarchyItem): List[TypeHierarchyItem] =
+    supertypes(item)
+
+  def `typeHierarchy/subtypes`(item: TypeHierarchyItem): List[TypeHierarchyItem] =
+    subtypes(item)
 
   // The stdio transport. Reads `Content-Length`-framed JSON-RPC messages from standard input and
   // dispatches each to the methods above; a single asynchronous writer drains the outgoing channel

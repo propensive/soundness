@@ -105,7 +105,9 @@ object Lsp:
       documentRangeFormattingProvider:  Optional[Boolean]                         = Unset,
       documentLinkProvider:             Optional[DocumentLinkOptions]             = Unset,
       codeLensProvider:                 Optional[CodeLensOptions]                 = Unset,
-      documentOnTypeFormattingProvider: Optional[DocumentOnTypeFormattingOptions] = Unset )
+      documentOnTypeFormattingProvider: Optional[DocumentOnTypeFormattingOptions] = Unset,
+      callHierarchyProvider:            Optional[Boolean]                         = Unset,
+      typeHierarchyProvider:            Optional[Boolean]                         = Unset )
 
   case class InitializeResult
     ( capabilities: ServerCapabilities, serverInfo: Optional[ServerInfo] = Unset )
@@ -195,6 +197,39 @@ object Lsp:
     ( label:               Text,
       textEdit:            Optional[TextEdit]       = Unset,
       additionalTextEdits: Optional[List[TextEdit]] = Unset )
+
+  // Call and type hierarchies
+
+  object CallHierarchyItem:
+    given decodable: Tactic[JsonError] => CallHierarchyItem is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class CallHierarchyItem
+    ( name:           Text,
+      kind:           SymbolKind,
+      tags:           Optional[List[SymbolTag]] = Unset,
+      detail:         Optional[Text]            = Unset,
+      uri:            Text,
+      range:          Range,
+      selectionRange: Range,
+      data:           Optional[Json]            = Unset )
+
+  case class CallHierarchyIncomingCall(from: CallHierarchyItem, fromRanges: List[Range])
+  case class CallHierarchyOutgoingCall(to: CallHierarchyItem, fromRanges: List[Range])
+
+  object TypeHierarchyItem:
+    given decodable: Tactic[JsonError] => TypeHierarchyItem is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class TypeHierarchyItem
+    ( name:           Text,
+      kind:           SymbolKind,
+      tags:           Optional[List[SymbolTag]] = Unset,
+      detail:         Optional[Text]            = Unset,
+      uri:            Text,
+      range:          Range,
+      selectionRange: Range,
+      data:           Optional[Json]            = Unset )
 
   // Diagnostics and window messages
 
@@ -289,6 +324,16 @@ object Lsp:
 
   enum TextDocumentSaveReason:
     case Manual, AfterDelay, FocusOut
+
+  object SymbolTag:
+    given encodable: SymbolTag is Json.Encodable =
+      Json.Encodable(Morphology.Whole): tag => (tag.ordinal + 1).json
+
+    given decodable: Tactic[JsonError] => SymbolTag is Json.Decodable =
+      Json.Decodable(Morphology.Whole): json => SymbolTag.fromOrdinal(json.as[Int] - 1)
+
+  enum SymbolTag:
+    case Deprecated
 
 trait Lsp extends JsonRpc:
   type Origin = LspClient
@@ -449,3 +494,27 @@ trait Lsp extends JsonRpc:
   def `textDocument/willSaveWaitUntil`
     ( textDocument: Lsp.TextDocumentIdentifier, reason: Lsp.TextDocumentSaveReason )
   :   List[Lsp.TextEdit]
+
+  @rpc
+  def `textDocument/prepareCallHierarchy`
+    ( textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position )
+  :   List[Lsp.CallHierarchyItem]
+
+  @rpc
+  def `callHierarchy/incomingCalls`(item: Lsp.CallHierarchyItem)
+  :   List[Lsp.CallHierarchyIncomingCall]
+
+  @rpc
+  def `callHierarchy/outgoingCalls`(item: Lsp.CallHierarchyItem)
+  :   List[Lsp.CallHierarchyOutgoingCall]
+
+  @rpc
+  def `textDocument/prepareTypeHierarchy`
+    ( textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position )
+  :   List[Lsp.TypeHierarchyItem]
+
+  @rpc
+  def `typeHierarchy/supertypes`(item: Lsp.TypeHierarchyItem): List[Lsp.TypeHierarchyItem]
+
+  @rpc
+  def `typeHierarchy/subtypes`(item: Lsp.TypeHierarchyItem): List[Lsp.TypeHierarchyItem]

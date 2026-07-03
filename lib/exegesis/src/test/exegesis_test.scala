@@ -67,6 +67,9 @@ object TestServer extends LspServer():
   override def prepareRename(uri: Text, position: Lsp.Position): Optional[Lsp.Range] =
     Lsp.Range(position, position)
 
+  override def incomingCalls(item: Lsp.CallHierarchyItem): List[Lsp.CallHierarchyIncomingCall] =
+    List(Lsp.CallHierarchyIncomingCall(from = item, fromRanges = List(item.range)))
+
   // Expand the `serve` dispatch macro once, here, rather than at each test call
   // site: each expansion inlines a codec (now schema-carrying) for every LSP
   // method, which repeated would exceed the JVM per-class size limit in `Tests`.
@@ -151,3 +154,14 @@ object Tests extends Suite(m"Exegesis Tests"):
 
         dispatch(request).let(_.as[JsonRpc.Response].result.as[Lsp.Range].start.line)
       . assert(_ == 3)
+
+      test(m"an incomingCalls request decodes a CallHierarchyItem param and echoes it"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","id":5,"method":"callHierarchy/incomingCalls","params":{"item":{"name":"foo","kind":12,"uri":"file:///x","range":{"start":{"line":0,"character":0},"end":{"line":0,"character":3}},"selectionRange":{"start":{"line":0,"character":0},"end":{"line":0,"character":3}}}}}"""
+          . decode[Json]
+
+        dispatch(request).let: response =>
+          response.as[JsonRpc.Response].result.as[List[Lsp.CallHierarchyIncomingCall]].head.from.name
+      . assert(_ == t"foo")
