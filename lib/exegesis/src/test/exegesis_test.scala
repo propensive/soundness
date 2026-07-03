@@ -76,6 +76,11 @@ object TestServer extends LspServer():
   override def executeCommand(command: Text, arguments: Optional[List[Json]]): Optional[Json] =
     command.json
 
+  override def onSave(document: Lsp.TextDocumentIdentifier, text: Optional[Text])(using LspClient)
+  :   Unit =
+
+    summon[LspClient].progress(t"token".json, t"begin".json)
+
   // Build the dispatcher once, here, rather than at each test call site: it expands a
   // schema-carrying codec for every LSP method, which repeated would exceed the JVM
   // per-class size limit in `Tests`.
@@ -201,3 +206,14 @@ object Tests extends Suite(m"Exegesis Tests"):
 
         dispatch(request)
       . assert(_ == Unset)
+
+      test(m"saving a document sends a progress notification to the client"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","method":"textDocument/didSave","params":{"textDocument":{"uri":"file:///x"}}}"""
+          . decode[Json]
+
+        dispatch(request)
+        TestServer.outgoing.iterator.next().as[JsonRpc.Request].method
+      . assert(_ == t"$$/progress")

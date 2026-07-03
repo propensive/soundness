@@ -34,6 +34,7 @@ package exegesis
 
 import anticipation.*
 import beneficence.*
+import jacinta.*
 import obligatory.*
 import vacuous.*
 
@@ -56,8 +57,26 @@ trait LspClient extends Findable:
   @rpc
   protected def `window/logMessage`(`type`: MessageType, message: Text): Unit
 
+  @rpc
+  protected def `telemetry/event`(params: Json): Unit
+
+  @rpc
+  protected def `$/logTrace`(message: Text, verbose: Optional[Text]): Unit
+
+  // A `ProgressToken` is a string or integer, and a progress `value` is protocol-specific, so both
+  // are passed as raw JSON.
+  @rpc
+  protected def `$/progress`(token: Json, value: Json): Unit
+
+  @rpc
+  protected def `$/cancelRequest`(id: Json): Unit
+
   def publishDiagnostics(uri: Text, diagnostics: List[Diagnostic]): Unit =
     `textDocument/publishDiagnostics`(uri, Unset, diagnostics)
 
   def showMessage(message: Text): Unit = `window/showMessage`(MessageType.Info, message)
   def logMessage(message: Text): Unit = `window/logMessage`(MessageType.Log, message)
+  def telemetry(params: Json): Unit = `telemetry/event`(params)
+  def logTrace(message: Text): Unit = `$/logTrace`(message, Unset)
+  def progress(token: Json, value: Json): Unit = `$/progress`(token, value)
+  def cancelRequest(id: Json): Unit = `$/cancelRequest`(id)
