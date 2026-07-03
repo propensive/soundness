@@ -42,12 +42,11 @@ object internal:
 
   def typename[typename <: AnyKind: Type]: Macro[Text] = Expr(name[typename])
 
-  def name(using Quotes)(typeRepr: quotes.reflect.TypeRepr): Text =
-    typeRepr.asType.absolve match case '[tpe] => name[tpe]
-
   def name[typename <: AnyKind: Type](using Quotes): Text =
     import quotes.reflect.*
+    name(TypeRepr.of[typename])
 
+  def name(using Quotes)(typeRepr: quotes.reflect.TypeRepr): Text =
     given Bindings = Bindings()
 
     val outer: List[Typename] = quotes.absolve match
@@ -88,7 +87,7 @@ object internal:
     given Imports =
       Imports(Set(Typename("scala"), Typename("scala.Predef")) ++ imports ++ outer, direct)
 
-    Syntax(TypeRepr.of[typename]).text
+    Syntax(typeRepr).text
 
   private def exportedTargets(using Quotes, dotty.tools.dotc.core.Contexts.Context)
     ( rootSym: dotty.tools.dotc.core.Symbols.Symbol )
