@@ -81,6 +81,9 @@ object TestServer extends LspServer():
 
     summon[LspClient].progress(t"token".json, t"begin".json)
 
+  override def resolveCompletion(item: Lsp.CompletionItem): Lsp.CompletionItem =
+    item.copy(detail = t"resolved")
+
   // Build the dispatcher once, here, rather than at each test call site: it expands a
   // schema-carrying codec for every LSP method, which repeated would exceed the JVM
   // per-class size limit in `Tests`.
@@ -217,3 +220,13 @@ object Tests extends Suite(m"Exegesis Tests"):
         dispatch(request)
         TestServer.outgoing.iterator.next().as[JsonRpc.Request].method
       . assert(_ == t"$$/progress")
+
+      test(m"a completionItem/resolve request decodes a bare item and resolves it"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","id":8,"method":"completionItem/resolve","params":{"label":"foo"}}"""
+          . decode[Json]
+
+        dispatch(request).let(_.as[JsonRpc.Response].result.as[Lsp.CompletionItem].detail)
+      . assert(_ == t"resolved")

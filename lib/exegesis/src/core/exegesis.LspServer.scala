@@ -96,6 +96,11 @@ object LspServer:
       import strategies.throwUnsafely
       JsonRpc.serve[LspWorkspace](server)
 
+  private object resolveRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      JsonRpc.serve[LspResolve](server)
+
   def dispatcher(server: Lsp): Json => Optional[Json] =
     import dynamicJsonAccess.enabled
     import strategies.throwUnsafely
@@ -107,7 +112,8 @@ object LspServer:
           JsonRpc.methods[LspNavigation] -> navigationRoute(server),
           JsonRpc.methods[LspEditing]    -> editingRoute(server),
           JsonRpc.methods[LspAdvanced]   -> advancedRoute(server),
-          JsonRpc.methods[LspWorkspace]  -> workspaceRoute(server) )
+          JsonRpc.methods[LspWorkspace]  -> workspaceRoute(server),
+          JsonRpc.methods[LspResolve]    -> resolveRoute(server) )
 
     json =>
       safely(json.method.as[Text]).lay(routes.head._2(json)): method =>
@@ -220,6 +226,14 @@ trait LspServer() extends Lsp:
   def willDeleteFiles(files: List[FileDelete]): Optional[WorkspaceEdit] = Unset
   def onDeleteFiles(files: List[FileDelete]): Unit = ()
   def onSetTrace(value: Text): Unit = ()
+
+  // The `*/resolve` hooks default to returning the item unchanged.
+  def resolveCompletion(item: CompletionItem): CompletionItem = item
+  def resolveCodeAction(codeAction: CodeAction): CodeAction = codeAction
+  def resolveCodeLens(codeLens: CodeLens): CodeLens = codeLens
+  def resolveDocumentLink(documentLink: DocumentLink): DocumentLink = documentLink
+  def resolveInlayHint(inlayHint: InlayHint): InlayHint = inlayHint
+  def resolveWorkspaceSymbol(workspaceSymbol: WorkspaceSymbol): WorkspaceSymbol = workspaceSymbol
 
   // The current contents of an open document, if any.
   def document(uri: Text): Optional[TextDocumentItem] = documents.at(uri)
@@ -481,6 +495,18 @@ trait LspServer() extends Lsp:
 
   def `workspace/didDeleteFiles`(files: List[FileDelete]): Unit = onDeleteFiles(files)
   def `$/setTrace`(value: Text): Unit = onSetTrace(value)
+
+  def `completionItem/resolve`(item: CompletionItem): CompletionItem = resolveCompletion(item)
+  def `codeAction/resolve`(codeAction: CodeAction): CodeAction = resolveCodeAction(codeAction)
+  def `codeLens/resolve`(codeLens: CodeLens): CodeLens = resolveCodeLens(codeLens)
+
+  def `documentLink/resolve`(documentLink: DocumentLink): DocumentLink =
+    resolveDocumentLink(documentLink)
+
+  def `inlayHint/resolve`(inlayHint: InlayHint): InlayHint = resolveInlayHint(inlayHint)
+
+  def `workspaceSymbol/resolve`(workspaceSymbol: WorkspaceSymbol): WorkspaceSymbol =
+    resolveWorkspaceSymbol(workspaceSymbol)
 
   // The stdio transport. Reads `Content-Length`-framed JSON-RPC messages from standard input and
   // dispatches each to the methods above; a single asynchronous writer drains the outgoing channel

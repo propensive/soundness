@@ -76,7 +76,9 @@ object Lsp:
   case class ServerInfo(name: Text, version: Optional[Text] = Unset)
   case class Folder(uri: Text, name: Text)
 
-  case class CompletionOptions(triggerCharacters: Optional[List[Text]] = Unset)
+  case class CompletionOptions
+    ( triggerCharacters: Optional[List[Text]] = Unset, resolveProvider: Optional[Boolean] = Unset )
+
   case class SignatureHelpOptions(triggerCharacters: Optional[List[Text]] = Unset)
   case class DocumentLinkOptions(resolveProvider: Optional[Boolean] = Unset)
   case class CodeLensOptions(resolveProvider: Optional[Boolean] = Unset)
@@ -138,12 +140,17 @@ object Lsp:
 
   case class CompletionContext(triggerKind: Int, triggerCharacter: Optional[Text] = Unset)
 
+  object CompletionItem:
+    given decodable: Tactic[JsonError] => CompletionItem is Json.Decodable =
+      Json.DecodableDerivation.derived
+
   case class CompletionItem
     ( label:         Text,
       kind:          Optional[CompletionItemKind] = Unset,
       detail:        Optional[Text]               = Unset,
       documentation: Optional[MarkupContent]      = Unset,
-      insertText:    Optional[Text]               = Unset )
+      insertText:    Optional[Text]               = Unset,
+      data:          Optional[Json]               = Unset )
 
   case class CompletionList(isIncomplete: Boolean = false, items: List[CompletionItem] = Nil)
 
@@ -161,14 +168,24 @@ object Lsp:
 
   case class FormattingOptions(tabSize: Int, insertSpaces: Boolean)
   case class TextEdit(range: Range, newText: Text)
+
+  object WorkspaceEdit:
+    given decodable: Tactic[JsonError] => WorkspaceEdit is Json.Decodable =
+      Json.DecodableDerivation.derived
+
   case class WorkspaceEdit(changes: Optional[Map[Text, List[TextEdit]]] = Unset)
 
   case class CodeActionContext(diagnostics: List[Diagnostic] = Nil)
 
+  object CodeAction:
+    given decodable: Tactic[JsonError] => CodeAction is Json.Decodable =
+      Json.DecodableDerivation.derived
+
   case class CodeAction
     ( title: Text,
       kind:  Optional[Text]          = Unset,
-      edit:  Optional[WorkspaceEdit] = Unset )
+      edit:  Optional[WorkspaceEdit] = Unset,
+      data:  Optional[Json]          = Unset )
 
   case class ParameterInformation(label: Text)
 
@@ -196,11 +213,20 @@ object Lsp:
 
   // Links, lenses and commands
 
+  // `arguments` is an arbitrary JSON array (`LSPAny[]`), kept as raw `Json`.
   case class Command
-    ( title: Text, command: Text, arguments: Optional[List[Json]] = Unset )
+    ( title: Text, command: Text, arguments: Optional[Json] = Unset )
+
+  object CodeLens:
+    given decodable: Tactic[JsonError] => CodeLens is Json.Decodable =
+      Json.DecodableDerivation.derived
 
   case class CodeLens
     ( range: Range, command: Optional[Command] = Unset, data: Optional[Json] = Unset )
+
+  object DocumentLink:
+    given decodable: Tactic[JsonError] => DocumentLink is Json.Decodable =
+      Json.DecodableDerivation.derived
 
   case class DocumentLink
     ( range:   Range,
@@ -262,6 +288,10 @@ object Lsp:
 
   // Inlay hints, inline values, linked editing and monikers
 
+  object InlayHint:
+    given decodable: Tactic[JsonError] => InlayHint is Json.Decodable =
+      Json.DecodableDerivation.derived
+
   case class InlayHint
     ( position:     Position,
       label:        Text,
@@ -287,6 +317,10 @@ object Lsp:
     ( kind: Text = t"full", resultId: Optional[Text] = Unset, items: List[Diagnostic] = Nil )
 
   // Workspace
+
+  object WorkspaceSymbol:
+    given decodable: Tactic[JsonError] => WorkspaceSymbol is Json.Decodable =
+      Json.DecodableDerivation.derived
 
   case class WorkspaceSymbol
     ( name:          Text,
@@ -726,8 +760,31 @@ trait LspWorkspace extends JsonRpc:
   @rpc
   def `$/setTrace`(value: Text): Unit
 
+// The `*/resolve` requests: the client sends back an item it received earlier for the server to
+// fill in lazily-computed fields. Their wire `params` is the bare item, not a `params` object with
+// named fields, so each parameter is marked `@bare` (see `obligatory.bare`).
+trait LspResolve extends JsonRpc:
+
+  @rpc
+  def `completionItem/resolve`(@bare item: Lsp.CompletionItem): Lsp.CompletionItem
+
+  @rpc
+  def `codeAction/resolve`(@bare codeAction: Lsp.CodeAction): Lsp.CodeAction
+
+  @rpc
+  def `codeLens/resolve`(@bare codeLens: Lsp.CodeLens): Lsp.CodeLens
+
+  @rpc
+  def `documentLink/resolve`(@bare documentLink: Lsp.DocumentLink): Lsp.DocumentLink
+
+  @rpc
+  def `inlayHint/resolve`(@bare inlayHint: Lsp.InlayHint): Lsp.InlayHint
+
+  @rpc
+  def `workspaceSymbol/resolve`(@bare workspaceSymbol: Lsp.WorkspaceSymbol): Lsp.WorkspaceSymbol
+
 // The full protocol: the union of every sub-interface, fixing `Origin` to `LspClient`. `LspServer`
 // implements this; `LspServer.dispatcher` serves each sub-interface separately, routing by method.
 trait Lsp
-extends LspLifecycle, LspLanguage, LspNavigation, LspEditing, LspAdvanced, LspWorkspace:
+extends LspLifecycle, LspLanguage, LspNavigation, LspEditing, LspAdvanced, LspWorkspace, LspResolve:
   type Origin = LspClient
