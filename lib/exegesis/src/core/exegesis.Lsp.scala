@@ -76,20 +76,60 @@ object Lsp:
   case class ServerInfo(name: Text, version: Optional[Text] = Unset)
   case class Folder(uri: Text, name: Text)
 
-  case class CompletionOptions(triggerCharacters: Optional[List[Text]] = Unset)
+  case class CompletionOptions
+    ( triggerCharacters: Optional[List[Text]] = Unset, resolveProvider: Optional[Boolean] = Unset )
+
   case class SignatureHelpOptions(triggerCharacters: Optional[List[Text]] = Unset)
+  case class DocumentLinkOptions(resolveProvider: Optional[Boolean] = Unset)
+  case class CodeLensOptions(resolveProvider: Optional[Boolean] = Unset)
+
+  case class DocumentOnTypeFormattingOptions
+    ( firstTriggerCharacter: Text, moreTriggerCharacter: Optional[List[Text]] = Unset )
+
+  case class SemanticTokensOptions
+    ( legend: SemanticTokensLegend,
+      range:  Optional[Boolean] = Unset,
+      full:   Optional[Boolean] = Unset )
+
+  case class DiagnosticOptions
+    ( identifier:            Optional[Text] = Unset,
+      interFileDependencies: Boolean,
+      workspaceDiagnostics:  Boolean )
+
+  case class ExecuteCommandOptions(commands: List[Text])
 
   case class ServerCapabilities
-    ( textDocumentSync:           Optional[TextDocumentSyncKind] = Unset,
-      completionProvider:         Optional[CompletionOptions]    = Unset,
-      hoverProvider:              Optional[Boolean]              = Unset,
-      definitionProvider:         Optional[Boolean]              = Unset,
-      referencesProvider:         Optional[Boolean]              = Unset,
-      documentSymbolProvider:     Optional[Boolean]              = Unset,
-      documentFormattingProvider: Optional[Boolean]              = Unset,
-      renameProvider:             Optional[Boolean]              = Unset,
-      codeActionProvider:         Optional[Boolean]              = Unset,
-      signatureHelpProvider:      Optional[SignatureHelpOptions] = Unset )
+    ( textDocumentSync:                 Optional[TextDocumentSyncKind]            = Unset,
+      completionProvider:               Optional[CompletionOptions]               = Unset,
+      hoverProvider:                    Optional[Boolean]                         = Unset,
+      definitionProvider:               Optional[Boolean]                         = Unset,
+      referencesProvider:               Optional[Boolean]                         = Unset,
+      documentSymbolProvider:           Optional[Boolean]                         = Unset,
+      documentFormattingProvider:       Optional[Boolean]                         = Unset,
+      renameProvider:                   Optional[Boolean]                         = Unset,
+      codeActionProvider:               Optional[Boolean]                         = Unset,
+      signatureHelpProvider:            Optional[SignatureHelpOptions]            = Unset,
+      declarationProvider:              Optional[Boolean]                         = Unset,
+      typeDefinitionProvider:           Optional[Boolean]                         = Unset,
+      implementationProvider:           Optional[Boolean]                         = Unset,
+      documentHighlightProvider:        Optional[Boolean]                         = Unset,
+      foldingRangeProvider:             Optional[Boolean]                         = Unset,
+      selectionRangeProvider:           Optional[Boolean]                         = Unset,
+      colorProvider:                    Optional[Boolean]                         = Unset,
+      documentRangeFormattingProvider:  Optional[Boolean]                         = Unset,
+      documentLinkProvider:             Optional[DocumentLinkOptions]             = Unset,
+      codeLensProvider:                 Optional[CodeLensOptions]                 = Unset,
+      documentOnTypeFormattingProvider: Optional[DocumentOnTypeFormattingOptions] = Unset,
+      callHierarchyProvider:            Optional[Boolean]                         = Unset,
+      typeHierarchyProvider:            Optional[Boolean]                         = Unset,
+      semanticTokensProvider:           Optional[SemanticTokensOptions]           = Unset,
+      inlayHintProvider:                Optional[Boolean]                         = Unset,
+      inlineValueProvider:              Optional[Boolean]                         = Unset,
+      linkedEditingRangeProvider:       Optional[Boolean]                         = Unset,
+      monikerProvider:                  Optional[Boolean]                         = Unset,
+      diagnosticProvider:               Optional[DiagnosticOptions]               = Unset,
+      workspaceSymbolProvider:          Optional[Boolean]                         = Unset,
+      executeCommandProvider:           Optional[ExecuteCommandOptions]           = Unset )
 
   case class InitializeResult
     ( capabilities: ServerCapabilities, serverInfo: Optional[ServerInfo] = Unset )
@@ -100,12 +140,17 @@ object Lsp:
 
   case class CompletionContext(triggerKind: Int, triggerCharacter: Optional[Text] = Unset)
 
+  object CompletionItem:
+    given decodable: Tactic[JsonError] => CompletionItem is Json.Decodable =
+      Json.DecodableDerivation.derived
+
   case class CompletionItem
     ( label:         Text,
       kind:          Optional[CompletionItemKind] = Unset,
       detail:        Optional[Text]               = Unset,
       documentation: Optional[MarkupContent]      = Unset,
-      insertText:    Optional[Text]               = Unset )
+      insertText:    Optional[Text]               = Unset,
+      data:          Optional[Json]               = Unset )
 
   case class CompletionList(isIncomplete: Boolean = false, items: List[CompletionItem] = Nil)
 
@@ -123,14 +168,24 @@ object Lsp:
 
   case class FormattingOptions(tabSize: Int, insertSpaces: Boolean)
   case class TextEdit(range: Range, newText: Text)
+
+  object WorkspaceEdit:
+    given decodable: Tactic[JsonError] => WorkspaceEdit is Json.Decodable =
+      Json.DecodableDerivation.derived
+
   case class WorkspaceEdit(changes: Optional[Map[Text, List[TextEdit]]] = Unset)
 
   case class CodeActionContext(diagnostics: List[Diagnostic] = Nil)
 
+  object CodeAction:
+    given decodable: Tactic[JsonError] => CodeAction is Json.Decodable =
+      Json.DecodableDerivation.derived
+
   case class CodeAction
     ( title: Text,
       kind:  Optional[Text]          = Unset,
-      edit:  Optional[WorkspaceEdit] = Unset )
+      edit:  Optional[WorkspaceEdit] = Unset,
+      data:  Optional[Json]          = Unset )
 
   case class ParameterInformation(label: Text)
 
@@ -141,6 +196,169 @@ object Lsp:
 
   case class SignatureHelp
     ( signatures: List[SignatureInformation] = Nil, activeSignature: Optional[Int] = Unset )
+
+  // Highlights, folding and selection
+
+  case class DocumentHighlight(range: Range, kind: Optional[DocumentHighlightKind] = Unset)
+
+  case class FoldingRange
+    ( startLine:      Int,
+      startCharacter: Optional[Int]  = Unset,
+      endLine:        Int,
+      endCharacter:   Optional[Int]  = Unset,
+      kind:           Optional[Text] = Unset,
+      collapsedText:  Optional[Text] = Unset )
+
+  case class SelectionRange(range: Range, parent: Optional[SelectionRange] = Unset)
+
+  // Links, lenses and commands
+
+  // `arguments` is an arbitrary JSON array (`LSPAny[]`), kept as raw `Json`.
+  case class Command
+    ( title: Text, command: Text, arguments: Optional[Json] = Unset )
+
+  object CodeLens:
+    given decodable: Tactic[JsonError] => CodeLens is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class CodeLens
+    ( range: Range, command: Optional[Command] = Unset, data: Optional[Json] = Unset )
+
+  object DocumentLink:
+    given decodable: Tactic[JsonError] => DocumentLink is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class DocumentLink
+    ( range:   Range,
+      target:  Optional[Text] = Unset,
+      tooltip: Optional[Text] = Unset,
+      data:    Optional[Json] = Unset )
+
+  // Colors
+
+  case class Color(red: Double, green: Double, blue: Double, alpha: Double)
+  case class ColorInformation(range: Range, color: Color)
+
+  case class ColorPresentation
+    ( label:               Text,
+      textEdit:            Optional[TextEdit]       = Unset,
+      additionalTextEdits: Optional[List[TextEdit]] = Unset )
+
+  // Call and type hierarchies
+
+  object CallHierarchyItem:
+    given decodable: Tactic[JsonError] => CallHierarchyItem is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class CallHierarchyItem
+    ( name:           Text,
+      kind:           SymbolKind,
+      tags:           Optional[List[SymbolTag]] = Unset,
+      detail:         Optional[Text]            = Unset,
+      uri:            Text,
+      range:          Range,
+      selectionRange: Range,
+      data:           Optional[Json]            = Unset )
+
+  case class CallHierarchyIncomingCall(from: CallHierarchyItem, fromRanges: List[Range])
+  case class CallHierarchyOutgoingCall(to: CallHierarchyItem, fromRanges: List[Range])
+
+  object TypeHierarchyItem:
+    given decodable: Tactic[JsonError] => TypeHierarchyItem is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class TypeHierarchyItem
+    ( name:           Text,
+      kind:           SymbolKind,
+      tags:           Optional[List[SymbolTag]] = Unset,
+      detail:         Optional[Text]            = Unset,
+      uri:            Text,
+      range:          Range,
+      selectionRange: Range,
+      data:           Optional[Json]            = Unset )
+
+  // Semantic tokens
+
+  case class SemanticTokensLegend(tokenTypes: List[Text], tokenModifiers: List[Text])
+  case class SemanticTokens(resultId: Optional[Text] = Unset, data: List[Int] = Nil)
+  case class SemanticTokensEdit(start: Int, deleteCount: Int, data: Optional[List[Int]] = Unset)
+
+  case class SemanticTokensDelta
+    ( resultId: Optional[Text] = Unset, edits: List[SemanticTokensEdit] = Nil )
+
+  // Inlay hints, inline values, linked editing and monikers
+
+  object InlayHint:
+    given decodable: Tactic[JsonError] => InlayHint is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class InlayHint
+    ( position:     Position,
+      label:        Text,
+      kind:         Optional[InlayHintKind] = Unset,
+      tooltip:      Optional[Text]          = Unset,
+      paddingLeft:  Optional[Boolean]       = Unset,
+      paddingRight: Optional[Boolean]       = Unset,
+      data:         Optional[Json]          = Unset )
+
+  object InlineValueContext:
+    given decodable: Tactic[JsonError] => InlineValueContext is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class InlineValueContext(frameId: Int, stoppedLocation: Range)
+  case class InlineValueText(range: Range, text: Text)
+
+  case class LinkedEditingRanges(ranges: List[Range], wordPattern: Optional[Text] = Unset)
+  case class Moniker(scheme: Text, identifier: Text, unique: Text, kind: Optional[Text] = Unset)
+
+  // Pull diagnostics
+
+  case class DocumentDiagnosticReport
+    ( kind: Text = t"full", resultId: Optional[Text] = Unset, items: List[Diagnostic] = Nil )
+
+  // Workspace
+
+  object WorkspaceSymbol:
+    given decodable: Tactic[JsonError] => WorkspaceSymbol is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class WorkspaceSymbol
+    ( name:          Text,
+      kind:          SymbolKind,
+      tags:          Optional[List[SymbolTag]] = Unset,
+      location:      Location,
+      containerName: Optional[Text]            = Unset,
+      data:          Optional[Json]            = Unset )
+
+  object FileEvent:
+    given decodable: Tactic[JsonError] => FileEvent is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class FileEvent(uri: Text, `type`: FileChangeType)
+
+  object WorkspaceFoldersChangeEvent:
+    given decodable: Tactic[JsonError] => WorkspaceFoldersChangeEvent is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class WorkspaceFoldersChangeEvent(added: List[Folder], removed: List[Folder])
+
+  object FileCreate:
+    given decodable: Tactic[JsonError] => FileCreate is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class FileCreate(uri: Text)
+
+  object FileRename:
+    given decodable: Tactic[JsonError] => FileRename is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class FileRename(oldUri: Text, newUri: Text)
+
+  object FileDelete:
+    given decodable: Tactic[JsonError] => FileDelete is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class FileDelete(uri: Text)
 
   // Diagnostics and window messages
 
@@ -216,8 +434,63 @@ object Lsp:
       Interface, Function, Variable, Constant, `String`, Number, `Boolean`, `Array`, `Object`,
       Key, `Null`, EnumMember, Struct, Event, Operator, TypeParameter
 
-trait Lsp extends JsonRpc:
-  type Origin = LspClient
+  object DocumentHighlightKind:
+    given encodable: DocumentHighlightKind is Json.Encodable =
+      Json.Encodable(Morphology.Whole): kind => (kind.ordinal + 1).json
+
+    given decodable: Tactic[JsonError] => DocumentHighlightKind is Json.Decodable =
+      Json.Decodable(Morphology.Whole): json => DocumentHighlightKind.fromOrdinal(json.as[Int] - 1)
+
+  enum DocumentHighlightKind:
+    case Text, Read, Write
+
+  object TextDocumentSaveReason:
+    given encodable: TextDocumentSaveReason is Json.Encodable =
+      Json.Encodable(Morphology.Whole): reason => (reason.ordinal + 1).json
+
+    given decodable: Tactic[JsonError] => TextDocumentSaveReason is Json.Decodable =
+      Json.Decodable(Morphology.Whole): json => TextDocumentSaveReason.fromOrdinal(json.as[Int] - 1)
+
+  enum TextDocumentSaveReason:
+    case Manual, AfterDelay, FocusOut
+
+  object SymbolTag:
+    given encodable: SymbolTag is Json.Encodable =
+      Json.Encodable(Morphology.Whole): tag => (tag.ordinal + 1).json
+
+    given decodable: Tactic[JsonError] => SymbolTag is Json.Decodable =
+      Json.Decodable(Morphology.Whole): json => SymbolTag.fromOrdinal(json.as[Int] - 1)
+
+  enum SymbolTag:
+    case Deprecated
+
+  object InlayHintKind:
+    given encodable: InlayHintKind is Json.Encodable =
+      Json.Encodable(Morphology.Whole): kind => (kind.ordinal + 1).json
+
+    given decodable: Tactic[JsonError] => InlayHintKind is Json.Decodable =
+      Json.Decodable(Morphology.Whole): json => InlayHintKind.fromOrdinal(json.as[Int] - 1)
+
+  enum InlayHintKind:
+    case Type, Parameter
+
+  object FileChangeType:
+    given encodable: FileChangeType is Json.Encodable =
+      Json.Encodable(Morphology.Whole): kind => (kind.ordinal + 1).json
+
+    given decodable: Tactic[JsonError] => FileChangeType is Json.Decodable =
+      Json.Decodable(Morphology.Whole): json => FileChangeType.fromOrdinal(json.as[Int] - 1)
+
+  enum FileChangeType:
+    case Created, Changed, Deleted
+
+// The Language Server Protocol request/notification surface. It is split into several sub-traits
+// purely so that each can be compiled into its own JSON-RPC dispatcher class: `JsonRpc.serve`
+// inlines a schema-carrying codec for every method it covers, so a single dispatcher for the whole
+// protocol would overflow the JVM per-class constant-pool limit. `LspServer.dispatcher` routes each
+// request to the sub-dispatcher whose interface declares its method (see `JsonRpc.methods`).
+
+trait LspLifecycle extends JsonRpc:
 
   @rpc
   def initialize
@@ -254,6 +527,8 @@ trait Lsp extends JsonRpc:
 
   @rpc
   def `textDocument/didClose`(textDocument: Lsp.TextDocumentIdentifier): Unit
+
+trait LspLanguage extends JsonRpc:
 
   @rpc
   def `textDocument/completion`
@@ -301,3 +576,215 @@ trait Lsp extends JsonRpc:
   @rpc
   def `textDocument/signatureHelp`(textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position)
   :   Optional[Lsp.SignatureHelp]
+
+trait LspNavigation extends JsonRpc:
+
+  @rpc
+  def `textDocument/declaration`(textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position)
+  :   List[Lsp.Location]
+
+  @rpc
+  def `textDocument/typeDefinition`
+    ( textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position )
+  :   List[Lsp.Location]
+
+  @rpc
+  def `textDocument/implementation`
+    ( textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position )
+  :   List[Lsp.Location]
+
+  @rpc
+  def `textDocument/documentHighlight`
+    ( textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position )
+  :   List[Lsp.DocumentHighlight]
+
+  @rpc
+  def `textDocument/foldingRange`(textDocument: Lsp.TextDocumentIdentifier)
+  :   List[Lsp.FoldingRange]
+
+  @rpc
+  def `textDocument/selectionRange`
+    ( textDocument: Lsp.TextDocumentIdentifier, positions: List[Lsp.Position] )
+  :   List[Lsp.SelectionRange]
+
+  @rpc
+  def `textDocument/documentLink`(textDocument: Lsp.TextDocumentIdentifier)
+  :   List[Lsp.DocumentLink]
+
+  @rpc
+  def `textDocument/codeLens`(textDocument: Lsp.TextDocumentIdentifier): List[Lsp.CodeLens]
+
+  @rpc
+  def `textDocument/documentColor`(textDocument: Lsp.TextDocumentIdentifier)
+  :   List[Lsp.ColorInformation]
+
+  @rpc
+  def `textDocument/colorPresentation`
+    ( textDocument: Lsp.TextDocumentIdentifier, color: Lsp.Color, range: Lsp.Range )
+  :   List[Lsp.ColorPresentation]
+
+trait LspEditing extends JsonRpc:
+
+  @rpc
+  def `textDocument/rangeFormatting`
+    ( textDocument: Lsp.TextDocumentIdentifier,
+      range:        Lsp.Range,
+      options:      Lsp.FormattingOptions )
+  :   List[Lsp.TextEdit]
+
+  @rpc
+  def `textDocument/onTypeFormatting`
+    ( textDocument: Lsp.TextDocumentIdentifier,
+      position:     Lsp.Position,
+      ch:           Text,
+      options:      Lsp.FormattingOptions )
+  :   List[Lsp.TextEdit]
+
+  @rpc
+  def `textDocument/prepareRename`
+    ( textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position )
+  :   Optional[Lsp.Range]
+
+  @rpc
+  def `textDocument/willSave`
+    ( textDocument: Lsp.TextDocumentIdentifier, reason: Lsp.TextDocumentSaveReason )
+  :   Unit
+
+  @rpc
+  def `textDocument/willSaveWaitUntil`
+    ( textDocument: Lsp.TextDocumentIdentifier, reason: Lsp.TextDocumentSaveReason )
+  :   List[Lsp.TextEdit]
+
+  @rpc
+  def `textDocument/prepareCallHierarchy`
+    ( textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position )
+  :   List[Lsp.CallHierarchyItem]
+
+  @rpc
+  def `callHierarchy/incomingCalls`(item: Lsp.CallHierarchyItem)
+  :   List[Lsp.CallHierarchyIncomingCall]
+
+  @rpc
+  def `callHierarchy/outgoingCalls`(item: Lsp.CallHierarchyItem)
+  :   List[Lsp.CallHierarchyOutgoingCall]
+
+  @rpc
+  def `textDocument/prepareTypeHierarchy`
+    ( textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position )
+  :   List[Lsp.TypeHierarchyItem]
+
+  @rpc
+  def `typeHierarchy/supertypes`(item: Lsp.TypeHierarchyItem): List[Lsp.TypeHierarchyItem]
+
+  @rpc
+  def `typeHierarchy/subtypes`(item: Lsp.TypeHierarchyItem): List[Lsp.TypeHierarchyItem]
+
+trait LspAdvanced extends JsonRpc:
+
+  @rpc
+  def `textDocument/semanticTokens/full`(textDocument: Lsp.TextDocumentIdentifier)
+  :   Lsp.SemanticTokens
+
+  @rpc
+  def `textDocument/semanticTokens/full/delta`
+    ( textDocument: Lsp.TextDocumentIdentifier, previousResultId: Text )
+  :   Lsp.SemanticTokensDelta
+
+  @rpc
+  def `textDocument/semanticTokens/range`
+    ( textDocument: Lsp.TextDocumentIdentifier, range: Lsp.Range )
+  :   Lsp.SemanticTokens
+
+  @rpc
+  def `textDocument/inlayHint`(textDocument: Lsp.TextDocumentIdentifier, range: Lsp.Range)
+  :   List[Lsp.InlayHint]
+
+  @rpc
+  def `textDocument/inlineValue`
+    ( textDocument: Lsp.TextDocumentIdentifier,
+      range:        Lsp.Range,
+      context:      Lsp.InlineValueContext )
+  :   List[Lsp.InlineValueText]
+
+  @rpc
+  def `textDocument/linkedEditingRange`
+    ( textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position )
+  :   Optional[Lsp.LinkedEditingRanges]
+
+  @rpc
+  def `textDocument/moniker`(textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position)
+  :   List[Lsp.Moniker]
+
+  @rpc
+  def `textDocument/diagnostic`
+    ( textDocument:     Lsp.TextDocumentIdentifier,
+      identifier:       Optional[Text],
+      previousResultId: Optional[Text] )
+  :   Lsp.DocumentDiagnosticReport
+
+trait LspWorkspace extends JsonRpc:
+
+  @rpc
+  def `workspace/symbol`(query: Text): List[Lsp.WorkspaceSymbol]
+
+  @rpc
+  def `workspace/executeCommand`(command: Text, arguments: Optional[List[Json]]): Optional[Json]
+
+  @rpc
+  def `workspace/didChangeConfiguration`(settings: Json): Unit
+
+  @rpc
+  def `workspace/didChangeWatchedFiles`(changes: List[Lsp.FileEvent]): Unit
+
+  @rpc
+  def `workspace/didChangeWorkspaceFolders`(event: Lsp.WorkspaceFoldersChangeEvent): Unit
+
+  @rpc
+  def `workspace/willCreateFiles`(files: List[Lsp.FileCreate]): Optional[Lsp.WorkspaceEdit]
+
+  @rpc
+  def `workspace/didCreateFiles`(files: List[Lsp.FileCreate]): Unit
+
+  @rpc
+  def `workspace/willRenameFiles`(files: List[Lsp.FileRename]): Optional[Lsp.WorkspaceEdit]
+
+  @rpc
+  def `workspace/didRenameFiles`(files: List[Lsp.FileRename]): Unit
+
+  @rpc
+  def `workspace/willDeleteFiles`(files: List[Lsp.FileDelete]): Optional[Lsp.WorkspaceEdit]
+
+  @rpc
+  def `workspace/didDeleteFiles`(files: List[Lsp.FileDelete]): Unit
+
+  @rpc
+  def `$/setTrace`(value: Text): Unit
+
+// The `*/resolve` requests: the client sends back an item it received earlier for the server to
+// fill in lazily-computed fields. Their wire `params` is the bare item, not a `params` object with
+// named fields, so each parameter is marked `@bare` (see `obligatory.bare`).
+trait LspResolve extends JsonRpc:
+
+  @rpc
+  def `completionItem/resolve`(@bare item: Lsp.CompletionItem): Lsp.CompletionItem
+
+  @rpc
+  def `codeAction/resolve`(@bare codeAction: Lsp.CodeAction): Lsp.CodeAction
+
+  @rpc
+  def `codeLens/resolve`(@bare codeLens: Lsp.CodeLens): Lsp.CodeLens
+
+  @rpc
+  def `documentLink/resolve`(@bare documentLink: Lsp.DocumentLink): Lsp.DocumentLink
+
+  @rpc
+  def `inlayHint/resolve`(@bare inlayHint: Lsp.InlayHint): Lsp.InlayHint
+
+  @rpc
+  def `workspaceSymbol/resolve`(@bare workspaceSymbol: Lsp.WorkspaceSymbol): Lsp.WorkspaceSymbol
+
+// The full protocol: the union of every sub-interface, fixing `Origin` to `LspClient`. `LspServer`
+// implements this; `LspServer.dispatcher` serves each sub-interface separately, routing by method.
+trait Lsp
+extends LspLifecycle, LspLanguage, LspNavigation, LspEditing, LspAdvanced, LspWorkspace, LspResolve:
+  type Origin = LspClient

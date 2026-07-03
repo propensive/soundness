@@ -56,6 +56,71 @@ import probates.awaitProbate
 import strategies.throwUnsafely
 import threading.virtualThreading
 
+object LspServer:
+  // The JSON-RPC dispatch is generated split across one dispatcher per `Lsp` sub-interface, rather
+  // than as a single `serve[Lsp]` inside the trait. `JsonRpc.serve` inlines a schema-carrying codec
+  // for every method it covers, so one dispatcher for the whole protocol — or even one on the
+  // `LspServer` trait alongside its handlers and `main` — overflows the JVM per-class constant-pool
+  // limit. Each sub-dispatcher is expanded in its own object, so it compiles into its own small
+  // class; `dispatcher` routes an incoming request to the one whose interface declares its method
+  // (a JSON-RPC response, which carries no method, is handled by any dispatcher, so the first
+  // suffices).
+
+  private object lifecycleRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      JsonRpc.serve[LspLifecycle](server)
+
+  private object languageRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      JsonRpc.serve[LspLanguage](server)
+
+  private object navigationRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      JsonRpc.serve[LspNavigation](server)
+
+  private object editingRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      JsonRpc.serve[LspEditing](server)
+
+  private object advancedRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      JsonRpc.serve[LspAdvanced](server)
+
+  private object workspaceRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      JsonRpc.serve[LspWorkspace](server)
+
+  private object resolveRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      JsonRpc.serve[LspResolve](server)
+
+  def dispatcher(server: Lsp): Json => Optional[Json] =
+    import dynamicJsonAccess.enabled
+    import strategies.throwUnsafely
+
+    val routes: List[(Set[Text], Json => Optional[Json])] =
+      List
+        ( JsonRpc.methods[LspLifecycle]  -> lifecycleRoute(server),
+          JsonRpc.methods[LspLanguage]   -> languageRoute(server),
+          JsonRpc.methods[LspNavigation] -> navigationRoute(server),
+          JsonRpc.methods[LspEditing]    -> editingRoute(server),
+          JsonRpc.methods[LspAdvanced]   -> advancedRoute(server),
+          JsonRpc.methods[LspWorkspace]  -> workspaceRoute(server),
+          JsonRpc.methods[LspResolve]    -> resolveRoute(server) )
+
+    json =>
+      safely(json.method.as[Text]).lay(routes.head._2(json)): method =>
+        routes.find(_._1.contains(method)) match
+          case Some((_, dispatch)) => dispatch(json)
+          case None                => Unset
+
 // A base for Language Server implementations. Subclasses provide their `name`, `capabilities` and
 // any of the overridable handler hooks they support; everything else (the JSON-RPC method dispatch,
 // the document store, and the stdio transport) is provided here. This is deliberately simpler than
@@ -95,6 +160,80 @@ trait LspServer() extends Lsp:
   def rename(uri: Text, position: Position, newName: Text): WorkspaceEdit = WorkspaceEdit()
   def codeActions(uri: Text, range: Range, context: CodeActionContext): List[CodeAction] = Nil
   def signatureHelp(uri: Text, position: Position): Optional[SignatureHelp] = Unset
+
+  def declaration(uri: Text, position: Position): List[Location] = Nil
+  def typeDefinition(uri: Text, position: Position): List[Location] = Nil
+  def implementation(uri: Text, position: Position): List[Location] = Nil
+  def documentHighlights(uri: Text, position: Position): List[DocumentHighlight] = Nil
+  def foldingRanges(uri: Text): List[FoldingRange] = Nil
+  def selectionRanges(uri: Text, positions: List[Position]): List[SelectionRange] = Nil
+  def documentLinks(uri: Text): List[DocumentLink] = Nil
+  def codeLenses(uri: Text): List[CodeLens] = Nil
+  def documentColors(uri: Text): List[ColorInformation] = Nil
+
+  def colorPresentations(uri: Text, color: Color, range: Range): List[ColorPresentation] = Nil
+
+  def formatRange(uri: Text, range: Range, options: FormattingOptions): List[TextEdit] = Nil
+
+  def formatOnType(uri: Text, position: Position, character: Text, options: FormattingOptions)
+  :   List[TextEdit] =
+
+    Nil
+
+  def prepareRename(uri: Text, position: Position): Optional[Range] = Unset
+  def onWillSave(document: TextDocumentIdentifier, reason: TextDocumentSaveReason): Unit = ()
+
+  def willSaveWaitUntil(document: TextDocumentIdentifier, reason: TextDocumentSaveReason)
+  :   List[TextEdit] =
+
+    Nil
+
+  def prepareCallHierarchy(uri: Text, position: Position): List[CallHierarchyItem] = Nil
+  def incomingCalls(item: CallHierarchyItem): List[CallHierarchyIncomingCall] = Nil
+  def outgoingCalls(item: CallHierarchyItem): List[CallHierarchyOutgoingCall] = Nil
+  def prepareTypeHierarchy(uri: Text, position: Position): List[TypeHierarchyItem] = Nil
+  def supertypes(item: TypeHierarchyItem): List[TypeHierarchyItem] = Nil
+  def subtypes(item: TypeHierarchyItem): List[TypeHierarchyItem] = Nil
+
+  def semanticTokens(uri: Text): SemanticTokens = SemanticTokens()
+  def semanticTokensRange(uri: Text, range: Range): SemanticTokens = SemanticTokens()
+
+  def semanticTokensDelta(uri: Text, previousResultId: Text): SemanticTokensDelta =
+    SemanticTokensDelta()
+
+  def inlayHints(uri: Text, range: Range): List[InlayHint] = Nil
+
+  def inlineValues(uri: Text, range: Range, context: InlineValueContext): List[InlineValueText] =
+    Nil
+
+  def linkedEditingRange(uri: Text, position: Position): Optional[LinkedEditingRanges] = Unset
+  def monikers(uri: Text, position: Position): List[Moniker] = Nil
+
+  def diagnostics(uri: Text, identifier: Optional[Text], previousResultId: Optional[Text])
+  :   DocumentDiagnosticReport =
+
+    DocumentDiagnosticReport()
+
+  def workspaceSymbols(query: Text): List[WorkspaceSymbol] = Nil
+  def executeCommand(command: Text, arguments: Optional[List[Json]]): Optional[Json] = Unset
+  def onConfigurationChange(settings: Json): Unit = ()
+  def onWatchedFilesChange(changes: List[FileEvent]): Unit = ()
+  def onWorkspaceFoldersChange(event: WorkspaceFoldersChangeEvent): Unit = ()
+  def willCreateFiles(files: List[FileCreate]): Optional[WorkspaceEdit] = Unset
+  def onCreateFiles(files: List[FileCreate]): Unit = ()
+  def willRenameFiles(files: List[FileRename]): Optional[WorkspaceEdit] = Unset
+  def onRenameFiles(files: List[FileRename]): Unit = ()
+  def willDeleteFiles(files: List[FileDelete]): Optional[WorkspaceEdit] = Unset
+  def onDeleteFiles(files: List[FileDelete]): Unit = ()
+  def onSetTrace(value: Text): Unit = ()
+
+  // The `*/resolve` hooks default to returning the item unchanged.
+  def resolveCompletion(item: CompletionItem): CompletionItem = item
+  def resolveCodeAction(codeAction: CodeAction): CodeAction = codeAction
+  def resolveCodeLens(codeLens: CodeLens): CodeLens = codeLens
+  def resolveDocumentLink(documentLink: DocumentLink): DocumentLink = documentLink
+  def resolveInlayHint(inlayHint: InlayHint): InlayHint = inlayHint
+  def resolveWorkspaceSymbol(workspaceSymbol: WorkspaceSymbol): WorkspaceSymbol = workspaceSymbol
 
   // The current contents of an open document, if any.
   def document(uri: Text): Optional[TextDocumentItem] = documents.at(uri)
@@ -187,6 +326,188 @@ trait LspServer() extends Lsp:
 
     signatureHelp(textDocument.uri, position)
 
+  def `textDocument/declaration`(textDocument: TextDocumentIdentifier, position: Position)
+  :   List[Location] =
+
+    declaration(textDocument.uri, position)
+
+  def `textDocument/typeDefinition`(textDocument: TextDocumentIdentifier, position: Position)
+  :   List[Location] =
+
+    typeDefinition(textDocument.uri, position)
+
+  def `textDocument/implementation`(textDocument: TextDocumentIdentifier, position: Position)
+  :   List[Location] =
+
+    implementation(textDocument.uri, position)
+
+  def `textDocument/documentHighlight`(textDocument: TextDocumentIdentifier, position: Position)
+  :   List[DocumentHighlight] =
+
+    documentHighlights(textDocument.uri, position)
+
+  def `textDocument/foldingRange`(textDocument: TextDocumentIdentifier): List[FoldingRange] =
+    foldingRanges(textDocument.uri)
+
+  def `textDocument/selectionRange`
+    ( textDocument: TextDocumentIdentifier, positions: List[Position] )
+  :   List[SelectionRange] =
+
+    selectionRanges(textDocument.uri, positions)
+
+  def `textDocument/documentLink`(textDocument: TextDocumentIdentifier): List[DocumentLink] =
+    documentLinks(textDocument.uri)
+
+  def `textDocument/codeLens`(textDocument: TextDocumentIdentifier): List[CodeLens] =
+    codeLenses(textDocument.uri)
+
+  def `textDocument/documentColor`(textDocument: TextDocumentIdentifier): List[ColorInformation] =
+    documentColors(textDocument.uri)
+
+  def `textDocument/colorPresentation`
+    ( textDocument: TextDocumentIdentifier, color: Color, range: Range )
+  :   List[ColorPresentation] =
+
+    colorPresentations(textDocument.uri, color, range)
+
+  def `textDocument/rangeFormatting`
+    ( textDocument: TextDocumentIdentifier, range: Range, options: FormattingOptions )
+  :   List[TextEdit] =
+
+    formatRange(textDocument.uri, range, options)
+
+  def `textDocument/onTypeFormatting`
+    ( textDocument: TextDocumentIdentifier,
+      position:     Position,
+      ch:           Text,
+      options:      FormattingOptions )
+  :   List[TextEdit] =
+
+    formatOnType(textDocument.uri, position, ch, options)
+
+  def `textDocument/prepareRename`(textDocument: TextDocumentIdentifier, position: Position)
+  :   Optional[Range] =
+
+    prepareRename(textDocument.uri, position)
+
+  def `textDocument/willSave`
+    ( textDocument: TextDocumentIdentifier, reason: TextDocumentSaveReason )
+  :   Unit =
+
+    onWillSave(textDocument, reason)
+
+  def `textDocument/willSaveWaitUntil`
+    ( textDocument: TextDocumentIdentifier, reason: TextDocumentSaveReason )
+  :   List[TextEdit] =
+
+    willSaveWaitUntil(textDocument, reason)
+
+  def `textDocument/prepareCallHierarchy`(textDocument: TextDocumentIdentifier, position: Position)
+  :   List[CallHierarchyItem] =
+
+    prepareCallHierarchy(textDocument.uri, position)
+
+  def `callHierarchy/incomingCalls`(item: CallHierarchyItem): List[CallHierarchyIncomingCall] =
+    incomingCalls(item)
+
+  def `callHierarchy/outgoingCalls`(item: CallHierarchyItem): List[CallHierarchyOutgoingCall] =
+    outgoingCalls(item)
+
+  def `textDocument/prepareTypeHierarchy`(textDocument: TextDocumentIdentifier, position: Position)
+  :   List[TypeHierarchyItem] =
+
+    prepareTypeHierarchy(textDocument.uri, position)
+
+  def `typeHierarchy/supertypes`(item: TypeHierarchyItem): List[TypeHierarchyItem] =
+    supertypes(item)
+
+  def `typeHierarchy/subtypes`(item: TypeHierarchyItem): List[TypeHierarchyItem] =
+    subtypes(item)
+
+  def `textDocument/semanticTokens/full`(textDocument: TextDocumentIdentifier): SemanticTokens =
+    semanticTokens(textDocument.uri)
+
+  def `textDocument/semanticTokens/full/delta`
+    ( textDocument: TextDocumentIdentifier, previousResultId: Text )
+  :   SemanticTokensDelta =
+
+    semanticTokensDelta(textDocument.uri, previousResultId)
+
+  def `textDocument/semanticTokens/range`(textDocument: TextDocumentIdentifier, range: Range)
+  :   SemanticTokens =
+
+    semanticTokensRange(textDocument.uri, range)
+
+  def `textDocument/inlayHint`(textDocument: TextDocumentIdentifier, range: Range)
+  :   List[InlayHint] =
+
+    inlayHints(textDocument.uri, range)
+
+  def `textDocument/inlineValue`
+    ( textDocument: TextDocumentIdentifier, range: Range, context: InlineValueContext )
+  :   List[InlineValueText] =
+
+    inlineValues(textDocument.uri, range, context)
+
+  def `textDocument/linkedEditingRange`(textDocument: TextDocumentIdentifier, position: Position)
+  :   Optional[LinkedEditingRanges] =
+
+    linkedEditingRange(textDocument.uri, position)
+
+  def `textDocument/moniker`(textDocument: TextDocumentIdentifier, position: Position)
+  :   List[Moniker] =
+
+    monikers(textDocument.uri, position)
+
+  def `textDocument/diagnostic`
+    ( textDocument: TextDocumentIdentifier,
+      identifier: Optional[Text],
+      previousResultId: Optional[Text] )
+  :   DocumentDiagnosticReport =
+
+    diagnostics(textDocument.uri, identifier, previousResultId)
+
+  def `workspace/symbol`(query: Text): List[WorkspaceSymbol] = workspaceSymbols(query)
+
+  def `workspace/executeCommand`(command: Text, arguments: Optional[List[Json]]): Optional[Json] =
+    executeCommand(command, arguments)
+
+  def `workspace/didChangeConfiguration`(settings: Json): Unit = onConfigurationChange(settings)
+
+  def `workspace/didChangeWatchedFiles`(changes: List[FileEvent]): Unit =
+    onWatchedFilesChange(changes)
+
+  def `workspace/didChangeWorkspaceFolders`(event: WorkspaceFoldersChangeEvent): Unit =
+    onWorkspaceFoldersChange(event)
+
+  def `workspace/willCreateFiles`(files: List[FileCreate]): Optional[WorkspaceEdit] =
+    willCreateFiles(files)
+
+  def `workspace/didCreateFiles`(files: List[FileCreate]): Unit = onCreateFiles(files)
+
+  def `workspace/willRenameFiles`(files: List[FileRename]): Optional[WorkspaceEdit] =
+    willRenameFiles(files)
+
+  def `workspace/didRenameFiles`(files: List[FileRename]): Unit = onRenameFiles(files)
+
+  def `workspace/willDeleteFiles`(files: List[FileDelete]): Optional[WorkspaceEdit] =
+    willDeleteFiles(files)
+
+  def `workspace/didDeleteFiles`(files: List[FileDelete]): Unit = onDeleteFiles(files)
+  def `$/setTrace`(value: Text): Unit = onSetTrace(value)
+
+  def `completionItem/resolve`(item: CompletionItem): CompletionItem = resolveCompletion(item)
+  def `codeAction/resolve`(codeAction: CodeAction): CodeAction = resolveCodeAction(codeAction)
+  def `codeLens/resolve`(codeLens: CodeLens): CodeLens = resolveCodeLens(codeLens)
+
+  def `documentLink/resolve`(documentLink: DocumentLink): DocumentLink =
+    resolveDocumentLink(documentLink)
+
+  def `inlayHint/resolve`(inlayHint: InlayHint): InlayHint = resolveInlayHint(inlayHint)
+
+  def `workspaceSymbol/resolve`(workspaceSymbol: WorkspaceSymbol): WorkspaceSymbol =
+    resolveWorkspaceSymbol(workspaceSymbol)
+
   // The stdio transport. Reads `Content-Length`-framed JSON-RPC messages from standard input and
   // dispatches each to the methods above; a single asynchronous writer drains the outgoing channel
   // (both request responses, funnelled in via `put`, and server-initiated notifications such as
@@ -196,7 +517,7 @@ trait LspServer() extends Lsp:
     import charEncoders.utf8Encoder
     import strategies.throwUnsafely
 
-    val dispatch: Json => Optional[Json] = JsonRpc.serve[Lsp](this)
+    val dispatch: Json => Optional[Json] = LspServer.dispatcher(this)
 
     // The writer drains the channel and frames each message onto stdout.
     val writer: Task[Unit] = async:

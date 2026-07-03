@@ -58,10 +58,36 @@ object TestServer extends LspServer():
                 severity = Lsp.DiagnosticSeverity.Error,
                 message  = t"oops" ) ) )
 
-  // Expand the `serve` dispatch macro once, here, rather than at each test call
-  // site: each expansion inlines a codec (now schema-carrying) for every LSP
-  // method, which repeated would exceed the JVM per-class size limit in `Tests`.
-  lazy val dispatch: Json => Optional[Json] = JsonRpc.serve[Lsp](this)
+  override def documentHighlights(uri: Text, position: Lsp.Position): List[Lsp.DocumentHighlight] =
+    List(Lsp.DocumentHighlight(Lsp.Range(position, position), Lsp.DocumentHighlightKind.Write))
+
+  override def foldingRanges(uri: Text): List[Lsp.FoldingRange] =
+    List(Lsp.FoldingRange(startLine = 0, endLine = 4, kind = t"region"))
+
+  override def prepareRename(uri: Text, position: Lsp.Position): Optional[Lsp.Range] =
+    Lsp.Range(position, position)
+
+  override def incomingCalls(item: Lsp.CallHierarchyItem): List[Lsp.CallHierarchyIncomingCall] =
+    List(Lsp.CallHierarchyIncomingCall(from = item, fromRanges = List(item.range)))
+
+  override def inlayHints(uri: Text, range: Lsp.Range): List[Lsp.InlayHint] =
+    List(Lsp.InlayHint(range.start, label = t": Int", kind = Lsp.InlayHintKind.Type))
+
+  override def executeCommand(command: Text, arguments: Optional[List[Json]]): Optional[Json] =
+    command.json
+
+  override def onSave(document: Lsp.TextDocumentIdentifier, text: Optional[Text])(using LspClient)
+  :   Unit =
+
+    summon[LspClient].progress(t"token".json, t"begin".json)
+
+  override def resolveCompletion(item: Lsp.CompletionItem): Lsp.CompletionItem =
+    item.copy(detail = t"resolved")
+
+  // Build the dispatcher once, here, rather than at each test call site: it expands a
+  // schema-carrying codec for every LSP method, which repeated would exceed the JVM
+  // per-class size limit in `Tests`.
+  lazy val dispatch: Json => Optional[Json] = LspServer.dispatcher(this)
 
 object Tests extends Suite(m"Exegesis Tests"):
   def run(): Unit =
@@ -112,3 +138,95 @@ object Tests extends Suite(m"Exegesis Tests"):
         dispatch(request)
         TestServer.outgoing.iterator.next().as[JsonRpc.Request].method
       . assert(_ == t"textDocument/publishDiagnostics")
+
+      test(m"a document-highlight request encodes its kind as a protocol number"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","id":2,"method":"textDocument/documentHighlight","params":{"textDocument":{"uri":"file:///x"},"position":{"line":1,"character":2}}}"""
+          . decode[Json]
+
+        dispatch(request).let(_.as[JsonRpc.Response].result.as[List[Lsp.DocumentHighlight]].head.kind)
+      . assert(_ == Lsp.DocumentHighlightKind.Write)
+
+      test(m"a folding-range request is answered with the folding ranges"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","id":3,"method":"textDocument/foldingRange","params":{"textDocument":{"uri":"file:///x"}}}"""
+          . decode[Json]
+
+        dispatch(request).let(_.as[JsonRpc.Response].result.as[List[Lsp.FoldingRange]].head.endLine)
+      . assert(_ == 4)
+
+      test(m"a prepareRename request decodes a position and returns a range"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","id":4,"method":"textDocument/prepareRename","params":{"textDocument":{"uri":"file:///x"},"position":{"line":3,"character":5}}}"""
+          . decode[Json]
+
+        dispatch(request).let(_.as[JsonRpc.Response].result.as[Lsp.Range].start.line)
+      . assert(_ == 3)
+
+      test(m"an incomingCalls request decodes a CallHierarchyItem param and echoes it"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","id":5,"method":"callHierarchy/incomingCalls","params":{"item":{"name":"foo","kind":12,"uri":"file:///x","range":{"start":{"line":0,"character":0},"end":{"line":0,"character":3}},"selectionRange":{"start":{"line":0,"character":0},"end":{"line":0,"character":3}}}}}"""
+          . decode[Json]
+
+        dispatch(request).let: response =>
+          response.as[JsonRpc.Response].result.as[List[Lsp.CallHierarchyIncomingCall]].head.from.name
+      . assert(_ == t"foo")
+
+      test(m"an inlayHint request encodes its kind as a protocol number"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","id":6,"method":"textDocument/inlayHint","params":{"textDocument":{"uri":"file:///x"},"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":1}}}}"""
+          . decode[Json]
+
+        dispatch(request).let(_.as[JsonRpc.Response].result.as[List[Lsp.InlayHint]].head.kind)
+      . assert(_ == Lsp.InlayHintKind.Type)
+
+      test(m"a workspace/executeCommand request decodes its command name"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","id":7,"method":"workspace/executeCommand","params":{"command":"do.thing","arguments":[]}}"""
+          . decode[Json]
+
+        dispatch(request).let(_.as[JsonRpc.Response].result.as[Text])
+      . assert(_ == t"do.thing")
+
+      test(m"a $$/setTrace notification is dispatched without a response"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","method":"$$/setTrace","params":{"value":"verbose"}}"""
+          . decode[Json]
+
+        dispatch(request)
+      . assert(_ == Unset)
+
+      test(m"saving a document sends a progress notification to the client"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","method":"textDocument/didSave","params":{"textDocument":{"uri":"file:///x"}}}"""
+          . decode[Json]
+
+        dispatch(request)
+        TestServer.outgoing.iterator.next().as[JsonRpc.Request].method
+      . assert(_ == t"$$/progress")
+
+      test(m"a completionItem/resolve request decodes a bare item and resolves it"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","id":8,"method":"completionItem/resolve","params":{"label":"foo"}}"""
+          . decode[Json]
+
+        dispatch(request).let(_.as[JsonRpc.Response].result.as[Lsp.CompletionItem].detail)
+      . assert(_ == t"resolved")

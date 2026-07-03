@@ -51,10 +51,25 @@ import vacuous.*
 
 
 object internal:
+  def methodNames[interface: Type]: Macro[Set[Text]] =
+    import quotes.reflect.*
+
+    val rpcType = TypeRepr.of[rpc].typeSymbol
+
+    val names = TypeRepr.of[interface].typeSymbol.declaredMethods.filter: method =>
+      val annotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
+      annotations.exists(_.tpe.typeSymbol == rpcType)
+
+    . map: method =>
+        Expr(method.name.tt)
+
+    '{Set(${Varargs(names)}*)}
+
   def dispatcher[interface: Type](target: Expr[interface]): Macro[Json => Optional[Json]] =
     import quotes.reflect.*
 
     val rpcType = TypeRepr.of[rpc].typeSymbol
+    val bareType = TypeRepr.of[bare].typeSymbol
     val interface = TypeRepr.of[interface]
 
     val rpcMethods = interface.typeSymbol.declaredMethods.filter: method =>
@@ -81,6 +96,10 @@ object internal:
               $ {
                   val cases = rpcMethods.map: method =>
                     val params = method.paramSymss.head.map: param =>
+                      // A `@bare` parameter is decoded from the whole `params` value; every other
+                      // parameter is decoded from the like-named field of a `params` object.
+                      val bare = param.annotations.exists(_.tpe.typeSymbol == bareType)
+
                       param.info.asType.absolve match
                         // Summon the schema-carrying `Json.Decodable` rather than a
                         // plain `Decodable in Json`: for a `Json`-typed parameter the
@@ -88,8 +107,11 @@ object internal:
                         // distillate's universal `generic` identity decoder.
                         case '[param] => Expr.summon[param is Json.Decodable] match
                           case Some(decoder) =>
-                            '{$decoder.decoded(request.params(${Expr(param.name)}))}
-                            . asTerm
+                            val source =
+                              if bare then '{request.params}
+                              else '{request.params(${Expr(param.name)})}
+
+                            '{$decoder.decoded($source)}.asTerm
 
                           case None =>
                             halt:

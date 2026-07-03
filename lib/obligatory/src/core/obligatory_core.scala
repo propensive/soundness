@@ -39,3 +39,8 @@ extension [element](stream: Iterator[element])
     framable.frames(stream)
 
 case class rpc() extends StaticAnnotation
+
+// Marks a single JSON-RPC method parameter as receiving the entire `params` value, rather than one
+// named field of a `params` object. Used for methods (such as the LSP `*/resolve` family) whose
+// wire `params` is a bare object decoded directly into the parameter.
+case class bare() extends StaticAnnotation
