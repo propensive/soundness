@@ -101,7 +101,7 @@ object Xenophile:
 
   // Reads the `Topic` (foreign type) and `Origin` (source language) from a `Foreign` receiver. The
   // topic is returned as a type, since it may be compound (a union, say) rather than a single name.
-  private def receiver(using quotes: Quotes)(self: Expr[Foreign])
+  private[xenophile] def receiver(using quotes: Quotes)(self: Expr[Foreign])
   :   (quotes.reflect.TypeRepr, quotes.reflect.TypeRepr) =
 
     import quotes.reflect.*
@@ -118,7 +118,7 @@ object Xenophile:
 
   // The single foreign type name of a topic, for navigation; compound topics (e.g. unions) have no
   // members to select, so they are rejected here.
-  private def topicName(using quotes: Quotes)(topic: quotes.reflect.TypeRepr): Text =
+  private[xenophile] def topicName(using quotes: Quotes)(topic: quotes.reflect.TypeRepr): Text =
     import quotes.reflect.*
 
     topic.absolve match
@@ -128,7 +128,7 @@ object Xenophile:
         halt(m"xenophile: a compound foreign type (such as a union) has no members to select")
 
   // Summons the `Interface` given for a source language and reads its definitions path (`Locus`).
-  private def locusOf(using quotes: Quotes)(origin: quotes.reflect.TypeRepr): Text =
+  private[xenophile] def locusOf(using quotes: Quotes)(origin: quotes.reflect.TypeRepr): Text =
     import quotes.reflect.*
 
     val interfaceType = Refinement(TypeRepr.of[Interface], "Form", TypeBounds(origin, origin))
