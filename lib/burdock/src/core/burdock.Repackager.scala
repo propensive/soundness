@@ -91,6 +91,11 @@ object Repackager:
   // Resolves a dependency hash to its public URL (deps.dev), or `Unset`.
   type Resolver = Text => Optional[HttpUrl]
 
+  // Reports per-dependency progress as `(completed, total)`, called once after each dependency is
+  // processed. Injected (rather than printed here) so the core stays free of I/O; the command-line
+  // entry point renders a progress bar from it.
+  type Progress = (Int, Int) => Unit
+
   // Looks up a dependency hash's entries (directories and the manifest excluded) in the
   // local cache, or `Unset`. Payloads stay lazy, so identifying an externalized
   // dependency's entry names (to strip them) does not read the cached JAR's contents.
@@ -98,11 +103,15 @@ object Repackager:
 
   // Pure partition; `resolve` (deps.dev) and `cached` (cache lookup) are injected
   // so the logic is testable without the network or the filesystem.
-  def partition(hashes: List[Text], resolve: Resolver, cached: CacheReader)
+  def partition
+    ( hashes: List[Text], resolve: Resolver, cached: CacheReader,
+      progress: Progress = (_, _) => () )
   :   (List[Requirement], List[Entry]) raises RepackageError =
 
     val requirements = List.newBuilder[Requirement]
     val inlined = List.newBuilder[Entry]
+    val total: Int = hashes.length
+    var completed: Int = 0
 
     hashes.each: hash =>
       (resolve(hash): @unchecked) match
@@ -116,6 +125,9 @@ object Repackager:
           entries.each: entry =>
             inlined += Entry(entry.ref.show, entry.read[Data])
 
+      completed += 1
+      progress(completed, total)
+
     (requirements.result(), inlined.result())
 
 
@@ -127,7 +139,7 @@ object Repackager:
   // itself be downloaded).
   def repackage
     ( inputJar: Path on Linux, outputJar: Path on Linux, resolve: Resolver, cached: CacheReader,
-      bootstrapClass: Data )
+      bootstrapClass: Data, progress: Progress = (_, _) => () )
   :   Summary raises RepackageError =
 
     mitigate:
@@ -175,7 +187,7 @@ object Repackager:
           . cut(t"\n").filter(_ != t"")
 
         val ownEntries: List[Entry] = ownBuilder.result()
-        val (requirements, inlined) = partition(hashes, resolve, cached)
+        val (requirements, inlined) = partition(hashes, resolve, cached, progress)
 
         // Published dependencies are downloaded and added to the classpath at runtime, so
         // their bundled entries can be stripped from the repackaged JAR to slim it. Identify
