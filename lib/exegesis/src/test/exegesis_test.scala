@@ -58,6 +58,15 @@ object TestServer extends LspServer():
                 severity = Lsp.DiagnosticSeverity.Error,
                 message  = t"oops" ) ) )
 
+  override def documentHighlights(uri: Text, position: Lsp.Position): List[Lsp.DocumentHighlight] =
+    List(Lsp.DocumentHighlight(Lsp.Range(position, position), Lsp.DocumentHighlightKind.Write))
+
+  override def foldingRanges(uri: Text): List[Lsp.FoldingRange] =
+    List(Lsp.FoldingRange(startLine = 0, endLine = 4, kind = t"region"))
+
+  override def prepareRename(uri: Text, position: Lsp.Position): Optional[Lsp.Range] =
+    Lsp.Range(position, position)
+
   // Expand the `serve` dispatch macro once, here, rather than at each test call
   // site: each expansion inlines a codec (now schema-carrying) for every LSP
   // method, which repeated would exceed the JVM per-class size limit in `Tests`.
@@ -112,3 +121,33 @@ object Tests extends Suite(m"Exegesis Tests"):
         dispatch(request)
         TestServer.outgoing.iterator.next().as[JsonRpc.Request].method
       . assert(_ == t"textDocument/publishDiagnostics")
+
+      test(m"a document-highlight request encodes its kind as a protocol number"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","id":2,"method":"textDocument/documentHighlight","params":{"textDocument":{"uri":"file:///x"},"position":{"line":1,"character":2}}}"""
+          . decode[Json]
+
+        dispatch(request).let(_.as[JsonRpc.Response].result.as[List[Lsp.DocumentHighlight]].head.kind)
+      . assert(_ == Lsp.DocumentHighlightKind.Write)
+
+      test(m"a folding-range request is answered with the folding ranges"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","id":3,"method":"textDocument/foldingRange","params":{"textDocument":{"uri":"file:///x"}}}"""
+          . decode[Json]
+
+        dispatch(request).let(_.as[JsonRpc.Response].result.as[List[Lsp.FoldingRange]].head.endLine)
+      . assert(_ == 4)
+
+      test(m"a prepareRename request decodes a position and returns a range"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","id":4,"method":"textDocument/prepareRename","params":{"textDocument":{"uri":"file:///x"},"position":{"line":3,"character":5}}}"""
+          . decode[Json]
+
+        dispatch(request).let(_.as[JsonRpc.Response].result.as[Lsp.Range].start.line)
+      . assert(_ == 3)

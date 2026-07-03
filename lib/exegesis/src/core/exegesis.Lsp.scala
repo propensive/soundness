@@ -78,18 +78,34 @@ object Lsp:
 
   case class CompletionOptions(triggerCharacters: Optional[List[Text]] = Unset)
   case class SignatureHelpOptions(triggerCharacters: Optional[List[Text]] = Unset)
+  case class DocumentLinkOptions(resolveProvider: Optional[Boolean] = Unset)
+  case class CodeLensOptions(resolveProvider: Optional[Boolean] = Unset)
+
+  case class DocumentOnTypeFormattingOptions
+    ( firstTriggerCharacter: Text, moreTriggerCharacter: Optional[List[Text]] = Unset )
 
   case class ServerCapabilities
-    ( textDocumentSync:           Optional[TextDocumentSyncKind] = Unset,
-      completionProvider:         Optional[CompletionOptions]    = Unset,
-      hoverProvider:              Optional[Boolean]              = Unset,
-      definitionProvider:         Optional[Boolean]              = Unset,
-      referencesProvider:         Optional[Boolean]              = Unset,
-      documentSymbolProvider:     Optional[Boolean]              = Unset,
-      documentFormattingProvider: Optional[Boolean]              = Unset,
-      renameProvider:             Optional[Boolean]              = Unset,
-      codeActionProvider:         Optional[Boolean]              = Unset,
-      signatureHelpProvider:      Optional[SignatureHelpOptions] = Unset )
+    ( textDocumentSync:                 Optional[TextDocumentSyncKind]            = Unset,
+      completionProvider:               Optional[CompletionOptions]               = Unset,
+      hoverProvider:                    Optional[Boolean]                         = Unset,
+      definitionProvider:               Optional[Boolean]                         = Unset,
+      referencesProvider:               Optional[Boolean]                         = Unset,
+      documentSymbolProvider:           Optional[Boolean]                         = Unset,
+      documentFormattingProvider:       Optional[Boolean]                         = Unset,
+      renameProvider:                   Optional[Boolean]                         = Unset,
+      codeActionProvider:               Optional[Boolean]                         = Unset,
+      signatureHelpProvider:            Optional[SignatureHelpOptions]            = Unset,
+      declarationProvider:              Optional[Boolean]                         = Unset,
+      typeDefinitionProvider:           Optional[Boolean]                         = Unset,
+      implementationProvider:           Optional[Boolean]                         = Unset,
+      documentHighlightProvider:        Optional[Boolean]                         = Unset,
+      foldingRangeProvider:             Optional[Boolean]                         = Unset,
+      selectionRangeProvider:           Optional[Boolean]                         = Unset,
+      colorProvider:                    Optional[Boolean]                         = Unset,
+      documentRangeFormattingProvider:  Optional[Boolean]                         = Unset,
+      documentLinkProvider:             Optional[DocumentLinkOptions]             = Unset,
+      codeLensProvider:                 Optional[CodeLensOptions]                 = Unset,
+      documentOnTypeFormattingProvider: Optional[DocumentOnTypeFormattingOptions] = Unset )
 
   case class InitializeResult
     ( capabilities: ServerCapabilities, serverInfo: Optional[ServerInfo] = Unset )
@@ -141,6 +157,44 @@ object Lsp:
 
   case class SignatureHelp
     ( signatures: List[SignatureInformation] = Nil, activeSignature: Optional[Int] = Unset )
+
+  // Highlights, folding and selection
+
+  case class DocumentHighlight(range: Range, kind: Optional[DocumentHighlightKind] = Unset)
+
+  case class FoldingRange
+    ( startLine:      Int,
+      startCharacter: Optional[Int]  = Unset,
+      endLine:        Int,
+      endCharacter:   Optional[Int]  = Unset,
+      kind:           Optional[Text] = Unset,
+      collapsedText:  Optional[Text] = Unset )
+
+  case class SelectionRange(range: Range, parent: Optional[SelectionRange] = Unset)
+
+  // Links, lenses and commands
+
+  case class Command
+    ( title: Text, command: Text, arguments: Optional[List[Json]] = Unset )
+
+  case class CodeLens
+    ( range: Range, command: Optional[Command] = Unset, data: Optional[Json] = Unset )
+
+  case class DocumentLink
+    ( range:   Range,
+      target:  Optional[Text] = Unset,
+      tooltip: Optional[Text] = Unset,
+      data:    Optional[Json] = Unset )
+
+  // Colors
+
+  case class Color(red: Double, green: Double, blue: Double, alpha: Double)
+  case class ColorInformation(range: Range, color: Color)
+
+  case class ColorPresentation
+    ( label:               Text,
+      textEdit:            Optional[TextEdit]       = Unset,
+      additionalTextEdits: Optional[List[TextEdit]] = Unset )
 
   // Diagnostics and window messages
 
@@ -215,6 +269,26 @@ object Lsp:
     case File, Module, Namespace, Package, Class, Method, Property, Field, Constructor, Enum,
       Interface, Function, Variable, Constant, `String`, Number, `Boolean`, `Array`, `Object`,
       Key, `Null`, EnumMember, Struct, Event, Operator, TypeParameter
+
+  object DocumentHighlightKind:
+    given encodable: DocumentHighlightKind is Json.Encodable =
+      Json.Encodable(Morphology.Whole): kind => (kind.ordinal + 1).json
+
+    given decodable: Tactic[JsonError] => DocumentHighlightKind is Json.Decodable =
+      Json.Decodable(Morphology.Whole): json => DocumentHighlightKind.fromOrdinal(json.as[Int] - 1)
+
+  enum DocumentHighlightKind:
+    case Text, Read, Write
+
+  object TextDocumentSaveReason:
+    given encodable: TextDocumentSaveReason is Json.Encodable =
+      Json.Encodable(Morphology.Whole): reason => (reason.ordinal + 1).json
+
+    given decodable: Tactic[JsonError] => TextDocumentSaveReason is Json.Decodable =
+      Json.Decodable(Morphology.Whole): json => TextDocumentSaveReason.fromOrdinal(json.as[Int] - 1)
+
+  enum TextDocumentSaveReason:
+    case Manual, AfterDelay, FocusOut
 
 trait Lsp extends JsonRpc:
   type Origin = LspClient
@@ -301,3 +375,77 @@ trait Lsp extends JsonRpc:
   @rpc
   def `textDocument/signatureHelp`(textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position)
   :   Optional[Lsp.SignatureHelp]
+
+  @rpc
+  def `textDocument/declaration`(textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position)
+  :   List[Lsp.Location]
+
+  @rpc
+  def `textDocument/typeDefinition`
+    ( textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position )
+  :   List[Lsp.Location]
+
+  @rpc
+  def `textDocument/implementation`
+    ( textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position )
+  :   List[Lsp.Location]
+
+  @rpc
+  def `textDocument/documentHighlight`
+    ( textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position )
+  :   List[Lsp.DocumentHighlight]
+
+  @rpc
+  def `textDocument/foldingRange`(textDocument: Lsp.TextDocumentIdentifier)
+  :   List[Lsp.FoldingRange]
+
+  @rpc
+  def `textDocument/selectionRange`
+    ( textDocument: Lsp.TextDocumentIdentifier, positions: List[Lsp.Position] )
+  :   List[Lsp.SelectionRange]
+
+  @rpc
+  def `textDocument/documentLink`(textDocument: Lsp.TextDocumentIdentifier)
+  :   List[Lsp.DocumentLink]
+
+  @rpc
+  def `textDocument/codeLens`(textDocument: Lsp.TextDocumentIdentifier): List[Lsp.CodeLens]
+
+  @rpc
+  def `textDocument/documentColor`(textDocument: Lsp.TextDocumentIdentifier)
+  :   List[Lsp.ColorInformation]
+
+  @rpc
+  def `textDocument/colorPresentation`
+    ( textDocument: Lsp.TextDocumentIdentifier, color: Lsp.Color, range: Lsp.Range )
+  :   List[Lsp.ColorPresentation]
+
+  @rpc
+  def `textDocument/rangeFormatting`
+    ( textDocument: Lsp.TextDocumentIdentifier,
+      range:        Lsp.Range,
+      options:      Lsp.FormattingOptions )
+  :   List[Lsp.TextEdit]
+
+  @rpc
+  def `textDocument/onTypeFormatting`
+    ( textDocument: Lsp.TextDocumentIdentifier,
+      position:     Lsp.Position,
+      ch:           Text,
+      options:      Lsp.FormattingOptions )
+  :   List[Lsp.TextEdit]
+
+  @rpc
+  def `textDocument/prepareRename`
+    ( textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position )
+  :   Optional[Lsp.Range]
+
+  @rpc
+  def `textDocument/willSave`
+    ( textDocument: Lsp.TextDocumentIdentifier, reason: Lsp.TextDocumentSaveReason )
+  :   Unit
+
+  @rpc
+  def `textDocument/willSaveWaitUntil`
+    ( textDocument: Lsp.TextDocumentIdentifier, reason: Lsp.TextDocumentSaveReason )
+  :   List[Lsp.TextEdit]

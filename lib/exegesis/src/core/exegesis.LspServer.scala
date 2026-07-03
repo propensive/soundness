@@ -96,6 +96,33 @@ trait LspServer() extends Lsp:
   def codeActions(uri: Text, range: Range, context: CodeActionContext): List[CodeAction] = Nil
   def signatureHelp(uri: Text, position: Position): Optional[SignatureHelp] = Unset
 
+  def declaration(uri: Text, position: Position): List[Location] = Nil
+  def typeDefinition(uri: Text, position: Position): List[Location] = Nil
+  def implementation(uri: Text, position: Position): List[Location] = Nil
+  def documentHighlights(uri: Text, position: Position): List[DocumentHighlight] = Nil
+  def foldingRanges(uri: Text): List[FoldingRange] = Nil
+  def selectionRanges(uri: Text, positions: List[Position]): List[SelectionRange] = Nil
+  def documentLinks(uri: Text): List[DocumentLink] = Nil
+  def codeLenses(uri: Text): List[CodeLens] = Nil
+  def documentColors(uri: Text): List[ColorInformation] = Nil
+
+  def colorPresentations(uri: Text, color: Color, range: Range): List[ColorPresentation] = Nil
+
+  def formatRange(uri: Text, range: Range, options: FormattingOptions): List[TextEdit] = Nil
+
+  def formatOnType(uri: Text, position: Position, character: Text, options: FormattingOptions)
+  :   List[TextEdit] =
+
+    Nil
+
+  def prepareRename(uri: Text, position: Position): Optional[Range] = Unset
+  def onWillSave(document: TextDocumentIdentifier, reason: TextDocumentSaveReason): Unit = ()
+
+  def willSaveWaitUntil(document: TextDocumentIdentifier, reason: TextDocumentSaveReason)
+  :   List[TextEdit] =
+
+    Nil
+
   // The current contents of an open document, if any.
   def document(uri: Text): Optional[TextDocumentItem] = documents.at(uri)
 
@@ -186,6 +213,82 @@ trait LspServer() extends Lsp:
   :   Optional[SignatureHelp] =
 
     signatureHelp(textDocument.uri, position)
+
+  def `textDocument/declaration`(textDocument: TextDocumentIdentifier, position: Position)
+  :   List[Location] =
+
+    declaration(textDocument.uri, position)
+
+  def `textDocument/typeDefinition`(textDocument: TextDocumentIdentifier, position: Position)
+  :   List[Location] =
+
+    typeDefinition(textDocument.uri, position)
+
+  def `textDocument/implementation`(textDocument: TextDocumentIdentifier, position: Position)
+  :   List[Location] =
+
+    implementation(textDocument.uri, position)
+
+  def `textDocument/documentHighlight`(textDocument: TextDocumentIdentifier, position: Position)
+  :   List[DocumentHighlight] =
+
+    documentHighlights(textDocument.uri, position)
+
+  def `textDocument/foldingRange`(textDocument: TextDocumentIdentifier): List[FoldingRange] =
+    foldingRanges(textDocument.uri)
+
+  def `textDocument/selectionRange`
+    ( textDocument: TextDocumentIdentifier, positions: List[Position] )
+  :   List[SelectionRange] =
+
+    selectionRanges(textDocument.uri, positions)
+
+  def `textDocument/documentLink`(textDocument: TextDocumentIdentifier): List[DocumentLink] =
+    documentLinks(textDocument.uri)
+
+  def `textDocument/codeLens`(textDocument: TextDocumentIdentifier): List[CodeLens] =
+    codeLenses(textDocument.uri)
+
+  def `textDocument/documentColor`(textDocument: TextDocumentIdentifier): List[ColorInformation] =
+    documentColors(textDocument.uri)
+
+  def `textDocument/colorPresentation`
+    ( textDocument: TextDocumentIdentifier, color: Color, range: Range )
+  :   List[ColorPresentation] =
+
+    colorPresentations(textDocument.uri, color, range)
+
+  def `textDocument/rangeFormatting`
+    ( textDocument: TextDocumentIdentifier, range: Range, options: FormattingOptions )
+  :   List[TextEdit] =
+
+    formatRange(textDocument.uri, range, options)
+
+  def `textDocument/onTypeFormatting`
+    ( textDocument: TextDocumentIdentifier,
+      position:     Position,
+      ch:           Text,
+      options:      FormattingOptions )
+  :   List[TextEdit] =
+
+    formatOnType(textDocument.uri, position, ch, options)
+
+  def `textDocument/prepareRename`(textDocument: TextDocumentIdentifier, position: Position)
+  :   Optional[Range] =
+
+    prepareRename(textDocument.uri, position)
+
+  def `textDocument/willSave`
+    ( textDocument: TextDocumentIdentifier, reason: TextDocumentSaveReason )
+  :   Unit =
+
+    onWillSave(textDocument, reason)
+
+  def `textDocument/willSaveWaitUntil`
+    ( textDocument: TextDocumentIdentifier, reason: TextDocumentSaveReason )
+  :   List[TextEdit] =
+
+    willSaveWaitUntil(textDocument, reason)
 
   // The stdio transport. Reads `Content-Length`-framed JSON-RPC messages from standard input and
   // dispatches each to the methods above; a single asynchronous writer drains the outgoing channel
