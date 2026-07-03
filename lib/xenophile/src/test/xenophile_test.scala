@@ -259,6 +259,11 @@ object Tests extends Suite(m"Xenophile tests"):
         demilitarize(api.add(t"two", t"three")).map(_.message)
       . assert(_ == List(t"xenophile: add expects an argument of foreign type s32"))
 
+      test(m"an interface function is qualified with its package's module id"):
+        val wit = t"package wasi:random@0.2.0; interface random { get-random-u64: func() -> u64; }"
+        WitDialect.parse(wit)(t"random")(t"get-random-u64").module.or(t"")
+      . assert(_ == t"wasi:random/random@0.2.0")
+
     suite(m"WebIDL (synthetic sample)"):
       val shape: Foreign of "Shape" from WebIdl = Foreign["Shape", WebIdl]
       val circle: Foreign of "Circle" from WebIdl = Foreign["Circle", WebIdl]
