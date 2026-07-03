@@ -39,5 +39,10 @@ import spectacular.*
 object Accent:
   given showable: Accent is Showable = _.toString.tt.lower
 
+// An accent is a *colour category*, and nothing more: a palette maps each accent to one
+// colour. `Term` is a term and `Typal` is a type. Whether a term or type token is a
+// binding or a usage is an orthogonal annotation carried by the token (see `Role`), not a
+// colour distinction — so a `val`'s name and a use of it share the same accent, and a
+// separate styling policy may add italic/bold to bindings.
 enum Accent:
-  case Error, Number, String, Ident, Term, Typed, Keyword, Symbol, Parens, Modifier, Unparsed
+  case Error, Number, String, Term, Typal, Keyword, Symbol, Parens, Modifier, Unparsed

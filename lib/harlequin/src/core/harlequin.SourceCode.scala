@@ -35,6 +35,7 @@ package harlequin
 import scala.collection.mutable as scm
 
 import dotty.tools.dotc.*, core.*, parsing.*, util.*
+import dotty.tools.dotc.core.NameOps.isVarPattern
 import dotty.tools.dotc.reporting.Diagnostic as CompilerDiagnostic
 import dotty.tools.dotc.reporting.HideNonSensicalMessages
 import dotty.tools.dotc.reporting.Reporter
@@ -55,7 +56,7 @@ object SourceCode:
     else if token == 3 || token == 10 || token == 11 then Accent.String
     else if token >= 4 && token <= 9 || token == 23 || token == 24 || token == 42 || token == 43
     then Accent.Number
-    else if token == 14 then Accent.Ident
+    else if token == 14 then Accent.Term
     else if token >= 20 && token <= 62 && Tokens.modifierTokens.has(token) then Accent.Modifier
     else if token >= 20 && token <= 66 then Accent.Keyword
     else if token >= 78 && token <= 99 then Accent.Symbol
@@ -109,16 +110,16 @@ object SourceCode:
       Stream(Token(text.sub(t"\t", t"  "), Accent.Unparsed), Token.Newline)
 
     def hard(stream: Stream[Token]): Boolean = stream match
-      case Token(_, Accent.Unparsed, _, _) #:: more                   => hard(more)
-      case Token(text, Accent.Ident, _, _) #:: more if soft.has(text) => hard(more)
-      case Token(text, Accent.Keyword | Accent.Modifier, _, _) #:: _  => true
-      case other                                                      => false
+      case Token(_, Accent.Unparsed, _, _, _) #:: more                  => hard(more)
+      case Token(text, Accent.Term, _, _, _) #:: more if soft.has(text) => hard(more)
+      case Token(text, Accent.Keyword | Accent.Modifier, _, _, _) #:: _ => true
+      case other                                                        => false
 
     def soften(stream: Stream[Token]): Stream[Token] = stream match
-      case (Token(text@(t"using" | t"erased"), Accent.Ident, _, _)) #:: more =>
+      case (Token(text@(t"using" | t"erased"), Accent.Term, _, _, _)) #:: more =>
         Token(text, Accent.Modifier) #:: soften(more)
 
-      case (token@Token(text, Accent.Ident, _, _)) #:: more if soft.has(text) =>
+      case (token@Token(text, Accent.Term, _, _, _)) #:: more if soft.has(text) =>
         if hard(more) then Token(text, Accent.Modifier) #:: soften(more)
         else token #:: soften(more)
 
@@ -149,10 +150,14 @@ object SourceCode:
           case Some(syntax) => Token.Meta(syntax)
           case None         => Unset
 
+        val annotation: Optional[TokenTag] = trees(start, end)
+        val tokenAccent: Accent = annotation.lay(accent(token))(_.accent)
+        val role: Optional[Role] = annotation.let(_.role)
+
         val content: Stream[Token] =
           if start == end then Stream() else
             text.segment(start.z thru end.u).cut(t"\n").to(Stream).flatMap: line =>
-              Stream(Token(line, trees(start, end).getOrElse(accent(token)), meta), Token.Newline)
+              Stream(Token(line, tokenAccent, meta, role = role), Token.Newline)
 
             . init
 
@@ -203,39 +208,120 @@ object SourceCode:
     SourceCode
       ( language, 1, IArray(positioned*), diagnostics = diagnostics, completions = completions )
 
+  // The accent (colour category) and role (binding vs usage) resolved for a token span
+  // from the parse tree.
+  private case class TokenTag(accent: Accent, role: Role)
+
   private class Trees() extends ast.untpd.UntypedTreeTraverser:
     import ast.*, untpd.*
 
-    private val trees: scm.HashMap[(Int, Int), Accent] = scm.HashMap()
+    private val trees: scm.HashMap[(Int, Int), TokenTag] = scm.HashMap()
 
-    def apply(start: Int, end: Int): Option[Accent] = trees.get((start, end))
+    def apply(start: Int, end: Int): Optional[TokenTag] = trees.get((start, end)) match
+      case Some(tag) => tag
+      case None      => Unset
+
+    private def tag(span: Spans.Span, accent: Accent, role: Role): Unit =
+      if span.exists then trees += (span.start, span.end) -> TokenTag(accent, role)
 
     def ignored(tree: NameTree): Boolean =
       val name = tree.name.toTermName
       name == StdNames.nme.ERROR || name == StdNames.nme.CONSTRUCTOR
 
+    // An `Ident` reached in pattern position that genuinely *binds* a name: a simple
+    // lowercase-led var-pattern name, not the `_` wildcard, not a backquoted
+    // stable-identifier usage (`` case `x` => ``), and not a type.
+    private def isBinderIdent(tree: Ident): Boolean =
+      tree.name != StdNames.nme.WILDCARD && tree.name.isVarPattern && !tree.isBackquoted &&
+        !tree.isType
+
+    // Walk a subtree known to be in *pattern* position. Simple var-pattern binders and
+    // `Bind` names are term bindings; everything else — extractor and stable-id usages,
+    // literals, type ascriptions — routes back through the ordinary traversal so it keeps
+    // its usage role.
+    private def traversePattern(tree: Tree)(using Contexts.Context): Unit = tree match
+      case tree: Ident if isBinderIdent(tree) =>
+        tag(tree.span, Accent.Term, Role.Binding)
+
+      case tree: Bind =>
+        tag(tree.nameSpan, Accent.Term, Role.Binding)
+        traversePattern(tree.body)
+
+      case Typed(expr, tpt) =>
+        traversePattern(expr)
+        traverse(tpt)
+
+      case Parens(pattern) =>
+        traversePattern(pattern)
+
+      case Tuple(elements) =>
+        elements.foreach(traversePattern)
+
+      case Alternative(alternatives) =>
+        alternatives.foreach(traversePattern)
+
+      case Apply(function, arguments) =>
+        traverse(function)
+        arguments.foreach(traversePattern)
+
+      case TypeApply(function, arguments) =>
+        traverse(function)
+        arguments.foreach(traverse)
+
+      case NamedArg(_, pattern) =>
+        traversePattern(pattern)
+
+      case other =>
+        traverse(other)
+
     def traverse(tree: Tree)(using Contexts.Context): Unit =
       tree match
-        case tree: NameTree if ignored(tree) => ()
+        case tree: NameTree if ignored(tree) => traverseChildren(tree)
+
+        case tree: TypeDef if tree.mods.is(Flags.Param) =>
+          tag(tree.nameSpan, Accent.Typal, Role.Binding)
+          traverseChildren(tree)
 
         case tree: ValOrDefDef =>
-          if tree.nameSpan.exists
-          then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Accent.Term
+          tag(tree.nameSpan, Accent.Term, Role.Binding)
+          traverseChildren(tree)
 
         case tree: MemberDef =>
-          if tree.nameSpan.exists
-          then trees += (tree.nameSpan.start, tree.nameSpan.end) -> Accent.Typed
+          tag(tree.nameSpan, Accent.Typal, Role.Binding)
+          traverseChildren(tree)
 
         case tree: Ident if tree.isType =>
-          if tree.span.exists then trees += (tree.span.start, tree.span.end) -> Accent.Typed
+          tag(tree.span, Accent.Typal, Role.Usage)
+          traverseChildren(tree)
+
+        case tree: Ident =>
+          tag(tree.span, Accent.Term, Role.Usage)
+          traverseChildren(tree)
 
         case tree: TypTree =>
-          if tree.span.exists then trees += (tree.span.start, tree.span.end) -> Accent.Typed
+          tag(tree.span, Accent.Typal, Role.Usage)
+          traverseChildren(tree)
+
+        case CaseDef(pattern, guard, body) =>
+          traversePattern(pattern)
+          traverse(guard)
+          traverse(body)
+
+        case GenFrom(pattern, expr, _) =>
+          traversePattern(pattern)
+          traverse(expr)
+
+        case GenAlias(pattern, expr) =>
+          traversePattern(pattern)
+          traverse(expr)
+
+        case tree: PatDef =>
+          tree.pats.foreach(traversePattern)
+          traverse(tree.tpt)
+          traverse(tree.rhs)
 
         case other =>
-          ()
-
-      traverseChildren(tree)
+          traverseChildren(tree)
 
   // Render a classpath to the `-classpath` argument string without needing an
   // ambient `System` capability (we only have directory and jar entries here).

@@ -41,12 +41,15 @@ import spectacular.*
 import symbolism.*
 import vacuous.*
 
+// A palette maps each accent to a colour, and nothing more. Whether a term or type token
+// is a binding or a usage is carried by the token's `Role`, and any additional text
+// styling (e.g. italicising bindings) is applied by a separate styling policy — not
+// encoded here.
 type ScalaSyntaxPalette = Palette:
   type Form = Srgb
   def scalaError: Color in Srgb
   def scalaNumber: Color in Srgb
   def scalaString: Color in Srgb
-  def scalaIdentifier: Color in Srgb
   def scalaTerm: Color in Srgb
   def scalaType: Color in Srgb
   def scalaKeyword: Color in Srgb
@@ -62,17 +65,16 @@ package syntaxHighlighting:
   import Accent.*
 
   given tokenTeletypeable: (palette: ScalaSyntaxPalette) => Token is Teletypeable =
-    case Token(text, Error, _, _)    => e"${palette.scalaError}($text)"
-    case Token(text, Number, _, _)   => e"${palette.scalaNumber}($text)"
-    case Token(text, Modifier, _, _) => e"${palette.scalaModifier}($text)"
-    case Token(text, Keyword, _, _)  => e"${palette.scalaKeyword}($text)"
-    case Token(text, Ident, _, _)    => e"${palette.scalaIdentifier}($text)"
-    case Token(text, Term, _, _)     => e"${palette.scalaTerm}($text)"
-    case Token(text, Typed, _, _)    => e"${palette.scalaType}($text)"
-    case Token(text, String, _, _)   => e"${palette.scalaString}($text)"
-    case Token(text, Parens, _, _)   => e"${palette.scalaParenthesis}($text)"
-    case Token(text, Symbol, _, _)   => e"${palette.scalaSymbol}($text)"
-    case Token(text, Unparsed, _, _) => e"${palette.scalaComment}($Italic($text))"
+    case Token(text, Error, _, _, _)    => e"${palette.scalaError}($text)"
+    case Token(text, Number, _, _, _)   => e"${palette.scalaNumber}($text)"
+    case Token(text, Modifier, _, _, _) => e"${palette.scalaModifier}($text)"
+    case Token(text, Keyword, _, _, _)  => e"${palette.scalaKeyword}($text)"
+    case Token(text, Term, _, _, _)     => e"${palette.scalaTerm}($text)"
+    case Token(text, Typal, _, _, _)    => e"${palette.scalaType}($text)"
+    case Token(text, String, _, _, _)   => e"${palette.scalaString}($text)"
+    case Token(text, Parens, _, _, _)   => e"${palette.scalaParenthesis}($text)"
+    case Token(text, Symbol, _, _, _)   => e"${palette.scalaSymbol}($text)"
+    case Token(text, Unparsed, _, _, _) => e"${palette.scalaComment}($Italic($text))"
 
   given numberedTeletypeable: (palette: ScalaSyntaxPalette)
   =>  SourceCode is Teletypeable = source =>

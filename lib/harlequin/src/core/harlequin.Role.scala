@@ -33,37 +33,15 @@
 package harlequin
 
 import anticipation.*
-import contingency.*
 import gossamer.*
-import harlequin.*
-import honeycomb.*
-import nomenclature.*
-import prepositional.*
-import punctuation.*
 import spectacular.*
-import vacuous.*
 
-import doms.html.whatwg, whatwg.*
+object Role:
+  given showable: Role is Showable = _.toString.tt.lower
 
-trait CommonFormattable extends Formattable:
-  given lineClass: (Attribution of "line" | "amok") = Attribution.classes()
-
-  // The accent becomes a CSS class; a term/type token's `Role` (binding/usage) becomes a
-  // second class, so a stylesheet — the styling policy for this front-end — can e.g.
-  // italicise `.binding` on top of the accent's colour.
-  def classes(accent: Accent, role: Optional[Role]): ClassList =
-    def cssClass(name: Text): Name[CssClass] = unsafely(Name[CssClass](name))
-
-    val roleClass: Optional[Name[CssClass]] = role.let: role =>
-      cssClass(role.show.lower)
-
-    ClassList(Set(cssClass(accent.show.lower)) ++ roleClass.option)
-
-  def element(accent: Accent, role: Optional[Role], text: Text): Element of "code" =
-    whatwg.Code(`class` = classes(accent, role))(text)
-
-  protected def postprocess(source: SourceCode): Html of Flow =
-    val code = source.lines.map: line =>
-      Span.line(line.map { case Token(text, accent, _, _, role) => element(accent, role, text) }*)
-
-    Fragment(Div.amok(Pre(code*)))
+// The role of a term or type token: whether it is a `Binding` (a `val`/`def`/parameter or
+// pattern name, a class/type/type-parameter definition) or a `Usage` referring to one
+// bound elsewhere. It is `Unset` on tokens that are neither terms nor types (keywords,
+// literals, punctuation). A styling policy may, for example, render bindings in italic.
+enum Role:
+  case Binding, Usage

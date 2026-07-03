@@ -42,7 +42,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
     def typeOf(tokens: List[Token], text: Text): Optional[Text] =
       tokens.find(_.text == text) match
-        case Some(Token(_, _, meta, _)) => meta.let(_.tpe.qualified)
+        case Some(Token(_, _, meta, _, _)) => meta.let(_.tpe.qualified)
         case _                          => Unset
 
     test(m"tokenized highlighting attaches no type metadata"):
@@ -55,6 +55,48 @@ object Tests extends Suite(m"Harlequin Tests"):
       tokens.map: token =>
         (token.text, token.span.startLine.lay(-1)(_.n0), token.span.startColumn.lay(-1)(_.n0))
     .assert(_.contains((t"List", 1, 2)))
+
+    // The binding/usage tagging runs on the parser output alone, so it is
+    // exercised by the tokenized (no-typer) path. `tagOf` reads the accent and role (as
+    // their rendered names) of the first token whose text matches.
+    def tagOf(source: Text, word: Text): (Text, Text) =
+      Scala.highlight(source).lines.to(List).flatten.find(_.text == word) match
+        case Some(token) => (token.accent.show, token.role.lay(t"")(_.show))
+        case None        => (t"", t"")
+
+    test(m"a val name is a term binding"):
+      tagOf(t"val alpha = 1", t"alpha")
+    .assert(_ == (t"term", t"binding"))
+
+    test(m"a term usage is a term reference"):
+      tagOf(t"val beta = gamma", t"gamma")
+    .assert(_ == (t"term", t"usage"))
+
+    test(m"a type usage is a typal usage"):
+      tagOf(t"val n: List = xs", t"List")
+    .assert(_ == (t"typal", t"usage"))
+
+    test(m"a tuple-pattern val binds each name as a term"):
+      val source = t"val (aa, bb) = pair"
+      (tagOf(source, t"aa"), tagOf(source, t"bb"))
+    .assert(_ == ((t"term", t"binding"), (t"term", t"binding")))
+
+    test(m"a case-clause pattern binder is a term binding"):
+      tagOf(t"val qq = nums.map { case xx => xx }", t"xx")
+    .assert(_ == (t"term", t"binding"))
+
+    test(m"a for-comprehension binder is a term binding"):
+      val source = t"val qq = for cc <- items yield cc"
+      (tagOf(source, t"cc"), tagOf(source, t"items"))
+    .assert(_ == ((t"term", t"binding"), (t"term", t"usage")))
+
+    test(m"a defined type parameter is a typal binding"):
+      tagOf(t"def gg[TT](vv: TT) = vv", t"TT")
+    .assert(_ == (t"typal", t"binding"))
+
+    test(m"a value parameter is a term binding"):
+      tagOf(t"def gg[TT](vv: TT) = vv", t"vv")
+    .assert(_ == (t"term", t"binding"))
 
     test(m"typechecked highlighting resolves the type of a val"):
       given Scalac[3.8] = Scalac[3.8](Nil)
