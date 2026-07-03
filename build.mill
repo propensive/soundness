@@ -812,16 +812,16 @@ object eucalyptus extends Library:
   object test extends Tests(ansi, core, syslog)
 
 object exegesis extends Library:
-  object core extends Component(obligatory.json):
+  object core extends Component(obligatory.json, ethereal.core, exoskeleton.completions):
     override def scalacOptions = Task:
       settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef",
         "-Yimports:java.lang,scala,proscenium"), "48")
 
-  object demo extends Internal(core, ethereal.core, exoskeleton.completions):
+  object demo extends Internal(core):
     override def scalacOptions = Task:
       settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef",
         "-Yimports:java.lang,scala,proscenium"), "48")
-    override def mainClass: Task.Simple[Option[String]] = Some("exegesis.lsp")
+    override def mainClass: Task.Simple[Option[String]] = Some("exegesis.DemoLspServer")
 
   object test extends Tests(core):
     override def scalacOptions = Task:

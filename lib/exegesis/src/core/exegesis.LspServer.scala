@@ -37,6 +37,8 @@ import scala.collection.mutable as scm
 import anticipation.*
 import contingency.*
 import distillate.*
+import ethereal.*
+import exoskeleton.*
 import gossamer.*
 import hieroglyph.*
 import jacinta.*
@@ -46,6 +48,13 @@ import prepositional.*
 import rudiments.*
 import turbulence.*
 import vacuous.*
+
+import backstops.stackTraceBackstop
+import executives.completions
+import interpreters.posixInterpreter
+import probates.awaitProbate
+import strategies.throwUnsafely
+import threading.virtualThreading
 
 // A base for Language Server implementations. Subclasses provide their `name`, `capabilities` and
 // any of the overridable handler hooks they support; everything else (the JSON-RPC method dispatch,
@@ -203,3 +212,17 @@ trait LspServer() extends Lsp:
       catch case error: Exception => put(JsonRpc.error(-32603, t"Internal error").json)
 
     writer.cancel()
+
+  // A runnable entry point: an `LspServer` object carries its own `main`, running as an
+  // Ethereal resident daemon over the stdio JSON-RPC transport. `main` is a plain (non-inline)
+  // method, so the object's static `main([Ljava/lang/String;)V` forwarder is a valid JVM entry
+  // point (`IArray[Text]` erases to `Array[String]`), and defining the server is enough to run
+  // it — no `@main`, and no `cli`/`execute`/`supervise` boilerplate. Ethereal's `cli` reads the
+  // real invocation from the daemon environment, so the JVM `args` are unused; it also provides
+  // the `-Dbuild.executable=<name>` native-launcher assembly path. To externalize the classpath
+  // with Burdock (shipping a thin launcher rather than a fat JAR), override this in the server's
+  // own module with `override def main(args: IArray[Text]): Unit = externalize(super.main(args))`.
+  def main(args: IArray[Text]): Unit = cli:
+    execute:
+      supervise(serve())
+      Exit.Ok
