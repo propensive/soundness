@@ -39,6 +39,7 @@ import ambience.*
 import anticipation.*
 import contingency.*
 import distillate.*
+import escapade.*
 import exoskeleton.*
 import fulminate.*
 import galilei.*
@@ -116,8 +117,28 @@ def repackage(): Unit = application(Nil):
 
       val tmpFile: Path on Linux = inputJar.parent.vouch/t"${inputJar.name}.tmp"
 
+      // Only animate on a real terminal; when stdout is redirected the carriage-return redraws
+      // and cursor escapes would garble the output, so we suppress them and let the final summary
+      // stand on its own.
+      val animate: Boolean = summon[Stdio].termcap.ansi
+
+      // Redraw a fixed-width progress bar in place (a leading carriage-return returns to column 0;
+      // a trailing erase-to-end-of-line wipes any residue from a longer previous frame) as each
+      // dependency is resolved and externalized or inlined.
+      def onProgress(done: Int, total: Int): Unit =
+        if animate && total > 0 then
+          Out.print(e"\r${ProgressBar.render(done.toDouble/total)} $done/$total${csi.el()}")
+
+      if animate then Out.print(csi.dectcem(false))
+
       val summary =
-        Repackager.repackage(inputJar, tmpFile, DepsDev.mavenUrl, cached, bootstrapClass)
+        Repackager.repackage
+          ( inputJar, tmpFile, DepsDev.mavenUrl, cached, bootstrapClass, onProgress )
+
+      // Move off the bar's line and restore the cursor before printing the summary.
+      if animate then
+        Out.print(csi.dectcem(true))
+        Out.println()
 
       import filesystemOptions.overwritePreexisting.enabled
       import filesystemOptions.deleteRecursively.disabled

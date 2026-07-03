@@ -30,12 +30,48 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package burdock
 
-export burdock.{DepsDev, DepsEvent, externalize, ProgressBar, Repackager}
+import anticipation.*
+import denominative.*
+import escapade.*
+import gossamer.*
+import iridescence.*
+import rudiments.*
+import spectacular.*
+import symbolism.*
+import vacuous.*
 
-// The repackager's command-line entry point, in the `soundness` package so it can be
-// launched as `java -cp app.jar soundness.repackage` (house style requires every file to
-// declare a package, so it cannot live in the default package).
-@main
-def repackage(): Unit = burdock.repackage()
+// A smooth, fixed-width progress bar for the repackager. `render` is pure (a fraction maps to a
+// styled `Teletype`) so the drawing logic stays free of I/O and is directly unit-testable; the
+// command-line entry point does the in-place redrawing. Smoothness comes from the eighth-width
+// block glyphs `▏▎▍▌▋▊▉█`: each cell is one eighth wider than the last, so the bar's right edge
+// advances sub-cell rather than jumping a whole character at a time.
+object ProgressBar:
+  val width: Int = 40
+
+  // Eighth-width left blocks, `1/8` through `8/8`; index `n` is `(n + 1)` eighths filled.
+  private val partials: Text = t"▏▎▍▌▋▊▉█"
+
+  private val foreground: Fg = Fg(rgb"#ff7d26")
+  private val background: Bg = Bg(rgb"#3b1700")
+
+  // Renders `fraction` (clamped to `[0, 1]`) as a `width`-cell bar. The bar's background is
+  // `#3b1700` throughout; filled cells are `#ff7d26` full blocks; the single boundary cell is a
+  // partial block in the foreground colour on the background colour, so its left portion reads as
+  // filled and its right portion as empty. Trailing cells are spaces (showing the background).
+  // Cell accounting is exact — `full + (partial ? 1 : 0) + trailing == width` — so the bar never
+  // changes width as it fills.
+  def render(fraction: Double): Teletype =
+    val eighths: Int = (fraction.max(0.0).min(1.0)*width*8).toInt
+    val full: Int = eighths/8
+    val remainder: Int = eighths%8
+
+    val head: Text =
+      if remainder == 0 then t""
+      else partials.at(Ordinal.zerary(remainder - 1)).let(_.show).or(t"")
+
+    val used: Int = full + (if remainder == 0 then 0 else 1)
+    val bar: Text = t"█"*full + head + t" "*(width - used)
+
+    e"$background(${foreground}($bar))"

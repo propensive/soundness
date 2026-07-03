@@ -89,6 +89,27 @@ object Tests extends Suite(m"Burdock Tests"):
         capture[Repackager.RepackageError](Repackager.partition(List(t"ccc"), resolve, cached))
       .assert(_ => true)
 
+    suite(m"Progress bar"):
+      test(m"an empty bar is all spaces"):
+        ProgressBar.render(0.0).plain
+      .assert(_ == t" "*40)
+
+      test(m"a full bar is all full blocks"):
+        ProgressBar.render(1.0).plain
+      .assert(_ == t"█"*40)
+
+      test(m"a half bar is twenty blocks then twenty spaces"):
+        ProgressBar.render(0.5).plain
+      .assert(_ == t"█"*20 + t" "*20)
+
+      test(m"a sub-cell fraction renders one partial block"):
+        ProgressBar.render(4.0/320).plain
+      .assert(_ == t"▌" + t" "*39)
+
+      test(m"the bar is always forty cells wide"):
+        List(0.0, 0.1, 0.333, 0.5, 0.9, 1.0).all(ProgressBar.render(_).plain.length == 40)
+      .assert(_ == true)
+
     suite(m"Repackager (end-to-end)"):
       val tmp: Path on Linux = temporaryDirectory[Path on Linux]
       val inputJar: Path on Linux = tmp/t"burdock-in-${Uuid().show}.jar"
