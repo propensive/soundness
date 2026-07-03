@@ -246,7 +246,7 @@ object soundness extends ScalaModule:
     harlequin.md, harlequin.ansi, austronesian.core, anthology.bundle, anthology.`scala`,
     exegesis.core)
 
-  object web extends Bundle(cacophony.core, cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
+  object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
     telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
@@ -1250,6 +1250,12 @@ object rudiments extends Library:
 
   object test extends Tests(core, abacist.core, quantitative.units)
 
+object archimedes extends Library:
+  object core extends Component(xylophone.core, honeycomb.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core)
+
 object savagery extends Library:
   object core extends Component(cataclysm.core, xylophone.core, geodesy.core, iridescence.core,
     mosquito.core):
@@ -1561,7 +1567,8 @@ object ziggurat extends Library:
 // directories.
 val allLibraries: Seq[Library] = Seq(
   abacist, acyclicity, adversaria, ambience, anamnesis, anthology, anticipation,
-  apoplexy, austronesian, aviation, baroque, beneficence, bitumen, breviloquence, burdock,
+  apoplexy, archimedes, austronesian, aviation, baroque, beneficence, bitumen, breviloquence,
+  burdock,
   cacophony, caduceus, caesura, camouflage, capricious, cardinality, cataclysm,
   charisma, chiaroscuro, coaxial, contextual, contingency, cordillera, cosmopolite,
   decorum, dendrology, denominative, digression, dissonance, distillate, diuretic,
