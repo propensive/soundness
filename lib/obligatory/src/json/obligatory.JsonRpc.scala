@@ -61,6 +61,11 @@ object JsonRpc:
   inline def serve[interface](interface: interface): Json => Optional[Json] =
     ${obligatory.internal.dispatcher[interface]('interface)}
 
+  // The set of JSON-RPC method names an interface declares (its `@rpc` members). Used to route a
+  // request across several `serve` dispatchers when a single interface's dispatcher would be too
+  // large to compile into one class.
+  inline def methods[interface]: Set[Text] = ${obligatory.internal.methodNames[interface]}
+
   case class Request(jsonrpc: Text, method: Text, params: Json, id: Optional[Json])
   case class Response(jsonrpc: Text, result: Json, id: Optional[Json])
 

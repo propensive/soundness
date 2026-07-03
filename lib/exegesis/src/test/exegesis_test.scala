@@ -70,10 +70,13 @@ object TestServer extends LspServer():
   override def incomingCalls(item: Lsp.CallHierarchyItem): List[Lsp.CallHierarchyIncomingCall] =
     List(Lsp.CallHierarchyIncomingCall(from = item, fromRanges = List(item.range)))
 
-  // Expand the `serve` dispatch macro once, here, rather than at each test call
-  // site: each expansion inlines a codec (now schema-carrying) for every LSP
-  // method, which repeated would exceed the JVM per-class size limit in `Tests`.
-  lazy val dispatch: Json => Optional[Json] = JsonRpc.serve[Lsp](this)
+  override def inlayHints(uri: Text, range: Lsp.Range): List[Lsp.InlayHint] =
+    List(Lsp.InlayHint(range.start, label = t": Int", kind = Lsp.InlayHintKind.Type))
+
+  // Build the dispatcher once, here, rather than at each test call site: it expands a
+  // schema-carrying codec for every LSP method, which repeated would exceed the JVM
+  // per-class size limit in `Tests`.
+  lazy val dispatch: Json => Optional[Json] = LspServer.dispatcher(this)
 
 object Tests extends Suite(m"Exegesis Tests"):
   def run(): Unit =
@@ -165,3 +168,13 @@ object Tests extends Suite(m"Exegesis Tests"):
         dispatch(request).let: response =>
           response.as[JsonRpc.Response].result.as[List[Lsp.CallHierarchyIncomingCall]].head.from.name
       . assert(_ == t"foo")
+
+      test(m"an inlayHint request encodes its kind as a protocol number"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","id":6,"method":"textDocument/inlayHint","params":{"textDocument":{"uri":"file:///x"},"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":1}}}}"""
+          . decode[Json]
+
+        dispatch(request).let(_.as[JsonRpc.Response].result.as[List[Lsp.InlayHint]].head.kind)
+      . assert(_ == Lsp.InlayHintKind.Type)

@@ -51,6 +51,20 @@ import vacuous.*
 
 
 object internal:
+  def methodNames[interface: Type]: Macro[Set[Text]] =
+    import quotes.reflect.*
+
+    val rpcType = TypeRepr.of[rpc].typeSymbol
+
+    val names = TypeRepr.of[interface].typeSymbol.declaredMethods.filter: method =>
+      val annotations = method.annotations ++ method.allOverriddenSymbols.flatMap(_.annotations)
+      annotations.exists(_.tpe.typeSymbol == rpcType)
+
+    . map: method =>
+        Expr(method.name.tt)
+
+    '{Set(${Varargs(names)}*)}
+
   def dispatcher[interface: Type](target: Expr[interface]): Macro[Json => Optional[Json]] =
     import quotes.reflect.*
 

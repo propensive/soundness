@@ -84,6 +84,16 @@ object Lsp:
   case class DocumentOnTypeFormattingOptions
     ( firstTriggerCharacter: Text, moreTriggerCharacter: Optional[List[Text]] = Unset )
 
+  case class SemanticTokensOptions
+    ( legend: SemanticTokensLegend,
+      range:  Optional[Boolean] = Unset,
+      full:   Optional[Boolean] = Unset )
+
+  case class DiagnosticOptions
+    ( identifier:            Optional[Text] = Unset,
+      interFileDependencies: Boolean,
+      workspaceDiagnostics:  Boolean )
+
   case class ServerCapabilities
     ( textDocumentSync:                 Optional[TextDocumentSyncKind]            = Unset,
       completionProvider:               Optional[CompletionOptions]               = Unset,
@@ -107,7 +117,13 @@ object Lsp:
       codeLensProvider:                 Optional[CodeLensOptions]                 = Unset,
       documentOnTypeFormattingProvider: Optional[DocumentOnTypeFormattingOptions] = Unset,
       callHierarchyProvider:            Optional[Boolean]                         = Unset,
-      typeHierarchyProvider:            Optional[Boolean]                         = Unset )
+      typeHierarchyProvider:            Optional[Boolean]                         = Unset,
+      semanticTokensProvider:           Optional[SemanticTokensOptions]           = Unset,
+      inlayHintProvider:                Optional[Boolean]                         = Unset,
+      inlineValueProvider:              Optional[Boolean]                         = Unset,
+      linkedEditingRangeProvider:       Optional[Boolean]                         = Unset,
+      monikerProvider:                  Optional[Boolean]                         = Unset,
+      diagnosticProvider:               Optional[DiagnosticOptions]               = Unset )
 
   case class InitializeResult
     ( capabilities: ServerCapabilities, serverInfo: Optional[ServerInfo] = Unset )
@@ -231,6 +247,41 @@ object Lsp:
       selectionRange: Range,
       data:           Optional[Json]            = Unset )
 
+  // Semantic tokens
+
+  case class SemanticTokensLegend(tokenTypes: List[Text], tokenModifiers: List[Text])
+  case class SemanticTokens(resultId: Optional[Text] = Unset, data: List[Int] = Nil)
+  case class SemanticTokensEdit(start: Int, deleteCount: Int, data: Optional[List[Int]] = Unset)
+
+  case class SemanticTokensDelta
+    ( resultId: Optional[Text] = Unset, edits: List[SemanticTokensEdit] = Nil )
+
+  // Inlay hints, inline values, linked editing and monikers
+
+  case class InlayHint
+    ( position:     Position,
+      label:        Text,
+      kind:         Optional[InlayHintKind] = Unset,
+      tooltip:      Optional[Text]          = Unset,
+      paddingLeft:  Optional[Boolean]       = Unset,
+      paddingRight: Optional[Boolean]       = Unset,
+      data:         Optional[Json]          = Unset )
+
+  object InlineValueContext:
+    given decodable: Tactic[JsonError] => InlineValueContext is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class InlineValueContext(frameId: Int, stoppedLocation: Range)
+  case class InlineValueText(range: Range, text: Text)
+
+  case class LinkedEditingRanges(ranges: List[Range], wordPattern: Optional[Text] = Unset)
+  case class Moniker(scheme: Text, identifier: Text, unique: Text, kind: Optional[Text] = Unset)
+
+  // Pull diagnostics
+
+  case class DocumentDiagnosticReport
+    ( kind: Text = t"full", resultId: Optional[Text] = Unset, items: List[Diagnostic] = Nil )
+
   // Diagnostics and window messages
 
   object Diagnostic:
@@ -335,8 +386,23 @@ object Lsp:
   enum SymbolTag:
     case Deprecated
 
-trait Lsp extends JsonRpc:
-  type Origin = LspClient
+  object InlayHintKind:
+    given encodable: InlayHintKind is Json.Encodable =
+      Json.Encodable(Morphology.Whole): kind => (kind.ordinal + 1).json
+
+    given decodable: Tactic[JsonError] => InlayHintKind is Json.Decodable =
+      Json.Decodable(Morphology.Whole): json => InlayHintKind.fromOrdinal(json.as[Int] - 1)
+
+  enum InlayHintKind:
+    case Type, Parameter
+
+// The Language Server Protocol request/notification surface. It is split into several sub-traits
+// purely so that each can be compiled into its own JSON-RPC dispatcher class: `JsonRpc.serve`
+// inlines a schema-carrying codec for every method it covers, so a single dispatcher for the whole
+// protocol would overflow the JVM per-class constant-pool limit. `LspServer.dispatcher` routes each
+// request to the sub-dispatcher whose interface declares its method (see `JsonRpc.methods`).
+
+trait LspLifecycle extends JsonRpc:
 
   @rpc
   def initialize
@@ -373,6 +439,8 @@ trait Lsp extends JsonRpc:
 
   @rpc
   def `textDocument/didClose`(textDocument: Lsp.TextDocumentIdentifier): Unit
+
+trait LspLanguage extends JsonRpc:
 
   @rpc
   def `textDocument/completion`
@@ -421,6 +489,8 @@ trait Lsp extends JsonRpc:
   def `textDocument/signatureHelp`(textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position)
   :   Optional[Lsp.SignatureHelp]
 
+trait LspNavigation extends JsonRpc:
+
   @rpc
   def `textDocument/declaration`(textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position)
   :   List[Lsp.Location]
@@ -464,6 +534,8 @@ trait Lsp extends JsonRpc:
   def `textDocument/colorPresentation`
     ( textDocument: Lsp.TextDocumentIdentifier, color: Lsp.Color, range: Lsp.Range )
   :   List[Lsp.ColorPresentation]
+
+trait LspEditing extends JsonRpc:
 
   @rpc
   def `textDocument/rangeFormatting`
@@ -518,3 +590,52 @@ trait Lsp extends JsonRpc:
 
   @rpc
   def `typeHierarchy/subtypes`(item: Lsp.TypeHierarchyItem): List[Lsp.TypeHierarchyItem]
+
+trait LspAdvanced extends JsonRpc:
+
+  @rpc
+  def `textDocument/semanticTokens/full`(textDocument: Lsp.TextDocumentIdentifier)
+  :   Lsp.SemanticTokens
+
+  @rpc
+  def `textDocument/semanticTokens/full/delta`
+    ( textDocument: Lsp.TextDocumentIdentifier, previousResultId: Text )
+  :   Lsp.SemanticTokensDelta
+
+  @rpc
+  def `textDocument/semanticTokens/range`
+    ( textDocument: Lsp.TextDocumentIdentifier, range: Lsp.Range )
+  :   Lsp.SemanticTokens
+
+  @rpc
+  def `textDocument/inlayHint`(textDocument: Lsp.TextDocumentIdentifier, range: Lsp.Range)
+  :   List[Lsp.InlayHint]
+
+  @rpc
+  def `textDocument/inlineValue`
+    ( textDocument: Lsp.TextDocumentIdentifier,
+      range:        Lsp.Range,
+      context:      Lsp.InlineValueContext )
+  :   List[Lsp.InlineValueText]
+
+  @rpc
+  def `textDocument/linkedEditingRange`
+    ( textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position )
+  :   Optional[Lsp.LinkedEditingRanges]
+
+  @rpc
+  def `textDocument/moniker`(textDocument: Lsp.TextDocumentIdentifier, position: Lsp.Position)
+  :   List[Lsp.Moniker]
+
+  @rpc
+  def `textDocument/diagnostic`
+    ( textDocument:     Lsp.TextDocumentIdentifier,
+      identifier:       Optional[Text],
+      previousResultId: Optional[Text] )
+  :   Lsp.DocumentDiagnosticReport
+
+// The full protocol: the union of every sub-interface, fixing `Origin` to `LspClient`. `LspServer`
+// implements this; `LspServer.dispatcher` serves each sub-interface separately and routes by method.
+trait Lsp
+extends LspLifecycle, LspLanguage, LspNavigation, LspEditing, LspAdvanced:
+  type Origin = LspClient

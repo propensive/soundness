@@ -56,6 +56,59 @@ import probates.awaitProbate
 import strategies.throwUnsafely
 import threading.virtualThreading
 
+object LspServer:
+  // The JSON-RPC dispatch is generated split across one dispatcher per `Lsp` sub-interface, rather
+  // than as a single `serve[Lsp]` inside the trait. `JsonRpc.serve` inlines a schema-carrying codec
+  // for every method it covers, so one dispatcher for the whole protocol — or even one on the
+  // `LspServer` trait alongside its handlers and `main` — overflows the JVM per-class constant-pool
+  // limit. Each sub-dispatcher is expanded in its own object, so it compiles into its own small
+  // class; `dispatcher` routes an incoming request to the one whose interface declares its method
+  // (a JSON-RPC response, which carries no method, is handled by any dispatcher, so the first
+  // suffices).
+
+  private object lifecycleRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      JsonRpc.serve[LspLifecycle](server)
+
+  private object languageRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      JsonRpc.serve[LspLanguage](server)
+
+  private object navigationRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      JsonRpc.serve[LspNavigation](server)
+
+  private object editingRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      JsonRpc.serve[LspEditing](server)
+
+  private object advancedRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      JsonRpc.serve[LspAdvanced](server)
+
+  def dispatcher(server: Lsp): Json => Optional[Json] =
+    import dynamicJsonAccess.enabled
+    import strategies.throwUnsafely
+
+    val routes: List[(Set[Text], Json => Optional[Json])] =
+      List
+        ( JsonRpc.methods[LspLifecycle]  -> lifecycleRoute(server),
+          JsonRpc.methods[LspLanguage]   -> languageRoute(server),
+          JsonRpc.methods[LspNavigation] -> navigationRoute(server),
+          JsonRpc.methods[LspEditing]    -> editingRoute(server),
+          JsonRpc.methods[LspAdvanced]   -> advancedRoute(server) )
+
+    json =>
+      safely(json.method.as[Text]).lay(routes.head._2(json)): method =>
+        routes.find(_._1.contains(method)) match
+          case Some((_, dispatch)) => dispatch(json)
+          case None                => Unset
+
 // A base for Language Server implementations. Subclasses provide their `name`, `capabilities` and
 // any of the overridable handler hooks they support; everything else (the JSON-RPC method dispatch,
 // the document store, and the stdio transport) is provided here. This is deliberately simpler than
@@ -129,6 +182,25 @@ trait LspServer() extends Lsp:
   def prepareTypeHierarchy(uri: Text, position: Position): List[TypeHierarchyItem] = Nil
   def supertypes(item: TypeHierarchyItem): List[TypeHierarchyItem] = Nil
   def subtypes(item: TypeHierarchyItem): List[TypeHierarchyItem] = Nil
+
+  def semanticTokens(uri: Text): SemanticTokens = SemanticTokens()
+  def semanticTokensRange(uri: Text, range: Range): SemanticTokens = SemanticTokens()
+
+  def semanticTokensDelta(uri: Text, previousResultId: Text): SemanticTokensDelta =
+    SemanticTokensDelta()
+
+  def inlayHints(uri: Text, range: Range): List[InlayHint] = Nil
+
+  def inlineValues(uri: Text, range: Range, context: InlineValueContext): List[InlineValueText] =
+    Nil
+
+  def linkedEditingRange(uri: Text, position: Position): Optional[LinkedEditingRanges] = Unset
+  def monikers(uri: Text, position: Position): List[Moniker] = Nil
+
+  def diagnostics(uri: Text, identifier: Optional[Text], previousResultId: Optional[Text])
+  :   DocumentDiagnosticReport =
+
+    DocumentDiagnosticReport()
 
   // The current contents of an open document, if any.
   def document(uri: Text): Optional[TextDocumentItem] = documents.at(uri)
@@ -319,6 +391,49 @@ trait LspServer() extends Lsp:
   def `typeHierarchy/subtypes`(item: TypeHierarchyItem): List[TypeHierarchyItem] =
     subtypes(item)
 
+  def `textDocument/semanticTokens/full`(textDocument: TextDocumentIdentifier): SemanticTokens =
+    semanticTokens(textDocument.uri)
+
+  def `textDocument/semanticTokens/full/delta`
+    ( textDocument: TextDocumentIdentifier, previousResultId: Text )
+  :   SemanticTokensDelta =
+
+    semanticTokensDelta(textDocument.uri, previousResultId)
+
+  def `textDocument/semanticTokens/range`(textDocument: TextDocumentIdentifier, range: Range)
+  :   SemanticTokens =
+
+    semanticTokensRange(textDocument.uri, range)
+
+  def `textDocument/inlayHint`(textDocument: TextDocumentIdentifier, range: Range)
+  :   List[InlayHint] =
+
+    inlayHints(textDocument.uri, range)
+
+  def `textDocument/inlineValue`
+    ( textDocument: TextDocumentIdentifier, range: Range, context: InlineValueContext )
+  :   List[InlineValueText] =
+
+    inlineValues(textDocument.uri, range, context)
+
+  def `textDocument/linkedEditingRange`(textDocument: TextDocumentIdentifier, position: Position)
+  :   Optional[LinkedEditingRanges] =
+
+    linkedEditingRange(textDocument.uri, position)
+
+  def `textDocument/moniker`(textDocument: TextDocumentIdentifier, position: Position)
+  :   List[Moniker] =
+
+    monikers(textDocument.uri, position)
+
+  def `textDocument/diagnostic`
+    ( textDocument: TextDocumentIdentifier,
+      identifier: Optional[Text],
+      previousResultId: Optional[Text] )
+  :   DocumentDiagnosticReport =
+
+    diagnostics(textDocument.uri, identifier, previousResultId)
+
   // The stdio transport. Reads `Content-Length`-framed JSON-RPC messages from standard input and
   // dispatches each to the methods above; a single asynchronous writer drains the outgoing channel
   // (both request responses, funnelled in via `put`, and server-initiated notifications such as
@@ -328,7 +443,7 @@ trait LspServer() extends Lsp:
     import charEncoders.utf8Encoder
     import strategies.throwUnsafely
 
-    val dispatch: Json => Optional[Json] = JsonRpc.serve[Lsp](this)
+    val dispatch: Json => Optional[Json] = LspServer.dispatcher(this)
 
     // The writer drains the channel and frames each message onto stdout.
     val writer: Task[Unit] = async:
