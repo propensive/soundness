@@ -94,6 +94,8 @@ object Lsp:
       interFileDependencies: Boolean,
       workspaceDiagnostics:  Boolean )
 
+  case class ExecuteCommandOptions(commands: List[Text])
+
   case class ServerCapabilities
     ( textDocumentSync:                 Optional[TextDocumentSyncKind]            = Unset,
       completionProvider:               Optional[CompletionOptions]               = Unset,
@@ -123,7 +125,9 @@ object Lsp:
       inlineValueProvider:              Optional[Boolean]                         = Unset,
       linkedEditingRangeProvider:       Optional[Boolean]                         = Unset,
       monikerProvider:                  Optional[Boolean]                         = Unset,
-      diagnosticProvider:               Optional[DiagnosticOptions]               = Unset )
+      diagnosticProvider:               Optional[DiagnosticOptions]               = Unset,
+      workspaceSymbolProvider:          Optional[Boolean]                         = Unset,
+      executeCommandProvider:           Optional[ExecuteCommandOptions]           = Unset )
 
   case class InitializeResult
     ( capabilities: ServerCapabilities, serverInfo: Optional[ServerInfo] = Unset )
@@ -282,6 +286,46 @@ object Lsp:
   case class DocumentDiagnosticReport
     ( kind: Text = t"full", resultId: Optional[Text] = Unset, items: List[Diagnostic] = Nil )
 
+  // Workspace
+
+  case class WorkspaceSymbol
+    ( name:          Text,
+      kind:          SymbolKind,
+      tags:          Optional[List[SymbolTag]] = Unset,
+      location:      Location,
+      containerName: Optional[Text]            = Unset,
+      data:          Optional[Json]            = Unset )
+
+  object FileEvent:
+    given decodable: Tactic[JsonError] => FileEvent is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class FileEvent(uri: Text, `type`: FileChangeType)
+
+  object WorkspaceFoldersChangeEvent:
+    given decodable: Tactic[JsonError] => WorkspaceFoldersChangeEvent is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class WorkspaceFoldersChangeEvent(added: List[Folder], removed: List[Folder])
+
+  object FileCreate:
+    given decodable: Tactic[JsonError] => FileCreate is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class FileCreate(uri: Text)
+
+  object FileRename:
+    given decodable: Tactic[JsonError] => FileRename is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class FileRename(oldUri: Text, newUri: Text)
+
+  object FileDelete:
+    given decodable: Tactic[JsonError] => FileDelete is Json.Decodable =
+      Json.DecodableDerivation.derived
+
+  case class FileDelete(uri: Text)
+
   // Diagnostics and window messages
 
   object Diagnostic:
@@ -395,6 +439,16 @@ object Lsp:
 
   enum InlayHintKind:
     case Type, Parameter
+
+  object FileChangeType:
+    given encodable: FileChangeType is Json.Encodable =
+      Json.Encodable(Morphology.Whole): kind => (kind.ordinal + 1).json
+
+    given decodable: Tactic[JsonError] => FileChangeType is Json.Decodable =
+      Json.Decodable(Morphology.Whole): json => FileChangeType.fromOrdinal(json.as[Int] - 1)
+
+  enum FileChangeType:
+    case Created, Changed, Deleted
 
 // The Language Server Protocol request/notification surface. It is split into several sub-traits
 // purely so that each can be compiled into its own JSON-RPC dispatcher class: `JsonRpc.serve`
@@ -634,8 +688,46 @@ trait LspAdvanced extends JsonRpc:
       previousResultId: Optional[Text] )
   :   Lsp.DocumentDiagnosticReport
 
+trait LspWorkspace extends JsonRpc:
+
+  @rpc
+  def `workspace/symbol`(query: Text): List[Lsp.WorkspaceSymbol]
+
+  @rpc
+  def `workspace/executeCommand`(command: Text, arguments: Optional[List[Json]]): Optional[Json]
+
+  @rpc
+  def `workspace/didChangeConfiguration`(settings: Json): Unit
+
+  @rpc
+  def `workspace/didChangeWatchedFiles`(changes: List[Lsp.FileEvent]): Unit
+
+  @rpc
+  def `workspace/didChangeWorkspaceFolders`(event: Lsp.WorkspaceFoldersChangeEvent): Unit
+
+  @rpc
+  def `workspace/willCreateFiles`(files: List[Lsp.FileCreate]): Optional[Lsp.WorkspaceEdit]
+
+  @rpc
+  def `workspace/didCreateFiles`(files: List[Lsp.FileCreate]): Unit
+
+  @rpc
+  def `workspace/willRenameFiles`(files: List[Lsp.FileRename]): Optional[Lsp.WorkspaceEdit]
+
+  @rpc
+  def `workspace/didRenameFiles`(files: List[Lsp.FileRename]): Unit
+
+  @rpc
+  def `workspace/willDeleteFiles`(files: List[Lsp.FileDelete]): Optional[Lsp.WorkspaceEdit]
+
+  @rpc
+  def `workspace/didDeleteFiles`(files: List[Lsp.FileDelete]): Unit
+
+  @rpc
+  def `$/setTrace`(value: Text): Unit
+
 // The full protocol: the union of every sub-interface, fixing `Origin` to `LspClient`. `LspServer`
-// implements this; `LspServer.dispatcher` serves each sub-interface separately and routes by method.
+// implements this; `LspServer.dispatcher` serves each sub-interface separately, routing by method.
 trait Lsp
-extends LspLifecycle, LspLanguage, LspNavigation, LspEditing, LspAdvanced:
+extends LspLifecycle, LspLanguage, LspNavigation, LspEditing, LspAdvanced, LspWorkspace:
   type Origin = LspClient

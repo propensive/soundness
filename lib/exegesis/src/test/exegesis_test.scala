@@ -73,6 +73,9 @@ object TestServer extends LspServer():
   override def inlayHints(uri: Text, range: Lsp.Range): List[Lsp.InlayHint] =
     List(Lsp.InlayHint(range.start, label = t": Int", kind = Lsp.InlayHintKind.Type))
 
+  override def executeCommand(command: Text, arguments: Optional[List[Json]]): Optional[Json] =
+    command.json
+
   // Build the dispatcher once, here, rather than at each test call site: it expands a
   // schema-carrying codec for every LSP method, which repeated would exceed the JVM
   // per-class size limit in `Tests`.
@@ -178,3 +181,23 @@ object Tests extends Suite(m"Exegesis Tests"):
 
         dispatch(request).let(_.as[JsonRpc.Response].result.as[List[Lsp.InlayHint]].head.kind)
       . assert(_ == Lsp.InlayHintKind.Type)
+
+      test(m"a workspace/executeCommand request decodes its command name"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","id":7,"method":"workspace/executeCommand","params":{"command":"do.thing","arguments":[]}}"""
+          . decode[Json]
+
+        dispatch(request).let(_.as[JsonRpc.Response].result.as[Text])
+      . assert(_ == t"do.thing")
+
+      test(m"a $$/setTrace notification is dispatched without a response"):
+        val dispatch = TestServer.dispatch
+
+        val request: Json =
+          t"""{"jsonrpc":"2.0","method":"$$/setTrace","params":{"value":"verbose"}}"""
+          . decode[Json]
+
+        dispatch(request)
+      . assert(_ == Unset)

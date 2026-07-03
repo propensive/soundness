@@ -91,6 +91,11 @@ object LspServer:
       import strategies.throwUnsafely
       JsonRpc.serve[LspAdvanced](server)
 
+  private object workspaceRoute:
+    def apply(server: Lsp): Json => Optional[Json] =
+      import strategies.throwUnsafely
+      JsonRpc.serve[LspWorkspace](server)
+
   def dispatcher(server: Lsp): Json => Optional[Json] =
     import dynamicJsonAccess.enabled
     import strategies.throwUnsafely
@@ -101,7 +106,8 @@ object LspServer:
           JsonRpc.methods[LspLanguage]   -> languageRoute(server),
           JsonRpc.methods[LspNavigation] -> navigationRoute(server),
           JsonRpc.methods[LspEditing]    -> editingRoute(server),
-          JsonRpc.methods[LspAdvanced]   -> advancedRoute(server) )
+          JsonRpc.methods[LspAdvanced]   -> advancedRoute(server),
+          JsonRpc.methods[LspWorkspace]  -> workspaceRoute(server) )
 
     json =>
       safely(json.method.as[Text]).lay(routes.head._2(json)): method =>
@@ -201,6 +207,19 @@ trait LspServer() extends Lsp:
   :   DocumentDiagnosticReport =
 
     DocumentDiagnosticReport()
+
+  def workspaceSymbols(query: Text): List[WorkspaceSymbol] = Nil
+  def executeCommand(command: Text, arguments: Optional[List[Json]]): Optional[Json] = Unset
+  def onConfigurationChange(settings: Json): Unit = ()
+  def onWatchedFilesChange(changes: List[FileEvent]): Unit = ()
+  def onWorkspaceFoldersChange(event: WorkspaceFoldersChangeEvent): Unit = ()
+  def willCreateFiles(files: List[FileCreate]): Optional[WorkspaceEdit] = Unset
+  def onCreateFiles(files: List[FileCreate]): Unit = ()
+  def willRenameFiles(files: List[FileRename]): Optional[WorkspaceEdit] = Unset
+  def onRenameFiles(files: List[FileRename]): Unit = ()
+  def willDeleteFiles(files: List[FileDelete]): Optional[WorkspaceEdit] = Unset
+  def onDeleteFiles(files: List[FileDelete]): Unit = ()
+  def onSetTrace(value: Text): Unit = ()
 
   // The current contents of an open document, if any.
   def document(uri: Text): Optional[TextDocumentItem] = documents.at(uri)
@@ -433,6 +452,35 @@ trait LspServer() extends Lsp:
   :   DocumentDiagnosticReport =
 
     diagnostics(textDocument.uri, identifier, previousResultId)
+
+  def `workspace/symbol`(query: Text): List[WorkspaceSymbol] = workspaceSymbols(query)
+
+  def `workspace/executeCommand`(command: Text, arguments: Optional[List[Json]]): Optional[Json] =
+    executeCommand(command, arguments)
+
+  def `workspace/didChangeConfiguration`(settings: Json): Unit = onConfigurationChange(settings)
+
+  def `workspace/didChangeWatchedFiles`(changes: List[FileEvent]): Unit =
+    onWatchedFilesChange(changes)
+
+  def `workspace/didChangeWorkspaceFolders`(event: WorkspaceFoldersChangeEvent): Unit =
+    onWorkspaceFoldersChange(event)
+
+  def `workspace/willCreateFiles`(files: List[FileCreate]): Optional[WorkspaceEdit] =
+    willCreateFiles(files)
+
+  def `workspace/didCreateFiles`(files: List[FileCreate]): Unit = onCreateFiles(files)
+
+  def `workspace/willRenameFiles`(files: List[FileRename]): Optional[WorkspaceEdit] =
+    willRenameFiles(files)
+
+  def `workspace/didRenameFiles`(files: List[FileRename]): Unit = onRenameFiles(files)
+
+  def `workspace/willDeleteFiles`(files: List[FileDelete]): Optional[WorkspaceEdit] =
+    willDeleteFiles(files)
+
+  def `workspace/didDeleteFiles`(files: List[FileDelete]): Unit = onDeleteFiles(files)
+  def `$/setTrace`(value: Text): Unit = onSetTrace(value)
 
   // The stdio transport. Reads `Content-Length`-framed JSON-RPC messages from standard input and
   // dispatches each to the methods above; a single asynchronous writer drains the outgoing channel
