@@ -47,11 +47,17 @@ object Token:
 
 // `span` locates the token in its `SourceCode`: a `Line`-mode `Span` carrying the
 // token's 0-based line and column and its length. It is `Span.empty` until the
-// token is placed into a `SourceCode`'s line grid.
+// token is placed into a `SourceCode`'s line grid. `role` distinguishes a binding from a
+// usage for term (`Term`) and type (`Typal`) tokens, and is `Unset` for all others.
 case class Token
-  ( text: Text, accent: Accent, meta: Optional[Token.Meta] = Unset, span: Span = Span.empty ):
+  ( text:   Text,
+    accent: Accent,
+    meta:   Optional[Token.Meta] = Unset,
+    span:   Span                 = Span.empty,
+    role:   Optional[Role]       = Unset ):
+
   def length: Int = text.length
 
   def snip(point: Int): (Token, Token) =
-    ( Token(text.keep(point), accent, meta, span),
-      Token(text.skip(point), accent, meta, span) )
+    ( Token(text.keep(point), accent, meta, span, role),
+      Token(text.skip(point), accent, meta, span, role) )

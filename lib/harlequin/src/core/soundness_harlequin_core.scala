@@ -35,5 +35,5 @@ package soundness
 // `Completion`/`Completions` are intentionally not re-exported here: those names
 // already belong to `exoskeleton` in the `soundness` namespace. Reach harlequin's
 // via `harlequin.Completion` / `harlequin.Completions`.
-export harlequin.{Accent, Diagnostic, Highlight, Java, Depth, ProgrammingLanguage, Scala,
+export harlequin.{Accent, Diagnostic, Highlight, Java, Depth, ProgrammingLanguage, Role, Scala,
     SourceCode, Token, highlighting}
