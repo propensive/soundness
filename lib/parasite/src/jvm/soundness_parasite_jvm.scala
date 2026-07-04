@@ -30,22 +30,6 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package diuretic
+package soundness
 
-import java.nio.file as jnf
-
-import anticipation.*
-import prepositional.*
-
-object JavaNioPath extends Instantiable, Abstractable:
-  type Self = jnf.Path
-  type Domain = Paths
-  type Origin = Text
-  type Result = Text
-
-  def apply(path: Text): jnf.Path = jnf.Paths.get(path.s).nn
-  def genericize(value: jnf.Path): Text = value.toAbsolutePath.nn.toString.tt
-
-// `java.nio.file.Path` can stand in for a soundness path abstraction (moved here from
-// `anticipation.path` to keep that module Scala.js-portable).
-inline given javaNioFilePath: jnf.Path is Representative of Paths = caps.unsafe.unsafeErasedValue
+export parasite.{GarbageCollection, Heap}

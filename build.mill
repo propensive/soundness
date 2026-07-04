@@ -701,6 +701,7 @@ object distillate extends Library:
 
 object diuretic extends Library:
   object core extends Component(anticipation.path, anticipation.url, anticipation.time):
+    override def scalaJs = false // `java.*` type interop (io.File, nio.Path, net.URL, time, util.Date)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
@@ -1224,7 +1225,12 @@ object parasite extends Library:
       nomenclature.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, quantitative.units)
+  // `GarbageCollection`/`Heap` introspection via `java.lang.management` — JVM-only.
+  object jvm extends Component(core):
+    override def scalaJs = false
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core, jvm, quantitative.units)
 
 object perihelion extends Library:
   object core extends Component(scintillate.server, coaxial.core, gastronomy.core, monotonous.core,

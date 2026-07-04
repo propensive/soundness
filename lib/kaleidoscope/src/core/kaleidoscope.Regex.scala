@@ -34,7 +34,7 @@ package kaleidoscope
 
 import language.experimental.pureFunctions
 
-import java.util.concurrent.ConcurrentHashMap
+import scala.collection.concurrent.TrieMap
 import java.util.regex as jur
 
 import anticipation.*
@@ -46,7 +46,7 @@ import vacuous.*
 import RegexError.Reason.*
 
 object Regex:
-  private val cache: ConcurrentHashMap[String, jur.Pattern] = ConcurrentHashMap()
+  private val cache: TrieMap[String, jur.Pattern] = TrieMap()
 
   enum Greed:
     case Greedy, Reluctant, Possessive
@@ -319,7 +319,7 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
   def captureGroups: List[Regex.Group] = allGroups.filter(_.capture)
 
   private[kaleidoscope] lazy val javaPattern: jur.Pattern =
-    Regex.cache.computeIfAbsent(capturePattern.s, jur.Pattern.compile(_)).nn
+    Regex.cache.getOrElseUpdate(capturePattern.s, jur.Pattern.compile(capturePattern.s).nn)
 
   def seek(input: Text, start: Ordinal = Prim): Optional[Interval] =
     val matcher: jur.Matcher = javaPattern.matcher(input.s).nn
@@ -374,7 +374,7 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
                   val subpattern = pattern.s.substring(group.start, group.end).nn
 
                   val compiled =
-                    Regex.cache.computeIfAbsent(subpattern, jur.Pattern.compile(_)).nn
+                    Regex.cache.getOrElseUpdate(subpattern, jur.Pattern.compile(subpattern).nn)
 
                   val submatcher = compiled.matcher(matchedText).nn
                   var submatches: List[Text] = Nil
