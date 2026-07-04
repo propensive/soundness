@@ -33,12 +33,15 @@
 package archimedes
 
 import anticipation.*
+import baroque.*
 import contingency.*
 import gossamer.*
 import hieroglyph.*
 import honeycomb.Html
 import honeycomb.Renderable
+import mosquito.*
 import prepositional.*
+import quantitative.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
@@ -101,6 +104,67 @@ object Math:
     honeycomb.doms.html.whatwg.Math.node(honeycomb.Attributes(pairs*))(children*)
 
   def apply(children: Mathml*): Math = Math(children.to(List))
+
+  // `Encodable in Math` instances: any value encodes to a `<math>` document, just
+  // as `Encodable in Xml` yields an `Xml`. `Mathml.atom` collapses a root back to a
+  // single node where one is needed (the `.mathml` extension, the `ergo""` macro).
+  given int:        Int is Encodable in Math        = value => Math(Mn(value.toString.tt))
+  given long:       Long is Encodable in Math       = value => Math(Mn(value.toString.tt))
+  given short:      Short is Encodable in Math      = value => Math(Mn(value.toString.tt))
+  given byte:       Byte is Encodable in Math       = value => Math(Mn(value.toString.tt))
+  given double:     Double is Encodable in Math     = value => Math(Mn(value.toString.tt))
+  given float:      Float is Encodable in Math      = value => Math(Mn(value.toString.tt))
+  given bigInt:     BigInt is Encodable in Math     = value => Math(Mn(value.toString.tt))
+  given bigDecimal: BigDecimal is Encodable in Math = value => Math(Mn(value.toString.tt))
+  given text:       Text is Encodable in Math       = value => Math(Mtext(value))
+  given identical:  Mathml is Encodable in Math     = node => Math(List(node))
+  given self:       Math is Encodable in Math       = identity(_)
+
+  // Wraps the encoder lambda in a class (rather than an inline function value) to
+  // avoid inline-given code bloat, mirroring quantitative's `ShowableQuantity`. It
+  // must be public because the inline given inlines a reference to it.
+  class QuantityEncodable[units <: Measure](lambda: Quantity[units] => Math)
+  extends Encodable:
+    type Self = Quantity[units]
+    type Form = Math
+    def encoded(quantity: Quantity[units]): Math = lambda(quantity)
+
+  // A quantity renders its magnitude as `<mn>` followed by each unit as `<mi>`
+  // (or `<msup>` when the exponent is not 1), joined by invisible multiplication.
+  inline given quantity: [units <: Measure] => Quantity[units] is Encodable in Math =
+    QuantityEncodable[units]: quantity =>
+      Math(quantityMathml(quantity.value, quantity.units))
+
+  given complex: [component: Encodable in Math] => Complex[component] is Encodable in Math =
+    value => Math(Mrow(List(value.real.mathml, Mo(t"+"), value.imaginary.mathml, Mi(t"i"))))
+
+  given vector: [element: Encodable in Math, size <: Int]
+  =>  Vector[element, size] is Encodable in Math =
+    vector =>
+      Math(fenced(Mtable(vector.list.map { element => Mtr(Mtd(element.mathml)) }*), t"(", t")"))
+
+  given matrix: [element: Encodable in Math, height <: Int, width <: Int]
+  =>  Matrix[element, height, width] is Encodable in Math =
+    matrix =>
+      val rows = (0 until matrix.rows).to(List).map: row =>
+        Mtr((0 until matrix.columns).to(List).map { column => Mtd(matrix(row, column).mathml) }*)
+
+      Math(fenced(Mtable(rows*), t"[", t"]"))
+
+  private def quantityMathml(value: Double, units: Map[Text, Int]): Mathml =
+    val unitNodes: List[Mathml] = units.to(List).sortBy(_._1.s).map: (symbol, power) =>
+      if power == 1 then Mi(symbol) else Msup(Mi(symbol), Mn(power.toString.tt))
+
+    product(Mn(value.toString.tt) :: unitNodes)
+
+  private def product(nodes: List[Mathml]): Mathml = nodes match
+    case one :: Nil   => one
+    case head :: tail => Mrow(head :: tail.flatMap { node => List(Mo(t"⁢"), node) })
+    case Nil          => Mrow(Nil)
+
+  private def fenced(inner: Mathml, open: Text, close: Text): Mathml =
+    val stretchy = List(t"stretchy" -> t"true")
+    Mrow(List(Mo(open, stretchy), inner, Mo(close, stretchy)))
 
 
 case class Math

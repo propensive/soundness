@@ -41,15 +41,13 @@ import prepositional.*
 // `<math>` element.
 val mathmlNamespace: Text = t"http://www.w3.org/1998/Math/MathML"
 
-// Converts any type with an `Encodable in Mathml` instance to a MathML node or a
-// `<math>` root — `5.math`, `complex.mathml`, `quantity.math`, etc. Instances
-// live in the `Mathml` companion; see `object Mathml` in `archimedes.Mathml.scala`.
-extension [ValueType: Encodable in Mathml as encodable](value: ValueType)
-  def mathml: Mathml = encodable.encoded(value)
+// Converts any type with an `Encodable in Math` instance to a `<math>` root or a
+// single MathML node — `5.math`, `complex.mathml`, `quantity.math`, etc. Instances
+// live in the `Math` companion; see `object Math` in `archimedes.Math.scala`.
+extension [ValueType: Encodable in Math as encodable](value: ValueType)
+  def math: Math = encodable.encoded(value)
 
-  def math: Math = mathml match
-    case Mrow(nodes, _) => Math(nodes)
-    case node           => Math(List(node))
+  def mathml: Mathml = Mathml.atom(encodable.encoded(value))
 
 // The `ergo""` interpolator: `ergo"(x↗y)"` parses an ergo shorthand literal into
 // a `Math` value, checking it at compile time (see `internal.ergoInterpolator`).

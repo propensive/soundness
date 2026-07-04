@@ -45,7 +45,7 @@ import vacuous.*
 
 object internal:
   // The macro behind the `ergo""` interpolator. It recovers the literal parts and
-  // converts each `$`-substitution (any value that is `Encodable in Mathml`) into a
+  // converts each `$`-substitution (any value that is `Encodable in Math`) into a
   // single atom node, parses the whole expression *at compile time* so a malformed
   // literal fails compilation with the parser's own diagnostic, then emits runtime
   // code that re-parses with the substitutions woven in.
@@ -63,13 +63,14 @@ object internal:
 
     val atoms: List[Expr[Mathml]] = insertionExprs.map: insertion =>
       insertion.absolve match
-        case '{$value: valueType} => Expr.summon[(? >: valueType) is Encodable in Mathml] match
-          case Some('{$encodable: Encodable}) => '{$encodable.encoded($value)}.asExprOf[Mathml]
+        case '{$value: valueType} => Expr.summon[(? >: valueType) is Encodable in Math] match
+          case Some('{$encodable: Encodable}) =>
+            '{Mathml.atom($encodable.encoded($value))}.asExprOf[Mathml]
 
           case _ =>
             val kind = TypeRepr.of[valueType].widen.show
             val position = insertion.asTerm.underlyingArgument.pos
-            halt(m"a $kind cannot be embedded in ergo: it is not Encodable in Mathml", position)
+            halt(m"a $kind cannot be embedded in ergo: it is not Encodable in Math", position)
 
     locally:
       import strategies.throwUnsafely

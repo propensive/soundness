@@ -33,12 +33,8 @@
 package archimedes
 
 import anticipation.*
-import baroque.*
-import gossamer.*
 import honeycomb.Html
-import mosquito.*
 import prepositional.*
-import quantitative.*
 import vacuous.*
 import xylophone.*
 
@@ -55,64 +51,13 @@ import xylophone.*
 //   - `html` builds a `honeycomb.Html` foreign-element tree (used for embedding
 //     MathML inside HTML, where honeycomb reserves `<math>` as a foreign tag).
 
-// `Encodable in Mathml` instances live here (the `Form` companion), so `.mathml`
-// and `.math` (defined in `archimedes_core.scala`) resolve without an import.
+// `Encodable in Math` instances live in the `Math` companion (the `Form`, mirroring
+// `Encodable in Xml`); `atom` collapses an encoded `<math>` root back to a single
+// node for callers — the `.mathml` extension and the `ergo""` macro — that want one.
 object Mathml:
-  given int:        Int is Encodable in Mathml        = value => Mn(value.toString.tt)
-  given long:       Long is Encodable in Mathml       = value => Mn(value.toString.tt)
-  given short:      Short is Encodable in Mathml      = value => Mn(value.toString.tt)
-  given byte:       Byte is Encodable in Mathml       = value => Mn(value.toString.tt)
-  given double:     Double is Encodable in Mathml     = value => Mn(value.toString.tt)
-  given float:      Float is Encodable in Mathml      = value => Mn(value.toString.tt)
-  given bigInt:     BigInt is Encodable in Mathml     = value => Mn(value.toString.tt)
-  given bigDecimal: BigDecimal is Encodable in Mathml = value => Mn(value.toString.tt)
-  given text:       Text is Encodable in Mathml       = Mtext(_)
-  given identical:  Mathml is Encodable in Mathml     = identity(_)
-
-  // Wraps the encoder lambda in a class (rather than an inline function value) to
-  // avoid inline-given code bloat, mirroring quantitative's `ShowableQuantity`. It
-  // must be public because the inline given inlines a reference to it.
-  class QuantityEncodable[units <: Measure](lambda: Quantity[units] => Mathml)
-  extends Encodable:
-    type Self = Quantity[units]
-    type Form = Mathml
-    def encoded(quantity: Quantity[units]): Mathml = lambda(quantity)
-
-  // A quantity renders its magnitude as `<mn>` followed by each unit as `<mi>`
-  // (or `<msup>` when the exponent is not 1), joined by invisible multiplication.
-  inline given quantity: [units <: Measure] => Quantity[units] is Encodable in Mathml =
-    QuantityEncodable[units]: quantity =>
-      quantityMathml(quantity.value, quantity.units)
-
-  given complex: [component: Encodable in Mathml] => Complex[component] is Encodable in Mathml =
-    value => Mrow(List(value.real.mathml, Mo(t"+"), value.imaginary.mathml, Mi(t"i")))
-
-  given vector: [element: Encodable in Mathml, size <: Int]
-  =>  Vector[element, size] is Encodable in Mathml =
-    vector => fenced(Mtable(vector.list.map { element => Mtr(Mtd(element.mathml)) }*), t"(", t")")
-
-  given matrix: [element: Encodable in Mathml, height <: Int, width <: Int]
-  =>  Matrix[element, height, width] is Encodable in Mathml =
-    matrix =>
-      val rows = (0 until matrix.rows).to(List).map: row =>
-        Mtr((0 until matrix.columns).to(List).map { column => Mtd(matrix(row, column).mathml) }*)
-
-      fenced(Mtable(rows*), t"[", t"]")
-
-  private def quantityMathml(value: Double, units: Map[Text, Int]): Mathml =
-    val unitNodes: List[Mathml] = units.to(List).sortBy(_._1.s).map: (symbol, power) =>
-      if power == 1 then Mi(symbol) else Msup(Mi(symbol), Mn(power.toString.tt))
-
-    product(Mn(value.toString.tt) :: unitNodes)
-
-  private def product(nodes: List[Mathml]): Mathml = nodes match
-    case one :: Nil   => one
-    case head :: tail => Mrow(head :: tail.flatMap { node => List(Mo(t"⁢"), node) })
-    case Nil          => Mrow(Nil)
-
-  private def fenced(inner: Mathml, open: Text, close: Text): Mathml =
-    val stretchy = List(t"stretchy" -> t"true")
-    Mrow(List(Mo(open, stretchy), inner, Mo(close, stretchy)))
+  def atom(math: Math): Mathml = math.contents match
+    case List(node) => node
+    case nodes      => Mrow(nodes)
 
 trait Mathml:
   def label: Text
