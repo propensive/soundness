@@ -42,4 +42,12 @@ package anticipation
 // never even constructed, and logging a disabled event costs nothing.
 trait Sink[-eventType, carrier]:
   def accepts(level: Level): Boolean
+
+  // Reports whether this sink records events of the given (concrete) type. Takes the *original*
+  // event rather than the transcribed carrier, because category membership (`Log.Category`) is a
+  // property of the event's runtime type — the log call site knows only the general event type, so
+  // a sink filtered to particular categories must test each event at runtime. Defaults to `true`,
+  // so category-agnostic sinks are unaffected.
+  def admits(event: eventType): Boolean = true
+
   def submit(level: Level, timestamp: Long, message: carrier): Unit
