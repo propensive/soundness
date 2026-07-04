@@ -33,8 +33,32 @@
 package archimedes
 
 import anticipation.*
+import contextual.*
 import gossamer.*
+import prepositional.*
 
 // The MathML namespace URI, written as the `xmlns` attribute on the root
 // `<math>` element.
 val mathmlNamespace: Text = t"http://www.w3.org/1998/Math/MathML"
+
+// Converts any type with an `Encodable in Mathml` instance to a MathML node or a
+// `<math>` root — `5.math`, `complex.mathml`, `quantity.math`, etc. Instances
+// live in the `Mathml` companion; see `object Mathml` in `archimedes.Mathml.scala`.
+extension [ValueType: Encodable in Mathml as encodable](value: ValueType)
+  def mathml: Mathml = encodable.encoded(value)
+
+  def math: Math = mathml match
+    case Mrow(nodes, _) => Math(nodes)
+    case node           => Math(List(node))
+
+// The `ergo""` interpolator: `ergo"(x↗y)"` parses an ergo shorthand literal into
+// a `Math` value, checking it at compile time (see `internal.ergoInterpolator`).
+inline given ergoInterpolable: Math is Interpolable:
+  transparent inline def interpolate[parts <: Tuple, origins <: Tuple]
+    ( inline insertions: Any* )
+  :   Math =
+
+    ${archimedes.internal.ergoInterpolator[parts]('insertions)}
+
+extension (inline context: StringContext)
+  transparent inline def ergo: Interpolation = interpolation[Math](context)

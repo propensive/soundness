@@ -30,12 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package archimedes
 
-export archimedes.{Math, Mathml, Token, Mi, Mn, Mo, Mtext, Ms, Mspace, Mglyph, Layout, Mrow,
-    Mfrac, Msqrt, Mroot, Mstyle, Merror, Mpadded, Mphantom, Menclose, Mfenced, Script, Msub, Msup,
-    Msubsup, Munder, Mover, Munderover, Mmultiscripts, Mprescripts, Mnone, Tabular, Mtable, Mtr,
-    Mlabeledtr, Mtd, Maligngroup, Malignmark, Elementary, Mstack, Mlongdiv, Msgroup, Msrow,
-    Mscarries, Mscarry, Msline, Semantic, Maction, Semantics, Annotation, AnnotationXml, Display,
-    MathmlError, MathmlParser, MathmlReader, mathmlNamespace, Ergo, ErgoError, ergo,
-    ergoInterpolable, mathml, math}
+import anticipation.*
+import fulminate.*
+
+object ErgoError:
+  enum Reason(val number: Int) extends Clarification:
+    case Empty                    extends Reason(1)
+    case BadOpener(char: Text)    extends Reason(2)
+    case Unclosed(expected: Text) extends Reason(3)
+    case UnexpectedEnd            extends Reason(4)
+    case MissingBody(char: Text)  extends Reason(5)
+    case Unsupported(label: Text) extends Reason(6)
+
+  given communicable: Reason is Communicable =
+    case Reason.Empty              => m"the expression was empty"
+    case Reason.BadOpener(char)    => m"the expression must start with a bracket, not $char"
+    case Reason.Unclosed(expected) => m"a group was not closed with $expected"
+    case Reason.UnexpectedEnd      => m"the expression ended unexpectedly"
+    case Reason.MissingBody(char)  => m"the $char introducer must be followed by a group"
+    case Reason.Unsupported(label) => m"the <$label> element has no ergo representation"
+
+case class ErgoError(reason: ErgoError.Reason)(using Diagnostics)
+extends Error(431, reason.number)(m"the ergo expression could not be parsed because $reason")
