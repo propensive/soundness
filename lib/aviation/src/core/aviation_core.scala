@@ -531,7 +531,7 @@ object TimeEvent:
     case ParseTzdb(name) => m"parsing the timezone database file $name"
 
 enum TimeEvent:
-  case ParseTzdb(name: Text)
+  case ParseTzdb(name: Text) extends TimeEvent, Log.Time
 
 // Which occurrence of a wall-clock time a `Moment` denotes during a fall-back DST overlap, where
 // the same local time happens twice (clocks go back). `First` is the earlier instant (under the

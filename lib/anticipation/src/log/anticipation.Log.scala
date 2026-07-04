@@ -58,70 +58,70 @@ object Log:
   abstract class Category(val reference: Class[?])
 
   object Memory extends Category(classOf[Memory])
-  trait Memory
+  transparent trait Memory
 
   object Cpu extends Category(classOf[Cpu])
-  trait Cpu
+  transparent trait Cpu
 
   object Threading extends Category(classOf[Threading])
-  trait Threading
+  transparent trait Threading
 
   object Process extends Category(classOf[Process])
-  trait Process
+  transparent trait Process
 
   object Filesystem extends Category(classOf[Filesystem])
-  trait Filesystem
+  transparent trait Filesystem
 
   object Disk extends Category(classOf[Disk])
-  trait Disk
+  transparent trait Disk
 
   object Network extends Category(classOf[Network])
-  trait Network
+  transparent trait Network
 
   object Database extends Category(classOf[Database])
-  trait Database
+  transparent trait Database
 
   object Cache extends Category(classOf[Cache])
-  trait Cache
+  transparent trait Cache
 
   object Serialization extends Category(classOf[Serialization])
-  trait Serialization
+  transparent trait Serialization
 
   object Crypto extends Category(classOf[Crypto])
-  trait Crypto
+  transparent trait Crypto
 
   object Auth extends Category(classOf[Auth])
-  trait Auth
+  transparent trait Auth
 
   object Configuration extends Category(classOf[Configuration])
-  trait Configuration
+  transparent trait Configuration
 
   object Dependency extends Category(classOf[Dependency])
-  trait Dependency
+  transparent trait Dependency
 
   object Scheduler extends Category(classOf[Scheduler])
-  trait Scheduler
+  transparent trait Scheduler
 
   object Time extends Category(classOf[Time])
-  trait Time
+  transparent trait Time
 
   object Ui extends Category(classOf[Ui])
-  trait Ui
+  transparent trait Ui
 
   object Protocol extends Category(classOf[Protocol])
-  trait Protocol
+  transparent trait Protocol
 
   object Compiler extends Category(classOf[Compiler])
-  trait Compiler
+  transparent trait Compiler
 
   object Runtime extends Category(classOf[Runtime])
-  trait Runtime
+  transparent trait Runtime
 
   object Gc extends Category(classOf[Gc])
-  trait Gc
+  transparent trait Gc
 
   object Resource extends Category(classOf[Resource])
-  trait Resource
+  transparent trait Resource
 
   object Security extends Category(classOf[Security])
-  trait Security
+  transparent trait Security

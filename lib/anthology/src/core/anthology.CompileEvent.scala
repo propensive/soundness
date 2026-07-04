@@ -44,7 +44,7 @@ object CompileEvent:
     case Running(arguments) => m"running the compiler with arguments ${arguments.join(t" ")}"
 
 enum CompileEvent:
-  case Start
-  case CompilerCrash
-  case Notice(diagnostic: Text)
-  case Running(arguments: List[Text])
+  case Start extends CompileEvent, Log.Compiler
+  case CompilerCrash extends CompileEvent, Log.Compiler
+  case Notice(diagnostic: Text) extends CompileEvent, Log.Compiler
+  case Running(arguments: List[Text]) extends CompileEvent, Log.Compiler

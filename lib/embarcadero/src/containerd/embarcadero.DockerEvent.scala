@@ -46,10 +46,10 @@ object DockerEvent:
     case TaskDeleted(container)        => m"deleted the task for container $container"
 
 enum DockerEvent:
-  case ContainerCreated(id: Text)
-  case ContainerDeleted(id: Text)
-  case ImageDeleted(name: Text)
-  case TaskCreated(container: Text)
-  case TaskStarted(container: Text, pid: Int)
-  case TaskKilled(container: Text, signal: Int)
-  case TaskDeleted(container: Text)
+  case ContainerCreated(id: Text) extends DockerEvent, Log.Process
+  case ContainerDeleted(id: Text) extends DockerEvent, Log.Process
+  case ImageDeleted(name: Text) extends DockerEvent, Log.Resource
+  case TaskCreated(container: Text) extends DockerEvent, Log.Process
+  case TaskStarted(container: Text, pid: Int) extends DockerEvent, Log.Process
+  case TaskKilled(container: Text, signal: Int) extends DockerEvent, Log.Process
+  case TaskDeleted(container: Text) extends DockerEvent, Log.Process

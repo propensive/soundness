@@ -57,15 +57,15 @@ object DaemonLogEvent:
     case Init(pid)                 => m"initialising $pid"
 
 enum DaemonLogEvent:
-  case WriteExecutable(location: Text)
-  case Shutdown
-  case Termination
-  case IdleTimeout
-  case Failure
-  case NewCli
-  case UnrecognizedMessage
-  case ReceivedSignal(signal: UnixSignal | WindowsSignal)
-  case ExitStatusRequest(pid: Pid)
-  case CloseConnection(pid: Pid)
-  case StderrRequest(pid: Pid)
-  case Init(pid: Pid)
+  case WriteExecutable(location: Text) extends DaemonLogEvent, Log.Filesystem
+  case Shutdown extends DaemonLogEvent, Log.Process
+  case Termination extends DaemonLogEvent, Log.Network
+  case IdleTimeout extends DaemonLogEvent, Log.Scheduler
+  case Failure extends DaemonLogEvent, Log.Runtime
+  case NewCli extends DaemonLogEvent, Log.Process
+  case UnrecognizedMessage extends DaemonLogEvent, Log.Protocol
+  case ReceivedSignal(signal: UnixSignal | WindowsSignal) extends DaemonLogEvent, Log.Process
+  case ExitStatusRequest(pid: Pid) extends DaemonLogEvent, Log.Process
+  case CloseConnection(pid: Pid) extends DaemonLogEvent, Log.Network
+  case StderrRequest(pid: Pid) extends DaemonLogEvent, Log.Process
+  case Init(pid: Pid) extends DaemonLogEvent, Log.Process

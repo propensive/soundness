@@ -41,5 +41,5 @@ object DepsEvent:
     case Resolved(hash, url) => m"resolved hash $hash to $url"
 
 enum DepsEvent:
-  case Querying(hash: Text)
-  case Resolved(hash: Text, url: Text)
+  case Querying(hash: Text) extends DepsEvent, Log.Network, Log.Dependency
+  case Resolved(hash: Text, url: Text) extends DepsEvent, Log.Dependency

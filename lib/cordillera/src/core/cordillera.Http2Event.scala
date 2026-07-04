@@ -41,5 +41,5 @@ object Http2Event:
     case GoAway(lastStream)     => m"received GOAWAY; the last processed stream was $lastStream"
 
 enum Http2Event:
-  case RequestSent(authority: Text)
-  case GoAway(lastStream: Int)
+  case RequestSent(authority: Text) extends Http2Event, Log.Network, Log.Protocol
+  case GoAway(lastStream: Int) extends Http2Event, Log.Network, Log.Protocol

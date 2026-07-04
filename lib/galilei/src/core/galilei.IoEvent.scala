@@ -48,11 +48,11 @@ object IoEvent:
     case Touch(path)           => m"touched $path"
 
 enum IoEvent:
-  case Exec(event: ExecEvent)
-  case Create(path: Text)
-  case Delete(path: Text)
-  case Move(from: Text, to: Text)
-  case Copy(from: Text, to: Text)
-  case HardLink(from: Text, to: Text)
-  case Symlink(link: Text, target: Text)
-  case Touch(path: Text)
+  case Exec(event: ExecEvent) extends IoEvent, Log.Process
+  case Create(path: Text) extends IoEvent, Log.Filesystem
+  case Delete(path: Text) extends IoEvent, Log.Filesystem
+  case Move(from: Text, to: Text) extends IoEvent, Log.Filesystem
+  case Copy(from: Text, to: Text) extends IoEvent, Log.Filesystem
+  case HardLink(from: Text, to: Text) extends IoEvent, Log.Filesystem
+  case Symlink(link: Text, target: Text) extends IoEvent, Log.Filesystem
+  case Touch(path: Text) extends IoEvent, Log.Filesystem
