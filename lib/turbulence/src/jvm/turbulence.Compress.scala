@@ -30,101 +30,38 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package hellenism
+package turbulence
 
-import java.net as jn
-import java.util as ju
+import java.io as ji
+import java.util.zip as juz
 
 import anticipation.*
-import contingency.*
-import gossamer.*
-import nomenclature.*
-import prepositional.*
 import rudiments.*
-import serpentine.*
-import turbulence.*
 import vacuous.*
 
-object Classpath extends Root(t""):
-  type Plane = Classpath
-  type Rules = MustNotContain["/"] & MustNotMatch["[0-9].*"] & MustMatch["[a-zA-Z0-9_$.]+"]
+// JVM `java.util.zip`-backed one-shot gzip/gunzip for a whole `Data` block. Kept out of
+// `turbulence.core` because `java.util.zip` has no Scala.js implementation; the streaming
+// `compress`/`decompress` (over the platform-agnostic `Compression`/`Compressor` typeclasses)
+// remain in core.
+extension (bytes: Data)
+  def gzip: Data =
+    val out = ji.ByteArrayOutputStream()
+    val out2 = juz.GZIPOutputStream(out)
+    out2.write(bytes.mutable(using Unsafe))
+    out2.close()
+    out.toByteArray.nn.immutable(using Unsafe)
 
-  inline given nominative: Classpath is Nominative under Rules = !!
+  def gunzip: Data =
+    val in = ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
+    val in2 = juz.GZIPInputStream(in)
+    val out = ji.ByteArrayOutputStream()
+    val buffer: Array[Byte] = new Array(1024)
 
-  given radical: Tactic[PathError] => Classpath.type is Radical:
-    type Plane = Classpath
+    def recur(): Unit = in2.read(buffer).tap: length =>
+      if length > 0 then
+        out.write(buffer, 0, length)
+        recur()
 
-    def length(text: Text): Int = 1
+    recur()
 
-    def decode(text: Text): Classpath.type =
-      if text.starts(t"/") then Classpath else abort(PathError(_.InvalidRoot))
-
-    def encode(root: Classpath.type): Text = t""
-
-  object Directory:
-    def apply[path: Abstractable across Paths to Text](path: path): ClasspathEntry.Directory =
-      ClasspathEntry.Directory(path.generic)
-
-  object Jar:
-    def apply[path: Abstractable across Paths to Text](path: path): ClasspathEntry.Jar =
-      ClasspathEntry.Jar(path.generic)
-
-  given filesystem: Classpath is Filesystem:
-    type UniqueRoot = true
-
-    val name: Text = "Java classpath"
-    val separator: Text = "/"
-    val self: Text = "."
-    val parent: Text = ".."
-
-  given streamable: [path <: Path on Classpath] => Tactic[ClasspathError]
-  =>  ( classloader: Classloader )
-  =>  path is Streamable by Data =
-
-    given Tactic[StreamError] = strategies.throwUnsafely
-
-    Streamable.inputStream.contramap: path =>
-      classloader.inputStream(path.encode)
-
-
-  def servicesFor[service](classpath: Classpath, cls: Class[service]): Set[service] =
-    val parent = Optional(cls.getClassLoader).or(ClassLoader.getSystemClassLoader.nn)
-
-    val urls: Array[jn.URL | Null] =
-      Array.from(classpath.entries.flatMap:
-        case ClasspathEntry.JavaRuntime => Nil
-        case other                      => List(other.javaUrl))
-
-    val loader = jn.URLClassLoader(urls, parent)
-    val seen = scala.collection.mutable.Set.empty[Class[?]]
-    val result = scala.collection.mutable.Set.empty[service]
-
-    ju.ServiceLoader.load(cls, loader).nn.stream.nn.forEach: provider =>
-      val provider0 = provider.nn
-      if seen.add(provider0.`type`.nn) then result += provider0.get.nn
-
-    result.toSet
-
-
-trait Classpath:
-  def entries: List[ClasspathEntry]
-  private def array: Array[jn.URL | Null] = Array.from(entries.map(_.javaUrl))
-
-  def classloader(parent: Classloader = classloaders.platformClassloader): Classloader =
-    val javaClassloader = new jn.URLClassLoader(array, parent.java):
-      override def loadClass(name: String | Null, resolve: Boolean): Class[?] | Null =
-        try findClass(name) catch case error: ClassNotFoundException =>
-          super.loadClass(name, resolve)
-
-    new Classloader(javaClassloader)
-
-  def classloader: Classloader =
-    val urls = entries.flatMap:
-      case ClasspathEntry.JavaRuntime => Nil
-      case other                      => List(other.javaUrl)
-
-    new Classloader
-      ( new jn.URLClassLoader(Array.from(urls), ClassLoader.getPlatformClassLoader().nn) )
-
-  inline def services[service]: Set[service] =
-    Classpath.servicesFor[service](this, reflectClass[service])
+    out.toByteArray.nn.immutable(using Unsafe)

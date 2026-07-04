@@ -36,7 +36,6 @@ import language.adhocExtensions
 
 import java.io as ji
 import java.lang as jl
-import java.util.zip as juz
 
 import anticipation.*
 import capricious.*
@@ -128,7 +127,7 @@ extension [element](stream: Stream[element])
 
 
   def multiplex(that: Stream[element])(using Monitor): Stream[element] =
-    unsafely(Stream.multiplex(stream, that))
+    Stream.multiplex(stream, that)
 
   def regulate(tap: Tap)(using Monitor): Stream[element] =
     def defer
@@ -244,29 +243,6 @@ extension (obj: Stream.type)
 
     recur(0)
 
-
-extension (bytes: Data)
-  def gzip: Data =
-    val out = ji.ByteArrayOutputStream()
-    val out2 = juz.GZIPOutputStream(out)
-    out2.write(bytes.mutable(using Unsafe))
-    out2.close()
-    out.toByteArray.nn.immutable(using Unsafe)
-
-  def gunzip: Data =
-    val in = ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
-    val in2 = juz.GZIPInputStream(in)
-    val out = ji.ByteArrayOutputStream()
-    val buffer: Array[Byte] = new Array(1024)
-
-    def recur(): Unit = in2.read(buffer).tap: length =>
-      if length > 0 then
-        out.write(buffer, 0, length)
-        recur()
-
-    recur()
-
-    out.toByteArray.nn.immutable(using Unsafe)
 
 extension (stream: Stream[Data])
   def discard(bytes: Bytes): Stream[Data] =

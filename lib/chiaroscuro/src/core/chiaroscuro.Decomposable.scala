@@ -38,7 +38,6 @@ import scala.reflect.*
 import anticipation.*
 import gossamer.*
 import kaleidoscope.*
-import larceny.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
@@ -55,9 +54,6 @@ object Decomposable extends Decomposable2:
 
     given string: String is Base =
       value => Decomposition.Primitive("String", value, value)
-
-    given compileError: CompileError is Base =
-      value => Decomposition.Primitive("CompileError", value.toString.tt, value)
 
     given decomposition: Decomposition is Base = identity(_)
 
