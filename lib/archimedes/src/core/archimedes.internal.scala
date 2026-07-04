@@ -30,12 +30,55 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package archimedes
 
-export archimedes.{Math, Mathml, Token, Mi, Mn, Mo, Mtext, Ms, Mspace, Mglyph, Layout, Mrow,
-    Mfrac, Msqrt, Mroot, Mstyle, Merror, Mpadded, Mphantom, Menclose, Mfenced, Script, Msub, Msup,
-    Msubsup, Munder, Mover, Munderover, Mmultiscripts, Mprescripts, Mnone, Tabular, Mtable, Mtr,
-    Mlabeledtr, Mtd, Maligngroup, Malignmark, Elementary, Mstack, Mlongdiv, Msgroup, Msrow,
-    Mscarries, Mscarry, Msline, Semantic, Maction, Semantics, Annotation, AnnotationXml, Display,
-    MathmlError, MathmlParser, MathmlReader, mathmlNamespace, Ergo, ErgoError, ergo,
-    ergoInterpolable, mathml, math}
+import scala.quoted.*
+
+import anticipation.*
+import contingency.*
+import fulminate.*
+import gigantism.*
+import gossamer.*
+import prepositional.*
+import rudiments.*
+import vacuous.*
+
+object internal:
+  // The macro behind the `ergo""` interpolator. It recovers the literal parts and
+  // converts each `$`-substitution (any value that is `Encodable in Mathml`) into a
+  // single atom node, parses the whole expression *at compile time* so a malformed
+  // literal fails compilation with the parser's own diagnostic, then emits runtime
+  // code that re-parses with the substitutions woven in.
+  def ergoInterpolator[parts <: Tuple: Type](insertions: Expr[Seq[Any]]): Macro[Math] =
+    import quotes.reflect.*
+
+    def recur[tuple: Type](strings: List[String]): List[String] = Type.of[tuple] match
+      case '[head *: tail] => recur[tail](TypeRepr.of[head].literal[String].vouch :: strings)
+      case _               => strings
+
+    val parts = recur[parts](Nil)
+
+    val insertionExprs: List[Expr[Any]] = insertions.absolve match
+      case Varargs(exprs) => exprs.to(List)
+
+    val atoms: List[Expr[Mathml]] = insertionExprs.map: insertion =>
+      insertion.absolve match
+        case '{$value: valueType} => Expr.summon[(? >: valueType) is Encodable in Mathml] match
+          case Some('{$encodable: Encodable}) => '{$encodable.encoded($value)}.asExprOf[Mathml]
+
+          case _ =>
+            val kind = TypeRepr.of[valueType].widen.show
+            val position = insertion.asTerm.underlyingArgument.pos
+            halt(m"a $kind cannot be embedded in ergo: it is not Encodable in Mathml", position)
+
+    locally:
+      import strategies.throwUnsafely
+      import errorDiagnostics.emptyDiagnostics
+
+      try Ergo.interpolate(parts.map(_.tt), List.fill(atoms.length)(Mi(t"?")))
+      catch case error: ErgoError =>
+        halt(m"the ergo expression could not be parsed because ${error.reason}")
+
+    val partExprs: Expr[Seq[Text]] = Expr.ofSeq(parts.map { part => '{${Expr(part)}.tt} })
+
+    '{Ergo.unsafeInterpolate($partExprs, ${Expr.ofSeq(atoms)})}
