@@ -32,6 +32,7 @@
                                                                                                   */
 package scintillate
 
+import anticipation.Log
 import fulminate.*
 import rudiments.*
 import telekinesis.*
@@ -44,7 +45,7 @@ object HttpServerEvent:
     case ConnectionFailed(error)      => m"the connection handler failed: ${error.message}"
 
 enum HttpServerEvent:
-  case Received(request: Http.Request)
-  case Processed(request: Http.Request, duration: Long)
-  case BrokenStream(length: Bytes)
-  case ConnectionFailed(error: Error)
+  case Received(request: Http.Request) extends HttpServerEvent, Log.Network, Log.Protocol
+  case Processed(request: Http.Request, duration: Long) extends HttpServerEvent, Log.Network
+  case BrokenStream(length: Bytes) extends HttpServerEvent, Log.Network
+  case ConnectionFailed(error: Error) extends HttpServerEvent, Log.Network

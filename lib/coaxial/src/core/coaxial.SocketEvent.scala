@@ -42,6 +42,6 @@ object SocketEvent:
     case Closed(endpoint)    => m"closed the connection to $endpoint"
 
 enum SocketEvent:
-  case Listening(endpoint: Text)
-  case Connected(endpoint: Text)
-  case Closed(endpoint: Text)
+  case Listening(endpoint: Text) extends SocketEvent, Log.Network
+  case Connected(endpoint: Text) extends SocketEvent, Log.Network
+  case Closed(endpoint: Text) extends SocketEvent, Log.Network

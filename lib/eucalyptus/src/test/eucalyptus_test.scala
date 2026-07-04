@@ -60,6 +60,18 @@ object Tests extends Suite(m"Eucalyptus tests"):
     given writable: Emit[StreamError] => Failing is Writable by Text =
       (failing, stream) => stream.each(_ => raise(StreamError(0.b)))
 
+  // An event enum whose cases carry *different* categories. Because the marker traits are
+  // transparent, `Log.info(Signal.Net(…))` is typed at the general `Signal`, so the concrete case's
+  // category is known only at runtime — exactly what a category-filtered `Logger` must test.
+  enum Signal:
+    case Net(text: Text) extends Signal, Log.Network
+    case Fs(text: Text) extends Signal, Log.Filesystem
+
+  object Signal:
+    given communicable: Signal is Communicable =
+      case Net(text) => m"net: $text"
+      case Fs(text)  => m"fs: $text"
+
   def run(): Unit = supervise:
     test(m"A Warn-threshold logger drops Fine and Info but keeps Warn and Fail"):
       val capture = Capture()
@@ -93,3 +105,21 @@ object Tests extends Suite(m"Eucalyptus tests"):
           errors.take()
 
     . assert(_ == t"cut")
+
+    test(m"A category-filtered logger records only events in its categories"):
+      val capture = Capture()
+      given Logger[Any, Message] = Logger(capture, categories = Set(Log.Network))
+      Log.info(Signal.Net(t"a"))
+      Log.info(Signal.Fs(t"b"))
+      capture.queue.take()
+
+    . assert(_ == t"[INFO] net: a\n")
+
+    test(m"A logger with no categories records events of every category"):
+      val capture = Capture()
+      given Logger[Any, Message] = Logger(capture)
+      Log.info(Signal.Net(t"a"))
+      Log.info(Signal.Fs(t"b"))
+      List(capture.queue.take(), capture.queue.take())
+
+    . assert(_ == List(t"[INFO] net: a\n", t"[INFO] fs: b\n"))

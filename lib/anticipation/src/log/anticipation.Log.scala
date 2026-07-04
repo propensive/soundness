@@ -48,3 +48,80 @@ object Log:
 
   def fail[loggable: Loggable](message: => loggable): Unit =
     loggable.log(Level.Fail, System.currentTimeMillis, message)
+
+  // A standard, growable vocabulary describing the *nature* of a log event. An event type (or, more
+  // usually, an individual enum case) mixes in one or more marker traits; a `Logger` may then be
+  // restricted to record only certain categories, a filter which crosscuts libraries. Each marker
+  // trait is paired with a companion `Category` selector value carrying the trait's runtime
+  // `Class`, so a logger can test each event by type at runtime (the log call site only knows the
+  // event type, so the concrete case's category is not statically available).
+  abstract class Category(val reference: Class[?])
+
+  object Memory extends Category(classOf[Memory])
+  transparent trait Memory
+
+  object Cpu extends Category(classOf[Cpu])
+  transparent trait Cpu
+
+  object Threading extends Category(classOf[Threading])
+  transparent trait Threading
+
+  object Process extends Category(classOf[Process])
+  transparent trait Process
+
+  object Filesystem extends Category(classOf[Filesystem])
+  transparent trait Filesystem
+
+  object Disk extends Category(classOf[Disk])
+  transparent trait Disk
+
+  object Network extends Category(classOf[Network])
+  transparent trait Network
+
+  object Database extends Category(classOf[Database])
+  transparent trait Database
+
+  object Cache extends Category(classOf[Cache])
+  transparent trait Cache
+
+  object Serialization extends Category(classOf[Serialization])
+  transparent trait Serialization
+
+  object Crypto extends Category(classOf[Crypto])
+  transparent trait Crypto
+
+  object Auth extends Category(classOf[Auth])
+  transparent trait Auth
+
+  object Configuration extends Category(classOf[Configuration])
+  transparent trait Configuration
+
+  object Dependency extends Category(classOf[Dependency])
+  transparent trait Dependency
+
+  object Scheduler extends Category(classOf[Scheduler])
+  transparent trait Scheduler
+
+  object Time extends Category(classOf[Time])
+  transparent trait Time
+
+  object Ui extends Category(classOf[Ui])
+  transparent trait Ui
+
+  object Protocol extends Category(classOf[Protocol])
+  transparent trait Protocol
+
+  object Compiler extends Category(classOf[Compiler])
+  transparent trait Compiler
+
+  object Runtime extends Category(classOf[Runtime])
+  transparent trait Runtime
+
+  object Gc extends Category(classOf[Gc])
+  transparent trait Gc
+
+  object Resource extends Category(classOf[Resource])
+  transparent trait Resource
+
+  object Security extends Category(classOf[Security])
+  transparent trait Security

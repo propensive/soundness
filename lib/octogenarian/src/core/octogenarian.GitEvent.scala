@@ -43,4 +43,4 @@ object GitEvent:
     case Exec(reason) => m"the git operation did not execute: $reason"
 
 enum GitEvent:
-  case Exec(event: ExecEvent)
+  case Exec(event: ExecEvent) extends GitEvent, Log.Process

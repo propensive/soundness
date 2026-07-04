@@ -46,8 +46,8 @@ object ExecEvent:
     case ProcessExit(pid, code)  => m"the process with PID $pid exited with code $code"
 
 enum ExecEvent:
-  case ProcessStart(command: Command)
-  case AbortProcess(pid: Pid)
-  case PipelineStart(commands: Seq[Command])
-  case KillProcess(pid: Pid)
-  case ProcessExit(pid: Pid, code: Int)
+  case ProcessStart(command: Command) extends ExecEvent, Log.Process
+  case AbortProcess(pid: Pid) extends ExecEvent, Log.Process
+  case PipelineStart(commands: Seq[Command]) extends ExecEvent, Log.Process
+  case KillProcess(pid: Pid) extends ExecEvent, Log.Process
+  case ProcessExit(pid: Pid, code: Int) extends ExecEvent, Log.Process

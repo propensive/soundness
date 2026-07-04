@@ -41,5 +41,5 @@ object ZipEvent:
     case Read(path, entries)  => m"read $entries entries from the zip archive $path"
 
 enum ZipEvent:
-  case Wrote(path: Text, entries: Int)
-  case Read(path: Text, entries: Int)
+  case Wrote(path: Text, entries: Int) extends ZipEvent, Log.Serialization
+  case Read(path: Text, entries: Int) extends ZipEvent, Log.Serialization

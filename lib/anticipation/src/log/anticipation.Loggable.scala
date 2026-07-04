@@ -54,11 +54,17 @@ object Loggable:
         // Force and transcribe the event only if some sink would record it at this level; otherwise
         // (including no sinks at all) the by-name `value` is never evaluated.
         if sinks.values.exists(_.accepts(level)) then
-          if !transcribable.skip(value) then
-            val message = transcribable.record(value)
+          val forced = value
+
+          if !transcribable.skip(forced) then
+            // Lazy, so an event no admitting sink records is never transcribed. `admits` tests the
+            // concrete event against each sink's category filter (the log site knows only the
+            // general event type, so this discrimination can only happen at runtime).
+            lazy val message = transcribable.record(forced)
 
             sinks.values.foreach: sink =>
-              if sink.accepts(level) then sink.submit(level, timestamp, message)
+              if sink.accepts(level) && sink.admits(forced)
+              then sink.submit(level, timestamp, message)
 
 trait Loggable extends Typeclass:
   loggable =>

@@ -32,6 +32,7 @@
                                                                                                   */
 package perihelion
 
+import anticipation.Log
 import fulminate.*
 
 object WebsocketEvent:
@@ -41,6 +42,6 @@ object WebsocketEvent:
     case Closed(code)    => m"closed the websocket connection with code $code"
 
 enum WebsocketEvent:
-  case Sent(bytes: Int)
-  case Received(bytes: Int)
-  case Closed(code: Int)
+  case Sent(bytes: Int) extends WebsocketEvent, Log.Network, Log.Protocol
+  case Received(bytes: Int) extends WebsocketEvent, Log.Network, Log.Protocol
+  case Closed(code: Int) extends WebsocketEvent, Log.Network, Log.Protocol

@@ -41,5 +41,5 @@ object ClasspathEvent:
     case ResourceMissing(path) => m"the classpath resource $path was not found"
 
 enum ClasspathEvent:
-  case ResourceLoaded(path: Text)
-  case ResourceMissing(path: Text)
+  case ResourceLoaded(path: Text) extends ClasspathEvent, Log.Runtime, Log.Resource
+  case ResourceMissing(path: Text) extends ClasspathEvent, Log.Runtime, Log.Resource
