@@ -1042,7 +1042,8 @@ object Tel extends Tel2:
     // Inlines and gets GC'd once all references to the prior Document are
     // released.
     private val cached: ThreadLocal[Parser] =
-      ThreadLocal.withInitial: () => new Parser()
+      new ThreadLocal[Parser]:
+        override def initialValue(): Parser = new Parser()
 
     def parse(cursor: Cursor[Data]): Tel.Document raises TelError =
       val p = cached.get.nn

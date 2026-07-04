@@ -1194,7 +1194,8 @@ object Json extends Json2, Dynamic:
       arr
 
     private val pool: ThreadLocal[Parser] =
-      ThreadLocal.withInitial{ () => new Parser }.nn
+      new ThreadLocal[Parser]:
+        override def initialValue(): Parser = new Parser
 
     def parse(source: Data, mode: NumberMode = NumberMode.Full): Raw raises ParseError =
       val parser = pool.get.nn

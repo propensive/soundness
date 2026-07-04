@@ -1536,7 +1536,8 @@ object Yaml extends Yaml2, Dynamic:
 
   private[ypsiloid] object Parser:
     private val pool: ThreadLocal[Parser] =
-      ThreadLocal.withInitial{ () => new Parser }.nn
+      new ThreadLocal[Parser]:
+        override def initialValue(): Parser = new Parser
 
     // Untracked entry points — preserved byte-identical to the historical
     // shape so callers that don't need position tracking pay no cost.

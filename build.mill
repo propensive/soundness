@@ -1580,6 +1580,7 @@ object xenophile extends Library:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object native extends Component(core):
+    override def scalaJs = false // native FFI via `java.lang.foreign` (Panama) — JVM-only
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object wit extends Component(core, hypotenuse.core):
@@ -1713,3 +1714,16 @@ object jsAll extends ScalaJSModule:
   def scalaVersion = settings.scalaVersion
   def scalaJSVersion = settings.scalaJsVersion
   override def moduleDeps = jsComponents
+
+// A tiny Scala.js app whose `fastLinkJS` actually LINKS a representative slice of
+// the JS-capable modules, so the linker reports any reachable reference to a
+// `java.*` class Scala.js does not implement (the runtime counterpart to the
+// static reference audit; `jsAll` only compiles).
+object jslink extends ScalaJSModule:
+  def scalaVersion = settings.scalaVersion
+  def scalaJSVersion = settings.scalaJsVersion
+  def scalacOptions =
+    settings.scalaOptions ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "jslink" / "src")
+  override def mainClass = Some("jslink.Main")
+  override def moduleDeps = Seq(gossamer.core.js, jacinta.core.js)
