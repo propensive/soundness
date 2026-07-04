@@ -34,8 +34,9 @@ package kaleidoscope
 
 import language.experimental.pureFunctions
 
-import scala.collection.concurrent.TrieMap
 import java.util.regex as jur
+
+import scala.collection.concurrent.TrieMap
 
 import anticipation.*
 import contingency.*

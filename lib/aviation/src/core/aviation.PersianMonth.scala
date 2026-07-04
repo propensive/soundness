@@ -43,7 +43,7 @@ object PersianMonth extends MonthRadix:
   given showable: PersianMonth is Showable = _.toString.tt
 
   given multiply: Int is Multiplicable by this.type to (Timespan of this.type) =
-    Multiplicable((n, _) => Timespan(this, n))
+    Multiplicable: (n, _) => Timespan(this, n)
 
 enum PersianMonth derives CanEqual:
   case Farvardin, Ordibehesht, Khordad, Tir, Mordad, Shahrivar, Mehr, Aban, Azar, Dey, Bahman,

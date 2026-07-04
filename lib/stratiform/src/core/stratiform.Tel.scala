@@ -1111,14 +1111,14 @@ object Tel extends Tel2:
     // this compiles and links on Scala.js (which has no `java.lang.invoke`); the
     // JIT folds this to an equivalent load on the JVM.
     private def longView(bytes: Array[Byte], pos: Int): Long =
-      (bytes(pos) & 0xffL)
-      | ((bytes(pos + 1) & 0xffL) << 8)
-      | ((bytes(pos + 2) & 0xffL) << 16)
-      | ((bytes(pos + 3) & 0xffL) << 24)
-      | ((bytes(pos + 4) & 0xffL) << 32)
-      | ((bytes(pos + 5) & 0xffL) << 40)
-      | ((bytes(pos + 6) & 0xffL) << 48)
-      | ((bytes(pos + 7) & 0xffL) << 56)
+      (bytes(pos) & 0xffL) |
+        ((bytes(pos + 1) & 0xffL) << 8) |
+        ((bytes(pos + 2) & 0xffL) << 16) |
+        ((bytes(pos + 3) & 0xffL) << 24) |
+        ((bytes(pos + 4) & 0xffL) << 32) |
+        ((bytes(pos + 5) & 0xffL) << 40) |
+        ((bytes(pos + 6) & 0xffL) << 48) |
+        ((bytes(pos + 7) & 0xffL) << 56)
 
     private final val OnesMask:     Long = 0x0101010101010101L
     private final val HighBitsMask: Long = 0x8080808080808080L

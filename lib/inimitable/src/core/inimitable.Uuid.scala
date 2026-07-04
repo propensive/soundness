@@ -58,6 +58,7 @@ object Uuid extends Extractor[Text, Uuid]:
 case class Uuid(msb: Long, lsb: Long):
   def java: ju.UUID = ju.UUID(msb, lsb)
   def text: Text = this.java.toString.tt
+
   def bytes: Data =
     (msb.bytestream.mutable(using Unsafe) ++ lsb.bytestream.mutable(using Unsafe))
     . immutable(using Unsafe)

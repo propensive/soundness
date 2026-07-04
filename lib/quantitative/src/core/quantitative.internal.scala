@@ -81,7 +81,7 @@ object internal extends protointernal:
       Subtractable(_ - _.value*5/9)
 
     given subtractable3: Temperature is Subtractable by Temperature to Quantity[Kelvins[1]] =
-      Subtractable((left, right) => Quantity(left.kelvin - right.kelvin))
+      Subtractable: (left, right) => Quantity(left.kelvin - right.kelvin)
 
 
   extension [units <: Measure](quantity: Quantity[units])

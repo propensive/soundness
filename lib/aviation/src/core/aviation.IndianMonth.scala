@@ -43,7 +43,7 @@ object IndianMonth extends MonthRadix:
   given showable: IndianMonth is Showable = _.toString.tt
 
   given multiply: Int is Multiplicable by this.type to (Timespan of this.type) =
-    Multiplicable((n, _) => Timespan(this, n))
+    Multiplicable: (n, _) => Timespan(this, n)
 
 enum IndianMonth derives CanEqual:
   case Chaitra, Vaishakha, Jyeshtha, Ashadha, Shravana, Bhadra, Ashwin, Kartika, Agrahayana, Pausha,

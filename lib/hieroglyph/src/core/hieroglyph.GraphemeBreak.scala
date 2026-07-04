@@ -141,9 +141,9 @@ object GraphemeBreak:
       index += 1
 
     Tables
-     (starts.immutable(using Unsafe),
-      ends.immutable(using Unsafe),
-      props.immutable(using Unsafe))
+      ( starts.immutable(using Unsafe),
+        ends.immutable(using Unsafe),
+        props.immutable(using Unsafe) )
 
   private lazy val gbpTables: Tables =
     val in = loadResource(

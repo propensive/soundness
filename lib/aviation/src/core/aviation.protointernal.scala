@@ -135,7 +135,7 @@ object protointernal:
     given minus: [transport]
     =>  ( resolution: transport is Resolution )
     =>  (Instant over transport) is Subtractable by (Instant over transport) to Duration =
-      Subtractable((left, right) => Quantity((raw(left) - raw(right))*resolution.nanos/1_000_000_000.0))
+      Subtractable: (left, right) => Quantity((raw(left) - raw(right))*resolution.nanos/1_000_000_000.0)
 
     given minusDuration: [transport, units <: Measure: Normalizable to Seconds[1]]
     =>  ( resolution: transport is Resolution )

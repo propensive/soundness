@@ -112,10 +112,10 @@ object JsonPointer extends Root(""):
         (pointer, segment) => pointer(filesystem.unescape(segment))
 
   given divisible: JsonPointer is Divisible by Text to JsonPointer =
-    Divisible((pointer, segment) => JsonPointer(pointer.url, pointer.path / segment))
+    Divisible: (pointer, segment) => JsonPointer(pointer.url, pointer.path / segment)
 
   given divisible2: JsonPointer is Divisible by Ordinal to JsonPointer =
-    Divisible((pointer, segment) => JsonPointer(pointer.url, pointer.path / segment))
+    Divisible: (pointer, segment) => JsonPointer(pointer.url, pointer.path / segment)
 
 case class JsonPointer(url: Optional[HttpUrl] = Unset, path: Path on JsonPointer = JsonPointer):
   def apply(using registry: JsonPointer.Registry)(document: Json): Json raises JsonPointerError =

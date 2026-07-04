@@ -56,7 +56,7 @@ object Moment:
   // The physical time between two moments — the difference of their grounded instants, in seconds —
   // so it honours DST and (under a counting interpretation) leap seconds.
   given subtractable: (RomanCalendar, GapPolicy) => Moment is Subtractable by Moment to Duration =
-    Subtractable((later, earlier) => later.instant - earlier.instant)
+    Subtractable: (later, earlier) => later.instant - earlier.instant
 
   // An ISO-8601 zoned date-time, e.g. `2016-12-31T23:59:60+00:00`. An inserted leap second renders
   // as the 61st second (`:60`); the offset is the zone's offset at this moment's instant.

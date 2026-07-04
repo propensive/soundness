@@ -113,7 +113,7 @@ object internal:
     inline def apply(year: Int): Year = year
 
     given multiplicable: Int is Multiplicable by Year.type to (Timespan of Year.type) =
-      Multiplicable((n, _) => Timespan(Year, n))
+      Multiplicable: (n, _) => Timespan(Year, n)
 
     given showable: Year is Showable = _.toString.tt
     given addable: Year is Addable by Int to Year = Addable(_ + _)
@@ -136,7 +136,7 @@ object internal:
     inline def apply(day: Int): Day = day
 
     given multiplicable: Int is Multiplicable by Day.type to (Timespan of Day.type) =
-      Multiplicable((n, _) => Timespan(Day, n))
+      Multiplicable: (n, _) => Timespan(Day, n)
 
     given decodable: (Int is Decodable in Text) => Day is Decodable in Text = day =>
       Day(day.decode[Int])

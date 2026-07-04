@@ -55,7 +55,7 @@ object IslamicMonth extends MonthRadix:
     case DhuAlHijjah   => t"Dhu al-Hijjah"
 
   given multiply: Int is Multiplicable by IslamicMonth.type to (Timespan of IslamicMonth.type) =
-    Multiplicable((n, _) => Timespan(IslamicMonth, n))
+    Multiplicable: (n, _) => Timespan(IslamicMonth, n)
 
 enum IslamicMonth derives CanEqual:
   case Muharram, Safar, RabiAlAwwal, RabiAlThani, JumadaAlAwwal, JumadaAlThani, Rajab, Shaban,

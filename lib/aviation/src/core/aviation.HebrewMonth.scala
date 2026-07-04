@@ -47,7 +47,7 @@ object HebrewMonth extends MonthRadix:
     case month     => month.toString.tt
 
   given multiply: Int is Multiplicable by this.type to (Timespan of this.type) =
-    Multiplicable((n, _) => Timespan(this, n))
+    Multiplicable: (n, _) => Timespan(this, n)
 
 enum HebrewMonth derives CanEqual:
   case Tishrei, Cheshvan, Kislev, Tevet, Shevat, Adar, AdarSheni, Nisan, Iyar, Sivan, Tammuz, Av,

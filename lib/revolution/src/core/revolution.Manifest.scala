@@ -69,7 +69,7 @@ object Manifest:
   given subtractable: [key <: Label, attribute <: ManifestAttribute[key]]
   =>  Manifest is Subtractable by attribute to Manifest =
 
-    Subtractable((manifest, attribute) => Manifest(manifest.entries - attribute.key))
+    Subtractable: (manifest, attribute) => Manifest(manifest.entries - attribute.key)
 
 case class Manifest(entries: Map[Text, Text]):
   def apply[key <: Label: DecodableManifest](attribute: ManifestAttribute[key])

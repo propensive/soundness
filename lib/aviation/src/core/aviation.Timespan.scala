@@ -189,7 +189,7 @@ object Timespan:
   // radices do not affect a date.
   given dateRegular: [topic <: Radix] => NotGiven[topic <:< Radix.Irregular]
   =>  Date is Addable by (Timespan of topic) to Date =
-    Addable((date, span) => date.addDays(span.days + span.weeks*7))
+    Addable: (date, span) => date.addDays(span.days + span.weeks*7)
 
   // The shared year+month step: advance to the target year-and-month (floored division, so negative
   // spans behave) using the calendar's `monthsInYear`, then resolve any day-of-month overflow per
@@ -226,7 +226,7 @@ object Timespan:
   given dateYear: [topic <: Radix]
   =>  ( topic <:< Radix.Irregular, NotGiven[topic <:< MonthRadix], Calendar, Disambiguation )
   =>  Date is Addable by (Timespan of topic) to Date =
-    Addable((date, span) => anchorMonth(date, span.years, 0).addDays(span.days + span.weeks*7))
+    Addable: (date, span) => anchorMonth(date, span.years, 0).addDays(span.days + span.weeks*7)
 
   // A span counted in some calendar's months: the in-scope `Calendar` must govern that month radix
   // (`topic <:< calendar.MonthUnit`), so a span's months can only be added to a date in the same
@@ -235,7 +235,7 @@ object Timespan:
     ( using calendar: Calendar, ev: topic <:< calendar.MonthUnit, disambiguation: Disambiguation )
   :   (Date is Addable by (Timespan of topic) to Date) =
 
-    Addable((date, span) => anchorMonth(date, span.years, span.months).addDays(span.days + span.weeks*7))
+    Addable: (date, span) => anchorMonth(date, span.years, span.months).addDays(span.days + span.weeks*7)
 
   private def physicalSeconds(span: Timespan): Quantity[Seconds[1]] =
     val days = span.days.toLong + span.weeks.toLong*7
@@ -247,12 +247,12 @@ object Timespan:
   given instantPlus: [transport, topic <: Radix]
   =>  ( NotGiven[topic <:< Radix.Irregular], transport is Resolution )
   =>  (Instant over transport) is Addable by (Timespan of topic) to (Instant over transport) =
-    Addable((instant, span) => instant + physicalSeconds(span))
+    Addable: (instant, span) => instant + physicalSeconds(span)
 
   given instantMinus: [transport, topic <: Radix]
   =>  ( NotGiven[topic <:< Radix.Irregular], transport is Resolution )
   =>  (Instant over transport) is Subtractable by (Timespan of topic) to (Instant over transport) =
-    Subtractable((instant, span) => instant - physicalSeconds(span))
+    Subtractable: (instant, span) => instant - physicalSeconds(span)
 
   // Adding a timespan to a (zoneless) timestamp applies the date/calendar part to the date (reusing
   // the `Date` instance, hence its calendar/disambiguation requirements) and rolls the sub-day part
