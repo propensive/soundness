@@ -44,7 +44,7 @@ object EthiopianMonth extends MonthRadix:
   given showable: EthiopianMonth is Showable = _.toString.tt
 
   given multiply: Int is Multiplicable by this.type to (Timespan of this.type) =
-    (n, _) => Timespan(this, n)
+    Multiplicable((n, _) => Timespan(this, n))
 
 enum EthiopianMonth derives CanEqual:
   case Meskerem, Tekemt, Hedar, Tahsas, Ter, Yekatit, Megabit, Miyazya, Genbot, Sene, Hamle, Nehase,

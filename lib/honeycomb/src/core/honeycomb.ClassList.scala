@@ -46,10 +46,10 @@ object ClassList:
     new ClassList(classes) { type Topic = name }
 
   given addable: ClassList is Addable by ClassList to ClassList =
-    (classes, additions) => ClassList(classes.classes ++ additions.classes)
+    Addable((classes, additions) => ClassList(classes.classes ++ additions.classes))
 
   given subtractable: ClassList is Subtractable by ClassList to ClassList =
-    (classes, subtractions) => ClassList(classes.classes -- subtractions.classes)
+    Subtractable((classes, subtractions) => ClassList(classes.classes -- subtractions.classes))
 
   given empty: ClassList(Set()):
     type Topic = "apply"

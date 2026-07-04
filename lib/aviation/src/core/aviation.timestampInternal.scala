@@ -88,7 +88,7 @@ object timestampInternal:
     // The civil difference of two timestamps, decomposed into days/hours/minutes/seconds by
     // truncated (sign-consistent) division. Nominal, calendar-free.
     given timestampSubtractable: (Timestamp is Subtractable by Timestamp to Difference) =
-      (a, b) =>
+      Subtractable: (a, b) =>
         val diff = underlying(a) - underlying(b)
         val days = (diff/aviation.internal.MillisPerDay).toInt
         val afterDays = diff%aviation.internal.MillisPerDay
@@ -124,18 +124,19 @@ object timestampInternal:
     inline given dateUnderlying: Underlying[Date, Long] = !!
 
     // Day arithmetic with `Quanta[Days[1]]`, and the civil `Date - Date` in whole days.
-    given dateSubtractable: Date is Subtractable by Date to Quanta[Days[1]] = (end, start) =>
-      (Quanta(((underlying(end) - underlying(start))/aviation.internal.MillisPerDay).toInt)
-      : Quanta[Days[1]])
+    given dateSubtractable: Date is Subtractable by Date to Quanta[Days[1]] = Subtractable:
+      (end, start) =>
+        (Quanta(((underlying(end) - underlying(start))/aviation.internal.MillisPerDay).toInt)
+        : Quanta[Days[1]])
 
-    given dateSubtractable2: Date is Subtractable by Quanta[Days[1]] to Date = (end, start) =>
-      end.addDays(-start[Days])
+    given dateSubtractable2: Date is Subtractable by Quanta[Days[1]] to Date = Subtractable:
+      (end, start) => end.addDays(-start[Days])
 
-    given dateAddable: Date is Addable by Quanta[Days[1]] to Date = (left, right) =>
-      left.addDays(right[Days])
+    given dateAddable: Date is Addable by Quanta[Days[1]] to Date = Addable:
+      (left, right) => left.addDays(right[Days])
 
-    given dateAddable2: Quanta[Days[1]] is Addable by Date to Date = (left, right) =>
-      right.addDays(left[Days])
+    given dateAddable2: Quanta[Days[1]] is Addable by Date to Date = Addable:
+      (left, right) => right.addDays(left[Days])
 
     // Date-only display (no time-of-day), honouring locale-ish formatting givens.
     given dateShowable: (Endianness, DateNumerics, DateSeparation, Years) => Date is Showable =
@@ -281,11 +282,11 @@ object timestampInternal:
     // ignored), so the result stays month-precise.
     given monthstampAddable: [topic <: Radix]
     =>  Monthstamp is Addable by (Timespan of topic) to Monthstamp =
-      (monthstamp, span) => monthstampShift(monthstamp, span.years*12 + span.months)
+      Addable((monthstamp, span) => monthstampShift(monthstamp, span.years*12 + span.months))
 
     given monthstampTimespanSubtractable: [topic <: Radix]
     =>  Monthstamp is Subtractable by (Timespan of topic) to Monthstamp =
-      (monthstamp, span) => monthstampShift(monthstamp, -(span.years*12 + span.months))
+      Subtractable((monthstamp, span) => monthstampShift(monthstamp, -(span.years*12 + span.months)))
 
     private def monthstampShift(monthstamp: Monthstamp, months: Int): Monthstamp =
       val total = monthstamp.year()*12 + monthstamp.month.ordinal + months

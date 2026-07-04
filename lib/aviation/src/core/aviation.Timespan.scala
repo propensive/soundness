@@ -114,7 +114,7 @@ object Timespan:
 
   given addable: [left <: Radix, right <: Radix]
   =>  (Timespan of left) is Addable by (Timespan of right) to (Timespan of (left & right)) =
-    (a, b) =>
+    Addable: (a, b) =>
       Timespan
         ( a.years + b.years,
           a.months + b.months,
@@ -128,7 +128,7 @@ object Timespan:
 
   given subtractable: [left <: Radix, right <: Radix]
   =>  (Timespan of left) is Subtractable by (Timespan of right) to (Timespan of (left & right)) =
-    (a, b) =>
+    Subtractable: (a, b) =>
       Timespan
         ( a.years - b.years,
           a.months - b.months,
@@ -142,7 +142,7 @@ object Timespan:
 
   given multiplicable: [topic <: Radix]
   =>  (Timespan of topic) is Multiplicable by Int to (Timespan of topic) =
-    (span, n) =>
+    Multiplicable: (span, n) =>
       Timespan
         ( span.years*n,
           span.months*n,
@@ -157,13 +157,13 @@ object Timespan:
   // Folding a physical seconds `Quantity` into a timespan adds `Seconds[1]` to its radix set.
   given quantityAddable: [topic <: Radix, units <: Measure: Normalizable to Seconds[1]]
   =>  (Timespan of topic) is Addable by Quantity[units] to (Timespan of (topic & Seconds[1])) =
-    (span, quantity) =>
+    Addable: (span, quantity) =>
       val updated = span.copy(seconds = span.seconds + quantity.normalize)
       updated.asInstanceOf[Timespan of (topic & Seconds[1])]
 
   given quantitySubtractable: [topic <: Radix, units <: Measure: Normalizable to Seconds[1]]
   =>  (Timespan of topic) is Subtractable by Quantity[units] to (Timespan of (topic & Seconds[1])) =
-    (span, quantity) =>
+    Subtractable: (span, quantity) =>
       val updated = span.copy(seconds = span.seconds - quantity.normalize)
       updated.asInstanceOf[Timespan of (topic & Seconds[1])]
 
@@ -189,7 +189,7 @@ object Timespan:
   // radices do not affect a date.
   given dateRegular: [topic <: Radix] => NotGiven[topic <:< Radix.Irregular]
   =>  Date is Addable by (Timespan of topic) to Date =
-    (date, span) => date.addDays(span.days + span.weeks*7)
+    Addable((date, span) => date.addDays(span.days + span.weeks*7))
 
   // The shared year+month step: advance to the target year-and-month (floored division, so negative
   // spans behave) using the calendar's `monthsInYear`, then resolve any day-of-month overflow per
@@ -226,7 +226,7 @@ object Timespan:
   given dateYear: [topic <: Radix]
   =>  ( topic <:< Radix.Irregular, NotGiven[topic <:< MonthRadix], Calendar, Disambiguation )
   =>  Date is Addable by (Timespan of topic) to Date =
-    (date, span) => anchorMonth(date, span.years, 0).addDays(span.days + span.weeks*7)
+    Addable((date, span) => anchorMonth(date, span.years, 0).addDays(span.days + span.weeks*7))
 
   // A span counted in some calendar's months: the in-scope `Calendar` must govern that month radix
   // (`topic <:< calendar.MonthUnit`), so a span's months can only be added to a date in the same
@@ -235,7 +235,7 @@ object Timespan:
     ( using calendar: Calendar, ev: topic <:< calendar.MonthUnit, disambiguation: Disambiguation )
   :   (Date is Addable by (Timespan of topic) to Date) =
 
-    (date, span) => anchorMonth(date, span.years, span.months).addDays(span.days + span.weeks*7)
+    Addable((date, span) => anchorMonth(date, span.years, span.months).addDays(span.days + span.weeks*7))
 
   private def physicalSeconds(span: Timespan): Quantity[Seconds[1]] =
     val days = span.days.toLong + span.weeks.toLong*7
@@ -247,19 +247,19 @@ object Timespan:
   given instantPlus: [transport, topic <: Radix]
   =>  ( NotGiven[topic <:< Radix.Irregular], transport is Resolution )
   =>  (Instant over transport) is Addable by (Timespan of topic) to (Instant over transport) =
-    (instant, span) => instant + physicalSeconds(span)
+    Addable((instant, span) => instant + physicalSeconds(span))
 
   given instantMinus: [transport, topic <: Radix]
   =>  ( NotGiven[topic <:< Radix.Irregular], transport is Resolution )
   =>  (Instant over transport) is Subtractable by (Timespan of topic) to (Instant over transport) =
-    (instant, span) => instant - physicalSeconds(span)
+    Subtractable((instant, span) => instant - physicalSeconds(span))
 
   // Adding a timespan to a (zoneless) timestamp applies the date/calendar part to the date (reusing
   // the `Date` instance, hence its calendar/disambiguation requirements) and rolls the sub-day part
   // through the clock, carrying whole days into the date.
   given timestampAdd: [topic <: Radix] => (dates: Date is Addable by (Timespan of topic) to Date)
   =>  Timestamp is Addable by (Timespan of topic) to Timestamp =
-    (timestamp, span) =>
+    Addable: (timestamp, span) =>
       val nanos = 1_000_000_000L
       val dayNanos = 86400L*nanos
       val time = timestamp.time
@@ -290,7 +290,7 @@ object Timespan:
   given momentAdd: [topic <: Radix]
   =>  ( Timestamp is Addable by (Timespan of topic) to Timestamp, RomanCalendar, LeapMode )
   =>  Moment is Addable by (Timespan of topic) to Moment =
-    (moment, span) =>
+    Addable: (moment, span) =>
       val timestamps = summon[Timestamp is Addable by (Timespan of topic) to Timestamp]
       val dateSpan = Timespan(span.years, span.months, span.weeks, span.days)
       val subSpan = Timespan(hours = span.hours, minutes = span.minutes, seconds = span.seconds)

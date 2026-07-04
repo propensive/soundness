@@ -43,7 +43,7 @@ object Month extends MonthRadix:
   val all: IArray[Month] = IArray(Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec)
 
   given multiplicable: Int is Multiplicable by Month.type to (Timespan of Month.type) =
-    (n, _) => Timespan(Month, n)
+    Multiplicable((n, _) => Timespan(Month, n))
 
   def apply(index: Int): Month raises TimeError =
     if index < 1 || index > 12 then abort(TimeError(_.Unknown(index.show, t"month")))

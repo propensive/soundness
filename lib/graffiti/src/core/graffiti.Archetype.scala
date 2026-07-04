@@ -49,7 +49,9 @@ object Archetype:
   // pairing the media type with a text stream of the rendered page. `Servable` is then synthesised
   // (in telekinesis) wherever a handler returns one, so graffiti needs no scintillate dependency.
   // The instances range over every `page <: Archetype`, since a page is always a concrete subtype.
-  given media: [page <: Archetype] => page is Media = _ => media"text/html"(charset = "UTF-8")
+  given media: [page <: Archetype] => page is Media:
+    extension (value: page)
+      def mediaType: MediaType = media"text/html"(charset = "UTF-8")
 
   given streamable: [page <: Archetype] => (Monitor, Probate) => page is Streamable by Text =
     archetype => archetype.document.stream[Text]

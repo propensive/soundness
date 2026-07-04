@@ -78,7 +78,7 @@ object Cookie:
       Http.Header("Set-Cookie", cookie.show)
 
     given addable: Http.Response is Addable by Cookie.Value to Http.Response =
-      (response, cookie) =>
+      Addable: (response, cookie) =>
         val header = Http.Header(t"set-cookie", cookie.show)
         response.status(header :: response.textHeaders, response.body)
 

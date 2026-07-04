@@ -60,15 +60,15 @@ trait MonthRadix extends Radix.Irregular
 // (constant ratio to the radix below); `Year` is `Irregular`; months are `MonthRadix`.
 object Week extends Radix.Regular:
   given multiplicable: Int is Multiplicable by Week.type to (Timespan of Week.type) =
-    (n, _) => Timespan(Week, n)
+    Multiplicable((n, _) => Timespan(Week, n))
 
 object Hour extends Radix.Regular:
   given multiplicable: Int is Multiplicable by Hour.type to (Timespan of Hour.type) =
-    (n, _) => Timespan(Hour, n)
+    Multiplicable((n, _) => Timespan(Hour, n))
 
 object Minute extends Radix.Regular:
   given multiplicable: Int is Multiplicable by Minute.type to (Timespan of Minute.type) =
-    (n, _) => Timespan(Minute, n)
+    Multiplicable((n, _) => Timespan(Minute, n))
 
 // Phantom precision markers for `Timestamp in <unit>` (the `Form` type member). `Day`, `Year` and
 // `Month` already exist as types and double as markers; the sub-day units exist only as radix

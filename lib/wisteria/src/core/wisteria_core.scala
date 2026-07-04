@@ -67,7 +67,8 @@ object arithmetic:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Addable by derivation to derivation =
 
-      (left, right) => build[derivation]: [field] => _.add(complement(left), complement(right))
+      Addable: (left, right) =>
+        build[derivation]: [field] => _.add(complement(left), complement(right))
 
 
   inline given addable: [value <: Product: ProductReflection]
@@ -82,7 +83,8 @@ object arithmetic:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Subtractable by derivation to derivation =
 
-      (left, right) => build[derivation]: [field] => _.subtract(complement(left), complement(right))
+      Subtractable: (left, right) =>
+        build[derivation]: [field] => _.subtract(complement(left), complement(right))
 
 
   inline given subtractable: [value <: Product: ProductReflection]
@@ -97,7 +99,7 @@ object arithmetic:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Multiplicable by derivation to derivation =
 
-      (left, right) =>
+      Multiplicable: (left, right) =>
         build[derivation]: [field] => _.multiply(complement(left), complement(right))
 
 
@@ -113,7 +115,7 @@ object arithmetic:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Divisible by derivation to derivation =
 
-      (left, right) =>
+      Divisible: (left, right) =>
         build[derivation]: [field] => _.divide(complement(left), complement(right))
 
   inline given divisible: [value <: Product: ProductReflection]

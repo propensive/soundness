@@ -62,14 +62,14 @@ object Manifest:
 
     . to(Map)
 
-  given addable: Manifest is Addable by ManifestEntry to Manifest = (manifest, entry) =>
+  given addable: Manifest is Addable by ManifestEntry to Manifest = Addable: (manifest, entry) =>
     Manifest(manifest.entries.updated(entry.key, entry.value))
 
 
   given subtractable: [key <: Label, attribute <: ManifestAttribute[key]]
   =>  Manifest is Subtractable by attribute to Manifest =
 
-    (manifest, attribute) => Manifest(manifest.entries - attribute.key)
+    Subtractable((manifest, attribute) => Manifest(manifest.entries - attribute.key))
 
 case class Manifest(entries: Map[Text, Text]):
   def apply[key <: Label: DecodableManifest](attribute: ManifestAttribute[key])

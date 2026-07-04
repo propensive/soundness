@@ -141,7 +141,9 @@ object Css:
 
   // Serve a stylesheet as an HTTP `text/css` response body (paired with the
   // `Streamable` instance above).
-  given media: Css is Media = _ => media"text/css"(charset = "UTF-8")
+  given media: Css is Media:
+    extension (value: Css)
+      def mediaType: MediaType = media"text/css"(charset = "UTF-8")
 
   // A set of declarations for an inline `style="…"` attribute, built with a typed
   // dynamic constructor: `Css.Style(borderWidth = 4.0*Px, color = rgb)`. Property

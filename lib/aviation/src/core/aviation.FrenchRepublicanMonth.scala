@@ -43,7 +43,7 @@ object FrenchRepublicanMonth extends MonthRadix:
   given showable: FrenchRepublicanMonth is Showable = _.toString.tt
 
   given multiply: Int is Multiplicable by this.type to (Timespan of this.type) =
-    (n, _) => Timespan(this, n)
+    Multiplicable((n, _) => Timespan(this, n))
 
 enum FrenchRepublicanMonth derives CanEqual:
   case Vendemiaire, Brumaire, Frimaire, Nivose, Pluviose, Ventose, Germinal, Floreal, Prairial,
