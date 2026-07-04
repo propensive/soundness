@@ -218,7 +218,12 @@ trait Tests(dependencies: JavaModule*) extends BaseScalaModule:
   def finalMainClass = (moduleDir / ".." / "..").last + ".Tests"
   def resources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
   def compileResources = Task.Sources(moduleDir / ".." / ".." / "res" / moduleId)
-  def moduleDeps: Seq[JavaModule] = probably.cli +: proscenium.core +: dependencies
+  // `larceny.plugin` supplies the `demilitarize`/`CompileError` symbols that test sources import
+  // (`import larceny.*`); it is also applied as an `-Xplugin` below. This used to reach the test
+  // classpath transitively via `chiaroscuro`, but chiaroscuro no longer depends on it (so it can
+  // cross-compile to Scala.js), so the dependency is now explicit here.
+  def moduleDeps: Seq[JavaModule] =
+    larceny.plugin +: probably.cli +: proscenium.core +: dependencies
   def sources = Task.Sources(moduleDir)
   def consoleScalacOptions = scalacOptions()
 
@@ -1107,7 +1112,7 @@ object kaleidoscope extends Library:
   object test extends Tests(core)
 
 object larceny extends Library:
-  object plugin extends Component(chiaroscuro.core):
+  object plugin extends Component():
     override def scalaJs = false // compiler plugin: uses the JVM-only dotty compiler API
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 

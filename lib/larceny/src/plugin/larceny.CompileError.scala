@@ -32,19 +32,9 @@
                                                                                                   */
 package larceny
 
-import anticipation.*
-import chiaroscuro.*
-import prepositional.*
-
 object CompileError:
   def apply(ordinal: Int, message: String, focus: String, start: Int, offset: Int): CompileError =
     new CompileError(CompileError.Reason.fromOrdinal(ordinal), message, focus, start, offset)
-
-  // Renders a `CompileError` in chiaroscuro test diffs. Lives here (rather than in chiaroscuro) so
-  // that chiaroscuro need not depend on this JVM-only compiler-plugin module and can compile to
-  // Scala.js.
-  given compileError: CompileError is Decomposable.Base =
-    value => Decomposition.Primitive("CompileError", value.toString.tt, value)
 
   enum Reason:
     case NoExplanation
