@@ -336,3 +336,80 @@ object Tests extends Suite(m"Archimedes tests"):
       .assert: result =>
         result.contains(t"<mtable>")
             && result.contains(t"<mtr><mtd><mn>1</mn></mtd><mtd><mn>2</mn></mtd></mtr>")
+
+    suite(m"Rendering to the terminal"):
+      test(m"a superscript stacks the exponent above the base"):
+        Msup(Mi(t"x"), Mn(t"2")).draw
+      .assert(_ == t" 2\nx ")
+
+      test(m"a subscript stacks the index below the base"):
+        Msub(Mi(t"x"), Mn(t"i")).draw
+      .assert(_ == t"x \n i")
+
+      test(m"a subsup places both scripts around the base"):
+        Msubsup(Mi(t"x"), Mn(t"i"), Mn(t"2")).draw
+      .assert(_ == t" 2\nx \n i")
+
+      test(m"a fraction stacks over a rule"):
+        Mfrac(Mn(t"1"), Mn(t"2")).draw
+      .assert(_ == t" 1 \n───\n 2 ")
+
+      test(m"binary operators are spaced in a row"):
+        Mrow(Mi(t"x"), Mo(t"+"), Mn(t"1")).draw
+      .assert(_ == t"x + 1")
+
+      test(m"a square root draws a vinculum over the radicand"):
+        Msqrt(Mrow(Mi(t"x"), Mo(t"+"), Mn(t"1"))).draw
+      .assert(_ == t"┌─────\n√x + 1")
+
+      test(m"a tall square root draws a foot and stem up to the corner"):
+        Msqrt(Mfrac(Mn(t"1"), Mn(t"2"))).draw
+      .assert(_ == t" ┌───\n │ 1 \n │───\n╲│ 2 ")
+
+      test(m"an nth root writes its index one line above the sign"):
+        Mroot(Mn(t"8"), Mn(t"3")).draw
+      .assert(_ == t"3 ┌─\n ╲│8")
+
+      test(m"an integral sign stretches to the height of its operand"):
+        Mrow(Mo(t"∫"), Mfrac(Mn(t"1"), Mn(t"2"))).draw
+      .assert(_ == t"╭  1 \n│ ───\n╯  2 ")
+
+      test(m"a contour integral overlays a circle on the axis"):
+        Mrow(Mo(t"∮"), Mfrac(Mn(t"1"), Mn(t"2"))).draw
+      .assert(_ == t"╭  1 \n○ ───\n╯  2 ")
+
+      test(m"a double integral repeats the stroke"):
+        Mrow(Mo(t"∬"), Mfrac(Mn(t"1"), Mn(t"2"))).draw
+      .assert(_ == t"╭╭  1 \n││ ───\n╯╯  2 ")
+
+      test(m"a one-line summand keeps the plain sigma glyph"):
+        Mrow(Mo(t"∑"), Mi(t"x")).draw
+      .assert(_ == t"∑x")
+
+      test(m"a one-line factor keeps the plain pi glyph"):
+        Mrow(Mo(t"∏"), Mi(t"x")).draw
+      .assert(_ == t"∏x")
+
+      test(m"a big sigma stretches to a taller summand"):
+        Mrow(Mo(t"∑"), Mfrac(Mn(t"1"), Mi(t"n"))).draw
+      .assert(_ == t"▁▁▁   \n╲   1 \n╱  ───\n▔▔▔ n ")
+
+      test(m"a big sigma only takes even heights, rounding up"):
+        Mrow(Mo(t"∑"), Msup(Mi(t"x"), Mn(t"2"))).draw
+      .assert(_ == t"▁▁▁  \n╲   2\n╱  x \n▔▔▔  ")
+
+      test(m"a big pi adapts to any height"):
+        Mrow(Mo(t"∏"), Mfrac(Mn(t"1"), Mi(t"n"))).draw
+      .assert(_ == t"┬──┬ 1 \n│  │───\n│  │ n ")
+
+      test(m"a summation carries its limits above and below"):
+        Munderover(Mo(t"∑"), Mrow(Mi(t"i"), Mo(t"="), Mn(t"0")), Mi(t"n")).draw
+      .assert(_ == t"  n  \n  ∑  \ni = 0")
+
+      test(m"parentheses stretch around a taller cell"):
+        Mfenced(Mfrac(Mn(t"1"), Mn(t"2"))).draw
+      .assert(_ == t"⎛ 1 ⎞\n⎜───⎟\n⎝ 2 ⎠")
+
+      test(m"the fraction bar aligns with the surrounding baseline"):
+        Mrow(Mi(t"y"), Mo(t"="), Mfrac(Mn(t"1"), Mn(t"2"))).draw
+      .assert(_ == t"     1 \ny = ───\n     2 ")

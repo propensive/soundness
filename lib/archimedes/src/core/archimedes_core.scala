@@ -62,3 +62,14 @@ inline given ergoInterpolable: Math is Interpolable:
 
 extension (inline context: StringContext)
   transparent inline def ergo: Interpolation = interpolation[Math](context)
+
+// Renders a MathML node (or the `<math>` root) as a monospaced, box-drawing block
+// of text for terminal display. `.cell` gives the composable `Cell` block (with its
+// baseline); `.draw` flattens it to newline-separated `Text` ready for printing.
+extension (node: Mathml)
+  def cell: Cell = Cell.of(node)
+  def draw: Text = Cell.of(node).render
+
+extension (math: Math)
+  def cell: Cell = Cell.of(Mrow(math.contents))
+  def draw: Text = math.cell.render
