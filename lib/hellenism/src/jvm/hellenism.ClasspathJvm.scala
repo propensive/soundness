@@ -30,92 +30,43 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package telekinesis
+package hellenism
 
-import java.text as jt
+import java.net as jn
 
 import anticipation.*
-import distillate.*
-import fulminate.*
-import gossamer.*
-import inimitable.*
+import galilei.*
 import prepositional.*
 import rudiments.*
-import spectacular.*
-import symbolism.*
-import urticose.*
+import serpentine.*
 import vacuous.*
 
-object Cookie:
-  val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
+// The galilei-backed parts of `Classpath`, split out of `hellenism.core` so that the `Classpath`
+// plane, `cp""` and `Resource` (which need only serpentine paths) can cross-compile to Scala.js.
+// `Substantiable` comes from galilei, and the `URLClassLoader` factory builds a `LocalClasspath`,
+// both of which are JVM-only.
 
-  // For some reason it seems necessary to use `DummyImplicit` instead of `Void` here
-  def apply[value: {Encodable in Text, Decodable in Text}](using DummyImplicit)
-    [ duration: Abstractable across Durations to Long ]
-    ( name:     Text,
-      domain:   Optional[Hostname] = Unset,
-      expiry:   Optional[duration] = Unset,
-      secure:   Boolean            = false,
-      httpOnly: Boolean            = false,
-      path:     Optional[Text]     = Unset ) =
+given classpathSubstantiable: (classloader: Classloader) => (Path on Classpath) is Substantiable =
+  path => classloader.java.getResourceAsStream(path.encode.s) != null
 
-    new Cookie[value](name, domain, expiry.let(_.generic/1_000_000L), secure, httpOnly, path)
+extension (classloader: Classloader)
+  def classpath: Optional[Classpath] = classloader.urlClassloader.let(Classpath.of(_))
 
+extension (classpath: Classpath.type)
+  def of(classloader: jn.URLClassLoader): Classpath =
+    val entries =
+      classloader.getURLs.nn.iterator.to(List).map(_.nn).flatMap(ClasspathEntry(_).option)
 
-  object Value:
-    given showable: Value is Showable = cookie =>
-      List
-        ( t"${cookie.name}=${cookie.value}",
-          cookie.expiry.let { expiry => t"Max-Age=$expiry" },
-          cookie.domain.let { domain => t"Domain=$domain" },
-          cookie.path.let { path => t"Path=$path" },
-          if cookie.secure then t"Secure" else Unset,
-          if cookie.httpOnly then t"HttpOnly" else Unset )
+    if entries.exists:
+      case _: ClasspathEntry.Url => true
+      case _                     => false
+    then OnlineClasspath(entries)
+    else
+      type Entry = ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type
 
-      . compact.join(t"; ")
+      val items: List[Entry] = entries.collect:
+        case directory: ClasspathEntry.Directory      => directory
+        case jar: ClasspathEntry.Jar                  => jar
+        case runtime: ClasspathEntry.JavaRuntime.type => runtime
 
-    given encodable: Cookie.Value is Encodable in Http.Header = cookie =>
-      Http.Header("Set-Cookie", cookie.show)
-
-    given addable: Http.Response is Addable by Cookie.Value to Http.Response =
-      Addable: (response, cookie) =>
-        val header = Http.Header(t"set-cookie", cookie.show)
-        response.status(header :: response.textHeaders, response.body)
-
-    given decodable: List[Cookie.Value] is Decodable in Text = value =>
-      value.cut(t"; ").flatMap:
-        _.cut(t"=", 2) match
-          case List(key, value) => List(Cookie.Value(key.urlDecode, value.urlDecode))
-          case _                => Nil
-
-  case class Value
-    ( name:     Text,
-      value:    Text,
-      domain:   Optional[Text] = Unset,
-      path:     Optional[Text] = Unset,
-      expiry:   Optional[Long] = Unset,
-      secure:   Boolean        = false,
-      httpOnly: Boolean        = false )
-
-  extension (cookie: Cookie[Session])
-    def session(lambda: Session ?=> Http.Response)(using Http.Request): Http.Response =
-      val session = cookie().or(Session(Uuid().show))
-      lambda(using session) + cookie(session)
-
-case class Cookie[value: {Encodable in Text, Decodable in Text}]
-  ( name:     Text,
-    domain:   Optional[Hostname],
-    expiry:   Optional[Long],
-    secure:   Boolean,
-    httpOnly: Boolean,
-    path:     Optional[Text] ):
-
-  def apply(value: value): Cookie.Value =
-    Cookie.Value(name, value.encode, domain.let(_.show), path, expiry.let(_/1000), secure, httpOnly)
-
-  inline def apply()(using Http.Request): Optional[value] =
-    summon[Http.Request].textCookies.at(name).let(_.decode)
-
-  object Session:
-    def unapply(using request: Http.Request)[result](lambda: value ?=> result): Option[result] =
-      request.textCookies.at(name).let(_.decode).letGiven(lambda).option
+      LocalClasspath(items*)

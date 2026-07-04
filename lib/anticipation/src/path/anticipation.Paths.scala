@@ -32,15 +32,12 @@
                                                                                                   */
 package anticipation
 
-import java.io as ji
-import java.nio.file as jnf
-
 import prepositional.*
 
 object Paths:
   case class Trusted(text: Text)
 
-  inline given javaIoFile: ji.File is Representative of Paths = caps.unsafe.unsafeErasedValue
-  inline given javaNioFilePath: jnf.Path is Representative of Paths = caps.unsafe.unsafeErasedValue
+  // The `java.io.File` / `java.nio.file.Path` "Representative of Paths" bridges live in `diuretic`
+  // (with the rest of the `java.*` interop) so that `anticipation.path` stays Scala.js-portable.
 
 sealed trait Paths

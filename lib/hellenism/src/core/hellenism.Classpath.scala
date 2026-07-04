@@ -37,7 +37,6 @@ import java.util as ju
 
 import anticipation.*
 import contingency.*
-import galilei.*
 import gossamer.*
 import nomenclature.*
 import prepositional.*
@@ -77,28 +76,6 @@ object Classpath extends Root(t""):
     val separator: Text = "/"
     val self: Text = "."
     val parent: Text = ".."
-
-  given substantiable: (classloader: Classloader) => (Path on Classpath) is Substantiable =
-    path => classloader.java.getResourceAsStream(path.encode.s) != null
-
-  def apply(classloader: jn.URLClassLoader): Classpath =
-    val entries =
-      classloader.getURLs.nn.iterator.to(List).map(_.nn).flatMap(ClasspathEntry(_).option)
-
-    if entries.exists:
-      case _: ClasspathEntry.Url => true
-      case _                     => false
-    then OnlineClasspath(entries)
-    else
-      type Entry = ClasspathEntry.Directory | ClasspathEntry.Jar | ClasspathEntry.JavaRuntime.type
-
-      val items: List[Entry] = entries.collect:
-        case directory: ClasspathEntry.Directory      => directory
-        case jar: ClasspathEntry.Jar                  => jar
-        case runtime: ClasspathEntry.JavaRuntime.type => runtime
-
-      LocalClasspath(items*)
-
 
   given streamable: [path <: Path on Classpath] => Tactic[ClasspathError]
   =>  ( classloader: Classloader )

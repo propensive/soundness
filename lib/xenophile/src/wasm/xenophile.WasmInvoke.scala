@@ -30,92 +30,94 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package telekinesis
+package xenophile
 
-import java.text as jt
+import scala.quoted.*
 
 import anticipation.*
 import distillate.*
 import fulminate.*
-import gossamer.*
-import inimitable.*
 import prepositional.*
 import rudiments.*
-import spectacular.*
-import symbolism.*
-import urticose.*
 import vacuous.*
 
-object Cookie:
-  val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
+// The terminal materializer for the WIT ecosystem: turns a fully-applied `Foreign` invocation into
+// a real Wasm Component Model import call (`scala.scalajs.wit.witImportCall`, lowered by the
+// scala-wasm compiler). Unlike querencia's runtime `Javascript.serialize`, this runs at compile
+// time, so it is a macro that deconstructs the inline navigation (the `invoke` extension in the
+// module's package object must be applied directly to an inline chain — not to a `val`).
+object WasmInvoke:
+  def invoke[result: Type](self: Expr[Foreign])(using quotes: Quotes): Expr[result] =
+    import quotes.reflect.*
 
-  // For some reason it seems necessary to use `DummyImplicit` instead of `Void` here
-  def apply[value: {Encodable in Text, Decodable in Text}](using DummyImplicit)
-    [ duration: Abstractable across Durations to Long ]
-    ( name:     Text,
-      domain:   Optional[Hostname] = Unset,
-      expiry:   Optional[duration] = Unset,
-      secure:   Boolean            = false,
-      httpOnly: Boolean            = false,
-      path:     Optional[Text]     = Unset ) =
+    // The receiver carries the source language (`Origin`) in its refined type; the WIT function it
+    // was reached through is recovered from the `Foreign.Expression` the navigation built.
+    val (_, origin) = Xenophile.receiver(self)
 
-    new Cookie[value](name, domain, expiry.let(_.generic/1_000_000L), secure, httpOnly, path)
+    val expression: Expr[Foreign.Expression] =
+      self.asTerm.underlyingArgument.asExpr.absolve match
+        case '{Foreign.make($tree)} => tree
 
+    // A `Foreign.Expression` string operand is `"…".tt`; recover the literal `String`.
+    def literal(text: Expr[Text]): Text = text.absolve match
+      case '{($string: String).tt} => string.valueOrAbort.tt
 
-  object Value:
-    given showable: Value is Showable = cookie =>
-      List
-        ( t"${cookie.name}=${cookie.value}",
-          cookie.expiry.let { expiry => t"Max-Age=$expiry" },
-          cookie.domain.let { domain => t"Domain=$domain" },
-          cookie.path.let { path => t"Path=$path" },
-          if cookie.secure then t"Secure" else Unset,
-          if cookie.httpOnly then t"HttpOnly" else Unset )
+    val (owner, function) = expression.absolve match
+      case '{Foreign.Expression.Apply(Foreign.Expression.Select($_, $member, $owner), $_)} =>
+        (literal(owner), literal(member))
 
-      . compact.join(t"; ")
+      case _ =>
+        halt(m"xenophile: `invoke` expects a foreign method call, `interface.function(args)`")
 
-    given encodable: Cookie.Value is Encodable in Http.Header = cookie =>
-      Http.Header("Set-Cookie", cookie.show)
+    // Look up the function's module id (e.g. `wasi:random/random@0.2.0`) from the definitions.
+    val members = Xenophile.definitions(origin, Xenophile.locusOf(origin)).at(owner).or:
+      halt(m"xenophile: the foreign type $owner is not defined")
 
-    given addable: Http.Response is Addable by Cookie.Value to Http.Response =
-      Addable: (response, cookie) =>
-        val header = Http.Header(t"set-cookie", cookie.show)
-        response.status(header :: response.textHeaders, response.body)
+    val prototype = members.at(function).or:
+      halt(m"xenophile: the foreign type $owner has no member $function")
 
-    given decodable: List[Cookie.Value] is Decodable in Text = value =>
-      value.cut(t"; ").flatMap:
-        _.cut(t"=", 2) match
-          case List(key, value) => List(Cookie.Value(key.urlDecode, value.urlDecode))
-          case _                => Nil
+    val module = prototype.module.or:
+      halt(m"xenophile: $owner.$function is not addressable as a WIT import (it has no module id)")
 
-  case class Value
-    ( name:     Text,
-      value:    Text,
-      domain:   Optional[Text] = Unset,
-      path:     Optional[Text] = Unset,
-      expiry:   Optional[Long] = Unset,
-      secure:   Boolean        = false,
-      httpOnly: Boolean        = false )
+    // The result crosses the boundary via its `Decodable in Wasm` codec; its `Carrier` type is what
+    // the import returns and what `witImportCall` is told (as `classOf[Carrier]`).
+    val decodable = Expr.summon[result is Decodable in Wasm].getOrElse:
+      halt(m"xenophile: no way to read a ${TypeRepr.of[result].show} from a WIT boundary")
 
-  extension (cookie: Cookie[Session])
-    def session(lambda: Session ?=> Http.Response)(using Http.Request): Http.Response =
-      val session = cookie().or(Session(Uuid().show))
-      lambda(using session) + cookie(session)
+    val carrier = carrierType(decodable)
 
-case class Cookie[value: {Encodable in Text, Decodable in Text}]
-  ( name:     Text,
-    domain:   Optional[Hostname],
-    expiry:   Optional[Long],
-    secure:   Boolean,
-    httpOnly: Boolean,
-    path:     Optional[Text] ):
+    // Emit `decodable.decoded(Wasm(witImportCall(module, function, classOf[Carrier])))`. The import
+    // call is built by looking up `witImportCall` in the *downstream* classpath (the scala-wasm
+    // library), so this macro needs no dependency on it.
+    val witImportCall = Symbol.requiredMethod("scala.scalajs.wit.witImportCall")
 
-  def apply(value: value): Cookie.Value =
-    Cookie.Value(name, value.encode, domain.let(_.show), path, expiry.let(_/1000), secure, httpOnly)
+    val classOfCarrier = carrier.asType.absolve match
+      case '[carrierType] => '{classOf[carrierType]}
 
-  inline def apply()(using Http.Request): Optional[value] =
-    summon[Http.Request].textCookies.at(name).let(_.decode)
+    val varargs =
+      Typed
+        ( Repeated(List(classOfCarrier.asTerm), TypeTree.of[Any]),
+          TypeTree.of[Seq[Any]] )
 
-  object Session:
-    def unapply(using request: Http.Request)[result](lambda: value ?=> result): Option[result] =
-      request.textCookies.at(name).let(_.decode).letGiven(lambda).option
+    val callTerm =
+      Apply
+        ( Ref(witImportCall),
+          List(Expr(module.s).asTerm, Expr(function.s).asTerm, varargs) )
+
+    val call = callTerm.asExprOf[Any]
+
+    '{$decodable.decoded(Wasm($call))}
+
+  // The `Carrier` type of a summoned `Encodable`/`Decodable in Wasm` codec, read from the `Carrier`
+  // refinement member of the codec's (precise) type.
+  private def carrierType(using quotes: Quotes)(codec: Expr[Any]): quotes.reflect.TypeRepr =
+    import quotes.reflect.*
+
+    def find(repr: TypeRepr): Optional[TypeRepr] = repr.dealias match
+      case Refinement(_, "Carrier", TypeBounds(_, hi)) => hi
+      case Refinement(parent, _, _)                    => find(parent)
+      case AndType(left, right)                        => find(left).or(find(right))
+      case _                                           => Unset
+
+    find(codec.asTerm.tpe.widen).or:
+      halt(m"xenophile: the WIT codec does not expose a `Carrier` type")

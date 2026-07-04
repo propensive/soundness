@@ -87,8 +87,9 @@ object Html extends Tag.Container
   sealed trait Decimal
   sealed trait Id
 
-  given media: Document[Html] is Media =
-    _ => media"text/html"(charset = "UTF-8")
+  given media: Document[Html] is Media:
+    extension (value: Document[Html])
+      def mediaType: MediaType = media"text/html"(charset = "UTF-8")
 
   def doctype: Doctype = Doctype(t"html")
 
@@ -140,7 +141,7 @@ object Html extends Tag.Container
                   right      <: Html of rightTopic in dom]
   =>  left is Addable by right to (Fragment of leftTopic | rightTopic in dom) =
 
-    (left, right) =>
+    Addable: (left, right) =>
       Fragment(List(left, right).nodes*).of[leftTopic | rightTopic].in[dom]
 
 

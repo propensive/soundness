@@ -140,7 +140,10 @@ object GraphemeBreak:
       props(index) = sorted(index).prop.toByte
       index += 1
 
-    unsafely(Tables(starts.immutable, ends.immutable, props.immutable))
+    Tables
+      ( starts.immutable(using Unsafe),
+        ends.immutable(using Unsafe),
+        props.immutable(using Unsafe) )
 
   private lazy val gbpTables: Tables =
     val in = loadResource(

@@ -34,7 +34,7 @@ package soundness
 
 export
   hellenism
-  . { Classloader, Classpath, ClasspathEntry, ClasspathError, ClasspathEvent, cp, LocalClasspath,
+  . { Classloader, Classpath, ClasspathEntry, ClasspathError, ClasspathEvent, cp,
       OnlineClasspath, Resource }
 
 package classloaders:

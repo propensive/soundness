@@ -1042,7 +1042,8 @@ object Tel extends Tel2:
     // Inlines and gets GC'd once all references to the prior Document are
     // released.
     private val cached: ThreadLocal[Parser] =
-      ThreadLocal.withInitial: () => new Parser()
+      new ThreadLocal[Parser]:
+        override def initialValue(): Parser = new Parser()
 
     def parse(cursor: Cursor[Data]): Tel.Document raises TelError =
       val p = cached.get.nn
@@ -1105,13 +1106,19 @@ object Tel extends Tel2:
     // an 8-iteration byte loop with one Long load plus a couple of bitwise
     // operations.
 
-    // `classOf[Array[Long]]` resolves to `java.lang.Object` under some Scala 3
-    // compilation paths (notably macro-expansion contexts) — and
-    // `byteArrayViewVarHandle` rejects that. Get `long[].class` directly from
-    // a runtime instance instead.
-    private val longView: java.lang.invoke.VarHandle =
-      java.lang.invoke.MethodHandles.byteArrayViewVarHandle
-        ( (new Array[Long](0)).getClass.nn, java.nio.ByteOrder.LITTLE_ENDIAN )
+    // Reads a little-endian `Long` from eight bytes at `pos`. Assembled by hand
+    // rather than through a `java.lang.invoke.VarHandle` byte-array view so that
+    // this compiles and links on Scala.js (which has no `java.lang.invoke`); the
+    // JIT folds this to an equivalent load on the JVM.
+    private def longView(bytes: Array[Byte], pos: Int): Long =
+      (bytes(pos) & 0xffL) |
+        ((bytes(pos + 1) & 0xffL) << 8) |
+        ((bytes(pos + 2) & 0xffL) << 16) |
+        ((bytes(pos + 3) & 0xffL) << 24) |
+        ((bytes(pos + 4) & 0xffL) << 32) |
+        ((bytes(pos + 5) & 0xffL) << 40) |
+        ((bytes(pos + 6) & 0xffL) << 48) |
+        ((bytes(pos + 7) & 0xffL) << 56)
 
     private final val OnesMask:     Long = 0x0101010101010101L
     private final val HighBitsMask: Long = 0x8080808080808080L
@@ -1493,7 +1500,7 @@ object Tel extends Tel2:
     // Advance pos until bytes(pos) == target1, or pos == bufEnd.
     private def scanUntil1(target1: Byte, repl1: Long): Unit =
       while pos + 8 <= bufEnd do
-        val v = Parser.longView.get(bytes, pos).asInstanceOf[Long]
+        val v = Parser.longView(bytes, pos)
         val mask = Parser.matchByte(v, repl1)
 
         if mask != 0L then
@@ -1507,7 +1514,7 @@ object Tel extends Tel2:
     // Advance pos until bytes(pos) ∈ {target1, target2}, or pos == bufEnd.
     private def scanUntil2(target1: Byte, target2: Byte, repl1: Long, repl2: Long): Unit =
       while pos + 8 <= bufEnd do
-        val v = Parser.longView.get(bytes, pos).asInstanceOf[Long]
+        val v = Parser.longView(bytes, pos)
         val combined = Parser.matchByte(v, repl1) | Parser.matchByte(v, repl2)
 
         if combined != 0L then
@@ -1525,7 +1532,7 @@ object Tel extends Tel2:
     :   Unit =
 
       while pos + 8 <= bufEnd do
-        val v = Parser.longView.get(bytes, pos).asInstanceOf[Long]
+        val v = Parser.longView(bytes, pos)
 
         val combined =
           Parser.matchByte(v, rA) |
@@ -1547,7 +1554,7 @@ object Tel extends Tel2:
     :   Unit =
 
       while pos + 8 <= bufEnd do
-        val v = Parser.longView.get(bytes, pos).asInstanceOf[Long]
+        val v = Parser.longView(bytes, pos)
 
         val combined =
           Parser.matchByte(v, rA) |

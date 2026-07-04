@@ -42,11 +42,13 @@ import vacuous.*
 // A minimal grammar for WIT (the WebAssembly Component Model's interface-definition language).
 // `record`s become navigable foreign types whose members are their fields; an `interface`'s
 // functions become members of a type named after the interface; `enum`s and `flags` are treated as
-// `s32`; `type` aliases are resolved. `package`, `use`, `world`, `variant` and `resource`
-// declarations are recognised but their bodies are skipped. Line and block comments are ignored.
+// `s32`; `type` aliases are resolved. The `package` declaration is read to qualify each interface's
+// functions with their Component Model module id (e.g. `wasi:random/random@0.2.0`); `use`, `world`,
+// `variant` and `resource` declarations are recognised but their bodies are skipped. Line and block
+// comments are ignored.
 object WitDialect extends Dialect:
   def parse(source: Text): Map[Text, Map[Text, Prototype]] =
-    val (types, typedefs) = items(tokenize(source.s), Map(), Map())
+    val (types, typedefs) = items(tokenize(source.s), Map(), Map(), Unset)
 
     resolve(types, typedefs)
 
@@ -120,26 +122,31 @@ object WitDialect extends Dialect:
   private def items
     ( tokens:   List[String],
       types:    Map[Text, Map[Text, Prototype]],
-      typedefs: Map[Text, Foreign.Type] )
+      typedefs: Map[Text, Foreign.Type],
+      pkg:      Optional[Text] )
   :   (Map[Text, Map[Text, Prototype]], Map[Text, Foreign.Type]) =
 
     tokens match
       case Nil =>
         (types, typedefs)
 
+      case "package" :: rest =>
+        val (id, after) = packageId(rest)
+        items(after, types, typedefs, id)
+
       case "interface" :: name :: "{" :: rest =>
-        val (types2, typedefs2, after) = interface(rest, name.tt, types, typedefs)
-        items(after, types2, typedefs2)
+        val (types2, typedefs2, after) = interface(rest, name.tt, types, typedefs, pkg)
+        items(after, types2, typedefs2, pkg)
 
       case "type" :: name :: "=" :: rest =>
         val (kind, after) = typeOf(rest)
-        items(skipTo(after, t";"), types, typedefs.updated(name.tt, kind))
+        items(skipTo(after, t";"), types, typedefs.updated(name.tt, kind), pkg)
 
       case ("world" | "interface") :: _ :: "{" :: rest =>
-        items(skipBraces(rest, 1), types, typedefs)
+        items(skipBraces(rest, 1), types, typedefs, pkg)
 
       case _ =>
-        items(skipTo(tokens, t";"), types, typedefs)
+        items(skipTo(tokens, t";"), types, typedefs, pkg)
 
   // Walks an interface body: `record`s and the interface's own functions become navigable types;
   // an `enum` becomes the unsigned discriminant (`u8`/`u16`/`u32`) that holds its cases and `flags`
@@ -149,8 +156,11 @@ object WitDialect extends Dialect:
     ( tokens:   List[String],
       name:     Text,
       types:    Map[Text, Map[Text, Prototype]],
-      typedefs: Map[Text, Foreign.Type] )
+      typedefs: Map[Text, Foreign.Type],
+      pkg:      Optional[Text] )
   :   (Map[Text, Map[Text, Prototype]], Map[Text, Foreign.Type], List[String]) =
+
+    val module = moduleId(pkg, name)
 
     def recur
       ( todo:      List[String],
@@ -208,7 +218,7 @@ object WitDialect extends Dialect:
             case "->" :: more => typeOf(more)
             case more         => (Foreign.Type.Named(t"unit"), more)
 
-          val signature = Prototype(parameters, result)
+          val signature = Prototype(parameters, result, module)
           recur(skipTo(after2, t";"), functions.updated(function.tt, signature), types, typedefs)
 
         // Any unrecognised `{ … }` block is skipped wholesale rather than token-by-token, so its
@@ -279,10 +289,29 @@ object WitDialect extends Dialect:
         Foreign.Type.Applied(constructor, arguments.map(expand))
 
     def signature(sig: Prototype): Prototype =
-      Prototype(sig.parameters.let(_.map(expand)), expand(sig.result))
+      Prototype(sig.parameters.let(_.map(expand)), expand(sig.result), sig.module)
 
     definitions.map: (name, members) =>
       (name, members.map { (member, sig) => (member, signature(sig)) })
+
+  // Reads the tokens of a `package …;` declaration up to (not including) the `;` and joins them
+  // with no separator — WIT package ids contain no internal whitespace, so an id such as
+  // `wasi:random@0.2.0` reassembles exactly — returning the id and the tokens after the `;`.
+  private def packageId(tokens: List[String]): (Text, List[String]) =
+    def recur(todo: List[String], acc: List[String]): (Text, List[String]) = todo match
+      case ";" :: rest  => (acc.reverse.mkString.tt, rest)
+      case Nil          => (acc.reverse.mkString.tt, Nil)
+      case head :: rest => recur(rest, head :: acc)
+
+    recur(tokens, Nil)
+
+  // Builds the Component Model module id for an interface from the enclosing package id: package
+  // `wasi:random@0.2.0` and interface `random` give `wasi:random/random@0.2.0` — the interface name
+  // is spliced in before the `@version`. `Unset` when there is no `package` declaration.
+  private def moduleId(pkg: Optional[Text], iface: Text): Optional[Text] = pkg.let: id =>
+    id.cut(t"@") match
+      case base :: version :: _ => t"$base/$iface@$version"
+      case _                    => t"$id/$iface"
 
   // Skips tokens up to and including the next occurrence of `token`.
   private def skipTo(tokens: List[String], token: Text): List[String] = tokens match

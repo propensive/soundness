@@ -120,7 +120,7 @@ object Query extends Dynamic:
   def apply(parameters: List[(Text, Text)]): Query = new Query(parameters)
 
   given addable: Query is Addable by Query to Query =
-    (left, right) => new Query(left.values ++ right.values)
+    Addable: (left, right) => new Query(left.values ++ right.values)
 
 case class Query private (values: List[(Text, Text)]) extends Dynamic:
   // private lazy val map: Map[Text, Text | List[Text]] = values.groupMap(_(0))(_(1))

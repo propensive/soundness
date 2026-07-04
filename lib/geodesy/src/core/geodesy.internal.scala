@@ -68,18 +68,19 @@ object internal:
     def apply(value: Double): Angle = value
     def degrees(value: Double): Angle = value*π/180
 
-    given addable: Angle is Addable by Angle to Angle = (left, right) => (left + right)%c
+    given addable: Angle is Addable by Angle to Angle = Addable: (left, right) => (left + right)%c
 
     given subtractable: Angle is Subtractable by Angle to Angle =
-      (left, right) => (c + left - right)%c
+      Subtractable: (left, right) => (c + left - right)%c
 
     given multiplicable: Angle is Multiplicable by Double to Angle =
-      (left, right) => (left*right)%c
+      Multiplicable: (left, right) => (left*right)%c
 
-    given divisible: Angle is Divisible by Double to Angle = (left, right) => (left/right)%c
+    given divisible: Angle is Divisible by Double to Angle =
+      Divisible: (left, right) => (left/right)%c
 
     given multiplicable2: Double is Multiplicable by Angle to Angle =
-      (left, right) => (left*right)%c
+      Multiplicable: (left, right) => (left*right)%c
 
     given showable: Angle is Showable = angle =>
       given decimalizer: Decimalizer = Decimalizer(decimalPlaces = 1)

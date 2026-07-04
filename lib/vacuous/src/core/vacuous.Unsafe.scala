@@ -32,4 +32,10 @@
                                                                                                   */
 package vacuous
 
+// A capability token gating operations that bypass a safety guarantee. It is a real (non-`erased`)
+// singleton value rather than an erased one: the Scala.js backend (`JSCodeGen.genClosure`) crashes
+// on closures carrying an `erased` parameter, which `unsafely`'s `Unsafe ?=>` block would otherwise
+// produce. Passing it to a `using erased Unsafe` parameter still erases it at those call sites.
+object Unsafe extends Unsafe
+
 sealed trait Unsafe

@@ -127,7 +127,7 @@ object protointernal:
     given plus: [transport, units <: Measure: Normalizable to Seconds[1]]
     =>  ( resolution: transport is Resolution )
     =>  (Instant over transport) is Addable by Quantity[units] to (Instant over transport) =
-      (instant, duration) =>
+      Addable: (instant, duration) =>
         Instant.of(raw(instant) + ticks(duration.normalize.value, resolution.nanos))
 
     // The difference of two instants on the same timeline is a `Duration` in seconds; subtracting
@@ -135,12 +135,12 @@ object protointernal:
     given minus: [transport]
     =>  ( resolution: transport is Resolution )
     =>  (Instant over transport) is Subtractable by (Instant over transport) to Duration =
-      (left, right) => Quantity((raw(left) - raw(right))*resolution.nanos/1_000_000_000.0)
+      Subtractable: (left, right) => Quantity((raw(left) - raw(right))*resolution.nanos/1_000_000_000.0)
 
     given minusDuration: [transport, units <: Measure: Normalizable to Seconds[1]]
     =>  ( resolution: transport is Resolution )
     =>  (Instant over transport) is Subtractable by Quantity[units] to (Instant over transport) =
-      (instant, duration) =>
+      Subtractable: (instant, duration) =>
         Instant.of(raw(instant) - ticks(duration.normalize.value, resolution.nanos))
 
 

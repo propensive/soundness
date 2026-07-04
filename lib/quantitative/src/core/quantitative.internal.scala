@@ -69,19 +69,19 @@ object internal extends protointernal:
       inline def zero: Temperature = Temperature(0)
 
     given addable: Temperature is Addable by Quantity[Kelvins[1]] to Temperature =
-      _ + _.value
+      Addable(_ + _.value)
 
     given addable2: Temperature is Addable by Quantity[Rankines[1]] to Temperature =
-      _ + _.value*5/9
+      Addable(_ + _.value*5/9)
 
     given subtractable: Temperature is Subtractable by Quantity[Kelvins[1]] to Temperature =
-      _ - _.value
+      Subtractable(_ - _.value)
 
     given subtractable2: Temperature is Subtractable by Quantity[Rankines[1]] to Temperature =
-      _ - _.value*5/9
+      Subtractable(_ - _.value*5/9)
 
     given subtractable3: Temperature is Subtractable by Temperature to Quantity[Kelvins[1]] =
-      (left, right) => Quantity(left.kelvin - right.kelvin)
+      Subtractable: (left, right) => Quantity(left.kelvin - right.kelvin)
 
 
   extension [units <: Measure](quantity: Quantity[units])

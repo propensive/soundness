@@ -46,8 +46,6 @@ inline def default[value](using default: Default[value]): value = default()
 inline def optimizable[value](lambda: Optional[value] => Optional[value]): Optional[value] =
   lambda(Unset)
 
-erased val Unsafe: Unsafe = caps.unsafe.unsafeErasedValue
-
 export vacuous.Optional.Unset
 
 type Optional[value] = Unset | value

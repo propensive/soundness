@@ -36,8 +36,14 @@ import anticipation.*
 import vacuous.*
 
 // The prototype of a member of a foreign type: a field has no parameters (`Unset`); a method
-// records its parameter types. `result` is the foreign type the member produces.
-case class Prototype(parameters: Optional[List[Foreign.Type]], result: Foreign.Type)
+// records its parameter types. `result` is the foreign type the member produces. `module`, when
+// set, qualifies the member with the fully-qualified module it belongs to — used by ecosystems
+// (such as WIT) whose members must be addressed by a module identifier at the point of invocation;
+// it is `Unset` for grammars that need no such qualifier.
+case class Prototype
+  ( parameters: Optional[List[Foreign.Type]],
+    result:     Foreign.Type,
+    module:     Optional[Text] = Unset )
 
 // A grammar for a particular foreign type system: parses a definitions source into a map from each
 // foreign type name to its members' prototypes. Keyed on an ecosystem so the macro stays agnostic.

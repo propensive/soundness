@@ -30,92 +30,38 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package telekinesis
+package turbulence
 
-import java.text as jt
+import java.io as ji
+import java.util.zip as juz
 
 import anticipation.*
-import distillate.*
-import fulminate.*
-import gossamer.*
-import inimitable.*
-import prepositional.*
 import rudiments.*
-import spectacular.*
-import symbolism.*
-import urticose.*
 import vacuous.*
 
-object Cookie:
-  val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
+// JVM `java.util.zip`-backed one-shot gzip/gunzip for a whole `Data` block. Kept out of
+// `turbulence.core` because `java.util.zip` has no Scala.js implementation; the streaming
+// `compress`/`decompress` (over the platform-agnostic `Compression`/`Compressor` typeclasses)
+// remain in core.
+extension (bytes: Data)
+  def gzip: Data =
+    val out = ji.ByteArrayOutputStream()
+    val out2 = juz.GZIPOutputStream(out)
+    out2.write(bytes.mutable(using Unsafe))
+    out2.close()
+    out.toByteArray.nn.immutable(using Unsafe)
 
-  // For some reason it seems necessary to use `DummyImplicit` instead of `Void` here
-  def apply[value: {Encodable in Text, Decodable in Text}](using DummyImplicit)
-    [ duration: Abstractable across Durations to Long ]
-    ( name:     Text,
-      domain:   Optional[Hostname] = Unset,
-      expiry:   Optional[duration] = Unset,
-      secure:   Boolean            = false,
-      httpOnly: Boolean            = false,
-      path:     Optional[Text]     = Unset ) =
+  def gunzip: Data =
+    val in = ji.ByteArrayInputStream(bytes.mutable(using Unsafe))
+    val in2 = juz.GZIPInputStream(in)
+    val out = ji.ByteArrayOutputStream()
+    val buffer: Array[Byte] = new Array(1024)
 
-    new Cookie[value](name, domain, expiry.let(_.generic/1_000_000L), secure, httpOnly, path)
+    def recur(): Unit = in2.read(buffer).tap: length =>
+      if length > 0 then
+        out.write(buffer, 0, length)
+        recur()
 
+    recur()
 
-  object Value:
-    given showable: Value is Showable = cookie =>
-      List
-        ( t"${cookie.name}=${cookie.value}",
-          cookie.expiry.let { expiry => t"Max-Age=$expiry" },
-          cookie.domain.let { domain => t"Domain=$domain" },
-          cookie.path.let { path => t"Path=$path" },
-          if cookie.secure then t"Secure" else Unset,
-          if cookie.httpOnly then t"HttpOnly" else Unset )
-
-      . compact.join(t"; ")
-
-    given encodable: Cookie.Value is Encodable in Http.Header = cookie =>
-      Http.Header("Set-Cookie", cookie.show)
-
-    given addable: Http.Response is Addable by Cookie.Value to Http.Response =
-      Addable: (response, cookie) =>
-        val header = Http.Header(t"set-cookie", cookie.show)
-        response.status(header :: response.textHeaders, response.body)
-
-    given decodable: List[Cookie.Value] is Decodable in Text = value =>
-      value.cut(t"; ").flatMap:
-        _.cut(t"=", 2) match
-          case List(key, value) => List(Cookie.Value(key.urlDecode, value.urlDecode))
-          case _                => Nil
-
-  case class Value
-    ( name:     Text,
-      value:    Text,
-      domain:   Optional[Text] = Unset,
-      path:     Optional[Text] = Unset,
-      expiry:   Optional[Long] = Unset,
-      secure:   Boolean        = false,
-      httpOnly: Boolean        = false )
-
-  extension (cookie: Cookie[Session])
-    def session(lambda: Session ?=> Http.Response)(using Http.Request): Http.Response =
-      val session = cookie().or(Session(Uuid().show))
-      lambda(using session) + cookie(session)
-
-case class Cookie[value: {Encodable in Text, Decodable in Text}]
-  ( name:     Text,
-    domain:   Optional[Hostname],
-    expiry:   Optional[Long],
-    secure:   Boolean,
-    httpOnly: Boolean,
-    path:     Optional[Text] ):
-
-  def apply(value: value): Cookie.Value =
-    Cookie.Value(name, value.encode, domain.let(_.show), path, expiry.let(_/1000), secure, httpOnly)
-
-  inline def apply()(using Http.Request): Optional[value] =
-    summon[Http.Request].textCookies.at(name).let(_.decode)
-
-  object Session:
-    def unapply(using request: Http.Request)[result](lambda: value ?=> result): Option[result] =
-      request.textCookies.at(name).let(_.decode).letGiven(lambda).option
+    out.toByteArray.nn.immutable(using Unsafe)

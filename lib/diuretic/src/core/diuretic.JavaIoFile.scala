@@ -35,6 +35,7 @@ package diuretic
 import java.io as ji
 
 import anticipation.*
+import prepositional.*
 
 object JavaIoFile extends Abstractable, Instantiable:
   type Self = ji.File
@@ -44,3 +45,7 @@ object JavaIoFile extends Abstractable, Instantiable:
 
   def apply(path: Text): ji.File = ji.File(path.s)
   def genericize(value: ji.File): Text = value.getAbsolutePath.nn.toString.tt
+
+// `java.io.File` can stand in for a soundness path abstraction (moved here from `anticipation.path`
+// to keep that module Scala.js-portable).
+inline given javaIoFile: ji.File is Representative of Paths = caps.unsafe.unsafeErasedValue

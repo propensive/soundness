@@ -119,10 +119,10 @@ object YamlPath extends Root(""):
         YamlPath(Unset, Path[YamlPath, YamlPath.type, Tuple]("/", descent))
 
   given divisible: YamlPath is Divisible by Text to YamlPath =
-    (path, segment) => YamlPath(path.url, path.path / segment)
+    Divisible: (path, segment) => YamlPath(path.url, path.path / segment)
 
   given divisible2: YamlPath is Divisible by Ordinal to YamlPath =
-    (path, segment) => YamlPath(path.url, path.path / segment)
+    Divisible: (path, segment) => YamlPath(path.url, path.path / segment)
 
 case class YamlPath(url: Optional[HttpUrl] = Unset, path: Path on YamlPath = YamlPath):
   def apply(using registry: YamlPath.Registry)(document: Yaml): Yaml raises YamlPathError =

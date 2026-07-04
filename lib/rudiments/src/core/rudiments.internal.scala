@@ -74,12 +74,12 @@ object internal:
     given communicable: [bytes <: Bytes] => bytes is Communicable =
       bytes => Message(bytes.text)
 
-    given addable: Bytes is Addable by Bytes to Bytes = _ + _
-    given subtractable: Bytes is Subtractable by Bytes to Bytes = _ - _
-    given multiplicable: Bytes is Multiplicable by Int to Bytes = _*_
-    given multiplicable2: Int is Multiplicable by Bytes to Bytes = _*_
-    given divisible: Bytes is Divisible by Int to Bytes = _/_
-    given divisible2: Bytes is Divisible by Bytes to Double = _.toDouble/_
+    given addable: Bytes is Addable by Bytes to Bytes = Addable(_ + _)
+    given subtractable: Bytes is Subtractable by Bytes to Bytes = Subtractable(_ - _)
+    given multiplicable: Bytes is Multiplicable by Int to Bytes = Multiplicable(_*_)
+    given multiplicable2: Int is Multiplicable by Bytes to Bytes = Multiplicable(_*_)
+    given divisible: Bytes is Divisible by Int to Bytes = Divisible(_/_)
+    given divisible2: Bytes is Divisible by Bytes to Double = Divisible(_.toDouble/_)
 
 
     extension (left: Bytes)

@@ -44,7 +44,7 @@ object CopticMonth extends MonthRadix:
   given showable: CopticMonth is Showable = _.toString.tt
 
   given multiplicable: Int is Multiplicable by CopticMonth.type to (Timespan of CopticMonth.type) =
-    (n, _) => Timespan(CopticMonth, n)
+    Multiplicable: (n, _) => Timespan(CopticMonth, n)
 
 enum CopticMonth derives CanEqual:
   case Thout, Paopi, Hathor, Koiak, Tobi, Meshir, Paremhat, Parmouti, Pashons, Paoni, Epip, Mesori,
