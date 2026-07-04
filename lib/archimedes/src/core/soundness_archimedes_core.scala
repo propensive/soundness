@@ -38,4 +38,4 @@ export archimedes.{Math, Mathml, Token, Mi, Mn, Mo, Mtext, Ms, Mspace, Mglyph, L
     Mlabeledtr, Mtd, Maligngroup, Malignmark, Elementary, Mstack, Mlongdiv, Msgroup, Msrow,
     Mscarries, Mscarry, Msline, Semantic, Maction, Semantics, Annotation, AnnotationXml, Display,
     MathmlError, MathmlParser, MathmlReader, mathmlNamespace, Ergo, ErgoError, ergo,
-    ergoInterpolable, mathml, math}
+    ergoInterpolable, mathml, math, Cell, cell, draw}
