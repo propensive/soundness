@@ -6,11 +6,22 @@ import soundness.*
 // modules, so `jslink.fastLinkJS` forces their code reachable and the linker
 // reports any reachable reference to a `java.*`/`javax.*` class Scala.js lacks —
 // the runtime (link-level) counterpart to the static reference audit.
+// The TypeScript definitions reused from xenophile's test resources; the `Interface` given points
+// the `Foreign` navigation at them so `foo.ping()` type-checks against the `ping(): string` member.
+type TsDefs = Interface in Typescript at "/xenophile/definitions.ts"
+given tsDefs: TsDefs = Interface[Typescript](cp"/xenophile/definitions.ts")
+
 object Main:
   case class Point(x: Int, y: Int)
 
   def main(args: Array[String]): Unit =
     val out = java.lang.System.out.nn
+
+    // xenophile (JS materializer): `Foreign["Foo", Typescript].ping().invoke[Text]` expands to a
+    // real Scala.js dynamic call — `js.Dynamic.global.selectDynamic("Foo").applyDynamic("ping")()` —
+    // decoded through the `Text` boundary codec. Linking it proves the emitted interop is valid.
+    // The chain must be inline (not bound to a `val`), exactly like the `Wasm` `invoke`.
+    out.println(Foreign["Foo", Typescript].ping().invoke[Text].s)
 
     // gossamer (Text) + kaleidoscope (regex, via interpolation/text ops)
     out.println(t"hello, ${args.length} args".s)
