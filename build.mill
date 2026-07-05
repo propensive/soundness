@@ -1604,6 +1604,13 @@ object xenophile extends Library:
     gossamer.core, prepositional.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  // The JavaScript materializer: emits Scala.js dynamic calls for WebIDL/TypeScript navigations.
+  // The `invoke` extension it exports collides by design with `wasm`'s (they target different
+  // Scala.js link outputs), so it is not bundled into the `test` module alongside `wasm`.
+  object js extends Component(core, hypotenuse.core, anticipation.codec, distillate.core,
+    gossamer.core, prepositional.core):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(typescript, native, wit, webidl, wasm)
 
 object querencia extends Library:
@@ -1739,4 +1746,4 @@ object jslink extends ScalaJSModule:
     settings.scalaOptions ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "jslink" / "src")
   override def mainClass = Some("jslink.Main")
-  override def moduleDeps = Seq(gossamer.core.js, jacinta.core.js, wisteria.core.js, ypsiloid.core.js, hypotenuse.core.js, spectacular.core.js, aviation.core.js)
+  override def moduleDeps = Seq(gossamer.core.js, jacinta.core.js, wisteria.core.js, ypsiloid.core.js, hypotenuse.core.js, spectacular.core.js, aviation.core.js, xenophile.typescript.js, xenophile.js.js)
