@@ -51,7 +51,7 @@ import vacuous.*
 //   /                     → Mfrac
 //   juxtaposition         → Mrow
 //
-// Introducers ⊞/⊟/⊡ start a matrix / row-vector / column-vector from the run of
+// Introducers ⋱/⋯/⋮ start a matrix / row-vector / column-vector from the run of
 // bracket groups that immediately follows. A space separates adjacent atoms
 // (`x y` = two `<mi>`, `xy` = one), and any operator glyph with a missing
 // operand degrades to a literal `Mo` (so `(↗)` writes a literal ↗).
@@ -65,9 +65,9 @@ object Ergo:
   private final val Over   = '↑' // ↑
   private final val Under  = '↓' // ↓
   private final val Radical = '√' // √
-  private final val Matrix = '⊞' // ⊞
-  private final val RowVec = '⊟' // ⊟
-  private final val ColVec = '⊡' // ⊡
+  private final val Matrix = '⋱' // ⋱
+  private final val RowVec = '⋯' // ⋯
+  private final val ColVec = '⋮' // ⋮
   private final val Hole   = '\uE000' // interpolator substitution placeholder
 
   // A postfix attribute directive (see `doc/ergo-directives.md`). `Fixed` sets a
@@ -78,40 +78,40 @@ object Ergo:
     case Fixed(name: Text, value: Text) extends Directive(name)
 
   private val directives: List[(Char, Directive)] = List(
-    '⧊' -> Directive.Fixed(t"displaystyle", t"true"),
+    '⧆' -> Directive.Fixed(t"displaystyle", t"true"),
     '⧄' -> Directive.Fixed(t"displaystyle", t"false"),
     '⌄' -> Directive.Param(t"scriptlevel"),
-    '▦' -> Directive.Fixed(t"display", t"block"),
+    '◻' -> Directive.Fixed(t"display", t"block"),
     '▭' -> Directive.Fixed(t"display", t"inline"),
     '●' -> Directive.Param(t"mathcolor"),
     '▨' -> Directive.Param(t"mathbackground"),
-    '⤢' -> Directive.Param(t"mathsize"),
+    '⟑' -> Directive.Param(t"mathsize"),
     '⦱' -> Directive.Fixed(t"mathvariant", t"normal"),
-    '▹' -> Directive.Fixed(t"dir", t"ltr"),
-    '◃' -> Directive.Fixed(t"dir", t"rtl"),
+    '⊩' -> Directive.Fixed(t"dir", t"ltr"),
+    '⫣' -> Directive.Fixed(t"dir", t"rtl"),
     '⊰' -> Directive.Fixed(t"form", t"prefix"),
     '⊹' -> Directive.Fixed(t"form", t"infix"),
     '⊱' -> Directive.Fixed(t"form", t"postfix"),
-    '⧘' -> Directive.Fixed(t"fence", t"true"),
-    '⧙' -> Directive.Fixed(t"fence", t"false"),
+    '∥' -> Directive.Fixed(t"fence", t"true"),
+    '∤' -> Directive.Fixed(t"fence", t"false"),
     '▮' -> Directive.Fixed(t"separator", t"true"),
     '▯' -> Directive.Fixed(t"separator", t"false"),
     '⇿' -> Directive.Fixed(t"stretchy", t"true"),
     '↮' -> Directive.Fixed(t"stretchy", t"false"),
     '⋈' -> Directive.Fixed(t"symmetric", t"true"),
-    '⋇' -> Directive.Fixed(t"symmetric", t"false"),
+    '⋊' -> Directive.Fixed(t"symmetric", t"false"),
     '◆' -> Directive.Fixed(t"largeop", t"true"),
     '◇' -> Directive.Fixed(t"largeop", t"false"),
-    '⇅' -> Directive.Fixed(t"movablelimits", t"true"),
-    '⇳' -> Directive.Fixed(t"movablelimits", t"false"),
-    '⇤' -> Directive.Param(t"lspace"),
-    '⇥' -> Directive.Param(t"rspace"),
+    '⧳' -> Directive.Fixed(t"movablelimits", t"true"),
+    '⧯' -> Directive.Fixed(t"movablelimits", t"false"),
+    '⧔' -> Directive.Param(t"lspace"),
+    '⧕' -> Directive.Param(t"rspace"),
     '⟰' -> Directive.Param(t"maxsize"),
     '⟱' -> Directive.Param(t"minsize"),
     '↔' -> Directive.Param(t"width"),
-    '⤒' -> Directive.Param(t"height"),
-    '⤓' -> Directive.Param(t"depth"),
-    '↨' -> Directive.Param(t"voffset"),
+    '⍏' -> Directive.Param(t"height"),
+    '⍖' -> Directive.Param(t"depth"),
+    '↕' -> Directive.Param(t"voffset"),
     '═' -> Directive.Param(t"linethickness"),
     '◠' -> Directive.Fixed(t"accent", t"true"),
     '⌢' -> Directive.Fixed(t"accent", t"false"),
@@ -150,7 +150,7 @@ object Ergo:
   // not representable and are dropped.
 
   private val special: Set[Char] =
-    Set('(', ')', '[', ']', '{', '}', '⟨', '⟩', '↗', '↘', '↑', '↓', '/', '√', '⊞', '⊟', '⊡')
+    Set('(', ')', '[', ']', '{', '}', '⟨', '⟩', '↗', '↘', '↑', '↓', '/', '√', '⋱', '⋯', '⋮')
 
   def serialize(math: Math)(using Tactic[ErgoError]): Text = t"(${sequence(math.contents)})"
 
@@ -244,9 +244,9 @@ object Ergo:
     val rows: List[List[Text]] = table.contents.collect:
       case Mtr(cells, _) => cells.map(cellText)
 
-    if rows.length == 1 then t"⊟(${rows.head.join})"
-    else if rows.forall(_.length == 1) then t"⊡(${rows.map(_.head).join})"
-    else t"⊞(${rows.map { cells => group(cells.join) }.join})"
+    if rows.length == 1 then t"${RowVec.toString.tt}(${rows.head.join})"
+    else if rows.forall(_.length == 1) then t"${ColVec.toString.tt}(${rows.map(_.head).join})"
+    else t"${Matrix.toString.tt}(${rows.map { cells => group(cells.join) }.join})"
 
   private def cellText(node: Mathml)(using Tactic[ErgoError]): Text = node match
     case Mtd(contents, _) => group(sequence(contents))
@@ -469,7 +469,7 @@ object Ergo:
 
     // Consumes the self-delimiting body `open <group>… close` that follows an
     // introducer, returning the parsed child groups. A body with no nested
-    // groups is treated as a single element (so `⊟(a)` is a one-cell vector).
+    // groups is treated as a single element (so `⋯(a)` is a one-cell vector).
     private def parseBody(introducer: Char): List[Mathml] =
       if peek != open then abort(ErgoError(ErgoError.Reason.MissingBody(introducer.toString.tt)))
       advance() // body open

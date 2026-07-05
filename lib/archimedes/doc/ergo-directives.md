@@ -2,7 +2,7 @@
 
 Ergo is a one-line shorthand for Presentation MathML. An expression is delimited
 by a bracket pair; the **first character** chooses which pair (`(`/`[`/`{`/`⟨`)
-acts as grouping syntax throughout, and every *other* bracket is a literal `<mo>`.
+acts as grouping syntax throughout, and every _other_ bracket is a literal `<mo>`.
 A grouped run is an `<mrow>` unit; operands of an operator are uniformly "an atom
 or a grouped unit".
 
@@ -15,8 +15,8 @@ equation tree, then the **attribute directives** (MathML Core) that decorate it.
 
 ### Scripts & limits
 
-- `↗` — **superscript** → `<msup>` — `x↗2` = *x²*
-- `↘` — **subscript** → `<msub>` — `x↘i` = *xᵢ*
+- `↗` — **superscript** → `<msup>` — `x↗2` = _x²_
+- `↘` — **subscript** → `<msub>` — `x↘i` = _xᵢ_
 - `↑` — **overscript / limit above** → `<mover>` (accent when the script is a single `<mo>`)
 - `↓` — **underscript / limit below** → `<munder>` (accent when the script is a single `<mo>`)
 
@@ -28,19 +28,19 @@ A base absorbs one `↘` and one `↗` → `<msubsup>`; one `↓` and one `↑` 
 
 - `/` — **fraction** → `<mfrac>` — `a/b`
 - `√` — **square root** (prefix) → `<msqrt>` — `√x`
-- `n√x` — **nth root** → `<mroot>` — an index atom immediately before `√` (no space): `3√x` = *∛x*
+- `n√x` — **nth root** → `<mroot>` — an index atom immediately before `√` (no space): `3√x` = _∛x_
 
 ### Introducers (tables)
 
 Self-delimiting; the body is one group whose child groups are the elements.
 
-- `⊞` — **matrix** → `<mtable>` — `⊞(((1)(2))((3)(4)))` = a 2×2 matrix (rows of cells)
-- `⊟` — **row vector** → `<mtable>` with one row — `⊟((1)(2)(3))`
-- `⊡` — **column vector** → `<mtable>` with one column — `⊡((a)(b))`
+- `⋱` — **matrix** → `<mtable>` — `⋱(((1)(2))((3)(4)))` = a 2×2 matrix (rows of cells)
+- `⋯` — **row vector** → `<mtable>` with one row — `⋯((1)(2)(3))`
+- `⋮` — **column vector** → `<mtable>` with one column — `⋮((a)(b))`
 
 ### Tokens & spacing
 
-- a **letter run** → one `<mi>` — `sin` = `<mi>sin</mi>`; a space splits identifiers (`x y` = *x·y*)
+- a **letter run** → one `<mi>` — `sin` = `<mi>sin</mi>`; a space splits identifiers (`x y` = _x·y_)
 - a **digit run** (interior `.` allowed) → one `<mn>` — `3.14`
 - any other character → `<mo>` — `+`, `=`, `∑`, `±`, …
 - an **operator glyph with a missing operand** degrades to a literal `<mo>` — `(↗)` writes a literal ↗
@@ -52,9 +52,9 @@ Self-delimiting; the body is one group whose child groups are the elements.
 
 Each MathML Core presentation attribute is written as a single **directive glyph**.
 The scope is MathML Core only, so the large MathML 3 table/elementary attribute
-families are absent (see *Excluded from Core* below).
+families are absent (see _Excluded from Core_ below).
 
-**Conventions** *(as implemented in the parser)*
+**Conventions** _(as implemented in the parser)_
 
 - Directives are **postfix** and bind to the primary (atom or bracketed group)
   immediately to their left; multiple directives simply **juxtapose**:
@@ -62,7 +62,7 @@ families are absent (see *Excluded from Core* below).
 - **Enumerated and boolean** attributes have **one bare glyph per value** — no
   parameter. `form` is `⊰`/`⊹`/`⊱` (prefix/infix/postfix); a boolean is `⇿`
   (true) or `↮` (false). Since these never take a group, `=◆(a)` is `=` with
-  `largeop="true"` *times* `(a)`, not `largeop="a"`.
+  `largeop="true"` _times_ `(a)`, not `largeop="a"`.
 - **Open-valued** attributes (length/colour/integer) take their value in the
   **active grouping bracket** (shown below as `[…]`), read verbatim: with `(`
   grouping, `x●(red)` sets `mathcolor="red"`; with `[` grouping it would be
@@ -73,9 +73,9 @@ families are absent (see *Excluded from Core* below).
 
 ### Document & display level
 
-- `⧊` / `⧄` — **displaystyle** = true / false — use display style (larger, limits over/under) vs inline/text style
+- `⧆` / `⧄` — **displaystyle** = true / false — use display style (larger, limits over/under) vs inline/text style
 - `⌄[±n]` — **scriptlevel** — relative script size level; `+n` shrinks, `-n` enlarges
-- `▦` / `▭` — **display** = block / inline *(on `<math>`)* — block equation vs inline in running text
+- `◻` / `▭` — **display** = block / inline _(on `<math>`)_ — block equation vs inline in running text
 
 ### Colour
 
@@ -84,33 +84,33 @@ families are absent (see *Excluded from Core* below).
 
 ### Text size & style
 
-- `⤢[length]` — **mathsize** — font size of the element
+- `⟑[length]` — **mathsize** — font size of the element
 - `⦱` — **mathvariant** = normal — render upright, cancelling the automatic italicisation of a single-letter identifier
-- `▹` / `◃` — **dir** = ltr / rtl — text/layout direction
+- `⊩` / `⫣` — **dir** = ltr / rtl — text/layout direction
 
 ### Operator role (`<mo>`)
 
 - `⊰` / `⊹` / `⊱` — **form** = prefix / infix / postfix — which spacing/role form the operator takes
-- `⧘` / `⧙` — **fence** = true / false — mark the operator as a fence (bracket/paren)
+- `∥` / `∤` — **fence** = true / false — mark the operator as a fence (bracket/paren)
 - `▮` / `▯` — **separator** = true / false — mark the operator as a separator (e.g. a comma)
 - `⇿` / `↮` — **stretchy** = true / false — allow the operator to stretch to its surrounding content
-- `⋈` / `⋇` — **symmetric** = true / false — stretch symmetrically about the maths axis
+- `⋈` / `⋊` — **symmetric** = true / false — stretch symmetrically about the maths axis
 - `◆` / `◇` — **largeop** = true / false — treat as a large operator (e.g. `∑`, `∫`) in display style
-- `⇅` / `⇳` — **movablelimits** = true / false — limits over/under in display style but as scripts inline
+- `⧳` / `⧯` — **movablelimits** = true / false — limits over/under in display style but as scripts inline
 
 ### Operator spacing & stretch (`<mo>`)
 
-- `⇤[length]` — **lspace** — space to the left of the operator
-- `⇥[length]` — **rspace** — space to the right of the operator
+- `⧔[length]` — **lspace** — space to the left of the operator
+- `⧕[length]` — **rspace** — space to the right of the operator
 - `⟰[length]` — **maxsize** — maximum stretched size
 - `⟱[length]` — **minsize** — minimum stretched size
 
 ### Box metrics (`<mspace>`, `<mpadded>`)
 
 - `↔[length]` — **width** — advance width of the box
-- `⤒[length]` — **height** — extent above the baseline
-- `⤓[length]` — **depth** — extent below the baseline
-- `↨[length]` — **voffset** *(on `<mpadded>`)* — vertical shift of the content
+- `⍏[length]` — **height** — extent above the baseline
+- `⍖[length]` — **depth** — extent below the baseline
+- `↕[length]` — **voffset** _(on `<mpadded>`)_ — vertical shift of the content
 
 ### Fraction (`<mfrac>`)
 
@@ -123,7 +123,7 @@ families are absent (see *Excluded from Core* below).
 
 ### Legacy (present in Core but behaviour undefined)
 
-- `⚙[type]` — **actiontype** *(on `<maction>`)* — legacy action type; behaviour is undefined in MathML Core
+- `⚙[type]` — **actiontype** _(on `<maction>`)_ — legacy action type; behaviour is undefined in MathML Core
 
 ---
 

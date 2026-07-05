@@ -158,22 +158,22 @@ object Tests extends Suite(m"Archimedes tests"):
 
     suite(m"Vectors and matrices (self-delimiting)"):
       test(m"row vector"):
-        body(t"(⊟((1)(2)(3)))")
+        body(t"(⋯((1)(2)(3)))")
       .assert(_ == t"<mtable><mtr><mtd><mn>1</mn></mtd><mtd><mn>2</mn></mtd>"
           + t"<mtd><mn>3</mn></mtd></mtr></mtable>")
 
       test(m"column vector"):
-        body(t"(⊡((a)(b)))")
+        body(t"(⋮((a)(b)))")
       .assert(_ == t"<mtable><mtr><mtd><mi>a</mi></mtd></mtr><mtr><mtd><mi>b</mi></mtd></mtr>"
           + t"</mtable>")
 
       test(m"2x2 matrix"):
-        body(t"(⊞(((1)(2))((3)(4))))")
+        body(t"(⋱(((1)(2))((3)(4))))")
       .assert(_ == t"<mtable><mtr><mtd><mn>1</mn></mtd><mtd><mn>2</mn></mtd></mtr><mtr>"
           + t"<mtd><mn>3</mn></mtd><mtd><mn>4</mn></mtd></mtr></mtable>")
 
       test(m"a single-cell row keeps a multi-token expression together"):
-        body(t"(⊞(((a b))((c))))")
+        body(t"(⋱(((a b))((c))))")
       .assert(_ == t"<mtable><mtr><mtd><mrow><mi>a</mi><mi>b</mi></mrow></mtd></mtr><mtr>"
           + t"<mtd><mi>c</mi></mtd></mtr></mtable>")
 
@@ -255,12 +255,12 @@ object Tests extends Suite(m"Archimedes tests"):
       .assert(_ == t"(x↑^)")
 
       test(m"a matrix"):
-        rt(t"(⊞(((1)(2))((3)(4))))")
-      .assert(_ == t"(⊞(((1)(2))((3)(4))))")
+        rt(t"(⋱(((1)(2))((3)(4))))")
+      .assert(_ == t"(⋱(((1)(2))((3)(4))))")
 
       test(m"a row vector"):
-        rt(t"(⊟((1)(2)(3)))")
-      .assert(_ == t"(⊟((1)(2)(3)))")
+        rt(t"(⋯((1)(2)(3)))")
+      .assert(_ == t"(⋯((1)(2)(3)))")
 
       test(m"the quadratic formula round-trips to an equal tree"):
         val quadratic = t"(x = (-b ± √(b↗2 - 4 a c))/(2 a))"
@@ -277,7 +277,7 @@ object Tests extends Suite(m"Archimedes tests"):
       .assert(_ == Ergo.parse(t"(x↗(y + 1))"))
 
       test(m"an interpolated matrix renders"):
-        ergo"(⊞(((1)(2))((3)(4))))".xml.show.contains(t"<mtable>")
+        ergo"(⋱(((1)(2))((3)(4))))".xml.show.contains(t"<mtable>")
       .assert(_ == true)
 
     suite(m"Interpolator substitutions"):
