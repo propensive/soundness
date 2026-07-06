@@ -104,7 +104,11 @@ trait Json2 extends Json3:
   =>  value is Json.Decodable =
 
     Json.Decodable(Morphology.Opt(decodable.shape())): json =>
-      if json.root.isAbsent then Unset else decodable.decoded(json)
+      // An `Optional` field reads `Unset` from an absent key *and* from an
+      // explicit JSON `null`: both mean "no value" on the wire. (Missing keys
+      // arrive here as `Unset`; a present `null` arrives as the `JsonNull`
+      // sentinel.)
+      if json.root.isAbsent || json.root.isNull then Unset else decodable.decoded(json)
 
 
   given bytes: Tactic[JsonError] => Bytes is Json.Decodable =
