@@ -50,7 +50,7 @@ import vacuous.*
 
 object Job:
   given writable: [chunk, command <: Label, result]
-  =>  Stdin is Writable by chunk
+  =>  ProcessInput is Writable by chunk
   =>  Job[command, result] is Writable by chunk =
 
     (process, stream) => process.stdin(stream)
@@ -84,8 +84,8 @@ extends Subprocess, ProcessRef:
   def status(): Int = process.waitFor()
 
 
-  def stdin[chunk](stream: Stream[chunk])(using writable: Stdin is Writable by chunk): Unit =
-    writable.write(Stdin(process.getOutputStream.nn), stream)
+  def stdin[chunk](stream: Stream[chunk])(using writable: ProcessInput is Writable by chunk): Unit =
+    writable.write(ProcessInput(process.getOutputStream.nn), stream)
 
 
   def await()(using computable: result is Computable): result = computable.compute(this)
