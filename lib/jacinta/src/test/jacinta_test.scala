@@ -293,6 +293,14 @@ object Tests extends Suite(m"Jacinta Tests"):
         t"""{"y": 1}""".read[Json].as[OptionalFoo].x
       . assert(_ == Unset)
 
+      test(m"Extract an explicit null Optional as Unset"):
+        t"""{"x": null}""".read[Json].as[OptionalFoo].x
+      . assert(_ == Unset)
+
+      test(m"Decode a top-level null to an Optional as Unset"):
+        t"""null""".read[Json].as[Optional[Int]]
+      . assert(_ == Unset)
+
       test(m"Extract a None"):
         t"""{"y": 1}""".read[Json].as[OptFoo].x
       . assert(_ == None)
