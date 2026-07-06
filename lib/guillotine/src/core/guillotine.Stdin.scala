@@ -34,44 +34,22 @@ package guillotine
 
 import language.experimental.pureFunctions
 
+import java.io as ji
+
 import anticipation.*
 import contingency.*
-import gossamer.*
+import hieroglyph.*
 import prepositional.*
-import rudiments.*
 import turbulence.*
 
-object Stderr:
-  given computable: Stderr is Computable = process => Stderr(process.errorText())
+// The standard input of a `Subprocess`, exposed as a sink so that writing to a process's input
+// never surfaces `java.io.OutputStream` in guillotine's public API. The `Writable` instances
+// delegate to turbulence's `OutputStream` writers.
+object Stdin:
+  given data: Emit[StreamError] => Stdin is Writable by Data = (stdin, stream) =>
+    summon[ji.OutputStream is Writable by Data].write(stdin.outputStream, stream)
 
-case class Stderr(text: Text)
+  given text: (Emit[StreamError], CharEncoder) => Stdin is Writable by Text = (stdin, stream) =>
+    summon[ji.OutputStream is Writable by Text].write(stdin.outputStream, stream)
 
-object Computable:
-  given stream: Stream[Text] is Computable = _.lines()
-
-  given list: List[Text] is Computable = _.lines().to(List)
-
-  given text: Text is Computable = _.text()
-
-  given string: String is Computable = _.text().s
-
-  given dataStream: Tactic[StreamError] => Stream[Data] is Computable = _.stdout()
-
-  given exitStatus: Exit is Computable = _.status() match
-    case 0     => Exit.Ok
-    case other => Exit.Fail(other)
-
-  given unit: Unit is Computable = exitStatus.map(_ => ())
-
-
-  given instantiable: [instantiable: Instantiable across Paths from Text]
-  =>  instantiable is Computable =
-
-    text.map: text => instantiable(text.trim)
-
-
-trait Computable extends Typeclass:
-  def compute(process: Subprocess): Self
-
-  def map[self2](lambda: Self => self2): self2 is Computable =
-    process => lambda(compute(process))
+class Stdin private[guillotine] (private[guillotine] val outputStream: ji.OutputStream)

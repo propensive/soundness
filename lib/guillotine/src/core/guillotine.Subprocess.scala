@@ -36,42 +36,15 @@ import language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
-import gossamer.*
-import prepositional.*
-import rudiments.*
 import turbulence.*
 
-object Stderr:
-  given computable: Stderr is Computable = process => Stderr(process.errorText())
-
-case class Stderr(text: Text)
-
-object Computable:
-  given stream: Stream[Text] is Computable = _.lines()
-
-  given list: List[Text] is Computable = _.lines().to(List)
-
-  given text: Text is Computable = _.text()
-
-  given string: String is Computable = _.text().s
-
-  given dataStream: Tactic[StreamError] => Stream[Data] is Computable = _.stdout()
-
-  given exitStatus: Exit is Computable = _.status() match
-    case 0     => Exit.Ok
-    case other => Exit.Fail(other)
-
-  given unit: Unit is Computable = exitStatus.map(_ => ())
-
-
-  given instantiable: [instantiable: Instantiable across Paths from Text]
-  =>  instantiable is Computable =
-
-    text.map: text => instantiable(text.trim)
-
-
-trait Computable extends Typeclass:
-  def compute(process: Subprocess): Self
-
-  def map[self2](lambda: Self => self2): self2 is Computable =
-    process => lambda(compute(process))
+// A running native subprocess, viewed without reference to any platform-specific process type (such
+// as `java.lang.Process`), so that `Computable` instances — and future non-JVM backends — never
+// mention one. The JVM implementation is `Job`.
+trait Subprocess:
+  def stdout(): Stream[Data] raises StreamError
+  def stderr(): Stream[Data] raises StreamError
+  def text(): Text
+  def errorText(): Text
+  def lines(): Stream[Text]
+  def status(): Int
