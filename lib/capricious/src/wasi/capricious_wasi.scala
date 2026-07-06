@@ -30,17 +30,32 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package capricious
 
-export xenophile.{Wasm, WasmInvoke}
+import scala.annotation.nowarn
+import scala.util as su
 
-// Materializes a fully-applied WIT `Foreign` invocation into a real Wasm Component Model import
-// call. Must be applied directly to an inline navigation chain — e.g.
-// `Foreign["random", Wit].\`get-random-u64\`().invoke[U64]` — not to a value bound to a `val`.
-// Plain `inline` (not `transparent`): the return type is fully determined by the type argument,
-// and non-transparency defers the macro when `invoke` appears inside another `inline` definition,
-// so a library can publish an inline given whose import call only materializes at the downstream
-// (Wasm-linked) call site — where `scala.scalajs.wit.witImportCall` is on the classpath.
-extension (foreign: xenophile.Foreign)
-  inline def invoke[result]: result =
-    ${xenophile.WasmInvoke.invoke[result]('foreign)}
+import hellenism.*
+import hypotenuse.*
+import prepositional.*
+import soundness.invoke
+import xenophile.*
+
+// The WIT definitions the navigation below is typechecked against, and which the `invoke`
+// materializer consults (at its downstream expansion site) for the function's module id.
+type WasiRandomApi = Interface in Wit at "/capricious/random.wit"
+given wasiRandomApi: WasiRandomApi = Interface[Wit](cp"/capricious/random.wit")
+
+package randomization:
+  // `inline`, so the `invoke` macro expands at the downstream summoning site: the Wasm Component
+  // import (`scala.scalajs.wit.witImportCall`) only materializes in code compiled for a Wasm
+  // target, where that intrinsic is on the classpath. Summoning it requires `wasiRandomApi` (and
+  // this module's WIT resource) to be visible at that site.
+  // The per-site duplication the compiler warns about is the point: the instance must materialize
+  // at the downstream summoning site, and a WASI-linked application summons it once.
+  @nowarn("msg=New anonymous class definition will be duplicated at each inline site")
+  inline given wasiRandomization: Randomization = new Randomization:
+    def initialize(): su.Random =
+      su.Random:
+        WasiRandom: () =>
+          Foreign["random", Wit].`get-random-u64`.invoke[U64].bits.s64.long

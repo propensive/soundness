@@ -30,17 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package capricious
 
-export xenophile.{Wasm, WasmInvoke}
+import java.util as ju
 
-// Materializes a fully-applied WIT `Foreign` invocation into a real Wasm Component Model import
-// call. Must be applied directly to an inline navigation chain — e.g.
-// `Foreign["random", Wit].\`get-random-u64\`().invoke[U64]` — not to a value bound to a `val`.
-// Plain `inline` (not `transparent`): the return type is fully determined by the type argument,
-// and non-transparency defers the macro when `invoke` appears inside another `inline` definition,
-// so a library can publish an inline given whose import call only materializes at the downstream
-// (Wasm-linked) call site — where `scala.scalajs.wit.witImportCall` is on the classpath.
-extension (foreign: xenophile.Foreign)
-  inline def invoke[result]: result =
-    ${xenophile.WasmInvoke.invoke[result]('foreign)}
+// Adapts an external 64-bit entropy source (such as WASI's `wasi:random/random`) to
+// `java.util.Random`'s `next` contract, so that it can back a `scala.util.Random` and hence a
+// `Randomization`. The inherited seed is never used.
+final class WasiRandom(entropy: () => Long) extends ju.Random(0L):
+  override def next(bits: Int): Int = (entropy() >>> (64 - bits)).toInt
