@@ -503,10 +503,11 @@ package monthEnds:
 
 def now()(using clock: Clock): Instant over Posix = clock()
 
-// A reading of the monotonic system clock (`System.nanoTime`), for measuring elapsed time. It has
-// an arbitrary origin, so it can only be compared/subtracted with other `Monotonic` readings, never
-// grounded to a calendar instant.
-def monotonic(): Instant over Monotonic = Instant.of[Monotonic](System.nanoTime)
+// A reading of the monotonic system clock, for measuring elapsed time. It has an arbitrary origin,
+// so it can only be compared/subtracted with other `Monotonic` readings, never grounded to a
+// calendar instant. The reading is taken through a `MonotonicClock` (the JVM default reads
+// `System.nanoTime`), so a non-JVM backend can supply it instead.
+def monotonic()(using clock: MonotonicClock): Instant over Monotonic = clock()
 
 def today()(using clock: Clock, calendar: RomanCalendar, timezone: Timezone): Date =
   (now() in timezone).date
