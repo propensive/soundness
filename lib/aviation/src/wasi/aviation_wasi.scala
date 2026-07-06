@@ -30,105 +30,30 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aviation
 
-export
-  aviation
-  . { am, AlexandrianCalendar, Anniversary, Apr, Aug, Base24, base24Extractable, Base60,
-      base60Extractable, Calendar, Chronometry, Clock, Clockface, CopticCalendar, CopticMonth, Date,
-      DateNumerics, DateSeparation, Day, Dec, dur,
-      Disambiguation, Duration, Endianness, EthiopianCalendar, EthiopianMonth, Feb,
-      FrenchRepublicanCalendar, FrenchRepublicanMonth, Frequency, Fri, Hebdomad, Holiday, Holidays,
-      Horology,
-      HebrewCalendar, HebrewMonth, Hour, IndianCalendar, IndianMonth, Instant, IslamicCalendar,
-      GapPolicy, IslamicMonth, Iso8601, Jan, Jul, Jun, Leap, LeapMode, LeapSeconds, Mar, May,
-      Meridiem, Minute, Moment, Mon, monotonic, Monotonic, MonotonicClock, Month, Months,
-      Monthstamp, Nov, now,
-      Occurrence, Oct, OffsetCalendar, OrdinalCalendar, Period, PersianCalendar, PersianMonth, pm,
-      following, occurrences, Posix, rec, Recurrence, RecurrenceError, recInterpolator,
-      RecurrenceLiteral, RecurrenceSet, Recurrent, Regime, Resolution, Rfc1123, RomanCalendar,
-      Rrule, RruleError, Tai, until, WeekdayOrdinal, within,
-      Sat, Sep, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics,
-      TimeSeparation, TimeSpecificity, Timespan, Timestamp, TimestampError, Timezone, TimezoneError,
-      today, ts, tsInterpolator, Tue, tz, Tzdb, TzdbError, Wed, Week, WeekDate, Weekday, Weekdays,
-      WorkingDays, Year, Years }
+import scala.annotation.nowarn
 
-package calendars:
-  export aviation.calendars.{gregorianCalendar, julianCalendar, copticCalendar, ethiopianCalendar,
-      islamicCalendar, persianCalendar, indianCalendar, hebrewCalendar, frenchRepublicanCalendar,
-      buddhistCalendar, minguoCalendar, ordinalCalendar, papalCutover, britishCutover}
+import hellenism.*
+import hypotenuse.*
+import prepositional.*
+import soundness.invoke
+import xenophile.*
 
-package nonexistentLeapDays:
-  export aviation.calendars.nonexistentLeapDays.{raiseErrorsLeapDay, roundDownLeapDay,
-      roundUpLeapDay}
+// The WIT definitions the navigation below is typechecked against, and which the `invoke`
+// materializer consults (at its downstream expansion site) for the function's module id.
+type WasiClockApi = Interface in Wit at "/aviation/clocks.wit"
+given wasiClockApi: WasiClockApi = Interface[Wit](cp"/aviation/clocks.wit")
 
-package monthEnds:
-  export aviation.monthEnds.{clampMonthEnd, overflowMonthEnd, raiseMonthEnd}
-
-package gapPolicies:
-  export aviation.gapPolicies.{pushBackward, rejectGap}
-
-package leapModes:
-  export aviation.leapModes.exact
-
-package chronometries:
-  export aviation.chronometries.{posix, atomic}
-
-package dateFormats:
-  export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,
-      southEastAsiaDateFormat, unitedKingdomDateFormat}
-
-package endianness:
-  export aviation.dateFormats.endianness.{bigEndian, littleEndian, middleEndian}
-
-package dateNumerics:
-  export aviation.dateFormats.numerics.{fixedWidthDateNumerics, variableWidthDateNumerics}
-
-package dateSeparators:
-  export aviation.dateFormats.separators.{dotDateSeparator, hyphenDateSeparator, slashDateSeparator,
-      spaceDateSeparator}
-
-package yearFormats:
-  export aviation.dateFormats.years.{fullYears, twoDigitsYears}
-
-package weekdays:
-  export
-    aviation.dateFormats.weekdays
-    . { englishWeekdays, englishShortWeekdays, oneLetterAmbiguousWeekdays,
-        shortestUnambiguousWeekdays, twoLetterWeekdays, frenchWeekdays, germanWeekdays,
-        spanishWeekdays }
-
-package monthFormats:
-  export
-    aviation.dateFormats.months
-    . { englishMonths, englishShortMonths, numericMonths, oneLetterAmbiguousMonths,
-        twoDigitMonths, frenchMonths, germanMonths, spanishMonths }
-
-package timeFormats:
-  export
-    aviation.timeFormats
-    . { associatedPressTimeFormat, civilianTimeFormat, frenchTimeFormat, iso8601TimeFormat,
-        ledgerTimeFormat, militaryTimeFormat, railwayTimeFormat }
-
-package timespanFormats:
-  export aviation.timespanFormats.{englishRelative, frenchRelative, germanRelative, spanishRelative}
-
-package hourFormats:
-  export aviation.timeFormats.hours.{twelveHourClock, twentyFourHourClock}
-
-package meridiems:
-  export aviation.timeFormats.meridiems.{lowerMeridiem, lowerPunctuatedMeridiem, upperMeridiem,
-      upperPunctuatedMeridiem}
-
-package timeNumerics:
-  export aviation.timeFormats.numerics.{fixedWidthTimeNumerics, variableWidthTimeNumerics}
-
-package timeSeparators:
-  export aviation.timeFormats.separators.{colonTimeSeparator, dotTimeSeparator, frenchTimeSeparator,
-      noneTimeSeparator}
-
-package hebdomads:
-  export aviation.hebdomads.{europeanHebdomad, jewishHebdomad, northAmericanHebdomad}
-
-package instantDecodables:
-  export aviation.instantDecodables.{iso8601InstantDecodable, rfc1123InstantDecodable}
+package clocks:
+  // `inline`, so the `invoke` macro expands at the downstream summoning site: the Wasm Component
+  // import (`scala.scalajs.wit.witImportCall`) only materializes in code compiled for a Wasm
+  // target, where that intrinsic is on the classpath. Summoning it requires `wasiClockApi` (and
+  // this module's WIT resource) to be visible at that site.
+  //
+  // The per-site duplication the compiler warns about is the point: the instance must materialize
+  // at the downstream summoning site, and a WASI-linked application summons it once.
+  @nowarn("msg=New anonymous class definition will be duplicated at each inline site")
+  inline given wasiMonotonicClock: MonotonicClock = new MonotonicClock:
+    def apply(): Instant over Monotonic =
+      Instant.of[Monotonic](Foreign["monotonic-clock", Wit].`now`.invoke[U64].bits.s64.long)
