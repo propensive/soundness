@@ -595,6 +595,12 @@ object capricious extends Library:
   object core extends Component(wisteria.core, hypotenuse.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  // WASI-backed entropy: a `Randomization` given whose randomness is a Wasm Component Model import
+  // of `wasi:random/random`, materialized by xenophile's `invoke` at the downstream (Wasm-linked)
+  // summoning site. Target-neutral `.sjsir` in this build; only meaningful linked as a component.
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
 
 object cardinality extends Library:

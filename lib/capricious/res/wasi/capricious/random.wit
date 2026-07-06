@@ -1,0 +1,7 @@
+// The subset of the WASI `random` interface that capricious uses for entropy.
+
+package wasi:random@0.2.0;
+
+interface random {
+  get-random-u64: func() -> u64;
+}
