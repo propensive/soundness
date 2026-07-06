@@ -1,0 +1,7 @@
+// The subset of the WASI `monotonic-clock` interface that aviation uses to read elapsed time.
+
+package wasi:clocks@0.2.0;
+
+interface monotonic-clock {
+  now: func() -> u64;
+}
