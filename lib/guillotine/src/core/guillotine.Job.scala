@@ -37,6 +37,8 @@ import language.experimental.pureFunctions
 import java.io as ji
 import java.util.concurrent as juc
 
+import scala.jdk.StreamConverters.StreamHasToScala
+
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -48,7 +50,7 @@ import vacuous.*
 
 object Job:
   given writable: [chunk, command <: Label, result]
-  =>  ji.OutputStream is Writable by chunk
+  =>  ProcessInput is Writable by chunk
   =>  Job[command, result] is Writable by chunk =
 
     (process, stream) => process.stdin(stream)
@@ -60,7 +62,8 @@ object Job:
     (process, stream) => process.stdin(stream.map(_.sysData))
 
 
-class Job[+exec <: Label, result](process: java.lang.Process) extends ProcessRef:
+class Job[+exec <: Label, result] private[guillotine] (process: java.lang.Process)
+extends Subprocess, ProcessRef:
   def pid: Pid = Pid(process.pid)
   def alive: Boolean = process.isAlive
   def attend(): Unit = process.waitFor()
@@ -71,21 +74,28 @@ class Job[+exec <: Label, result](process: java.lang.Process) extends ProcessRef
   def stderr(): Stream[Data] raises StreamError =
     Streamable.inputStream.stream(process.getErrorStream.nn)
 
+  def text(): Text = String(process.getInputStream.nn.readAllBytes().nn, "UTF-8").nn.tt
+  def errorText(): Text = String(process.getErrorStream.nn.readAllBytes().nn, "UTF-8").nn.tt
 
-  def stdin[chunk](stream: Stream[chunk])(using writable: ji.OutputStream is Writable by chunk)
-  :   Unit =
+  def lines(): Stream[Text] =
+    val reader = ji.BufferedReader(ji.InputStreamReader(process.getInputStream))
+    reader.lines().nn.toScala(Stream).map(_.tt)
 
-    writable.write(process.getOutputStream.nn, stream)
+  def status(): Int = process.waitFor()
 
 
-  def await()(using computable: result is Computable): result = computable.compute(process)
+  def stdin[chunk](stream: Stream[chunk])(using writable: ProcessInput is Writable by chunk): Unit =
+    writable.write(ProcessInput(process.getOutputStream.nn), stream)
+
+
+  def await()(using computable: result is Computable): result = computable.compute(this)
 
   def await[duration: Abstractable across Durations to Long](duration: duration)
     ( using computable: result is Computable )
   :   result raises AsyncError =
 
     if process.waitFor(duration.generic/1_000_000L, juc.TimeUnit.MILLISECONDS)
-    then computable.compute(process)
+    then computable.compute(this)
     else contingency.abort(AsyncError(AsyncError.Reason.Timeout))
 
   def exitStatus(): Exit logs ExecEvent = process.waitFor() match

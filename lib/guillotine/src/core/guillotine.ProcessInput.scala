@@ -30,10 +30,27 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package guillotine
 
-export
-  guillotine
-  . { Command, Computable, ExecError, ExecEvent, Executable, Intelligible, Job, Parameterizable,
-      Pid, PidError, Pipeline, PosixCommands, Process, ProcessInput, ProcessRef, Sh, sh, Stderr,
-      Subprocess }
+import language.experimental.pureFunctions
+
+import java.io as ji
+
+import anticipation.*
+import contingency.*
+import hieroglyph.*
+import prepositional.*
+import turbulence.*
+
+// The standard input of a `Subprocess`, exposed as a sink so that writing to a process's input
+// never surfaces `java.io.OutputStream` in guillotine's public API. The `Writable` instances
+// delegate to turbulence's `OutputStream` writers.
+object ProcessInput:
+  given data: Emit[StreamError] => ProcessInput is Writable by Data = (stdin, stream) =>
+    summon[ji.OutputStream is Writable by Data].write(stdin.outputStream, stream)
+
+  given text: (Emit[StreamError], CharEncoder) => ProcessInput is Writable by Text =
+    (stdin, stream) =>
+      summon[ji.OutputStream is Writable by Text].write(stdin.outputStream, stream)
+
+class ProcessInput private[guillotine] (private[guillotine] val outputStream: ji.OutputStream)

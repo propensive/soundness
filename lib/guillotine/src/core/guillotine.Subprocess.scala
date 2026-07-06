@@ -30,10 +30,21 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package guillotine
 
-export
-  guillotine
-  . { Command, Computable, ExecError, ExecEvent, Executable, Intelligible, Job, Parameterizable,
-      Pid, PidError, Pipeline, PosixCommands, Process, ProcessInput, ProcessRef, Sh, sh, Stderr,
-      Subprocess }
+import language.experimental.pureFunctions
+
+import anticipation.*
+import contingency.*
+import turbulence.*
+
+// A running native subprocess, viewed without reference to any platform-specific process type (such
+// as `java.lang.Process`), so that `Computable` instances — and future non-JVM backends — never
+// mention one. The JVM implementation is `Job`.
+trait Subprocess:
+  def stdout(): Stream[Data] raises StreamError
+  def stderr(): Stream[Data] raises StreamError
+  def text(): Text
+  def errorText(): Text
+  def lines(): Stream[Text]
+  def status(): Int

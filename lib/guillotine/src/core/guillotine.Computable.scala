@@ -34,10 +34,6 @@ package guillotine
 
 import language.experimental.pureFunctions
 
-import java.io as ji
-
-import scala.jdk.StreamConverters.StreamHasToScala
-
 import anticipation.*
 import contingency.*
 import gossamer.*
@@ -46,30 +42,22 @@ import rudiments.*
 import turbulence.*
 
 object Stderr:
-  given computable: Stderr is Computable = proc =>
-    Stderr(String(proc.getErrorStream.nn.readAllBytes().nn, "UTF-8").nn.tt)
+  given computable: Stderr is Computable = process => Stderr(process.errorText())
 
 case class Stderr(text: Text)
 
 object Computable:
-  given stream: Stream[Text] is Computable = proc =>
-    val reader = ji.BufferedReader(ji.InputStreamReader(proc.getInputStream))
-    reader.lines().nn.toScala(Stream).map(_.tt)
+  given stream: Stream[Text] is Computable = _.lines()
 
-  given list: List[Text] is Computable = proc =>
-    val reader = ji.BufferedReader(ji.InputStreamReader(proc.getInputStream))
-    reader.lines().nn.toScala(List).map(_.tt)
+  given list: List[Text] is Computable = _.lines().to(List)
 
-  given text: Text is Computable = proc =>
-    String(proc.getInputStream.nn.readAllBytes().nn, "UTF-8").nn.tt
+  given text: Text is Computable = _.text()
 
-  given string: String is Computable = proc =>
-    String(proc.getInputStream.nn.readAllBytes().nn, "UTF-8").nn
+  given string: String is Computable = _.text().s
 
-  given dataStream: Tactic[StreamError] => Stream[Data] is Computable =
-    proc => Streamable.inputStream.stream(proc.getInputStream.nn)
+  given dataStream: Tactic[StreamError] => Stream[Data] is Computable = _.stdout()
 
-  given exitStatus: Exit is Computable = _.waitFor() match
+  given exitStatus: Exit is Computable = _.status() match
     case 0     => Exit.Ok
     case other => Exit.Fail(other)
 
@@ -83,7 +71,7 @@ object Computable:
 
 
 trait Computable extends Typeclass:
-  def compute(process: java.lang.Process): Self
+  def compute(process: Subprocess): Self
 
   def map[self2](lambda: Self => self2): self2 is Computable =
     process => lambda(compute(process))
