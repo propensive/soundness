@@ -36,7 +36,11 @@ export xenophile.{Wasm, WasmInvoke}
 
 // Materializes a fully-applied WIT `Foreign` invocation into a real Wasm Component Model import
 // call. Must be applied directly to an inline navigation chain — e.g.
-// `Foreign["random", Wit].getRandomU64().invoke[U64]` — not to a value bound to a `val`.
+// `Foreign["random", Wit].\`get-random-u64\`().invoke[U64]` — not to a value bound to a `val`.
+// Plain `inline` (not `transparent`): the return type is fully determined by the type argument,
+// and non-transparency defers the macro when `invoke` appears inside another `inline` definition,
+// so a library can publish an inline given whose import call only materializes at the downstream
+// (Wasm-linked) call site — where `scala.scalajs.wit.witImportCall` is on the classpath.
 extension (foreign: xenophile.Foreign)
-  transparent inline def invoke[result]: result =
+  inline def invoke[result]: result =
     ${xenophile.WasmInvoke.invoke[result]('foreign)}

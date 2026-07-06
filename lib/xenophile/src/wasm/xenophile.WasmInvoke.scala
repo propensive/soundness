@@ -54,20 +54,43 @@ object WasmInvoke:
     // was reached through is recovered from the `Foreign.Expression` the navigation built.
     val (_, origin) = Xenophile.receiver(self)
 
-    val expression: Expr[Foreign.Expression] =
-      self.asTerm.underlyingArgument.asExpr.absolve match
-        case '{Foreign.make($tree)} => tree
+    // The navigation expands to `Foreign.make(<AST>).asInstanceOf[…]`, and reaching this macro
+    // through further `inline` definitions (e.g. an inline given publishing a deferred import)
+    // nests it in `Inlined`/`Typed` layers that `underlyingArgument` cannot fold away. So the AST
+    // is recovered by term-level stripping, as in `JsInvoke`, rather than quote-pattern matching.
+    def strip(term: Term): Term = term match
+      case Inlined(_, _, body)                        => strip(body)
+      case Typed(expr, _)                             => strip(expr)
+      case Block(Nil, expr)                           => strip(expr)
+      case TypeApply(Select(expr, "asInstanceOf"), _) => strip(expr)
+      case _                                          => term
 
-    // A `Foreign.Expression` string operand is `"…".tt`; recover the literal `String`.
-    def literal(text: Expr[Text]): Text = text.absolve match
-      case '{($string: String).tt} => string.valueOrAbort.tt
+    // `.tt` desugars to `tt("…")`; recover the string from the operand (or a bare string literal).
+    def stringOf(term: Term): Text = strip(term).absolve match
+      case Literal(StringConstant(string)) => string.tt
 
-    val (owner, function) = expression.absolve match
-      case '{Foreign.Expression.Apply(Foreign.Expression.Select($_, $member, $owner), $_)} =>
-        (literal(owner), literal(member))
+    def literal(term: Term): Text = strip(term).absolve match
+      case Apply(Ident("tt"), List(argument)) => stringOf(argument)
 
-      case _ =>
-        halt(m"xenophile: `invoke` expects a foreign method call, `interface.function(args)`")
+    def notCall: Nothing =
+      halt(m"xenophile: `invoke` expects a foreign function invocation, `interface.function(args)`")
+
+    val expression = strip(self.asTerm.underlyingArgument).absolve match
+      case Apply(Select(_, "make"), List(argument)) => strip(argument)
+      case _                                        => notCall
+
+    // Either an applied call — `Expression.Apply(select, args)`, whose companion `apply` takes two
+    // arguments — or the bare selection of a zero-parameter WIT function (`Expression.Select`,
+    // whose companion `apply` takes three): `interface.function.invoke[R]`. The latter is
+    // preferred inside `inline` definitions, where re-inlining an empty-varargs application trips
+    // path-dependent type avoidance.
+    val selectNode = expression match
+      case Apply(Select(_, "apply"), List(node, _)) => strip(node)
+      case _                                        => expression
+
+    val (owner, function) = selectNode.absolve match
+      case Apply(Select(_, "apply"), List(_, member, owner)) => (literal(owner), literal(member))
+      case _                                                 => notCall
 
     // Look up the function's module id (e.g. `wasi:random/random@0.2.0`) from the definitions.
     val members = Xenophile.definitions(origin, Xenophile.locusOf(origin)).at(owner).or:
@@ -91,13 +114,17 @@ object WasmInvoke:
     // library), so this macro needs no dependency on it.
     val witImportCall = Symbol.requiredMethod("scala.scalajs.wit.witImportCall")
 
-    val classOfCarrier = carrier.asType.absolve match
-      case '[carrierType] => '{classOf[carrierType]}
+    // A raw class literal (not a quoted `classOf[T]`, which arrives at the backend wrapped in
+    // adaptation nodes that its literal-`classOf` check rejects).
+    val classOfCarrier = Literal(ClassOfConstant(carrier))
+
+    // The `sigAndArgs` argument must be a `Repeated` ascribed with the tree-level repeated type
+    // (`scala.<repeated>[Any]` — not `Seq[Any]`, which reads as a single sequence value and gets
+    // re-wrapped as one vararg element).
+    val repeatedAny = defn.RepeatedParamClass.typeRef.appliedTo(TypeRepr.of[Any])
 
     val varargs =
-      Typed
-        ( Repeated(List(classOfCarrier.asTerm), TypeTree.of[Any]),
-          TypeTree.of[Seq[Any]] )
+      Typed(Repeated(List(classOfCarrier), TypeTree.of[Any]), Inferred(repeatedAny))
 
     val callTerm =
       Apply

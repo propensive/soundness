@@ -225,8 +225,13 @@ object Xenophile:
     val signature = typeMembers.at(fieldName).or:
       halt(m"xenophile: the foreign type $topic has no member $fieldName")
 
-    signature.parameters.let: _ =>
-      halt(m"xenophile: $fieldName is a method of $topic and must be called with arguments")
+    // A method with parameters cannot be bare-selected, but a zero-parameter method can: the
+    // selection is typed by its result, so a terminal materializer (e.g. WIT `invoke`) can treat it
+    // as a nullary call — avoiding an empty-varargs application, which trips path-dependent type
+    // avoidance when the navigation is re-inlined from an enclosing `inline` definition.
+    signature.parameters.let: parameters =>
+      if !parameters.isEmpty
+      then halt(m"xenophile: $fieldName is a method of $topic and must be called with arguments")
 
     foreignType(signature.result, originRepr).asType.absolve match
       case '[type result <: Foreign; result] =>
