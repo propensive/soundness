@@ -1,7 +1,9 @@
-// The subset of the WASI `environment` interface that ambience uses to read environment variables.
+// The subset of the WASI `environment` interface that ambience uses: environment variables and the
+// initial working directory.
 
 package wasi:cli@0.2.0;
 
 interface environment {
   get-environment: func() -> list<tuple<string, string>>;
+  initial-cwd: func() -> option<string>;
 }

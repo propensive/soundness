@@ -36,3 +36,6 @@ export ambience.{WasiEnvironmentApi, wasiEnvironmentApi}
 
 package environments:
   export ambience.environments.wasiEnvironment
+
+package workingDirectories:
+  export ambience.workingDirectories.wasiWorkingDirectory

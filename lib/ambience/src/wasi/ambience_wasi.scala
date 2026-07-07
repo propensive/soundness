@@ -35,6 +35,7 @@ package ambience
 import scala.annotation.nowarn
 
 import anticipation.*
+import gossamer.*
 import hellenism.*
 import prepositional.*
 import rudiments.*
@@ -60,3 +61,11 @@ package environments:
     def variable(name: Text): Optional[Text] =
       Foreign["environment", Wit].`get-environment`.invoke[List[(Text, Text)]]
         .filter(_._1 == name).prim.let(_._2)
+
+package workingDirectories:
+  // The component's initial working directory, from `wasi:cli/environment` `initial-cwd`
+  // (`option<string>` → `Optional[Text]`); a component without one falls back to `/`.
+  @nowarn("msg=New anonymous class definition will be duplicated at each inline site")
+  inline given wasiWorkingDirectory: WorkingDirectory = new WorkingDirectory:
+    def directory(): Text =
+      Foreign["environment", Wit].`initial-cwd`.invoke[Optional[Text]].or(t"/")
