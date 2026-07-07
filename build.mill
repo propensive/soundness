@@ -416,6 +416,12 @@ object ambience extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  // WASI-backed environment: an `Environment` given whose variables come from a Wasm Component
+  // Model import of `wasi:cli/environment` `get-environment` (`list<tuple<string, string>>`),
+  // materialized by xenophile's `invoke` at the downstream (Wasm-linked) summoning site.
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
 
 object anamnesis extends Library:
