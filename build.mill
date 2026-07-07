@@ -251,10 +251,10 @@ object soundness extends ScalaModule:
 
   object base extends Bundle(ambience.core, aviation.core, contextual.core, contingency.core,
     denominative.core, digression.core, diuretic.core, fulminate.core,
-    hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core, gossamer.core,
+    hieroglyph.core, adversaria.core, turbulence.core, turbulence.jvm, eucalyptus.core, gossamer.core,
     inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
     nomenclature.lexicon,
-    parasite.core, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
+    parasite.core, parasite.jvm, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
     prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
     typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core)
 
@@ -280,7 +280,7 @@ object soundness extends ScalaModule:
     superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm, mandible.core,
     probably.coverage)
 
-  object tool extends Bundle(anthology.core, decorum.plugin, harlequin.core, hellenism.core,
+  object tool extends Bundle(anthology.core, decorum.plugin, harlequin.core, hellenism.core, hellenism.jvm,
     hyperbole.core, octogenarian.core, revolution.core, umbrageous.plugin, anthology.java,
     harlequin.md, harlequin.ansi, austronesian.core, anthology.bundle, anthology.`scala`,
     exegesis.core)
@@ -326,10 +326,12 @@ object groupCheck extends Module:
     "proscenium.core"
   )
 
-  // Platform-specific component variants (e.g. `xenophile.js`, `ambience.wasi`) reach
-  // `soundness-all` transitively via their platform-neutral counterparts, so they are
-  // not wired into a group bundle directly.
-  def platformSuffixes: Set[String] = Set("jvm", "js", "wasm", "wasi")
+  // Platform-specific component variants for platforms we don't yet publish for (JS,
+  // WebAssembly and WASI). These are not part of the published JVM artifacts, so they
+  // are not required to join a group bundle. JVM variants are *not* excluded: they ship
+  // in the published artifacts and must be wired into a group bundle like any other
+  // component.
+  def platformSuffixes: Set[String] = Set("js", "wasm", "wasi")
 
   def validate(): Command[Unit] = Task.Command:
     val onDisk = os.list(mill.api.BuildCtx.workspaceRoot / "lib").iterator
