@@ -32,15 +32,28 @@
                                                                                                   */
 package perihelion
 
+import java.security.SecureRandom
+
 import anticipation.*
 import coaxial.*
 import contingency.*
 import distillate.*
+import gastronomy.*
+import gigantism.*
 import gossamer.*
 import hieroglyph.*
+import monotonous.*
 import parasite.*
 import prepositional.*
+import rudiments.*
+import spectacular.*
 import telekinesis.*
+import urticose.*
+import vacuous.*
+
+import alphabets.base64Standard
+import crypto.permitDeprecatedCrypto
+import providers.javaStdlibProvider
 
 // A formal `Message is Ingressive`, so the raw `Message` type satisfies the
 // `Ingressive` requirement `webSocket` places on its message type. A `Message`
@@ -63,9 +76,9 @@ private type RawMessage[message] <: Boolean = message match
 // `Control`. The message type is inferred from the handler's parameter, so it is
 // usually annotated there: the raw `Message` (text or binary) with `(message:
 // Message) => …`, or any `Ingressive` type — a `Text`, a `Json`/`Tel` value, or a
-// typed payload `(value: MyAdt over Json) => …`. A raw `Message` reply is written
-// verbatim (already framed); any other reply is written as one Text frame. The
-// result is `Servable` (the `101` handshake response).
+// typed payload `(value: MyAdt over Json) => …`. Every reply is serialised (by its
+// `Transmissible`) to a complete frame before reaching the loop, so the loop just
+// spools it. The result is `Servable` (the `101` handshake response).
 inline def webSocket[state](initial: state = ())[message]
   ( handle: (state: state) ?=> message => Control[state] )
   ( using ingressive: message is Ingressive )
@@ -78,22 +91,19 @@ inline def webSocket[state](initial: state = ())[message]
     then ((incoming: Message) => incoming).asInstanceOf[Message => message]
     else (incoming: Message) => ingressive.deserialize(incoming.bytes)
 
-  val frame: Data => Data =
-    inline if compiletime.constValue[RawMessage[message]]
-    then (data: Data) => data
-    else (data: Data) => Frame.Text(true, data).encode
-
-  Websocket(request, initial, decode, frame, handle)
+  Websocket(request, initial, decode, handle)
 
 // A reply value `MyAdt over Json`/`over Tel`: there is no automatic
 // `Encodable in Json` ⇒ `Encodable in Text` bridge, so compose the value↔transport
-// codec with the transport's own text codec. The result is UNFRAMED (raw text
-// bytes); `webSocket`'s loop wraps it in a single Text frame.
+// codec with the transport's own text codec, and wrap the text in a single (unmasked)
+// Text frame. Every `Transmissible` in perihelion yields a complete frame, so the
+// send path is uniform: the server spools it verbatim; a client masks it once at the
+// `Channel` boundary.
 given transmissible: [transport, value]
 =>  ( format: transport is Encodable in Text, codec: value is Encodable in transport )
 =>  CharEncoder
 =>  (value over transport) is Transmissible =
-  payload => Stream(format.encoded(codec.encoded(payload)).data)
+  payload => Stream(Frame.Text(true, format.encoded(codec.encoded(payload)).data).encode)
 
 // The decode direction. The `Decodable in Text`/`in transport` instances are
 // `Tactic`-conditional and don't resolve as nested given constraints, so we
@@ -110,3 +120,132 @@ given ingressive: [transport, value]
 // no-op cast: `Reply(response.over[Json], state)`.
 extension [self](value: self)
   def over[transport]: self over transport = value.asInstanceOf[self over transport]
+
+// A `ws://` or `wss://` URL. `Url` decoding is scheme-generic, so a `WsUrl` parses with
+// no bespoke scheme machinery; the port defaults to 80 (`ws`) or 443 (`wss`) when the
+// authority omits it. `wss://` parses but is not yet connectable (see `wsClient`),
+// pending client-side TLS.
+type WsUrl = Url["ws" | "wss"]
+
+// Split a byte stream at the first CRLFCRLF: returns the header block (up to and
+// including the terminator) and the remaining stream (the trailing bytes of the chunk
+// that completed it, then the untouched rest). Consumes only as many chunks as needed
+// to see the terminator, so it never reads past the `101` into a not-yet-sent frame.
+private def readHandshake(chunks: Stream[Data], acc: Data): (Data, Stream[Data]) =
+  def crlfCrlf(data: Data): Int =
+    def matches(i: Int): Boolean =
+      data(i) == 13 && data(i + 1) == 10 && data(i + 2) == 13 && data(i + 3) == 10
+
+    def recur(index: Int): Int =
+      if index + 3 >= data.length then -1 else if matches(index) then index else recur(index + 1)
+
+    recur(0)
+
+  val marker = crlfCrlf(acc)
+
+  if marker >= 0 then
+    val leftover = acc.drop(marker + 4)
+    (acc.take(marker + 4), if leftover.length > 0 then leftover #:: chunks else chunks)
+  else if chunks.isEmpty then
+    (acc, Stream())
+  else
+    readHandshake(chunks.tail, acc ++ chunks.head)
+
+// Makes a `WsUrl` a Coaxial client transport, so a WebSocket client is just Coaxial's
+// own client loop: `url.exchange(initialState) { message => … }`, symmetric with the
+// server's `webSocket(initial) { … }`. It is a `Duplexable` (not merely a `Serviceable`)
+// because its `transmit` spools through a thread-safe `Channel`, so Coaxial's `transceive`
+// (the `Sender`-carrying, full-duplex counterpart of `exchange`) also works — a client can
+// send proactively (`url.transceive(state) { sender => sender.send(request) } { reply => … }`),
+// not only in reply. `connect` opens the TCP connection and performs the RFC 6455 handshake;
+// `receive` runs the shared `Reader` (Ping/Pong and Close handled there) and yields one
+// reassembled message per element; `transmit` masks and spools at the `Channel` boundary.
+// Client→server frames are masked with a fresh key (RFC 6455 §5.3); a masked server frame
+// is rejected.
+given wsClient: ( Online,
+                  Monitor,
+                  Probate,
+                  Every[SocketOption.Tcp],
+                  Tactic[WebsocketError],
+                  Tactic[HttpResponseError],
+                  Tactic[PortError] )
+=>  WsUrl is Duplexable:
+
+  type Output = Data
+  type Connection = WsConnection
+
+  def connect(url: WsUrl, interface: Optional[MacAddress]): WsConnection =
+    if url.scheme.name == t"wss" then
+      abort(WebsocketError(WebsocketError.Reason.Handshake(t"wss:// (TLS) is not yet supported")))
+
+    val host: Host = url.host.or:
+      abort(WebsocketError(WebsocketError.Reason.Handshake(t"the URL had no host")))
+
+    val portNumber: Int = url.authority.lay(80)(_.port.or(80))
+    val endpoint: Endpoint[TcpPort] = Endpoint(host.show, Port[Tcp](portNumber))
+    val duplex: Duplex = summon[Endpoint[TcpPort] is Connectable].connect(endpoint, interface)
+
+    // RFC 6455 §4.1: a fresh 16-byte nonce, Base64-encoded, is the `Sec-WebSocket-Key`;
+    // the server's `Sec-WebSocket-Accept` must echo `base64(sha1(key ++ magic))`.
+    val nonce: Data =
+      val bytes = new Array[Byte](16)
+      SecureRandom().nextBytes(bytes)
+      bytes.immutable(using Unsafe)
+
+    val key: Text = nonce.serialize[Base64]
+
+    val request: Http.Request =
+      Http.Request
+        ( Http.Get,
+          1.1,
+          host,
+          url.requestTarget,
+          List
+            ( Http.Header(t"Connection", t"Upgrade"),
+              Http.Header(t"Upgrade", t"websocket"),
+              Http.Header(t"Sec-WebSocket-Key", key),
+              Http.Header(t"Sec-WebSocket-Version", t"13") ),
+          () => Stream() )
+
+    duplex.send(Http.Request.transmissible.serialize(request))
+
+    // Read the response headers up to the CRLFCRLF terminator *without* over-reading:
+    // `Http.Response.parse` on a live socket eagerly refills one chunk past the headers,
+    // which would block here, since a server that only sends the `101` has no frame to
+    // send until we do. So split the header block off the stream and parse just that
+    // finite slice; anything after the terminator is the first inbound frame bytes.
+    val (headerBytes, inbound) = readHandshake(duplex.stream, Data())
+    val response: Http.Response = Http.Response.parse(Stream(headerBytes))
+
+    if response.status != Http.SwitchingProtocols then
+      abort(WebsocketError(WebsocketError.Reason.Handshake(t"the server did not upgrade")))
+
+    given accept: ("secWebsocketAccept" is Directive of Text) = identity(_)
+    val expected: Text = t"$key${Websocket.magic}".digest[Sha1].serialize[Base64].keep(28)
+
+    if response.headers.secWebsocketAccept.prim != expected then
+      abort(WebsocketError(WebsocketError.Reason.Handshake(t"the Sec-WebSocket-Accept was wrong")))
+
+    val masking: Masking = Masking.Client()
+    given Masking = masking
+    val channel: Channel = Channel()
+
+    // Once the handshake is read, one writer (this pump, draining the spool) and one
+    // reader (`receive`, over `inbound`) share the connection.
+    val pump: Daemon = daemon(duplex.send(channel.stream))
+
+    WsConnection(duplex, channel, masking, inbound, pump)
+
+  def receive(connection: WsConnection): Stream[Data] =
+    given Masking = connection.masking
+    Reader(() => connection.inbound, connection.channel).messages.map(_.bytes)
+
+  def transmit(connection: WsConnection, input: Stream[Data]): Unit =
+    input.each(connection.channel.enqueue(_))
+
+  def close(connection: WsConnection): Unit =
+    given Masking = connection.masking
+    safely(connection.channel.enqueue(Frame.Close(1000, Data()).encode))
+    connection.channel.stop()
+    safely(connection.pump.attend())
+    connection.duplex.close()

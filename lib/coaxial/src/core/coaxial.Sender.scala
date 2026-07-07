@@ -30,17 +30,14 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package coaxial
 
-export
-  coaxial
-  . { Bindable, BindError, Connectable, Connection, ConnectionError, Control, DomainSocket,
-      DomainSocketEndpoint, duplex, Duplex, Duplexable, exchange, Ingressive, listen, Packet,
-      Routable, Sender, Serviceable, SocketEvent, SocketOption, SocketService, transceive,
-      Transmissible, transmit, UdpResponse }
+import anticipation.*
+import prepositional.*
 
-package socketOptions:
-  export
-    coaxial.socketOptions
-    . { reuseAddressSocketOption, reusePortSocketOption, noDelaySocketOption, keepAliveSocketOption,
-        broadcastSocketOption, receiveBuffer, sendBuffer, linger, trafficClass, timeout }
+// A handle for sending messages over an open, full-duplex connection at any moment —
+// before the first inbound message arrives, or concurrently from another task — rather
+// than only in reply to one. Handed to the `interact` block of `exchange` on a
+// `Duplexable` transport, whose `transmit` is safe to call concurrently.
+class Sender[message: Transmissible as transmissible](post: Stream[Data] => Unit):
+  def send(message: message): Unit = post(transmissible.serialize(message))

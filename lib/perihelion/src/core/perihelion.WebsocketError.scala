@@ -32,6 +32,7 @@
                                                                                                   */
 package perihelion
 
+import anticipation.*
 import fulminate.*
 
 object WebsocketError:
@@ -45,16 +46,20 @@ object WebsocketError:
     case InvalidText             extends Reason(6, 1007)
     case ReservedBits            extends Reason(7, 1002)
     case BadClose                extends Reason(8, 1002)
+    case Masked                  extends Reason(9, 1002)
+    case Handshake(detail: Text) extends Reason(10, 1002)
 
   given communicable: Reason is Communicable =
-    case Reason.Unmasked         => m"the client sent an unmasked frame"
-    case Reason.BadOpcode(code)  => m"the frame used the reserved opcode $code"
-    case Reason.BadControl       => m"a control frame was fragmented or exceeded 125 bytes"
-    case Reason.BadFragmentation => m"the message fragmentation was invalid"
-    case Reason.TooLarge(size)   => m"the frame payload of $size bytes exceeded the limit"
-    case Reason.InvalidText      => m"a text frame contained invalid UTF-8"
-    case Reason.ReservedBits     => m"a reserved header bit (RSV1/2/3) was set"
-    case Reason.BadClose         => m"the close frame had a malformed payload or invalid code"
+    case Reason.Unmasked          => m"the client sent an unmasked frame"
+    case Reason.BadOpcode(code)   => m"the frame used the reserved opcode $code"
+    case Reason.BadControl        => m"a control frame was fragmented or exceeded 125 bytes"
+    case Reason.BadFragmentation  => m"the message fragmentation was invalid"
+    case Reason.TooLarge(size)    => m"the frame payload of $size bytes exceeded the limit"
+    case Reason.InvalidText       => m"a text frame contained invalid UTF-8"
+    case Reason.ReservedBits      => m"a reserved header bit (RSV1/2/3) was set"
+    case Reason.BadClose          => m"the close frame had a malformed payload or invalid code"
+    case Reason.Masked            => m"the server sent a masked frame"
+    case Reason.Handshake(detail) => m"the WebSocket handshake failed because $detail"
 
 case class WebsocketError(reason: WebsocketError.Reason)(using Diagnostics)
 extends Error(368, reason.number)(m"the WebSocket protocol was violated because $reason")

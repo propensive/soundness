@@ -36,6 +36,7 @@ import soundness.*
 import scintillate.SocketServer
 
 import logging.silentLogging
+import internetAccess.online
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
 import webserverErrorPages.minimalErrorPage
@@ -141,6 +142,10 @@ object Tests extends Suite(m"Perihelion tests"):
       case perihelion.Message.Text(text) => text
       case perihelion.Message.Binary(_)  => t"<binary>"
 
+    // The pure-codec tests below read frames as a server does (inbound frames are the
+    // client's, and masked); the client direction is exercised in "Client masking".
+    given Masking = Masking.Server
+
     suite(m"Frame codec"):
       test(m"A masked text frame decodes to its payload"):
         parseFrame(frame(0x1, octets("hi"))) match
@@ -238,10 +243,45 @@ object Tests extends Suite(m"Perihelion tests"):
       test(m"A Ping round-trips through the composed over-Json codec"):
         val outgoing = infer[(Ping over Json) is Transmissible]
         val incoming = infer[(Ping over Json) is Ingressive]
-        val bytes = outgoing.serialize(Ping(7).over[Json]).foldLeft(Data())(_ ++ _)
 
-        incoming.deserialize(bytes)
+        // `outgoing` now yields a complete (unmasked) Text frame; the reader unframes it
+        // before `incoming` decodes the JSON payload.
+        val frameBytes = outgoing.serialize(Ping(7).over[Json]).foldLeft(Data())(_ ++ _)
+
+        val payload = Frame.parse(Cursor[Data](Stream(frameBytes).iterator))(using Masking.Client()) match
+          case Frame.Text(_, data) => data
+          case _                   => Data()
+
+        incoming.deserialize(payload)
       . assert(_ == Ping(7))
+
+    suite(m"Client masking"):
+      def parseAs(masking: Masking, bytes: Data): Optional[Frame] =
+        Frame.parse(Cursor[Data](Stream(bytes).iterator))(using masking)
+
+      test(m"A client-masked frame is readable by the server"):
+        val masked: Data = Masking.Client().outbound(Frame.Text(true, t"hi".data).encode)
+        parseAs(Masking.Server, masked) match
+          case Frame.Text(_, data) => data.utf8
+          case _                   => t"?"
+      . assert(_ == t"hi")
+
+      test(m"A client masks with a fresh key each time"):
+        val client = Masking.Client()
+        val frame = Frame.Text(true, t"hello".data).encode
+        client.outbound(frame) != client.outbound(frame)
+      . assert(_ == true)
+
+      test(m"A client accepts an unmasked server frame"):
+        parseAs(Masking.Client(), Frame.Text(true, t"hi".data).encode) match
+          case Frame.Text(_, data) => data.utf8
+          case _                   => t"?"
+      . assert(_ == t"hi")
+
+      test(m"A client rejects a masked server frame"):
+        val masked: Data = Masking.Client().outbound(Frame.Text(true, t"hi".data).encode)
+        capture[WebsocketError](parseAs(Masking.Client(), masked)).reason
+      . assert(_ == WebsocketError.Reason.Masked)
 
     supervise:
       suite(m"WebSocket echo"):
@@ -316,3 +356,56 @@ object Tests extends Suite(m"Perihelion tests"):
           (head.contains(t"101"), opcode, reply.value)
 
         . assert(_ == (true, 0x1, 8))
+
+      suite(m"WebSocket client"):
+        // The client is Coaxial's `exchange` over the `WsUrl is Serviceable` transport. It
+        // is reactive (it acts on inbound messages), so the server greets on connect via
+        // its `Channel`, and the client decodes the typed greeting and concludes.
+        test(m"A client handshakes and decodes a server-pushed typed message"):
+          val port = freePort()
+
+          val server = SocketServer(port).handle:
+            val websocket = webSocket(): (message: perihelion.Message) => Continue(())
+            websocket.channel.send(perihelion.Message.Text(Ping(7).json.show))
+            websocket
+
+          val url = t"ws://localhost:$port/".decode[WsUrl]
+
+          val value = url.exchange(0): (ping: Ping over Json) =>
+            Conclude(Ping(ping.value + 1).over[Json], ping.value)
+
+          server.cancel()
+          value
+
+        . assert(_ == 7)
+
+        // The full-duplex `transceive` gives the caller a `Sender` before the loop, so
+        // the client speaks first: it sends `Ping(7)`, the server replies `Ping(8)`.
+        test(m"A client sends proactively, then reacts to the reply"):
+          val port = freePort()
+
+          val server = SocketServer(port).handle:
+            webSocket(): (ping: Ping over Json) =>
+              Reply(Ping(ping.value + 1).over[Json], ())
+
+          val url = t"ws://localhost:$port/".decode[WsUrl]
+
+          val handle: (state: Int) ?=> (Ping over Json) => Control[Int] =
+            ping => Conclude(Ping(0).over[Json], ping.value)
+
+          val value = url.transceive(0)(handle)(_.send(Ping(7).over[Json]))
+
+          server.cancel()
+          value
+
+        . assert(_ == 8)
+
+        test(m"A wss:// URL is rejected pending client TLS support"):
+          val url = t"wss://example.com/".decode[WsUrl]
+
+          capture[WebsocketError](url.exchange(())((_: perihelion.Message) => Terminate)).reason
+          match
+            case WebsocketError.Reason.Handshake(_) => true
+            case _                                  => false
+
+        . assert(_ == true)

@@ -30,17 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package perihelion
 
-export
-  coaxial
-  . { Bindable, BindError, Connectable, Connection, ConnectionError, Control, DomainSocket,
-      DomainSocketEndpoint, duplex, Duplex, Duplexable, exchange, Ingressive, listen, Packet,
-      Routable, Sender, Serviceable, SocketEvent, SocketOption, SocketService, transceive,
-      Transmissible, transmit, UdpResponse }
+import anticipation.*
+import coaxial.*
+import parasite.*
 
-package socketOptions:
-  export
-    coaxial.socketOptions
-    . { reuseAddressSocketOption, reusePortSocketOption, noDelaySocketOption, keepAliveSocketOption,
-        broadcastSocketOption, receiveBuffer, sendBuffer, linger, trafficClass, timeout }
+// A live WebSocket client connection: the underlying byte `Duplex`, the outgoing frame
+// `Channel` (masking each frame with `Masking.Client`), the reassembled inbound frame
+// stream left after the `101` handshake, and the background pump copying spooled frames
+// onto the socket. It is the `Connection` type of the `WsUrl is Serviceable` instance
+// (`wsClient`), so a client is driven by Coaxial's `exchange`.
+class WsConnection
+  ( private[perihelion] val duplex:  Duplex,
+    private[perihelion] val channel: Channel,
+    private[perihelion] val masking: Masking,
+    private[perihelion] val inbound: Stream[Data],
+    private[perihelion] val pump:    Daemon )

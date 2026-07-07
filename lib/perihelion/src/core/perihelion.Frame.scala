@@ -54,12 +54,13 @@ object Frame:
     (code >= 1000 && code <= 1003) || (code >= 1007 && code <= 1011) ||
       (code >= 3000 && code <= 4999)
 
-  // Decode one client frame off `cursor` — consuming exactly its bytes and
-  // unmasking the payload — or `Unset` at a clean end of stream. The byte-level
-  // counterpart of `Frame.encode`. Uses `peek`/`next`/`take` (not `lay`/`seek`),
-  // which don't reference the cursor's erased `Operand` type, so it works on a
-  // bare `Cursor[Data]` parameter.
-  def parse(cursor: Cursor[Data]): Optional[Frame] raises WebsocketError =
+  // Decode one frame off `cursor` — consuming exactly its bytes and unmasking the
+  // payload — or `Unset` at a clean end of stream. The byte-level counterpart of
+  // `Frame.encode`. `Masking` fixes the direction: a server requires the frame to be
+  // masked (a client's), a client requires it to be unmasked (a server's). Uses
+  // `peek`/`next`/`take` (not `lay`/`seek`), which don't reference the cursor's erased
+  // `Operand` type, so it works on a bare `Cursor[Data]` parameter.
+  def parse(cursor: Cursor[Data])(using masking: Masking): Optional[Frame] raises WebsocketError =
     if cursor.finished then Unset else
       val byte0 = cursor.peek.asInt
       cursor.next()
@@ -75,8 +76,10 @@ object Frame:
       cursor.next()
       val masked = (byte1 & 0x80) != 0
 
-      // RFC 6455 §5.1: the server must reject an unmasked client frame.
-      if !masked then abort(WebsocketError(WebsocketError.Reason.Unmasked))
+      // RFC 6455 §5.1: a server must reject an unmasked client frame; a client must
+      // likewise reject a masked server frame.
+      if masking.inbound && !masked then abort(WebsocketError(WebsocketError.Reason.Unmasked))
+      if !masking.inbound && masked then abort(WebsocketError(WebsocketError.Reason.Masked))
 
       val length: Long = (byte1 & 0x7f) match
         case 126 => B16(cursor.take(Data())(2)).u16.long
@@ -92,7 +95,7 @@ object Frame:
       if opcode >= 0x8 && (!fin || length > maxControlPayload)
       then abort(WebsocketError(WebsocketError.Reason.BadControl))
 
-      val mask = cursor.take(Data())(4)
+      val mask = if masked then cursor.take(Data())(4) else Data()
       val payload = unmask(cursor.take(Data())(length.toInt), mask)
 
       opcode match
