@@ -48,6 +48,11 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
   extends Error(m"${items.length} decoding issues"):
     def +(focus: Text, error: TelError): Issues = Issues(items :+ (focus, error))
 
+  case class Located(items: List[(Text, Optional[TelError.Position])] = Nil)(using Diagnostics)
+  extends Error(m"${items.length} located issues"):
+    def +(pointer: Text, position: Optional[TelError.Position]): Located =
+      Located(items :+ (pointer, position))
+
   private def validateTel[result](tel: Tel)
                                  (decode: Tel => result raises TelError tracks Tel.Focus)
   :   Issues =
@@ -60,6 +65,18 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
     validate[Tel.Focus](Issues()):
       case error: TelError =>
         accrual + (prior.let(_.pointer.encode).or(t"#"), error)
+    . protect(Tel.Type.assign(tel, schema))
+
+  // Validate a *tracked* document against `schema`, capturing each error's
+  // keyword-path pointer alongside the source `Position` filled in by
+  // `Tel.Type.assign`'s `withPosition` enrichment.
+  private def assignPositions(text: Text, schema: Tels): Located =
+    val tel = Tel.parseTracked(text)
+
+    validate[Tel.Focus](Located()):
+      case error: TelError =>
+        accrual + (prior.let(_.pointer.encode).or(t"#"),
+                   prior.lay(Unset: Optional[TelError.Position])(_.position))
     . protect(Tel.Type.assign(tel, schema))
 
   // Parse a document under an accrual boundary: recoverable parse defects
@@ -239,3 +256,27 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
            ( TelError.Reason.BadVersion,
              TelError.Reason.OverIndentation,
              TelError.Reason.TrailingSpaces )
+
+    suite(m"Located schema-validation errors (LSP diagnostics)"):
+      test(m"Unknown-keyword errors carry their keyword pointer"):
+        assignPositions(t"foo a\nbar b\n", optionalFieldSchema).items.map(_(0).s).to(Set)
+      . assert(_ == Set("#/foo", "#/bar"))
+
+      test(m"Unknown-keyword errors are located at the offending compound"):
+        assignPositions(t"foo a\nbar b\n", optionalFieldSchema).items.map(_(1)).to(Set)
+      . assert(_ == Set(Optional(Tel.Position(1, 1, length = Optional(3))),
+                        Optional(Tel.Position(2, 1, length = Optional(3)))))
+
+      test(m"An unlocated (untracked) validation still accrues without a position"):
+        val tel = t"foo a\n".read[Tel]
+
+        validate[Tel.Focus](Issues()):
+          case error: TelError => accrual + (prior.lay(t"")(_.position.lay(t"")(_.describe)), error)
+        . protect(Tel.Type.assign(tel, optionalFieldSchema))
+        . items.map(_(0).s).to(Set)
+      . assert(_ == Set(""))
+
+      test(m"Missing required members carry a pointer but no source position"):
+        assignPositions(t"", twoRequiredSchema).items.map { case (p, pos) => (p.s, pos.present) }
+        . to(Set)
+      . assert(_ == Set(("#/name", false), ("#/email", false)))
