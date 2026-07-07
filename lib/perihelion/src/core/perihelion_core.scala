@@ -123,8 +123,9 @@ extension [self](value: self)
 
 // A `ws://` or `wss://` URL. `Url` decoding is scheme-generic, so a `WsUrl` parses with
 // no bespoke scheme machinery; the port defaults to 80 (`ws`) or 443 (`wss`) when the
-// authority omits it. `wss://` parses but is not yet connectable (see `wsClient`),
-// pending client-side TLS.
+// authority omits it. A `wss://` connection is opened over TLS (via Coaxial's
+// `SecureEndpoint`), configured by the `Tls` capability in scope (system trust store and
+// hostname verification by default).
 type WsUrl = Url["ws" | "wss"]
 
 // Split a byte stream at the first CRLFCRLF: returns the header block (up to and
@@ -166,6 +167,7 @@ given wsClient: ( Online,
                   Monitor,
                   Probate,
                   Every[SocketOption.Tcp],
+                  Tls,
                   Tactic[WebsocketError],
                   Tactic[HttpResponseError],
                   Tactic[PortError] )
@@ -175,15 +177,23 @@ given wsClient: ( Online,
   type Connection = WsConnection
 
   def connect(url: WsUrl, interface: Optional[MacAddress]): WsConnection =
-    if url.scheme.name == t"wss" then
-      abort(WebsocketError(WebsocketError.Reason.Handshake(t"wss:// (TLS) is not yet supported")))
+    val secure: Boolean = url.scheme.name == t"wss"
 
     val host: Host = url.host.or:
       abort(WebsocketError(WebsocketError.Reason.Handshake(t"the URL had no host")))
 
-    val portNumber: Int = url.authority.lay(80)(_.port.or(80))
-    val endpoint: Endpoint[TcpPort] = Endpoint(host.show, Port[Tcp](portNumber))
-    val duplex: Duplex = summon[Endpoint[TcpPort] is Connectable].connect(endpoint, interface)
+    val defaultPort: Int = if secure then 443 else 80
+    val portNumber: Int = url.authority.lay(defaultPort)(_.port.or(defaultPort))
+
+    // `wss` connects over TLS (`SecureEndpoint`), `ws` over plain TCP; everything after is
+    // transport-agnostic, over the `Duplex`.
+    val duplex: Duplex =
+      if secure then
+        val endpoint = SecureEndpoint(host.show, portNumber)
+        summon[SecureEndpoint is Connectable].connect(endpoint, interface)
+      else
+        val endpoint = Endpoint(host.show, Port[Tcp](portNumber))
+        summon[Endpoint[TcpPort] is Connectable].connect(endpoint, interface)
 
     // RFC 6455 §4.1: a fresh 16-byte nonce, Base64-encoded, is the `Sec-WebSocket-Key`;
     // the server's `Sec-WebSocket-Accept` must echo `base64(sha1(key ++ magic))`.

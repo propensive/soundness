@@ -30,72 +30,66 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package coaxial
+package perihelion
 
-import java.io as ji
-import java.nio.ByteBuffer
-import java.nio.channels as jnc
+import soundness.*
 
-import anticipation.*
-import rudiments.*
-import vacuous.*
+import logging.silentLogging
+import internetAccess.online
+import strategies.throwUnsafely
+import threading.virtualThreading
+import probates.awaitProbate
 
-object Duplex:
-  // Wraps a blocking `InputStream`/`OutputStream` pair — the shape a socket that has no
-  // `SocketChannel` exposes (e.g. an `SSLSocket`). `shutdown` closes the underlying
-  // resource. The read side blocks in `read` and copies each fill; EOF (`-1`) ends the
-  // stream. The stream/write shape mirrors `channel` and `Serviceable`'s socket path.
-  def streams(in: ji.InputStream, out: ji.OutputStream)(shutdown: () => Unit): Duplex = new Duplex:
-    private val buffer = new Array[Byte](65536)
+// A conformance harness for driving the WebSocket *client* against the Autobahn|Testsuite
+// `fuzzingserver` — the counterpart of `AutobahnServer` (which drives the server against a
+// `fuzzingclient`). Start `wstest -m fuzzingserver` (listening on 9001 by default), then run
+// `java -cp <test-classpath> perihelion.AutobahnClient [host] [port]` and read its HTML report.
+// Not part of the test suite — it only runs when invoked directly.
+//
+// The fuzzingserver drives every exchange, so the client is a pure echo: for each case it
+// connects, replies to every message verbatim, and answers Ping/Close per the RFC (handled by
+// the shared `Reader`). It drives that `Reader`/`Channel` directly rather than through Coaxial's
+// `exchange`, because `exchange` flattens each message to bytes — losing the Text/Binary frame
+// type an echo must preserve — and has no hook to send an RFC close code on a protocol violation.
+object AutobahnClient:
+  private val agent: Text = t"soundness-perihelion"
 
-    def stream: Stream[Data] =
-      def recur(): Stream[Data] = in.read(buffer) match
-        case -1    => Stream()
-        case count => buffer.take(count).immutable(using Unsafe) #:: recur()
+  def main(args: Array[String]): Unit =
+    val host: Text = (if args.length > 0 then args(0) else "localhost").tt
+    val port: Int = if args.length > 1 then Integer.parseInt(args(1)) else 9001
 
-      recur()
+    supervise:
+      // Open one connection, hand each inbound message to `consume`, and always close cleanly;
+      // a protocol violation surfaces as a `WebsocketError` and is answered with its close code.
+      def session(path: Text)(consume: Channel => perihelion.Message => Unit): Unit =
+        val url = t"ws://$host:$port$path".decode[WsUrl]
+        val connection = summon[WsUrl is Duplexable].connect(url, Unset)
+        given Masking = connection.masking
 
-    def send(data: Stream[Data]): Unit =
-      data.each: bytes =>
-        out.write(bytes.mutable(using Unsafe))
-        out.flush()
+        try
+          recover:
+            case error: WebsocketError =>
+              safely(connection.channel.close(error.reason.closeCode))
 
-    def close(): Unit = shutdown()
+          . protect:
+              Reader(() => connection.inbound, connection.channel).messages.each:
+                consume(connection.channel)(_)
 
-  // Wraps a blocking `SocketChannel` (TCP or Unix-domain). The read side fills a
-  // reusable buffer and blocks in `read`; EOF (`-1`) terminates the stream.
-  def channel(socketChannel: jnc.SocketChannel): Duplex = new Duplex:
-    private val buffer = ByteBuffer.allocate(65536).nn
+        finally
+          connection.channel.stop()
+          safely(connection.pump.attend())
+          connection.duplex.close()
 
-    def stream: Stream[Data] =
-      def recur(): Stream[Data] =
-        buffer.clear()
+      var count: Int = 0
 
-        socketChannel.read(buffer) match
-          case -1 => Stream()
+      // How many cases does the fuzzingserver have? It sends the count as one Text message.
+      session(t"/getCaseCount"): channel =>
+        case perihelion.Message.Text(text) => count = safely(Integer.parseInt(text.s.trim)).or(count)
+        case _                             => ()
 
-          case _ =>
-            buffer.flip()
-            val array = new Array[Byte](buffer.remaining)
-            buffer.get(array)
-            array.immutable(using Unsafe) #:: recur()
+      // Echo each case verbatim, preserving the Text/Binary frame type.
+      for index <- 1 to count do
+        safely(session(t"/runCase?case=$index&agent=$agent")(channel => channel.send(_)))
 
-      recur()
-
-    def send(data: Stream[Data]): Unit =
-      data.each: bytes =>
-        val out = ByteBuffer.wrap(bytes.mutable(using Unsafe)).nn
-        while out.hasRemaining do socketChannel.write(out)
-
-    def close(): Unit = socketChannel.close()
-
-// A persistent, bidirectional connection: unlike `Serviceable`'s request/response
-// `transmit`/`receive` (which shuts down the output side after sending), a `Duplex`
-// stays open for repeated, independent reads and writes — the shape a multiplexing
-// protocol such as HTTP/2 needs, where one side both streams requests and receives
-// server-initiated frames concurrently. Reads block until data arrives or the peer
-// closes; `send` may be called many times and never half-closes the connection.
-trait Duplex:
-  def stream: Stream[Data]
-  def send(data: Stream[Data]): Unit
-  def close(): Unit
+      // Ask the server to write its reports.
+      safely(session(t"/updateReports?agent=$agent")(_ => _ => ()))
