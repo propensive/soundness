@@ -199,7 +199,7 @@ object Tests extends Suite(m"Coaxial tests"):
           val port = Port[Tcp]()
           val server = port.listen[Data](socket => ascii(t"greeting"))
 
-          val received: Data = port.exchange(Data())[Data](Data()): message =>
+          val received: Data = port.exchange(Data())[Data]: message =>
             Conclude(ascii(t""), message)
 
           bytes(received).also(server.stop())

@@ -103,7 +103,7 @@ extension [endpoint: {Serviceable as serviceable, Showable}](endpoint: endpoint)
     serviceable.receive(connection)
 
 
-  def exchange[state](initialState: state)[message: Ingressive](initialMessage: message = Data())
+  def exchange[state](initialState: state)[message: Ingressive]
     ( handle: (state: state) ?=> message => Control[state] )
   :   state logs SocketEvent =
 
@@ -124,6 +124,40 @@ extension [endpoint: {Serviceable as serviceable, Showable}](endpoint: endpoint)
           state2.or(state)
 
     recur(serviceable.receive(connection), initialState).also(serviceable.close(connection))
+
+
+extension [endpoint: {Duplexable as duplexable, Showable}](endpoint: endpoint)
+  // A full-duplex `exchange`: as soon as the connection opens — before the `handle` loop
+  // begins — `interact` is handed a `Sender`, so a client can send *proactively* (send
+  // first, or push from a task it spawns), concurrently with the reactive `handle` loop
+  // (which still replies via `Control`). `handle` precedes `interact` so the message type
+  // is fixed by the (annotated) handler. Available only for a `Duplexable` transport,
+  // whose `transmit` is safe to call concurrently; a request/response `Serviceable` has
+  // only the reactive `exchange`.
+  def transceive[state](initialState: state)[message: {Ingressive, Transmissible}]
+    ( handle: (state: state) ?=> message => Control[state] )
+    ( interact: Sender[message] => Unit )
+  :   state logs SocketEvent =
+
+    val connection = duplexable.connect(endpoint, Unset)
+    Log.fine(SocketEvent.Connected(endpoint.show))
+
+    interact(Sender[message](duplexable.transmit(connection, _)))
+
+    def recur(input: Stream[Data], state: state): state = input.flow(state):
+      handle(using state)(message.deserialize(next)) match
+        case Continue(state2) => recur(more, state2.or(state))
+        case Terminate        => state
+
+        case Reply(message, state2) =>
+          duplexable.transmit(connection, Stream(message))
+          recur(more, state2.or(state))
+
+        case Conclude(message, state2) =>
+          duplexable.transmit(connection, Stream(message))
+          state2.or(state)
+
+    recur(duplexable.receive(connection), initialState).also(duplexable.close(connection))
 
 
 extension [endpoint: {Routable as routable, Showable}](endpoint: endpoint)

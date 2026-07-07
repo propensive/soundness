@@ -30,17 +30,12 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package coaxial
 
-export
-  coaxial
-  . { Bindable, BindError, Connectable, Connection, ConnectionError, Control, DomainSocket,
-      DomainSocketEndpoint, duplex, Duplex, Duplexable, exchange, Ingressive, listen, Packet,
-      Routable, Sender, Serviceable, SocketEvent, SocketOption, SocketService, transceive,
-      Transmissible, transmit, UdpResponse }
-
-package socketOptions:
-  export
-    coaxial.socketOptions
-    . { reuseAddressSocketOption, reusePortSocketOption, noDelaySocketOption, keepAliveSocketOption,
-        broadcastSocketOption, receiveBuffer, sendBuffer, linger, trafficClass, timeout }
+// A `Serviceable` whose connection is full-duplex and persistent: `transmit` may be
+// called repeatedly, and concurrently with `receive` and with itself, without ever
+// half-closing the connection. Only such a transport can send *proactively* — before
+// the first inbound message, or from another task — so `exchange`'s `Sender`-carrying
+// overload is offered only for a `Duplexable`. A request/response `Serviceable` (which
+// may shut its output down after transmitting) is deliberately not one.
+trait Duplexable extends Serviceable
