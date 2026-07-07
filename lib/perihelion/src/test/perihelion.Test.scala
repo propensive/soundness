@@ -393,7 +393,7 @@ object Tests extends Suite(m"Perihelion tests"):
         . assert(_ == (true, 0x1, 8))
 
       suite(m"WebSocket client"):
-        // The client is Coaxial's `exchange` over the `WsUrl is Serviceable` transport. It
+        // The client is Coaxial's `react` over the `WsUrl is Duplexable` transport. It
         // is reactive (it acts on inbound messages), so the server greets on connect via
         // its `Channel`, and the client decodes the typed greeting and concludes.
         test(m"A client handshakes and decodes a server-pushed typed message"):
@@ -406,7 +406,7 @@ object Tests extends Suite(m"Perihelion tests"):
 
           val url = t"ws://localhost:$port/".decode[WsUrl]
 
-          val value = url.exchange(0): (ping: Ping over Json) =>
+          val value = url.react(0): (ping: Ping over Json) =>
             Conclude(Ping(ping.value + 1).over[Json], ping.value)
 
           server.cancel()
@@ -414,7 +414,7 @@ object Tests extends Suite(m"Perihelion tests"):
 
         . assert(_ == 7)
 
-        // The full-duplex `transceive` gives the caller a `Sender` before the loop, so
+        // The full-duplex `exchange` gives the caller a `Sender` before the loop, so
         // the client speaks first: it sends `Ping(7)`, the server replies `Ping(8)`.
         test(m"A client sends proactively, then reacts to the reply"):
           val port = freePort()
@@ -428,7 +428,7 @@ object Tests extends Suite(m"Perihelion tests"):
           val handle: (state: Int) ?=> (Ping over Json) => Control[Int] =
             ping => Conclude(Ping(0).over[Json], ping.value)
 
-          val value = url.transceive(0)(handle)(_.send(Ping(7).over[Json]))
+          val value = url.exchange(0)(handle)(_.send(Ping(7).over[Json]))
 
           server.cancel()
           value
@@ -452,7 +452,7 @@ object Tests extends Suite(m"Perihelion tests"):
           val handle: (state: Int) ?=> (Ping over Json) => Control[Int] =
             ping => Conclude(Ping(0).over[Json], ping.value)
 
-          val value = url.transceive(0)(handle)(_.send(Ping(7).over[Json]))
+          val value = url.exchange(0)(handle)(_.send(Ping(7).over[Json]))
 
           server.cancel()
           value

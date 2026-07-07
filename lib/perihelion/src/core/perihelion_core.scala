@@ -71,7 +71,7 @@ private type RawMessage[message] <: Boolean = message match
   case _       => false
 
 // Handle an upgraded connection as a stateful WebSocket message loop, mirroring
-// Coaxial's `exchange`. Each reassembled message is decoded to the handler's
+// Coaxial's `react`. Each reassembled message is decoded to the handler's
 // `message` type and passed to `handle` with the current `state`, returning a
 // `Control`. The message type is inferred from the handler's parameter, so it is
 // usually annotated there: the raw `Message` (text or binary) with `(message:
@@ -153,11 +153,11 @@ private def readHandshake(chunks: Stream[Data], acc: Data): (Data, Stream[Data])
     readHandshake(chunks.tail, acc ++ chunks.head)
 
 // Makes a `WsUrl` a Coaxial client transport, so a WebSocket client is just Coaxial's
-// own client loop: `url.exchange(initialState) { message => … }`, symmetric with the
+// own client loop: `url.react(initialState) { message => … }`, symmetric with the
 // server's `webSocket(initial) { … }`. It is a `Duplexable` (not merely a `Serviceable`)
-// because its `transmit` spools through a thread-safe `Channel`, so Coaxial's `transceive`
-// (the `Sender`-carrying, full-duplex counterpart of `exchange`) also works — a client can
-// send proactively (`url.transceive(state) { sender => sender.send(request) } { reply => … }`),
+// because its `transmit` spools through a thread-safe `Channel`, so Coaxial's `exchange`
+// (the `Sender`-carrying, full-duplex counterpart of `react`) also works — a client can
+// send proactively (`url.exchange(state) { reply => … } { sender => sender.send(request) }`),
 // not only in reply. `connect` opens the TCP connection and performs the RFC 6455 handshake;
 // `receive` runs the shared `Reader` (Ping/Pong and Close handled there) and yields one
 // reassembled message per element; `transmit` masks and spools at the `Channel` boundary.

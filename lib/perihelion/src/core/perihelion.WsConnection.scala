@@ -39,8 +39,8 @@ import parasite.*
 // A live WebSocket client connection: the underlying byte `Duplex`, the outgoing frame
 // `Channel` (masking each frame with `Masking.Client`), the reassembled inbound frame
 // stream left after the `101` handshake, and the background pump copying spooled frames
-// onto the socket. It is the `Connection` type of the `WsUrl is Serviceable` instance
-// (`wsClient`), so a client is driven by Coaxial's `exchange`.
+// onto the socket. It is the `Connection` type of the `WsUrl is Duplexable` instance
+// (`wsClient`), so a client is driven by Coaxial's `react`/`exchange`.
 class WsConnection
   ( private[perihelion] val duplex:  Duplex,
     private[perihelion] val channel: Channel,

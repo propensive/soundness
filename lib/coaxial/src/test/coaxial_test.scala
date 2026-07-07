@@ -32,11 +32,11 @@
                                                                                                   */
 package coaxial
 
-// The `transmit`, `listen`, `exchange` and `duplex` extensions are defined in this
+// The `transmit`, `listen`, `react` and `duplex` extensions are defined in this
 // package, so they are already in scope; re-importing them through `soundness`
 // would make the two same-shaped `transmit` overloads (from `Serviceable` and
 // `Routable`) ambiguous, so they are excluded from the wildcard.
-import soundness.{transmit as _, listen as _, exchange as _, duplex as _, *}
+import soundness.{transmit as _, listen as _, react as _, duplex as _, *}
 
 import charEncoders.utf8Encoder
 import charDecoders.utf8Decoder
@@ -195,11 +195,11 @@ object Tests extends Suite(m"Coaxial tests"):
         . assert(_ == t"ping")
 
       suite(m"TCP server and client"):
-        test(m"A client exchange receives the server's pushed message"):
+        test(m"A client reacts to the server's pushed message"):
           val port = Port[Tcp]()
           val server = port.listen[Data](socket => ascii(t"greeting"))
 
-          val received: Data = port.exchange(Data())[Data]: message =>
+          val received: Data = port.react(Data())[Data]: message =>
             Conclude(ascii(t""), message)
 
           bytes(received).also(server.stop())

@@ -36,8 +36,8 @@ export
   coaxial
   . { Bindable, BindError, Connectable, Connection, ConnectionError, Control, DomainSocket,
       DomainSocketEndpoint, duplex, Duplex, Duplexable, exchange, Ingressive, listen, Packet,
-      Routable, SecureEndpoint, Sender, Serviceable, SocketEvent, SocketOption, SocketService, Tls,
-      transceive, Transmissible, transmit, UdpResponse }
+      react, Routable, SecureEndpoint, Sender, Serviceable, SocketEvent, SocketOption,
+      SocketService, Tls, Transmissible, transmit, UdpResponse }
 
 package socketOptions:
   export
