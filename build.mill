@@ -326,6 +326,11 @@ object groupCheck extends Module:
     "proscenium.core"
   )
 
+  // Platform-specific component variants (e.g. `xenophile.js`, `ambience.wasi`) reach
+  // `soundness-all` transitively via their platform-neutral counterparts, so they are
+  // not wired into a group bundle directly.
+  def platformSuffixes: Set[String] = Set("jvm", "js", "wasm", "wasi")
+
   def validate(): Command[Unit] = Task.Command:
     val onDisk = os.list(mill.api.BuildCtx.workspaceRoot / "lib").iterator
       .filter(p => os.isDir(p) && os.exists(p / "src"))
@@ -352,7 +357,8 @@ object groupCheck extends Module:
       problems += "`allLibraries` references libraries with no `lib/<name>/src` "
         + "directory:\n  " + orphanLibs.toSeq.sorted.mkString("\n  ")
 
-    val unbundled = declaredComponents -- coveredComponents -- excluded
+    val unbundled = (declaredComponents -- coveredComponents -- excluded)
+      .filterNot(c => platformSuffixes.exists(s => c.endsWith("." + s)))
     if unbundled.nonEmpty then
       problems += "Components not in any soundness.* group bundle and not in "
         + "`groupCheck.excluded` (a new module needs to join a group bundle, or "
