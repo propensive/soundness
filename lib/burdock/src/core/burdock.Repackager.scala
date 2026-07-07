@@ -39,6 +39,7 @@ import distillate.*
 import fulminate.*
 import galilei.*
 import gossamer.*
+import parasite.{async, supervise, AsyncError}
 import prepositional.*
 import revolution.*
 import rudiments.*
@@ -51,6 +52,8 @@ import vacuous.*
 import zeppelin.*
 
 import errorDiagnostics.emptyDiagnostics
+import parasite.probates.cancelProbate
+import parasite.threading.virtualThreading
 
 // The repackager. Reads the dependency hashes embedded by the compile-time macro
 // and partitions them: a hash that resolves to a public URL is externalized (a
@@ -73,7 +76,6 @@ object Repackager:
   case class Requirement(url: into[HttpUrl], digest: Text):
     def text = t"$digest:$url"
 
-  case class Entry(name: Text, data: Data)
   case class UserError(detail: Message)(using Diagnostics) extends Error(detail)
   case class RepackageError(detail: Message)(using Diagnostics) extends Error(detail)
 
@@ -101,32 +103,58 @@ object Repackager:
   // dependency's entry names (to strip them) does not read the cached JAR's contents.
   type CacheReader = Text => Optional[List[Zip.Entry]]
 
-  // Pure partition; `resolve` (deps.dev) and `cached` (cache lookup) are injected
-  // so the logic is testable without the network or the filesystem.
+  // How many deps.dev lookups to run concurrently (see `partition`). Each is an independent HTTP
+  // round-trip, so serial resolution costs `dependencies × latency`; a bounded fan-out cuts that
+  // to roughly `ceil(dependencies / parallelism) × latency` while staying polite to the API.
+  private val parallelism: Int = 16
+
+  // Partitions the dependency hashes; `resolve` (deps.dev) and `cached` (cache lookup) are injected
+  // so the logic is testable without the network or the filesystem. A published dependency becomes
+  // a `Requirement` (externalized, fetched at runtime); otherwise it contributes its cached entries
+  // to inline. The cached `Zip.Entry` values are carried through verbatim (still compressed) rather
+  // than decompressed, so the write path can copy their bytes without re-deflating.
   def partition
     ( hashes: List[Text], resolve: Resolver, cached: CacheReader,
       progress: Progress = (_, _) => () )
-  :   (List[Requirement], List[Entry]) raises RepackageError =
+  :   (List[Requirement], List[Zip.Entry]) raises RepackageError =
 
     val requirements = List.newBuilder[Requirement]
-    val inlined = List.newBuilder[Entry]
+    val inlined = List.newBuilder[Zip.Entry]
     val total: Int = hashes.length
     var completed: Int = 0
 
-    hashes.each: hash =>
+    // Classify a single hash. Pure (no shared mutable state), so many hashes can be classified
+    // concurrently. It never raises — a hash that is neither published nor cached is returned as
+    // `Unset` and raised (with the offending hash) on the main thread after the join — so the async
+    // task's only failure mode is `AsyncError`, which keeps `await`'s error type concrete.
+    def classify(hash: Text): Optional[(List[Requirement], List[Zip.Entry])] =
       (resolve(hash): @unchecked) match
-        case url: HttpUrl =>
-          requirements += Requirement(url, hash)
+        case url: HttpUrl => (List(Requirement(url, hash)), Nil)
+        case Unset        => cached(hash).let: entries => (Nil, entries)
 
-        case Unset =>
-          val entries: List[Zip.Entry] = cached(hash).lest:
-            RepackageError(m"dependency $hash is neither published nor cached")
+    // Resolve deps.dev in parallel: each lookup is an independent HTTP round-trip, so the serial
+    // cost is `total × latency`. Fan out over virtual threads, bounded to `parallelism` in flight;
+    // await each group in order on this thread (keeping the builders single-threaded) and advance
+    // the progress bar once per group, so terminal writes never race across worker threads.
+    mitigate:
+      case AsyncError(_) =>
+        RepackageError(m"a concurrency error occurred while resolving dependencies")
 
-          entries.each: entry =>
-            inlined += Entry(entry.ref.show, entry.read[Data])
+    . protect:
+        supervise:
+          hashes.grouped(parallelism).to(List).each: group =>
+            val tasks = group.map: hash =>
+              async((hash, classify(hash)))
 
-      completed += 1
-      progress(completed, total)
+            tasks.map(_.await()).each: (hash, result) =>
+              val (reqs, entries) =
+                result.lest(RepackageError(m"dependency $hash is neither published nor cached"))
+
+              requirements ++= reqs
+              inlined ++= entries
+
+            completed += group.length
+            progress(completed, total)
 
     (requirements.result(), inlined.result())
 
@@ -153,31 +181,33 @@ object Repackager:
     . protect:
         val resource: Text = burdock.internal.ResourcePath.tt
         val bootstrapName: Text = t"burdock/Bootstrap.class"
+        val manifestName: Text = t"META-INF/MANIFEST.MF"
         var manifestData: Optional[Data] = Unset
         var depsData: Optional[Data] = Unset
         var inputCount: Int = 0
         var directoriesSkipped: Int = 0
-        val ownBuilder = List.newBuilder[Entry]
+        val ownBuilder = List.newBuilder[Zip.Entry]
 
         Zipfile.read(inputJar).entries.each: entry =>
           inputCount += 1
 
-          // Directory entries (the zeppelin reader strips their trailing slash and flags
-          // them as `directory`) must never be copied into an `Entry`, which carries no
-          // directory flag and would re-emit them as zero-byte *files* — colliding with the
-          // real directory on extraction ("exists but is not directory"). A JAR needs no
-          // explicit directory entries: extractors synthesise parents on demand. `cached`
-          // already drops them.
+          // Directory entries (the zeppelin reader strips their trailing slash and flags them as
+          // `directory`) are dropped: a JAR needs no explicit directory entries — extractors
+          // synthesise parents on demand — and `cached` drops them too, so keeping them would only
+          // reintroduce the "exists but is not directory" extraction clash. Every other entry is
+          // kept as its original `Zip.Entry`, so its already-compressed payload is copied verbatim
+          // on write rather than inflated here and re-deflated there.
           if entry.directory then directoriesSkipped += 1 else
             val name: Text = entry.ref.show
 
-            // The bootstrap class is force-included below, so drop any copy already bundled
-            // (an app whose `Main-Class` is `burdock.Bootstrap` bundles burdock) to avoid a
-            // duplicate entry.
-            if name == t"META-INF/MANIFEST.MF" then manifestData = entry.read[Data]
+            // The manifest and the deps resource are the only entries whose *decompressed* bytes
+            // are needed (to rewrite the manifest and read the hash list); read those two. Drop any
+            // bundled `burdock/Bootstrap.class` (an app whose `Main-Class` is `burdock.Bootstrap`
+            // bundles burdock) since the bootstrap is force-included below, avoiding a duplicate.
+            if name == manifestName then manifestData = entry.read[Data]
             else if name == resource then depsData = entry.read[Data]
             else if name == bootstrapName then ()
-            else ownBuilder += Entry(name, entry.read[Data])
+            else ownBuilder += entry
 
         val manifest: Manifest =
           manifestData.lest(RepackageError(m"the JAR has no manifest")).read[Manifest]
@@ -186,7 +216,7 @@ object Repackager:
           depsData.lest(RepackageError(m"the JAR has no $resource resource")).utf8
           . cut(t"\n").filter(_ != t"")
 
-        val ownEntries: List[Entry] = ownBuilder.result()
+        val ownEntries: List[Zip.Entry] = ownBuilder.result()
         val (requirements, inlined) = partition(hashes, resolve, cached, progress)
 
         // Published dependencies are downloaded and added to the classpath at runtime, so
@@ -199,8 +229,8 @@ object Repackager:
 
         val stripped: Set[Text] = publishedEntries.map(_.ref.show).to(Set)
 
-        val keptEntries: List[Entry] = ownEntries.filter: entry =>
-          !stripped.contains(entry.name)
+        val keptEntries: List[Zip.Entry] = ownEntries.filter: entry =>
+          !stripped.contains(entry.ref.show)
 
         import manifestAttributes.*
 
@@ -211,18 +241,22 @@ object Repackager:
           manifest - MainClass + BurdockRequire(requirements) + BurdockMain(originalMain) +
             BurdockVerbosity(t"silent") + MainClass(fqcn"burdock.Bootstrap")
 
-        val bootstrap: Entry = Entry(bootstrapName, bootstrapClass)
+        // The freshly-built entries — the rewritten manifest and the force-included bootstrap class
+        // — are the only two that are compressed here; everything else is a verbatim copy.
+        val manifestEntry: Zip.Entry =
+          Zip.Entry(manifestName.decode[Path on Zip], manifest2.serialize)
+
+        val bootstrap: Zip.Entry =
+          Zip.Entry(bootstrapName.decode[Path on Zip], () => Stream(bootstrapClass))
 
         // Keep the first occurrence of each entry name: the force-included bootstrap over any
         // bundled or inlined copy (an unpublished `burdock` dependency's cached JAR also
         // carries `burdock/Bootstrap.class`), and a bundled class over an inlined cache copy.
         // Without this, `Zipfile.write` rejects the duplicate entry.
-        val entries: List[Entry] = (bootstrap :: keptEntries ++ inlined).distinctBy(_.name)
+        val entries: List[Zip.Entry] =
+          (bootstrap :: keptEntries ++ inlined).distinctBy(_.ref.show)
 
-        Zipfile.write(outputJar):
-          Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifest2.serialize) #::
-            entries.to(Stream).map: entry =>
-              Zip.Entry(entry.name.decode[Path on Zip], () => Stream(entry.data))
+        Zipfile.write(outputJar)(manifestEntry #:: entries.to(Stream))
 
         // The output also carries the manifest entry, hence `entries.length + 1`.
         Summary

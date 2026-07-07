@@ -32,6 +32,9 @@
                                                                                                   */
 package burdock
 
+import java.util.concurrent as juc
+import juc.atomic as juca
+
 import soundness.*
 
 import strategies.throwUnsafely
@@ -88,6 +91,41 @@ object Tests extends Suite(m"Burdock Tests"):
       test(m"a hash that is neither published nor cached is rejected"):
         capture[Repackager.RepackageError](Repackager.partition(List(t"ccc"), resolve, cached))
       .assert(_ => true)
+
+      test(m"deps.dev lookups run concurrently, not one at a time"):
+        // Each lookup blocks on a shared latch that only releases once every lookup has arrived.
+        // If the lookups ran sequentially the first would wait alone until it timed out (recording
+        // failure); running concurrently, all arrive, the latch releases, and every `await` returns
+        // `true`. `cached` returns an empty entry list so an unresolved hash is neither an error nor
+        // any inlined output.
+        val count = 4
+        val latch = juc.CountDownLatch(count)
+        val concurrent = juca.AtomicBoolean(true)
+
+        val slowResolve: Repackager.Resolver = _ =>
+          latch.countDown()
+          if !latch.await(5, juc.TimeUnit.SECONDS) then concurrent.set(false)
+          Unset
+
+        val emptyCache: Repackager.CacheReader = _ => List()
+        val hashes = List(t"h0", t"h1", t"h2", t"h3")
+        Repackager.partition(hashes, slowResolve, emptyCache)
+        concurrent.get
+      .assert(_ == true)
+
+      test(m"progress advances monotonically to the total"):
+        val emptyCache: Repackager.CacheReader = _ => List()
+        val hashes = List(t"h0", t"h1", t"h2")
+        val last = juca.AtomicInteger(0)
+        val monotonic = juca.AtomicBoolean(true)
+
+        val progress: Repackager.Progress = (done, total) =>
+          if done < last.get || total != hashes.length then monotonic.set(false)
+          last.set(done)
+
+        Repackager.partition(hashes, _ => Unset, emptyCache, progress)
+        (monotonic.get, last.get)
+      .assert(_ == (true, 3))
 
     suite(m"Progress bar"):
       test(m"an empty bar is all spaces"):
@@ -306,3 +344,60 @@ object Tests extends Suite(m"Burdock Tests"):
       test(m"records the published dependency as a requirement"):
         manifest.contains(t"pub")
       .assert(_ == true)
+
+    suite(m"Repackager (verbatim copy)"):
+      // Entries copied from the input JAR must be passed through byte-for-byte — the same
+      // compression method, CRC and payload — never inflated and re-deflated. A `Stored` input
+      // entry is the tell: were it recompressed under the default `Deflate` policy, it would come
+      // out as `Deflate`.
+      val tmp: Path on Linux = temporaryDirectory[Path on Linux]
+      val inputJar: Path on Linux = tmp/t"burdock-verbatim-in-${Uuid().show}.jar"
+      val outputJar: Path on Linux = tmp/t"burdock-verbatim-out-${Uuid().show}.jar"
+
+      val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
+
+      // A `Stored` entry (kept uncompressed) and a `Deflate` entry (a compressible payload, so the
+      // deflate actually wins and the method is recorded as `Deflate`).
+      val storedEntry: Zip.Entry =
+        given Zip.Compression = Zip.Compression.Stored
+        Zip.Entry(t"pkg/Stored.class".decode[Path on Zip], t"stored-payload".data)
+
+      val deflateEntry: Zip.Entry =
+        given Zip.Compression = Zip.Compression.Deflate(-1)
+        Zip.Entry(t"pkg/Deflated.class".decode[Path on Zip], (t"a"*2000).data)
+
+      Zipfile.write(inputJar):
+        Zip.Entry(t"META-INF/MANIFEST.MF".decode[Path on Zip], manifestText.data)
+        #:: Zip.Entry(t"META-INF/burdock.deps".decode[Path on Zip], t"".data)
+        #:: storedEntry
+        #:: deflateEntry
+        #:: LazyList()
+
+      Repackager.repackage(inputJar, outputJar, _ => Unset, _ => Unset, t"bootstrap".data)
+
+      def entry(jar: Path on Linux, name: Text): Zip.Entry =
+        Zipfile.read(jar).entries.find(_.ref.show == name).get
+
+      test(m"a Stored input entry stays Stored (no re-deflate)"):
+        entry(outputJar, t"pkg/Stored.class").method
+      .assert(_ == Zip.Method.Stored)
+
+      test(m"a Deflate input entry stays Deflate"):
+        entry(outputJar, t"pkg/Deflated.class").method
+      .assert(_ == Zip.Method.Deflate)
+
+      test(m"the CRC-32 is carried through unchanged"):
+        entry(outputJar, t"pkg/Deflated.class").crc32
+      .assert(_ == entry(inputJar, t"pkg/Deflated.class").crc32)
+
+      test(m"the compressed size is carried through unchanged"):
+        entry(outputJar, t"pkg/Deflated.class").compressedSize
+      .assert(_ == entry(inputJar, t"pkg/Deflated.class").compressedSize)
+
+      test(m"the decompressed Stored payload is preserved"):
+        entry(outputJar, t"pkg/Stored.class").read[Data].utf8
+      .assert(_ == t"stored-payload")
+
+      test(m"the decompressed Deflate payload is preserved"):
+        entry(outputJar, t"pkg/Deflated.class").read[Data].utf8
+      .assert(_ == t"a"*2000)
