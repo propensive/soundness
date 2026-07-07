@@ -32,34 +32,54 @@
                                                                                                   */
 package perihelion
 
+import java.security.SecureRandom
+
 import anticipation.*
-import fulminate.*
+import rudiments.*
+import vacuous.*
 
-object WebsocketError:
-  // Each reason carries the RFC 6455 close code the server sends before closing.
-  enum Reason(val number: Int, val closeCode: Int) extends Clarification:
-    case Unmasked                extends Reason(1, 1002)
-    case BadOpcode(code: Int)    extends Reason(2, 1002)
-    case BadControl              extends Reason(3, 1002)
-    case BadFragmentation        extends Reason(4, 1002)
-    case TooLarge(size: Long)    extends Reason(5, 1009)
-    case InvalidText             extends Reason(6, 1007)
-    case ReservedBits            extends Reason(7, 1002)
-    case BadClose                extends Reason(8, 1002)
-    case Masked                  extends Reason(9, 1002)
-    case Handshake(detail: Text) extends Reason(10, 1002)
+// Which side of a WebSocket connection this endpoint is, and hence how frames are
+// masked. RFC 6455 §5.3: a client MUST mask every frame it sends with a fresh 32-bit
+// key; a server MUST send unmasked and reject an unmasked client frame, and — the
+// mirror image — a client MUST reject a masked server frame. Masking is applied once,
+// on the outgoing side, at the `Channel` boundary (every element spooled there is
+// already exactly one complete, unmasked frame); the incoming side (`Frame.parse`)
+// enforces the expected direction.
+object Masking:
+  // The server side: send unmasked, require inbound frames to be masked.
+  object Server extends Masking:
+    def outbound(frame: Data): Data = frame
+    def inbound: Boolean = true
 
-  given communicable: Reason is Communicable =
-    case Reason.Unmasked          => m"the client sent an unmasked frame"
-    case Reason.BadOpcode(code)   => m"the frame used the reserved opcode $code"
-    case Reason.BadControl        => m"a control frame was fragmented or exceeded 125 bytes"
-    case Reason.BadFragmentation  => m"the message fragmentation was invalid"
-    case Reason.TooLarge(size)    => m"the frame payload of $size bytes exceeded the limit"
-    case Reason.InvalidText       => m"a text frame contained invalid UTF-8"
-    case Reason.ReservedBits      => m"a reserved header bit (RSV1/2/3) was set"
-    case Reason.BadClose          => m"the close frame had a malformed payload or invalid code"
-    case Reason.Masked            => m"the server sent a masked frame"
-    case Reason.Handshake(detail) => m"the WebSocket handshake failed because $detail"
+  // The client side: mask each outgoing frame with a fresh key, and reject a masked
+  // inbound (server) frame. One `SecureRandom` is kept per connection for the keys.
+  class Client() extends Masking:
+    private val random: SecureRandom = SecureRandom()
 
-case class WebsocketError(reason: WebsocketError.Reason)(using Diagnostics)
-extends Error(368, reason.number)(m"the WebSocket protocol was violated because $reason")
+    def inbound: Boolean = false
+
+    def outbound(frame: Data): Data =
+      // A frame we generated is unmasked, so its header is 2 bytes plus the 0/2/8 bytes
+      // of extended length; the mask bit (byte 1, high bit) is clear. Set it, splice in
+      // a fresh 4-byte key, and XOR the payload (`Frame.unmask` is its own inverse).
+      val headerLength = (frame(1).toInt & 0x7f) match
+        case 126 => 4
+        case 127 => 10
+        case _   => 2
+
+      val key: Data =
+        val bytes = new Array[Byte](4)
+        random.nextBytes(bytes)
+        bytes.immutable(using Unsafe)
+
+      val header: Data = Data.fill(headerLength): index =>
+        if index == 1 then (frame(1).toInt | 0x80).toByte else frame(index)
+
+      header ++ key ++ Frame.unmask(frame.drop(headerLength), key)
+
+trait Masking:
+  // Mask a complete, self-generated (and therefore well-formed and unmasked) frame, or
+  // return it unchanged for the server. `inbound` reports whether frames read from the
+  // peer must be masked.
+  def outbound(frame: Data): Data
+  def inbound: Boolean

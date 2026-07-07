@@ -77,27 +77,30 @@ enum Message:
 // The outgoing side of a connection: a thread-safe spool of encoded frames that
 // the server pumps to the socket as the `101` response body (mirroring Coaxial's
 // `Duplex.send`). The reader and the handler both enqueue here.
-class Channel():
+class Channel()(using masking: Masking):
   private val spool: Spool[Data] = Spool()
 
-  private[perihelion] def enqueue(frame: Data): Unit = spool.put(frame)
+  // Mask each frame once, here, on its way out: every element reaching the spool is
+  // already a complete, unmasked frame (a Reader auto-reply, a handler `Reply`, a
+  // `send`, or a `close`), so a client masks it and a server passes it through.
+  private[perihelion] def enqueue(frame: Data): Unit = spool.put(masking.outbound(frame))
   private[perihelion] def stream: Stream[Data] = spool.stream
 
   def send(message: Message): Unit logs WebsocketEvent =
     Log.fine(WebsocketEvent.Sent(message.bytes.length))
-    Message.transmissible.serialize(message).each(spool.put(_))
+    Message.transmissible.serialize(message).each(enqueue(_))
 
   def stop(): Unit = spool.stop()
 
   def close(code: Int = 1000): Unit logs WebsocketEvent =
     Log.info(WebsocketEvent.Closed(code))
-    spool.put(Frame.Close(code, Data()).encode)
+    enqueue(Frame.Close(code, Data()).encode)
     spool.stop()
 
 // Reads client frames off the connection, reassembles fragmented messages,
 // answers Ping with Pong, and ends (stopping the outgoing side) when the peer
 // sends Close. Protocol violations raise `WebsocketError`.
-class Reader(body: () => Stream[Data], channel: Channel)(using Tactic[WebsocketError]):
+class Reader(body: () => Stream[Data], channel: Channel)(using Tactic[WebsocketError], Masking):
   def messages: Stream[Message] =
     val cursor = Cursor(body().filter(_.nonEmpty).iterator)
 
@@ -186,9 +189,11 @@ class Websocket[message, state]
   ( request: Http.Request,
     initial: state,
     decode:  Message => message,
-    frame:   Data => Data,
     handle:  (state: state) ?=> message => Control[state] )
   ( using Monitor, Probate ):
+
+  // A server sends unmasked frames and requires the peer's to be masked.
+  given Masking = Masking.Server
 
   given key0: ("secWebsocketKey" is Directive of Text) = identity(_)
 
@@ -209,11 +214,11 @@ class Websocket[message, state]
         state
 
       case Reply(bytes, state2) =>
-        channel.enqueue(frame(bytes))
+        channel.enqueue(bytes)
         loop(more, state2.or(state))
 
       case Conclude(bytes, state2) =>
-        channel.enqueue(frame(bytes))
+        channel.enqueue(bytes)
         channel.stop()
         state2.or(state)
 
