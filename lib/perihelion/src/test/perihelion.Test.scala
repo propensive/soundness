@@ -59,6 +59,41 @@ object Tests extends Suite(m"Perihelion tests"):
       socket.close()
       port
 
+    // A throwaway self-signed `CN=localhost` certificate (via the JDK's keytool) and the
+    // matching contexts: a server context that presents it, and a trust-all client context
+    // (used with `verify = false`, since the cert carries no SAN). Mirrors the scintillate
+    // TLS test.
+    def tlsContexts(): (javax.net.ssl.SSLContext, javax.net.ssl.SSLContext) =
+      val dir = java.nio.file.Files.createTempDirectory("perihelion-tls").nn
+      val path = dir.resolve("test.p12").nn.toString.nn
+
+      val keytool = java.lang.ProcessBuilder("keytool", "-genkeypair", "-alias", "test",
+          "-keyalg", "RSA", "-keysize", "2048", "-validity", "1", "-storetype", "PKCS12",
+          "-keystore", path, "-storepass", "changeit", "-dname", "CN=localhost")
+
+      keytool.redirectErrorStream(true)
+      keytool.redirectOutput(java.lang.ProcessBuilder.Redirect.DISCARD)
+      keytool.start().nn.waitFor()
+
+      val password = "changeit".toCharArray.nn
+      val keystore = java.security.KeyStore.getInstance("PKCS12").nn
+      keystore.load(java.io.FileInputStream(path), password)
+      val keyManagers = javax.net.ssl.KeyManagerFactory.getInstance("SunX509").nn
+      keyManagers.init(keystore, password)
+      val serverContext = javax.net.ssl.SSLContext.getInstance("TLS").nn
+      serverContext.init(keyManagers.getKeyManagers, null, null)
+
+      val trustManager = new javax.net.ssl.X509TrustManager:
+        type Certs = Array[java.security.cert.X509Certificate | Null] | Null
+        def getAcceptedIssuers: Certs = scala.Array.empty[java.security.cert.X509Certificate | Null]
+        def checkClientTrusted(chain: Certs, kind: String | Null): Unit = ()
+        def checkServerTrusted(chain: Certs, kind: String | Null): Unit = ()
+
+      val clientContext = javax.net.ssl.SSLContext.getInstance("TLS").nn
+      clientContext.init(null, scala.Array(trustManager), java.security.SecureRandom())
+
+      (serverContext, clientContext)
+
     // Build a masked client frame (clients must mask).
     def clientFrame(opcode: Int, payload: Array[Byte]): Array[Byte] =
       val mask = Array[Byte](0x12, 0x34, 0x56, 0x78)
@@ -400,12 +435,26 @@ object Tests extends Suite(m"Perihelion tests"):
 
         . assert(_ == 8)
 
-        test(m"A wss:// URL is rejected pending client TLS support"):
-          val url = t"wss://example.com/".decode[WsUrl]
+        // The whole client stack over TLS: a self-signed `wss://` echo server, and a client
+        // that trusts it (verification off for the self-signed cert). Proves the TLS
+        // `Duplex` carries the handshake and framed, masked messages.
+        test(m"A wss:// client completes a TLS handshake and round-trips a message"):
+          val (serverContext, clientContext) = tlsContexts()
+          val port = freePort()
 
-          capture[WebsocketError](url.exchange(())((_: perihelion.Message) => Terminate)).reason
-          match
-            case WebsocketError.Reason.Handshake(_) => true
-            case _                                  => false
+          val server = SocketServer(port, ssl = serverContext).handle:
+            webSocket(): (ping: Ping over Json) =>
+              Reply(Ping(ping.value + 1).over[Json], ())
 
-        . assert(_ == true)
+          given Tls = Tls(clientContext, verify = false)
+          val url = t"wss://localhost:$port/".decode[WsUrl]
+
+          val handle: (state: Int) ?=> (Ping over Json) => Control[Int] =
+            ping => Conclude(Ping(0).over[Json], ping.value)
+
+          val value = url.transceive(0)(handle)(_.send(Ping(7).over[Json]))
+
+          server.cancel()
+          value
+
+        . assert(_ == 8)
