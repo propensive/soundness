@@ -299,10 +299,16 @@ object StackTrace:
 
     else if rewritten.s.endsWith("#") then
       val pivot = rewritten.s.lastIndexOf(".")
-      val sub = if rewritten.s.endsWith("⁆#") then "⁅" else "Ξ"
 
-      (rewritten.s.substring(0, pivot).nn+"."+sub+rewritten.s.substring(pivot + 1).nn.dropRight(1))
-      . tt
+      // With no `.` to split on (`pivot == -1`), `substring(0, pivot)` would throw, so leave the
+      // name unchanged rather than out-of-bounds.
+      if pivot < 0 then rewritten
+      else
+        val sub = if rewritten.s.endsWith("⁆#") then "⁅" else "Ξ"
+        val head = rewritten.s.substring(0, pivot).nn
+        val tail = rewritten.s.substring(pivot + 1).nn.dropRight(1)
+
+        (head+"."+sub+tail).tt
     else
       rewritten
 
