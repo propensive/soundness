@@ -46,11 +46,11 @@ import probates.awaitProbate
 // `java -cp <test-classpath> perihelion.AutobahnClient [host] [port]` and read its HTML report.
 // Not part of the test suite — it only runs when invoked directly.
 //
-// The fuzzingserver drives every exchange, so the client is a pure echo: for each case it
+// The fuzzingserver drives every interaction, so the client is a pure echo: for each case it
 // connects, replies to every message verbatim, and answers Ping/Close per the RFC (handled by
 // the shared `Reader`). It drives that `Reader`/`Channel` directly rather than through Coaxial's
-// `exchange`, because `exchange` flattens each message to bytes — losing the Text/Binary frame
-// type an echo must preserve — and has no hook to send an RFC close code on a protocol violation.
+// `react`/`exchange`, which flatten each message to bytes — losing the Text/Binary frame type an
+// echo must preserve — and offer no hook to send an RFC close code on a protocol violation.
 object AutobahnClient:
   private val agent: Text = t"soundness-perihelion"
 
