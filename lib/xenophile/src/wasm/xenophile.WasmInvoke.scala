@@ -37,7 +37,6 @@ import scala.quoted.*
 import anticipation.*
 import distillate.*
 import fulminate.*
-import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -194,7 +193,28 @@ object WasmInvoke:
 
           (arrayCarrier, decode)
 
+    val optionClass = Symbol.requiredClass("java.util.Optional")
+
+    // An `option<T>` (Scala `Optional[T]` = `Unset | T`), carried as a `java.util.Optional[Tc]`.
+    def optionOf(inner: TypeRepr): (TypeRepr, Expr[Any] => Expr[Any]) =
+      val (innerCarrier, innerDecode) = leaf(inner)
+      val carrier = optionClass.typeRef.appliedTo(List(innerCarrier))
+
+      // `java.util.Optional` is nameable here, so ordinary quotes suffice (no reflective decode);
+      // an absent value becomes `Unset`.
+      val decode: Expr[Any] => Expr[Any] = call =>
+        '{  val option = $call.asInstanceOf[java.util.Optional[Any]]
+            if option.isPresent then ${innerDecode('{option.get})} else Unset  }
+
+      (carrier, decode)
+
     TypeRepr.of[result].dealias match
+      case OrType(left, right) if left =:= TypeRepr.of[Unset] =>
+        optionOf(right)
+
+      case OrType(left, right) if right =:= TypeRepr.of[Unset] =>
+        optionOf(left)
+
       case AppliedType(list, List(element)) if list.typeSymbol == listClass =>
         element.dealias match
           case AppliedType(tuple, List(leftType, rightType))
