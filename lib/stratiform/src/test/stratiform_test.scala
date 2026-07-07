@@ -1969,3 +1969,4 @@ object Tests extends Suite(m"Stratiform Tests"):
     RecordsTests()
     VerifyTests()
     AccrualTests()
+    PositionTests()

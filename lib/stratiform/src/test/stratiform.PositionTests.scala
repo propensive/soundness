@@ -30,107 +30,97 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package ypsiloid
+package stratiform
 
 import soundness.*
 
+import charEncoders.utf8Encoder
+import parsing.trackPositions
 import strategies.throwUnsafely
-import errorDiagnostics.stackTracesDiagnostics
 
-case class FPerson(name: Text, age: Int, email: Text) derives CanEqual
-case class FAddress(street: Text, city: Text, zip: Text) derives CanEqual
-case class FContact(person: FPerson, address: FAddress) derives CanEqual
+object PositionTests extends Suite(m"Stratiform position-index tests"):
 
-object FocusTests extends Suite(m"Ypsiloid focus + position tests"):
-
-  case class Captured
-    ( items: List[(Text, Optional[Int], Optional[Int])] = Nil )
-    ( using Diagnostics )
-  extends Error(m"${items.length} validation issues"):
-    def +(focus: Text, line: Optional[Int], column: Optional[Int]): Captured =
-      Captured(items :+ (focus, line, column))
-
-  private def captureFoci[result](yaml: Yaml)
-                                 (decode: Yaml => result raises YamlError tracks Yaml.Focus)
-  :   List[(Text, Optional[Int], Optional[Int])] =
-    validate[Yaml.Focus](Captured()):
-      case error: YamlError =>
-        val position = prior.let(_.position)
-        accrual + ( prior.let(_.pointer.encode).or(t"#"),
-                    position.let(_.line),
-                    position.let(_.column) )
-    . protect(decode(yaml)).items
+  // A compound's keyword position: 1-based line/column with the keyword's
+  // character length (mirrors `jacinta.PositionTests.at`).
+  private def at(line: Int, column: Int, length: Int): Tel.Position =
+    Tel.Position(line, column, length = Optional(length))
 
   def run(): Unit =
-    suite(m"Pointer-only focus (untracked Yaml)"):
-      test(m"Missing field reports the focus pointer (no position)"):
-        val yaml = t"name: Alice\nage: 30".read[Yaml]
-        captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to(Set)
-      . assert(_ == Set("#/email"))
+    suite(m"Top-level compounds"):
+      test(m"Locate the document root"):
+        t"greeting hello\n".read[Tel].locate(TelPath(Nil))
+      . assert(_ == at(1, 1, 0))
 
-      test(m"Wrong-type field reports the focus pointer (no position)"):
-        val yaml = t"name: Alice\nage: thirty\nemail: a@b".read[Yaml]
-        captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to(Set)
-      . assert(_ == Set("#/age"))
+      test(m"Locate a top-level compound by keyword"):
+        t"greeting hello\n".read[Tel].locate(TelPath(List(t"greeting")))
+      . assert(_ == at(1, 1, 8))
 
-      test(m"Nested case-class missing field reports root-first path"):
-        val yaml = t"""
-person:
-  name: X
-  age: 1
-  email: x@y
-address:
-  street: S
-""".read[Yaml]
-        // address is missing both `city` and `zip`; primitive
-        // decoders raise+yet on the `Unset` sentinel so both accrue
-        // their own errors rather than the first one aborting the
-        // whole decode.
-        captureFoci(yaml)(_.as[FContact]).map(_(0).s).to(Set)
-      . assert(_ == Set("#/address/city", "#/address/zip"))
+      test(m"Locate the second of two top-level compounds"):
+        t"first a\nsecond b\n".read[Tel].locate(TelPath(List(t"second")))
+      . assert(_ == at(2, 1, 6))
 
-      test(m"Untracked roots leave the focus position Unset"):
-        val yaml = t"name: Alice\nage: 30".read[Yaml]
-        captureFoci(yaml)(_.as[FPerson]).forall((_, line, _) => line == Unset)
-      . assert(identity)
+      test(m"An unknown keyword returns Unset"):
+        t"greeting hello\n".read[Tel].locate(TelPath(List(t"absent")))
+      . assert(_ == Unset)
 
-    suite(m"Position-aware focus (tracked Yaml)"):
-      import parsing.trackPositions
+    suite(m"Nested compounds"):
+      test(m"Locate a child compound"):
+        t"person\n  name Alice\n  age 30\n".read[Tel]
+        . locate(TelPath(List(t"person", t"name")))
+      . assert(_ == at(2, 3, 4))
 
-      test(m"Tracked root: focus pointers are still correct"):
-        // The decoder still aborts on first error (raise+yet is a PR 3
-        // change), so position population via `as[T]`'s Foci.supplement
-        // doesn't fire when an error short-circuits the decode. The
-        // focus *path* is registered by the focus block's try/finally
-        // either way, so we verify that path here and exercise the
-        // `withPosition` plumbing in a separate direct test below.
-        val yaml = t"name: Alice\nage: 30".read[Yaml]
-        captureFoci(yaml)(_.as[FPerson]).map(_(0).s).to(Set)
-      . assert(_ == Set("#/email"))
+      test(m"Locate a sibling child on a later line"):
+        t"person\n  name Alice\n  age 30\n".read[Tel]
+        . locate(TelPath(List(t"person", t"age")))
+      . assert(_ == at(3, 3, 3))
 
-      test(m"Nested missing field reports root-first path on a tracked root"):
-        val source = t"""person:
-  name: C
-  age: 25
-  email: c@x
-address:
-  street: X
-"""
-        captureFoci(source.read[Yaml])(_.as[FContact]).map(_(0).s).to(Set)
-      . assert(_ == Set("#/address/city", "#/address/zip"))
+      test(m"Locate a grandchild compound"):
+        t"a\n  b\n    c hello\n".read[Tel].locate(TelPath(List(t"a", t"b", t"c")))
+      . assert(_ == at(3, 5, 1))
 
-      test(m"withPosition on a tracked Yaml resolves the pointer to a real position"):
-        // Direct exercise of `Yaml.Focus#withPosition`. Even though the
-        // current decoder aborts before `as[T]`'s `Foci.supplement` can
-        // run, the plumbing is wired correctly — once primitive
-        // decoders gain raise+yet sentinels in PR 3, wrong-type errors
-        // will land with `position` populated through this same path.
-        val source = t"name: Alice\nage: 30\nemail: a@b\n"
-        val yaml = source.read[Yaml]
-        Yaml.Focus(YamlPath()(t"age")).withPosition(yaml).position.let(_.line)
+      test(m"A missing intermediate segment returns Unset"):
+        t"person\n  name Alice\n".read[Tel].locate(TelPath(List(t"person", t"absent")))
+      . assert(_ == Unset)
+
+    suite(m"Column tracks indentation"):
+      test(m"A top-level keyword is at column 1"):
+        t"root\n  child value\n".read[Tel].locate(TelPath(List(t"root"))).let(_.column)
+      . assert(_ == 1)
+
+      test(m"A one-level-deep keyword is at column 3"):
+        t"root\n  child value\n".read[Tel]
+        . locate(TelPath(List(t"root", t"child"))).let(_.column)
+      . assert(_ == 3)
+
+      test(m"A one-level-deep keyword is on the second line"):
+        t"root\n  child value\n".read[Tel]
+        . locate(TelPath(List(t"root", t"child"))).let(_.line)
       . assert(_ == 2)
 
-      test(m"withPosition leaves position Unset when the pointer doesn't resolve"):
-        val yaml = t"name: Alice".read[Yaml]
-        Yaml.Focus(YamlPath()(t"missing")).withPosition(yaml).position
+    suite(m"Tracking mode"):
+      test(m"`import parsing.trackPositions` records a position index"):
+        t"greeting hello\n".read[Tel].positionIndex.absent
+      . assert(_ == false)
+
+      test(m"Without the import, the position index is Unset"):
+        given PositionTracking = PositionTracking.Off
+        t"greeting hello\n".read[Tel].positionIndex
       . assert(_ == Unset)
+
+      test(m"Locating in an untracked document returns Unset"):
+        given PositionTracking = PositionTracking.Off
+        t"greeting hello\n".read[Tel].locate(TelPath(List(t"greeting")))
+      . assert(_ == Unset)
+
+    suite(m"Span derivation"):
+      test(m"a position's span carries its line as a 0-based ordinal"):
+        at(2, 8, 3).span.startLine.vouch
+      . assert(_ == 1.z)
+
+      test(m"a position's span carries its column as a 0-based ordinal"):
+        at(2, 8, 3).span.startColumn.vouch
+      . assert(_ == 7.z)
+
+      test(m"a position's span carries its length"):
+        at(2, 8, 3).span.length.vouch
+      . assert(_ == 3)
