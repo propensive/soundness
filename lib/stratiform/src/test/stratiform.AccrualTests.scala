@@ -71,7 +71,8 @@ object AccrualTests extends Suite(m"Stratiform multi-error accrual tests"):
   // keyword-path pointer alongside the source `Position` filled in by
   // `Tel.Type.assign`'s `withPosition` enrichment.
   private def assignPositions(text: Text, schema: Tels): Located =
-    val tel = Tel.parseTracked(text)
+    import parsing.trackPositions
+    val tel = text.read[Tel]
 
     validate[Tel.Focus](Located()):
       case error: TelError =>

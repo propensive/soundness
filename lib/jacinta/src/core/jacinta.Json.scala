@@ -710,29 +710,35 @@ object Json extends Json2, Dynamic:
         else expected(JsonPrimitive.Number) yet 0L
 
     // Low-level parsers building an `Ast` directly from input. Public reading
-    // goes through `source.read[Json]` (the `Aggregable` instances); these are
-    // the underlying engine and stay scoped to the `Ast` companion.
-    def parse(source: Data)(using mode: NumberMode): Json.Ast raises ParseError =
+    // goes through `source.read[Json]` (the `Aggregable` instances, which
+    // consult `PositionTracking`); these are the underlying engine and stay
+    // package-private (used by the `read` givens, the interpolator macros, and
+    // benchmarks — all within `jacinta`).
+    private[jacinta] def parse(source: Data)(using mode: NumberMode): Json.Ast raises ParseError =
       Json.Ast(Parser.parse(source, mode))
 
-    def parse(source: Data, holes: Boolean)(using mode: NumberMode): Json.Ast raises ParseError =
+    private[jacinta] def parse(source: Data, holes: Boolean)(using mode: NumberMode)
+    :   Json.Ast raises ParseError =
+
       Json.Ast(Parser.parse(source, holes, mode))
 
-    def parse(input: Iterator[Data])(using mode: NumberMode): Json.Ast raises ParseError =
+    private[jacinta] def parse(input: Iterator[Data])(using mode: NumberMode)
+    :   Json.Ast raises ParseError =
+
       Json.Ast(Parser.parse(input, mode))
 
-    def parse(input: Iterator[Data], holes: Boolean)(using mode: NumberMode)
+    private[jacinta] def parse(input: Iterator[Data], holes: Boolean)(using mode: NumberMode)
     :   Json.Ast raises ParseError =
 
       Json.Ast(Parser.parse(input, holes, mode))
 
-    def parseTracked(source: Data)(using mode: NumberMode)
+    private[jacinta] def parseTracked(source: Data)(using mode: NumberMode)
     :   (Json.Ast, Json.PositionIndex) raises ParseError =
 
       val (raw, ints) = Parser.parseTracked(source, mode)
       (Json.Ast(raw), Json.PositionIndex(ints))
 
-    def parseTracked(input: Iterator[Data])(using mode: NumberMode)
+    private[jacinta] def parseTracked(input: Iterator[Data])(using mode: NumberMode)
     :   (Json.Ast, Json.PositionIndex) raises ParseError =
 
       val (raw, ints) = Parser.parseTracked(input, mode)
@@ -745,19 +751,19 @@ object Json extends Json2, Dynamic:
   def apply(value: Any): Json = new Json(value)
   def apply(value: Any, positions: Optional[Json.PositionIndex]): Json = new Json(value, positions)
 
-  // Defined on the companion directly (not as a `Json.type` extension) because
-  // the companion's `Dynamic` parentage intercepts `Json.parseTracked(...)`
-  // before extension-method resolution gets a chance.
-  def parseTracked(source: Data)(using NumberMode): Json raises ParseError =
-    val (ast, index) = Json.Ast.parseTracked(source)
-    new Json(ast, index)
+  // Parse a byte-chunk iterator into a `Json`, honouring the in-scope
+  // `PositionTracking` toggle (`parsing.trackPositions`): when on, source
+  // positions are recorded and retained on the `Json` (locatable via
+  // `Positionable`); when off, the throughput path is unchanged. This is the
+  // single place the `read`/`load` givens branch on tracking.
+  private def readJson(input: Iterator[Data])(using Tactic[ParseError], PositionTracking): Json =
+    summon[PositionTracking] match
+      case PositionTracking.On =>
+        val (ast, index) = Json.Ast.parseTracked(input)
+        new Json(ast, index)
 
-  def parseTracked(input: Iterator[Data])(using NumberMode): Json raises ParseError =
-    val (ast, index) = Json.Ast.parseTracked(input)
-    new Json(ast, index)
-
-  def parseTracked(source: Text)(using NumberMode, CharEncoder): Json raises ParseError =
-    parseTracked(source.data)
+      case PositionTracking.Off =>
+        Json(Json.Ast.parse(input))
 
   // Canonical external accessor for the underlying AST. The `root`
   // method on `class Json` is package-private so that breaking through
@@ -1085,15 +1091,16 @@ object Json extends Json2, Dynamic:
     given Formatting = Formatting(Unset, false)
     json.root.show
 
-  given aggregable: Tactic[ParseError] => Json is Aggregable by Data =
-    bytes => Json(bytes.read[Json.Ast])
+  given aggregable: (Tactic[ParseError], PositionTracking) => Json is Aggregable by Data =
+    bytes => readJson(bytes.iterator)
 
 
   given aggregableDirect: [value: distillate.Decodable in Json] => Tactic[ParseError]
+  =>  PositionTracking
   =>  Tactic[JsonError]
   =>  (value in Json) is Aggregable by Data =
 
-    bytes => Json(bytes.read[Json.Ast]).as[value].asInstanceOf[value in Json]
+    bytes => readJson(bytes.iterator).as[value].asInstanceOf[value in Json]
 
 
   given showable: Formatting => Json is Showable = _.root.show
@@ -1111,10 +1118,11 @@ object Json extends Json2, Dynamic:
         (t"application/json; charset=${encoder.encoding.name}", Stream(json.show.data))
 
 
-  given decodable: Tactic[ParseError] => Json is distillate.Decodable in Text =
+  given decodable: (Tactic[ParseError], PositionTracking) => Json is distillate.Decodable in Text =
     text => Stream(text.data(using charEncoders.utf8Encoder)).read[Json]
 
-  given instantiable: Tactic[ParseError] => Json is Instantiable across HttpRequests from Text =
+  given instantiable: Tactic[ParseError] => PositionTracking
+  =>  Json is Instantiable across HttpRequests from Text =
     text => Stream(text.data(using charEncoders.utf8Encoder)).read[Json]
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Json)*): Json =

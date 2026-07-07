@@ -175,15 +175,17 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
         . protect(decode(json)).items
 
       test(m"Missing field reports a position on a tracked Json"):
+        import parsing.trackPositions
         val source = t"""{"name": "Alice"}"""
-        val json = Json.parseTracked(source)
+        val json = source.read[Json]
         val results = validateWithPositions(json)(_.as[VPerson])
         results.map(_(0).s).to(Set)
       . assert(_ == Set("#/age", "#/email"))
 
       test(m"Wrong-type field reports the value's line/column"):
+        import parsing.trackPositions
         val source = t"{\n  \"name\": 42,\n  \"age\": 30,\n  \"email\": \"x@y\"\n}"
-        val json = Json.parseTracked(source)
+        val json = source.read[Json]
         val results = validateWithPositions(json)(_.as[VPerson])
         // `name` value 42 is on line 2; column points at the `4` of `42`.
         results.find(_(0) == t"#/name").map((_, line, col) => (line, col))

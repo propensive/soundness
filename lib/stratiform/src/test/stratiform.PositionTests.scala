@@ -35,6 +35,7 @@ package stratiform
 import soundness.*
 
 import charEncoders.utf8Encoder
+import parsing.trackPositions
 import strategies.throwUnsafely
 
 object PositionTests extends Suite(m"Stratiform position-index tests"):
@@ -47,65 +48,67 @@ object PositionTests extends Suite(m"Stratiform position-index tests"):
   def run(): Unit =
     suite(m"Top-level compounds"):
       test(m"Locate the document root"):
-        Tel.parseTracked(t"greeting hello\n").locate(TelPath(Nil))
+        t"greeting hello\n".read[Tel].locate(TelPath(Nil))
       . assert(_ == at(1, 1, 0))
 
       test(m"Locate a top-level compound by keyword"):
-        Tel.parseTracked(t"greeting hello\n").locate(TelPath(List(t"greeting")))
+        t"greeting hello\n".read[Tel].locate(TelPath(List(t"greeting")))
       . assert(_ == at(1, 1, 8))
 
       test(m"Locate the second of two top-level compounds"):
-        Tel.parseTracked(t"first a\nsecond b\n").locate(TelPath(List(t"second")))
+        t"first a\nsecond b\n".read[Tel].locate(TelPath(List(t"second")))
       . assert(_ == at(2, 1, 6))
 
       test(m"An unknown keyword returns Unset"):
-        Tel.parseTracked(t"greeting hello\n").locate(TelPath(List(t"absent")))
+        t"greeting hello\n".read[Tel].locate(TelPath(List(t"absent")))
       . assert(_ == Unset)
 
     suite(m"Nested compounds"):
       test(m"Locate a child compound"):
-        Tel.parseTracked(t"person\n  name Alice\n  age 30\n")
+        t"person\n  name Alice\n  age 30\n".read[Tel]
         . locate(TelPath(List(t"person", t"name")))
       . assert(_ == at(2, 3, 4))
 
       test(m"Locate a sibling child on a later line"):
-        Tel.parseTracked(t"person\n  name Alice\n  age 30\n")
+        t"person\n  name Alice\n  age 30\n".read[Tel]
         . locate(TelPath(List(t"person", t"age")))
       . assert(_ == at(3, 3, 3))
 
       test(m"Locate a grandchild compound"):
-        Tel.parseTracked(t"a\n  b\n    c hello\n").locate(TelPath(List(t"a", t"b", t"c")))
+        t"a\n  b\n    c hello\n".read[Tel].locate(TelPath(List(t"a", t"b", t"c")))
       . assert(_ == at(3, 5, 1))
 
       test(m"A missing intermediate segment returns Unset"):
-        Tel.parseTracked(t"person\n  name Alice\n").locate(TelPath(List(t"person", t"absent")))
+        t"person\n  name Alice\n".read[Tel].locate(TelPath(List(t"person", t"absent")))
       . assert(_ == Unset)
 
     suite(m"Column tracks indentation"):
       test(m"A top-level keyword is at column 1"):
-        Tel.parseTracked(t"root\n  child value\n").locate(TelPath(List(t"root"))).let(_.column)
+        t"root\n  child value\n".read[Tel].locate(TelPath(List(t"root"))).let(_.column)
       . assert(_ == 1)
 
       test(m"A one-level-deep keyword is at column 3"):
-        Tel.parseTracked(t"root\n  child value\n")
+        t"root\n  child value\n".read[Tel]
         . locate(TelPath(List(t"root", t"child"))).let(_.column)
       . assert(_ == 3)
 
       test(m"A one-level-deep keyword is on the second line"):
-        Tel.parseTracked(t"root\n  child value\n")
+        t"root\n  child value\n".read[Tel]
         . locate(TelPath(List(t"root", t"child"))).let(_.line)
       . assert(_ == 2)
 
     suite(m"Tracking mode"):
-      test(m"A tracked parse records a position index"):
-        Tel.parseTracked(t"greeting hello\n").positionIndex.absent
+      test(m"`import parsing.trackPositions` records a position index"):
+        t"greeting hello\n".read[Tel].positionIndex.absent
       . assert(_ == false)
 
-      test(m"A plain parse leaves the position index Unset"):
+      test(m"Without the import, the position index is Unset"):
+        given PositionTracking = PositionTracking.Off
         t"greeting hello\n".read[Tel].positionIndex
       . assert(_ == Unset)
 
-      test(m"Locating in a plain (untracked) document returns Unset"):
+      test(m"Locating in an untracked document returns Unset"):
+        given PositionTracking = PositionTracking.Off
         t"greeting hello\n".read[Tel].locate(TelPath(List(t"greeting")))
       . assert(_ == Unset)
 

@@ -38,7 +38,6 @@ import anticipation.*
 import contingency.*
 import distillate.*
 import gossamer.*
-import hieroglyph.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
@@ -807,17 +806,21 @@ object Tel extends Tel2:
   extension (positionIndex: PositionIndex)
     private[stratiform] def ints: IArray[Int] = positionIndex
 
-  // Parse `bytes` (or `text`) into a `Tel` carrying a `PositionIndex`, so that
+  // Parse `bytes` into a `Tel` carrying a `PositionIndex`, so that
   // `tel.locate(pointer)` / `tel.locateKey(pointer)` resolve a node's keyword
   // path to its source `Position`, and accrued `Tel.Focus`es can be located via
-  // `withPosition`. A plain `bytes.read[Tel]` leaves `positionIndex` Unset, so
-  // the throughput-optimised path is unaffected.
-  def parseTracked(bytes: Data): Tel raises TelError =
+  // `withPosition`. Reached from the `read` / `load` givens only when
+  // `parsing.trackPositions` is in scope; otherwise the untracked `parse` runs
+  // and `positionIndex` is left Unset, so the throughput path is unaffected.
+  private def parseTracked(bytes: Data): Tel raises TelError =
     val (document, triples) = Tel.Parser.parseTracked(bytes)
     Tel(document, Optional(PositionIndex(buildIndex(document, triples))))
 
-  def parseTracked(text: Text)(using CharEncoder): Tel raises TelError =
-    parseTracked(text.data)
+  // Parse `bytes` honouring the in-scope `Tracking` toggle (`parsing.trackPositions`).
+  private def parseTracking(bytes: Data)(using PositionTracking): Tel raises TelError =
+    summon[PositionTracking] match
+      case PositionTracking.On  => parseTracked(bytes)
+      case PositionTracking.Off => parse(bytes)
 
   // Fold the parser's flat pre-order stream of (line, column, length) triples —
   // one per compound, in recursive-descent order — into the navigable packed
@@ -928,17 +931,17 @@ object Tel extends Tel2:
   // pragma, line-endings) is *not* surfaced — use `.load[Tel]` to
   // recover those alongside the value. Per §6.1, single-document parsing
   // stops at the first document separator; content after it is ignored.
-  given aggregable: Tactic[TelError] => Tel is Aggregable by Data =
-    source => parse(concatenate(source))
+  given aggregable: (Tactic[TelError], PositionTracking) => Tel is Aggregable by Data =
+    source => parseTracking(concatenate(source))
 
   // `source.read[Foo in Tel]` shorthand for
   // `source.read[Tel].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`
   // for `value in Json`. The `Form` type-tag is added by an
   // `asInstanceOf` cast — `value in Tel` is just
   // `value { type Form = Tel }` so the cast is a no-op at runtime.
-  given aggregableIn: [value: distillate.Decodable in Tel] => Tactic[TelError]
+  given aggregableIn: [value: distillate.Decodable in Tel] => (Tactic[TelError], PositionTracking)
   =>  (value in Tel) is Aggregable by Data =
-    source => parse(concatenate(source)).as[value].asInstanceOf[value in Tel]
+    source => parseTracking(concatenate(source)).as[value].asInstanceOf[value in Tel]
 
   // `source.read[List[Tel]]` / `read[Stream[Tel]]` for a multi-document source
   // (§6.1). `List[Tel]` parses every document eagerly; `Stream[Tel]` parses
@@ -954,7 +957,7 @@ object Tel extends Tel2:
   // `text.load[Tel]` for any Stream[Text] source: concatenates the
   // chunks, UTF-8 encodes, parses, and pairs the resulting Tel with a
   // `Tel.Metadata` carrying the document's prologue.
-  given loadable: Tactic[TelError] => Tel is Loadable by Text = stream =>
+  given loadable: (Tactic[TelError], PositionTracking) => Tel is Loadable by Text = stream =>
     import denominative.nil
     val builder = new StringBuilder()
     var s = stream
@@ -964,10 +967,16 @@ object Tel extends Tel2:
       s = s.tail
 
     val text = builder.toString
-    val bytes = text.getBytes("UTF-8").nn
-    val doc = Tel.Parser.parse(IArray.unsafeFromArray(bytes))
-    val meta = Tel.Metadata(doc.interpreterDirective, doc.pragma, doc.lineEndings)
-    turbulence.Document(Tel(doc): Tel, meta)
+    val bytes = IArray.unsafeFromArray(text.getBytes("UTF-8").nn)
+    val tel = parseTracking(bytes)
+
+    tel.subtree match
+      case doc: Tel.Document =>
+        turbulence.Document
+          ( tel, Tel.Metadata(doc.interpreterDirective, doc.pragma, doc.lineEndings) )
+
+      case _ =>
+        turbulence.Document(tel, Tel.Metadata(Unset, Unset, Tel.LineEndings.Lf))
 
   // Renders a document's presentation back to text, reversing the presentation parser. The whole
   // line-based serialization lives in this instance so that `.show` is the single route to TEL
