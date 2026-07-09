@@ -30,7 +30,10 @@ the point without effort.
   Avoid throat-clearing ("In this section…", "It is important to note that…") and
   signposting ("Firstly…", "In conclusion…").
 - **Stay out of view.** Avoid first-person pronouns and meta-discussion of the writing,
-  the document, or its structure.
+  the document, or its structure. Do not refer to the document by its genre: never
+  justify a choice as one that "suits a tutorial" or is made "for this guide". State
+  the choice directly instead — write "the `throwUnsafely` strategy raises an exception
+  on failure", not "raising an exception suits a tutorial".
 - **Be plain and direct.** Prefer straightforward phrasing over ornate, inflated, or
   needlessly technical wording. Cut clutter, hedging, and unnecessary qualifiers.
 - **Project confidence.** State things plainly rather than hedging or apologising;
@@ -65,8 +68,14 @@ the subject's scope. Within these, an `### About` section gives the overview and
 individual topics in their own `###` sections.
 
 Prioritise foundational details and the most commonly used features; deprioritise
-implementation details and esoteric features. In the prose, refer to the project as
-"Soundness", never by an internal module name.
+implementation details and esoteric features.
+
+The reader already knows the subject is Soundness, so do not make "Soundness" the
+reflexive subject of every sentence, least of all the opening one. Lead with the
+capability or the thing itself — "Regular expressions are checked as the code compiles",
+not "Soundness checks regular expressions as the code compiles". Name the project where
+it genuinely marks a contrast — what Soundness does against what other libraries do — and
+when you do name it, call it "Soundness", never an internal module name.
 
 ## Code samples
 
