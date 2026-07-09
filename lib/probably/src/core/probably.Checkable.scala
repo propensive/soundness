@@ -41,7 +41,7 @@ object Checkable:
 
 
   given stream: [left, right] => (left is Checkable against right)
-  =>  Stream[left] is Checkable against Stream[right] =
+  =>  LazyList[left] is Checkable against LazyList[right] =
 
     _.zip(_).all(_ === _)
 

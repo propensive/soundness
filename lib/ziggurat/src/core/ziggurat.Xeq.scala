@@ -75,7 +75,7 @@ object Xeq:
     val encoded: List[(Text, Text)] = payloads.map: payload =>
       val raw: Data =
         if !payload.gzip then payload.bytes
-        else Stream(payload.bytes).compress[Gzip].read[Data]
+        else LazyList(payload.bytes).compress[Gzip].read[Data]
 
       payload.label -> raw.serialize[Base64].slices(ChunkSize).join(t"", t"\n", t"\n")
 
@@ -164,7 +164,7 @@ object Xeq:
     output.create[File]()
 
     output.open: handle =>
-      Stream(data).writeTo(handle)
+      LazyList(data).writeTo(handle)
 
     output.executable() = true
 

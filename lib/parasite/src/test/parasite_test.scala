@@ -600,11 +600,11 @@ object Tests extends Suite(m"Parasite tests"):
 
       suite(m"Concurrent stream"):
         test(m"Concurrent on a complete stream returns same elements"):
-          Stream(1, 2, 3, 4, 5).concurrent.to(List)
+          LazyList(1, 2, 3, 4, 5).concurrent.to(List)
         . assert(_ == List(1, 2, 3, 4, 5))
 
         test(m"Concurrent on empty stream is empty"):
-          Stream[Int]().concurrent.to(List)
+          LazyList[Int]().concurrent.to(List)
         . assert(_ == List())
 
       suite(m"High contention"):
@@ -1226,7 +1226,7 @@ object Tests extends Suite(m"Parasite tests"):
       suite(m"Concurrent stream details"):
         test(m"Concurrent stream preserves head element with delays"):
           val gate = Promise[Unit]()
-          val stream: Stream[Int] = 1 #:: { gate.await(); 2 } #:: { 3 } #:: Stream.empty
+          val stream: LazyList[Int] = 1 #:: { gate.await(); 2 } #:: { 3 } #:: LazyList.empty
           val task = async(stream.concurrent.head)
           gate.fulfill(())
           task.await()

@@ -44,7 +44,7 @@ private val telMediaType: MediaType =
 
 package postables:
   given telPostable: (encoder: CharEncoder) => Tel is Postable =
-    Postable(telMediaType, value => Stream(encoder.encoded(value.show)))
+    Postable(telMediaType, value => LazyList(encoder.encoded(value.show)))
 
 package servables:
   given telServable: (encoder: CharEncoder) => Tel is Servable =

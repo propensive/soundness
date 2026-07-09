@@ -579,7 +579,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"---\n42\n...".read[Yaml].as[Int]
       . assert(_ == 42)
 
-      test(m"Stream of three documents"):
+      test(m"LazyList of three documents"):
         t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int])
       . assert(_ == List(1, 2, 3))
 
@@ -587,7 +587,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"".read[List[Yaml]].length
       . assert(_ == 0)
 
-      test(m"Stream of mixed-type documents"):
+      test(m"LazyList of mixed-type documents"):
         t"---\nname: Alice\n---\n[1, 2, 3]".read[List[Yaml]].length
       . assert(_ == 2)
 
@@ -595,7 +595,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"42".read[List[Yaml]].map(_.as[Int])
       . assert(_ == List(42))
 
-      test(m"Stream with trailing end marker"):
+      test(m"LazyList with trailing end marker"):
         t"1\n---\n2\n...".read[List[Yaml]].map(_.as[Int])
       . assert(_ == List(1, 2))
 

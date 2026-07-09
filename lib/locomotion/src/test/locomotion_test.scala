@@ -90,36 +90,36 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
 
     suite(m"Round-trips"):
       test(m"single int field"):
-        Stream(Sample(150).protobuf.encode).read[Sample in Protobuf]
+        LazyList(Sample(150).protobuf.encode).read[Sample in Protobuf]
       . assert(_ == Sample(150))
 
       test(m"two int fields, one at its default"):
-        Stream(Point(0, 5).protobuf.encode).read[Point in Protobuf]
+        LazyList(Point(0, 5).protobuf.encode).read[Point in Protobuf]
       . assert(_ == Point(0, 5))
 
       test(m"string and int fields"):
-        Stream(Person(t"Alice", 30).protobuf.encode).read[Person in Protobuf]
+        LazyList(Person(t"Alice", 30).protobuf.encode).read[Person in Protobuf]
       . assert(_ == Person(t"Alice", 30))
 
       test(m"read[Protobuf] then as[T] (two-step)"):
-        Stream(Person(t"Alice", 30).protobuf.encode).read[Protobuf].as[Person]
+        LazyList(Person(t"Alice", 30).protobuf.encode).read[Protobuf].as[Person]
       . assert(_ == Person(t"Alice", 30))
 
       test(m"nested message"):
-        Stream(Wrapper(Point(3, 4), t"origin").protobuf.encode).read[Wrapper in Protobuf]
+        LazyList(Wrapper(Point(3, 4), t"origin").protobuf.encode).read[Wrapper in Protobuf]
       . assert(_ == Wrapper(Point(3, 4), t"origin"))
 
       test(m"sparse field numbers"):
-        Stream(Sparse(9, t"x").protobuf.encode).read[Sparse in Protobuf]
+        LazyList(Sparse(9, t"x").protobuf.encode).read[Sparse in Protobuf]
       . assert(_ == Sparse(9, t"x"))
 
     suite(m"Repeated fields"):
       test(m"repeated strings round-trip in order"):
-        Stream(Tags(List(t"a", t"b", t"c")).protobuf.encode).read[Tags in Protobuf]
+        LazyList(Tags(List(t"a", t"b", t"c")).protobuf.encode).read[Tags in Protobuf]
       . assert(_ == Tags(List(t"a", t"b", t"c")))
 
       test(m"repeated ints round-trip, keeping default elements"):
-        Stream(Numbers(List(0, 1, 2)).protobuf.encode).read[Numbers in Protobuf]
+        LazyList(Numbers(List(0, 1, 2)).protobuf.encode).read[Numbers in Protobuf]
       . assert(_ == Numbers(List(0, 1, 2)))
 
       test(m"repeated ints are packed into one length-delimited field"):
@@ -129,7 +129,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       test(m"a packed field produced elsewhere decodes back to a List"):
         // The canonical packed encoding of [3, 270, 86942] (matches `protoc`).
         val packed = IArray[Byte](0x0a, 0x06, 0x03, 0x8e.toByte, 0x02, 0x9e.toByte, 0xa7.toByte, 0x05)
-        Stream(packed).read[Numbers in Protobuf]
+        LazyList(packed).read[Numbers in Protobuf]
       . assert(_ == Numbers(List(3, 270, 86942)))
 
       test(m"empty repeated field writes nothing"):
@@ -139,31 +139,31 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
 
       test(m"a type recursive through a List round-trips"):
-        Stream(tree.protobuf.encode).read[Protobuf].as[Tree]
+        LazyList(tree.protobuf.encode).read[Protobuf].as[Tree]
       . assert(_ == tree)
 
       test(m"a generic product over a recursive type stays structurally derived"):
-        Stream(Boxed(tree).protobuf.encode).read[Protobuf].as[Boxed[Tree]]
+        LazyList(Boxed(tree).protobuf.encode).read[Protobuf].as[Boxed[Tree]]
       . assert(_ == Boxed(tree))
 
     suite(m"Optional presence"):
       test(m"a set optional round-trips"):
-        Stream(MaybeName(t"set").protobuf.encode).read[MaybeName in Protobuf]
+        LazyList(MaybeName(t"set").protobuf.encode).read[MaybeName in Protobuf]
       . assert(_ == MaybeName(t"set"))
 
       test(m"an unset optional writes nothing and round-trips to Unset"):
-        Stream(MaybeName(Unset).protobuf.encode).read[MaybeName in Protobuf]
+        LazyList(MaybeName(Unset).protobuf.encode).read[MaybeName in Protobuf]
       . assert(_ == MaybeName(Unset))
 
     suite(m"Sum types (oneof)"):
       test(m"the Circle variant round-trips"):
         val shape: Shape = Shape.Circle(5)
-        Stream(shape.protobuf.encode).read[Shape in Protobuf]
+        LazyList(shape.protobuf.encode).read[Shape in Protobuf]
       . assert(_ == Shape.Circle(5))
 
       test(m"the Rectangle variant round-trips"):
         val shape: Shape = Shape.Rectangle(3, 4)
-        Stream(shape.protobuf.encode).read[Shape in Protobuf]
+        LazyList(shape.protobuf.encode).read[Shape in Protobuf]
       . assert(_ == Shape.Rectangle(3, 4))
 
     suite(m"Field-number fallback"):
@@ -172,14 +172,14 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       . assert(_ == List(0x08, 0x96))
 
       test(m"unannotated message round-trips"):
-        Stream(Unnumbered(7, 9).protobuf.encode).read[Unnumbered in Protobuf]
+        LazyList(Unnumbered(7, 9).protobuf.encode).read[Unnumbered in Protobuf]
       . assert(_ == Unnumbered(7, 9))
 
     suite(m"Typed integer encodings"):
       val typed = Typed(7.bits.u32, 8L.bits.u64, -3.bits.s32, -4L.bits.s64, 5.bits, 6L.bits)
 
       test(m"all typed integers round-trip"):
-        Stream(typed.protobuf.encode).read[Typed in Protobuf]
+        LazyList(typed.protobuf.encode).read[Typed in Protobuf]
       . assert(_ == typed)
 
       test(m"sint32 uses zig-zag (field 3, -1 ⇒ tag 0x18, 0x01)"):
@@ -193,12 +193,12 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
     suite(m"Maps"):
       test(m"a string→string map round-trips"):
         val labels = Labels(Map(t"a" -> t"1", t"b" -> t"2"))
-        Stream(labels.protobuf.encode).read[Labels in Protobuf]
+        LazyList(labels.protobuf.encode).read[Labels in Protobuf]
       . assert(_ == Labels(Map(t"a" -> t"1", t"b" -> t"2")))
 
       test(m"a string→int map round-trips"):
         val counts = Counts(Map(t"x" -> 10, t"y" -> 20))
-        Stream(counts.protobuf.encode).read[Counts in Protobuf]
+        LazyList(counts.protobuf.encode).read[Counts in Protobuf]
       . assert(_ == Counts(Map(t"x" -> 10, t"y" -> 20)))
 
       test(m"an empty map writes nothing"):
@@ -211,7 +211,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
 
     suite(m"Parse errors carry a byte offset"):
       def decode(bytes: Byte*): Sample raises ProtobufError =
-        Stream(IArray.from(bytes)).read[Sample in Protobuf]
+        LazyList(IArray.from(bytes)).read[Sample in Protobuf]
 
       test(m"a truncated length-delimited payload reports the offset where data ran out"):
         // field 1, wire type Len, length 5, but only one payload byte present.
@@ -225,7 +225,7 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
 
       test(m"a varint longer than ten bytes is malformed"):
         capture[ProtobufError]:
-          Stream(IArray.fill(11)(0x80.toByte)).read[Sample in Protobuf]
+          LazyList(IArray.fill(11)(0x80.toByte)).read[Sample in Protobuf]
       . assert(_ == ProtobufError(ProtobufError.Reason.MalformedVarint(0)))
 
       test(m"a varint whose value overflows 64 bits is rejected"):

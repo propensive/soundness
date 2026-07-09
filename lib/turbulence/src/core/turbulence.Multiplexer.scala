@@ -52,7 +52,7 @@ case class Multiplexer[key, element]()(using Monitor):
   def close(): Unit = active.keys.each(remove(_))
 
   @tailrec
-  private def pump(key: key, stream: Stream[element])(using Worker): Unit =
+  private def pump(key: key, stream: LazyList[element])(using Worker): Unit =
     if stream.nil then remove(key) else
       relent()
       queue.put(stream.head)
@@ -62,7 +62,7 @@ case class Multiplexer[key, element]()(using Monitor):
   // a containment removes its key — so the consumer sees that source end rather than
   // blocking forever on a `Removal` the failed pump never enqueued — and isolates the
   // failure to that source rather than letting it escape.
-  def add(key: key, stream: Stream[element]): Unit =
+  def add(key: key, stream: LazyList[element]): Unit =
     active(key) =
       contain:
         case _ => remove(key); Remedy.Accept
@@ -71,10 +71,10 @@ case class Multiplexer[key, element]()(using Monitor):
 
   private def remove(key: key): Unit = if !active.nil then queue.put(Removal(key))
 
-  def stream: Stream[element] = queue.take().nn.absolve match
+  def stream: LazyList[element] = queue.take().nn.absolve match
     case Removal(key) =>
       active -= key
-      if active.nil then Stream() else stream
+      if active.nil then LazyList() else stream
 
     case value =>
       value.asInstanceOf[element] #:: stream

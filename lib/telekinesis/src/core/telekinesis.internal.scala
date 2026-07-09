@@ -163,7 +163,7 @@ object internal:
             val path = $fetch.originForm
 
             val request =
-              Http.Request($method, 1.1, $fetch.host, path, $headers.to(List), () => Stream())
+              Http.Request($method, 1.1, $fetch.host, path, $headers.to(List), () => LazyList())
 
             $client.request(request, $fetch.target)
           }

@@ -143,8 +143,8 @@ trait JsonRpc extends Original:
   def put(json: Json): Unit =
     channel.put(json)
 
-  def outgoing: Stream[Json] = channel.stream
+  def outgoing: LazyList[Json] = channel.stream
 
-  def stream: Stream[Sse] =
+  def stream: LazyList[Sse] =
     channel.stream.map: json =>
       Sse(data = List(json.encode))

@@ -37,4 +37,4 @@ import prepositional.*
 trait Recording extends Domainal:
   def active: Boolean
   def stop(): Unit
-  def stream: Stream[Audio across Domain]
+  def stream: LazyList[Audio across Domain]

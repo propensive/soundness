@@ -138,8 +138,8 @@ object Tests extends Suite(m"Dissonance tests"):
     val end = Series(t"foo", t"quux", t"bop", t"baz")
 
     suite(m"Diff parsing tests"):
-      val diffStream = Stream(t"2c2,3", t"< bar", t"---", t"> quux", t"> bop")
-      val reverseStream = Stream(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar")
+      val diffStream = LazyList(t"2c2,3", t"< bar", t"---", t"> quux", t"> bop")
+      val reverseStream = LazyList(t"2,3c2", t"< quux", t"< bop", t"---", t"> bar")
 
       test(m"Parse a simple diff file"):
         diffStream.read[Diff[Text]]
@@ -261,15 +261,15 @@ object Tests extends Suite(m"Dissonance tests"):
     val list = Series(t"- alpha", t"- beta", t"- gamma")
 
     suite(m"Redraft parsing tests"):
-      val roundtrip = Stream(t"line1", t"- line2", t"+ new", t"\\- escaped", t"< forced", t"> add")
+      val roundtrip = LazyList(t"line1", t"- line2", t"+ new", t"\\- escaped", t"< forced", t"> add")
 
       test(m"Parse a simple redraft"):
-        Redraft.parse(Stream(t"line1", t"- line2", t"+ new line 2a", t"line3"))
+        Redraft.parse(LazyList(t"line1", t"- line2", t"+ new line 2a", t"line3"))
       . assert(_ == Redraft(D.Keep(t"line1"), D.Mark(t"line2", false), D.Mark(t"new line 2a", true),
           D.Keep(t"line3")))
 
       test(m"Parse forced and escaped directives"):
-        Redraft.parse(Stream(t"< forced", t"> add", t"\\- escaped"))
+        Redraft.parse(LazyList(t"< forced", t"> add", t"\\- escaped"))
       . assert(_ == Redraft(D.Cut(t"forced"), D.Add(t"add"), D.Keep(t"- escaped")))
 
       test(m"Serialize round-trips through parse"):
@@ -278,48 +278,48 @@ object Tests extends Suite(m"Dissonance tests"):
 
     suite(m"Redraft application tests"):
       test(m"Apply a simple redraft"):
-        Redraft.parse(Stream(t"- line2", t"+ new line 2a")).patch(source).to(Series)
+        Redraft.parse(LazyList(t"- line2", t"+ new line 2a")).patch(source).to(Series)
       . assert(_ == Series(t"line1", t"new line 2a", t"line3"))
 
       test(m"Omitted unchanged lines are skipped"):
-        Redraft.parse(Stream(t"- line2")).patch(source).to(Series)
+        Redraft.parse(LazyList(t"- line2")).patch(source).to(Series)
       . assert(_ == Series(t"line1", t"line3"))
 
       test(m"Insert before the first line"):
-        Redraft.parse(Stream(t"+ line0")).patch(source).to(Series)
+        Redraft.parse(LazyList(t"+ line0")).patch(source).to(Series)
       . assert(_ == Series(t"line0", t"line1", t"line2", t"line3"))
 
       test(m"Forced insert with the alternate marker"):
-        Redraft.parse(Stream(t"> line0")).patch(source).to(Series)
+        Redraft.parse(LazyList(t"> line0")).patch(source).to(Series)
       . assert(_ == Series(t"line0", t"line1", t"line2", t"line3"))
 
       test(m"Deletion anchored by context"):
-        Redraft.parse(Stream(t"b", t"- a")).patch(dup).to(Series)
+        Redraft.parse(LazyList(t"b", t"- a")).patch(dup).to(Series)
       . assert(_ == Series(t"a", t"b"))
 
       test(m"A verbatim marker line is kept as context"):
-        Redraft.parse(Stream(t"- alpha", t"< - beta", t"- gamma")).patch(list).to(Series)
+        Redraft.parse(LazyList(t"- alpha", t"< - beta", t"- gamma")).patch(list).to(Series)
       . assert(_ == Series(t"- alpha", t"- gamma"))
 
       test(m"Escaped context matches a literal marker line"):
-        Redraft.parse(Stream(t"\\- alpha")).patch(list).to(Series)
+        Redraft.parse(LazyList(t"\\- alpha")).patch(list).to(Series)
       . assert(_ == Series(t"- alpha", t"- beta", t"- gamma"))
 
       test(m"Delete a literal marker line with a doubled marker"):
-        Redraft.parse(Stream(t"- alpha", t"- - beta", t"- gamma")).patch(list).to(Series)
+        Redraft.parse(LazyList(t"- alpha", t"- - beta", t"- gamma")).patch(list).to(Series)
       . assert(_ == Series(t"- alpha", t"- gamma"))
 
     suite(m"Redraft ambiguity tests"):
       test(m"An under-anchored deletion is rejected"):
-        capture[RedraftError](Redraft.parse(Stream(t"- a")).patch(dup))
+        capture[RedraftError](Redraft.parse(LazyList(t"- a")).patch(dup))
       . assert(_.reason == RedraftError.Reason.Unanchored)
 
       test(m"verify reports the under-anchored line"):
-        Redraft.parse(Stream(t"- a")).verify(dup)
+        Redraft.parse(LazyList(t"- a")).verify(dup)
       . assert(_ == List(Redraft.Anomaly(0, t"a", RedraftError.Reason.Unanchored)))
 
       test(m"A non-matching context line is rejected"):
-        capture[RedraftError](Redraft.parse(Stream(t"absent", t"- line2")).patch(source))
+        capture[RedraftError](Redraft.parse(LazyList(t"absent", t"- line2")).patch(source))
       . assert(_.reason == RedraftError.Reason.NoMatch)
 
     suite(m"Redraft rendering tests"):
@@ -340,22 +340,22 @@ object Tests extends Suite(m"Dissonance tests"):
     // suite(m"Casual diff tests"):
     //   test(m"Parse a simple casual diff"):
     //     import unsafeExceptions.canThrowAny
-    //     CasualDiff.parse(t"- remove\n+ insert".cut(t"\n").to(Stream))
+    //     CasualDiff.parse(t"- remove\n+ insert".cut(t"\n").to(LazyList))
     //   .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove"), List(t"insert")))))
 
     //   test(m"Parse a slightly longer casual diff"):
     //     import unsafeExceptions.canThrowAny
-    //     CasualDiff.parse(t"- remove\n+ insert\n- removal".cut(t"\n").to(Stream))
+    //     CasualDiff.parse(t"- remove\n+ insert\n- removal".cut(t"\n").to(LazyList))
     //   .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove"), List(t"insert")), Replace(Nil, List(t"removal"), Nil))))
 
     //   test(m"Parse a longer casual diff"):
     //     import unsafeExceptions.canThrowAny
-    //     CasualDiff.parse(t"- remove 1\n- remove 2\n+ insert 1\n+ insert 2\n- removal".cut(t"\n").to(Stream))
+    //     CasualDiff.parse(t"- remove 1\n- remove 2\n+ insert 1\n+ insert 2\n- removal".cut(t"\n").to(LazyList))
     //   .assert(_ == CasualDiff(List(Replace(Nil, List(t"remove 1", t"remove 2"), List(t"insert 1", t"insert 2")), Replace(Nil, List(t"removal"), Nil))))
 
     //   test(m"Fail to parse a problematic casual diff"):
     //     import unsafeExceptions.canThrowAny
-    //     capture[CasualDiffError](CasualDiff.parse(t"- remove 1\n- remove 2\n insert 1\n+ insert 2\n- removal".cut(t"\n").to(Stream)))
+    //     capture[CasualDiffError](CasualDiff.parse(t"- remove 1\n- remove 2\n insert 1\n+ insert 2\n- removal".cut(t"\n").to(LazyList)))
     //   .assert(_ == CasualDiffError(CasualDiffError.Reason.BadLineStart(t" insert 1"), 3))
 
     // suite(m"Invariance tests"):

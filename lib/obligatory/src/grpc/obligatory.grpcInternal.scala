@@ -48,7 +48,7 @@ import proscenium.*
 object grpcInternal:
   // Derive a client stub for a service interface of `@rpc`-annotated methods. Each
   // method takes a single request message and returns either a response message
-  // (unary) or a `Stream` of them (server-streaming); the generated body delegates to
+  // (unary) or a `LazyList` of them (server-streaming); the generated body delegates to
   // `GrpcChannel`, with the `:path` built from `service` and the method's own name.
   // The protobuf codecs and the call's error capabilities are summoned at the call
   // site, so `remote` must be invoked where they are in scope.
@@ -111,7 +111,7 @@ object grpcInternal:
                 val req = argument.asExprOf[request]
 
                 result.asType.absolve match
-                  case '[Stream[response]] =>
+                  case '[LazyList[response]] =>
                     val dec = decoder[response]
 
                     Some:

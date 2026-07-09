@@ -254,7 +254,7 @@ object Html extends Tag.Container
       writeHtml(producer, dom, document.root, 0, block, Mode.Whitespace)
       producer.finish()
 
-    producer.iterator.to(Stream)
+    producer.iterator.to(LazyList)
 
   // `.show` serializes against the standard WHATWG (HTML5) DOM and without indentation, so a bare
   // node renders correctly (void elements, escaping) even outside a `Document`. The `Streamable`

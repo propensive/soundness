@@ -1115,15 +1115,15 @@ object Json extends Json2, Dynamic:
       type Result = HttpStreams.Content
 
       def genericize(json: Json): HttpStreams.Content =
-        (t"application/json; charset=${encoder.encoding.name}", Stream(json.show.data))
+        (t"application/json; charset=${encoder.encoding.name}", LazyList(json.show.data))
 
 
   given decodable: (Tactic[ParseError], PositionTracking) => Json is distillate.Decodable in Text =
-    text => Stream(text.data(using charEncoders.utf8Encoder)).read[Json]
+    text => LazyList(text.data(using charEncoders.utf8Encoder)).read[Json]
 
   given instantiable: Tactic[ParseError] => PositionTracking
   =>  Json is Instantiable across HttpRequests from Text =
-    text => Stream(text.data(using charEncoders.utf8Encoder)).read[Json]
+    text => LazyList(text.data(using charEncoders.utf8Encoder)).read[Json]
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0)))

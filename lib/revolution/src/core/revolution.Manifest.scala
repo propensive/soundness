@@ -45,7 +45,7 @@ import vacuous.*
 
 object Manifest:
   protected def parse[streamable: Streamable by Data](source: streamable): Manifest =
-    val java = juj.Manifest(source.read[Stream[Data]].inputStream)
+    val java = juj.Manifest(source.read[LazyList[Data]].inputStream)
 
     Manifest:
       java.getMainAttributes.nn.asScala.to(List).map: (key, value) =>
@@ -53,7 +53,7 @@ object Manifest:
 
       . to(Map)
 
-  given streamable: Manifest is Streamable by Data = manifest => Stream(manifest.serialize)
+  given streamable: Manifest is Streamable by Data = manifest => LazyList(manifest.serialize)
   given aggregable: Manifest is Aggregable by Data = parse(_)
 
   def apply(entries: ManifestEntry*): Manifest = Manifest:

@@ -68,14 +68,14 @@ extends RequestServable:
 
   private val continueResponse: Data = t"HTTP/1.1 100 Continue\r\n\r\n".data
 
-  private def writeAll(out: ji.OutputStream, stream: Stream[Data]): Unit raises StreamError =
+  private def writeAll(out: ji.OutputStream, stream: LazyList[Data]): Unit raises StreamError =
     var count: Int = 0
 
     // Consume the stream one block at a time and flush after each: a streaming
     // body (chunked response, SSE, or an upgraded WebSocket) may never end, so
     // its bytes must reach the client as they are produced rather than be forced
     // into memory or sit unflushed in the buffer.
-    def recur(stream: Stream[Data]): Unit = stream.flow(()):
+    def recur(stream: LazyList[Data]): Unit = stream.flow(()):
       try
         out.write(next.mutable(using Unsafe))
         out.flush()
@@ -90,7 +90,7 @@ extends RequestServable:
   // for `Transfer-Encoding: chunked`, otherwise `Content-Length` bytes, or empty
   // when neither is given. The framed stream stops exactly at the body's end so
   // the cursor is left at the next pipelined request.
-  private def requestBody(cursor: Cursor[Data], head: Http.Request.Head): Stream[Data] =
+  private def requestBody(cursor: Cursor[Data], head: Http.Request.Head): LazyList[Data] =
     val chunked: Boolean = head.headers.exists: header =>
       header.key.lower == t"transfer-encoding" && header.value.lower.contains(t"chunked")
 
@@ -100,7 +100,7 @@ extends RequestServable:
         . lay(Unset: Optional[Int]): text =>
             safely(Integer.parseInt(text.s.trim.nn))
 
-      length.lay(Stream())(Http.Request.fixedBody(cursor, _))
+      length.lay(LazyList())(Http.Request.fixedBody(cursor, _))
 
   // RFC 7230 §6.3: HTTP/1.1 keeps connections alive unless `Connection: close`;
   // HTTP/1.0 closes unless `Connection: keep-alive`.
@@ -171,7 +171,7 @@ extends RequestServable:
           val upgrade = isUpgrade(head)
 
           // Tell a waiting client it may send the body before we read it.
-          if expectsContinue(head) then writeAll(out, Stream(continueResponse))
+          if expectsContinue(head) then writeAll(out, LazyList(continueResponse))
 
           val body = if upgrade then cursor.remainder else requestBody(cursor, head)
 
@@ -215,7 +215,7 @@ extends RequestServable:
             // measures only what the drain itself reads.
             val drainStart = cursor.position.n0
 
-            def drained(stream: Stream[Data]): Boolean = stream match
+            def drained(stream: LazyList[Data]): Boolean = stream match
               case _ #:: tail => cursor.position.n0 - drainStart <= drainLimit && drained(tail)
               case _          => true
 

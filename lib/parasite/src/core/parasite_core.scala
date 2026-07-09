@@ -159,9 +159,9 @@ def hibernate[instant: Abstractable across Instants to Long](instant: instant)(u
   while instant.generic > jl.System.currentTimeMillis do sleep(instant.generic)
 
 
-extension [result](stream: Stream[result])
-  def concurrent(using Monitor, Probate): Stream[result] raises AsyncError =
-    if async(stream.nil).await() then Stream() else stream.head #:: stream.tail.concurrent
+extension [result](stream: LazyList[result])
+  def concurrent(using Monitor, Probate): LazyList[result] raises AsyncError =
+    if async(stream.nil).await() then LazyList() else stream.head #:: stream.tail.concurrent
 
 
 def supervise[result](block: Monitor ?=> result)(using threading: Threading, codepoint: Codepoint)

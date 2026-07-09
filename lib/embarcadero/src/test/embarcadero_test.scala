@@ -163,8 +163,8 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
         val serverToClient = Spool[Data]()
 
         def duplex(inbound: Spool[Data], outbound: Spool[Data]) = new Duplex:
-          def stream: Stream[Data] = inbound.stream
-          def send(data: Stream[Data]): Unit = data.each(outbound.put)
+          def stream: LazyList[Data] = inbound.stream
+          def send(data: LazyList[Data]): Unit = data.each(outbound.put)
           def close(): Unit = outbound.stop()
 
         (duplex(serverToClient, clientToServer), duplex(clientToServer, serverToClient))
@@ -177,7 +177,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
         daemon:
           safely:
-            serverSide.send(Stream(Frame.Settings(Nil, ack = false).serialize))
+            serverSide.send(LazyList(Frame.Settings(Nil, ack = false).serialize))
             val raw = serverSide.stream.iterator
 
             val afterPreface: Iterator[Data] =
@@ -195,7 +195,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
               case f: Frame => f match
                 case Frame.Settings(_, false) =>
-                  serverSide.send(Stream(Frame.Settings(Nil, ack = true).serialize))
+                  serverSide.send(LazyList(Frame.Settings(Nil, ack = true).serialize))
 
                 case Frame.Headers(id, block, _, _) =>
                   val fields = hpack.decode(block)
@@ -206,9 +206,9 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
                       HpackEntry(t"content-type", t"application/grpc")))
 
                   val trailer = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
-                  serverSide.send(Stream(Frame.Headers(id, status, false, true).serialize))
-                  serverSide.send(Stream(Frame.Data(id, body, false).serialize))
-                  serverSide.send(Stream(Frame.Headers(id, trailer, true, true).serialize))
+                  serverSide.send(LazyList(Frame.Headers(id, status, false, true).serialize))
+                  serverSide.send(LazyList(Frame.Data(id, body, false).serialize))
+                  serverSide.send(LazyList(Frame.Headers(id, trailer, true, true).serialize))
 
                 case _ => ()
 
@@ -379,6 +379,6 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"a Container timestamp round-trips and converts to an Aviation Instant"):
         val container = Container(t"svc", createdAt = embarcadero.Timestamp.of(moment))
-        val restored = Stream(container.protobuf.encode).read[Container in Protobuf]
+        val restored = LazyList(container.protobuf.encode).read[Container in Protobuf]
         restored.createdAt.instant[Instant over Posix]
       . assert(_ == moment)

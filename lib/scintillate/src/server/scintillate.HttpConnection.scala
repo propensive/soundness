@@ -78,9 +78,9 @@ object HttpConnection:
 
     val buffer = new Array[Byte](65536)
 
-    def stream(): Stream[Data] =
+    def stream(): LazyList[Data] =
       val length = in.read(buffer)
-      if length > 0 then buffer.slice(0, length).snapshot #:: stream() else Stream.empty
+      if length > 0 then buffer.slice(0, length).snapshot #:: stream() else LazyList.empty
 
     val request =
       Http.Request

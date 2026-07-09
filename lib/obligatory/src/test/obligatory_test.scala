@@ -50,31 +50,31 @@ object Tests extends Suite(m"Obligatory Tests"):
   def run(): Unit =
     suite(m"Unframing tests"):
       test(m"Unframe by carriage-return lines"):
-        Stream(t"one\rtwo\r", t"three").iterator.frames[CarriageReturn].to(List)
+        LazyList(t"one\rtwo\r", t"three").iterator.frames[CarriageReturn].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by carriage-return lines, without terminal line"):
-        Stream(t"one\rtwo", t"\rthree\r").iterator.frames[CarriageReturn].to(List)
+        LazyList(t"one\rtwo", t"\rthree\r").iterator.frames[CarriageReturn].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by linefeed lines"):
-        Stream(t"one\ntwo\nth", t"ree").iterator.frames[Linefeed].to(List)
+        LazyList(t"one\ntwo\nth", t"ree").iterator.frames[Linefeed].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by linefeed lines, without terminal line"):
-        Stream(t"one\ntwo\nthree\n").iterator.frames[Linefeed].to(List)
+        LazyList(t"one\ntwo\nthree\n").iterator.frames[Linefeed].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by cr/lf lines"):
-        Stream(t"""one\r\ntwo\r\nthree""").iterator.frames[CrLf].to(List)
+        LazyList(t"""one\r\ntwo\r\nthree""").iterator.frames[CrLf].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Unframe by cr/lf lines, without terminal line"):
-        Stream(t"""one\r\ntwo\r\nthree\r\n""").iterator.frames[CrLf].to(List)
+        LazyList(t"""one\r\ntwo\r\nthree\r\n""").iterator.frames[CrLf].to(List)
       . assert(_ == List("one", "two", "three"))
 
       test(m"Length-prefixed chunks"):
-        Stream(Data(0, 0, 0, 3, 50, 100, -100, 0, 0, 0, 1, -128, 0, 0, 0, 5, 5, 4, 3, 2, 1))
+        LazyList(Data(0, 0, 0, 3, 50, 100, -100, 0, 0, 0, 1, -128, 0, 0, 0, 5, 5, 4, 3, 2, 1))
         . iterator
         . frames[LengthPrefix]
         . to(List)
@@ -128,17 +128,17 @@ object Tests extends Suite(m"Obligatory Tests"):
 
       test(m"round-trip a single message"):
         val framed = GrpcFraming.encode(ascii(t"hello"))
-        Stream(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
+        LazyList(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
       . assert(_ == List(ascii(t"hello").to(List)))
 
       test(m"split two concatenated messages"):
         val framed = GrpcFraming.encode(ascii(t"one")) ++ GrpcFraming.encode(ascii(t"two"))
-        Stream(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
+        LazyList(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
       . assert(_ == List(ascii(t"one").to(List), ascii(t"two").to(List)))
 
       test(m"gzip-compressed message round-trips"):
         val framed = GrpcFraming.encode(ascii(t"compress me please"), compress = true)
-        Stream(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
+        LazyList(framed).iterator.frames[GrpcFraming].to(List).map(_.to(List))
       . assert(_ == List(ascii(t"compress me please").to(List)))
 
       test(m"status code maps to the canonical name"):
@@ -155,8 +155,8 @@ object Tests extends Suite(m"Obligatory Tests"):
         val serverToClient = Spool[Data]()
 
         def duplex(inbound: Spool[Data], outbound: Spool[Data]) = new Duplex:
-          def stream: Stream[Data] = inbound.stream
-          def send(data: Stream[Data]): Unit = data.each(outbound.put)
+          def stream: LazyList[Data] = inbound.stream
+          def send(data: LazyList[Data]): Unit = data.each(outbound.put)
           def close(): Unit = outbound.stop()
 
         (duplex(serverToClient, clientToServer), duplex(clientToServer, serverToClient))
@@ -178,7 +178,7 @@ object Tests extends Suite(m"Obligatory Tests"):
 
         daemon:
           safely:
-            serverSide.send(Stream(Frame.Settings(Nil, ack = false).serialize))
+            serverSide.send(LazyList(Frame.Settings(Nil, ack = false).serialize))
             val raw = serverSide.stream.iterator
 
             val afterPreface: Iterator[Data] =
@@ -196,11 +196,11 @@ object Tests extends Suite(m"Obligatory Tests"):
 
               case f: Frame => f match
                 case Frame.Settings(_, false) =>
-                  serverSide.send(Stream(Frame.Settings(Nil, ack = true).serialize))
+                  serverSide.send(LazyList(Frame.Settings(Nil, ack = true).serialize))
 
                 case Frame.Headers(id, _, _, _) =>
                   responder(hpack, id).each: frame =>
-                    serverSide.send(Stream(frame.serialize))
+                    serverSide.send(LazyList(frame.serialize))
 
                 case _ => ()
 

@@ -33,6 +33,6 @@
 package octogenarian
 
 
-class GitProcess[+result](val progress: Stream[Progress])(closure: => result):
+class GitProcess[+result](val progress: LazyList[Progress])(closure: => result):
   lazy val result: result = closure
   def complete(): result = result

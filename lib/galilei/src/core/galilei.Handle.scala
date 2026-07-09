@@ -41,4 +41,4 @@ object Handle:
   given streamable: Tactic[StreamError] => Handle is Streamable by Data = _.reader()
   given writable: Emit[StreamError] => Handle is Writable by Data = _.writer(_)
 
-class Handle(val reader: () => Stream[Data], val writer: Stream[Data] => Unit)
+class Handle(val reader: () => LazyList[Data], val writer: LazyList[Data] => Unit)

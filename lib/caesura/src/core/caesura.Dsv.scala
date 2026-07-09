@@ -133,7 +133,7 @@ object Dsv extends Dsv2:
   // `source.read[Foo in Dsv]` shorthand for `source.read[Sheet].rows.head.as[Foo]`:
   // decodes a single DSV record (the first row) into `Foo`, mirroring the other
   // formats' `value in Format` aggregables. Multi-row sources should be read as a
-  // `Sheet` instead (`Sheet.as[Foo]` yields a `Stream[Foo]`). The `Form` type-tag is
+  // `Sheet` instead (`Sheet.as[Foo]` yields a `LazyList[Foo]`). The `Form` type-tag is
   // added by an `asInstanceOf` cast — `value in Dsv` is just `value { type Form = Dsv }`
   // so the cast is a no-op at runtime.
   given aggregableIn: [value: Decodable in Dsv] => (format: DsvFormat) => Tactic[DsvError]

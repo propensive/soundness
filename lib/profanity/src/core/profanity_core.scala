@@ -83,12 +83,12 @@ package keyboards:
   given rawKeyboard: Keyboard:
     type Keypress = Char
 
-    def process(stream: Stream[Char]): Stream[Keypress] = stream
+    def process(stream: LazyList[Char]): LazyList[Keypress] = stream
 
   given numericKeyboard: Keyboard:
     type Keypress = Int
 
-    def process(stream: Stream[Char]): Stream[Int] = stream.map(_.toInt)
+    def process(stream: LazyList[Char]): LazyList[Int] = stream.map(_.toInt)
 
   given standardKeyboard: (monitor: Monitor, probate: Probate) => Keyboard.Standard =
     Keyboard.Standard()

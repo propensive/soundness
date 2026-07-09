@@ -81,15 +81,15 @@ object HttpClient:
     ( uri:         jn.URI,
       method:      Http.Method,
       textHeaders: List[Http.Header],
-      bodyFn:      () => Stream[Data] )
+      bodyFn:      () => LazyList[Data] )
   :   jnh.HttpRequest =
 
     val request: jnh.HttpRequest.Builder = jnh.HttpRequest.newBuilder().nn.uri(uri).nn
 
     lazy val body = bodyFn() match
-      case Stream() => jnh.HttpRequest.BodyPublishers.noBody.nn
+      case LazyList() => jnh.HttpRequest.BodyPublishers.noBody.nn
 
-      case Stream(bytes) =>
+      case LazyList(bytes) =>
         jnh.HttpRequest.BodyPublishers.ofByteArray(bytes.mutable(using Unsafe))
 
       case stream =>
@@ -166,7 +166,7 @@ object HttpClient:
       ( url:     Text,
         method:  Http.Method,
         headers: List[Http.Header],
-        body:    () => Stream[Data] )
+        body:    () => LazyList[Data] )
       ( using Tactic[ConnectError] )
     :   Http.Response =
 
@@ -202,7 +202,7 @@ object HttpClient:
       val url = httpRequest.on(origin)
       Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
 
-      def loop(uri: jn.URI, method: Http.Method, bodyFn: () => Stream[Data], remaining: Int)
+      def loop(uri: jn.URI, method: Http.Method, bodyFn: () => LazyList[Data], remaining: Int)
       :   Http.Response =
 
         val response = backend.request(uri.toString.tt, method, httpRequest.textHeaders, bodyFn)
@@ -221,8 +221,8 @@ object HttpClient:
               Log.fine(HttpEvent.Redirect(uri.toString.tt, nextUri.toString.tt))
               val nextMethod = redirectMethod(code, method)
 
-              val nextBody: () => Stream[Data] =
-                if nextMethod == method then bodyFn else () => Stream()
+              val nextBody: () => LazyList[Data] =
+                if nextMethod == method then bodyFn else () => LazyList()
 
               loop(nextUri, nextMethod, nextBody, remaining - 1)
 

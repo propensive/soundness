@@ -2850,38 +2850,38 @@ object Tests extends Suite(m"Aviation Tests"):
           case _: TzdbError =>
 
       test(m"parses a single Rule line"):
-        val lines = Stream(t"Rule\tUS\t2007\tmax\t-\tMar\tSun>=8\t2:00\t1:00\tD")
+        val lines = LazyList(t"Rule\tUS\t2007\tmax\t-\tMar\tSun>=8\t2:00\t1:00\tD")
         Tzdb.parse(t"inline", lines).headOption
       . matches:
           case Some(_: Tzdb.Entry.Rule) =>
 
       test(m"parses a single Link line"):
-        val lines = Stream(t"Link\tEurope/London\tEurope/Belfast")
+        val lines = LazyList(t"Link\tEurope/London\tEurope/Belfast")
         Tzdb.parse(t"inline", lines).headOption
       . matches:
           case Some(_: Tzdb.Entry.Link) =>
 
       test(m"parses a leap line with normal-time"):
-        val lines = Stream(t"Leap\t1972\tJun\t30\t23:59:59\t+\tS")
+        val lines = LazyList(t"Leap\t1972\tJun\t30\t23:59:59\t+\tS")
         Tzdb.parse(t"inline", lines).headOption
       . matches:
           case Some(_: Tzdb.Entry.Leap) =>
 
       test(m"leap line with 60-second time raises TzdbError"):
-        val lines = Stream(t"Leap\t1972\tJun\t30\t23:59:60\t+\tS")
+        val lines = LazyList(t"Leap\t1972\tJun\t30\t23:59:60\t+\tS")
         capture(Tzdb.parse(t"inline", lines))
       . matches:
           case _: TzdbError =>
 
 
       test(m"unparseable Rule raises UnexpectedRule"):
-        val lines = Stream(t"Rule\tonly")
+        val lines = LazyList(t"Rule\tonly")
         capture(Tzdb.parse(t"inline", lines))
       . matches:
           case _: TzdbError =>
 
       test(m"unparseable Link raises UnexpectedLink"):
-        val lines = Stream(t"Link\tonly")
+        val lines = LazyList(t"Link\tonly")
         capture(Tzdb.parse(t"inline", lines))
       . matches:
           case _: TzdbError =>

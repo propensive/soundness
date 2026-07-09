@@ -37,6 +37,6 @@ import vacuous.*
 export mosquito.internal.Vector
 
 extension [element](list: List[element])
-  def slide(size: Int): Stream[Vector[element, size.type]] = list match
-    case Nil          => Stream()
-    case head :: tail => Vector.take(list, size).lay(Stream())(_ #:: tail.slide(size))
+  def slide(size: Int): LazyList[Vector[element, size.type]] = list match
+    case Nil          => LazyList()
+    case head :: tail => Vector.take(list, size).lay(LazyList())(_ #:: tail.slide(size))

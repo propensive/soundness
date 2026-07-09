@@ -198,12 +198,12 @@ extension [textual: Textual](text: textual)
 
   def contains(substring: Text): Boolean = textual.indexOf(text, substring).present
 
-  def search(regex: Regex, overlap: Boolean = false): Stream[textual] =
+  def search(regex: Regex, overlap: Boolean = false): LazyList[textual] =
     regex.search(textual.text(text), overlap = overlap).map(text.segment(_))
 
   inline def extract[value](inline start: Ordinal = Prim)
     ( inline lambda: Scanner ?=> textual ~> value )
-  :   Stream[value] =
+  :   LazyList[value] =
 
     $ {
         gossamer.internal.extractMacro[textual, value]

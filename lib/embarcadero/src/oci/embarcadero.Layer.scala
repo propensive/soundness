@@ -48,7 +48,7 @@ object Layer:
 class Layer(val tar: Tarfile):
   lazy val raw:        Data       = tar.stream[Data].foldLeft(IArray.empty[Byte])(_ ++ _)
   lazy val diffId:     Text       = sha256(raw)
-  lazy val blob:       Data       = Stream(raw).compress[Gzip].foldLeft(IArray.empty[Byte])(_ ++ _)
+  lazy val blob:       Data       = LazyList(raw).compress[Gzip].foldLeft(IArray.empty[Byte])(_ ++ _)
   lazy val digest:     Text       = sha256(blob)
 
   lazy val descriptor: Descriptor =

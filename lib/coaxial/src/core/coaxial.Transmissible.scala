@@ -38,17 +38,17 @@ import hieroglyph.*
 import prepositional.*
 
 object Transmissible:
-  given bytes: [bytes <: Data] => bytes is Transmissible = Stream(_)
-  given stream: [stream <: Stream[Data]] => stream is Transmissible = identity(_)
+  given bytes: [bytes <: Data] => bytes is Transmissible = LazyList(_)
+  given stream: [stream <: LazyList[Data]] => stream is Transmissible = identity(_)
 
   given text: [text <: Text] => CharEncoder => text is Transmissible =
-    text => Stream(text.data)
+    text => LazyList(text.data)
 
   given encoder: [message: Encodable in Text] => CharEncoder => message is Transmissible =
-    value => Stream(value.encode.data)
+    value => LazyList(value.encode.data)
 
 trait Transmissible extends Typeclass:
-  def serialize(message: Self): Stream[Data]
+  def serialize(message: Self): LazyList[Data]
 
   def contramap[self2](lambda: self2 => Self): self2 is Transmissible =
     message => serialize(lambda(message))

@@ -63,13 +63,13 @@ extends Cipher, Encryption, Symmetric:
   // mirroring `turbulence.Compression`. The IV (if any) is emitted as the first
   // chunk; the `NoPadding` alignment check happens at end-of-stream, where the
   // total length is finally known.
-  def encryptStream(stream: Stream[Data], key: Data, vector: InitializationVector): Stream[Data] =
+  def encryptStream(stream: LazyList[Data], key: Data, vector: InitializationVector): LazyList[Data] =
     val blockSize = cipher.blockSize(transformation)
     val iv: Optional[Data] = if mode.usesIv then vector(blockSize) else Unset
     val session = cipher.stream(transformation, key, iv)
-    val prefix: Stream[Data] = iv.lay(Stream())(Stream(_))
+    val prefix: LazyList[Data] = iv.lay(LazyList())(LazyList(_))
 
-    def recur(stream: Stream[Data], total: Int): Stream[Data] = stream match
+    def recur(stream: LazyList[Data], total: Int): LazyList[Data] = stream match
       case head #:: tail =>
         val updated = session.update(head)
         val rest = recur(tail, total + head.length)
@@ -78,7 +78,7 @@ extends Cipher, Encryption, Symmetric:
       case _ =>
         padding.verify(total, blockSize, mode.blockAligned)
         val last = session.finish()
-        if last.length > 0 then Stream(last) else Stream()
+        if last.length > 0 then LazyList(last) else LazyList()
 
     prefix #::: recur(stream, 0)
 

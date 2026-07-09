@@ -40,10 +40,10 @@ import hypotenuse.*
 import rudiments.*
 import vacuous.*
 
-extension (stream: Stream[Data])
+extension (stream: LazyList[Data])
   inline def framed[width <: U16 | U32](terminator: Optional[width] = Unset)
     ( using Tactic[StreamError] )
-  :   Stream[Data] =
+  :   LazyList[Data] =
 
     inline compiletime.erasedValue[width] match
       case _: U16 =>
@@ -53,13 +53,13 @@ extension (stream: Stream[Data])
         framingImpl(stream, 4, terminator.asInstanceOf[Optional[U32]].let(_.long).or(-1L))
 
 private[turbulence] def framingImpl
-  ( stream: Stream[Data], width: Int, terminator: Long )
+  ( stream: LazyList[Data], width: Int, terminator: Long )
   ( using Tactic[StreamError] )
-:   Stream[Data] =
+:   LazyList[Data] =
 
   def take
-    ( n: Int, buffer: IArray[Byte], offset: Int, tail: Stream[Data], totalSoFar: Long )
-  :   (IArray[Byte], IArray[Byte], Int, Stream[Data]) =
+    ( n: Int, buffer: IArray[Byte], offset: Int, tail: LazyList[Data], totalSoFar: Long )
+  :   (IArray[Byte], IArray[Byte], Int, LazyList[Data]) =
 
     val out = new Array[Byte](n)
     var taken = 0
@@ -101,10 +101,10 @@ private[turbulence] def framingImpl
 
     acc
 
-  def loop(buffer: IArray[Byte], offset: Int, tail: Stream[Data], totalSoFar: Long)
-  :   Stream[Data] =
+  def loop(buffer: IArray[Byte], offset: Int, tail: LazyList[Data], totalSoFar: Long)
+  :   LazyList[Data] =
 
-    val nonEmpty: Optional[(IArray[Byte], Int, Stream[Data])] =
+    val nonEmpty: Optional[(IArray[Byte], Int, LazyList[Data])] =
       if buffer.length - offset > 0 then (buffer, offset, tail)
       else tail match
         case head #:: more => (head, 0, more)
@@ -114,7 +114,7 @@ private[turbulence] def framingImpl
       val (prefix, buf1, off1, rest1) = take(width, buf0, off0, rest0, totalSoFar)
       val length = decodeBE(prefix)
 
-      if length == terminator then Stream()
+      if length == terminator then LazyList()
       else if length < 0 || length > Int.MaxValue then
         abort(StreamError((totalSoFar + width).b))
       else
@@ -123,6 +123,6 @@ private[turbulence] def framingImpl
 
         frame #:: loop(buf2, off2, rest2, totalSoFar + width + length)
 
-    . or(Stream())
+    . or(LazyList())
 
   loop(IArray.empty[Byte], 0, stream, 0L)

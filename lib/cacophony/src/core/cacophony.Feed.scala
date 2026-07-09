@@ -141,17 +141,17 @@ case class Feed(private[cacophony] val mixerInfo: jss.Mixer.Info):
           line.stop()
           line.close()
 
-      def stream: Stream[Audio across layout] =
-        def recur: Stream[Audio across layout] =
-          if stopped then Stream() else
+      def stream: LazyList[Audio across layout] =
+        def recur: LazyList[Audio across layout] =
+          if stopped then LazyList() else
             val buf: Array[Byte] = new Array[Byte](chunkBytes)
             val n = line.read(buf, 0, buf.length)
 
-            if n <= 0 then Stream() else
+            if n <= 0 then LazyList() else
               val chunk =
                 if n == buf.length then buf
                 else java.util.Arrays.copyOf(buf, n).nn
 
               Audio.of[layout](line.getFormat.nn, chunk) #:: recur
 
-        Stream.defer(recur)
+        LazyList.defer(recur)

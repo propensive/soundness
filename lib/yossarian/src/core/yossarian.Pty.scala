@@ -52,16 +52,16 @@ object Pty:
   def apply(width: Int, height: Int): Pty =
     Pty(Screen(width, height), PtyState(scrollBottom = (height - 1).z), Spool())
 
-  def stream(pty: Pty, in: Stream[Text]): Stream[Pty] raises PtyEscapeError = in match
+  def stream(pty: Pty, in: LazyList[Text]): LazyList[Pty] raises PtyEscapeError = in match
     case head #:: tail =>
       val pty2 = pty.consume(head)
       pty2 #:: stream(pty2, tail)
 
     case _ =>
-      Stream()
+      LazyList()
 
 case class Pty(buffer: Screen[Style], state: PtyState, output: Spool[Text]):
-  def stream: Stream[Text] = output.stream
+  def stream: LazyList[Text] = output.stream
 
   def title: Text = state.title
   def cursor: Ordinal = state.cursor

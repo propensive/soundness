@@ -142,7 +142,7 @@ object Assembler:
     val patched: Data = patch(runner, buildId, javaMinimum, javaPreferred, jdk, publicKey)
 
     output.open
-      ( file => Stream(patched).writeTo(file),
+      ( file => LazyList(patched).writeTo(file),
         List(jnio.file.StandardOpenOption.TRUNCATE_EXISTING) )
 
     if platformLabel.starts(t"macos") then

@@ -188,5 +188,5 @@ object Packager:
   :   Unit raises IoError raises StreamError =
 
     output.create[File]()
-    output.open(Stream(data).writeTo(_))
+    output.open(LazyList(data).writeTo(_))
     output.executable() = true

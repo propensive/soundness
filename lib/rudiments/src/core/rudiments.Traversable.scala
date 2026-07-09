@@ -38,17 +38,17 @@ import prepositional.*
 // A type that can be traversed as a lazy sequence of its elements (its `Operand`,
 // bound with `by` — e.g. `List[Int] is Traversable by Int`). It is the basis for
 // element-oriented operations like `where` that need to visit elements in order
-// and short-circuit; `traverse` returns a `Stream` (lazy) so callers only force
+// and short-circuit; `traverse` returns a `LazyList` (lazy) so callers only force
 // as much as they consume.
 object Traversable:
   given iterable: [element, collection <: Iterable[element]]
   =>  collection is Traversable by element =
-    _.to(Stream)
+    _.to(LazyList)
 
   // `Text` (opaque over `String`) is not an `Iterable`, so it needs its own instance;
   // placing it here (the typeclass companion) keeps it in implicit scope for
   // `Text is Traversable` without an explicit `import`, unlike a top-level given.
-  given text: Text is Traversable by Char = text => Stream(text.s.toCharArray.nn*)
+  given text: Text is Traversable by Char = text => LazyList(text.s.toCharArray.nn*)
 
 trait Traversable extends Typeclass, Operable:
-  def traverse(self: Self): Stream[Operand]
+  def traverse(self: Self): LazyList[Operand]

@@ -47,7 +47,7 @@ object Stderr:
 case class Stderr(text: Text)
 
 object Computable:
-  given stream: Stream[Text] is Computable = _.lines()
+  given stream: LazyList[Text] is Computable = _.lines()
 
   given list: List[Text] is Computable = _.lines().to(List)
 
@@ -55,7 +55,7 @@ object Computable:
 
   given string: String is Computable = _.text().s
 
-  given dataStream: Tactic[StreamError] => Stream[Data] is Computable = _.stdout()
+  given dataStream: Tactic[StreamError] => LazyList[Data] is Computable = _.stdout()
 
   given exitStatus: Exit is Computable = _.status() match
     case 0     => Exit.Ok

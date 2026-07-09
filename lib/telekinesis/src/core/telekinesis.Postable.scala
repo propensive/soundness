@@ -51,28 +51,28 @@ import vacuous.*
 import alphabets.hexLowerCase
 
 object Postable:
-  def apply[response](mediaType0: MediaType, stream0: response => Stream[Data])
+  def apply[response](mediaType0: MediaType, stream0: response => LazyList[Data])
   :   response is Postable =
 
     new Postable:
       type Self = response
       def mediaType(response: response): MediaType = mediaType0
-      def stream(response: response): Stream[Data] = stream0(response)
+      def stream(response: response): LazyList[Data] = stream0(response)
 
 
   given text: (encoder: CharEncoder) => Text is Postable =
-    Postable(media"text/plain", value => Stream(IArray.from(value.data)))
+    Postable(media"text/plain", value => LazyList(IArray.from(value.data)))
 
-  given textStream: (encoder: CharEncoder) => Stream[Text] is Postable =
+  given textStream: (encoder: CharEncoder) => LazyList[Text] is Postable =
     Postable(media"application/octet-stream", _.map(_.data))
 
-  given unit: Unit is Postable = Postable(media"text/plain", unit => Stream())
-  given data: Data is Postable = Postable(media"application/octet-stream", Stream(_))
-  given byteStream: Stream[Data] is Postable = Postable(media"application/octet-stream", identity)
+  given unit: Unit is Postable = Postable(media"text/plain", unit => LazyList())
+  given data: Data is Postable = Postable(media"application/octet-stream", LazyList(_))
+  given byteStream: LazyList[Data] is Postable = Postable(media"application/octet-stream", identity)
 
   given query: Query is Postable =
     import charEncoders.utf8Encoder
-    Postable(media"application/x-www-form-urlencoded", query => Stream(query.queryString.data))
+    Postable(media"application/x-www-form-urlencoded", query => LazyList(query.queryString.data))
 
 
   given dataStream: [response: Abstractable across HttpStreams to HttpStreams.Content]
@@ -83,11 +83,11 @@ object Postable:
       type Self = response
 
       def mediaType(content: response): MediaType = content.generic(0).decode[MediaType]
-      def stream(content: response): Stream[Data] = content.generic(1)
+      def stream(content: response): LazyList[Data] = content.generic(1)
 
 trait Postable extends Typeclass:
   def mediaType(content: Self): MediaType
-  def stream(content: Self): Stream[Data]
+  def stream(content: Self): LazyList[Data]
 
   def preview(value: Self): Text = stream(value).prim.lay(t""): data =>
     val sample = data.take(1024)

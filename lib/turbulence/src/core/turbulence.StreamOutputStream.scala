@@ -45,7 +45,7 @@ class StreamOutputStream() extends ji.OutputStream:
   private val buffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
   private val chunks: Spool[Data] = Spool()
 
-  def stream: Stream[Data] = chunks.stream
+  def stream: LazyList[Data] = chunks.stream
   def write(int: Int): Unit = buffer.append(int.toByte)
   override def close(): Unit = flush().also(chunks.stop())
 

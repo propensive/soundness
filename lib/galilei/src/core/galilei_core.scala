@@ -69,7 +69,7 @@ package filesystemTraversal:
 
 extension [plane: Filesystem](path: Path on plane)
 
-  inline def children(using explorable: plane is Explorable): Stream[Path on plane] =
+  inline def children(using explorable: plane is Explorable): LazyList[Path on plane] =
     explorable.children(path)
 
   private[galilei] def protect[result](operation: Operation)(block: => result)
@@ -94,12 +94,12 @@ extension [plane: Filesystem](path: Path on plane)
 
 
   def descendants(using DereferenceSymlinks, TraversalOrder, plane is Explorable)
-  :   Stream[Path on plane] raises IoError =
+  :   LazyList[Path on plane] raises IoError =
 
     path.children.flatMap: child =>
       summon[TraversalOrder] match
         case TraversalOrder.PreOrder  => child #:: child.descendants
-        case TraversalOrder.PostOrder => child.descendants #::: Stream(child)
+        case TraversalOrder.PostOrder => child.descendants #::: LazyList(child)
 
 
   def size()(using plane is Explorable): Bytes raises IoError =

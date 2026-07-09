@@ -99,13 +99,13 @@ trait Deserializable extends Findable:
   def deserialize(previous: Text, current: Text, index0: Int, last: Boolean): Data
   def deserialize(value: Text): Data = deserialize(t"", value, 0, true)
 
-  def deserialize(stream: Stream[Text]): Stream[Data] =
-    def recur(stream: Stream[Text], previous: Text, carry: Int): Stream[Data] = stream match
+  def deserialize(stream: LazyList[Text]): LazyList[Data] =
+    def recur(stream: LazyList[Text], previous: Text, carry: Int): LazyList[Data] = stream match
       case head #:: tail =>
         val carry2 = (carry + head.length)%atomicity
         deserialize(previous, head, -carry, tail.nil) #:: recur(tail, head, carry2)
 
       case _ =>
-        if carry > 0 then Stream(deserialize(previous, t"", -carry, true)) else Stream()
+        if carry > 0 then LazyList(deserialize(previous, t"", -carry, true)) else LazyList()
 
     recur(stream, t"", 0)

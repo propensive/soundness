@@ -43,59 +43,59 @@ import spectacular.*
 
 object Explorable:
   given Linux is Explorable:
-    def children(path: Path on Linux): Stream[Path on Linux] =
+    def children(path: Path on Linux): LazyList[Path on Linux] =
       given tactic: Tactic[PathError] = strategies.throwUnsafely
 
-      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then Stream() else
+      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then LazyList() else
         jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
         . iterator().nn
         . asScala
         . map(_.toString.tt.decode[Path on Linux])
-        . to(Stream)
+        . to(LazyList)
 
   given Posix is Explorable:
-    def children(path: Path on Posix): Stream[Path on Posix] =
+    def children(path: Path on Posix): LazyList[Path on Posix] =
       given tactic: Tactic[PathError] = strategies.throwUnsafely
 
-      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then Stream() else
+      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then LazyList() else
         jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
         . iterator().nn
         . asScala
         . map(_.toString.tt.decode[Path on Posix])
-        . to(Stream)
+        . to(LazyList)
 
   given Windows is Explorable:
-    def children(path: Path on Windows): Stream[Path on Windows] =
+    def children(path: Path on Windows): LazyList[Path on Windows] =
       given tactic: Tactic[PathError] = strategies.throwUnsafely
 
-      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then Stream() else
+      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then LazyList() else
         jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
         . iterator().nn
         . asScala
         . map(_.toString.tt.decode[Path on Windows])
-        . to(Stream)
+        . to(LazyList)
 
   given MacOs is Explorable:
-    def children(path: Path on MacOs): Stream[Path on MacOs] =
+    def children(path: Path on MacOs): LazyList[Path on MacOs] =
       given tactic: Tactic[PathError] = strategies.throwUnsafely
 
-      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then Stream() else
+      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then LazyList() else
         jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
         . iterator().nn
         . asScala
         . map(_.toString.tt.decode[Path on MacOs])
-        . to(Stream)
+        . to(LazyList)
 
   given local: ambience.System => Local is Explorable:
-    def children(path: Path on Local): Stream[Path on Local] =
+    def children(path: Path on Local): LazyList[Path on Local] =
       given tactic: Tactic[PathError] = strategies.throwUnsafely
 
-      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then Stream() else
+      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then LazyList() else
         jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
         . iterator().nn
         . asScala
         . map(_.toString.tt.decode[Path on Local])
-        . to(Stream)
+        . to(LazyList)
 
 trait Explorable extends Typeclass:
-  def children(path: Path on Self): Stream[Path on Self]
+  def children(path: Path on Self): LazyList[Path on Self]

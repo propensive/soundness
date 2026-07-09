@@ -58,7 +58,7 @@ package dsvRedesignations:
 extension [encodable: Encodable in Dsv](value: encodable) def dsv: Dsv = encodable.encode(value)
 
 extension [encodable: Encodable in Dsv](value: Seq[encodable])
-  def dsv: Sheet = Sheet(value.to(Stream).map(encodable.encode(_)))
+  def dsv: Sheet = Sheet(value.to(LazyList).map(encodable.encode(_)))
 
 // Panopticon optics for tabular data (no nesting, so they mirror the row/cell
 // structure rather than JSON's map/array). `cellLens` reads/writes a cell by column

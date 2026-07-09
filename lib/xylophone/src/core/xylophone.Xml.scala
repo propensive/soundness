@@ -512,12 +512,12 @@ object Xml extends Tag.Container
       type Result = HttpStreams.Content
 
       def genericize(xml: Xml): HttpStreams.Content =
-        (t"application/xml; charset=${encoder.encoding.name}", Stream(xml.show.data))
+        (t"application/xml; charset=${encoder.encoding.name}", LazyList(xml.show.data))
 
   given instantiable: (schema: XmlSchema) => Tactic[ParseError]
   =>  Xml is Instantiable across HttpRequests from Text =
 
-    text => Stream(text).read[Xml]
+    text => LazyList(text).read[Xml]
 
   // `source.read[Foo in Xml]` shorthand for
   // `source.read[Xml].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`
@@ -549,7 +549,7 @@ object Xml extends Tag.Container
         Document(node, Xml.header)
 
   given streamable: (Monitor, Probate) => Document[Xml] is Streamable by Text =
-    emit(_).to(Stream)
+    emit(_).to(LazyList)
 
   // Tracking-mode parse entry points. Build the parser with a line-feed
   // tracking `Lineation` in its cursor, parse, then bundle the resulting

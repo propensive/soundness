@@ -92,12 +92,12 @@ object Api:
 
     val url = full.decode[HttpUrl]
 
-    val empty: () => Stream[Data] = () => Stream()
+    val empty: () => LazyList[Data] = () => LazyList()
 
-    val (contentType, body): (Optional[Text], () => Stream[Data]) = request.body match
+    val (contentType, body): (Optional[Text], () => LazyList[Data]) = request.body match
       case Api.Body.Empty       => (Unset, empty)
-      case Api.Body.Json(value) => (t"application/json", () => Stream(value.show.data))
-      case Api.Body.Xml(value)  => (t"application/xml", () => Stream(value.show.data))
+      case Api.Body.Json(value) => (t"application/json", () => LazyList(value.show.data))
+      case Api.Body.Xml(value)  => (t"application/xml", () => LazyList(value.show.data))
 
     val contentTypeHeader: List[Http.Header] = contentType.lay(Nil): media =>
       List(Http.Header(t"content-type", media))

@@ -67,7 +67,7 @@ object Watch:
 // yields events as they occur, and `unregister` cancels the backend registration and terminates
 // the stream. The actual change-detection is delegated to a `Watcher` backend.
 class Watch(spool: Spool[WatchEvent], registration: Watcher.Registration):
-  def stream: Stream[WatchEvent] = spool.stream
+  def stream: LazyList[WatchEvent] = spool.stream
 
   def unregister(): Unit =
     registration.cancel()

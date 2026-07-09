@@ -113,7 +113,7 @@ object Tests extends Suite(m"Zeppelin tests"):
         case text: String    => text.tt
       finally zip.close()
 
-    def writeBytes(name: Text, stream: Stream[Data]): Path on Linux =
+    def writeBytes(name: Text, stream: LazyList[Data]): Path on Linux =
       val path = workDir/name
       val out = ji.FileOutputStream(ji.File(path.encode.s))
       try stream.each { chunk => out.write(chunk.mutable(using Unsafe)) } finally out.close()
@@ -143,7 +143,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       . assert(_ == t"xyz")
 
       test(m"direct constructor accepts lazily-computed content"):
-        val lazyEntry: Zip.Entry = Zip.Entry(zipRef(t"a.txt"), () => Stream(t"lazy".data))
+        val lazyEntry: Zip.Entry = Zip.Entry(zipRef(t"a.txt"), () => LazyList(t"lazy".data))
         lazyEntry.read[Text]
       . assert(_ == t"lazy")
 
