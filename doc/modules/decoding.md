@@ -22,8 +22,8 @@ conversion can fail is visible in the code that calls it. A `Decodable`
 conversion raises a typed error when it fails. An `Extractable` conversion yields
 no result rather than raising, which is exactly what pattern matching wants. An
 `Irrefutable` conversion cannot fail at all. The names read as English and state
-the direction of the conversion: a value `is Decodable in Text` reads *out of*
-text, and text `is Extractable to Int` reads *toward* an integer.
+the direction of the conversion: a value `is Decodable in Text` reads _out of_
+text, and text `is Extractable to Int` reads _toward_ an integer.
 
 The everyday surface is small — the `decode` method and the `As` extractor — and
 the sections below start there before turning to the typeclasses underneath and
@@ -44,7 +44,8 @@ t"123".decode[Int]   // 123
 ```
 
 Decoding can fail — the text might not be a number — so it needs an error-handling
-strategy in scope. Raising an exception suits a tutorial:
+strategy in scope. The `throwUnsafely` strategy raises an exception when a decode
+fails:
 
 ```scala
 import strategies.throwUnsafely
@@ -54,8 +55,8 @@ t"hello".decode[Int]  // raises a NumberError
 ```
 
 A `NumberError` reports both the offending text and why it failed: text that is
-not a number at all is *unparseable*, while a number outside the target type's
-range is *out of range*. Decoding to a `Byte` distinguishes the two:
+not a number at all is _unparseable_, while a number outside the target type's
+range is _out of range_. Decoding to a `Byte` distinguishes the two:
 
 ```scala
 t"300".decode[Byte]   // raises a NumberError: 300 is out of range for a Byte
@@ -81,6 +82,8 @@ safely(t"hello".decode[Int]).or(0)   // 0
 ```
 
 ### Extracting in patterns
+
+// "raising one" should be "raising an exception".
 
 Pattern matching needs a conversion that declines to match instead of raising one.
 That is the `As` extractor: `As[Int]` succeeds when the scrutinee yields an `Int`
@@ -179,7 +182,7 @@ t"North" match
 
 Some types accept an empty input and some do not, and a form or a configuration
 often needs to know which before it asks for a value. A `Requirable` instance
-answers that: a type is *required* when an empty input cannot produce one. The
+answers that: a type is _required_ when an empty input cannot produce one. The
 judgement follows from the type's decoder, so no separate declaration is needed.
 
 ### Defining your own

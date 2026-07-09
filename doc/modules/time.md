@@ -44,8 +44,8 @@ import soundness.*
 ```
 
 Operations that can fail — parsing text, constructing a date from runtime
-integers — need an error-handling strategy in scope. These examples raise
-exceptions on failure, which suits a tutorial:
+integers — need an error-handling strategy in scope. The `throwUnsafely` strategy
+raises an exception on failure:
 
 ```scala
 import strategies.throwUnsafely

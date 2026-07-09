@@ -6,9 +6,8 @@ Soundness reads and writes [JSON](https://en.wikipedia.org/wiki/JSON). Text pars
 into a `Json` value; a `Json` value converts to and from ordinary Scala types
 without boilerplate; and the conversion is checked as it happens, so asking a
 number for a string, or a document for a field it lacks, produces a typed error
-rather than a wrong answer. A document can also be validated against a schema
-derived from a Scala type, and — most unusually — its fields can be navigated with
-the compiler checking each step.
+rather than a wrong answer. Additionally, a document can be validated against a JSON schema
+derived from a Scala type, and its fields can be navigated with the compiler checking each step.
 
 ### On JSON
 
@@ -29,13 +28,14 @@ The same derivation produces a schema, and from a schema two further guarantees
 follow: a document can be checked against the shape a type expects, and the fields
 of a verified document can be read with the compiler rejecting any path the schema
 does not allow. The sections below start with parsing and the everyday conversions,
-then build toward schemas, validation, and the integrations with HTTP and time.
+then build toward schemas, validation, and the integrations with other types.
 
 These examples assume a few imports — the package, an error strategy, a text
 encoding, and a choice of output formatting:
 
 ```scala
 import soundness.*
+
 import strategies.throwUnsafely
 import charEncoders.utf8Encoder
 import formatting.compactJsonFormatting
@@ -43,14 +43,14 @@ import formatting.compactJsonFormatting
 
 ### Parsing
 
-Text becomes a `Json` value with `read`:
+Any textual source can become a `Json` value with `read`:
 
 ```scala
 val document = t"""{"name": "Alice", "age": 30}""".read[Json]
 ```
 
-Parsing can fail on malformed input, so it draws on the error strategy in scope;
-`throwUnsafely` raises an exception, which suits a tutorial.
+Parsing can fail on malformed input, so it draws on the error strategy in scope; for now, the
+`throwUnsafely` strategy raises an exception on failure.
 
 ### Reading values
 
@@ -75,10 +75,10 @@ and decoder from the fields, so a value converts to an object and back:
 ```scala
 case class Person(name: Text, age: Int)
 
-Person(t"Paul", 81).json.show   // t"""{"name":"Paul","age":81}"""
+Person(t"Alice", 30).json.show   // t"""{"name":"Alice","age":30}"""
 
-t"""{"name": "John", "age": 40}""".read[Json].as[Person]
-// Person(t"John", 40)
+t"""{"name": "Bob", "age": 40}""".read[Json].as[Person]
+// Person(t"Bob", 40)
 ```
 
 The `json` method encodes any value for which an encoder is derived, and `show`
@@ -87,11 +87,11 @@ whole structure converts in one step. Decoding straight from text to a type comb
 the two:
 
 ```scala
-case class Band(guitarists: List[Person], drummer: Person, bassist: Option[Person])
+case class Crew(rowers: List[Person], cox: Person, reserve: Option[Person])
 
-t"""{"guitarists":[{"name":"John","age":40}],"drummer":{"name":"Ringo","age":82}}"""
-  .read[Band in Json]
-// Band(List(Person(t"John", 40)), Person(t"Ringo", 82), None)
+t"""{"rowers":[{"name":"Bob","age":40}],"cox":{"name":"Carol","age":25}}"""
+. read[Crew in Json]
+// Crew(List(Person(t"Bob", 40)), Person(t"Carol", 25), None)
 ```
 
 ### Optional fields and defaults
