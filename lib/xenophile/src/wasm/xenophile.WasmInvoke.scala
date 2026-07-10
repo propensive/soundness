@@ -157,41 +157,53 @@ object WasmInvoke:
 
     val listClass = Symbol.requiredClass("scala.collection.immutable.List")
 
-    // A `list<tuple<Ac, Bc>>` (Scala `List[(A, B)]`), if that is the shape of the result.
-    def listOfPairs(leftType: TypeRepr, rightType: TypeRepr): (TypeRepr, Expr[Any] => Expr[Any]) =
+    // The carrier and a decode for a single `tuple<Lc, Rc>` (Scala `(L, R)`): scala-wasm's `Tuple2`
+    // (whose name is resolved here, downstream, so it never appears in `xenophile.wasm`'s own
+    // scala-wasm-free compilation), and a `Term => Term` reading `_1`/`_2` off a raw `Tuple2` term.
+    // A WIT `record` of two fields shares a `tuple`'s ABI, so this also serves a two-field record.
+    def pairCodec(leftType: TypeRepr, rightType: TypeRepr)
+    :   (TypeRepr, TypeRepr, Term => Term) =
+
       leftType.asType.absolve match case '[left] => rightType.asType.absolve match
         case '[right] =>
           val (leftCarrier, leftDecode) = leaf(leftType)
           val (rightCarrier, rightDecode) = leaf(rightType)
-
-          // The carrier element is scala-wasm's `Tuple2`, whose name is resolved here (downstream),
-          // so it never appears in `xenophile.wasm`'s own (scala-wasm-free) compilation.
           val witTuple2 = Symbol.requiredClass("scala.scalajs.wit.Tuple2")
           val tupleCarrier = witTuple2.typeRef.appliedTo(List(leftCarrier, rightCarrier))
-          val arrayCarrier = defn.ArrayClass.typeRef.appliedTo(tupleCarrier)
           val pairType = TypeRepr.of[(left, right)]
 
-          val decode: Expr[Any] => Expr[Any] = call =>
-            // Each element is a `scala.scalajs.wit.Tuple2`; read `_1`/`_2`, decode them, and build
-            // a Scala `(left, right)`. Done through a reflective `map` because the element type is
-            // not nameable in this module.
-            val method = MethodType(List("tuple"))(_ => List(TypeRepr.of[Any]), _ => pairType)
+          val decodeTuple: Term => Term = raw =>
+            val tuple = TypeApply(Select.unique(raw, "asInstanceOf"), List(Inferred(tupleCarrier)))
+            val leftValue = leftDecode(Select.unique(tuple, "_1").asExprOf[Any])
+            val rightValue = rightDecode(Select.unique(tuple, "_2").asExprOf[Any])
+            '{(${leftValue.asExprOf[left]}, ${rightValue.asExprOf[right]})}.asTerm
 
-            val mapper = Lambda(Symbol.spliceOwner, method, (_, params) =>
-              val tuple = TypeApply(Select.unique(params.head.asInstanceOf[Term], "asInstanceOf"),
-                  List(Inferred(tupleCarrier)))
+          (tupleCarrier, pairType, decodeTuple)
 
-              val leftValue = leftDecode(Select.unique(tuple, "_1").asExprOf[Any])
-              val rightValue = rightDecode(Select.unique(tuple, "_2").asExprOf[Any])
-              '{(${leftValue.asExprOf[left]}, ${rightValue.asExprOf[right]})}.asTerm)
+    // A bare `tuple<A, B>` (Scala `(A, B)`).
+    def pairOf(leftType: TypeRepr, rightType: TypeRepr): (TypeRepr, Expr[Any] => Expr[Any]) =
+      val (tupleCarrier, _, decodeTuple) = pairCodec(leftType, rightType)
+      (tupleCarrier, call => decodeTuple(call.asTerm).asExprOf[Any])
 
-            val wrapped =
-              '{scala.collection.immutable.ArraySeq.unsafeWrapArray($call.asInstanceOf[Array[Any]])}
+    // A `list<tuple<Ac, Bc>>` (Scala `List[(A, B)]`).
+    def listOfPairs(leftType: TypeRepr, rightType: TypeRepr): (TypeRepr, Expr[Any] => Expr[Any]) =
+      val (tupleCarrier, pairType, decodeTuple) = pairCodec(leftType, rightType)
+      val arrayCarrier = defn.ArrayClass.typeRef.appliedTo(tupleCarrier)
 
-            val mapped = Select.overloaded(wrapped.asTerm, "map", List(pairType), List(mapper))
-            Select.unique(mapped, "toList").asExprOf[Any]
+      val decode: Expr[Any] => Expr[Any] = call =>
+        // A reflective `map` because the element type (`Tuple2`) is not nameable in this module.
+        val method = MethodType(List("tuple"))(_ => List(TypeRepr.of[Any]), _ => pairType)
 
-          (arrayCarrier, decode)
+        val mapper = Lambda(Symbol.spliceOwner, method,
+            (_, params) => decodeTuple(params.head.asInstanceOf[Term]))
+
+        val wrapped =
+          '{scala.collection.immutable.ArraySeq.unsafeWrapArray($call.asInstanceOf[Array[Any]])}
+
+        val mapped = Select.overloaded(wrapped.asTerm, "map", List(pairType), List(mapper))
+        Select.unique(mapped, "toList").asExprOf[Any]
+
+      (arrayCarrier, decode)
 
     val optionClass = Symbol.requiredClass("java.util.Optional")
 
@@ -214,6 +226,10 @@ object WasmInvoke:
 
       case OrType(left, right) if right =:= TypeRepr.of[Unset] =>
         optionOf(left)
+
+      case AppliedType(tuple, List(leftType, rightType))
+      if tuple.typeSymbol == defn.TupleClass(2) =>
+        pairOf(leftType, rightType)
 
       case AppliedType(list, List(element)) if list.typeSymbol == listClass =>
         element.dealias match

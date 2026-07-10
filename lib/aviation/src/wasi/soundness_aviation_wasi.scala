@@ -35,4 +35,4 @@ package soundness
 export aviation.{WasiClockApi, wasiClockApi}
 
 package clocks:
-  export aviation.clocks.wasiMonotonicClock
+  export aviation.clocks.{wasiMonotonicClock, wasiClock}
