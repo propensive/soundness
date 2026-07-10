@@ -42,6 +42,8 @@ import urticose.*
 import vacuous.*
 import wisteria.*
 import zephyrine.*
+
+import httpBackends.virtualMachine
 import JsonError.Reason
 
 package jsonPointerRegistries:

@@ -45,6 +45,7 @@ import telekinesis.*
 import urticose.*
 import vacuous.*
 
+import httpBackends.virtualMachine
 import internetAccess.online
 
 // Resolves a dependency's content hash to its public download URL using Google's

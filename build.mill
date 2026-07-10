@@ -288,7 +288,7 @@ object soundness extends ScalaModule:
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
     punctuation.core, savagery.core, scintillate.server, scintillate.servlet,
-    telekinesis.core, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
+    telekinesis.jvm, plutocrat.core, eucalyptus.gcp, punctuation.html, perihelion.core,
     legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http, jacinta.schema,
     stratiform.http, obligatory.core, obligatory.json, synesthesia.core, apoplexy.core,
     cataclysm.html, querencia.core, cordillera.core, embarcadero.containerd, obligatory.grpc,
@@ -567,7 +567,7 @@ object burdock extends Library:
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object core
-      extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.core,
+      extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.jvm,
                        gastronomy.core, jacinta.core, boot):
     override def scalaJs = false // packaging; depends on JVM-only `zeppelin`/`telekinesis`
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
@@ -586,7 +586,7 @@ object caduceus extends Library:
   object core extends Component(honeycomb.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object resend extends Component(core, telekinesis.core, jacinta.core):
+  object resend extends Component(core, telekinesis.jvm, jacinta.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -795,7 +795,7 @@ object polysyllabic extends Library:
   object bench extends Benchmarks(core, escritoire.core, hellenism.core, quantitative.units)
 
 object ethereal extends Library:
-  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.core, quantitative.units, telekinesis.core, urticose.url, gastronomy.core):
+  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.core, quantitative.units, telekinesis.jvm, urticose.url, gastronomy.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -1113,7 +1113,7 @@ object jacinta extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object schema extends Component(core, telekinesis.core):
+  object schema extends Component(core, telekinesis.jvm):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -1223,7 +1223,7 @@ object octogenarian extends Library:
   object test extends Tests(core)
 
 object orthodoxy extends Library:
-  object core extends Component(scintillate.server, jacinta.core):
+  object core extends Component(scintillate.server, jacinta.core, telekinesis.jvm):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -1498,18 +1498,24 @@ object synesthesia extends Library:
   object test extends Tests(core)
 
 object tarantula extends Library:
-  object core extends Component(jacinta.core, telekinesis.core, cataclysm.core, hallucination.core, diuretic.core, gastronomy.core):
+  object core extends Component(jacinta.core, telekinesis.jvm, cataclysm.core, hallucination.core, diuretic.core, gastronomy.core):
     override def scalaJs = false // browser automation; depends on JVM-only `hallucination`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
 
 object telekinesis extends Library:
-  object core extends Component(monotonous.core, coaxial.core, legerdemain.core, turbulence.core):
-    override def scalaJs = false // HTTP client (`java.net.http`, `coaxial`)
+  object core extends Component(monotonous.core, legerdemain.core, turbulence.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+  // JVM-only transports split out of `core` so the platform-agnostic HTTP model and client can
+  // cross-compile to Scala.js: the `java.net.http` `Http.Backend` (`httpBackends.virtualMachine`)
+  // and the `coaxial` domain-socket client.
+  object jvm extends Component(core, coaxial.core):
+    override def scalaJs = false
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  object test extends Tests(core, jvm)
 
 object turbulence extends Library:
   object core
@@ -1723,7 +1729,7 @@ object ziggurat extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object packager
       extends Component(core, guillotine.core, galilei.core, eucalyptus.core, ethereal.core,
-                       telekinesis.core):
+                       telekinesis.jvm):
     override def scalaJs = false // native packaging; `guillotine`/`galilei`/`ethereal` (JVM)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
