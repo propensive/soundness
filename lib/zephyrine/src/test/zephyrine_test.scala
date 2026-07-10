@@ -673,6 +673,17 @@ object Tests extends Suite(m"Zephyrine tests"):
         regulation.decode(regulation.encode(Credit(3456))).count
       . assert(_ == 3456L)
 
+      test(m"cursor over a stream sees all elements across chunk boundaries"):
+        val cursor = Cursor[Text](Stream(Iterator(t"ab", t"cd")))
+        var out: String = ""
+
+        while !cursor.finished do
+          out += cursor.peek.asInt.toChar
+          cursor.next()
+
+        out
+      . assert(_ == "abcd")
+
       test(m"flow grants nothing when halted"):
         val regulation = summon[Flow is Regulation]
 
