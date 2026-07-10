@@ -42,7 +42,7 @@ import prepositional.*
 // resource's methods, and eventually `dispose()`d.
 object WitHandle:
   given interoperable: [topic <: Label]
-  =>  ((WitHandle of topic) is Interoperable in Wit of topic) =
+  =>  ( (WitHandle of topic) is Interoperable in Wit of topic ) =
     Interoperable()
 
 final class WitHandle(val value: Any) extends Topical
