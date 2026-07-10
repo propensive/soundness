@@ -39,11 +39,14 @@ import vacuous.*
 // records its parameter types. `result` is the foreign type the member produces. `module`, when
 // set, qualifies the member with the fully-qualified module it belongs to — used by ecosystems
 // (such as WIT) whose members must be addressed by a module identifier at the point of invocation;
-// it is `Unset` for grammars that need no such qualifier.
+// it is `Unset` for grammars that need no such qualifier. `resource`, when set, names the stateful
+// foreign type (a WIT `resource`) the member is a method of, so an invocation can address it (e.g.
+// `[method]output-stream.blocking-write-and-flush`) and thread the receiver's handle.
 case class Prototype
   ( parameters: Optional[List[Foreign.Type]],
     result:     Foreign.Type,
-    module:     Optional[Text] = Unset )
+    module:     Optional[Text] = Unset,
+    resource:   Optional[Text] = Unset )
 
 // A grammar for a particular foreign type system: parses a definitions source into a map from each
 // foreign type name to its members' prototypes. Keyed on an ecosystem so the macro stays agnostic.

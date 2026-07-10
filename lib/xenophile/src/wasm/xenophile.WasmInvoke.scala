@@ -37,6 +37,7 @@ import scala.quoted.*
 import anticipation.*
 import distillate.*
 import fulminate.*
+import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -79,21 +80,57 @@ object WasmInvoke:
       case Apply(Select(_, "make"), List(argument)) => strip(argument)
       case _                                        => notCall
 
+    // The elements of the `Expr.ofList`-built argument list of an `Expression.Apply`.
+    def argumentList(term: Term): List[Term] = strip(term) match
+      case Apply(_, List(varargs)) => strip(varargs) match
+        case Repeated(elements, _) => elements.map(strip)
+        case _                     => Nil
+
+      case _ =>
+        Nil
+
+    // The Scala value wrapped by the `Foreign.converter` `Conversion` in a navigation operand (a
+    // converted argument, or a `WitHandle` receiver): the argument of the conversion's `apply`.
+    def convertedValue(term: Term): Term =
+      var found: Optional[Term] = Unset
+
+      val traverser = new TreeTraverser:
+        override def traverseTree(tree: Tree)(owner: Symbol): Unit = tree match
+          case Apply(Select(qualifier, "apply"), List(value))
+          if qualifier.tpe <:< TypeRepr.of[Conversion[Nothing, Foreign]] =>
+            if found.absent then found = value
+
+          case _ =>
+            traverseTreeChildren(tree)(owner)
+
+      traverser.traverseTree(term)(Symbol.spliceOwner)
+
+      found.or:
+        halt(m"xenophile: a foreign operand must be a Scala value with an `Interoperable` instance")
+
     // Either an applied call — `Expression.Apply(select, args)`, whose companion `apply` takes two
     // arguments — or the bare selection of a zero-parameter WIT function (`Expression.Select`,
     // whose companion `apply` takes three): `interface.function.invoke[R]`. The latter is
     // preferred inside `inline` definitions, where re-inlining an empty-varargs application trips
     // path-dependent type avoidance.
-    val selectNode = expression match
-      case Apply(Select(_, "apply"), List(node, _)) => strip(node)
-      case _                                        => expression
+    val (selectNode, argumentTerms) = expression match
+      case Apply(Select(_, "apply"), List(node, arguments)) =>
+        (strip(node), argumentList(arguments))
 
-    val (owner, function) = selectNode.absolve match
-      case Apply(Select(_, "apply"), List(_, member, owner)) => (literal(owner), literal(member))
-      case _                                                 => notCall
+      case _ =>
+        (expression, Nil)
+
+    val (receiverNode, owner, function) = selectNode.absolve match
+      case Apply(Select(_, "apply"), List(receiver, member, owner)) =>
+        (strip(receiver), literal(owner), literal(member))
+
+      case _ =>
+        notCall
 
     // Look up the function's module id (e.g. `wasi:random/random@0.2.0`) from the definitions.
-    val members = Xenophile.definitions(origin, Xenophile.locusOf(origin)).at(owner).or:
+    val allDefinitions = Xenophile.definitions(origin, Xenophile.locusOf(origin))
+
+    val members = allDefinitions.at(owner).or:
       halt(m"xenophile: the foreign type $owner is not defined")
 
     val prototype = members.at(function).or:
@@ -102,11 +139,68 @@ object WasmInvoke:
     val module = prototype.module.or:
       halt(m"xenophile: $owner.$function is not addressable as a WIT import (it has no module id)")
 
+    // The module in which a named WIT type is defined: for a resource, taken from its methods; for
+    // other named types (variants, records), the referencing function's own module — WASI types
+    // are used within the interface that declares them.
+    def definingModule(name: Text): Optional[Text] =
+      allDefinitions.at(name).let(_.values.to(List).prim.let(_.module).or(Unset)).or(module)
+
+    def facadeOf(name: Text): Symbol =
+      facadeClass(definingModule(name).or(halt(m"xenophile: $name has no defining module")), name)
+
     // The requested result type determines both the WIT carrier the import returns (told to
     // `witImportCall` as `classOf[Carrier]`) and how that carrier is decoded. `deriveResult`
     // computes the pair; the carrier for a `list<tuple<…>>` mentions the scala-wasm `Tuple2` class,
-    // which is resolved (and only ever appears) in this downstream-expanded code.
-    val (carrier, decode) = deriveResult[result]
+    // which is resolved (and only ever appears) in this downstream-expanded code. Two result shapes
+    // are handled here rather than in `deriveResult`, because they need the WIT prototype:
+    //
+    //  -  A `WitHandle of topic` result is a WIT resource: its carrier is the resource's facade
+    //     class, and the raw handle is wrapped in a `WitHandle`.
+    //  -  A `Unit` result against a WIT `result<…>` function crosses as a `scala.scalajs.wit.Result`
+    //     and is checked: an `Err` raises an exception, an `Ok` becomes `()`.
+    val witHandleTopic: Optional[TypeRepr] = TypeRepr.of[result].dealias match
+      case Refinement(base, "Topic", TypeBounds(_, topic)) if base =:= TypeRepr.of[WitHandle] =>
+        topic
+
+      case _ =>
+        Unset
+
+    val (carrier, decode) = witHandleTopic.absolve match
+      case topic: TypeRepr =>
+        prototype.result.absolve match
+          case Foreign.Type.Named(name) =>
+            val facade = facadeOf(name)
+
+            val decode: Expr[Any] => Expr[Any] = call =>
+              val handle = '{new WitHandle($call)}.asTerm
+              TypeApply(Select.unique(handle, "asInstanceOf"), List(TypeTree.of[result]))
+                .asExprOf[Any]
+
+            (facade.typeRef, decode)
+
+          case other =>
+            halt(m"xenophile: $owner.$function does not return a WIT resource")
+
+      case _ =>
+        if TypeRepr.of[result] =:= TypeRepr.of[Unit] then prototype.result match
+          case Foreign.Type.Applied(constructor, _) if constructor.s == "result" =>
+            val resultClass = Symbol.requiredClass("scala.scalajs.wit.Result")
+            val okClass = Symbol.requiredClass("scala.scalajs.wit.Ok")
+            val okType = AppliedType(okClass.typeRef, List(TypeBounds.empty))
+
+            val decode: Expr[Any] => Expr[Any] = call =>
+              '{  val outcome = $call
+
+                  if !${ TypeApply(Select.unique('outcome.asTerm, "isInstanceOf"),
+                      List(Inferred(okType))).asExprOf[Boolean] }
+                  then throw new RuntimeException("WIT import returned an error: " + outcome)  }
+
+            (resultClass.typeRef, decode)
+
+          case _ =>
+            halt(m"xenophile: `invoke[Unit]` requires a WIT `result<…>` function")
+
+        else deriveResult[result]
 
     // Emit `<decode>(witImportCall(module, function, classOf[Carrier]))`. The import call is built
     // by looking up `witImportCall` in the *downstream* classpath (the scala-wasm library), so this
@@ -117,26 +211,168 @@ object WasmInvoke:
     // adaptation nodes that its literal-`classOf` check rejects).
     val classOfCarrier = Literal(ClassOfConstant(carrier))
 
-    // The WIT result type as text, straight from the `.wit` definition, so the backend has the full
-    // shape (e.g. `list<tuple<string, string>>`) that `classOf` cannot carry: `classOf` erases
-    // nested type arguments, collapsing a `tuple<string, string>` to a fieldless tuple. `classOf`
-    // still supplies the (erasure-safe) IR result type.
-    val witType = Literal(StringConstant(prototype.result.text.s))
-
     // The `sigAndArgs` argument must be a `Repeated` ascribed with the tree-level repeated type
     // (`scala.<repeated>[Any]` — not `Seq[Any]`, which reads as a single sequence value and gets
     // re-wrapped as one vararg element).
     val repeatedAny = defn.RepeatedParamClass.typeRef.appliedTo(TypeRepr.of[Any])
 
+    // The WIT result type as a structured descriptor, straight from the `.wit` definition, so the
+    // backend has the full shape (e.g. `list<tuple<string, string>>`) that `classOf` cannot carry:
+    // `classOf` erases nested type arguments, collapsing a `tuple<string, string>` to a fieldless
+    // tuple. The descriptor is a tree of calls to the `wit*` markers in `scala.scalajs.wit`
+    // (resolved here, downstream, like `witImportCall` itself), which the backend deconstructs by
+    // symbol; `classOf` still supplies the (erasure-safe) IR result type.
+    def marker(name: String): Term = Ref(Symbol.requiredMethod("scala.scalajs.wit." + name))
+
+    val primitives =
+      Set("bool", "u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64", "char",
+          "string")
+
+    def descriptor(witType: Foreign.Type): Term = witType match
+      case Foreign.Type.Named(name) if primitives(name.s) =>
+        Apply(marker("witPrim"), List(Literal(StringConstant(name.s))))
+
+      // A non-primitive name is a WIT resource, variant, record, flags or enum, conveyed by its
+      // facade class, from which the backend derives the WIT type (via the class's annotations).
+      case Foreign.Type.Named(name) =>
+        Apply(marker("witNamed"), List(Literal(ClassOfConstant(facadeOf(name).typeRef))))
+
+      case Foreign.Type.Union(List(inner, Foreign.Type.Named(none))) if none.s == "none" =>
+        Apply(marker("witOption"), List(descriptor(inner)))
+
+      case Foreign.Type.Applied(constructor, arguments) => constructor.s match
+        case "list" =>
+          Apply(marker("witList"), List(descriptor(arguments.head)))
+
+        case "option" =>
+          Apply(marker("witOption"), List(descriptor(arguments.head)))
+
+        case "tuple" =>
+          val elements = Repeated(arguments.map(descriptor), TypeTree.of[Any])
+          Apply(marker("witTuple"), List(Typed(elements, Inferred(repeatedAny))))
+
+        case "result" =>
+          def arm(tpe: Foreign.Type): Term = tpe match
+            case Foreign.Type.Named(name) if name.s == "_" => marker("witUnit")
+            case other                                     => descriptor(other)
+
+          Apply(marker("witResult"), List(arm(arguments.head), arm(arguments(1))))
+
+        case other =>
+          halt(m"xenophile: the WIT type constructor $other cannot cross a WIT boundary yet")
+
+      case other =>
+        halt(m"xenophile: the WIT type ${other.text} cannot cross a WIT boundary yet")
+
+    // A resource method is imported under its Component Model name, `[method]resource.function`,
+    // and takes the resource's handle — the underlying value of the `WitHandle` receiver — as its
+    // first (borrow) parameter.
+    val importName: Text = prototype.resource.lay(function): resource =>
+      t"[method]$resource.$function"
+
+    val receiverPair: List[Term] = prototype.resource.lay(List()): resource =>
+      val facade = facadeOf(resource)
+
+      // The receiver's handle is recovered at runtime from the `Foreign` value's expression — a
+      // converted `WitHandle` is an `Expression.Literal` wrapping it — so the receiver may be a
+      // bound `val`, not only an inline chain.
+      val handle =
+        '{  ${receiverNode.asExprOf[Foreign.Expression]} match
+              case Foreign.Expression.Literal(handle: WitHandle) => handle.value
+              case _ => throw new RuntimeException("xenophile: not a WIT resource handle")  }
+
+      List(Literal(ClassOfConstant(facade.typeRef)), handle.asTerm)
+
+    // Each declared argument crosses the boundary through its `Encodable in Wasm` codec, passed as
+    // a `(classOf[Carrier], encoded)` pair.
+    val argumentPairs: List[Term] = argumentTerms.flatMap: argument =>
+      val value = convertedValue(argument)
+
+      value.tpe.widen.asType.absolve match
+        case '[argument] =>
+          val encodable = Expr.summon[argument is Encodable in Wasm].getOrElse:
+            halt(m"xenophile: no way to pass a ${value.tpe.widen.show} across a WIT boundary")
+
+          val encoded = '{$encodable.encoded(${value.asExprOf[argument]}).value}.asTerm
+
+          List(Literal(ClassOfConstant(carrierType(encodable))), encoded)
+
     val varargs =
-      Typed(Repeated(List(classOfCarrier, witType), TypeTree.of[Any]), Inferred(repeatedAny))
+      Typed
+        ( Repeated
+            ( List(classOfCarrier, descriptor(prototype.result)) ++ receiverPair ++ argumentPairs,
+              TypeTree.of[Any] ),
+          Inferred(repeatedAny) )
 
     val callTerm =
       Apply
         ( Ref(witImportCall),
-          List(Expr(module.s).asTerm, Expr(function.s).asTerm, varargs) )
+          List(Expr(module.s).asTerm, Expr(importName.s).asTerm, varargs) )
 
     decode(callTerm.asExprOf[Any]).asExprOf[result]
+
+  // Releases a WIT resource: emits the `[resource-drop]<resource>` Component Model import for the
+  // handle's resource type, passing the handle as its only parameter.
+  def dispose(self: Expr[WitHandle])(using quotes: Quotes): Expr[Unit] =
+    import quotes.reflect.*
+
+    val topic: Text = self.asTerm.tpe.widen.dealias match
+      case Refinement(_, "Topic", TypeBounds(_, ConstantType(StringConstant(name)))) => name.tt
+      case _ => halt(m"xenophile: the handle does not have a known WIT resource type")
+
+    val origin = TypeRepr.of[Wit]
+    val definitions = Xenophile.definitions(origin, Xenophile.locusOf(origin))
+
+    val module = definitions.at(topic).let(_.values.to(List).prim.let(_.module).or(Unset)).or:
+      halt(m"xenophile: the WIT resource $topic has no known module")
+
+    val facade = facadeClass(module, topic)
+    val witImportCall = Symbol.requiredMethod("scala.scalajs.wit.witImportCall")
+    val repeatedAny = defn.RepeatedParamClass.typeRef.appliedTo(TypeRepr.of[Any])
+    val unitMarker = Ref(Symbol.requiredMethod("scala.scalajs.wit.witUnit"))
+    val handle = Select.unique(self.asTerm, "value")
+
+    val varargs =
+      Typed
+        ( Repeated
+            ( List(Literal(ClassOfConstant(TypeRepr.of[Unit])), unitMarker,
+                  Literal(ClassOfConstant(facade.typeRef)), handle),
+              TypeTree.of[Any] ),
+          Inferred(repeatedAny) )
+
+    val call =
+      Apply
+        ( Ref(witImportCall),
+          List(Expr(module.s).asTerm, Expr(s"[resource-drop]$topic").asTerm, varargs) )
+
+    '{  ${call.asExprOf[Any]}
+        ()  }
+
+  // The facade class representing a named WIT type on the downstream classpath, following
+  // scala-wasm's layout: module `wasi:io/streams@0.2.0` and name `output-stream` give
+  // `scala.scalajs.wasi.io.streams.OutputStream` (kebab-case package path → snake_case, type
+  // name → UpperCamelCase).
+  private def facadeClass(using quotes: Quotes)(definedIn: Text, name: Text)
+  :   quotes.reflect.Symbol =
+
+    import quotes.reflect.*
+
+    def camel(part: String): String =
+      if part.isEmpty then part
+      else part.substring(0, 1).nn.toUpperCase.nn + part.substring(1).nn
+
+    val base = definedIn.s.split("@").nn.head.toString
+    val namespace = base.split(":").nn.head.toString
+    val path = base.split(":").nn.last.toString.replace("/", ".").nn.replace("-", "_").nn
+    val parts = name.s.split("-").nn
+    val className = new java.lang.StringBuilder()
+    var index = 0
+
+    while index < parts.length do
+      className.append(camel(parts(index).nn.toString))
+      index += 1
+
+    Symbol.requiredClass(s"scala.scalajs.$namespace.$path.$className")
 
   // The WIT carrier a result type crosses the boundary as, paired with a function decoding that
   // carrier (an `Any`, the erased `witImportCall` result) back to the result. A leaf type uses its

@@ -198,11 +198,12 @@ object WitDialect extends Dialect:
           val updated = types.updated(variant.tt, ListMap[Text, Prototype]())
           recur(skipBraces(rest, 1), functions, updated, typedefs)
 
-        case "resource" :: _ :: "{" :: rest =>
-          recur(skipBraces(rest, 1), functions, types, typedefs)
+        case "resource" :: resource :: "{" :: rest =>
+          val (methods, after) = resourceBody(rest, resource.tt, module, ListMap())
+          recur(after, functions, types.updated(resource.tt, methods), typedefs)
 
-        case "resource" :: _ :: ";" :: rest =>
-          recur(rest, functions, types, typedefs)
+        case "resource" :: resource :: ";" :: rest =>
+          recur(rest, functions, types.updated(resource.tt, ListMap()), typedefs)
 
         case "use" :: rest =>
           recur(skipTo(rest, t";"), functions, types, typedefs)
@@ -230,6 +231,43 @@ object WitDialect extends Dialect:
           recur(rest, functions, types, typedefs)
 
     recur(tokens, ListMap(), types, typedefs)
+
+  // Walks a `resource … { … }` body: its methods become members of a type named after the
+  // resource, each marked with the resource it belongs to (so an invocation can address it as
+  // `[method]resource.name` and thread the receiver's handle). `constructor` and `static`
+  // declarations are recognised but skipped for now.
+  private def resourceBody
+    ( tokens:   List[String],
+      resource: Text,
+      module:   Optional[Text],
+      methods:  Map[Text, Prototype] )
+  :   (Map[Text, Prototype], List[String]) =
+
+    tokens match
+      case "}" :: rest =>
+        (methods, rest)
+
+      case Nil =>
+        (methods, Nil)
+
+      case "constructor" :: "(" :: rest =>
+        resourceBody(skipTo(rest, t";"), resource, module, methods)
+
+      case method :: ":" :: "static" :: rest =>
+        resourceBody(skipTo(rest, t";"), resource, module, methods)
+
+      case method :: ":" :: "func" :: "(" :: rest =>
+        val (parameters, after) = params(rest, Nil)
+
+        val (result, after2) = after match
+          case "->" :: more => typeOf(more)
+          case more         => (Foreign.Type.Named(t"unit"), more)
+
+        val signature = Prototype(parameters, result, module, resource)
+        resourceBody(skipTo(after2, t";"), resource, module, methods.updated(method.tt, signature))
+
+      case _ :: rest =>
+        resourceBody(rest, resource, module, methods)
 
   private def recordFields(tokens: List[String], acc: Map[Text, Prototype])
   :   (Map[Text, Prototype], List[String]) =
@@ -289,7 +327,7 @@ object WitDialect extends Dialect:
         Foreign.Type.Applied(constructor, arguments.map(expand))
 
     def signature(sig: Prototype): Prototype =
-      Prototype(sig.parameters.let(_.map(expand)), expand(sig.result), sig.module)
+      Prototype(sig.parameters.let(_.map(expand)), expand(sig.result), sig.module, sig.resource)
 
     definitions.map: (name, members) =>
       (name, members.map { (member, sig) => (member, signature(sig)) })
