@@ -76,6 +76,8 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
+import filesystemBackends.virtualMachine
+
 given daemonLogEvent: Message transcribes DaemonLogEvent = _.communicate
 
 def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus] = service
@@ -192,7 +194,7 @@ def cli[bus <: Matchable](using executive: Executive)
                     Out.println(e"Downloading $runnerName from runners-${Runners.version}")
                     val bytes: Data = Runners.download(platformLabel)
                     if !cacheDir.exists() then cacheDir.create[Directory]()
-                    cacheRunner.open(_.write(Stream(bytes)))
+                    cacheRunner.open(LazyList(bytes).writeTo(_))
                     bytes
 
             // ML-DSA-44 public key used by the runner to verify upgrades.

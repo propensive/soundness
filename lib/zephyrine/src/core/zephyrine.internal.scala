@@ -60,6 +60,19 @@ object internal:
 
     recur(0, '{()})
 
+  // Fine-grained backpressure demand: "I can accept `count` more operands". A
+  // count of elements of the medium's `Operand` type (bytes, chars or
+  // records), not a byte count, so its meaning changes across a `Duct` that
+  // changes medium; `Duct.translate` performs that conversion. Unboxed on the
+  // hot path.
+  opaque type Credit = Long
+
+  object Credit:
+    inline def apply(count: Long): Credit = count
+
+    extension (credit: Credit)
+      inline def count: Long = credit
+
   opaque type Datum = Int
 
   object Datum:

@@ -54,6 +54,8 @@ import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
+import filesystemBackends.virtualMachine
+
 // Apply an upgrade to the running ethereal application. The given `source`
 // must yield the bytes of a complete signed runner+JAR binary — exactly
 // what `ethereal-sign` produces. The Scala side performs no verification;
@@ -106,7 +108,7 @@ object Upgrade:
         val pendingPath: Path on Linux = pendingDir/t".pending"
 
         pendingPath.open: file =>
-          file.write(Stream(bytes))
+          LazyList(bytes).writeTo(file)
 
         val launcher: Text = System.properties.ethereal.script[Text]()
 

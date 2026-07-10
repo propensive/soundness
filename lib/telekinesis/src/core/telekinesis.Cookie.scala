@@ -32,8 +32,6 @@
                                                                                                   */
 package telekinesis
 
-import java.text as jt
-
 import anticipation.*
 import distillate.*
 import fulminate.*
@@ -47,8 +45,6 @@ import urticose.*
 import vacuous.*
 
 object Cookie:
-  val dateFormat: jt.SimpleDateFormat = jt.SimpleDateFormat("dd MMM yyyy HH:mm:ss")
-
   // For some reason it seems necessary to use `DummyImplicit` instead of `Void` here
   def apply[value: {Encodable in Text, Decodable in Text}](using DummyImplicit)
     [ duration: Abstractable across Durations to Long ]

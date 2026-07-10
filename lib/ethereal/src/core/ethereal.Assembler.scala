@@ -55,6 +55,8 @@ import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
+import filesystemBackends.virtualMachine
+
 case class AssemblyError(detail: Message)(using Diagnostics) extends Error(detail)
 
 // Produces a self-contained per-platform executable by patching a bare ethereal
@@ -142,8 +144,8 @@ object Assembler:
     val patched: Data = patch(runner, buildId, javaMinimum, javaPreferred, jdk, publicKey)
 
     output.open
-      ( file => file.write(Stream(patched)),
-        List(jnio.file.StandardOpenOption.TRUNCATE_EXISTING) )
+      ( file => LazyList(patched).writeTo(file),
+        List(OpenFlag.Truncate) )
 
     if platformLabel.starts(t"macos") then
       if !isWindows then output.executable() = true

@@ -47,6 +47,8 @@ import backstops.silentBackstop
 
 import Shell.*
 
+import filesystemBackends.virtualMachine
+
 object Tests extends Suite(m"Exoskeleton Tests"):
   def run(): Unit =
     supervise:

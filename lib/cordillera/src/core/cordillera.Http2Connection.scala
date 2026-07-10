@@ -178,10 +178,10 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
 
     . protect:
         val writer = daemon:
-          duplex.send(Stream(connectionPreface))
+          duplex.send(LazyList(connectionPreface))
 
           outbound.stream.each: frame =>
-            duplex.send(Stream(frame.serialize))
+            duplex.send(LazyList(frame.serialize))
 
         val reader = daemon:
           // A protocol error tears down just this connection; throw it to the enclosing
@@ -229,7 +229,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
 
     Log.fine(Http2Event.RequestSent(authority))
     val headerBlock = PseudoHeaders.request(request, scheme, authority)
-    val chunks = request.body().to(List)
+    val chunks = request.body().lazyList.to(List)
 
     val payload: Optional[Bytes] =
       if chunks.isEmpty then Unset else chunks.foldLeft(IArray.empty[Byte])(_ ++ _)

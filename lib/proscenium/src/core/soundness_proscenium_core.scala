@@ -41,10 +41,12 @@ export scala.collection.concurrent.TrieMap
 export
   Predef
   . { $conforms, ArrowAssoc, assert, augmentString, booleanArrayOps, byteArrayOps,
-      byteWrapper, charArrayOps, charWrapper, classOf, doubleArrayOps, doubleWrapper,
+      byteWrapper, charArrayOps, charWrapper, doubleArrayOps, doubleWrapper,
       floatArrayOps, floatWrapper, genericArrayOps, identity, intArrayOps, intWrapper, is,
       locally, longArrayOps, longWrapper, nn, refArrayOps, shortArrayOps, shortWrapper,
       summon, unitArrayOps, valueOf, `???` }
+
+export proscenium.classOf
 
 export scala.util.control.NonFatal
 
@@ -61,7 +63,6 @@ export
 
 export scala.annotation.unchecked.{uncheckedCaptures, uncheckedStable, uncheckedVariance}
 
-export scala.LazyList as Stream
 export scala.DummyImplicit as Void
 
 export proscenium.{`~>`, Label, Mono, Nat, unexported, Zero}

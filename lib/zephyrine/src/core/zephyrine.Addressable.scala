@@ -35,6 +35,8 @@ package zephyrine
 import java.io as ji
 import java.lang as jl
 
+import scala.collection.mutable as scm
+
 import anticipation.*
 import denominative.*
 import prepositional.*
@@ -49,6 +51,7 @@ object Addressable:
 
     val empty: Data = IArray.from(Nil)
 
+    inline def substrate: Substrate = Substrate.Bytes
     inline def blank(size: Int): ji.ByteArrayOutputStream = ji.ByteArrayOutputStream(size)
 
     inline def build(target: ji.ByteArrayOutputStream): Data =
@@ -102,6 +105,87 @@ object Addressable:
       target.write(storage, off, len)
 
 
+  // Heap-object media: a chunk of records (parsed rows, JSON events) is an
+  // `IArray` of them, stored in an erased `Array[AnyRef]` — so credit is
+  // counted in records, and `Buffering` sizes these buffers by reference
+  // count (`Substrate.Boxes`), since their memory usage isn't
+  // deterministically bounded. Erasure means the medium's element type must
+  // be a reference type; the `IArray`s this instance materializes are backed
+  // by `Array[AnyRef]`, which is indistinguishable at erased use sites.
+  given boxed: [element <: AnyRef] => IArray[element] is Addressable:
+    type Operand = element
+    type Target = scm.ArrayBuffer[element]
+    type Storage = Array[AnyRef]
+
+    val empty: IArray[element] = IArray.empty[AnyRef].asInstanceOf[IArray[element]]
+
+    def substrate: Substrate = Substrate.Boxes
+    def blank(size: Int): scm.ArrayBuffer[element] = scm.ArrayBuffer[element]()
+
+    def build(target: scm.ArrayBuffer[element]): IArray[element] =
+      target.toArray[AnyRef].asInstanceOf[IArray[element]]
+
+    def length(block: IArray[element]): Int = block.length
+    def address(block: IArray[element], index: Ordinal): element = block(index.n0)
+
+    def grab(block: IArray[element], start: Ordinal, end: Ordinal): IArray[element] =
+      block.slice(start.n0, end.n0)
+
+    def clone(source: IArray[element], start: Ordinal, end: Ordinal)
+      ( target: scm.ArrayBuffer[element] )
+    :   Unit =
+
+      var index = start.n0
+
+      while index <= end.n0 do
+        target += source(index)
+        index += 1
+
+    def allocate(size: Int): Array[AnyRef] = new Array[AnyRef](size)
+    def storageSize(storage: Array[AnyRef]): Int = storage.length
+
+    def storageAddress(storage: Array[AnyRef], index: Int): element =
+      storage(index).asInstanceOf[element]
+
+    def storageUpdate(storage: Array[AnyRef], index: Int, operand: element): Unit =
+      storage(index) = operand
+
+    def append(target: scm.ArrayBuffer[element], operand: element): Unit = target += operand
+
+    def copyChunk
+      ( source:  IArray[element],
+       srcOff:  Int,
+       dest:    Array[AnyRef],
+       destOff: Int,
+       len:     Int )
+    :   Unit =
+
+      System.arraycopy(source.asInstanceOf[Array[AnyRef]], srcOff, dest, destOff, len)
+
+    def transfer
+      ( src:     Array[AnyRef],
+       srcOff:  Int,
+       dest:    Array[AnyRef],
+       destOff: Int,
+       len:     Int )
+    :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
+
+    def materialize(storage: Array[AnyRef], off: Int, len: Int): IArray[element] =
+      val array = new Array[AnyRef](len)
+      System.arraycopy(storage, off, array, 0, len)
+      array.asInstanceOf[IArray[element]]
+
+    def cloneStorage
+      (storage: Array[AnyRef], off: Int, len: Int)(target: scm.ArrayBuffer[element])
+    :   Unit =
+
+      var index = off
+
+      while index < off + len do
+        target += storage(index).asInstanceOf[element]
+        index += 1
+
+
   inline given text: Text is Addressable:
     type Operand = Char
     type Target = jl.StringBuilder
@@ -109,6 +193,7 @@ object Addressable:
 
     val empty: Text = ""
 
+    inline def substrate: Substrate = Substrate.Chars
     inline def build(target: jl.StringBuilder): Text = target.toString.tt
     inline def blank(size: Int): jl.StringBuilder = jl.StringBuilder(size)
     inline def length(text: Text): Int = text.s.length
@@ -166,6 +251,10 @@ trait Addressable extends Typeclass, Operable, Targetable:
   type Storage
 
   def empty: Self
+
+  // How this medium's storage is physically represented, for `Buffering` to
+  // size stage buffers appropriately.
+  def substrate: Substrate
   // All operations are declared non-inline at the trait level so non-inline
   // call sites (e.g. inside `Cursor.forward`, or in parser plumbing that
   // wraps Cursor calls) can still dispatch through them. Concrete instances

@@ -61,6 +61,10 @@ object Wit:
   given char: (Char is Interoperable in Wit of "char") = Interoperable[Char, Wit, "char"]()
   given string: (Text is Interoperable in Wit of "string") = Interoperable[Text, Wit, "string"]()
 
+  // Binary data (an immutable byte array) corresponds to a WIT `list<u8>`.
+  given data: (Data is Interoperable in Wit of ("list" over "u8")) =
+    Interoperable[Data, Wit, ("list" over "u8")]()
+
   // A WIT `list<T>` corresponds to a Scala `List` of the element type.
   given list: [element, topic]
   =>  ( element is Interoperable in Wit of topic )

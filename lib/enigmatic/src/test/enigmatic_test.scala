@@ -262,7 +262,7 @@ object Tests extends Suite(m"Gastronomy tests"):
     test(m"Streaming encryption round-trips via one-shot decryption"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.expose:
-        val chunks = Stream(t"Hello, ".data, t"streaming ".data, t"world!".data)
+        val chunks = LazyList(t"Hello, ".data, t"streaming ".data, t"world!".data)
         chunks.encrypt(InitializationVector.random).reduce(_ ++ _).decrypt.text
     . assert(_ == t"Hello, streaming world!")
 
@@ -271,7 +271,7 @@ object Tests extends Suite(m"Gastronomy tests"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.expose:
         val streamed =
-          Stream(t"Hello, ".data, t"streaming ".data, t"world!".data).encrypt(iv).reduce(_ ++ _)
+          LazyList(t"Hello, ".data, t"streaming ".data, t"world!".data).encrypt(iv).reduce(_ ++ _)
 
         streamed.serialize[Hex] == t"Hello, streaming world!".data.encrypt(iv).serialize[Hex]
     . assert(_ == true)
@@ -400,6 +400,6 @@ object Tests extends Suite(m"Gastronomy tests"):
         given Crypto = OpensslCrypto
         val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
         key.expose:
-          val chunks = Stream(t"Hello, ".data, t"streaming ".data, t"world!".data)
+          val chunks = LazyList(t"Hello, ".data, t"streaming ".data, t"world!".data)
           chunks.encrypt(InitializationVector.random).reduce(_ ++ _).decrypt.text
       . assert(_ == t"Hello, streaming world!")

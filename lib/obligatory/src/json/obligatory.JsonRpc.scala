@@ -54,6 +54,8 @@ import urticose.*
 import vacuous.*
 import zephyrine.*
 
+import httpBackends.virtualMachine
+
 
 object JsonRpc:
   private val promises: scm.HashMap[Text | Int, Promise[Json]] = scm.HashMap()
@@ -143,8 +145,8 @@ trait JsonRpc extends Original:
   def put(json: Json): Unit =
     channel.put(json)
 
-  def outgoing: Stream[Json] = channel.stream
+  def outgoing: LazyList[Json] = channel.stream
 
-  def stream: Stream[Sse] =
+  def stream: LazyList[Sse] =
     channel.stream.map: json =>
       Sse(data = List(json.encode))

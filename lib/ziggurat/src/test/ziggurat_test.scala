@@ -56,6 +56,8 @@ import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 
+import filesystemBackends.virtualMachine
+
 object Tests extends Suite(m"Ziggurat tests"):
   def run(): Unit =
     if Ci() then Out.println(t"Running in CI; skipping Ziggurat tests")
@@ -87,7 +89,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       val script = dir / t"hello"
       script.create[File]()
       script.open: handle =>
-        handle.write(Stream(bundleBytes))
+        LazyList(bundleBytes).writeTo(handle)
       script.executable() = true
       (dir, script)
 
@@ -119,7 +121,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       val script = dir / t"fetch"
       script.create[File]()
       script.open: handle =>
-        handle.write(Stream(Xeq.onlineLauncher(jar, entries)))
+        LazyList(Xeq.onlineLauncher(jar, entries)).writeTo(handle)
       script.executable() = true
       script
 
@@ -131,7 +133,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       bin.create[File]()
       val bytes = body.data
       bin.open: handle =>
-        handle.write(Stream(bytes))
+        LazyList(bytes).writeTo(handle)
       (label, t"file://$bin", hash.or(bytes.digest[Sha2[256]].serialize[Hex]))
 
     suite(m"onlineLauncher()"):
@@ -218,7 +220,7 @@ object Tests extends Suite(m"Ziggurat tests"):
           ++ Array.fill(64 + ethereal.Assembler.PublicKeyLength)(0.toByte)
 
         file.create[File]()
-        file.open(_.write(Stream(bytes.immutable(using Unsafe): Data)))
+        file.open(LazyList(bytes.immutable(using Unsafe): Data).writeTo(_))
 
       test(m"EmbedAll bundles the JAR once and every patched stub"):
         val dir: Path on Linux = tempDir()
@@ -226,7 +228,7 @@ object Tests extends Suite(m"Ziggurat tests"):
 
         val jar: Path on Linux = dir/t"app.jar"
         jar.create[File]()
-        jar.open(_.write(Stream(t"JARBYTES".data)))
+        jar.open(LazyList(t"JARBYTES".data).writeTo(_))
 
         val out: Path on Linux = dir/t"hello"
 
@@ -251,7 +253,7 @@ object Tests extends Suite(m"Ziggurat tests"):
 
         val jar: Path on Linux = dir/t"app.jar"
         jar.create[File]()
-        jar.open(_.write(Stream(t"JARBYTES".data)))
+        jar.open(LazyList(t"JARBYTES".data).writeTo(_))
 
         val out: Path on Linux = dir/t"hello"
         val hashes: Map[Text, Text] = labels.map(_ -> t"0"*64).to(Map)
@@ -311,7 +313,7 @@ class Hello { static void Main() { System.Console.WriteLine("hello from windows-
 Add-Type -TypeDefinition $$src -OutputAssembly ziggurat-test-hello.exe -OutputType ConsoleApplication
 """
         compilePs.open: handle =>
-          handle.write(Stream(psContent.data))
+          LazyList(psContent.data).writeTo(handle)
 
         val localExe = workDir / t"hello.exe"
 
@@ -333,7 +335,7 @@ Add-Type -TypeDefinition $$src -OutputAssembly ziggurat-test-hello.exe -OutputTy
             val script = workDir / t"hello-${Uuid().show}.$extension"
             script.create[File]()
             script.open: handle =>
-              handle.write(Stream(winBundle))
+              LazyList(winBundle).writeTo(handle)
             val remote = t"ziggurat-test-${Uuid().show}.$extension"
             sh"scp -q $script $host:$remote".exec[Exit]()
             remote

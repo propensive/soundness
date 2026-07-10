@@ -46,7 +46,7 @@ object Tests extends Suite(m"Monotonous tests"):
 
   val allNumbers = IArray.from((0 to 18).map(_.toByte))
 
-  val stream = Stream(Data(1), Data(2, 3), Data(4, 5, 6), Data(7, 8, 9, 10),
+  val stream = LazyList(Data(1), Data(2, 3), Data(4, 5, 6), Data(7, 8, 9, 10),
       Data(11, 12, 13, 14, 15), Data(16, 17, 18, 19, 20, 21), Data(22, 23, 24, 25, 26, 27, 28))
 
   def run(): Unit = stochastic:
@@ -54,7 +54,7 @@ object Tests extends Suite(m"Monotonous tests"):
     //suite(m"Streaming tests"):
       // test(m"Streaming BASE32"):
       //   val text: Text = allNumbers.serialize
-      //   val shredded = Stream(text.bytes).shred(6, 9).map(_.utf8)
+      //   val shredded = LazyList(text.bytes).shred(6, 9).map(_.utf8)
       //   println(shredded.to(List).inspect)
       //   val result = shredded.deserialize.toList
       //   println(result.reduce(_ ++ _).to(List).inspect)
@@ -185,3 +185,59 @@ object Tests extends Suite(m"Monotonous tests"):
           import alphabets.binaryStandard
           arb.serialize[Binary].deserialize[Binary].to(List)
         . assert(_ == arbList)
+
+    suite(m"Streaming serialization tests"):
+      import strategies.throwUnsafely
+      import alphabets.hexUpperCase, alphabets.base64Standard
+
+      val payload = Data.fill(100)(_.toByte)
+
+      test(m"hex duct serializes a byte stream"):
+        Drain.text(Stream(payload).through(summon[Alphabet[Hex]]))
+      . assert(_ == payload.serialize[Hex])
+
+      test(m"hex duct deserializes a text stream"):
+        Drain.data(Stream(payload.serialize[Hex]).through(summon[Alphabet[Hex]])).to(List)
+      . assert(_ == payload.to(List))
+
+      test(m"base64 duct emits padding at end of stream"):
+        Drain.text(Stream(Data(1, 2, 3, 4)).through(summon[Alphabet[Base64]]))
+      . assert(_ == Data(1, 2, 3, 4).serialize[Base64])
+
+      test(m"base64 duct roundtrips through both directions"):
+        val text = Drain.text(Stream(payload).through(summon[Alphabet[Base64]]))
+        Drain.data(Stream(text).through(summon[Alphabet[Base64]])).to(List)
+      . assert(_ == payload.to(List))
+
+// Drains a duct-composed pull endpoint, for the streaming serialization
+// tests.
+object Drain:
+  def text(stream: Stream[Text] over Credit, credit: Int = 7): Text =
+    val builder = StringBuilder()
+
+    def recur(): Unit = stream.refill(Credit(credit)) match
+      case count: Int =>
+        val window = unsafely(stream.window).asInstanceOf[Array[Char]]
+        builder.append(String(window, stream.start, count))
+        stream.skip(count)
+        recur()
+
+      case _ => ()
+
+    recur()
+    builder.toString.tt
+
+  def data(stream: Stream[Data] over Credit, credit: Int = 7): Data =
+    val target = java.io.ByteArrayOutputStream()
+
+    def recur(): Unit = stream.refill(Credit(credit)) match
+      case count: Int =>
+        val window = unsafely(stream.window).asInstanceOf[Array[Byte]]
+        target.write(window, stream.start, count)
+        stream.skip(count)
+        recur()
+
+      case _ => ()
+
+    recur()
+    target.toByteArray.nn.immutable(using Unsafe)

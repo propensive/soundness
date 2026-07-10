@@ -68,23 +68,23 @@ extends Subprocess, ProcessRef:
   def alive: Boolean = process.isAlive
   def attend(): Unit = process.waitFor()
 
-  def stdout(): Stream[Data] raises StreamError =
+  def stdout(): LazyList[Data] raises StreamError =
     Streamable.inputStream.stream(process.getInputStream.nn)
 
-  def stderr(): Stream[Data] raises StreamError =
+  def stderr(): LazyList[Data] raises StreamError =
     Streamable.inputStream.stream(process.getErrorStream.nn)
 
   def text(): Text = String(process.getInputStream.nn.readAllBytes().nn, "UTF-8").nn.tt
   def errorText(): Text = String(process.getErrorStream.nn.readAllBytes().nn, "UTF-8").nn.tt
 
-  def lines(): Stream[Text] =
+  def lines(): LazyList[Text] =
     val reader = ji.BufferedReader(ji.InputStreamReader(process.getInputStream))
-    reader.lines().nn.toScala(Stream).map(_.tt)
+    reader.lines().nn.toScala(LazyList).map(_.tt)
 
   def status(): Int = process.waitFor()
 
 
-  def stdin[chunk](stream: Stream[chunk])
+  def stdin[chunk](stream: LazyList[chunk])
     ( using writable: (ProcessInput is Writable by chunk)^ )
   :   Unit =
     writable.write(ProcessInput(process.getOutputStream.nn), stream)

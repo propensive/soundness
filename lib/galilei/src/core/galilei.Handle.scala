@@ -36,18 +36,19 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 import turbulence.*
+import zephyrine.*
 
-// A scoped capability: its `read`/`write` operations are direct methods (not `Streamable`/`Writable`
-// typeclass givens summoned on the handle's own type). Summoning a typeclass on a *scoped* capability's
-// type fails under capture checking — given resolution widens the scoped capture to `{any}` — so the
-// typeclasses are instead summoned on the (non-scoped) source/result types here.
-class Handle(val reader: () => Stream[Data], val writer: Stream[Data] => Unit)
-extends caps.ExclusiveCapability:
+object Handle:
+  given streamable: Tactic[StreamError] => Handle is Streamable by Data = _.reader()
+  given writable: Emit[StreamError] => Handle is Writable by Data = _.writer(_)
+  given source: Handle is Source by Data over Credit = _.source()
+  given sink: Handle is Sink by Data over Credit = _.intake()
 
-  def write[source: Streamable by Data as streamable](source: source): Unit =
-    writer(streamable.stream(source))
-
-  def stream: Stream[Data] = reader()
-
-  def read[result](using readable: (Stream[Data] is Readable to result)^): result =
-    readable.read(reader())
+// The native `source`/`intake` endpoints default to bridging the legacy
+// `reader`/`writer`; `Openable` supplies channel-native endpoints, so file
+// I/O reads and writes directly through the streaming kernel's buffers.
+class Handle
+  ( val reader: () => LazyList[Data], val writer: LazyList[Data] => Unit )
+  ( val source: () => Stream[Data] over Credit = () => Stream(reader().iterator),
+    val intake: () => Intake[Data] over Credit =
+      () => Sink.buffered((), (_, stream) => writer(stream)) )

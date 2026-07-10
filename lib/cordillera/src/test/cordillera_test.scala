@@ -224,8 +224,8 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
         val serverToClient = Spool[Data]()
 
         def duplex(inbound: Spool[Data], outbound: Spool[Data]) = new Duplex:
-          def stream: Stream[Data] = inbound.stream
-          def send(data: Stream[Data]): Unit = data.each(outbound.put)
+          def stream: LazyList[Data] = inbound.stream
+          def send(data: LazyList[Data]): Unit = data.each(outbound.put)
           def close(): Unit = outbound.stop()
 
         (duplex(serverToClient, clientToServer), duplex(clientToServer, serverToClient))
@@ -237,7 +237,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
       // trailer. Returned as a Daemon so the caller can cancel it.
       def runServer(serverSide: Duplex)(using Monitor, Probate): Daemon = daemon:
         safely:
-          serverSide.send(Stream(Frame.Settings(Nil, ack = false).serialize))
+          serverSide.send(LazyList(Frame.Settings(Nil, ack = false).serialize))
 
           // Skip the 24-byte client connection preface before frame-parsing.
           val raw = serverSide.stream.iterator
@@ -256,16 +256,16 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
             case Unset        => continue = false
             case f: Frame     => f match
               case Frame.Settings(_, false) =>
-                serverSide.send(Stream(Frame.Settings(Nil, ack = true).serialize))
+                serverSide.send(LazyList(Frame.Settings(Nil, ack = true).serialize))
 
               case Frame.Headers(id, _, _, _) =>
                 val respHeaders = hpack.encode(List(HpackEntry(t":status", t"200"),
                     HpackEntry(t"content-type", t"application/grpc")))
 
                 val trailers = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
-                serverSide.send(Stream(Frame.Headers(id, respHeaders, false, true).serialize))
-                serverSide.send(Stream(Frame.Data(id, ascii(t"pong"), false).serialize))
-                serverSide.send(Stream(Frame.Headers(id, trailers, true, true).serialize))
+                serverSide.send(LazyList(Frame.Headers(id, respHeaders, false, true).serialize))
+                serverSide.send(LazyList(Frame.Data(id, ascii(t"pong"), false).serialize))
+                serverSide.send(LazyList(Frame.Headers(id, trailers, true, true).serialize))
 
               case _ => ()
 
@@ -309,7 +309,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"unix")
 
           val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".decode[Host]),
-              t"/echo.Service/Call", Nil, () => Stream())
+              t"/echo.Service/Call", Nil, () => Stream(Iterator.empty[Data]))
 
           client.request(request, endpoint).status.code
       . assert(_ == 200)

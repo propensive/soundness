@@ -45,5 +45,5 @@ class WsConnection
   ( private[perihelion] val duplex:  Duplex,
     private[perihelion] val channel: Channel,
     private[perihelion] val masking: Masking,
-    private[perihelion] val inbound: Stream[Data],
+    private[perihelion] val inbound: LazyList[Data],
     private[perihelion] val pump:    Daemon )

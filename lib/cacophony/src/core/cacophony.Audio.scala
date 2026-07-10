@@ -92,7 +92,7 @@ object Audio:
     new Audio(format, data):
       type Domain = layout
 
-  private def writeAudio(audio: Audio, formatName: Text): Stream[Data] =
+  private def writeAudio(audio: Audio, formatName: Text): LazyList[Data] =
     val ais = jss.AudioInputStream(ji.ByteArrayInputStream(audio.data), audio.format, audio.frames)
 
     val fileType = jss.AudioSystem.getAudioFileTypes.nn.find(_.toString == formatName.s).getOrElse:
@@ -118,7 +118,7 @@ object Audio:
     type Result = HttpStreams.Content
 
     def genericize(audio: Audio in format): HttpStreams.Content =
-      (format.mediaType.basic, audio.read[Stream[Data]])
+      (format.mediaType.basic, HttpStreams.Body(audio.read[LazyList[Data]].iterator))
 
   given aggregable: [format: Audible as audible] => Tactic[AudioError]
   =>  (Audio in format) is Aggregable by Data =

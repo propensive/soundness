@@ -78,6 +78,9 @@ object WitDialect extends Dialect:
         if char == '/' && next == '/' then recur(skipLine(index), "", flushed)
         else if char == '/' && next == '*' then recur(skipBlock(index + 2), "", flushed)
         else if char == '-' && next == '>' then recur(index + 2, "", "->" :: flushed)
+        // `%` escapes an identifier that collides with a WIT keyword (`%stream`); the name
+        // itself is the unescaped form.
+        else if char == '%' then recur(index + 1, current, tokens)
         else if ident(char) then recur(index + 1, current + char, tokens)
         else if char.isWhitespace then recur(index + 1, "", flushed)
         else recur(index + 1, "", char.toString :: flushed)
@@ -94,13 +97,23 @@ object WitDialect extends Dialect:
       if name == "option" then args match
         case inner :: Nil => (Foreign.Type.Union(List(inner, Foreign.Type.Named(t"none"))), after)
         case _            => (Foreign.Type.Applied(t"option", args), after)
+      else if name == "result" then (result(args), after)
       else (Foreign.Type.Applied(name.tt, args), after)
+
+    case "result" :: rest =>
+      (result(Nil), rest)
 
     case name :: rest =>
       (Foreign.Type.Named(name.tt), rest)
 
     case Nil =>
       (Foreign.Type.Named(t""), Nil)
+
+  // A `result` type always carries exactly two arms: `result` and `result<T>` pad the missing
+  // `ok`/`err` arm(s) with `_`, so consumers see one uniform shape.
+  private def result(args: List[Foreign.Type]): Foreign.Type =
+    val unit = Foreign.Type.Named(t"_")
+    Foreign.Type.Applied(t"result", (args ++ List(unit, unit)).take(2))
 
   private def typeArguments(tokens: List[String], acc: List[Foreign.Type])
   :   (List[Foreign.Type], List[String]) =
@@ -194,15 +207,21 @@ object WitDialect extends Dialect:
 
           recur(after, functions, types, typedefs.updated(alias.tt, Foreign.Type.Named(topic)))
 
+        // A variant (or a bodyless resource) has no navigable members, but must still record
+        // which module defines it, so functions in *other* interfaces that mention it (e.g. in a
+        // `result` error arm) resolve its facade class through `definingModule`: a single
+        // unnameable member carries the module.
         case "variant" :: variant :: "{" :: rest =>
-          val updated = types.updated(variant.tt, ListMap[Text, Prototype]())
+          val updated = types.updated(variant.tt, declaration(variant.tt, module))
           recur(skipBraces(rest, 1), functions, updated, typedefs)
 
-        case "resource" :: _ :: "{" :: rest =>
-          recur(skipBraces(rest, 1), functions, types, typedefs)
+        case "resource" :: resource :: "{" :: rest =>
+          val (methods, after) = resourceBody(rest, resource.tt, module, ListMap())
+          recur(after, functions, types.updated(resource.tt, methods), typedefs)
 
-        case "resource" :: _ :: ";" :: rest =>
-          recur(rest, functions, types, typedefs)
+        case "resource" :: resource :: ";" :: rest =>
+          val updated = types.updated(resource.tt, declaration(resource.tt, module))
+          recur(rest, functions, updated, typedefs)
 
         case "use" :: rest =>
           recur(skipTo(rest, t";"), functions, types, typedefs)
@@ -230,6 +249,59 @@ object WitDialect extends Dialect:
           recur(rest, functions, types, typedefs)
 
     recur(tokens, ListMap(), types, typedefs)
+
+  // Walks a `resource … { … }` body: its methods become members of a type named after the
+  // resource, each marked with the resource it belongs to (so an invocation can address it as
+  // `[method]resource.name` and thread the receiver's handle). `constructor` and `static`
+  // declarations are recognised but skipped for now.
+  private def resourceBody
+    ( tokens:   List[String],
+      resource: Text,
+      module:   Optional[Text],
+      methods:  Map[Text, Prototype] )
+  :   (Map[Text, Prototype], List[String]) =
+
+    tokens match
+      case "}" :: rest =>
+        (methods, rest)
+
+      case Nil =>
+        (methods, Nil)
+
+      // A constructor is registered as the member `constructor`, returning the resource itself; a
+      // `static func` is a member addressed through the resource but taking no receiver.
+      case "constructor" :: "(" :: rest =>
+        val (parameters, after) = params(rest, Nil)
+        val signature = Prototype(parameters, Foreign.Type.Named(resource), module, resource, true)
+        val updated = methods.updated(t"constructor", signature)
+        resourceBody(skipTo(after, t";"), resource, module, updated)
+
+      case method :: ":" :: "static" :: "func" :: "(" :: rest =>
+        val (parameters, after) = params(rest, Nil)
+
+        val (result, after2) = after match
+          case "->" :: more => typeOf(more)
+          case more         => (Foreign.Type.Named(t"unit"), more)
+
+        val signature = Prototype(parameters, result, module, resource, true)
+        resourceBody(skipTo(after2, t";"), resource, module, methods.updated(method.tt, signature))
+
+      case method :: ":" :: "func" :: "(" :: rest =>
+        val (parameters, after) = params(rest, Nil)
+
+        val (result, after2) = after match
+          case "->" :: more => typeOf(more)
+          case more         => (Foreign.Type.Named(t"unit"), more)
+
+        val signature = Prototype(parameters, result, module, resource)
+        resourceBody(skipTo(after2, t";"), resource, module, methods.updated(method.tt, signature))
+
+      case _ :: rest =>
+        resourceBody(rest, resource, module, methods)
+
+  // The pseudo-member recording, for a memberless type declaration, the module that defines it.
+  private def declaration(name: Text, module: Optional[Text]): Map[Text, Prototype] =
+    ListMap(t"" -> Prototype(Unset, Foreign.Type.Named(name), module))
 
   private def recordFields(tokens: List[String], acc: Map[Text, Prototype])
   :   (Map[Text, Prototype], List[String]) =
@@ -289,7 +361,12 @@ object WitDialect extends Dialect:
         Foreign.Type.Applied(constructor, arguments.map(expand))
 
     def signature(sig: Prototype): Prototype =
-      Prototype(sig.parameters.let(_.map(expand)), expand(sig.result), sig.module)
+      Prototype
+        ( sig.parameters.let(_.map(expand)),
+          expand(sig.result),
+          sig.module,
+          sig.resource,
+          sig.static )
 
     definitions.map: (name, members) =>
       (name, members.map { (member, sig) => (member, signature(sig)) })

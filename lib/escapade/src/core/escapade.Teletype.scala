@@ -67,14 +67,14 @@ object Teletype:
     type Self = Out.type
     type Operand = Teletype
 
-    def write(target: Self, stream: Stream[Teletype]): Unit =
+    def write(target: Self, stream: LazyList[Teletype]): Unit =
       stream.flow(())(Out.print(next) yet write(target, more))
 
   given err: Stdio => Err.type is Writable by Teletype = new Writable:
     type Self = Err.type
     type Operand = Teletype
 
-    def write(target: Self, stream: Stream[Teletype]): Unit =
+    def write(target: Self, stream: LazyList[Teletype]): Unit =
       stream.flow(())(Err.print(next) yet write(target, more))
 
   given textual: Teletype is Textual:

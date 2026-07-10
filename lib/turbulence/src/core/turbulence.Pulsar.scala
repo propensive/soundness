@@ -41,10 +41,10 @@ class Pulsar[duration: Abstractable across Durations to Long](duration: duration
 
   def stop(): Unit = continue = false
 
-  def stream(using Monitor): Stream[Unit] =
-    if !continue then Stream()
+  def stream(using Monitor): LazyList[Unit] =
+    if !continue then LazyList()
     else
       try
         snooze(duration)
         () #:: stream
-      catch case error: AsyncError => Stream()
+      catch case error: AsyncError => LazyList()

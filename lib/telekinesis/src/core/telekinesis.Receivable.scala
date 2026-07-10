@@ -49,7 +49,7 @@ trait Receivable2:
 
 
 object Receivable extends Receivable2:
-  def apply[result](lambda: (Stream[Data] => result)^)(using tactic: Tactic[HttpError])
+  def apply[result](lambda: (LazyList[Data] => result)^)(using tactic: Tactic[HttpError])
   :   ((result is Receivable)^{lambda, tactic}) =
     response =>
       response.successBody.let(lambda).lest(HttpError(response.status, response.textHeaders))

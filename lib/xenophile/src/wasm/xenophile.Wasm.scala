@@ -36,6 +36,8 @@ import anticipation.*
 import distillate.*
 import hypotenuse.*
 import prepositional.*
+import rudiments.*
+import vacuous.*
 
 // The uniform form of a value marshalled across a WIT function boundary (see the `Wasm` class). A
 // single form lets a codec be summoned for any Scala type without knowing its carrier in advance;
@@ -93,6 +95,12 @@ object Wasm:
   given charDecodable: ((Char is Decodable in Wasm) { type Carrier = Char }) = dec(identity)
   given textEncodable: ((Text is Encodable in Wasm) { type Carrier = String }) = enc(_.s)
   given textDecodable: ((Text is Decodable in Wasm) { type Carrier = String }) = dec(_.tt)
+
+  given dataEncodable: ((Data is Encodable in Wasm) { type Carrier = Array[Byte] }) =
+    enc(_.mutable(using Unsafe))
+
+  given dataDecodable: ((Data is Decodable in Wasm) { type Carrier = Array[Byte] }) =
+    dec(_.immutable(using Unsafe))
 
   // TODO: `F32`/`F64` (need the `Float`/`Double`->`F32`/`F64` constructors) and a WIT `list<T>`
   // codec (crosses the boundary as an `Array` of the element carrier) are not yet provided.

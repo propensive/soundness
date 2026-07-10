@@ -101,7 +101,7 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
     total
 
   // Parse the request-line and headers of a single request.
-  def parseRequest(bytes: Data): Http.Method = Http.Request.parse(Stream(bytes)).method
+  def parseRequest(bytes: Data): Http.Method = Http.Request.parse(LazyList(bytes)).method
 
   // Serialise a fixed response to bytes, forcing the whole stream.
   def serializeResponse(response: Http.Response): Int =

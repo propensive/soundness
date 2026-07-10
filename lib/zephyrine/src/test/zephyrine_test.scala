@@ -403,7 +403,9 @@ object Tests extends Suite(m"Zephyrine tests"):
             for i <- 1 to 7 do cursor.next()
             cursor.grab(start, cursor.mark)
 
-        . assert(_ == "onetwot")
+    suite(m"Cursor[Data] tests"):
+      def stream = LazyList(bytes).shred(10.0, 10.0).filter(_.nonEmpty)
+      def byteCursor = Cursor[Data](stream.iterator)
 
       suite(m"Cursor[Data] tests"):
         def stream = Stream(bytes).shred(10.0, 10.0).filter(_.nonEmpty)
@@ -444,25 +446,26 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         . assert(_ === Data(5, 6, 7, 8, 9, 10, 11, 12, 13, 14))
 
-        test(m"Cursor[Data] seek finds byte"):
-          val cursor = byteCursor
-          cursor.seek(15.toByte)
-          cursor.datum(using Unsafe)
+      test(m"Cursor[Data] remainder from start equals full stream"):
+        val blocks = LazyList(Data(1, 2, 3), Data(4, 5), Data(6, 7))
+        val cursor = Cursor[Data](blocks.iterator)
+        cursor.remainder.flatten.to(List)
 
         . assert(_ == 15.toByte)
 
-        test(m"Cursor[Data] remainder from start equals full stream"):
-          val blocks = Stream(Data(1, 2, 3), Data(4, 5), Data(6, 7))
-          val cursor = Cursor[Data](blocks.iterator)
-          cursor.remainder.flatten.to(List)
+      test(m"Cursor[Data] remainder mid-block emits cross-block tail"):
+        val blocks = LazyList(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
+        val cursor = Cursor[Data](blocks.iterator)
+        for i <- 0 until 3 do cursor.next()
+        cursor.remainder.flatten.to(List)
 
         . assert(_ == List[Byte](1, 2, 3, 4, 5, 6, 7))
 
-        test(m"Cursor[Data] remainder mid-block emits cross-block tail"):
-          val blocks = Stream(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
-          val cursor = Cursor[Data](blocks.iterator)
-          for i <- 0 until 3 do cursor.next()
-          cursor.remainder.flatten.to(List)
+      test(m"Cursor[Data] remainder inside hold still emits unconsumed tail"):
+        val blocks = LazyList(Data(1, 2, 3, 4, 5), Data(6, 7, 8))
+        val cursor = Cursor[Data](blocks.iterator)
+        for i <- 0 until 3 do cursor.next()
+        cursor.hold(cursor.remainder.flatten.to(List))
 
         . assert(_ == List[Byte](4, 5, 6, 7, 8))
 
@@ -577,3 +580,307 @@ object Tests extends Suite(m"Zephyrine tests"):
             (inner, cursor.grab(outer, cursor.mark).s)
         . assert(_ == ((true, "a")))
 
+    suite(m"Streaming kernel tests"):
+      val small = IArray[Byte](1, 2, 3, 4, 5)
+
+      test(m"flowTo transfers a single-chunk stream"):
+        val gather = Gather()
+        Stream(bytes).flowTo(gather)
+        gather.data.to(List)
+      . assert(_ == bytes.to(List))
+
+      test(m"iterator stream transfers all chunks in order"):
+        val gather = Gather()
+        Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](), IArray[Byte](4, 5))).flowTo(gather)
+        gather.data.to(List)
+      . assert(_ == List[Byte](1, 2, 3, 4, 5))
+
+      test(m"through doubles each byte"):
+        val gather = Gather()
+        Stream(small).through(Doubler()).flowTo(gather)
+        gather.data.to(List)
+      . assert(_ == small.to(List).flatMap { byte => List(byte, byte) })
+
+      test(m"a duct translates downstream demand for its upstream"):
+        val recorder = Recorder(Stream(small))
+        val gather = Gather()
+        gather.credit = 10
+        recorder.through(Doubler()).flowTo(gather)
+        recorder.demands.last
+      . assert(_ == 5L)
+
+      test(m"accepting reports translated demand"):
+        val gather = Gather()
+        gather.credit = 10
+        gather.accepting(Doubler()).demand.count
+      . assert(_ == 5L)
+
+      test(m"accepting transforms pushed data"):
+        val gather = Gather()
+        val intake = gather.accepting(Doubler())
+        intake.put(small)
+        intake.finish()
+        gather.data.to(List)
+      . assert(_ == small.to(List).flatMap { byte => List(byte, byte) })
+
+      test(m"duct flush emits terminal state on finish"):
+        val gather = Gather()
+        val intake = gather.accepting(Trailer())
+        intake.put(IArray[Byte](1, 2))
+        intake.finish()
+        gather.data.to(List)
+      . assert(_ == List[Byte](1, 2, 99))
+
+      test(m"duct flush emits terminal state at end of a pulled stream"):
+        val gather = Gather()
+        Stream(IArray[Byte](1, 2)).through(Trailer()).flowTo(gather)
+        gather.data.to(List)
+      . assert(_ == List[Byte](1, 2, 99))
+
+      test(m"conduit transfers data across threads"):
+        val conduit = Conduit[Data]()
+        val gather = Gather()
+        val task = async(conduit.stream.flowTo(gather))
+        conduit.put(bytes)
+        conduit.finish()
+        unsafely(task.await())
+        gather.data.to(List)
+      . assert(_ == bytes.to(List))
+
+      test(m"conduit demand reflects buffered data"):
+        val conduit = Conduit[Data]()
+        val before = conduit.demand.count
+        conduit.put(IArray[Byte](1, 2, 3))
+        val after = conduit.demand.count
+        before - after
+      . assert(_ == 3L)
+
+      test(m"conduit rethrows producer failure at the reader"):
+        val conduit = Conduit[Data]()
+        conduit.fail(RuntimeException("boom"))
+
+        try
+          conduit.stream.refill(Credit(1))
+          false
+        catch case _: RuntimeException => true
+      . assert(identity)
+
+      test(m"credit grant clamps to Int range and zero"):
+        val regulation = summon[Credit is Regulation]
+
+        ( regulation.grant(Credit(-5)),
+          regulation.grant(Credit(3)),
+          regulation.grant(Credit(Long.MaxValue)) )
+      . assert(_ == ((0, 3, Int.MaxValue)))
+
+      test(m"credit encode/decode roundtrip"):
+        val regulation = summon[Credit is Regulation]
+        regulation.decode(regulation.encode(Credit(3456))).count
+      . assert(_ == 3456L)
+
+      test(m"cursor over a stream sees all elements across chunk boundaries"):
+        val cursor = Cursor[Text](Stream(Iterator(t"ab", t"cd")))
+        var out: String = ""
+
+        while !cursor.finished do
+          out += cursor.peek.asInt.toChar
+          cursor.next()
+
+        out
+      . assert(_ == "abcd")
+
+      import charDecoders.utf8Decoder, charEncoders.utf8Encoder, textSanitizers.skipSanitizer
+
+      val exotic = t"héllo → 🎉 fin"
+
+      test(m"char decoder duct reassembles multi-byte characters split across refills"):
+        val chunks = exotic.s.getBytes("UTF-8").nn.toSeq.map { byte => IArray[Byte](byte) }
+        val stream = Stream(chunks.iterator).through(summon[CharDecoder])
+        val builder = StringBuilder()
+
+        def recur(): Unit = stream.refill(Credit(8)) match
+          case count: Int =>
+            val window = unsafely(stream.window).asInstanceOf[Array[Char]]
+            builder.append(String(window, stream.start, count))
+            stream.skip(count)
+            recur()
+
+          case _ => ()
+
+        recur()
+        builder.toString.tt
+      . assert(_ == exotic)
+
+      test(m"char encoder duct emits UTF-8 for supplementary characters"):
+        val gather = Gather()
+        Stream(exotic).through(summon[CharEncoder]).flowTo(gather)
+        gather.data.to(List)
+      . assert(_ == exotic.s.getBytes("UTF-8").nn.to(List))
+
+      test(m"charset ducts roundtrip through both directions"):
+        val gather = Gather()
+        Stream(exotic).through(summon[CharEncoder]).flowTo(gather)
+        val decoded = Stream(gather.data).through(summon[CharDecoder])
+        val builder = StringBuilder()
+
+        def recur(): Unit = decoded.refill(Credit(4)) match
+          case count: Int =>
+            val window = unsafely(decoded.window).asInstanceOf[Array[Char]]
+            builder.append(String(window, decoded.start, count))
+            decoded.skip(count)
+            recur()
+
+          case _ => ()
+
+        recur()
+        builder.toString.tt
+      . assert(_ == exotic)
+
+      test(m"record streams carry heap objects with credit counted in records"):
+        val records = IArray.from((1 to 100).map { index => s"record-$index" })
+        val stream = Stream[IArray[String]](records)
+        var collected: List[String] = Nil
+
+        def recur(): Unit = stream.refill(Credit(7)) match
+          case count: Int =>
+            val window = unsafely(stream.window).asInstanceOf[Array[AnyRef]]
+
+            for index <- 0 until count
+            do collected = window(stream.start + index).asInstanceOf[String] :: collected
+
+            stream.skip(count)
+            recur()
+
+          case _ => ()
+
+        recur()
+        collected.reverse
+      . assert(_ == (1 to 100).map { index => s"record-$index" }.to(List))
+
+      test(m"flow grants nothing when halted"):
+        val regulation = summon[Pace is Regulation]
+
+        ( regulation.grant(Pace.Halted),
+          regulation.grant(Pace.Free) > 0,
+          regulation.measured(Pace.Measured) )
+      . assert(_ == ((0, true, true)))
+
+
+// A byte intake that gathers everything written to it, with a configurable
+// reported demand, for asserting demand translation.
+class Gather() extends Intake[Data]:
+  type Transport = Credit
+
+  private val block: Int = 16
+  private val storage: addressable.Storage = addressable.allocate(block)
+  private val target: addressable.Target = addressable.blank(64)
+  private var mark1: Int = 0
+  var credit: Long = Long.MaxValue
+
+  def demand: Credit = Credit(credit)
+  protected def buffer0: AnyRef = storage.asInstanceOf[AnyRef]
+  def mark: Int = mark1
+
+  def reserve(min: Int): Int =
+    val free = block - mark1
+
+    if free >= min then free else
+      drain()
+      block
+
+  def commit(count: Int): Unit =
+    mark1 += count
+    if mark1 == block then drain()
+
+  def finish(): Unit = drain()
+
+  def data: Data =
+    drain()
+    addressable.build(target)
+
+  private def drain(): Unit =
+    if mark1 > 0 then
+      addressable.cloneStorage(storage, 0, mark1)(target)
+      mark1 = 0
+
+// Doubles each byte, like hexadecimal serialization: 1024 elements of
+// downstream demand translate to 512 elements of upstream demand.
+class Doubler() extends Duct[Data, Data]:
+  type Transport = Credit
+  type Upstream = Credit
+
+  def regulation: Credit is Regulation = summon[Credit is Regulation]
+
+  // Ceiling division, written to avoid overflow when the demand is unbounded
+  // (`Long.MaxValue`).
+  def translate(demand: Credit): Credit = Credit(demand.count - demand.count/2)
+
+  override def quantum: Int = 2
+
+  def step
+    ( source: input.Storage,
+      sourceOffset: Int,
+      sourceLength: Int,
+      target: output.Storage,
+      targetOffset: Int,
+      targetSpace: Int )
+  :   Duct.Progress =
+
+    var consumed: Int = 0
+    var produced: Int = 0
+    val target2 = target.asInstanceOf[input.Storage]
+
+    while consumed < sourceLength && produced + 2 <= targetSpace do
+      val byte = input.storageAddress(source, sourceOffset + consumed)
+      input.storageUpdate(target2, targetOffset + produced, byte)
+      input.storageUpdate(target2, targetOffset + produced + 1, byte)
+      consumed += 1
+      produced += 2
+
+    Duct.Progress(consumed, produced)
+
+// The identity transformation, plus a single trailing `99` byte at
+// end-of-stream, exercising the `flush` path.
+class Trailer() extends Duct[Data, Data]:
+  type Transport = Credit
+  type Upstream = Credit
+
+  private var emitted: Boolean = false
+
+  def regulation: Credit is Regulation = summon[Credit is Regulation]
+  def translate(demand: Credit): Credit = demand
+
+  def step
+    ( source: input.Storage,
+      sourceOffset: Int,
+      sourceLength: Int,
+      target: output.Storage,
+      targetOffset: Int,
+      targetSpace: Int )
+  :   Duct.Progress =
+
+    val count = sourceLength.min(targetSpace)
+    input.transfer(source, sourceOffset, target.asInstanceOf[input.Storage], targetOffset, count)
+
+    Duct.Progress(count, count)
+
+  override def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
+    if emitted then 0 else
+      emitted = true
+      output.storageUpdate(target, targetOffset, 99.toByte.asInstanceOf[output.Operand])
+      1
+
+// Passes refills through unchanged, recording each demand it receives.
+class Recorder(underlying: Stream[Data] over Credit) extends Stream[Data]:
+  type Transport = Credit
+
+  var demands: List[Long] = Nil
+
+  def refill(demand: Credit): Optional[Int] =
+    demands ::= demand.count
+    underlying.refill(demand)
+
+  protected def window0: AnyRef = unsafely(underlying.window).asInstanceOf[AnyRef]
+  def start: Int = underlying.start
+  def limit: Int = underlying.limit
+  def skip(count: Int): Unit = underlying.skip(count)

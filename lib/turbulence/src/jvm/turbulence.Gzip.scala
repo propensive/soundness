@@ -38,14 +38,27 @@ import java.util.zip as juz
 import anticipation.*
 import rudiments.*
 import vacuous.*
+import zephyrine.*
 
 object Gzip:
   given compression: Gzip is Compression:
-    def compress(stream: Stream[Data]): Stream[Data] =
+    def compressor()(using Buffering): Duct[Data, Data] {
+      type Transport = Credit
+      type Upstream = Credit } =
+
+      Deflation(gzip = true, nowrap = true)
+
+    def decompressor()(using Buffering): Duct[Data, Data] {
+      type Transport = Credit
+      type Upstream = Credit } =
+
+      Inflation(gzip = true, nowrap = true)
+
+    def compress(stream: LazyList[Data]): LazyList[Data] =
       val out = ji.ByteArrayOutputStream()
       val out2 = juz.GZIPOutputStream(out)
 
-      def recur(stream: Stream[Data]): Stream[Data] = stream match
+      def recur(stream: LazyList[Data]): LazyList[Data] = stream match
         case head #:: tail =>
           out2.write(head.mutable(using Unsafe))
           out2.flush()
@@ -57,20 +70,22 @@ object Gzip:
 
         case _ =>
           out2.close()
-          if out.size == 0 then Stream() else Stream(out.toByteArray().nn.immutable(using Unsafe))
+
+          if out.size == 0 then LazyList()
+          else LazyList(out.toByteArray().nn.immutable(using Unsafe))
 
       recur(stream)
 
     // Hand-rolled read loop rather than `unsafely(….stream[Data])`: the lazy stream would
     // capture the tactic beyond the scope `unsafely` seals (see rep/DECISIONS.md).
-    def decompress(stream: Stream[Data]): Stream[Data] =
+    def decompress(stream: LazyList[Data]): LazyList[Data] =
       val in = juz.GZIPInputStream(stream.inputStream)
       val buffer: Array[Byte] = new Array(4096)
 
-      def recur(): Stream[Data] =
+      def recur(): LazyList[Data] =
         val count = in.read(buffer)
 
-        if count < 0 then Stream()
+        if count < 0 then LazyList()
         else if count == 0 then recur()
         else buffer.slice(0, count).immutable(using Unsafe) #:: recur()
 

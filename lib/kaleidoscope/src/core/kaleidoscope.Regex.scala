@@ -326,16 +326,16 @@ case class Regex(pattern: Text, groups: List[Regex.Group]):
     val matcher: jur.Matcher = javaPattern.matcher(input.s).nn
     if matcher.find(start.n0) then Interval.zerary(matcher.start, matcher.end) else Unset
 
-  def search(input: Text, start: Ordinal = Prim, overlap: Boolean = false): Stream[Interval] =
+  def search(input: Text, start: Ordinal = Prim, overlap: Boolean = false): LazyList[Interval] =
     val matcher: jur.Matcher = javaPattern.matcher(input.s).nn
 
-    def recur(offset: Int): Stream[Interval] =
+    def recur(offset: Int): LazyList[Interval] =
       if matcher.find(offset)
       then
         Interval.zerary(matcher.start, matcher.end) #::
           recur((if overlap then matcher.start else matcher.end) + 1)
       else
-        Stream()
+        LazyList()
 
     recur(start.n0)
 

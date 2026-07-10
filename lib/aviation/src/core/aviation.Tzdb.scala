@@ -74,18 +74,18 @@ object Tzdb:
   def parseFile(name: Text): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
     Log.fine(TimeEvent.ParseTzdb(name))
 
-    val lines: Stream[Text] =
+    val lines: LazyList[Text] =
       val stream = safely(getClass.getResourceAsStream(s"/aviation/tzdb/$name").nn)
 
       val stream2 = stream.or:
         abort(TzdbError(TzdbError.Reason.NoTzdbFile(name), 0))
 
       Source.fromInputStream(stream2).getLines().map(Text(_)).map(_.cut(t"\t").head.lower)
-      . to(Stream)
+      . to(LazyList)
 
     parse(name, lines)
 
-  def parse(name: Text, lines: Stream[Text]): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
+  def parse(name: Text, lines: LazyList[Text]): List[Tzdb.Entry] logs TimeEvent raises TzdbError =
     def parseDuration(lineNo: Int, string: Text) = string.cut(t":").to(List) match
       case As[Base24](h) :: Nil                                   => Duration(h, 0, 0)
       case As[Base24](h) :: As[Base60](m) :: Nil                  => Duration(h, m, 0)
@@ -182,7 +182,7 @@ object Tzdb:
     @tailrec
     def recur
       ( lineNo:  Int,
-        lines:   Stream[Text],
+        lines:   LazyList[Text],
         entries: List[Tzdb.Entry]        = Nil,
         zone:    Option[Tzdb.Entry.Zone] = None )
     :   List[Tzdb.Entry] =

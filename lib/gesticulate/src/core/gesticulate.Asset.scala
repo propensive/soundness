@@ -40,4 +40,4 @@ object Asset:
   def apply[entity: {Media, Streamable by Data}](name: Text, content: entity): Asset =
     Asset(name, content.mediaType, content.stream[Data])
 
-case class Asset(name: Text, media: MediaType, stream: Stream[Data])
+case class Asset(name: Text, media: MediaType, stream: LazyList[Data])

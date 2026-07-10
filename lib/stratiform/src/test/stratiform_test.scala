@@ -161,7 +161,7 @@ object Tests extends Suite(m"Stratiform Tests"):
       // documents must match it document-for-document. Fixtures whose `.check`
       // carries an `errors:` section exercise per-document error *recovery* in
       // streaming mode (the reference still yields a recovered document and
-      // reports its errors). Stratiform's `Stream[Tel]`/`List[Tel]` model is
+      // reports its errors). Stratiform's `LazyList[Tel]`/`List[Tel]` model is
       // deliberately fail-fast (see "a malformed document in a stream raises"
       // below) and carries no per-document error list, so those fixtures are
       // skipped pending the in-progress upstream error-isolation work.
@@ -170,9 +170,9 @@ object Tests extends Suite(m"Stratiform Tests"):
           testcase.source.read[List[Tel]].map(TelCheckTree.of)
         . assert(_ == CheckFormat.parseStream(testcase.check).map(_.tree))
 
-        // `LazyList[Tel]` is proscenium's `Stream[Tel]`; this file doesn't
+        // `LazyList[Tel]` is proscenium's `LazyList[Tel]`; this file doesn't
         // import the predef alias, so spell it out.
-        test(m"read[Stream[Tel]] parses ${testcase.stem}"):
+        test(m"read[LazyList[Tel]] parses ${testcase.stem}"):
           testcase.source.read[LazyList[Tel]].map(TelCheckTree.of).to(List)
         . assert(_ == CheckFormat.parseStream(testcase.check).map(_.tree))
 
@@ -194,7 +194,7 @@ object Tests extends Suite(m"Stratiform Tests"):
         capture[TelError](t"a 1\n##\nparent\n   bad".read[List[Tel]]).reason.number
       . assert(_ == 107)
 
-      test(m"read[Stream[Tel]] is lazy past a malformed later document"):
+      test(m"read[LazyList[Tel]] is lazy past a malformed later document"):
         val source = t"first ok\n##\nparent\n   bad"
         TelCheckTree.of(source.read[LazyList[Tel]].head)
       . assert(_ == TelCheckTree.of(t"first ok".read[Tel]))
@@ -1035,7 +1035,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"UpdateAtom never downgrades a literal atom to inline (§22.3)"):
         // A literal atom updated to an inline-safe value stays literal.
-        val tel    = doc("note\n      ===\nnow literal\n===\n")
+        val tel    = doc("note\n      ===\nnow literal\n      ===\n")
         val ptr    = Tel.Pointer.of(t"note")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"now simple"))
         result.childCompounds.head.atoms.head match

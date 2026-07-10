@@ -54,8 +54,11 @@ import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 import filesystemOptions.overwritePreexisting.enabled
 import gastronomy.*, providers.javaStdlibProvider
+import httpBackends.virtualMachine
 import internetAccess.online
 import monotonous.*, alphabets.hexLowerCase
+
+import filesystemBackends.virtualMachine
 
 // Turns a `Packaging` configuration into a distributable. Each per-platform binary is the
 // application JAR appended to a bare reusable runner stub, obtained from `RunnerSource` —
@@ -184,5 +187,5 @@ object Packager:
   :   Unit raises IoError raises StreamError =
 
     output.create[File]()
-    output.write(data)
+    output.open(LazyList(data).writeTo(_))
     output.executable() = true

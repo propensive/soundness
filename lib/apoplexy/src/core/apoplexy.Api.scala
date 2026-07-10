@@ -46,9 +46,11 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import telekinesis.*
+import turbulence.*
 import urticose.*
 import vacuous.*
 import xylophone.*
+import zephyrine.*
 
 object Api:
   // Root constructor: `Api(cp"/spec.json")` reads the spec resource's `Locus`,
@@ -92,9 +94,9 @@ object Api:
 
     val url = full.decode[HttpUrl]
 
-    val empty: () => Stream[Data] = () => Stream()
+    val empty: () => Stream[Data] over Credit = () => Stream(Iterator.empty[Data])
 
-    val (contentType, body): (Optional[Text], () => Stream[Data]) = request.body match
+    val (contentType, body): (Optional[Text], () => Stream[Data] over Credit) = request.body match
       case Api.Body.Empty       => (Unset, empty)
       case Api.Body.Json(value) => (t"application/json", () => Stream(value.show.data))
       case Api.Body.Xml(value)  => (t"application/xml", () => Stream(value.show.data))

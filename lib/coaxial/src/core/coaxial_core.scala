@@ -93,7 +93,7 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
 // the evidence is an explicit capturing using-parameter rather than a context bound, which would
 // demand a pure instance.
 extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint is Serviceable)^)
-  def transmit[message: Transmissible](input: message): Stream[Data] logs SocketEvent =
+  def transmit[message: Transmissible](input: message): LazyList[Data] logs SocketEvent =
     val connection = serviceable.connect(endpoint, Unset)
     Log.fine(SocketEvent.Connected(endpoint.show))
 
@@ -111,17 +111,17 @@ extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint 
     val connection = serviceable.connect(endpoint, Unset)
     Log.fine(SocketEvent.Connected(endpoint.show))
 
-    def recur(input: Stream[Data], state: state): state = input.flow(state):
+    def recur(input: LazyList[Data], state: state): state = input.flow(state):
       handle(using state)(message.deserialize(next)) match
         case Continue(state2) => recur(more, state2.or(state))
         case Terminate        => state
 
         case Reply(message, state2) =>
-          serviceable.transmit(connection, Stream(message))
+          serviceable.transmit(connection, LazyList(message))
           recur(more, state2.or(state))
 
         case Conclude(message, state2) =>
-          serviceable.transmit(connection, Stream(message))
+          serviceable.transmit(connection, LazyList(message))
           state2.or(state)
 
     recur(serviceable.receive(connection), initialState).also(serviceable.close(connection))
@@ -147,17 +147,17 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
 
     interact(Sender[message](duplexable.transmit(connection, _)))
 
-    def recur(input: Stream[Data], state: state): state = input.flow(state):
+    def recur(input: LazyList[Data], state: state): state = input.flow(state):
       handle(using state)(message.deserialize(next)) match
         case Continue(state2) => recur(more, state2.or(state))
         case Terminate        => state
 
         case Reply(message, state2) =>
-          duplexable.transmit(connection, Stream(message))
+          duplexable.transmit(connection, LazyList(message))
           recur(more, state2.or(state))
 
         case Conclude(message, state2) =>
-          duplexable.transmit(connection, Stream(message))
+          duplexable.transmit(connection, LazyList(message))
           state2.or(state)
 
     recur(duplexable.receive(connection), initialState).also(duplexable.close(connection))

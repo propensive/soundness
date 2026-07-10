@@ -51,6 +51,8 @@ import vacuous.*
 
 import GitError.Reason.*
 
+import filesystemBackends.virtualMachine
+
 object GitRepo:
   def at[abstractable: Abstractable across Paths to Text](path: abstractable)
     ( using Tactic[PathError], Tactic[NameError], Tactic[GitError], Tactic[IoError] )
@@ -106,7 +108,7 @@ case class GitRepo(gitDir: Path on Linux):
       sh"$git $repoOptions config --get $variable".exec[Text]().decode[value]
 
   def tags()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[GitTag] logs GitEvent =
-    sh"$git $repoOptions tag".exec[Stream[Text]]().to(List).map(GitTag.unsafe(_))
+    sh"$git $repoOptions tag".exec[LazyList[Text]]().to(List).map(GitTag.unsafe(_))
 
 
   def tag(name: GitTag)(using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
@@ -151,7 +153,7 @@ case class GitRepo(gitDir: Path on Linux):
   def remotes()(using GitCommand, WorkingDirectory, Tactic[ExecError])
   :   List[Remote] logs GitEvent =
 
-    val lines = sh"$git $repoOptions remote -v".exec[Stream[Text]]()
+    val lines = sh"$git $repoOptions remote -v".exec[LazyList[Text]]()
 
     val grouped = lines.collect:
       case r"$name(\S+)\t$url(\S+) \($kind(fetch|push)\)" => (name, url, kind)
@@ -182,9 +184,9 @@ case class GitRepo(gitDir: Path on Linux):
 
   private def parsePem(text: Text): Optional[Pem] = safely(Pem.parse(text))
 
-  def log()(using GitCommand, WorkingDirectory, Tactic[ExecError]): Stream[Commit] logs GitEvent =
+  def log()(using GitCommand, WorkingDirectory, Tactic[ExecError]): LazyList[Commit] logs GitEvent =
     def recur
-      ( stream:    Stream[Text],
+      ( stream:    LazyList[Text],
         hash:      Optional[GitHash] = Unset,
         tree:      Optional[GitHash] = Unset,
         parents:   List[GitHash]     = Nil,
@@ -192,14 +194,14 @@ case class GitRepo(gitDir: Path on Linux):
         committer: Optional[Text]    = Unset,
         signature: List[Text]        = Nil,
         lines:     List[Text]        = Nil )
-    :   Stream[Commit] =
+    :   LazyList[Commit] =
 
-      def commit(): Stream[Commit] =
-        if hash.absent || tree.absent || author.absent || committer.absent then Stream()
+      def commit(): LazyList[Commit] =
+        if hash.absent || tree.absent || author.absent || committer.absent then LazyList()
         else unsafely:
           val pem = parsePem(signature.join(t"\n"))
 
-          Stream:
+          LazyList:
             Commit
               ( hash.vouch,
                 tree.vouch,
@@ -209,7 +211,7 @@ case class GitRepo(gitDir: Path on Linux):
                 pem,
                 lines.reverse )
 
-      def read(stream: Stream[Text], lines: List[Text]): (List[Text], Stream[Text]) =
+      def read(stream: LazyList[Text], lines: List[Text]): (List[Text], LazyList[Text]) =
         stream match
           case r" $line(.*)" #:: tail => read(tail, line :: lines)
           case _                      => (lines.reverse, stream)
@@ -249,24 +251,24 @@ case class GitRepo(gitDir: Path on Linux):
         case _ =>
           commit()
 
-    recur(sh"$git $repoOptions log --format=raw --color=never".exec[Stream[Text]]())
+    recur(sh"$git $repoOptions log --format=raw --color=never".exec[LazyList[Text]]())
 
 
   def diff(refA: Refspec, refB: Refspec)
     ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-  :   Stream[FileDiff] logs GitEvent =
+  :   LazyList[FileDiff] logs GitEvent =
 
-    Patch.parse(sh"$git $repoOptions diff --no-color $refA $refB".exec[Stream[Text]]())
+    Patch.parse(sh"$git $repoOptions diff --no-color $refA $refB".exec[LazyList[Text]]())
 
 
   def reflog(ref: Optional[Refspec] = Unset)
     ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-  :   Stream[ReflogEntry] logs GitEvent =
+  :   LazyList[ReflogEntry] logs GitEvent =
 
     val refArg = ref.lay(sh""): ref => sh"$ref"
     val format = t"--format=%H %gd %ct %gs"
 
-    sh"$git $repoOptions reflog show $format $refArg".exec[Stream[Text]]().collect:
+    sh"$git $repoOptions reflog show $format $refArg".exec[LazyList[Text]]().collect:
       case r"$hash([a-f0-9]{40}) $selector(\S+) $time([0-9]+) $message(.*)" =>
         ReflogEntry(GitHash.unsafe(hash), selector, time.s.toLong, message)
 
@@ -338,11 +340,11 @@ case class GitRepo(gitDir: Path on Linux):
 
     def list(ref: Path on GitRefs = GitRefs.defaultNotes)
       ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-    :   Stream[(GitHash, GitHash)] logs GitEvent =
+    :   LazyList[(GitHash, GitHash)] logs GitEvent =
 
       val refArg = sh"--ref=${ref.encode}"
 
-      sh"$git $repoOptions notes $refArg list".exec[Stream[Text]]().collect:
+      sh"$git $repoOptions notes $refArg list".exec[LazyList[Text]]().collect:
         case r"$noteHash([a-f0-9]{40}) $target([a-f0-9]{40})" =>
           (GitHash.unsafe(noteHash), GitHash.unsafe(target))
 

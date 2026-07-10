@@ -44,59 +44,58 @@ import symbolism.*
 import vacuous.*
 
 object Streamable:
-  given bytes: Data is Streamable by Data = Stream(_)
-  given text: [textual <: Text] => textual is Streamable by Text = Stream(_)
+  given bytes: Data is Streamable by Data = LazyList(_)
+  given text: [textual <: Text] => textual is Streamable by Text = LazyList(_)
+  given stream: [element] => LazyList[element] is Streamable by element = identity(_)
 
   // The encoder-bridged counterpart of `Aggregable`'s `bytesText` (`Text is Aggregable by Data`),
   // so a `Text` can be streamed as `Data` directly — e.g. written to a file with `path.write`.
   given textData: (encoder: CharEncoder) => Text is Streamable by Data =
-    text => encoder.encoded(Stream(text))
-
-  given stream: [element] => Stream[element] is Streamable by element = identity(_)
+    text => encoder.encoded(LazyList(text))
 
   given inCharReader: (stdio: Stdio) => In.type is Streamable by Char = in =>
-    def recur(count: Bytes): Stream[Char] =
+    def recur(count: Bytes): LazyList[Char] =
       stdio.reader.read() match
-        case -1  => Stream()
+        case -1  => LazyList()
         case int => int.toChar #:: recur(count + 1.b)
 
-    Stream.defer(recur(0L.b))
+    LazyList.defer(recur(0L.b))
 
   given inByteReader: (stdio: Stdio) => In.type is Streamable by Byte = in =>
-    def recur(count: Bytes): Stream[Byte] =
+    def recur(count: Bytes): LazyList[Byte] =
       stdio.in.read() match
-        case -1  => Stream()
+        case -1  => LazyList()
         case int => int.toByte #:: recur(count + 1.b)
 
-    Stream.defer(recur(0L.b))
+    LazyList.defer(recur(0L.b))
 
   given reader: [input <: ji.Reader] => (tactic: Tactic[StreamError]^)
   =>  ((input is Streamable by Char)^{tactic}) =
     reader =>
-      def recur(count: Bytes): Stream[Char] =
+      def recur(count: Bytes): LazyList[Char] =
         try reader.read() match
-          case -1  => Stream()
+          case -1  => LazyList()
           case int => int.toChar #:: recur(count + 1.b)
         catch case error: ji.IOException =>
           reader.close()
           abort(StreamError(count))
 
-      Stream.defer(recur(0L.b))
+      LazyList.defer(recur(0L.b))
 
 
   given bufferedReader: [input <: ji.BufferedReader] => (tactic: Tactic[StreamError]^)
   =>  ((input is Streamable by Line)^{tactic}) =
 
     reader =>
-      def recur(count: Bytes): Stream[Line] =
+      def recur(count: Bytes): LazyList[Line] =
         try reader.readLine() match
-          case null         => Stream()
+          case null         => LazyList()
           case line: String => Line(Text(line)) #:: recur(count + line.length.b + 1.b)
         catch case error: ji.IOException =>
           reader.close()
           abort(StreamError(count))
 
-      Stream.defer(recur(0L.b))
+      LazyList.defer(recur(0L.b))
 
 
   given inputStream: [input <: ji.InputStream] => (tactic: Tactic[StreamError]^)
@@ -110,9 +109,9 @@ object Streamable:
     channel =>
       val buffer: jn.ByteBuffer = jn.ByteBuffer.wrap(new Array[Byte](1024)).nn
 
-      def recur(total: Long): Stream[Data] =
+      def recur(total: Long): LazyList[Data] =
         try channel.read(buffer) match
-          case -1 => Stream().also(try channel.close() catch case error: Exception => ())
+          case -1 => LazyList().also(try channel.close() catch case error: Exception => ())
           case 0  => recur(total)
 
           case count =>
@@ -126,10 +125,10 @@ object Streamable:
 
         catch case e: Exception => abort(StreamError(total.b))
 
-      Stream.defer(recur(0))
+      LazyList.defer(recur(0))
 
 trait Streamable extends Typeclass, Operable:
-  def stream(value: Self): Stream[Operand]
+  def stream(value: Self): LazyList[Operand]
 
   def contramap[self2](lambda: self2 => Self): (self2 is Streamable by Operand)^{this, lambda} =
     source => stream(lambda(source))

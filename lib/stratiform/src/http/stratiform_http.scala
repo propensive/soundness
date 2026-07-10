@@ -38,6 +38,7 @@ import gossamer.*
 import hieroglyph.*
 import spectacular.*
 import telekinesis.*
+import zephyrine.*
 
 private val telMediaType: MediaType =
   MediaType(Media.Group.Application, Media.Subtype.Vendor(t"tel"))

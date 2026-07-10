@@ -39,6 +39,7 @@ import gossamer.*
 import prepositional.*
 import spectacular.*
 import turbulence.*
+import zephyrine.*
 
 object Servable:
   def apply[response](mediaType: response => MediaType)(lambda: response => Http.Body)
@@ -62,7 +63,9 @@ object Servable:
 
     def mediaType(value: response): MediaType = unsafely(Media.parse(response.generic(value)(0)))
 
-    Servable[response](mediaType): value => Http.Body.Streaming(response.generic(value)(1))
+    Servable[response](mediaType): value =>
+      Http.Body.Flowing: () =>
+        response.generic(value)(1).stream
 
 
   given data: Data is Servable =

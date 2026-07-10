@@ -37,13 +37,12 @@ export
   . { accessed, append, BlockDevice, C, CharDevice, children, CopyAttributes, copyInto, copyTo,
       Creatable, create, created, CreateNonexistent, CreateNonexistentParents, D, delete,
       DeleteRecursively, DereferenceSymlinks, descendants, Device, Directory, Dos, Drive, Entry,
-      entry, executable,
-      exists, Explorable, Fifo, File, FilesystemAttribute, Handle, hardLinks, hardLinkTo, hidden,
-      IoError, IoEvent, javaFile, javaPath, Linux, Local, MacOs, modified, MoveAtomically, moveInto,
-      moveTo, open, Openable, OverwritePreexisting, p, Platform, Posix, readable, ReadAccess, size,
-      Socket, Substantiable, Symlink, symlinkInto, symlinkTo, touch, TraversalOrder, UnixEntry,
-      Volume, volume, Windows, WindowsEntry, wipe, writable, write, WriteAccess,
-      WriteSynchronously }
+      entry, executable, exists, Explorable, Fifo, File, FilesystemAttribute, FilesystemBackend,
+      Handle, hardLinks, hardLinkTo, hidden, IoError, IoEvent, javaFile, javaPath, Linux, Local,
+      MacOs, modified, MoveAtomically, moveInto, moveTo, open, Openable, OpenFlag,
+      OverwritePreexisting, p, Platform, Posix, readable, ReadAccess, size, Socket, Stat,
+      Substantiable, Symlink, symlinkInto, symlinkTo, touch, TraversalOrder, UnixEntry, Volume,
+      volume, Windows, WindowsEntry, wipe, writable, write, WriteAccess, WriteSynchronously }
 
 package interfaces.paths:
   export

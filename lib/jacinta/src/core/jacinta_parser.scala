@@ -39,4 +39,9 @@ import turbulence.*
 import zephyrine.*
 
 given parserAggregable: Tactic[ParseError] => Json.Ast is Aggregable by Data =
-  source => Json.Ast.parse(source.iterator)
+  new Aggregable:
+    type Self = Json.Ast
+    type Operand = Data
+
+    def aggregate(source: LazyList[Data]): Json.Ast = Json.Ast.parse(source.iterator)
+    override def accept(stream: Stream[Data] over Credit): Json.Ast = Json.Ast.parse(stream)

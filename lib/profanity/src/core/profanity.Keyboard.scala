@@ -125,7 +125,7 @@ object Keyboard:
   class Standard()(using Monitor, Probate) extends Keyboard:
     type Keypress = profanity.Keypress | TerminalInfo
 
-    def process(stream: Stream[Char]): Stream[Keypress] = stream match
+    def process(stream: LazyList[Char]): LazyList[Keypress] = stream match
       case '\u001b' #:: rest =>
         safely(async(rest.head).await(30.0*Milli(Second))) match
           case Unset => Keypress.Escape #:: process(rest)
@@ -180,7 +180,7 @@ object Keyboard:
                     Keypress.EscapeSeq(char, sequence*) #:: process(tail)
 
                   case _ =>
-                    Stream()
+                    LazyList()
 
             case ']' #:: '1' #:: '1' #:: ';' #:: 'r' #:: 'g' #:: 'b' #:: ':' #:: rest =>
               val content = rest.takeWhile(_ != '\u001b').mkString.tt
@@ -215,9 +215,9 @@ object Keyboard:
         Keypress.CharKey(other) #:: process(rest)
 
       case _ =>
-        Stream()
+        LazyList()
 
 trait Keyboard:
   type Keypress
 
-  def process(stream: Stream[Char]): Stream[Keypress]
+  def process(stream: LazyList[Char]): LazyList[Keypress]

@@ -126,9 +126,9 @@ extension (value: Text)
     deserializable.deserialize(value)
 
 
-extension (stream: Stream[Text])
+extension (stream: LazyList[Text])
   def deserialize[scheme <: Serialization](using deserializable: Deserializable in scheme)
-  :   Stream[Data] raises SerializationError =
+  :   LazyList[Data] raises SerializationError =
 
     deserializable.deserialize(stream)
 

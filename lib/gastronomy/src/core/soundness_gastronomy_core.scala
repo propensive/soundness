@@ -44,4 +44,5 @@ package providers:
 package crypto:
   export gastronomy.crypto.{permitUnauthenticatedCrypto, permitDeprecatedCrypto, permitLegacyCrypto,
       permitDisallowedCrypto, permitCryptoThrough2014, permitCryptoThrough2024,
-      permitCryptoThrough2030}
+      permitCryptoThrough2030, permitLegacyTls, permitUntrustedCertificates,
+      permitUncheckedRevocation}

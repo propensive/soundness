@@ -38,45 +38,93 @@ import hieroglyph.*
 import prepositional.*
 import rudiments.*
 import symbolism.*
+import vacuous.*
+import zephyrine.*
 
 object Aggregable:
-  given bytesData: Data is Aggregable by Data = source0 =>
-    val size = source0.foldLeft(0)(_ + _.length)
+  // Drain a pull endpoint into the medium's builder: one copy per window,
+  // no intermediate chunks. The native `accept` for whole-value aggregation.
+  private def gather[medium](stream: Stream[medium] over Credit): medium =
+    val target = stream.addressable.blank(4096)
 
-    var source = source0
+    def recur(): Unit = stream.refill(Credit(Long.MaxValue)) match
+      case count: Int =>
+        stream.addressable.cloneStorage(stream.window(using Unsafe), stream.start, count)(target)
+        stream.skip(count)
+        recur()
 
-    Data.build(size): array =>
-      var index = Prim
+      case _ => ()
 
-      while !source.nil do
-        val bytes = source.head
-        array.place(bytes, index)
-        index += bytes.length
-        source = source.tail
+    recur()
+    stream.addressable.build(target)
+
+  given bytesData: Data is Aggregable by Data = new Aggregable:
+    type Self = Data
+    type Operand = Data
+
+    override def accept(stream: Stream[Data] over Credit): Data = gather(stream)
+
+    def aggregate(source0: LazyList[Data]): Data =
+      val size = source0.foldLeft(0)(_ + _.length)
+
+      var source = source0
+
+      Data.build(size): array =>
+        var index = Prim
+
+        while !source.nil do
+          val bytes = source.head
+          array.place(bytes, index)
+          index += bytes.length
+          source = source.tail
 
   given bytesText: (decoder: CharDecoder^) => ((Text is Aggregable by Data)^{decoder}) =
     bytesData.map(decoder.decoded)
 
-  given textText: Text is Aggregable by Text = source0 =>
-    var source = source0
+  given textText: Text is Aggregable by Text = new Aggregable:
+    type Self = Text
+    type Operand = Text
 
-    val builder = new StringBuilder()
+    override def accept(stream: Stream[Text] over Credit): Text = gather(stream)
 
-    while !source.nil do
-      builder.append(source.head.s)
-      source = source.tail
+    def aggregate(source0: LazyList[Text]): Text =
+      var source = source0
 
-    builder.toString.tt
+      val builder = new StringBuilder()
+
+      while !source.nil do
+        builder.append(source.head.s)
+        source = source.tail
+
+      builder.toString.tt
 
 
   given stream: [element, element2] => (aggregable: element2 is Aggregable by element)
-  =>  Stream[element2] is Aggregable by element =
+  =>  LazyList[element2] is Aggregable by element =
 
-    element => Stream(aggregable.aggregate(element))
+    element => LazyList(aggregable.aggregate(element))
 
 trait Aggregable extends Typeclass, Operable:
   aggregable: Aggregable =>
-  def aggregate(source: Stream[Operand]): Self
+  def aggregate(source: LazyList[Operand]): Self
+
+  // Consume a pull endpoint. The default materializes one chunk per refill
+  // and delegates to the legacy `aggregate`; instances override it to build
+  // directly from the stream's windows.
+  def accept(stream: Stream[Operand] over Credit): Self =
+    def recur(): LazyList[Operand] =
+      stream.refill(Credit(Long.MaxValue)) match
+        case count: Int =>
+          val chunk =
+            stream.addressable.materialize(stream.window(using Unsafe), stream.start, count)
+
+          stream.skip(count)
+          chunk #:: recur()
+
+        case _ =>
+          LazyList()
+
+    aggregate(LazyList.defer(recur()))
 
   def map[self2](lambda: Self => self2): (self2 is Aggregable by Operand)^{lambda} = source =>
     lambda(aggregable.aggregate(source))

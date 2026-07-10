@@ -57,3 +57,11 @@ package clocks:
   inline given wasiMonotonicClock: MonotonicClock = new MonotonicClock:
     def apply(): Instant over Monotonic =
       Instant.of[Monotonic](Foreign["monotonic-clock", Wit].`now`.invoke[U64].bits.s64.long)
+
+  // The wall clock reads `wasi:clocks/wall-clock` `now`, whose `datetime` record crosses the
+  // boundary as a `(seconds: U64, nanoseconds: U32)` pair, converted to POSIX millisecond ticks.
+  @nowarn("msg=New anonymous class definition will be duplicated at each inline site")
+  inline given wasiClock: Clock = new Clock:
+    def apply(): Instant over Posix =
+      val (seconds, nanoseconds) = Foreign["wall-clock", Wit].`now`.invoke[(U64, U32)]
+      Instant.of[Posix](seconds.bits.s64.long*1000 + nanoseconds.bits.s32.int/1000000)

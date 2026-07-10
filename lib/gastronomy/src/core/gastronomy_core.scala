@@ -62,6 +62,26 @@ package crypto:
   erased given permitDeprecatedCrypto: Permit[Concession.TripleDes] & Permit[Concession.Sha1] =
     caps.unsafe.unsafeErasedValue
 
+  // Deprecated TLS protocol versions, key sizes and cipher families. Note that
+  // re-enabling these is process-wide (see `telekinesis.Tls.unlock`).
+  erased given permitLegacyTls
+  :   Permit[Concession.Tls10] & Permit[Concession.Tls11] & Permit[Concession.SmallDh] &
+    Permit[Concession.CbcCipher] =
+
+    caps.unsafe.unsafeErasedValue
+
+  // Certificate-validation relaxations: expired or self-signed peer
+  // certificates, and hostname mismatches.
+  erased given permitUntrustedCertificates
+  :   Permit[Concession.ExpiredCertificate] & Permit[Concession.SelfSignedCertificate] &
+    Permit[Concession.UnverifiedHostname] =
+
+    caps.unsafe.unsafeErasedValue
+
+  // Connections to peers whose certificates' revocation status is not checked.
+  erased given permitUncheckedRevocation: Permit[Concession.UncheckedRevocation] =
+    caps.unsafe.unsafeErasedValue
+
   // "Legacy use": processing already-protected data only (decrypt/verify).
   erased given permitLegacyCrypto
   :   ProcessingPermit[Concession.TripleDes] & ProcessingPermit[Concession.Dsa] =

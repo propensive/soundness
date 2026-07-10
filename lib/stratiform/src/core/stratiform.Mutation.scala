@@ -609,22 +609,26 @@ object Mutation:
       ok
 
   // §22.3 literal delimiter: the shortest run of `-`, starting from
-  // `initial`, that does not appear as a line of the value — so the value
-  // is literal-safe (§22.2) with respect to it.
+  // `initial`, that does not collide with a line of the value at any
+  // indentation — a position-independent sufficient check for §22.2
+  // literal-safety, since the actual serialization indent isn't known here.
   private def literalDelimiter(value: Text, initial: Text): Text =
     var delimiter = initial.s
-    while appearsAsLine(value.s, delimiter) do delimiter = delimiter+"-"
+    while collidesWithDelimiterLine(value.s, delimiter) do delimiter = delimiter+"-"
     Text(delimiter)
 
-  // True if `line` occurs as a whole LF-delimited line of `s`.
-  private def appearsAsLine(s: String, line: String): Boolean =
+  // True if `s` contains a line consisting of zero-or-more spaces followed
+  // exactly by `delimiter`.
+  private def collidesWithDelimiterLine(s: String, delimiter: String): Boolean =
     var start = 0
     var found = false
 
     while !found && start <= s.length do
       val nl = s.indexOf('\n', start)
       val end = if nl < 0 then s.length else nl
-      if s.substring(start, end).nn == line then found = true
+      var i = start
+      while i < end && s.charAt(i) == ' ' do i += 1
+      if s.substring(i, end).nn == delimiter then found = true
       start = if nl < 0 then s.length + 1 else nl + 1
 
     found

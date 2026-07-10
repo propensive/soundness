@@ -34,5 +34,5 @@ package gesticulate
 
 import anticipation.*
 
-case class Content(media: MediaType, stream: Stream[Data]):
+case class Content(media: MediaType, stream: LazyList[Data]):
   def named(name: Text): Asset = Asset(name, media, stream)

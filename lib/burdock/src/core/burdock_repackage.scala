@@ -63,6 +63,8 @@ import stdios.virtualMachineStdio
 import systems.javaSystem
 import termcaps.environmentTermcap
 
+import filesystemBackends.virtualMachine
+
 // The repackager's command-line logic, launched by the `soundness.repackage` entry point.
 // It takes no arguments — it self-locates the application JAR it is running from and
 // rewrites it in place (see `Repackager.repackage`).

@@ -67,7 +67,7 @@ object PseudoHeaders:
 
   // Reconstruct an `Http.Response` from a decoded HEADERS block and the body stream.
   // `:status` selects the `Http.Status`; other fields become response headers.
-  def response(headerBlock: List[HpackEntry], body: Stream[Data])
+  def response(headerBlock: List[HpackEntry], body: LazyList[Data])
   :   Http.Response raises Http2Error =
 
     var statusText: Optional[Text] = Unset

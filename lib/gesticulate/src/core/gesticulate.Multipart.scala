@@ -98,7 +98,7 @@ object Multipart:
       var i = 0
       while i < count && cursor.next() do i += 1
 
-    def body(): Stream[Data] = cursor.hold:
+    def body(): LazyList[Data] = cursor.hold:
       val bodyStart = cursor.mark
       var bodyEnd: Optional[Cursor.Mark] = Unset
       var continue = true
@@ -129,11 +129,11 @@ object Multipart:
         // Position is at the body-ending '\r'. Skip past "\r\n<boundary>" which
         // is boundary.length + 2 bytes total.
         skipBytes(boundary.length + 2)
-        Stream(out)
+        LazyList(out)
 
-      . or(Stream(cursor.grab(bodyStart, cursor.mark)))
+      . or(LazyList(cursor.grab(bodyStart, cursor.mark)))
 
-    def parsePart(headers: Map[Text, Text], stream: Stream[Data]): Part =
+    def parsePart(headers: Map[Text, Text], stream: LazyList[Data]): Part =
       headers.at(t"Content-Disposition").let: disposition =>
         val parts = disposition.cut(t";").map(_.trim)
 
@@ -165,12 +165,12 @@ object Multipart:
 
       . or(Part(Multipart.Disposition.FormData, Map(), Unset, Unset, stream))
 
-    def parts(): Stream[Part] =
+    def parts(): LazyList[Part] =
       val part = parsePart(headers(Nil), body())
 
       if cursor.finished then
         raise(expected('-'))
-        Stream()
+        LazyList()
       else if cursor.peek == '\r' then
         cursor.next()
         cursor.expect('\n')(expected('\n'))
@@ -183,14 +183,14 @@ object Multipart:
         cursor.expect('\r')(expected('\r'))
         cursor.expect('\n')(expected('\n'))
 
-        Stream(part)
+        LazyList(part)
 
       else
         raise(expected('-'))
-        Stream()
+        LazyList()
 
     Multipart(parts())
 
 
-case class Multipart(parts: Stream[Part]):
+case class Multipart(parts: LazyList[Part]):
   def at(name: Text): Optional[Part] = parts.find(_.name == name).getOrElse(Unset)

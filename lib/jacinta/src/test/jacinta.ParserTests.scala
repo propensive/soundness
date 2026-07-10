@@ -51,6 +51,8 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 
+import filesystemBackends.virtualMachine
+
 object ParserTests extends Suite(m"Jacinta JSON parser tests"):
   def run(): Unit =
     val work: Path on Linux = workingDirectory

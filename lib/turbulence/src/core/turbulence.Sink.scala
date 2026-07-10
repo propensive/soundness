@@ -1,0 +1,212 @@
+                                                                                                  /*
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                  ┃
+┃                                                   ╭───╮                                          ┃
+┃                                                   │   │                                          ┃
+┃                                                   │   │                                          ┃
+┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
+┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
+┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
+┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
+┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
+┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
+┃                                                                                                  ┃
+┃    Soundness, version 0.63.0.                                                                    ┃
+┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
+┃                                                                                                  ┃
+┃    The primary distribution site is:                                                             ┃
+┃                                                                                                  ┃
+┃        https://soundness.dev/                                                                    ┃
+┃                                                                                                  ┃
+┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
+┃    except in compliance with the License. You may obtain a copy of the License at                ┃
+┃                                                                                                  ┃
+┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
+┃                                                                                                  ┃
+┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
+┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
+┃    either express or implied. See the License for the specific language governing permissions    ┃
+┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                                                                                  */
+package turbulence
+
+import java.io as ji
+import java.nio as jn
+
+import anticipation.*
+import contingency.*
+import prepositional.*
+import rudiments.*
+import vacuous.*
+import zephyrine.*
+
+// A target which can be opened as a push endpoint: the successor to
+// `Writable`, accepting writes incrementally through an `Intake` instead of
+// consuming a whole `LazyList`. As with `Writable`, a write failure `raise`s
+// a typed `StreamError` through an `Emit` captured by the given — a writer
+// only reports a cut, never aborts. `finish` closes the underlying resource,
+// matching `Writable`'s end-of-stream behaviour.
+object Sink extends Sink2:
+  given outputStream: [output <: ji.OutputStream] => (Emit[StreamError], Buffering)
+  =>  output is Sink by Data over Credit =
+
+    value =>
+      new Intake[Data]:
+        type Transport = Credit
+
+        private val block: Int = summon[Buffering].capacity(Substrate.Bytes)
+        private val storage: Array[Byte] = new Array[Byte](block)
+        private var mark0: Int = 0
+        private var total: Long = 0
+        private var broken: Boolean = false
+
+        def demand: Credit = Credit(if broken then 0 else Long.MaxValue)
+        protected def buffer0: AnyRef = storage
+        def mark: Int = mark0
+
+        def reserve(min: Int): Int =
+          val free = block - mark0
+
+          if free >= min then free else
+            drain()
+            block
+
+        def commit(count: Int): Unit =
+          mark0 += count
+          if mark0 == block then drain()
+
+        override def flush(): Unit =
+          drain()
+          try value.flush() catch case _: ji.IOException => ()
+
+        def finish(): Unit =
+          drain()
+          try value.close() catch case _: ji.IOException => raise(StreamError(total.b))
+
+        private def drain(): Unit =
+          if mark0 > 0 && !broken then
+            try
+              value.write(storage, 0, mark0)
+              value.flush()
+              total += mark0
+            catch case _: ji.IOException =>
+              broken = true
+              raise(StreamError(total.b))
+
+          mark0 = 0
+
+  given channel: (Emit[StreamError], Buffering)
+  =>  jn.channels.WritableByteChannel is Sink by Data over Credit =
+
+    value =>
+      new Intake[Data]:
+        type Transport = Credit
+
+        private val block: Int = summon[Buffering].capacity(Substrate.Bytes)
+        private val storage: Array[Byte] = new Array[Byte](block)
+        private var mark0: Int = 0
+        private var total: Long = 0
+        private var broken: Boolean = false
+
+        def demand: Credit = Credit(if broken then 0 else Long.MaxValue)
+        protected def buffer0: AnyRef = storage
+        def mark: Int = mark0
+
+        def reserve(min: Int): Int =
+          val free = block - mark0
+
+          if free >= min then free else
+            drain()
+            block
+
+        def commit(count: Int): Unit =
+          mark0 += count
+          if mark0 == block then drain()
+
+        override def flush(): Unit = drain()
+
+        def finish(): Unit =
+          drain()
+          try value.close() catch case _: Exception => raise(StreamError(total.b))
+
+        private def drain(): Unit =
+          if mark0 > 0 && !broken then
+            val buffer = jn.ByteBuffer.wrap(storage, 0, mark0).nn
+
+            try
+              while buffer.hasRemaining do
+                if value.write(buffer) == -1 then
+                  broken = true
+                  raise(StreamError(total.b))
+
+              total += mark0
+            catch case _: Exception =>
+              broken = true
+              raise(StreamError(total.b))
+
+          mark0 = 0
+
+  // Adapts a whole-`LazyList` writing function to the incremental `Intake`
+  // protocol by accumulating chunks until `finish` — the basis of the
+  // transitional `Writable` bridges below.
+  def buffered[target, medium]
+    ( target: target, write: (target, LazyList[medium]) => Unit )
+    ( using addressable0: medium is Addressable )
+  :   Intake[medium] over Credit =
+
+    new Intake[medium]:
+      type Transport = Credit
+
+      private val block: Int = 2048
+      private val storage: addressable0.Storage = addressable0.allocate(block)
+      private var mark0: Int = 0
+      private var chunks: List[medium] = Nil
+
+      def demand: Credit = Credit(Long.MaxValue)
+      protected def buffer0: AnyRef = storage.asInstanceOf[AnyRef]
+      def mark: Int = mark0
+
+      def reserve(min: Int): Int =
+        val free = block - mark0
+
+        if free >= min then free else
+          drain()
+          block
+
+      def commit(count: Int): Unit =
+        mark0 += count
+        if mark0 == block then drain()
+
+      def finish(): Unit =
+        drain()
+        write(target, chunks.reverse.to(LazyList))
+
+      private def drain(): Unit =
+        if mark0 > 0 then
+          chunks ::= addressable0.materialize(storage, 0, mark0)
+          mark0 = 0
+
+// Transitional: any `Writable` instance over a buffer-backed medium is a
+// `Sink`, at lower priority than the native instances above. Since `Writable`
+// consumes its entire `LazyList` in one call (closing the target at its end),
+// this bridge must accumulate everything written and deliver it at `finish` —
+// memory is unbounded, so native `Sink` instances should replace it.
+trait Sink2:
+  given writableData: [target] => (writable: target is Writable by Data)
+  =>  target is Sink by Data over Credit =
+
+    Sink.buffered(_, writable.write)
+
+  given writableText: [target] => (writable: target is Writable by Text)
+  =>  target is Sink by Text over Credit =
+
+    Sink.buffered(_, writable.write)
+
+trait Sink extends Typeclass, Operable:
+  type Transport
+  def intake(target: Self): Intake[Operand] over Transport
+
+  def contramap[self2](lambda: self2 => Self): self2 is Sink by Operand over Transport =
+    target => intake(lambda(target))

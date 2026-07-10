@@ -1,0 +1,69 @@
+                                                                                                  /*
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓
+┃                                                                                                  ┃
+┃                                                   ╭───╮                                          ┃
+┃                                                   │   │                                          ┃
+┃                                                   │   │                                          ┃
+┃   ╭───────╮╭─────────╮╭───╮ ╭───╮╭───╮╌────╮╭────╌┤   │╭───╮╌────╮╭────────╮╭───────╮╭───────╮   ┃
+┃   │   ╭───╯│   ╭─╮   ││   │ │   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮   ││   ╭─╮  ││   ╭───╯│   ╭───╯   ┃
+┃   │   ╰───╮│   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╰─╯  ││   ╰───╮│   ╰───╮   ┃
+┃   ╰───╮   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   │ │   ││   ╭────╯╰───╮   │╰───╮   │   ┃
+┃   ╭───╯   ││   ╰─╯   ││   ╰─╯   ││   │ │   ││   ╰─╯   ││   │ │   ││   ╰────╮╭───╯   │╭───╯   │   ┃
+┃   ╰───────╯╰─────────╯╰────╌╰───╯╰───╯ ╰───╯╰────╌╰───╯╰───╯ ╰───╯╰────────╯╰───────╯╰───────╯   ┃
+┃                                                                                                  ┃
+┃    Soundness, version 0.63.0.                                                                    ┃
+┃    © Copyright 2021-25 Jon Pretty, Propensive OÜ.                                                ┃
+┃                                                                                                  ┃
+┃    The primary distribution site is:                                                             ┃
+┃                                                                                                  ┃
+┃        https://soundness.dev/                                                                    ┃
+┃                                                                                                  ┃
+┃    Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file     ┃
+┃    except in compliance with the License. You may obtain a copy of the License at                ┃
+┃                                                                                                  ┃
+┃        https://www.apache.org/licenses/LICENSE-2.0                                               ┃
+┃                                                                                                  ┃
+┃    Unless required by applicable law or agreed to in writing,  software distributed under the    ┃
+┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
+┃    either express or implied. See the License for the specific language governing permissions    ┃
+┃    and limitations under the License.                                                            ┃
+┃                                                                                                  ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+                                                                                                  */
+package galilei
+
+import java.io as ji
+import java.net as jn
+import java.nio.channels as jnc
+import java.nio.file as jnf
+
+import contingency.*
+import prepositional.*
+import serpentine.*
+
+// The `java.nio` representations of a path, for interoperating with Java APIs directly.
+extension [plane: Filesystem](path: Path on plane)
+  def javaPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
+  def javaFile: ji.File = javaPath.toFile.nn
+
+object SocketCreation:
+  given socket: [plane <: Posix: Filesystem]
+  =>  ( createNonexistentParents: CreateNonexistentParents on plane,
+        overwritePreexisting:     OverwritePreexisting on plane,
+        tactic:                   Tactic[IoError] )
+  =>  Socket is Creatable to Socket =
+
+    new Creatable:
+      type Plane = plane
+      type Self = Socket
+      type Result = Socket
+
+      def create(path: Path on Plane): Result =
+        createNonexistentParents(path):
+          overwritePreexisting(path):
+            val address = jn.UnixDomainSocketAddress.of(path.javaPath).nn
+            val channel = jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
+            channel.bind(address)
+            Socket(channel)
+
+export SocketCreation.socket as socketCreatable

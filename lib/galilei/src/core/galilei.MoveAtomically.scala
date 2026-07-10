@@ -32,7 +32,5 @@
                                                                                                   */
 package galilei
 
-import java.nio.file as jnf
-
 trait MoveAtomically:
-  def options(): List[jnf.CopyOption]
+  def atomic: Boolean

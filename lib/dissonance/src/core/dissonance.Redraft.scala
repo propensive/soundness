@@ -66,7 +66,7 @@ object Redraft:
   private def payload(text: Text): Text =
     (if text.s.length >= 2 then text.s.substring(2).nn else "").tt
 
-  def parse(lines: Stream[Text]): Redraft =
+  def parse(lines: LazyList[Text]): Redraft =
     val directives = lines.map: line =>
       val s = line.s
 
@@ -267,7 +267,7 @@ object Redraft:
 
 
 case class Redraft(directives: Redraft.Directive*):
-  def serialize: Stream[Text] = directives.map(Redraft.render1).to(Stream)
+  def serialize: LazyList[Text] = directives.map(Redraft.render1).to(LazyList)
 
   def resolve(original: IndexedSeq[Text], compare: (Text, Text) -> Boolean = _ == _)
   :   Diff[Text] raises RedraftError =
@@ -284,6 +284,6 @@ case class Redraft(directives: Redraft.Directive*):
     Redraft.analyze(directives.to(List), original, compare)(1)
 
   def patch(original: IndexedSeq[Text], compare: (Text, Text) -> Boolean = _ == _)
-  :   Stream[Text] raises RedraftError =
+  :   LazyList[Text] raises RedraftError =
 
     resolve(original, compare).patch(original)

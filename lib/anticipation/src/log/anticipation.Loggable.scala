@@ -39,12 +39,13 @@ import prepositional.*
 
 object Loggable:
   // Derives the single `event is Loggable` that `Log.fine`/`info`/`warn`/`fail` summon: transcribe
-  // the event to a common `carrier` once, then fan out to EVERY in-scope `Sink` for that carrier
-  // (contravariance means a `Sink[Any, carrier]` is collected for any event). No sink in scope ⇒ an
+  // the event to a common `carrier` once, then fan out to EVERY in-scope `LogSink` for that carrier
+  // (contravariance means a `LogSink[Any, carrier]` is collected for any event). No sink in
+  // scope ⇒ an
   // empty `Every` ⇒ silent; many ⇒ fan-out with per-sink routing. Living in `Loggable`'s companion
   // keeps it in implicit scope, so no import is needed at the use site.
   given fanOut: [event, carrier]
-  =>  ( transcribable: event is Transcribable to carrier, sinks: Every[Sink[event, carrier]] )
+  =>  ( transcribable: event is Transcribable to carrier, sinks: Every[LogSink[event, carrier]] )
   =>  event is Loggable =
 
     new Loggable:

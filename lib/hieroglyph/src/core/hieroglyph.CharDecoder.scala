@@ -51,23 +51,23 @@ object CharDecoder:
   def unapply(name: Text)(using sanitizer: TextSanitizer^): Option[CharDecoder^{sanitizer}] =
     Encoding.unapply(name).map(CharDecoder(_))
 
-class CharDecoder(val encoding: Encoding)(using sanitizer: TextSanitizer^) extends Findable:
+class CharDecoder(val encoding: Encoding)(using val sanitizer: TextSanitizer^) extends Findable:
   type Self = Text
   type Form = Data
 
   def decoded(bytes: Data, omit: Boolean): Text =
     val buffer: StringBuilder = StringBuilder()
-    decoded(Stream(bytes)).each: text => buffer.append(text.s)
+    decoded(LazyList(bytes)).each: text => buffer.append(text.s)
     buffer.toString.tt
 
   def decoded(bytes: Data): Text = decoded(bytes, false)
 
-  def decoded(stream: Stream[Data]): Stream[Text] =
+  def decoded(stream: LazyList[Data]): LazyList[Text] =
     val decoder = encoding.charset.newDecoder().nn
     val out = jn.CharBuffer.allocate(4096).nn
     val in = jn.ByteBuffer.allocate(4096).nn
 
-    def recur(todo: Stream[Array[Byte]], offset: Int = 0, total: Int = 0): Stream[Text] =
+    def recur(todo: LazyList[Array[Byte]], offset: Int = 0, total: Int = 0): LazyList[Text] =
       val count = in.remaining
 
       if !todo.nil then in.put(todo.head, offset, in.remaining.min(todo.head.length - offset))
@@ -87,7 +87,7 @@ class CharDecoder(val encoding: Encoding)(using sanitizer: TextSanitizer^) exten
       out.clear()
 
       def continue =
-        if todo.nil && !status.isOverflow then Stream()
+        if todo.nil && !status.isOverflow then LazyList()
         else if !todo.nil && count >= todo.head.length - offset
         then recur(todo.tail, 0, total + todo.head.length - offset)
         else recur(todo, offset + count, total + count)

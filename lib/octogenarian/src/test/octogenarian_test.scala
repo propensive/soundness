@@ -61,6 +61,8 @@ import filesystemOptions.deleteRecursively.enabled
 
 import gitCommands.environmentDefaultGitCommand
 
+import filesystemBackends.virtualMachine
+
 object Tests extends Suite(m"Octogenarian Tests"):
   def run(): Unit =
 
@@ -88,7 +90,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
     def writeFile(path: Path on Linux, content: Text): Unit =
       if !path.exists() then path.create[File]()
       path.open: handle =>
-        handle.write(Stream(content.data))
+        LazyList(content.data).writeTo(handle)
 
     def commitFile(worktree: Worktree, name: Text, content: Text, message: Text): GitHash =
       writeFile(worktree.path / name, content)

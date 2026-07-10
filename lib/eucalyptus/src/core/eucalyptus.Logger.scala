@@ -108,7 +108,7 @@ object Logger:
 
 class Logger[-eventType, loggingType] private
   ( threshold: Level, categories: Set[Log.Category], enqueue: (loggingType, Level, Long) => Unit )
-extends Sink[eventType, loggingType]:
+extends LogSink[eventType, loggingType]:
 
   def accepts(level: Level): Boolean = level.ordinal >= threshold.ordinal
 

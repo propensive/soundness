@@ -63,20 +63,20 @@ object Serviceable:
 
       Connection(channel)
 
-    def transmit(connection: Connection, input: Stream[Data]): Unit =
+    def transmit(connection: Connection, input: LazyList[Data]): Unit =
       input.each: bytes =>
         connection.channel.write(ByteBuffer.wrap(bytes.mutable(using Unsafe)))
 
       connection.channel.shutdownOutput()
 
-    def receive(connection: Connection): Stream[Data] =
+    def receive(connection: Connection): LazyList[Data] =
       val buffer = ByteBuffer.allocate(512).nn
 
-      def recur(): Stream[Data] =
+      def recur(): LazyList[Data] =
         connection.channel.read(buffer) match
           case -1 =>
             connection.channel.shutdownInput()
-            Stream()
+            LazyList()
 
           case n =>
             buffer.flip()
@@ -105,7 +105,7 @@ object Serviceable:
       configure(socket, summon[Every[SocketOption.Tcp]].values)
       socket
 
-    def transmit(socket: jn.Socket, input: Stream[Data]): Unit =
+    def transmit(socket: jn.Socket, input: LazyList[Data]): Unit =
       val out = socket.getOutputStream.nn
 
       input.each: bytes =>
@@ -113,7 +113,7 @@ object Serviceable:
         out.flush()
 
     def close(socket: jn.Socket): Unit = socket.close()
-    def receive(socket: jn.Socket): Stream[Data] = socket.getInputStream.nn.stream[Data]
+    def receive(socket: jn.Socket): LazyList[Data] = socket.getInputStream.nn.stream[Data]
 
   given tcpPort: (Tactic[StreamError], Every[SocketOption.Tcp])
   =>  ( (TcpPort is Serviceable)^ ) = new Serviceable:
@@ -132,9 +132,9 @@ object Serviceable:
       socket
 
     def close(socket: jn.Socket): Unit = socket.close()
-    def receive(socket: jn.Socket): Stream[Data] = socket.getInputStream.nn.stream[Data]
+    def receive(socket: jn.Socket): LazyList[Data] = socket.getInputStream.nn.stream[Data]
 
-    def transmit(socket: jn.Socket, input: Stream[Data]): Unit =
+    def transmit(socket: jn.Socket, input: LazyList[Data]): Unit =
       val out = socket.getOutputStream.nn
 
       input.each: bytes =>
@@ -142,5 +142,5 @@ object Serviceable:
         out.flush()
 
 trait Serviceable extends Routable:
-  def receive(connection: Connection): Stream[Data]
+  def receive(connection: Connection): LazyList[Data]
   def close(connection: Connection): Unit

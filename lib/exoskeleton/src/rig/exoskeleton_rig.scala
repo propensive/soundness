@@ -37,6 +37,8 @@ import soundness.*
 import errorDiagnostics.stackTracesDiagnostics
 import interfaces.paths.pathOnLinux
 
+import filesystemBackends.virtualMachine
+
 extension (shell: Shell)
   def tmux(width: Int = 80, height: Int = 24)[result](action: (tmux: Tmux) ?=> result)
     ( using WorkingDirectory, Enclave.Tool, Monitor, TemporaryDirectory )

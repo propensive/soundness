@@ -380,48 +380,48 @@ object Tests extends Suite(m"Profanity Tests"):
             def render(old: Optional[LineEditor], editor: LineEditor): Unit = ()
             def result(editor: LineEditor): Text = editor.value
 
-            override def react(editor: LineEditor, event: TerminalEvent): LineEditor =
-              event match
-                case Keypress.Tab => LineEditor(t"${editor.value}ography")
-                case _            => editor
+        completingEditor
+         ( LazyList(Keypress.CharKey('g'), Keypress.CharKey('e'), Keypress.Tab,
+                  Keypress.Enter).iterator,
+           LineEditor() )
+         (_(_))
+      . assert(_ == t"geography")
 
-          completingEditor
-           ( Stream(Keypress.CharKey('g'), Keypress.CharKey('e'), Keypress.Tab,
-                    Keypress.Enter).iterator,
-             LineEditor() )
-           (_(_))
-        . assert(_ == t"geography")
+    suite(m"Keyboard decoding"):
+      test(m"Shift+Enter is decoded from its CSI-u sequence"):
+        supervise:
+          Keyboard.Standard().process(LazyList('', '[', '1', '3', ';', '2', 'u')).head
+      . assert:
+          case Keypress.Shift(Keypress.Enter) => true
+          case _                              => false
 
-      suite(m"Keyboard decoding"):
-        test(m"Shift+Enter is decoded from its CSI-u sequence"):
-          Keyboard.Standard().process(Stream('', '[', '1', '3', ';', '2', 'u')).head
-        . assert:
-            case Keypress.Shift(Keypress.Enter) => true
-            case _                              => false
+      test(m"plain Enter is decoded from its CSI-u sequence"):
+        supervise:
+          Keyboard.Standard().process(LazyList('', '[', '1', '3', 'u')).head
+      . assert:
+          case Keypress.Enter => true
+          case _              => false
 
-        test(m"plain Enter is decoded from its CSI-u sequence"):
-          Keyboard.Standard().process(Stream('', '[', '1', '3', 'u')).head
-        . assert:
-            case Keypress.Enter => true
-            case _              => false
+      test(m"Escape is decoded from its CSI-u sequence"):
+        supervise:
+          Keyboard.Standard().process(LazyList('', '[', '2', '7', 'u')).head
+      . assert:
+          case Keypress.Escape => true
+          case _               => false
 
-        test(m"Escape is decoded from its CSI-u sequence"):
-          Keyboard.Standard().process(Stream('', '[', '2', '7', 'u')).head
-        . assert:
-            case Keypress.Escape => true
-            case _               => false
+      test(m"Ctrl+C is decoded from its CSI-u sequence"):
+        supervise:
+          Keyboard.Standard().process(LazyList('', '[', '9', '9', ';', '5', 'u')).head
+      . assert:
+          case Keypress.Ctrl('C') => true
+          case _                  => false
 
-        test(m"Ctrl+C is decoded from its CSI-u sequence"):
-          Keyboard.Standard().process(Stream('', '[', '9', '9', ';', '5', 'u')).head
-        . assert:
-            case Keypress.Ctrl('C') => true
-            case _                  => false
-
-        test(m"a plain letter is decoded from its CSI-u sequence"):
-          Keyboard.Standard().process(Stream('', '[', '9', '7', 'u')).head
-        . assert:
-            case Keypress.CharKey('a') => true
-            case _                     => false
+      test(m"a plain letter is decoded from its CSI-u sequence"):
+        supervise:
+          Keyboard.Standard().process(LazyList('', '[', '9', '7', 'u')).head
+      . assert:
+          case Keypress.CharKey('a') => true
+          case _                     => false
 
       suite(m"Terminal features"):
         test(m"the kitty keyboard feature pushes the protocol on"):

@@ -2,4 +2,4 @@ parent
   child
         END
 literal content here
-END
+        END

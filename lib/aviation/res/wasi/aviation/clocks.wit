@@ -1,7 +1,14 @@
-// The subset of the WASI `monotonic-clock` interface that aviation uses to read elapsed time.
+// The subset of the WASI clock interfaces that aviation uses: the monotonic clock for elapsed time
+// and the wall clock for calendar time. `wall-clock` returns a `datetime` record `{ seconds: u64,
+// nanoseconds: u32 }`, declared here as the ABI-identical `tuple<u64, u32>` so its value crosses the
+// boundary as a `(U64, U32)` pair.
 
 package wasi:clocks@0.2.0;
 
 interface monotonic-clock {
   now: func() -> u64;
+}
+
+interface wall-clock {
+  now: func() -> tuple<u64, u32>;
 }

@@ -35,7 +35,6 @@ package telekinesis
 import language.dynamics
 
 import anticipation.*
-import coaxial.*
 import contingency.*
 import denominative.*
 import distillate.*
@@ -227,7 +226,7 @@ object Http:
   object Request:
     given showable: Request is Showable = request =>
       val bodySample: Text =
-        try request.body().read[Data].utf8 catch
+        try request.body().lazyList.read[Data].utf8 catch
           case error: StreamError  => t"[-/-]"
 
       val headers: Text =
@@ -255,7 +254,11 @@ object Http:
         t"params"   -> params
       ).map { case (key, value) => t"$key = $value" }.join(t", ")
 
-    given transmissible: Request is Transmissible = request =>
+    // Serialize the request to its HTTP/1.1 wire form: the request line, `Host`
+    // and framing headers, then the header block and body. Used by transports
+    // that write directly to a socket (e.g. the `coaxial` domain-socket client
+    // in `telekinesis.jvm`, which wraps this in a `Transmissible`).
+    def serialize(request: Request): LazyList[Data] =
       import charEncoders.asciiEncoder
 
       val text: Text = Text.build:
@@ -270,10 +273,10 @@ object Http:
         append(request.host.show)
         newline()
 
-        request.body() match
-          case Stream()     => append(t"Content-Length: 0")
-          case Stream(data) => append(t"Content-Length: ${data.length}")
-          case _            => append(t"Transfer-Encoding: chunked")
+        request.body().lazyList match
+          case LazyList()     => append(t"Content-Length: 0")
+          case LazyList(data) => append(t"Content-Length: ${data.length}")
+          case _              => append(t"Transfer-Encoding: chunked")
 
         request.textHeaders.map: parameter =>
           newline()
@@ -284,7 +287,7 @@ object Http:
         newline()
         newline()
 
-      text.data #:: request.body()
+      text.data #:: request.body().lazyList
 
     case class Head
       ( method: Method, version: Version, host: Host, target: Text, headers: List[Header] )
@@ -370,22 +373,27 @@ object Http:
 
       Head(method, version, host, target, headers)
 
-    def parse(stream: Stream[Data]): Request raises HttpRequestError =
+    def parse(stream: LazyList[Data]): Request raises HttpRequestError =
       val cursor = Cursor[Data](stream.filter(_.nonEmpty).iterator)
       val head = parseHead(cursor)
 
       Request
-        ( head.method, head.version, head.host, head.target, head.headers, () => cursor.remainder )
+        ( head.method,
+          head.version,
+          head.host,
+          head.target,
+          head.headers,
+          () => Stream(cursor.remainder.iterator) )
 
-    // Stream exactly `length` bytes of body off `cursor`, in buffer-sized
+    // LazyList exactly `length` bytes of body off `cursor`, in buffer-sized
     // pieces, leaving it at the first byte after the body (the start of the next
     // pipelined request on a kept-alive connection). Uses `advance` rather than
     // `next`, so — like `parseHead` — it never reads past the body and so never
     // blocks waiting for bytes that will not arrive until the client has our
     // response.
-    def fixedBody(cursor: Cursor[Data, ?], length: Int): Stream[Data] =
-      def recur(remaining: Int): Stream[Data] =
-        if remaining <= 0 || cursor.finished then Stream() else
+    def fixedBody(cursor: Cursor[Data, ?], length: Int): LazyList[Data] =
+      def recur(remaining: Int): LazyList[Data] =
+        if remaining <= 0 || cursor.finished then LazyList() else
           val take = remaining.min(cursor.available)
 
           val chunk = cursor.hold:
@@ -400,14 +408,14 @@ object Http:
 
           chunk #:: recur(remaining - take)
 
-      Stream.defer(recur(length))
+      LazyList.defer(recur(length))
 
     // Decode a `Transfer-Encoding: chunked` request body off `cursor`, yielding
     // each chunk's data and leaving the cursor after the terminating `0`-chunk
     // and trailers — i.e. at the next request. Lenient: a malformed length or a
     // truncated stream simply ends the body. Consumes CRLFs with `advance` (not
     // `next`), so it never reads past the body's final `\r\n` (see `parseHead`).
-    def chunkedBody(cursor: Cursor[Data, ?]): Stream[Data] =
+    def chunkedBody(cursor: Cursor[Data, ?]): LazyList[Data] =
       def hex(digit: Int): Int =
         if digit >= '0' && digit <= '9' then digit - '0'
         else if digit >= 'a' && digit <= 'f' then digit - 'a' + 10
@@ -435,8 +443,8 @@ object Http:
         consumeCrlf()
         size
 
-      def recur(): Stream[Data] = Stream.defer:
-        if cursor.finished then Stream() else
+      def recur(): LazyList[Data] = LazyList.defer:
+        if cursor.finished then LazyList() else
           val size = readSize()
 
           if size <= 0 then
@@ -445,7 +453,7 @@ object Http:
               consumeCrlf()
 
             consumeCrlf() // final blank line
-            Stream()
+            LazyList()
 
           else
             val data = cursor.hold:
@@ -464,15 +472,21 @@ object Http:
       recur()
 
   enum Body:
-    case Streaming(data: Stream[Data])
+    case Streaming(data: LazyList[Data])
+    case Flowing(source: () => Stream[Data] over Credit)
     case Fixed(data: Data)
     case Empty
 
-    def stream: Stream[Data] = this match
-      case Body.Fixed(data)       => Stream(data)
-      case Body.Empty             => Stream()
+    def stream: LazyList[Data] = this match
+      case Body.Fixed(data)       => LazyList(data)
+      case Body.Empty             => LazyList()
       case Body.Streaming(stream) => stream
+      case Body.Flowing(source)   => source().lazyList
 
+
+  // A request body with no bytes; each call constructs a fresh, already-empty
+  // pull endpoint, matching the re-materializable contract of `body` thunks.
+  def emptyBody(): Stream[Data] over Credit = Stream(Iterator.empty[Data])
 
   class Request
     ( val method:      Http.Method,
@@ -480,7 +494,7 @@ object Http:
       val host:        Host,
       val target:      Text,
       val textHeaders: List[Http.Header],
-      val body:        () => Stream[Data] ):
+      val body:        () => Stream[Data] over Credit ):
 
     inline def request: this.type = this
 
@@ -497,7 +511,7 @@ object Http:
     lazy val query: Query =
       contentType.let(_.base.show) match
         case t"application/x-www-form-urlencoded" =>
-          queryText.decode[Query] ++ body().read[Data].utf8.decode[Query]
+          queryText.decode[Query] ++ body().lazyList.read[Data].utf8.decode[Query]
 
         case _ =>
           queryText.decode[Query]
@@ -526,22 +540,16 @@ object Http:
   // The swappable transport that physically sends a single request and returns
   // its response. The URL is fully resolved (passed as `Text`) so non-JVM
   // backends can parse it themselves; redirects are handled by `HttpClient`, not
-  // the backend. The JVM default (using `java.net.http`) is provided in
-  // `HttpClient`; other platforms or implementations (e.g. HTTP/2) supply their
-  // own given.
-  object Backend:
-    // The default transport. telekinesis is currently JVM-only, so this
-    // delegates to the `java.net.http` client; when the module is split for
-    // other platforms this default moves to a platform-specific source. A
-    // user-supplied `Http.Backend` given in scope overrides it.
-    given default: Backend = HttpClient.javaBackend
-
+  // the backend. Backends are platform-specific, so each is summoned by an
+  // explicit import: `httpBackends.virtualMachine` (`java.net.http`, in
+  // `telekinesis.jvm`) on the JVM; other platforms or implementations (e.g.
+  // HTTP/2) supply their own given.
   trait Backend:
     def request
       ( url:     Text,
         method:  Http.Method,
         headers: List[Http.Header],
-        body:    () => Stream[Data] )
+        body:    () => Stream[Data] over Credit )
       ( using Tactic[ConnectError] )
     :   Http.Response
 
@@ -590,7 +598,7 @@ object Http:
     // `101` upgrades (where the caller pipes the post-handshake stream raw). The
     // inverse of `parse`.
     def serialize(response: Response, includeBody: Boolean = true, version: Version = 1.1)
-    :   Stream[Data] =
+    :   LazyList[Data] =
 
       import charEncoders.asciiEncoder
 
@@ -618,7 +626,7 @@ object Http:
             val length = data.length.toString.tt
             (if hasContentLength then Nil else List(Header(t"content-length", length)), false)
 
-          case Body.Streaming(_) =>
+          case Body.Streaming(_) | Body.Flowing(_) =>
             if explicitChunked && chunkable then (Nil, true)
             else if hasContentLength then (Nil, false)
             else if chunkable then (List(Header(t"transfer-encoding", t"chunked")), true)
@@ -645,25 +653,29 @@ object Http:
 
         append(t"\r\n")
 
-      def chunkedFraming(stream: Stream[Data]): Stream[Data] = stream match
+      def chunkedFraming(stream: LazyList[Data]): LazyList[Data] = stream match
         case block #:: tail =>
           if block.length == 0 then chunkedFraming(tail) else
             val size: Text = Integer.toHexString(block.length).nn.tt
             t"$size\r\n".data #:: block #:: t"\r\n".data #:: chunkedFraming(tail)
 
         case _ =>
-          Stream(t"0\r\n\r\n".data)
+          LazyList(t"0\r\n\r\n".data)
 
-      def bodyBytes: Stream[Data] =
-        if !includeBody then Stream() else if upgrade then response.body.stream
+      def bodyBytes: LazyList[Data] =
+        if !includeBody then LazyList() else if upgrade then response.body.stream
         else response.body match
-          case Body.Empty             => Stream()
-          case Body.Fixed(data)       => Stream(data)
+          case Body.Empty             => LazyList()
+          case Body.Fixed(data)       => LazyList(data)
           case Body.Streaming(stream) => if chunked then chunkedFraming(stream) else stream
+
+          case Body.Flowing(source) =>
+            val stream = source().lazyList
+            if chunked then chunkedFraming(stream) else stream
 
       head.data #:: bodyBytes
 
-    def parse(stream: Stream[Data]): Response raises HttpResponseError =
+    def parse(stream: LazyList[Data]): Response raises HttpResponseError =
       val cursor = Cursor[Data](stream.filter(_.nonEmpty).iterator)
 
       inline def expected(char: Char): Diagnostics ?=> HttpResponseError =
@@ -768,7 +780,7 @@ object Http:
       copy(textHeaders = Header(key2, label.encode(value)) :: textHeaders.filter(_.key != key2))
 
 
-    def successBody: Optional[Stream[Data]] =
+    def successBody: Optional[LazyList[Data]] =
       if status.category != Http.Status.Category.Successful then Unset else body.stream
 
 

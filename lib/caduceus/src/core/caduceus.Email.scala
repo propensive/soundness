@@ -65,7 +65,7 @@ object Email:
       case Body.HtmlOnly(_)        => media"text/html"
       case Body.Alternatives(_, _) => media"multipart/alternative"
 
-  case class Inline(cid: Text, contentType: MediaType, body: Stream[Text])
+  case class Inline(cid: Text, contentType: MediaType, body: LazyList[Text])
 
   case class Content(body: Body, inlines: Inline*):
     def contentType: MediaType =

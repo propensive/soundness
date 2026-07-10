@@ -32,14 +32,9 @@
                                                                                                   */
 package galilei
 
-import java.io as ji
-import java.nio.file as jnf
-import java.nio.file.attribute as jnfa
-
 import anticipation.*
 import contingency.*
 import denominative.*
-import fulminate.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
@@ -73,7 +68,7 @@ package filesystemTraversal:
 
 extension [plane: Filesystem](path: Path on plane)
 
-  inline def children(using explorable: plane is Explorable): Stream[Path on plane] =
+  inline def children(using explorable: plane is Explorable): LazyList[Path on plane] =
     explorable.children(path)
 
   // Write `content` to the file in its entirety as a single, direct operation: the whole file is
@@ -117,81 +112,75 @@ extension [plane: Filesystem](path: Path on plane)
 
 
   def descendants(using DereferenceSymlinks, TraversalOrder, plane is Explorable)
-  :   Stream[Path on plane] raises IoError =
+  :   LazyList[Path on plane] raises IoError =
 
     path.children.flatMap: child =>
       summon[TraversalOrder] match
         case TraversalOrder.PreOrder  => child #:: child.descendants
-        case TraversalOrder.PostOrder => child.descendants #::: Stream(child)
+        case TraversalOrder.PostOrder => child.descendants #::: LazyList(child)
 
 
-  def size()(using plane is Explorable): Bytes raises IoError =
+  def size()(using plane is Explorable, FilesystemBackend on plane): Bytes raises IoError =
     import filesystemOptions.dereferenceSymlinks.disabled
     given TraversalOrder = TraversalOrder.PreOrder
-    descendants.fuse(jnf.Files.size(path.javaPath).b)(state + next.size())
+
+    descendants.fuse(summon[FilesystemBackend on plane].stat(path, false).size.b):
+      state + next.size()
 
 
   def delete()(using deleteRecursively: DeleteRecursively on plane)
-  :   Path on plane raises IoError logs IoEvent =
+    ( using backend: FilesystemBackend on plane )
+  :   Path on plane logs IoEvent raises IoError =
 
-    protect(Operation.Delete):
-      deleteRecursively.conditionally(path)(jnf.Files.delete(path.javaPath))
-
+    deleteRecursively.conditionally(path)(backend.delete(path))
     Log.info(IoEvent.Delete(path.show))
     path
 
 
   def wipe()(using deleteRecursively: DeleteRecursively on plane)(using io: Tactic[IoError])
-  :   Path on plane raises IoError logs IoEvent =
+    ( using backend: FilesystemBackend on plane )
+  :   Path on plane logs IoEvent raises IoError =
 
-    deleteRecursively.conditionally(path)(jnf.Files.deleteIfExists(javaPath))
+    deleteRecursively.conditionally(path)(backend.deleteIfExists(path))
     Log.info(IoEvent.Delete(path.show))
     path
 
 
-  def volume(): Volume =
-    val fileStore = jnf.Files.getFileStore(path.javaPath).nn
-    Volume(fileStore.name.nn.tt, fileStore.`type`.nn.tt)
+  def volume()(using backend: FilesystemBackend on plane): Volume raises IoError =
+    backend.volume(path)
 
 
   def hardLinkTo(destination: Path on plane)
     ( using overwritePreexisting:     OverwritePreexisting on plane,
-            createNonexistentParents: CreateNonexistentParents on plane )
-  :   Path on plane raises IoError logs IoEvent =
+            createNonexistentParents: CreateNonexistentParents on plane,
+            backend:                  FilesystemBackend on plane )
+  :   Path on plane logs IoEvent raises IoError =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
-        jnf.Files.createLink(destination.javaPath, path.javaPath)
+        backend.hardLink(destination, path)
 
     Log.info(IoEvent.HardLink(path.show, destination.show))
     destination
 
 
-  def entry()(using symlinks: DereferenceSymlinks): Entry =
-    if !symlinks.dereference && jnf.Files.isSymbolicLink(javaPath) then Symlink
-    else if jnf.Files.isRegularFile(javaPath) then File
-    else if jnf.Files.isDirectory(javaPath) then Directory
-    else
-      val mode = jnf.Files.getAttribute(javaPath, "unix:mode", symlinks.options()*).nn
+  def entry()(using symlinks: DereferenceSymlinks)
+    ( using backend: FilesystemBackend on plane )
+  :   Entry raises IoError =
 
-      mode.absolve match
-        case mode: Int => (mode & 61440) match
-          case  4096 => Fifo
-          case  8192 => CharDevice
-          case 24576 => BlockDevice
-          case 49152 => Socket
-          case _     => panic(m"an unexpected POSIX mode value was returned")
+    backend.stat(path, symlinks.dereference).entry
 
 
   def copyTo(destination: Path on plane)
     ( using overwritePreexisting:     OverwritePreexisting on plane,
             dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on plane )
-  :   Path on plane raises IoError logs IoEvent =
+    ( using FilesystemBackend on plane )
+  :   Path on plane logs IoEvent raises IoError =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
-        jnf.Files.copy(path.javaPath, destination.javaPath, dereferenceSymlinks.options()*)
+        summon[FilesystemBackend on plane].copy(path, destination, dereferenceSymlinks.dereference)
 
     Log.info(IoEvent.Copy(path.show, destination.show))
     destination
@@ -201,6 +190,7 @@ extension [plane: Filesystem](path: Path on plane)
     ( using overwritePreexisting: OverwritePreexisting on plane,
             dereferenceSymlinks:  DereferenceSymlinks,
             substantiable:        (Path on plane) is Substantiable )
+    ( using FilesystemBackend on plane )
   :   Path on plane raises IoError =
 
     given CreateNonexistentParents on plane =
@@ -215,13 +205,12 @@ extension [plane: Filesystem](path: Path on plane)
             moveAtomically:           MoveAtomically,
             dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on plane )
-  :   Path on plane raises IoError logs IoEvent =
-
-    val options: Seq[jnf.CopyOption] = dereferenceSymlinks.options() ++ moveAtomically.options()
+    ( using backend: FilesystemBackend on plane )
+  :   Path on plane logs IoEvent raises IoError =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
-        jnf.Files.move(path.javaPath, destination.javaPath, options*)
+        backend.move(path, destination, moveAtomically.atomic, dereferenceSymlinks.dereference)
 
     Log.info(IoEvent.Move(path.show, destination.show))
     destination
@@ -233,6 +222,7 @@ extension [plane: Filesystem](path: Path on plane)
             moveAtomically:       MoveAtomically,
             substantiable:        (Path on plane) is Substantiable,
             dereferenceSymlinks:  DereferenceSymlinks )
+    ( using FilesystemBackend on plane )
   :   Path on plane raises IoError =
 
     import filesystemOptions.createNonexistentParents.enabled
@@ -241,12 +231,13 @@ extension [plane: Filesystem](path: Path on plane)
 
   def symlinkTo(destination: Path on plane)
     ( using overwritePreexisting:     OverwritePreexisting on plane,
-            createNonexistentParents: CreateNonexistentParents on plane )
-  :   Path on plane raises IoError logs IoEvent =
+            createNonexistentParents: CreateNonexistentParents on plane,
+            backend:                  FilesystemBackend on plane )
+  :   Path on plane logs IoEvent raises IoError =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
-        jnf.Files.createSymbolicLink(destination.javaPath, path.javaPath)
+        backend.symlink(destination, path)
 
     Log.info(IoEvent.Symlink(destination.show, path.show))
     destination
@@ -258,30 +249,36 @@ extension [plane: Filesystem](path: Path on plane)
             moveAtomically:       MoveAtomically,
             substantiable:        (Path on plane) is Substantiable,
             dereferenceSymlinks:  DereferenceSymlinks )
+    ( using FilesystemBackend on plane )
   :   Path on plane raises IoError =
 
     import filesystemOptions.createNonexistentParents.enabled
     symlinkTo(unsafely(destination.child(path.descent.head)))
 
 
-  def modified[instant: Instantiable across Instants from Long](): instant =
-    instant(jnf.Files.getLastModifiedTime(path.javaPath).nn.toInstant.nn.toEpochMilli)
+  def modified[instant: Instantiable across Instants from Long]()
+    ( using backend: FilesystemBackend on plane )
+  :   instant raises IoError =
 
-  def accessed[instant: Instantiable across Instants from Long](): instant =
-    val attributes = jnf.Files.readAttributes(path.javaPath, classOf[jnfa.BasicFileAttributes]).nn
-    instant(attributes.lastAccessTime().nn.toInstant.nn.toEpochMilli)
+    instant(backend.stat(path, true).modified)
 
-  def readable: FilesystemAttribute.Readable[plane] = FilesystemAttribute.Readable(path)
-  def writable: FilesystemAttribute.Writable[plane] = FilesystemAttribute.Writable(path)
+  def accessed[instant: Instantiable across Instants from Long]()
+    ( using backend: FilesystemBackend on plane )
+  :   instant raises IoError =
 
-  def hidden(): Boolean raises IoError =
-    protect(Operation.Metadata)(jnf.Files.isHidden(path.javaPath))
+    instant(backend.stat(path, true).accessed)
 
-  def touch(): Unit raises IoError logs IoEvent =
-    protect(Operation.Metadata):
-      jnf.Files.setLastModifiedTime
-        ( path.javaPath, jnfa.FileTime.fromMillis(java.lang.System.currentTimeMillis) )
+  def readable(using FilesystemBackend on plane): FilesystemAttribute.Readable[plane] =
+    FilesystemAttribute.Readable(path)
 
+  def writable(using FilesystemBackend on plane): FilesystemAttribute.Writable[plane] =
+    FilesystemAttribute.Writable(path)
+
+  def hidden()(using backend: FilesystemBackend on plane): Boolean raises IoError =
+    backend.hidden(path)
+
+  def touch()(using backend: FilesystemBackend on plane): Unit logs IoEvent raises IoError =
+    backend.touch(path)
     Log.fine(IoEvent.Touch(path.show))
 
   transparent inline def create[entry]()
@@ -292,72 +289,78 @@ extension [plane: Filesystem](path: Path on plane)
     creatable.create(path)
 
 extension (path: Path on Windows)
-  def created[instant: Instantiable across Instants from Long](): instant raises IoError =
-    path.protect(Operation.Metadata):
-      val attributes = jnf.Files.readAttributes(path.javaPath, classOf[jnfa.BasicFileAttributes]).nn
-      instant(attributes.creationTime().nn.toInstant.nn.toEpochMilli)
+  def created[instant: Instantiable across Instants from Long]()
+    ( using backend: FilesystemBackend on Windows )
+  :   instant raises IoError =
+
+    instant:
+      backend.stat(path, true).created.or:
+        abort(IoError(path, Operation.Metadata, Reason.Unsupported))
 
 extension [plane <: Posix: Filesystem](path: Path on plane)
-  def executable: FilesystemAttribute.Executable[plane] =
+  def executable(using FilesystemBackend on plane): FilesystemAttribute.Executable[plane] =
     FilesystemAttribute.Executable(path)
 
-  def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks): Int raises IoError =
-    path.protect(Operation.Metadata):
-      jnf.Files.getAttribute(jnf.Path.of(path.show.s), "unix:nlink", dereferenceSymlinks.options()*)
-      . match
-        case count: Int => count
-        case _          => abort(IoError(path, Operation.Metadata, Reason.Unsupported))
+  def hardLinks()(using dereferenceSymlinks: DereferenceSymlinks)
+    ( using backend: FilesystemBackend on plane )
+  :   Int raises IoError =
+
+    backend.hardLinkCount(path, dereferenceSymlinks.dereference)
 
 package filesystemOptions:
   object readAccess:
     given enabled: ReadAccess:
       type Transform[HandleType] = HandleType & ReadAccess.Ability
 
-      def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.READ)
+      def flags(): List[OpenFlag] = List(OpenFlag.Read)
 
     given disabled: ReadAccess:
       type Transform[HandleType] = HandleType
 
-      def options(): List[jnf.OpenOption] = Nil
+      def flags(): List[OpenFlag] = Nil
 
   object writeAccess:
     given enabled: WriteAccess:
       type Transform[HandleType] = HandleType & WriteAccess.Ability
 
-      def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.WRITE)
+      def flags(): List[OpenFlag] = List(OpenFlag.Write)
 
     given disabled: WriteAccess:
       type Transform[HandleType] = HandleType
 
-      def options(): List[jnf.OpenOption] = Nil
+      def flags(): List[OpenFlag] = Nil
 
   object dereferenceSymlinks:
     given enabled: DereferenceSymlinks:
       def dereference = true
-      def options() = Nil
 
     given disabled: DereferenceSymlinks:
       def dereference = false
-      def options() = List(jnf.LinkOption.NOFOLLOW_LINKS)
 
   object moveAtomically:
-    given enabled: MoveAtomically = () => List(jnf.StandardCopyOption.ATOMIC_MOVE)
-    given disabled: MoveAtomically = () => Nil
+    given enabled: MoveAtomically:
+      def atomic = true
+
+    given disabled: MoveAtomically:
+      def atomic = false
 
   object copyAttributes:
-    given enabled: CopyAttributes = () => List(jnf.StandardCopyOption.COPY_ATTRIBUTES)
-    given disabled: CopyAttributes = () => Nil
+    given enabled: CopyAttributes:
+      def attributes = true
+
+    given disabled: CopyAttributes:
+      def attributes = false
 
   object deleteRecursively:
-    given enabled: [plane: Filesystem]
-    =>  ( explorable: plane is Explorable )
+    given enabled: [plane: Filesystem] => Tactic[IoError]
+    =>  ( explorable: plane is Explorable, backend: FilesystemBackend on plane )
     =>  DeleteRecursively on plane:
 
       type World = plane
 
       def recur(path: Path on plane): Unit raises IoError =
         path.children.each(recur(_))
-        jnf.Files.delete(jnf.Path.of(path.show.s))
+        backend.delete(path)
 
       def conditionally[result](path: Path on Plane)(operation: => result): result raises IoError =
         path.children.each(recur(_)) yet operation
@@ -383,27 +386,27 @@ package filesystemOptions:
         deleteRecursively.conditionally(path)(operation)
 
 
-    given disabled: [plane: Filesystem] => OverwritePreexisting on plane:
+    // The backend raises `AlreadyExists` itself when the operation collides with an existing
+    // entry, so nothing needs intercepting here.
+    given disabled: [plane: Filesystem] => Tactic[IoError]
+    =>  OverwritePreexisting on plane:
 
       type Plane = plane
 
-      def apply[result](path: Path on Plane)(operation: => result): result raises IoError =
-        try operation catch case error: jnf.FileAlreadyExistsException =>
-          abort(IoError(path, IoError.Operation.Write, Reason.AlreadyExists))
+      def apply[result](path: Path on Plane)(operation: => result): result = operation
 
   object createNonexistentParents:
-    given enabled: [plane: Filesystem] => (Path on plane) is Substantiable
+    given enabled: [plane: Filesystem] => Tactic[IoError]
+    =>  ( backend: FilesystemBackend on plane )
     =>  CreateNonexistentParents on plane:
 
-      def apply[result](path: Path on plane)(operation: => result): result raises IoError =
-        val parent: Optional[Path on plane] = safely(path.parent)
+      def apply[result](path: Path on plane)(operation: => result): result =
+        def ensure(directory: Path on plane): Unit =
+          if !backend.exists(directory, true) then
+            safely(directory.parent).let(ensure(_))
+            backend.createDirectory(directory)
 
-        parent.let: parent =>
-          import dereferenceSymlinks.disabled
-
-          if !parent.exists() || parent.entry() != Directory
-          then jnf.Files.createDirectories(jnf.Path.of(parent.show.s))
-
+        safely(path.parent).let(ensure(_))
         operation
 
 
@@ -411,8 +414,7 @@ package filesystemOptions:
 
       type Plane = plane
 
-      def apply[result](path: Path on plane)(block: => result): result raises IoError =
-        path.protect(Operation.Write)(block)
+      def apply[result](path: Path on plane)(block: => result): result = block
 
   object createNonexistent:
     given enabled: [plane: Filesystem]
@@ -428,7 +430,7 @@ package filesystemOptions:
       def apply(path: Path on Plane)(operation: => Unit): Unit raises IoError =
         if !path.exists() then create(path)(operation)
 
-      def options(): List[jnf.OpenOption] = List(jnf.StandardOpenOption.CREATE)
+      def flags(): List[OpenFlag] = List(OpenFlag.Create)
 
 
     given disabled: [plane: Filesystem] => CreateNonexistent on plane:
@@ -438,9 +440,9 @@ package filesystemOptions:
       def error(path: Path on Plane, operation: IoError.Operation): Nothing raises IoError =
         abort(IoError(path, operation, Reason.Nonexistent))
 
-      def apply(path: Path on Plane)(operation: => Unit): Unit raises IoError = ()
-      def options(): List[jnf.OpenOption] = List()
+      def apply(path: Path on Plane)(operation: => Unit): Unit = ()
+      def flags(): List[OpenFlag] = List()
 
   object writeSynchronously:
-    given enabled: WriteSynchronously = () => List(jnf.StandardOpenOption.SYNC)
+    given enabled: WriteSynchronously = () => List(OpenFlag.Sync)
     given disabled: WriteSynchronously = () => Nil

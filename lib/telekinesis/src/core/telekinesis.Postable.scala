@@ -46,12 +46,18 @@ import monotonous.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 import alphabets.hexLowerCase
 
 object Postable:
-  def apply[response](mediaType0: MediaType, stream0: response => Stream[Data])
+  // `stream0` must construct a fresh pull endpoint on each call: the request
+  // body may be materialized more than once — for a redirect that preserves
+  // the method, and independently by `preview` for logging — and a `Stream`,
+  // being a single-use mutable buffer, cannot be re-pulled.
+  def apply[response](mediaType0: MediaType, stream0: response => Stream[Data] over Credit)
   :   response is Postable =
 
     // `Typeclass` instances are `Pure` by infrastructure, but the streaming lambda may capture
@@ -62,18 +68,20 @@ object Postable:
     new Postable:
       type Self = response
       def mediaType(response: response): MediaType = mediaType0
-      def stream(response: response): Stream[Data] = stream1(response)
+      def stream(response: response): Stream[Data] over Credit = stream0(response)
 
 
   given text: (encoder: CharEncoder) => Text is Postable =
     Postable(media"text/plain", value => Stream(IArray.from(value.data)))
 
-  given textStream: (encoder: CharEncoder) => Stream[Text] is Postable =
-    Postable(media"application/octet-stream", _.map(_.data))
+  given textStream: (encoder: CharEncoder) => LazyList[Text] is Postable =
+    Postable(media"application/octet-stream", lazyList => Stream(lazyList.map(_.data).iterator))
 
-  given unit: Unit is Postable = Postable(media"text/plain", unit => Stream())
+  given unit: Unit is Postable = Postable(media"text/plain", _ => Stream(Iterator.empty[Data]))
   given data: Data is Postable = Postable(media"application/octet-stream", Stream(_))
-  given byteStream: Stream[Data] is Postable = Postable(media"application/octet-stream", identity)
+
+  given byteStream: LazyList[Data] is Postable =
+    Postable(media"application/octet-stream", lazyList => Stream(lazyList.iterator))
 
   given query: Query is Postable =
     import charEncoders.utf8Encoder
@@ -94,16 +102,14 @@ object Postable:
     new Postable:
       type Self = response
 
-      def mediaType(content: response): MediaType =
-        content.generic(0).decode[MediaType](using decoder)
-
-      def stream(content: response): Stream[Data] = content.generic(1)
+      def mediaType(content: response): MediaType = content.generic(0).decode[MediaType]
+      def stream(content: response): Stream[Data] over Credit = content.generic(1).stream
 
 trait Postable extends Typeclass:
   def mediaType(content: Self): MediaType
-  def stream(content: Self): Stream[Data]
+  def stream(content: Self): Stream[Data] over Credit
 
-  def preview(value: Self): Text = stream(value).prim.lay(t""): data =>
+  def preview(value: Self): Text = stream(value).lazyList.prim.lay(t""): data =>
     val sample = data.take(1024)
     val string: Text = sample.serialize[Hex]
     if data.length > 128 then t"$string..." else string

@@ -53,7 +53,7 @@ class SseSource(capacity: Int):
     spool.put(sse)
     current += 1
 
-  def stream(start: Optional[Int] = Unset): Stream[Sse] raises SseError = mutex:
+  def stream(start: Optional[Int] = Unset): LazyList[Sse] raises SseError = mutex:
     start.let: start =>
       spool.stop()
       spool = Spool()

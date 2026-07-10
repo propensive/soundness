@@ -59,13 +59,14 @@ class Recorder(canned: () => Http.Response) extends Http.Backend:
   var lastHeaders: List[Http.Header]     = Nil
 
   def request
-     ( url: Text, method: Http.Method, headers: List[Http.Header], body: () => Stream[Data] )
+     ( url: Text, method: Http.Method, headers: List[Http.Header],
+        body: () => Stream[Data] over Credit )
      ( using Tactic[ConnectError] )
   :   Http.Response =
     lastUrl = url
     lastMethod = method
     lastHeaders = headers
-    val chunks = body().to(List)
+    val chunks = body().lazyList.to(List)
     lastBody = if chunks.isEmpty then Unset else chunks.head
     canned()
 

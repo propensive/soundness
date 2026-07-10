@@ -45,6 +45,7 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
+import zephyrine.*
 
 object GrpcChannel:
   // Open a channel to a cleartext-h2c endpoint, completing the HTTP/2 handshake. The
@@ -121,7 +122,7 @@ class GrpcChannel
   private def decodeMessage[value](bytes: Data)(using decodable: value is Decodable in Protobuf)
   :   value raises ProtobufError =
 
-    decodable.decoded(Stream(bytes).read[Protobuf])
+    decodable.decoded(LazyList(bytes).read[Protobuf])
 
   // A unary call: send one message, read exactly one response message, then verify
   // the trailing status.
@@ -147,12 +148,12 @@ class GrpcChannel
 
   // A server-streaming call: send one message, then lazily decode each response
   // message. The trailing status is verified once the response stream is exhausted,
-  // so the returned `Stream` must be consumed within the enclosing `supervise` scope.
+  // so the returned `LazyList` must be consumed within the enclosing `supervise` scope.
   def serverStreaming[request, response]
     ( method: Grpc.Method, value: request, metadata: Grpc.Metadata = Grpc.Metadata() )
     ( using request is Encodable in Protobuf, response is Decodable in Protobuf )
     ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )
-  :   Stream[response] =
+  :   LazyList[response] =
 
     val (stream, response) =
       connection.fetch(httpRequest(method, metadata, encodeMessage(value)), t"http", authority)
@@ -160,10 +161,10 @@ class GrpcChannel
     expectOk(response)
     val messages = stream.body.stream.iterator.frames[GrpcFraming]
 
-    def recur(): Stream[response] =
+    def recur(): LazyList[response] =
       if messages.hasNext then decodeMessage[response](messages.next()) #:: recur()
       else
         expectStatus(stream)
-        Stream()
+        LazyList()
 
     recur()

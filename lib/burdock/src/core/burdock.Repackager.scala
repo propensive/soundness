@@ -247,7 +247,7 @@ object Repackager:
           Zip.Entry(manifestName.decode[Path on Zip], manifest2.serialize)
 
         val bootstrap: Zip.Entry =
-          Zip.Entry(bootstrapName.decode[Path on Zip], () => Stream(bootstrapClass))
+          Zip.Entry(bootstrapName.decode[Path on Zip], () => LazyList(bootstrapClass))
 
         // Keep the first occurrence of each entry name: the force-included bootstrap over any
         // bundled or inlined copy (an unpublished `burdock` dependency's cached JAR also
@@ -256,7 +256,7 @@ object Repackager:
         val entries: List[Zip.Entry] =
           (bootstrap :: keptEntries ++ inlined).distinctBy(_.ref.show)
 
-        Zipfile.write(outputJar)(manifestEntry #:: entries.to(Stream))
+        Zipfile.write(outputJar)(manifestEntry #:: entries.to(LazyList))
 
         // The output also carries the manifest entry, hence `entries.length + 1`.
         Summary

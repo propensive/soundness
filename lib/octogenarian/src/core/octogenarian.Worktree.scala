@@ -50,6 +50,8 @@ import vacuous.*
 
 import GitError.Reason.*
 
+import filesystemBackends.virtualMachine
+
 object Worktree:
   def apply[abstractable: Abstractable across Paths to Text](path: abstractable)
     ( using Tactic[PathError], Tactic[NameError], Tactic[GitError], Tactic[IoError] )
@@ -129,7 +131,7 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
   :   List[GitBranch] logs GitEvent =
 
     sh"$git $repoOptions branch"
-    . exec[Stream[Text]]()
+    . exec[LazyList[Text]]()
     . map(_.skip(2))
     . to(List)
     . map(GitBranch.unsafe(_))
@@ -211,17 +213,17 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
   // diff(ref): full tree-vs-ref diff (working tree relative to ref).
   def diff(staged: Boolean = false)
     ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-  :   Stream[FileDiff] logs GitEvent =
+  :   LazyList[FileDiff] logs GitEvent =
 
     val stagedOpt = if staged then sh"--staged" else sh""
-    Patch.parse(sh"$git $repoOptions diff --no-color $stagedOpt".exec[Stream[Text]]())
+    Patch.parse(sh"$git $repoOptions diff --no-color $stagedOpt".exec[LazyList[Text]]())
 
 
   def diff(ref: Refspec)
     ( using GitCommand, WorkingDirectory, Tactic[ExecError] )
-  :   Stream[FileDiff] logs GitEvent =
+  :   LazyList[FileDiff] logs GitEvent =
 
-    Patch.parse(sh"$git $repoOptions diff --no-color $ref".exec[Stream[Text]]())
+    Patch.parse(sh"$git $repoOptions diff --no-color $ref".exec[LazyList[Text]]())
 
 
   def merge

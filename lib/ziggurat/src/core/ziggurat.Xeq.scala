@@ -48,6 +48,8 @@ import vacuous.*
 import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
 import classloaders.threadContextClassloader
+import filesystemBackends.virtualMachine
+import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 import filesystemOptions.overwritePreexisting.enabled
@@ -71,7 +73,7 @@ object Xeq:
     val encoded: List[(Text, Text)] = payloads.map: payload =>
       val raw: Data =
         if !payload.gzip then payload.bytes
-        else Stream(payload.bytes).compress[Gzip].read[Data]
+        else LazyList(payload.bytes).compress[Gzip].read[Data]
 
       payload.label -> raw.serialize[Base64].slices(ChunkSize).join(t"", t"\n", t"\n")
 
@@ -159,7 +161,9 @@ object Xeq:
   private def write(output: Path on Linux, data: Data): Unit = unsafely:
     output.create[File]()
 
-    output.write(data)
+    output.open: handle =>
+      LazyList(data).writeTo(handle)
+
     output.executable() = true
 
 
@@ -189,7 +193,7 @@ object Xeq:
 
     val dataPayload: Optional[Payload] =
       if dataPath.exists() then
-        val bytes: Data = dataPath.read[Data]
+        val bytes: Data = dataPath.open(_.read[Data])
         Payload(DataName, bytes, gzip = false)
       else
         Unset
@@ -207,7 +211,7 @@ object Xeq:
   private def onlineLauncherMain(output: Text, jar: Text, manifest: Text, baseUrl: Text): Unit =
     unsafely:
       val outputPath: Path on Linux = output.decode[Path on Linux]
-      val jarData: Data = jar.decode[Path on Linux].read[Data]
+      val jarData: Data = jar.decode[Path on Linux].open(_.read[Data])
       val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
 
       val entries: List[(Text, Text, Text)] =

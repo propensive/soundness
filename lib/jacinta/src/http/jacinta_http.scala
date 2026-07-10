@@ -38,6 +38,7 @@ import gossamer.*
 import hieroglyph.*
 import spectacular.*
 import telekinesis.*
+import zephyrine.*
 
 package postables:
   given jsonPostable: (encoder: CharEncoder, formatting: Json.Formatting) => Json is Postable =

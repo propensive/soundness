@@ -60,6 +60,8 @@ import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
+import filesystemBackends.virtualMachine
+
 object Installer:
   object Result:
     given communicable: Result is Communicable =

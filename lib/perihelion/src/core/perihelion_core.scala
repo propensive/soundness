@@ -103,7 +103,7 @@ given transmissible: [transport, value]
 =>  ( format: transport is Encodable in Text, codec: value is Encodable in transport )
 =>  CharEncoder
 =>  (value over transport) is Transmissible =
-  payload => Stream(Frame.Text(true, format.encoded(codec.encoded(payload)).data).encode)
+  payload => LazyList(Frame.Text(true, format.encoded(codec.encoded(payload)).data).encode)
 
 // The decode direction. The `Decodable in Text`/`in transport` instances are
 // `Tactic`-conditional and don't resolve as nested given constraints, so we
@@ -132,7 +132,7 @@ type WsUrl = Url["ws" | "wss"]
 // including the terminator) and the remaining stream (the trailing bytes of the chunk
 // that completed it, then the untouched rest). Consumes only as many chunks as needed
 // to see the terminator, so it never reads past the `101` into a not-yet-sent frame.
-private def readHandshake(chunks: Stream[Data], acc: Data): (Data, Stream[Data]) =
+private def readHandshake(chunks: LazyList[Data], acc: Data): (Data, LazyList[Data]) =
   def crlfCrlf(data: Data): Int =
     def matches(i: Int): Boolean =
       data(i) == 13 && data(i + 1) == 10 && data(i + 2) == 13 && data(i + 3) == 10
@@ -148,7 +148,7 @@ private def readHandshake(chunks: Stream[Data], acc: Data): (Data, Stream[Data])
     val leftover = acc.drop(marker + 4)
     (acc.take(marker + 4), if leftover.length > 0 then leftover #:: chunks else chunks)
   else if chunks.isEmpty then
-    (acc, Stream())
+    (acc, LazyList())
   else
     readHandshake(chunks.tail, acc ++ chunks.head)
 
@@ -221,9 +221,9 @@ given wsClient: ( online:            Online,
                 Http.Header(t"Upgrade", t"websocket"),
                 Http.Header(t"Sec-WebSocket-Key", key),
                 Http.Header(t"Sec-WebSocket-Version", t"13") ),
-            () => Stream() )
+            () => Http.emptyBody() )
 
-      duplex.send(Http.Request.transmissible.serialize(request))
+      duplex.send(Http.Request.serialize(request))
 
       // Read the response headers up to the CRLFCRLF terminator *without* over-reading:
       // `Http.Response.parse` on a live socket eagerly refills one chunk past the headers,
@@ -252,11 +252,11 @@ given wsClient: ( online:            Online,
 
       WsConnection(duplex, channel, masking, inbound, pump)
 
-    def receive(connection: WsConnection): Stream[Data] =
+    def receive(connection: WsConnection): LazyList[Data] =
       given Masking = connection.masking
       Reader(() => connection.inbound, connection.channel).messages.map(_.bytes)
 
-    def transmit(connection: WsConnection, input: Stream[Data]): Unit =
+    def transmit(connection: WsConnection, input: LazyList[Data]): Unit =
       input.each(connection.channel.enqueue(_))
 
     def close(connection: WsConnection): Unit =

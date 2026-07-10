@@ -37,40 +37,43 @@ import scala.annotation.implicitNotFound
 import anticipation.*
 import hieroglyph.*
 import prepositional.*
+import zephyrine.*
 
-// `Readable` composes a `Streamable` for the source type and an `Aggregable`
-// for the result type into a single resolvable instance, bridging with a
-// `CharDecoder`/`CharEncoder` when the two operate on different operands
-// (`Data` vs `Text`). Expressing the four pipelines as prioritised `given`s
-// (rather than a macro that summons combinations) means a missing instance is
-// an ordinary failed implicit search — so Frontier's `explainMissingContext`,
-// when in scope, lists the candidates and what each still requires.
+// `Readable` composes a `Source` for the source type and an `Aggregable` for
+// the result type into a single resolvable instance, bridging with a
+// `CharDecoder`/`CharEncoder` duct when the two operate on different operands
+// (`Data` vs `Text`) — so a bridged read transcodes incrementally, in bounded
+// buffers, on the reading thread. Expressing the four pipelines as
+// prioritised `given`s (rather than a macro that summons combinations) means
+// a missing instance is an ordinary failed implicit search — so Frontier's
+// `explainMissingContext`, when in scope, lists the candidates and what each
+// still requires.
 //
 // Priority (highest first): same-operand pipelines before the bridged ones,
 // so a directly-streamable/aggregable pairing is preferred when both apply.
 
 trait Readable3:
   given textToData: [source, result]
-  =>  ( streamable: (source is Streamable by Text)^ )
-  =>  ( aggregable: (result is Aggregable by Data)^ )
-  =>  ( encoder: CharEncoder )
-  =>  ((source is Readable to result)^) =
-    value => aggregable.aggregate(encoder.encoded(streamable.stream(value)))
+  =>  ( source0: source is Source by Text over Credit )
+  =>  ( aggregable: result is Aggregable by Data )
+  =>  ( encoder: CharEncoder, buffering: Buffering )
+  =>  source is Readable to result =
+    value => aggregable.accept(source0.stream(value).through(encoder))
 
 trait Readable2 extends Readable3:
   given dataToText: [source, result]
-  =>  ( streamable: (source is Streamable by Data)^ )
-  =>  ( aggregable: (result is Aggregable by Text)^ )
-  =>  ( decoder: CharDecoder^ )
-  =>  ((source is Readable to result)^) =
-    value => aggregable.aggregate(decoder.decoded(streamable.stream(value)))
+  =>  ( source0: source is Source by Data over Credit )
+  =>  ( aggregable: result is Aggregable by Text )
+  =>  ( decoder: CharDecoder, buffering: Buffering )
+  =>  source is Readable to result =
+    value => aggregable.accept(source0.stream(value).through(decoder))
 
 trait Readable1 extends Readable2:
   given textToText: [source, result]
-  =>  ( streamable: (source is Streamable by Text)^ )
-  =>  ( aggregable: (result is Aggregable by Text)^ )
-  =>  ((source is Readable to result)^) =
-    value => aggregable.aggregate(streamable.stream(value))
+  =>  ( source0: source is Source by Text over Credit )
+  =>  ( aggregable: result is Aggregable by Text )
+  =>  source is Readable to result =
+    value => aggregable.accept(source0.stream(value))
 
 object Readable extends Readable1:
   // Direct, whole-`Data` instances: when the entire content is already in hand as one `Data`,
@@ -83,13 +86,13 @@ object Readable extends Readable1:
     decoder.decoded(_)
 
   given dataToData: [source, result]
-  =>  ( streamable: (source is Streamable by Data)^ )
-  =>  ( aggregable: (result is Aggregable by Data)^ )
-  =>  ((source is Readable to result)^) =
-    value => aggregable.aggregate(streamable.stream(value))
+  =>  ( source0: source is Source by Data over Credit )
+  =>  ( aggregable: result is Aggregable by Data )
+  =>  source is Readable to result =
+    value => aggregable.accept(source0.stream(value))
 
 @implicitNotFound("turbulence: the source cannot be read as the target type; this needs a "+
-    "`Streamable` instance for the source and an `Aggregable` instance for the target, plus a "+
+    "`Source` instance for the source and an `Aggregable` instance for the target, plus a "+
     "`CharDecoder` or `CharEncoder` if their operands (Data/Text) differ")
 trait Readable extends Typeclass, Resultant:
   def read(value: Self): Result

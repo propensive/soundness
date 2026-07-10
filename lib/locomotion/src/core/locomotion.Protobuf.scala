@@ -120,7 +120,7 @@ object Protobuf extends Protobuf2:
       type Result = HttpStreams.Content
 
       def genericize(value: Protobuf): HttpStreams.Content =
-        (t"application/protobuf", Stream(value.encode))
+        (t"application/protobuf", HttpStreams.Body(value.encode))
 
   // `bytes.read[Protobuf]` aggregates the byte stream and wraps it as a message.
   given aggregable: Protobuf is Aggregable by Data = bytes => message(bytes.read[Data])
@@ -160,7 +160,7 @@ object Protobuf extends Protobuf2:
     Producer.collect[Data](): producer =>
       lambda(ProtobufPrinter(producer))
 
-  // Stream a message's wire bytes incrementally (chunked); the producing code runs on a separate
+  // LazyList a message's wire bytes incrementally (chunked); the producing code runs on a separate
   // fiber. The bytes themselves are already assembled (Protobuf length-prefixes nested messages, so
   // their lengths must be known up front); this hands them out in bounded chunks.
   def emit(value: Protobuf)(using Monitor, Probate): Iterator[Data] =

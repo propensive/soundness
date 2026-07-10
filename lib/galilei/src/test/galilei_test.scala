@@ -34,6 +34,8 @@ package galilei
 
 import soundness.*
 
+import filesystemBackends.virtualMachine
+
 object Tests extends Suite(m"Galilei tests"):
   def run(): Unit =
     import charEncoders.utf8Encoder

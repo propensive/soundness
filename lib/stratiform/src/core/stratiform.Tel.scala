@@ -748,15 +748,149 @@ object Tel extends Tel2:
   // Parse a multi-document source (§6.1) into its sequence of documents.
   // `parseAll` is eager; `parseStream` parses lazily on demand. Used internally
   // by the collection Aggregable typeclasses; user code should prefer
-  // `bytes.read[List[Tel]]` or `bytes.read[Stream[Tel]]`.
+  // `bytes.read[List[Tel]]` or `bytes.read[LazyList[Tel]]`.
   private[stratiform] def parseAll(bytes: Data): List[Tel] raises TelError =
     Tel.Parser.parseDocuments(bytes).map(Tel(_))
 
-  private[stratiform] def parseStream(bytes: Data): Stream[Tel] raises TelError =
+  private[stratiform] def parseStream(bytes: Data): LazyList[Tel] raises TelError =
     Tel.Parser.parseStream(bytes).map(Tel(_))
 
-  // Concatenate the chunks of a `Stream[Data]` source into a single byte array.
-  private def concatenate(source: Stream[Data]): Data =
+  // ── Position tracking (editor / tooling support) ──────────────────────────
+  //
+  // A flat `IArray[Int]` of position descriptors produced alongside the
+  // presentation tree by `Tel.parseTracked`. All internal references are stored
+  // as offsets relative to the start of the containing node descriptor, so any
+  // slice taken at a descriptor boundary is itself a valid `PositionIndex` —
+  // mirrors `jacinta.Json.PositionIndex` and `ypsiloid.Yaml.PositionIndex`.
+  //
+  // Layout per node descriptor at `offset`:
+  //   data(offset)              size of this descriptor (including children)
+  //   data(offset + 1)          1-indexed source line of the node's keyword
+  //   data(offset + 2)          1-indexed source column of the node's keyword
+  //   data(offset + 3)          length in characters of the keyword
+  //   data(offset + 4)          child count
+  //   data(offset + 5 + k)      relative offset (from `offset`) of the k-th child
+  //   … child descriptors laid out contiguously …
+  // The document root occupies the outermost descriptor with a synthetic
+  // (line 1, column 1, length 0) header; its children are the top-level compounds.
+  opaque type PositionIndex = IArray[Int]
+
+  object PositionIndex:
+    private[stratiform] def apply(data: IArray[Int]): PositionIndex = data
+
+  extension (positionIndex: PositionIndex)
+    private[stratiform] def ints: IArray[Int] = positionIndex
+
+  // Parse `bytes` into a `Tel` carrying a `PositionIndex`, so that
+  // `tel.locate(pointer)` / `tel.locateKey(pointer)` resolve a node's keyword
+  // path to its source `Position`, and accrued `Tel.Focus`es can be located via
+  // `withPosition`. Reached from the `read` / `load` givens only when
+  // `parsing.trackPositions` is in scope; otherwise the untracked `parse` runs
+  // and `positionIndex` is left Unset, so the throughput path is unaffected.
+  private def parseTracked(bytes: Data): Tel raises TelError =
+    val (document, triples) = Tel.Parser.parseTracked(bytes)
+    Tel(document, Optional(PositionIndex(buildIndex(document, triples))))
+
+  // Parse `bytes` honouring the in-scope `Tracking` toggle (`parsing.trackPositions`).
+  private def parseTracking(bytes: Data)(using PositionTracking): Tel raises TelError =
+    summon[PositionTracking] match
+      case PositionTracking.On  => parseTracked(bytes)
+      case PositionTracking.Off => parse(bytes)
+
+  // Fold the parser's flat pre-order stream of (line, column, length) triples —
+  // one per compound, in recursive-descent order — into the navigable packed
+  // descriptor layout documented on `PositionIndex`. The AST supplies the tree
+  // shape; the triples supply the coordinates. Runs only under `parseTracked`,
+  // never on the hot path.
+  private[stratiform] def buildIndex(document: Tel.Document, triples: IArray[Int]): IArray[Int] =
+    var cursor = 0
+
+    def build(node: Tel.Subtree, line: Int, column: Int, length: Int): Array[Int] =
+      val children = node.children.flatMap(_.compounds)
+      val childDescriptors = new Array[Array[Int]](children.length)
+      var k = 0
+
+      while k < children.length do
+        val childLine   = triples(cursor)
+        val childColumn = triples(cursor + 1)
+        val childLength = triples(cursor + 2)
+        cursor += 3
+        childDescriptors(k) = build(children(k), childLine, childColumn, childLength)
+        k += 1
+
+      val header = 5 + children.length
+      var total = header
+      k = 0
+
+      while k < children.length do
+        total += childDescriptors(k).length
+        k += 1
+
+      val buffer = new Array[Int](total)
+      buffer(0) = total
+      buffer(1) = line
+      buffer(2) = column
+      buffer(3) = length
+      buffer(4) = children.length
+      var offset = header
+      k = 0
+
+      while k < children.length do
+        buffer(5 + k) = offset
+        System.arraycopy(childDescriptors(k), 0, buffer, offset, childDescriptors(k).length)
+        offset += childDescriptors(k).length
+        k += 1
+
+      buffer
+
+    IArray.unsafeFromArray(build(document, 1, 1, 0))
+
+  // Resolves a `TelPath` to the source `Position` recorded in a tracked `Tel`'s
+  // `PositionIndex`. Exposed uniformly as `tel.locate(path)` / `tel.locateKey(path)`
+  // through zephyrine's `Positionable`, matching `jacinta.Json` and `ypsiloid.Yaml`.
+  given positionable: Tel is Positionable by TelPath to TelError.Position =
+    new Positionable:
+      type Self    = Tel
+      type Operand = TelPath
+      type Result  = TelError.Position
+
+      def locate(value: Tel, path: TelPath): Optional[TelError.Position] =
+        value.positionIndex.let: index =>
+          walkIndex(value.subtree, index.ints, 0, path.keywords.toIndexedSeq, 0, false)
+
+      def locateKey(value: Tel, path: TelPath): Optional[TelError.Position] =
+        value.positionIndex.let: index =>
+          walkIndex(value.subtree, index.ints, 0, path.keywords.toIndexedSeq, 0, true)
+
+  // Walk the packed `PositionIndex` alongside the AST, following `segments`
+  // (a root-first keyword path) from the descriptor at `offset`. TEL has no
+  // separate key/value nodes — a compound's position *is* its keyword — so
+  // `keyMode` differs from the value lookup only at the root, which has no
+  // keyword and yields `Unset`.
+  private def walkIndex
+    ( node:     Tel.Subtree,
+      data:     IArray[Int],
+      offset:   Int,
+      segments: IndexedSeq[Text],
+      i:        Int,
+      keyMode:  Boolean )
+  :   Optional[TelError.Position] =
+
+    if i >= segments.length then
+      if keyMode && i == 0 then Unset
+      else TelError.Position
+        ( line   = data(offset + 1),
+          column = data(offset + 2),
+          length = Optional(data(offset + 3)) )
+    else
+      val children = node.children.flatMap(_.compounds)
+      val k = children.indexWhere(_.keyword == segments(i))
+
+      if k < 0 then Unset
+      else walkIndex(children(k), data, offset + data(offset + 5 + k), segments, i + 1, keyMode)
+
+  // Concatenate the chunks of a `LazyList[Data]` source into a single byte array.
+  private def concatenate(source: LazyList[Data]): Data =
     import denominative.nil
     var acc    = IArray.empty[Byte]
     var stream = source
@@ -767,7 +901,7 @@ object Tel extends Tel2:
 
     acc
 
-  // `bytes.read[Tel]` for any Stream[Data] source: concatenates the
+  // `bytes.read[Tel]` for any LazyList[Data] source: concatenates the
   // chunks and parses the result. The metadata (interpreter directive,
   // pragma, line-endings) is *not* surfaced — use `.load[Tel]` to
   // recover those alongside the value. Per §6.1, single-document parsing
@@ -784,19 +918,19 @@ object Tel extends Tel2:
   =>  (value in Tel) is Aggregable by Data =
     source => parse(concatenate(source)).as[value].asInstanceOf[value in Tel]
 
-  // `source.read[List[Tel]]` / `read[Stream[Tel]]` for a multi-document source
-  // (§6.1). `List[Tel]` parses every document eagerly; `Stream[Tel]` parses
+  // `source.read[List[Tel]]` / `read[LazyList[Tel]]` for a multi-document source
+  // (§6.1). `List[Tel]` parses every document eagerly; `LazyList[Tel]` parses
   // them lazily on demand (the more specific instance wins over turbulence's
-  // generic `Stream` Aggregable, which would otherwise wrap the whole source as
+  // generic `LazyList` Aggregable, which would otherwise wrap the whole source as
   // a single element).
   given listAggregable: (tactic: Tactic[TelError]) => ((List[Tel] is Aggregable by Data)^{tactic}) =
     source => parseAll(concatenate(source))
 
   given streamAggregable: (tactic: Tactic[TelError])
-  =>  ((Stream[Tel] is Aggregable by Data)^{tactic}) =
+  =>  ((LazyList[Tel] is Aggregable by Data)^{tactic}) =
     source => parseStream(concatenate(source))
 
-  // `text.load[Tel]` for any Stream[Text] source: concatenates the
+  // `text.load[Tel]` for any LazyList[Text] source: concatenates the
   // chunks, UTF-8 encodes, parses, and pairs the resulting Tel with a
   // `Tel.Metadata` carrying the document's prologue.
   given loadable: (tactic: Tactic[TelError]) => ((Tel is Loadable by Text)^{tactic}) = stream =>
@@ -879,7 +1013,8 @@ object Tel extends Tel2:
               if nl < 0 then start = sourceText.length + 1 else start = nl + 1
 
           case Tel.Atom.Literal(delimiter, text) =>
-            out("  "*(indent + 3) + delimiter.s)
+            val delimiterLine = "  "*(indent + 3) + delimiter.s
+            out(delimiterLine)
             val payload = text.s
             var start = 0
 
@@ -889,7 +1024,7 @@ object Tel extends Tel2:
               out(payload.substring(start, end).nn)
               if nl < 0 then start = payload.length + 1 else start = nl + 1
 
-            out(delimiter.s)
+            out(delimiterLine)
 
           case _ => ()
 
@@ -1093,7 +1228,7 @@ object Tel extends Tel2:
       p.reset(Cursor[Data](input), Unset)
       p.parseAllDocuments()
 
-    def parseStream(input: Data): Stream[Tel.Document] raises TelError =
+    def parseStream(input: Data): LazyList[Tel.Document] raises TelError =
       import zephyrine.Lineation.untrackedData
       // A dedicated parser instance, not the shared per-thread cache: the lazy
       // tail parses later document(s) on demand and must own its parser state.
@@ -1822,12 +1957,12 @@ object Tel extends Tel2:
       buffer.to(List)
 
     // Lazy streaming parse: documents are parsed on demand as the returned
-    // `Stream` is forced. Mirrors turbulence's deferred `Streamable` readers,
+    // `LazyList` is forced. Mirrors turbulence's deferred `Streamable` readers,
     // which likewise capture the error capability in the lazy tail; the consumer
     // must drive the stream within the `raises TelError` handler's scope. Uses a
     // dedicated parser instance (never the shared per-thread cache) so the
     // parser state survives across element demands.
-    private def documentStream(first: Boolean): Stream[Tel.Document] raises TelError =
+    private def documentStream(first: Boolean): LazyList[Tel.Document] raises TelError =
       if first then
         syncFrom()
         checkBom()
@@ -1840,9 +1975,9 @@ object Tel extends Tel2:
         consumeSeparatorLine()
         doc #:: documentStream(first = false)
       else if documentIsEmpty(doc) then
-        Stream.empty
+        LazyList.empty
       else
-        Stream(doc)
+        LazyList(doc)
 
     // A document with no prologue and no children: the empty document yielded
     // between two separators, or the absence of any document at the end of a
@@ -2966,8 +3101,8 @@ object Tel extends Tel2:
 
     // Cursor is at the first content byte of the opening line (the delimiter
     // text). The delimiter is the rest of the opening line. The payload is
-    // everything between the next LF and the first line whose content equals
-    // the delimiter (at column 0 / flush left).
+    // everything between the next LF and the first line whose content is
+    // byte-identical to the opening delimiter line (indentation included).
     private def parseLiteralAtom(literalIndent: Int): Tel.Atom.Literal raises TelError =
       val openingLine = head.startLine
       // Read the delimiter — opening line, terminated by LF or CR per the
@@ -2984,6 +3119,7 @@ object Tel extends Tel2:
         consumeLineEnding()
         d
 
+      val closingLine = (" "*literalIndent)+delimiter
       sb.setLength(0)
       var done = false
 
@@ -3010,7 +3146,7 @@ object Tel extends Tel2:
             if raw.length > 0 && raw.charAt(raw.length - 1) == '\r'
             then raw.substring(0, raw.length - 1)
             else raw
-          if line == delimiter then
+          if line == closingLine then
             // Closing delimiter — the LF *before* the closing delimiter is the
             // delimiter's leading separator, not part of the payload. Strip the
             // trailing '\n' we appended for the previous payload line (if any),
