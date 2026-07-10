@@ -38,6 +38,7 @@ import scala.annotation.nowarn
 
 import anticipation.*
 import hellenism.*
+import hypotenuse.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -50,12 +51,12 @@ type WasiCliApi = Interface in Wit at "/turbulence/cli.wit"
 given wasiCliApi: WasiCliApi = Interface[Wit](cp"/turbulence/cli.wit")
 
 package stdios:
-  // A `Stdio` whose standard output and error write through the WASI `output-stream` resource:
-  // each write obtains the stream handle (`get-stdout`/`get-stderr`), invokes its
-  // `blocking-write-and-flush` method, and disposes of the handle. `inline`, so the `invoke`s
-  // expand at the downstream summoning site: the Wasm Component imports only materialize in code
-  // compiled for a Wasm target. Summoning it requires `wasiCliApi` (and this module's WIT
-  // resource) to be visible at that site.
+  // A `Stdio` whose standard streams go through the WASI stream resources: each write obtains the
+  // stream handle (`get-stdout`/`get-stderr`), invokes its `blocking-write-and-flush` method, and
+  // disposes of the handle; reads do likewise with `get-stdin` and `blocking-read`. `inline`, so
+  // the `invoke`s expand at the downstream summoning site: the Wasm Component imports only
+  // materialize in code compiled for a Wasm target. Summoning it requires `wasiCliApi` (and this
+  // module's WIT resource) to be visible at that site.
   //
   // The per-site duplication the compiler warns about is the point: the instances must materialize
   // at the downstream summoning site, and a WASI-linked application summons them once.
@@ -80,13 +81,37 @@ package stdios:
           val slice = java.util.Arrays.copyOfRange(array, offset, offset + length).nn
           send(error, slice.immutable(using Unsafe))
 
+    // Reads block until at least one byte is available; a closed stream (the `Err` arm of
+    // `blocking-read`'s result, raised by the decoder) is end-of-input.
+    def wasiInput(): ji.InputStream = new ji.InputStream:
+      def read(): Int =
+        val array = new Array[Byte](1)
+        if read(array, 0, 1) == -1 then -1 else array(0) & 0xff
+
+      override def read(array: Array[Byte] | Null, offset: Int, length: Int): Int =
+        if array == null || length == 0 then 0 else
+          val handle = Foreign["stdin", Wit].`get-stdin`.invoke[WitHandle of "input-stream"]
+          val stream: Foreign of "input-stream" from Wit = handle
+
+          try
+            val data = stream.`blocking-read`(U64(length.toLong.bits)).invoke[Data]
+            var index = 0
+
+            while index < data.length do
+              array(offset + index) = data(index)
+              index += 1
+
+            if data.length == 0 then -1 else data.length
+          catch case error: RuntimeException => -1
+          finally handle.dispose()
+
     def bytes(text: Text): Data = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
 
     new Stdio:
       val termcap: Termcap = termcap0
       val out: ji.PrintStream = ji.PrintStream(wasiStream(false), true)
       val err: ji.PrintStream = ji.PrintStream(wasiStream(true), true)
-      val in: ji.InputStream = Stdio.MuteInputStream
+      val in: ji.InputStream = wasiInput()
 
       override def print(text: Text): Unit = send(false, bytes(text))
       override def printErr(text: Text): Unit = send(true, bytes(text))
