@@ -211,7 +211,9 @@ object Xenophile:
     val argTopic = refinements(argRepr).at(t"Topic").or:
       halt(m"xenophile: the foreign type of an argument to $method is not known")
 
-    if argTopic =:= paramTopic then '{$arg.expr}
+    // Subsumption, not equality: a `string` (or a bare `none`) argument satisfies an
+    // `option<string>` (`string|none`) parameter.
+    if argTopic <:< paramTopic then '{$arg.expr}
     else halt(m"xenophile: $method expects an argument of foreign type ${paramType.text}")
 
   def select(self: Expr[Foreign], field: Expr[String]): Macro[Foreign] =

@@ -149,73 +149,117 @@ object WasmInvoke:
       facadeClass(definingModule(name).or(halt(m"xenophile: $name has no defining module")), name)
 
     // The requested result type determines both the WIT carrier the import returns (told to
-    // `witImportCall` as `classOf[Carrier]`) and how that carrier is decoded. `deriveResult`
-    // computes the pair; the carrier for a `list<tuple<…>>` mentions the scala-wasm `Tuple2` class,
-    // which is resolved (and only ever appears) in this downstream-expanded code. Two result shapes
-    // are handled here rather than in `deriveResult`, because they need the WIT prototype:
+    // `witImportCall` as `classOf[Carrier]`) and how that carrier is decoded. The derivation is
+    // driven by the WIT result type, recursing structurally so that wrapped shapes compose (the
+    // WASI HTTP response flow yields e.g. `option<result<result<incoming-response, error-code>>>`):
     //
-    //  -  A `WitHandle of topic` result is a WIT resource: its carrier is the resource's facade
-    //     class, and the raw handle is wrapped in a `WitHandle`.
-    //  -  A result against a WIT `result<…>` function crosses as a `scala.scalajs.wit.Result`
-    //     and is checked: an `Err` raises an exception; an `Ok` becomes `()` or its decoded
-    //     payload.
-    val (carrier, decode) = TypeRepr.of[result].dealias match
-      case Refinement(base, "Topic", TypeBounds(_, topic)) if base =:= TypeRepr.of[WitHandle] =>
-        prototype.result.absolve match
-          case Foreign.Type.Named(name) =>
-            val facade = facadeOf(name)
+    //  -  A WIT `result<…>` crosses as a `scala.scalajs.wit.Result` and is checked: an `Err`
+    //     raises an exception; an `Ok` becomes `()` or its recursively-decoded payload.
+    //  -  A WIT `option<T>` (read as `T | none`) crosses as a `java.util.Optional` and becomes
+    //     `Unset` or its recursively-decoded payload.
+    //  -  A named WIT type requested as a `WitHandle of topic` is a resource: its carrier is the
+    //     resource's facade class, and the raw handle is wrapped in a `WitHandle`.
+    //  -  Anything else is derived from the requested Scala type alone (`deriveResult`: leaf
+    //     codecs, pairs, lists of pairs), whose carrier for a `list<tuple<…>>` mentions the
+    //     scala-wasm `Tuple2` class — resolved (and only ever appearing) in this
+    //     downstream-expanded code.
+    val optionClass = Symbol.requiredClass("java.util.Optional")
 
-            val decode: Expr[Any] => Expr[Any] = call =>
-              val handle = '{new WitHandle($call)}.asTerm
-              TypeApply(Select.unique(handle, "asInstanceOf"), List(TypeTree.of[result]))
-                .asExprOf[Any]
+    // The payload type of an `option`, whichever way the dialect rendered it.
+    def optionPayload(witType: Foreign.Type): Optional[Foreign.Type] = witType match
+      case Foreign.Type.Union(List(inner, Foreign.Type.Named(none))) if none.s == "none" =>
+        inner
 
-            (facade.typeRef, decode)
-
-          case other =>
-            halt(m"xenophile: $owner.$function does not return a WIT resource")
+      case Foreign.Type.Applied(constructor, List(inner)) if constructor.s == "option" =>
+        inner
 
       case _ =>
-        prototype.result match
-          // A `result<…>` function crosses as a `scala.scalajs.wit.Result` and is checked: an
-          // `Err` raises an exception; an `Ok`'s payload — if the requested type is not `Unit` —
-          // is decoded exactly as if the function had returned the `ok` arm directly.
-          case Foreign.Type.Applied(constructor, _) if constructor.s == "result" =>
-            val resultClass = Symbol.requiredClass("scala.scalajs.wit.Result")
-            val okClass = Symbol.requiredClass("scala.scalajs.wit.Ok")
-            val okType = AppliedType(okClass.typeRef, List(TypeBounds.empty))
+        Unset
 
-            def isOk(outcome: Expr[Any]): Expr[Boolean] =
-              TypeApply(Select.unique(outcome.asTerm, "isInstanceOf"), List(Inferred(okType)))
-                .asExprOf[Boolean]
+    // The mandatory part of an `Optional[T]` (a plain `Unset | T` union).
+    def scalaPayload(scala: TypeRepr): Optional[TypeRepr] = scala.dealias match
+      case OrType(left, right) if left =:= TypeRepr.of[Unset]  => right
+      case OrType(left, right) if right =:= TypeRepr.of[Unset] => left
+      case _                                                   => Unset
 
-            def payload(outcome: Expr[Any]): Expr[Any] =
-              val cast =
-                TypeApply(Select.unique(outcome.asTerm, "asInstanceOf"), List(Inferred(okType)))
+    def isHandle(scala: TypeRepr): Boolean = scala.dealias match
+      case Refinement(base, "Topic", _) => base =:= TypeRepr.of[WitHandle]
+      case _                            => false
 
-              Select.unique(cast, "value").asExprOf[Any]
+    def handleDecode(name: Text, scala: TypeRepr): (TypeRepr, Expr[Any] => Expr[Any]) =
+      val facade = facadeOf(name)
 
-            val decode: Expr[Any] => Expr[Any] =
-              if TypeRepr.of[result] =:= TypeRepr.of[Unit] then call =>
+      val decode: Expr[Any] => Expr[Any] = call => scala.asType.absolve match
+        case '[scala] =>
+          val handle = '{new WitHandle($call)}.asTerm
+          TypeApply(Select.unique(handle, "asInstanceOf"), List(TypeTree.of[scala])).asExprOf[Any]
+
+      (facade.typeRef, decode)
+
+    def decodeFor(witType: Foreign.Type, scala: TypeRepr): (TypeRepr, Expr[Any] => Expr[Any]) =
+      witType match
+        case Foreign.Type.Applied(constructor, arguments) if constructor.s == "result" =>
+          val resultClass = Symbol.requiredClass("scala.scalajs.wit.Result")
+          val okClass = Symbol.requiredClass("scala.scalajs.wit.Ok")
+          val okType = AppliedType(okClass.typeRef, List(TypeBounds.empty))
+
+          def isOk(outcome: Expr[Any]): Expr[Boolean] =
+            TypeApply(Select.unique(outcome.asTerm, "isInstanceOf"), List(Inferred(okType)))
+              .asExprOf[Boolean]
+
+          def payload(outcome: Expr[Any]): Expr[Any] =
+            val cast =
+              TypeApply(Select.unique(outcome.asTerm, "asInstanceOf"), List(Inferred(okType)))
+
+            Select.unique(cast, "value").asExprOf[Any]
+
+          val decode: Expr[Any] => Expr[Any] =
+            if scala =:= TypeRepr.of[Unit] then call =>
+              '{  val outcome = $call
+
+                  if !${isOk('outcome)}
+                  then throw new RuntimeException("WIT import returned an error: " + outcome)  }
+            else
+              val (_, payloadDecode) = decodeFor(arguments.head, scala)
+
+              call =>
                 '{  val outcome = $call
 
-                    if !${isOk('outcome)}
-                    then throw new RuntimeException("WIT import returned an error: " + outcome)  }
-              else
-                val (_, payloadDecode) = deriveResult[result]
+                    if ${isOk('outcome)} then ${payloadDecode(payload('outcome))}
+                    else throw new RuntimeException("WIT import returned an error: " + outcome)  }
 
-                call =>
-                  '{  val outcome = $call
+          (resultClass.typeRef, decode)
 
-                      if ${isOk('outcome)} then ${payloadDecode(payload('outcome))}
-                      else throw new RuntimeException("WIT import returned an error: " + outcome)  }
+        case _ =>
+          val payloadWit = optionPayload(witType)
+          val payloadScala = scalaPayload(scala)
 
-            (resultClass.typeRef, decode)
+          if payloadWit.present && payloadScala.present then
+            val (innerCarrier, innerDecode) = decodeFor(payloadWit.vouch, payloadScala.vouch)
 
-          case _ =>
-            if TypeRepr.of[result] =:= TypeRepr.of[Unit]
-            then halt(m"xenophile: `invoke[Unit]` requires a WIT `result<…>` function")
-            else deriveResult[result]
+            // `java.util.Optional` is nameable here, so ordinary quotes suffice; an absent
+            // value becomes `Unset`.
+            val decode: Expr[Any] => Expr[Any] = call =>
+              '{  val option = $call.asInstanceOf[java.util.Optional[Any]]
+                  if option.isPresent then ${innerDecode('{option.get})} else Unset  }
+
+            (optionClass.typeRef.appliedTo(List(innerCarrier)), decode)
+          else
+            witType match
+              case Foreign.Type.Named(name) if isHandle(scala) =>
+                handleDecode(name, scala)
+
+              // A genuinely void function (`block: func()`): nothing to check or decode.
+              case Foreign.Type.Named(name) if name.s == "unit" && scala =:= TypeRepr.of[Unit] =>
+                (TypeRepr.of[Unit], call => '{val _ = $call})
+
+              case _ =>
+                if scala =:= TypeRepr.of[Unit]
+                then halt(m"xenophile: `invoke[Unit]` requires a WIT `result<…>` or void function")
+                else scala.asType.absolve match
+                  case '[scala] => deriveResult[scala]
+
+    val (carrier, decode) = decodeFor(prototype.result, TypeRepr.of[result].dealias)
 
     // Emit `<decode>(witImportCall(module, function, classOf[Carrier]))`. The import call is built
     // by looking up `witImportCall` in the *downstream* classpath (the scala-wasm library), so this
@@ -244,6 +288,9 @@ object WasmInvoke:
           "string")
 
     def descriptor(witType: Foreign.Type): Term = witType match
+      case Foreign.Type.Named(name) if name.s == "unit" || name.s == "_" =>
+        marker("witUnit")
+
       case Foreign.Type.Named(name) if primitives(name.s) =>
         Apply(marker("witPrim"), List(Literal(StringConstant(name.s))))
 
@@ -308,18 +355,79 @@ object WasmInvoke:
         List(Literal(ClassOfConstant(facade.typeRef)), handle.asTerm)
 
     // Each declared argument crosses the boundary through its `Encodable in Wasm` codec, passed as
-    // a `(classOf[Carrier], encoded)` pair.
-    val argumentPairs: List[Term] = argumentTerms.flatMap: argument =>
-      val value = convertedValue(argument)
+    // a `(witParam(classOf[Carrier], <descriptor>), encoded)` pair: the carrier class gives the
+    // IR-level type the argument is lowered as, and the structured descriptor the exact WIT type
+    // (which `classOf` alone erases, e.g. `option<string>`'s payload). An `Optional[T]` argument
+    // (WIT `option<T>`) crosses as a `java.util.Optional` of `T`'s carrier.
+    val parameterTypes: List[Foreign.Type] = prototype.parameters.or(Nil)
 
-      value.tpe.widen.asType.absolve match
+    val arity = parameterTypes.length
+
+    if arity != argumentTerms.length then
+      halt(m"xenophile: $owner.$function takes $arity parameters, not ${argumentTerms.length}")
+
+    def encodedArgument(value: Term, parameter: Foreign.Type): (TypeRepr, Term) =
+      value.tpe.widen.dealias match
+      // A statically-absent argument (a bare `Unset` against an `option<T>` parameter, e.g. the
+      // `option<request-options>` of `wasi:http`'s `handle`) needs no payload codec at all.
+      case tpe if tpe =:= TypeRepr.of[Unset] =>
+        (optionClass.typeRef, '{java.util.Optional.empty[Any]().nn}.asTerm)
+
+      // A resource argument (a `WitHandle of topic`, e.g. the `fields` passed to
+      // `outgoing-request`'s constructor) crosses as its facade class, unwrapped to the raw
+      // handle.
+      case Refinement(base, "Topic", TypeBounds(_, ConstantType(StringConstant(topic))))
+      if base =:= TypeRepr.of[WitHandle] =>
+        val encoded = '{${value.asExprOf[Any]}.asInstanceOf[WitHandle].value}.asTerm
+        (facadeOf(topic.tt).typeRef, encoded)
+
+      case OrType(left, right)
+      if left =:= TypeRepr.of[Unset] || right =:= TypeRepr.of[Unset] =>
+        val inner0 = if left =:= TypeRepr.of[Unset] then right else left
+
+        inner0.asType.absolve match
+          case '[inner] =>
+            val encodable = Expr.summon[inner is Encodable in Wasm].getOrElse:
+              halt(m"xenophile: no way to pass a ${inner0.show} across a WIT boundary")
+
+            val optional = value.asExprOf[Optional[inner]]
+
+            // `match`, not `let`/`lay`: `Optional`'s inline combinators crash `pickleQuotes`
+            // inside staged code.
+            val encoded =
+              '{  $optional match
+                    case Unset => java.util.Optional.empty[Any]().nn
+
+                    case value =>
+                      java.util.Optional.of($encodable.encoded(value.asInstanceOf[inner]).value)
+                      . nn  }
+
+            (optionClass.typeRef.appliedTo(List(carrierType(encodable))), encoded.asTerm)
+
+      case other => other.asType.absolve match
         case '[argument] =>
           val encodable = Expr.summon[argument is Encodable in Wasm].getOrElse:
-            halt(m"xenophile: no way to pass a ${value.tpe.widen.show} across a WIT boundary")
+            halt(m"xenophile: no way to pass a ${other.show} across a WIT boundary")
 
           val encoded = '{$encodable.encoded(${value.asExprOf[argument]}).value}.asTerm
 
-          List(Literal(ClassOfConstant(carrierType(encodable))), encoded)
+          // A plain (always-present) value against an `option<T>` parameter crosses as a present
+          // `java.util.Optional`, matching the parameter's descriptor.
+          if optionPayload(parameter).present then
+            val wrapped = '{java.util.Optional.of(${encoded.asExprOf[Any]}).nn}.asTerm
+            (optionClass.typeRef.appliedTo(List(carrierType(encodable))), wrapped)
+          else (carrierType(encodable), encoded)
+
+    val argumentPairs: List[Term] =
+      argumentTerms.zip(parameterTypes).flatMap: (argument, parameter) =>
+        val (carrierRepr, encoded) = encodedArgument(convertedValue(argument), parameter)
+
+        val slot =
+          Apply
+            ( marker("witParam"),
+              List(Literal(ClassOfConstant(carrierRepr)), descriptor(parameter)) )
+
+        List(slot, encoded)
 
     val varargs =
       Typed
