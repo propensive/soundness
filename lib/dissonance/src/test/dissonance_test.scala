@@ -261,7 +261,8 @@ object Tests extends Suite(m"Dissonance tests"):
     val list = Series(t"- alpha", t"- beta", t"- gamma")
 
     suite(m"Redraft parsing tests"):
-      val roundtrip = LazyList(t"line1", t"- line2", t"+ new", t"\\- escaped", t"< forced", t"> add")
+      val roundtrip =
+        LazyList(t"line1", t"- line2", t"+ new", t"\\- escaped", t"< forced", t"> add")
 
       test(m"Parse a simple redraft"):
         Redraft.parse(LazyList(t"line1", t"- line2", t"+ new line 2a", t"line3"))

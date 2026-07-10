@@ -40,7 +40,7 @@ package anticipation
 // threshold). `Loggable.fanOut` consults it *before* forcing or transcribing the (by-name) event,
 // so that when no sink accepts — in particular when there are no sinks at all — the logged value is
 // never even constructed, and logging a disabled event costs nothing.
-trait Sink[-eventType, carrier]:
+trait LogSink[-eventType, carrier]:
   def accepts(level: Level): Boolean
 
   // Reports whether this sink records events of the given (concrete) type. Takes the *original*

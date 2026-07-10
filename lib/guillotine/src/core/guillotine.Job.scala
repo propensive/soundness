@@ -84,7 +84,8 @@ extends Subprocess, ProcessRef:
   def status(): Int = process.waitFor()
 
 
-  def stdin[chunk](stream: LazyList[chunk])(using writable: ProcessInput is Writable by chunk): Unit =
+  def stdin[chunk](stream: LazyList[chunk])(using writable: ProcessInput is Writable by chunk)
+  :   Unit =
     writable.write(ProcessInput(process.getOutputStream.nn), stream)
 
 

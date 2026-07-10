@@ -72,6 +72,27 @@ extension [value: Streamable by Text](value: value)
   def load[result <: Documentary: Loadable by Text]: Document[result] =
     result.load(value.stream[Text])
 
+extension [medium](stream: zephyrine.Stream[medium] over zephyrine.Credit)
+  // Legacy view: drain a pull endpoint as a lazy list of materialized chunks,
+  // pulling one block per forced cell. For consumers not yet converted to the
+  // streaming kernel; conversion holds only one block at a time, but the
+  // resulting cells are immutable and GC-managed like any lazy list.
+  def lazyList(using buffering: zephyrine.Buffering): LazyList[medium] =
+    val block = buffering.capacity(stream.addressable.substrate)
+
+    def recur(): LazyList[medium] =
+      stream.refill(zephyrine.Credit(block)) match
+        case Unset =>
+          LazyList()
+
+        case count: Int =>
+          val window = stream.window(using Unsafe)
+          val chunk = stream.addressable.materialize(window, stream.start, count)
+          stream.skip(count)
+          chunk #:: recur()
+
+    LazyList.defer(recur())
+
 package stdios:
   given muteStdio: Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
 

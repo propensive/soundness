@@ -32,4 +32,4 @@
                                                                                                   */
 package soundness
 
-export anticipation.{Level, Log, Loggable, logs, Sink, Transcribable, transcribes}
+export anticipation.{Level, Log, Loggable, logs, LogSink, Transcribable, transcribes}

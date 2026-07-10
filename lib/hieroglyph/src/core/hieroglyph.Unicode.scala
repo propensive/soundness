@@ -133,7 +133,8 @@ object Unicode:
         else map.updated(range, width)
 
     @tailrec
-    def recur(stream: LazyList[Text], map: TreeMap[CharRange, EaWidth]): TreeMap[CharRange, EaWidth] =
+    def recur(stream: LazyList[Text], map: TreeMap[CharRange, EaWidth])
+    :   TreeMap[CharRange, EaWidth] =
       stream match
         case
           r"${Hex(from)}([0-9A-F]{4,6})\.\.${Hex(to)}([0-9A-F]{4,6});${EaWidth(w)}([AFHNW]a?).*" #::

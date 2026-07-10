@@ -32,6 +32,8 @@
                                                                                                   */
 package turbulence
 
+import java.io as ji
+
 import soundness.*
 
 import charEncoders.utf8Encoder, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
@@ -489,3 +491,71 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"Empty stream yields empty result"):
         LazyList[Data]().framed[U32]().to(List)
       . assert(_ == Nil)
+
+    suite(m"Source and Sink tests"):
+      val payload: Data = Data.fill(10000)(_.toByte)
+
+      test(m"input stream source flows to output stream sink"):
+        val input = ji.ByteArrayInputStream(payload.mutable(using Unsafe))
+        val output = ji.ByteArrayOutputStream()
+        val source = summon[ji.ByteArrayInputStream is Source by Data over Credit]
+        val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
+        source.stream(input).flowTo(sink.intake(output))
+        output.toByteArray.nn.to(List)
+      . assert(_ == payload.to(List))
+
+      test(m"in-memory data source flows to output stream sink"):
+        val output = ji.ByteArrayOutputStream()
+        val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
+        summon[Data is Source by Data over Credit].stream(payload).flowTo(sink.intake(output))
+        output.toByteArray.nn.to(List)
+      . assert(_ == payload.to(List))
+
+      val original = t"The quick brown fox jumps over the lazy dog"*100
+
+      test(m"reader source delivers text across refills"):
+        val reader = ji.StringReader(original.s)
+        val source = summon[ji.StringReader is Source by Text over Credit]
+        val stream = source.stream(reader)
+        val builder = StringBuilder()
+
+        def recur(): Unit = stream.refill(Credit(64)) match
+          case count: Int =>
+            val window = unsafely(stream.window).asInstanceOf[Array[Char]]
+            builder.append(String(window, stream.start, count))
+            stream.skip(count)
+            recur()
+
+          case _ => ()
+
+        recur()
+        builder.toString.tt
+      . assert(_ == original)
+
+      test(m"lazyList view drains a stream as chunks"):
+        val stream = summon[Data is Source by Data over Credit].stream(payload)
+        stream.lazyList.map(_.to(List)).flatten.to(List)
+      . assert(_ == payload.to(List))
+
+      test(m"a Streamable instance is a Source through the bridge"):
+        val output = ji.ByteArrayOutputStream()
+        val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
+        val source = summon[LazyList[Data] is Source by Data over Credit]
+        source.stream(LazyList(payload, payload)).flowTo(sink.intake(output))
+        output.toByteArray.nn.length
+      . assert(_ == payload.length*2)
+
+      test(m"a Writable instance is a Sink through the bridge"):
+        class Store():
+          val buffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+
+        object Store:
+          given Store is Writable by Data = (store, stream) => stream.each: data =>
+            data.each: byte =>
+              store.buffer.append(byte)
+
+        val store = Store()
+        val sink = summon[Store is Sink by Data over Credit]
+        summon[Data is Source by Data over Credit].stream(payload).flowTo(sink.intake(store))
+        store.buffer.length
+      . assert(_ == payload.length)

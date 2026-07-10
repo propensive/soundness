@@ -63,7 +63,8 @@ extends Cipher, Encryption, Symmetric:
   // mirroring `turbulence.Compression`. The IV (if any) is emitted as the first
   // chunk; the `NoPadding` alignment check happens at end-of-stream, where the
   // total length is finally known.
-  def encryptStream(stream: LazyList[Data], key: Data, vector: InitializationVector): LazyList[Data] =
+  def encryptStream(stream: LazyList[Data], key: Data, vector: InitializationVector)
+  :   LazyList[Data] =
     val blockSize = cipher.blockSize(transformation)
     val iv: Optional[Data] = if mode.usesIv then vector(blockSize) else Unset
     val session = cipher.stream(transformation, key, iv)

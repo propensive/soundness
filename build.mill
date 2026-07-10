@@ -1512,7 +1512,9 @@ object telekinesis extends Library:
   object test extends Tests(core)
 
 object turbulence extends Library:
-  object core extends Component(hieroglyph.core, parasite.core, capricious.core, stenography.core):
+  object core
+  extends Component(hieroglyph.core, parasite.core, capricious.core, stenography.core,
+      zephyrine.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   // JVM-only implementations (`java.util.zip` compression) split out of `core` so modules that use

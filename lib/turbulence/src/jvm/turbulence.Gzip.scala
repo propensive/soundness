@@ -58,7 +58,8 @@ object Gzip:
 
         case _ =>
           out2.close()
-          if out.size == 0 then LazyList() else LazyList(out.toByteArray().nn.immutable(using Unsafe))
+          if out.size == 0 then LazyList()
+          else LazyList(out.toByteArray().nn.immutable(using Unsafe))
 
       recur(stream)
 
