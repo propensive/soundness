@@ -165,17 +165,33 @@ object Html extends Tag.Container
   =>  NotGiven[Html.Recovery.Permissive]
   =>  (Html of content) is Aggregable by Text =
 
-    input =>
-      val root = Tag.root(content.reify.map(_.tt).to(Set))
-      HtmlParser.fromIterator(input.iterator, permissive = false).parseHtml(root).of[content]
+    new Aggregable:
+      type Self = Html of content
+      type Operand = Text
+
+      def aggregate(input: LazyList[Text]): Html of content =
+        val root = Tag.root(content.reify.map(_.tt).to(Set))
+        HtmlParser.fromIterator(input.iterator, permissive = false).parseHtml(root).of[content]
+
+      override def accept(stream: Stream[Text] over Credit): Html of content =
+        val root = Tag.root(content.reify.map(_.tt).to(Set))
+        HtmlParser.fromStream(stream, permissive = false).parseHtml(root).of[content]
 
   given strictAggregable2: (dom: Dom)
   =>  Tactic[ParseError]
   =>  NotGiven[Html.Recovery.Permissive]
   =>  Html is Aggregable by Text =
-    input =>
-      HtmlParser.fromIterator(input.iterator, permissive = false)
-      . parseHtml(dom.generic, doctypes = false)
+    new Aggregable:
+      type Self = Html
+      type Operand = Text
+
+      def aggregate(input: LazyList[Text]): Html =
+        HtmlParser.fromIterator(input.iterator, permissive = false)
+        . parseHtml(dom.generic, doctypes = false)
+
+      override def accept(stream: Stream[Text] over Credit): Html =
+        HtmlParser.fromStream(stream, permissive = false)
+        . parseHtml(dom.generic, doctypes = false)
 
   given strictLoadable: (dom: Dom)
   =>  Tactic[ParseError]
@@ -206,22 +222,44 @@ object Html extends Tag.Container
   =>  Html.Recovery.Permissive
   =>  (Html of content) is Aggregable by Text =
 
-    input =>
-      given Tactic[ParseError] = lenientTactic
-      val root = Tag.root(content.reify.map(_.tt).to(Set))
+    new Aggregable:
+      type Self = Html of content
+      type Operand = Text
 
-      lenient(Fragment().of[content]):
-        HtmlParser.fromIterator(input.iterator, permissive = true).parseHtml(root).of[content]
+      def aggregate(input: LazyList[Text]): Html of content =
+        given Tactic[ParseError] = lenientTactic
+        val root = Tag.root(content.reify.map(_.tt).to(Set))
+
+        lenient(Fragment().of[content]):
+          HtmlParser.fromIterator(input.iterator, permissive = true).parseHtml(root).of[content]
+
+      override def accept(stream: Stream[Text] over Credit): Html of content =
+        given Tactic[ParseError] = lenientTactic
+        val root = Tag.root(content.reify.map(_.tt).to(Set))
+
+        lenient(Fragment().of[content]):
+          HtmlParser.fromStream(stream, permissive = true).parseHtml(root).of[content]
 
   given permissiveAggregable2: (dom: Dom)
   =>  Html.Recovery.Permissive
   =>  Html is Aggregable by Text =
-    input =>
-      given Tactic[ParseError] = lenientTactic
+    new Aggregable:
+      type Self = Html
+      type Operand = Text
 
-      lenient(Fragment()):
-        HtmlParser.fromIterator(input.iterator, permissive = true)
-        . parseHtml(dom.generic, doctypes = false)
+      def aggregate(input: LazyList[Text]): Html =
+        given Tactic[ParseError] = lenientTactic
+
+        lenient(Fragment()):
+          HtmlParser.fromIterator(input.iterator, permissive = true)
+          . parseHtml(dom.generic, doctypes = false)
+
+      override def accept(stream: Stream[Text] over Credit): Html =
+        given Tactic[ParseError] = lenientTactic
+
+        lenient(Fragment()):
+          HtmlParser.fromStream(stream, permissive = true)
+          . parseHtml(dom.generic, doctypes = false)
 
   given permissiveLoadable: (dom: Dom)
   =>  Html.Recovery.Permissive
@@ -547,6 +585,11 @@ object Html extends Tag.Container
       new HtmlParser(Cursor[Text](text), permissive)
 
     def fromIterator(input: Iterator[Text], permissive: Boolean = false)(using Dom): HtmlParser =
+      new HtmlParser(Cursor[Text](input), permissive)
+
+    def fromStream(input: Stream[Text] over Credit, permissive: Boolean = false)(using Dom)
+    :   HtmlParser =
+
       new HtmlParser(Cursor[Text](input), permissive)
 
   private[honeycomb] final class HtmlParser
