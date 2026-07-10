@@ -1,12 +1,16 @@
-// The subset of the WASI interfaces that turbulence uses for standard output and error: the
-// `output-stream` resource (from `wasi:io/streams`) and the `wasi:cli` functions that provide the
-// standard streams.
+// The subset of the WASI interfaces that turbulence uses for the standard streams: the
+// `input-stream`/`output-stream` resources (from `wasi:io/streams`) and the `wasi:cli` functions
+// that provide them.
 
 package wasi:io@0.2.0;
 
 interface streams {
   resource output-stream {
     blocking-write-and-flush: func(contents: list<u8>) -> result<_, stream-error>;
+  }
+
+  resource input-stream {
+    blocking-read: func(len: u64) -> result<list<u8>, stream-error>;
   }
 }
 
@@ -18,4 +22,8 @@ interface stdout {
 
 interface stderr {
   get-stderr: func() -> output-stream;
+}
+
+interface stdin {
+  get-stdin: func() -> input-stream;
 }

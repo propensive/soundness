@@ -156,17 +156,11 @@ object WasmInvoke:
     //
     //  -  A `WitHandle of topic` result is a WIT resource: its carrier is the resource's facade
     //     class, and the raw handle is wrapped in a `WitHandle`.
-    //  -  A `Unit` result against a WIT `result<…>` function crosses as a `scala.scalajs.wit.Result`
-    //     and is checked: an `Err` raises an exception, an `Ok` becomes `()`.
-    val witHandleTopic: Optional[TypeRepr] = TypeRepr.of[result].dealias match
+    //  -  A result against a WIT `result<…>` function crosses as a `scala.scalajs.wit.Result`
+    //     and is checked: an `Err` raises an exception; an `Ok` becomes `()` or its decoded
+    //     payload.
+    val (carrier, decode) = TypeRepr.of[result].dealias match
       case Refinement(base, "Topic", TypeBounds(_, topic)) if base =:= TypeRepr.of[WitHandle] =>
-        topic
-
-      case _ =>
-        Unset
-
-    val (carrier, decode) = witHandleTopic.absolve match
-      case topic: TypeRepr =>
         prototype.result.absolve match
           case Foreign.Type.Named(name) =>
             val facade = facadeOf(name)
@@ -182,25 +176,46 @@ object WasmInvoke:
             halt(m"xenophile: $owner.$function does not return a WIT resource")
 
       case _ =>
-        if TypeRepr.of[result] =:= TypeRepr.of[Unit] then prototype.result match
+        prototype.result match
+          // A `result<…>` function crosses as a `scala.scalajs.wit.Result` and is checked: an
+          // `Err` raises an exception; an `Ok`'s payload — if the requested type is not `Unit` —
+          // is decoded exactly as if the function had returned the `ok` arm directly.
           case Foreign.Type.Applied(constructor, _) if constructor.s == "result" =>
             val resultClass = Symbol.requiredClass("scala.scalajs.wit.Result")
             val okClass = Symbol.requiredClass("scala.scalajs.wit.Ok")
             val okType = AppliedType(okClass.typeRef, List(TypeBounds.empty))
 
-            val decode: Expr[Any] => Expr[Any] = call =>
-              '{  val outcome = $call
+            def isOk(outcome: Expr[Any]): Expr[Boolean] =
+              TypeApply(Select.unique(outcome.asTerm, "isInstanceOf"), List(Inferred(okType)))
+                .asExprOf[Boolean]
 
-                  if !${ TypeApply(Select.unique('outcome.asTerm, "isInstanceOf"),
-                      List(Inferred(okType))).asExprOf[Boolean] }
-                  then throw new RuntimeException("WIT import returned an error: " + outcome)  }
+            def payload(outcome: Expr[Any]): Expr[Any] =
+              val cast =
+                TypeApply(Select.unique(outcome.asTerm, "asInstanceOf"), List(Inferred(okType)))
+
+              Select.unique(cast, "value").asExprOf[Any]
+
+            val decode: Expr[Any] => Expr[Any] =
+              if TypeRepr.of[result] =:= TypeRepr.of[Unit] then call =>
+                '{  val outcome = $call
+
+                    if !${isOk('outcome)}
+                    then throw new RuntimeException("WIT import returned an error: " + outcome)  }
+              else
+                val (_, payloadDecode) = deriveResult[result]
+
+                call =>
+                  '{  val outcome = $call
+
+                      if ${isOk('outcome)} then ${payloadDecode(payload('outcome))}
+                      else throw new RuntimeException("WIT import returned an error: " + outcome)  }
 
             (resultClass.typeRef, decode)
 
           case _ =>
-            halt(m"xenophile: `invoke[Unit]` requires a WIT `result<…>` function")
-
-        else deriveResult[result]
+            if TypeRepr.of[result] =:= TypeRepr.of[Unit]
+            then halt(m"xenophile: `invoke[Unit]` requires a WIT `result<…>` function")
+            else deriveResult[result]
 
     // Emit `<decode>(witImportCall(module, function, classOf[Carrier]))`. The import call is built
     // by looking up `witImportCall` in the *downstream* classpath (the scala-wasm library), so this
@@ -278,8 +293,11 @@ object WasmInvoke:
       // bound `val`, not only an inline chain.
       val handle =
         '{  ${receiverNode.asExprOf[Foreign.Expression]} match
-              case Foreign.Expression.Literal(handle: WitHandle) => handle.value
-              case _ => throw new RuntimeException("xenophile: not a WIT resource handle")  }
+              case Foreign.Expression.Literal(handle: WitHandle) =>
+                handle.value
+
+              case _ =>
+                throw new RuntimeException("xenophile: not a WIT resource handle")  }
 
       List(Literal(ClassOfConstant(facade.typeRef)), handle.asTerm)
 
@@ -318,7 +336,9 @@ object WasmInvoke:
 
     val topic: Text = self.asTerm.tpe.widen.dealias match
       case Refinement(_, "Topic", TypeBounds(_, ConstantType(StringConstant(name)))) => name.tt
-      case _ => halt(m"xenophile: the handle does not have a known WIT resource type")
+
+      case _ =>
+        halt(m"xenophile: the handle does not have a known WIT resource type")
 
     val origin = TypeRepr.of[Wit]
     val definitions = Xenophile.definitions(origin, Xenophile.locusOf(origin))
