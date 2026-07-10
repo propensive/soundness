@@ -1043,7 +1043,8 @@ object Tel extends Tel2:
               if nl < 0 then start = sourceText.length + 1 else start = nl + 1
 
           case Tel.Atom.Literal(delimiter, text) =>
-            out("  "*(indent + 3) + delimiter.s)
+            val delimiterLine = "  "*(indent + 3) + delimiter.s
+            out(delimiterLine)
             val payload = text.s
             var start = 0
 
@@ -1053,7 +1054,7 @@ object Tel extends Tel2:
               out(payload.substring(start, end))
               if nl < 0 then start = payload.length + 1 else start = nl + 1
 
-            out(delimiter.s)
+            out(delimiterLine)
 
           case _ => ()
 
@@ -3163,8 +3164,8 @@ object Tel extends Tel2:
 
     // Cursor is at the first content byte of the opening line (the delimiter
     // text). The delimiter is the rest of the opening line. The payload is
-    // everything between the next LF and the first line whose content equals
-    // the delimiter (at column 0 / flush left).
+    // everything between the next LF and the first line whose content is
+    // byte-identical to the opening delimiter line (indentation included).
     private def parseLiteralAtom(literalIndent: Int): Tel.Atom.Literal raises TelError =
       val openingLine = head.startLine
       // Read the delimiter — opening line, terminated by LF or CR per the
@@ -3181,6 +3182,7 @@ object Tel extends Tel2:
         consumeLineEnding()
         d
 
+      val closingLine = (" "*literalIndent)+delimiter
       sb.setLength(0)
       var done = false
 
@@ -3207,7 +3209,7 @@ object Tel extends Tel2:
             if raw.length > 0 && raw.charAt(raw.length - 1) == '\r'
             then raw.substring(0, raw.length - 1)
             else raw
-          if line == delimiter then
+          if line == closingLine then
             // Closing delimiter — the LF *before* the closing delimiter is the
             // delimiter's leading separator, not part of the payload. Strip the
             // trailing '\n' we appended for the previous payload line (if any),
