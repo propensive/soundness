@@ -146,7 +146,7 @@ given execEvent: GitEvent transcribes ExecEvent = GitEvent.Exec(_)
 
 Log messages are lowercase, terse, present-tense, with no trailing period, and
 interpolate the relevant context — matching the house style for `fulminate`
-error messages:
+error messages (see `messages.md`):
 
 ```scala
 m"connected to $remote"
