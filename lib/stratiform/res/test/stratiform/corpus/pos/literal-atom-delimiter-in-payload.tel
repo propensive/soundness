@@ -2,4 +2,4 @@ code
       END
 this END is not the closing delimiter
 because it's not on its own line
-END
+      END

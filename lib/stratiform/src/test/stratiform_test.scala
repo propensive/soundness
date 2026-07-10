@@ -1035,7 +1035,7 @@ object Tests extends Suite(m"Stratiform Tests"):
 
       test(m"UpdateAtom never downgrades a literal atom to inline (§22.3)"):
         // A literal atom updated to an inline-safe value stays literal.
-        val tel    = doc("note\n      ===\nnow literal\n===\n")
+        val tel    = doc("note\n      ===\nnow literal\n      ===\n")
         val ptr    = Tel.Pointer.of(t"note")
         val result = Mutation(tel, Mutation.Op.UpdateAtom(ptr, 0, t"now simple"))
         result.childCompounds.head.atoms.head match

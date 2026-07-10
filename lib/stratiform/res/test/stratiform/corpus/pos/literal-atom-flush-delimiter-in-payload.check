@@ -11,8 +11,8 @@ Document {
                     keyword: "code",
                     atoms: [
                         Literal {
-                            delimiter: "EOF",
-                            text: "literal content",
+                            delimiter: "END",
+                            text: "END\nstill payload",
                         },
                     ],
                     remark: None,
@@ -23,5 +23,3 @@ Document {
         },
     ],
 }
-errors:
-  E111 [41,45): Over-indentation

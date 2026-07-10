@@ -24,16 +24,10 @@ Document {
                     remark: None,
                     children: [],
                 },
-                Compound {
-                    keyword: "END",
-                    atoms: [],
-                    remark: None,
-                    children: [],
-                },
             ],
             trailing_blank_lines: 1,
         },
     ],
 }
 errors:
-  E111 [25,31): Over-indentation
+  E111 [31,37): Over-indentation
