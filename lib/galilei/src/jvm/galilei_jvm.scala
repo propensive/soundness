@@ -262,4 +262,6 @@ package filesystemBackends:
             Handle
               ( () => unsafely(Streamable.channel.stream(channel).stream[Data]),
                 data => unsafely(Writable.channel.write(channel, data)) )
+              ( () => unsafely(Source.channel.stream(channel)),
+                () => unsafely(Sink.channel.intake(channel)) )
         finally channel.close()
