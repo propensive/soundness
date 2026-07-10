@@ -32,21 +32,7 @@
                                                                                                   */
 package soundness
 
-export xenophile.{Wasm, WasmInvoke, WitCase, WitError, WitHandle}
+export galilei.{WasiFilesystemApi, wasiFilesystemApi}
 
-// Materializes a fully-applied WIT `Foreign` invocation into a real Wasm Component Model import
-// call. Must be applied directly to an inline navigation chain — e.g.
-// `Foreign["random", Wit].\`get-random-u64\`().invoke[U64]` — not to a value bound to a `val`.
-// Plain `inline` (not `transparent`): the return type is fully determined by the type argument,
-// and non-transparency defers the macro when `invoke` appears inside another `inline` definition,
-// so a library can publish an inline given whose import call only materializes at the downstream
-// (Wasm-linked) call site — where `scala.scalajs.wit.witImportCall` is on the classpath.
-extension (foreign: xenophile.Foreign)
-  inline def invoke[result]: result =
-    ${xenophile.WasmInvoke.invoke[result]('foreign)}
-
-// Releases a WIT resource handle, emitting its `[resource-drop]` Component Model import. Like
-// `invoke`, plain `inline` so the import materializes at the downstream (Wasm-linked) call site.
-extension (handle: xenophile.WitHandle)
-  inline def dispose(): Unit =
-    ${xenophile.WasmInvoke.dispose('handle)}
+package filesystemBackends:
+  export galilei.filesystemBackends.wasi

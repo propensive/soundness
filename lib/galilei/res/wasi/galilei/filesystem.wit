@@ -1,0 +1,66 @@
+// The subset of the WASI filesystem and I/O interfaces that galilei's Wasm backend uses. Records,
+// enums and flags are written as their ABI-equivalent structural types — `descriptor-stat` as a
+// tuple (with `descriptor-type` as `u8` and `datetime` as `tuple<u64, u32>`), and the flags types
+// as `u32` — since the canonical ABI lowers each pair identically. The `error-code` and
+// `new-timestamp` variants' cases are not enumerated here: their shapes are derived from their
+// facade classes; only their names and defining interface matter to this subset.
+
+package wasi:io@0.2.0;
+
+interface streams {
+  resource input-stream {
+    blocking-read: func(len: u64) -> result<list<u8>, stream-error>;
+  }
+
+  resource output-stream {
+    blocking-write-and-flush: func(contents: list<u8>) -> result<_, stream-error>;
+  }
+}
+
+package wasi:filesystem@0.2.0;
+
+interface types {
+  variant error-code {}
+  variant new-timestamp {}
+
+  resource directory-entry-stream {
+    read-directory-entry: func() -> result<option<tuple<u8, string>>, error-code>;
+  }
+
+  resource descriptor {
+    read-via-stream: func(offset: u64) -> result<input-stream, error-code>;
+    write-via-stream: func(offset: u64) -> result<output-stream, error-code>;
+    append-via-stream: func() -> result<output-stream, error-code>;
+
+    read-directory: func() -> result<directory-entry-stream, error-code>;
+
+    stat: func()
+      -> result<tuple<u8, u64, u64, option<tuple<u64, u32>>, option<tuple<u64, u32>>,
+         option<tuple<u64, u32>>>, error-code>;
+
+    stat-at: func(path-flags: u32, path: string)
+      -> result<tuple<u8, u64, u64, option<tuple<u64, u32>>, option<tuple<u64, u32>>,
+         option<tuple<u64, u32>>>, error-code>;
+
+    set-times-at: func(path-flags: u32, path: string, data-access-timestamp: new-timestamp,
+      data-modification-timestamp: new-timestamp) -> result<_, error-code>;
+
+    open-at: func(path-flags: u32, path: string, open-flags: u32, flags: u32)
+      -> result<descriptor, error-code>;
+
+    create-directory-at: func(path: string) -> result<_, error-code>;
+    unlink-file-at: func(path: string) -> result<_, error-code>;
+    remove-directory-at: func(path: string) -> result<_, error-code>;
+    symlink-at: func(old-path: string, new-path: string) -> result<_, error-code>;
+
+    link-at: func(old-path-flags: u32, old-path: string, new-descriptor: descriptor,
+      new-path: string) -> result<_, error-code>;
+
+    rename-at: func(old-path: string, new-descriptor: descriptor, new-path: string)
+      -> result<_, error-code>;
+  }
+}
+
+interface preopens {
+  get-directories: func() -> list<tuple<descriptor, string>>;
+}

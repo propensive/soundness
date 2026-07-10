@@ -964,6 +964,12 @@ object galilei extends Library:
     override def scalaJs = false
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  // A `FilesystemBackend` over `wasi:filesystem`, materialized by xenophile's `invoke` at the
+  // downstream (Wasm-linked) summoning site. Target-neutral `.sjsir` here; only meaningful linked
+  // as a component.
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core, jvm)
 
 object gastronomy extends Library:
