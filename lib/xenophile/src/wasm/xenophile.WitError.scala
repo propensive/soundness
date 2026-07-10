@@ -30,23 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-export xenophile.{Wasm, WasmInvoke, WitCase, WitError, WitHandle}
+import anticipation.*
+import gossamer.*
 
-// Materializes a fully-applied WIT `Foreign` invocation into a real Wasm Component Model import
-// call. Must be applied directly to an inline navigation chain — e.g.
-// `Foreign["random", Wit].\`get-random-u64\`().invoke[U64]` — not to a value bound to a `val`.
-// Plain `inline` (not `transparent`): the return type is fully determined by the type argument,
-// and non-transparency defers the macro when `invoke` appears inside another `inline` definition,
-// so a library can publish an inline given whose import call only materializes at the downstream
-// (Wasm-linked) call site — where `scala.scalajs.wit.witImportCall` is on the classpath.
-extension (foreign: xenophile.Foreign)
-  inline def invoke[result]: result =
-    ${xenophile.WasmInvoke.invoke[result]('foreign)}
+// The `err` arm of a WIT `result<…>`, raised by `invoke`'s decoder. The error value (e.g. a case
+// of `wasi:filesystem`'s `error-code`) is held untyped, so this module never names its
+// (Wasm-only) class; `name` recovers which case it is — the case's lower-kebab-case name, as a
+// `WitCase` would spell it — so callers can translate failures into their own error vocabulary.
+class WitError(val value: Any) extends RuntimeException:
+  def name: Text =
+    val simple = value.getClass.getSimpleName.nn.tt
+    val stripped = if simple.ends(t"$$") then simple.skip(1, Rtl) else simple
+    stripped.uncamel.kebab
 
-// Releases a WIT resource handle, emitting its `[resource-drop]` Component Model import. Like
-// `invoke`, plain `inline` so the import materializes at the downstream (Wasm-linked) call site.
-extension (handle: xenophile.WitHandle)
-  inline def dispose(): Unit =
-    ${xenophile.WasmInvoke.dispose('handle)}
+  override def getMessage: String = "WIT import returned an error: " + name.s

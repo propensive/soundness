@@ -159,10 +159,12 @@ object WasmInvoke:
     //     `Unset` or its recursively-decoded payload.
     //  -  A named WIT type requested as a `WitHandle of topic` is a resource: its carrier is the
     //     resource's facade class, and the raw handle is wrapped in a `WitHandle`.
-    //  -  Anything else is derived from the requested Scala type alone (`deriveResult`: leaf
-    //     codecs, pairs, lists of pairs), whose carrier for a `list<tuple<…>>` mentions the
-    //     scala-wasm `Tuple2` class — resolved (and only ever appearing) in this
-    //     downstream-expanded code.
+    //  -  A WIT `tuple<…>` (or a record, which shares its ABI) crosses as the scala-wasm `TupleN`
+    //     of its recursively-derived element carriers and becomes the corresponding Scala tuple;
+    //     a `list<T>` crosses as an `Array` of `T`'s carrier and becomes a `List`. The scala-wasm
+    //     class names are resolved here, downstream, so they never appear in this module's own
+    //     compilation.
+    //  -  Anything else is a leaf, derived from the requested Scala type's codec (`deriveResult`).
     val optionClass = Symbol.requiredClass("java.util.Optional")
 
     // The payload type of an `option`, whichever way the dialect rendered it.
@@ -186,6 +188,19 @@ object WasmInvoke:
       case Refinement(base, "Topic", _) => base =:= TypeRepr.of[WitHandle]
       case _                            => false
 
+    def isTuple(scala: TypeRepr, arity: Int): Boolean = scala.dealias match
+      case AppliedType(tuple, arguments) =>
+        tuple.typeSymbol == defn.TupleClass(arity) && arguments.length == arity
+
+      case _ =>
+        false
+
+    val listClass = Symbol.requiredClass("scala.collection.immutable.List")
+
+    def isList(scala: TypeRepr): Boolean = scala.dealias match
+      case AppliedType(list, List(_)) => list.typeSymbol == listClass
+      case _                          => false
+
     def handleDecode(name: Text, scala: TypeRepr): (TypeRepr, Expr[Any] => Expr[Any]) =
       val facade = facadeOf(name)
 
@@ -207,28 +222,89 @@ object WasmInvoke:
             TypeApply(Select.unique(outcome.asTerm, "isInstanceOf"), List(Inferred(okType)))
               .asExprOf[Boolean]
 
-          def payload(outcome: Expr[Any]): Expr[Any] =
+          val errClass = Symbol.requiredClass("scala.scalajs.wit.Err")
+          val errType = AppliedType(errClass.typeRef, List(TypeBounds.empty))
+
+          def payload(outcome: Expr[Any], tpe: TypeRepr): Expr[Any] =
             val cast =
-              TypeApply(Select.unique(outcome.asTerm, "asInstanceOf"), List(Inferred(okType)))
+              TypeApply(Select.unique(outcome.asTerm, "asInstanceOf"), List(Inferred(tpe)))
 
             Select.unique(cast, "value").asExprOf[Any]
+
+          // An `Err` raises a `WitError` carrying the error value (e.g. an `error-code` case), so
+          // callers can recover which failure occurred (`WitError.name`) and translate it.
+          def raiseError(outcome: Expr[Any]): Expr[Nothing] =
+            '{throw new WitError(${payload(outcome, errType)})}
 
           val decode: Expr[Any] => Expr[Any] =
             if scala =:= TypeRepr.of[Unit] then call =>
               '{  val outcome = $call
-
-                  if !${isOk('outcome)}
-                  then throw new RuntimeException("WIT import returned an error: " + outcome)  }
+                  if !${isOk('outcome)} then ${raiseError('outcome)}  }
             else
               val (_, payloadDecode) = decodeFor(arguments.head, scala)
 
               call =>
                 '{  val outcome = $call
 
-                    if ${isOk('outcome)} then ${payloadDecode(payload('outcome))}
-                    else throw new RuntimeException("WIT import returned an error: " + outcome)  }
+                    if ${isOk('outcome)} then ${payloadDecode(payload('outcome, okType))}
+                    else ${raiseError('outcome)}  }
 
           (resultClass.typeRef, decode)
+
+        // A `tuple<…>` (or a record, whose ABI it shares) with the matching Scala tuple type:
+        // element-wise recursion, carried as the scala-wasm `TupleN` of the element carriers.
+        case Foreign.Type.Applied(constructor, elements)
+        if constructor.s == "tuple" && isTuple(scala, elements.length) =>
+          val fields = scala.dealias.typeArgs
+          val derived = elements.zip(fields).map(decodeFor(_, _))
+          val carriers = derived.map(_(0))
+
+          val tupleClass =
+            Symbol.requiredClass("scala.scalajs.wit.Tuple" + elements.length.toString)
+
+          val tupleCarrier = tupleClass.typeRef.appliedTo(carriers)
+          val scalaTuple = defn.TupleClass(elements.length).companionModule
+
+          val decode: Expr[Any] => Expr[Any] = call =>
+            val cast =
+              TypeApply(Select.unique(call.asTerm, "asInstanceOf"), List(Inferred(tupleCarrier)))
+
+            val decoded = derived.zipWithIndex.map: (derivation, index) =>
+              derivation(1)(Select.unique(cast, "_" + (index + 1).toString).asExprOf[Any]).asTerm
+
+            val applied =
+              Apply
+                ( TypeApply
+                    ( Select.unique(Ref(scalaTuple), "apply"),
+                      fields.map { field => Inferred(field) } ),
+                  decoded )
+
+            applied.asExprOf[Any]
+
+          (tupleCarrier, decode)
+
+        // A `list<T>` with a Scala `List[T]`: carried as an `Array` of `T`'s carrier, decoded
+        // element-wise (reflectively, since the element carrier may not be nameable here).
+        case Foreign.Type.Applied(constructor, List(element))
+        if constructor.s == "list" && isList(scala) =>
+          val elementType = scala.dealias.typeArgs.head
+          val (elementCarrier, elementDecode) = decodeFor(element, elementType)
+          val arrayCarrier = defn.ArrayClass.typeRef.appliedTo(elementCarrier)
+
+          val decode: Expr[Any] => Expr[Any] = call =>
+            val method = MethodType(List("element"))(_ => List(TypeRepr.of[Any]), _ => elementType)
+
+            val mapper = Lambda(Symbol.spliceOwner, method,
+                (_, parameters) => elementDecode(parameters.head.asInstanceOf[Term].asExprOf[Any])
+                  . asTerm)
+
+            val elements = '{$call.asInstanceOf[Array[Any]]}
+            val wrapped = '{_root_.scala.collection.immutable.ArraySeq.unsafeWrapArray($elements)}
+
+            val mapped = Select.overloaded(wrapped.asTerm, "map", List(elementType), List(mapper))
+            Select.unique(mapped, "toList").asExprOf[Any]
+
+          (arrayCarrier, decode)
 
         case _ =>
           val payloadWit = optionPayload(witType)
@@ -536,110 +612,19 @@ object WasmInvoke:
 
     Symbol.requiredClass(s"scala.scalajs.$namespace.$path.$className")
 
-  // The WIT carrier a result type crosses the boundary as, paired with a function decoding that
-  // carrier (an `Any`, the erased `witImportCall` result) back to the result. A leaf type uses its
-  // `Decodable in Wasm` codec directly; a `List[(A, B)]` is a `list<tuple<Ac, Bc>>`, carried as an
-  // `Array[scala.scalajs.wit.Tuple2[Ac, Bc]]` and decoded element-wise.
+  // The WIT carrier a leaf result type crosses the boundary as, paired with a function decoding
+  // that carrier (an `Any`, the erased `witImportCall` result) back to the result, using its
+  // `Decodable in Wasm` codec. Structured shapes (tuples, lists, options, results, resources) are
+  // derived recursively — and WIT-driven — by `decodeFor` in `invoke`; this is its base case.
   private def deriveResult[result: Type](using quotes: Quotes)
   :   (quotes.reflect.TypeRepr, Expr[Any] => Expr[Any]) =
 
     import quotes.reflect.*
 
-    def leaf(tpe: TypeRepr): (TypeRepr, Expr[Any] => Expr[Any]) =
-      tpe.asType.absolve match
-        case '[leafType] =>
-          val decodable = Expr.summon[leafType is Decodable in Wasm].getOrElse:
-            halt(m"xenophile: no way to read a ${tpe.show} from a WIT boundary")
+    val decodable = Expr.summon[result is Decodable in Wasm].getOrElse:
+      halt(m"xenophile: no way to read a ${TypeRepr.of[result].show} from a WIT boundary")
 
-          (carrierType(decodable), call => '{$decodable.decoded(Wasm($call))})
-
-    val listClass = Symbol.requiredClass("scala.collection.immutable.List")
-
-    // The carrier and a decode for a single `tuple<Lc, Rc>` (Scala `(L, R)`): scala-wasm's `Tuple2`
-    // (whose name is resolved here, downstream, so it never appears in `xenophile.wasm`'s own
-    // scala-wasm-free compilation), and a `Term => Term` reading `_1`/`_2` off a raw `Tuple2` term.
-    // A WIT `record` of two fields shares a `tuple`'s ABI, so this also serves a two-field record.
-    def pairCodec(leftType: TypeRepr, rightType: TypeRepr)
-    :   (TypeRepr, TypeRepr, Term => Term) =
-
-      leftType.asType.absolve match case '[left] => rightType.asType.absolve match
-        case '[right] =>
-          val (leftCarrier, leftDecode) = leaf(leftType)
-          val (rightCarrier, rightDecode) = leaf(rightType)
-          val witTuple2 = Symbol.requiredClass("scala.scalajs.wit.Tuple2")
-          val tupleCarrier = witTuple2.typeRef.appliedTo(List(leftCarrier, rightCarrier))
-          val pairType = TypeRepr.of[(left, right)]
-
-          val decodeTuple: Term => Term = raw =>
-            val tuple = TypeApply(Select.unique(raw, "asInstanceOf"), List(Inferred(tupleCarrier)))
-            val leftValue = leftDecode(Select.unique(tuple, "_1").asExprOf[Any])
-            val rightValue = rightDecode(Select.unique(tuple, "_2").asExprOf[Any])
-            '{(${leftValue.asExprOf[left]}, ${rightValue.asExprOf[right]})}.asTerm
-
-          (tupleCarrier, pairType, decodeTuple)
-
-    // A bare `tuple<A, B>` (Scala `(A, B)`).
-    def pairOf(leftType: TypeRepr, rightType: TypeRepr): (TypeRepr, Expr[Any] => Expr[Any]) =
-      val (tupleCarrier, _, decodeTuple) = pairCodec(leftType, rightType)
-      (tupleCarrier, call => decodeTuple(call.asTerm).asExprOf[Any])
-
-    // A `list<tuple<Ac, Bc>>` (Scala `List[(A, B)]`).
-    def listOfPairs(leftType: TypeRepr, rightType: TypeRepr): (TypeRepr, Expr[Any] => Expr[Any]) =
-      val (tupleCarrier, pairType, decodeTuple) = pairCodec(leftType, rightType)
-      val arrayCarrier = defn.ArrayClass.typeRef.appliedTo(tupleCarrier)
-
-      val decode: Expr[Any] => Expr[Any] = call =>
-        // A reflective `map` because the element type (`Tuple2`) is not nameable in this module.
-        val method = MethodType(List("tuple"))(_ => List(TypeRepr.of[Any]), _ => pairType)
-
-        val mapper = Lambda(Symbol.spliceOwner, method,
-            (_, params) => decodeTuple(params.head.asInstanceOf[Term]))
-
-        val wrapped =
-          '{scala.collection.immutable.ArraySeq.unsafeWrapArray($call.asInstanceOf[Array[Any]])}
-
-        val mapped = Select.overloaded(wrapped.asTerm, "map", List(pairType), List(mapper))
-        Select.unique(mapped, "toList").asExprOf[Any]
-
-      (arrayCarrier, decode)
-
-    val optionClass = Symbol.requiredClass("java.util.Optional")
-
-    // An `option<T>` (Scala `Optional[T]` = `Unset | T`), carried as a `java.util.Optional[Tc]`.
-    def optionOf(inner: TypeRepr): (TypeRepr, Expr[Any] => Expr[Any]) =
-      val (innerCarrier, innerDecode) = leaf(inner)
-      val carrier = optionClass.typeRef.appliedTo(List(innerCarrier))
-
-      // `java.util.Optional` is nameable here, so ordinary quotes suffice (no reflective decode);
-      // an absent value becomes `Unset`.
-      val decode: Expr[Any] => Expr[Any] = call =>
-        '{  val option = $call.asInstanceOf[java.util.Optional[Any]]
-            if option.isPresent then ${innerDecode('{option.get})} else Unset  }
-
-      (carrier, decode)
-
-    TypeRepr.of[result].dealias match
-      case OrType(left, right) if left =:= TypeRepr.of[Unset] =>
-        optionOf(right)
-
-      case OrType(left, right) if right =:= TypeRepr.of[Unset] =>
-        optionOf(left)
-
-      case AppliedType(tuple, List(leftType, rightType))
-      if tuple.typeSymbol == defn.TupleClass(2) =>
-        pairOf(leftType, rightType)
-
-      case AppliedType(list, List(element)) if list.typeSymbol == listClass =>
-        element.dealias match
-          case AppliedType(tuple, List(leftType, rightType))
-          if tuple.typeSymbol == defn.TupleClass(2) =>
-            listOfPairs(leftType, rightType)
-
-          case _ =>
-            leaf(TypeRepr.of[result])
-
-      case _ =>
-        leaf(TypeRepr.of[result])
+    (carrierType(decodable), call => '{$decodable.decoded(Wasm($call))})
 
   // The `Carrier` type of a summoned `Encodable`/`Decodable in Wasm` codec, read from the `Carrier`
   // refinement member of the codec's (precise) type.
