@@ -226,7 +226,7 @@ object Http:
   object Request:
     given showable: Request is Showable = request =>
       val bodySample: Text =
-        try request.body().read[Data].utf8 catch
+        try request.body().lazyList.read[Data].utf8 catch
           case error: StreamError  => t"[-/-]"
 
       val headers: Text =
@@ -273,7 +273,7 @@ object Http:
         append(request.host.show)
         newline()
 
-        request.body() match
+        request.body().lazyList match
           case LazyList()     => append(t"Content-Length: 0")
           case LazyList(data) => append(t"Content-Length: ${data.length}")
           case _              => append(t"Transfer-Encoding: chunked")
@@ -287,7 +287,7 @@ object Http:
         newline()
         newline()
 
-      text.data #:: request.body()
+      text.data #:: request.body().lazyList
 
     case class Head
       ( method: Method, version: Version, host: Host, target: Text, headers: List[Header] )
@@ -378,7 +378,12 @@ object Http:
       val head = parseHead(cursor)
 
       Request
-        ( head.method, head.version, head.host, head.target, head.headers, () => cursor.remainder )
+        ( head.method,
+          head.version,
+          head.host,
+          head.target,
+          head.headers,
+          () => Stream(cursor.remainder.iterator) )
 
     // LazyList exactly `length` bytes of body off `cursor`, in buffer-sized
     // pieces, leaving it at the first byte after the body (the start of the next
@@ -479,13 +484,17 @@ object Http:
       case Body.Flowing(source)   => source().lazyList
 
 
+  // A request body with no bytes; each call constructs a fresh, already-empty
+  // pull endpoint, matching the re-materializable contract of `body` thunks.
+  def emptyBody(): Stream[Data] over Credit = Stream(Iterator.empty[Data])
+
   class Request
     ( val method:      Http.Method,
       val version:     Http.Version,
       val host:        Host,
       val target:      Text,
       val textHeaders: List[Http.Header],
-      val body:        () => LazyList[Data] ):
+      val body:        () => Stream[Data] over Credit ):
 
     inline def request: this.type = this
 
@@ -500,7 +509,7 @@ object Http:
     lazy val query: Query =
       contentType.let(_.base.show) match
         case t"application/x-www-form-urlencoded" =>
-          queryText.decode[Query] ++ body().read[Data].utf8.decode[Query]
+          queryText.decode[Query] ++ body().lazyList.read[Data].utf8.decode[Query]
 
         case _ =>
           queryText.decode[Query]
@@ -538,7 +547,7 @@ object Http:
       ( url:     Text,
         method:  Http.Method,
         headers: List[Http.Header],
-        body:    () => LazyList[Data] )
+        body:    () => Stream[Data] over Credit )
       ( using Tactic[ConnectError] )
     :   Http.Response
 

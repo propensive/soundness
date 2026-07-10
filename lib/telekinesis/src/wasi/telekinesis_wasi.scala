@@ -42,9 +42,10 @@ import hypotenuse.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import turbulence.*
 import vacuous.*
-import soundness.{invoke, dispose}
 import xenophile.*
+import zephyrine.*
 
 // The WIT definitions the navigation below is typechecked against, and which the `invoke`
 // materializer consults (at its downstream expansion site) for module ids, resource methods and
@@ -69,7 +70,7 @@ package httpBackends:
       ( url:     Text,
         method:  Http.Method,
         headers: List[Http.Header],
-        body:    () => LazyList[Data] )
+        body:    () => Stream[Data] over Credit )
       ( using Tactic[ConnectError] )
     :   Http.Response =
 
@@ -115,7 +116,7 @@ package httpBackends:
 
       // A method that carries a payload streams it through the request's `outgoing-body`, which
       // must then be `finish`ed (a static function) for the request to be complete.
-      val payload: LazyList[Data] = if method.payload then body() else LazyList()
+      val payload: LazyList[Data] = if method.payload then body().lazyList else LazyList()
 
       val bodyHandles =
         if payload.isEmpty then Unset else

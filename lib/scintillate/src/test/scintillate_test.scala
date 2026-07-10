@@ -97,7 +97,7 @@ object Tests extends Suite(m"Scintillate tests"):
           val port = freePort()
 
           val server = SocketServer(port).handle:
-            Http.Response(Http.Ok)(request.body().read[Data].utf8)
+            Http.Response(Http.Ok)(request.body().lazyList.read[Data].utf8)
 
           val response =
             rawRequest(port, t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 5\r\n\r\nhello")
@@ -111,7 +111,7 @@ object Tests extends Suite(m"Scintillate tests"):
           val port = freePort()
 
           val server = SocketServer(port).handle:
-            Http.Response(Http.Ok)(request.body().read[Data].utf8)
+            Http.Response(Http.Ok)(request.body().lazyList.read[Data].utf8)
 
           val response =
             rawRequest
@@ -156,7 +156,7 @@ object Tests extends Suite(m"Scintillate tests"):
           // Echo upgrade: the response body is the post-handshake request stream,
           // piped straight back out with no HTTP framing.
           val server = SocketServer(port).handle:
-            Http.Response(Http.SwitchingProtocols)(Http.Body.Streaming(request.body()))
+            Http.Response(Http.SwitchingProtocols)(Http.Body.Flowing(() => request.body()))
 
           val response =
             rawRequest

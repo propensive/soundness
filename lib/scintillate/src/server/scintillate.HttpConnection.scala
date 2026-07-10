@@ -89,7 +89,7 @@ object HttpConnection:
           version     = version,
           host        = host,
           target      = target,
-          body        = () => stream(),
+          body        = () => Stream(stream().iterator),
           textHeaders = headers )
 
     Log.fine(HttpServerEvent.Received(request))

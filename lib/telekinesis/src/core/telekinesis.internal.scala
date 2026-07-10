@@ -129,12 +129,17 @@ object internal:
             given payload is Postable = $postable
             given loggable0: HttpEvent is Loggable = $loggable
             val host: Host = $submit.host
-            val body = $postable.stream($payload)
             val path = $submit.originForm
             val contentType = Http.Header("content-type".tt, $postable.mediaType($payload).show)
 
             val request =
-              Http.Request($method, 1.1, host, path, contentType :: $headers.to(List), () => body)
+              Http.Request
+                ( $method,
+                  1.1,
+                  host,
+                  path,
+                  contentType :: $headers.to(List),
+                  () => $postable.stream($payload) )
 
             $client.request(request, $submit.target)
           }
@@ -163,7 +168,8 @@ object internal:
             val path = $fetch.originForm
 
             val request =
-              Http.Request($method, 1.1, $fetch.host, path, $headers.to(List), () => LazyList())
+              Http.Request
+                ( $method, 1.1, $fetch.host, path, $headers.to(List), () => Http.emptyBody() )
 
             $client.request(request, $fetch.target)
           }

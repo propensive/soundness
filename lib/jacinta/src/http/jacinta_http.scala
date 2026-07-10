@@ -38,10 +38,11 @@ import gossamer.*
 import hieroglyph.*
 import spectacular.*
 import telekinesis.*
+import zephyrine.*
 
 package postables:
   given jsonPostable: (encoder: CharEncoder, formatting: Json.Formatting) => Json is Postable =
-    Postable(media"application/json"(charset = "UTF-8"), value => LazyList(value.show.data))
+    Postable(media"application/json"(charset = "UTF-8"), value => Stream(value.show.data))
 
 package servables:
   given jsonServable: (encoder: CharEncoder, formatting: Json.Formatting) => Json is Servable =

@@ -184,7 +184,7 @@ object Mcp:
                 ( mcpInterface.stream )
 
             case Http.Post =>
-              val input = request.body().read[Json]
+              val input = request.body().lazyList.read[Json]
 
               dispatch(input).let: json =>
                 import formatting.indentedJsonFormatting

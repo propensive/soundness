@@ -45,6 +45,7 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import urticose.*
+import zephyrine.*
 
 object HttpClient:
   // Log a received response at a level reflecting its status: a server error is a `Fail`, a client
@@ -98,7 +99,8 @@ object HttpClient:
       val url = httpRequest.on(origin)
       Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
 
-      def loop(uri: jn.URI, method: Http.Method, bodyFn: () => LazyList[Data], remaining: Int)
+      def loop(uri: jn.URI, method: Http.Method, bodyFn: () => Stream[Data] over Credit,
+          remaining: Int)
       :   Http.Response =
 
         val response = backend.request(uri.toString.tt, method, httpRequest.textHeaders, bodyFn)
@@ -117,8 +119,8 @@ object HttpClient:
               Log.fine(HttpEvent.Redirect(uri.toString.tt, nextUri.toString.tt))
               val nextMethod = redirectMethod(code, method)
 
-              val nextBody: () => LazyList[Data] =
-                if nextMethod == method then bodyFn else () => LazyList()
+              val nextBody: () => Stream[Data] over Credit =
+                if nextMethod == method then bodyFn else () => Http.emptyBody()
 
               loop(nextUri, nextMethod, nextBody, remaining - 1)
 

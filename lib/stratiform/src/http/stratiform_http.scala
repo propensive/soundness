@@ -38,13 +38,14 @@ import gossamer.*
 import hieroglyph.*
 import spectacular.*
 import telekinesis.*
+import zephyrine.*
 
 private val telMediaType: MediaType =
   MediaType(Media.Group.Application, Media.Subtype.Vendor(t"tel"))
 
 package postables:
   given telPostable: (encoder: CharEncoder) => Tel is Postable =
-    Postable(telMediaType, value => LazyList(encoder.encoded(value.show)))
+    Postable(telMediaType, value => Stream(encoder.encoded(value.show)))
 
 package servables:
   given telServable: (encoder: CharEncoder) => Tel is Servable =
