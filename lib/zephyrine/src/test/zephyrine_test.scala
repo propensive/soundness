@@ -684,6 +684,53 @@ object Tests extends Suite(m"Zephyrine tests"):
         out
       . assert(_ == "abcd")
 
+      import charDecoders.utf8Decoder, charEncoders.utf8Encoder, textSanitizers.skipSanitizer
+
+      val exotic = t"héllo → 🎉 fin"
+
+      test(m"char decoder duct reassembles multi-byte characters split across refills"):
+        val chunks = exotic.s.getBytes("UTF-8").nn.toSeq.map { byte => IArray[Byte](byte) }
+        val stream = Stream(chunks.iterator).through(summon[CharDecoder])
+        val builder = StringBuilder()
+
+        def recur(): Unit = stream.refill(Credit(8)) match
+          case count: Int =>
+            val window = unsafely(stream.window).asInstanceOf[Array[Char]]
+            builder.append(String(window, stream.start, count))
+            stream.skip(count)
+            recur()
+
+          case _ => ()
+
+        recur()
+        builder.toString.tt
+      . assert(_ == exotic)
+
+      test(m"char encoder duct emits UTF-8 for supplementary characters"):
+        val gather = Gather()
+        Stream(exotic).through(summon[CharEncoder]).flowTo(gather)
+        gather.data.to(List)
+      . assert(_ == exotic.s.getBytes("UTF-8").nn.to(List))
+
+      test(m"charset ducts roundtrip through both directions"):
+        val gather = Gather()
+        Stream(exotic).through(summon[CharEncoder]).flowTo(gather)
+        val decoded = Stream(gather.data).through(summon[CharDecoder])
+        val builder = StringBuilder()
+
+        def recur(): Unit = decoded.refill(Credit(4)) match
+          case count: Int =>
+            val window = unsafely(decoded.window).asInstanceOf[Array[Char]]
+            builder.append(String(window, decoded.start, count))
+            decoded.skip(count)
+            recur()
+
+          case _ => ()
+
+        recur()
+        builder.toString.tt
+      . assert(_ == exotic)
+
       test(m"flow grants nothing when halted"):
         val regulation = summon[Flow is Regulation]
 

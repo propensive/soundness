@@ -87,13 +87,17 @@ export Cursor.{Mark, Offset}
 
 extension [in, transport](stream: Stream[in] over transport)
   // Pull-composition: a differently-typed `Stream` whose refills translate
-  // demand through the duct and pull from this stream. Runs entirely on the
-  // consumer's thread.
-  def through[out](duct: Duct[in, out] { type Upstream = transport })
-    ( using buffering: Buffering )
-  :   Stream[out] over duct.Transport =
+  // demand through the stage and pull from this stream. Runs entirely on
+  // the consumer's thread. The stage may be a raw `Duct` or any descriptor
+  // value with a `Ductile` instance.
+  def through[stage](stage: stage)
+    ( using ductile: (stage is Ductile by in) { type Upstream = transport },
+            buffering: Buffering )
+  :   Stream[ductile.Result] over ductile.Transport =
 
-    new Stream[out](using duct.output):
+    val duct = ductile.duct(stage)
+
+    new Stream[ductile.Result](using duct.output):
       type Transport = duct.Transport
 
       private val capacity: Int =
@@ -127,17 +131,13 @@ extension [in, transport](stream: Stream[in] over transport)
                 if produced == 0 then flushed = true else limit0 += produced
               else
                 stream.refill(duct.translate(demand)) match
-                  case Unset =>
-                    ended = true
-
-                  // The downstream demand granted at least `quantum`, so a
-                  // starved upstream means the duct's `translate` violated
-                  // its contract; spinning here would livelock silently.
-                  case 0 =>
-                    panic(m"a duct translated a productive demand into one granting nothing")
-
                   case count: Int =>
-                    if count > 0 then
+                    // The downstream demand granted at least `quantum`, so a
+                    // starved upstream means the duct's `translate` violated
+                    // its contract; spinning here would livelock silently.
+                    if count == 0
+                    then panic(m"a duct translated a productive demand into one granting nothing")
+                    else
                       // `Addressable` instances are unique per medium, so the
                       // stream's storage and the duct's input storage
                       // coincide, even though their paths differ.
@@ -152,6 +152,9 @@ extension [in, transport](stream: Stream[in] over transport)
 
                       stream.skip(progress.consumed)
                       limit0 += progress.produced
+
+                  case _ =>
+                    ended = true
 
             if flushed && limit0 == start0 then Unset else limit0 - start0
 
@@ -186,14 +189,17 @@ extension [in, transport](stream: Stream[in] over transport)
 
 extension [out, transport](intake: Intake[out] over transport)
   // Push-composition: a differently-typed `Intake` which reports translated
-  // demand, and whose commits step synchronously through the duct into this
-  // intake's writable window. The same `Duct` serves `through` and
-  // `accepting`; only the attachment differs.
-  def accepting[in](duct: Duct[in, out] { type Transport = transport })
-    ( using buffering: Buffering )
-  :   Intake[in] over duct.Upstream =
+  // demand, and whose commits step synchronously through the stage into
+  // this intake's writable window. The same stage value serves `through`
+  // and `accepting`; only the attachment differs.
+  def accepting[stage](stage: stage)
+    ( using ductile: (stage is Ductile to out) { type Transport = transport },
+            buffering: Buffering )
+  :   Intake[ductile.Operand] over ductile.Upstream =
 
-    new Intake[in](using duct.input):
+    val duct = ductile.duct(stage)
+
+    new Intake[ductile.Operand](using duct.input):
       type Transport = duct.Upstream
 
       private val capacity: Int = buffering.capacity(duct.input.substrate)
