@@ -732,11 +732,11 @@ object Tests extends Suite(m"Zephyrine tests"):
       . assert(_ == exotic)
 
       test(m"flow grants nothing when halted"):
-        val regulation = summon[Flow is Regulation]
+        val regulation = summon[Pace is Regulation]
 
-        ( regulation.grant(Flow.Halted),
-          regulation.grant(Flow.Free) > 0,
-          regulation.measured(Flow.Measured) )
+        ( regulation.grant(Pace.Halted),
+          regulation.grant(Pace.Free) > 0,
+          regulation.measured(Pace.Measured) )
       . assert(_ == ((0, true, true)))
 
 

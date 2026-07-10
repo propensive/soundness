@@ -50,17 +50,17 @@ object Regulation:
     def encode(demand: Credit): Long = demand.count
     def decode(bits: Long): Credit = Credit(bits)
 
-  given flow: Flow is Regulation:
-    def initial: Flow = Flow.Free
+  given pace: Pace is Regulation:
+    def initial: Pace = Pace.Free
 
-    def grant(demand: Flow): Int = demand match
-      case Flow.Halted => 0
+    def grant(demand: Pace): Int = demand match
+      case Pace.Halted => 0
       case _           => Int.MaxValue
 
-    def spend(demand: Flow, count: Int): Flow = demand
-    def measured(demand: Flow): Boolean = demand == Flow.Measured
-    def encode(demand: Flow): Long = demand.ordinal
-    def decode(bits: Long): Flow = Flow.fromOrdinal(bits.toInt)
+    def spend(demand: Pace, count: Int): Pace = demand
+    def measured(demand: Pace): Boolean = demand == Pace.Measured
+    def encode(demand: Pace): Long = demand.ordinal
+    def decode(bits: Long): Pace = Pace.fromOrdinal(bits.toInt)
 
 trait Regulation extends Typeclass:
   def initial: Self

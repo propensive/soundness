@@ -35,5 +35,5 @@ package zephyrine
 // Coarse backpressure demand: a sink that cannot usefully count elements can
 // still ask its upstream to send freely, to pace itself between blocks
 // (`Measured`), or to stop producing until demand is polled again (`Halted`).
-enum Flow:
+enum Pace:
   case Free, Measured, Halted
