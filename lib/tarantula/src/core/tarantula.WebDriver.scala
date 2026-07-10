@@ -48,6 +48,7 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 
+import httpBackends.virtualMachine
 import strategies.throwUnsafely
 
 case class WebDriver(server: Navigator#Server):

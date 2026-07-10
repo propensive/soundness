@@ -217,7 +217,7 @@ given wsClient: ( Online,
               Http.Header(t"Sec-WebSocket-Version", t"13") ),
           () => LazyList() )
 
-    duplex.send(Http.Request.transmissible.serialize(request))
+    duplex.send(Http.Request.serialize(request))
 
     // Read the response headers up to the CRLFCRLF terminator *without* over-reading:
     // `Http.Response.parse` on a live socket eagerly refills one chunk past the headers,

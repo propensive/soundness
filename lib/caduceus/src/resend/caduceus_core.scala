@@ -53,6 +53,7 @@ import charEncoders.utf8Encoder
 import environments.javaEnvironment
 import errorDiagnostics.stackTracesDiagnostics
 import formatting.compactJsonFormatting
+import httpBackends.virtualMachine
 import stdios.virtualMachineStdio
 import termcaps.environmentTermcap
 

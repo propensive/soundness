@@ -33,7 +33,6 @@
 package telekinesis
 
 import anticipation.*
-import coaxial.*
 import fulminate.*
 import prepositional.*
 import urticose.*
@@ -50,15 +49,6 @@ object Fetchable:
 
       def hostname(httpUrl: url): Host = httpUrl.host.or:
         panic(m"The HTTP URL does not have a hostname")
-
-  given unixSocket: DomainSocketEndpoint is Fetchable onto DomainSocket =
-    new Fetchable:
-      type Self = DomainSocketEndpoint
-      type Target = DomainSocket
-
-      def target(endpoint: DomainSocketEndpoint): DomainSocket = endpoint.socket
-      def text(endpoint: DomainSocketEndpoint): Text = endpoint.path
-      def hostname(endpoint: DomainSocketEndpoint): Host = Localhost
 
 trait Fetchable extends Typeclass, Targetable:
   def target(value: Self): Target

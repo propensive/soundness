@@ -35,7 +35,6 @@ package telekinesis
 import language.dynamics
 
 import anticipation.*
-import coaxial.*
 import contingency.*
 import denominative.*
 import distillate.*
@@ -255,7 +254,11 @@ object Http:
         t"params"   -> params
       ).map { case (key, value) => t"$key = $value" }.join(t", ")
 
-    given transmissible: Request is Transmissible = request =>
+    // Serialize the request to its HTTP/1.1 wire form: the request line, `Host`
+    // and framing headers, then the header block and body. Used by transports
+    // that write directly to a socket (e.g. the `coaxial` domain-socket client
+    // in `telekinesis.jvm`, which wraps this in a `Transmissible`).
+    def serialize(request: Request): LazyList[Data] =
       import charEncoders.asciiEncoder
 
       val text: Text = Text.build:
@@ -273,7 +276,7 @@ object Http:
         request.body() match
           case LazyList()     => append(t"Content-Length: 0")
           case LazyList(data) => append(t"Content-Length: ${data.length}")
-          case _            => append(t"Transfer-Encoding: chunked")
+          case _              => append(t"Transfer-Encoding: chunked")
 
         request.textHeaders.map: parameter =>
           newline()
@@ -524,16 +527,10 @@ object Http:
   // The swappable transport that physically sends a single request and returns
   // its response. The URL is fully resolved (passed as `Text`) so non-JVM
   // backends can parse it themselves; redirects are handled by `HttpClient`, not
-  // the backend. The JVM default (using `java.net.http`) is provided in
-  // `HttpClient`; other platforms or implementations (e.g. HTTP/2) supply their
-  // own given.
-  object Backend:
-    // The default transport. telekinesis is currently JVM-only, so this
-    // delegates to the `java.net.http` client; when the module is split for
-    // other platforms this default moves to a platform-specific source. A
-    // user-supplied `Http.Backend` given in scope overrides it.
-    given default: Backend = HttpClient.javaBackend
-
+  // the backend. Backends are platform-specific, so each is summoned by an
+  // explicit import: `httpBackends.virtualMachine` (`java.net.http`, in
+  // `telekinesis.jvm`) on the JVM; other platforms or implementations (e.g.
+  // HTTP/2) supply their own given.
   trait Backend:
     def request
       ( url:     Text,

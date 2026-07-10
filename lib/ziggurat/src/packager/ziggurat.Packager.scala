@@ -58,6 +58,7 @@ import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 import gastronomy.*, providers.javaStdlibProvider
+import httpBackends.virtualMachine
 import internetAccess.online
 import monotonous.*, alphabets.hexLowerCase
 

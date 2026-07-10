@@ -44,6 +44,7 @@ case class Person(name: Text, address: Address)
 
 object Tests extends Suite(m"Telekinesis tests"):
   def run(): Unit =
+    import httpBackends.virtualMachine
     import internetAccess.online
 
     suite(m"Response construction tests"):
