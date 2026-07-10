@@ -39,6 +39,7 @@ import soundness.*
 import charEncoders.utf8Encoder, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
 import threading.platformThreading
 import strategies.throwUnsafely
+import probates.panicProbate
 import errorDiagnostics.emptyDiagnostics
 
 import scala.collection.mutable as scm
@@ -559,3 +560,71 @@ object Tests extends Suite(m"Turbulence tests"):
         summon[Data is Source by Data over Credit].stream(payload).flowTo(sink.intake(store))
         store.buffer.length
       . assert(_ == payload.length)
+
+      test(m"a sink write failure raises StreamError"):
+        import unsafeExceptions.canThrowAny
+
+        val broken = new ji.OutputStream():
+          override def write(byte: Int): Unit = throw ji.IOException("cut")
+          override def write(array: Array[Byte] | Null, off: Int, len: Int): Unit =
+            throw ji.IOException("cut")
+
+        val sink = summon[ji.OutputStream is Sink by Data over Credit]
+
+        capture[StreamError]:
+          summon[Data is Source by Data over Credit].stream(payload).flowTo(sink.intake(broken))
+      . assert(_ == StreamError(0.b))
+
+      test(m"cancelling a blocked conduit writer releases it"):
+        supervise:
+          val conduit = Conduit[Data]()
+          val big = Data.fill(100000)(_.toByte)
+          val writer = async(conduit.put(big))
+          writer.cancel()
+          true
+      . assert(identity)
+
+      test(m"cancelling a detached flow blocked on an empty conduit releases it"):
+        supervise:
+          val conduit = Conduit[Data]()
+          val gather = Gather2()
+          val pump = conduit.stream.flow(gather)
+          pump.cancel()
+          true
+      . assert(identity)
+
+// A byte intake that gathers everything written to it, for exercising the
+// pump and cancellation paths.
+class Gather2() extends Intake[Data]:
+  type Transport = Credit
+
+  private val block: Int = 16
+  private val storage: addressable.Storage = addressable.allocate(block)
+  private val target: addressable.Target = addressable.blank(64)
+  private var mark1: Int = 0
+
+  def demand: Credit = Credit(Long.MaxValue)
+  protected def buffer0: AnyRef = storage.asInstanceOf[AnyRef]
+  def mark: Int = mark1
+
+  def reserve(min: Int): Int =
+    val free = block - mark1
+
+    if free >= min then free else
+      drain()
+      block
+
+  def commit(count: Int): Unit =
+    mark1 += count
+    if mark1 == block then drain()
+
+  def finish(): Unit = drain()
+
+  def data: Data =
+    drain()
+    addressable.build(target)
+
+  private def drain(): Unit =
+    if mark1 > 0 then
+      addressable.cloneStorage(storage, 0, mark1)(target)
+      mark1 = 0

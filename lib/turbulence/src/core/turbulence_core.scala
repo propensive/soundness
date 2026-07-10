@@ -47,6 +47,7 @@ import prepositional.*
 import rudiments.*
 import symbolism.*
 import vacuous.*
+import zephyrine.*
 
 import LineSeparation.*
 import abstractables.instantAbstractable
@@ -72,16 +73,23 @@ extension [value: Streamable by Text](value: value)
   def load[result <: Documentary: Loadable by Text]: Document[result] =
     result.load(value.stream[Text])
 
-extension [medium](stream: zephyrine.Stream[medium] over zephyrine.Credit)
+extension [medium, transport](stream: Stream[medium] over transport)
+  // The detached pump: `flowTo` on its own parasite task, for fire-and-forget
+  // transfers and genuinely concurrent pipeline halves. This is the "one
+  // pumping thread" of a pipeline with an asynchronous boundary.
+  def flow(intake: Intake[medium] over transport)(using Monitor, Probate): Task[Unit] =
+    async(stream.flowTo(intake))
+
+extension [medium](stream: Stream[medium] over Credit)
   // Legacy view: drain a pull endpoint as a lazy list of materialized chunks,
   // pulling one block per forced cell. For consumers not yet converted to the
   // streaming kernel; conversion holds only one block at a time, but the
   // resulting cells are immutable and GC-managed like any lazy list.
-  def lazyList(using buffering: zephyrine.Buffering): LazyList[medium] =
+  def lazyList(using buffering: Buffering): LazyList[medium] =
     val block = buffering.capacity(stream.addressable.substrate)
 
     def recur(): LazyList[medium] =
-      stream.refill(zephyrine.Credit(block)) match
+      stream.refill(Credit(block)) match
         case Unset =>
           LazyList()
 
