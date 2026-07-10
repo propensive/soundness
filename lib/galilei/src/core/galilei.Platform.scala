@@ -70,4 +70,6 @@ object Platform:
 
       readable.read(bytes)
 
-trait Platform
+// Pure: platforms are phantom plane markers, so capture checking never freshens them
+// (keeping `=:=`-based plane unification exact through the `soundness` export aliases).
+trait Platform extends caps.Pure

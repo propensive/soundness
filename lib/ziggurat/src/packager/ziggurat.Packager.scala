@@ -59,6 +59,10 @@ import internetAccess.online
 import monotonous.*, alphabets.hexLowerCase
 
 import filesystemBackends.virtualMachine
+import filesystemOptions.createNonexistent.enabled
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.enabled
 
 // Turns a `Packaging` configuration into a distributable. Each per-platform binary is the
 // application JAR appended to a bare reusable runner stub, obtained from `RunnerSource` —
@@ -187,5 +191,5 @@ object Packager:
   :   Unit raises IoError raises StreamError =
 
     output.create[File]()
-    output.open(LazyList(data).writeTo(_))
+    output.open(_.write(LazyList(data)))
     output.executable() = true

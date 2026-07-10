@@ -231,7 +231,7 @@ given wsClient: ( online:            Online,
       // send until we do. So split the header block off the stream and parse just that
       // finite slice; anything after the terminator is the first inbound frame bytes.
       val (headerBytes, inbound) = readHandshake(duplex.stream, Data())
-      val response: Http.Response = Http.Response.parse(Stream(headerBytes))
+      val response: Http.Response = Http.Response.parse(LazyList(headerBytes))
 
       if response.status != Http.SwitchingProtocols then
         abort(WebsocketError(WebsocketError.Reason.Handshake(t"the server did not upgrade")))

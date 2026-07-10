@@ -131,11 +131,14 @@ object Cursor:
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand,
             buffering:    Buffering )
-  :   Cursor[data] =
+  // `Stream over Credit` is not (yet) a declared capability, so the closure over it is
+  // untracked and the cursor's capture set is empty; if the reactive kernel's types become
+  // capabilities, this factory should be re-typed like the iterator one above.
+  :   Cursor[data, {}] =
 
     val block: Int = buffering.capacity(addressable0.substrate)
 
-    new Cursor[data]
+    new Cursor[data, {}]
       ( () =>
           stream.refill(Credit(block)).let: count =>
             val window = stream.window(using Unsafe).asInstanceOf[addressable0.Storage]

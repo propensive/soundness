@@ -77,6 +77,12 @@ package lineation:
     inline def active: Boolean = true
     inline def track(datum: Byte): Boolean = datum == 13
 
+package parsing:
+  // Bring into scope with `import parsing.trackPositions` to make the generic
+  // `read`/`load` entry points of the position-aware parsers record source
+  // positions, overriding the `PositionTracking.Off` companion default.
+  given trackPositions: PositionTracking = PositionTracking.On
+
 export Cursor.{Mark, Offset}
 
 extension [in, transport](stream: Stream[in] over transport)

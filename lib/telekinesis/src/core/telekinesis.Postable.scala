@@ -63,12 +63,12 @@ object Postable:
     // `Typeclass` instances are `Pure` by infrastructure, but the streaming lambda may capture
     // capabilities with the same lifetime as this instance's given resolution; laundered pure —
     // the jacinta codec-thunk seal pattern (see rep/DECISIONS.md).
-    val stream1: response -> Stream[Data] = caps.unsafe.unsafeAssumePure(stream0)
+    val stream1: response -> (Stream[Data] over Credit) = caps.unsafe.unsafeAssumePure(stream0)
 
     new Postable:
       type Self = response
       def mediaType(response: response): MediaType = mediaType0
-      def stream(response: response): Stream[Data] over Credit = stream0(response)
+      def stream(response: response): Stream[Data] over Credit = stream1(response)
 
 
   given text: (encoder: CharEncoder) => Text is Postable =
@@ -102,7 +102,8 @@ object Postable:
     new Postable:
       type Self = response
 
-      def mediaType(content: response): MediaType = content.generic(0).decode[MediaType]
+      def mediaType(content: response): MediaType =
+        content.generic(0).decode[MediaType](using decoder)
       def stream(content: response): Stream[Data] over Credit = content.generic(1).stream
 
 trait Postable extends Typeclass:

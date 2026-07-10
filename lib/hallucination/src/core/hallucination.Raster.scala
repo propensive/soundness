@@ -79,13 +79,14 @@ object Raster:
     def height(raster: Raster): Int = raster.height
 
 
-  given aggregable: [format: Rasterizable as rasterizable] => Tactic[RasterError]
-  =>  (Raster in format) is Aggregable by Data =
+  given aggregable: [format: Rasterizable as rasterizable] => (tactic: Tactic[RasterError])
+  =>  (((Raster in format) is Aggregable by Data)^{tactic}) =
 
     rasterizable.read(_)
 
 
-  given aggregable2: Tactic[RasterError] => Raster is Aggregable by Data = Raster(_)
+  given aggregable2: (tactic: Tactic[RasterError])
+  =>  ((Raster is Aggregable by Data)^{tactic}) = Raster(_)
 
 case class Raster(private[hallucination] val image: jai.BufferedImage) extends Formal:
   def width: Int = image.getWidth

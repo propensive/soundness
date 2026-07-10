@@ -1519,7 +1519,8 @@ object Yaml extends Yaml2, Dynamic:
       case Yaml.Tracking.Off =>
         Yaml.Parser.parseAll(input).map(Yaml(_))
 
-  given aggregable: (Tactic[ParseError], Yaml.Tracking) => Yaml is Aggregable by Text =
+  given aggregable: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
+  =>  ((Yaml is Aggregable by Text)^{tactic}) =
     summon[Text is Aggregable by Text].map: text =>
       summon[Yaml.Tracking] match
         case Yaml.Tracking.On =>
@@ -1532,7 +1533,8 @@ object Yaml extends Yaml2, Dynamic:
   // Multi-document reads (`---`-separated YAML) through the uniform `.read`
   // API: `text.read[List[Yaml]]` yields one `Yaml` per document. Backed by
   // `parseAll`, this replaces the former bespoke `Text.readAll` extension.
-  given aggregableAll: (Tactic[ParseError], Yaml.Tracking) => List[Yaml] is Aggregable by Text =
+  given aggregableAll: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
+  =>  ((List[Yaml] is Aggregable by Text)^{tactic}) =
     summon[Text is Aggregable by Text].map(parseAll(_))
 
   // HTTP content-type integration. `Abstractable across HttpStreams` makes a
@@ -1563,8 +1565,8 @@ object Yaml extends Yaml2, Dynamic:
   // `asInstanceOf` cast — `value in Yaml` is just `value { type
   // Form = Yaml }` so the cast is a no-op at runtime.
   given aggregableIn: [value: Decodable in Yaml]
-  =>  ( Tactic[ParseError], Tactic[YamlError], Yaml.Tracking )
-  =>  (value in Yaml) is Aggregable by Text =
+  =>  ( tactic: Tactic[ParseError], yamlTactic: Tactic[YamlError], tracking: Yaml.Tracking )
+  =>  (((value in Yaml) is Aggregable by Text)^{tactic, yamlTactic}) =
 
     summon[Text is Aggregable by Text].map: text =>
       val yaml = summon[Yaml.Tracking] match

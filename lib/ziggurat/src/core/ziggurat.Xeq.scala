@@ -49,6 +49,9 @@ import charDecoders.utf8Decoder
 import charEncoders.utf8Encoder
 import classloaders.threadContextClassloader
 import filesystemBackends.virtualMachine
+import filesystemOptions.dereferenceSymlinks.enabled
+import filesystemOptions.readAccess.enabled
+import filesystemOptions.writeAccess.enabled
 import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
@@ -162,7 +165,7 @@ object Xeq:
     output.create[File]()
 
     output.open: handle =>
-      LazyList(data).writeTo(handle)
+      handle.write(LazyList(data))
 
     output.executable() = true
 

@@ -557,8 +557,8 @@ object Cbor extends Cbor2, Dynamic:
   // for `value in Json`. The `Form` type-tag is added by an
   // `asInstanceOf` cast — `value in Cbor` is just
   // `value { type Form = Cbor }` so the cast is a no-op at runtime.
-  given aggregableIn: [value: Decodable in Cbor] => Tactic[CborError]
-  =>  (value in Cbor) is Aggregable by Data =
+  given aggregableIn: [value: Decodable in Cbor] => (tactic: Tactic[CborError])
+  =>  (((value in Cbor) is Aggregable by Data)^{tactic}) =
     bytes => Cbor.ast(bytes.read[Cbor.Ast]).as[value].asInstanceOf[value in Cbor]
 
   given unit: (tactic: Tactic[CborError])

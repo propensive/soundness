@@ -46,19 +46,19 @@ extension (char: Char)
   def designation: Optional[Text] = Unicode.name(char)
 
 package charDecoders:
-  given utf8Decoder: (sanitizer: TextSanitizer^) => (CharDecoder^{sanitizer}) =
+  given utf8Decoder: (sanitizer: TextSanitizer) => (CharDecoder) =
     CharDecoder.unapply("UTF-8".tt).get
 
-  given utf16Decoder: (sanitizer: TextSanitizer^) => (CharDecoder^{sanitizer}) =
+  given utf16Decoder: (sanitizer: TextSanitizer) => (CharDecoder) =
     CharDecoder.unapply("UTF-16".tt).get
 
-  given utf16LeDecoder: (sanitizer: TextSanitizer^) => (CharDecoder^{sanitizer}) =
+  given utf16LeDecoder: (sanitizer: TextSanitizer) => (CharDecoder) =
     CharDecoder.unapply("UTF-16LE".tt).get
 
-  given utf16BeDecoder: (sanitizer: TextSanitizer^) => (CharDecoder^{sanitizer}) =
+  given utf16BeDecoder: (sanitizer: TextSanitizer) => (CharDecoder) =
     CharDecoder.unapply("UTF-16BE".tt).get
 
-  given asciiDecoder: (sanitizer: TextSanitizer^) => (CharDecoder^{sanitizer}) =
+  given asciiDecoder: (sanitizer: TextSanitizer) => (CharDecoder) =
     CharDecoder.unapply("ASCII".tt).get
 
   given iso88591Decoder: CharDecoder =
@@ -73,16 +73,20 @@ package charEncoders:
   given iso88591Encoder: CharEncoder = CharEncoder.unapply("ISO-8859-1".tt).get
 
 package textSanitizers:
-  given strictSanitizer: (Tactic[CharDecodeError]^) => (TextSanitizer^) = (position, encoding) =>
-    abort(CharDecodeError(position, encoding))
+  // Sealed per the codec-thunk pattern (rep/DECISIONS.md): the resolution-scoped tactic
+  // shares the sanitizer's given-resolution lifetime, keeping `CharDecoder` untracked.
+  given strictSanitizer: (Tactic[CharDecodeError]^) => (TextSanitizer) =
+    caps.unsafe.unsafeAssumePure: (position, encoding) =>
+      abort(CharDecodeError(position, encoding))
 
   given skipSanitizer: TextSanitizer = (position, encoding) => Unset
   given substituteSanitizer: TextSanitizer = (position, encoding) => '?'
 
+  // Sealed like `strictSanitizer` above.
   given accrueSanitizer
-  :   (Tactic[CharDecodeError]^, Foci[CharDecoder.Focus]^) => (TextSanitizer^) =
+  :   (Tactic[CharDecodeError]^, Foci[CharDecoder.Focus]^) => (TextSanitizer) =
 
-    (position, encoding) =>
+    caps.unsafe.unsafeAssumePure: (position, encoding) =>
       focus(CharDecoder.Focus(position)):
         raise(CharDecodeError(position, encoding))
 

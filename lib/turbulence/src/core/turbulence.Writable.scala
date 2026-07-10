@@ -73,8 +73,8 @@ object Writable:
       recur(0.b, stream)
 
 
-  given decodingAdapter: [writable] => (writable0: (writable is Writable by Text)^, decoder: CharDecoder^)
-  =>  ((writable is Writable by Data)^{writable0, decoder}) =
+  given decodingAdapter: [writable] => (writable0: (writable is Writable by Text)^, decoder: CharDecoder)
+  =>  ((writable is Writable by Data)^{writable0}) =
 
     (target, stream) => writable0.write(target, decoder.decoded(stream))
 

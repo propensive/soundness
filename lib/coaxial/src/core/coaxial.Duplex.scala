@@ -151,7 +151,7 @@ trait Duplex:
 
   // Push endpoint over the write side: repeatable, like `send`, and
   // `finish()` flushes without half-closing the connection.
-  def intake(using buffering: Buffering): Intake[Data] over Credit =
+  def intake(using buffering: Buffering): (Intake[Data] over Credit)^{this} =
     new Intake[Data]:
       type Transport = Credit
 

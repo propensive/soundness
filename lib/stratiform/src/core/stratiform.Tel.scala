@@ -914,8 +914,8 @@ object Tel extends Tel2:
   // for `value in Json`. The `Form` type-tag is added by an
   // `asInstanceOf` cast — `value in Tel` is just
   // `value { type Form = Tel }` so the cast is a no-op at runtime.
-  given aggregableIn: [value: distillate.Decodable in Tel] => Tactic[TelError]
-  =>  (value in Tel) is Aggregable by Data =
+  given aggregableIn: [value: distillate.Decodable in Tel] => (tactic: Tactic[TelError])
+  =>  (((value in Tel) is Aggregable by Data)^{tactic}) =
     source => parse(concatenate(source)).as[value].asInstanceOf[value in Tel]
 
   // `source.read[List[Tel]]` / `read[LazyList[Tel]]` for a multi-document source
@@ -1220,6 +1220,18 @@ object Tel extends Tel2:
       p.reset(Cursor[Data](input), schema: Optional[Tels])
       p.parse()
 
+    // Tracked parse: one document plus the flat pre-order (line, column, length)
+    // triples backing `Tel.PositionIndex`. Uses `untrackedData` like the plain
+    // path — coordinates come from the parser's own `lineNo` / `leadingSpaces`
+    // bookkeeping, not the cursor's lineation.
+    def parseTracked(input: Data): (Tel.Document, IArray[Int]) raises TelError =
+      import zephyrine.Lineation.untrackedData
+      val p = cached.get.nn
+      p.reset(Cursor[Data](input), Unset)
+      p.tracking = true
+
+      try (p.parse(), IArray.from(p.positionTriples)) finally p.tracking = false
+
     // Streaming parse (§6.1) of a multi-document source into the documents it
     // contains. `parseDocuments` is eager; `parseStream` parses lazily on demand.
     def parseDocuments(input: Data): List[Tel.Document] raises TelError =
@@ -1383,6 +1395,15 @@ object Tel extends Tel2:
     // just consumed is the final byte of the document; consumed exactly once
     // by the first consumeTrailingBlanksFor that reaches EOF.
     private var documentEndsWithLf: Boolean = false
+
+    // ── Position tracking (set by `Parser.parseTracked`) ──────────────────────
+    // When `tracking` is on, the parser appends one (line, column, length)
+    // triple per compound — in recursive-descent (pre-order) sequence — to
+    // `positionTriples`, from which `Tel.buildIndex` folds the navigable
+    // `PositionIndex`. Off by default, so the throughput-optimised parse path is
+    // untouched (no triple is recorded and no per-compound work is added).
+    private[stratiform] var tracking: Boolean = false
+    private[stratiform] val positionTriples = scala.collection.mutable.ArrayBuffer.empty[Int]
 
     // Ancestor stack of Struct types known for each open compound, used by
     // §19.5's schema-aware E107 recovery. The element at index `i` is the
@@ -1824,6 +1845,8 @@ object Tel extends Tel2:
       pos    = 0
       bufEnd = 0
       lineNo = 1
+      tracking = false
+      positionTriples.clear()
       margin = 0
       sigil  = '#'.toByte
       crlfMode = false
@@ -2567,6 +2590,16 @@ object Tel extends Tel2:
           parseCompoundLine(compoundLine)
           val compoundKeyword = compoundLineKeyword
           val compoundRemark  = compoundLineRemark
+
+          // Record this compound's keyword position *before* descending, so the
+          // triple stream is pre-order (parent before children) — the order
+          // `Tel.buildIndex` folds against the AST. Column is 1-indexed at the
+          // keyword's first character (just past the leading spaces).
+          if tracking then
+            positionTriples += compoundLine
+            positionTriples += compoundLeadingSpaces + 1
+            positionTriples += compoundKeyword.s.length
+
           prevContentLeadingSpaces = compoundLeadingSpaces
           prevLineWasBoundary = false
           // §19.5 recovery needs this compound's keyword on the ancestor
@@ -3374,7 +3407,9 @@ object Tel extends Tel2:
         else Text(sliceText(startMark))
 
 
-class Tel private[stratiform](private[stratiform] val subtree: Tel.Subtree)
+class Tel private[stratiform]
+  ( private[stratiform] val subtree:       Tel.Subtree,
+    private[stratiform] val positionIndex: Optional[Tel.PositionIndex] = Unset )
 extends scala.Dynamic, Documentary, Topical, Original:
   type Self = Tel
   type Metadata = Tel.Metadata

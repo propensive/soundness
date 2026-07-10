@@ -380,12 +380,17 @@ object Tests extends Suite(m"Profanity Tests"):
             def render(old: Optional[LineEditor], editor: LineEditor): Unit = ()
             def result(editor: LineEditor): Text = editor.value
 
-        completingEditor
-         ( LazyList(Keypress.CharKey('g'), Keypress.CharKey('e'), Keypress.Tab,
-                  Keypress.Enter).iterator,
-           LineEditor() )
-         (_(_))
-      . assert(_ == t"geography")
+            override def react(editor: LineEditor, event: TerminalEvent): LineEditor =
+              event match
+                case Keypress.Tab => LineEditor(t"${editor.value}ography")
+                case _            => editor
+
+          completingEditor
+           ( LazyList(Keypress.CharKey('g'), Keypress.CharKey('e'), Keypress.Tab,
+                    Keypress.Enter).iterator,
+             LineEditor() )
+           (_(_))
+        . assert(_ == t"geography")
 
     suite(m"Keyboard decoding"):
       test(m"Shift+Enter is decoded from its CSI-u sequence"):

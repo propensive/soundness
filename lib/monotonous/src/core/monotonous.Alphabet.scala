@@ -56,7 +56,10 @@ object Alphabet:
   given serialization: [encoding <: Serialization]
   =>  Ductile.Of[Alphabet[encoding], Data, Text, Credit, Credit] =
 
-    new Ductile:
+    // Sealed: a Ductile is a stateless stage descriptor; instantiation freshens its
+    // type arguments under capture checking, which the seal discards.
+    caps.unsafe.unsafeAssumePure:
+     new Ductile:
       type Self = Alphabet[encoding]
       type Operand = Data
       type Result = Text
@@ -148,7 +151,9 @@ object Alphabet:
   given deserialization: [encoding <: Serialization] => Tactic[SerializationError]
   =>  Ductile.Of[Alphabet[encoding], Text, Data, Credit, Credit] =
 
-    new Ductile:
+    // Sealed: see `serialization` above.
+    caps.unsafe.unsafeAssumePure:
+     new Ductile:
       type Self = Alphabet[encoding]
       type Operand = Text
       type Result = Data
@@ -158,7 +163,10 @@ object Alphabet:
       def duct(stage: Alphabet[encoding])(using Buffering)
       :   Duct[Text, Data] { type Transport = Credit; type Upstream = Credit } =
 
-        new Duct[Text, Data]:
+        // Sealed: the duct closes over the ambient `Buffering`, which is sizing policy
+        // only; the instance performs no effects beyond its own mutable buffers.
+        caps.unsafe.unsafeAssumePure:
+         new Duct[Text, Data]:
           type Transport = Credit
           type Upstream = Credit
 

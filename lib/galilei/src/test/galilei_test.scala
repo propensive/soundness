@@ -43,7 +43,8 @@ object Tests extends Suite(m"Galilei tests"):
     import textSanitizers.skipSanitizer
 
     suite(m"Direct read and write"):
-      val dest: Path on Linux = unsafely((% / "tmp" / Uuid().show).on[Linux])
+      val leafName: Text = Uuid().show
+      val dest: Path on Linux = unsafely((% / "tmp" / leafName).on[Linux])
 
       test(m"Writing then reading a file round-trips its content"):
         unsafely:

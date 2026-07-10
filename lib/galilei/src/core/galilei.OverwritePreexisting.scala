@@ -33,8 +33,8 @@
 package galilei
 
 import beneficence.*
-import contingency.*
 import prepositional.*
+import contingency.*
 import serpentine.*
 
 trait OverwritePreexisting extends Planar, Findable:

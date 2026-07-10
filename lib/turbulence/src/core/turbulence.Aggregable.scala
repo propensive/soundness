@@ -78,7 +78,7 @@ object Aggregable:
           index += bytes.length
           source = source.tail
 
-  given bytesText: (decoder: CharDecoder^) => ((Text is Aggregable by Data)^{decoder}) =
+  given bytesText: (decoder: CharDecoder) => ((Text is Aggregable by Data)) =
     bytesData.map(decoder.decoded)
 
   given textText: Text is Aggregable by Text = new Aggregable:
@@ -105,7 +105,9 @@ object Aggregable:
     element => LazyList(aggregable.aggregate(element))
 
 trait Aggregable extends Typeclass, Operable:
-  aggregable: Aggregable =>
+  // The capturing self type permits instances that capture (e.g. a resolution-scoped
+  // tactic) while keeping the explicit self name the 3.9 SAM adaptation requires.
+  aggregable: Aggregable^ =>
   def aggregate(source: LazyList[Operand]): Self
 
   // Consume a pull endpoint. The default materializes one chunk per refill
@@ -126,5 +128,5 @@ trait Aggregable extends Typeclass, Operable:
 
     aggregate(LazyList.defer(recur()))
 
-  def map[self2](lambda: Self => self2): (self2 is Aggregable by Operand)^{lambda} = source =>
+  def map[self2](lambda: Self => self2): (self2 is Aggregable by Operand)^{this, lambda} = source =>
     lambda(aggregable.aggregate(source))

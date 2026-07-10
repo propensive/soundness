@@ -519,8 +519,8 @@ object Xml extends Tag.Container
 
 
   given aggregable: [content <: Label: Reifiable to List[String]] => (schema: XmlSchema)
-  =>  Tactic[ParseError]
-  =>  (Xml of content) is Aggregable by Text =
+  =>  (tactic: Tactic[ParseError])
+  =>  (((Xml of content) is Aggregable by Text)^{tactic}) =
 
     input => XmlParser.fromIterator(input.iterator).parseXml(headers0 = false).of[content]
 
@@ -554,8 +554,8 @@ object Xml extends Tag.Container
   // `asInstanceOf` cast — `value in Xml` is just `value { type
   // Form = Xml }` so the cast is a no-op at runtime.
   given aggregableIn: [value: Decodable in Xml] => (schema: XmlSchema)
-  =>  ( Tactic[ParseError], Tactic[XmlError] )
-  =>  (value in Xml) is Aggregable by Text =
+  =>  ( tactic: Tactic[ParseError], xmlTactic: Tactic[XmlError] )
+  =>  (((value in Xml) is Aggregable by Text)^{tactic, xmlTactic}) =
 
     input =>
       XmlParser.fromIterator(input.iterator).parseXml(headers0 = false).as[value]

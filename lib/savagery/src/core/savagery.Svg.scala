@@ -47,11 +47,9 @@ import xylophone.*
 import zephyrine.*
 
 object Svg:
-  given aggregable: (XmlSchema)
-  =>  Tactic[ParseError]
-  =>  Tactic[XmlError]
-  =>  Tactic[SvgError]
-  =>  Svg is Aggregable by Text =
+  given aggregable: (schema: XmlSchema)
+  =>  (parseTactic: Tactic[ParseError], xmlTactic: Tactic[XmlError], svgTactic: Tactic[SvgError])
+  =>  ((Svg is Aggregable by Text)^{parseTactic, xmlTactic, svgTactic}) =
 
     source =>
       val xml: Xml = summon[Xml is Aggregable by Text].aggregate(source)

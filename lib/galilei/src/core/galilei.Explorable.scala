@@ -40,11 +40,15 @@ object Explorable:
   // All planes explore identically: the backend lists child names, appended to the parent path
   // (which is well-formed by construction, since each name came from a real directory entry).
   given explorable: [plane: Filesystem]
-  =>  ( backend: FilesystemBackend on plane, tactic: Tactic[IoError] )
+  =>  ( backend: FilesystemBackend on plane )
   =>  plane is Explorable =
 
-    path => backend.children(path).map: name =>
-      unsafely(path.child(name))
+    // `children` cannot raise through its lazy result, so backend failures propagate as
+    // thrown `IoError`s (the pre-backend per-platform instances did the same).
+    path =>
+      import strategies.throwUnsafely
+      backend.children(path).map: name =>
+        unsafely(path.child(name))
 
 trait Explorable extends Typeclass:
   def children(path: Path on Self): LazyList[Path on Self]

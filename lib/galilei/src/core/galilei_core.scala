@@ -32,6 +32,9 @@
                                                                                                   */
 package galilei
 
+import java.io as ji
+import java.nio.file as jnf
+
 import anticipation.*
 import contingency.*
 import denominative.*
@@ -151,7 +154,7 @@ extension [plane: Filesystem](path: Path on plane)
 
 
   def hardLinkTo(destination: Path on plane)
-    ( using overwritePreexisting:     OverwritePreexisting on plane,
+    ( using overwritePreexisting: OverwritePreexisting on plane,
             createNonexistentParents: CreateNonexistentParents on plane,
             backend:                  FilesystemBackend on plane )
   :   Path on plane logs IoEvent raises IoError =
@@ -172,7 +175,7 @@ extension [plane: Filesystem](path: Path on plane)
 
 
   def copyTo(destination: Path on plane)
-    ( using overwritePreexisting:     OverwritePreexisting on plane,
+    ( using overwritePreexisting: OverwritePreexisting on plane,
             dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on plane )
     ( using FilesystemBackend on plane )
@@ -201,7 +204,7 @@ extension [plane: Filesystem](path: Path on plane)
 
 
   def moveTo(destination: Path on plane)
-    ( using overwritePreexisting:     OverwritePreexisting on plane,
+    ( using overwritePreexisting: OverwritePreexisting on plane,
             moveAtomically:           MoveAtomically,
             dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on plane )
@@ -230,7 +233,7 @@ extension [plane: Filesystem](path: Path on plane)
 
 
   def symlinkTo(destination: Path on plane)
-    ( using overwritePreexisting:     OverwritePreexisting on plane,
+    ( using overwritePreexisting: OverwritePreexisting on plane,
             createNonexistentParents: CreateNonexistentParents on plane,
             backend:                  FilesystemBackend on plane )
   :   Path on plane logs IoEvent raises IoError =
@@ -282,7 +285,7 @@ extension [plane: Filesystem](path: Path on plane)
     Log.fine(IoEvent.Touch(path.show))
 
   transparent inline def create[entry]()
-    ( using creatable: entry is Creatable on plane, log: IoEvent is Loggable )
+    ( using creatable: (entry is Creatable on plane)^, log: IoEvent is Loggable )
   :   creatable.Result =
 
     Log.info(IoEvent.Create(path.show))
@@ -352,11 +355,11 @@ package filesystemOptions:
       def attributes = false
 
   object deleteRecursively:
-    given enabled: [plane: Filesystem] => Tactic[IoError]
+    given enabled: [plane: Filesystem]
     =>  ( explorable: plane is Explorable, backend: FilesystemBackend on plane )
     =>  DeleteRecursively on plane:
 
-      type World = plane
+      type Plane = plane
 
       def recur(path: Path on plane): Unit raises IoError =
         path.children.each(recur(_))
@@ -388,19 +391,19 @@ package filesystemOptions:
 
     // The backend raises `AlreadyExists` itself when the operation collides with an existing
     // entry, so nothing needs intercepting here.
-    given disabled: [plane: Filesystem] => Tactic[IoError]
-    =>  OverwritePreexisting on plane:
+    given disabled: [plane: Filesystem] => OverwritePreexisting on plane:
 
       type Plane = plane
 
-      def apply[result](path: Path on Plane)(operation: => result): result = operation
+      def apply[result](path: Path on Plane)(operation: => result): result raises IoError =
+        operation
 
   object createNonexistentParents:
-    given enabled: [plane: Filesystem] => Tactic[IoError]
+    given enabled: [plane: Filesystem]
     =>  ( backend: FilesystemBackend on plane )
     =>  CreateNonexistentParents on plane:
 
-      def apply[result](path: Path on plane)(operation: => result): result =
+      def apply[result](path: Path on plane)(operation: => result): result raises IoError =
         def ensure(directory: Path on plane): Unit =
           if !backend.exists(directory, true) then
             safely(directory.parent).let(ensure(_))
@@ -414,7 +417,8 @@ package filesystemOptions:
 
       type Plane = plane
 
-      def apply[result](path: Path on plane)(block: => result): result = block
+      def apply[result](path: Path on plane)(block: => result): result raises IoError =
+        block
 
   object createNonexistent:
     given enabled: [plane: Filesystem]
@@ -440,7 +444,7 @@ package filesystemOptions:
       def error(path: Path on Plane, operation: IoError.Operation): Nothing raises IoError =
         abort(IoError(path, operation, Reason.Nonexistent))
 
-      def apply(path: Path on Plane)(operation: => Unit): Unit = ()
+      def apply(path: Path on Plane)(operation: => Unit): Unit raises IoError = ()
       def flags(): List[OpenFlag] = List()
 
   object writeSynchronously:

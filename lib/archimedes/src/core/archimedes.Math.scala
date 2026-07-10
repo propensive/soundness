@@ -58,11 +58,9 @@ import zephyrine.ParseError
 //     reusing honeycomb's own serializer.
 
 object Math:
-  given aggregable: (XmlSchema)
-  =>  Tactic[ParseError]
-  =>  Tactic[XmlError]
-  =>  Tactic[MathmlError]
-  =>  Math is Aggregable by Text =
+  given aggregable: (schema: XmlSchema)
+  =>  (parseTactic: Tactic[ParseError], xmlTactic: Tactic[XmlError], mathmlTactic: Tactic[MathmlError])
+  =>  ((Math is Aggregable by Text)^{parseTactic, xmlTactic, mathmlTactic}) =
 
     source =>
       val xml: Xml = summon[Xml is Aggregable by Text].aggregate(source)

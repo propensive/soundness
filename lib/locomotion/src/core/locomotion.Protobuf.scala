@@ -129,8 +129,8 @@ object Protobuf extends Protobuf2:
   // mirroring jacinta's `value in Json` and breviloquence's `value in Cbor`.
   // `value in Protobuf` is just `value { type Form = Protobuf }`, so the
   // cast is a no-op at runtime.
-  given aggregableIn: [value: Decodable in Protobuf] => Tactic[ProtobufError]
-  =>  (value in Protobuf) is Aggregable by Data =
+  given aggregableIn: [value: Decodable in Protobuf] => (tactic: Tactic[ProtobufError])
+  =>  (((value in Protobuf) is Aggregable by Data)^{tactic}) =
     bytes => message(bytes.read[Data]).as[value].asInstanceOf[value in Protobuf]
 
   // Number-keyed optic: Protobuf fields are addressed by number, not name, so an

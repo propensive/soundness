@@ -62,30 +62,31 @@ object Tests extends Suite(m"Coaxial tests"):
     def joined(stream: LazyList[Data]): List[Byte] = stream.to(List).flatMap(_.to(List))
 
     suite(m"Duplex streaming endpoints"):
-      val payload = Data.fill(60000) { index => (index%97).toByte }
+      supervise:
+        val payload = Data.fill(60000) { index => (index%97).toByte }
 
-      test(m"data flows through native socket stream endpoints"):
-        import supervisors.globalSupervisor
+        test(m"data flows through native socket stream endpoints"):
+          import supervisors.globalSupervisor
 
-        val server = jnc.ServerSocketChannel.open().nn
-        server.bind(jn.InetSocketAddress("127.0.0.1", 0))
-        val port = server.socket.nn.getLocalPort
+          val server = jnc.ServerSocketChannel.open().nn
+          server.bind(jn.InetSocketAddress("127.0.0.1", 0))
+          val port = server.socket.nn.getLocalPort
 
-        val received = async:
-          val serverDuplex = Duplex.channel(server.accept().nn)
-          summon[Data is Aggregable by Data].accept(serverDuplex.source)
+          val received = async:
+            val serverDuplex = Duplex.channel(server.accept().nn)
+            summon[Data is Aggregable by Data].accept(serverDuplex.source)
 
-        val client = jnc.SocketChannel.open(jn.InetSocketAddress("127.0.0.1", port)).nn
-        val clientDuplex = Duplex.channel(client)
+          val client = jnc.SocketChannel.open(jn.InetSocketAddress("127.0.0.1", port)).nn
+          val clientDuplex = Duplex.channel(client)
 
-        summon[Data is Source by Data over Credit].stream(payload).flowTo(clientDuplex.intake)
-        client.shutdownOutput()
+          summon[Data is Source by Data over Credit].stream(payload).flowTo(clientDuplex.intake)
+          client.shutdownOutput()
 
-        val result = received.await()
-        server.close()
-        client.close()
-        result.to(List)
-      . assert(_ == payload.to(List))
+          val result = received.await()
+          server.close()
+          client.close()
+          result.to(List)
+        . assert(_ == payload.to(List))
 
     suite(m"Transmissible serialization"):
       test(m"Data is transmitted as a single chunk"):

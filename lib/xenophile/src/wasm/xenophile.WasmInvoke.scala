@@ -256,7 +256,18 @@ object WasmInvoke:
         case Foreign.Type.Applied(constructor, elements)
         if constructor.s == "tuple" && isTuple(scala, elements.length) =>
           val fields = scala.dealias.typeArgs
-          val derived = elements.zip(fields).map(decodeFor(_, _))
+          // Macro-time only: mapping with a lambda would let the decoders' minted quote
+          // capabilities leak into the closure's capture set, so the traversal is an
+          // explicit loop with each pair laundered (macro-under-cc precedent,
+          // rep/DECISIONS.md).
+          val derivedBuffer = List.newBuilder[(TypeRepr, Expr[Any] => Expr[Any])]
+
+          for (element, field) <- elements.zip(fields) do
+            val (repr, decode) = decodeFor(element, field)
+            val decode1: Expr[Any] -> Expr[Any] = caps.unsafe.unsafeAssumePure(decode)
+            derivedBuffer += ((repr, decode1))
+
+          val derived = derivedBuffer.result()
           val carriers = derived.map(_(0))
 
           val tupleClass =

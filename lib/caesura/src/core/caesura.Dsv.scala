@@ -157,8 +157,9 @@ object Dsv extends Dsv2:
   // `Sheet` instead (`Sheet.as[Foo]` yields a `LazyList[Foo]`). The `Form` type-tag is
   // added by an `asInstanceOf` cast — `value in Dsv` is just `value { type Form = Dsv }`
   // so the cast is a no-op at runtime.
-  given aggregableIn: [value: Decodable in Dsv] => (format: DsvFormat) => Tactic[DsvError]
-  =>  (value in Dsv) is Aggregable by Text =
+  given aggregableIn: [value: Decodable in Dsv] => (format: DsvFormat)
+  =>  (tactic: Tactic[DsvError])
+  =>  (((value in Dsv) is Aggregable by Text)^{tactic}) =
     text =>
       summon[Sheet is Aggregable by Text].aggregate(text).rows.head.as[value]
       . asInstanceOf[value in Dsv]

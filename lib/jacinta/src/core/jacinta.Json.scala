@@ -819,6 +819,20 @@ object Json extends Json2, Dynamic:
   def parseTracked(source: Text)(using NumberMode, CharEncoder): Json raises ParseError =
     parseTracked(source.data)
 
+  // Parse a byte-chunk iterator into a `Json`, honouring the in-scope
+  // `PositionTracking` toggle (`parsing.trackPositions`): when on, source
+  // positions are recorded and retained on the `Json` (locatable via
+  // `Positionable`); when off, the throughput path is unchanged. This is the
+  // single place the `read`/`load` givens branch on tracking.
+  private def readJson(input: Iterator[Data])(using Tactic[ParseError], PositionTracking): Json =
+    summon[PositionTracking] match
+      case PositionTracking.On =>
+        val (ast, index) = Json.Ast.parseTracked(input)
+        new Json(ast, index)
+
+      case PositionTracking.Off =>
+        Json(Json.Ast.parse(input))
+
   // As above, but pulling from a demand-aware stream rather than a chunk
   // iterator.
   private def readJson(input: Stream[Data] over Credit)
@@ -1194,29 +1208,36 @@ object Json extends Json2, Dynamic:
     given Formatting = Formatting(Unset, false)
     json.root.show
 
-  given aggregable: (tactic: Tactic[ParseError])
-  =>  ((Json is Aggregable by Data)^{tactic}) =
-    new Aggregable:
-      type Self = Json
-      type Operand = Data
+  // Laundered pure per the codec-thunk seal pattern (see the primitive codecs above and
+  // rep/DECISIONS.md): the resolution-scoped tactic shares the instance's given-resolution
+  // lifetime, and a capturing instance cannot be expressed via `new Aggregable` (its pure
+  // base class forbids captured references in method bodies).
+  given aggregable: (tactic: Tactic[ParseError], tracking: PositionTracking)
+  =>  Json is Aggregable by Data =
+    caps.unsafe.unsafeAssumePure:
+      new Aggregable:
+        type Self = Json
+        type Operand = Data
 
-      def aggregate(bytes: LazyList[Data]): Json = readJson(bytes.iterator)
-      override def accept(stream: Stream[Data] over Credit): Json = readJson(stream)
+        def aggregate(bytes: LazyList[Data]): Json = readJson(bytes.iterator)
+        override def accept(stream: Stream[Data] over Credit): Json = readJson(stream)
 
 
-  given aggregableDirect: [value: distillate.Decodable in Json] => Tactic[ParseError]
-  =>  Tactic[JsonError]
-  =>  (value in Json) is Aggregable by Data =
+  // Sealed like `aggregable` above.
+  given aggregableDirect: [value: distillate.Decodable in Json]
+  =>  (tactic: Tactic[ParseError], jsonTactic: Tactic[JsonError], tracking: PositionTracking)
+  =>  ((value in Json) is Aggregable by Data) =
 
-    new Aggregable:
-      type Self = value in Json
-      type Operand = Data
+    caps.unsafe.unsafeAssumePure:
+      new Aggregable:
+        type Self = value in Json
+        type Operand = Data
 
-      def aggregate(bytes: LazyList[Data]): value in Json =
-        readJson(bytes.iterator).as[value].asInstanceOf[value in Json]
+        def aggregate(bytes: LazyList[Data]): value in Json =
+          readJson(bytes.iterator).as[value].asInstanceOf[value in Json]
 
-      override def accept(stream: Stream[Data] over Credit): value in Json =
-        readJson(stream).as[value].asInstanceOf[value in Json]
+        override def accept(stream: Stream[Data] over Credit): value in Json =
+          readJson(stream).as[value].asInstanceOf[value in Json]
 
 
   given showable: Formatting => Json is Showable = _.root.show
@@ -1544,7 +1565,7 @@ object Json extends Json2, Dynamic:
         import Lineation.untrackedData
         Cursor[Data](input)
 
-    private def makeCursor(input: Stream[Data] over Credit): Cursor[Data] =
+    private def makeCursor(input: Stream[Data] over Credit): Cursor[Data, ?] =
       if tracking then
         import zephyrine.lineation.linefeedByte
         Cursor[Data](input)

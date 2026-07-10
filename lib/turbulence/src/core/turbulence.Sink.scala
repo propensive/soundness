@@ -49,8 +49,8 @@ import zephyrine.*
 // only reports a cut, never aborts. `finish` closes the underlying resource,
 // matching `Writable`'s end-of-stream behaviour.
 object Sink extends Sink2:
-  given outputStream: [output <: ji.OutputStream] => (Emit[StreamError], Buffering)
-  =>  output is Sink by Data over Credit =
+  given outputStream: [output <: ji.OutputStream] => (streamCut: Emit[StreamError], buffering: Buffering)
+  =>  ((output is Sink by Data over Credit)^{streamCut}) =
 
     value =>
       new Intake[Data]:
@@ -97,8 +97,8 @@ object Sink extends Sink2:
 
           mark0 = 0
 
-  given channel: (Emit[StreamError], Buffering)
-  =>  jn.channels.WritableByteChannel is Sink by Data over Credit =
+  given channel: (streamCut: Emit[StreamError], buffering: Buffering)
+  =>  ((jn.channels.WritableByteChannel is Sink by Data over Credit)^{streamCut}) =
 
     value =>
       new Intake[Data]:
@@ -154,7 +154,7 @@ object Sink extends Sink2:
   def buffered[target, medium]
     ( target: target, write: (target, LazyList[medium]) => Unit )
     ( using addressable0: medium is Addressable )
-  :   Intake[medium] over Credit =
+  :   (Intake[medium] over Credit)^{write} =
 
     new Intake[medium]:
       type Transport = Credit
@@ -194,13 +194,13 @@ object Sink extends Sink2:
 // this bridge must accumulate everything written and deliver it at `finish` —
 // memory is unbounded, so native `Sink` instances should replace it.
 trait Sink2:
-  given writableData: [target] => (writable: target is Writable by Data)
-  =>  target is Sink by Data over Credit =
+  given writableData: [target] => (writable: (target is Writable by Data)^)
+  =>  ((target is Sink by Data over Credit)^{writable}) =
 
     Sink.buffered(_, writable.write)
 
-  given writableText: [target] => (writable: target is Writable by Text)
-  =>  target is Sink by Text over Credit =
+  given writableText: [target] => (writable: (target is Writable by Text)^)
+  =>  ((target is Sink by Text over Credit)^{writable}) =
 
     Sink.buffered(_, writable.write)
 
@@ -208,5 +208,6 @@ trait Sink extends Typeclass, Operable:
   type Transport
   def intake(target: Self): Intake[Operand] over Transport
 
-  def contramap[self2](lambda: self2 => Self): self2 is Sink by Operand over Transport =
+  def contramap[self2](lambda: self2 => Self)
+  :   (self2 is Sink by Operand over Transport)^{this, lambda} =
     target => intake(lambda(target))
