@@ -731,6 +731,27 @@ object Tests extends Suite(m"Zephyrine tests"):
         builder.toString.tt
       . assert(_ == exotic)
 
+      test(m"record streams carry heap objects with credit counted in records"):
+        val records = IArray.from((1 to 100).map { index => s"record-$index" })
+        val stream = Stream[IArray[String]](records)
+        var collected: List[String] = Nil
+
+        def recur(): Unit = stream.refill(Credit(7)) match
+          case count: Int =>
+            val window = unsafely(stream.window).asInstanceOf[Array[AnyRef]]
+
+            for index <- 0 until count
+            do collected = window(stream.start + index).asInstanceOf[String] :: collected
+
+            stream.skip(count)
+            recur()
+
+          case _ => ()
+
+        recur()
+        collected.reverse
+      . assert(_ == (1 to 100).map { index => s"record-$index" }.to(List))
+
       test(m"flow grants nothing when halted"):
         val regulation = summon[Pace is Regulation]
 

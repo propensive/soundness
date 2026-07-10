@@ -35,6 +35,8 @@ package zephyrine
 import java.io as ji
 import java.lang as jl
 
+import scala.collection.mutable as scm
+
 import anticipation.*
 import denominative.*
 import prepositional.*
@@ -101,6 +103,87 @@ object Addressable:
     :   Unit =
 
       target.write(storage, off, len)
+
+
+  // Heap-object media: a chunk of records (parsed rows, JSON events) is an
+  // `IArray` of them, stored in an erased `Array[AnyRef]` — so credit is
+  // counted in records, and `Buffering` sizes these buffers by reference
+  // count (`Substrate.Boxes`), since their memory usage isn't
+  // deterministically bounded. Erasure means the medium's element type must
+  // be a reference type; the `IArray`s this instance materializes are backed
+  // by `Array[AnyRef]`, which is indistinguishable at erased use sites.
+  given boxed: [element <: AnyRef] => IArray[element] is Addressable:
+    type Operand = element
+    type Target = scm.ArrayBuffer[element]
+    type Storage = Array[AnyRef]
+
+    val empty: IArray[element] = IArray.empty[AnyRef].asInstanceOf[IArray[element]]
+
+    def substrate: Substrate = Substrate.Boxes
+    def blank(size: Int): scm.ArrayBuffer[element] = scm.ArrayBuffer[element]()
+
+    def build(target: scm.ArrayBuffer[element]): IArray[element] =
+      target.toArray[AnyRef].asInstanceOf[IArray[element]]
+
+    def length(block: IArray[element]): Int = block.length
+    def address(block: IArray[element], index: Ordinal): element = block(index.n0)
+
+    def grab(block: IArray[element], start: Ordinal, end: Ordinal): IArray[element] =
+      block.slice(start.n0, end.n0)
+
+    def clone(source: IArray[element], start: Ordinal, end: Ordinal)
+      ( target: scm.ArrayBuffer[element] )
+    :   Unit =
+
+      var index = start.n0
+
+      while index <= end.n0 do
+        target += source(index)
+        index += 1
+
+    def allocate(size: Int): Array[AnyRef] = new Array[AnyRef](size)
+    def storageSize(storage: Array[AnyRef]): Int = storage.length
+
+    def storageAddress(storage: Array[AnyRef], index: Int): element =
+      storage(index).asInstanceOf[element]
+
+    def storageUpdate(storage: Array[AnyRef], index: Int, operand: element): Unit =
+      storage(index) = operand
+
+    def append(target: scm.ArrayBuffer[element], operand: element): Unit = target += operand
+
+    def copyChunk
+      ( source:  IArray[element],
+       srcOff:  Int,
+       dest:    Array[AnyRef],
+       destOff: Int,
+       len:     Int )
+    :   Unit =
+
+      System.arraycopy(source.asInstanceOf[Array[AnyRef]], srcOff, dest, destOff, len)
+
+    def transfer
+      ( src:     Array[AnyRef],
+       srcOff:  Int,
+       dest:    Array[AnyRef],
+       destOff: Int,
+       len:     Int )
+    :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
+
+    def materialize(storage: Array[AnyRef], off: Int, len: Int): IArray[element] =
+      val array = new Array[AnyRef](len)
+      System.arraycopy(storage, off, array, 0, len)
+      array.asInstanceOf[IArray[element]]
+
+    def cloneStorage
+      (storage: Array[AnyRef], off: Int, len: Int)(target: scm.ArrayBuffer[element])
+    :   Unit =
+
+      var index = off
+
+      while index < off + len do
+        target += storage(index).asInstanceOf[element]
+        index += 1
 
 
   inline given text: Text is Addressable:
