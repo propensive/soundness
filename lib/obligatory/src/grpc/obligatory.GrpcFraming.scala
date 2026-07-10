@@ -48,7 +48,8 @@ import zephyrine.*
 // `LengthPrefix` does for the JSON-RPC stream framing.
 object GrpcFraming:
   private def gzip(message: Data): Data = Gzip.compression.compress(LazyList(message)).read[Data]
-  private def gunzip(message: Data): Data = Gzip.compression.decompress(LazyList(message)).read[Data]
+  private def gunzip(message: Data): Data =
+    Gzip.compression.decompress(LazyList(message)).read[Data]
 
   // Prefix one message for the wire, optionally gzip-compressing the payload.
   def encode(message: Data, compress: Boolean = false): Data =

@@ -30,60 +30,86 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package monotonous
+package zephyrine
+
+import java.nio as jn, jn.charset as jnc
 
 import anticipation.*
-import contingency.*
-import denominative.*
-import gossamer.*
-import hypotenuse.*
+import hieroglyph.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
-import zephyrine.*
 
-// An `Alphabet` is the stage descriptor for streaming serialization in both
-// directions: `stream.through(alphabets.hex.upperCase)` serializes a byte
-// stream to text, or deserializes a text stream to bytes, chosen by the
-// stream's medium. The demand conversion is the exact arithmetic of the
-// base: a downstream credit of 1024 hex chars translates to an upstream
-// credit of 512 bytes.
-object Alphabet:
-  // Bits per serialized character: alphabets have 2^bits characters, plus
-  // one for padding.
-  private def bits(alphabet: Alphabet[?]): Int =
-    31 - Integer.numberOfLeadingZeros(alphabet.chars.s.length)
+// Makes a stage-descriptor value — a character decoder, a compression
+// algorithm, a serialization alphabet — instantiable as a `Duct`, so it can
+// be applied directly with `stream.through(stage)` or
+// `intake.accepting(stage)`. Instances are typed
+// `X is Ductile by In to Out over Transport`, with `Upstream` (the demand
+// type the stage presents to its upstream) as a further member, `Credit` in
+// almost all cases. A `Duct` is trivially its own descriptor, so raw ducts
+// compose with the same `through`/`accepting` calls.
+object Ductile:
+  // The fully-determined type of a `Ductile` instance for `stage`, naming all
+  // five type members positionally.
+  type Of[stage, in, out, transport, upstream] =
+    (stage is Ductile by in to out over transport) { type Upstream = upstream }
 
-  given serialization: [encoding <: Serialization]
-  =>  Ductile.Of[Alphabet[encoding], Data, Text, Credit, Credit] =
+  given duct: [in, out, transport, upstream,
+        stage <: Duct[in, out] { type Transport = transport; type Upstream = upstream }]
+  =>  Of[stage, in, out, transport, upstream] =
 
     new Ductile:
-      type Self = Alphabet[encoding]
+      type Self = stage
+      type Operand = in
+      type Result = out
+      type Transport = transport
+      type Upstream = upstream
+
+      def duct(stage0: stage)(using Buffering)
+      :   Duct[in, out] { type Transport = transport; type Upstream = upstream } =
+
+        stage0
+
+  // Character decoding as a pipeline stage. Bytes are staged internally (so
+  // multi-byte characters split across refills are carried, and `step`
+  // always consumes what it is offered), and malformed input is substituted
+  // through the decoder's `TextSanitizer`, exactly as `CharDecoder.decoded`.
+  given charDecoder: Of[CharDecoder, Data, Text, Credit, Credit] =
+    new Ductile:
+      type Self = CharDecoder
       type Operand = Data
       type Result = Text
       type Transport = Credit
       type Upstream = Credit
 
-      def duct(stage: Alphabet[encoding])(using Buffering)
+      def duct(stage: CharDecoder)(using buffering: Buffering)
       :   Duct[Data, Text] { type Transport = Credit; type Upstream = Credit } =
 
         new Duct[Data, Text]:
           type Transport = Credit
           type Upstream = Credit
 
-          private val base: Int = bits(stage)
+          private val decoder: jnc.CharsetDecoder = stage.encoding.charset.newDecoder().nn
 
-          // Serialized characters per group, for terminal padding.
-          private val multiple: Int = 8/base.gcd(8)
+          private val staging: jn.ByteBuffer =
+            jn.ByteBuffer.allocate(buffering.capacity(Substrate.Bytes)).nn
 
-          private var accumulator: Int = 0
-          private var accumulated: Int = 0
-          private var written: Long = 0
-          private var flushing: Boolean = false
+          private var total: Int = 0
+          private var ended: Boolean = false
 
           def regulation: Credit is Regulation = summon[Credit is Regulation]
 
-          def translate(demand: Credit): Credit =
-            Credit((demand.count.min(Long.MaxValue/8)*base/8).max(1))
+          // At most one output char per input byte, so char-credit is a
+          // sound byte-credit as it stands.
+          def translate(demand: Credit): Credit = demand
+
+          private def decode(out: jn.CharBuffer, endOfInput: Boolean): Unit =
+            val result = decoder.decode(staging, out, endOfInput).nn
+
+            if result.isMalformed then
+              stage.sanitizer.sanitize(total + staging.position, stage.encoding).let(out.put(_))
+              staging.position(staging.position + result.length)
+              decode(out, endOfInput)
 
           def step
             ( source: input.Storage,
@@ -96,83 +122,70 @@ object Alphabet:
 
             val bytes = source.asInstanceOf[Array[Byte]]
             val chars = target.asInstanceOf[Array[Char]]
-            var consumed: Int = 0
-            var produced: Int = 0
-            var continue: Boolean = true
+            val copy = sourceLength.min(staging.remaining)
+            staging.put(bytes, sourceOffset, copy)
+            staging.flip()
 
-            while continue do
-              if accumulated >= base then
-                if produced < targetSpace then
-                  chars(targetOffset + produced) =
-                    stage((accumulator >>> (accumulated - base)) & ((1 << base) - 1))
+            val out = jn.CharBuffer.wrap(chars, targetOffset, targetSpace).nn
+            decode(out, false)
+            total += staging.position
+            staging.compact()
 
-                  produced += 1
-                  accumulated -= base
-                  written += 1
-                else
-                  continue = false
-              else if consumed < sourceLength then
-                accumulator = (accumulator << 8) | (bytes(sourceOffset + consumed) & 0xff)
-                accumulated += 8
-                consumed += 1
-              else
-                continue = false
-
-            Duct.Progress(consumed, produced)
+            Duct.Progress(copy, out.position - targetOffset)
 
           override def flush(target: output.Storage, targetOffset: Int, targetSpace: Int)
           :   Int =
 
-            val chars = target.asInstanceOf[Array[Char]]
-            var produced: Int = 0
+            if ended then 0 else
+              val chars = target.asInstanceOf[Array[Char]]
+              val out = jn.CharBuffer.wrap(chars, targetOffset, targetSpace).nn
+              staging.flip()
+              decode(out, true)
+              total += staging.position
+              staging.compact()
 
-            if !flushing then
-              flushing = true
+              if decoder.flush(out).nn.isUnderflow then ended = true
 
-              if accumulated > 0 then
-                chars(targetOffset) =
-                  stage((accumulator << (base - accumulated)) & ((1 << base) - 1))
+              out.position - targetOffset
 
-                produced = 1
-                accumulated = 0
-                written += 1
-
-            if stage.padding then
-              while written%multiple != 0 && produced < targetSpace do
-                chars(targetOffset + produced) = stage(1 << base)
-                produced += 1
-                written += 1
-
-            produced
-
-  given deserialization: [encoding <: Serialization] => Tactic[SerializationError]
-  =>  Ductile.Of[Alphabet[encoding], Text, Data, Credit, Credit] =
-
+  // Character encoding as a pipeline stage. Malformed input (a split
+  // surrogate pair at end-of-stream) and unmappable characters are replaced,
+  // mirroring the replacement semantics of `CharEncoder.encoded`.
+  given charEncoder: Of[CharEncoder, Text, Data, Credit, Credit] =
     new Ductile:
-      type Self = Alphabet[encoding]
+      type Self = CharEncoder
       type Operand = Text
       type Result = Data
       type Transport = Credit
       type Upstream = Credit
 
-      def duct(stage: Alphabet[encoding])(using Buffering)
+      def duct(stage: CharEncoder)(using buffering: Buffering)
       :   Duct[Text, Data] { type Transport = Credit; type Upstream = Credit } =
 
         new Duct[Text, Data]:
           type Transport = Credit
           type Upstream = Credit
 
-          private val base: Int = bits(stage)
-          private val pad: Char = if stage.padding then stage(1 << base) else ' '
+          private val encoder: jnc.CharsetEncoder =
+            stage.encoding.charset.newEncoder().nn
+            . onMalformedInput(jnc.CodingErrorAction.REPLACE).nn
+            . onUnmappableCharacter(jnc.CodingErrorAction.REPLACE).nn
 
-          private var accumulator: Int = 0
-          private var accumulated: Int = 0
-          private var position: Int = 0
+          private val worst: Int = encoder.maxBytesPerChar.toDouble.ceil.toInt.max(1)
+
+          private val staging: jn.CharBuffer =
+            jn.CharBuffer.allocate(buffering.capacity(Substrate.Chars)).nn
+
+          private var ended: Boolean = false
 
           def regulation: Credit is Regulation = summon[Credit is Regulation]
 
-          def translate(demand: Credit): Credit =
-            Credit((demand.count.min(Long.MaxValue/8)*8/base).max(1))
+          // A char yields at least one byte and at most `worst`; requesting
+          // the byte demand divided by the worst case can never overflow the
+          // downstream, and the floor of one prevents starvation.
+          def translate(demand: Credit): Credit = Credit((demand.count/worst).max(1))
+
+          override def quantum: Int = worst
 
           def step
             ( source: input.Storage,
@@ -185,43 +198,34 @@ object Alphabet:
 
             val chars = source.asInstanceOf[Array[Char]]
             val bytes = target.asInstanceOf[Array[Byte]]
-            var consumed: Int = 0
-            var produced: Int = 0
-            var continue: Boolean = true
+            val copy = sourceLength.min(staging.remaining)
+            staging.put(chars, sourceOffset, copy)
+            staging.flip()
 
-            while continue do
-              if accumulated >= 8 then
-                if produced < targetSpace then
-                  bytes(targetOffset + produced) =
-                    ((accumulator >>> (accumulated - 8)) & 0xff).toByte
+            val out = jn.ByteBuffer.wrap(bytes, targetOffset, targetSpace).nn
+            encoder.encode(staging, out, false)
+            staging.compact()
 
-                  produced += 1
-                  accumulated -= 8
-                else
-                  continue = false
-              else if consumed < sourceLength then
-                val char = chars(sourceOffset + consumed)
+            Duct.Progress(copy, out.position - targetOffset)
 
-                // Trailing padding characters carry no data; the bits already
-                // accumulated before them are alignment filler.
-                if stage.padding && char == pad then accumulated = 0
-                else
-                  accumulator = (accumulator << base) | stage.invert(position, char)
-                  accumulated += base
+          override def flush(target: output.Storage, targetOffset: Int, targetSpace: Int)
+          :   Int =
 
-                position += 1
-                consumed += 1
-              else
-                continue = false
+            if ended then 0 else
+              val bytes = target.asInstanceOf[Array[Byte]]
+              val out = jn.ByteBuffer.wrap(bytes, targetOffset, targetSpace).nn
+              staging.flip()
+              encoder.encode(staging, out, true)
+              staging.compact()
 
-            Duct.Progress(consumed, produced)
+              if encoder.flush(out).nn.isUnderflow then ended = true
 
-case class Alphabet[encoding <: Serialization]
-  ( chars: Text, padding: Boolean, tolerance: Map[Char, Int] = Map() ):
+              out.position - targetOffset
 
-  def apply(index: Int): Char = chars.at(index.z).vouch
+trait Ductile extends Typeclass, Operable, Resultant:
+  type Transport
+  type Upstream
 
-  def invert(position: Int, char: Char): Int raises SerializationError =
-    inverse.getOrElse(char, abort(SerializationError(position, char)))
-
-  lazy val inverse: Map[Char, Int] = tolerance ++ chars.chars.zipWithIndex.to(Map)
+  def duct(stage: Self)(using Buffering): Duct[Operand, Result] {
+    type Transport = Ductile.this.Transport
+    type Upstream = Ductile.this.Upstream }

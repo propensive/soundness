@@ -63,7 +63,8 @@ package logFormats:
 
 val dateFormat = jt.SimpleDateFormat(t"yyyy-MMM-dd HH:mm:ss.SSS".s)
 
-// Runs `lambda` with logging of `event` suppressed, regardless of any ambient `Sink`s. The silent
+// Runs `lambda` with logging of `event` suppressed, regardless of any ambient `LogSink`s. The
+// silent
 // `event is Loggable` is supplied directly to the block, so (as a lexically-scoped given) it takes
 // precedence over the companion-scoped `Loggable.fanOut`.
 def mute[event](using erased Void)[result](lambda: (event is Loggable) ?=> result): result =

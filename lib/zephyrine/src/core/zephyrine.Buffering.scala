@@ -30,6 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package zephyrine
 
-export anticipation.{Level, Log, Loggable, logs, LogSink, Transcribable, transcribes}
+// Contextual configuration determining how streaming stages are instantiated
+// with buffers. `capacity` is consulted once per stage at construction time, so
+// an adaptive instance (e.g. one consulting available memory) sees each new
+// stage, but never resizes a live one. `window` is the number of blocks of
+// headroom a `Conduit` holds between its writer and reader threads.
+object Buffering:
+  given standard: Buffering:
+    def capacity(substrate: Substrate): Int = substrate match
+      case Substrate.Bytes => 4096
+      case Substrate.Chars => 2048
+      case Substrate.Boxes => 256
+
+    def window: Int = 4
+
+trait Buffering:
+  def capacity(substrate: Substrate): Int
+  def window: Int

@@ -30,6 +30,11 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package zephyrine
 
-export anticipation.{Level, Log, Loggable, logs, LogSink, Transcribable, transcribes}
+// The physical representation of a stage's buffer, used by `Buffering` to size
+// allocations: byte and char buffers have deterministic footprints, while
+// `Boxes` (heap-object buffers) are counted in references, so their memory
+// usage isn't deterministically bounded.
+enum Substrate:
+  case Bytes, Chars, Boxes

@@ -30,67 +30,138 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package telekinesis
+package zephyrine
 
-import language.dynamics
+import java.util.concurrent as juc
+import java.util.concurrent.atomic as juca
 
-import anticipation.*
-import contingency.*
-import distillate.*
 import fulminate.*
-import gesticulate.*
-import gossamer.*
-import hieroglyph.*
-import legerdemain.*
-import monotonous.*
 import prepositional.*
 import rudiments.*
-import spectacular.*
-import turbulence.*
 import vacuous.*
 
-import alphabets.hexLowerCase
+// The asynchronous boundary of a streaming pipeline: an `Intake` on its write
+// side and a `Stream` on its read side, with exactly one thread ever touching
+// each. Data crosses in blocks through a bounded queue, so a writer that
+// outpaces its reader parks in `reserve` — cross-thread backpressure — and
+// the free capacity is the credit this conduit reports as its `demand`. This
+// is the only synchronized component of a pipeline; every other stage is
+// single-owner mutable state on one side of a conduit or the other.
+//
+// A conduit is the generalization of `Producer.Channel`: block-granular
+// hand-off, but with element-granular credit, storage handed to the reader
+// without materializing an immutable chunk, and failure propagation — a
+// producer-side `fail` is rethrown from the reader's next `refill`.
+object Conduit:
+  private object End
 
-object Postable:
-  def apply[response](mediaType0: MediaType, stream0: response => LazyList[Data])
-  :   response is Postable =
+  private class Block(val storage: AnyRef, val size: Int)
 
-    new Postable:
-      type Self = response
-      def mediaType(response: response): MediaType = mediaType0
-      def stream(response: response): LazyList[Data] = stream0(response)
+final class Conduit[medium]
+  (using val addressable0: medium is Addressable)(using buffering: Buffering)
+extends Intake[medium](using addressable0):
+  type Transport = Credit
 
+  private val block: Int = buffering.capacity(addressable0.substrate)
+  private val queue: juc.ArrayBlockingQueue[AnyRef] = juc.ArrayBlockingQueue(buffering.window)
 
-  given text: (encoder: CharEncoder) => Text is Postable =
-    Postable(media"text/plain", value => LazyList(IArray.from(value.data)))
+  private val written: juca.AtomicLong = juca.AtomicLong(0)
+  private val consumed: juca.AtomicLong = juca.AtomicLong(0)
+  @volatile private var error: Throwable | Null = null
+  @volatile private var closed: Boolean = false
 
-  given textStream: (encoder: CharEncoder) => LazyList[Text] is Postable =
-    Postable(media"application/octet-stream", _.map(_.data))
+  private var current: addressable0.Storage = addressable0.allocate(block)
+  private var mark0: Int = 0
 
-  given unit: Unit is Postable = Postable(media"text/plain", unit => LazyList())
-  given data: Data is Postable = Postable(media"application/octet-stream", LazyList(_))
-  given byteStream: LazyList[Data] is Postable = Postable(media"application/octet-stream", identity)
+  // Everything this conduit can hold: the queued blocks plus the block being
+  // written. `demand` is this allowance less what is currently buffered, so
+  // it reaches zero exactly when `reserve` would block.
+  private val allowance: Long = block.toLong * (buffering.window + 1)
 
-  given query: Query is Postable =
-    import charEncoders.utf8Encoder
-    Postable(media"application/x-www-form-urlencoded", query => LazyList(query.queryString.data))
+  def demand: Credit = Credit(allowance - (written.get - consumed.get))
 
+  protected def buffer0: AnyRef = current.asInstanceOf[AnyRef]
+  def mark: Int = mark0
 
-  given dataStream: [response: Abstractable across HttpStreams to HttpStreams.Content]
-  =>  Tactic[MediaTypeError]
-  =>  response is Postable =
+  def reserve(min: Int): Int =
+    val free = block - mark0
 
-    new Postable:
-      type Self = response
+    if free >= min then free else
+      publish()
+      block
 
-      def mediaType(content: response): MediaType = content.generic(0).decode[MediaType]
-      def stream(content: response): LazyList[Data] = content.generic(1).lazyList
+  def commit(count: Int): Unit =
+    mark0 += count
+    written.addAndGet(count)
+    if mark0 == block then publish()
 
-trait Postable extends Typeclass:
-  def mediaType(content: Self): MediaType
-  def stream(content: Self): LazyList[Data]
+  override def flush(): Unit = if mark0 > 0 then publish()
 
-  def preview(value: Self): Text = stream(value).prim.lay(t""): data =>
-    val sample = data.take(1024)
-    val string: Text = sample.serialize[Hex]
-    if data.length > 128 then t"$string..." else string
+  def finish(): Unit =
+    flush()
+    queue.put(Conduit.End)
+
+  override def fail(error: Throwable): Unit =
+    this.error = error
+    queue.clear()
+    queue.put(Conduit.End)
+
+  private def publish(): Unit =
+    if mark0 > 0 then
+      if closed then
+        written.addAndGet(-mark0)
+        mark0 = 0
+      else
+        queue.put(Conduit.Block(current.asInstanceOf[AnyRef], mark0))
+        current = addressable0.allocate(block)
+        mark0 = 0
+
+  // The read side; single reader. `refill` parks (in `queue.take`) until the
+  // writer publishes a block or finishes.
+  val stream: Stream[medium] over Credit = new Stream[medium](using addressable0):
+    type Transport = Credit
+
+    private var storage: addressable0.Storage = addressable0.allocate(0)
+    private var start0: Int = 0
+    private var limit0: Int = 0
+    private var size: Int = 0
+    private var ended: Boolean = false
+
+    protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+    def start: Int = start0
+    def limit: Int = limit0
+
+    def skip(count: Int): Unit =
+      start0 += count
+      consumed.addAndGet(count)
+
+    def refill(demand: Credit): Optional[Int] =
+      if limit0 > start0 then limit0 - start0
+      else if ended then Unset
+      else
+        val granted = summon[Credit is Regulation].grant(demand)
+
+        if granted == 0 then 0
+        else if limit0 < size then
+          limit0 += (size - limit0).min(granted)
+          limit0 - start0
+        else
+          (queue.take().nn: @unchecked) match
+            case Conduit.End =>
+              ended = true
+              val error0 = error
+              if error0 == null then Unset else throw error0
+
+            case received: Conduit.Block =>
+              storage = received.storage.asInstanceOf[addressable0.Storage]
+              size = received.size
+              start0 = 0
+              limit0 = size.min(granted)
+              limit0
+
+            case _ =>
+              panic(m"unexpected value in conduit queue")
+
+    override def close(): Unit =
+      closed = true
+      queue.clear()

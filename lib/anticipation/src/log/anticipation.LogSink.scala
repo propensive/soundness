@@ -30,6 +30,24 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package anticipation
 
-export anticipation.{Level, Log, Loggable, logs, LogSink, Transcribable, transcribes}
+// A destination for log messages of a given `carrier` type. `eucalyptus.Logger` is the concrete
+// implementation; abstracting it here lets `Loggable.fanOut` collect every in-scope sink (via
+// `gigantism.Every`) without `anticipation.log` depending on the logging runtime.
+//
+// `accepts` reports whether the sink would record an event at the given level (e.g. against a level
+// threshold). `Loggable.fanOut` consults it *before* forcing or transcribing the (by-name) event,
+// so that when no sink accepts — in particular when there are no sinks at all — the logged value is
+// never even constructed, and logging a disabled event costs nothing.
+trait LogSink[-eventType, carrier]:
+  def accepts(level: Level): Boolean
+
+  // Reports whether this sink records events of the given (concrete) type. Takes the *original*
+  // event rather than the transcribed carrier, because category membership (`Log.Category`) is a
+  // property of the event's runtime type — the log call site knows only the general event type, so
+  // a sink filtered to particular categories must test each event at runtime. Defaults to `true`,
+  // so category-agnostic sinks are unaffected.
+  def admits(event: eventType): Boolean = true
+
+  def submit(level: Level, timestamp: Long, message: carrier): Unit

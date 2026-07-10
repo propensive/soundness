@@ -32,11 +32,14 @@
                                                                                                   */
 package turbulence
 
+import java.io as ji
+
 import soundness.*
 
 import charEncoders.utf8Encoder, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
 import threading.platformThreading
 import strategies.throwUnsafely
+import probates.panicProbate
 import errorDiagnostics.emptyDiagnostics
 
 import scala.collection.mutable as scm
@@ -489,3 +492,208 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"Empty stream yields empty result"):
         LazyList[Data]().framed[U32]().to(List)
       . assert(_ == Nil)
+
+    suite(m"Source and Sink tests"):
+      val payload: Data = Data.fill(10000)(_.toByte)
+
+      test(m"input stream source flows to output stream sink"):
+        val input = ji.ByteArrayInputStream(payload.mutable(using Unsafe))
+        val output = ji.ByteArrayOutputStream()
+        val source = summon[ji.ByteArrayInputStream is Source by Data over Credit]
+        val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
+        source.stream(input).flowTo(sink.intake(output))
+        output.toByteArray.nn.to(List)
+      . assert(_ == payload.to(List))
+
+      test(m"in-memory data source flows to output stream sink"):
+        val output = ji.ByteArrayOutputStream()
+        val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
+        summon[Data is Source by Data over Credit].stream(payload).flowTo(sink.intake(output))
+        output.toByteArray.nn.to(List)
+      . assert(_ == payload.to(List))
+
+      val original = t"The quick brown fox jumps over the lazy dog"*100
+
+      test(m"reader source delivers text across refills"):
+        val reader = ji.StringReader(original.s)
+        val source = summon[ji.StringReader is Source by Text over Credit]
+        val stream = source.stream(reader)
+        val builder = StringBuilder()
+
+        def recur(): Unit = stream.refill(Credit(64)) match
+          case count: Int =>
+            val window = unsafely(stream.window).asInstanceOf[Array[Char]]
+            builder.append(String(window, stream.start, count))
+            stream.skip(count)
+            recur()
+
+          case _ => ()
+
+        recur()
+        builder.toString.tt
+      . assert(_ == original)
+
+      test(m"lazyList view drains a stream as chunks"):
+        val stream = summon[Data is Source by Data over Credit].stream(payload)
+        stream.lazyList.map(_.to(List)).flatten.to(List)
+      . assert(_ == payload.to(List))
+
+      test(m"a Streamable instance is a Source through the bridge"):
+        val output = ji.ByteArrayOutputStream()
+        val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
+        val source = summon[LazyList[Data] is Source by Data over Credit]
+        source.stream(LazyList(payload, payload)).flowTo(sink.intake(output))
+        output.toByteArray.nn.length
+      . assert(_ == payload.length*2)
+
+      test(m"a Writable instance is a Sink through the bridge"):
+        class Store():
+          val buffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
+
+        object Store:
+          given Store is Writable by Data = (store, stream) => stream.each: data =>
+            data.each: byte =>
+              store.buffer.append(byte)
+
+        val store = Store()
+        val sink = summon[Store is Sink by Data over Credit]
+        summon[Data is Source by Data over Credit].stream(payload).flowTo(sink.intake(store))
+        store.buffer.length
+      . assert(_ == payload.length)
+
+      test(m"a sink write failure raises StreamError"):
+        import unsafeExceptions.canThrowAny
+
+        val broken = new ji.OutputStream():
+          override def write(byte: Int): Unit = throw ji.IOException("cut")
+          override def write(array: Array[Byte] | Null, off: Int, len: Int): Unit =
+            throw ji.IOException("cut")
+
+        val sink = summon[ji.OutputStream is Sink by Data over Credit]
+
+        capture[StreamError]:
+          summon[Data is Source by Data over Credit].stream(payload).flowTo(sink.intake(broken))
+      . assert(_ == StreamError(0.b))
+
+      test(m"cancelling a blocked conduit writer releases it"):
+        supervise:
+          val conduit = Conduit[Data]()
+          val big = Data.fill(100000)(_.toByte)
+          val writer = async(conduit.put(big))
+          writer.cancel()
+          true
+      . assert(identity)
+
+      test(m"confluence merges all sources completely"):
+        supervise:
+          val sources = (1 to 4).map { index => Data.fill(1000)(_ => index.toByte) }
+          val merged = Confluence(sources.map { data =>
+              summon[Data is Source by Data over Credit].stream(data) }*)
+          val gather = Gather2()
+          merged.flowTo(gather)
+          gather.data.to(List).sorted
+      . assert(_ == (1 to 4).flatMap { index => List.fill(1000)(index.toByte) }.sorted.to(List))
+
+      test(m"manifold delivers the whole stream to every subscriber"):
+        supervise:
+          val source = summon[Data is Source by Data over Credit].stream(payload)
+          val subscribers = Manifold(source, 3)
+
+          val results = subscribers.map: stream =>
+            async:
+              val gather = Gather2()
+              stream.flowTo(gather)
+              gather.data.to(List)
+
+          results.map { task => task.await() }.to(List)
+      . assert(_ == List.fill(3)(payload.to(List)))
+
+      val mixed: Data =
+        Data.fill(50000) { index => (index%251).toByte } ++ (t"repetition "*500).data
+
+      test(m"gzip duct roundtrips a byte stream"):
+        val gather = Gather2()
+        summon[Data is Source by Data over Credit].stream(mixed)
+        . compress[Gzip].decompress[Gzip].flowTo(gather)
+        gather.data.to(List)
+      . assert(_ == mixed.to(List))
+
+      test(m"deflate duct roundtrips a byte stream"):
+        val gather = Gather2()
+        summon[Data is Source by Data over Credit].stream(mixed)
+        . compress[Deflate].decompress[Deflate].flowTo(gather)
+        gather.data.to(List)
+      . assert(_ == mixed.to(List))
+
+      test(m"zlib duct roundtrips a byte stream"):
+        val gather = Gather2()
+        summon[Data is Source by Data over Credit].stream(mixed)
+        . compress[Zlib].decompress[Zlib].flowTo(gather)
+        gather.data.to(List)
+      . assert(_ == mixed.to(List))
+
+      test(m"gzip duct output is genuine gzip"):
+        val gather = Gather2()
+        summon[Data is Source by Data over Credit].stream(mixed).compress[Gzip].flowTo(gather)
+        val stream = java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(gather.data.mutable(using Unsafe)))
+        stream.readAllBytes().nn.to(List)
+      . assert(_ == mixed.to(List))
+
+      test(m"gzip duct decompresses JDK-produced gzip"):
+        val out = ji.ByteArrayOutputStream()
+        val zipped = java.util.zip.GZIPOutputStream(out)
+        zipped.write(mixed.mutable(using Unsafe))
+        zipped.close()
+        val gather = Gather2()
+
+        summon[LazyList[Data] is Source by Data over Credit]
+        . stream(out.toByteArray.nn.immutable(using Unsafe).grouped(7).to(LazyList))
+        . decompress[Gzip].flowTo(gather)
+
+        gather.data.to(List)
+      . assert(_ == mixed.to(List))
+
+      test(m"cancelling a detached flow blocked on an empty conduit releases it"):
+        supervise:
+          val conduit = Conduit[Data]()
+          val gather = Gather2()
+          val pump = conduit.stream.flow(gather)
+          pump.cancel()
+          true
+      . assert(identity)
+
+// A byte intake that gathers everything written to it, for exercising the
+// pump and cancellation paths.
+class Gather2() extends Intake[Data]:
+  type Transport = Credit
+
+  private val block: Int = 16
+  private val storage: addressable.Storage = addressable.allocate(block)
+  private val target: addressable.Target = addressable.blank(64)
+  private var mark1: Int = 0
+
+  def demand: Credit = Credit(Long.MaxValue)
+  protected def buffer0: AnyRef = storage.asInstanceOf[AnyRef]
+  def mark: Int = mark1
+
+  def reserve(min: Int): Int =
+    val free = block - mark1
+
+    if free >= min then free else
+      drain()
+      block
+
+  def commit(count: Int): Unit =
+    mark1 += count
+    if mark1 == block then drain()
+
+  def finish(): Unit = drain()
+
+  def data: Data =
+    drain()
+    addressable.build(target)
+
+  private def drain(): Unit =
+    if mark1 > 0 then
+      addressable.cloneStorage(storage, 0, mark1)(target)
+      mark1 = 0

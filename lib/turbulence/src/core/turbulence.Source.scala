@@ -30,76 +30,61 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package coaxial
+package turbulence
 
 import java.io as ji
-import java.nio.ByteBuffer
-import java.nio.channels as jnc
+import java.nio as jn
 
 import anticipation.*
+import contingency.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
 import zephyrine.*
 
-object Duplex:
-  // Wraps a blocking `InputStream`/`OutputStream` pair — the shape a socket that has no
-  // `SocketChannel` exposes (e.g. an `SSLSocket`). `shutdown` closes the underlying
-  // resource. The read side blocks in `read` and copies each fill; EOF (`-1`) ends the
-  // stream. The stream/write shape mirrors `channel` and `Serviceable`'s socket path.
-  def streams(in: ji.InputStream, out: ji.OutputStream)(shutdown: () => Unit): Duplex = new Duplex:
-    private val buffer = new Array[Byte](65536)
+// A value which can be opened as a pull endpoint: the successor to
+// `Streamable`, producing a demand-aware `Stream` over a mutable buffer
+// instead of a `LazyList`. Sources needing buffers or error contexts capture
+// them as contextual values of the given (`Buffering`, `Tactic[StreamError]`),
+// so the typeclass itself remains a single abstract method.
+object Source extends Source2:
+  given bytes: Data is Source by Data over Credit = Stream(_)
+  given text: [textual <: Text] => textual is Source by Text over Credit = value => Stream(value)
 
-    def stream: LazyList[Data] =
-      def recur(): LazyList[Data] = in.read(buffer) match
-        case -1    => LazyList()
-        case count => buffer.take(count).immutable(using Unsafe) #:: recur()
+  // Legacy views: a lazy list of chunks is a source, though its production is
+  // beyond demand control; demand bounds only the exposure of each chunk.
+  given lazyListData: LazyList[Data] is Source by Data over Credit = value =>
+    Stream(value.iterator)
 
-      recur()
+  given lazyListText: LazyList[Text] is Source by Text over Credit = value =>
+    Stream(value.iterator)
 
-    def send(data: LazyList[Data]): Unit =
-      data.each: bytes =>
-        out.write(bytes.mutable(using Unsafe))
-        out.flush()
+  // The HTTP-body interchange protocol is itself a pull source, so a
+  // request or response body can be `read` directly.
+  given httpBody: Buffering => HttpStreams.Body is Source by Data over Credit = _.stream
 
-    def close(): Unit = shutdown()
+  given inputStream: [input <: ji.InputStream] => (Tactic[StreamError], Buffering)
+  =>  input is Source by Data over Credit =
 
-  // Wraps a blocking `SocketChannel` (TCP or Unix-domain). The read side fills a
-  // reusable buffer and blocks in `read`; EOF (`-1`) terminates the stream.
-  def channel(socketChannel: jnc.SocketChannel): Duplex = new Duplex:
-    private val buffer = ByteBuffer.allocate(65536).nn
+    value => Source.stream(jn.channels.Channels.newChannel(value).nn)
 
-    def stream: LazyList[Data] =
-      def recur(): LazyList[Data] =
-        buffer.clear()
+  given channel: (Tactic[StreamError], Buffering)
+  =>  jn.channels.ReadableByteChannel is Source by Data over Credit =
 
-        socketChannel.read(buffer) match
-          case -1 => LazyList()
+    Source.stream(_)
 
-          case _ =>
-            buffer.flip()
-            val array = new Array[Byte](buffer.remaining)
-            buffer.get(array)
-            array.immutable(using Unsafe) #:: recur()
+  given reader: [input <: ji.Reader] => (Tactic[StreamError], Buffering)
+  =>  input is Source by Text over Credit =
 
-      recur()
-
-    def send(data: LazyList[Data]): Unit =
-      data.each: bytes =>
-        val out = ByteBuffer.wrap(bytes.mutable(using Unsafe)).nn
-        while out.hasRemaining do socketChannel.write(out)
-
-    def close(): Unit = socketChannel.close()
-
-    override def source(using buffering: Buffering): Stream[Data] over Credit =
-      new Stream[Data]:
+    value =>
+      new Stream[Text]:
         type Transport = Credit
 
-        private val capacity: Int = buffering.capacity(Substrate.Bytes)
-        private val storage: Array[Byte] = new Array[Byte](capacity)
-        private val wrapped: ByteBuffer = ByteBuffer.wrap(storage).nn
+        private val capacity: Int = summon[Buffering].capacity(Substrate.Chars)
+        private val storage: Array[Char] = new Array[Char](capacity)
         private var start0: Int = 0
         private var limit0: Int = 0
+        private var total: Long = 0
         private var ended: Boolean = false
 
         protected def window0: AnyRef = storage
@@ -116,66 +101,103 @@ object Duplex:
             if granted == 0 then 0 else
               start0 = 0
               limit0 = 0
-              wrapped.clear()
-              wrapped.limit(capacity.min(granted))
 
-              socketChannel.read(wrapped) match
+              try value.read(storage, 0, capacity.min(granted)) match
                 case -1 =>
                   ended = true
+                  value.close()
                   Unset
 
-                case 0 =>
-                  refill(demand)
-
                 case count =>
+                  total += count
                   limit0 = count
                   count
 
-// A persistent, bidirectional connection: unlike `Serviceable`'s request/response
-// `transmit`/`receive` (which shuts down the output side after sending), a `Duplex`
-// stays open for repeated, independent reads and writes — the shape a multiplexing
-// protocol such as HTTP/2 needs, where one side both streams requests and receives
-// server-initiated frames concurrently. Reads block until data arrives or the peer
-// closes; `send` may be called many times and never half-closes the connection.
-trait Duplex:
-  def stream: LazyList[Data]
-  def send(data: LazyList[Data]): Unit
-  def close(): Unit
+              catch case error: ji.IOException =>
+                ended = true
+                try value.close() catch case _: Exception => ()
+                abort(StreamError(total.b))
 
-  // Pull endpoint over the read side. The default adapts the legacy
-  // `stream`; `Duplex.channel` overrides it to read directly into the
-  // endpoint's buffer, allocation-free.
-  def source(using Buffering): Stream[Data] over Credit = Stream(stream.iterator)
+        override def close(): Unit =
+          ended = true
+          try value.close() catch case _: Exception => ()
 
-  // Push endpoint over the write side: repeatable, like `send`, and
-  // `finish()` flushes without half-closing the connection.
-  def intake(using buffering: Buffering): Intake[Data] over Credit =
-    new Intake[Data]:
+  // The byte pump underlying `inputStream` and `channel` sources: reads
+  // directly into the stream's own storage, at most one granted block at a
+  // time.
+  private def stream(input: jn.channels.ReadableByteChannel)
+    ( using tactic: Tactic[StreamError], buffering: Buffering )
+  :   Stream[Data] over Credit =
+
+    new Stream[Data]:
       type Transport = Credit
 
-      private val block: Int = buffering.capacity(Substrate.Bytes)
-      private val storage: Array[Byte] = new Array[Byte](block)
-      private var mark0: Int = 0
+      private val capacity: Int = buffering.capacity(Substrate.Bytes)
+      private val storage: Array[Byte] = new Array[Byte](capacity)
+      private val buffer: jn.ByteBuffer = jn.ByteBuffer.wrap(storage).nn
+      private var start0: Int = 0
+      private var limit0: Int = 0
+      private var total: Long = 0
+      private var ended: Boolean = false
 
-      def demand: Credit = Credit(Long.MaxValue)
-      protected def buffer0: AnyRef = storage
-      def mark: Int = mark0
+      protected def window0: AnyRef = storage
+      def start: Int = start0
+      def limit: Int = limit0
+      def skip(count: Int): Unit = start0 += count
 
-      def reserve(min: Int): Int =
-        val free = block - mark0
+      def refill(demand: Credit): Optional[Int] =
+        if limit0 > start0 then limit0 - start0
+        else if ended then Unset
+        else
+          val granted = summon[Credit is Regulation].grant(demand)
 
-        if free >= min then free else
-          drain()
-          block
+          if granted == 0 then 0 else
+            start0 = 0
+            limit0 = 0
+            buffer.clear()
+            buffer.limit(capacity.min(granted))
 
-      def commit(count: Int): Unit =
-        mark0 += count
-        if mark0 == block then drain()
+            try input.read(buffer) match
+              case -1 =>
+                ended = true
+                try input.close() catch case _: Exception => ()
+                Unset
 
-      override def flush(): Unit = drain()
-      def finish(): Unit = drain()
+              case 0 =>
+                0
 
-      private def drain(): Unit =
-        if mark0 > 0 then
-          send(LazyList(storage.slice(0, mark0).nn.immutable(using Unsafe)))
-          mark0 = 0
+              case count =>
+                total += count
+                limit0 = count
+                count
+
+            catch case error: Exception =>
+              ended = true
+              try input.close() catch case _: Exception => ()
+              abort(StreamError(total.b))
+
+      override def close(): Unit =
+        ended = true
+        try input.close() catch case _: Exception => ()
+
+// Transitional: any `Streamable` instance over a buffer-backed medium is a
+// `Source`, at lower priority than the native instances above, so downstream
+// code migrates without ceremony. Production of the underlying `LazyList` is
+// not demand-controlled.
+trait Source2:
+  given streamableData: [value] => (streamable: value is Streamable by Data)
+  =>  value is Source by Data over Credit =
+
+    source => Stream(streamable.stream(source).iterator)
+
+  given streamableText: [value] => (streamable: value is Streamable by Text)
+  =>  value is Source by Text over Credit =
+
+    source => Stream(streamable.stream(source).iterator)
+
+trait Source extends Typeclass, Operable:
+  type Transport
+  def stream(value: Self): Stream[Operand] over Transport
+
+  def contramap[self2](lambda: self2 => Self): self2 is Source by Operand over Transport =
+    value => stream(lambda(value))

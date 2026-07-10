@@ -117,7 +117,7 @@ object Protobuf extends Protobuf2:
       type Result = HttpStreams.Content
 
       def genericize(value: Protobuf): HttpStreams.Content =
-        (t"application/protobuf", LazyList(value.encode))
+        (t"application/protobuf", HttpStreams.Body(value.encode))
 
   // `bytes.read[Protobuf]` aggregates the byte stream and wraps it as a message.
   given aggregable: Protobuf is Aggregable by Data = bytes => message(bytes.read[Data])

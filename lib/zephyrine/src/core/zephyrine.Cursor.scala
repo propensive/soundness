@@ -122,6 +122,32 @@ object Cursor:
         lineation0 )
 
 
+  // Build a Cursor over a pull endpoint: each load refills the stream with a
+  // block-sized credit (from the ambient `Buffering`) and materializes the
+  // delivered window as one chunk. The credit bounds how much any upstream
+  // stage produces per load, so memory stays bounded through a parse of an
+  // arbitrarily large input.
+  transparent inline def apply[data](stream: Stream[data] over Credit)
+    ( using addressable0: data is Addressable,
+            lineation0:   Lineation by addressable0.Operand,
+            buffering:    Buffering )
+  :   Cursor[data] =
+
+    val block: Int = buffering.capacity(addressable0.substrate)
+
+    new Cursor[data]
+      ( () =>
+          stream.refill(Credit(block)).let: count =>
+            val window = stream.window(using Unsafe).asInstanceOf[addressable0.Storage]
+            val chunk = addressable0.materialize(window, stream.start, count)
+            stream.skip(count)
+            chunk,
+        Unset,
+        DefaultCapacity,
+        addressable0,
+        lineation0 )
+
+
   // Backwards-compatible factory that adapts an Iterator to the loader API.
   // Lets the existing test suite cross-compile against Cursor.
   transparent inline def apply[data](iterator: Iterator[data])

@@ -30,6 +30,87 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package zephyrine
 
-export anticipation.{Level, Log, Loggable, logs, LogSink, Transcribable, transcribes}
+import denominative.*
+import prepositional.*
+import rudiments.*
+import vacuous.*
+
+// The push endpoint of a streaming pipeline: a mutable buffer whose writable
+// window is exposed zero-copy to exactly one producer, and which reports its
+// current `demand` — the reactive message telling that producer how much it
+// can accept. An `Intake` is transformed into a differently-typed `Intake`
+// with `accepting`. `Intake` extends `Producer`, so producing code written
+// against `put`/`push` (serializers) drives a pipeline unchanged.
+//
+// The primitive protocol is `reserve`/`buffer`/`mark`/`commit`: a writer
+// reserves contiguous space, writes directly into the intake's storage at
+// `mark`, then commits. `put`, `push` and `absorb` are final loops over that
+// protocol, so implementations provide only the window and its lifecycle.
+trait Intake[medium](using val addressable: medium is Addressable) extends Producer[medium]:
+  type Operand = addressable.Operand
+  type Transport
+
+  // The current demand this intake reports to whoever writes to it. Computed
+  // on request; never cached by callers. Advisory for bounding upstream
+  // production — `reserve` is what actually blocks.
+  def demand: Transport
+
+  // Ensure at least `min` elements of contiguous writable space, blocking if
+  // necessary, and return the available space. `min` must not exceed the
+  // intake's block size.
+  def reserve(min: Int): Int
+
+  // Zero-copy view of this intake's buffer; elements from `mark` are writable
+  // up to the last `reserve`d space. Valid only until the next `commit`,
+  // `flush` or `finish` — single-owner discipline, as `Stream.window`.
+  // Implementations provide the untyped `buffer0`; since `Addressable`
+  // instances are unique per medium, the cast in `buffer` is sound.
+  final def buffer(using Unsafe): addressable.Storage =
+    buffer0.asInstanceOf[addressable.Storage]
+
+  protected def buffer0: AnyRef
+  def mark: Int
+
+  // Declare `count` elements written at `mark`; may synchronously cascade
+  // them through downstream stages.
+  def commit(count: Int): Unit
+
+  // Propagate buffered data downstream now, without ending the stream.
+  def flush(): Unit = ()
+
+  // End-of-stream: flush, emit any terminal stage state, release downstream.
+  // Called exactly once.
+  def finish(): Unit
+
+  // Abort: propagate failure downstream so stages can release resources. The
+  // error is rethrown to the reader at an asynchronous boundary.
+  def fail(error: Throwable): Unit = finish()
+
+  final def absorb(source: addressable.Storage, offset: Int, count: Int): Unit =
+    var done: Int = 0
+
+    while done < count do
+      val free = reserve(1)
+      val size = free.min(count - done)
+      addressable.transfer(source, offset + done, buffer(using Unsafe), mark, size)
+      commit(size)
+      done += size
+
+  final def put(source: medium): Unit = put(source, Prim, addressable.length(source))
+
+  final def put(source: medium, offset: Ordinal, size: Int): Unit =
+    var done: Int = 0
+
+    while done < size do
+      val free = reserve(1)
+      val count = free.min(size - done)
+      addressable.copyChunk(source, offset.n0 + done, buffer(using Unsafe), mark, count)
+      commit(count)
+      done += count
+
+  final def push(operand: Operand): Unit =
+    reserve(1)
+    addressable.storageUpdate(buffer(using Unsafe), mark, operand)
+    commit(1)

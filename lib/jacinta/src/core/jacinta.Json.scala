@@ -744,6 +744,17 @@ object Json extends Json2, Dynamic:
       val (raw, ints) = Parser.parseTracked(input, mode)
       (Json.Ast(raw), Json.PositionIndex(ints))
 
+    private[jacinta] def parse(input: Stream[Data] over Credit)(using mode: NumberMode)
+    :   Json.Ast raises ParseError =
+
+      Json.Ast(Parser.parse(input, mode))
+
+    private[jacinta] def parseTracked(input: Stream[Data] over Credit)(using mode: NumberMode)
+    :   (Json.Ast, Json.PositionIndex) raises ParseError =
+
+      val (raw, ints) = Parser.parseTracked(input, mode)
+      (Json.Ast(raw), Json.PositionIndex(ints))
+
   def ast(value: Json.Ast): Json = new Json(value)
 
   // `object Json` extends `Dynamic`, which suppresses the universal-apply
@@ -757,6 +768,20 @@ object Json extends Json2, Dynamic:
   // `Positionable`); when off, the throughput path is unchanged. This is the
   // single place the `read`/`load` givens branch on tracking.
   private def readJson(input: Iterator[Data])(using Tactic[ParseError], PositionTracking): Json =
+    summon[PositionTracking] match
+      case PositionTracking.On =>
+        val (ast, index) = Json.Ast.parseTracked(input)
+        new Json(ast, index)
+
+      case PositionTracking.Off =>
+        Json(Json.Ast.parse(input))
+
+  // As above, but pulling from a demand-aware stream rather than a chunk
+  // iterator.
+  private def readJson(input: Stream[Data] over Credit)
+    ( using Tactic[ParseError], PositionTracking )
+  :   Json =
+
     summon[PositionTracking] match
       case PositionTracking.On =>
         val (ast, index) = Json.Ast.parseTracked(input)
@@ -1092,7 +1117,12 @@ object Json extends Json2, Dynamic:
     json.root.show
 
   given aggregable: (Tactic[ParseError], PositionTracking) => Json is Aggregable by Data =
-    bytes => readJson(bytes.iterator)
+    new Aggregable:
+      type Self = Json
+      type Operand = Data
+
+      def aggregate(bytes: LazyList[Data]): Json = readJson(bytes.iterator)
+      override def accept(stream: Stream[Data] over Credit): Json = readJson(stream)
 
 
   given aggregableDirect: [value: distillate.Decodable in Json] => Tactic[ParseError]
@@ -1100,7 +1130,15 @@ object Json extends Json2, Dynamic:
   =>  Tactic[JsonError]
   =>  (value in Json) is Aggregable by Data =
 
-    bytes => readJson(bytes.iterator).as[value].asInstanceOf[value in Json]
+    new Aggregable:
+      type Self = value in Json
+      type Operand = Data
+
+      def aggregate(bytes: LazyList[Data]): value in Json =
+        readJson(bytes.iterator).as[value].asInstanceOf[value in Json]
+
+      override def accept(stream: Stream[Data] over Credit): value in Json =
+        readJson(stream).as[value].asInstanceOf[value in Json]
 
 
   given showable: Formatting => Json is Showable = _.root.show
@@ -1115,7 +1153,7 @@ object Json extends Json2, Dynamic:
       type Result = HttpStreams.Content
 
       def genericize(json: Json): HttpStreams.Content =
-        (t"application/json; charset=${encoder.encoding.name}", LazyList(json.show.data))
+        (t"application/json; charset=${encoder.encoding.name}", HttpStreams.Body(json.show.data))
 
 
   given decodable: (Tactic[ParseError], PositionTracking) => Json is distillate.Decodable in Text =
@@ -1263,6 +1301,25 @@ object Json extends Json2, Dynamic:
       val raw = parser.parse()
       (raw, parser.rootIndex.nn)
 
+    def parse(input: Stream[Data] over Credit, mode: NumberMode): Raw raises ParseError =
+      val parser = pool.get.nn
+      parser.tracking = false
+      parser.resetStream(input)
+      parser.holes = false
+      parser.numberMode = mode
+      parser.parse()
+
+    def parseTracked(input: Stream[Data] over Credit, mode: NumberMode)
+    :   (Raw, IArray[Int]) raises ParseError =
+
+      val parser = pool.get.nn
+      parser.tracking = true
+      parser.resetStream(input)
+      parser.holes = false
+      parser.numberMode = mode
+      val raw = parser.parse()
+      (raw, parser.rootIndex.nn)
+
   private[jacinta] final class Parser:
     import scala.annotation.switch
     import scala.collection.mutable.ArrayBuffer
@@ -1373,6 +1430,17 @@ object Json extends Json2, Dynamic:
       rootIndex = null
       heldToken = null
 
+    def resetStream(input: Stream[Data] over Credit): Unit =
+      cursor = makeCursor(input)
+      syncFrom()
+      stringCursor = 0
+      arrayBufferId = -1
+      bcdLongBufferId = -1
+      bcdIntBufferId = -1
+      indexBufferId = -1
+      rootIndex = null
+      heldToken = null
+
     private def makeCursor(input: Data): Cursor[Data] =
       if tracking then
         import zephyrine.lineation.linefeedByte
@@ -1382,6 +1450,14 @@ object Json extends Json2, Dynamic:
         Cursor[Data](input)
 
     private def makeCursor(input: Iterator[Data]): Cursor[Data] =
+      if tracking then
+        import zephyrine.lineation.linefeedByte
+        Cursor[Data](input)
+      else
+        import Lineation.untrackedData
+        Cursor[Data](input)
+
+    private def makeCursor(input: Stream[Data] over Credit): Cursor[Data] =
       if tracking then
         import zephyrine.lineation.linefeedByte
         Cursor[Data](input)
