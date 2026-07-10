@@ -468,6 +468,7 @@ object Http:
 
   enum Body:
     case Streaming(data: LazyList[Data])
+    case Flowing(source: () => Stream[Data] over Credit)
     case Fixed(data: Data)
     case Empty
 
@@ -475,6 +476,7 @@ object Http:
       case Body.Fixed(data)       => LazyList(data)
       case Body.Empty             => LazyList()
       case Body.Streaming(stream) => stream
+      case Body.Flowing(source)   => source().lazyList
 
 
   class Request
@@ -612,7 +614,7 @@ object Http:
             val length = data.length.toString.tt
             (if hasContentLength then Nil else List(Header(t"content-length", length)), false)
 
-          case Body.Streaming(_) =>
+          case Body.Streaming(_) | Body.Flowing(_) =>
             if explicitChunked && chunkable then (Nil, true)
             else if hasContentLength then (Nil, false)
             else if chunkable then (List(Header(t"transfer-encoding", t"chunked")), true)
@@ -654,6 +656,10 @@ object Http:
           case Body.Empty             => LazyList()
           case Body.Fixed(data)       => LazyList(data)
           case Body.Streaming(stream) => if chunked then chunkedFraming(stream) else stream
+
+          case Body.Flowing(source) =>
+            val stream = source().lazyList
+            if chunked then chunkedFraming(stream) else stream
 
       head.data #:: bodyBytes
 
