@@ -56,7 +56,11 @@ object settings:
   // directory to switch compilers. After rebuilding the compiler, run `./mill clean`: the
   // compiler and sbt-bridge paths are content-hashed, but coursier may serve other repo
   // artifacts from its cache under this unchanging version string.
-  val scalaVersion = "3.9.0-RC1-propensive"
+  // `SOUNDNESS_SCALA_VERSION`/`SOUNDNESS_SCALA_HOME` switch toolchains together (the version
+  // string must match what the `release` was built with, or coursier/zinc caches poison each
+  // other across compilers). Defaults target the 3.9.0 row; the 3.10.0 row (tracking
+  // upstream/main) lives at ../scala/all-main/release with version "3.10.0-propensive".
+  val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION", "3.9.0-RC1-propensive")
   val scalaHome =
     sys.env.getOrElse
       ("SOUNDNESS_SCALA_HOME", "/Users/propensive/work/worktrees/scala/soundness-390/release")
