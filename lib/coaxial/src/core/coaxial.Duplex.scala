@@ -37,8 +37,10 @@ import java.nio.ByteBuffer
 import java.nio.channels as jnc
 
 import anticipation.*
+import prepositional.*
 import rudiments.*
 import vacuous.*
+import zephyrine.*
 
 object Duplex:
   // Wraps a blocking `InputStream`/`OutputStream` pair — the shape a socket that has no
@@ -89,6 +91,46 @@ object Duplex:
 
     def close(): Unit = socketChannel.close()
 
+    override def source(using buffering: Buffering): Stream[Data] over Credit =
+      new Stream[Data]:
+        type Transport = Credit
+
+        private val capacity: Int = buffering.capacity(Substrate.Bytes)
+        private val storage: Array[Byte] = new Array[Byte](capacity)
+        private val wrapped: ByteBuffer = ByteBuffer.wrap(storage).nn
+        private var start0: Int = 0
+        private var limit0: Int = 0
+        private var ended: Boolean = false
+
+        protected def window0: AnyRef = storage
+        def start: Int = start0
+        def limit: Int = limit0
+        def skip(count: Int): Unit = start0 += count
+
+        def refill(demand: Credit): Optional[Int] =
+          if limit0 > start0 then limit0 - start0
+          else if ended then Unset
+          else
+            val granted = summon[Credit is Regulation].grant(demand)
+
+            if granted == 0 then 0 else
+              start0 = 0
+              limit0 = 0
+              wrapped.clear()
+              wrapped.limit(capacity.min(granted))
+
+              socketChannel.read(wrapped) match
+                case -1 =>
+                  ended = true
+                  Unset
+
+                case 0 =>
+                  refill(demand)
+
+                case count =>
+                  limit0 = count
+                  count
+
 // A persistent, bidirectional connection: unlike `Serviceable`'s request/response
 // `transmit`/`receive` (which shuts down the output side after sending), a `Duplex`
 // stays open for repeated, independent reads and writes — the shape a multiplexing
@@ -99,3 +141,41 @@ trait Duplex:
   def stream: LazyList[Data]
   def send(data: LazyList[Data]): Unit
   def close(): Unit
+
+  // Pull endpoint over the read side. The default adapts the legacy
+  // `stream`; `Duplex.channel` overrides it to read directly into the
+  // endpoint's buffer, allocation-free.
+  def source(using Buffering): Stream[Data] over Credit = Stream(stream.iterator)
+
+  // Push endpoint over the write side: repeatable, like `send`, and
+  // `finish()` flushes without half-closing the connection.
+  def intake(using buffering: Buffering): Intake[Data] over Credit =
+    new Intake[Data]:
+      type Transport = Credit
+
+      private val block: Int = buffering.capacity(Substrate.Bytes)
+      private val storage: Array[Byte] = new Array[Byte](block)
+      private var mark0: Int = 0
+
+      def demand: Credit = Credit(Long.MaxValue)
+      protected def buffer0: AnyRef = storage
+      def mark: Int = mark0
+
+      def reserve(min: Int): Int =
+        val free = block - mark0
+
+        if free >= min then free else
+          drain()
+          block
+
+      def commit(count: Int): Unit =
+        mark0 += count
+        if mark0 == block then drain()
+
+      override def flush(): Unit = drain()
+      def finish(): Unit = drain()
+
+      private def drain(): Unit =
+        if mark0 > 0 then
+          send(LazyList(storage.slice(0, mark0).nn.immutable(using Unsafe)))
+          mark0 = 0

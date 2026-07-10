@@ -36,6 +36,9 @@ package coaxial
 // package, so they are already in scope; re-importing them through `soundness`
 // would make the two same-shaped `transmit` overloads (from `Serviceable` and
 // `Routable`) ambiguous, so they are excluded from the wildcard.
+import java.net as jn
+import java.nio.channels as jnc
+
 import soundness.{transmit as _, listen as _, react as _, duplex as _, *}
 
 import charEncoders.utf8Encoder
@@ -55,6 +58,32 @@ object Tests extends Suite(m"Coaxial tests"):
     def ascii(text: Text): Data = IArray.from(text.s.getBytes("US-ASCII").nn.to(List))
     def bytes(data: Data): List[Byte] = data.to(List)
     def joined(stream: LazyList[Data]): List[Byte] = stream.to(List).flatMap(_.to(List))
+
+    suite(m"Duplex streaming endpoints"):
+      val payload = Data.fill(60000) { index => (index%97).toByte }
+
+      test(m"data flows through native socket stream endpoints"):
+        import supervisors.globalSupervisor
+
+        val server = jnc.ServerSocketChannel.open().nn
+        server.bind(jn.InetSocketAddress("127.0.0.1", 0))
+        val port = server.socket.nn.getLocalPort
+
+        val received = async:
+          val serverDuplex = Duplex.channel(server.accept().nn)
+          summon[Data is Aggregable by Data].accept(serverDuplex.source)
+
+        val client = jnc.SocketChannel.open(jn.InetSocketAddress("127.0.0.1", port)).nn
+        val clientDuplex = Duplex.channel(client)
+
+        summon[Data is Source by Data over Credit].stream(payload).flowTo(clientDuplex.intake)
+        client.shutdownOutput()
+
+        val result = received.await()
+        server.close()
+        client.close()
+        result.to(List)
+      . assert(_ == payload.to(List))
 
     suite(m"Transmissible serialization"):
       test(m"Data is transmitted as a single chunk"):
