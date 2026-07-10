@@ -108,7 +108,7 @@ object Upgrade:
         val pendingPath: Path on Linux = pendingDir/t".pending"
 
         pendingPath.open: file =>
-          LazyList(bytes).writeTo(file)
+          file.write(LazyList(bytes))
 
         val launcher: Text = System.properties.ethereal.script[Text]()
 

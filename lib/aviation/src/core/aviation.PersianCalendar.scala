@@ -92,8 +92,5 @@ class PersianCalendar() extends Calendar:
   def diurnal(date: Date): Day =
     Day(date.jdn - toJulianDay(annual(date)(), mensual(date).ordinal, 1) + 1)
 
-  def jdn(year: Year, month: PersianMonth, day: Day): Date raises TimeError =
-    if day() < 1 || day() > daysInMonth(month, year) then
-      raise(TimeError(_.Invalid(year(), month.ordinal + 1, day(), this)))
-
+  def computeJdn(year: Year, month: PersianMonth, day: Day): Date =
     Date.julianDay(toJulianDay(year(), month.ordinal, day()))

@@ -55,8 +55,8 @@ object Logger:
       level:       Level               = Level.Info,
       name:        Optional[Text]      = Unset,
       categories:  Set[Log.Category]   = Set() )
-    ( using inscribable: loggingType is Inscribable in format,
-            writable:    target is Writable by format,
+    ( using inscribable: (loggingType is Inscribable in format)^,
+            writable:    (target is Writable by format)^,
             monitor:     Monitor,
             codepoint:   Codepoint,
             probate:     Probate )
@@ -68,19 +68,23 @@ object Logger:
       . nn
       . asInstanceOf[Spool[format]]
 
-    def enqueue(message: loggingType, level: Level, timestamp: Long): Unit =
-      spool.put(inscribable.formatter(message, level, timestamp))
+    // The enqueue closure retains the formatter and writer, whose lifetime is the global
+    // spool registry's (application-wide, by design of the shared-spool scheme); laundered
+    // pure so `Logger` instances remain plain values.
+    val enqueue: (loggingType, Level, Long) -> Unit =
+      caps.unsafe.unsafeAssumePure: (message, level, timestamp) =>
+        spool.put(inscribable.formatter(message, level, timestamp))
 
     new Logger(level, categories, enqueue)
 
-  // The write runs in a fire-and-forget daemon. A write failure `raise`s a `StreamError`, discharged
-  // by the `Emit` captured when the caller summoned the `Writable` — typically a `handle` enclosing
-  // the `Logger(…)` construction. Because that handler runs in place and control returns, the write
-  // is simply re-established (a fresh `spool.stream` resumes from the same queue) so one failure
-  // does not permanently silence the logger. The loop ends only once the spool is stopped.
+  // The write runs in a fire-and-forget daemon. A daemon body is hygienic — it cannot capture an
+  // enclosing handler to discharge a write failure — so it handles its own errors: a `StreamError`
+  // ends the current stream, and the loop re-establishes a fresh `spool.stream` from the same queue,
+  // so one failure does not permanently silence the logger. The loop ends only once the spool is
+  // stopped.
   private def establish[format, target]
     ( destination: target )
-    ( using writable:  target is Writable by format,
+    ( using writable:  (target is Writable by format)^,
             monitor:   Monitor,
             codepoint: Codepoint,
             probate:   Probate )
@@ -88,9 +92,15 @@ object Logger:
 
     val stopped: juc.atomic.AtomicBoolean = juc.atomic.AtomicBoolean(false)
 
+    // The daemon body must stay capture-free (hygienic, see above); the writer's lifetime is
+    // the global spool registry's, so it is laundered pure for use inside the daemon.
+    val writable0: target is Writable by format = caps.unsafe.unsafeAssumePure(writable)
+
     Spool[format]().tap: spool =>
       daemon:
-        while !stopped.get() do spool.stream.writeTo(destination)
+        while !stopped.get() do
+          try spool.stream.writeTo(destination)(using writable = writable0)
+          catch case _: StreamError => ()
 
       Os.intercept[Shutdown]:
         stopped.set(true)

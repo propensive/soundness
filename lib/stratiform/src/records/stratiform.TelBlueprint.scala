@@ -118,7 +118,9 @@ object TelBlueprint:
     TelBlueprint.intensional(identity)
 
   // Helper constructor for `Intensional` instances that ignore params.
-  def intensional[name <: Label, value](accessor: Tel => value)
+  // A pure function (`->`): the instance retains it, and a capturing conversion would make
+  // the typeclass instance itself a capability, which its pure self type (rightly) forbids.
+  def intensional[name <: Label, value](accessor: Tel -> value)
   :   name is Intensional in TelBlueprint from Tel to value =
 
     new Intensional:
@@ -131,7 +133,9 @@ object TelBlueprint:
       def transform(tel: Tel, params: List[Text]): value = access(tel)
 
   // Build a polyvinyl Record from a Tel value and an accessor map.
-  def record(data0: Tel, access0: Text => Tel => Any): Record = new Record:
+  // Pure functions (`->`): the Record instance retains the accessor, and a capturing one would
+  // make the record itself a capability, which polyvinyl's pure Record type (rightly) forbids.
+  def record(data0: Tel, access0: Text -> Tel -> Any): Record = new Record:
     type Origin = Tel
     val data: Tel = data0
     def access: Text => Tel => Any = access0
@@ -192,5 +196,5 @@ abstract class TelBlueprint(val tels: Tels) extends Specification:
 
   def access(name: Text, tel: Tel): Tel = tel.field(name).or(Tel.empty)
 
-  def build(data: Tel, access: Text => Tel => Any): Record =
+  def build(data: Tel, access: Text -> Tel -> Any): Record =
     TelBlueprint.record(data, access)

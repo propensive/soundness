@@ -42,7 +42,8 @@ import turbulence.*
 import vacuous.*
 
 object Diff:
-  given aggregable: Tactic[DiffError] => Diff[Text] is Aggregable by Text = parse(_)
+  given aggregable: (tactic: Tactic[DiffError])
+  =>  ((Diff[Text] is Aggregable by Text)^{tactic}) = parse(_)
 
   private def parse(lines: LazyList[Text]): Diff[Text] raises DiffError =
     def recur
@@ -152,7 +153,7 @@ case class Diff[element](edits: Edit[element]*):
     Diff(edits.map(_.map(lambda))*)
 
 
-  def patch(sequence: Seq[element], update: (element, element) => element = (left, right) => left)
+  def patch(sequence: Seq[element], update: (element, element) -> element = (left, right) => left)
   :   LazyList[element] =
 
     def recur(todo: List[Edit[element]], sequence: Seq[element]): LazyList[element] = todo match

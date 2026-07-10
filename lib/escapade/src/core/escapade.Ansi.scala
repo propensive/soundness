@@ -49,19 +49,19 @@ import symbolism.*
 import vacuous.*
 
 trait Ansi2:
-  class TeletypeSubstitution[value](teletype: value => Teletype)
+  class TeletypeSubstitution[value](teletype: value -> Teletype)
   extends Substitution[Ansi.Input, value, "t"]:
     def embed(value: value) = Ansi.Input.TextInput(teletype(value))
 
   inline given teletype: [value] => Substitution[Ansi.Input, value, "t"] =
-    val teletype: value => Teletype = value => compiletime.summonFrom:
+    val teletype: value -> Teletype = value => compiletime.summonFrom:
       case given (`value` is Teletypeable) => value.teletype
       case given (`value` is Showable)     => Teletype(value.show)
 
     TeletypeSubstitution[value](teletype)
 
 object Ansi extends Ansi2:
-  type Transform = TextStyle => TextStyle
+  type Transform = TextStyle -> TextStyle
 
   def strip(txt: Text): Text = txt.sub(t"""\e\\[?.*?[\\@-~]""", t"")
 

@@ -58,14 +58,10 @@ object OrdinalCalendar extends Calendar:
 
   def diurnal(date: Date): Day = Day(date.jdn - base.zerothDayOfYear(base.annual(date)).jdn)
 
-  def jdn(year: Year, month: Annus.type, day: Day): Date raises TimeError =
-    if day() < 1 || day() > base.daysInYear(year) then
-      raise(TimeError(_.Invalid(year(), 1, day(), this)))
-      base.zerothDayOfYear(year).addDays(1)
-    else
-      base.zerothDayOfYear(year).addDays(day())
+  def computeJdn(year: Year, month: Annus.type, day: Day): Date =
+    base.zerothDayOfYear(year).addDays(day())
 
   // Construct directly from a year and a day-of-year, without the vestigial month.
-  def apply(year: Year, dayOfYear: Int): Date raises TimeError = jdn(year, Annus, Day(dayOfYear))
+  inline def apply(year: Year, dayOfYear: Int): Date raises TimeError = jdn(year, Annus, Day(dayOfYear))
 
   override def format(date: Date): Text = t"${annual(date)()}-${diurnal(date)()}"

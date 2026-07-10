@@ -48,7 +48,7 @@ import vacuous.*
 
 object internal:
   private def handle[test: Type, result: Type]
-    ( test:         Expr[Test[test]],
+    ( test:         Expr[Test[test]^],
       predicate:    Expr[test => Boolean],
       action:       Expr[Trial[test] => result],
       aspirational: Boolean )
@@ -95,6 +95,11 @@ object internal:
         // The non-contrast assertion, used whenever contrast expectations are disabled or no
         // `Contrastable` instance can be derived for the expected value's type (e.g. when the
         // test body carries an effect type, or the type is otherwise not contrastable).
+        // The non-contrast assertion passes no expectation (`Unset`), so it constructs no
+        // `Contrastable` at all. This avoids both the capture-checking box that the `inline`
+        // `Contrastable.nothing[test]` mints when `test` is a pure type (`left.decompose.text: Text`
+        // inlined into the splice) and the out-of-scope-given failure that summoning a *derived*
+        // `Contrastable` (e.g. a sum type's) would cause at the splice site.
         val plain: Expr[result] =
           ' {
               assertion[test, test, report, result]
@@ -102,8 +107,7 @@ object internal:
                   $test,
                   $predicate,
                   $action,
-                  Contrastable.nothing[test],
-                  None,
+                  Unset,
                   $inclusion,
                   $inclusion2,
                   Decomposable.any[test],
@@ -130,8 +134,7 @@ object internal:
                     $test,
                     $predicate,
                     $action,
-                    contrast,
-                    Some($expr),
+                    ($expr, contrast),
                     $inclusion,
                     $inclusion2,
                     decompose,
@@ -144,13 +147,13 @@ object internal:
         else plain
 
 
-  def check[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[test] =
+  def check[test: Type](test: Expr[Test[test]^], predicate: Expr[test => Boolean]): Macro[test] =
     handle[test, test](test, predicate, '{(t: Trial[test]) => t.get}, false)
 
-  def assert[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[Unit] =
+  def assert[test: Type](test: Expr[Test[test]^], predicate: Expr[test => Boolean]): Macro[Unit] =
     handle[test, Unit](test, predicate, '{_ => ()}, false)
 
-  def aspire[test: Type](test: Expr[Test[test]], predicate: Expr[test => Boolean]): Macro[Unit] =
+  def aspire[test: Type](test: Expr[Test[test]^], predicate: Expr[test => Boolean]): Macro[Unit] =
     handle[test, Unit](test, predicate, '{_ => ()}, true)
 
   def succeed: Any => Boolean = (value: Any) => true
@@ -158,11 +161,10 @@ object internal:
 
   def assertion[test, test2 <: test, report, result]
     ( runner:       Runner[report],
-      test:         Test[test2],
+      test:         Test[test2]^,
       predicate:    test2 => Boolean,
       result:       Trial[test2] => result,
-      contrast:     test is Contrastable,
-      exp:          Option[test],
+      expectation:  Optional[(test, test is Contrastable)],
       inc:          Inclusion[report, Verdict],
       inc2:         Inclusion[report, Verdict.Detail],
       decomposable: test is Decomposable,
@@ -183,19 +185,15 @@ object internal:
             if predicate(value) then
               if aspirational then Verdict.AspirePass(duration) else Verdict.Pass(duration)
             else
-              exp match
-                case Some(exp) =>
-                  inc2.include
-                    ( runner.report,
-                      test.id,
-                      Verdict.Detail.Compare
-                        ( decomposable.decomposition(exp).text,
-                          decomposable.decomposition(value).text,
-                          contrast.juxtaposition(exp, value) ) )
-
-                case None =>
-                  // inc2.include(runner.report, test.id, Verdict.Detail.Compare
-                  //  (summon[Any is Contrastable].compare(value, 1)))
+              expectation.let: pair =>
+                val (exp, contrast) = pair
+                inc2.include
+                  ( runner.report,
+                    test.id,
+                    Verdict.Detail.Compare
+                      ( decomposable.decomposition(exp).text,
+                        decomposable.decomposition(value).text,
+                        contrast.juxtaposition(exp, value) ) )
 
               if !map.nil
               then inc2.include(runner.report, test.id, Verdict.Detail.Captures(map))

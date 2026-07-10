@@ -108,7 +108,9 @@ object internal:
         t"${ip.byte0.toString}.${ip.byte1.toString}.${ip.byte2.toString}.${ip.byte3.toString}"
 
       given encodable: Ipv4 is Encodable in Text = _.show
-      given decodable: Tactic[IpAddressError] => Ipv4 is Decodable in Text = parse(_)
+      given decodable: (tactic: Tactic[IpAddressError])
+      =>  ((Ipv4 is Decodable in Text)^{tactic}) =
+        parse(_)
 
       lazy val Localhost: Ipv4 = apply(127, 0, 0, 1)
 
@@ -143,7 +145,9 @@ object internal:
       inline given underlying: Underlying[MacAddress, Long] = !!
       given showable: MacAddress is Showable = _.text
       given encodable: MacAddress is Encodable in Text = _.text
-      given decoder: Tactic[MacAddressError] => MacAddress is Decodable in Text = parse(_)
+      given decoder: (tactic: Tactic[MacAddressError])
+      =>  ((MacAddress is Decodable in Text)^{tactic}) =
+        parse(_)
 
       def apply(value: Long): MacAddress = value
 
@@ -187,7 +191,8 @@ object internal:
       // transport-refined `Port over transport` (e.g. `Port over Tcp`); provide it explicitly.
       given showableOver: [transport] => (Port over transport) is Showable = _.number.show
 
-      given decodable: (Tactic[NumberError], Tactic[PortError]) => Port is Decodable in Text =
+      given decodable: (numberTactic: Tactic[NumberError], portTactic: Tactic[PortError])
+      =>  ((Port is Decodable in Text)^{numberTactic, portTactic}) =
         text => apply(text.decode[Int])
 
       def unsafe[transport](value: Int): Port over transport =
@@ -257,7 +262,9 @@ object internal:
   object Ipv4Subnet:
     given showable: Ipv4Subnet is Showable = subnet => t"${subnet.ipv4}/${subnet.size}"
     given encodable: Ipv4Subnet is Encodable in Text = _.show
-    given decodable: Tactic[IpAddressError] => Ipv4Subnet is Decodable in Text = parse(_)
+    given decodable: (tactic: Tactic[IpAddressError])
+    =>  ((Ipv4Subnet is Decodable in Text)^{tactic}) =
+      parse(_)
 
     def parse(text: Text): Ipv4Subnet raises IpAddressError =
       text.cut(t"/").to(List) match
@@ -277,10 +284,13 @@ object internal:
       case ipv6: Ipv6              => t"[${ipv6.show}]"
       case ipv4: (Ipv4 @unchecked) => ipv4.show
 
-    given hostDecodable: Tactic[HostnameError] => urticose.Host is Decodable in Text = text =>
+    given hostDecodable: (tactic: Tactic[HostnameError])
+    =>  ((urticose.Host is Decodable in Text)^{tactic}) = text =>
       safely(text.decode[Ipv6]).or(safely(text.decode[Ipv4])).or(text.decode[Hostname])
 
-    given decodable: Tactic[IpAddressError] => Ipv6 is Decodable in Text = parse(_)
+    given decodable: (tactic: Tactic[IpAddressError])
+    =>  ((Ipv6 is Decodable in Text)^{tactic}) =
+      parse(_)
 
     given toExpr: ToExpr[Ipv6]:
       def apply(ipv6: Ipv6)(using Quotes): Expr[Ipv6] =
@@ -365,7 +375,9 @@ object internal:
       t"${Ipv6.showable.text(subnet.ipv6)}/${subnet.size}"
 
     given encodable: Ipv6Subnet is Encodable in Text = _.show
-    given decodable: Tactic[IpAddressError] => Ipv6Subnet is Decodable in Text = parse(_)
+    given decodable: (tactic: Tactic[IpAddressError])
+    =>  ((Ipv6Subnet is Decodable in Text)^{tactic}) =
+      parse(_)
 
     def parse(text: Text): Ipv6Subnet raises IpAddressError =
       text.cut(t"/").to(List) match

@@ -38,10 +38,15 @@ import prepositional.*
 import vacuous.*
 
 object Requirable:
-  given decodable: [value] => (decodable: Tactic[Exception] ?=> value is Decodable in Text)
+  given decodable: [value] => (decodable: Tactic[Exception]^ ?=> value is Decodable in Text)
   =>  value is Requirable =
 
-    () => safely("".tt.decode[value]).absent
+    // The `Decodable` is resolved against `throwUnsafely` (a label-free tactic) rather than the
+    // ambient `safely`-scoped `OptionalTactic`, so the decoded value does not retain that scoped
+    // capability — mirroring `Extractable.decodable`. Laundered pure: the retained context
+    // function shares the instance's given-resolution lifetime (the codec-thunk seal pattern).
+    caps.unsafe.unsafeAssumePure:
+      () => safely(decodable(using strategies.throwUnsafely).decoded("".tt)).absent
 
 
 trait Requirable extends Typeclass:

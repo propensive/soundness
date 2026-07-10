@@ -35,7 +35,7 @@ package symbolism
 import prepositional.*
 
 object Divisible:
-  def apply[dividend, divisor, result](lambda: (dividend, divisor) => result)
+  def apply[dividend, divisor, result](lambda: (dividend, divisor) -> result)
   :   dividend is Divisible by divisor to result =
 
     new Divisible:

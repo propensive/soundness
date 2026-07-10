@@ -46,12 +46,14 @@ import vacuous.*
 
 object Deserializable:
   def base[base <: Serialization](base: Int)(using alphabet: Alphabet[base])
-  :   Deserializable in base raises SerializationError =
+  :   Deserializable in base =
 
     new:
       override protected val atomicity = 8.lcm(base)/base
 
-      def deserialize(previous: Text, text: Text, index0: Int, last: Boolean): Data =
+      def deserialize(previous: Text, text: Text, index0: Int, last: Boolean)
+      :   Data raises SerializationError =
+
         val padding: Char = if alphabet.padding then alphabet(1 << base) else '\u0000'
 
         val length =
@@ -77,29 +79,24 @@ object Deserializable:
 
           recur(index0 = index0)
 
-  given base64: (Alphabet[Base64], Tactic[SerializationError]) => Deserializable in Base64 = base(6)
-  given base32: (Alphabet[Base32], Tactic[SerializationError]) => Deserializable in Base32 = base(5)
-  given hex: (Alphabet[Hex], Tactic[SerializationError]) => Deserializable in Hex = base(4)
-  given octal: (Alphabet[Octal], Tactic[SerializationError]) => Deserializable in Octal = base(3)
-
-
-  given quaternary: (Alphabet[Quaternary], Tactic[SerializationError])
-  =>  Deserializable in Quaternary =
-
-    base(2)
-
-
-  given binary: (Alphabet[Binary], Tactic[SerializationError]) => Deserializable in Binary = base(1)
+  given base64: Alphabet[Base64] => Deserializable in Base64 = base(6)
+  given base32: Alphabet[Base32] => Deserializable in Base32 = base(5)
+  given hex: Alphabet[Hex] => Deserializable in Hex = base(4)
+  given octal: Alphabet[Octal] => Deserializable in Octal = base(3)
+  given quaternary: Alphabet[Quaternary] => Deserializable in Quaternary = base(2)
+  given binary: Alphabet[Binary] => Deserializable in Binary = base(1)
 
 trait Deserializable extends Findable:
   type Form <: Serialization
 
   protected val atomicity: Int = 1
 
-  def deserialize(previous: Text, current: Text, index0: Int, last: Boolean): Data
-  def deserialize(value: Text): Data = deserialize(t"", value, 0, true)
+  def deserialize(previous: Text, current: Text, index0: Int, last: Boolean)
+  :   Data raises SerializationError
 
-  def deserialize(stream: LazyList[Text]): LazyList[Data] =
+  def deserialize(value: Text): Data raises SerializationError = deserialize(t"", value, 0, true)
+
+  def deserialize(stream: LazyList[Text]): LazyList[Data] raises SerializationError =
     def recur(stream: LazyList[Text], previous: Text, carry: Int): LazyList[Data] = stream match
       case head #:: tail =>
         val carry2 = (carry + head.length)%atomicity

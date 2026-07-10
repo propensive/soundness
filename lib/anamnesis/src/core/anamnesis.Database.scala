@@ -41,7 +41,7 @@ import vacuous.*
 object Database:
   sealed trait Relation[left, right]
 
-  inline def apply[relations <: Tuple](): Database of relations =
+  transparent inline def apply[relations <: Tuple](): Database of relations =
     val size = valueOf[Tuple.Size[relations]]
     new Database(size).asInstanceOf[Database of relations]
 

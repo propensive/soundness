@@ -528,7 +528,12 @@ object internal:
     // the Gregorian calendar when nothing is in scope, preserving today's behaviour.
     def runtime: Expr[Date] =
       val calendar = summoned.getOrElse('{calendars.gregorianCalendar})
-      '{unsafely($calendar.jdn($left.year, $left.month, Day($right)))}
+      // `Day(_)` is transparent here in aviation core (`opaque type Day = Int`), so the quoted tree
+      // would carry an `Int` type; a spliced `Int` then mismatches the opaque `Day` that the now-
+      // `inline` `jdn` expects at the (external) call site. The explicit ascription pins the tree's
+      // type to `Day`.
+      val day: Expr[Day] = '{Day($right): Day}
+      '{unsafely($calendar.jdn($left.year, $left.month, $day))}
 
     // Identify a contextual calendar as one of this module's calendar givens (matched by leaf name,
     // since it may be reached through the `soundness` re-export rather than its `aviation` origin;

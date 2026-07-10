@@ -48,45 +48,45 @@ object Writable:
   // from the scope where the `Writable` is summoned (a `trap`-injected one, or one propagated as
   // `emits StreamError`). `Emit` rather than `Tactic`: a writer only reports a cut, never `abort`s.
   given outputStreamData: [output <: ji.OutputStream] => (streamCut: Emit[StreamError])
-  =>  output is Writable by Data =
+  =>  ((output is Writable by Data)^{streamCut}) =
 
     (outputStream, stream) =>
       @tailrec
       def recur(total: Bytes, todo: LazyList[Data]): Unit =
         todo.flow(close(outputStream, total)):
-          val array = next.mutable(using Unsafe)
+          val array = next.asInstanceOf[Data].mutable(using Unsafe)
           if write(outputStream, array, total) then recur(total + array.length.b, more)
 
       recur(0.b, stream)
 
 
   given outputStreamText: (streamCut: Emit[StreamError], encoder: CharEncoder)
-  =>  ji.OutputStream is Writable by Text =
+  =>  ((ji.OutputStream is Writable by Text)^{streamCut}) =
 
     (outputStream, stream) =>
       @tailrec
       def recur(total: Bytes, todo: LazyList[Text]): Unit =
         todo.flow(close(outputStream, total)):
-          val array = encoder.encode(next).mutable(using Unsafe)
+          val array = encoder.encode(next.asInstanceOf[Text]).asInstanceOf[Array[Byte]]
           if write(outputStream, array, total) then recur(total + array.length.b, more)
 
       recur(0.b, stream)
 
 
-  given decodingAdapter: [writable: Writable by Text] => (decoder: CharDecoder)
-  =>  writable is Writable by Data =
+  given decodingAdapter: [writable] => (writable0: (writable is Writable by Text)^, decoder: CharDecoder)
+  =>  ((writable is Writable by Data)^{writable0}) =
 
-    (target, stream) => writable.write(target, decoder.decoded(stream))
-
-
-  given encodingAdapter: [writable: Writable by Data] => (encoder: CharEncoder)
-  =>  writable is Writable by Text =
-
-    (target, stream) => writable.write(target, encoder.encoded(stream))
+    (target, stream) => writable0.write(target, decoder.decoded(stream))
 
 
-  given channel: Emit[StreamError]
-  =>  jn.channels.WritableByteChannel is Writable by Data =
+  given encodingAdapter: [writable] => (writable0: (writable is Writable by Data)^, encoder: CharEncoder)
+  =>  ((writable is Writable by Text)^{writable0}) =
+
+    (target, stream) => writable0.write(target, encoder.encoded(stream))
+
+
+  given channel: (streamCut: Emit[StreamError])
+  =>  ((jn.channels.WritableByteChannel is Writable by Data)^{streamCut}) =
 
     (channel, stream) =>
       @tailrec
@@ -117,5 +117,5 @@ object Writable:
 trait Writable extends Typeclass, Operable:
   def write(target: Self, stream: LazyList[Operand]): Unit
 
-  def contramap[self2](lambda: self2 => Self): self2 is Writable by Operand =
+  def contramap[self2](lambda: self2 => Self): (self2 is Writable by Operand)^{this, lambda} =
     (target, stream) => write(lambda(target), stream)

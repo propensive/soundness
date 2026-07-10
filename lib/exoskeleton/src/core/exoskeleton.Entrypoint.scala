@@ -34,6 +34,7 @@ package exoskeleton
 
 import anticipation.*
 import beneficence.*
+import galilei.*
 import prepositional.*
 import serpentine.*
 

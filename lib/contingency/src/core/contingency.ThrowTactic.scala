@@ -36,8 +36,25 @@ import language.experimental.pureFunctions
 
 import fulminate.*
 
-class ThrowTactic[error <: Exception, success]()(using CanThrow[error]) extends Tactic[error]:
+// `caps.Unscoped`: a throwing tactic captures nothing (`CanThrow` is erased), so it is safe at
+// any level — the classifier lets a use-site instantiation flow into the `raises` existential of
+// a non-inline method result, which an ordinary fresh capability may not. Boundary-based tactics,
+// which really do capture their `Label`, remain scoped.
+// The `CanThrow` evidence lives on the `strategies` givens that mint throwing tactics, not on
+// the class: even an erased constructor parameter is a retained capture under capture checking.
+class ThrowTactic[error <: Exception, success]()
+extends Tactic[error], caps.Unscoped:
   def diagnostics: Diagnostics = Diagnostics.capture
-  def record(error: Diagnostics ?=> error): Unit = throw error(using diagnostics)
-  def abort(error: Diagnostics ?=> error): Nothing = throw error(using diagnostics)
+
+  // `canThrowAny` is imported method-locally rather than retained from the constructor: the
+  // caller's `CanThrow` evidence is erased type-level permission, and holding it as a field
+  // would make the tactic capture a scoped control capability, defeating `Unscoped`.
+  def record(error: Diagnostics ?=> error): Unit =
+    import unsafeExceptions.canThrowAny
+    throw error(using diagnostics)
+
+  def abort(error: Diagnostics ?=> error): Nothing =
+    import unsafeExceptions.canThrowAny
+    throw error(using diagnostics)
+
   def certify(): Unit = ()

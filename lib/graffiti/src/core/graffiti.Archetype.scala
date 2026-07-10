@@ -53,7 +53,9 @@ object Archetype:
     extension (value: page)
       def mediaType: MediaType = media"text/html"(charset = "UTF-8")
 
-  given streamable: [page <: Archetype] => (Monitor, Probate) => page is Streamable by Text =
+  // `^{monitor}` only: `Probate` is not capture-tracked.
+  given streamable: [page <: Archetype] => (monitor: Monitor, probate: Probate)
+  =>  ((page is Streamable by Text)^{monitor}) =
     archetype => archetype.document.stream[Text]
 
 // The base of every page archetype. Concrete pages are built by mixing in feature traits (each a

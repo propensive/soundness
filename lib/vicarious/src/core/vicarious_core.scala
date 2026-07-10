@@ -36,7 +36,7 @@ import denominative.*
 import prepositional.*
 
 
-inline def catalog[key](key: key)[value](inline lambda: [field] => (field: field) => value)
+inline def catalog[key](key: key)[value](inline lambda: [field] => (field: field) -> value)
   ( using classTag: ClassTag[value] )
 :   Catalog[key, value] =
 

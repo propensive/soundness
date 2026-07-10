@@ -47,7 +47,9 @@ object Duplex:
   // `SocketChannel` exposes (e.g. an `SSLSocket`). `shutdown` closes the underlying
   // resource. The read side blocks in `read` and copies each fill; EOF (`-1`) ends the
   // stream. The stream/write shape mirrors `channel` and `Serviceable`'s socket path.
-  def streams(in: ji.InputStream, out: ji.OutputStream)(shutdown: () => Unit): Duplex = new Duplex:
+  // `shutdown` is a pure function: its closures hold only untracked OS resources (like
+  // `channel`'s socket), so the `Duplex` remains capture-free under capture checking.
+  def streams(in: ji.InputStream, out: ji.OutputStream)(shutdown: () -> Unit): Duplex = new Duplex:
     private val buffer = new Array[Byte](65536)
 
     def stream: LazyList[Data] =
@@ -149,7 +151,7 @@ trait Duplex:
 
   // Push endpoint over the write side: repeatable, like `send`, and
   // `finish()` flushes without half-closing the connection.
-  def intake(using buffering: Buffering): Intake[Data] over Credit =
+  def intake(using buffering: Buffering): (Intake[Data] over Credit)^{this} =
     new Intake[Data]:
       type Transport = Credit
 

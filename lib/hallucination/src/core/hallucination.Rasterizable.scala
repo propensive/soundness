@@ -42,7 +42,7 @@ import rudiments.*
 import turbulence.*
 
 trait Rasterizable extends Typeclass:
-  rasterizable =>
+  rasterizable: Rasterizable =>
     def name: Text
     def mediaType: MediaType
 

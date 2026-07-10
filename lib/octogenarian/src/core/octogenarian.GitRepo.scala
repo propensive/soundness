@@ -55,7 +55,8 @@ import filesystemBackends.virtualMachine
 
 object GitRepo:
   def at[abstractable: Abstractable across Paths to Text](path: abstractable)
-  :   GitRepo raises PathError raises NameError raises GitError raises IoError =
+    ( using Tactic[PathError], Tactic[NameError], Tactic[GitError], Tactic[IoError] )
+  :   GitRepo =
 
     unsafely(path.generic.decode[Path on Linux]).pipe: path =>
       if !path.exists() then abort(GitError(RepoDoesNotExist))
@@ -68,8 +69,8 @@ case class GitRepo(gitDir: Path on Linux):
   val repoOptions = sh"--git-dir=$gitDir"
 
 
-  def pushTags()(using Internet, GitCommand, WorkingDirectory)
-  :   Unit logs GitEvent raises GitError raises ExecError =
+  def pushTags()(using Internet, GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError])
+  :   Unit logs GitEvent =
 
     sh"$git $repoOptions push --tags".exec[Exit]() match
       case Exit.Ok => ()
@@ -364,7 +365,7 @@ case class GitRepo(gitDir: Path on Linux):
 
   // Lists every non-bare worktree attached to this object database.
   def worktrees()(using GitCommand, WorkingDirectory, Tactic[ExecError])
-  :   List[Worktree] logs GitEvent raises GitError =
+  :   List[Worktree] raises GitError logs GitEvent =
 
     val lines = sh"$git $repoOptions worktree list --porcelain".exec[List[Text]]()
 
@@ -392,10 +393,10 @@ case class GitRepo(gitDir: Path on Linux):
     ( target: path, ref: Refspec, detach: Boolean = false )
     ( using WorkingDirectory,
             Tactic[GitError],
-            (Path on Linux) is Decodable in Text,
+            ((Path on Linux) is Decodable in Text)^,
             Tactic[ExecError],
             GitCommand )
-  :   Worktree logs GitEvent raises NameError raises PathError =
+  :   Worktree raises NameError raises PathError logs GitEvent =
 
     val targetPath: Path on Linux =
       try target.generic.decode[Path on Linux]

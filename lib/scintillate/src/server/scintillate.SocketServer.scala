@@ -90,7 +90,7 @@ extends RequestServable:
   // for `Transfer-Encoding: chunked`, otherwise `Content-Length` bytes, or empty
   // when neither is given. The framed stream stops exactly at the body's end so
   // the cursor is left at the next pipelined request.
-  private def requestBody(cursor: Cursor[Data], head: Http.Request.Head): LazyList[Data] =
+  private def requestBody(cursor: Cursor[Data, ?], head: Http.Request.Head): LazyList[Data] =
     val chunked: Boolean = head.headers.exists: header =>
       header.key.lower == t"transfer-encoding" && header.value.lower.contains(t"chunked")
 
@@ -153,7 +153,7 @@ extends RequestServable:
 
     // Handle one request off the cursor; return whether to keep the connection
     // alive for a further request.
-    def serveRequest(cursor: Cursor[Data]): Boolean =
+    def serveRequest(cursor: Cursor[Data, ?]): Boolean =
       recover:
         case error: HttpRequestError =>
           val response = Http.Response(errorStatus(error.reason))() + closeHeader

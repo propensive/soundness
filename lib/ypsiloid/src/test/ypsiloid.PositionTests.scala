@@ -34,7 +34,6 @@ package ypsiloid
 
 import soundness.*
 
-import parsing.trackPositions
 import strategies.throwUnsafely
 
 object PositionTests extends Suite(m"Ypsiloid position-index tests"):
@@ -42,8 +41,9 @@ object PositionTests extends Suite(m"Ypsiloid position-index tests"):
   private def at(line: Int, column: Int, length: Int): Yaml.Ast.Position =
     Yaml.Ast.Position(line, column, length = length)
 
-  // Tracking-on context — the suite-level `import parsing.trackPositions` makes
-  // every `.read[Yaml]` below produce a tracked `Yaml`.
+  // Tracking-on context — every test in this suite parses under
+  // `Yaml.Tracking.On` so `.read[Yaml]` produces a tracked `Yaml`.
+  private given Yaml.Tracking = Yaml.Tracking.On
 
   def run(): Unit =
     suite(m"Single-line root primitives"):
@@ -176,9 +176,9 @@ object PositionTests extends Suite(m"Ypsiloid position-index tests"):
       . assert(identity)
 
     suite(m"Non-tracking mode"):
-      test(m"Default PositionTracking.Off leaves positionIndex Unset"):
-        // Locally override the suite-level `trackPositions` import to verify the
+      test(m"Default Tracking.Off leaves positionIndex Unset"):
+        // Locally override the suite-level `Tracking.On` to verify the
         // untracked path.
-        given PositionTracking = PositionTracking.Off
+        given Yaml.Tracking = Yaml.Tracking.Off
         t"42".read[Yaml].positionIndex
       . assert(_ == Unset)

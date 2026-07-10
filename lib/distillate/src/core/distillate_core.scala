@@ -35,10 +35,12 @@ package distillate
 import prepositional.*
 
 extension [format](value: format)
-  def decode[result](using decodable: result is Decodable in format): result =
+  // Capture-polymorphic evidence (`^`): decoders built from a `Tactic` capture it. Decoding
+  // completes within the call, so nothing is retained and the result is the plain value.
+  def decode[result](using decodable: (result is Decodable in format)^): result =
     decodable.decoded(value)
 
-  def as[result](using decodable: result is Decodable in format): result =
+  def as[result](using decodable: (result is Decodable in format)^): result =
     decodable.decoded(value)
 
 extension (value: Any)

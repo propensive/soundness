@@ -33,6 +33,7 @@
 package monotonous
 
 import anticipation.*
+import contingency.*
 import gossamer.*
 import prepositional.*
 
@@ -119,13 +120,15 @@ package alphabets:
     Alphabet(t"""!"#$$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_""", false)
 
 extension (value: Text)
-  def deserialize[scheme <: Serialization](using deserializable: Deserializable in scheme): Data =
+  def deserialize[scheme <: Serialization](using deserializable: Deserializable in scheme)
+  :   Data raises SerializationError =
+
     deserializable.deserialize(value)
 
 
 extension (stream: LazyList[Text])
   def deserialize[scheme <: Serialization](using deserializable: Deserializable in scheme)
-  :   LazyList[Data] =
+  :   LazyList[Data] raises SerializationError =
 
     deserializable.deserialize(stream)
 

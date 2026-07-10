@@ -80,8 +80,8 @@ object LocalClasspath:
 
 
   given paths: [path: Abstractable across Paths to Text]
-  =>  ( Tactic[PathError], Tactic[IoError], DereferenceSymlinks )
-  =>  LocalClasspath is Addable by path to LocalClasspath =
+  =>  ( pathTactic: Tactic[PathError], ioTactic: Tactic[IoError], deref: DereferenceSymlinks )
+  =>  ((LocalClasspath is Addable by path to LocalClasspath)^{pathTactic, ioTactic}) =
 
     (classpath, path) =>
       path.generic.decode[Path on Linux].pipe: path =>

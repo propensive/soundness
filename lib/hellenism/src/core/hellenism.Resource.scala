@@ -45,10 +45,12 @@ object Resource:
   given streamable: [resource <: Resource]
   =>  ( classloader: Classloader )
   =>  resource is Streamable by Data =
-    given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
+    // See `Classpath.streamable`: unscoped throwing tactic + pure classloader; laundered pure.
+    caps.unsafe.unsafeAssumePure:
+      given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
 
-    Streamable.inputStream.contramap: resource =>
-      classloader.inputStream(resource.path.encode)
+      Streamable.inputStream.contramap: resource =>
+        classloader.inputStream(resource.path.encode)
 
   given nominable: [resource <: Resource] => resource is Nominable = _.path.descent.prim.or(t"/")
 

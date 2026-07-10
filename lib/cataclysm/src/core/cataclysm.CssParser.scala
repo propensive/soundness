@@ -51,7 +51,7 @@ private[cataclysm] object CssParser:
 
     Parser(Cursor[Text](input), validating).document()
 
-  private class Parser(cursor: Cursor[Text], validating: Boolean)(using Tactic[CssError]):
+  private class Parser(cursor: Cursor[Text, ?], validating: Boolean)(using Tactic[CssError]):
     def document(): Css = Css(nodes())
 
     private def fail(reason: CssError.Reason): Nothing =

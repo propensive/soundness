@@ -48,5 +48,5 @@ object Ingressive:
 trait Ingressive extends Typeclass:
   def deserialize(message: Data): Self
 
-  def map[self2](lambda: Self => self2): self2 is Ingressive =
+  def map[self2](lambda: Self => self2): (self2 is Ingressive)^{this, lambda} =
     message => lambda(deserialize(message))

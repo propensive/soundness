@@ -188,69 +188,85 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
   // keeps the recursion on nested schemas pointed back at this same given.
   given decodable: (Tactic[JsonError], Tactic[JsonPointerError])
   =>  JsonSchema is Json.Decodable =
-    Json.Decodable(Morphology.Any): json =>
-      def field[value: Json.Decodable](name: Text): Optional[value] =
-        json(name).as[Optional[value]]
+    // The decoder closes over the two resolution-scoped tactics (and, through the nested-
+    // schema recursion, over itself), which share the instance's given-resolution lifetime;
+    // the whole instance is laundered pure per the codec-thunk seal pattern (see
+    // rep/DECISIONS.md). The local primitive codecs below re-expose the (sealed-pure)
+    // primitives at a higher priority so the `optional`/`array`/`map` givens' pure by-name
+    // inner codecs (their thunks must remain pure to be expressible inside staged quotes)
+    // resolve without consulting the enclosing tactics.
+    caps.unsafe.unsafeAssumePure:
+      Json.Decodable(Morphology.Any): json =>
+        given textDecodable: (Text is Json.Decodable) = Json.text
+        given intDecodable: (Int is Json.Decodable) = Json.int
 
-      val reference = json("$ref".tt)
+        given doubleDecodable: (Double is Json.Decodable) = Json.double
 
-      if !reference.root.isAbsent
-      then JsonSchema.Ref(reference.as[JsonPointer], field[Text](t"description"))
-      else field[Text](t"type") match
-        case t"array" =>
-          JsonSchema.Array
-            ( field[Text](t"description"),
-              field[JsonSchema](t"items"),
-              field[Int](t"minItems"),
-              field[Int](t"maxItems"),
-              false,
-              field[Int](t"maxContains"),
-              field[Int](t"minContains") )
+        given booleanDecodable: (scala.Boolean is Json.Decodable) = Json.boolean
 
-        case t"string" =>
-          JsonSchema.String
-            ( field[Text](t"description"),
-              field[Int](t"minLength"),
-              field[Int](t"maxLength"),
-              field[Text](t"pattern"),
-              field[JsonSchema.Format](t"format"),
-              false )
+        def field[value](name: Text)(using decodable: value is Json.Decodable)
+        :   Optional[value] =
+          json(name).as[Optional[value]]
 
-        case t"number" =>
-          JsonSchema.Number
-            ( field[Text](t"description"),
-              field[Double](t"multipleOf"),
-              field[Double](t"maximum"),
-              field[Double](t"minimum"),
-              field[Double](t"exclusiveMinimum"),
-              field[Double](t"exclusiveMaximum"),
-              false )
+        val reference = json("$ref".tt)
 
-        case t"integer" =>
-          JsonSchema.Integer
-            ( field[Text](t"description"),
-              field[Int](t"maximum"),
-              field[Int](t"minimum"),
-              field[Int](t"exclusiveMinimum"),
-              field[Int](t"exclusiveMaximum"),
-              false )
+        if !reference.root.isAbsent
+        then JsonSchema.Ref(reference.as[JsonPointer], field[Text](t"description"))
+        else field[Text](t"type") match
+          case t"array" =>
+            JsonSchema.Array
+              ( field[Text](t"description"),
+                field[JsonSchema](t"items"),
+                field[Int](t"minItems"),
+                field[Int](t"maxItems"),
+                false,
+                field[Int](t"maxContains"),
+                field[Int](t"minContains") )
 
-        case t"boolean" =>
-          JsonSchema.Boolean(field[Text](t"description"), false)
+          case t"string" =>
+            JsonSchema.String
+              ( field[Text](t"description"),
+                field[Int](t"minLength"),
+                field[Int](t"maxLength"),
+                field[Text](t"pattern"),
+                field[JsonSchema.Format](t"format"),
+                false )
 
-        case t"null" =>
-          JsonSchema.Null(field[Text](t"description"), false)
+          case t"number" =>
+            JsonSchema.Number
+              ( field[Text](t"description"),
+                field[Double](t"multipleOf"),
+                field[Double](t"maximum"),
+                field[Double](t"minimum"),
+                field[Double](t"exclusiveMinimum"),
+                field[Double](t"exclusiveMaximum"),
+                false )
 
-        case _ =>
-          // `object`, or an untyped schema (treated as an object).
-          JsonSchema.Object
-            ( field[Text](t"description"),
-              field[Map[Text, JsonSchema]](t"properties").or(Map()),
-              false,
-              field[List[Text]](t"required"),
-              field[List[Json]](t"enum"),
-              json(t"additionalProperties").as[Optional[scala.Boolean]].or(false),
-              field[List[JsonSchema]](t"oneOf") )
+          case t"integer" =>
+            JsonSchema.Integer
+              ( field[Text](t"description"),
+                field[Int](t"maximum"),
+                field[Int](t"minimum"),
+                field[Int](t"exclusiveMinimum"),
+                field[Int](t"exclusiveMaximum"),
+                false )
+
+          case t"boolean" =>
+            JsonSchema.Boolean(field[Text](t"description"), false)
+
+          case t"null" =>
+            JsonSchema.Null(field[Text](t"description"), false)
+
+          case _ =>
+            // `object`, or an untyped schema (treated as an object).
+            JsonSchema.Object
+              ( field[Text](t"description"),
+                field[Map[Text, JsonSchema]](t"properties").or(Map()),
+                false,
+                field[List[Text]](t"required"),
+                field[List[Json]](t"enum"),
+                json(t"additionalProperties").as[Optional[scala.Boolean]].or(false),
+                field[List[JsonSchema]](t"oneOf") )
 
   given discriminatedUnion: JsonSchema is Discriminable:
     type Form = Json
@@ -262,7 +278,10 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
     def variant(json: Json): Json = unsafely(json.updateDynamic("type")(Unset))
 
     def discriminate(json: Json): Optional[Text] =
-      safely(json.selectField("type").as[Text]).let(_.capitalize)
+      // Reads the AST directly rather than via `as[Text]`: the `Text` codec is a
+      // tactic-taking given whose instance would capture `safely`'s tactic, which the
+      // at-focus decodable evidence cannot retain.
+      safely(json.selectField("type").root.string).let(_.capitalize)
 
 
   inline def conjunction[derivation <: Product: ProductReflection]

@@ -77,7 +77,7 @@ object XPath extends Root("/"):
   // reporting the offset of any error. Each step is interpreted by `parseStep`;
   // an unrecognised (e.g. empty, or `name[x]` with a non-numeric ordinal) step
   // is a `BadStep`.
-  given decodable: Tactic[XPathError] => XPath is Decodable in Text = text =>
+  given decodable: (tactic: Tactic[XPathError]) => ((XPath is Decodable in Text)^{tactic}) = text =>
     val string = text.s
 
     if string.isEmpty || string.charAt(0) != '/'

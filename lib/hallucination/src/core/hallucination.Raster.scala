@@ -79,13 +79,14 @@ object Raster:
     def height(raster: Raster): Int = raster.height
 
 
-  given aggregable: [format: Rasterizable as rasterizable] => Tactic[RasterError]
-  =>  (Raster in format) is Aggregable by Data =
+  given aggregable: [format: Rasterizable as rasterizable] => (tactic: Tactic[RasterError])
+  =>  (((Raster in format) is Aggregable by Data)^{tactic}) =
 
     rasterizable.read(_)
 
 
-  given aggregable2: Tactic[RasterError] => Raster is Aggregable by Data = Raster(_)
+  given aggregable2: (tactic: Tactic[RasterError])
+  =>  ((Raster is Aggregable by Data)^{tactic}) = Raster(_)
 
 case class Raster(private[hallucination] val image: jai.BufferedImage) extends Formal:
   def width: Int = image.getWidth
@@ -106,7 +107,7 @@ case class Raster(private[hallucination] val image: jai.BufferedImage) extends F
   def rotate(angle: 90 | 180 | 270): Raster = angle match
     case 90  => Raster(height, width): (x, y) => apply(width - 1 - y, x)
     case 180 => Raster(width, height): (x, y) => apply(width - 1 - x, height - 1 - y)
-    case 270 => Raster(height, width): (x, y) => apply(y, height - 1 - x)
+    case _   => Raster(height, width): (x, y) => apply(y, height - 1 - x)
 
   def portrait: Boolean = height > width
   def square: Boolean = width == height

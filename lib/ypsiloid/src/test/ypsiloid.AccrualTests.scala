@@ -46,12 +46,17 @@ object AccrualTests extends Suite(m"Ypsiloid multi-error accrual tests"):
   extends Error(m"${items.length} validation issues"):
     def +(focus: Text, error: YamlError): Issues = Issues(items :+ (focus, error))
 
-  private def validateYaml[result](yaml: Yaml)
-                                  (decode: Yaml => result raises YamlError tracks Yaml.Focus)
+  // Inline, with a directly-constructed `Validate`: a `raises … tracks …` function VALUE
+  // cannot be typed under capture checking (its honest type is a curried dependent context
+  // function, an unimplemented compiler restriction), so the decode lambda must beta-reduce
+  // away into `protect`'s inline position. See rep/DECISIONS.md.
+  private inline def validateYaml[result](yaml: Yaml)
+    (inline decode: Yaml => result raises YamlError tracks Yaml.Focus)
   :   Issues =
-    validate[Yaml.Focus](Issues()):
-      case error: YamlError =>
-        accrual + (prior.let(_.pointer.encode).or(t"#"), error)
+    Validate[Issues, [r] =>> r raises YamlError, Yaml.Focus]
+      ( Issues(),
+        { case error: YamlError =>
+            accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
     . protect(decode(yaml))
 
   def run(): Unit =

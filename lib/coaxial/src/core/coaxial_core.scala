@@ -51,50 +51,48 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
   // A default argument cannot be combined with the path-dependent `bindable.Input`/`.Output`
   // types here (default-getter synthesis fails), so the interface-less form is a separate
   // overload that delegates with `Unset`.
-  def listen[input](using Monitor, Probate)[result](lambda: bindable.Input => bindable.Output)
-  :   SocketService logs SocketEvent raises BindError =
+  transparent inline def listen[input](using Monitor, Probate)[result]
+    ( lambda: bindable.Input => bindable.Output )
+  :   (SocketService^) raises BindError logs SocketEvent =
 
     socket.listen(lambda)(Unset)
 
-  def listen[input](using Monitor, Probate)[result](lambda: bindable.Input => bindable.Output)
+  transparent inline def listen[input](using Monitor, Probate)[result]
+    ( lambda: bindable.Input => bindable.Output )
     ( interface: Optional[MacAddress] )
-  :   SocketService logs SocketEvent raises BindError =
+  :   (SocketService^) raises BindError logs SocketEvent =
 
     val binding = bindable.bind(socket, interface)
     Log.info(SocketEvent.Listening(socket.show))
 
-    // Each accepted connection is handled on its own daemon, so connections are served
-    // concurrently and a per-connection failure — a handler error, a dropped client, or a
-    // failure to write the reply — surfaces as a raised `ConnectionError` that the trap below
-    // turns into `Remedy.Accept`, ending only that connection's daemon while the accept loop
-    // keeps running. The connection is always closed afterwards. A failure to *accept* a
-    // connection runs on the loop thread (not a daemon), so `safely` skips that iteration; on
-    // `stop()` the loop is already `Stopping`, so the interrupted `accept()` simply unwinds.
-    contain:
-      case _ => Remedy.Accept
+    // Each accepted connection is served by its own supervised `async` task, so connections are
+    // handled concurrently. The task body is impure (it captures the connection and the handler),
+    // which is why it is an `async` task rather than a pure `daemon`; the `ConnectionError` from a
+    // handler error, a dropped client, or a failed reply is raised through the `AsyncTactic` the
+    // task provides, and `safely` absorbs it so one bad connection only ends its own task — the
+    // connection is always closed — while the accept loop keeps running. A failure to *accept* a
+    // connection runs on the loop thread, so its `safely` skips that iteration; on `stop()` the
+    // loop is already `Stopping`, so the interrupted `accept()` simply unwinds.
+    val bindLoop = loop:
+      safely(bindable.connect(binding)).let: connection =>
+        async:
+          safely:
+            try bindable.transmit(binding, connection, lambda(connection))
+            finally bindable.close(connection)
 
-    . protect:
-        val bindLoop = loop:
-          safely(bindable.connect(binding)).let: connection =>
-            daemon:
-              // A connection failure aborts just this handler; throw it to the enclosing
-              // `contain`, which closes the connection and carries on accepting others.
-              given Tactic[ConnectionError] = AsyncTactic()
+    val task = async(bindLoop.run())
 
-              try bindable.transmit(binding, connection, lambda(connection))
-              finally bindable.close(connection)
-
-        val task = async(bindLoop.run())
-
-        new SocketService:
-          def stop(): Unit =
-            bindLoop.stop()
-            bindable.stop(binding)
-            safely(task.await())
-            Log.fine(SocketEvent.Closed(socket.show))
+    SocketService: () =>
+      bindLoop.stop()
+      bindable.stop(binding)
+      safely(task.await())
+      Log.fine(SocketEvent.Closed(socket.show))
 
 
-extension [endpoint: {Serviceable as serviceable, Showable}](endpoint: endpoint)
+// `Serviceable` instances are capabilities (their givens retain tactics and socket options), so
+// the evidence is an explicit capturing using-parameter rather than a context bound, which would
+// demand a pure instance.
+extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint is Serviceable)^)
   def transmit[message: Transmissible](input: message): LazyList[Data] logs SocketEvent =
     val connection = serviceable.connect(endpoint, Unset)
     Log.fine(SocketEvent.Connected(endpoint.show))
@@ -129,7 +127,9 @@ extension [endpoint: {Serviceable as serviceable, Showable}](endpoint: endpoint)
     recur(serviceable.receive(connection), initialState).also(serviceable.close(connection))
 
 
-extension [endpoint: {Duplexable as duplexable, Showable}](endpoint: endpoint)
+// As for `Serviceable` above: `Duplexable` instances may be capabilities (a WebSocket client
+// retains a `Monitor` and its tactics), so the evidence is a capturing using-parameter.
+extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint is Duplexable)^)
   // A full-duplex exchange: as soon as the connection opens — before the `handle` loop
   // begins — `interact` is handed a `Sender`, so a client can send *proactively* (send
   // first, or push from a task it spawns), concurrently with the reactive `handle` loop
@@ -139,7 +139,7 @@ extension [endpoint: {Duplexable as duplexable, Showable}](endpoint: endpoint)
   // only the reactive `react`.
   def exchange[state](initialState: state)[message: {Ingressive, Transmissible}]
     ( handle: (state: state) ?=> message => Control[state] )
-    ( interact: Sender[message] => Unit )
+    ( interact: Sender[message]^ => Unit )
   :   state logs SocketEvent =
 
     val connection = duplexable.connect(endpoint, Unset)
@@ -165,7 +165,7 @@ extension [endpoint: {Duplexable as duplexable, Showable}](endpoint: endpoint)
 
 extension [endpoint: {Routable as routable, Showable}](endpoint: endpoint)
   def transmit[transmissible: Transmissible](message: transmissible)(using Monitor)
-  :   Unit logs SocketEvent raises StreamError =
+  :   Unit raises StreamError logs SocketEvent =
 
     Log.fine(SocketEvent.Connected(endpoint.show))
     routable.transmit(routable.connect(endpoint, Unset), transmissible.serialize(message))

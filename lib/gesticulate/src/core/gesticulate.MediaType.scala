@@ -51,7 +51,12 @@ object MediaType:
     mt => t"${mt.basic}${mt.parameters.map { p => t"; ${p(0)}=${p(1)}" }.join}"
 
   given encodable: MediaType is Encodable in Text = _.show
-  given decodable: Tactic[MediaTypeError] => MediaType is Decodable in Text = Media.parse(_)
+  // Laundered pure: the resolution-scoped tactic shares the instance's given-resolution
+  // lifetime, and wisteria-derived codecs summon `Decodable in Text` field instances
+  // against pure expected types inside macro splices (see rep/DECISIONS.md).
+  given decodable: (tactic: Tactic[MediaTypeError])
+  =>  MediaType is Decodable in Text =
+    caps.unsafe.unsafeAssumePure(Media.parse(_))
 
   given formenctype: ("formenctype" is GenericHtmlAttribute[MediaType]):
     def name: Text = t"formenctype"
@@ -69,7 +74,7 @@ object MediaType:
     def name: Text = t"type"
     def serialize(mediaType: MediaType): Text = mediaType.show
 
-  def unapply(value: Text): Option[MediaType] = safely(Some(Media.parse(value))).or(None)
+  def unapply(value: Text): Option[MediaType] = safely(Media.parse(value)).let(Some(_)).or(None)
 
   inline given interpolable: MediaType is Interpolable:
     transparent inline def interpolate[parts <: Tuple, origins <: Tuple]

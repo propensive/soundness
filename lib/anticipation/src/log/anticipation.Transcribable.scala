@@ -38,5 +38,5 @@ trait Transcribable extends Typeclass, Resultant:
   def skip(value: Self): Boolean = false
   def record(value: Self): Result
 
-  def contramap[self2](lambda: self2 => Self): self2 is Transcribable to Result =
+  def contramap[self2](lambda: self2 => Self): (self2 is Transcribable to Result)^{this, lambda} =
     value => record(lambda(value))

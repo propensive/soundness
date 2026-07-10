@@ -35,19 +35,25 @@ package panopticon
 import prepositional.*
 
 extension [value](value: value)
-  inline def lens(inline lambdas: (Optic from value onto value => value => value)*): value =
+  // The optic-application lambdas may capture (a fallible optic closes over its `Tactic`), so they
+  // are impure arrows (`=>`). They are applied eagerly, so the result is the plain `value`; the
+  // fallibility requirement is enforced where a fallible optic given is summoned during expansion.
+  inline def lens(inline lambdas: ((Optic from value onto value) => value => value)*)
+  :   value =
     ${panopticon.internal.fuse[value]('value, 'lambdas)}
 
-  private[panopticon] def lensFold
-    ( lambdas: (Optic from value onto value => value => value)* )
+  // The capture-set parameter `C` carries the lambdas' captures so this folds over a varargs of
+  // capturing functions without their reach capability leaking into the method scope.
+  private[panopticon] def lensFold[C^]
+    ( lambdas: ((Optic from value onto value) ->{C} value ->{C} value)* )
   :   value =
 
     lambdas.foldLeft(value): (value, lambda) =>
       lambda(Optic.identity)(value)
 
 extension [value](left: value)
-  def compose[operand, result](right: operand)
+  def compose[operand, result](right: operand^)
     ( using composable: value is Composable by operand to result )
-  :   result =
+  :   result^ =
 
     composable.composition(left, right)

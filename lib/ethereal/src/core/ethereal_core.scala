@@ -83,7 +83,7 @@ given daemonLogEvent: Message transcribes DaemonLogEvent = _.communicate
 def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus] = service
 
 def cli[bus <: Matchable](using executive: Executive)
-  ( block: (DaemonService[bus], executive.Interface, Environment) ?=> executive.Return )
+  ( block: (DaemonService[bus], executive.Interface, Environment, Monitor) ?=> executive.Return )
   ( using interpreter: Interpreter,
           threading:   Threading,
           handler:     Backstop )
@@ -173,8 +173,8 @@ def cli[bus <: Matchable](using executive: Executive)
             val cacheRunner: Path on Linux = cacheDir/runnerName
 
             val runnerBytes: Data =
-              if localRunner.exists() then localRunner.open(_.stream[Data].read[Data])
-              else if cacheRunner.exists() then cacheRunner.open(_.stream[Data].read[Data])
+              if localRunner.exists() then localRunner.open(_.read[Data])
+              else if cacheRunner.exists() then cacheRunner.open(_.read[Data])
               else
                 mitigate:
                   case RunnerError(detail) =>
@@ -194,7 +194,7 @@ def cli[bus <: Matchable](using executive: Executive)
                     Out.println(e"Downloading $runnerName from runners-${Runners.version}")
                     val bytes: Data = Runners.download(platformLabel)
                     if !cacheDir.exists() then cacheDir.create[Directory]()
-                    cacheRunner.open(LazyList(bytes).writeTo(_))
+                    cacheRunner.open(_.write(LazyList(bytes)))
                     bytes
 
             // ML-DSA-44 public key used by the runner to verify upgrades.
@@ -214,7 +214,7 @@ def cli[bus <: Matchable](using executive: Executive)
                     val work: Path on Linux = workingDirectory
                     work + keyPath.decode[Relative on Linux]
 
-                  val raw: Data = resolved.open(_.stream[Data].read[Data])
+                  val raw: Data = resolved.open(_.read[Data])
 
                   if raw.length != Assembler.PublicKeyLength then
                     Out.println(e"Public key at $keyPath is the wrong size (expected 1312 bytes)")
@@ -261,7 +261,7 @@ def cli[bus <: Matchable](using executive: Executive)
 
   def ownsState: Boolean =
     val recorded: Optional[Text] =
-      if pidFile.exists() then safely(pidFile.open(_.stream[Data].read[Text]).trim)
+      if pidFile.exists() then safely(pidFile.open(_.read[Text]).trim)
       else Unset
 
     recorded.let(_ == Process().pid.value.show).or(false)
@@ -441,7 +441,7 @@ def cli[bus <: Matchable](using executive: Executive)
         // executive can produce a tree; others yield `Unset` and `service.help()` falls back.
         lazy val helpValue: Optional[Help] =
           executive.help(name, environment, () => directory, stdio, login):
-            (interface: executive.Interface) ?=> block(using service, interface, environment)
+            (interface: executive.Interface) ?=> block(using service, interface, environment, summon[Monitor])
 
         lazy val service: DaemonService[bus] =
           DaemonService[bus]
@@ -470,7 +470,7 @@ def cli[bus <: Matchable](using executive: Executive)
           clientState.invocation.offer(cli)
 
           if cli.proceed then
-            val result = block(using service, cli, environment)
+            val result = block(using service, cli, environment, summon[Monitor])
             val exitStatus: Exit = executive.process(cli)(result)
 
             clientState.exitPromise.fulfill(exitStatus)
@@ -522,9 +522,9 @@ def cli[bus <: Matchable](using executive: Executive)
       val buildId = safely(System.properties.build.id[Int]()).or:
         safely((Classpath/"build.id").read[Text].trim.decode[Int]).or(0)
 
-      buildFile.open(t"$buildId".writeTo(_))
+      buildFile.open(_.write(t"$buildId"))
       val pidValue = Process().pid.value.show
-      pidFile.open(pidValue.writeTo(_))
+      pidFile.open(_.write(pidValue))
 
       task(n"pid-watcher"):
         safely:

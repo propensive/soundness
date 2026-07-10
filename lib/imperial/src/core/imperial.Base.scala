@@ -41,13 +41,6 @@ import prepositional.*
 import vacuous.*
 
 object Base extends BaseLayout(Unset)(using BaseLayout.Dir(false, Nil)):
-  override def apply[path: Instantiable across Paths from Text]()
-    ( using System, Environment )
-  :   path raises PropertyError raises EnvironmentError =
-
-    path(t"/")
-
-
   object Boot extends BaseLayout[Mono["boot"]](t"boot", readOnly = true)
   object Efi extends BaseLayout[Mono["efi"]](t"efi", readOnly = true)
   object Etc extends BaseLayout[Mono["etc"]](t"etc")

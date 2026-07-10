@@ -34,7 +34,10 @@ package probably
 
 
 object Test:
-  extension [test](test: Test[test])
+  // The `Test` may capture (its block can close over a capability); the methods accept a capturing
+  // receiver so a test whose block uses a capability still type-checks, while `test` (the asserted
+  // result type) stays whatever the block produced — pure, when the block produces a pure value.
+  extension [test](test: Test[test]^)
     inline def aspire(inline predicate: test => Boolean): Unit =
       ${probably.internal.aspire[test]('test, 'predicate)}
 

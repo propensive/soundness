@@ -51,14 +51,14 @@ package encodables:
       Tel.scalar((duration.value*1000).toLong.toString.tt)
 
 package decodables:
-  given instantTelDecodable: Tactic[TelError]
-  =>  (Instant over Posix) is Tel.Decodable =
+  given instantTelDecodable: (tactic: Tactic[TelError])
+  =>  (((Instant over Posix) is Tel.Decodable)^{tactic}) =
     Tel.Decodable(Morphology.Whole): tel =>
       try Instant.of[Posix](tel.primaryAtom.s.toLong)
       catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
 
-  given durationTelDecodable: Tactic[TelError]
-  =>  Duration is Tel.Decodable =
+  given durationTelDecodable: (tactic: Tactic[TelError])
+  =>  ((Duration is Tel.Decodable)^{tactic}) =
     Tel.Decodable(Morphology.Whole): tel =>
       try Duration(tel.primaryAtom.s.toLong)
       catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))

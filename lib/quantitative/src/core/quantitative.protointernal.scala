@@ -44,7 +44,10 @@ import probably.*
 import rudiments.*
 import symbolism.*
 
-trait protointernal:
+// `caps.Pure`: a stateless namespace of macro-support value classes; without the marker, the
+// nested classes' references to sibling members capture `protointernal.this`, which their pure
+// self types reject under capture checking.
+trait protointernal extends caps.Pure:
   case class UnitPower(ref: UnitRef, power: Int)
 
   trait Temperature2:
@@ -65,8 +68,17 @@ trait protointernal:
     def apply[measure <: Measure: Type](using Quotes): UnitsMap =
       import quotes.reflect.*
 
+      // Capture checking can wrap the instantiated `measure` (and the branches of its
+      // intersections) in `@caps.internal.inferred` `AnnotatedType`s, which the structural
+      // matches below don't expect; strip annotations (and dealias) before each match, as
+      // `readUnitPower` already does. Without this, an annotated measure falls through to
+      // the empty map and `repr` becomes `None` downstream.
+      def strip(repr: TypeRepr): TypeRepr = repr.dealias.asMatchable match
+        case AnnotatedType(underlying, _) => strip(underlying)
+        case other                        => other
+
       def recur(repr: TypeRepr): Map[DimensionRef, UnitPower] =
-        repr.asMatchable match
+        strip(repr).asMatchable match
           case AndType(left, right) => recur(left) ++ recur(right)
 
           case AppliedType(_, List(_)) =>
@@ -101,10 +113,16 @@ trait protointernal:
   def readUnitPower(using Quotes)(typeRepr: quotes.reflect.TypeRepr): UnitPower =
     import quotes.reflect.*
 
-    typeRepr.asMatchable.absolve match
-      case AppliedType(unit, List(constantType)) => constantType.asMatchable.absolve match
+    // Capture checking can wrap inferred types in `@caps.internal.inferred` `AnnotatedType`s, which
+    // these structural matches don't expect; strip annotations (and dealias) before each match.
+    def strip(repr: TypeRepr): TypeRepr = repr.dealias.asMatchable match
+      case AnnotatedType(underlying, _) => strip(underlying)
+      case other                        => other
+
+    strip(typeRepr).asMatchable.absolve match
+      case AppliedType(unit, List(constantType)) => strip(constantType).asMatchable.absolve match
         case ConstantType(constant) => constant.absolve match
-          case IntConstant(power) => unit.asMatchable.absolve match
+          case IntConstant(power) => strip(unit).asMatchable.absolve match
             case unit@TypeRef(_, _) =>
               UnitPower(UnitRef(unit.asType, unit.show), power)
 

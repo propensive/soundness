@@ -38,7 +38,20 @@ import filesystemBackends.virtualMachine
 
 object Tests extends Suite(m"Galilei tests"):
   def run(): Unit =
-    ()
+    import charEncoders.utf8Encoder
+    import charDecoders.utf8Decoder
+    import textSanitizers.skipSanitizer
+
+    suite(m"Direct read and write"):
+      val leafName: Text = Uuid().show
+      val dest: Path on Linux = unsafely((% / "tmp" / leafName).on[Linux])
+
+      test(m"Writing then reading a file round-trips its content"):
+        unsafely:
+          dest.write(t"Hello world")
+          dest.read[Text]
+      . assert(_ == t"Hello world")
+
     // suite(m"Opening tests"):
     //   val tmp: Path on Linux = temporaryDirectory
     //   Out.println(m"Writing to $tmp")

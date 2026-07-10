@@ -41,7 +41,7 @@ import denominative.*
 import digression.idempotent
 import distillate.*
 import fulminate.*
-import galilei.*
+import galilei.*, galilei.Platform.pathReadable
 import gossamer.*
 import guillotine.*
 import hieroglyph.*
@@ -55,11 +55,6 @@ import turbulence.*
 import vacuous.*
 
 import charDecoders.utf8Decoder
-import filesystemOptions.createNonexistent.enabled
-import filesystemOptions.createNonexistentParents.enabled
-import filesystemOptions.dereferenceSymlinks.enabled
-import filesystemOptions.readAccess.enabled
-import filesystemOptions.writeAccess.enabled
 import textSanitizers.skipSanitizer
 
 import filesystemBackends.virtualMachine
@@ -127,7 +122,7 @@ object Completions:
       Nil
 
 
-  def install(force: Boolean = false)(using entrypoint: Entrypoint)(using erased Effectful)
+  def install(force: Boolean = false)(using entrypoint: Entrypoint)(using erased effectful: Effectful)
     ( using WorkingDirectory, Diagnostics )
   :   Installation raises InstallError logs CliEvent =
 
@@ -191,14 +186,10 @@ object Completions:
               val profile = sh"pwsh -NoProfile -Command 'echo $$PROFILE'".exec[Path on Linux]()
               val marker = t"# $command tab-completions"
 
-              if profile.exists() && profile.open(_.read[Text]).contains(marker)
+              if profile.exists() && profile.read[Text].contains(marker)
               then Installation.InstallResult.AlreadyInstalled(Shell.Powershell, profile.encode)
               else
-                import filesystemOptions.writeAccess.enabled
-                import filesystemOptions.readAccess.enabled
-                import filesystemOptions.createNonexistent.enabled
-                import filesystemOptions.createNonexistentParents.enabled
-                Eof(profile).open(script(Shell.Powershell, command).sysData.writeTo(_))
+                profile.append(script(Shell.Powershell, command).sysData)
                 Installation.InstallResult.Installed(Shell.Powershell, profile.encode)
 
             .or(Installation.InstallResult.NoWritableLocation(Shell.Powershell))
@@ -207,7 +198,7 @@ object Completions:
 
 
   def install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on Linux])
-    ( using erased Effectful )
+    ( using erased effectful: Effectful )
     ( using Diagnostics )
   :   Installation.InstallResult raises InstallError logs CliEvent =
 
@@ -224,7 +215,7 @@ object Completions:
           if path.exists()
           then Installation.InstallResult.AlreadyInstalled(shell, path.encode)
           else
-            path.open(script(shell, command).sysData.writeTo(_))
+            path.write(script(shell, command).sysData)
             Installation.InstallResult.Installed(shell, path.encode)
 
         . or(Installation.InstallResult.NoWritableLocation(shell))

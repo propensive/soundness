@@ -58,13 +58,32 @@ import wisteria.*
 // list contains one Compound per field, keyed by the field's label.
 // Decoding inverts these mappings.
 
+// Register a decode error and continue with `sentinel` instead of aborting, so
+// that sibling fields of a product can each accrue their own error under a
+// `validate[Tel.Focus]` boundary. A field with no atom (the empty `Tel` handed
+// to a primitive by `conjunction` for an absent field) raises `Absent`; an atom
+// that fails to parse raises `NotScalar`, distinguishing "missing" from
+// "wrong shape". Outside a `validate` boundary the ambient `ThrowTactic` makes
+// `raise` throw, preserving fail-fast decoding.
+// At file level (not a trait member) so the decoder SAMs that call it capture only their
+// tactic, not the enclosing `Tel2` instance.
+private[stratiform] def primitiveFault[value]
+  ( tel: Tel, expected: Text, sentinel: value )
+  ( parse: Text => Optional[value] )
+  ( using Tactic[TelError] )
+:   value =
+
+  if tel.atomTexts.isEmpty then raise(TelError(TelError.Reason.Absent)) yet sentinel
+  else parse(tel.primaryAtom).or:
+    raise(TelError(TelError.Reason.NotScalar(tel.primaryAtom, expected))) yet sentinel
+
 trait Tel2:
   // Field-keyed lens: a name `<: Label` resolves to a Lens from `Tel`
   // onto `Tel`. The getter delegates to `selectDynamic`; the setter
   // routes through `Tel.modify`, which replaces an existing child
   // compound with the same kebab-case keyword in place or appends a
   // new one. Mirrors jacinta's lens given.
-  given lens: [name <: Label: ValueOf] => (erased DynamicTelEnabler) => Tactic[TelError]
+  given lens: [name <: Label: ValueOf] => (erased dynamicTelEnabler: DynamicTelEnabler) => Tactic[TelError]
   =>  name is Lens from Tel onto Tel =
     Lens(_.selectField(valueOf[name]), _.modify(valueOf[name], _))
 
@@ -73,17 +92,7 @@ trait Tel2:
   // `applyDynamic(field)(index)`). `Ordinal` addresses the n-th child; `Each` every
   // child. The transform's result keeps the original child's keyword, so a positional
   // update preserves the field identity while replacing its value/children.
-  private def rewrap(original: Tel.Compound, replacement: Tel): Tel.Compound =
-    replacement.subtree match
-      case compound: Tel.Compound =>
-        compound.copy(keyword = original.keyword)
-
-      case document: Tel.Document =>
-        original.copy(atoms = IArray.empty[Tel.Atom], remark = Unset, children = document.children)
-
-  private def rebuild(origin: Tel, children: IArray[Tel.Block]): Tel = origin.subtree match
-    case document: Tel.Document => Tel.make(document.copy(children = children))
-    case compound: Tel.Compound => Tel.make(compound.copy(children = children))
+  // (`rewrap`/`rebuild` are package-level pure helpers — see `stratiform_core.scala`.)
 
   given ordinalOptical: [element] => Ordinal is Optical from Tel onto Tel = ordinal =>
     Optic: (origin, lambda) =>
@@ -266,49 +275,33 @@ trait Tel2:
   // atom. These mirror jacinta.Json's primitive decoders but go through
   // the atom text rather than a JSON AST.
 
-  // Register a decode error and continue with `sentinel` instead of aborting, so
-  // that sibling fields of a product can each accrue their own error under a
-  // `validate[Tel.Focus]` boundary. A field with no atom (the empty `Tel` handed
-  // to a primitive by `conjunction` for an absent field) raises `Absent`; an atom
-  // that fails to parse raises `NotScalar`, distinguishing "missing" from
-  // "wrong shape". Outside a `validate` boundary the ambient `ThrowTactic` makes
-  // `raise` throw, preserving fail-fast decoding.
-  private def primitiveFault[value]
-    ( tel: Tel, expected: Text, sentinel: value )
-    ( parse: Text => Optional[value] )
-    ( using Tactic[TelError] )
-  :   value =
 
-    if tel.atomTexts.isEmpty then raise(TelError(TelError.Reason.Absent)) yet sentinel
-    else parse(tel.primaryAtom).or:
-      raise(TelError(TelError.Reason.NotScalar(tel.primaryAtom, expected))) yet sentinel
-
-  given textDecodable: Tactic[TelError] => Text is Tel.Decodable =
+  given textDecodable: (tactic: Tactic[TelError]) => ((Text is Tel.Decodable)^{tactic}) =
     Tel.Decodable(Morphology.Str): tel =>
       primitiveFault(tel, t"Text", t""): atom =>
         atom
 
-  given stringDecodable: Tactic[TelError] => String is Tel.Decodable =
+  given stringDecodable: (tactic: Tactic[TelError]) => ((String is Tel.Decodable)^{tactic}) =
     Tel.Decodable(Morphology.Str): tel =>
       primitiveFault(tel, t"String", ""): atom =>
         atom.s
 
-  given intDecodable: Tactic[TelError] => Int is Tel.Decodable =
+  given intDecodable: (tactic: Tactic[TelError]) => ((Int is Tel.Decodable)^{tactic}) =
     Tel.Decodable(Morphology.Whole): tel =>
       primitiveFault(tel, t"Int", 0): atom =>
         try atom.s.toInt catch case _: NumberFormatException => Unset
 
-  given longDecodable: Tactic[TelError] => Long is Tel.Decodable =
+  given longDecodable: (tactic: Tactic[TelError]) => ((Long is Tel.Decodable)^{tactic}) =
     Tel.Decodable(Morphology.Whole): tel =>
       primitiveFault(tel, t"Long", 0L): atom =>
         try atom.s.toLong catch case _: NumberFormatException => Unset
 
-  given doubleDecodable: Tactic[TelError] => Double is Tel.Decodable =
+  given doubleDecodable: (tactic: Tactic[TelError]) => ((Double is Tel.Decodable)^{tactic}) =
     Tel.Decodable(Morphology.Real): tel =>
       primitiveFault(tel, t"Double", 0.0): atom =>
         try atom.s.toDouble catch case _: NumberFormatException => Unset
 
-  given booleanDecodable: Tactic[TelError] => Boolean is Tel.Decodable =
+  given booleanDecodable: (tactic: Tactic[TelError]) => ((Boolean is Tel.Decodable)^{tactic}) =
     Tel.Decodable(Morphology.Bool): tel =>
       primitiveFault(tel, t"Boolean", false): atom =>
         atom.s match
@@ -351,7 +344,7 @@ trait Tel2:
 
   given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  Tactic[TelError]
-  =>  ( decodable: => inner is Tel.Decodable )
+  =>  ( decodable: -> (inner is Tel.Decodable) )
   =>  value is Tel.Decodable =
     Tel.Decodable(Morphology.Opt(decodable.shape())): telVal =>
       if telVal.childCompounds.nil && telVal.atomTexts.nil then Unset
@@ -366,41 +359,24 @@ trait Tel2:
   // element via the target's `Factory`.
 
   // Re-keys an encoded value's compound (or wraps a document) under `keyword`.
-  private def reKey(tel: Tel, keyword: Text): Tel.Compound = tel.subtree match
-    case c: Tel.Compound => c.copy(keyword = keyword)
-    case d: Tel.Document => Tel.Compound(keyword, IArray.empty, Unset, d.children)
-
-  private def collectionDocument[value]
-    (values: Iterable[value])(using encodable: value is Encodable in Tel)
-  :   Tel =
-
-    val compounds: IArray[Tel.Compound] = IArray.from:
-      values.flatMap: element =>
-        encodable.encoded(element).subtree match
-          case compound: Tel.Compound => List(compound)
-          case document: Tel.Document => document.children.flatMap(_.compounds).to(List)
-
-    Tel(Tel.Document(Unset, Unset, Tel.LineEndings.Lf,
-        IArray(Tel.Block(IArray.empty, Unset, compounds, 0))))
-
-  given listEncodable: [list <: List, element] => (encodable: => element is Tel.Encodable)
+  given listEncodable: [list <: List, element] => (encodable: -> (element is Tel.Encodable))
   =>  list[element] is Tel.Encodable =
     Tel.Encodable(Morphology.Arr(encodable.shape())): values =>
       collectionDocument(values)(using encodable)
 
-  given setEncodable: [set <: Set, element] => (encodable: => element is Tel.Encodable)
+  given setEncodable: [set <: Set, element] => (encodable: -> (element is Tel.Encodable))
   =>  set[element] is Tel.Encodable =
     Tel.Encodable(Morphology.Arr(encodable.shape())): values =>
       collectionDocument(values)(using encodable)
 
-  given seriesEncodable: [series <: Series, element] => (encodable: => element is Tel.Encodable)
+  given seriesEncodable: [series <: Series, element] => (encodable: -> (element is Tel.Encodable))
   =>  series[element] is Tel.Encodable =
     Tel.Encodable(Morphology.Arr(encodable.shape())): values =>
       collectionDocument(values)(using encodable)
 
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory:   Factory[element, collection[element]],
-        element0:  => element is Tel.Decodable )
+        element0:  -> (element is Tel.Decodable) )
   =>  Tactic[TelError]
   =>  collection[element] is Tel.Decodable =
     new Tel.Decodable:

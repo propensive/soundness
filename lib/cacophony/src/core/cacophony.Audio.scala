@@ -120,13 +120,14 @@ object Audio:
     def genericize(audio: Audio in format): HttpStreams.Content =
       (format.mediaType.basic, HttpStreams.Body(audio.read[LazyList[Data]].iterator))
 
-  given aggregable: [format: Audible as audible] => Tactic[AudioError]
-  =>  (Audio in format) is Aggregable by Data =
+  given aggregable: [format: Audible as audible] => (tactic: Tactic[AudioError])
+  =>  (((Audio in format) is Aggregable by Data)^{tactic}) =
 
     audible.read(_)
 
 
-  given aggregable2: Tactic[AudioError] => Audio is Aggregable by Data = Audio(_)
+  given aggregable2: (tactic: Tactic[AudioError])
+  =>  ((Audio is Aggregable by Data)^{tactic}) = Audio(_)
 
 case class Audio
   ( private[cacophony] val format: jss.AudioFormat, private[cacophony] val data: Array[Byte] )

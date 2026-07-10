@@ -34,7 +34,6 @@ package serpentine
 
 import anticipation.*
 import contingency.*
-import inimitable.*
 import nomenclature.*
 import prepositional.*
 import rudiments.*
@@ -59,9 +58,8 @@ object Admissible:
 
     Admissible[string, filesystem]: void => Name.verify[string, filesystem]
 
-
-  given uuid: [uuid <: Uuid, filesystem <: Posix | Windows] => uuid is Admissible on filesystem =
-    unchecked[uuid, filesystem]
+  // The platform-specific `uuid` instance (a `Uuid` is an admissible name on any OS filesystem)
+  // lives with the OS platform types in galilei's `object Os`.
 
 trait Admissible extends Typeclass, Planar:
   def check(name: Text): Unit

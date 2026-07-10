@@ -68,11 +68,10 @@ object Loggable:
               then sink.submit(level, timestamp, message)
 
 trait Loggable extends Typeclass:
-  loggable =>
+  loggable: Loggable =>
     def log(level: Level, timestamp: Long, event: => Self): Unit
 
-    def contramap[self2](lambda: self2 => Self): self2 is Loggable = new Loggable:
-      type Self = self2
-
-      def log(level: Level, timestamp: Long, event: => Self): Unit =
-        loggable.log(level, timestamp, lambda(event))
+    // `^{lambda}` only: the compiler treats a bare `Loggable` receiver as untracked
+    // (empty capture set), so `this` is not a legal capture reference here.
+    def contramap[self2](lambda: self2 => Self): (self2 is Loggable)^{lambda} =
+      (level, timestamp, event) => loggable.log(level, timestamp, lambda(event))

@@ -44,51 +44,63 @@ trait Decodable2:
   given generic: [value] => value is Decodable in value = identity(_)
 
 object Decodable extends Decodable2:
-  given int: (number: Tactic[NumberError]) => Int is Decodable in Text = text =>
-    try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      abort(NumberError(text, Int, NumberError.Reason.Unparseable))
+  // The SAM instances below raise through their resolution-scoped tactic, which shares each
+  // instance's given-resolution lifetime, so the instances are laundered pure rather than
+  // making every decoder a capability (the codec-thunk seal pattern; see rep/DECISIONS.md).
+  given int: (number: Tactic[NumberError]^) => Int is Decodable in Text =
+    caps.unsafe.unsafeAssumePure: text =>
+      try Integer.parseInt(text.s) catch case _: NumberFormatException =>
+        abort(NumberError(text, Int, NumberError.Reason.Unparseable))
 
-  given fqcn: Tactic[FqcnError] => Fqcn is Decodable in Text = Fqcn(_)
-  given uuid: Tactic[UuidError] => Uuid is Decodable in Text = Uuid.parse(_)
+  given fqcn: (Tactic[FqcnError]^) => Fqcn is Decodable in Text =
+    caps.unsafe.unsafeAssumePure(Fqcn(_))
+  given uuid: (Tactic[UuidError]^) => Uuid is Decodable in Text =
+    caps.unsafe.unsafeAssumePure(Uuid.parse(_))
 
-  given byte: Tactic[NumberError] => Byte is Decodable in Text = text =>
-    val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      abort(NumberError(text, Byte, NumberError.Reason.Unparseable))
+  given byte: (Tactic[NumberError]^) => Byte is Decodable in Text =
+    caps.unsafe.unsafeAssumePure: text =>
+      val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
+        abort(NumberError(text, Byte, NumberError.Reason.Unparseable))
 
-    if int < Byte.MinValue || int > Byte.MaxValue
-    then abort(NumberError(text, Byte, NumberError.Reason.OutOfRange))
-    else int.toByte
+      if int < Byte.MinValue || int > Byte.MaxValue
+      then abort(NumberError(text, Byte, NumberError.Reason.OutOfRange))
+      else int.toByte
 
-  given short: Tactic[NumberError] => Short is Decodable in Text = text =>
-    val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
-      abort(NumberError(text, Short, NumberError.Reason.Unparseable))
+  given short: (Tactic[NumberError]^) => Short is Decodable in Text =
+    caps.unsafe.unsafeAssumePure: text =>
+      val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
+        abort(NumberError(text, Short, NumberError.Reason.Unparseable))
 
-    if int < Short.MinValue || int > Short.MaxValue
-    then abort(NumberError(text, Short, NumberError.Reason.OutOfRange))
-    else int.toShort
+      if int < Short.MinValue || int > Short.MaxValue
+      then abort(NumberError(text, Short, NumberError.Reason.OutOfRange))
+      else int.toShort
 
-  given long: Tactic[NumberError] => Long is Decodable in Text = text =>
-    try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
-      abort(NumberError(text, Long, NumberError.Reason.Unparseable))
+  given long: (Tactic[NumberError]^) => Long is Decodable in Text =
+    caps.unsafe.unsafeAssumePure: text =>
+      try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
+        abort(NumberError(text, Long, NumberError.Reason.Unparseable))
 
-  given double: Tactic[NumberError] => Double is Decodable in Text = text =>
-    try java.lang.Double.parseDouble(text.s) catch case _: NumberFormatException =>
-      abort(NumberError(text, Double, NumberError.Reason.Unparseable))
+  given double: (Tactic[NumberError]^) => Double is Decodable in Text =
+    caps.unsafe.unsafeAssumePure: text =>
+      try java.lang.Double.parseDouble(text.s) catch case _: NumberFormatException =>
+        abort(NumberError(text, Double, NumberError.Reason.Unparseable))
 
-  given float: Tactic[NumberError] => Float is Decodable in Text = text =>
-    try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
-      abort(NumberError(text, Float, NumberError.Reason.Unparseable))
+  given float: (Tactic[NumberError]^) => Float is Decodable in Text =
+    caps.unsafe.unsafeAssumePure: text =>
+      try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
+        abort(NumberError(text, Float, NumberError.Reason.Unparseable))
 
   given char: Char is Decodable in Text = _.s(0)
 
 
   given enumeration: [enumeration <: reflect.Enum: {Enumerable, Identifiable as identifiable}]
-  =>  Tactic[VariantError]
-  =>  enumeration is Decodable in Text = value =>
+  =>  (Tactic[VariantError]^)
+  =>  enumeration is Decodable in Text =
+    caps.unsafe.unsafeAssumePure: value =>
 
-    enumeration.value(identifiable.decode(value)).or:
-      val names = enumeration.values.to(List).map(enumeration.name(_)).map(enumeration.encode(_))
-      abort(VariantError(value, enumeration.name, names))
+      enumeration.value(identifiable.decode(value)).or:
+        val names = enumeration.values.to(List).map(enumeration.name(_)).map(enumeration.encode(_))
+        abort(VariantError(value, enumeration.name, names))
 
 trait Decodable extends Typeclass, Formal, Locative:
   inline def decodable: this.type = this
@@ -100,5 +112,5 @@ trait Decodable extends Typeclass, Formal, Locative:
   // stays abstract so each instance specifies its own focus type.
   def position(value: Form, focus: Locus): Locus = focus
 
-  def map[self2](lambda: Self => self2): self2 is Decodable in Form =
+  def map[self2](lambda: Self => self2): (self2 is Decodable in Form)^{this, lambda} =
     value => lambda(decodable.decoded(value))

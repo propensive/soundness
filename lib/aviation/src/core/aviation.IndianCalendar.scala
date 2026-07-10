@@ -93,8 +93,5 @@ class IndianCalendar() extends Calendar:
     val before = daysBeforeMonth(mensual(date).ordinal, leapYear(Year(saka)))
     Day(date.jdn - yearStart(saka) - before + 1)
 
-  def jdn(year: Year, month: IndianMonth, day: Day): Date raises TimeError =
-    if day() < 1 || day() > daysInMonth(month, year) then
-      raise(TimeError(_.Invalid(year(), month.ordinal + 1, day(), this)))
-
+  def computeJdn(year: Year, month: IndianMonth, day: Day): Date =
     Date.julianDay(yearStart(year()) + daysBeforeMonth(month.ordinal, leapYear(year)) + day() - 1)

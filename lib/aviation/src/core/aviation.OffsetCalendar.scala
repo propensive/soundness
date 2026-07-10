@@ -53,5 +53,5 @@ class OffsetCalendar(base: RomanCalendar, offset: Int, val name: Text) extends C
   def diurnal(date: Date): Day = base.diurnal(date)
   def zerothDayOfYear(year: Year): Date = base.zerothDayOfYear(Year(year() - offset))
 
-  def jdn(year: Year, month: Month, day: Day): Date raises TimeError =
-    base.jdn(Year(year() - offset), month, day)
+  def computeJdn(year: Year, month: Month, day: Day): Date =
+    base.computeJdn(Year(year() - offset), month, day)

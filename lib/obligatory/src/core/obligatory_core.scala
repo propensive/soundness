@@ -34,8 +34,11 @@ package obligatory
 
 import prepositional.*
 
-extension [element](stream: Iterator[element])
-  def frames[frame](using framable: element is Framable by frame): Iterator[element] =
+extension [element](stream: Iterator[element]^)
+  // The evidence is capture-polymorphic (`^`): framers built from a `Tactic` capture it, and
+  // the framed iterator honestly retains the framer (it can raise during iteration).
+  def frames[frame](using framable: (element is Framable by frame)^)
+  :   Iterator[element]^{stream, framable} =
     framable.frames(stream)
 
 case class rpc() extends StaticAnnotation

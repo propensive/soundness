@@ -36,5 +36,8 @@ import beneficence.*
 import prepositional.*
 import turbulence.*
 
-trait Courier extends Resultant, Findable:
+// A `Courier` is a capability: its instances are constructed from other capabilities (an HTTP
+// client, a `Tactic`, logging) which they retain — a given that takes capabilities as parameters
+// produces a capability (Jon, 2026-07-06; see rep/DECISIONS.md).
+trait Courier extends Resultant, Findable, caps.ExclusiveCapability:
   def send(message: Document[Email]): Result

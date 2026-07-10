@@ -125,6 +125,11 @@ object Xml extends Tag.Container
     case Fragment(node: Node)                  => textOf(node)
     case _                                     => Unset
 
+  // The primitive decoders are laundered pure: their resolution-scoped tactic shares
+  // each instance's given-resolution lifetime, and the product derivation summons them
+  // against pure expected types (honest capturing forms return with wisteria capture-
+  // polymorphism; see rep/DECISIONS.md).
+  //
   // Explicit `Decodable in Xml` for the common primitive scalars. These
   // *raise + continue* (record an `XmlError` on the ambient `Foci` and
   // return a zero / false sentinel) rather than `abort`ing, so a case
@@ -134,63 +139,70 @@ object Xml extends Tag.Container
   // Specific givens here shadow the generic `decodable` summonFrom below
   // for these types — that branch's `summon[Decodable in Text]` for
   // `Int` would otherwise `abort` with `NumberError` and break accrual.
-  given int: Tactic[XmlError] => Int is Decodable in Xml = xml =>
-    textOf(xml).let: text =>
-      try Integer.parseInt(text.s).nn
-      catch case _: NumberFormatException => raise(XmlError()) yet 0
+  given int: (tactic: Tactic[XmlError]) => Int is Decodable in Xml =
+    caps.unsafe.unsafeAssumePure: xml =>
+      textOf(xml).let: text =>
+        try Integer.parseInt(text.s).nn
+        catch case _: NumberFormatException => raise(XmlError()) yet 0
 
-    . or:
-        raise(XmlError()) yet 0
+      . or:
+          raise(XmlError()) yet 0
 
-  given long: Tactic[XmlError] => Long is Decodable in Xml = xml =>
-    textOf(xml).let: text =>
-      try jl.Long.parseLong(text.s).nn
-      catch case _: NumberFormatException => raise(XmlError()) yet 0L
+  given long: (tactic: Tactic[XmlError]) => Long is Decodable in Xml =
+    caps.unsafe.unsafeAssumePure: xml =>
+      textOf(xml).let: text =>
+        try jl.Long.parseLong(text.s).nn
+        catch case _: NumberFormatException => raise(XmlError()) yet 0L
 
-    . or:
-        raise(XmlError()) yet 0L
+      . or:
+          raise(XmlError()) yet 0L
 
-  given short: Tactic[XmlError] => Short is Decodable in Xml = xml =>
-    textOf(xml).let: text =>
-      try jl.Short.parseShort(text.s).nn
-      catch case _: NumberFormatException => raise(XmlError()) yet 0.toShort
+  given short: (tactic: Tactic[XmlError]) => Short is Decodable in Xml =
+    caps.unsafe.unsafeAssumePure: xml =>
+      textOf(xml).let: text =>
+        try jl.Short.parseShort(text.s).nn
+        catch case _: NumberFormatException => raise(XmlError()) yet 0.toShort
 
-    . or:
-        raise(XmlError()) yet 0.toShort
+      . or:
+          raise(XmlError()) yet 0.toShort
 
-  given byte: Tactic[XmlError] => Byte is Decodable in Xml = xml =>
-    textOf(xml).let: text =>
-      try jl.Byte.parseByte(text.s).nn
-      catch case _: NumberFormatException => raise(XmlError()) yet 0.toByte
+  given byte: (tactic: Tactic[XmlError]) => Byte is Decodable in Xml =
+    caps.unsafe.unsafeAssumePure: xml =>
+      textOf(xml).let: text =>
+        try jl.Byte.parseByte(text.s).nn
+        catch case _: NumberFormatException => raise(XmlError()) yet 0.toByte
 
-    . or:
-        raise(XmlError()) yet 0.toByte
+      . or:
+          raise(XmlError()) yet 0.toByte
 
-  given double: Tactic[XmlError] => Double is Decodable in Xml = xml =>
-    textOf(xml).let: text =>
-      try jl.Double.parseDouble(text.s).nn
-      catch case _: NumberFormatException => raise(XmlError()) yet 0.0
+  given double: (tactic: Tactic[XmlError]) => Double is Decodable in Xml =
+    caps.unsafe.unsafeAssumePure: xml =>
+      textOf(xml).let: text =>
+        try jl.Double.parseDouble(text.s).nn
+        catch case _: NumberFormatException => raise(XmlError()) yet 0.0
 
-    . or:
-        raise(XmlError()) yet 0.0
+      . or:
+          raise(XmlError()) yet 0.0
 
-  given float: Tactic[XmlError] => Float is Decodable in Xml = xml =>
-    textOf(xml).let: text =>
-      try jl.Float.parseFloat(text.s).nn
-      catch case _: NumberFormatException => raise(XmlError()) yet 0.0f
+  given float: (tactic: Tactic[XmlError]) => Float is Decodable in Xml =
+    caps.unsafe.unsafeAssumePure: xml =>
+      textOf(xml).let: text =>
+        try jl.Float.parseFloat(text.s).nn
+        catch case _: NumberFormatException => raise(XmlError()) yet 0.0f
 
-    . or:
-        raise(XmlError()) yet 0.0f
+      . or:
+          raise(XmlError()) yet 0.0f
 
-  given boolean: Tactic[XmlError] => Boolean is Decodable in Xml = xml =>
-    textOf(xml).let: text =>
-      text.s match
-        case "true"  => true
-        case "false" => false
-        case _       => raise(XmlError()) yet false
+  given boolean: (tactic: Tactic[XmlError]) => Boolean is Decodable in Xml =
+    caps.unsafe.unsafeAssumePure: xml =>
+      textOf(xml).let: text =>
+        text.s match
+          case "true"  => true
+          case "false" => false
+          case _       => raise(XmlError()) yet false
 
-    . or:
-        raise(XmlError()) yet false
+      . or:
+          raise(XmlError()) yet false
 
   // Single entry-point for resolving `Decodable in Xml`. Prefers a textual
   // decoder when one exists (so any `Decodable in Text` value works as a
@@ -242,30 +254,46 @@ object Xml extends Tag.Container
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Xml =
 
+      // The capabilities are summoned at the derivation site and supplied
+      // explicitly to `decodeElement`, rather than re-summoned inside the
+      // decoder body via nested `provide`s. Under capture checking the
+      // nested context-function `provide`s minted distinct root capabilities
+      // that failed to unify; a `Decodable` instance is `Pure`, so the SAM
+      // closing over the summoned capabilities contributes nothing to its
+      // capture set.
       xml =>
-        provide[Foci[Xml.Focus]]:
-          provide[Tactic[XmlError]]:
-            xml match
-              case e: Element           => buildWith[derivation](e)
-              case Fragment(e: Element) => buildWith[derivation](e)
+        decodeElement[derivation](xml)
+          ( using infer[ProductReflection[derivation]],
+                  infer[Foci[Xml.Focus]],
+                  infer[Tactic[XmlError]] )
 
-              case _ =>
-                // Wrong-shape input (including the `Absent` sentinel an
-                // outer conjunction passes in for a missing nested case-
-                // class field). If the user supplied `Default[derivation]`
-                // we register one error at the current focus and continue
-                // with the sentinel — a missing nested case class lands
-                // as a single error rather than expanding per sub-field.
-                // Without a `Default`, we fall back to running `build`
-                // against an empty children map so each sub-field accrues
-                // its own missing-field error.
-                summonFrom:
-                  case derivationDefault: Default[`derivation`] =>
-                    raise(XmlError()) yet derivationDefault()
+    private inline def decodeElement[derivation <: Product]
+      ( xml: Xml )
+      ( using ProductReflection[derivation], Foci[Xml.Focus], Tactic[XmlError] )
+    :   derivation =
 
-                  case _ =>
-                    raise(XmlError())
-                    buildWith[derivation](Element(t"", Attributes.empty, IArray.empty))
+      xml match
+        case e: Element           => buildWith[derivation](e)
+        case Fragment(e: Element) => buildWith[derivation](e)
+
+        case _ =>
+          // Wrong-shape input (including the `Absent` sentinel an
+          // outer conjunction passes in for a missing nested case-
+          // class field). If the user supplied `Default[derivation]`
+          // we register one error at the current focus and continue
+          // with the sentinel — a missing nested case class lands
+          // as a single error rather than expanding per sub-field.
+          // Without a `Default`, we fall back to running `build`
+          // against an empty children map so each sub-field accrues
+          // its own missing-field error.
+          summonFrom:
+            case derivationDefault: Default[`derivation`] =>
+              raise(XmlError())
+              derivationDefault()
+
+            case _ =>
+              raise(XmlError())
+              buildWith[derivation](Element(t"", Attributes.empty, IArray.empty))
 
     private inline def buildWith[derivation <: Product: ProductReflection]
       ( element: Element )
@@ -491,12 +519,13 @@ object Xml extends Tag.Container
 
 
   given aggregable: [content <: Label: Reifiable to List[String]] => (schema: XmlSchema)
-  =>  Tactic[ParseError]
-  =>  (Xml of content) is Aggregable by Text =
+  =>  (tactic: Tactic[ParseError])
+  =>  (((Xml of content) is Aggregable by Text)^{tactic}) =
 
     input => XmlParser.fromIterator(input.iterator).parseXml(headers0 = false).of[content]
 
-  given aggregable2: (schema: XmlSchema) => Tactic[ParseError] => Xml is Aggregable by Text =
+  given aggregable2: (schema: XmlSchema) => (tactic: Tactic[ParseError])
+  =>  ((Xml is Aggregable by Text)^{tactic}) =
     input => XmlParser.fromIterator(input.iterator).parseXml(headers0 = false)
 
   // HTTP content-type integration. `Abstractable across HttpStreams` makes an
@@ -514,8 +543,8 @@ object Xml extends Tag.Container
       def genericize(xml: Xml): HttpStreams.Content =
         (t"application/xml; charset=${encoder.encoding.name}", HttpStreams.Body(xml.show.data))
 
-  given instantiable: (schema: XmlSchema) => Tactic[ParseError]
-  =>  Xml is Instantiable across HttpRequests from Text =
+  given instantiable: (schema: XmlSchema) => (tactic: Tactic[ParseError])
+  =>  ((Xml is Instantiable across HttpRequests from Text)^{tactic}) =
 
     text => LazyList(text).read[Xml]
 
@@ -525,14 +554,15 @@ object Xml extends Tag.Container
   // `asInstanceOf` cast — `value in Xml` is just `value { type
   // Form = Xml }` so the cast is a no-op at runtime.
   given aggregableIn: [value: Decodable in Xml] => (schema: XmlSchema)
-  =>  ( Tactic[ParseError], Tactic[XmlError] )
-  =>  (value in Xml) is Aggregable by Text =
+  =>  ( tactic: Tactic[ParseError], xmlTactic: Tactic[XmlError] )
+  =>  (((value in Xml) is Aggregable by Text)^{tactic, xmlTactic}) =
 
     input =>
       XmlParser.fromIterator(input.iterator).parseXml(headers0 = false).as[value]
       . asInstanceOf[value in Xml]
 
-  given loadable: (schema: XmlSchema) => Tactic[ParseError] => Xml is Loadable by Text = stream =>
+  given loadable: (schema: XmlSchema) => (tactic: Tactic[ParseError])
+  =>  ((Xml is Loadable by Text)^{tactic}) = stream =>
     XmlParser.fromIterator(stream.iterator).parseXml(headers0 = true) match
       case Fragment((header: Header), rest*) =>
         if rest.nil then abort(ParseError(Xml, Position(1.u, 1.u), Issue.BadDocument))
@@ -548,7 +578,9 @@ object Xml extends Tag.Container
       case node: Node =>
         Document(node, Xml.header)
 
-  given streamable: (Monitor, Probate) => Document[Xml] is Streamable by Text =
+  // `^{monitor}` only: `Probate` is not capture-tracked (see rep/REVIEW.md).
+  given streamable: (monitor: Monitor, probate: Probate)
+  =>  ((Document[Xml] is Streamable by Text)^{monitor}) =
     emit(_).to(LazyList)
 
   // Tracking-mode parse entry points. Build the parser with a line-feed
@@ -704,7 +736,7 @@ object Xml extends Tag.Container
         producer.put("<")
         producer.put(label)
 
-        if !attributes.nil then attributes.each: (key, value) =>
+        if !attributes.nil then attributes.eachPair: (key, value) =>
           producer.put(" ")
           producer.put(key)
           producer.put("=\"")
@@ -1031,7 +1063,7 @@ object Xml extends Tag.Container
   //                     `var pos`. Used by `aggregable` / `loadable`. Faster
   //                     because all primitives are trivial integer
   //                     arithmetic; `final` lets the JIT devirtualise them.
-  //   * `XmlStreaming` — operates over a `Cursor[Text]` against an
+  //   * `XmlStreaming` — operates over a `Cursor[Text, ?]^` against an
   //                     `Iterator[Text]`. Used by macro interpolators
   //                     (which need callbacks for `\u0000` placeholders);
   //                     handles unbounded streaming inputs.
@@ -1069,9 +1101,11 @@ object Xml extends Tag.Container
       new XmlParser(Cursor[Text](input), tracking = true)
 
   private[xylophone] final class XmlParser
-    ( cursor:                   Cursor[Text],
-     protected[xylophone] val tracking: Boolean )
-    ( using schema: XmlSchema ):
+    ( val cursor:               Cursor[Text, ?]^,
+     protected[xylophone] val tracking: Boolean,
+     callback:                  (Ordinal, Hole) => Unit = (_, _) => () )
+    ( using schema: XmlSchema )
+  extends caps.ExclusiveCapability:
     type Region = Cursor.Mark
 
     private var heldToken: Cursor.Held | Null = null
@@ -1351,12 +1385,6 @@ object Xml extends Tag.Container
       val length: Optional[Int] = start.let: mark => end - mark.absolute.toInt
       Position(line.u, col.u, offset = offset, length = length)
 
-    // Optional callback invoked when a `\u0000` placeholder is encountered.
-    // Used by the macro interpolators to record hole positions; the
-    // substrate must still recognise `\u0000` as a special character at
-    // each insertion point. Default no-op for non-macro use.
-    var callback: Optional[(Ordinal, Hole) => Unit] = Unset
-
     protected inline def fail(issue: Issue)(using Tactic[ParseError]): Nothing =
       abort(ParseError(Xml, computePosition(Unset), issue))
 
@@ -1520,7 +1548,7 @@ object Xml extends Tag.Container
             // we report it but include U+0000 in the value text so the
             // macro post-processor can locate it.
             appendSlice(segStart, buf)
-            callback.let(_(position.z, Hole.Attribute(tag, t"")))
+            callback(position.z, Hole.Attribute(tag, t""))
             buf.append('\u0000')
             advance()
             segStart = begin()
@@ -1563,7 +1591,7 @@ object Xml extends Tag.Container
 
         if ch == '>' || ch == '/' || ch == '?' then done = true
         else if ch == '\u0000' then
-          callback.let(_(position.z, Hole.Tagbody))
+          callback(position.z, Hole.Tagbody)
           advance()
           skipWs()
           ensureCapacity()
@@ -1593,7 +1621,7 @@ object Xml extends Tag.Container
 
           val value =
             if q == '\u0000' then
-              callback.let(_(position.z, Hole.Attribute(tag, key)))
+              callback(position.z, Hole.Attribute(tag, key))
               advance()
               t"\u0000"
             else if q == '"' || q == '\'' then
@@ -1647,7 +1675,7 @@ object Xml extends Tag.Container
         else if c == '\u0000' then
           if buf == null then buf = jl.StringBuilder()
           appendSlice(segStart, buf.nn)
-          callback.let(_(position.z, Hole.Node(parentLabel)))
+          callback(position.z, Hole.Node(parentLabel))
           buf.nn.append('\u0000')
           advance()
           segStart = begin()
@@ -1842,7 +1870,7 @@ object Xml extends Tag.Container
     protected def readElement()(using Tactic[ParseError]): Element =
       // Detect `<\u0000` (macro element hole)
       if more && peek == '\u0000' then
-        callback.let(_(position.z, Hole.Element(t"")))
+        callback(position.z, Hole.Element(t""))
         advance()
         if !more then fail(Issue.ExpectedMore)
         if peek != '>' then fail(Issue.Unexpected(peek))
@@ -2030,7 +2058,7 @@ object Xml extends Tag.Container
       // Macro element holes can't carry meaningful positions; emit an empty
       // attribute / child set and a zero-length descriptor.
       if more && peek == ' ' then
-        callback.let(_(position.z, Hole.Element(t"")))
+        callback(position.z, Hole.Element(t""))
         advance()
         if !more then fail(Issue.ExpectedMore)
         if peek != '>' then fail(Issue.Unexpected(peek))
@@ -2104,7 +2132,7 @@ object Xml extends Tag.Container
 
         if ch == '>' || ch == '/' || ch == '?' then done = true
         else if ch == ' ' then
-          callback.let(_(position.z, Hole.Tagbody))
+          callback(position.z, Hole.Tagbody)
           advance()
           skipWs()
           ensureCapacity()
@@ -2141,7 +2169,7 @@ object Xml extends Tag.Container
 
           val value =
             if q == ' ' then
-              callback.let(_(position.z, Hole.Attribute(tag, key)))
+              callback(position.z, Hole.Attribute(tag, key))
               advance()
               t" "
             else if q == '"' || q == '\'' then
@@ -2327,14 +2355,12 @@ object Xml extends Tag.Container
   private[xylophone] def parse[schema <: XmlSchema]
     ( input:    Iterator[Text],
       root:     Tag,
-      callback: Optional[(Ordinal, Hole) => Unit] = Unset,
+      callback: (Ordinal, Hole) => Unit                = (_, _) => (),
       headers0: Boolean                           = false )
     ( using schema: XmlSchema )
   :   Xml raises ParseError =
 
-    val parser = XmlParser.fromIterator(input)
-    parser.callback = callback
-    parser.parseXml(headers0)
+    new XmlParser(Cursor[Text](input), tracking = false, callback).parseXml(headers0)
 
 
 sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
@@ -2395,10 +2421,10 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
 
     IArray.from(buffer)
 
-  def selectDynamic(name: String)(using erased DynamicXmlEnabler): Fragment =
+  def selectDynamic(name: String)(using erased dynamicXmlEnabler: DynamicXmlEnabler): Fragment =
     new Fragment(childElements(name)*)
 
-  def applyDynamic(name: String)(ordinal: Ordinal = Prim)(using erased DynamicXmlEnabler)
+  def applyDynamic(name: String)(ordinal: Ordinal = Prim)(using erased dynamicXmlEnabler: DynamicXmlEnabler)
   :   Fragment =
 
     childElements(name).at(ordinal).lay(new Fragment())(new Fragment(_))

@@ -47,7 +47,7 @@ import spectacular.*
 import turbulence.*
 import vacuous.*
 
-def execute(block: (erased Effectful) ?=> Invocation ?=> Exit)(using cli: Cli): Execution =
+def execute(block: (erased effectful: Effectful) ?=> Invocation ?=> Exit)(using cli: Cli): Execution =
   cli.absolve match
     case completion: Completion => Execution(Exit.Ok)
     case invocation: Invocation => Execution(block(using !!)(using invocation))
@@ -137,7 +137,7 @@ package executives:
 
       arguments match
         case
-          t"{completions}" :: t"powershell" :: As[Int](cursor) :: _ :: tty ::
+          t"{completions}" :: t"powershell" :: As.Int(cursor) :: _ :: tty ::
             t"--" ::
             rawLine ::
             Nil =>
@@ -165,7 +165,7 @@ package executives:
               login )
 
         case
-          t"{completions}" :: shellName :: As[Int](focus0) :: As[Int](position0) :: tty ::
+          t"{completions}" :: shellName :: As.Int(focus0) :: As.Int(position0) :: tty ::
             t"--" ::
             command ::
             rest =>

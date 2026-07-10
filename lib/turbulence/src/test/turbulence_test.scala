@@ -92,8 +92,8 @@ object Tests extends Suite(m"Turbulence tests"):
           val stream = string.data.grouped(bs).to(LazyList)
           val result = stream.read[Text]
 
-          result
-        . assert(_ == string)
+          result.s
+        . assert(_ == string.s)
 
     val qbf = t"The quick brown fox\njumps over the lazy dog"
     val qbfData = qbf.data
@@ -124,28 +124,28 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert(_ == qbfData.to(List))
 
       test(m"Read Text as Text"):
-        qbf.read[Text]
-      . assert(_ == qbf)
+        qbf.read[Text].s
+      . assert(_ == qbf.s)
 
       test(m"Read type as Text with Text and Byte Streamable"):
-        Ref().read[Text]
-      . assert(_ == t"abcdef")
+        Ref().read[Text].s
+      . assert(_ == t"abcdef".s)
 
       test(m"Read type as Data with Text and Byte Streamable"):
         Ref().read[Data].to(List)
       . assert(_ == t"abcdef".data.to(List))
 
       test(m"Read some type as Text with only Text Streamable instance"):
-        Ref2().read[Text]
-      . assert(_ == t"abcdef")
+        Ref2().read[Text].s
+      . assert(_ == t"abcdef".s)
 
       test(m"Read some type as Data with only Text Streamable instance"):
         Ref2().read[Data].to(List)
       . assert(_ == t"abcdef".data.to(List))
 
       test(m"Read some type as Text with only Data Streamable instance"):
-        Ref3().read[Text]
-      . assert(_ == t"abcdef")
+        Ref3().read[Text].s
+      . assert(_ == t"abcdef".s)
 
       test(m"Read some type as Data with only Data Streamable instance"):
         Ref3().read[Data].to(List)
@@ -164,8 +164,8 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert(_.reduce(_ ++ _).to(List) == qbfData.to(List))
 
       test(m"Read Data as Text"):
-        qbfData.read[Text]
-      . assert(_ == qbf)
+        qbfData.read[Text].s
+      . assert(_ == qbf.s)
 
       test(m"Read Data as LazyList[Text]"):
         qbfData.read[LazyList[Text]].join
@@ -222,14 +222,14 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"Write Text to some reference with Text and Data instances"):
         val store = GeneralStore()
         qbf.writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write Data to some reference with Text and Data instances"):
         val store = GeneralStore()
         qbfData.writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write LazyList[Text] with Text and Data instances"):
         val store = GeneralStore()
@@ -246,14 +246,14 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"Write Text to some reference with only a Data instance"):
         val store = ByteStore()
         qbf.writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write Data to some reference with only a Data instance"):
         val store = ByteStore()
         qbfData.writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write LazyList[Text] with only Data instance"):
         val store = ByteStore()
@@ -270,14 +270,14 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"Write Text to some reference with only a Text instance"):
         val store = TextStore()
         qbf.writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write Data to some reference with only a Text instance"):
         val store = TextStore()
         qbfData.writeTo(store)
-        store()
-      . assert(_ == qbf)
+        store().s
+      . assert(_ == qbf.s)
 
       test(m"Write LazyList[Text] with only Text instance"):
         val store = TextStore()

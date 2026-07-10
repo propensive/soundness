@@ -508,8 +508,13 @@ case class Teletype
           if ins.nil then buffer.add(plain.s.substring(from, to).nn.tt)
           else
             var p = from
+            // An explicit iterator loop rather than `.each`: under capture checking the
+            // per-element closure cannot flow into the surrounding builder (as in
+            // rudiments' `weave`).
+            val iterator = ins.iterator
 
-            ins.each: (k, v) =>
+            while iterator.hasNext do
+              val (k, v) = iterator.next()
               if p < k then buffer.add(plain.s.substring(p, k).nn.tt)
               buffer.add(v)
               p = k

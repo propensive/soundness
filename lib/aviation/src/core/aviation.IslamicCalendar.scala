@@ -75,8 +75,5 @@ class IslamicCalendar() extends Calendar:
     val doy = dayOfYear(date)
     Day(doy - daysBeforeMonth((doy*2/59).min(11)) + 1)
 
-  def jdn(year: Year, month: IslamicMonth, day: Day): Date raises TimeError =
-    if day() < 1 || day() > daysInMonth(month, year) then
-      raise(TimeError(_.Invalid(year(), month.ordinal + 1, day(), this)))
-
+  def computeJdn(year: Year, month: IslamicMonth, day: Day): Date =
     Date.julianDay(epoch + daysBeforeYear(year()) + daysBeforeMonth(month.ordinal) + day() - 1)

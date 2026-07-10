@@ -45,10 +45,10 @@ import vacuous.*
 object CharDecoder:
   case class Focus(position: Int) derives CanEqual
 
-  def system(using TextSanitizer): CharDecoder =
+  def system(using sanitizer: TextSanitizer): CharDecoder =
     unapply(jnc.Charset.defaultCharset.nn.displayName.nn.tt).get
 
-  def unapply(name: Text)(using TextSanitizer): Option[CharDecoder] =
+  def unapply(name: Text)(using sanitizer: TextSanitizer): Option[CharDecoder] =
     Encoding.unapply(name).map(CharDecoder(_))
 
 class CharDecoder(val encoding: Encoding)(using val sanitizer: TextSanitizer) extends Findable:

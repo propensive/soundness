@@ -49,10 +49,16 @@ extends Error(m"${items.length} validation issues"):
 
 object ValidationTests extends Suite(m"Jacinta validation tests"):
 
-  private def validateJson[result](json: Json)(decode: Json => result raises JsonError tracks Json.Focus)
+  // Inline, with a directly-constructed `Validate`: a `raises … tracks …` function VALUE
+  // cannot be typed under capture checking (its honest type is a curried dependent context
+  // function, an unimplemented compiler restriction), so the decode lambda must beta-reduce
+  // away into `protect`'s inline position. See rep/DECISIONS.md.
+  private inline def validateJson[result](json: Json)
+    (inline decode: Json => result raises JsonError tracks Json.Focus)
   :   Issues =
-    validate[Json.Focus](Issues()):
-      case error: JsonError => accrual + (prior.let(_.pointer.encode).or(t"#"), error)
+    Validate[Issues, [r] =>> r raises JsonError, Json.Focus]
+      ( Issues(),
+        { case error: JsonError => accrual + (prior.let(_.pointer.encode).or(t"#"), error) } )
     . protect(decode(json))
 
   def run(): Unit =
@@ -150,6 +156,12 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
       . assert(_ == 6)
 
     suite(m"Position-aware focus (tracked Json)"):
+      case class Tagged(items: List[(Text, Optional[Int], Optional[Int])] = Nil)
+                       (using Diagnostics)
+      extends Error(m"${items.length} validation issues"):
+        def +(focus: Text, line: Optional[Int], column: Optional[Int]): Tagged =
+          Tagged(items :+ (focus, line, column))
+
       // `withPosition` resolves the focus's pointer against the tracked
       // Json's position index. Costs nothing on the success path because
       // `Json.Focus` is constructed (and `withPosition` invoked) only
@@ -157,35 +169,28 @@ object ValidationTests extends Suite(m"Jacinta validation tests"):
       // `as[T]` runs the Decodable's `position` method (which delegates
       // to `Json.Focus.withPosition`) over the accumulated foci once
       // after decoding, so accruals don't need to call `withPosition`.
-      def validateWithPositions[result](json: Json)
-                                       (decode: Json => result raises JsonError tracks Json.Focus)
+      inline def validateWithPositions[result](json: Json)
+        (inline decode: Json => result raises JsonError tracks Json.Focus)
       :   List[(Text, Optional[Int], Optional[Int])] =
-        case class Tagged(items: List[(Text, Optional[Int], Optional[Int])] = Nil)
-                         (using Diagnostics)
-        extends Error(m"${items.length} validation issues"):
-          def +(focus: Text, line: Optional[Int], column: Optional[Int]): Tagged =
-            Tagged(items :+ (focus, line, column))
-
-        validate[Json.Focus](Tagged()):
-          case error: JsonError =>
-            val position = prior.let(_.position)
-            accrual + ( prior.let(_.pointer.encode).or(t"#"),
-                        position.let(_.line),
-                        position.let(_.column) )
+        Validate[Tagged, [r] =>> r raises JsonError, Json.Focus]
+          ( Tagged(),
+            { case error: JsonError =>
+                val position = prior.let(_.position)
+                accrual + ( prior.let(_.pointer.encode).or(t"#"),
+                            position.let(_.line),
+                            position.let(_.column) ) } )
         . protect(decode(json)).items
 
       test(m"Missing field reports a position on a tracked Json"):
-        import parsing.trackPositions
         val source = t"""{"name": "Alice"}"""
-        val json = source.read[Json]
+        val json = Json.parseTracked(source)
         val results = validateWithPositions(json)(_.as[VPerson])
         results.map(_(0).s).to(Set)
       . assert(_ == Set("#/age", "#/email"))
 
       test(m"Wrong-type field reports the value's line/column"):
-        import parsing.trackPositions
         val source = t"{\n  \"name\": 42,\n  \"age\": 30,\n  \"email\": \"x@y\"\n}"
-        val json = source.read[Json]
+        val json = Json.parseTracked(source)
         val results = validateWithPositions(json)(_.as[VPerson])
         // `name` value 42 is on line 2; column points at the `4` of `42`.
         results.find(_(0) == t"#/name").map((_, line, col) => (line, col))

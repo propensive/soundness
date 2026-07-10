@@ -67,7 +67,7 @@ class Form
   // Bind every container to the wake function so a mutation requests a repaint.
   private def bind(node: Pane): Unit = node match
     case Pane.Branch(_, _, panes) =>
-      panes.onChange = wake
+      panes.bindWake(wake)
       panes.contents.each(bind(_))
 
     case _ =>

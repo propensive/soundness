@@ -256,7 +256,20 @@ object WasmInvoke:
         case Foreign.Type.Applied(constructor, elements)
         if constructor.s == "tuple" && isTuple(scala, elements.length) =>
           val fields = scala.dealias.typeArgs
-          val derived = elements.zip(fields).map(decodeFor(_, _))
+          // Macro-time only: mapping with a lambda would let the decoders' minted quote
+          // capabilities leak into the closure's capture set, so the traversal is an
+          // explicit loop with each pair laundered (macro-under-cc precedent,
+          // rep/DECISIONS.md).
+          val derivedBuffer = List.newBuilder[(TypeRepr, Expr[Any] -> Expr[Any])]
+
+          val pairs = elements.zip(fields).iterator
+          while pairs.hasNext do
+            val (element, field) = pairs.next()
+            val (repr, decode) = decodeFor(element, field)
+            val decode1: Expr[Any] -> Expr[Any] = caps.unsafe.unsafeAssumePure(decode)
+            derivedBuffer += ((repr, decode1))
+
+          val derived = derivedBuffer.result()
           val carriers = derived.map(_(0))
 
           val tupleClass =
@@ -269,8 +282,16 @@ object WasmInvoke:
             val cast =
               TypeApply(Select.unique(call.asTerm, "asInstanceOf"), List(Inferred(tupleCarrier)))
 
-            val decoded = derived.zipWithIndex.map: (derivation, index) =>
-              derivation(1)(Select.unique(cast, "_" + (index + 1).toString).asExprOf[Any]).asTerm
+            // Explicit loop like `derived` above (macro-under-cc precedent).
+            val decodedBuffer = List.newBuilder[Term]
+
+            val indexed = derived.zipWithIndex.iterator
+            while indexed.hasNext do
+              val (derivation, index) = indexed.next()
+              decodedBuffer +=
+                derivation(1)(Select.unique(cast, "_" + (index + 1).toString).asExprOf[Any]).asTerm
+
+            val decoded = decodedBuffer.result()
 
             val applied =
               Apply

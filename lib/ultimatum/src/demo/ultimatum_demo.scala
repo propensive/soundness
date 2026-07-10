@@ -39,7 +39,6 @@ import probates.cancelProbate
 import executives.completions
 import interpreters.posixInterpreter
 import strategies.throwUnsafely
-import supervisors.globalSupervisor
 import threading.platformThreading
 
 // A medium-complexity fullscreen layout demonstrating the framework: a title bar
@@ -51,9 +50,10 @@ import threading.platformThreading
 @main
 def demo(): Unit = cli:
   execute:
-    interactive: terminal ?=>
-      form(Mode.Inline)(demoLayout)
-      Exit.Ok
+    supervise:
+      interactive: terminal ?=>
+        form(Mode.Inline)(demoLayout)
+        Exit.Ok
 
 // rank(title, file(sidebar, rank(heading, compose, activity)), status), with the
 // sidebar, compose box and activity panel each wrapped in a `border` and the

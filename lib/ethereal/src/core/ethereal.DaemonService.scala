@@ -32,6 +32,7 @@
                                                                                                   */
 package ethereal
 
+import galilei.*
 import language.experimental.pureFunctions
 
 import java.lang as jl

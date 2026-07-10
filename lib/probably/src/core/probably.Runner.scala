@@ -57,7 +57,10 @@ class Runner[report]()(using reporter: Reporter[report]) extends Findable:
 
   val report: report = reporter.report()
 
-  def maybeRun[result](test: Test[result]): Optional[Trial[result]] =
+  // The test's `action` may capture a capability (an error tactic, a decoder, …), so the `Test` is
+  // accepted as capturing (`Test[result]^`). Without the `^`, capture checking would box the (often
+  // pure) `result` type to reconcile a capturing argument with a non-capturing parameter.
+  def maybeRun[result](test: Test[result]^): Optional[Trial[result]] =
     if skip(test.id) then Unset else run[result](test)
 
   def redraw(size: Int): Unit = if !silent then
@@ -69,7 +72,7 @@ class Runner[report]()(using reporter: Reporter[report]) extends Findable:
     Out.print(e"\e[J")
 
 
-  def run[result](test: Test[result]): Trial[result] =
+  def run[result](test: Test[result]^): Trial[result] =
     mutex:
       val size = active.size
       active ::= test.id

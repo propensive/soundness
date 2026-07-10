@@ -80,28 +80,32 @@ object Sse:
   given textEncodable: Text is Encodable in Sse =
     text => Sse("message", List(text))
 
-  given decodable: Tactic[SseError] => Sse is Decodable in Text = text =>
-    var event: Text = "message"
-    var data: List[Text] = Nil
-    var id: Optional[Text] = Unset
-    var retry: Optional[Long] = Unset
+  given decodable: Tactic[SseError] => Sse is Decodable in Text =
+    // The decode lambda closes over the resolution-scoped tactic, which shares the
+    // instance's given-resolution lifetime; laundered pure per the codec-thunk seal
+    // pattern (see rep/DECISIONS.md).
+    caps.unsafe.unsafeAssumePure: text =>
+      var event: Text = "message"
+      var data: List[Text] = Nil
+      var id: Optional[Text] = Unset
+      var retry: Optional[Long] = Unset
 
-    text.cut(Lf).each: line =>
-      line.offsetOf(t":").lay(raise(SseError(SseError.Reason.MalformedField))): ordinal =>
-        val n = ordinal.n0
-        val value = line.skip(if line.at(n.z + 1) == ' ' then n + 2 else n + 1)
+      text.cut(Lf).each: line =>
+        line.offsetOf(t":").lay(raise(SseError(SseError.Reason.MalformedField))): ordinal =>
+          val n = ordinal.n0
+          val value = line.skip(if line.at(n.z + 1) == ' ' then n + 2 else n + 1)
 
-        line.keep(n) match
-          case "event" => event = value
-          case "data"  => data ::= value
-          case "id"    => id = value
+          line.keep(n) match
+            case "event" => event = value
+            case "data"  => data ::= value
+            case "id"    => id = value
 
-          case "retry" =>
-            retry = safely(value.decode[Long]).lest(SseError(SseError.Reason.BadRetryValue))
+            case "retry" =>
+              retry = safely(value.decode[Long]).lest(SseError(SseError.Reason.BadRetryValue))
 
-          case _ => raise(SseError(SseError.Reason.UnknownField))
+            case _ => raise(SseError(SseError.Reason.UnknownField))
 
-    Sse(event, data.reverse, id, retry)
+      Sse(event, data.reverse, id, retry)
 
   given encodable: Sse is Encodable in Text =
     sse =>

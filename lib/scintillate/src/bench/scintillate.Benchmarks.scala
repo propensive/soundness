@@ -76,7 +76,7 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
         t"Accept: text/html",
         t"User-Agent: bench" )
 
-    . join(t"", t"\r\n", t"\r\n\r\n)
+    . join(t"", t"\r\n", t"\r\n\r\n")
     . data
 
   lazy val getRequestBytes: Array[Byte] = getRequest.mutable(using Unsafe)

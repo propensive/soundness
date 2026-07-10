@@ -133,8 +133,9 @@ extension (shell: Shell)
             import filesystemOptions.dereferenceSymlinks.enabled
             import charEncoders.utf8Encoder
 
-            val file: Path on Linux = unsafely(temporaryDirectory/t"exoskeleton-${Uuid()}.ps1")
-            file.open(psScript.tt.writeTo(_))
+            val tmpDir: Path on Linux = temporaryDirectory[Path on Linux]
+            val file: Path on Linux = unsafely(tmpDir/t"exoskeleton-${Uuid()}.ps1")
+            file.open(_.write(psScript.tt))
             psFile = file
             t"POWERSHELL_UPDATECHECK=Off pwsh -NoLogo -NoExit -File ${file.encode}"
 

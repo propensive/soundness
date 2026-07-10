@@ -36,7 +36,7 @@ import anticipation.*
 import beneficence.*
 
 object Default:
-  def apply[value](value: => value): Default[value] = () => value
+  def apply[value](value: -> value): Default[value] = () => value
 
   given int: Default[Int] = () => 0
   given singleton: [value: ValueOf] => Default[value] = () => valueOf[value]
@@ -47,5 +47,5 @@ object Default:
   given set: [element] => Default[Set[element]] = () => Set()
   given series: [element] => Default[Series[element]] = () => Series()
 
-trait Default[+value] extends Findable:
+trait Default[+value] extends Findable, scala.caps.Pure:
   def apply(): value

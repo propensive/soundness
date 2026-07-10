@@ -71,7 +71,8 @@ object SchemaSignature:
   // header or as the textual schema identifier on a TEL pragma after
   // BASE-256 encoding.
   def fromDocument(doc: Tel, axiom: Tels)
-  :   Data raises BintelError raises TelError =
+    ( using Tactic[BintelError], Tactic[TelError] )
+  :   Data =
 
     fromElement(Tel.Type.assign(doc, axiom).asInstanceOf[Tel.Element.Node], axiom)
 
@@ -79,7 +80,8 @@ object SchemaSignature:
   // root — used when recomputing the signature of an embedded schema body
   // decoded from a self-contained BinTEL document (§6.2, B11).
   def fromElement(root: Tel.Element.Node, axiom: Tels)
-  :   Data raises BintelError raises TelError =
+    ( using Tactic[BintelError], Tactic[TelError] )
+  :   Data =
 
     // Resolve the flat keyword index of "layer" and the Layer
     // RecordDefinition's struct from the axiom. If either is missing

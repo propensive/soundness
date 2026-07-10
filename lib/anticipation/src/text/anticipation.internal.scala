@@ -40,14 +40,18 @@ import scala.util.*
 import symbolism.*
 
 object internal:
-  into opaque type Text <: Matchable = String
+  into opaque type Text <: Matchable & caps.Pure = String & caps.Pure
 
   object Text:
-    def apply(string: String): Text = string
-    def apply(chars: IArray[Char]): Text = String(chars.asInstanceOf[Array[Char]])
-    def apply(bytes: IArray[Byte]): Text = String(bytes.asInstanceOf[Array[Byte]], "ASCII")
+    // `caps.Pure` is an erased marker, so `Text` still erases to `String`; this cast is a
+    // runtime no-op that lets the capture checker treat `Text` as a pure type.
+    private inline def make(string: String): Text = string.asInstanceOf[Text]
 
-    extension (text: Text) inline def s: String = text
+    def apply(string: String): Text = make(string)
+    def apply(chars: IArray[Char]): Text = make(String(chars.asInstanceOf[Array[Char]]))
+    def apply(bytes: IArray[Byte]): Text = make(String(bytes.asInstanceOf[Array[Byte]], "ASCII"))
+
+    extension (text: Text) inline def s: String = text.asInstanceOf[String]
 
     given zeroic: Text is Zeroic:
       inline def zero: Text = "".tt
@@ -57,7 +61,7 @@ object internal:
       type Operand = Text
       type Result = Text
 
-      def concat(left: text, right: Text): Text = left+right
+      def concat(left: text, right: Text): Text = make(left.s+right.s)
 
     given addableString: [text <: Text] => text is Addable:
       type Self = text
@@ -67,7 +71,7 @@ object internal:
       def add(left: text, right: String): Text = (left.s+right).tt
 
     private def recur(text: Text, n: Int, acc: Text): Text =
-      if n == 0 then acc else recur(text, n - 1, acc + text)
+      if n == 0 then acc else recur(text, n - 1, make(acc.s + text.s))
 
     given multiplicable: [text <: Text] => text is Multiplicable:
       type Self = Text
@@ -77,10 +81,10 @@ object internal:
       def multiply(text: Text, n: Int): Text = recur(text, n.max(0), "".tt)
 
     given ordering: Ordering[Text] = Ordering.String.on[Text](identity)
-    given fromString: CommandLineParser.FromString[Text] = identity(_)
+    given fromString: CommandLineParser.FromString[Text] = make(_)
 
     given fromExpr: (fromExpr: FromExpr[String]) => FromExpr[Text]:
-      def unapply(expr: Expr[Text])(using Quotes): Option[Text] = fromExpr.unapply(expr)
+      def unapply(expr: Expr[Text])(using Quotes): Option[Text] = fromExpr.unapply(expr).map(make)
 
     given toExpr: ToExpr[Text]:
       def apply(text: Text)(using Quotes) =
@@ -89,12 +93,12 @@ object internal:
         val expr = Literal(StringConstant(text)).asExprOf[String]
         '{Text($expr)}
 
-    given conversion: Conversion[String, Text] = identity(_)
+    given conversion: Conversion[String, Text] = make(_)
     inline given canEqual: CanEqual[Text, Text] = caps.unsafe.unsafeErasedValue
     inline given canEqual2: CanEqual[String, Text] = caps.unsafe.unsafeErasedValue
     inline given canEqual3: CanEqual[Text, String] = caps.unsafe.unsafeErasedValue
 
     given typeable: Typeable[Text]:
       def unapply(value: Any): Option[value.type & Text] = value.asMatchable match
-        case string: String => Some(string)
+        case string: String => Some(make(string).asInstanceOf[value.type & Text])
         case _              => None

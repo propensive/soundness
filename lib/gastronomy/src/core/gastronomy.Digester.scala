@@ -35,7 +35,7 @@ package gastronomy
 import prepositional.*
 import rudiments.*
 
-case class Digester(run: Digestion => Unit):
+case class Digester(run: Digestion -> Unit):
   def apply[algorithm <: Algorithm](using hash: Hash in algorithm): Digest in algorithm =
     hash.initialize().pipe: accumulator =>
       run(accumulator)

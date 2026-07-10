@@ -44,5 +44,5 @@ object Printable:
 trait Printable extends Typeclass:
   def print(text: Self, termcap: Termcap): Text
 
-  def contramap[self](lambda: Termcap ?=> self => Self): self is Printable =
+  def contramap[self](lambda: Termcap ?=> self => Self): (self is Printable)^{this, lambda} =
     (self, termcap) => print(lambda(using termcap)(self), termcap)

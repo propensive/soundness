@@ -9,3 +9,4 @@ bin
 dist
 tests/JSONTestSuite
 lib/ethereal/target
+rep/_probe

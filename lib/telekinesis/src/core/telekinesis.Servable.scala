@@ -43,7 +43,7 @@ import zephyrine.*
 
 object Servable:
   def apply[response](mediaType: response => MediaType)(lambda: response => Http.Body)
-  :   response is Servable =
+  :   ((response is Servable)^{mediaType, lambda}) =
 
     response =>
 
@@ -89,4 +89,4 @@ object Servable:
 
 trait Servable extends Typeclass:
   def serve(content: Self): Http.Response
-  def contramap[self2](lambda: self2 => Self): self2 is Servable = content => serve(lambda(content))
+  def contramap[self2](lambda: self2 => Self): (self2 is Servable)^{this, lambda} = content => serve(lambda(content))

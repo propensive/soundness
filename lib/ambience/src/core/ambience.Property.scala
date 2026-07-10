@@ -50,7 +50,7 @@ object Property:
 
 
     def applyDynamic[property](key: String)()
-      ( using properties: System, reader: (name+"."+key.type) is Property of property )
+      ( using properties: System, reader: ((name+"."+key.type) is Property of property)^ )
     :   property =
 
       val name = property+"."+key
@@ -58,7 +58,7 @@ object Property:
 
 
     inline def apply[property]()
-      ( using properties: System, reader: name is Property of property )
+      ( using properties: System, reader: (name is Property of property)^ )
     :   property =
 
       val name = valueOf[name]
@@ -66,14 +66,14 @@ object Property:
 
 
   def apply[name <: String, property](lambda: Text => property)
-  :   name is Property of property =
+  :   ((name is Property of property)^{lambda}) =
 
     (value, property) =>
       lambda(value.or(panic(m"the system property $property was unavailable")))
 
 
-  given generic: [label <: String & Singleton] => Tactic[PropertyError]
-  =>  label is Property of Text =
+  given generic: [label <: String & Singleton] => (tactic: Tactic[PropertyError])
+  =>  ((label is Property of Text)^{tactic}) =
 
     (value, property) => value.lest(PropertyError(property))
 
@@ -103,15 +103,16 @@ object Property:
   given javaVendorUrl: ("java.vendor.url" is Property of Text) = Property(identity)
 
 
-  given javaRuntimeVersion: Tactic[PropertyError]
-  =>  ( "java.runtime.version" is Property of Text ) =
+  given javaRuntimeVersion: (tactic: Tactic[PropertyError])
+  =>  (("java.runtime.version" is Property of Text)^{tactic}) =
 
     (value, name) => value.lest(PropertyError(name))
 
 
   given javaClassVersion: ("java.runtime.version" is Property of Int) =
-    given Tactic[NumberError] = strategies.throwUnsafely
-    Property(_.decode[Int])
+    // Decoded under `unsafely`, whose unscoped tactic is minted per call: the lambda captures
+    // nothing, so the instance is pure and can be stored as a global given.
+    Property(text => unsafely(text.decode[Int]))
 
 
   // given javaExtDirs: [path: Instantiable across Paths from Text]
@@ -146,9 +147,9 @@ object Property:
     Property(_.decode[Architecture])
 
 
-  given decoder: [label <: Label, property] => (decoder: property is Decodable in Text)
-  =>  Tactic[PropertyError]
-  =>  label is Property of property =
+  given decoder: [label <: Label, property] => (decoder: (property is Decodable in Text)^)
+  =>  (tactic: Tactic[PropertyError])
+  =>  ((label is Property of property)^{decoder, tactic}) =
 
     (value, name) =>
       decoder.decoded(value.lest(PropertyError(name)))

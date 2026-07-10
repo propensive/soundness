@@ -47,7 +47,8 @@ object ContentLength:
   // framer would) coincides with bytes only for ASCII content and corrupts the stream on any
   // multi-byte UTF-8 body. Unrecognised headers are skipped rather than rejected, since clients
   // routinely send headers beyond `Content-Length` and `Content-Type`.
-  given framable: Tactic[FrameError] => Data is Framable by ContentLength = input =>
+  given framable: (tactic: Tactic[FrameError])
+  =>  ((Data is Framable by ContentLength)^{tactic}) = input =>
     val cursor = Cursor(input)
 
     val cr: Byte = 13

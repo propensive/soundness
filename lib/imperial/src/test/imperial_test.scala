@@ -114,5 +114,6 @@ object Tests extends Suite(m"Imperial tests"):
     . assert(_ == t"/usr/share/factory/etc")
 
     test(m"/proc PID path"):
-      Base.Proc(Pid(2000))()
+      val proc = Base.Proc(Pid(2000))
+      proc()
     . assert(_ == t"/proc/2000")

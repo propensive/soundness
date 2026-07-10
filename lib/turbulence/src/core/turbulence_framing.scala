@@ -42,7 +42,7 @@ import vacuous.*
 
 extension (stream: LazyList[Data])
   inline def framed[width <: U16 | U32](terminator: Optional[width] = Unset)
-    ( using Tactic[StreamError] )
+    ( using Tactic[StreamError]^ )
   :   LazyList[Data] =
 
     inline compiletime.erasedValue[width] match
@@ -54,7 +54,7 @@ extension (stream: LazyList[Data])
 
 private[turbulence] def framingImpl
   ( stream: LazyList[Data], width: Int, terminator: Long )
-  ( using Tactic[StreamError] )
+  ( using Tactic[StreamError]^ )
 :   LazyList[Data] =
 
   def take

@@ -61,8 +61,9 @@ object protointernal:
     :   derivation is Decodable in Pojo =
 
       case array: Array[Pojo @unchecked] =>
-        build[derivation]: [field] =>
-          _.decoded(array(index))
+        provide[Tactic[PojoError]]:
+          build[derivation]: [field] =>
+            _.decoded(array(index))
 
       case other =>
         provide[Tactic[PojoError]](abort(PojoError()))
@@ -70,7 +71,9 @@ object protointernal:
 
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Pojo =
       case Array(label: String @unchecked, pojo: Pojo @unchecked) =>
-        delegate(label): [variant <: derivation] => _.decoded(pojo)
+        provide[Tactic[PojoError]]:
+          provide[Tactic[VariantError]]:
+            delegate(label): [variant <: derivation] => _.decoded(pojo)
 
       case other =>
         provide[Tactic[PojoError]](abort(PojoError()))

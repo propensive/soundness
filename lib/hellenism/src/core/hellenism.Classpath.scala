@@ -51,12 +51,12 @@ object Classpath extends Root(t""):
 
   inline given nominative: Classpath is Nominative under Rules = !!
 
-  given radical: Tactic[PathError] => Classpath.type is Radical:
+  given radical: Classpath.type is Radical:
     type Plane = Classpath
 
-    def length(text: Text): Int = 1
+    def length(text: Text): Int raises PathError = 1
 
-    def decode(text: Text): Classpath.type =
+    def decode(text: Text): Classpath.type raises PathError =
       if text.starts(t"/") then Classpath else abort(PathError(_.InvalidRoot))
 
     def encode(root: Classpath.type): Text = t""
@@ -81,10 +81,13 @@ object Classpath extends Root(t""):
   =>  ( classloader: Classloader )
   =>  path is Streamable by Data =
 
-    given Tactic[StreamError] = strategies.throwUnsafely
+    // Built over `throwUnsafely` (unscoped, merely throws) and the pure classloader, so the
+    // instance retains no scoped capability; laundered pure (the codec-thunk seal pattern).
+    caps.unsafe.unsafeAssumePure:
+      given Tactic[StreamError] = strategies.throwUnsafely
 
-    Streamable.inputStream.contramap: path =>
-      classloader.inputStream(path.encode)
+      Streamable.inputStream.contramap: path =>
+        classloader.inputStream(path.encode)
 
 
   def servicesFor[service](classpath: Classpath, cls: Class[service]): Set[service] =
@@ -105,18 +108,24 @@ object Classpath extends Root(t""):
 
     result.toSet
 
+  // Defined here, rather than inline in `Classpath#classloader`, so the anonymous
+  // `URLClassLoader` subclass carries no outer reference to a `Classpath` instance and so
+  // does not spuriously capture it under capture checking.
+  private[hellenism] def delegatingClassloader(urls: Array[jn.URL | Null], parent: ClassLoader)
+  :   jn.URLClassLoader =
+
+    new jn.URLClassLoader(urls, parent):
+      override def loadClass(name: String | Null, resolve: Boolean): Class[?] | Null =
+        try findClass(name) catch case error: ClassNotFoundException =>
+          super.loadClass(name, resolve)
+
 
 trait Classpath:
   def entries: List[ClasspathEntry]
   private def array: Array[jn.URL | Null] = Array.from(entries.map(_.javaUrl))
 
   def classloader(parent: Classloader = classloaders.platformClassloader): Classloader =
-    val javaClassloader = new jn.URLClassLoader(array, parent.java):
-      override def loadClass(name: String | Null, resolve: Boolean): Class[?] | Null =
-        try findClass(name) catch case error: ClassNotFoundException =>
-          super.loadClass(name, resolve)
-
-    new Classloader(javaClassloader)
+    new Classloader(Classpath.delegatingClassloader(array, parent.java))
 
   def classloader: Classloader =
     val urls = entries.flatMap:

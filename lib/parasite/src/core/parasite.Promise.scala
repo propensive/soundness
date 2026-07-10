@@ -105,8 +105,12 @@ final case class Promise[value]():
     if Thread.interrupted() then throw new InterruptedException()
 
     state.getAndUpdate(enqueue(Thread.currentThread.nn)) match
-      case Incomplete(_) => jucl.LockSupport.park(this) yet attend()
-      case _             => ()
+      case Incomplete(_) =>
+        jucl.LockSupport.park(this)
+        attend()
+
+      case _ =>
+        ()
 
   private def cancelIncomplete(current: State[value] | Null): State[value] = current match
     case Incomplete(_) => Cancelled

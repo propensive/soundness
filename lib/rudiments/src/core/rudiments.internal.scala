@@ -94,7 +94,22 @@ object internal:
   def name[target: Type]: Macro[Text] =
     import quotes.reflect.*
 
-    val name = TypeRepr.of[target].show
+    // Under capture checking, inferred types reaching an inline call site are wrapped in
+    // compiler-internal annotations (e.g. `Double @scala.caps.internal.inferred`), which would
+    // otherwise leak into the rendered name. Strip any `scala.caps` annotation, recursing into
+    // type arguments.
+    def strip(repr: TypeRepr): TypeRepr = repr match
+      case AnnotatedType(parent, annotation)
+      if annotation.tpe.typeSymbol.fullName.startsWith("scala.caps") =>
+        strip(parent)
+
+      case AppliedType(constructor, arguments) =>
+        AppliedType(strip(constructor), arguments.map(strip))
+
+      case other =>
+        other
+
+    val name = strip(TypeRepr.of[target]).show
     Expr[Text](name)
 
   def reflectClass[target: Type]: Macro[Class[target]] =

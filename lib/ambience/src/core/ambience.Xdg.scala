@@ -41,56 +41,66 @@ import prepositional.*
 import vacuous.*
 
 object Xdg:
-  def dataHome[path: Instantiable across Paths from Text]
+  def dataHome[path]
+    ( using instantiable: (path is Instantiable across Paths from Text)^ )
     ( using environment: Environment, system: System )
   :   path =
 
-    safely(Environment.xdgDataHome[path]).or(path(t"${Directories.homeText}/.local/share"))
+    safely(Environment.xdgDataHome[path]).or(instantiable(t"${Directories.homeText}/.local/share"))
 
 
-  def configHome[path: Instantiable across Paths from Text]
+  def configHome[path]
+    ( using instantiable: (path is Instantiable across Paths from Text)^ )
     ( using environment: Environment, system: System )
   :   path =
 
-    safely(Environment.xdgConfigHome[path]).or(path(t"${Directories.homeText}/.config"))
+    safely(Environment.xdgConfigHome[path]).or(instantiable(t"${Directories.homeText}/.config"))
 
 
-  def cacheHome[path: Instantiable across Paths from Text]
+  def cacheHome[path]
+    ( using instantiable: (path is Instantiable across Paths from Text)^ )
     ( using environment: Environment, system: System )
   :   path =
 
-    safely(Environment.xdgCacheHome[path]).or(path(t"${Directories.homeText}/.cache"))
+    safely(Environment.xdgCacheHome[path]).or(instantiable(t"${Directories.homeText}/.cache"))
 
 
-  def stateHome[path: Instantiable across Paths from Text]
+  def stateHome[path]
+    ( using instantiable: (path is Instantiable across Paths from Text)^ )
     ( using environment: Environment, system: System )
   :   path =
 
-    safely(Environment.xdgStateHome[path]).or(path(t"${Directories.homeText}/.local/state"))
+    safely(Environment.xdgStateHome[path]).or(instantiable(t"${Directories.homeText}/.local/state"))
 
 
-  def runtimeDir[path: Instantiable across Paths from Text](using environment: Environment)
+  def runtimeDir[path]
+    ( using instantiable: (path is Instantiable across Paths from Text)^ )
+    ( using environment: Environment )
   :   Optional[path] =
 
     safely(Environment.xdgRuntimeDir[path])
 
 
-  def bin[path: Instantiable across Paths from Text]
+  def bin[path]
+    ( using instantiable: (path is Instantiable across Paths from Text)^ )
     ( using environment: Environment, system: System )
   :   path =
 
-    safely(Environment.xdgConfigHome[path]).or(path(t"${Directories.homeText}/.local/bin"))
+    safely(Environment.xdgConfigHome[path]).or(instantiable(t"${Directories.homeText}/.local/bin"))
 
 
-  def dataDirs[path: Instantiable across Paths from Text]
+  def dataDirs[path]
+    ( using instantiable: (path is Instantiable across Paths from Text)^ )
     ( using environment: Environment, system: System )
   :   List[path] =
 
     safely(Environment.xdgDataDirs[List[path]]).or:
-      List(t"/usr/local/share", t"/usr/share").map(path(_))
+      List(t"/usr/local/share", t"/usr/share").map(instantiable(_))
 
 
-  def configDirs[path: Instantiable across Paths from Text](using Environment, System)
+  def configDirs[path]
+    ( using instantiable: (path is Instantiable across Paths from Text)^ )
+    ( using Environment, System )
   :   List[path] =
 
-    safely(Environment.xdgConfigDirs[List[path]]).or(List(t"/etc/xdg").map(path(_)))
+    safely(Environment.xdgConfigDirs[List[path]]).or(List(t"/etc/xdg").map(instantiable(_)))

@@ -63,7 +63,9 @@ object YamlPath extends Root(""):
     def apply(url: HttpUrl): Optional[Yaml] = documents.at(url).or(lookup(url))
     protected def lookup(url: HttpUrl): Optional[Yaml]
 
-  given navigable: [ordinal <: Ordinal] => ordinal is Navigable on YamlPath = _.n0.toString.tt
+  given navigable: [ordinal <: Ordinal] => ordinal is Navigable on YamlPath =
+    // `(ordinal: Ordinal)` widens the singleton-bounded parameter (case-2 pure-value box).
+    ordinal => (ordinal: Ordinal).n0.toString.tt
   given admissible: [ordinal <: Ordinal] => ordinal is Admissible on YamlPath = _ => ()
   given admissible2: [text <: Text] => text is Admissible on YamlPath = _ => ()
 
@@ -89,7 +91,8 @@ object YamlPath extends Root(""):
   // Parses a same-document YAML path (`#`, `#/`, `#/a/b`), reporting the offset
   // of any error. Modelled on `jacinta.JsonPointer`'s decoder, with the same
   // RFC 6901 escaping.
-  given decodable: Tactic[YamlPathError] => YamlPath is Decodable in Text = text =>
+  given decodable: (tactic: Tactic[YamlPathError])
+  =>  ((YamlPath is Decodable in Text)^{tactic}) = text =>
     val string = text.s
 
     if string.isEmpty || string.charAt(0) != '#'
@@ -122,7 +125,17 @@ object YamlPath extends Root(""):
     Divisible: (path, segment) => YamlPath(path.url, path.path / segment)
 
   given divisible2: YamlPath is Divisible by Ordinal to YamlPath =
-    Divisible: (path, segment) => YamlPath(path.url, path.path / segment)
+    // An explicit anonymous class rather than the `Divisible:` factory: under capture checking
+    // the factory's lambda parameter mints a fresh capture variable on the pure `Ordinal`
+    // (a case-2 pure-value box, cf. scala/scala3#16978), and a plain SAM conversion crashes
+    // genSJSIR for Scala.js. The explicit instance avoids both.
+    new Divisible:
+      type Self = YamlPath
+      type Result = YamlPath
+      type Operand = Ordinal
+
+      def divide(path: YamlPath, segment: Ordinal): YamlPath =
+        YamlPath(path.url, path.path / segment)
 
 case class YamlPath(url: Optional[HttpUrl] = Unset, path: Path on YamlPath = YamlPath):
   def apply(using registry: YamlPath.Registry)(document: Yaml): Yaml raises YamlPathError =

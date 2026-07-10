@@ -48,10 +48,10 @@ object Moniker:
 
   extension (moniker: Moniker) def ordinal: Int = moniker
 
-  given encodable: [transport] => (Vocabulary over transport, Tactic[MonikerError])
-  =>  (Moniker over transport) is Encodable in Text =
-    moniker => summon[Vocabulary over transport].name(moniker.ordinal)
+  given encodable: [transport] => (vocabulary: Vocabulary over transport, tactic: Tactic[MonikerError])
+  =>  (((Moniker over transport) is Encodable in Text)^{tactic}) =
+    moniker => vocabulary.name(moniker.ordinal)
 
-  given decodable: [transport] => (Vocabulary over transport, Tactic[MonikerError])
-  =>  (Moniker over transport) is Decodable in Text =
-    text => wrap(summon[Vocabulary over transport].number(text))
+  given decodable: [transport] => (vocabulary: Vocabulary over transport, tactic: Tactic[MonikerError])
+  =>  (((Moniker over transport) is Decodable in Text)^{tactic}) =
+    text => wrap(vocabulary.number(text))

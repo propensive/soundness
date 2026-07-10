@@ -72,9 +72,11 @@ trait Cbor2:
 
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[CborError]
   =>  ( decodable: => inner is Decodable in Cbor )
-  =>  value is Decodable in Cbor = cbor =>
-
-    if cbor.root.unset then Unset else decodable.decoded(cbor)
+  =>  value is Decodable in Cbor =
+    // The by-name inner decoder and resolution-scoped tactic share this instance's
+    // given-resolution lifetime; laundered pure (the codec-thunk seal pattern).
+    caps.unsafe.unsafeAssumePure: cbor =>
+      if cbor.root.unset then Unset else decodable.decoded(cbor)
 
 
   inline given decodable: [value] => value is Decodable in Cbor = summonFrom:
@@ -93,29 +95,45 @@ trait Cbor2:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Decodable in Cbor =
 
+        // The `Tactic` is summoned at the derivation site and supplied explicitly to `decodeRecord`,
+        // rather than re-summoned via a `provide` inside the decoder body: that minted a distinct
+        // root capability that failed to unify with `build`'s polymorphic per-field lambda. A
+        // `Decodable` is `Pure`, so the SAM closing over the summoned `Tactic` adds nothing to its
+        // capture set.
       cbor =>
-        provide[Tactic[CborError]]:
-          val root = cbor.root
-          val count = if root.isMap then root.entries else 0
-          val values = scala.collection.mutable.HashMap.empty[String, Ast]
-          var index = 0
+        decodeRecord[derivation](cbor)
+          (using infer[ProductReflection[derivation]], infer[Tactic[CborError]])
 
-          while index < count do
-            val key = root.key(index)
-            if key.isTextString then values.update(key.string, root.value(index))
-            index += 1
+    private inline def decodeRecord[derivation <: Product]
+      ( cbor: Cbor )
+      ( using ProductReflection[derivation], Tactic[CborError] )
+    :   derivation =
 
-          // `@name[Cbor]` / bare `@name` renames: field name -> map key, read
-          // back the same way they are written.
-          val renames: Map[Text, Text] = relabelling[derivation, Cbor]
+      val root = cbor.root
+      val count = if root.isMap then root.entries else 0
 
-          build[derivation]: [field] =>
-            context =>
-              val key: Text = renames.at(label).or(label)
+      // Built immutably: `build`'s per-field lambda is polymorphic and must be pure, so it may only
+      // close over pure values — a mutable map would be a capability.
+      val values: Map[String, Ast] =
+        val builder = Map.newBuilder[String, Ast]
+        var index = 0
+        while index < count do
+          val key = root.key(index)
+          if key.isTextString then builder += key.string -> root.value(index)
+          index += 1
+        builder.result()
 
-              values.get(key.s) match
-                case Some(value) => context.decoded(new Cbor(value))
-                case None        => default.or(context.decoded(new Cbor(Ast(Unset))))
+      // `@name[Cbor]` / bare `@name` renames: field name -> map key, read
+      // back the same way they are written.
+      val renames: Map[Text, Text] = relabelling[derivation, Cbor]
+
+      build[derivation]: [field] =>
+        context =>
+          val key: Text = renames.at(label).or(label)
+
+          values.get(key.s) match
+            case Some(value) => context.decoded(new Cbor(value))
+            case None        => default.or(context.decoded(new Cbor(Ast(Unset))))
 
     inline def disjunction[derivation: SumReflection]: derivation is Decodable in Cbor =
       cbor =>
@@ -438,9 +456,11 @@ object Cbor extends Cbor2, Dynamic:
   // and `filterOptical` traverse every (or matching) array element. All reuse the
   // existing `selectDynamic`/`modify`/`element`/`Ast.array` primitives and rebuild
   // immutably. Mirrors jacinta's `Json` optics.
-  given lens: [name <: Label: ValueOf] => (erased DynamicCborEnabler) => Tactic[CborError]
-  =>  name is Lens from Cbor onto Cbor =
-    Lens(_.selectDynamic(valueOf[name]), _.modify(valueOf[name], _))
+  given lens: [name <: Label: ValueOf] => (erased dynamicCborEnabler: DynamicCborEnabler) => (tactic: Tactic[CborError])
+  =>  ((name is Lens from Cbor onto Cbor)^{tactic}) =
+    Lens
+     ( cbor => cbor.selectDynamic(valueOf[name]),
+       (cbor, value) => cbor.modify(valueOf[name], value) )
 
   given ordinalOptical: [element] => Ordinal is Optical from Cbor onto Cbor = ordinal =>
     Optic: (origin, lambda) =>
@@ -497,17 +517,26 @@ object Cbor extends Cbor2, Dynamic:
       else
         origin
 
-  given boolean: Tactic[CborError] => Boolean is Decodable in Cbor = _.root.boolean
-  given double: Tactic[CborError] => Double is Decodable in Cbor = _.root.double
-  given float: Tactic[CborError] => Float is Decodable in Cbor = _.root.double.toFloat
-  given long: Tactic[CborError] => Long is Decodable in Cbor = _.root.long
-  given int: Tactic[CborError] => Int is Decodable in Cbor = _.root.long.toInt
-  given text: Tactic[CborError] => Text is Decodable in Cbor = _.root.string.tt
-  given string: Tactic[CborError] => String is Decodable in Cbor = _.root.string
-  given byteString: Tactic[CborError] => IArray[Byte] is Decodable in Cbor = _.root.byteString
+  given boolean: (tactic: Tactic[CborError])
+  =>  ((Boolean is Decodable in Cbor)^{tactic}) = _.root.boolean
+  given double: (tactic: Tactic[CborError])
+  =>  ((Double is Decodable in Cbor)^{tactic}) = _.root.double
+  given float: (tactic: Tactic[CborError])
+  =>  ((Float is Decodable in Cbor)^{tactic}) = _.root.double.toFloat
+  given long: (tactic: Tactic[CborError])
+  =>  ((Long is Decodable in Cbor)^{tactic}) = _.root.long
+  given int: (tactic: Tactic[CborError])
+  =>  ((Int is Decodable in Cbor)^{tactic}) = _.root.long.toInt
+  given text: (tactic: Tactic[CborError])
+  =>  ((Text is Decodable in Cbor)^{tactic}) = _.root.string.tt
+  given string: (tactic: Tactic[CborError])
+  =>  ((String is Decodable in Cbor)^{tactic}) = _.root.string
+  given byteString: (tactic: Tactic[CborError])
+  =>  ((IArray[Byte] is Decodable in Cbor)^{tactic}) = _.root.byteString
   given cbor: Cbor is Decodable in Cbor = identity(_)
 
-  given aggregable: Tactic[CborError] => Cbor is Aggregable by Data =
+  given aggregable: (tactic: Tactic[CborError])
+  =>  ((Cbor is Aggregable by Data)^{tactic}) =
     bytes => Cbor.ast(bytes.read[Cbor.Ast])
 
   // HTTP content-type integration: `Abstractable across HttpStreams` makes a
@@ -528,11 +557,12 @@ object Cbor extends Cbor2, Dynamic:
   // for `value in Json`. The `Form` type-tag is added by an
   // `asInstanceOf` cast — `value in Cbor` is just
   // `value { type Form = Cbor }` so the cast is a no-op at runtime.
-  given aggregableIn: [value: Decodable in Cbor] => Tactic[CborError]
-  =>  (value in Cbor) is Aggregable by Data =
+  given aggregableIn: [value: Decodable in Cbor] => (tactic: Tactic[CborError])
+  =>  (((value in Cbor) is Aggregable by Data)^{tactic}) =
     bytes => Cbor.ast(bytes.read[Cbor.Ast]).as[value].asInstanceOf[value in Cbor]
 
-  given unit: Tactic[CborError] => Unit is Decodable in Cbor =
+  given unit: (tactic: Tactic[CborError])
+  =>  ((Unit is Decodable in Cbor)^{tactic}) =
     value =>
       if !value.root.nullary then
         val reason =
@@ -575,22 +605,28 @@ object Cbor extends Cbor2, Dynamic:
   given cborEncodable: Cbor is Encodable in Cbor = identity(_)
 
 
+  // The collection instances below retain their by-name element codecs (and, where present,
+  // a resolution-scoped `Tactic`), which share each instance's given-resolution lifetime;
+  // laundered pure per the codec-thunk seal pattern (see rep/DECISIONS.md).
   given listEncodable: [list <: List, element] => (encodable: => element is Encodable in Cbor)
   =>  list[element] is Encodable in Cbor =
 
-    values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
+    caps.unsafe.unsafeAssumePure:
+      values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given setEncodable: [set <: Set, element] => (encodable: => element is Encodable in Cbor)
   =>  set[element] is Encodable in Cbor =
 
-    values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
+    caps.unsafe.unsafeAssumePure:
+      values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given seriesEncodable: [series <: Series, element] => (encodable: => element is Encodable in Cbor)
   =>  series[element] is Encodable in Cbor =
 
-    values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
+    caps.unsafe.unsafeAssumePure:
+      values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given collectionDecodable: [collection <: Iterable, element]
@@ -598,11 +634,12 @@ object Cbor extends Cbor2, Dynamic:
   =>  ( decodable: => element is Decodable in Cbor )
   =>  collection[element] is Decodable in Cbor =
 
-    value =>
-      val builder = factory.newBuilder
-      value.root.array.each: cbor => builder += decodable.decoded(ast(cbor))
+    caps.unsafe.unsafeAssumePure:
+      value =>
+        val builder = factory.newBuilder
+        value.root.array.each: cbor => builder += decodable.decoded(ast(cbor))
 
-      builder.result()
+        builder.result()
 
 
   given mapDecodable: [key: Decodable in Text, element]
@@ -610,22 +647,22 @@ object Cbor extends Cbor2, Dynamic:
   =>  Tactic[CborError]
   =>  Map[key, element] is Decodable in Cbor =
 
-    value =>
-      val root = value.root
-      val count = if root.isMap then root.entries else 0
-      var index = 0
-      var map = Map.empty[key, element]
+    caps.unsafe.unsafeAssumePure: value =>
+        val root = value.root
+        val count = if root.isMap then root.entries else 0
+        var index = 0
+        var map = Map.empty[key, element]
 
-      while index < count do
-        val key = root.key(index)
+        while index < count do
+          val key = root.key(index)
 
-        if key.isTextString
-        then map = map.updated(key.string.tt.decode, decodable.decoded(ast(root.value(index))))
-        else abort(CborError(Reason.NonStringKey))
+          if key.isTextString
+          then map = map.updated(key.string.tt.decode, decodable.decoded(ast(root.value(index))))
+          else abort(CborError(Reason.NonStringKey))
 
-        index += 1
+          index += 1
 
-      map
+        map
 
 
   given mapEncodable: [key: Encodable in Text, element]
@@ -1047,24 +1084,24 @@ object Cbor extends Cbor2, Dynamic:
 class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives CanEqual:
   def apply(index: Int): Cbor raises CborError = Cbor(root.array(index))
 
-  def selectDynamic(field: String)(using erased DynamicCborEnabler): Cbor raises CborError =
+  def selectDynamic(field: String)(using erased dynamicCborEnabler: DynamicCborEnabler): Cbor raises CborError =
     apply(field.tt)
 
 
-  def applyDynamic(field: String)(index: Int)(using erased DynamicCborEnabler)
+  def applyDynamic(field: String)(index: Int)(using erased dynamicCborEnabler: DynamicCborEnabler)
   :   Cbor raises CborError =
 
     apply(field.tt)(index)
 
 
   def updateDynamic(field: String)[value: Encodable in Cbor](value: value)
-    ( using erased DynamicCborEnabler )
+    ( using erased dynamicCborEnabler: DynamicCborEnabler )
   :   Cbor raises CborError =
 
     modify(field, value.encode)
 
 
-  def updateDynamic(field: String)[value](unset: Unset.type)(using erased DynamicCborEnabler)
+  def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamicCborEnabler: DynamicCborEnabler)
   :   Cbor raises CborError =
 
     delete(field)
@@ -1175,4 +1212,5 @@ class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives Ca
     else
       false
 
-  def as[value: Decodable in Cbor]: value raises CborError = value.decoded(this)
+  def as[value](using decodable: (value is Decodable in Cbor)^): value raises CborError =
+    decodable.decoded(this)

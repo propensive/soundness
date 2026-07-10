@@ -50,15 +50,17 @@ object FocusTests extends Suite(m"Ypsiloid focus + position tests"):
     def +(focus: Text, line: Optional[Int], column: Optional[Int]): Captured =
       Captured(items :+ (focus, line, column))
 
-  private def captureFoci[result](yaml: Yaml)
-                                 (decode: Yaml => result raises YamlError tracks Yaml.Focus)
+  // Inline + direct `Validate` construction; see ypsiloid.AccrualTests and rep/DECISIONS.md.
+  private inline def captureFoci[result](yaml: Yaml)
+    (inline decode: Yaml => result raises YamlError tracks Yaml.Focus)
   :   List[(Text, Optional[Int], Optional[Int])] =
-    validate[Yaml.Focus](Captured()):
-      case error: YamlError =>
-        val position = prior.let(_.position)
-        accrual + ( prior.let(_.pointer.encode).or(t"#"),
-                    position.let(_.line),
-                    position.let(_.column) )
+    Validate[Captured, [r] =>> r raises YamlError, Yaml.Focus]
+      ( Captured(),
+        { case error: YamlError =>
+            val position = prior.let(_.position)
+            accrual + ( prior.let(_.pointer.encode).or(t"#"),
+                        position.let(_.line),
+                        position.let(_.column) ) } )
     . protect(decode(yaml)).items
 
   def run(): Unit =
@@ -95,7 +97,7 @@ address:
       . assert(identity)
 
     suite(m"Position-aware focus (tracked Yaml)"):
-      import parsing.trackPositions
+      given Yaml.Tracking = Yaml.Tracking.On
 
       test(m"Tracked root: focus pointers are still correct"):
         // The decoder still aborts on first error (raise+yet is a PR 3

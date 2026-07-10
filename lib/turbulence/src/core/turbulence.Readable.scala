@@ -54,32 +54,41 @@ import zephyrine.*
 
 trait Readable3:
   given textToData: [source, result]
-  =>  ( source0: source is Source by Text over Credit )
-  =>  ( aggregable: result is Aggregable by Data )
+  =>  ( source0: (source is Source by Text over Credit)^ )
+  =>  ( aggregable: (result is Aggregable by Data)^ )
   =>  ( encoder: CharEncoder, buffering: Buffering )
-  =>  source is Readable to result =
+  =>  ((source is Readable to result)^{source0, aggregable}) =
     value => aggregable.accept(source0.stream(value).through(encoder))
 
 trait Readable2 extends Readable3:
   given dataToText: [source, result]
-  =>  ( source0: source is Source by Data over Credit )
-  =>  ( aggregable: result is Aggregable by Text )
+  =>  ( source0: (source is Source by Data over Credit)^ )
+  =>  ( aggregable: (result is Aggregable by Text)^ )
   =>  ( decoder: CharDecoder, buffering: Buffering )
-  =>  source is Readable to result =
+  =>  ((source is Readable to result)^{source0, aggregable}) =
     value => aggregable.accept(source0.stream(value).through(decoder))
 
 trait Readable1 extends Readable2:
   given textToText: [source, result]
-  =>  ( source0: source is Source by Text over Credit )
-  =>  ( aggregable: result is Aggregable by Text )
-  =>  source is Readable to result =
+  =>  ( source0: (source is Source by Text over Credit)^ )
+  =>  ( aggregable: (result is Aggregable by Text)^ )
+  =>  ((source is Readable to result)^{source0, aggregable}) =
     value => aggregable.accept(source0.stream(value))
 
 object Readable extends Readable1:
+  // Direct, whole-`Data` instances: when the entire content is already in hand as one `Data`,
+  // decode it in a single step rather than wrapping it in a one-element `Stream` and aggregating.
+  // These are concrete (`Self = Data`), so they take precedence over the generic composed pipelines
+  // by specificity — a whole-file `path.read[Text]` is then a genuinely direct read.
+  given dataData: Data is Readable to Data = identity(_)
+
+  given dataText: (decoder: CharDecoder) => ((Data is Readable to Text)) =
+    decoder.decoded(_)
+
   given dataToData: [source, result]
-  =>  ( source0: source is Source by Data over Credit )
-  =>  ( aggregable: result is Aggregable by Data )
-  =>  source is Readable to result =
+  =>  ( source0: (source is Source by Data over Credit)^ )
+  =>  ( aggregable: (result is Aggregable by Data)^ )
+  =>  ((source is Readable to result)^{source0, aggregable}) =
     value => aggregable.accept(source0.stream(value))
 
 @implicitNotFound("turbulence: the source cannot be read as the target type; this needs a "+

@@ -39,3 +39,22 @@ object As:
   :   Option[result] =
 
     extractable.unapply(scrutinee)
+
+  // Result-fixed extractors. Unlike `As[result]` — whose explicit type argument forces the
+  // scrutinee through a `scrutinee.type` singleton, which capture checking cannot bind to the
+  // `Extractable` instance's `Self` — these take no type argument, so the scrutinee type is
+  // inferred directly from the matched value and the `Extractable` resolves cleanly. Usable
+  // from capture-checked code.
+  object Int:
+    def unapply[scrutinee](scrutinee: scrutinee)
+      ( using extractable: scrutinee is Extractable to scala.Int )
+    :   Option[scala.Int] =
+
+      extractable.unapply(scrutinee)
+
+  object Boolean:
+    def unapply[scrutinee](scrutinee: scrutinee)
+      ( using extractable: scrutinee is Extractable to scala.Boolean )
+    :   Option[scala.Boolean] =
+
+      extractable.unapply(scrutinee)

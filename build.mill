@@ -45,7 +45,25 @@ import publish.*
 import os.Path
 
 object settings:
-  val scalaVersion = "3.8.4"
+  // A locally-built Scala compiler from the propensive/scala fork: the `make` build of the
+  // 3.9.0-RC1 tree merged with the capture-checking fix branches (currently
+  // `feature/3.9.0/make-unboxedpure-splicealias-aliascap-ctxresult-castbox-permitlazy`; the
+  // stock compiler mis-boxes pure values, mishandles quote type-holes, alias and
+  // context-result capabilities, cast type-arguments, and cycles on JDK 25 sealed-classfile
+  // parsing — see rep/DECISIONS.md). Build it with `make` in the fork worktree;
+  // the `toolchain` module below exposes its `release/lib` jars to every coursier resolution,
+  // so no publishing step is needed. Point `SOUNDNESS_SCALA_HOME` at a different `release`
+  // directory to switch compilers. After rebuilding the compiler, run `./mill clean`: the
+  // compiler and sbt-bridge paths are content-hashed, but coursier may serve other repo
+  // artifacts from its cache under this unchanging version string.
+  // `SOUNDNESS_SCALA_VERSION`/`SOUNDNESS_SCALA_HOME` switch toolchains together (the version
+  // string must match what the `release` was built with, or coursier/zinc caches poison each
+  // other across compilers). Defaults target the 3.9.0 row; the 3.10.0 row (tracking
+  // upstream/main) lives at ../scala/all-main/release with version "3.10.0-propensive".
+  val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION", "3.9.0-RC1-propensive")
+  val scalaHome =
+    sys.env.getOrElse
+      ("SOUNDNESS_SCALA_HOME", "/Users/propensive/work/worktrees/scala/soundness-390/release")
   val scalaJsVersion = "1.20.2"
   val scalaOptions = Seq(
     "-experimental",
@@ -104,6 +122,14 @@ object settings:
 
   val scalaOptionsCC = scalaOptions ++ Seq("-Ycc-new")
 
+  // Append the capture-checking flags to an existing options list. Enabling capture
+  // checking is being rolled out module-by-module, bottom-up through the dependency
+  // graph; a module opts in by routing its `scalacOptions` through this. The language
+  // flag is equivalent to a per-file `import language.experimental.captureChecking`, so
+  // no source edits are needed to switch a module on.
+  def cc(options: Seq[String]): Seq[String] =
+    options ++ Seq("-Ycc-new", "-language:experimental.captureChecking")
+
   // Override `-Xmax-inlines` to `limit`, replacing any existing setting rather
   // than appending a second one (which the compiler reports as "Option
   // -Xmax-inlines was updated"). The base stays 32 everywhere else.
@@ -115,7 +141,104 @@ object settings:
 
     strip(options.to(List)) ++ Seq("-Xmax-inlines", limit)
 
-trait BaseScalaModule extends ScalaModule:
+// Exposes the fork compiler's `release/lib` directory (see `settings.scalaHome`) as a
+// Maven-layout repository, generated on demand into the task's own dest: the unversioned jars
+// are copied to versioned coordinates with minimal POMs. Everything coursier resolves for
+// `settings.scalaVersion` — the unified `scala-library` (force-versioned into every module's
+// resolution), `scala3-compiler_3` (including the modules that depend on the compiler API),
+// `scala3-staging_3`, the sbt bridge, and the Scala.js stdlib — is served from here.
+object toolchain extends Module:
+  // Content-fingerprints the fork's jars so a rebuilt compiler regenerates the repository.
+  def distribution: T[PathRef] = Task.Input:
+    PathRef(os.Path(settings.scalaHome) / "lib")
+
+  def repo: T[PathRef] = Task:
+    val lib = distribution().path
+    val v = settings.scalaVersion
+    val sl = "org.scala-lang"
+    val sjs = "org.scala-js"
+
+    // (group, artifactId, jar filename in release/lib, dependencies as (group, id, version))
+    val artifacts = Seq(
+      (sl, "scala-library", "scala-library.jar", Seq()),
+      (sl, "scala3-library_3", "scala3-library.jar", Seq((sl, "scala-library", v))),
+      (sl, "scala3-interfaces", "scala3-interfaces.jar", Seq()),
+      (sl, "tasty-core_3", "tasty-core.jar", Seq((sl, "scala-library", v))),
+      (sl, "scala3-compiler_3", "scala3-compiler.jar", Seq(
+        (sl, "scala3-interfaces", v),
+        (sl, "tasty-core_3", v),
+        (sl, "scala3-library_3", v),
+        ("org.scala-lang.modules", "scala-asm", "9.9.0-scala-1"),
+        ("org.scala-sbt", "compiler-interface", "1.10.7"),
+        ("org.scala-sbt", "util-interface", "1.10.7"))),
+      (sl, "scala3-repl_3", "scala3-repl.jar", Seq(
+        (sl, "scala3-compiler_3", v),
+        ("org.jline", "jline-reader", "3.29.0"),
+        ("org.jline", "jline-terminal", "3.29.0"),
+        ("org.jline", "jline-terminal-jni", "3.29.0"),
+        ("io.get-coursier", "interface", "1.0.28"),
+        ("org.virtuslab", "using_directives", "1.1.4"),
+        ("com.lihaoyi", "pprint_3", "0.9.3"))),
+      (sl, "scala3-sbt-bridge", "scala3-sbt-bridge.jar", Seq(
+        (sl, "scala3-compiler_3", v),
+        (sl, "scala3-repl_3", v))),
+      (sl, "scala3-staging_3", "scala3-staging.jar", Seq((sl, "scala3-compiler_3", v))),
+      (sl, "scala3-tasty-inspector_3", "scala3-tasty-inspector.jar", Seq(
+        (sl, "scala3-compiler_3", v))),
+      (sjs, "scalajs-scalalib_2.13", "scalajs-scalalib_2.13.jar", Seq(
+        (sjs, "scalajs-javalib", settings.scalaJsVersion))),
+      (sl, "scala3-library_sjs1_3", "scala3-library_sjs1.jar", Seq(
+        (sl, "scala-library", v),
+        (sjs, "scalajs-library_2.13", settings.scalaJsVersion),
+        (sjs, "scalajs-scalalib_2.13", v))))
+
+    artifacts.map: (group, id, jar, dependencies) =>
+      val dir = Task.dest / os.SubPath(group.replace('.', '/')) / id / v
+      os.makeDir.all(dir)
+      os.copy(lib / jar, dir / s"$id-$v.jar", replaceExisting = true)
+
+      val deps = dependencies.map: (dGroup, dId, dVersion) =>
+        s"<dependency><groupId>$dGroup</groupId><artifactId>$dId</artifactId>" +
+          s"<version>$dVersion</version></dependency>"
+      . mkString
+
+      os.write.over(dir / s"$id-$v.pom",
+        s"""<?xml version="1.0" encoding="UTF-8"?>
+           |<project xmlns="http://maven.apache.org/POM/4.0.0">
+           |  <modelVersion>4.0.0</modelVersion>
+           |  <groupId>$group</groupId>
+           |  <artifactId>$id</artifactId>
+           |  <version>$v</version>
+           |  <dependencies>$deps</dependencies>
+           |</project>
+           |""".stripMargin)
+
+    PathRef(Task.dest)
+
+// Routes a Scala module through the fork toolchain: the repository view above for all coursier
+// resolutions, plus direct (content-hashed) paths for the two hot artifacts — the compiler
+// classpath and the compiled sbt bridge — so a rebuilt compiler is picked up without any
+// version-string ceremony.
+trait Toolchain extends ScalaModule:
+  override def repositories: T[Seq[String]] = Task:
+    super.repositories() :+ s"file://${toolchain.repo().path}"
+
+  override def scalaCompilerClasspath: T[Seq[PathRef]] = Task:
+    // The fork-built jars come from the repository view because Zinc locates the standard
+    // library within this classpath BY FILENAME (`scala-library-<version>*.jar`), and the
+    // distribution's own filenames are unversioned. Third-party jars (already versioned
+    // filenames) come straight from the distribution.
+    val versioned = os.walk(toolchain.repo().path).filter(_.ext == "jar")
+    val thirdParty =
+      os.list(toolchain.distribution().path).filter: jar =>
+        jar.ext == "jar" && jar.baseName.exists(_.isDigit)
+
+    (versioned ++ thirdParty).map(PathRef(_))
+
+  override def scalaCompilerBridge: T[Option[PathRef]] = Task:
+    Some(PathRef(toolchain.distribution().path / "scala3-sbt-bridge.jar"))
+
+trait BaseScalaModule extends Toolchain:
   override def scalaVersion = settings.scalaVersion
   override def scalacOptions = settings.scalaOptions
   def consoleScalacOptions = scalacOptions()
@@ -166,7 +289,7 @@ trait ScalaJsCross extends BaseScalaModule:
   def scalaJs: Boolean = true
   def jsModuleDeps: Seq[ScalaJSModule]
 
-  object js extends ScalaJSModule:
+  object js extends ScalaJSModule, Toolchain:
     def scalaVersion = settings.scalaVersion
     def scalaJSVersion = settings.scalaJsVersion
     def scalacOptions = jvm.scalacOptions
@@ -245,16 +368,16 @@ trait Bundle(dependencies: PublishModule*) extends BaseScalaModule, PublishModul
   def moduleDeps = dependencies
 
 // ------------------------ GROUPS ------------------------
-object soundness extends ScalaModule:
+object soundness extends Toolchain:
   def scalaVersion = settings.scalaVersion
   def moduleDeps = Seq()
 
   object base extends Bundle(ambience.core, aviation.core, contextual.core, contingency.core,
     denominative.core, digression.core, diuretic.core, fulminate.core,
-    hieroglyph.core, adversaria.core, turbulence.core, turbulence.jvm, eucalyptus.core, gossamer.core,
+    hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core, gossamer.core,
     inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
     nomenclature.lexicon,
-    parasite.core, parasite.jvm, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
+    parasite.core, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
     prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
     typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core)
 
@@ -280,7 +403,7 @@ object soundness extends ScalaModule:
     superlunary.core, yossarian.core, probably.core, probably.cli, superlunary.jvm, mandible.core,
     probably.coverage)
 
-  object tool extends Bundle(anthology.core, decorum.plugin, harlequin.core, hellenism.core, hellenism.jvm,
+  object tool extends Bundle(anthology.core, decorum.plugin, harlequin.core, hellenism.core,
     hyperbole.core, octogenarian.core, revolution.core, umbrageous.plugin, anthology.java,
     harlequin.md, harlequin.ansi, austronesian.core, anthology.bundle, anthology.`scala`,
     exegesis.core)
@@ -296,7 +419,7 @@ object soundness extends ScalaModule:
 
   object all extends Bundle(base, cli, data, sci, test, tool, web)
 
-object test extends ScalaModule:
+object test extends Toolchain:
   def scalaVersion = settings.scalaVersion
   def scalacOptions = settings.scalaOptions
   def moduleDeps: Seq[JavaModule] =
@@ -326,13 +449,6 @@ object groupCheck extends Module:
     "proscenium.core"
   )
 
-  // Platform-specific component variants for platforms we don't yet publish for (JS,
-  // WebAssembly and WASI). These are not part of the published JVM artifacts, so they
-  // are not required to join a group bundle. JVM variants are *not* excluded: they ship
-  // in the published artifacts and must be wired into a group bundle like any other
-  // component.
-  def platformSuffixes: Set[String] = Set("js", "wasm", "wasi")
-
   def validate(): Command[Unit] = Task.Command:
     val onDisk = os.list(mill.api.BuildCtx.workspaceRoot / "lib").iterator
       .filter(p => os.isDir(p) && os.exists(p / "src"))
@@ -359,8 +475,7 @@ object groupCheck extends Module:
       problems += "`allLibraries` references libraries with no `lib/<name>/src` "
         + "directory:\n  " + orphanLibs.toSeq.sorted.mkString("\n  ")
 
-    val unbundled = (declaredComponents -- coveredComponents -- excluded)
-      .filterNot(c => platformSuffixes.exists(s => c.endsWith("." + s)))
+    val unbundled = declaredComponents -- coveredComponents -- excluded
     if unbundled.nonEmpty then
       problems += "Components not in any soundness.* group bundle and not in "
         + "`groupCheck.excluded` (a new module needs to join a group bundle, or "
@@ -402,52 +517,62 @@ object website extends BaseScalaModule:
 object abacist extends Library:
   object core extends Component(quantitative.units):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object acyclicity extends Library:
   object core extends Component(gossamer.core, nomenclature.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object adversaria extends Library:
   object core extends Component(rudiments.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object examples extends Internal(core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(examples)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(examples):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object ambience extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // WASI-backed environment: an `Environment` given whose variables come from a Wasm Component
   // Model import of `wasi:cli/environment` `get-environment` (`list<tuple<string, string>>`),
   // materialized by xenophile's `invoke` at the downstream (Wasm-linked) summoning site.
   object wasi extends Component(core, xenophile.wasm, xenophile.wit):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object anamnesis extends Library:
   object core extends Component(distillate.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object anthology extends Library:
   object core extends Component(hellenism.jvm, denominative.core):
     override def scalaJs = false // Scala compiler / classpath tooling (dotty, `hellenism`)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
 
   object `scala` extends Component(core):
     override def scalaJs = false // wraps the Scala compiler (dotty)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object `java` extends Component(core):
@@ -458,49 +583,53 @@ object anthology extends Library:
     override def scalaJs = false // depends on JVM-only `anthology.core`/`zeppelin`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(`scala`, `java`, core, spectacular.core)
+  object test extends Tests(`scala`, `java`, core, spectacular.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object anticipation extends Library:
   object generic extends Component(prepositional.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object text extends Component(symbolism.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object opaque extends Component(text):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object gfx extends Component(prepositional.core, color):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object url extends Component(text, generic):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object html extends Component(text, generic):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object print extends Component(text):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object http extends Component(codec, generic):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object codec extends Component(text):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object color extends Component(opaque, prepositional.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object log extends Component(text, gigantism.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object path extends Component(text, generic):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object time extends Component(generic):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests:
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object apoplexy extends Library:
   object core extends Component(jacinta.schema, jacinta.http, ypsiloid.core, telekinesis.core,
@@ -508,12 +637,14 @@ object apoplexy extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object austronesian extends Library:
   object core extends Component(probably.core, hellenism.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object aviation extends Library:
@@ -531,29 +662,35 @@ object aviation extends Library:
 object baroque extends Library:
   object core extends Component(quantitative.core, geodesy.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, abacist.core, quantitative.units, mosquito.core)
 
 object beneficence extends Library:
-  object core extends BareComponent()
+  object core extends BareComponent():
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
   object plugin extends BareComponent():
     override def scalaJs = false // compiler plugin: uses the JVM-only dotty compiler API
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
-  object test extends Tests(core, plugin)
+  object test extends Tests(core, plugin):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object bitumen extends Library:
   object core extends Component(serpentine.core, turbulence.jvm, galilei.jvm):
     override def scalaJs = false // depends on `galilei` (filesystem) and `turbulence.jvm`
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, galilei.jvm, guillotine.core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, galilei.jvm, guillotine.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object breviloquence extends Library:
   object core
       extends Component(urticose.url, panopticon.core, turbulence.core, adversaria.core,
                        zephyrine.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, sedentary.core, eucalyptus.core)
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(
@@ -565,7 +702,7 @@ object burdock extends Library:
   object boot extends Component:
     override def scalaJs = false // bootstrap loader (`java.nio.file`/`security`/`jar`)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object core
       extends Component(zeppelin.core, exoskeleton.core, revolution.core, telekinesis.jvm,
                        gastronomy.core, jacinta.core, boot):
@@ -573,30 +710,38 @@ object burdock extends Library:
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object cacophony extends Library:
   object core extends Component(gesticulate.core, quantitative.units, anticipation.http):
     override def scalaJs = false // audio (`javax.sound.sampled`)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object caduceus extends Library:
   object core extends Component(honeycomb.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object resend extends Component(core, telekinesis.jvm, jacinta.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object caesura extends Library:
   object core extends Component(turbulence.core, escritoire.core, panopticon.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(
       mvn"com.univocity:univocity-parsers:2.9.1",
@@ -608,26 +753,32 @@ object caesura extends Library:
 object camouflage extends Library:
   object core extends Component(parasite.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object capricious extends Library:
   object core extends Component(wisteria.core, hypotenuse.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // WASI-backed entropy: a `Randomization` given whose randomness is a Wasm Component Model import
   // of `wasi:random/random`, materialized by xenophile's `invoke` at the downstream (Wasm-linked)
   // summoning site. Target-neutral `.sjsir` in this build; only meaningful linked as a component.
   object wasi extends Component(core, xenophile.wasm, xenophile.wit):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object cardinality extends Library:
   object core extends Component(fulminate.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object cataclysm extends Library:
   object core extends Component(zephyrine.core, gossamer.core, turbulence.core,
@@ -638,33 +789,41 @@ object cataclysm extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object html extends Component(core, honeycomb.core, gigantism.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, html)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, html):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object charisma extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object chiaroscuro extends Library:
   object core extends Component(escapade.core, dendrology.tree, escritoire.core, dissonance.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object coaxial extends Library:
   object core extends Component(galilei.jvm, urticose.core, frontier.core):
     override def scalaJs = false // TCP sockets (`java.nio.channels`)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object contextual extends Library:
   object core extends Component(rudiments.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object cordillera extends Library:
   object core
@@ -673,69 +832,85 @@ object cordillera extends Library:
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object contingency extends Library:
   object core extends Component(rudiments.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object cosmopolite extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
     override def enabled = false
 
 object dendrology extends Library:
   object tree extends Component(gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object dag extends Component(acyclicity.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object demo extends Internal(dag, turbulence.core, ambience.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(tree, dag)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(tree, dag):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object decorum extends Library:
   object plugin extends BareComponent():
     override def scalaJs = false // compiler plugin: uses the JVM-only dotty compiler API
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
-  object test extends Tests(plugin)
+  object test extends Tests(plugin):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object denominative extends Library:
   object core extends Component(fulminate.core, vacuous.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object digression extends Library:
   object core extends Component(contingency.core, iridescence.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object dissonance extends Library:
   object core extends Component(turbulence.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object distillate extends Library:
   object core extends Component(digression.core, inimitable.core, wisteria.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, urticose.url)
 
 object diuretic extends Library:
   object core extends Component(anticipation.path, anticipation.url, anticipation.time):
     override def scalaJs = false // `java.*` type interop (io.File, nio.Path, net.URL, time, util.Date)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object embarcadero extends Library:
   object oci
@@ -743,29 +918,28 @@ object embarcadero extends Library:
         gesticulate.core):
     override def scalaJs = false // OCI images; depends on JVM-only `bitumen` (galilei archives)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object containerd extends Component(obligatory.grpc, cordillera.core, coaxial.core, locomotion.core, anticipation.time):
     override def scalaJs = false // container runtime; depends on JVM-only `obligatory.grpc`
     override def scalacOptions = Task:
-      settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef",
-        "-Yimports:java.lang,scala,proscenium"), "64")
+      settings.cc(settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"), "64"))
   object test extends Tests(oci, containerd, aviation.core):
     override def scalacOptions = Task:
-      settings.maxInlines(super.scalacOptions(), "64")
+      settings.cc(settings.maxInlines(super.scalacOptions(), "64"))
 
 object enigmatic extends Library:
   object core extends Component(gastronomy.core):
     override def scalaJs = false // crypto via `gastronomy` (`java.security`/`javax.crypto`)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object cose extends Component(core, breviloquence.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object openssl extends Component(core, xenophile.native):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, cose, openssl):
     override def forkArgs: T[Seq[String]] = Task:
       super.forkArgs() ++ Seq("--enable-native-access=ALL-UNNAMED")
@@ -773,25 +947,29 @@ object enigmatic extends Library:
 object escapade extends Library:
   object csi extends Component(gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object core extends Component(csi, anticipation.gfx, gossamer.core, turbulence.core, anticipation.url, iridescence.core, escritoire.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, yossarian.core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, yossarian.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
   object bench extends Benchmarks(core, quantitative.units)
 
 object escritoire extends Library:
   object core extends Component(gossamer.core, polysyllabic.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def enabled = false
 
 object polysyllabic extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
   object bench extends Benchmarks(core, escritoire.core, hellenism.core, quantitative.units)
 
 object ethereal extends Library:
@@ -880,30 +1058,33 @@ object ethereal extends Library:
 
       PathRef(dist / "hello")
 
-  object test extends Tests(core, exoskeleton.rig, quantitative.units)
+  object test extends Tests(core, exoskeleton.rig, quantitative.units):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object eucalyptus extends Library:
   object core extends Component(turbulence.core, gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object syslog extends Component(guillotine.core, core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object gcp extends Component(jacinta.core, core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object ansi extends Component(escapade.core, core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(ansi, core, syslog)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(ansi, core, syslog):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object exegesis extends Library:
   object core extends Component(obligatory.json, ethereal.core, exoskeleton.completions):
     override def scalaJs = false // LSP server; depends on JVM-only `ethereal`/`exoskeleton`
     override def scalacOptions = Task:
-      settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef",
-        "-Yimports:java.lang,scala,proscenium"), "48")
+      settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"), "48")
 
   object demo extends Internal(core):
     override def scalacOptions = Task:
@@ -918,15 +1099,15 @@ object exegesis extends Library:
 object exoskeleton extends Library:
   object args extends Component(escapade.core, profanity.core, ambience.core, quantitative.units):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object core extends Component(args, galilei.jvm):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object completions extends Component(core):
     override def scalaJs = false // shell completions; `(erased Effectful) ?=>` closures (JS backend)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
 
   object rig extends Internal(completions, superlunary.core, ethereal.core, anthology.bundle, quantitative.units):
     override def scalacOptions = Task:
@@ -936,27 +1117,33 @@ object exoskeleton extends Library:
        (mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
         mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
-  object test extends Tests(rig)
+  object test extends Tests(rig):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object frontier extends Library:
   object core extends Component(dendrology.tree, escapade.core, beneficence.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, scintillate.servlet, jacinta.schema)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, scintillate.servlet, jacinta.schema):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object fulminate extends Library:
   object core extends Component(anticipation.http, anticipation.print, anticipation.log, proscenium.core, gigantism.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
 
-  object test extends Tests(core)
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object galilei extends Library:
   object core extends Component(serpentine.core, turbulence.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // The `java.nio` `FilesystemBackend` (`filesystemBackends.virtualMachine`), split out of `core`
   // so the platform-neutral filesystem API can cross-compile; other platforms (e.g. WASI) supply
   // their own backend.
@@ -970,100 +1157,124 @@ object galilei extends Library:
   object wasi extends Component(core, xenophile.wasm, xenophile.wit):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, jvm)
+  object test extends Tests(core, jvm):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object gastronomy extends Library:
   object core extends Component(monotonous.core, turbulence.core):
     override def scalaJs = false // hashing (`java.security` MessageDigest)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object geodesy extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object gesticulate extends Library:
   object core extends Component(gossamer.core, anticipation.html, turbulence.core, zephyrine.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object gigantism extends Library:
   object core extends Component():
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
 
   object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
     override def enabled = false
 
 object gnossienne extends Library:
   object core extends Component(distillate.core, adversaria.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object gossamer extends Library:
   object core extends Component(mercator.core, hieroglyph.core, contextual.core, spectacular.core, hypotenuse.core, distillate.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, serpentine.core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, serpentine.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object graffiti extends Library:
   object core extends Component(honeycomb.core, cataclysm.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object guillotine extends Library:
   object core extends Component(turbulence.core, ambience.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, galilei.jvm)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, galilei.jvm):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object hallucination extends Library:
   object core extends Component(anticipation.gfx, iridescence.core, gesticulate.core):
     override def scalaJs = false // uses `java.awt`/`javax.imageio` (no Scala.js implementation)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object ansi extends Component(escapade.core, core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(ansi)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(ansi):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object harlequin extends Library:
   object core extends Component(anthology.scala, stenography.core, hellenism.jvm):
     override def scalaJs = false // syntax highlighting via `anthology.scala` (the compiler)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object ansi extends Component(core, escapade.core):
     override def scalaJs = false // depends on JVM-only `harlequin.core`
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object md extends Component(core, punctuation.html):
     override def scalaJs = false // depends on JVM-only `harlequin.core`
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(ansi, md)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(ansi, md):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object hellenism extends Library:
   // Galilei-free classpath/`Resource`/`cp""` — cross-compiles to Scala.js (used by xenophile).
   object core extends Component(anticipation.url, serpentine.core, turbulence.core,
     nomenclature.core, gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // Galilei/filesystem-backed classpath (`LocalClasspath`, the `Filesystem`/`Substantiable` givens).
   object jvm extends Component(core, galilei.jvm, ambience.core):
     override def scalaJs = false // depends on `galilei` (filesystem) and `ambience`
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, jvm, turbulence.core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, jvm, turbulence.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object honeycomb extends Library:
   object core extends Component(panopticon.core, gesticulate.core, xylophone.core, urticose.url,
@@ -1077,58 +1288,70 @@ object honeycomb extends Library:
 object hieroglyph extends Library:
   object core extends Component(kaleidoscope.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object hyperbole extends Library:
   object core extends Component(harlequin.ansi, escritoire.core, dendrology.tree):
     override def scalaJs = false // depends on JVM-only `harlequin.ansi`
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
-  object test extends Tests(core, quantitative.units, mandible.core)
+  object test extends Tests(core, quantitative.units, mandible.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object hypotenuse extends Library:
   object core extends Component(cardinality.core, anticipation.opaque, contingency.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, quantitative.units, abacist.core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, quantitative.units, abacist.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object imperial extends Library:
   object core extends Component(guillotine.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object inimitable extends Library:
   object core extends Component(contingency.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object iridescence extends Library:
   object core extends Component(contextual.core, anticipation.color, hypotenuse.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object jacinta extends Library:
   object core extends Component(zephyrine.core, turbulence.core, urticose.url, panopticon.core, adversaria.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object time extends Component(core, aviation.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object http extends Component(core, telekinesis.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object schema extends Component(core, telekinesis.jvm):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object records extends Component(core, polyvinyl.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -1146,8 +1369,10 @@ object jacinta extends Library:
 object kaleidoscope extends Library:
   object core extends Component(contingency.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object larceny extends Library:
   object plugin extends Component():
@@ -1160,106 +1385,128 @@ object larceny extends Library:
 object legerdemain extends Library:
   object core extends Component(honeycomb.core, anamnesis.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, scintillate.server):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
     override def enabled = false
 
 object mandible extends Library:
-  object core extends Component(hyperbole.core):
+  object core extends Component(hyperbole.core, galilei.core):
     override def scalaJs = false // depends on JVM-only `hyperbole`
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}")
 
-  object test extends Tests(core, revolution.core, quantitative.units)
+  object test extends Tests(core, revolution.core, quantitative.units):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object locomotion extends Library:
   object core
       extends Component(turbulence.core, wisteria.core, adversaria.core, hypotenuse.core,
         gossamer.core, spectacular.core, panopticon.core, zephyrine.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(mvn"com.google.protobuf:protobuf-java:4.29.3")
 
 object mercator extends Library:
   object core extends Component(fulminate.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object metamorphose extends Library:
   object core extends Component(contingency.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object monotonous extends Library:
   object core extends Component(gossamer.core, zephyrine.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object mosquito extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(quantitative.units, core, baroque.core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(quantitative.units, core, baroque.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object urticose extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object url extends Component(escapade.core, serpentine.core, anticipation.html, core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, url)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, url):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object nomenclature extends Library:
   object core extends Component(gossamer.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object lexicon extends Component(core, turbulence.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, lexicon, hellenism.core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, lexicon, hellenism.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object octogenarian extends Library:
   object core extends Component(galilei.jvm, guillotine.core, urticose.core, enigmatic.core, anticipation.url,
     dissonance.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object orthodoxy extends Library:
   object core extends Component(scintillate.server, jacinta.core, telekinesis.jvm):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
     override def enabled = false
 
 object obligatory extends Library:
   object core extends Component(zephyrine.core, gossamer.core, contingency.core, anticipation.codec, fulminate.core, prepositional.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object json extends Component(core, scintillate.server, hyperbole.core, eucalyptus.core, revolution.core, jacinta.schema, jacinta.http):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object grpc extends Component(core, locomotion.core, cordillera.core, turbulence.jvm):
     override def scalaJs = false // gRPC over `cordillera` (HTTP/2) with `turbulence.jvm` compression
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, json, grpc)
 
 object panopticon extends Library:
   object core extends Component(rudiments.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, honeycomb.core)
   object bench extends Benchmarks(core, quantitative.units)
 
@@ -1267,12 +1514,12 @@ object parasite extends Library:
   object core extends Component(digression.core, mercator.core, anticipation.time,
       nomenclature.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // `GarbageCollection`/`Heap` introspection via `java.lang.management` — JVM-only.
   object jvm extends Component(core):
     override def scalaJs = false
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, jvm, quantitative.units)
 
 object perihelion extends Library:
@@ -1280,80 +1527,96 @@ object perihelion extends Library:
       hypotenuse.core, contingency.core, parasite.core, eucalyptus.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, jacinta.core)
 
 object phoenicia extends Library:
   object core extends Component(quantitative.units, polaris.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object plutocrat extends Library:
   object core extends Component(gossamer.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object polaris extends Library:
   object core extends Component(hypotenuse.core, wisteria.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object polyvinyl extends Library:
   object core extends Component(rudiments.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object prepositional extends Library:
   object core extends Component:
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object proscenium extends Library:
   object core extends Component:
     override def moduleDeps = Seq(beneficence.core)
     override def scalacOptions = Task:
-      super.scalacOptions() :+ "-Yno-predef"
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() :+ "-Yno-predef")
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object probably extends Library:
   object core extends Component(chiaroscuro.core, ambience.core, eucalyptus.core, coverage):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
   object cli extends Component(core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object coverage extends Component(dendrology.tree):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(cli)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(cli):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object profanity extends Library:
   object core extends Component(ambience.core, eucalyptus.core, diuretic.core, iridescence.core,
                                 quantitative.units, frontier.core, escapade.csi):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, exoskeleton.rig)
+  object test extends Tests(core, exoskeleton.rig):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object punctuation extends Library:
   object core extends Component(honeycomb.core, frontier.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object html extends Component(core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object ansi extends Component(core, harlequin.core, harlequin.ansi, escapade.core,
       polysyllabic.core):
     override def scalaJs = false // depends on JVM-only `harlequin` (syntax highlighting)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, html, ansi, jacinta.core, telekinesis.core, sedentary.core, quantitative.units):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
   object bench extends Benchmarks(core, quantitative.units)
 
 object quantitative extends Library:
@@ -1362,15 +1625,19 @@ object quantitative extends Library:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object units extends Component(core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, units, mandible.core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, units, mandible.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object revolution extends Library:
   object core extends Component(serpentine.core, turbulence.core):
     override def scalaJs = false // JAR manifests (`java.util.jar`)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object rudiments extends Library:
   object core extends Component(
@@ -1380,23 +1647,29 @@ object rudiments extends Library:
       denominative.core
     ):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
 
-  object test extends Tests(core, abacist.core, quantitative.units)
+  object test extends Tests(core, abacist.core, quantitative.units):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object archimedes extends Library:
   object core extends Component(xylophone.core, honeycomb.core, contextual.core, gigantism.core,
     quantitative.core, baroque.core, mosquito.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, quantitative.units)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, quantitative.units):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object savagery extends Library:
   object core extends Component(cataclysm.core, xylophone.core, geodesy.core, iridescence.core,
     mosquito.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object scintillate extends Library:
   object server extends Component(telekinesis.core):
@@ -1407,10 +1680,12 @@ object scintillate extends Library:
   object servlet extends Component(server):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def mvnDeps = Seq(mvn"jakarta.servlet:jakarta.servlet-api:6.0.0")
 
-  object test extends Tests(server, servlet)
+  object test extends Tests(server, servlet):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
   object bench extends Benchmarks(server, eucalyptus.core, quantitative.units)
 
 object sedentary extends Library:
@@ -1418,55 +1693,65 @@ object sedentary extends Library:
     override def scalaJs = false // benchmarking via JVM-only `superlunary`/`anthology`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object serpentine extends Library:
   object core extends Component(nomenclature.core, ambience.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
-  object bench extends Benchmarks(core, quantitative.units)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  // The platform types (`Linux`, `Windows`, …) that the path-algebra tests exercise now live in
+  // galilei, so the tests depend on it for a concrete `Filesystem` to test against.
+  object test extends Tests(core, galilei.core)
+  object bench extends Benchmarks(core, galilei.core, quantitative.units)
 
 object spectacular extends Library:
   object core extends Component(stenography.core, inimitable.core, wisteria.core, digression.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object stenography extends Library:
   object core extends Component(rudiments.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def mvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object test extends Tests(core)
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object stratiform extends Library:
   object core extends Component(zephyrine.core, turbulence.core, panopticon.core, gossamer.core, contingency.core, anticipation.codec, distillate.core, wisteria.core, prepositional.core, contextual.core, gigantism.core, fulminate.core, adversaria.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object base256 extends Component(gossamer.core, contingency.core, fulminate.core, anticipation.codec, vacuous.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object binary extends Component(core, base256, gastronomy.core, ulysses.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object records extends Component(core, polyvinyl.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object time extends Component(core, aviation.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object http extends Component(core, telekinesis.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, base256, binary, records, time, http, eucalyptus.core)
   object bench extends Benchmarks(core, quantitative.units, hellenism.core, ambience.core)
 
 object superlunary extends Library:
-  object core extends Component(jacinta.core, gastronomy.core, anthology.scala, austronesian.core):
+  object core
+      extends Component
+              (jacinta.core, gastronomy.core, anthology.scala, austronesian.core, galilei.core):
     override def scalaJs = false // runtime multi-stage compilation via `anthology.scala`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -1478,7 +1763,7 @@ object superlunary extends Library:
   object jvm extends Component(core):
     override def scalaJs = false // JVM runtime staging backend
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def mvnDeps = Seq(
       mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
       mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
@@ -1492,34 +1777,41 @@ object surveillance extends Library:
     override def scalaJs = false // file watching (`java.nio.file` WatchService)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, galilei.jvm, imperial.core, diuretic.core, quantitative.units)
+  object test extends Tests(core, galilei.jvm, imperial.core, diuretic.core, quantitative.units):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object symbolism extends Library:
   object core extends Component(prepositional.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object synesthesia extends Library:
   object core extends Component(obligatory.json):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef",
-        "-Yimports:java.lang,scala,proscenium"), "48")
+      settings.maxInlines(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"), "48")
 
-  object test extends Tests(core)
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object tarantula extends Library:
   object core extends Component(jacinta.core, telekinesis.jvm, cataclysm.core, hallucination.core, diuretic.core, gastronomy.core):
     override def scalaJs = false // browser automation; depends on JVM-only `hallucination`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object telekinesis extends Library:
   object core extends Component(monotonous.core, legerdemain.core, turbulence.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // JVM-only transports split out of `core` so the platform-agnostic HTTP model and client can
   // cross-compile to Scala.js: the `java.net.http` `Http.Backend` (`httpBackends.virtualMachine`)
   // and the `coaxial` domain-socket client.
@@ -1533,38 +1825,44 @@ object telekinesis extends Library:
   object wasi extends Component(core, xenophile.wasm, xenophile.wit):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, jvm)
+  object test extends Tests(core, jvm):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object turbulence extends Library:
   object core
   extends Component(hieroglyph.core, parasite.core, capricious.core, stenography.core,
       zephyrine.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // JVM-only implementations (`java.util.zip` compression) split out of `core` so modules that use
   // only turbulence's platform-agnostic streaming can cross-compile to Scala.js.
   object jvm extends Component(core):
     override def scalaJs = false
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // WASI-backed standard streams: a `Stdio` whose output writes through the `wasi:io/streams`
   // `output-stream` resource, materialized by xenophile's `invoke` at the downstream (Wasm-linked)
   // summoning site. Target-neutral `.sjsir` here; only meaningful linked as a component.
   object wasi extends Component(core, xenophile.wasm, xenophile.wit):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, jvm)
+  object test extends Tests(core, jvm):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object typonym extends Library:
   object core extends Component(proscenium.core, gigantism.core, anticipation.text):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object ultimatum extends Library:
   object core extends Component(profanity.core, escapade.core, yossarian.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object demo extends Internal(core, ethereal.core, exoskeleton.completions):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -1599,69 +1897,79 @@ object ultimatum extends Library:
 
       new java.io.File(target.toString).setExecutable(true)
       PathRef(target)
-  object test extends Tests(core)
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object ulysses extends Library:
   object core extends Component(gastronomy.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object umbrageous extends Library:
   object plugin extends Component():
     override def scalaJs = false // compiler plugin: uses the JVM-only dotty compiler API
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
 
-  object test extends Tests(plugin)
+  object test extends Tests(plugin):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object vacuous extends Library:
   object core extends Component(fulminate.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object vexillology extends Library:
   object core extends Component(hypotenuse.core, distillate.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object vicarious extends Library:
   object core extends Component(rudiments.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object wisteria extends Library:
   object core extends Component(contingency.core, vicarious.core):
     def compileMvnDeps = Seq(mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}")
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object xenophile extends Library:
   object core extends Component(gossamer.core, prepositional.core, gigantism.core, fulminate.core,
     vacuous.core, hellenism.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object typescript extends Component(core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object native extends Component(core):
     override def scalaJs = false // native FFI via `java.lang.foreign` (Panama) — JVM-only
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object wit extends Component(core, hypotenuse.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object webidl extends Component(core, hypotenuse.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object wasm extends Component(core, wit, hypotenuse.core, anticipation.codec, distillate.core,
     gossamer.core, prepositional.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // The JavaScript materializer: emits Scala.js dynamic calls for WebIDL/TypeScript navigations.
   // The `invoke` extension it exports collides by design with `wasm`'s (they target different
   // Scala.js link outputs), so it is not bundled into the `test` module alongside `wasm`.
@@ -1669,19 +1977,23 @@ object xenophile extends Library:
     gossamer.core, prepositional.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(typescript, native, wit, webidl, wasm)
+  object test extends Tests(typescript, native, wit, webidl, wasm):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object querencia extends Library:
   object core extends Component(xenophile.webidl, honeycomb.core, hypotenuse.core, gossamer.core,
     prepositional.core, vacuous.core, hellenism.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object xylophone extends Library:
   object core extends Component(zephyrine.core, adversaria.core, typonym.core, urticose.core, wisteria.core, panopticon.core, turbulence.core, serpentine.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
   object bench extends Benchmarks(core, quantitative.units, hellenism.core):
     def mvnDeps = Seq(mvn"org.scala-lang.modules::scala-xml:2.4.0")
@@ -1689,13 +2001,15 @@ object xylophone extends Library:
 object yossarian extends Library:
   object core extends Component(iridescence.core, gossamer.core, turbulence.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object ypsiloid extends Library:
   object core extends Component(distillate.core, turbulence.core, gossamer.core, contingency.core, vacuous.core, wisteria.core, zephyrine.core, panopticon.core, urticose.url, serpentine.core, beneficence.core, gigantism.core, contextual.core, jacinta.core, adversaria.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
 
   object test extends Tests(core, jacinta.core):
     def yamlTestSuiteCommit = "6ad3d2c62885d82fc349026c136ef560838fdf3d"
@@ -1727,8 +2041,10 @@ object ypsiloid extends Library:
 object zephyrine extends Library:
   object core extends Component(hieroglyph.core, hypotenuse.core):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
   object bench extends Benchmarks(core, quantitative.units)
 
 object zeppelin extends Library:
@@ -1736,7 +2052,9 @@ object zeppelin extends Library:
     override def scalaJs = false // zip archives (`java.util.zip`, `galilei`)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, imperial.core, diuretic.core)
+  object test extends Tests(core, imperial.core, diuretic.core):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 object ziggurat extends Library:
   object core
@@ -1744,14 +2062,16 @@ object ziggurat extends Library:
                        galilei.jvm):
     override def scalaJs = false // JAR/zip packaging; `hellenism`, `turbulence.jvm`, `galilei`
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object packager
       extends Component(core, guillotine.core, galilei.jvm, eucalyptus.core, ethereal.core,
                        telekinesis.jvm):
     override def scalaJs = false // native packaging; `guillotine`/`galilei`/`ethereal` (JVM)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
-  object test extends Tests(core, packager)
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, packager):
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions())
 
 // Every top-level Library declared above must appear here exactly once. The
 // `groupCheck.validate` task verifies this list against the on-disk `lib/*/src`
@@ -1788,7 +2108,7 @@ val jsComponents: Seq[ScalaJSModule] =
     case component: Component if component.scalaJs     => component.js
     case component: BareComponent if component.scalaJs => component.js
 
-object jsAll extends ScalaJSModule:
+object jsAll extends ScalaJSModule, Toolchain:
   def scalaVersion = settings.scalaVersion
   def scalaJSVersion = settings.scalaJsVersion
   override def moduleDeps = jsComponents
@@ -1797,7 +2117,7 @@ object jsAll extends ScalaJSModule:
 // the JS-capable modules, so the linker reports any reachable reference to a
 // `java.*` class Scala.js does not implement (the runtime counterpart to the
 // static reference audit; `jsAll` only compiles).
-object jslink extends ScalaJSModule:
+object jslink extends ScalaJSModule, Toolchain:
   def scalaVersion = settings.scalaVersion
   def scalaJSVersion = settings.scalaJsVersion
   def scalacOptions =

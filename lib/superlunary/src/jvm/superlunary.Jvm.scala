@@ -37,6 +37,7 @@ import anthology.*
 import anticipation.*
 import contingency.*
 import eucalyptus.*
+import galilei.*
 import guillotine.*
 import hellenism.*
 import jacinta.*

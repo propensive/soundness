@@ -41,16 +41,21 @@ import vacuous.*
 
 object Daemon:
   def apply(evaluate: Worker => Unit)
-    ( using monitor: Monitor, codepoint: Codepoint, probate: Probate )
+    ( using monitor: Monitor^, codepoint: Codepoint, probate: Probate^ )
   :   Daemon =
 
-    inline def evaluate0: Worker => Unit = evaluate
+    // The body closure may capture a stack-scoped error tactic; that is enforced at the `daemon`/
+    // `async` entry point and laundered to pure here. The daemon *handle* is likewise laundered to a
+    // pure `Daemon` (it is freely shared, like a `Task`); the worker remains a supervised child of
+    // `monitor`, and the effect capabilities its body uses are still tracked at the entry point.
+    val evaluate0: Worker -> Unit = caps.unsafe.unsafeAssumePure(evaluate)
 
-    new Worker(codepoint, monitor, probate) with Daemon:
-      type Result = Unit
-      def name: Optional[Name[Async]] = Unset
-      def daemon: Boolean = true
-      def evaluate(worker: Worker): Result = evaluate0(worker)
+    caps.unsafe.unsafeAssumePure:
+      new Worker(codepoint, monitor, probate) with Daemon:
+        type Result = Unit
+        def name: Optional[Name[Async]] = Unset
+        def daemon: Boolean = true
+        def evaluate(worker: Worker): Result = evaluate0(worker)
 
 
 trait Daemon:

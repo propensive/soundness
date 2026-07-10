@@ -52,5 +52,5 @@ trait Interpretable extends Typeclass:
   def operand: Boolean = true
   def interpret(arguments: List[Argument]): Optional[Self]
 
-  def map[self2](lambda: Self => self2): self2 is Interpretable =
+  def map[self2](lambda: Self => self2): (self2 is Interpretable)^{this, lambda} =
     arguments => interpret(arguments).let(lambda(_))

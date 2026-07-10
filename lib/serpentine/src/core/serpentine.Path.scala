@@ -47,10 +47,8 @@ import symbolism.*
 import vacuous.*
 
 object Path:
-  inline given pathOnLinux: (Path on Linux) is Representative of Paths = !!
-  inline given pathOnWindows: (Path on Windows) is Representative of Paths = !!
-  inline given pathOnMacOs: (Path on MacOs) is Representative of Paths = !!
-  inline given pathOnLocal: (Path on Local) is Representative of Paths = !!
+  // Platform `Representative` instances (`Path on Linux`, …) live with the OS platform types in
+  // galilei; the generic `Path` algebra stays here.
 
   @targetName("Root")
   object % extends Path(t"/"):
@@ -59,7 +57,8 @@ object Path:
 
 
   given decodable: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
-  =>  (Path on filesystem) is Decodable in Text =
+  =>  (tactic: Tactic[PathError])
+  =>  (((Path on filesystem) is Decodable in Text)^{tactic}) =
 
     text =>
       val root = radical.encode(radical.decode(text))
@@ -70,7 +69,8 @@ object Path:
 
 
   given decodable2: [filesystem: Filesystem, root] => (radical: root is Radical on filesystem)
-  =>  (Path on filesystem under root) is Decodable in Text =
+  =>  (tactic: Tactic[PathError])
+  =>  (((Path on filesystem under root) is Decodable in Text)^{tactic}) =
 
     text =>
       val root = radical.encode(radical.decode(text))
@@ -86,15 +86,19 @@ object Path:
 
   given trustedInstantiable: [filesystem: Filesystem]
   =>  ( radical: Tactic[PathError] ?=> Radical on filesystem )
-  =>  (Path on filesystem) is Instantiable across Paths from Paths.Trusted =
+  =>  (((Path on filesystem) is Instantiable across Paths from Paths.Trusted)^{radical}) =
 
-    given Radical on filesystem = radical(using strategies.throwUnsafely)
-    _.text.decode[Path on filesystem]
+    // The input is already-trusted path data, so decoding it cannot fail; the tactic is
+    // minted per call by `unsafely`, so the instance captures only the `radical` context.
+    trusted => unsafely:
+      given Radical on filesystem = radical
+      trusted.text.decode[Path on filesystem]
 
 
   given instantiable: [filesystem: Filesystem]
   =>  Radical on filesystem
-  =>  (Path on filesystem) is Instantiable across Paths from Text =
+  =>  (tactic: Tactic[PathError])
+  =>  (((Path on filesystem) is Instantiable across Paths from Text)^{tactic}) =
 
     _.decode[Path on filesystem]
 
@@ -131,7 +135,7 @@ object Path:
     _.encode
 
 
-  private def conversion[from, to](lambda: from => to): Conversion[from, to] = lambda(_)
+  private def conversion[from, to](lambda: from -> to): Conversion[from, to] = lambda(_)
 
 
   inline given convert: [topic, root, filesystem, path <: Path of topic under root]
@@ -142,6 +146,7 @@ object Path:
 
   transparent inline given quotient: [filesystem, root, path <: Path on filesystem under root]
   =>  ( radical: root is Radical on filesystem )
+  =>  (Tactic[PathError]^)
   =>  path is Quotient =
 
     ( path =>
@@ -185,7 +190,8 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
 
   def resolve(text: Text)
-    ( using (Path on Plane) is Decodable in Text, (Relative on Plane) is Decodable in Text )
+    ( using ((Path on Plane) is Decodable in Text)^,
+            ((Relative on Plane) is Decodable in Text)^ )
   :   Path on Plane raises PathError =
 
     safely(text.decode[Path on Plane]).or(safely(this + text.decode[Relative on Plane])).or:
@@ -221,7 +227,12 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
 
       summonFrom:
         case limit: (Limit is Submissible on `filesystem`)                 => limit.check(root)
-        case radical: (Limit is Radical on `filesystem`)                   => radical.decode(root)
+
+        // `root` already belongs to a valid `Path`, so re-validating it cannot fail in
+        // practice; decode it totally (a genuine mismatch throws) so `on` stays total
+        // and usable from `Conversion`.
+        case radical: (Limit is Radical on `filesystem`) =>
+          radical.decode(root)(using strategies.throwUnsafely)
 
         case filesystem: (`filesystem` is (Filesystem { type UniqueRoot = true })) =>
           infer[Plane is (Filesystem { type UniqueRoot = true })]
@@ -276,7 +287,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
   def ancestors: List[Path on Plane under Limit] =
     safely(parent).let { parent => parent :: parent.ancestors }.or(Nil)
 
-  def child(value: Text)(using erased Unsafe): Path on Plane under Limit =
+  def child(value: Text)(using erased unsafe: Unsafe): Path on Plane under Limit =
     Path[Plane, Limit, Text *: Topic](root, value +: descent)
 
   @targetName("slash")

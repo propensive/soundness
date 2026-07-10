@@ -63,7 +63,7 @@ class CompileProcess():
   def errors: Int = errorCount
   def warnings: Int = warningCount
 
-  def complete()(using Monitor): CompileResult logs CompileEvent raises AsyncError =
+  def complete()(using Monitor): CompileResult raises AsyncError logs CompileEvent =
     try completion.await() finally
       safely(compilation.let(_.await()))
       safely(noticesSpool.stop())
