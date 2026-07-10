@@ -250,11 +250,22 @@ object WitDialect extends Dialect:
       case Nil =>
         (methods, Nil)
 
+      // A constructor is registered as the member `constructor`, returning the resource itself; a
+      // `static func` is a member addressed through the resource but taking no receiver.
       case "constructor" :: "(" :: rest =>
-        resourceBody(skipTo(rest, t";"), resource, module, methods)
+        val (parameters, after) = params(rest, Nil)
+        val signature = Prototype(parameters, Foreign.Type.Named(resource), module, resource, true)
+        resourceBody(skipTo(after, t";"), resource, module, methods.updated(t"constructor", signature))
 
-      case method :: ":" :: "static" :: rest =>
-        resourceBody(skipTo(rest, t";"), resource, module, methods)
+      case method :: ":" :: "static" :: "func" :: "(" :: rest =>
+        val (parameters, after) = params(rest, Nil)
+
+        val (result, after2) = after match
+          case "->" :: more => typeOf(more)
+          case more         => (Foreign.Type.Named(t"unit"), more)
+
+        val signature = Prototype(parameters, result, module, resource, true)
+        resourceBody(skipTo(after2, t";"), resource, module, methods.updated(method.tt, signature))
 
       case method :: ":" :: "func" :: "(" :: rest =>
         val (parameters, after) = params(rest, Nil)
@@ -327,7 +338,12 @@ object WitDialect extends Dialect:
         Foreign.Type.Applied(constructor, arguments.map(expand))
 
     def signature(sig: Prototype): Prototype =
-      Prototype(sig.parameters.let(_.map(expand)), expand(sig.result), sig.module, sig.resource)
+      Prototype
+        ( sig.parameters.let(_.map(expand)),
+          expand(sig.result),
+          sig.module,
+          sig.resource,
+          sig.static )
 
     definitions.map: (name, members) =>
       (name, members.map { (member, sig) => (member, signature(sig)) })
