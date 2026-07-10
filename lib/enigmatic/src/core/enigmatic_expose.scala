@@ -57,18 +57,18 @@ extension [value: Encodable in Data](value: value)
 
     algorithm.encrypt(value.bytestream, encryptor.bytes, iv)
 
-// Streaming encryption (block ciphers only) lazily transforms a `Stream`, driving
+// Streaming encryption (block ciphers only) lazily transforms a `LazyList`, driving
 // the JCE cipher through update/doFinal. The IV is emitted as the leading chunk
 // and the `NoPadding` alignment check runs at end-of-stream. Drain it within the
 // `expose` block — only the fixed ciphertext of `stream` could otherwise leak.
 
-extension (stream: Stream[Data])
+extension (stream: LazyList[Data])
   def encrypt[cipher <: BlockCipher](iv: InitializationVector)
     ( using encryptor: Encryptor[cipher],
             algorithm: cipher & Encryption,
             erased weakness: Permit[Weakness[cipher]],
             erased authentication: Permit[Authentication[cipher]] )
-  :   Stream[Data] =
+  :   LazyList[Data] =
 
     algorithm.encryptStream(stream, encryptor.bytes, iv)
 

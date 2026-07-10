@@ -48,14 +48,14 @@ object Duplex:
   def streams(in: ji.InputStream, out: ji.OutputStream)(shutdown: () => Unit): Duplex = new Duplex:
     private val buffer = new Array[Byte](65536)
 
-    def stream: Stream[Data] =
-      def recur(): Stream[Data] = in.read(buffer) match
-        case -1    => Stream()
+    def stream: LazyList[Data] =
+      def recur(): LazyList[Data] = in.read(buffer) match
+        case -1    => LazyList()
         case count => buffer.take(count).immutable(using Unsafe) #:: recur()
 
       recur()
 
-    def send(data: Stream[Data]): Unit =
+    def send(data: LazyList[Data]): Unit =
       data.each: bytes =>
         out.write(bytes.mutable(using Unsafe))
         out.flush()
@@ -67,12 +67,12 @@ object Duplex:
   def channel(socketChannel: jnc.SocketChannel): Duplex = new Duplex:
     private val buffer = ByteBuffer.allocate(65536).nn
 
-    def stream: Stream[Data] =
-      def recur(): Stream[Data] =
+    def stream: LazyList[Data] =
+      def recur(): LazyList[Data] =
         buffer.clear()
 
         socketChannel.read(buffer) match
-          case -1 => Stream()
+          case -1 => LazyList()
 
           case _ =>
             buffer.flip()
@@ -82,7 +82,7 @@ object Duplex:
 
       recur()
 
-    def send(data: Stream[Data]): Unit =
+    def send(data: LazyList[Data]): Unit =
       data.each: bytes =>
         val out = ByteBuffer.wrap(bytes.mutable(using Unsafe)).nn
         while out.hasRemaining do socketChannel.write(out)
@@ -96,6 +96,6 @@ object Duplex:
 // server-initiated frames concurrently. Reads block until data arrives or the peer
 // closes; `send` may be called many times and never half-closes the connection.
 trait Duplex:
-  def stream: Stream[Data]
-  def send(data: Stream[Data]): Unit
+  def stream: LazyList[Data]
+  def send(data: LazyList[Data]): Unit
   def close(): Unit

@@ -61,7 +61,6 @@ export
 
 export scala.annotation.unchecked.{uncheckedCaptures, uncheckedStable, uncheckedVariance}
 
-export scala.LazyList as Stream
 export scala.DummyImplicit as Void
 
 export proscenium.{`~>`, Label, Mono, Nat, unexported, Zero}

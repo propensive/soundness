@@ -42,13 +42,13 @@ object Patch:
   // Streams a `git diff -p --no-color` output as one FileDiff per file.
   // Common cases (modify, add, delete, rename, copy) are handled. Binary
   // diffs and mode-only changes produce a FileDiff with no hunks.
-  def parse(stream: Stream[Text]): Stream[FileDiff] =
+  def parse(stream: LazyList[Text]): LazyList[FileDiff] =
     stream.dropWhile(!_.starts(t"diff --git ")) match
       case head #:: tail =>
         val (body, rest) = tail.span(!_.starts(t"diff --git "))
-        Stream(parseFile(head, body.to(List))) #::: parse(rest)
+        LazyList(parseFile(head, body.to(List))) #::: parse(rest)
 
-      case _ => Stream()
+      case _ => LazyList()
 
 
   // Flattens every hunk's edits into a single Dissonance Diff[Text].

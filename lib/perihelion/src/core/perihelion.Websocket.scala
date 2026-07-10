@@ -58,8 +58,8 @@ object Message:
   // A `Message` serialises to a complete (unmasked) WebSocket frame, so it can
   // flow through Coaxial's `Control.Reply`/`Conclude` and be written verbatim.
   given transmissible: Message is Transmissible =
-    case Text(text)   => Stream(Frame.Text(true, text.data).encode)
-    case Binary(data) => Stream(Frame.Binary(true, data).encode)
+    case Text(text)   => LazyList(Frame.Text(true, text.data).encode)
+    case Binary(data) => LazyList(Frame.Binary(true, data).encode)
 
 // A complete WebSocket message: text frames are reassembled and UTF-8-decoded;
 // binary frames are reassembled as raw bytes. Control frames (Ping/Pong/Close)
@@ -84,7 +84,7 @@ class Channel()(using masking: Masking):
   // already a complete, unmasked frame (a Reader auto-reply, a handler `Reply`, a
   // `send`, or a `close`), so a client masks it and a server passes it through.
   private[perihelion] def enqueue(frame: Data): Unit = spool.put(masking.outbound(frame))
-  private[perihelion] def stream: Stream[Data] = spool.stream
+  private[perihelion] def stream: LazyList[Data] = spool.stream
 
   def send(message: Message): Unit logs WebsocketEvent =
     Log.fine(WebsocketEvent.Sent(message.bytes.length))
@@ -100,8 +100,8 @@ class Channel()(using masking: Masking):
 // Reads client frames off the connection, reassembles fragmented messages,
 // answers Ping with Pong, and ends (stopping the outgoing side) when the peer
 // sends Close. Protocol violations raise `WebsocketError`.
-class Reader(body: () => Stream[Data], channel: Channel)(using Tactic[WebsocketError], Masking):
-  def messages: Stream[Message] =
+class Reader(body: () => LazyList[Data], channel: Channel)(using Tactic[WebsocketError], Masking):
+  def messages: LazyList[Message] =
     val cursor = Cursor(body().filter(_.nonEmpty).iterator)
 
     // Validate `data` as UTF-8. `whole` marks a complete message, where a
@@ -120,7 +120,7 @@ class Reader(body: () => Stream[Data], channel: Channel)(using Tactic[WebsocketE
 
     // Extend a (new or in-progress) message by `data`, validating a text message
     // incrementally and emitting it once `fin` is seen.
-    def extend(text: Boolean, data: Data, fin: Boolean): Stream[Message] =
+    def extend(text: Boolean, data: Data, fin: Boolean): LazyList[Message] =
       if text && !validUtf8(data, fin)
       then abort(WebsocketError(WebsocketError.Reason.InvalidText))
 
@@ -129,15 +129,15 @@ class Reader(body: () => Stream[Data], channel: Channel)(using Tactic[WebsocketE
     // A data frame arriving mid-message (a fragmented message is still open) is a
     // protocol violation, as is a continuation with nothing to continue.
     def started(fin: Boolean, text: Boolean, data: Data, partial: Optional[(Boolean, Data)])
-    :   Stream[Message] =
+    :   LazyList[Message] =
 
       if partial.present then abort(WebsocketError(WebsocketError.Reason.BadFragmentation))
       else extend(text, data, fin)
 
-    def recur(partial: Optional[(Boolean, Data)]): Stream[Message] =
+    def recur(partial: Optional[(Boolean, Data)]): LazyList[Message] =
       (Frame.parse(cursor): @unchecked) match
         case Unset =>
-          Stream()
+          LazyList()
 
         case Frame.Ping(data) =>
           channel.enqueue(Frame.Pong(data).encode)
@@ -150,7 +150,7 @@ class Reader(body: () => Stream[Data], channel: Channel)(using Tactic[WebsocketE
           if !validUtf8(reason, true) then abort(WebsocketError(WebsocketError.Reason.InvalidText))
           channel.enqueue(Frame.Close(if code == 1005 then 1000 else code, Data()).encode)
           channel.stop()
-          Stream()
+          LazyList()
 
         case Frame.Text(fin, data)   => started(fin, true, data, partial)
         case Frame.Binary(fin, data) => started(fin, false, data, partial)
@@ -202,7 +202,7 @@ class Websocket[message, state]
 
   val channel: Channel = Channel()
 
-  private def loop(messages: Stream[Message], state: state): state = messages.flow(close(state)):
+  private def loop(messages: LazyList[Message], state: state): state = messages.flow(close(state)):
     Log.fine(WebsocketEvent.Received(next.bytes.length))
 
     handle(using state)(decode(next)) match

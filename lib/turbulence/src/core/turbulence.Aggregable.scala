@@ -70,13 +70,13 @@ object Aggregable:
 
 
   given stream: [element, element2] => (aggregable: element2 is Aggregable by element)
-  =>  Stream[element2] is Aggregable by element =
+  =>  LazyList[element2] is Aggregable by element =
 
-    element => Stream(aggregable.aggregate(element))
+    element => LazyList(aggregable.aggregate(element))
 
 trait Aggregable extends Typeclass, Operable:
   aggregable =>
-  def aggregate(source: Stream[Operand]): Self
+  def aggregate(source: LazyList[Operand]): Self
 
   def map[self2](lambda: Self => self2): self2 is Aggregable by Operand = source =>
     lambda(aggregable.aggregate(source))

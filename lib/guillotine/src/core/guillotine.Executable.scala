@@ -111,7 +111,7 @@ case class Command(arguments: Text*) extends Executable:
     Log.info(ExecEvent.ProcessStart(this))
 
     try new Job(processBuilder.start().nn)
-    catch case errror: ji.IOException => abort(ExecError(this, Stream(), Stream()))
+    catch case errror: ji.IOException => abort(ExecError(this, LazyList(), LazyList()))
 
 
   def escape: Text = arguments.map { argument => t"'${argument.sub(t"'", t"\'")}'" }.join(t" ")

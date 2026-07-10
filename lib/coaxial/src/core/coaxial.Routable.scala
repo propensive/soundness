@@ -55,7 +55,7 @@ object Routable:
 
       Connection(address, endpoint.port.number, socket)
 
-    def transmit(connection: Connection, input: Stream[Data]): Unit =
+    def transmit(connection: Connection, input: LazyList[Data]): Unit =
       input.each: bytes =>
         val packet =
           jn.DatagramPacket
@@ -75,7 +75,7 @@ object Routable:
 
       Connection(port.number, socket)
 
-    def transmit(connection: Connection, input: Stream[Data]): Unit =
+    def transmit(connection: Connection, input: LazyList[Data]): Unit =
       input.each: bytes =>
         val packet =
           jn.DatagramPacket
@@ -90,4 +90,4 @@ trait Routable extends Typeclass:
   type Connection
 
   def connect(endpoint: Self, interface: Optional[MacAddress]): Connection
-  def transmit(connection: Connection, input: Stream[Data]): Unit
+  def transmit(connection: Connection, input: LazyList[Data]): Unit

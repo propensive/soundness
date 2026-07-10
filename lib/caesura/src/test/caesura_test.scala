@@ -94,43 +94,43 @@ object Tests extends Suite(m"Caesura tests"):
 
       test(m"multi-line CSV without trailing newline"):
         t"""foo,bar\nbaz,quux""".read[Sheet].rows
-      . assert(_ == Stream(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
+      . assert(_ == LazyList(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
 
       test(m"multi-line CSV with trailing newline"):
         t"""foo,bar\nbaz,quux\n""".read[Sheet].rows
-      . assert(_ == Stream(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
+      . assert(_ == LazyList(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
 
       test(m"multi-line CSV with CR and LF"):
         t"""foo,bar\r\nbaz,quux\r\n""".read[Sheet].rows
-      . assert(_ == Stream(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
+      . assert(_ == LazyList(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
 
       test(m"multi-line CSV with quoted newlines"):
         t""""foo","bar"\n"baz","quux"\n""".read[Sheet].rows
-      . assert(_ == Stream(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
+      . assert(_ == LazyList(Dsv(t"foo", t"bar"), Dsv(t"baz", t"quux")))
 
       test(m"multi-line CSV with newlines and quotes in cells"):
         t""""f""oo","Hello\nWorld"\nbaz,"1\n2\n3\n"\n""".read[Sheet].rows
-      . assert(_ == Stream(Dsv(t"f\"oo", t"Hello\nWorld"), Dsv(t"baz", t"1\n2\n3\n")))
+      . assert(_ == LazyList(Dsv(t"f\"oo", t"Hello\nWorld"), Dsv(t"baz", t"1\n2\n3\n")))
 
       test(m"multi-line CSV with quoted quotes adjacent to newlines"):
         t""""f""oo","Hello\nWorld"\nbaz,"1""\n""2\n3\n"\n""".read[Sheet].rows
-      . assert(_ == Stream(Dsv(t"f\"oo", t"Hello\nWorld"), Dsv(t"baz", t"1\"\n\"2\n3\n")))
+      . assert(_ == LazyList(Dsv(t"f\"oo", t"Hello\nWorld"), Dsv(t"baz", t"1\"\n\"2\n3\n")))
 
       test(m"CSV with quoted quotes adjacent to delimiters"):
         t""""f""oo","${"\"\""}Hello\nWorld${t"\"\""}"\n""".read[Sheet].rows
-      . assert(_ == Stream(Dsv(t"f\"oo", t"\"Hello\nWorld\"")))
+      . assert(_ == LazyList(Dsv(t"f\"oo", t"\"Hello\nWorld\"")))
 
 
     suite(m"Alternative formats"):
       test(m"Parse TSV data without header"):
         import dsvFormats.tsvFormat
         t"Hello\tWorld\n".read[Sheet].rows
-      . assert(_ == Stream(Dsv(t"Hello", t"World")))
+      . assert(_ == LazyList(Dsv(t"Hello", t"World")))
 
       test(m"Parse TSV data with header"):
         import dsvFormats.tsvWithHeaderFormat
         t"Greeting\tAddressee\nHello\tWorld\n".read[Sheet]
-      . assert(_ == Sheet(Stream(Dsv(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeaderFormat, IArray(t"Greeting", t"Addressee")))
+      . assert(_ == Sheet(LazyList(Dsv(IArray(t"Hello", t"World"), Map(t"Greeting" -> 0, t"Addressee" -> 1))), dsvFormats.tsvWithHeaderFormat, IArray(t"Greeting", t"Addressee")))
 
 
 
@@ -190,38 +190,38 @@ object Tests extends Suite(m"Caesura tests"):
 
     test(m"convert simple row to string"):
       import dsvFormats.csvFormat
-      Sheet(Stream(Dsv(t"hello", t"world"))).show
+      Sheet(LazyList(Dsv(t"hello", t"world"))).show
     . assert(_ == t"""hello,world""")
 
     test(m"convert complex row to string"):
       import dsvFormats.csvFormat
-      Sheet(Stream(Dsv(t"0.1", t"two", t"three", t"4", t"five", t"six"))).show
+      Sheet(LazyList(Dsv(t"0.1", t"two", t"three", t"4", t"five", t"six"))).show
     . assert(_ == t"""0.1,two,three,4,five,six""")
 
     test(m"convert row with escaped quote"):
       import dsvFormats.csvFormat
-      Sheet(Stream(Dsv(t"hello\"world"))).show
+      Sheet(LazyList(Dsv(t"hello\"world"))).show
     . assert(_ == t""""hello""world"""")
 
     test(m"convert row with delimiter in cell"):
       import dsvFormats.csvFormat
-      Sheet(Stream(Dsv(t"hello, world", t"test"))).show
+      Sheet(LazyList(Dsv(t"hello, world", t"test"))).show
     . assert(_ == t""""hello, world",test""")
 
     test(m"convert row with newline in cell"):
       import dsvFormats.csvFormat
-      Sheet(Stream(Dsv(t"line1\nline2", t"test"))).show
+      Sheet(LazyList(Dsv(t"line1\nline2", t"test"))).show
     . assert(_ == t""""line1\nline2",test""")
 
     test(m"convert row with carriage return in cell"):
       import dsvFormats.csvFormat
-      Sheet(Stream(Dsv(t"line1\rline2", t"test"))).show
+      Sheet(LazyList(Dsv(t"line1\rline2", t"test"))).show
     . assert(_ == t""""line1\rline2",test""")
 
     test(m"simple parse TSV"):
       import dsvFormats.tsvFormat
       t"hello\tworld".read[Sheet]
-    . assert(_ == Sheet(Stream(Dsv(t"hello", t"world")), format = dsvFormats.tsvFormat))
+    . assert(_ == Sheet(LazyList(Dsv(t"hello", t"world")), format = dsvFormats.tsvFormat))
 
     test(m"decode case class from TSV"):
       import dsvFormats.tsvFormat

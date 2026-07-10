@@ -44,9 +44,9 @@ import vacuous.*
 object Diff:
   given aggregable: Tactic[DiffError] => Diff[Text] is Aggregable by Text = parse(_)
 
-  private def parse(lines: Stream[Text]): Diff[Text] raises DiffError =
+  private def parse(lines: LazyList[Text]): Diff[Text] raises DiffError =
     def recur
-      ( todo:          Stream[Text],
+      ( todo:          LazyList[Text],
         line:          Int,
         edits:         List[Edit[Text]],
         position:      Int,
@@ -119,7 +119,7 @@ object Diff:
     def redraft(context: Redraft.Context = Redraft.Context.Minimal): Redraft =
       Redraft.render(diff, context)
 
-    def serialize: Stream[Text] = diff.chunks.flatMap:
+    def serialize: LazyList[Text] = diff.chunks.flatMap:
       case Chunk(left, right, dels, inss) =>
         def range(start: Int, end: Int): Text =
           s"$start${if start == end then "" else s",$end"}".tt
@@ -153,10 +153,10 @@ case class Diff[element](edits: Edit[element]*):
 
 
   def patch(sequence: Seq[element], update: (element, element) => element = (left, right) => left)
-  :   Stream[element] =
+  :   LazyList[element] =
 
-    def recur(todo: List[Edit[element]], sequence: Seq[element]): Stream[element] = todo match
-      case Nil                   => sequence.to(Stream)
+    def recur(todo: List[Edit[element]], sequence: Seq[element]): LazyList[element] = todo match
+      case Nil                   => sequence.to(LazyList)
       case Ins(_, value) :: tail => value #:: recur(tail, sequence)
       case Del(_, _) :: tail     => recur(tail, sequence.tail)
 
@@ -202,12 +202,12 @@ case class Diff[element](edits: Edit[element]*):
             ( xs.collect { case del: Del[element] => del },
               xs.collect { case ins: Ins[element] => ins } )
 
-  def chunks: Stream[Chunk[element]] =
+  def chunks: LazyList[Chunk[element]] =
     def recur(todo: List[Edit[element]], position: Int, rightPosition: Int)
-    :   Stream[Chunk[element]] =
+    :   LazyList[Chunk[element]] =
 
       todo match
-        case Nil                         => Stream()
+        case Nil                         => LazyList()
         case Par(pos2, rpos2, _) :: tail => recur(tail, pos2 + 1, rpos2 + 1)
 
         case _ =>

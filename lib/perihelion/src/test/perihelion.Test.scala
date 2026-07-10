@@ -167,10 +167,10 @@ object Tests extends Suite(m"Perihelion tests"):
       scala.Array[Byte]((code >> 8).toByte, code.toByte) ++ octets(reason)
 
     def parseFrame(bytes: Array[Byte]): Optional[Frame] =
-      Frame.parse(Cursor[Data](Stream(bytes.immutable(using Unsafe)).iterator))
+      Frame.parse(Cursor[Data](LazyList(bytes.immutable(using Unsafe)).iterator))
 
     def readMessages(frames: Array[Byte]*): List[perihelion.Message] =
-      val stream = Stream(frames*).map(_.immutable(using Unsafe))
+      val stream = LazyList(frames*).map(_.immutable(using Unsafe))
       Reader(() => stream, Channel()).messages.toList
 
     def texts(messages: List[perihelion.Message]): List[Text] = messages.map:
@@ -283,7 +283,7 @@ object Tests extends Suite(m"Perihelion tests"):
         // before `incoming` decodes the JSON payload.
         val frameBytes = outgoing.serialize(Ping(7).over[Json]).foldLeft(Data())(_ ++ _)
 
-        val payload = Frame.parse(Cursor[Data](Stream(frameBytes).iterator))(using Masking.Client()) match
+        val payload = Frame.parse(Cursor[Data](LazyList(frameBytes).iterator))(using Masking.Client()) match
           case Frame.Text(_, data) => data
           case _                   => Data()
 
@@ -292,7 +292,7 @@ object Tests extends Suite(m"Perihelion tests"):
 
     suite(m"Client masking"):
       def parseAs(masking: Masking, bytes: Data): Optional[Frame] =
-        Frame.parse(Cursor[Data](Stream(bytes).iterator))(using masking)
+        Frame.parse(Cursor[Data](LazyList(bytes).iterator))(using masking)
 
       test(m"A client-masked frame is readable by the server"):
         val masked: Data = Masking.Client().outbound(Frame.Text(true, t"hi".data).encode)

@@ -116,8 +116,8 @@ abstract class Tabulation[text: ClassTag]():
     // We may be able to increase the slack in some of the remaining columns
     if rowLayout2.totalWidth > width then attenuation(rowLayout2.totalWidth, width)
 
-    def lines(data: Seq[IArray[IArray[text]]]): Stream[TableRow[text]] =
-      data.to(Stream).map: cells =>
+    def lines(data: Seq[IArray[IArray[text]]]): LazyList[TableRow[text]] =
+      data.to(LazyList).map: cells =>
         val tableCells = rowLayout2.columnWidths.map: (index, column, width) =>
           val lines = column.sizing.fit(cells(index), width, column.textAlign)
           TableCell(width, 1, lines, lines.length, column.textAlign)

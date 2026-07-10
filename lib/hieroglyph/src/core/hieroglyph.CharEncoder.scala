@@ -51,4 +51,4 @@ extends Encodable, Findable:
   type Form = Data
 
   def encoded(text: Text): Data = text.s.getBytes(encoding.name.s).nn.immutable(using Unsafe)
-  def encoded(stream: Stream[Text]): Stream[Data] = stream.map(encode)
+  def encoded(stream: LazyList[Text]): LazyList[Data] = stream.map(encode)

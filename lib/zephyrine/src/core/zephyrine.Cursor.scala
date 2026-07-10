@@ -404,11 +404,11 @@ final class Cursor[data]
   // interface dispatch that the abstract `Lineation` member would imply.
   inline def lineActive: Boolean = lineationActive
 
-  // Stream of all unconsumed data from the current position onwards. Yields
+  // LazyList of all unconsumed data from the current position onwards. Yields
   // the buffered tail first (one chunk materialised from `pos` to `writeEnd`),
   // then drains the loader, returning chunks as it goes. Caller-driven, so a
   // streaming consumer pays nothing until it pulls.
-  def remainder: Stream[data] =
+  def remainder: LazyList[data] =
     val tailLen = writeEnd - pos
 
     val tail: data =
@@ -425,16 +425,16 @@ final class Cursor[data]
     // WebSocket upgrade, whose body is the post-handshake frame stream the peer
     // only sends after our `101`). `#::` keeps the non-empty branch lazy; the
     // empty branch must defer the call explicitly.
-    if tailLen > 0 then tail #:: loaderStream else Stream.empty.lazyAppendedAll(loaderStream)
+    if tailLen > 0 then tail #:: loaderStream else LazyList.empty.lazyAppendedAll(loaderStream)
 
-  private def loaderStream: Stream[data] =
-    if ended then Stream.empty else load() match
+  private def loaderStream: LazyList[data] =
+    if ended then LazyList.empty else load() match
       case chunk: data @unchecked =>
         if addressable.length(chunk) > 0 then chunk #:: loaderStream else loaderStream
 
       case _ =>
         ended = true
-        Stream.empty
+        LazyList.empty
 
 
   // ─── unsafe direct buffer access ──────────────────────────────────────────

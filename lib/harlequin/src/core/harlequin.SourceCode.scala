@@ -106,16 +106,16 @@ object SourceCode:
     val scanner =
       if language == Java then JavaScanners.JavaScanner(source) else Scanners.Scanner(source)
 
-    def untab(text: Text): Stream[Token] =
-      Stream(Token(text.sub(t"\t", t"  "), Accent.Unparsed), Token.Newline)
+    def untab(text: Text): LazyList[Token] =
+      LazyList(Token(text.sub(t"\t", t"  "), Accent.Unparsed), Token.Newline)
 
-    def hard(stream: Stream[Token]): Boolean = stream match
+    def hard(stream: LazyList[Token]): Boolean = stream match
       case Token(_, Accent.Unparsed, _, _, _) #:: more                  => hard(more)
       case Token(text, Accent.Term, _, _, _) #:: more if soft.has(text) => hard(more)
       case Token(text, Accent.Keyword | Accent.Modifier, _, _, _) #:: _ => true
       case other                                                        => false
 
-    def soften(stream: Stream[Token]): Stream[Token] = stream match
+    def soften(stream: LazyList[Token]): LazyList[Token] = stream match
       case (Token(text@(t"using" | t"erased"), Accent.Term, _, _, _)) #:: more =>
         Token(text, Accent.Modifier) #:: soften(more)
 
@@ -127,19 +127,19 @@ object SourceCode:
         token #:: soften(more)
 
       case _ =>
-        Stream()
+        LazyList()
 
-    def stream(lastEnd: Int = 0): Stream[Token] = scanner.token match
+    def stream(lastEnd: Int = 0): LazyList[Token] = scanner.token match
       case Tokens.EOF => untab(text.segment(lastEnd.z till text.limit)).filter(_.length > 0)
 
       case token =>
         val start = scanner.offset max lastEnd
 
-        val unparsed: Stream[Token] =
-          if lastEnd == start then Stream() else
+        val unparsed: LazyList[Token] =
+          if lastEnd == start then LazyList() else
             text.segment(lastEnd.z thru start.u)
             . cut(t"\n")
-            . to(Stream)
+            . to(LazyList)
             . flatMap(untab(_).filter(_.length > 0))
             . init
 
@@ -154,10 +154,10 @@ object SourceCode:
         val tokenAccent: Accent = annotation.lay(accent(token))(_.accent)
         val role: Optional[Role] = annotation.let(_.role)
 
-        val content: Stream[Token] =
-          if start == end then Stream() else
-            text.segment(start.z thru end.u).cut(t"\n").to(Stream).flatMap: line =>
-              Stream(Token(line, tokenAccent, meta, role = role), Token.Newline)
+        val content: LazyList[Token] =
+          if start == end then LazyList() else
+            text.segment(start.z thru end.u).cut(t"\n").to(LazyList).flatMap: line =>
+              LazyList(Token(line, tokenAccent, meta, role = role), Token.Newline)
 
             . init
 

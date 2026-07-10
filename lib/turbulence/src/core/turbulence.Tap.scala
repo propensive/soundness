@@ -47,4 +47,4 @@ class Tap(initial: Boolean = true):
   def pause(): Unit = if flowing.getAndSet(false) then spool.put(Tap.Regulation.Stop)
   def stop(): Unit = spool.stop()
   def state(): Boolean = flowing.get
-  def stream: Stream[Tap.Regulation] = spool.stream
+  def stream: LazyList[Tap.Regulation] = spool.stream

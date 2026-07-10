@@ -45,4 +45,4 @@ object Ndjson:
 
     Ndjson(value.stream[Line].map { line => line.content.read[Json] })
 
-case class Ndjson(stream: Stream[Json])
+case class Ndjson(stream: LazyList[Json])

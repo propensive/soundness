@@ -52,7 +52,7 @@ object Writable:
 
     (outputStream, stream) =>
       @tailrec
-      def recur(total: Bytes, todo: Stream[Data]): Unit =
+      def recur(total: Bytes, todo: LazyList[Data]): Unit =
         todo.flow(close(outputStream, total)):
           val array = next.mutable(using Unsafe)
           if write(outputStream, array, total) then recur(total + array.length.b, more)
@@ -65,7 +65,7 @@ object Writable:
 
     (outputStream, stream) =>
       @tailrec
-      def recur(total: Bytes, todo: Stream[Text]): Unit =
+      def recur(total: Bytes, todo: LazyList[Text]): Unit =
         todo.flow(close(outputStream, total)):
           val array = encoder.encode(next).mutable(using Unsafe)
           if write(outputStream, array, total) then recur(total + array.length.b, more)
@@ -90,7 +90,7 @@ object Writable:
 
     (channel, stream) =>
       @tailrec
-      def recur(total: Bytes, todo: Stream[jn.ByteBuffer]): Unit =
+      def recur(total: Bytes, todo: LazyList[jn.ByteBuffer]): Unit =
         todo.flow(()):
           val count = try channel.write(next) catch case e: Exception => -1
 
@@ -115,7 +115,7 @@ object Writable:
     try outputStream.close() catch case _: ji.IOException => raise(StreamError(total))
 
 trait Writable extends Typeclass, Operable:
-  def write(target: Self, stream: Stream[Operand]): Unit
+  def write(target: Self, stream: LazyList[Operand]): Unit
 
   def contramap[self2](lambda: self2 => Self): self2 is Writable by Operand =
     (target, stream) => write(lambda(target), stream)

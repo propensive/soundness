@@ -192,7 +192,7 @@ def cli[bus <: Matchable](using executive: Executive)
                     Out.println(e"Downloading $runnerName from runners-${Runners.version}")
                     val bytes: Data = Runners.download(platformLabel)
                     if !cacheDir.exists() then cacheDir.create[Directory]()
-                    cacheRunner.open(Stream(bytes).writeTo(_))
+                    cacheRunner.open(LazyList(bytes).writeTo(_))
                     bytes
 
             // ML-DSA-44 public key used by the runner to verify upgrades.

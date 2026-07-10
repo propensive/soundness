@@ -46,7 +46,7 @@ object Tests extends Suite(m"Monotonous tests"):
 
   val allNumbers = IArray.from((0 to 18).map(_.toByte))
 
-  val stream = Stream(Data(1), Data(2, 3), Data(4, 5, 6), Data(7, 8, 9, 10),
+  val stream = LazyList(Data(1), Data(2, 3), Data(4, 5, 6), Data(7, 8, 9, 10),
       Data(11, 12, 13, 14, 15), Data(16, 17, 18, 19, 20, 21), Data(22, 23, 24, 25, 26, 27, 28))
 
   def run(): Unit = stochastic:
@@ -54,7 +54,7 @@ object Tests extends Suite(m"Monotonous tests"):
     //suite(m"Streaming tests"):
       // test(m"Streaming BASE32"):
       //   val text: Text = allNumbers.serialize
-      //   val shredded = Stream(text.bytes).shred(6, 9).map(_.utf8)
+      //   val shredded = LazyList(text.bytes).shred(6, 9).map(_.utf8)
       //   println(shredded.to(List).inspect)
       //   val result = shredded.deserialize.toList
       //   println(result.reduce(_ ++ _).to(List).inspect)

@@ -424,7 +424,7 @@ class Report(using Environment)(using palette: TestPalette):
         if surface.juncture.treeName == t"DefDef" then e"• ${surface.juncture.method.teletype}"
         else e"• ${surface.juncture.shortCode}"
 
-      def render(junctures: List[Surface]): Stream[(Surface, Teletype)] =
+      def render(junctures: List[Surface]): LazyList[(Surface, Teletype)] =
         val diagram = TreeDiagram.by[Surface](_.children)(junctures*)
         diagram.nodes.zip(diagram.render(describe))
 

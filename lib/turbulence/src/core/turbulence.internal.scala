@@ -44,7 +44,7 @@ import vacuous.*
 object internal:
   import stenography.internal.name
 
-  def stream[source: Type, operand: Type](source: Expr[source]): Macro[Stream[operand]] =
+  def stream[source: Type, operand: Type](source: Expr[source]): Macro[LazyList[operand]] =
     import quotes.reflect.*
 
     val bytes = TypeRepr.of[operand] =:= TypeRepr.of[Data]
@@ -71,14 +71,14 @@ object internal:
     . or:
         if text && streamableData.present then decoder.let: decoder =>
           '{$decoder.decoded(${streamableData.vouch}.stream($source))}.absolve match
-            case '{$stream: Stream[`operand`]} => stream
+            case '{$stream: LazyList[`operand`]} => stream
 
         . or:
             halt(m"can not stream ${name[source]} as ${name[Text]} without a ${name[CharDecoder]}")
 
         else if bytes && streamableText.present then encoder.let: encoder =>
           '{$encoder.encoded(${streamableText.vouch}.stream($source))}.absolve match
-            case '{$stream: Stream[`operand`]} => stream
+            case '{$stream: LazyList[`operand`]} => stream
 
         . or:
             halt(m"can not stream ${name[source]} as ${name[Data]} without a ${name[CharEncoder]}")

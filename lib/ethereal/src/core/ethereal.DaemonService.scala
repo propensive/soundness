@@ -49,7 +49,7 @@ case class DaemonService[bus <: Matchable]
     cliInput:   Stdin,
     executable: Path on Local,
     deliver:    bus => Unit,
-    bus:        Stream[bus],
+    bus:        LazyList[bus],
     script:     Text,
     startTime:  Long,
     helpThunk:  () => Optional[Help] )

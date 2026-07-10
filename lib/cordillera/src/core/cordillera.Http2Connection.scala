@@ -178,10 +178,10 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
 
     . protect:
         val writer = daemon:
-          duplex.send(Stream(connectionPreface))
+          duplex.send(LazyList(connectionPreface))
 
           outbound.stream.each: frame =>
-            duplex.send(Stream(frame.serialize))
+            duplex.send(LazyList(frame.serialize))
 
         val reader = daemon:
           // A protocol error tears down just this connection; throw it to the enclosing

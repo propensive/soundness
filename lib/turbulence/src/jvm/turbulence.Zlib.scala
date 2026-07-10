@@ -42,12 +42,12 @@ import vacuous.*
 
 object Zlib:
   given compression: Zlib is Compression:
-    def compress(stream: Stream[Data]): Stream[Data] =
+    def compress(stream: LazyList[Data]): LazyList[Data] =
       val deflater = juz.Deflater()
       val buffer: Array[Byte] = new Array(4096)
       val out = new ji.ByteArrayOutputStream()
 
-      def recur(stream: Stream[Data]): Stream[Data] = stream match
+      def recur(stream: LazyList[Data]): LazyList[Data] = stream match
         case head #:: tail =>
           deflater.setInput(head.mutable(using Unsafe))
           var count = deflater.deflate(buffer, 0, buffer.length, juz.Deflater.SYNC_FLUSH)
@@ -71,15 +71,15 @@ object Zlib:
           val data = out.toByteArray.nn.immutable(using Unsafe)
           out.reset()
           deflater.end()
-          if !data.nil then Stream(data) else Stream.empty
+          if !data.nil then LazyList(data) else LazyList.empty
 
       recur(stream)
 
-    def decompress(stream: Stream[Data]): Stream[Data] =
+    def decompress(stream: LazyList[Data]): LazyList[Data] =
       val inflater = juz.Inflater(false)
       val buffer: Array[Byte] = new Array(4096)
 
-      def recur(stream: Stream[Data]): Stream[Data] = stream match
+      def recur(stream: LazyList[Data]): LazyList[Data] = stream match
         case head #:: tail =>
           inflater.setInput(head.mutable(using Unsafe))
           val out = new ji.ByteArrayOutputStream()

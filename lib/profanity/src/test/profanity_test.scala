@@ -386,7 +386,7 @@ object Tests extends Suite(m"Profanity Tests"):
               case _            => editor
 
         completingEditor
-         ( Stream(Keypress.CharKey('g'), Keypress.CharKey('e'), Keypress.Tab,
+         ( LazyList(Keypress.CharKey('g'), Keypress.CharKey('e'), Keypress.Tab,
                   Keypress.Enter).iterator,
            LineEditor() )
          (_(_))
@@ -395,35 +395,35 @@ object Tests extends Suite(m"Profanity Tests"):
     suite(m"Keyboard decoding"):
       test(m"Shift+Enter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Stream('', '[', '1', '3', ';', '2', 'u')).head
+          Keyboard.Standard().process(LazyList('', '[', '1', '3', ';', '2', 'u')).head
       . assert:
           case Keypress.Shift(Keypress.Enter) => true
           case _                              => false
 
       test(m"plain Enter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Stream('', '[', '1', '3', 'u')).head
+          Keyboard.Standard().process(LazyList('', '[', '1', '3', 'u')).head
       . assert:
           case Keypress.Enter => true
           case _              => false
 
       test(m"Escape is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Stream('', '[', '2', '7', 'u')).head
+          Keyboard.Standard().process(LazyList('', '[', '2', '7', 'u')).head
       . assert:
           case Keypress.Escape => true
           case _               => false
 
       test(m"Ctrl+C is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Stream('', '[', '9', '9', ';', '5', 'u')).head
+          Keyboard.Standard().process(LazyList('', '[', '9', '9', ';', '5', 'u')).head
       . assert:
           case Keypress.Ctrl('C') => true
           case _                  => false
 
       test(m"a plain letter is decoded from its CSI-u sequence"):
         supervise:
-          Keyboard.Standard().process(Stream('', '[', '9', '7', 'u')).head
+          Keyboard.Standard().process(LazyList('', '[', '9', '7', 'u')).head
       . assert:
           case Keypress.CharKey('a') => true
           case _                     => false

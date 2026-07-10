@@ -521,7 +521,7 @@ object Cbor extends Cbor2, Dynamic:
       type Result = HttpStreams.Content
 
       def genericize(value: Cbor): HttpStreams.Content =
-        (t"application/cbor", Stream(Ast.encodable.encoded(Cbor.unseal(value))))
+        (t"application/cbor", LazyList(Ast.encodable.encoded(Cbor.unseal(value))))
 
   // `source.read[Foo in Cbor]` shorthand for
   // `source.read[Cbor].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`

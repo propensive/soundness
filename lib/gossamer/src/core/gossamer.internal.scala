@@ -215,7 +215,7 @@ object internal:
       lambda:  Expr[Scanner ?=> textual ~> value],
       textual: Expr[textual is Textual] )
     ( using Quotes )
-  :   Expr[Stream[value]] =
+  :   Expr[LazyList[value]] =
 
     import quotes.reflect.*
 
@@ -245,8 +245,8 @@ object internal:
         ' {
             val input = $textual.text($text)
 
-            def step(from: Int): Stream[value] =
-              if from >= input.s.length then Stream() else
+            def step(from: Int): LazyList[value] =
+              if from >= input.s.length then LazyList() else
                 val scanner = Scanner(from)
 
                 $lambda(using scanner).lift($text) match
@@ -254,7 +254,7 @@ object internal:
                     head #:: step(scanner.matchEnd.or(input.s.length).max(from + 1))
 
                   case _ =>
-                    Stream()
+                    LazyList()
 
             step($start.n0)
           }
@@ -304,8 +304,8 @@ object internal:
             val length = input.s.length
             val cases = ${Expr.ofList(closures)}
 
-            def step(from: Int): Stream[value] =
-              if from >= length then Stream() else
+            def step(from: Int): LazyList[value] =
+              if from >= length then LazyList() else
                 var best: Optional[(Int, Int, value)] = Unset
                 val it = cases.iterator
 
@@ -320,7 +320,7 @@ object internal:
 
                     case _ =>
 
-                best.lay(Stream()): triple =>
+                best.lay(LazyList()): triple =>
                   triple(2) #:: step(triple(1).max(from + 1))
 
             step($start.n0)

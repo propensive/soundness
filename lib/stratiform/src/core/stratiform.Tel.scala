@@ -773,11 +773,11 @@ object Tel extends Tel2:
   // Parse a multi-document source (§6.1) into its sequence of documents.
   // `parseAll` is eager; `parseStream` parses lazily on demand. Used internally
   // by the collection Aggregable typeclasses; user code should prefer
-  // `bytes.read[List[Tel]]` or `bytes.read[Stream[Tel]]`.
+  // `bytes.read[List[Tel]]` or `bytes.read[LazyList[Tel]]`.
   private[stratiform] def parseAll(bytes: Data): List[Tel] raises TelError =
     Tel.Parser.parseDocuments(bytes).map(Tel(_))
 
-  private[stratiform] def parseStream(bytes: Data): Stream[Tel] raises TelError =
+  private[stratiform] def parseStream(bytes: Data): LazyList[Tel] raises TelError =
     Tel.Parser.parseStream(bytes).map(Tel(_))
 
   // ── Position tracking (editor / tooling support) ──────────────────────────
@@ -914,8 +914,8 @@ object Tel extends Tel2:
       if k < 0 then Unset
       else walkIndex(children(k), data, offset + data(offset + 5 + k), segments, i + 1, keyMode)
 
-  // Concatenate the chunks of a `Stream[Data]` source into a single byte array.
-  private def concatenate(source: Stream[Data]): Data =
+  // Concatenate the chunks of a `LazyList[Data]` source into a single byte array.
+  private def concatenate(source: LazyList[Data]): Data =
     import denominative.nil
     var acc    = IArray.empty[Byte]
     var stream = source
@@ -926,7 +926,7 @@ object Tel extends Tel2:
 
     acc
 
-  // `bytes.read[Tel]` for any Stream[Data] source: concatenates the
+  // `bytes.read[Tel]` for any LazyList[Data] source: concatenates the
   // chunks and parses the result. The metadata (interpreter directive,
   // pragma, line-endings) is *not* surfaced — use `.load[Tel]` to
   // recover those alongside the value. Per §6.1, single-document parsing
@@ -943,18 +943,18 @@ object Tel extends Tel2:
   =>  (value in Tel) is Aggregable by Data =
     source => parseTracking(concatenate(source)).as[value].asInstanceOf[value in Tel]
 
-  // `source.read[List[Tel]]` / `read[Stream[Tel]]` for a multi-document source
-  // (§6.1). `List[Tel]` parses every document eagerly; `Stream[Tel]` parses
+  // `source.read[List[Tel]]` / `read[LazyList[Tel]]` for a multi-document source
+  // (§6.1). `List[Tel]` parses every document eagerly; `LazyList[Tel]` parses
   // them lazily on demand (the more specific instance wins over turbulence's
-  // generic `Stream` Aggregable, which would otherwise wrap the whole source as
+  // generic `LazyList` Aggregable, which would otherwise wrap the whole source as
   // a single element).
   given listAggregable: Tactic[TelError] => List[Tel] is Aggregable by Data =
     source => parseAll(concatenate(source))
 
-  given streamAggregable: Tactic[TelError] => Stream[Tel] is Aggregable by Data =
+  given streamAggregable: Tactic[TelError] => LazyList[Tel] is Aggregable by Data =
     source => parseStream(concatenate(source))
 
-  // `text.load[Tel]` for any Stream[Text] source: concatenates the
+  // `text.load[Tel]` for any LazyList[Text] source: concatenates the
   // chunks, UTF-8 encodes, parses, and pairs the resulting Tel with a
   // `Tel.Metadata` carrying the document's prologue.
   given loadable: (Tactic[TelError], PositionTracking) => Tel is Loadable by Text = stream =>
@@ -1269,7 +1269,7 @@ object Tel extends Tel2:
       p.reset(Cursor[Data](input), Unset)
       p.parseAllDocuments()
 
-    def parseStream(input: Data): Stream[Tel.Document] raises TelError =
+    def parseStream(input: Data): LazyList[Tel.Document] raises TelError =
       import zephyrine.Lineation.untrackedData
       // A dedicated parser instance, not the shared per-thread cache: the lazy
       // tail parses later document(s) on demand and must own its parser state.
@@ -2009,12 +2009,12 @@ object Tel extends Tel2:
       buffer.to(List)
 
     // Lazy streaming parse: documents are parsed on demand as the returned
-    // `Stream` is forced. Mirrors turbulence's deferred `Streamable` readers,
+    // `LazyList` is forced. Mirrors turbulence's deferred `Streamable` readers,
     // which likewise capture the error capability in the lazy tail; the consumer
     // must drive the stream within the `raises TelError` handler's scope. Uses a
     // dedicated parser instance (never the shared per-thread cache) so the
     // parser state survives across element demands.
-    private def documentStream(first: Boolean): Stream[Tel.Document] raises TelError =
+    private def documentStream(first: Boolean): LazyList[Tel.Document] raises TelError =
       if first then
         syncFrom()
         checkBom()
@@ -2027,9 +2027,9 @@ object Tel extends Tel2:
         consumeSeparatorLine()
         doc #:: documentStream(first = false)
       else if documentIsEmpty(doc) then
-        Stream.empty
+        LazyList.empty
       else
-        Stream(doc)
+        LazyList(doc)
 
     // A document with no prologue and no children: the empty document yielded
     // between two separators, or the absence of any document at the end of a

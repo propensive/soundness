@@ -266,36 +266,36 @@ object Tests extends Suite(m"Breviloquence Tests"):
       . assert(identity)
 
     suite(m"Aggregable"):
-      test(m"Aggregate single-chunk Stream[Data] to Cbor"):
+      test(m"Aggregate single-chunk LazyList[Data] to Cbor"):
         val original = Point(3, 4)
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
-        Stream(bytes).read[Cbor].as[Point]
+        LazyList(bytes).read[Cbor].as[Point]
       . assert(_ == Point(3, 4))
 
-      test(m"Aggregate split-chunk Stream[Data] to Cbor"):
+      test(m"Aggregate split-chunk LazyList[Data] to Cbor"):
         val original = Person(t"Ada", 36)
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
         val half = bytes.length/2
-        Stream(bytes.slice(0, half), bytes.slice(half, bytes.length)).read[Cbor].as[Person]
+        LazyList(bytes.slice(0, half), bytes.slice(half, bytes.length)).read[Cbor].as[Person]
       . assert(_ == Person(t"Ada", 36))
 
-      test(m"Aggregate single-chunk Stream[Data] to Cbor.Ast"):
+      test(m"Aggregate single-chunk LazyList[Data] to Cbor.Ast"):
         val original = Wrapper(List(1, 2, 3), t"hi")
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
-        Cbor.ast(Stream(bytes).read[Cbor.Ast]).as[Wrapper]
+        Cbor.ast(LazyList(bytes).read[Cbor.Ast]).as[Wrapper]
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
 
     suite(m"`in Cbor` decoder shorthand"):
       test(m"`read[T in Cbor]` resolves a value directly from bytes"):
         val original = Point(3, 4)
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
-        Stream(bytes).read[Point in Cbor]
+        LazyList(bytes).read[Point in Cbor]
       . assert(_ == Point(3, 4))
 
       test(m"`read[T in Cbor]` works for nested case classes"):
         val original = Wrapper(List(1, 2, 3), t"hi")
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
-        Stream(bytes).read[Wrapper in Cbor]
+        LazyList(bytes).read[Wrapper in Cbor]
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
 
     suite(m"@name field renaming"):

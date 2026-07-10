@@ -1058,7 +1058,7 @@ object Tests extends Suite(m"Jacinta Tests"):
 
     suite(m"Ndjson tests"):
       test(m"Ndjson stream of three values decodes to a List"):
-        val stream = Stream(
+        val stream = LazyList(
           t"1".read[Json],
           t"2".read[Json],
           t"3".read[Json])
@@ -1066,7 +1066,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == List(1, 2, 3))
 
       test(m"Ndjson can hold heterogeneous values"):
-        val stream = Stream(
+        val stream = LazyList(
           t""""hi"""".read[Json],
           t"42".read[Json],
           t"true".read[Json])

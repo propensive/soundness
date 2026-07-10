@@ -40,4 +40,4 @@ trait Loadable extends Typeclass:
   type Self <: Documentary
   type Operand
 
-  def load(stream: Stream[Operand]): Document[Self]
+  def load(stream: LazyList[Operand]): Document[Self]

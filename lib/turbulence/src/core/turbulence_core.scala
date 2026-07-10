@@ -55,7 +55,7 @@ import probates.awaitProbate
 inline def more[value](using value: value aka "more"): value = value()
 
 extension [value](value: value)
-  inline def stream[element]: Stream[element] =
+  inline def stream[element]: LazyList[element] =
     ${turbulence.internal.stream[value, element]('value)}
 
   inline def read[result](using readable: value is Readable to result): result =
@@ -89,17 +89,17 @@ package stdios:
         ji.FileInputStream(ji.FileDescriptor.in),
         termcap )
 
-extension [element](stream: Stream[element])
-  def deduplicate: Stream[element] =
-    def recur(last: element, stream: Stream[element]): Stream[element] =
-      stream.flow(Stream()):
+extension [element](stream: LazyList[element])
+  def deduplicate: LazyList[element] =
+    def recur(last: element, stream: LazyList[element]): LazyList[element] =
+      stream.flow(LazyList()):
         if last == next then recur(last, more) else next #:: recur(next, more)
 
-    stream.flow(Stream())(next #:: recur(next, more))
+    stream.flow(LazyList())(next #:: recur(next, more))
 
 
   inline def flow[result](inline termination: => result)
-    ( inline proceed: (element aka "next", Stream[element] aka "more") ?=> result )
+    ( inline proceed: (element aka "next", LazyList[element] aka "more") ?=> result )
   :   result =
 
     stream match
@@ -107,16 +107,16 @@ extension [element](stream: Stream[element])
       case _             => termination
 
 
-  def strict: Stream[element] = stream.length yet stream
+  def strict: LazyList[element] = stream.length yet stream
 
   def rate
     [ generic: {Abstractable across Durations to Long, Instantiable across Durations from Long} ]
     ( duration: generic )
     ( using Monitor )
-  :   Stream[element] raises AsyncError =
+  :   LazyList[element] raises AsyncError =
 
-    def recur(stream: Stream[element], last: Long): Stream[element] =
-      stream.flow(Stream()):
+    def recur(stream: LazyList[element], last: Long): LazyList[element] =
+      stream.flow(LazyList()):
         val duration2 =
           generic(duration.generic - (jl.System.currentTimeMillis - last)*1_000_000L)
 
@@ -126,26 +126,26 @@ extension [element](stream: Stream[element])
     async(recur(stream, jl.System.currentTimeMillis)).await()
 
 
-  def multiplex(that: Stream[element])(using Monitor): Stream[element] =
-    Stream.multiplex(stream, that)
+  def multiplex(that: LazyList[element])(using Monitor): LazyList[element] =
+    LazyList.multiplex(stream, that)
 
-  def regulate(tap: Tap)(using Monitor): Stream[element] =
+  def regulate(tap: Tap)(using Monitor): LazyList[element] =
     def defer
       ( active: Boolean,
-        stream: Stream[Some[element] | Tap.Regulation],
+        stream: LazyList[Some[element] | Tap.Regulation],
         buffer: List[element] )
-    :   Stream[element] =
+    :   LazyList[element] =
 
       recur(active, stream, buffer)
 
 
     @tailrec
     def recur
-      ( active: Boolean, stream: Stream[Some[element] | Tap.Regulation], buffer: List[element] )
-    :   Stream[element] =
+      ( active: Boolean, stream: LazyList[Some[element] | Tap.Regulation], buffer: List[element] )
+    :   LazyList[element] =
 
       if active && buffer.nonEmpty then buffer.head #:: defer(true, stream, buffer.tail)
-      else if stream.nil then Stream()
+      else if stream.nil then LazyList()
       else stream.head match
         case Tap.Regulation.Start => recur(true, stream.tail, buffer)
         case Tap.Regulation.Stop  => recur(false, stream.tail, Nil)
@@ -154,21 +154,21 @@ extension [element](stream: Stream[element])
           if active then other.nn #:: defer(true, stream.tail, Nil)
           else recur(false, stream.tail, other.nn :: buffer)
 
-    Stream.defer(recur(true, stream.map(Some(_)).multiplex(tap.stream), Nil))
+    LazyList.defer(recur(true, stream.map(Some(_)).multiplex(tap.stream), Nil))
 
   def cluster[duration: Abstractable across Durations to Long]
     ( duration: duration, maxSize: Optional[Int] = Unset )
     ( using Monitor )
-  :   Stream[List[element]] =
+  :   LazyList[List[element]] =
 
     val Limit = maxSize.or(Int.MaxValue)
 
-    def recur(stream: Stream[element], list: List[element], count: Int): Stream[List[element]] =
+    def recur(stream: LazyList[element], list: List[element], count: Int): LazyList[List[element]] =
       count match
         case 0 =>
           safely(async(stream.nil).await()) match
             case false => recur(stream.tail, stream.head :: list, count + 1)
-            case true  => Stream()
+            case true  => LazyList()
             case _     => recur(stream, Nil, 0)
 
         case Limit =>
@@ -177,13 +177,13 @@ extension [element](stream: Stream[element])
         case _ =>
           safely(async(stream.nil).await(duration)) match
             case false => recur(stream.tail, stream.head :: list, count + 1)
-            case true  => Stream(list.reverse)
+            case true  => LazyList(list.reverse)
             case _     => list.reverse #:: recur(stream, Nil, 0)
 
-    Stream.defer(recur(stream, Nil, 0))
+    LazyList.defer(recur(stream, Nil, 0))
 
 
-  def parallelMap[element2](lambda: element => element2)(using Monitor): Stream[element2] =
+  def parallelMap[element2](lambda: element => element2)(using Monitor): LazyList[element2] =
 
     val out: Spool[element2] = Spool()
 
@@ -217,55 +217,55 @@ package lineSeparation:
     case "\n"      => linefeedLineSeparation
     case _: String => adaptiveLinefeedLineSeparation
 
-extension (obj: Stream.type)
-  def multiplex[element](streams: Stream[element]*)(using Monitor): Stream[element] =
+extension (obj: LazyList.type)
+  def multiplex[element](streams: LazyList[element]*)(using Monitor): LazyList[element] =
     multiplexer(streams*).stream
 
-  def multiplexer[element](streams: Stream[element]*)(using Monitor): Multiplexer[Any, element] =
+  def multiplexer[element](streams: LazyList[element]*)(using Monitor): Multiplexer[Any, element] =
     Multiplexer[Any, element]().tap: multiplexer =>
       streams.zipWithIndex.each: (stream, index) =>
         multiplexer.add(index, stream)
 
-  def defer[element](stream: => Stream[element]): Stream[element] =
+  def defer[element](stream: => LazyList[element]): LazyList[element] =
     (null.asInstanceOf[element] #:: stream).tail
 
 
   def metronome[generic: Abstractable across Durations to Long](duration: generic)(using Monitor)
-  :   Stream[Unit] =
+  :   LazyList[Unit] =
 
     val startTime: Long = jl.System.currentTimeMillis
 
-    def recur(iteration: Int): Stream[Unit] =
+    def recur(iteration: Int): LazyList[Unit] =
       try
         sleep(startTime + duration.generic/1_000_000L*iteration)
         () #:: recur(iteration + 1)
-      catch case error: AsyncError => Stream()
+      catch case error: AsyncError => LazyList()
 
     recur(0)
 
 
-extension (stream: Stream[Data])
-  def discard(bytes: Bytes): Stream[Data] =
-    def recur(stream: Stream[Data], count: Bytes): Stream[Data] = stream.flow(Stream()):
+extension (stream: LazyList[Data])
+  def discard(bytes: Bytes): LazyList[Data] =
+    def recur(stream: LazyList[Data], count: Bytes): LazyList[Data] = stream.flow(LazyList()):
       if next.bytes < count
       then recur(more, count - next.bytes)
       else next.drop(count.long.toInt) #:: more
 
     recur(stream, bytes)
 
-  def compress[compression <: Compressor: Compression]: Stream[Data] =
+  def compress[compression <: Compressor: Compression]: LazyList[Data] =
     compression.compress(stream)
 
-  def decompress[compression <: Compressor: Compression]: Stream[Data] =
+  def decompress[compression <: Compressor: Compression]: LazyList[Data] =
     compression.decompress(stream)
 
-  def shred(mean: Double, variance: Double)(using Random): Stream[Data] =
+  def shred(mean: Double, variance: Double)(using Random): LazyList[Data] =
     given gamma: Distribution = Gamma.approximate(mean, variance)
 
     def newArray(): Array[Byte] = new Array[Byte](arbitrary[Double]().toInt.max(1))
 
-    def recur(stream: Stream[Data], sourcePos: Int, dest: Array[Byte], destPos: Int)
-    :   Stream[Data] =
+    def recur(stream: LazyList[Data], sourcePos: Int, dest: Array[Byte], destPos: Int)
+    :   LazyList[Data] =
 
       stream match
         case source #:: more =>
@@ -283,17 +283,17 @@ extension (stream: Stream[Data])
             dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
 
         case _ =>
-          if destPos == 0 then Stream()
-          else Stream(dest.slice(0, destPos).immutable(using Unsafe))
+          if destPos == 0 then LazyList()
+          else LazyList(dest.slice(0, destPos).immutable(using Unsafe))
 
     recur(stream, 0, newArray(), 0)
 
-  def chunked(size: Int, zeroPadding: Boolean = false): Stream[Data] =
+  def chunked(size: Int, zeroPadding: Boolean = false): LazyList[Data] =
     def newArray(): Array[Byte] = new Array[Byte](size)
 
 
-    def recur(stream: Stream[Data], sourcePos: Int, dest: Array[Byte], destPos: Int)
-    :   Stream[Data] =
+    def recur(stream: LazyList[Data], sourcePos: Int, dest: Array[Byte], destPos: Int)
+    :   LazyList[Data] =
 
       stream match
         case source #:: more =>
@@ -311,23 +311,23 @@ extension (stream: Stream[Data])
             dest.immutable(using Unsafe) #:: recur(more, 0, newArray(), 0)
 
         case _ =>
-          if destPos == 0 then Stream()
-          else Stream:
+          if destPos == 0 then LazyList()
+          else LazyList:
             (if zeroPadding then dest else dest.slice(0, destPos)).immutable(using Unsafe)
 
 
     recur(stream, 0, newArray(), 0)
 
-  def take(bytes: Bytes): Stream[Data] =
-    def recur(stream: Stream[Data], count: Bytes): Stream[Data] =
-      stream.flow(Stream()):
+  def take(bytes: Bytes): LazyList[Data] =
+    def recur(stream: LazyList[Data], count: Bytes): LazyList[Data] =
+      stream.flow(LazyList()):
         if next.bytes < count then next #:: recur(more, count - next.bytes)
-        else Stream(next.take(count.long.toInt))
+        else LazyList(next.take(count.long.toInt))
 
     recur(stream, bytes)
 
   def inputStream: ji.InputStream = new ji.InputStream:
-    private var current: Stream[Data] = stream
+    private var current: LazyList[Data] = stream
     private var offset: Int = 0
     private var focus: Data = IArray.empty[Byte]
 

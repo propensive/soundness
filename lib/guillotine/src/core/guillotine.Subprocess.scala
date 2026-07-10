@@ -42,9 +42,9 @@ import turbulence.*
 // as `java.lang.Process`), so that `Computable` instances — and future non-JVM backends — never
 // mention one. The JVM implementation is `Job`.
 trait Subprocess:
-  def stdout(): Stream[Data] raises StreamError
-  def stderr(): Stream[Data] raises StreamError
+  def stdout(): LazyList[Data] raises StreamError
+  def stderr(): LazyList[Data] raises StreamError
   def text(): Text
   def errorText(): Text
-  def lines(): Stream[Text]
+  def lines(): LazyList[Text]
   def status(): Int

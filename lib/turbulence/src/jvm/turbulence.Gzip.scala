@@ -42,11 +42,11 @@ import vacuous.*
 
 object Gzip:
   given compression: Gzip is Compression:
-    def compress(stream: Stream[Data]): Stream[Data] =
+    def compress(stream: LazyList[Data]): LazyList[Data] =
       val out = ji.ByteArrayOutputStream()
       val out2 = juz.GZIPOutputStream(out)
 
-      def recur(stream: Stream[Data]): Stream[Data] = stream match
+      def recur(stream: LazyList[Data]): LazyList[Data] = stream match
         case head #:: tail =>
           out2.write(head.mutable(using Unsafe))
           out2.flush()
@@ -58,11 +58,11 @@ object Gzip:
 
         case _ =>
           out2.close()
-          if out.size == 0 then Stream() else Stream(out.toByteArray().nn.immutable(using Unsafe))
+          if out.size == 0 then LazyList() else LazyList(out.toByteArray().nn.immutable(using Unsafe))
 
       recur(stream)
 
-    def decompress(stream: Stream[Data]): Stream[Data] =
+    def decompress(stream: LazyList[Data]): LazyList[Data] =
       unsafely(juz.GZIPInputStream(stream.inputStream).stream[Data])
 
 sealed trait Gzip extends Compressor

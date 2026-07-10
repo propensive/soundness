@@ -261,12 +261,12 @@ object Zipfile:
       if payloadOffset < earliestEntry then earliestEntry = payloadOffset
       val payloadSize = compressedSize
 
-      val storedBytes: () => Stream[Data] = () =>
+      val storedBytes: () => LazyList[Data] = () =>
         val header = source.read(payloadOffset, 30)
         val headerNameLength = Zip.u16(header, 26)
         val headerExtraLength = Zip.u16(header, 28)
         val start = payloadOffset + 30 + headerNameLength + headerExtraLength
-        Stream(source.read(start, payloadSize.toInt))
+        LazyList(source.read(start, payloadSize.toInt))
 
       builder += Zip.Entry.precompressed(ref, method, crc, uncompressedSize, compressedSize,
           storedBytes, dosTime, dosDate, directory, entryComment)
@@ -421,7 +421,7 @@ case class Zipfile
   def entry(ref: Path on Zip): Zip.Entry raises ZipError =
     entries.find(_.ref == ref).getOrElse(abort(ZipError(ZipError.Reason.NotFound(ref))))
 
-  def serialize: Stream[Data] =
+  def serialize: LazyList[Data] =
     // Emit the prefix first; all subsequent offsets are absolute (they include the prefix), so
     // any reader sees standard entries and the prefix as leading, otherwise-unassigned data.
     val prefixBytes: Data = prefix.or(IArray.empty[Byte])
@@ -441,10 +441,10 @@ case class Zipfile
     val cdSize = central.foldLeft(0L)(_ + _.length)
     val tail = Zipfile.endRecords(records.length.toLong, cdStart, cdSize, comment)
 
-    val prefixStream: Stream[Data] =
+    val prefixStream: LazyList[Data] =
       if prefixBytes.length == 0 then LazyList() else LazyList(prefixBytes)
 
-    val local: Stream[Data] =
+    val local: LazyList[Data] =
       records.to(LazyList).flatMap: (entry, _, header, _) => header #:: entry.storedBytes()
 
     prefixStream #::: local #::: central.to(LazyList) #::: tail.to(LazyList)

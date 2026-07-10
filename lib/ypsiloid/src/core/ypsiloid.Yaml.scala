@@ -1481,12 +1481,12 @@ object Yaml extends Yaml2, Dynamic:
 
       def genericize(value: Yaml): HttpStreams.Content =
         ( t"application/yaml; charset=${encoder.encoding.name}",
-          Stream(Yaml.unseal(value).show.data) )
+          LazyList(Yaml.unseal(value).show.data) )
 
   given instantiable: (Tactic[ParseError], PositionTracking)
   =>  Yaml is Instantiable across HttpRequests from Text =
 
-    text => Stream(text).read[Yaml]
+    text => LazyList(text).read[Yaml]
 
   // `source.read[Foo in Yaml]` shorthand for
   // `source.read[Yaml].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`

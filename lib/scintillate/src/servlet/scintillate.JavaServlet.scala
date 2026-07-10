@@ -47,7 +47,7 @@ import urticose.*
 import vacuous.*
 
 open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.HttpServlet:
-  protected def streamBody(request: jsh.HttpServletRequest): Stream[Data] raises StreamError =
+  protected def streamBody(request: jsh.HttpServletRequest): LazyList[Data] raises StreamError =
     Streamable.inputStream.stream(request.getInputStream().nn)
 
 

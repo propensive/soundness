@@ -55,18 +55,18 @@ object Tarfile:
 
   given streamable: Tarfile is Streamable by Data = _.blocks
 
-  def read(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
+  def read(stream: LazyList[Data]): LazyList[Tar.Entry] raises TarError =
     readEntries(stream.chunked(512), Map.empty, Map.empty, Unset, Unset)
 
-  def from(stream: Stream[Data]): Tarfile raises TarError = Tarfile(read(stream))
+  def from(stream: LazyList[Data]): Tarfile raises TarError = Tarfile(read(stream))
 
-  def fromGzip(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
+  def fromGzip(stream: LazyList[Data]): LazyList[Tar.Entry] raises TarError =
     read(stream.decompress[Gzip])
 
-  def fromZlib(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
+  def fromZlib(stream: LazyList[Data]): LazyList[Tar.Entry] raises TarError =
     read(stream.decompress[Zlib])
 
-  def fromDeflate(stream: Stream[Data]): Stream[Tar.Entry] raises TarError =
+  def fromDeflate(stream: LazyList[Data]): LazyList[Tar.Entry] raises TarError =
     read(stream.decompress[Deflate])
 
   def from[plane <: Posix: Filesystem](root: Path on plane)
@@ -81,16 +81,16 @@ object Tarfile:
     Tarfile(entries)
 
   private def readEntries
-    ( blocks:        Stream[Data],
+    ( blocks:        LazyList[Data],
       paxOverlay:    Map[Text, Text],
       globalOverlay: Map[Text, Text],
       longName:      Optional[Text],
       longLink:      Optional[Text] )
-  :   Stream[Tar.Entry] raises TarError =
+  :   LazyList[Tar.Entry] raises TarError =
 
     blocks match
       case head #:: tail =>
-        if TarHeader.isZeroBlock(head) then Stream() else
+        if TarHeader.isZeroBlock(head) then LazyList() else
           val header = TarHeader.parse(head)
           val checksum = TarHeader.decodeOctal(header.checksum, t"checksum")
           TarHeader.verifyChecksum(head, checksum)
@@ -149,7 +149,7 @@ object Tarfile:
 
               val entry =
                 Tar.Entry.Sparse
-                  ( path, mode, user, group, mtime, realSize, allSegments, Stream(data), extras )
+                  ( path, mode, user, group, mtime, realSize, allSegments, LazyList(data), extras )
 
               entry #:: readEntries(rest, Map.empty, globalOverlay, Unset, Unset)
 
@@ -169,7 +169,7 @@ object Tarfile:
 
       case _ =>
         raise(TarError(TarError.Reason.TruncatedStream(512, 0)))
-        Stream()
+        LazyList()
 
   private def buildEntry
     ( flag:   Int,
@@ -182,13 +182,13 @@ object Tarfile:
       link:   Text,
       extras: Map[Text, Text],
       header: TarHeader,
-      blocks: Stream[Data] )
-  :   (Tar.Entry, Stream[Data]) raises TarError =
+      blocks: LazyList[Data] )
+  :   (Tar.Entry, LazyList[Data]) raises TarError =
 
     flag match
       case 0 | '0' | '7' =>
         val (data, rest) = takeData(blocks, size)
-        (Tar.Entry.File(path, mode, user, group, mtime, Stream(data), extras), rest)
+        (Tar.Entry.File(path, mode, user, group, mtime, LazyList(data), extras), rest)
 
       case '5' =>
         (Tar.Entry.Directory(path, mode, user, group, mtime, extras), blocks)
@@ -216,7 +216,7 @@ object Tarfile:
         raise(TarError(TarError.Reason.UnknownTypeFlag(other.toByte)))
         (Tar.Entry.Directory(path, mode, user, group, mtime, extras), blocks)
 
-  private def takeData(blocks: Stream[Data], size: Int): (Data, Stream[Data]) =
+  private def takeData(blocks: LazyList[Data], size: Int): (Data, LazyList[Data]) =
     val nBlocks = (size + 511)/512
     val (taken, rest) = blocks.splitAt(nBlocks)
     val concatenated: Data = taken.foldLeft(IArray.empty[Byte])(_ ++ _).slice(0, size)
@@ -247,8 +247,8 @@ object Tarfile:
 
     builder.result()
 
-  private def readSparseExtensions(blocks: Stream[Data], hasMore: Boolean)
-  :   (List[SparseSegment], Stream[Data]) raises TarError =
+  private def readSparseExtensions(blocks: LazyList[Data], hasMore: Boolean)
+  :   (List[SparseSegment], LazyList[Data]) raises TarError =
 
     if !hasMore then (Nil, blocks) else blocks match
       case head #:: tail =>
@@ -365,9 +365,9 @@ case class Tarfile
     entries.flatMap(emitEntry) #::: LazyList(Tarfile.zeroBlock, Tarfile.zeroBlock)
 
   // Compressed views of the archive's TAR stream.
-  def gzip: Stream[Data] = this.stream[Data].compress[Gzip]
-  def zlib: Stream[Data] = this.stream[Data].compress[Zlib]
-  def deflate: Stream[Data] = this.stream[Data].compress[Deflate]
+  def gzip: LazyList[Data] = this.stream[Data].compress[Gzip]
+  def zlib: LazyList[Data] = this.stream[Data].compress[Zlib]
+  def deflate: LazyList[Data] = this.stream[Data].compress[Deflate]
 
   def extractTo[plane <: Posix: Filesystem](root: Path on plane)
     ( using CreateNonexistentParents on plane, OverwritePreexisting on plane )

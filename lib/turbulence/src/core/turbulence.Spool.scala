@@ -45,9 +45,9 @@ class Spool[item]():
   def put(item: item): Unit = queue.put(item)
   def stop(): Unit = queue.put(Spool.Termination)
 
-  def stream: Stream[item] =
-    Stream.continually(queue.take().nn).takeWhile(_ != Spool.Termination)
-    . asInstanceOf[Stream[item]]
+  def stream: LazyList[item] =
+    LazyList.continually(queue.take().nn).takeWhile(_ != Spool.Termination)
+    . asInstanceOf[LazyList[item]]
 
   def iterator: Iterator[item] =
     Iterator.continually(queue.take().nn).takeWhile(_ != Spool.Termination)

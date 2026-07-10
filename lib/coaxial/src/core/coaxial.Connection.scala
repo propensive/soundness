@@ -40,7 +40,7 @@ import turbulence.*
 
 case class Connection
   ( private[coaxial] val in: ji.InputStream, private[coaxial] val out: ji.OutputStream ):
-  def stream(): Stream[Data] raises StreamError = in.stream[Data]
+  def stream(): LazyList[Data] raises StreamError = in.stream[Data]
   def reader: ji.InputStream = in
   def writer: ji.OutputStream = out
 

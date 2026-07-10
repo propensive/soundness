@@ -97,19 +97,19 @@ object Sheet:
     if format.header then Sheet(rows, format, rows.prim.let(_.header)) else Sheet(rows, format)
 
   given showable: DsvFormat => Sheet is Showable = _.rows.map(_.show).join(t"\n")
-  given streamable: DsvFormat => Sheet is Streamable by Text = _.rows.to(Stream).map(_.show+t"\n")
+  given streamable: DsvFormat => Sheet is Streamable by Text = _.rows.to(LazyList).map(_.show+t"\n")
 
 
-  private def parse(content: Stream[Text])
+  private def parse(content: LazyList[Text])
     ( using format: DsvFormat, tactic: Tactic[DsvError] )
-  :   Stream[Dsv] =
+  :   LazyList[Dsv] =
 
     new Parser(content).stream
 
 
-  private class Parser(initial: Stream[Text])
+  private class Parser(initial: LazyList[Text])
     ( using format: DsvFormat, tactic: Tactic[DsvError] ):
-    private var content: Stream[Text] = initial
+    private var content: LazyList[Text] = initial
     private var current: String = ""
     private var currentLen: Int = 0
     private var pos: Int = 0
@@ -246,9 +246,9 @@ object Sheet:
       else
         Unset
 
-    def stream: Stream[Dsv] = next()
+    def stream: LazyList[Dsv] = next()
 
-    private def next(): Stream[Dsv] = parseRow() match
+    private def next(): LazyList[Dsv] = parseRow() match
       case row: Dsv =>
         if isHeader && headings.absent then
           val data = row.data
@@ -265,14 +265,14 @@ object Sheet:
           row #:: next()
 
       case _ =>
-        Stream()
+        LazyList()
 
 case class Sheet
-  ( rows:    Stream[Dsv],
+  ( rows:    LazyList[Dsv],
     format:  Optional[DsvFormat]    = Unset,
     columns: Optional[IArray[Text]] = Unset ):
 
-  def as[value: Decodable in Dsv]: Stream[value] raises DsvError tracks CellRef =
+  def as[value: Decodable in Dsv]: LazyList[value] raises DsvError tracks CellRef =
     rows.map(_.as[value])
 
   override def hashCode: Int =

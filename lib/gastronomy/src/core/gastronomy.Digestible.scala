@@ -93,7 +93,7 @@ object Digestible extends Derivable[Digestible]:
         valueDigestible.digest(digestion, value)
 
 
-  given stream: [value] => (digestible: => value is Digestible) => Stream[value] is Digestible =
+  given stream: [value] => (digestible: => value is Digestible) => LazyList[value] is Digestible =
     (digestion, iterable) => iterable.each(digestible.digest(digestion, _))
 
   given int: Int is Digestible = (digestion, value) =>

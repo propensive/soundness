@@ -37,5 +37,5 @@ import anticipation.*
 trait Compression:
   type Self <: Compressor
 
-  def compress(stream: Stream[Data]): Stream[Data]
-  def decompress(stream: Stream[Data]): Stream[Data]
+  def compress(stream: LazyList[Data]): LazyList[Data]
+  def decompress(stream: LazyList[Data]): LazyList[Data]
