@@ -30,23 +30,22 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-export xenophile.{Wasm, WasmInvoke, WitCase, WitHandle}
+import anticipation.*
+import prepositional.*
 
-// Materializes a fully-applied WIT `Foreign` invocation into a real Wasm Component Model import
-// call. Must be applied directly to an inline navigation chain — e.g.
-// `Foreign["random", Wit].\`get-random-u64\`().invoke[U64]` — not to a value bound to a `val`.
-// Plain `inline` (not `transparent`): the return type is fully determined by the type argument,
-// and non-transparency defers the macro when `invoke` appears inside another `inline` definition,
-// so a library can publish an inline given whose import call only materializes at the downstream
-// (Wasm-linked) call site — where `scala.scalajs.wit.witImportCall` is on the classpath.
-extension (foreign: xenophile.Foreign)
-  inline def invoke[result]: result =
-    ${xenophile.WasmInvoke.invoke[result]('foreign)}
+// A payload-less case of a WIT `variant` (or `enum`), named by its lower-kebab-case Scala-side
+// name (e.g. `get` or `dns-timeout`), for passing as an argument to a WIT function — such as the
+// `method` taken by `wasi:http`'s `outgoing-request.set-method`. The phantom `Topic` records the
+// variant type, so the value converts (via the `Interoperable` instance below) into an argument of
+// that foreign type; `invoke` selects the corresponding facade case object at runtime.
+object WitCase:
+  def apply[topic <: Label](name: Text): WitCase of topic =
+    new WitCase(name).asInstanceOf[WitCase of topic]
 
-// Releases a WIT resource handle, emitting its `[resource-drop]` Component Model import. Like
-// `invoke`, plain `inline` so the import materializes at the downstream (Wasm-linked) call site.
-extension (handle: xenophile.WitHandle)
-  inline def dispose(): Unit =
-    ${xenophile.WasmInvoke.dispose('handle)}
+  given interoperable: [topic <: Label]
+  =>  ( (WitCase of topic) is Interoperable in Wit of topic ) =
+    Interoperable()
+
+final class WitCase(val name: Text) extends Topical

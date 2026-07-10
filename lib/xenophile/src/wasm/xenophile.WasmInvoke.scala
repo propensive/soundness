@@ -366,57 +366,85 @@ object WasmInvoke:
     if arity != argumentTerms.length then
       halt(m"xenophile: $owner.$function takes $arity parameters, not ${argumentTerms.length}")
 
+    // A payload-less `variant` case argument (a `WitCase of topic`): the facade case object,
+    // selected by name at runtime from the sealed facade trait's children. The case-object names
+    // are matched in their lower-kebab-case form (`DnsTimeout` matches `dns-timeout`).
+    def caseArgument(topic: Text, value: Term): (TypeRepr, Term) =
+      val facade = facadeOf(topic)
+      val selector = '{${value.asExprOf[Any]}.asInstanceOf[WitCase].name.s}.asTerm
+
+      val caseDefs: List[CaseDef] = facade.children.flatMap: child =>
+        if child.flags.is(Flags.Module) then
+          val name = child.name.tt.uncamel.kebab
+          List(CaseDef(Literal(StringConstant(name.s)), None, Ref(child.companionModule)))
+        else
+          List()
+
+      val missing =
+        CaseDef
+          ( Wildcard(), None,
+            '{throw new RuntimeException("xenophile: not a case of " + ${Expr(topic.s)})}.asTerm )
+
+      (facade.typeRef, Match(selector, caseDefs :+ missing))
+
     def encodedArgument(value: Term, parameter: Foreign.Type): (TypeRepr, Term) =
-      value.tpe.widen.dealias match
-      // A statically-absent argument (a bare `Unset` against an `option<T>` parameter, e.g. the
-      // `option<request-options>` of `wasi:http`'s `handle`) needs no payload codec at all.
-      case tpe if tpe =:= TypeRepr.of[Unset] =>
-        (optionClass.typeRef, '{java.util.Optional.empty[Any]().nn}.asTerm)
+      val (carrier, encoded, alreadyOption) = value.tpe.widen.dealias match
+        // A statically-absent argument (a bare `Unset` against an `option<T>` parameter, e.g. the
+        // `option<request-options>` of `wasi:http`'s `handle`) needs no payload codec at all.
+        case tpe if tpe =:= TypeRepr.of[Unset] =>
+          (optionClass.typeRef, '{java.util.Optional.empty[Any]().nn}.asTerm, true)
 
-      // A resource argument (a `WitHandle of topic`, e.g. the `fields` passed to
-      // `outgoing-request`'s constructor) crosses as its facade class, unwrapped to the raw
-      // handle.
-      case Refinement(base, "Topic", TypeBounds(_, ConstantType(StringConstant(topic))))
-      if base =:= TypeRepr.of[WitHandle] =>
-        val encoded = '{${value.asExprOf[Any]}.asInstanceOf[WitHandle].value}.asTerm
-        (facadeOf(topic.tt).typeRef, encoded)
+        // A resource argument (a `WitHandle of topic`, e.g. the `fields` passed to
+        // `outgoing-request`'s constructor) crosses as its facade class, unwrapped to the raw
+        // handle.
+        case Refinement(base, "Topic", TypeBounds(_, ConstantType(StringConstant(topic))))
+        if base =:= TypeRepr.of[WitHandle] =>
+          val encoded = '{${value.asExprOf[Any]}.asInstanceOf[WitHandle].value}.asTerm
+          (facadeOf(topic.tt).typeRef, encoded, false)
 
-      case OrType(left, right)
-      if left =:= TypeRepr.of[Unset] || right =:= TypeRepr.of[Unset] =>
-        val inner0 = if left =:= TypeRepr.of[Unset] then right else left
+        case Refinement(base, "Topic", TypeBounds(_, ConstantType(StringConstant(topic))))
+        if base =:= TypeRepr.of[WitCase] =>
+          val (carrier, encoded) = caseArgument(topic.tt, value)
+          (carrier, encoded, false)
 
-        inner0.asType.absolve match
-          case '[inner] =>
-            val encodable = Expr.summon[inner is Encodable in Wasm].getOrElse:
-              halt(m"xenophile: no way to pass a ${inner0.show} across a WIT boundary")
+        case OrType(left, right)
+        if left =:= TypeRepr.of[Unset] || right =:= TypeRepr.of[Unset] =>
+          val inner0 = if left =:= TypeRepr.of[Unset] then right else left
 
-            val optional = value.asExprOf[Optional[inner]]
+          inner0.asType.absolve match
+            case '[inner] =>
+              val encodable = Expr.summon[inner is Encodable in Wasm].getOrElse:
+                halt(m"xenophile: no way to pass a ${inner0.show} across a WIT boundary")
 
-            // `match`, not `let`/`lay`: `Optional`'s inline combinators crash `pickleQuotes`
-            // inside staged code.
-            val encoded =
-              '{  $optional match
-                    case Unset => java.util.Optional.empty[Any]().nn
+              val optional = value.asExprOf[Optional[inner]]
 
-                    case value =>
-                      java.util.Optional.of($encodable.encoded(value.asInstanceOf[inner]).value)
-                      . nn  }
+              // `match`, not `let`/`lay`: `Optional`'s inline combinators crash `pickleQuotes`
+              // inside staged code.
+              val encoded =
+                '{  $optional match
+                      case Unset => java.util.Optional.empty[Any]().nn
 
-            (optionClass.typeRef.appliedTo(List(carrierType(encodable))), encoded.asTerm)
+                      case value =>
+                        java.util.Optional.of($encodable.encoded(value.asInstanceOf[inner]).value)
+                        . nn  }
 
-      case other => other.asType.absolve match
-        case '[argument] =>
-          val encodable = Expr.summon[argument is Encodable in Wasm].getOrElse:
-            halt(m"xenophile: no way to pass a ${other.show} across a WIT boundary")
+              (optionClass.typeRef.appliedTo(List(carrierType(encodable))), encoded.asTerm, true)
 
-          val encoded = '{$encodable.encoded(${value.asExprOf[argument]}).value}.asTerm
+        case other => other.asType.absolve match
+          case '[argument] =>
+            val encodable = Expr.summon[argument is Encodable in Wasm].getOrElse:
+              halt(m"xenophile: no way to pass a ${other.show} across a WIT boundary")
 
-          // A plain (always-present) value against an `option<T>` parameter crosses as a present
-          // `java.util.Optional`, matching the parameter's descriptor.
-          if optionPayload(parameter).present then
-            val wrapped = '{java.util.Optional.of(${encoded.asExprOf[Any]}).nn}.asTerm
-            (optionClass.typeRef.appliedTo(List(carrierType(encodable))), wrapped)
-          else (carrierType(encodable), encoded)
+            val encoded = '{$encodable.encoded(${value.asExprOf[argument]}).value}.asTerm
+            (carrierType(encodable), encoded, false)
+
+      // A plain (always-present) value against an `option<T>` parameter crosses as a present
+      // `java.util.Optional`, matching the parameter's descriptor.
+      if optionPayload(parameter).present && !alreadyOption then
+        val wrapped = '{java.util.Optional.of(${encoded.asExprOf[Any]}).nn}.asTerm
+        (optionClass.typeRef.appliedTo(List(carrier)), wrapped)
+      else
+        (carrier, encoded)
 
     val argumentPairs: List[Term] =
       argumentTerms.zip(parameterTypes).flatMap: (argument, parameter) =>

@@ -41,6 +41,7 @@ import hellenism.*
 import hypotenuse.*
 import prepositional.*
 import rudiments.*
+import spectacular.*
 import vacuous.*
 import soundness.{invoke, dispose}
 import xenophile.*
@@ -53,15 +54,12 @@ given wasiHttpApi: WasiHttpApi = Interface[Wit](cp"/telekinesis/http.wit")
 
 package httpBackends:
   // An `Http.Backend` over `wasi:http/outgoing-handler`: the request is assembled from
-  // `wasi:http/types` resources (`fields` for the headers, then an `outgoing-request`), handed to
-  // the host, and its response awaited through the pollable and read from the body's
+  // `wasi:http/types` resources (`fields` for the headers, then an `outgoing-request` with its
+  // method, scheme, authority and path, plus an `outgoing-body` when the method carries one),
+  // handed to the host, and its response awaited through the pollable and read from the body's
   // `input-stream`. `inline`, so the `invoke`s expand at the downstream summoning site: the Wasm
   // Component imports only materialize in code compiled for a Wasm target. Summoning it requires
   // `wasiHttpApi` (and this module's WIT resource) to be visible at that site.
-  //
-  // Only `GET` requests are supported so far: setting the method or scheme on an
-  // `outgoing-request` takes a WIT `variant` argument, which `invoke` cannot yet marshal, so the
-  // request is sent with its defaults (`GET`, and a scheme of the host's choosing).
   //
   // The per-site duplication the compiler warns about is the point: the instance must materialize
   // at the downstream summoning site, and a WASI-linked application summons it once.
@@ -75,13 +73,11 @@ package httpBackends:
       ( using Tactic[ConnectError] )
     :   Http.Response =
 
-      if method != Http.Get then abort(ConnectError(ConnectError.Reason.Unknown))
-
-      // The URL arrives fully resolved; split it into the authority and the path-with-query the
-      // `outgoing-request` setters take. (The scheme is currently left unset — see above.)
-      val afterScheme: Text = url.cut(t"://", 2) match
-        case List(_, rest) => rest
-        case _             => url
+      // The URL arrives fully resolved; split it into the scheme, authority and path-with-query
+      // the `outgoing-request` setters take.
+      val (scheme: Text, afterScheme: Text) = url.cut(t"://", 2) match
+        case List(scheme, rest) => (scheme, rest)
+        case _                  => (t"http", url)
 
       val (authority: Text, target: Text) = afterScheme.cut(t"/", 2) match
         case List(host, path) => (host, t"/$path")
@@ -108,17 +104,46 @@ package httpBackends:
       val requestHandle =
         outgoingRequest.constructor(fieldsHandle).invoke[WitHandle of "outgoing-request"]
 
-      // The setters take `option<string>`s; a plain `string` argument subsumes (and crosses the
-      // boundary wrapped as a present option).
+      // The method and scheme are WIT `variant` cases, selected by their lower-kebab-case names;
+      // the other setters take `option<string>`s, which a plain `string` argument subsumes (and
+      // crosses the boundary wrapped as a present option).
       val request: Foreign of "outgoing-request" from Wit = requestHandle
+      request.`set-method`(WitCase["method"](method.show.lower)).invoke[Unit]
+      request.`set-scheme`(WitCase["scheme"](scheme.lower)).invoke[Unit]
       request.`set-authority`(authority).invoke[Unit]
       request.`set-path-with-query`(target).invoke[Unit]
+
+      // A method that carries a payload streams it through the request's `outgoing-body`, which
+      // must then be `finish`ed (a static function) for the request to be complete.
+      val payload: LazyList[Data] = if method.payload then body() else LazyList()
+
+      val bodyHandles =
+        if payload.isEmpty then Unset else
+          val bodyHandle = request.body.invoke[WitHandle of "outgoing-body"]
+          val outgoingBody: Foreign of "outgoing-body" from Wit = bodyHandle
+          val writeHandle = outgoingBody.write.invoke[WitHandle of "output-stream"]
+          (bodyHandle, writeHandle)
 
       val outgoingHandler =
         Foreign["outgoing-handler", Wit].asInstanceOf[Foreign of "outgoing-handler" from Wit]
 
       val futureHandle =
         outgoingHandler.handle(requestHandle, Unset).invoke[WitHandle of "future-incoming-response"]
+
+      // The payload is written after the request is handed off (the host consumes it as it
+      // arrives) and before blocking on the response.
+      bodyHandles.let: (bodyHandle, writeHandle) =>
+        val outStream: Foreign of "output-stream" from Wit = writeHandle
+
+        payload.each: chunk =>
+          outStream.`blocking-write-and-flush`(chunk).invoke[Unit]
+
+        writeHandle.dispose()
+
+        val outgoingBody =
+          Foreign["outgoing-body", Wit].asInstanceOf[Foreign of "outgoing-body" from Wit]
+
+        outgoingBody.finish(bodyHandle, Unset).invoke[Unit]
 
       val future: Foreign of "future-incoming-response" from Wit = futureHandle
 

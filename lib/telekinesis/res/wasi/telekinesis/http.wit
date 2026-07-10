@@ -18,12 +18,18 @@ interface streams {
   resource input-stream {
     blocking-read: func(len: u64) -> result<list<u8>, stream-error>;
   }
+
+  resource output-stream {
+    blocking-write-and-flush: func(contents: list<u8>) -> result<_, stream-error>;
+  }
 }
 
 package wasi:http@0.2.0;
 
 interface types {
   variant error-code {}
+  variant method {}
+  variant scheme {}
 
   resource request-options;
 
@@ -35,8 +41,16 @@ interface types {
 
   resource outgoing-request {
     constructor(headers: fields);
+    set-method: func(method: method) -> result;
+    set-scheme: func(scheme: option<scheme>) -> result;
     set-authority: func(authority: option<string>) -> result;
     set-path-with-query: func(path-with-query: option<string>) -> result;
+    body: func() -> result<outgoing-body>;
+  }
+
+  resource outgoing-body {
+    write: func() -> result<output-stream>;
+    finish: static func(this: outgoing-body, trailers: option<fields>) -> result<_, error-code>;
   }
 
   resource future-incoming-response {
