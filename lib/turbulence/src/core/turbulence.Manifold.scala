@@ -30,138 +30,98 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package zephyrine
+package turbulence
 
 import java.util.concurrent as juc
-import java.util.concurrent.atomic as juca
 
+import anticipation.*
 import fulminate.*
+import parasite.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import zephyrine.*
 
-// The asynchronous boundary of a streaming pipeline: an `Intake` on its write
-// side and a `Stream` on its read side, with exactly one thread ever touching
-// each. Data crosses in blocks through a bounded queue, so a writer that
-// outpaces its reader parks in `reserve` — cross-thread backpressure — and
-// the free capacity is the credit this conduit reports as its `demand`. This
-// is the only synchronized component of a pipeline; every other stage is
-// single-owner mutable state on one side of a conduit or the other.
-//
-// A conduit is the generalization of `Producer.Channel`: block-granular
-// hand-off, but with element-granular credit, storage handed to the reader
-// without materializing an immutable chunk, and failure propagation — a
-// producer-side `fail` is rethrown from the reader's next `refill`.
-object Conduit:
+// Fan-out: one pump task pulls the source and delivers every chunk to each
+// of `count` subscriber endpoints through bounded queues. Chunks are
+// materialized once and shared immutably between subscribers; a full
+// subscriber queue parks the pump, so the slowest subscriber gates the
+// source — the correct backpressure semantics for replication. A source
+// failure is rethrown from each subscriber's next refill.
+object Manifold:
   private object End
 
-  private class Block(val storage: AnyRef, val size: Int)
+  def apply[medium](source: Stream[medium] over Credit, count: Int)
+    ( using addressable0: medium is Addressable,
+            buffering:    Buffering,
+            monitor:      Monitor,
+            probate:      Probate )
+  :   IndexedSeq[Stream[medium] over Credit] =
 
-final class Conduit[medium]
-  (using val addressable0: medium is Addressable)(using buffering: Buffering)
-extends Intake[medium](using addressable0):
-  type Transport = Credit
+    val block: Int = buffering.capacity(addressable0.substrate)
 
-  private val block: Int = buffering.capacity(addressable0.substrate)
-  private val queue: juc.ArrayBlockingQueue[AnyRef] = juc.ArrayBlockingQueue(buffering.window)
+    val queues: IndexedSeq[juc.ArrayBlockingQueue[AnyRef]] =
+      IndexedSeq.fill(count)(juc.ArrayBlockingQueue[AnyRef](buffering.window))
 
-  private val written: juca.AtomicLong = juca.AtomicLong(0)
-  private val consumed: juca.AtomicLong = juca.AtomicLong(0)
-  @volatile private var error: Throwable | Null = null
-  @volatile private var closed: Boolean = false
+    @volatile var error: Throwable | Null = null
 
-  private var current: addressable0.Storage = addressable0.allocate(block)
-  private var mark0: Int = 0
+    async:
+      def loop(): Unit = source.refill(Credit(block)) match
+        case size: Int =>
+          val chunk =
+            addressable0.materialize
+              ( source.window(using Unsafe).asInstanceOf[addressable0.Storage],
+                source.start,
+                size )
 
-  // Everything this conduit can hold: the queued blocks plus the block being
-  // written. `demand` is this allowance less what is currently buffered, so
-  // it reaches zero exactly when `reserve` would block.
-  private val allowance: Long = block.toLong * (buffering.window + 1)
+          source.skip(size)
+          queues.each(_.put(chunk.asInstanceOf[AnyRef]))
+          loop()
 
-  def demand: Credit = Credit(allowance - (written.get - consumed.get))
+        case _ =>
+          queues.each(_.put(End))
 
-  protected def buffer0: AnyRef = current.asInstanceOf[AnyRef]
-  def mark: Int = mark0
+      try loop() catch case exception: Exception =>
+        error = exception
+        queues.each(_.put(End))
 
-  def reserve(min: Int): Int =
-    val free = block - mark0
+    queues.map: queue =>
+      new Stream[medium](using addressable0):
+        type Transport = Credit
 
-    if free >= min then free else
-      publish()
-      block
+        // The shared chunk is immutable; subscribers only read the window,
+        // so exposing its backing array directly is safe and copy-free.
+        private var storage: AnyRef = addressable0.allocate(0).asInstanceOf[AnyRef]
+        private var start0: Int = 0
+        private var limit0: Int = 0
+        private var size: Int = 0
+        private var ended: Boolean = false
 
-  def commit(count: Int): Unit =
-    mark0 += count
-    written.addAndGet(count)
-    if mark0 == block then publish()
+        protected def window0: AnyRef = storage
+        def start: Int = start0
+        def limit: Int = limit0
+        def skip(count: Int): Unit = start0 += count
 
-  override def flush(): Unit = if mark0 > 0 then publish()
+        def refill(demand: Credit): Optional[Int] =
+          if limit0 > start0 then limit0 - start0
+          else if ended then Unset
+          else
+            val granted = summon[Credit is Regulation].grant(demand)
 
-  def finish(): Unit =
-    flush()
-    queue.put(Conduit.End)
+            if granted == 0 then 0
+            else if limit0 < size then
+              limit0 += (size - limit0).min(granted)
+              limit0 - start0
+            else
+              (queue.take().nn: @unchecked) match
+                case End =>
+                  ended = true
+                  val error0 = error
+                  if error0 == null then Unset else throw error0
 
-  override def fail(error: Throwable): Unit =
-    this.error = error
-    queue.clear()
-    queue.put(Conduit.End)
-
-  private def publish(): Unit =
-    if mark0 > 0 then
-      if closed then
-        written.addAndGet(-mark0)
-        mark0 = 0
-      else
-        queue.put(Conduit.Block(current.asInstanceOf[AnyRef], mark0))
-        current = addressable0.allocate(block)
-        mark0 = 0
-
-  // The read side; single reader. `refill` parks (in `queue.take`) until the
-  // writer publishes a block or finishes.
-  val stream: Stream[medium] over Credit = new Stream[medium](using addressable0):
-    type Transport = Credit
-
-    private var storage: addressable0.Storage = addressable0.allocate(0)
-    private var start0: Int = 0
-    private var limit0: Int = 0
-    private var size: Int = 0
-    private var ended: Boolean = false
-
-    protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
-    def start: Int = start0
-    def limit: Int = limit0
-
-    def skip(count: Int): Unit =
-      start0 += count
-      consumed.addAndGet(count)
-
-    def refill(demand: Credit): Optional[Int] =
-      if limit0 > start0 then limit0 - start0
-      else if ended then Unset
-      else
-        val granted = summon[Credit is Regulation].grant(demand)
-
-        if granted == 0 then 0
-        else if limit0 < size then
-          limit0 += (size - limit0).min(granted)
-          limit0 - start0
-        else
-          (queue.take().nn: @unchecked) match
-            case Conduit.End =>
-              ended = true
-              val error0 = error
-              if error0 == null then Unset else throw error0
-
-            case received: Conduit.Block =>
-              storage = received.storage.asInstanceOf[addressable0.Storage]
-              size = received.size
-              start0 = 0
-              limit0 = size.min(granted)
-              limit0
-
-            case _ =>
-              panic(m"unexpected value in conduit queue")
-
-    override def close(): Unit =
-      closed = true
-      queue.clear()
+                case chunk =>
+                  storage = chunk
+                  size = addressable0.length(chunk.asInstanceOf[medium])
+                  start0 = 0
+                  limit0 = size.min(granted)
+                  limit0

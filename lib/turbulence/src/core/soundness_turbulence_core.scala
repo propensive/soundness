@@ -38,8 +38,8 @@ export
       defer, discard, Document, Documentary, Eof, Err, In, inputStream,
       Io, Line, LineSeparation, load, Loadable, metronome, more, multiplex, Multiplexer,
       multiplexer, Out, parallelMap, Pistol, Pulsar, rate, read, regulate, shred, Spool, spool,
-      Readable, Sink, Source, Stdio, stream, Streamable, StreamError, StreamOutputStream, strict,
-      take, Tap, Writable, writeTo, framed, flow, lazyList }
+      Confluence, Manifold, Readable, Sink, Source, Stdio, stream, Streamable, StreamError,
+      StreamOutputStream, strict, take, Tap, Writable, writeTo, framed, flow, lazyList }
 
 package stdios:
   export turbulence.stdios.{muteStdio, systemStdio, virtualMachineStdio}

@@ -584,6 +584,30 @@ object Tests extends Suite(m"Turbulence tests"):
           true
       . assert(identity)
 
+      test(m"confluence merges all sources completely"):
+        supervise:
+          val sources = (1 to 4).map { index => Data.fill(1000)(_ => index.toByte) }
+          val merged = Confluence(sources.map { data =>
+              summon[Data is Source by Data over Credit].stream(data) }*)
+          val gather = Gather2()
+          merged.flowTo(gather)
+          gather.data.to(List).sorted
+      . assert(_ == (1 to 4).flatMap { index => List.fill(1000)(index.toByte) }.sorted.to(List))
+
+      test(m"manifold delivers the whole stream to every subscriber"):
+        supervise:
+          val source = summon[Data is Source by Data over Credit].stream(payload)
+          val subscribers = Manifold(source, 3)
+
+          val results = subscribers.map: stream =>
+            async:
+              val gather = Gather2()
+              stream.flowTo(gather)
+              gather.data.to(List)
+
+          results.map { task => task.await() }.to(List)
+      . assert(_ == List.fill(3)(payload.to(List)))
+
       val mixed: Data =
         Data.fill(50000) { index => (index%251).toByte } ++ (t"repetition "*500).data
 
