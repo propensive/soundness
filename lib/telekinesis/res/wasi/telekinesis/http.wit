@@ -1,0 +1,61 @@
+// The subset of the WASI HTTP and I/O interfaces that telekinesis's Wasm backend uses: enough of
+// `wasi:http/types` to build an outgoing request and read its response, the `outgoing-handler`
+// that sends it, and the `wasi:io` pollable/stream resources the response flow passes through.
+// Field names, status codes and header values are written as their concrete types (`string`,
+// `u16`, `list<u8>`) — WIT type aliases are structural, so the canonical function types match the
+// host's. The `error-code` variant's cases are not enumerated here: its shape is derived from its
+// facade class; only its name and defining interface matter to this subset.
+
+package wasi:io@0.2.0;
+
+interface poll {
+  resource pollable {
+    block: func();
+  }
+}
+
+interface streams {
+  resource input-stream {
+    blocking-read: func(len: u64) -> result<list<u8>, stream-error>;
+  }
+}
+
+package wasi:http@0.2.0;
+
+interface types {
+  variant error-code {}
+
+  resource request-options;
+
+  resource fields {
+    constructor();
+    append: func(name: string, value: list<u8>) -> result<_, header-error>;
+    entries: func() -> list<tuple<string, list<u8>>>;
+  }
+
+  resource outgoing-request {
+    constructor(headers: fields);
+    set-authority: func(authority: option<string>) -> result;
+    set-path-with-query: func(path-with-query: option<string>) -> result;
+  }
+
+  resource future-incoming-response {
+    subscribe: func() -> pollable;
+    get: func() -> option<result<result<incoming-response, error-code>>>;
+  }
+
+  resource incoming-response {
+    status: func() -> u16;
+    headers: func() -> fields;
+    consume: func() -> result<incoming-body>;
+  }
+
+  resource incoming-body {
+    %stream: func() -> result<input-stream>;
+  }
+}
+
+interface outgoing-handler {
+  handle: func(request: outgoing-request, options: option<request-options>)
+    -> result<future-incoming-response, error-code>;
+}
