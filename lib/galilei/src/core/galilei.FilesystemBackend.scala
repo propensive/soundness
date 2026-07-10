@@ -30,99 +30,75 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package exoskeleton
+package galilei
 
-import ambience.*
-import anthology.*
 import anticipation.*
 import contingency.*
-import digression.*
-import distillate.*
-import eucalyptus.*
-import galilei.*
-import gossamer.*
-import guillotine.*
-import hellenism.*
-import jacinta.*
-import parasite.*
 import prepositional.*
-import rudiments.*
 import serpentine.*
-import spectacular.*
-import superlunary.*
-import symbolism.*
-import vacuous.*
 
-import filesystemOptions.deleteRecursively.disabled
-import logging.silentLogging
-import probates.cancelProbate
-import workingDirectories.javaWorkingDirectory
+// The pluggable low-level filesystem backend for a plane: the complete set of primitive
+// operations that galilei's user-facing API is defined in terms of, expressed without reference
+// to any platform API. `galilei.jvm` provides the `java.nio` implementation
+// (`filesystemBackends.virtualMachine`); other platforms (e.g. WASI's `wasi:filesystem`) supply
+// their own.
+//
+// Operations that compose several primitives (recursive deletion, copy-into, creating parents)
+// live in the user-facing API, not here; an operation a backend cannot support raises an
+// `IoError` with `Reason.Unsupported` rather than approximating. `dereference` selects whether a
+// final-component symlink is followed. Errors are raised as `IoError`s, with each backend
+// responsible for mapping its native failures (exceptions, error codes) to the common
+// `IoError.Reason` vocabulary — as informatively as it can.
+object FilesystemBackend:
+  enum Attribute:
+    case Readable, Writable, Executable
 
-import filesystemBackends.virtualMachine
+trait FilesystemBackend extends Planar:
+  // The entry's type, size and timestamps, in one read. (`created` is `Unset` on filesystems
+  // that do not record creation times.)
+  def stat(path: Path on Plane, dereference: Boolean)(using Tactic[IoError]): Stat
 
+  def exists(path: Path on Plane, dereference: Boolean): Boolean
 
-object Enclave:
-  case class Tool(path: Path on Linux, pid: Pid):
-    def command: Text = path.name
+  // The names (not paths) of the directory's immediate children.
+  def children(path: Path on Plane)(using Tactic[IoError]): LazyList[Text]
 
-    def completions(using Monitor)[result](block: => Unit): Optional[Text] =
-      val promise = Promise[Text]()
+  def createDirectory(path: Path on Plane)(using Tactic[IoError]): Unit
+  def createFile(path: Path on Plane)(using Tactic[IoError]): Unit
+  def createFifo(path: Path on Plane)(using Tactic[IoError]): Unit
+  def delete(path: Path on Plane)(using Tactic[IoError]): Unit
+  def deleteIfExists(path: Path on Plane)(using Tactic[IoError]): Unit
 
-      async:
-        promise.offer(safely(sh"$path '{admin}' await".exec[Text]()).or(t"failed"))
+  def symlink(link: Path on Plane, target: Path on Plane)(using Tactic[IoError]): Unit
+  def hardLink(link: Path on Plane, target: Path on Plane)(using Tactic[IoError]): Unit
 
-      block
-      safely(promise.await())
+  def copy(source: Path on Plane, destination: Path on Plane, dereference: Boolean)
+    ( using Tactic[IoError] )
+  :   Unit
 
-  case class Launcher(path: Path on Linux):
-    def sandbox[result](block: (tool: Tool) ?=> result)
-    :   result raises ExecError raises NumberError raises PathError =
+  def move(source: Path on Plane, destination: Path on Plane, atomic: Boolean, dereference: Boolean)
+    ( using Tactic[IoError] )
+  :   Unit
 
-      val completionScripts = sh"$path '{admin}' install".exec[Text]()
-      val pid = Pid(sh"$path '{admin}' pid".exec[Text]().trim.decode[Int])
-      val tool = Tool(path, pid)
+  // Sets the modification time to the present moment.
+  def touch(path: Path on Plane)(using Tactic[IoError]): Unit
 
-      block(using tool).also:
-        sh"$path '{admin}' kill".exec[Exit]()
+  def hidden(path: Path on Plane)(using Tactic[IoError]): Boolean
+  def volume(path: Path on Plane)(using Tactic[IoError]): Volume
+  def hardLinkCount(path: Path on Plane, dereference: Boolean)(using Tactic[IoError]): Int
 
-        completionScripts.trim.lines.map(_.decode[Path on Linux]).each: item =>
-          safely(item.delete())
+  // Coarse-grained permission flags on the entry, from the perspective of the current user.
+  // These express the *current* model; a richer permissions API can be layered on later without
+  // touching the primitives above.
+  def attribute(path: Path on Plane, attribute: FilesystemBackend.Attribute): Boolean
 
+  def update(path: Path on Plane, attribute: FilesystemBackend.Attribute, value: Boolean)
+    ( using Tactic[IoError] )
+  :   Unit
 
-case class Enclave(name: Text, buildId: Optional[Int] = Unset)(using Classloader, Environment)
-extends Rig:
-  type Result[output] = Enclave.Launcher
-  type Form = Text
-  type Target = Path on Linux
-  type Transport = Json
+  // Opens the entry's content for streaming, applies `lambda` to the open handle, and closes it,
+  // whatever the outcome.
+  def open[result](path: Path on Plane, flags: List[OpenFlag])(lambda: Handle => result)
+    ( using Tactic[IoError] )
+  :   result
 
-  def stage(out: Path on Linux): Path on Linux =
-    val target = unsafely(out.peer(name))
-
-    unsafely:
-      val name2 = t"$name.jar"
-      val jarfile = out.peer(name2)
-      val bundle = Bundler.bundle(out, jarfile, fqcn"superlunary.Executor2")
-
-      val cmd = (buildId: @unchecked) match
-        case id: Int => sh"java -Dbuild.id=$id -Dbuild.executable=$target -jar $jarfile '[]'"
-        case Unset   => sh"java -Dbuild.executable=$target -jar $jarfile '[]'"
-
-      cmd.exec[Exit]() match
-        case Exit.Ok         => target
-        case Exit.Fail(fail) => ???
-
-  protected val scalac: Scalac[3.8] = Scalac(List(scalacOptions.experimental))
-
-
-  protected def invoke[output](stage: Stage[output, Text, Path on Linux])
-  :   Enclave.Launcher =
-
-    stage.remote: input =>
-      unsafely:
-        variables(inputParameters = input):
-          sh"${stage.target}".exec[Exit]()
-
-      t"""[""]"""
-
-    Enclave.Launcher(stage.target)

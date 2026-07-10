@@ -51,6 +51,8 @@ import vacuous.*
 
 import GitError.Reason.*
 
+import filesystemBackends.virtualMachine
+
 object GitRepo:
   def at[abstractable: Abstractable across Paths to Text](path: abstractable)
   :   GitRepo raises PathError raises NameError raises GitError raises IoError =

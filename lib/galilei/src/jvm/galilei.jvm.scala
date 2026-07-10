@@ -30,99 +30,40 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package exoskeleton
+package galilei
 
-import ambience.*
-import anthology.*
-import anticipation.*
+import java.io as ji
+import java.net as jn
+import java.nio.channels as jnc
+import java.nio.file as jnf
+
 import contingency.*
-import digression.*
-import distillate.*
-import eucalyptus.*
-import galilei.*
-import gossamer.*
-import guillotine.*
-import hellenism.*
-import jacinta.*
-import parasite.*
 import prepositional.*
-import rudiments.*
 import serpentine.*
-import spectacular.*
-import superlunary.*
-import symbolism.*
-import vacuous.*
 
-import filesystemOptions.deleteRecursively.disabled
-import logging.silentLogging
-import probates.cancelProbate
-import workingDirectories.javaWorkingDirectory
+// The `java.nio` representations of a path, for interoperating with Java APIs directly.
+extension [plane: Filesystem](path: Path on plane)
+  def javaPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
+  def javaFile: ji.File = javaPath.toFile.nn
 
-import filesystemBackends.virtualMachine
+object SocketCreation:
+  given socket: [plane <: Posix: Filesystem]
+  =>  ( createNonexistentParents: CreateNonexistentParents on plane,
+        overwritePreexisting:     OverwritePreexisting on plane,
+        tactic:                   Tactic[IoError] )
+  =>  Socket is Creatable to Socket =
 
+    new Creatable:
+      type Plane = plane
+      type Self = Socket
+      type Result = Socket
 
-object Enclave:
-  case class Tool(path: Path on Linux, pid: Pid):
-    def command: Text = path.name
+      def create(path: Path on Plane): Result =
+        createNonexistentParents(path):
+          overwritePreexisting(path):
+            val address = jn.UnixDomainSocketAddress.of(path.javaPath).nn
+            val channel = jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
+            channel.bind(address)
+            Socket(channel)
 
-    def completions(using Monitor)[result](block: => Unit): Optional[Text] =
-      val promise = Promise[Text]()
-
-      async:
-        promise.offer(safely(sh"$path '{admin}' await".exec[Text]()).or(t"failed"))
-
-      block
-      safely(promise.await())
-
-  case class Launcher(path: Path on Linux):
-    def sandbox[result](block: (tool: Tool) ?=> result)
-    :   result raises ExecError raises NumberError raises PathError =
-
-      val completionScripts = sh"$path '{admin}' install".exec[Text]()
-      val pid = Pid(sh"$path '{admin}' pid".exec[Text]().trim.decode[Int])
-      val tool = Tool(path, pid)
-
-      block(using tool).also:
-        sh"$path '{admin}' kill".exec[Exit]()
-
-        completionScripts.trim.lines.map(_.decode[Path on Linux]).each: item =>
-          safely(item.delete())
-
-
-case class Enclave(name: Text, buildId: Optional[Int] = Unset)(using Classloader, Environment)
-extends Rig:
-  type Result[output] = Enclave.Launcher
-  type Form = Text
-  type Target = Path on Linux
-  type Transport = Json
-
-  def stage(out: Path on Linux): Path on Linux =
-    val target = unsafely(out.peer(name))
-
-    unsafely:
-      val name2 = t"$name.jar"
-      val jarfile = out.peer(name2)
-      val bundle = Bundler.bundle(out, jarfile, fqcn"superlunary.Executor2")
-
-      val cmd = (buildId: @unchecked) match
-        case id: Int => sh"java -Dbuild.id=$id -Dbuild.executable=$target -jar $jarfile '[]'"
-        case Unset   => sh"java -Dbuild.executable=$target -jar $jarfile '[]'"
-
-      cmd.exec[Exit]() match
-        case Exit.Ok         => target
-        case Exit.Fail(fail) => ???
-
-  protected val scalac: Scalac[3.8] = Scalac(List(scalacOptions.experimental))
-
-
-  protected def invoke[output](stage: Stage[output, Text, Path on Linux])
-  :   Enclave.Launcher =
-
-    stage.remote: input =>
-      unsafely:
-        variables(inputParameters = input):
-          sh"${stage.target}".exec[Exit]()
-
-      t"""[""]"""
-
-    Enclave.Launcher(stage.target)
+export SocketCreation.socket as socketCreatable

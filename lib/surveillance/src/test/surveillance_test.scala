@@ -41,6 +41,8 @@ import strategies.throwUnsafely
 import systems.javaSystem
 import temporaryDirectories.systemTemporaryDirectory
 
+import filesystemBackends.virtualMachine
+
 object Tests extends Suite(m"Surveillance tests"):
   def run(): Unit =
     test(m"Watching a path beneath a nonexistent directory raises a WatchError"):

@@ -32,10 +32,7 @@
                                                                                                   */
 package galilei
 
-import java.nio.file as jnf
-
 import beneficence.*
 
 trait DereferenceSymlinks extends Findable:
   def dereference: Boolean
-  def options(): List[jnf.LinkOption]

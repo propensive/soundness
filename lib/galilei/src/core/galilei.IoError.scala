@@ -44,7 +44,8 @@ object IoError:
   enum Reason:
     case
       PermissionDenied, Nonexistent, AlreadyExists, IsNotDirectory, IsDirectory, DirectoryNotEmpty,
-      NotSameVolume, Unsupported, Cycle
+      NotSameVolume, Unsupported, Cycle, Busy, ReadOnly, TooManyLinks, NameTooLong, QuotaExceeded,
+      StorageFull, InvalidData, Interrupted, Physical
 
   @targetName("apply2")
   def apply(path: Path, operation: Operation, reason: Reason)
@@ -64,6 +65,15 @@ object IoError:
     case Reason.NotSameVolume     => m"the source and destination are on different volumes"
     case Reason.Unsupported       => m"it is not supported by the filesystem"
     case Reason.Cycle             => m"a cycle was detected on the filesystem"
+    case Reason.Busy              => m"the entry is in use"
+    case Reason.ReadOnly          => m"the filesystem is read-only"
+    case Reason.TooManyLinks      => m"too many hard links point to the entry"
+    case Reason.NameTooLong       => m"the entry's name is too long for the filesystem"
+    case Reason.QuotaExceeded     => m"the user's storage quota would be exceeded"
+    case Reason.StorageFull       => m"the filesystem has no space remaining"
+    case Reason.InvalidData       => m"the entry's data is invalid"
+    case Reason.Interrupted       => m"the operation was interrupted"
+    case Reason.Physical          => m"of a physical input/output error"
 
   given Operation is Communicable =
     case Operation.Read     => m"read"

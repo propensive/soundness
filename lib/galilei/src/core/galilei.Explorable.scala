@@ -32,70 +32,19 @@
                                                                                                   */
 package galilei
 
-import java.nio.file as jnf
-
-import anticipation.*
 import contingency.*
-import distillate.*
 import prepositional.*
 import serpentine.*
-import spectacular.*
 
 object Explorable:
-  given Linux is Explorable:
-    def children(path: Path on Linux): LazyList[Path on Linux] =
-      given tactic: Tactic[PathError] = strategies.throwUnsafely
+  // All planes explore identically: the backend lists child names, appended to the parent path
+  // (which is well-formed by construction, since each name came from a real directory entry).
+  given explorable: [plane: Filesystem]
+  =>  ( backend: FilesystemBackend on plane, tactic: Tactic[IoError] )
+  =>  plane is Explorable =
 
-      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then LazyList() else
-        jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
-        . iterator().nn
-        . asScala
-        . map(_.toString.tt.decode[Path on Linux])
-        . to(LazyList)
-
-  given Posix is Explorable:
-    def children(path: Path on Posix): LazyList[Path on Posix] =
-      given tactic: Tactic[PathError] = strategies.throwUnsafely
-
-      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then LazyList() else
-        jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
-        . iterator().nn
-        . asScala
-        . map(_.toString.tt.decode[Path on Posix])
-        . to(LazyList)
-
-  given Windows is Explorable:
-    def children(path: Path on Windows): LazyList[Path on Windows] =
-      given tactic: Tactic[PathError] = strategies.throwUnsafely
-
-      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then LazyList() else
-        jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
-        . iterator().nn
-        . asScala
-        . map(_.toString.tt.decode[Path on Windows])
-        . to(LazyList)
-
-  given MacOs is Explorable:
-    def children(path: Path on MacOs): LazyList[Path on MacOs] =
-      given tactic: Tactic[PathError] = strategies.throwUnsafely
-
-      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then LazyList() else
-        jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
-        . iterator().nn
-        . asScala
-        . map(_.toString.tt.decode[Path on MacOs])
-        . to(LazyList)
-
-  given local: ambience.System => Local is Explorable:
-    def children(path: Path on Local): LazyList[Path on Local] =
-      given tactic: Tactic[PathError] = strategies.throwUnsafely
-
-      if !jnf.Files.isDirectory(jnf.Path.of(path.show.s).nn) then LazyList() else
-        jnf.Files.list(jnf.Path.of(path.show.s).nn).nn
-        . iterator().nn
-        . asScala
-        . map(_.toString.tt.decode[Path on Local])
-        . to(LazyList)
+    path => backend.children(path).map: name =>
+      unsafely(path.child(name))
 
 trait Explorable extends Typeclass:
   def children(path: Path on Self): LazyList[Path on Self]

@@ -76,6 +76,8 @@ import filesystemOptions.dereferenceSymlinks.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
+import filesystemBackends.virtualMachine
+
 given daemonLogEvent: Message transcribes DaemonLogEvent = _.communicate
 
 def service[bus <: Matchable](using service: DaemonService[bus]): DaemonService[bus] = service

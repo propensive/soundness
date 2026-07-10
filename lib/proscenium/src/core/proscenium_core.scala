@@ -43,7 +43,14 @@ export Predef
     shortWrapper, byteWrapper, valueOf, doubleWrapper, floatWrapper, locally, is,
     refArrayOps, genericArrayOps, byteArrayOps, shortArrayOps, intArrayOps, longArrayOps,
     floatArrayOps, doubleArrayOps, charArrayOps, booleanArrayOps, unitArrayOps,
-    augmentString, `???`, classOf, assert }
+    augmentString, `???`, assert }
+
+// `Predef.classOf` is a compiler intrinsic only when its call carries a concrete class type:
+// through an export forwarder, the type argument is the forwarder's own (erased) type parameter,
+// so every call yielded `Class[Object]` at runtime. This inline version summons the class token
+// at each call site instead (where the type argument is concrete).
+inline def classOf[T](using tag: scala.reflect.ClassTag[T]): Class[T] =
+  tag.runtimeClass.asInstanceOf[Class[T]]
 
 export scala.util.control.NonFatal
 

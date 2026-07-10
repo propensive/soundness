@@ -58,6 +58,8 @@ import manifestAttributes.*
 import systems.javaSystem
 import workingDirectories.javaWorkingDirectory
 
+import filesystemBackends.virtualMachine
+
 object Bundler:
   def classpath(out: Path on Linux): LocalClasspath =
     val entries = Classpath.Directory(out) :: (classloaders.threadContextClassloader.classpath.match

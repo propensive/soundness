@@ -56,6 +56,8 @@ import filesystemOptions.createNonexistent.enabled
 import filesystemOptions.createNonexistentParents.enabled
 import filesystemOptions.deleteRecursively.enabled
 
+import filesystemBackends.virtualMachine
+
 object Tests extends Suite(m"Ziggurat tests"):
   def run(): Unit =
     if Ci() then Out.println(t"Running in CI; skipping Ziggurat tests")

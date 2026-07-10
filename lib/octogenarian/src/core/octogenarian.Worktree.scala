@@ -50,6 +50,8 @@ import vacuous.*
 
 import GitError.Reason.*
 
+import filesystemBackends.virtualMachine
+
 object Worktree:
   def apply[abstractable: Abstractable across Paths to Text](path: abstractable)
   :   Worktree raises PathError raises NameError raises GitError raises IoError =

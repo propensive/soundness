@@ -62,6 +62,8 @@ import httpBackends.virtualMachine
 import internetAccess.online
 import monotonous.*, alphabets.hexLowerCase
 
+import filesystemBackends.virtualMachine
+
 // Turns a `Packaging` configuration into a distributable. Each per-platform binary is the
 // application JAR appended to a bare reusable runner stub, obtained from `RunnerSource` —
 // read from a local directory, or downloaded and SHA-256-verified against the manifest.

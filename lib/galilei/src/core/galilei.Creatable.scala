@@ -34,14 +34,7 @@ package galilei
 
 import language.experimental.pureFunctions
 
-import java.nio.channels as jnc
-import java.nio.file as jnf
-
-import ambience.*
-import anticipation.*
 import contingency.*
-import fulminate.*
-import guillotine.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
@@ -50,6 +43,7 @@ object Creatable:
   given [plane: Filesystem]
   =>  ( createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
+        backend:                  FilesystemBackend on plane,
         tactic:                   Tactic[IoError] )
   =>  Directory is Creatable on plane to (Path on plane) =
 
@@ -61,33 +55,14 @@ object Creatable:
       def create(path: Path on Plane): Path on Plane =
         createNonexistentParents(path):
           overwritePreexisting(path):
-            jnf.Files.createDirectory(jnf.Path.of(path.encode.s).nn)
+            backend.createDirectory(path)
             path
-
-
-  given socket: [plane <: Posix: Filesystem]
-  =>  ( createNonexistentParents: CreateNonexistentParents on plane,
-        overwritePreexisting:     OverwritePreexisting on plane,
-        tactic:                   Tactic[IoError] )
-  =>  Socket is Creatable to Socket =
-
-    new Creatable:
-      type Plane = plane
-      type Self = Socket
-      type Result = Socket
-
-      def create(path: Path on Plane): Result =
-        createNonexistentParents(path):
-          overwritePreexisting(path):
-            val address = java.net.UnixDomainSocketAddress.of(path.javaPath).nn
-            val channel = jnc.ServerSocketChannel.open(java.net.StandardProtocolFamily.UNIX).nn
-            channel.bind(address)
-            Socket(channel)
 
 
   given file: [plane: Filesystem]
   =>  ( createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
+        backend:                  FilesystemBackend on plane,
         tactic:                   Tactic[IoError] )
   =>  File is Creatable on plane to (Path on plane) =
 
@@ -99,15 +74,14 @@ object Creatable:
       def create(path: Path on Plane): Path on Plane = path.also:
         createNonexistentParents(path):
           overwritePreexisting(path):
-            jnf.Files.createFile(path.javaPath)
+            backend.createFile(path)
 
 
   given fifo: [plane: Filesystem]
   =>  ( createNonexistentParents: CreateNonexistentParents on plane,
         overwritePreexisting:     OverwritePreexisting on plane,
-        working:                  WorkingDirectory,
-        tactic:                   Tactic[IoError],
-        loggable:                 ExecEvent is Loggable )
+        backend:                  FilesystemBackend on plane,
+        tactic:                   Tactic[IoError] )
   =>  Fifo is Creatable to (Path on plane) =
 
     new Creatable:
@@ -118,18 +92,7 @@ object Creatable:
       def create(path: Path on Plane): Path on Plane = path.also:
         createNonexistentParents(path):
           overwritePreexisting(path):
-            mitigate:
-              case ExecError(_, _, _) =>
-                import errorDiagnostics.stackTracesDiagnostics
-                IoError(path, IoError.Operation.Create, IoError.Reason.Unsupported)
-
-            . protect:
-                sh"mkfifo $path"() match
-                  case Exit.Ok => ()
-
-                  case _ =>
-                    raise
-                      ( IoError(path, IoError.Operation.Create, IoError.Reason.PermissionDenied) )
+            backend.createFifo(path)
 
 trait Creatable extends Typeclass, Resultant, Planar:
   def create(path: Path on Plane): Result
