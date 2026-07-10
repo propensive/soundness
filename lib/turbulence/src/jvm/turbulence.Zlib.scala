@@ -39,9 +39,22 @@ import anticipation.*
 import denominative.*
 import rudiments.*
 import vacuous.*
+import zephyrine.*
 
 object Zlib:
   given compression: Zlib is Compression:
+    def compressor()(using Buffering): Duct[Data, Data] {
+      type Transport = Credit
+      type Upstream = Credit } =
+
+      Deflation(gzip = false, nowrap = false)
+
+    def decompressor()(using Buffering): Duct[Data, Data] {
+      type Transport = Credit
+      type Upstream = Credit } =
+
+      Inflation(gzip = false, nowrap = false)
+
     def compress(stream: LazyList[Data]): LazyList[Data] =
       val deflater = juz.Deflater()
       val buffer: Array[Byte] = new Array(4096)

@@ -94,8 +94,12 @@ abstract class Duct[in, out]
       targetSpace: Int )
   :   Duct.Progress
 
-  // Emit terminal state after the upstream ends (e.g. a compressor's tail).
-  // Called repeatedly until it returns `0`.
+  // Emit terminal state after the upstream ends: a compressor's tail, and —
+  // critically — any pending output the transformation retains internally
+  // beyond what `step` could deliver (a decompressor may hold far more
+  // undelivered output than one step's space). A duct whose state can retain
+  // output MUST override this; the first `0` it returns is taken as the end
+  // of the stream. Called repeatedly until it returns `0`.
   def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int = 0
 
   def close(): Unit = ()

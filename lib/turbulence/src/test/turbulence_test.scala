@@ -584,6 +584,51 @@ object Tests extends Suite(m"Turbulence tests"):
           true
       . assert(identity)
 
+      val mixed: Data =
+        Data.fill(50000) { index => (index%251).toByte } ++ (t"repetition "*500).data
+
+      test(m"gzip duct roundtrips a byte stream"):
+        val gather = Gather2()
+        summon[Data is Source by Data over Credit].stream(mixed)
+        . compress[Gzip].decompress[Gzip].flowTo(gather)
+        gather.data.to(List)
+      . assert(_ == mixed.to(List))
+
+      test(m"deflate duct roundtrips a byte stream"):
+        val gather = Gather2()
+        summon[Data is Source by Data over Credit].stream(mixed)
+        . compress[Deflate].decompress[Deflate].flowTo(gather)
+        gather.data.to(List)
+      . assert(_ == mixed.to(List))
+
+      test(m"zlib duct roundtrips a byte stream"):
+        val gather = Gather2()
+        summon[Data is Source by Data over Credit].stream(mixed)
+        . compress[Zlib].decompress[Zlib].flowTo(gather)
+        gather.data.to(List)
+      . assert(_ == mixed.to(List))
+
+      test(m"gzip duct output is genuine gzip"):
+        val gather = Gather2()
+        summon[Data is Source by Data over Credit].stream(mixed).compress[Gzip].flowTo(gather)
+        val stream = java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(gather.data.mutable(using Unsafe)))
+        stream.readAllBytes().nn.to(List)
+      . assert(_ == mixed.to(List))
+
+      test(m"gzip duct decompresses JDK-produced gzip"):
+        val out = ji.ByteArrayOutputStream()
+        val zipped = java.util.zip.GZIPOutputStream(out)
+        zipped.write(mixed.mutable(using Unsafe))
+        zipped.close()
+        val gather = Gather2()
+
+        summon[LazyList[Data] is Source by Data over Credit]
+        . stream(out.toByteArray.nn.immutable(using Unsafe).grouped(7).to(LazyList))
+        . decompress[Gzip].flowTo(gather)
+
+        gather.data.to(List)
+      . assert(_ == mixed.to(List))
+
       test(m"cancelling a detached flow blocked on an empty conduit releases it"):
         supervise:
           val conduit = Conduit[Data]()

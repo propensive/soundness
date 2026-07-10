@@ -80,6 +80,18 @@ extension [medium, transport](stream: Stream[medium] over transport)
   def flow(intake: Intake[medium] over transport)(using Monitor, Probate): Task[Unit] =
     async(stream.flowTo(intake))
 
+extension (stream: Stream[Data] over Credit)
+  def compress[format <: Compressor](using compression: format is Compression, buffering: Buffering)
+  :   Stream[Data] over Credit =
+
+    stream.through(compression.compressor())
+
+  def decompress[format <: Compressor]
+    ( using compression: format is Compression, buffering: Buffering )
+  :   Stream[Data] over Credit =
+
+    stream.through(compression.decompressor())
+
 extension [medium](stream: Stream[medium] over Credit)
   // Legacy view: drain a pull endpoint as a lazy list of materialized chunks,
   // pulling one block per forced cell. For consumers not yet converted to the

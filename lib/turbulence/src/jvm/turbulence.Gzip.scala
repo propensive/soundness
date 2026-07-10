@@ -39,9 +39,22 @@ import anticipation.*
 import contingency.*
 import rudiments.*
 import vacuous.*
+import zephyrine.*
 
 object Gzip:
   given compression: Gzip is Compression:
+    def compressor()(using Buffering): Duct[Data, Data] {
+      type Transport = Credit
+      type Upstream = Credit } =
+
+      Deflation(gzip = true, nowrap = true)
+
+    def decompressor()(using Buffering): Duct[Data, Data] {
+      type Transport = Credit
+      type Upstream = Credit } =
+
+      Inflation(gzip = true, nowrap = true)
+
     def compress(stream: LazyList[Data]): LazyList[Data] =
       val out = ji.ByteArrayOutputStream()
       val out2 = juz.GZIPOutputStream(out)
