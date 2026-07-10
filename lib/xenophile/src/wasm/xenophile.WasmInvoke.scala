@@ -281,25 +281,31 @@ object WasmInvoke:
 
     // A resource method is imported under its Component Model name, `[method]resource.function`,
     // and takes the resource's handle — the underlying value of the `WitHandle` receiver — as its
-    // first (borrow) parameter.
+    // first (borrow) parameter. A constructor or static function is addressed through the resource
+    // (`[constructor]resource`, `[static]resource.function`) but takes no receiver.
     val importName: Text = prototype.resource.lay(function): resource =>
-      t"[method]$resource.$function"
+      if prototype.static then
+        if function == t"constructor" then t"[constructor]$resource"
+        else t"[static]$resource.$function"
+      else
+        t"[method]$resource.$function"
 
     val receiverPair: List[Term] = prototype.resource.lay(List()): resource =>
-      val facade = facadeOf(resource)
+      if prototype.static then List() else
+        val facade = facadeOf(resource)
 
-      // The receiver's handle is recovered at runtime from the `Foreign` value's expression — a
-      // converted `WitHandle` is an `Expression.Literal` wrapping it — so the receiver may be a
-      // bound `val`, not only an inline chain.
-      val handle =
-        '{  ${receiverNode.asExprOf[Foreign.Expression]} match
-              case Foreign.Expression.Literal(handle: WitHandle) =>
-                handle.value
+        // The receiver's handle is recovered at runtime from the `Foreign` value's expression — a
+        // converted `WitHandle` is an `Expression.Literal` wrapping it — so the receiver may be a
+        // bound `val`, not only an inline chain.
+        val handle =
+          '{  ${receiverNode.asExprOf[Foreign.Expression]} match
+                case Foreign.Expression.Literal(handle: WitHandle) =>
+                  handle.value
 
-              case _ =>
-                throw new RuntimeException("xenophile: not a WIT resource handle")  }
+                case _ =>
+                  throw new RuntimeException("xenophile: not a WIT resource handle")  }
 
-      List(Literal(ClassOfConstant(facade.typeRef)), handle.asTerm)
+        List(Literal(ClassOfConstant(facade.typeRef)), handle.asTerm)
 
     // Each declared argument crosses the boundary through its `Encodable in Wasm` codec, passed as
     // a `(classOf[Carrier], encoded)` pair.
