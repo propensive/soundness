@@ -133,7 +133,8 @@ extension [plane: Filesystem](path: Path on plane)
 
   def delete()(using deleteRecursively: DeleteRecursively on plane)
     ( using backend: FilesystemBackend on plane )
-  :   Path on plane logs IoEvent raises IoError =
+  ( using Tactic[IoError], IoEvent is Loggable )
+  :   Path on plane =
 
     deleteRecursively.conditionally(path)(backend.delete(path))
     Log.info(IoEvent.Delete(path.show))
@@ -142,7 +143,8 @@ extension [plane: Filesystem](path: Path on plane)
 
   def wipe()(using deleteRecursively: DeleteRecursively on plane)(using io: Tactic[IoError])
     ( using backend: FilesystemBackend on plane )
-  :   Path on plane logs IoEvent raises IoError =
+    ( using IoEvent is Loggable )
+  :   Path on plane =
 
     deleteRecursively.conditionally(path)(backend.deleteIfExists(path))
     Log.info(IoEvent.Delete(path.show))
@@ -157,7 +159,8 @@ extension [plane: Filesystem](path: Path on plane)
     ( using overwritePreexisting: OverwritePreexisting on plane,
             createNonexistentParents: CreateNonexistentParents on plane,
             backend:                  FilesystemBackend on plane )
-  :   Path on plane logs IoEvent raises IoError =
+  ( using Tactic[IoError], IoEvent is Loggable )
+  :   Path on plane =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
@@ -179,7 +182,8 @@ extension [plane: Filesystem](path: Path on plane)
             dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on plane )
     ( using FilesystemBackend on plane )
-  :   Path on plane logs IoEvent raises IoError =
+  ( using Tactic[IoError], IoEvent is Loggable )
+  :   Path on plane =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
@@ -209,7 +213,8 @@ extension [plane: Filesystem](path: Path on plane)
             dereferenceSymlinks:      DereferenceSymlinks,
             createNonexistentParents: CreateNonexistentParents on plane )
     ( using backend: FilesystemBackend on plane )
-  :   Path on plane logs IoEvent raises IoError =
+  ( using Tactic[IoError], IoEvent is Loggable )
+  :   Path on plane =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
@@ -236,7 +241,8 @@ extension [plane: Filesystem](path: Path on plane)
     ( using overwritePreexisting: OverwritePreexisting on plane,
             createNonexistentParents: CreateNonexistentParents on plane,
             backend:                  FilesystemBackend on plane )
-  :   Path on plane logs IoEvent raises IoError =
+  ( using Tactic[IoError], IoEvent is Loggable )
+  :   Path on plane =
 
     createNonexistentParents(destination):
       overwritePreexisting(destination):
@@ -280,7 +286,9 @@ extension [plane: Filesystem](path: Path on plane)
   def hidden()(using backend: FilesystemBackend on plane): Boolean raises IoError =
     backend.hidden(path)
 
-  def touch()(using backend: FilesystemBackend on plane): Unit logs IoEvent raises IoError =
+  def touch()(using backend: FilesystemBackend on plane)
+    ( using Tactic[IoError], IoEvent is Loggable )
+  :   Unit =
     backend.touch(path)
     Log.fine(IoEvent.Touch(path.show))
 
