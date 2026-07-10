@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export xenophile.{Wasm, WasmInvoke}
+export xenophile.{Wasm, WasmInvoke, WitHandle}
 
 // Materializes a fully-applied WIT `Foreign` invocation into a real Wasm Component Model import
 // call. Must be applied directly to an inline navigation chain — e.g.
@@ -44,3 +44,9 @@ export xenophile.{Wasm, WasmInvoke}
 extension (foreign: xenophile.Foreign)
   inline def invoke[result]: result =
     ${xenophile.WasmInvoke.invoke[result]('foreign)}
+
+// Releases a WIT resource handle, emitting its `[resource-drop]` Component Model import. Like
+// `invoke`, plain `inline` so the import materializes at the downstream (Wasm-linked) call site.
+extension (handle: xenophile.WitHandle)
+  inline def dispose(): Unit =
+    ${xenophile.WasmInvoke.dispose('handle)}
