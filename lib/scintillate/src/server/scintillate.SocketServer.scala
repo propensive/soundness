@@ -178,7 +178,12 @@ extends RequestServable:
 
           val request =
             Http.Request
-              ( head.method, head.version, head.host, head.target, head.headers, () => body )
+              ( head.method,
+                head.version,
+                head.host,
+                head.target,
+                head.headers,
+                () => Stream(body.iterator) )
 
           var upgraded = false
           var keep = keepAlive(head)

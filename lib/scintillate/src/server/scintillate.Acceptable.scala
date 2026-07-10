@@ -59,7 +59,7 @@ object Acceptable:
           val boundary = contentType.at(t"boundary").or:
             abort(MultipartError(MultipartError.Reason.MediaType))
 
-          Multipart.parse(request.body(), boundary)
+          Multipart.parse(request.body().lazyList, boundary)
         else
           abort(MultipartError(MultipartError.Reason.MediaType))
 

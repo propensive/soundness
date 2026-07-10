@@ -277,7 +277,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           connection.start()
 
           val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".decode[Host]),
-              t"/echo.Service/Call", Nil, () => LazyList(ascii(t"ping")))
+              t"/echo.Service/Call", Nil, () => Stream(ascii(t"ping")))
 
           val (stream, response) = connection.fetch(request, t"http", t"unix")
           val bodyText = ascii(t"pong").to(List) == response.body.stream.reduce(_ ++ _).to(List)
@@ -309,7 +309,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"unix")
 
           val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".decode[Host]),
-              t"/echo.Service/Call", Nil, () => LazyList())
+              t"/echo.Service/Call", Nil, () => Stream(Iterator.empty[Data]))
 
           client.request(request, endpoint).status.code
       . assert(_ == 200)

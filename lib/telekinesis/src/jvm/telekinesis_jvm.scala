@@ -45,7 +45,6 @@ import prepositional.*
 import rudiments.*
 import turbulence.*
 import urticose.*
-import vacuous.*
 import zephyrine.*
 
 // Build the underlying Java client with redirect-following disabled — the
@@ -71,19 +70,16 @@ private def buildJavaRequest
   ( uri:         jn.URI,
     method:      Http.Method,
     textHeaders: List[Http.Header],
-    bodyFn:      () => LazyList[Data] )
+    bodyFn:      () => Stream[Data] over Credit )
 :   jnh.HttpRequest =
 
   val request: jnh.HttpRequest.Builder = jnh.HttpRequest.newBuilder().nn.uri(uri).nn
 
-  lazy val body = bodyFn() match
-    case LazyList() => jnh.HttpRequest.BodyPublishers.noBody.nn
-
-    case LazyList(bytes) =>
-      jnh.HttpRequest.BodyPublishers.ofByteArray(bytes.mutable(using Unsafe))
-
-    case stream =>
-      jnh.HttpRequest.BodyPublishers.ofInputStream: () => stream.inputStream
+  // The publisher pulls a fresh pull endpoint each time it is subscribed (the
+  // JDK may re-subscribe on retry), draining it lazily through an
+  // `InputStream` so the body is never held whole in memory.
+  lazy val body =
+    jnh.HttpRequest.BodyPublishers.ofInputStream { () => bodyFn().lazyList.inputStream }.nn
 
   method match
     case Http.Delete  => request.DELETE().nn
@@ -150,7 +146,7 @@ package httpBackends:
       ( url:     Text,
         method:  Http.Method,
         headers: List[Http.Header],
-        body:    () => LazyList[Data] )
+        body:    () => Stream[Data] over Credit )
       ( using Tactic[ConnectError] )
     :   Http.Response =
 

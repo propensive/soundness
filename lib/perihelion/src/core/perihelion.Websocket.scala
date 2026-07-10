@@ -233,4 +233,4 @@ class Websocket[message, state]
         initial
 
     . protect:
-        loop(Reader(() => request.body(), channel).messages, initial)
+        loop(Reader(() => request.body().lazyList, channel).messages, initial)

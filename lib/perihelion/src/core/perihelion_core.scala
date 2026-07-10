@@ -215,7 +215,7 @@ given wsClient: ( Online,
               Http.Header(t"Upgrade", t"websocket"),
               Http.Header(t"Sec-WebSocket-Key", key),
               Http.Header(t"Sec-WebSocket-Version", t"13") ),
-          () => LazyList() )
+          () => Http.emptyBody() )
 
     duplex.send(Http.Request.serialize(request))
 
