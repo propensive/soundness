@@ -52,6 +52,8 @@ import textSanitizers.skipSanitizer
 import _root_.java.io as ji
 import _root_.java.util.zip as juz
 
+import filesystemBackends.virtualMachine
+
 object Tests extends Suite(m"Zeppelin tests"):
   def run(): Unit =
     val workDir: Path on Linux = temporaryDirectory[Path on Linux]/Uuid().show
