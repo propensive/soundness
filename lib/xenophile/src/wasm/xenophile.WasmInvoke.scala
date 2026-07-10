@@ -117,19 +117,58 @@ object WasmInvoke:
     // adaptation nodes that its literal-`classOf` check rejects).
     val classOfCarrier = Literal(ClassOfConstant(carrier))
 
-    // The WIT result type as text, straight from the `.wit` definition, so the backend has the full
-    // shape (e.g. `list<tuple<string, string>>`) that `classOf` cannot carry: `classOf` erases
-    // nested type arguments, collapsing a `tuple<string, string>` to a fieldless tuple. `classOf`
-    // still supplies the (erasure-safe) IR result type.
-    val witType = Literal(StringConstant(prototype.result.text.s))
-
     // The `sigAndArgs` argument must be a `Repeated` ascribed with the tree-level repeated type
     // (`scala.<repeated>[Any]` — not `Seq[Any]`, which reads as a single sequence value and gets
     // re-wrapped as one vararg element).
     val repeatedAny = defn.RepeatedParamClass.typeRef.appliedTo(TypeRepr.of[Any])
 
+    // The WIT result type as a structured descriptor, straight from the `.wit` definition, so the
+    // backend has the full shape (e.g. `list<tuple<string, string>>`) that `classOf` cannot carry:
+    // `classOf` erases nested type arguments, collapsing a `tuple<string, string>` to a fieldless
+    // tuple. The descriptor is a tree of calls to the `wit*` markers in `scala.scalajs.wit`
+    // (resolved here, downstream, like `witImportCall` itself), which the backend deconstructs by
+    // symbol; `classOf` still supplies the (erasure-safe) IR result type.
+    def marker(name: String): Term = Ref(Symbol.requiredMethod("scala.scalajs.wit." + name))
+
+    val primitives =
+      Set("bool", "u8", "u16", "u32", "u64", "s8", "s16", "s32", "s64", "f32", "f64", "char",
+          "string")
+
+    def descriptor(witType: Foreign.Type): Term = witType match
+      case Foreign.Type.Named(name) if primitives(name.s) =>
+        Apply(marker("witPrim"), List(Literal(StringConstant(name.s))))
+
+      case Foreign.Type.Union(List(inner, Foreign.Type.Named(none))) if none.s == "none" =>
+        Apply(marker("witOption"), List(descriptor(inner)))
+
+      case Foreign.Type.Applied(constructor, arguments) => constructor.s match
+        case "list" =>
+          Apply(marker("witList"), List(descriptor(arguments.head)))
+
+        case "option" =>
+          Apply(marker("witOption"), List(descriptor(arguments.head)))
+
+        case "tuple" =>
+          val elements = Repeated(arguments.map(descriptor), TypeTree.of[Any])
+          Apply(marker("witTuple"), List(Typed(elements, Inferred(repeatedAny))))
+
+        case "result" =>
+          def arm(tpe: Foreign.Type): Term = tpe match
+            case Foreign.Type.Named(name) if name.s == "_" => marker("witUnit")
+            case other                                     => descriptor(other)
+
+          Apply(marker("witResult"), List(arm(arguments.head), arm(arguments(1))))
+
+        case other =>
+          halt(m"xenophile: the WIT type constructor $other cannot cross a WIT boundary yet")
+
+      case other =>
+        halt(m"xenophile: the WIT type ${other.text} cannot cross a WIT boundary yet")
+
     val varargs =
-      Typed(Repeated(List(classOfCarrier, witType), TypeTree.of[Any]), Inferred(repeatedAny))
+      Typed
+        ( Repeated(List(classOfCarrier, descriptor(prototype.result)), TypeTree.of[Any]),
+          Inferred(repeatedAny) )
 
     val callTerm =
       Apply
