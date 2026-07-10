@@ -75,6 +75,8 @@ object Openable:
       Handle
         ( () => Streamable.channel.stream(channel).stream[Data],
           Writable.channel.write(channel, _) )
+        ( () => Source.channel.stream(channel),
+          () => Sink.channel.intake(channel) )
 
     def close(channel: jnc.FileChannel): Unit = channel.close()
 

@@ -36,9 +36,19 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 import turbulence.*
+import zephyrine.*
 
 object Handle:
   given streamable: Tactic[StreamError] => Handle is Streamable by Data = _.reader()
   given writable: Emit[StreamError] => Handle is Writable by Data = _.writer(_)
+  given source: Handle is Source by Data over Credit = _.source()
+  given sink: Handle is Sink by Data over Credit = _.intake()
 
-class Handle(val reader: () => LazyList[Data], val writer: LazyList[Data] => Unit)
+// The native `source`/`intake` endpoints default to bridging the legacy
+// `reader`/`writer`; `Openable` supplies channel-native endpoints, so file
+// I/O reads and writes directly through the streaming kernel's buffers.
+class Handle
+  ( val reader: () => LazyList[Data], val writer: LazyList[Data] => Unit )
+  ( val source: () => Stream[Data] over Credit = () => Stream(reader().iterator),
+    val intake: () => Intake[Data] over Credit =
+      () => Sink.buffered((), (_, stream) => writer(stream)) )

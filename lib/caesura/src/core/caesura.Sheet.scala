@@ -51,6 +51,7 @@ import spectacular.*
 import symbolism.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 object Sheet:
   private enum State:
@@ -92,24 +93,61 @@ object Sheet:
               Column[Dsv, Text, Text](name, sizing = columnar.Collapsible(0.5))
                 ( _[Text](name).or(t"") ) )* )
 
-  given aggregable: (format: DsvFormat) => Tactic[DsvError] => Sheet is Aggregable by Text = text =>
-    val rows = parse(text)
-    if format.header then Sheet(rows, format, rows.prim.let(_.header)) else Sheet(rows, format)
+  given aggregable: (format: DsvFormat) => Tactic[DsvError] => Sheet is Aggregable by Text =
+    new Aggregable:
+      type Self = Sheet
+      type Operand = Text
+
+      def aggregate(text: LazyList[Text]): Sheet = sheet(parse(text))
+      override def accept(stream: Stream[Text] over Credit): Sheet = sheet(parse(stream))
+
+      private def sheet(rows: LazyList[Dsv]): Sheet =
+        if format.header then Sheet(rows, format, rows.prim.let(_.header))
+        else Sheet(rows, format)
 
   given showable: DsvFormat => Sheet is Showable = _.rows.map(_.show).join(t"\n")
   given streamable: DsvFormat => Sheet is Streamable by Text = _.rows.to(LazyList).map(_.show+t"\n")
 
 
-  private def parse(content: LazyList[Text])
+  private def parse(content0: LazyList[Text])
     ( using format: DsvFormat, tactic: Tactic[DsvError] )
   :   LazyList[Dsv] =
 
-    new Parser(content).stream
+    var content: LazyList[Text] = content0
+
+    val load: () => Optional[Text] = () => content match
+      case head #:: tail =>
+        content = tail
+        head
+
+      case _ =>
+        Unset
+
+    new Parser(load).stream
 
 
-  private class Parser(initial: LazyList[Text])
+  // Parse rows from a pull endpoint, one block-credit refill per chunk.
+  private def parse(stream: Stream[Text] over Credit)
+    ( using format: DsvFormat, tactic: Tactic[DsvError], buffering: Buffering )
+  :   LazyList[Dsv] =
+
+    val block = buffering.capacity(Substrate.Chars)
+
+    val load: () => Optional[Text] = () => stream.refill(Credit(block)) match
+      case count: Int =>
+        val window = stream.window(using Unsafe)
+        val text = stream.addressable.materialize(window, stream.start, count)
+        stream.skip(count)
+        text
+
+      case _ =>
+        Unset
+
+    new Parser(load).stream
+
+
+  private class Parser(load: () => Optional[Text])
     ( using format: DsvFormat, tactic: Tactic[DsvError] ):
-    private var content: LazyList[Text] = initial
     private var current: String = ""
     private var currentLen: Int = 0
     private var pos: Int = 0
@@ -124,20 +162,25 @@ object Sheet:
     private val quoteChar: Char = format.quote
     private val isHeader: Boolean = format.header
 
-    @scala.annotation.tailrec
     private def loadChunk(): Boolean =
-      if pos < currentLen then true
-      else content match
-        case head #:: tail =>
-          consumed += currentLen
-          current = head.s
-          currentLen = current.length
-          pos = 0
-          content = tail
-          if currentLen == 0 then loadChunk() else true
+      if pos < currentLen then true else
+        var continue = true
+        var result = false
 
-        case _ =>
-          false
+        while continue do
+          val next = load()
+
+          if next.absent then continue = false else
+            consumed += currentLen
+            current = next.or(t"").s
+            currentLen = current.length
+            pos = 0
+
+            if currentLen > 0 then
+              continue = false
+              result = true
+
+        result
 
     private def closeCell(): Unit =
       cellsBuf += Text(builder.toString.nn)
