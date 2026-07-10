@@ -50,6 +50,8 @@ import probates.awaitProbate
 
 import Control.*
 
+import filesystemBackends.virtualMachine
+
 object Tests extends Suite(m"Coaxial tests"):
   def run(): Unit = unsafely:
 
