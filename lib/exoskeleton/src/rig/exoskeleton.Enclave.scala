@@ -58,6 +58,8 @@ import logging.silentLogging
 import probates.cancelProbate
 import workingDirectories.javaWorkingDirectory
 
+import filesystemBackends.virtualMachine
+
 
 object Enclave:
   case class Tool(path: Path on Linux, pid: Pid):
