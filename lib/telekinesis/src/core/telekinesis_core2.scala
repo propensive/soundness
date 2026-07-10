@@ -48,7 +48,7 @@ import doms.html.whatwg, whatwg.*
 // may itself capture capabilities — a value constructed from capabilities is a capability
 // (Jon, 2026-07-06; see rep/DECISIONS.md).
 class Orchestrate[value: Encodable in Query, result](initial: Optional[value] = Unset)
-  ( process: (Text => Html of Flow) => Optional[value] => result )
+  ( process: (form: Text => Html of Flow) => Optional[value] ->{form, caps.any} result )
 extends caps.ExclusiveCapability:
   def otherwise(validate: (query: Query) ?=> Validation)(using Formulation, value is Formulaic)
     ( using decodable: Tactic[Exception] ?=> value is Decodable in Query )

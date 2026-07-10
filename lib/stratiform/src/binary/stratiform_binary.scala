@@ -76,8 +76,12 @@ extension (tel: Tel)
   // magic + signature length + signature + body. The signature length
   // must be a valid palimpsest length under some `(H, k_i, k_r)`;
   // otherwise raises `BintelError(BadSignatureLength)`.
+  // Declared with explicit tactics rather than stacked `raises`: under capture checking
+  // a stacked context-function result whose inner level uses the outer tactic cannot
+  // unify its capture with the declared result capability (3.10 toolchain).
   def bintelDocument(schema: Tels, signature: Data)
-  :   Data raises TelError raises BintelError =
+    ( using Tactic[TelError], Tactic[BintelError] )
+  :   Data =
 
     Bintel.frame(tel.bintel(schema), signature)
 
