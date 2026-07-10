@@ -32,16 +32,15 @@
                                                                                                   */
 package galilei
 
-import java.nio.file as jnf
-
 import prepositional.*
 import serpentine.*
 
 object Substantiable:
   given substantiable: [filesystem: Filesystem, path <: Path on filesystem]
+  =>  ( backend: FilesystemBackend on filesystem )
   =>  path is Substantiable =
 
-    path => jnf.Files.exists(path.javaPath)
+    path => backend.exists(path, true)
 
 
 trait Substantiable extends Typeclass:

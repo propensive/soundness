@@ -32,19 +32,38 @@
                                                                                                   */
 package galilei
 
+import java.io as ji
+import java.net as jn
+import java.nio.channels as jnc
+import java.nio.file as jnf
+
 import contingency.*
 import prepositional.*
 import serpentine.*
 
-object Explorable:
-  // All planes explore identically: the backend lists child names, appended to the parent path
-  // (which is well-formed by construction, since each name came from a real directory entry).
-  given explorable: [plane: Filesystem]
-  =>  ( backend: FilesystemBackend on plane, tactic: Tactic[IoError] )
-  =>  plane is Explorable =
+// The `java.nio` representations of a path, for interoperating with Java APIs directly.
+extension [plane: Filesystem](path: Path on plane)
+  def javaPath: jnf.Path = jnf.Path.of(Path.encodable.encode(path).s).nn
+  def javaFile: ji.File = javaPath.toFile.nn
 
-    path => backend.children(path).map: name =>
-      unsafely(path.child(name))
+object SocketCreation:
+  given socket: [plane <: Posix: Filesystem]
+  =>  ( createNonexistentParents: CreateNonexistentParents on plane,
+        overwritePreexisting:     OverwritePreexisting on plane,
+        tactic:                   Tactic[IoError] )
+  =>  Socket is Creatable to Socket =
 
-trait Explorable extends Typeclass:
-  def children(path: Path on Self): LazyList[Path on Self]
+    new Creatable:
+      type Plane = plane
+      type Self = Socket
+      type Result = Socket
+
+      def create(path: Path on Plane): Result =
+        createNonexistentParents(path):
+          overwritePreexisting(path):
+            val address = jn.UnixDomainSocketAddress.of(path.javaPath).nn
+            val channel = jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
+            channel.bind(address)
+            Socket(channel)
+
+export SocketCreation.socket as socketCreatable

@@ -32,19 +32,14 @@
                                                                                                   */
 package galilei
 
-import contingency.*
-import prepositional.*
-import serpentine.*
+import vacuous.*
 
-object Explorable:
-  // All planes explore identically: the backend lists child names, appended to the parent path
-  // (which is well-formed by construction, since each name came from a real directory entry).
-  given explorable: [plane: Filesystem]
-  =>  ( backend: FilesystemBackend on plane, tactic: Tactic[IoError] )
-  =>  plane is Explorable =
-
-    path => backend.children(path).map: name =>
-      unsafely(path.child(name))
-
-trait Explorable extends Typeclass:
-  def children(path: Path on Self): LazyList[Path on Self]
+// An entry's metadata, as one value: its type, size in bytes, and millisecond-epoch timestamps.
+// `created` is `Unset` on filesystems that do not record creation times (most POSIX filesystems,
+// and WASI).
+case class Stat
+  ( entry:    Entry,
+    size:     Long,
+    modified: Long,
+    accessed: Long,
+    created:  Optional[Long] )

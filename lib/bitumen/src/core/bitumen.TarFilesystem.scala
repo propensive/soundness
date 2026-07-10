@@ -47,6 +47,8 @@ import serpentine.*
 import spectacular.*
 import vacuous.*
 
+import filesystemBackends.virtualMachine
+
 
 private[bitumen] object TarFilesystem:
   def entryFor[plane <: Posix: Filesystem]

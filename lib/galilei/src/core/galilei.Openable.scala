@@ -32,10 +32,6 @@
                                                                                                   */
 package galilei
 
-import java.nio.channels as jnc
-import java.nio.file as jnf
-
-import anticipation.*
 import contingency.*
 import prepositional.*
 import serpentine.*
@@ -47,60 +43,32 @@ object Openable:
         write:       WriteAccess,
         dereference: DereferenceSymlinks,
         create:      CreateNonexistent on filesystem,
-        streamError: Tactic[StreamError],
+        backend:     FilesystemBackend on filesystem,
         ioError:     Tactic[IoError] )
-  =>  path is Openable by jnf.OpenOption to Handle = new Openable:
+  =>  path is Openable by OpenFlag to Handle = new Openable:
 
     type Self = path
-    type Operand = jnf.OpenOption
+    type Operand = OpenFlag
     type Result = Handle
-    type Transport = jnc.FileChannel
 
-    def initialize(path: path, extraOptions: List[jnf.OpenOption]): jnc.FileChannel =
-      val options =
-        read.options() ++ write.options() ++ dereference.options() ++ create.options() ++
-          extraOptions
+    def open[result](path: path, lambda: Handle => result, extraOptions: List[OpenFlag]): result =
+      val dereferenceFlags = if dereference.dereference then Nil else List(OpenFlag.NoFollow)
 
-      import jnf.StandardOpenOption as jnfsoo
+      val flags =
+        read.flags() ++ write.flags() ++ dereferenceFlags ++ create.flags() ++ extraOptions
 
-      val options2 =
-        if options.contains(jnfsoo.READ) && options.contains(jnfsoo.APPEND)
-        then options.filter(_ != jnfsoo.READ)
-        else options
-
-      path.protect(IoError.Operation.Open)
-        ( jnc.FileChannel.open(jnf.Path.of(path.encode.s), options2*).nn )
-
-    def handle(channel: jnc.FileChannel): Handle =
-      Handle
-        ( () => Streamable.channel.stream(channel).stream[Data],
-          Writable.channel.write(channel, _) )
-        ( () => Source.channel.stream(channel),
-          () => Sink.channel.intake(channel) )
-
-    def close(channel: jnc.FileChannel): Unit = channel.close()
+      backend.open(path, flags)(lambda)
 
 
-  given eof: [file: Openable by jnf.OpenOption] => Eof[file] is Openable:
+  given eof: [file: Openable by OpenFlag] => Eof[file] is Openable:
     type Self = Eof[file]
-    type Operand = file.Operand
+    type Operand = OpenFlag
     type Result = file.Result
-    type Transport = file.Transport
 
-    def initialize(eof: Eof[file], options: List[Operand]): Transport =
-      file.initialize(eof.file, jnf.StandardOpenOption.APPEND :: options)
+    def open[result](eof: Eof[file], lambda: file.Result => result, options: List[OpenFlag])
+    :   result =
 
-    def handle(transport: Transport): Result = file.handle(transport)
-    def close(transport: Transport): Unit = file.close(transport)
+      file.open(eof.file, lambda, OpenFlag.Append :: options)
 
 trait Openable extends Typeclass, Operable, Resultant:
-  protected type Transport
-
-  def initialize(value: Self, options: List[Operand]): Transport
-  def handle(transport: Transport): Result
-
-  def open[result](value: Self, lambda: Result => result, options: List[Operand]): result =
-    val transport = initialize(value, options)
-    try lambda(handle(transport)) finally close(transport)
-
-  def close(transport: Transport): Unit
+  def open[result](value: Self, lambda: Result => result, options: List[Operand]): result

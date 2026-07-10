@@ -34,11 +34,9 @@ package galilei
 
 import anticipation.*
 import fulminate.*
-import guillotine.*
 
 object IoEvent:
   given communicable: IoEvent is Communicable =
-    case Exec(event)           => event.communicate
     case Create(path)          => m"created $path"
     case Delete(path)          => m"deleted $path"
     case Move(from, to)        => m"moved $from to $to"
@@ -48,7 +46,6 @@ object IoEvent:
     case Touch(path)           => m"touched $path"
 
 enum IoEvent:
-  case Exec(event: ExecEvent) extends IoEvent, Log.Process
   case Create(path: Text) extends IoEvent, Log.Filesystem
   case Delete(path: Text) extends IoEvent, Log.Filesystem
   case Move(from: Text, to: Text) extends IoEvent, Log.Filesystem

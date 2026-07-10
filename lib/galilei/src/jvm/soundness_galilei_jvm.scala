@@ -30,21 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package soundness
 
-import contingency.*
-import prepositional.*
-import serpentine.*
+export galilei.{javaPath, javaFile, socketCreatable, Device}
 
-object Explorable:
-  // All planes explore identically: the backend lists child names, appended to the parent path
-  // (which is well-formed by construction, since each name came from a real directory entry).
-  given explorable: [plane: Filesystem]
-  =>  ( backend: FilesystemBackend on plane, tactic: Tactic[IoError] )
-  =>  plane is Explorable =
-
-    path => backend.children(path).map: name =>
-      unsafely(path.child(name))
-
-trait Explorable extends Typeclass:
-  def children(path: Path on Self): LazyList[Path on Self]
+package filesystemBackends:
+  export galilei.filesystemBackends.virtualMachine

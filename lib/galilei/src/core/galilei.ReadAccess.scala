@@ -32,15 +32,13 @@
                                                                                                   */
 package galilei
 
-import java.nio.file as jnf
-
 object ReadAccess:
   sealed trait Ability
 
 trait ReadAccess:
   type Transform[_]
 
-  def options(): List[jnf.OpenOption]
+  def flags(): List[OpenFlag]
 
   def transform[HandleType](handle: HandleType): Transform[HandleType] =
     handle.asInstanceOf[Transform[HandleType]]

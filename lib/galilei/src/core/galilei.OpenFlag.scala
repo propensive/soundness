@@ -32,19 +32,8 @@
                                                                                                   */
 package galilei
 
-import contingency.*
-import prepositional.*
-import serpentine.*
-
-object Explorable:
-  // All planes explore identically: the backend lists child names, appended to the parent path
-  // (which is well-formed by construction, since each name came from a real directory entry).
-  given explorable: [plane: Filesystem]
-  =>  ( backend: FilesystemBackend on plane, tactic: Tactic[IoError] )
-  =>  plane is Explorable =
-
-    path => backend.children(path).map: name =>
-      unsafely(path.child(name))
-
-trait Explorable extends Typeclass:
-  def children(path: Path on Self): LazyList[Path on Self]
+// The platform-neutral options for opening an entry's content, assembled by the `ReadAccess`,
+// `WriteAccess`, `CreateNonexistent` and `WriteSynchronously` option typeclasses (plus `Eof` for
+// appending) and interpreted by the `FilesystemBackend`.
+enum OpenFlag:
+  case Read, Write, Append, Create, Exclusive, Truncate, Sync, Dsync, NoFollow

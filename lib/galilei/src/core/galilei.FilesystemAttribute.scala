@@ -32,21 +32,33 @@
                                                                                                   */
 package galilei
 
-import java.nio.file as jnf
-
+import contingency.*
 import prepositional.*
 import serpentine.*
-import spectacular.*
+
+import FilesystemBackend.Attribute
 
 object FilesystemAttribute:
-  class Readable[plane: Filesystem](path: Path on plane):
-    def apply(): Boolean = jnf.Files.isReadable(jnf.Path.of(path.show.s))
-    def update(value: Boolean): Unit = path.javaFile.setReadable(value)
+  class Readable[plane: Filesystem](path: Path on plane)
+    ( using backend: FilesystemBackend on plane ):
 
-  class Writable[plane: Filesystem](path: Path on plane):
-    def apply(): Boolean = jnf.Files.isWritable(jnf.Path.of(path.show.s))
-    def update(value: Boolean): Unit = path.javaFile.setWritable(value)
+    def apply(): Boolean = backend.attribute(path, Attribute.Readable)
 
-  class Executable[plane <: Posix: Filesystem](path: Path on plane):
-    def apply(): Boolean = jnf.Files.isExecutable(jnf.Path.of(path.show.s))
-    def update(value: Boolean): Unit = path.javaFile.setExecutable(value)
+    def update(value: Boolean): Unit raises IoError =
+      backend.update(path, Attribute.Readable, value)
+
+  class Writable[plane: Filesystem](path: Path on plane)
+    ( using backend: FilesystemBackend on plane ):
+
+    def apply(): Boolean = backend.attribute(path, Attribute.Writable)
+
+    def update(value: Boolean): Unit raises IoError =
+      backend.update(path, Attribute.Writable, value)
+
+  class Executable[plane <: Posix: Filesystem](path: Path on plane)
+    ( using backend: FilesystemBackend on plane ):
+
+    def apply(): Boolean = backend.attribute(path, Attribute.Executable)
+
+    def update(value: Boolean): Unit raises IoError =
+      backend.update(path, Attribute.Executable, value)

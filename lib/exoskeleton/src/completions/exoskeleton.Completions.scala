@@ -62,6 +62,8 @@ import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 import textSanitizers.skipSanitizer
 
+import filesystemBackends.virtualMachine
+
 object Completions:
   case class Tab(arguments: List[Text], focus: Int, cursor: Int, count: Int = 0):
     def next: Tab = copy(count = count + 1)

@@ -32,7 +32,5 @@
                                                                                                   */
 package galilei
 
-import java.nio.file as jnf
-
 trait WriteSynchronously:
-  def options(): List[jnf.StandardOpenOption]
+  def flags(): List[OpenFlag]

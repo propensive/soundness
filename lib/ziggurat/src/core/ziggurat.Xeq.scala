@@ -57,6 +57,8 @@ import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 import textSanitizers.skipSanitizer
 
+import filesystemBackends.virtualMachine
+
 object Xeq:
   private val ChunkSize: Int = 8000
   private val RunnerPrefix = t"runner-"

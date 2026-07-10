@@ -55,6 +55,8 @@ import filesystemOptions.overwritePreexisting.enabled
 import filesystemOptions.readAccess.enabled
 import filesystemOptions.writeAccess.enabled
 
+import filesystemBackends.virtualMachine
+
 case class AssemblyError(detail: Message)(using Diagnostics) extends Error(detail)
 
 // Produces a self-contained per-platform executable by patching a bare ethereal
@@ -143,7 +145,7 @@ object Assembler:
 
     output.open
       ( file => LazyList(patched).writeTo(file),
-        List(jnio.file.StandardOpenOption.TRUNCATE_EXISTING) )
+        List(OpenFlag.Truncate) )
 
     if platformLabel.starts(t"macos") then
       if !isWindows then output.executable() = true
