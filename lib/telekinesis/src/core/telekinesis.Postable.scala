@@ -46,6 +46,7 @@ import monotonous.*
 import prepositional.*
 import rudiments.*
 import spectacular.*
+import turbulence.*
 import vacuous.*
 
 import alphabets.hexLowerCase
@@ -83,7 +84,7 @@ object Postable:
       type Self = response
 
       def mediaType(content: response): MediaType = content.generic(0).decode[MediaType]
-      def stream(content: response): LazyList[Data] = content.generic(1)
+      def stream(content: response): LazyList[Data] = content.generic(1).lazyList
 
 trait Postable extends Typeclass:
   def mediaType(content: Self): MediaType

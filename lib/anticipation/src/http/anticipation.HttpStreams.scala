@@ -33,6 +33,33 @@
 package anticipation
 
 object HttpStreams:
-  type Content = (Text, LazyList[IArray[Byte]])
+  // A minimal demand-aware pull protocol for HTTP message bodies: each call
+  // to `next` produces at most `limit` bytes as one chunk, or `null` at the
+  // end of the stream, and may block until input is available. Deliberately
+  // dependency-free; richer streaming types (turbulence's `Source`,
+  // zephyrine's `Stream`) adapt to and from it.
+  object Body:
+    val empty: Body = limit => null
+
+    // A whole-value body, delivered in `limit`-bounded slices.
+    def apply(data: IArray[Byte]): Body = new Body:
+      private var position: Int = 0
+
+      def next(limit: Int): IArray[Byte] | Null =
+        if position >= data.length then null else
+          val end = data.length.min(position + limit)
+          val chunk = data.slice(position, end)
+          position = end
+          chunk
+
+    // A chunked body from a legacy iterator; `limit` cannot bound the
+    // chunks' own sizes.
+    def apply(chunks: Iterator[IArray[Byte]]): Body = limit =>
+      if chunks.hasNext then chunks.next() else null
+
+  trait Body:
+    def next(limit: Int): IArray[Byte] | Null
+
+  type Content = (Text, Body)
 
 sealed trait HttpStreams

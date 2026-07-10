@@ -118,7 +118,7 @@ object Audio:
     type Result = HttpStreams.Content
 
     def genericize(audio: Audio in format): HttpStreams.Content =
-      (format.mediaType.basic, audio.read[LazyList[Data]])
+      (format.mediaType.basic, HttpStreams.Body(audio.read[LazyList[Data]].iterator))
 
   given aggregable: [format: Audible as audible] => Tactic[AudioError]
   =>  (Audio in format) is Aggregable by Data =

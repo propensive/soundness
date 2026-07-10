@@ -113,6 +113,67 @@ extension [medium](stream: Stream[medium] over Credit)
 
     LazyList.defer(recur())
 
+extension (stream: Stream[Data] over Credit)
+  // Adapt a pull endpoint to the HTTP-body interchange protocol: each `next`
+  // refills with `limit` credit and materializes the delivered window.
+  def httpBody: HttpStreams.Body = limit =>
+    stream.refill(Credit(limit)) match
+      case count: Int =>
+        val take = count.min(limit)
+        val chunk = stream.addressable.materialize(stream.window(using Unsafe), stream.start, take)
+        stream.skip(take)
+        chunk
+
+      case _ =>
+        null
+
+extension (body: HttpStreams.Body)
+  // View an HTTP-body interchange value as a pull endpoint, one chunk per
+  // block-sized request.
+  def stream(using buffering: Buffering): Stream[Data] over Credit =
+    new Stream[Data]:
+      type Transport = Credit
+
+      private val block: Int = buffering.capacity(Substrate.Bytes)
+      private var chunk: Data = IArray.empty[Byte]
+      private var start0: Int = 0
+      private var limit0: Int = 0
+      private var ended: Boolean = false
+
+      // The chunk is immutable and only ever read through the window.
+      protected def window0: AnyRef = chunk.asInstanceOf[AnyRef]
+      def start: Int = start0
+      def limit: Int = limit0
+      def skip(count: Int): Unit = start0 += count
+
+      def refill(demand: Credit): Optional[Int] =
+        if limit0 > start0 then limit0 - start0
+        else if ended then Unset
+        else
+          val granted = summon[Credit is Regulation].grant(demand)
+
+          if granted == 0 then 0 else
+            body.next(block.min(granted)) match
+              case null =>
+                ended = true
+                Unset
+
+              case data: Data =>
+                chunk = data
+                start0 = 0
+                limit0 = data.length
+                if limit0 == 0 then refill(demand) else limit0
+
+  // Legacy view of an HTTP body as a lazy list of chunks.
+  def lazyList(using buffering: Buffering): LazyList[Data] =
+    val block = buffering.capacity(Substrate.Bytes)
+
+    def recur(): LazyList[Data] = body.next(block) match
+      case null       => LazyList()
+      case data: Data => data #:: recur()
+
+    LazyList.defer(recur())
+
 package stdios:
   given muteStdio: Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
 

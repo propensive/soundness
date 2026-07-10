@@ -59,6 +59,10 @@ object Source extends Source2:
   given lazyListText: LazyList[Text] is Source by Text over Credit = value =>
     Stream(value.iterator)
 
+  // The HTTP-body interchange protocol is itself a pull source, so a
+  // request or response body can be `read` directly.
+  given httpBody: Buffering => HttpStreams.Body is Source by Data over Credit = _.stream
+
   given inputStream: [input <: ji.InputStream] => (Tactic[StreamError], Buffering)
   =>  input is Source by Data over Credit =
 

@@ -71,7 +71,7 @@ object Sheet:
             case '\t' => t"text/tab-separated-values"
             case _    => t"text/csv"
 
-        (mediaType, dsv.stream[Text].map(_.data))
+        (mediaType, HttpStreams.Body(dsv.stream[Text].map(_.data).iterator))
 
 
   given tabular: Sheet is Tabular[Text]:

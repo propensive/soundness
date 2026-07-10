@@ -1153,7 +1153,7 @@ object Json extends Json2, Dynamic:
       type Result = HttpStreams.Content
 
       def genericize(json: Json): HttpStreams.Content =
-        (t"application/json; charset=${encoder.encoding.name}", LazyList(json.show.data))
+        (t"application/json; charset=${encoder.encoding.name}", HttpStreams.Body(json.show.data))
 
 
   given decodable: (Tactic[ParseError], PositionTracking) => Json is distillate.Decodable in Text =

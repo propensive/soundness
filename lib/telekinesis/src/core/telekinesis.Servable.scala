@@ -62,7 +62,8 @@ object Servable:
 
     def mediaType(value: response): MediaType = unsafely(Media.parse(response.generic(value)(0)))
 
-    Servable[response](mediaType): value => Http.Body.Streaming(response.generic(value)(1))
+    Servable[response](mediaType): value =>
+      Http.Body.Streaming(response.generic(value)(1).lazyList)
 
 
   given data: Data is Servable =
