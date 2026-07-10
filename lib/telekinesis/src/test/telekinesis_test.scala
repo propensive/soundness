@@ -595,3 +595,55 @@ object Tests extends Suite(m"Telekinesis tests"):
 
         test(m"no-sct")(capture[ConnectError](url"https://no-sct.badssl.com/".fetch()))
         . aspire(_ == ConnectError(Ssl(Handshake)))
+
+    suite(m"TLS acceptance materialization"):
+      test(m"strict acceptance verifies hostnames"):
+        val (_, parameters) = TlsAcceptance().materialize()
+        parameters.getEndpointIdentificationAlgorithm == "HTTPS"
+      . assert(identity)
+
+      test(m"relaxed acceptance disables endpoint identification"):
+        import crypto.permitUntrustedCertificates
+        val (_, parameters) = TlsAcceptance().permitHostnameMismatch.materialize()
+        parameters.getEndpointIdentificationAlgorithm == null
+      . assert(identity)
+
+      test(m"an expired-tolerant acceptance materializes a custom context"):
+        import crypto.permitUntrustedCertificates
+        val (context, _) = TlsAcceptance().permitExpired.materialize()
+        context != javax.net.ssl.SSLContext.getDefault
+      . assert(identity)
+
+      test(m"protocol restriction is applied to parameters"):
+        val acceptance = TlsAcceptance(versions = List(Tls.Version.Tls13))
+        val (_, parameters) = acceptance.materialize()
+        parameters.getProtocols.nn.to(List).map(_.nn.tt)
+      . assert(_ == List(t"TLSv1.3"))
+
+    suite(m"Certificate validation with relaxed acceptance"):
+      import crypto.permitUntrustedCertificates, crypto.permitUncheckedRevocation
+
+      test(m"expired certificate accepted under permitExpired"):
+        given TlsAcceptance = TlsAcceptance().permitExpired
+        url"https://expired.badssl.com/".fetch().status
+      . aspire(_ == Http.Ok)
+
+      test(m"self-signed certificate accepted under permitSelfSigned"):
+        given TlsAcceptance = TlsAcceptance().permitSelfSigned
+        url"https://self-signed.badssl.com/".fetch().status
+      . aspire(_ == Http.Ok)
+
+      test(m"untrusted root accepted under permitSelfSigned"):
+        given TlsAcceptance = TlsAcceptance().permitSelfSigned
+        url"https://untrusted-root.badssl.com/".fetch().status
+      . aspire(_ == Http.Ok)
+
+      test(m"wrong-host certificate accepted under permitHostnameMismatch"):
+        given TlsAcceptance = TlsAcceptance().permitHostnameMismatch
+        url"https://wrong.host.badssl.com/".fetch().status
+      . aspire(_ == Http.Ok)
+
+      test(m"revoked certificate accepted under permitRevoked"):
+        given TlsAcceptance = TlsAcceptance().permitRevoked
+        url"https://revoked.badssl.com/".fetch().status
+      . aspire(_ == Http.Ok)

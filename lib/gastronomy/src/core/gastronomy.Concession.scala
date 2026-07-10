@@ -47,6 +47,18 @@ object Concession:
   sealed trait Md5
   sealed trait Sha1
 
+  // TLS concessions (telekinesis): peer configurations a connection may be
+  // permitted to accept, from deprecated protocol versions and key sizes to
+  // certificate-validation relaxations.
+  sealed trait Tls10
+  sealed trait Tls11
+  sealed trait SmallDh              // ephemeral DH shorter than 2048 bits
+  sealed trait CbcCipher
+  sealed trait ExpiredCertificate
+  sealed trait SelfSignedCertificate
+  sealed trait UnverifiedHostname
+  sealed trait UncheckedRevocation
+
   // cipher concessions (enigmatic)
   sealed trait Des
   sealed trait TripleDes

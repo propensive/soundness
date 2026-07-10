@@ -35,6 +35,7 @@ package telekinesis
 import java.io as ji
 import java.net as jn
 import java.net.http as jnh
+import java.util.concurrent as juc
 import javax.net.ssl as jns
 
 import anticipation.*
@@ -50,9 +51,21 @@ import zephyrine.*
 // Build the underlying Java client with redirect-following disabled — the
 // redirect-following telekinesis given runs its own loop so it can honour
 // `HttpRedirection` exactly. Java's `NORMAL` policy has its own hard-coded
-// cap and would shadow the limit we summon.
-private lazy val javaClient: jnh.HttpClient =
-  jnh.HttpClient.newBuilder.nn.followRedirects(jnh.HttpClient.Redirect.NEVER).nn.build.nn
+// cap and would shadow the limit we summon. Java clients are immutable per
+// SSL configuration, so one is built and cached for each distinct
+// `TlsAcceptance` in use.
+private val javaClients: juc.ConcurrentHashMap[TlsAcceptance, jnh.HttpClient] =
+  juc.ConcurrentHashMap()
+
+private def javaClient(using acceptance: TlsAcceptance): jnh.HttpClient =
+  javaClients.computeIfAbsent(acceptance, { acceptance0 =>
+    val (context, parameters) = acceptance0.nn.materialize()
+
+    jnh.HttpClient.newBuilder.nn
+    . followRedirects(jnh.HttpClient.Redirect.NEVER).nn
+    . sslContext(context).nn
+    . sslParameters(parameters).nn
+    . build.nn }).nn
 
 private def buildJavaRequest
   ( uri:         jn.URI,
@@ -90,7 +103,7 @@ private def buildJavaRequest
 
   request.build().nn
 
-private def send(request: jnh.HttpRequest)(using Tactic[ConnectError])
+private def send(request: jnh.HttpRequest)(using Tactic[ConnectError], TlsAcceptance)
 :   jnh.HttpResponse[ji.InputStream] =
 
   import ConnectError.Reason.*, Ssl.Reason.*
@@ -132,7 +145,7 @@ package httpBackends:
   // The JVM transport, using `java.net.http`. Other platforms (e.g. Scala.js)
   // or implementations (e.g. an HTTP/2 client) supply their own `Http.Backend`
   // given instead.
-  given virtualMachine: Http.Backend = new Http.Backend:
+  given virtualMachine: TlsAcceptance => Http.Backend = new Http.Backend:
     def request
       ( url:     Text,
         method:  Http.Method,
