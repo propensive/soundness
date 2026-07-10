@@ -1511,7 +1511,7 @@ object telekinesis extends Library:
   // JVM-only transports split out of `core` so the platform-agnostic HTTP model and client can
   // cross-compile to Scala.js: the `java.net.http` `Http.Backend` (`httpBackends.virtualMachine`)
   // and the `coaxial` domain-socket client.
-  object jvm extends Component(core, coaxial.core):
+  object jvm extends Component(core, coaxial.core, gastronomy.core):
     override def scalaJs = false
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
