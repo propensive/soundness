@@ -48,6 +48,7 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
+import zephyrine.*
 
 object HttpConnection:
   def apply(exchange: csnh.HttpExchange)
@@ -109,6 +110,7 @@ object HttpConnection:
         case Http.Body.Empty        => -1
         case Http.Body.Fixed(data)  => data.length
         case Http.Body.Streaming(_) => 0
+        case Http.Body.Flowing(_)   => 0
 
       exchange.sendResponseHeaders(response.status.code, length)
       val responseBody = exchange.getResponseBody.nn
@@ -130,6 +132,25 @@ object HttpConnection:
               count += block.length
               responseBody.flush()
             catch case _: ji.IOException => abort(StreamError(count.b))
+
+        case Http.Body.Flowing(source) =>
+          val stream = source()
+
+          def recur(): Unit = stream.refill(Credit(Long.MaxValue)) match
+            case size: Int =>
+              try
+                val window = stream.window(using Unsafe).asInstanceOf[Array[Byte]]
+                responseBody.write(window, stream.start, size)
+                count += size
+                responseBody.flush()
+              catch case _: ji.IOException => abort(StreamError(count.b))
+
+              stream.skip(size)
+              recur()
+
+            case _ => ()
+
+          recur()
 
         case Http.Body.Empty =>
           try responseBody.flush()

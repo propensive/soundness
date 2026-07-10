@@ -45,6 +45,7 @@ import telekinesis.*
 import turbulence.*
 import urticose.*
 import vacuous.*
+import zephyrine.*
 
 open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.HttpServlet:
   protected def streamBody(request: jsh.HttpServletRequest): LazyList[Data] raises StreamError =
@@ -95,6 +96,21 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
         case Http.Body.Streaming(stream) =>
           servletResponse.addHeader("transfer-encoding", "chunked")
           stream.map(_.mutable(using Unsafe)).each(out.write(_))
+
+        case Http.Body.Flowing(source) =>
+          servletResponse.addHeader("transfer-encoding", "chunked")
+          val stream = source()
+
+          def recur(): Unit = stream.refill(Credit(Long.MaxValue)) match
+            case count: Int =>
+              out.write(stream.window(using Unsafe).asInstanceOf[Array[Byte]], stream.start, count)
+              out.flush()
+              stream.skip(count)
+              recur()
+
+            case _ => ()
+
+          recur()
 
       out.close()
 

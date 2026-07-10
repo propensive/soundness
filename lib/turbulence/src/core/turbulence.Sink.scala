@@ -151,7 +151,7 @@ object Sink extends Sink2:
   // Adapts a whole-`LazyList` writing function to the incremental `Intake`
   // protocol by accumulating chunks until `finish` — the basis of the
   // transitional `Writable` bridges below.
-  private[turbulence] def buffered[target, medium]
+  def buffered[target, medium]
     ( target: target, write: (target, LazyList[medium]) => Unit )
     ( using addressable0: medium is Addressable )
   :   Intake[medium] over Credit =

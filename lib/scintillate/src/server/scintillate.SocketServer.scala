@@ -127,6 +127,7 @@ extends RequestServable:
 
   private def streaming(response: Http.Response): Boolean = response.body match
     case Http.Body.Streaming(_) => true
+    case Http.Body.Flowing(_)   => true
     case _                      => false
 
   // Map a request-parsing failure to the status the client should see.

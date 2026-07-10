@@ -45,6 +45,7 @@ import rudiments.*
 import turbulence.*
 import urticose.*
 import vacuous.*
+import zephyrine.*
 
 // Build the underlying Java client with redirect-following disabled — the
 // redirect-following telekinesis given runs its own loop so it can honour
@@ -121,7 +122,11 @@ private def buildResponse(response: jnh.HttpResponse[ji.InputStream])(using Tact
   val headers: List[Http.Header] = response.headers.nn.map().nn.asScala.to(List).flatMap:
     (key, values) => values.asScala.map: value => Http.Header(key.tt, value.tt)
 
-  status(headers, Http.Body.Streaming(unsafely(response.body().nn.stream[Data])))
+  val body = Http.Body.Flowing: () =>
+    unsafely:
+      summon[ji.InputStream is Source by Data over Credit].stream(response.body().nn)
+
+  status(headers, body)
 
 package httpBackends:
   // The JVM transport, using `java.net.http`. Other platforms (e.g. Scala.js)
