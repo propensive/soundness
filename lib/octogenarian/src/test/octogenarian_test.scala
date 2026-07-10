@@ -61,6 +61,8 @@ import filesystemOptions.deleteRecursively.enabled
 
 import gitCommands.environmentDefaultGitCommand
 
+import filesystemBackends.virtualMachine
+
 object Tests extends Suite(m"Octogenarian Tests"):
   def run(): Unit =
 
