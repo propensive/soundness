@@ -49,6 +49,7 @@ object Addressable:
 
     val empty: Data = IArray.from(Nil)
 
+    inline def substrate: Substrate = Substrate.Bytes
     inline def blank(size: Int): ji.ByteArrayOutputStream = ji.ByteArrayOutputStream(size)
 
     inline def build(target: ji.ByteArrayOutputStream): Data =
@@ -109,6 +110,7 @@ object Addressable:
 
     val empty: Text = ""
 
+    inline def substrate: Substrate = Substrate.Chars
     inline def build(target: jl.StringBuilder): Text = target.toString.tt
     inline def blank(size: Int): jl.StringBuilder = jl.StringBuilder(size)
     inline def length(text: Text): Int = text.s.length
@@ -166,6 +168,10 @@ trait Addressable extends Typeclass, Operable, Targetable:
   type Storage
 
   def empty: Self
+
+  // How this medium's storage is physically represented, for `Buffering` to
+  // size stage buffers appropriately.
+  def substrate: Substrate
   // All operations are declared non-inline at the trait level so non-inline
   // call sites (e.g. inside `Cursor.forward`, or in parser plumbing that
   // wraps Cursor calls) can still dispatch through them. Concrete instances

@@ -32,77 +32,85 @@
                                                                                                   */
 package zephyrine
 
-import scala.quoted.*
-
-import gigantism.*
+import denominative.*
+import prepositional.*
 import rudiments.*
+import vacuous.*
 
-object internal:
-  def consume(cursor: Expr[Cursor[?]], text0: Expr[String], otherwise: Expr[Unit]): Macro[Unit] =
-    import quotes.reflect.*
+// The push endpoint of a streaming pipeline: a mutable buffer whose writable
+// window is exposed zero-copy to exactly one producer, and which reports its
+// current `demand` — the reactive message telling that producer how much it
+// can accept. An `Intake` is transformed into a differently-typed `Intake`
+// with `accepting`. `Intake` extends `Producer`, so producing code written
+// against `put`/`push` (serializers) drives a pipeline unchanged.
+//
+// The primitive protocol is `reserve`/`buffer`/`mark`/`commit`: a writer
+// reserves contiguous space, writes directly into the intake's storage at
+// `mark`, then commits. `put`, `push` and `absorb` are final loops over that
+// protocol, so implementations provide only the window and its lifecycle.
+trait Intake[medium](using val addressable: medium is Addressable) extends Producer[medium]:
+  type Operand = addressable.Operand
+  type Transport
 
-    val text = text0.valueOrAbort
+  // The current demand this intake reports to whoever writes to it. Computed
+  // on request; never cached by callers. Advisory for bounding upstream
+  // production — `reserve` is what actually blocks.
+  def demand: Transport
 
-    def recur(index: Int, checks: Expr[Unit]): Expr[Unit] =
-      if index >= text.length then checks else
-        val char = text(index)
+  // Ensure at least `min` elements of contiguous writable space, blocking if
+  // necessary, and return the available space. `min` must not exceed the
+  // intake's block size.
+  def reserve(min: Int): Int
 
-        val checks2 =
-          ' {
-              $checks
-              $cursor.next()
+  // Zero-copy view of this intake's buffer; elements from `mark` are writable
+  // up to the last `reserve`d space. Valid only until the next `commit`,
+  // `flush` or `finish` — single-owner discipline, as `Stream.window`.
+  // Implementations provide the untyped `buffer0`; since `Addressable`
+  // instances are unique per medium, the cast in `buffer` is sound.
+  final def buffer(using Unsafe): addressable.Storage =
+    buffer0.asInstanceOf[addressable.Storage]
 
-              $cursor.lay($otherwise): datum =>
-                if datum != ${Expr(char)} then $otherwise
-            }
+  protected def buffer0: AnyRef
+  def mark: Int
 
-        recur(index + 1, checks2)
+  // Declare `count` elements written at `mark`; may synchronously cascade
+  // them through downstream stages.
+  def commit(count: Int): Unit
 
-    recur(0, '{()})
+  // Propagate buffered data downstream now, without ending the stream.
+  def flush(): Unit = ()
 
-  // Fine-grained backpressure demand: "I can accept `count` more operands". A
-  // count of elements of the medium's `Operand` type (bytes, chars or
-  // records), not a byte count, so its meaning changes across a `Duct` that
-  // changes medium; `Duct.translate` performs that conversion. Unboxed on the
-  // hot path.
-  opaque type Credit = Long
+  // End-of-stream: flush, emit any terminal stage state, release downstream.
+  // Called exactly once.
+  def finish(): Unit
 
-  object Credit:
-    inline def apply(count: Long): Credit = count
+  // Abort: propagate failure downstream so stages can release resources. The
+  // error is rethrown to the reader at an asynchronous boundary.
+  def fail(error: Throwable): Unit = finish()
 
-    extension (credit: Credit)
-      inline def count: Long = credit
+  final def absorb(source: addressable.Storage, offset: Int, count: Int): Unit =
+    var done: Int = 0
 
-  opaque type Datum = Int
+    while done < count do
+      val free = reserve(1)
+      val size = free.min(count - done)
+      addressable.transfer(source, offset + done, buffer(using Unsafe), mark, size)
+      commit(size)
+      done += size
 
-  object Datum:
-    // Sentinel for an exhausted cursor. The only `Datum` not derivable from a
-    // byte or char.
-    val End: Datum = -1
+  final def put(source: medium): Unit = put(source, Prim, addressable.length(source))
 
-    // Lift an unsigned byte (`0..255` after `& 0xff`) into a `Datum`.
-    inline def apply(byte: Byte): Datum = byte & 0xff
+  final def put(source: medium, offset: Ordinal, size: Int): Unit =
+    var done: Int = 0
 
-    // Lift a char into a `Datum`.
-    inline def apply(char: Char): Datum = char.toInt
+    while done < size do
+      val free = reserve(1)
+      val count = free.min(size - done)
+      addressable.copyChunk(source, offset.n0 + done, buffer(using Unsafe), mark, count)
+      commit(count)
+      done += count
 
-    // Construct from a raw `Int`. Caller is responsible for the value being a
-    // valid byte/char or `-1` — used by `Cursor.peek` to wrap an `Int` it has
-    // already validated.
-    private[zephyrine] inline def fromRaw(int: Int): Datum = int
-
-    inline given datumByte:  CanEqual[Datum, Byte]  = !!
-    inline given byteDatum:  CanEqual[Byte, Datum] = !!
-    inline given datumChar:  CanEqual[Datum, Char]  = !!
-    inline given charDatum:  CanEqual[Char, Datum] = !!
-    inline given datumDatum: CanEqual[Datum, Datum] = !!
-
-
-    extension (datum: Datum)
-      // The underlying `Int` representation. Use sparingly — anywhere it
-      // leaks the `Datum` distinction is lost.
-      inline def asInt: Int = datum
-
-      // `true` if the cursor that produced this `Datum` was exhausted.
-      inline def isEnd: Boolean = datum == Datum.End
-
+  final def push(operand: Operand): Unit =
+    reserve(1)
+    addressable.storageUpdate(buffer(using Unsafe), mark, operand)
+    commit(1)

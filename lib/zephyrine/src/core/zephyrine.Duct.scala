@@ -32,77 +32,70 @@
                                                                                                   */
 package zephyrine
 
-import scala.quoted.*
+import prepositional.*
 
-import gigantism.*
-import rudiments.*
+// A synchronous transformation stage, attachable to either end of a pipeline:
+// `stream.through(duct)` yields a differently-typed `Stream`, and
+// `intake.accepting(duct)` yields a differently-typed `Intake` — the same
+// `Duct` instance serves both, since `translate` converts demand whichever
+// direction it is reported.
+//
+// `translate` is the demand-conversion hook: it maps downstream demand (in
+// `out` terms) to upstream demand (in `in` terms), e.g. a bytes-to-hex duct
+// maps a credit of 1024 chars to a credit of 512 bytes. Conversions must be
+// conservative bounds, not exact arithmetic: any surplus a stage produces is
+// retained in its buffer for the next transfer, which is what makes ducts
+// with unknowable ratios (compression) possible.
+//
+// `step` is a pure buffer-to-buffer transformation. Given at least one input
+// element and at least `quantum` elements of output space, it must consume or
+// produce at least one element; input that cannot yet be transformed (a
+// partial atom at the end of the offered input) must be consumed and carried
+// in the duct's internal state, never left unconsumed across steps. A duct is
+// single-owner mutable state: it belongs to the one thread driving its side
+// of the pipeline.
+object Duct:
+  // Unboxed (consumed, produced) pair returned by `step`.
+  object Progress:
+    inline def apply(consumed: Int, produced: Int): Progress =
+      (consumed.toLong << 32) | (produced.toLong & 0xffffffffL)
 
-object internal:
-  def consume(cursor: Expr[Cursor[?]], text0: Expr[String], otherwise: Expr[Unit]): Macro[Unit] =
-    import quotes.reflect.*
+    extension (progress: Progress)
+      inline def consumed: Int = (progress >> 32).toInt
+      inline def produced: Int = progress.toInt
 
-    val text = text0.valueOrAbort
+  opaque type Progress = Long
 
-    def recur(index: Int, checks: Expr[Unit]): Expr[Unit] =
-      if index >= text.length then checks else
-        val char = text(index)
+abstract class Duct[in, out]
+  ( using val input: in is Addressable, val output: out is Addressable ):
 
-        val checks2 =
-          ' {
-              $checks
-              $cursor.next()
+  type Transport
+  type Upstream
 
-              $cursor.lay($otherwise): datum =>
-                if datum != ${Expr(char)} then $otherwise
-            }
+  def regulation: Transport is Regulation
 
-        recur(index + 1, checks2)
+  // Convert downstream demand into the demand this duct presents upstream.
+  // Must not starve: whenever `demand` grants at least `quantum` elements, the
+  // translated demand must grant at least one, and unbounded demand values
+  // (`Long.MaxValue` credit) must be handled without arithmetic overflow —
+  // compute ceiling divisions as `n - n/2`, not `(n + 1)/2`.
+  def translate(demand: Transport): Upstream
 
-    recur(0, '{()})
+  // The minimum output space `step` needs to guarantee progress, e.g. `2` for
+  // a duct whose smallest output atom is two elements.
+  def quantum: Int = 1
 
-  // Fine-grained backpressure demand: "I can accept `count` more operands". A
-  // count of elements of the medium's `Operand` type (bytes, chars or
-  // records), not a byte count, so its meaning changes across a `Duct` that
-  // changes medium; `Duct.translate` performs that conversion. Unboxed on the
-  // hot path.
-  opaque type Credit = Long
+  def step
+    ( source: input.Storage,
+      sourceOffset: Int,
+      sourceLength: Int,
+      target: output.Storage,
+      targetOffset: Int,
+      targetSpace: Int )
+  :   Duct.Progress
 
-  object Credit:
-    inline def apply(count: Long): Credit = count
+  // Emit terminal state after the upstream ends (e.g. a compressor's tail).
+  // Called repeatedly until it returns `0`.
+  def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int = 0
 
-    extension (credit: Credit)
-      inline def count: Long = credit
-
-  opaque type Datum = Int
-
-  object Datum:
-    // Sentinel for an exhausted cursor. The only `Datum` not derivable from a
-    // byte or char.
-    val End: Datum = -1
-
-    // Lift an unsigned byte (`0..255` after `& 0xff`) into a `Datum`.
-    inline def apply(byte: Byte): Datum = byte & 0xff
-
-    // Lift a char into a `Datum`.
-    inline def apply(char: Char): Datum = char.toInt
-
-    // Construct from a raw `Int`. Caller is responsible for the value being a
-    // valid byte/char or `-1` — used by `Cursor.peek` to wrap an `Int` it has
-    // already validated.
-    private[zephyrine] inline def fromRaw(int: Int): Datum = int
-
-    inline given datumByte:  CanEqual[Datum, Byte]  = !!
-    inline given byteDatum:  CanEqual[Byte, Datum] = !!
-    inline given datumChar:  CanEqual[Datum, Char]  = !!
-    inline given charDatum:  CanEqual[Char, Datum] = !!
-    inline given datumDatum: CanEqual[Datum, Datum] = !!
-
-
-    extension (datum: Datum)
-      // The underlying `Int` representation. Use sparingly — anywhere it
-      // leaks the `Datum` distinction is lost.
-      inline def asInt: Int = datum
-
-      // `true` if the cursor that produced this `Datum` was exhausted.
-      inline def isEnd: Boolean = datum == Datum.End
-
+  def close(): Unit = ()

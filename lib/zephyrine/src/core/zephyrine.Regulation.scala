@@ -32,77 +32,45 @@
                                                                                                   */
 package zephyrine
 
-import scala.quoted.*
+import prepositional.*
 
-import gigantism.*
-import rudiments.*
+// Operations over a backpressure-demand type, the "reactive message" of a
+// streaming pipeline. Demand values do not travel as messages at runtime: a
+// stage computes its current demand on request, by converting its downstream's
+// demand (see `Duct.translate`), bottoming out in shared state at an
+// asynchronous boundary. `encode`/`decode` require every demand type to pack
+// into a `Long`, so that shared state is a single atomic value, whatever the
+// demand type.
+object Regulation:
+  given credit: Credit is Regulation:
+    def initial: Credit = Credit(Long.MaxValue)
+    def grant(demand: Credit): Int = demand.count.max(0L).min(Int.MaxValue).toInt
+    def spend(demand: Credit, count: Int): Credit = Credit(demand.count - count)
+    def measured(demand: Credit): Boolean = false
+    def encode(demand: Credit): Long = demand.count
+    def decode(bits: Long): Credit = Credit(bits)
 
-object internal:
-  def consume(cursor: Expr[Cursor[?]], text0: Expr[String], otherwise: Expr[Unit]): Macro[Unit] =
-    import quotes.reflect.*
+  given flow: Flow is Regulation:
+    def initial: Flow = Flow.Free
 
-    val text = text0.valueOrAbort
+    def grant(demand: Flow): Int = demand match
+      case Flow.Halted => 0
+      case _           => Int.MaxValue
 
-    def recur(index: Int, checks: Expr[Unit]): Expr[Unit] =
-      if index >= text.length then checks else
-        val char = text(index)
+    def spend(demand: Flow, count: Int): Flow = demand
+    def measured(demand: Flow): Boolean = demand == Flow.Measured
+    def encode(demand: Flow): Long = demand.ordinal
+    def decode(bits: Long): Flow = Flow.fromOrdinal(bits.toInt)
 
-        val checks2 =
-          ' {
-              $checks
-              $cursor.next()
+trait Regulation extends Typeclass:
+  def initial: Self
+  def grant(demand: Self): Int
+  def spend(demand: Self, count: Int): Self
 
-              $cursor.lay($otherwise): datum =>
-                if datum != ${Expr(char)} then $otherwise
-            }
+  // A `Measured` demand grants freely but asks the pump to pace itself (e.g.
+  // `relent()` or sleep between blocks); pacing is the pump's concern, not a
+  // grant-arithmetic one.
+  def measured(demand: Self): Boolean
 
-        recur(index + 1, checks2)
-
-    recur(0, '{()})
-
-  // Fine-grained backpressure demand: "I can accept `count` more operands". A
-  // count of elements of the medium's `Operand` type (bytes, chars or
-  // records), not a byte count, so its meaning changes across a `Duct` that
-  // changes medium; `Duct.translate` performs that conversion. Unboxed on the
-  // hot path.
-  opaque type Credit = Long
-
-  object Credit:
-    inline def apply(count: Long): Credit = count
-
-    extension (credit: Credit)
-      inline def count: Long = credit
-
-  opaque type Datum = Int
-
-  object Datum:
-    // Sentinel for an exhausted cursor. The only `Datum` not derivable from a
-    // byte or char.
-    val End: Datum = -1
-
-    // Lift an unsigned byte (`0..255` after `& 0xff`) into a `Datum`.
-    inline def apply(byte: Byte): Datum = byte & 0xff
-
-    // Lift a char into a `Datum`.
-    inline def apply(char: Char): Datum = char.toInt
-
-    // Construct from a raw `Int`. Caller is responsible for the value being a
-    // valid byte/char or `-1` — used by `Cursor.peek` to wrap an `Int` it has
-    // already validated.
-    private[zephyrine] inline def fromRaw(int: Int): Datum = int
-
-    inline given datumByte:  CanEqual[Datum, Byte]  = !!
-    inline given byteDatum:  CanEqual[Byte, Datum] = !!
-    inline given datumChar:  CanEqual[Datum, Char]  = !!
-    inline given charDatum:  CanEqual[Char, Datum] = !!
-    inline given datumDatum: CanEqual[Datum, Datum] = !!
-
-
-    extension (datum: Datum)
-      // The underlying `Int` representation. Use sparingly — anywhere it
-      // leaks the `Datum` distinction is lost.
-      inline def asInt: Int = datum
-
-      // `true` if the cursor that produced this `Datum` was exhausted.
-      inline def isEnd: Boolean = datum == Datum.End
-
+  def encode(demand: Self): Long
+  def decode(bits: Long): Self

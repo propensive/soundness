@@ -32,8 +32,9 @@
                                                                                                   */
 package soundness
 
-export zephyrine.{Addressable, Cursor, Datum, Format, Formatting, Lineation, ParseError,
-    PositionTracking, Producer, Positionable, locate, locateKey}
+export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum, Duct, Flow, Format,
+    Formatting, Intake, Lineation, ParseError, PositionTracking, Producer, Positionable,
+    Regulation, Stream, Substrate, accepting, flowTo, locate, locateKey, through}
 
 package parsing:
   export zephyrine.parsing.trackPositions

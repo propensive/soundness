@@ -32,77 +32,20 @@
                                                                                                   */
 package zephyrine
 
-import scala.quoted.*
+// Contextual configuration determining how streaming stages are instantiated
+// with buffers. `capacity` is consulted once per stage at construction time, so
+// an adaptive instance (e.g. one consulting available memory) sees each new
+// stage, but never resizes a live one. `window` is the number of blocks of
+// headroom a `Conduit` holds between its writer and reader threads.
+object Buffering:
+  given standard: Buffering:
+    def capacity(substrate: Substrate): Int = substrate match
+      case Substrate.Bytes => 4096
+      case Substrate.Chars => 2048
+      case Substrate.Boxes => 256
 
-import gigantism.*
-import rudiments.*
+    def window: Int = 4
 
-object internal:
-  def consume(cursor: Expr[Cursor[?]], text0: Expr[String], otherwise: Expr[Unit]): Macro[Unit] =
-    import quotes.reflect.*
-
-    val text = text0.valueOrAbort
-
-    def recur(index: Int, checks: Expr[Unit]): Expr[Unit] =
-      if index >= text.length then checks else
-        val char = text(index)
-
-        val checks2 =
-          ' {
-              $checks
-              $cursor.next()
-
-              $cursor.lay($otherwise): datum =>
-                if datum != ${Expr(char)} then $otherwise
-            }
-
-        recur(index + 1, checks2)
-
-    recur(0, '{()})
-
-  // Fine-grained backpressure demand: "I can accept `count` more operands". A
-  // count of elements of the medium's `Operand` type (bytes, chars or
-  // records), not a byte count, so its meaning changes across a `Duct` that
-  // changes medium; `Duct.translate` performs that conversion. Unboxed on the
-  // hot path.
-  opaque type Credit = Long
-
-  object Credit:
-    inline def apply(count: Long): Credit = count
-
-    extension (credit: Credit)
-      inline def count: Long = credit
-
-  opaque type Datum = Int
-
-  object Datum:
-    // Sentinel for an exhausted cursor. The only `Datum` not derivable from a
-    // byte or char.
-    val End: Datum = -1
-
-    // Lift an unsigned byte (`0..255` after `& 0xff`) into a `Datum`.
-    inline def apply(byte: Byte): Datum = byte & 0xff
-
-    // Lift a char into a `Datum`.
-    inline def apply(char: Char): Datum = char.toInt
-
-    // Construct from a raw `Int`. Caller is responsible for the value being a
-    // valid byte/char or `-1` — used by `Cursor.peek` to wrap an `Int` it has
-    // already validated.
-    private[zephyrine] inline def fromRaw(int: Int): Datum = int
-
-    inline given datumByte:  CanEqual[Datum, Byte]  = !!
-    inline given byteDatum:  CanEqual[Byte, Datum] = !!
-    inline given datumChar:  CanEqual[Datum, Char]  = !!
-    inline given charDatum:  CanEqual[Char, Datum] = !!
-    inline given datumDatum: CanEqual[Datum, Datum] = !!
-
-
-    extension (datum: Datum)
-      // The underlying `Int` representation. Use sparingly — anywhere it
-      // leaks the `Datum` distinction is lost.
-      inline def asInt: Int = datum
-
-      // `true` if the cursor that produced this `Datum` was exhausted.
-      inline def isEnd: Boolean = datum == Datum.End
-
+trait Buffering:
+  def capacity(substrate: Substrate): Int
+  def window: Int
