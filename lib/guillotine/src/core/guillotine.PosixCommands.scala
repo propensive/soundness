@@ -135,7 +135,7 @@ trait PosixCommands:
   inline given wc: ("wc" is Intelligible to Text) = !!
 
 
-  inline given which: [path] => (erased path is Instantiable across Paths from Text)
+  inline given which: [path] => (erased instantiable: path is Instantiable across Paths from Text)
   =>  ( "which" is Intelligible to path ) =
 
     !!

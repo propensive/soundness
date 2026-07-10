@@ -120,7 +120,7 @@ object Completions:
       Nil
 
 
-  def install(force: Boolean = false)(using entrypoint: Entrypoint)(using erased Effectful)
+  def install(force: Boolean = false)(using entrypoint: Entrypoint)(using erased effectful: Effectful)
     ( using WorkingDirectory, Diagnostics )
   :   Installation raises InstallError logs CliEvent =
 
@@ -196,7 +196,7 @@ object Completions:
 
 
   def install(shell: Shell, command: Text, scriptName: Name[Linux], dirs: List[Path on Linux])
-    ( using erased Effectful )
+    ( using erased effectful: Effectful )
     ( using Diagnostics )
   :   Installation.InstallResult raises InstallError logs CliEvent =
 

@@ -208,12 +208,12 @@ object Cursor:
   // the next cursor operation that may compact or grow the buffer.
   extension [cap^](cursor: Cursor[Data, cap])
     @targetName("dataBuffer")
-    inline def buffer(using erased Unsafe): Array[Byte] =
+    inline def buffer(using erased unsafe: Unsafe): Array[Byte] =
       cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Byte]]
 
   extension [cap^](cursor: Cursor[Text, cap])
     @targetName("textBuffer")
-    inline def buffer(using erased Unsafe): Array[Char] =
+    inline def buffer(using erased unsafe: Unsafe): Array[Char] =
       cursor.unsafeBuffer(using Unsafe).asInstanceOf[Array[Char]]
 
 
@@ -354,7 +354,7 @@ final class Cursor[data, cap^]
   // Variant of `advance` for callers that have just read the current operand
   // (e.g. via `unsafeBuffer(pos)` in a tight scan loop). Reuses the supplied
   // `operand` instead of re-loading it from the buffer for lineation tracking.
-  inline def unsafeAdvanceWith(operand: addressable.Operand)(using erased Unsafe): Unit =
+  inline def unsafeAdvanceWith(operand: addressable.Operand)(using erased unsafe: Unsafe): Unit =
     pos += 1
 
     if lineationActive then
@@ -367,20 +367,20 @@ final class Cursor[data, cap^]
   // per-character lineation update inside `advance`/`unsafeAdvanceWith`, then
   // reconcile lineation in one shot. The caller is responsible for tracking
   // newlines while it scans.
-  inline def unsafeBumpPos(by: Int)(using erased Unsafe): Unit = pos += by
+  inline def unsafeBumpPos(by: Int)(using erased unsafe: Unsafe): Unit = pos += by
 
   // Increase the line counter by `by`, leaving the column counter untouched.
-  inline def unsafeBumpLine(by: Int)(using erased Unsafe): Unit =
+  inline def unsafeBumpLine(by: Int)(using erased unsafe: Unsafe): Unit =
     lineNo = denominative.Ordinal.zerary(lineNo.n0 + by)
 
   // Increase the column counter by `by`. Must not be called across newlines.
-  inline def unsafeBumpColumn(by: Int)(using erased Unsafe): Unit =
+  inline def unsafeBumpColumn(by: Int)(using erased unsafe: Unsafe): Unit =
     columnNo = denominative.Ordinal.zerary(columnNo.n0 + by)
 
   // Set the column counter directly. Used after a bulk advance over a range
   // that contained at least one newline, to set the column to the offset
   // since the most-recent newline.
-  inline def unsafeSetColumn(value: Int)(using erased Unsafe): Unit =
+  inline def unsafeSetColumn(value: Int)(using erased unsafe: Unsafe): Unit =
     columnNo = denominative.Ordinal.zerary(value)
 
   // `next()` is `advance(); more`, so it returns `true` while more data is
@@ -450,19 +450,19 @@ final class Cursor[data, cap^]
   // byte/char scan loops this is a major hot-path tax. Callers who know the
   // concrete buffer type can `asInstanceOf` it once at the call site and let
   // the JIT keep the array reference in a register across the inner loop.
-  inline def unsafeBuffer(using erased Unsafe): addressable.Storage = buffer
-  inline def unsafePos(using erased Unsafe): Int = pos
-  inline def unsafeWriteEnd(using erased Unsafe): Int = writeEnd
+  inline def unsafeBuffer(using erased unsafe: Unsafe): addressable.Storage = buffer
+  inline def unsafePos(using erased unsafe: Unsafe): Int = pos
+  inline def unsafeWriteEnd(using erased unsafe: Unsafe): Int = writeEnd
 
   // Bulk-advance without per-byte lineation tracking. Caller is responsible
   // for line/column updates if `lineation.active`. Intended for callers that
   // maintain a parser-local copy of `pos` for register-resident hot loops
   // and only push it back to the cursor at refill or mark/slice points.
-  inline def unsafeAdvanceBy(n: Int)(using erased Unsafe): Unit = pos += n
+  inline def unsafeAdvanceBy(n: Int)(using erased unsafe: Unsafe): Unit = pos += n
 
   // ─── current element ──────────────────────────────────────────────────────
 
-  inline def datum(using erased Unsafe): addressable.Operand =
+  inline def datum(using erased unsafe: Unsafe): addressable.Operand =
     addressable.storageAddress(buffer, pos)
 
   inline def lay[result](inline otherwise: => result)(inline lambda: addressable.Operand => result)

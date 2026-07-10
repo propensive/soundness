@@ -3326,7 +3326,7 @@ extends scala.Dynamic, Documentary, Topical, Original:
   // kebab-case). When the field is missing it is appended to the last
   // block; when present it is replaced in place, preserving surrounding
   // formatting.
-  def modify(fieldName: String, value: Tel)(using erased DynamicTelEnabler): Tel =
+  def modify(fieldName: String, value: Tel)(using erased dynamicTelEnabler: DynamicTelEnabler): Tel =
     val name = Tel.camelToKebab(fieldName)
 
     val newCompound = value.subtree match

@@ -456,7 +456,7 @@ object Cbor extends Cbor2, Dynamic:
   // and `filterOptical` traverse every (or matching) array element. All reuse the
   // existing `selectDynamic`/`modify`/`element`/`Ast.array` primitives and rebuild
   // immutably. Mirrors jacinta's `Json` optics.
-  given lens: [name <: Label: ValueOf] => (erased DynamicCborEnabler) => (tactic: Tactic[CborError])
+  given lens: [name <: Label: ValueOf] => (erased dynamicCborEnabler: DynamicCborEnabler) => (tactic: Tactic[CborError])
   =>  ((name is Lens from Cbor onto Cbor)^{tactic}) =
     Lens
      ( cbor => cbor.selectDynamic(valueOf[name]),
@@ -1084,24 +1084,24 @@ object Cbor extends Cbor2, Dynamic:
 class Cbor(private[breviloquence] val root: Cbor.Ast) extends Dynamic derives CanEqual:
   def apply(index: Int): Cbor raises CborError = Cbor(root.array(index))
 
-  def selectDynamic(field: String)(using erased DynamicCborEnabler): Cbor raises CborError =
+  def selectDynamic(field: String)(using erased dynamicCborEnabler: DynamicCborEnabler): Cbor raises CborError =
     apply(field.tt)
 
 
-  def applyDynamic(field: String)(index: Int)(using erased DynamicCborEnabler)
+  def applyDynamic(field: String)(index: Int)(using erased dynamicCborEnabler: DynamicCborEnabler)
   :   Cbor raises CborError =
 
     apply(field.tt)(index)
 
 
   def updateDynamic(field: String)[value: Encodable in Cbor](value: value)
-    ( using erased DynamicCborEnabler )
+    ( using erased dynamicCborEnabler: DynamicCborEnabler )
   :   Cbor raises CborError =
 
     modify(field, value.encode)
 
 
-  def updateDynamic(field: String)[value](unset: Unset.type)(using erased DynamicCborEnabler)
+  def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamicCborEnabler: DynamicCborEnabler)
   :   Cbor raises CborError =
 
     delete(field)

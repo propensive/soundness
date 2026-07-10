@@ -2421,10 +2421,10 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
 
     IArray.from(buffer)
 
-  def selectDynamic(name: String)(using erased DynamicXmlEnabler): Fragment =
+  def selectDynamic(name: String)(using erased dynamicXmlEnabler: DynamicXmlEnabler): Fragment =
     new Fragment(childElements(name)*)
 
-  def applyDynamic(name: String)(ordinal: Ordinal = Prim)(using erased DynamicXmlEnabler)
+  def applyDynamic(name: String)(ordinal: Ordinal = Prim)(using erased dynamicXmlEnabler: DynamicXmlEnabler)
   :   Fragment =
 
     childElements(name).at(ordinal).lay(new Fragment())(new Fragment(_))

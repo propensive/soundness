@@ -42,7 +42,7 @@ import rudiments.*
 
 object internal:
   def catalog[key: Type, value: Type]
-    ( lambda:   Expr[[field] => (field: field) => value],
+    ( lambda:   Expr[[field] => (field: field) -> value],
       value:    Expr[key],
       classTag: Expr[ClassTag[value]] )
   :   Macro[Catalog[key, value]] =

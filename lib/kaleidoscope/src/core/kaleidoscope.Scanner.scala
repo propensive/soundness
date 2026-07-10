@@ -36,7 +36,7 @@ import beneficence.*
 import vacuous.*
 
 object Scanner:
-  given default: (erased DummyImplicit) => Scanner = Scanner(Unset)
+  given default: (erased dummy: DummyImplicit) => Scanner = Scanner(Unset)
 
 class Scanner(var nextStart: Optional[Int] = Unset, var matchEnd: Optional[Int] = Unset)
 extends Findable

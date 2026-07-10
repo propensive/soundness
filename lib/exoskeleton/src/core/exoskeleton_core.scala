@@ -121,7 +121,7 @@ package executives:
       try exitStatus(using invocation)
       catch case error: Throwable => backstop.handle(error)(using invocation.stdio)
 
-inline def effectful[result](lambda: (erased Effectful) ?=> result): result =
+inline def effectful[result](lambda: (erased effectful: Effectful) ?=> result): result =
   lambda(using !![Effectful])
 
 inline def trap(handler: PartialFunction[UnixSignal | WindowsSignal, SignalResponse])

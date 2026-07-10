@@ -249,7 +249,7 @@ case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
     IArray.tabulate(columns.size)(columns(_))
 
 
-  def selectDynamic[value: Decodable in Text](field: String)(using erased DynamicDsvEnabler)
+  def selectDynamic[value: Decodable in Text](field: String)(using erased dynamicDsvEnabler: DynamicDsvEnabler)
     ( using DsvRedesignation )
   :   Optional[value] =
 

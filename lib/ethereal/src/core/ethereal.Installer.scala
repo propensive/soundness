@@ -106,7 +106,7 @@ object Installer:
 
   def install(force: Boolean = false, target: Optional[Path on Linux] = Unset)
     ( using service: DaemonService[?], environment: Environment )
-    ( using erased Effectful )
+    ( using erased effectful: Effectful )
     ( using Diagnostics )
   :   Result logs DaemonLogEvent raises InstallError =
 

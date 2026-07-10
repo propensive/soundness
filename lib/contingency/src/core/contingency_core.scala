@@ -63,7 +63,7 @@ package strategies:
   // `raises` existential of a non-inline method result.
   given fatalErrors: [exception <: Exception: Fatal] => (FatalTactic[exception]^) = FatalTactic()
 
-  given uncheckedErrors: [error <: Exception] => (erased error is Unchecked)
+  given uncheckedErrors: [error <: Exception] => (erased unchecked: error is Unchecked)
   =>  ( UncheckedTactic[error]^ ) =
 
     UncheckedTactic()
@@ -92,7 +92,7 @@ def abort[success, exception <: Exception](error: Diagnostics ?=> exception)
 // that arrow's capture set cannot be reconciled with the block's expected type (the tactic is
 // created inside `safely`, after the block value). Collapsing the layers makes the block's result
 // the plain `success` value, which retains nothing.
-def safely[error <: Exception](using erased Void)[success]
+def safely[error <: Exception](using erased void: Void)[success]
   ( block: (Diagnostics, OptionalTactic[error, success]^, CanThrow[Exception]) ?=> success )
 :   Optional[success] =
 
@@ -101,7 +101,7 @@ def safely[error <: Exception](using erased Void)[success]
   catch case error: Exception => Unset
 
 
-def unsafely[error <: Exception](using erased Void)[success]
+def unsafely[error <: Exception](using erased void: Void)[success]
   ( block: (Unsafe, ThrowTactic[error, success]^, CanThrow[Exception]) ?=> success )
 :   success =
 
@@ -127,7 +127,7 @@ def throwErrors[error <: Exception](using CanThrow[error])[success]
   block(using ThrowTactic())
 
 
-def capture[error <: Exception: ClassTag](using erased Void)[success]
+def capture[error <: Exception: ClassTag](using erased void: Void)[success]
   ( block: Tactic[error]^ ?=> success )
   ( using Tactic[ExpectationError[success]]^, Diagnostics )
 :   error =
@@ -145,7 +145,7 @@ def capture[error <: Exception: ClassTag](using erased Void)[success]
     case exception: Throwable => throw exception
 
 
-def attempt[error <: Exception](using erased Void)[success]
+def attempt[error <: Exception](using erased void: Void)[success]
   ( block: AttemptTactic[error, success]^ ?=> success )
   ( using Diagnostics )
 :   Attempt[success, error] =
@@ -154,7 +154,7 @@ def attempt[error <: Exception](using erased Void)[success]
     Attempt.Success(block(using AttemptTactic(label)))
 
 
-def amalgamate[error <: Exception](using erased Void)[success]
+def amalgamate[error <: Exception](using erased void: Void)[success]
   ( block: AmalgamateTactic[error, success]^ ?=> success )
   ( using Diagnostics )
 :   success | error =
@@ -209,14 +209,14 @@ inline def focus[focus, result](using foci: Foci[focus])
 inline def accrual[value](using value: value aka "accrual"): value = value()
 
 
-transparent inline def track[focus](using erased Void)[accrual <: Exception](accrual: accrual)
+transparent inline def track[focus](using erased void: Void)[accrual <: Exception](accrual: accrual)
   ( inline block: (Optional[focus] aka "prior", accrual aka "accrual") ?=> Exception ~> accrual )
 :   Tracking[accrual, ?, focus] =
 
   ${contingency.internal.track[accrual, focus]('accrual, 'block)}
 
 
-transparent inline def validate[focus](using erased Void)[accrual](accrual: accrual)
+transparent inline def validate[focus](using erased void: Void)[accrual](accrual: accrual)
   ( inline block: (Optional[focus] aka "prior", accrual aka "accrual") ?=> Exception ~> accrual )
 :   Any =
 
@@ -224,7 +224,7 @@ transparent inline def validate[focus](using erased Void)[accrual](accrual: accr
 
 
 extension [element](sequence: Iterable[element])
-  transparent inline def survive[result](using erased Void)[error <: Exception]
+  transparent inline def survive[result](using erased void: Void)[error <: Exception]
     ( lambda
     : (OptionalTactic[error, result], Diagnostics, CanThrow[Exception]) ?=> element => result )
   :   Iterable[result] =
@@ -237,7 +237,7 @@ extension [value](optional: Optional[value])
     optional.or(abort(error))
 
 
-  def dare[error <: Exception](using erased Void)[success]
+  def dare[error <: Exception](using erased void: Void)[success]
     ( block
     : (Diagnostics, OptionalTactic[error, success]^, CanThrow[Exception]) ?=> value => success )
   :   Optional[success] =

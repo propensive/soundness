@@ -383,6 +383,6 @@ extension (stream: Stream[Data])
           offset += count
           count
 
-def spool[item](using erased Void)[result](lambda: Spool[item] => result): result =
+def spool[item](using erased void: Void)[result](lambda: Spool[item] => result): result =
   val spool: Spool[item] = Spool()
   try lambda(spool) finally spool.stop()

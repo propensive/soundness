@@ -896,7 +896,7 @@ object Json extends Json2, Dynamic:
       ${jacinta.internal.extractor[parts, origins]('scrutinee)}
 
 
-  given lens: [name <: Label: ValueOf] => (erased DynamicJsonEnabler) => (tactic: Tactic[JsonError])
+  given lens: [name <: Label: ValueOf] => (erased dynamicJsonEnabler: DynamicJsonEnabler) => (tactic: Tactic[JsonError])
   =>  ((name is Lens from Json onto Json)^{tactic}) =
 
     Lens(_.selectField(valueOf[name]), (json, value) => json.modify(valueOf[name], value))
@@ -2983,7 +2983,7 @@ extends Dynamic, Topical, Original derives CanEqual:
 
 
   def update[value: anticipation.Encodable in Json](index: Int, value: value)
-    ( using erased DynamicJsonEnabler )
+    (using erased dynamicJsonEnabler: DynamicJsonEnabler)
   :   Json raises JsonError =
 
     if !root.isArray then raise(JsonError(Reason.NotType(root.primitive, JsonPrimitive.Array)))
@@ -3002,13 +3002,13 @@ extends Dynamic, Topical, Original derives CanEqual:
 
 
   def updateDynamic(field: String)[value: anticipation.Encodable in Json](value: value)
-    ( using erased DynamicJsonEnabler )
+    (using erased dynamicJsonEnabler: DynamicJsonEnabler)
   :   Json raises JsonError =
 
     modify(field, value.encode)
 
 
-  def updateDynamic(field: String)[value](unset: Unset.type)(using erased DynamicJsonEnabler)
+  def updateDynamic(field: String)[value](unset: Unset.type)(using erased dynamicJsonEnabler: DynamicJsonEnabler)
   :   Json raises JsonError =
 
     delete(field)

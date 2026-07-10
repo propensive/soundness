@@ -83,7 +83,7 @@ trait Tel2:
   // routes through `Tel.modify`, which replaces an existing child
   // compound with the same kebab-case keyword in place or appends a
   // new one. Mirrors jacinta's lens given.
-  given lens: [name <: Label: ValueOf] => (erased DynamicTelEnabler) => Tactic[TelError]
+  given lens: [name <: Label: ValueOf] => (erased dynamicTelEnabler: DynamicTelEnabler) => Tactic[TelError]
   =>  name is Lens from Tel onto Tel =
     Lens(_.selectField(valueOf[name]), _.modify(valueOf[name], _))
 
