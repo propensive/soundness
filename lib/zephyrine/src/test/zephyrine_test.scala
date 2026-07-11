@@ -764,6 +764,33 @@ object Tests extends Suite(m"Zephyrine tests"):
             regulation.measured(Pace.Measured) )
         . assert(_ == ((0, true, true)))
 
+        test(m"foreachWindow visits every element in order across chunks"):
+          var collected: List[Byte] = Nil
+
+          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](), IArray[Byte](4, 5)))
+          . foreachWindow: (storage, start, count) =>
+              val bytes = storage.asInstanceOf[Array[Byte]]
+              for index <- 0 until count do collected = bytes(start + index) :: collected
+
+          collected.reverse
+        . assert(_ == List[Byte](1, 2, 3, 4, 5))
+
+        test(m"memoize drains a byte stream into a single immutable value"):
+          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](4, 5))).memoize.to(List)
+        . assert(_ == List[Byte](1, 2, 3, 4, 5))
+
+        test(m"memoize of an empty stream yields an empty value"):
+          Stream(Iterator.empty[Data]).memoize.to(List)
+        . assert(_ == List())
+
+        test(m"memoize reassembles a transformed pipeline"):
+          Stream(small).through(Doubler()).memoize.to(List)
+        . assert(_ == small.to(List).flatMap { byte => List(byte, byte) })
+
+        test(m"memoize drains a text stream into a single text value"):
+          Stream(Iterator(t"ab", t"cd", t"e")).memoize.s
+        . assert(_ == "abcde")
+
 
   // A byte intake that gathers everything written to it, with a configurable
   // reported demand, for asserting demand translation.
