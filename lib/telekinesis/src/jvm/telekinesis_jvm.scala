@@ -79,7 +79,7 @@ private def buildJavaRequest
   // JDK may re-subscribe on retry), draining it lazily through an
   // `InputStream` so the body is never held whole in memory.
   lazy val body =
-    jnh.HttpRequest.BodyPublishers.ofInputStream { () => bodyFn().lazyList.inputStream }.nn
+    jnh.HttpRequest.BodyPublishers.ofInputStream { () => bodyFn().inputStream }.nn
 
   method match
     case Http.Delete  => request.DELETE().nn

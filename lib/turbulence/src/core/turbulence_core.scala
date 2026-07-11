@@ -131,6 +131,51 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
     caps.unsafe.unsafeAssumePure(LazyList.defer(recur()))
 
 extension (consume stream: (Stream[Data] over Credit)^)
+  // View a pull endpoint as a `java.io.InputStream` for handing to JDK APIs:
+  // each `read` pulls through the window (one block of credit at a time) and
+  // never materializes a chunk; `close` closes the endpoint. The kernel-native
+  // replacement for `lazyList.inputStream`.
+  def inputStream(using buffering: Buffering): ji.InputStream^ =
+    val block = buffering.capacity(Substrate.Bytes)
+
+    new ji.InputStream:
+      // A JDK class cannot extend `Stateful`; the flag is this adapter's only state.
+      @caps.unsafe.untrackedCaptures
+      private var ended: Boolean = false
+
+      // The count of bytes now readable in the window: refills (skipping
+      // zero-credit grants) until data arrives or the stream ends.
+      private def ensure(): Int =
+        if ended then -1 else stream.refill(Credit(block)) match
+          case count: Int => if count == 0 then ensure() else count
+          case _          =>
+            ended = true
+            stream.close()
+            -1
+
+      override def read(): Int =
+        val available = ensure()
+
+        if available < 0 then -1 else
+          val byte = stream.window(using Unsafe).asInstanceOf[Array[Byte]](stream.start) & 0xff
+          stream.skip(1)
+          byte
+
+      override def read(target: Array[Byte] | Null, offset: Int, length: Int): Int =
+        if length == 0 then 0 else
+          val available = ensure()
+
+          if available < 0 then -1 else
+            val take = available.min(length)
+            System.arraycopy(stream.window(using Unsafe), stream.start, target, offset, take)
+            stream.skip(take)
+            take
+
+      override def close(): Unit = if !ended then
+        ended = true
+        stream.close()
+
+extension (consume stream: (Stream[Data] over Credit)^)
   // Adapt a pull endpoint to the HTTP-body interchange protocol: each `next`
   // refills with `limit` credit and materializes the delivered window.
   def httpBody: HttpStreams.Body^ = limit =>
