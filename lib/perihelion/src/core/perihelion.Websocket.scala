@@ -58,8 +58,8 @@ object Message:
   // A `Message` serialises to a complete (unmasked) WebSocket frame, so it can
   // flow through Coaxial's `Control.Reply`/`Conclude` and be written verbatim.
   given transmissible: Message is Transmissible =
-    case Text(text)   => LazyList(Frame.Text(true, text.data).encode)
-    case Binary(data) => LazyList(Frame.Binary(true, data).encode)
+    case Text(text)   => zephyrine.Stream(Frame.Text(true, text.data).encode)
+    case Binary(data) => zephyrine.Stream(Frame.Binary(true, data).encode)
 
 // A complete WebSocket message: text frames are reassembled and UTF-8-decoded;
 // binary frames are reassembled as raw bytes. Control frames (Ping/Pong/Close)
@@ -88,7 +88,8 @@ class Channel()(using masking: Masking):
 
   def send(message: Message): Unit logs WebsocketEvent =
     Log.fine(WebsocketEvent.Sent(message.bytes.length))
-    Message.transmissible.serialize(message).each(enqueue(_))
+    // One message serializes to one complete frame; see `Transmissible`.
+    enqueue(Message.transmissible.serialize(message).memoize)
 
   def stop(): Unit = spool.stop()
 

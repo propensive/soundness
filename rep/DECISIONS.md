@@ -1297,3 +1297,13 @@ committed 1157194e4b):
 4. Delete both `lazyList` defs in turbulence_core + bridge tests
    (turbulence_test:538 + "Streamable instance is a Source through the bridge").
 Then dual gates: make attest (3.9) + 3.10 clean gate.
+
+## Jon's design decisions for the wire-form finale (2026-07-11)
+
+Verbatim intent: the websocket Channel SHOULD be Conduit-backed, and
+Transmissible.serialize SHOULD return a `Stream^`. "Coaxial's design should be
+adapted to take full advantage of our new mutable streams and separation
+checking." Execution order (bottom-up, compiling commits): coaxial
+Transmissible/transmit layer -> Http wire form (serialize/Response/Body) ->
+perihelion Channel -> scintillate/servlet/cordillera knock-ons -> delete
+lazyList defs + Source2/Sink2 + bridge tests -> dual gates.

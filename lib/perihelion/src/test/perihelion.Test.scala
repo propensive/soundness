@@ -281,7 +281,7 @@ object Tests extends Suite(m"Perihelion tests"):
 
         // `outgoing` now yields a complete (unmasked) Text frame; the reader unframes it
         // before `incoming` decodes the JSON payload.
-        val frameBytes = outgoing.serialize(Ping(7).over[Json]).foldLeft(Data())(_ ++ _)
+        val frameBytes = outgoing.serialize(Ping(7).over[Json]).memoize
 
         val payload = Frame.parse(Cursor[Data](LazyList(frameBytes).iterator))(using Masking.Client()) match
           case Frame.Text(_, data) => data

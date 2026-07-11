@@ -40,10 +40,12 @@ import java.nio.file as jnf
 import anticipation.*
 import contingency.*
 import gigantism.*
+import prepositional.*
 import rudiments.*
 import turbulence.*
 import urticose.*
 import vacuous.*
+import zephyrine.*
 
 object Serviceable:
   given domainSocket: (Tactic[StreamError], Every[SocketOption.Domain])
@@ -63,9 +65,9 @@ object Serviceable:
 
       Connection(channel)
 
-    def transmit(connection: Connection, input: LazyList[Data]): Unit =
-      input.each: bytes =>
-        connection.channel.write(ByteBuffer.wrap(bytes.mutable(using Unsafe)))
+    def transmit(connection: Connection, input: (Stream[Data] over Credit)^): Unit =
+      input.foreachWindow: (storage, start, count) =>
+        connection.channel.write(ByteBuffer.wrap(storage.asInstanceOf[Array[Byte]], start, count))
 
       connection.channel.shutdownOutput()
 
@@ -105,11 +107,11 @@ object Serviceable:
       configure(socket, summon[Every[SocketOption.Tcp]].values)
       socket
 
-    def transmit(socket: jn.Socket, input: LazyList[Data]): Unit =
+    def transmit(socket: jn.Socket, input: (Stream[Data] over Credit)^): Unit =
       val out = socket.getOutputStream.nn
 
-      input.each: bytes =>
-        out.write(bytes.mutable(using Unsafe))
+      input.foreachWindow: (storage, start, count) =>
+        out.write(storage.asInstanceOf[Array[Byte]], start, count)
         out.flush()
 
     def close(socket: jn.Socket): Unit = socket.close()
@@ -134,11 +136,11 @@ object Serviceable:
     def close(socket: jn.Socket): Unit = socket.close()
     def receive(socket: jn.Socket): LazyList[Data] = socket.getInputStream.nn.stream[Data]
 
-    def transmit(socket: jn.Socket, input: LazyList[Data]): Unit =
+    def transmit(socket: jn.Socket, input: (Stream[Data] over Credit)^): Unit =
       val out = socket.getOutputStream.nn
 
-      input.each: bytes =>
-        out.write(bytes.mutable(using Unsafe))
+      input.foreachWindow: (storage, start, count) =>
+        out.write(storage.asInstanceOf[Array[Byte]], start, count)
         out.flush()
 
 trait Serviceable extends Routable:

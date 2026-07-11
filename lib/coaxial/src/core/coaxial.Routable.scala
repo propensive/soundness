@@ -37,8 +37,10 @@ import java.net as jn
 import anticipation.*
 import beneficence.*
 import gigantism.*
+import prepositional.*
 import rudiments.*
 import urticose.*
+import zephyrine.*
 import vacuous.*
 
 object Routable:
@@ -55,13 +57,15 @@ object Routable:
 
       Connection(address, endpoint.port.number, socket)
 
-    def transmit(connection: Connection, input: LazyList[Data]): Unit =
-      input.each: bytes =>
-        val packet =
-          jn.DatagramPacket
-            ( bytes.mutable(using Unsafe), bytes.length, connection.address, connection.port )
+    def transmit(connection: Connection, input: (Stream[Data] over Credit)^): Unit =
+      // One `transmit` call carries one message, and UDP frames per datagram.
+      val bytes = input.memoize
 
-        connection.socket.send(packet)
+      val packet =
+        jn.DatagramPacket
+          ( bytes.mutable(using Unsafe), bytes.length, connection.address, connection.port )
+
+      connection.socket.send(packet)
 
   given udpPort: Every[SocketOption.Udp] => UdpPort is Routable:
     case class Connection(port: Int, socket: jn.DatagramSocket)
@@ -75,20 +79,22 @@ object Routable:
 
       Connection(port.number, socket)
 
-    def transmit(connection: Connection, input: LazyList[Data]): Unit =
-      input.each: bytes =>
-        val packet =
-          jn.DatagramPacket
-            ( bytes.mutable(using Unsafe),
-              bytes.length,
-              jn.InetAddress.getLocalHost.nn,
-              connection.port )
+    def transmit(connection: Connection, input: (Stream[Data] over Credit)^): Unit =
+      // See `udpEndpoint`: one message, one datagram.
+      val bytes = input.memoize
 
-        connection.socket.send(packet)
+      val packet =
+        jn.DatagramPacket
+          ( bytes.mutable(using Unsafe),
+            bytes.length,
+            jn.InetAddress.getLocalHost.nn,
+            connection.port )
+
+      connection.socket.send(packet)
 
 trait Routable extends Findable:
   type Self
   type Connection
 
   def connect(endpoint: Self, interface: Optional[MacAddress]): Connection
-  def transmit(connection: Connection, input: LazyList[Data]): Unit
+  def transmit(connection: Connection, input: (Stream[Data] over Credit)^): Unit

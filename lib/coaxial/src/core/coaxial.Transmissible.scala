@@ -36,19 +36,26 @@ import anticipation.*
 import gossamer.*
 import hieroglyph.*
 import prepositional.*
+import zephyrine.*
 
 object Transmissible:
-  given bytes: [bytes <: Data] => bytes is Transmissible = LazyList(_)
-  given stream: [stream <: LazyList[Data]] => stream is Transmissible = identity(_)
+  given bytes: [bytes <: Data] => bytes is Transmissible = Stream(_)
+
+  given stream: [stream <: LazyList[Data]] => stream is Transmissible = value =>
+    Stream(value.iterator)
 
   given text: [text <: Text] => CharEncoder => text is Transmissible =
-    text => LazyList(text.data)
+    text => Stream(text.data)
 
   given encoder: [message: Encodable in Text] => CharEncoder => message is Transmissible =
-    value => LazyList(value.encode.data)
+    value => Stream(value.encode.data)
 
+// One call to `serialize` yields the wire form of one message, as a fresh pull
+// endpoint. Transports with message framing (a UDP datagram, a WebSocket frame)
+// may therefore `memoize` the stream into a single framed unit; byte-stream
+// transports write it through the window, zero-copy.
 trait Transmissible extends Typeclass:
-  def serialize(message: Self): LazyList[Data]
+  def serialize(message: Self): (Stream[Data] over Credit)^
 
   def contramap[self2](lambda: self2 => Self): (self2 is Transmissible)^{this, lambda} =
     message => serialize(lambda(message))

@@ -34,10 +34,11 @@ package coaxial
 
 import anticipation.*
 import prepositional.*
+import zephyrine.*
 
 // A handle for sending messages over an open, full-duplex connection at any moment —
 // before the first inbound message arrives, or concurrently from another task — rather
 // than only in reply to one. Handed to the `interact` block of `exchange` on a
 // `Duplexable` transport, whose `transmit` is safe to call concurrently.
-class Sender[message: Transmissible as transmissible](post: LazyList[Data] => Unit):
+class Sender[message: Transmissible as transmissible](post: ((Stream[Data] over Credit)^) => Unit):
   def send(message: message): Unit = post(transmissible.serialize(message))
