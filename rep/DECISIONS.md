@@ -1144,3 +1144,35 @@ Also fixed en route: ThreadLocal pool is an erased `AnyRef` boundary with one ri
 (`borrow()`), matching the Conduit-queue precedent; `TenPow`/`StringScanContinue` frozen
 to `IArray`; Bcd.finish results freeze-asserted (opaque over post-finish-immutable array);
 buffer-pool getters de-inlined (per-expansion reach caps don't unify).
+
+## jacinta GREEN (298/298); the block-scoping discipline codified (2026-07-11)
+
+jacinta.core compiles clean (from-scratch module build) and its full suite passes with the
+Parser as a separation-checked stateful capability. gesticulate + telekinesis converted en
+route (operand casts; `Cursor[Data, {}]^` params — concrete cap arg, never `?`, which
+collapses inline receiver proxies to read-only; `Http.parse` returns `Request^` since the
+body thunk legitimately retains the local cursor — local fresh may hide in a fresh result).
+
+The reusable discipline for stateful holders mixing own state with a held capability:
+1. NEVER bind the exclusive field (or let an inline method's receiver proxy bind it) in a
+   scope that later touches other own-state: pre-read own state into locals, bind the
+   capability ONCE inside a `locally:` block, do all capability work through that binding,
+   write own state after the block.
+2. Methods that READ the capability field must be non-inline (a private field read from
+   inline code synthesizes an accessor whose exclusive result type is a template-level
+   hider barring other member declarations — P7's member-order rule, unfixable by
+   reordering since the accessor placement isn't source-controlled).
+3. `raises` sugar on update methods → explicit `(using Tactic[...])` (context-function
+   results hide `this`); same for methods returning fresh values built inside `yet`
+   by-name operands or raising closures (hoist to a binding, or convert the method).
+4. Scratch arrays: exclusive (`Array[T]^`) with element access through DIRECT field paths
+   only (the Cursor.recordMark pattern); a local binding of one hides the owner.
+5. Post-parse-frozen data: type it IArray and freeze at the single build site
+   (`.immutable(using Unsafe)`) instead of laundering at use sites.
+6. Cross-thread/pool rims stay as documented casts (ThreadLocal pool borrow()).
+
+OBSERVATION (worth confirming upstream): once one unit of a module enables
+separationChecking, CC-only units compiled in the same run exhibit sepcheck-flavoured
+typing (fresh/rd decorations on Array/IArray construction, Stateful classification
+demands) — the module effectively converts as a whole. Plan the per-module sweeps
+accordingly (the module is the gating unit, not the file).
