@@ -82,6 +82,22 @@ object PositionTests extends Suite(m"Xylophone position-index tests"):
         tracked.locate(XPath().element(t"root", 1).element(t"missing", 1))
       . assert(_ == Unset)
 
+    suite(m"Leading XML declaration"):
+      test(m"Declaration does not prevent tracked parsing"):
+        val tracked = Xml.parseTracked(t"""<?xml version="1.0"?><root/>""")
+        tracked.locate(XPath().element(t"root", 1)) != Unset
+      . assert(_ == true)
+
+      test(m"Root column accounts for the declaration prefix"):
+        val tracked = Xml.parseTracked(t"""<?xml version="1.0"?><root/>""")
+        col(tracked.locate(XPath().element(t"root", 1)))
+      . assert(_ == 22)
+
+      test(m"Declaration on its own line, root on the next"):
+        val tracked = Xml.parseTracked(t"<?xml version=\"1.0\"?>\n<root>hello</root>")
+        line(tracked.locate(XPath().element(t"root", 1)))
+      . assert(_ == 2)
+
     suite(m"Attributes"):
       test(m"Single attribute column"):
         val tracked = Xml.parseTracked(t"""<root name="x"/>""")

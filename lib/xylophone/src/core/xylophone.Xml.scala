@@ -587,9 +587,19 @@ object Xml extends Tag.Container
   // tracking `Lineation` in its cursor, parse, then bundle the resulting
   // `Xml` with the position index the parser emitted along the way.
   // `positionIndex` is `Unset` if the input contains no root element.
+  //
+  // Parse with `headers0 = true` so a leading `<?xml …?>` declaration is
+  // accepted (like `.load[Xml]`), then drop it: the position index is built
+  // from the root element alone, so the tracked value must have the same
+  // shape it would for header-less input, else `Tracked.walk` misaligns.
+  private def dropHeader(xml: Xml): Xml = xml match
+    case Fragment((_: Header), rest*) => if rest.length == 1 then rest.head else Fragment(rest*)
+    case _: Header                    => Fragment()
+    case other                        => other
+
   def parseTracked(text: Text)(using schema: XmlSchema, tactic: Tactic[ParseError]): Tracked =
     val parser = XmlParser.fromTextTracked(text)
-    val xml = parser.parseXml(headers0 = false)
+    val xml = dropHeader(parser.parseXml(headers0 = true))
     val index = parser.rootIndex
     Tracked(xml, PositionIndex(if index == null then IArray.empty[Int] else index))
 
@@ -598,7 +608,7 @@ object Xml extends Tag.Container
   :   Tracked =
 
     val parser = XmlParser.fromIteratorTracked(input)
-    val xml = parser.parseXml(headers0 = false)
+    val xml = dropHeader(parser.parseXml(headers0 = true))
     val index = parser.rootIndex
     Tracked(xml, PositionIndex(if index == null then IArray.empty[Int] else index))
 
