@@ -33,6 +33,7 @@
 package xenophile
 
 import anticipation.*
+import gossamer.*
 import prepositional.*
 
 // A payload-less case of a WIT `variant` (or `enum`), named by its lower-kebab-case Scala-side
@@ -43,6 +44,13 @@ import prepositional.*
 object WitCase:
   def apply[topic <: Label](name: Text): WitCase of topic =
     new WitCase(name).asInstanceOf[WitCase of topic]
+
+  // The case's lower-kebab-case name, recovered from a facade case object's class (the same
+  // spelling `apply` accepts, and the same derivation as `WitError.name`).
+  def caseName(value: Any): Text =
+    val simple = value.getClass.getSimpleName.nn.tt
+    val stripped = if simple.ends(t"$$") then simple.skip(1, Rtl) else simple
+    stripped.uncamel.kebab
 
   given interoperable: [topic <: Label]
   =>  ( (WitCase of topic) is Interoperable in Wit of topic ) =

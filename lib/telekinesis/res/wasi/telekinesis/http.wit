@@ -67,6 +67,24 @@ interface types {
   resource incoming-body {
     %stream: func() -> result<input-stream>;
   }
+
+  resource incoming-request {
+    method: func() -> method;
+    path-with-query: func() -> option<string>;
+    authority: func() -> option<string>;
+    headers: func() -> fields;
+    consume: func() -> result<incoming-body>;
+  }
+
+  resource outgoing-response {
+    constructor(headers: fields);
+    set-status-code: func(status-code: u16) -> result;
+    body: func() -> result<outgoing-body>;
+  }
+
+  resource response-outparam {
+    set: static func(param: response-outparam, response: result<outgoing-response, error-code>);
+  }
 }
 
 interface outgoing-handler {

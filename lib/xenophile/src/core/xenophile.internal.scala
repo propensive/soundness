@@ -211,9 +211,16 @@ object Xenophile:
     val argTopic = refinements(argRepr).at(t"Topic").or:
       halt(m"xenophile: the foreign type of an argument to $method is not known")
 
+    // The `ok` arm topic of a `result<ok, err>` parameter, if it is one — so a value of that arm's
+    // foreign type satisfies the parameter (the terminal materializer wraps it as an `Ok`), used
+    // for `wasi:http`'s `response-outparam.set(result<outgoing-response, error-code>)`.
+    val okArm: Optional[TypeRepr] = paramType match
+      case Foreign.Type.Applied(constructor, ok :: _) if constructor.s == "result" => reprOf(ok)
+      case _                                                                       => Unset
+
     // Subsumption, not equality: a `string` (or a bare `none`) argument satisfies an
-    // `option<string>` (`string|none`) parameter.
-    if argTopic <:< paramTopic then '{$arg.expr}
+    // `option<string>` (`string|none`) parameter, and an `ok`-arm value a `result<…>` parameter.
+    if argTopic <:< paramTopic || okArm.lay(false)(argTopic <:< _) then '{$arg.expr}
     else halt(m"xenophile: $method expects an argument of foreign type ${paramType.text}")
 
   def select(self: Expr[Foreign], field: Expr[String]): Macro[Foreign] =
