@@ -74,11 +74,17 @@ sealed trait Monitor extends Resultant, Findable, caps.ExclusiveCapability:
 
   protected[parasite] def workers: Set[Worker^{}] = workersRef.get().nn
 
+  // The casts are for the Scala.js pipeline, which infers the updated set's element type with
+  // the argument's reach capabilities attached (widening the worker's fields to `any`), where
+  // the JVM pipeline accepts the direct form. A cast, not an ascription, because no source-level
+  // type spells the pipeline's widened element type. (Compiler divergence.)
   protected[parasite] def addWorker(worker: Worker^): Unit =
-    workersRef.updateAndGet(_.nn + caps.unsafe.unsafeAssumePure(worker))
+    val worker0: Worker^{} = caps.unsafe.unsafeAssumePure(worker)
+    workersRef.updateAndGet(_.nn.incl(worker0).asInstanceOf[Set[Worker^{}]])
 
   protected[parasite] def remove(monitor: Worker^): Unit =
-    workersRef.updateAndGet(_.nn - caps.unsafe.unsafeAssumePure(monitor))
+    val monitor0: Worker^{} = caps.unsafe.unsafeAssumePure(monitor)
+    workersRef.updateAndGet(_.nn.excl(monitor0).asInstanceOf[Set[Worker^{}]])
 
   def name: Optional[Name[Async]]
   def chain: Optional[Chain]

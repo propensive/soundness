@@ -72,6 +72,10 @@ trait Loggable extends Typeclass:
     def log(level: Level, timestamp: Long, event: => Self): Unit
 
     // `^{lambda}` only: the compiler treats a bare `Loggable` receiver as untracked
-    // (empty capture set), so `this` is not a legal capture reference here.
+    // (empty capture set), so `this` is not a legal capture reference here. The laundering is
+    // for the Scala.js pipeline, which — unlike the JVM pipeline — insists the anonymous
+    // instance's base class is pure and rejects the capture of `lambda`; the result type still
+    // declares it. (Compiler divergence; the JVM pipeline accepts the direct form.)
     def contramap[self2](lambda: self2 => Self): (self2 is Loggable)^{lambda} =
-      (level, timestamp, event) => loggable.log(level, timestamp, lambda(event))
+      val lambda0: self2 -> Self = caps.unsafe.unsafeAssumePure(lambda)
+      (level, timestamp, event) => loggable.log(level, timestamp, lambda0(event))
