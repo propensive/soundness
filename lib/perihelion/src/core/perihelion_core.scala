@@ -254,7 +254,7 @@ given wsClient: ( online:            Online,
 
     def receive(connection: WsConnection): LazyList[Data] =
       given Masking = connection.masking
-      Reader(() => connection.inbound, connection.channel).messages.map(_.bytes)
+      Reader(() => zephyrine.Stream(connection.inbound.iterator), connection.channel).messages.map(_.bytes)
 
     def transmit(connection: WsConnection, input: LazyList[Data]): Unit =
       input.each(connection.channel.enqueue(_))

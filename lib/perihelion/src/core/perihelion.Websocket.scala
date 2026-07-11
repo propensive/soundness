@@ -100,9 +100,9 @@ class Channel()(using masking: Masking):
 // Reads client frames off the connection, reassembles fragmented messages,
 // answers Ping with Pong, and ends (stopping the outgoing side) when the peer
 // sends Close. Protocol violations raise `WebsocketError`.
-class Reader(body: () => LazyList[Data], channel: Channel)(using Tactic[WebsocketError], Masking):
+class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[WebsocketError], Masking):
   def messages: LazyList[Message] =
-    val cursor = Cursor(body().filter(_.nonEmpty).iterator)
+    val cursor = Cursor[Data](body())
 
     // Validate `data` as UTF-8. `whole` marks a complete message, where a
     // trailing partial multi-byte sequence is an error; for a fragment prefix it
@@ -233,4 +233,4 @@ class Websocket[message, state]
         initial
 
     . protect:
-        loop(Reader(() => request.body().lazyList, channel).messages, initial)
+        loop(Reader(request.body, channel).messages, initial)

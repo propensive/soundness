@@ -171,7 +171,7 @@ object Tests extends Suite(m"Perihelion tests"):
 
     def readMessages(frames: Array[Byte]*): List[perihelion.Message] =
       val stream = LazyList(frames*).map(_.immutable(using Unsafe))
-      Reader(() => stream, Channel()).messages.toList
+      Reader(() => zephyrine.Stream(stream.iterator), Channel()).messages.toList
 
     def texts(messages: List[perihelion.Message]): List[Text] = messages.map:
       case perihelion.Message.Text(text) => text

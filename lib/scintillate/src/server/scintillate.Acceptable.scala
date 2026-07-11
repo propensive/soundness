@@ -41,6 +41,7 @@ import prepositional.*
 import rudiments.*
 import telekinesis.*
 import turbulence.*
+import zephyrine.*
 import vacuous.*
 
 import errorDiagnostics.stackTracesDiagnostics
@@ -59,7 +60,10 @@ object Acceptable:
           val boundary = contentType.at(t"boundary").or:
             abort(MultipartError(MultipartError.Reason.MediaType))
 
-          Multipart.parse(request.body().lazyList, boundary)
+          // Interim: `Multipart.parse` is still `Streamable`-typed; the whole body is
+          // materialized (as its parts already were). Cursor-based parsing comes with
+          // the Streamable-tail conversion (see rep/DECISIONS.md).
+          Multipart.parse(request.body().memoize, boundary)
         else
           abort(MultipartError(MultipartError.Reason.MediaType))
 
