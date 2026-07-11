@@ -90,7 +90,9 @@ object GrpcFraming:
 
               cursor.lay(truncated()): byte3 =>
                 cursor.next()
-                (flag != 0, byte0 << 24 | byte1 << 16 | byte2 << 8 | byte3)
+                ( flag != 0,
+                  byte0.asInstanceOf[Byte] << 24 | byte1.asInstanceOf[Byte] << 16
+                    | byte2.asInstanceOf[Byte] << 8 | byte3.asInstanceOf[Byte] )
 
     Framable.frames[Data]:
       header.let: (compressed, length) =>

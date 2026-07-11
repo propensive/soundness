@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import language.experimental.separationChecking
+
 import scala.annotation.targetName
 
 import anticipation.Data
@@ -57,6 +59,17 @@ object Cursor:
   val shared: Held = new Held()
 
   type Loader[data] = () => Optional[data]
+
+  // A direct refill strategy: writes up to `space` elements straight into the cursor's
+  // buffer at `offset`, returning the count written, `0` when nothing was granted (the
+  // cursor retries), or `-1` at end-of-stream. Bypasses the `Loader` chunk protocol so a
+  // pull endpoint's window can be transferred into the cursor in a single copy, instead
+  // of materializing an intermediate chunk that `refill` then copies again. `block` is
+  // the growth hint: the cursor guarantees at least one element of space and grows its
+  // buffer towards `writeEnd + block` before each fill.
+  trait Filler[storage]:
+    def block: Int
+    def fill(storage: storage, offset: Int, space: Int): Int
 
   object Mark:
     final val Initial: Mark = 0L
@@ -96,74 +109,112 @@ object Cursor:
   transparent inline def apply[data, cap^](inline load: () ->{cap} Optional[data])
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand )
-  :   Cursor[data, cap] =
+  :   Cursor[data, cap]^ =
 
-    new Cursor[data, cap]
-      ( () => load(),
-        Unset,
-        DefaultCapacity,
-        addressable0,
-        lineation0 )
+    // The ascribed binding is load-bearing — see the iterator factory below. The seal
+    // is the audited unsafety that keeps the class Unscoped; the loader's capabilities
+    // remain visible in the `cap` type argument.
+    val cursor: Cursor[data, cap]^ =
+      new Cursor[data, cap]
+        ( caps.unsafe.unsafeAssumePure(() => load()),
+          Unset,
+          DefaultCapacity,
+          addressable0,
+          lineation0,
+          Unset )
+
+    cursor
 
 
   // Build a Cursor pre-filled with a single chunk; the loader is a no-op.
   // This is the "Direct" mode: parsers that already have all the data in
   // memory pay no per-call refill cost.
-  transparent inline def apply[data](initial: data)
+  def apply[data](initial: data)
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand )
-  :   Cursor[data, {}] =
+  :   Cursor[data, {}]^ =
 
-    new Cursor[data, {}]
-      ( () => Unset,
-        initial,
-        addressable0.length(initial).max(1),
-        addressable0,
-        lineation0 )
+    // The ascribed binding is load-bearing — see the iterator factory below.
+    val cursor: Cursor[data, {}]^ =
+      new Cursor[data, {}]
+        ( () => Unset,
+          initial,
+          addressable0.length(initial).max(1),
+          addressable0,
+          lineation0,
+          Unset )
+
+    cursor
 
 
-  // Build a Cursor over a pull endpoint: each load refills the stream with a
-  // block-sized credit (from the ambient `Buffering`) and materializes the
-  // delivered window as one chunk. The credit bounds how much any upstream
-  // stage produces per load, so memory stays bounded through a parse of an
-  // arbitrarily large input.
-  transparent inline def apply[data](stream: Stream[data] over Credit)
+  // Build a Cursor over a pull endpoint: each fill refills the stream with a credit
+  // bounded by the ambient `Buffering` block size and transfers the delivered window
+  // straight into the cursor's buffer — a single copy, with no intermediate chunk
+  // allocation. The credit bounds how much any upstream stage produces per fill, so
+  // memory stays bounded through a parse of an arbitrarily large input. The window is
+  // read and skipped within the fill, before the stream can refill again — the borrow
+  // discipline `Stream.window` documents, applied at the one place a cursor touches it.
+  def apply[data](stream: Stream[data] over Credit)
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand,
             buffering:    Buffering )
   // `Stream over Credit` is not (yet) a declared capability, so the closure over it is
   // untracked and the cursor's capture set is empty; if the reactive kernel's types become
   // capabilities, this factory should be re-typed like the iterator one above.
-  :   Cursor[data, {}] =
+  :   Cursor[data, {}]^ =
 
-    val block: Int = buffering.capacity(addressable0.substrate)
-
-    new Cursor[data, {}]
-      ( () =>
-          stream.refill(Credit(block)).let: count =>
-            val window = stream.window(using Unsafe).asInstanceOf[addressable0.Storage]
-            val chunk = addressable0.materialize(window, stream.start, count)
-            stream.skip(count)
-            chunk,
+    // The ascribed binding is load-bearing — see the iterator factory below.
+    val cursor: Cursor[data, {}]^ = new Cursor[data, {}]
+      ( () => Unset,
         Unset,
         DefaultCapacity,
         addressable0,
-        lineation0 )
+        lineation0,
+        new Filler[addressable0.Storage]:
+          val block: Int = buffering.capacity(addressable0.substrate)
+
+          def fill(storage: addressable0.Storage, offset: Int, space: Int): Int =
+            stream.refill(Credit(space.min(block))).lay(-1): count =>
+              val copied = count.min(space)
+              val window = stream.window(using Unsafe).asInstanceOf[addressable0.Storage]
+              addressable0.transfer(window, stream.start, storage, offset, copied)
+              stream.skip(copied)
+              copied )
+
+    cursor
 
 
   // Backwards-compatible factory that adapts an Iterator to the loader API.
   // Lets the existing test suite cross-compile against Cursor.
-  transparent inline def apply[data](iterator: Iterator[data]^)
+  // The loader is SEALED (`unsafeAssumePure`, the CC-rollout fallback idiom): a loader
+  // that visibly captures the iterator drags the call site's fresh iterator temp into the
+  // instance's capture set, and the transparent expansion's exclusivity then collapses to
+  // `^{}` at CC-only call sites — every update call through the cursor is rejected as
+  // read-only. Re-track the iterator once that interaction is understood (needs a minimal
+  // repro; the toy version works).
+  def apply[data](iterator: Iterator[data]^)
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand )
-  :   Cursor[data, {iterator}]^{iterator} =
+  :   Cursor[data, {}]^ =
 
-    new Cursor[data, {iterator}]
-      ( () => if iterator.hasNext then iterator.next() else Unset,
-        Unset,
-        DefaultCapacity,
-        addressable0,
-        lineation0 )
+    // The `cursor` binding's ascription is load-bearing: without it, the transparent
+    // expansion's type pins the tracked-val refinement to expansion-local `$proxy`
+    // singletons, and avoiding those collapses the fresh capture to `^{}` at CC-only
+    // call sites — every update call through the cursor is then rejected as read-only.
+    // The ascription costs the refinement (`Operand`/`Target` go abstract on cursors
+    // from this factory); per-medium extensions (`peek`, `expect`, `buffer`) are
+    // unaffected, and direct `clone`/`datum` users cast at the call site.
+    val cursor: Cursor[data, {}]^ =
+      new Cursor[data, {}]
+        ( caps.unsafe.unsafeAssumePure
+            (() => if iterator.hasNext then iterator.next() else Unset),
+          Unset,
+          DefaultCapacity,
+          addressable0,
+          lineation0,
+          Unset )
+
+    cursor
 
   // Safe, allocation-free single-element peek. Returns `Datum.End` when the
   // cursor is finished; otherwise the current byte (unsigned, `0..255`) or
@@ -251,12 +302,27 @@ object Cursor:
 // explicit capture parameter — rather than letting capture checking infer a blanket self-capture —
 // keeps a pure cursor's type free of a `load`-bearing refinement, so its path-dependent members
 // (`addressable.Storage`/`Operand`) still resolve through any reference.
+// A cursor is a stateful capability: a bare `Cursor` reference is read-only (position and
+// lineation queries only), while `Cursor[...]^` grants the exclusive access that the
+// mutating navigation methods (`update`-classified) require. Separation checking — enabled
+// in this unit — verifies the classification; consumers need only capture checking.
+//
+// The class extends `Mutable` (Unscoped-classified), which is what lets consumers hold a
+// cursor in an exclusive field (e.g. jacinta's pooled parser) — scoped capabilities may
+// not flow into longer-lived locations. Unscoped requires that the class captures nothing
+// non-Unscoped, so the `load` field is PURE and the loader factory seals capturing
+// loaders at construction (the audited point). Confinement is still enforced at the API:
+// the loader's capabilities appear in the `cap` type argument, so a cursor over a scoped
+// loader cannot leave the loader's scope (verified by probe: escaping `withFile` with a
+// file-reading cursor is rejected via the type argument).
 final class Cursor[data, cap^]
-  (             load:        () ->{cap} Optional[data],
+  (             load:        () -> Optional[data],
                 initial:     Optional[data],
                 initialSize: Int,
     tracked val addressable: data is Addressable,
-    tracked val lineation:   Lineation by addressable.Operand ):
+    tracked val lineation:   Lineation by addressable.Operand,
+                filler:      Optional[Cursor.Filler[addressable.Storage]] )
+extends caps.Mutable:
 
   // ─── state ────────────────────────────────────────────────────────────────
   // A single contiguous buffer holds all currently-live data. `pos` is the
@@ -288,8 +354,8 @@ final class Cursor[data, cap^]
   // `ArrayDeque[Mark]`/`ArrayDeque[Offset]` avoids two `java.lang.Long` boxes
   // per `mark()` call — a meaningful saving on parser hot paths that mark
   // every token boundary.
-  private var marks:     Array[Long] = new Array[Long](16)
-  private var offsets:   Array[Long] = new Array[Long](16)
+  private var marks:     Array[Long]^ = new Array[Long](16)
+  private var offsets:   Array[Long]^ = new Array[Long](16)
   private var marksSize: Int = 0
 
   private var lineNo:   Ordinal = Prim
@@ -316,7 +382,7 @@ final class Cursor[data, cap^]
   // Kept as a regular (non-inline) method so the slow path's bytecode bloat
   // doesn't push `next()` past the JIT's inline budgets. Mirrors the rationale
   // for the original `Cursor.forward()`.
-  private def refill(): Unit =
+  private update def refill(): Unit =
     if !ended then
       // Compact: drop any data that is no longer reachable. Outside a hold,
       // everything before `pos` is dead; inside a hold, everything before
@@ -334,24 +400,44 @@ final class Cursor[data, cap^]
         writeEnd = live
         if holdStart >= 0 then holdStart = 0
 
-      // Pull chunks until we either receive non-empty data or hit EOF.
-      var loaded = false
+      // Pull until we either receive non-empty data or hit EOF: directly into the
+      // buffer when a `Filler` was provided (single copy), otherwise through the
+      // chunk-materializing `Loader` protocol.
+      filler.lay(pullChunks())(pullDirect(_))
 
-      while !loaded && !ended do
-        val chunk = load()
+  // The single-copy path: grow towards a full block of space, then let the filler
+  // transfer straight into the buffer at `writeEnd`.
+  private update def pullDirect(filler: Cursor.Filler[addressable.Storage]): Unit =
+    var loaded = false
 
-        if chunk.absent then ended = true
-        else
-          val data = chunk.vouch
-          val len = addressable.length(data)
+    while !loaded && !ended do
+      ensureCapacity(writeEnd + filler.block)
+      val space = addressable.storageSize(buffer) - writeEnd
+      val count = filler.fill(buffer, writeEnd, space)
 
-          if len > 0 then
-            ensureCapacity(writeEnd + len)
-            addressable.copyChunk(data, 0, buffer, writeEnd, len)
-            writeEnd += len
-            loaded = true
+      if count < 0 then ended = true
+      else if count > 0 then
+        writeEnd += count
+        loaded = true
 
-  private def ensureCapacity(needed: Int): Unit =
+  private update def pullChunks(): Unit =
+    var loaded = false
+
+    while !loaded && !ended do
+      val chunk = load()
+
+      if chunk.absent then ended = true
+      else
+        val data = chunk.vouch
+        val len = addressable.length(data)
+
+        if len > 0 then
+          ensureCapacity(writeEnd + len)
+          addressable.copyChunk(data, 0, buffer, writeEnd, len)
+          writeEnd += len
+          loaded = true
+
+  private update def ensureCapacity(needed: Int): Unit =
     val cap = addressable.storageSize(buffer)
 
     if needed > cap then
@@ -369,7 +455,7 @@ final class Cursor[data, cap^]
   // `Cursor.forward` rationale and keeps the inner loop one instruction
   // tighter — important for raw byte-scan parsers like Merino where the
   // hot loop is `while more && {peek-test} do advance()`.
-  inline def advance(): Unit =
+  inline update def advance(): Unit =
     if lineationActive then
       val operand = addressable.storageAddress(buffer, pos)
       pos += 1
@@ -383,7 +469,7 @@ final class Cursor[data, cap^]
   // Variant of `advance` for callers that have just read the current operand
   // (e.g. via `unsafeBuffer(pos)` in a tight scan loop). Reuses the supplied
   // `operand` instead of re-loading it from the buffer for lineation tracking.
-  inline def unsafeAdvanceWith(operand: addressable.Operand)(using erased unsafe: Unsafe): Unit =
+  inline update def unsafeAdvanceWith(operand: addressable.Operand)(using erased unsafe: Unsafe): Unit =
     pos += 1
 
     if lineationActive then
@@ -396,25 +482,25 @@ final class Cursor[data, cap^]
   // per-character lineation update inside `advance`/`unsafeAdvanceWith`, then
   // reconcile lineation in one shot. The caller is responsible for tracking
   // newlines while it scans.
-  inline def unsafeBumpPos(by: Int)(using erased unsafe: Unsafe): Unit = pos += by
+  inline update def unsafeBumpPos(by: Int)(using erased unsafe: Unsafe): Unit = pos += by
 
   // Increase the line counter by `by`, leaving the column counter untouched.
-  inline def unsafeBumpLine(by: Int)(using erased unsafe: Unsafe): Unit =
+  inline update def unsafeBumpLine(by: Int)(using erased unsafe: Unsafe): Unit =
     lineNo = denominative.Ordinal.zerary(lineNo.n0 + by)
 
   // Increase the column counter by `by`. Must not be called across newlines.
-  inline def unsafeBumpColumn(by: Int)(using erased unsafe: Unsafe): Unit =
+  inline update def unsafeBumpColumn(by: Int)(using erased unsafe: Unsafe): Unit =
     columnNo = denominative.Ordinal.zerary(columnNo.n0 + by)
 
   // Set the column counter directly. Used after a bulk advance over a range
   // that contained at least one newline, to set the column to the offset
   // since the most-recent newline.
-  inline def unsafeSetColumn(value: Int)(using erased unsafe: Unsafe): Unit =
+  inline update def unsafeSetColumn(value: Int)(using erased unsafe: Unsafe): Unit =
     columnNo = denominative.Ordinal.zerary(value)
 
   // `next()` is `advance(); more`, so it returns `true` while more data is
   // available and `false` when the stream is exhausted.
-  inline def next(): Boolean =
+  inline update def next(): Boolean =
     advance()
     more
 
@@ -422,12 +508,12 @@ final class Cursor[data, cap^]
   // in the buffer; only when the buffer is drained do we pay for the slow
   // path. `moreSlow` is non-inline so the inline budget for `more` stays
   // small enough that callers (parser hot loops) get tight bytecode.
-  inline def more: Boolean = pos < writeEnd || moreSlow()
+  inline update def more: Boolean = pos < writeEnd || moreSlow()
 
-  private def moreSlow(): Boolean =
+  private update def moreSlow(): Boolean =
     !ended && { refill(); pos < writeEnd }
 
-  inline def finished: Boolean = !more
+  inline update def finished: Boolean = !more
   inline def position: Ordinal = (basePos + pos).toInt.z
   inline def available: Int = writeEnd - pos
   inline def line: Ordinal = lineNo
@@ -442,7 +528,7 @@ final class Cursor[data, cap^]
   // the buffered tail first (one chunk materialised from `pos` to `writeEnd`),
   // then drains the loader, returning chunks as it goes. Caller-driven, so a
   // streaming consumer pays nothing until it pulls.
-  def remainder: LazyList[data] =
+  update def remainder: LazyList[data] =
     val tailLen = writeEnd - pos
 
     val tail: data =
@@ -461,7 +547,7 @@ final class Cursor[data, cap^]
     // empty branch must defer the call explicitly.
     if tailLen > 0 then tail #:: loaderStream else LazyList.empty.lazyAppendedAll(loaderStream)
 
-  private def loaderStream: LazyList[data] =
+  private update def loaderStream: LazyList[data] =
     if ended then LazyList.empty else load() match
       case chunk: data @unchecked =>
         if addressable.length(chunk) > 0 then chunk #:: loaderStream else loaderStream
@@ -487,27 +573,27 @@ final class Cursor[data, cap^]
   // for line/column updates if `lineation.active`. Intended for callers that
   // maintain a parser-local copy of `pos` for register-resident hot loops
   // and only push it back to the cursor at refill or mark/slice points.
-  inline def unsafeAdvanceBy(n: Int)(using erased unsafe: Unsafe): Unit = pos += n
+  inline update def unsafeAdvanceBy(n: Int)(using erased unsafe: Unsafe): Unit = pos += n
 
   // ─── current element ──────────────────────────────────────────────────────
 
   inline def datum(using erased unsafe: Unsafe): addressable.Operand =
     addressable.storageAddress(buffer, pos)
 
-  inline def lay[result](inline otherwise: => result)(inline lambda: addressable.Operand => result)
+  inline update def lay[result](inline otherwise: => result)(inline lambda: addressable.Operand => result)
   :   result =
 
     if !finished then lambda(addressable.storageAddress(buffer, pos)) else otherwise
 
-  inline def let(inline lambda: addressable.Operand => Unit): Unit =
+  inline update def let(inline lambda: addressable.Operand => Unit): Unit =
     if !finished then lambda(addressable.storageAddress(buffer, pos))
 
-  inline def process[result](inline lambda: addressable.Operand => result): Unit =
+  inline update def process[result](inline lambda: addressable.Operand => result): Unit =
     if !finished then lambda(addressable.storageAddress(buffer, pos))
 
   // ─── search primitives ────────────────────────────────────────────────────
 
-  inline def seek(target: addressable.Operand): Boolean =
+  inline update def seek(target: addressable.Operand): Boolean =
     var found = false
     var continue = true
 
@@ -517,21 +603,21 @@ final class Cursor[data, cap^]
 
     found
 
-  inline def consume(inline otherwise: => Unit)(inline text: String): Unit =
+  inline update def consume(inline otherwise: => Unit)(inline text: String): Unit =
     ${zephyrine.internal.consume('this, 'text, 'otherwise)}
 
   // ─── hold / mark / cue / grab / clone ─────────────────────────────────────
 
   // `mark` requires `using Cursor.Held` so callers can only mark inside a
   // hold block, where compaction cannot drop the marked region.
-  inline def mark(using held: Cursor.Held): Cursor.Mark =
+  inline update def mark(using held: Cursor.Held): Cursor.Mark =
     Cursor.Mark(basePos + pos).tap: mark =>
       if lineationActive then
         recordMark(mark.absolute, Cursor.Offset(lineNo, columnNo).toLong)
 
   // Append `(mark, offset)` to the parallel `Long` buffers, growing geometrically
   // when full. Off the hot path's inline budget so `mark()` itself stays small.
-  private def recordMark(mark: Long, offset: Long): Unit =
+  private update def recordMark(mark: Long, offset: Long): Unit =
     val cap = marks.length
 
     if marksSize >= cap then
@@ -558,7 +644,7 @@ final class Cursor[data, cap^]
   inline def offset(mark: Cursor.Mark): Cursor.Offset =
     Cursor.offsetFromLong(offsetForMark(mark.absolute))
 
-  inline def cue(mark: Cursor.Mark): Unit =
+  inline update def cue(mark: Cursor.Mark): Unit =
     pos = (mark.absolute - basePos).toInt
 
     if lineationActive then
@@ -566,7 +652,7 @@ final class Cursor[data, cap^]
       lineNo = o.line
       columnNo = o.column
 
-  inline def hold[result](inline action: Cursor.Held ?=> result): result =
+  inline update def hold[result](inline action: Cursor.Held ?=> result): result =
     val wasHeld = holdStart >= 0
     if !wasHeld then holdStart = pos
 
@@ -598,7 +684,7 @@ final class Cursor[data, cap^]
     if len > 0
     then addressable.cloneStorage(buffer, (start.absolute - basePos).toInt, len)(target)
 
-  inline def take(inline otherwise: => data)(length: Int): data =
+  inline update def take(inline otherwise: => data)(length: Int): data =
     hold:
       val start = mark
       var count = 0

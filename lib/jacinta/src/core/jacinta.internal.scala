@@ -427,7 +427,7 @@ object internal:
     // wants a `Bcd` instead of a single-Long packing. Skips the
     // `Bcd.Builder` allocation and the `seedFromLong` re-walk; the layout
     // is fixed (1 header + 1 data word).
-    private[jacinta] inline def fromContent15(content: Long, negative: Boolean): Bcd =
+    private[jacinta] def fromContent15(content: Long, negative: Boolean): Bcd =
       val arr = new Array[Double](2)
       arr(0) = packHeaderDouble(negative, 15)
       arr(1) = packDataDouble(content)
@@ -484,7 +484,7 @@ object internal:
     // Incremental builder used by `Json.Parser` to assemble a `Bcd` one nibble
     // at a time as it overflows the in-Long fast path. Keeps a growing
     // `Array[Double]` of completed words and a current 52-bit nibble buffer.
-    final class Builder:
+    final class Builder extends caps.Mutable:
       private var data: Array[Double] = new Array[Double](2)
       private var wordIdx: Int = 0
       private var word: Long = 0L   // raw nibble buffer; packed into a Double on commit
@@ -493,7 +493,7 @@ object internal:
 
       // Append one nibble (0x0–0xC) to the in-progress word. When the word
       // fills (13 nibbles), it is committed to the `data` array.
-      def add(nibble: Int): Unit =
+      update def add(nibble: Int): Unit =
         word = (word << 4) | (nibble & 0xFL)
         inWord += 1
         nibbles += 1
@@ -507,7 +507,7 @@ object internal:
 
       // Replace the most recently-added nibble. Used by the parser to rewrite
       // an emitted `e` (0xB) as `e-` (0xC) when a `-` follows.
-      def overwriteLast(nibble: Int): Unit =
+      update def overwriteLast(nibble: Int): Unit =
         val mask = 0xFL
         val v = nibble & mask
 
@@ -518,7 +518,7 @@ object internal:
 
       // Snapshot the in-Long fast-path accumulator (15 nibbles) into the
       // builder, so the parser can hand off mid-number without losing state.
-      def seedFromLong(content: Long, count: Int): Unit =
+      update def seedFromLong(content: Long, count: Int): Unit =
         var i = count - 1
 
         while i >= 0 do
@@ -537,7 +537,7 @@ object internal:
         if inWord > 0 then arr(1 + wordIdx) = packDataDouble(word)
         arr
 
-      private def ensureCapacity(needed: Int): Unit =
+      private update def ensureCapacity(needed: Int): Unit =
         if needed > data.length then
           val newSize = (data.length * 2).max(needed)
           val newData = new Array[Double](newSize)
@@ -679,7 +679,7 @@ object internal:
 
     val (parts2, spreads) = preprocess(parts)
     val source: String = parts2.mkString(MarkerString)
-    val data: IArray[Byte] = IArray.from(source.getBytes("UTF-8").nn.iterator)
+    val data: IArray[Byte] = IArray.from(source.getBytes("UTF-8").nn.iterator).asInstanceOf[IArray[Byte]]
 
     // Map a parser char-offset (within the joined input) back to a source-file
     // Position. The cleaned parts (parts2) are what the parser sees; the
@@ -969,7 +969,7 @@ object internal:
     abortive:
       val (parts2, spreads) = preprocess(parts)
       val source: String = parts2.mkString(MarkerString)
-      val data: IArray[Byte] = IArray.from(source.getBytes("UTF-8").nn.iterator)
+      val data: IArray[Byte] = IArray.from(source.getBytes("UTF-8").nn.iterator).asInstanceOf[IArray[Byte]]
       val ast: Json.Ast = Json.Ast.parse(data, true)
 
       var nextHole: Int = 0

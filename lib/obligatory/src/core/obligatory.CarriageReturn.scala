@@ -47,7 +47,7 @@ object CarriageReturn:
       cursor.hold:
         val start = cursor.mark
 
-        if !cursor.finished && cursor.seek(Cr)
+        if !cursor.finished && cursor.seek(Cr.toByte.asInstanceOf[cursor.addressable.Operand])
         then cursor.grab(start, cursor.mark).also(cursor.next())
         else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)
 

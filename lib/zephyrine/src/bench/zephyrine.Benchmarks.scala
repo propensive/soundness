@@ -77,6 +77,15 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
     while i < arr.length do { arr(i) = 0x41.toByte; i += 1 }
     arr.immutable(using Unsafe)
 
+  // The same 10 KB of bytes as 100 × 100-byte blocks, pulled through a `Stream`
+  // by the stream-backed cursor factory.
+  lazy val data10kFragments: List[Data] =
+    List.tabulate(100): _ =>
+      val arr = new Array[Byte](100)
+      var i = 0
+      while i < arr.length do { arr(i) = 0x41.toByte; i += 1 }
+      arr.immutable(using Unsafe)
+
   // A 10 KB string with a single space at offset 9000. Used to drive `seek`
   // through 9000 non-matching positions before returning.
   lazy val textWithSpace: Text =
@@ -125,6 +134,14 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
     while c.next() do n += 1
     n
 
+  // Cursor over a pull endpoint — exercises the stream-backed factory's refill
+  // path (window transferred into the cursor's buffer once per fill).
+  def cursorNextStreamed(blocks: List[Data]): Int =
+    val c = Cursor[Data](Stream(blocks.iterator))
+    var n = 0
+    while c.next() do n += 1
+    n
+
   def cursorEmptyHoldLoop(text: Text, count: Int): Int =
     val c = Cursor(Iterator(text))
     var i = 0
@@ -161,7 +178,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
 
   def cursorSeekSpace(text: Text): Boolean =
     val c = Cursor(Iterator(text))
-    c.seek(' ')
+    c.seek(' '.asInstanceOf[c.addressable.Operand])
 
   def cursorTake64(text: Text): Int =
     val c = Cursor(Iterator(text))
@@ -181,7 +198,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
     val c = Cursor[Data](Iterator(data))
     var acc = 0
     while !c.finished do
-      val b = c.datum(using Unsafe) & 0xff
+      val b = c.datum(using Unsafe).asInstanceOf[Byte] & 0xff
       acc ^= b
       c.advance()
     acc
@@ -221,6 +238,10 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
       bench(m"Cursor[Data].next, 10 KB single block")
         ( target = 1*Second, operationSize = text10kSize ):
         '{ zephyrine.Benchmarks.cursorNextData(zephyrine.Benchmarks.data10k) }
+
+      bench(m"Cursor[Data].next over Stream, 100 × 100-byte blocks")
+        ( target = 1*Second, operationSize = text10kSize ):
+        '{ zephyrine.Benchmarks.cursorNextStreamed(zephyrine.Benchmarks.data10kFragments) }
 
     suite(m"Hold and capture"):
       bench(m"empty hold {} × 1000 (Held alloc)")

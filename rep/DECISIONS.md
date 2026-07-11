@@ -991,3 +991,200 @@ tolerates old legerdemain), and harlequin tolerates old punctuation/hellenism.
 
 Every prefix of the final 107-commit series was verified by a full `test.assembly` build
 (clean-retry on zinc cross-batch artifacts), split across two worktrees.
+
+## Separation checking for the streaming kernel: Phase 0 characterization (2026-07-11)
+
+Plan: apply `language.experimental.separationChecking` to the mutable streaming fast paths
+(zephyrine windows/Conduit hand-off/Cursor, then turbulence and the HTTP stack), replacing
+the convention-only single-owner discipline currently gated by `Unsafe`. Full plan in
+`~/.claude/plans/now-that-we-have-expressive-summit.md`; probe suite + findings table in
+`rep/sepcheck-probes/README.md`. All 20 probes green on BOTH rows (3.9.0-RC1-propensive and
+3.10.0-propensive, single-shot fork scalac).
+
+Key decisions established by the probes:
+
+1. **Scoped CPS borrows are the window mechanism.** `reading[T](lambda: (storage, start,
+   limit) ->{caps.any, this.rd} T)` rejects both refill-during-borrow and storage escape.
+   First-class windows stay temporal (unexpressible) — raw accessors that remain keep
+   `Unsafe`.
+2. **Kernel stage types re-parent to `ExclusiveCapability, Stateful` — NOT `Mutable`.**
+   Mutable implies the Unscoped classifier, and an Unscoped capability cannot capture
+   non-Unscoped things (Cursor's `load` thunk, any stage wrapping an upstream). The
+   exclusive/read-only discipline is identical without Unscoped.
+3. **`Addressable.Storage` stays untracked.** The built-in Array-as-Mutable treatment does
+   not compose through an abstract type member (bare abstract param = pure; fresh results
+   don't flow; exclusive abstract fields can't be reassigned). Safety attaches to the
+   STAGE capability; generic storage primitives keep their current typing. Concrete-array
+   code (compaction, ensureCapacity-style swap, freeze) is fully supported.
+4. **The read-only cascade is CC-level**: consumers compiled without the sepcheck import
+   still get bare-ref = read-only against re-parented kernel types. Re-parenting is
+   therefore a repo-visible API change (mechanical `^` sweep), gated behind the plan's
+   decision gate; `consume`/hidden-set/freeze diagnostics remain per-unit.
+5. The 3.9 row needs no SepCheck cherry-pick so far (`562b513a4e` absent but the anonymous
+   factory shape is green). GOTCHA for kernel authors: declare normal members before
+   `consume` methods in a template (later members are "hidden by" the consume result —
+   upstream-reportable, like the abstract-Storage opacity).
+
+## Sepcheck Phase 1/2 outcome: enforcement needs re-parenting; single-copy loader shipped (2026-07-11)
+
+Two further probes killed Phase 1 as scoped (file-local `consume` in Conduit):
+
+- `consume` on an UNTRACKED abstract-Storage param is VACUOUS — use-after-consume compiles
+  clean. Combined with the P5 finding (Storage can't be tracked through the abstract
+  member), a Conduit-internal consume helper would be safety theater; not shipped.
+- A tracked carrier (concrete `Slab extends Mutable` field) fails differently
+  (`p9-field-move.neg`, both rows): a tracked capability cannot be MOVED out of a field —
+  the field read widens to a fresh `any` hiding the enclosing instance, rejecting the
+  re-mint and everything after. No take/replace primitive exists. And the update-override
+  rule chains commit/flush→publish→update all the way into Intake's public methods, so
+  enforcement anywhere in Conduit requires the Stateful re-parenting of Intake itself.
+
+CONCLUSION: separation checking's enforceable value for the kernel starts at Phase 3/4
+re-parenting (exclusive/read-only stage discipline, consume factories/combinators, borrows,
+freeze) and the hand-off/field-swap points keep one audited Unsafe site each even then.
+Phases 1–2 as originally scoped deliver no checking; dropped in favour of presenting the
+decision gate with this evidence.
+
+Independently shipped (no sepcheck dependency): the stream→cursor single-copy refill.
+`Cursor.Filler` (direct fill into the cursor buffer) replaces the materialize-then-copyChunk
+loader in the stream-backed factory; the window is read, transferred and skipped within one
+fill — the borrow discipline applied manually at the one place a cursor touches a window.
+zephyrine suite 233/233; new benchmark `Cursor[Data].next over Stream, 100 × 100-byte
+blocks`: 12.124 µs → 9.397 µs per 10 KB (82.5k → 106.4k op/s, ~29% more throughput).
+
+## Sepcheck Phase 3: Cursor is now a stateful capability; fork fix #11; the parser wall (2026-07-11)
+
+**Fork fix #11 `inlineupdate`** (both rows, pushed): inline accessors now inherit the
+update classification (`AccessProxies.newAccessorSymbol` sets the Mutable flag, gated on
+separationChecking) — without it every `inline update def` mutating a private var fails
+inside its synthetic accessor. Probe P10 green on both rebuilt rows; build branches
+rebuilt and pushed (3.9 `...-staleread` @016f16e656, `all/3.10.0` @86cd606d28).
+
+**Cursor converted** (zephyrine suite 233/233): `extends caps.ExclusiveCapability,
+caps.Stateful` (NOT Mutable, per P4); ~27 members classified `update` (no pure peek
+exists: anything that can lazily refill mutates); `marks`/`offsets` fields `Array[Long]^`;
+unit is separation-checked. Bare `Cursor` = read-only is enforced in CC-only consumers
+(verified by deliberate-misuse compile).
+
+**Transparent-factory gotcha**: the expansion's type pins the tracked-val refinement to
+expansion-local `$proxy` singletons; avoidance then collapses the fresh capture to `^{}`
+and every update call is rejected as read-only. Fix: all four factories bind and ascribe
+`val cursor: Cursor[data, …]^` internally (load-bearing comment in file). COST: the
+refinement is stripped — `Operand`/`Target` go abstract on factory-built cursors; the
+per-medium extensions (peek/expect/buffer) are unaffected; direct `clone`/`seek`-operand
+users cast (8 sites, zephyrine tests only). Upstream-reportable (with the P7/P9/P5 items).
+The iterator factory's loader is additionally SEALED (`unsafeAssumePure`) and its
+iterator param untracked.
+
+**THE PARSER WALL (decision needed)**: jacinta's pooled `Parser` (ThreadLocal reuse,
+`private var cursor` field) cannot hold an exclusive cursor in a CC-only unit — a fresh
+capability cannot flow into an exclusive var field (`any` vs `any²`; the write-side dual
+of P9), casts don't launder it, and `@untrackedCaptures` doesn't relax it under plain CC.
+Options: (a) separation-check jacinta.Json.scala and classify Parser as
+Stateful+ExclusiveCapability with update methods (~30 methods; the principled path — the
+ThreadLocal pool then also needs a capability-aware shape); (b) fork accommodation
+allowing fresh-into-`@untrackedCaptures`-field assignment under CC; (c) revert Cursor
+exclusivity. jacinta reverted to pristine on this branch pending the decision; the other
+8 parser modules are expected to hit the same pattern wherever they field-hold cursors.
+
+## Sepcheck jacinta conversion: 95% done, blocked on cap-param field admission (2026-07-11)
+
+Option 1 executed: `Parser` extracted from jacinta.Json.scala into its own separation-
+checked unit (jacinta.Json.Parser.scala — keeps the derivation-bearing Json.scala away
+from the sepcheck import), re-parented `ExclusiveCapability, Stateful`, ~40 methods
+classified `update` by compiler-driven fixpoint sweep, `chars`/keyCache arrays exclusive,
+`StringScanContinue` frozen to `IArray`, pool hand-out cast to `Parser^` (asserts the
+per-thread single-owner invariant the ThreadLocal pool provides by construction).
+
+Lessons that took bisection:
+- A method result must be `Cursor[Data, {}]^` — the `^` matters (bare = implicit read-only
+  `.rd` result) and the WILDCARD cap arg `Cursor[Data, ?]` misbehaves; use the concrete
+  `{}` arg.
+- Method-result freshes ARE admissible into exclusive fields (probe-proven, incl. cross-
+  module and under the full flag set) — EXCEPT for classes with a `cap^` capture-set
+  parameter: `p11-capparam-field.neg` (19 lines, self-contained) shows plain factory,
+  ascribed local, consume adapter, and direct `new` ALL fail with "fresh … is not visible
+  from any in variable …", and `@untrackedCaptures` does not relax it. Cursor has a cap
+  param, so Parser's three cursor-reset assignments are blocked. FORK FIX #12 candidate:
+  the admission logic (maxSubsumes/levelOK — ctxresult-adjacent) treats the CapSet type
+  argument's presence as level-relevant. Until then jacinta.core does not compile; the
+  conversion is committed as WIP.
+
+## Fork fix #12 VERDICT: not a bug — Unscoped is the design; Cursor re-parented to Mutable (2026-07-11)
+
+Jon's constraint (only fix genuine compiler bugs) applied to P11. Root cause found in
+`Capability.acceptsLevelOf`: level checking is waived for Unscoped-classified capabilities
+(`|| classifier.derivesFrom(defn.Caps_Unscoped)`). Scoped exclusive capabilities not
+flowing into longer-lived fields is the INTENDED discipline — it protects a real hazard
+(a pooled parser outlives the method frame; a cursor whose loader captured a `withFile`
+handle must not be smuggled out via a field). NO COMPILER CHANGE.
+
+Sound design instead: **Cursor extends `caps.Mutable`** (Unscoped), with the loader FIELD
+sealed pure at the factory boundary (`unsafeAssumePure`, the one audited point) so the
+class captures nothing non-Unscoped. Confinement moves to the API: the loader's
+capabilities live in the `cap` TYPE ARGUMENT, and probe-verified, a cursor over a
+file-reading loader CANNOT escape `withFile` (type-variable instantiation rejects the
+leaked capability). zephyrine 233/233 green; jacinta's field assignments now admitted.
+
+jacinta status: compiles down to 10 errors, all mechanical, two patterns:
+1. **Cursor-op hiding**: any binding of the exclusive cursor field (explicit val, or the
+   inliner's `Cursor_this` receiver proxy) is typed as a widened fresh whose hidden set
+   covers the Parser itself, so parser state may not be touched afterwards in the same
+   scope. DISCIPLINE (applied to reconcileLineation/moreSlow/bom): pre-read parser state
+   into locals, bind the cursor ONCE inside a `locally:` block, do all cursor work through
+   that binding, write parser state after the block. Remaining sites: holding/tail region
+   (~714-740), parseWord (~826). NOTE: a toy WITHOUT Cursor's `cap^` type parameter does
+   not exhibit the hiding (p14 shape is green) — the widened-fresh typing of
+   cap-parameterized field reads is upstream-discussion-worthy, but the statement rule
+   itself is by-design.
+2. **`raises` result hides this** (line ~758 `tail`): update methods with `raises` sugar
+   get context-function results that capture `this` — the established convention from the
+   3.10 work applies: explicit `(using Tactic[...])` parameter instead of `raises`.
+Also fixed en route: ThreadLocal pool is an erased `AnyRef` boundary with one rim cast
+(`borrow()`), matching the Conduit-queue precedent; `TenPow`/`StringScanContinue` frozen
+to `IArray`; Bcd.finish results freeze-asserted (opaque over post-finish-immutable array);
+buffer-pool getters de-inlined (per-expansion reach caps don't unify).
+
+## jacinta GREEN (298/298); the block-scoping discipline codified (2026-07-11)
+
+jacinta.core compiles clean (from-scratch module build) and its full suite passes with the
+Parser as a separation-checked stateful capability. gesticulate + telekinesis converted en
+route (operand casts; `Cursor[Data, {}]^` params — concrete cap arg, never `?`, which
+collapses inline receiver proxies to read-only; `Http.parse` returns `Request^` since the
+body thunk legitimately retains the local cursor — local fresh may hide in a fresh result).
+
+The reusable discipline for stateful holders mixing own state with a held capability:
+1. NEVER bind the exclusive field (or let an inline method's receiver proxy bind it) in a
+   scope that later touches other own-state: pre-read own state into locals, bind the
+   capability ONCE inside a `locally:` block, do all capability work through that binding,
+   write own state after the block.
+2. Methods that READ the capability field must be non-inline (a private field read from
+   inline code synthesizes an accessor whose exclusive result type is a template-level
+   hider barring other member declarations — P7's member-order rule, unfixable by
+   reordering since the accessor placement isn't source-controlled).
+3. `raises` sugar on update methods → explicit `(using Tactic[...])` (context-function
+   results hide `this`); same for methods returning fresh values built inside `yet`
+   by-name operands or raising closures (hoist to a binding, or convert the method).
+4. Scratch arrays: exclusive (`Array[T]^`) with element access through DIRECT field paths
+   only (the Cursor.recordMark pattern); a local binding of one hides the owner.
+5. Post-parse-frozen data: type it IArray and freeze at the single build site
+   (`.immutable(using Unsafe)`) instead of laundering at use sites.
+6. Cross-thread/pool rims stay as documented casts (ThreadLocal pool borrow()).
+
+OBSERVATION (worth confirming upstream): once one unit of a module enables
+separationChecking, CC-only units compiled in the same run exhibit sepcheck-flavoured
+typing (fresh/rd decorations on Array/IArray construction, Stateful classification
+demands) — the module effectively converts as a whole. Plan the per-module sweeps
+accordingly (the module is the gating unit, not the file).
+
+## Query per-module test failures: pre-existing, both compilers (2026-07-11)
+
+The 5 telekinesis Query tests (`Query.make(...).show` expecting url-encoding) fail in
+per-module `mill telekinesis.test.run` on a CLEAN build of MAIN with BOTH the
+pre-inlineupdate and current compilers (verified via a scratch worktree at c494765a6 and
+a temporary rebuild of the pre-fix compiler): `.show` resolves legerdemain's companion
+`Query is Showable` (debug format). The attested umbrella `soundness.Tests` bundle
+compiles all test sources together, where the implicit scope evidently differs. NOT a
+regression from this branch or from fork fix #11 (which is thereby exonerated of
+CC-only-unit effects). Left as-is; flagged for a separate look at the per-module/umbrella
+implicit-scope divergence.

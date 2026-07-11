@@ -59,7 +59,7 @@ object Sse:
     val cursor = Cursor(input)
 
     def frame(start: Cursor.Mark)(using Cursor.Held): Optional[Text] = cursor.hold:
-      if !cursor.finished && cursor.seek(Lf) then
+      if !cursor.finished && cursor.seek(Lf.toByte.asInstanceOf[cursor.addressable.Operand]) then
         val end = cursor.mark
         cursor.next()
 

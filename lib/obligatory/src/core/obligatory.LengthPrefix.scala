@@ -57,7 +57,8 @@ object LengthPrefix:
 
             cursor.lay(fail()): byte3 =>
               cursor.next()
-              byte0 << 24 | byte1 << 16 | byte2 << 8 | byte3
+              byte0.asInstanceOf[Byte] << 24 | byte1.asInstanceOf[Byte] << 16
+                | byte2.asInstanceOf[Byte] << 8 | byte3.asInstanceOf[Byte]
 
     Framable.frames[Data]:
       length.let: length =>

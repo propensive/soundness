@@ -1596,32 +1596,37 @@ object Yaml extends Yaml2, Dynamic:
       case _ => YamlPrimitive.Null
 
   private[ypsiloid] object Parser:
-    private val pool: ThreadLocal[Parser] =
-      new ThreadLocal[Parser]:
-        override def initialValue(): Parser = new Parser
+    // The pool is a checker-opaque boundary (jacinta's Parser pool precedent):
+    // ThreadLocal cannot carry capture-typed arguments; per-thread single ownership is
+    // the pool's construction guarantee, reasserted at the rim by `borrow()`.
+    private val pool: ThreadLocal[AnyRef] =
+      new ThreadLocal[AnyRef]:
+        override def initialValue(): AnyRef = (new Parser).asInstanceOf[AnyRef]
+
+    private def borrow(): Parser^ = pool.get.nn.asInstanceOf[Parser^]
 
     // Untracked entry points — preserved byte-identical to the historical
     // shape so callers that don't need position tracking pay no cost.
     def parse(input: Text)(using Tactic[ParseError]): Yaml.Ast =
-      val parser = pool.get.nn
+      val parser = borrow()
       parser.tracking = false
       parser.resetText(input)
       parser.parse()
 
     def parse(input: Data)(using Tactic[ParseError]): Yaml.Ast =
-      val parser = pool.get.nn
+      val parser = borrow()
       parser.tracking = false
       parser.resetData(input)
       parser.parse()
 
     def parseAll(input: Text)(using Tactic[ParseError]): List[Yaml.Ast] =
-      val parser = pool.get.nn
+      val parser = borrow()
       parser.tracking = false
       parser.resetText(input)
       parser.parseAll()
 
     def parseAll(input: Data)(using Tactic[ParseError]): List[Yaml.Ast] =
-      val parser = pool.get.nn
+      val parser = borrow()
       parser.tracking = false
       parser.resetData(input)
       parser.parseAll()
@@ -1630,7 +1635,7 @@ object Yaml extends Yaml2, Dynamic:
     // descriptor index. Used by the tracking-aware `Decodable`/`Aggregable`
     // givens in `object Yaml` when `Yaml.Tracking.On` is in scope.
     def parseTracked(input: Text)(using Tactic[ParseError]): (Yaml.Ast, IArray[Int]) =
-      val parser = pool.get.nn
+      val parser = borrow()
       parser.tracking = true
 
       try
@@ -1640,7 +1645,7 @@ object Yaml extends Yaml2, Dynamic:
       finally parser.tracking = false
 
     def parseTracked(input: Data)(using Tactic[ParseError]): (Yaml.Ast, IArray[Int]) =
-      val parser = pool.get.nn
+      val parser = borrow()
       parser.tracking = true
 
       try
@@ -1652,7 +1657,7 @@ object Yaml extends Yaml2, Dynamic:
     def parseAllTracked(input: Text)(using Tactic[ParseError])
     :   List[(Yaml.Ast, IArray[Int])] =
 
-      val parser = pool.get.nn
+      val parser = borrow()
       parser.tracking = true
 
       try
@@ -1663,7 +1668,7 @@ object Yaml extends Yaml2, Dynamic:
     def parseAllTracked(input: Data)(using Tactic[ParseError])
     :   List[(Yaml.Ast, IArray[Int])] =
 
-      val parser = pool.get.nn
+      val parser = borrow()
       parser.tracking = true
 
       try
@@ -1671,7 +1676,9 @@ object Yaml extends Yaml2, Dynamic:
         parser.parseAllTracked()
       finally parser.tracking = false
 
-  private[ypsiloid] final class Parser:
+  // Holds an exclusive cursor in a field, so the parser is itself a capability
+  // (fresh per instance; one per thread via the pool).
+  private[ypsiloid] final class Parser extends caps.ExclusiveCapability:
     import scala.annotation.{switch, tailrec}
     import scala.collection.mutable.ArrayBuffer
     import Yaml.Ast.Byte.*
@@ -1681,7 +1688,7 @@ object Yaml extends Yaml2, Dynamic:
     // pattern: keep `bytes`/`pos`/`bufEnd` as plain fields so the JIT can
     // hold them in registers across hot byte loops. Sync to the cursor
     // before mark/slice/refill operations and refresh after.
-    private var cursor:    Cursor[Data, ?]      = null.asInstanceOf[Cursor[Data, ?]]
+    private var cursor:    Cursor[Data, {}]^    = null.asInstanceOf[Cursor[Data, {}]^]
     private var heldToken: Cursor.Held | Null = null
     private var bytes:     Array[Byte]       = null.asInstanceOf[Array[Byte]]
     private var pos:       Int               = 0
@@ -1767,19 +1774,21 @@ object Yaml extends Yaml2, Dynamic:
 
     def resetText(input: Text): Unit =
       val data: Data = input.s.getBytes("UTF-8").nn.immutable(using Unsafe)
-      cursor = makeCursor(data)
+      val cursor0 = makeCursor(data)
+      cursor = cursor0
       resetParserState()
 
     def resetData(input: Data): Unit =
-      cursor = makeCursor(input)
+      val cursor0 = makeCursor(input)
+      cursor = cursor0
       resetParserState()
 
-    // Build a `Cursor[Data, ?]` with the appropriate `Lineation`. The two
+    // Build a `Cursor[Data, {}]` with the appropriate `Lineation`. The two
     // `import`s are mutually exclusive — both define a `Lineation` for
     // `Data` and bringing both into scope at the same time would render
-    // `Cursor[Data, ?]` constructor resolution ambiguous. Local-import-per-
+    // `Cursor[Data, {}]` constructor resolution ambiguous. Local-import-per-
     // branch is the workaround established by jacinta #1147.
-    private def makeCursor(input: Data): Cursor[Data, ?] =
+    private def makeCursor(input: Data): Cursor[Data, {}]^ =
       if tracking then zephyrine.lineation.linefeedByte.give(Cursor[Data](input))
       else Lineation.untrackedData.give(Cursor[Data](input))
 
@@ -2821,7 +2830,7 @@ object Yaml extends Yaml2, Dynamic:
         if b == Colon then
           // Mapping-key colon iff the byte after the colon is whitespace
           // or end-of-input. The whole input is loaded at parser reset
-          // (`Cursor[Data, ?]` over a single `Data` buffer), so a direct
+          // (`Cursor[Data, {}]` over a single `Data` buffer), so a direct
           // bounds check on the snapshot suffices — no refill needed.
           val nextByte = if pos + 1 < bufEnd then bytes(pos + 1) else -1
 

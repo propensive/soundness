@@ -232,7 +232,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           cursor.hold:
             val mark = cursor.mark
             for i <- 1 to 2 do cursor.next()
-            cursor.clone(mark, cursor.mark)(builder)
+            cursor.clone(mark, cursor.mark)(builder.asInstanceOf[cursor.addressable.Target])
 
           builder.toString
         . assert(_ == "el")
@@ -245,7 +245,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           cursor.hold:
             val mark = cursor.mark
             for i <- 1 to 3 do cursor.next()
-            cursor.clone(mark, cursor.mark)(builder)
+            cursor.clone(mark, cursor.mark)(builder.asInstanceOf[cursor.addressable.Target])
 
           builder.toString
         . assert(_ == "llo")
@@ -258,7 +258,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           cursor.hold:
             val mark = cursor.mark
             for i <- 1 to 4 do cursor.next()
-            cursor.clone(mark, cursor.mark)(builder)
+            cursor.clone(mark, cursor.mark)(builder.asInstanceOf[cursor.addressable.Target])
 
           builder.toString
         . assert(_ == "lo w")
@@ -272,7 +272,7 @@ object Tests extends Suite(m"Zephyrine tests"):
             val mark1 = cursor.mark
             for i <- 1 to 2 do cursor.next()
             val mark2 = cursor.mark
-            cursor.clone(mark1, mark2)(builder)
+            cursor.clone(mark1, mark2)(builder.asInstanceOf[cursor.addressable.Target])
             for i <- 1 to 2 do cursor.next()
 
           builder.toString
@@ -287,9 +287,9 @@ object Tests extends Suite(m"Zephyrine tests"):
             val mark1 = cursor.mark
             for i <- 1 to 2 do cursor.next()
             val mark2 = cursor.mark
-            cursor.clone(mark1, mark2)(builder)
+            cursor.clone(mark1, mark2)(builder.asInstanceOf[cursor.addressable.Target])
             for i <- 1 to 3 do cursor.next()
-            cursor.clone(mark1, cursor.mark)(builder)
+            cursor.clone(mark1, cursor.mark)(builder.asInstanceOf[cursor.addressable.Target])
 
           builder.toString
         . assert(_ == "lolo wo")
@@ -369,7 +369,7 @@ object Tests extends Suite(m"Zephyrine tests"):
           cursor.hold:
             val mark = cursor.mark
             while cursor.next() do ()
-            cursor.clone(mark, cursor.mark)(builder)
+            cursor.clone(mark, cursor.mark)(builder.asInstanceOf[cursor.addressable.Target])
 
           builder.toString
         . assert(_ == "Hello world!")
@@ -411,7 +411,8 @@ object Tests extends Suite(m"Zephyrine tests"):
         def byteCursor = Cursor[Data](stream.iterator)
 
         test(m"Cursor[Data] starts at first byte"):
-          byteCursor.datum(using Unsafe)
+          val cursor = byteCursor
+          cursor.datum(using Unsafe)
 
         . assert(_ == 0.toByte)
 
@@ -447,7 +448,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         test(m"Cursor[Data] seek finds byte"):
           val cursor = byteCursor
-          cursor.seek(15.toByte)
+          cursor.seek(15.toByte.asInstanceOf[cursor.addressable.Operand])
           cursor.datum(using Unsafe)
 
         . assert(_ == 15.toByte)
