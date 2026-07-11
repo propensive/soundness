@@ -1276,25 +1276,24 @@ payload, wasi payload, telekinesis/scintillate/apoplexy tests); Postable.preview
 (consume-extension export forwarders work — flowTo precedent; only dependent-
 typed ones need hand-written forwarders).
 
-REMAINING (each is a real refactor; convert one, compile, test, commit):
-1. `Http.Request.serialize` + `Response` wire form (Http.scala ~278/292/678):
-   return LazyList[Data] built from `request.body().lazyList` — the wire form
-   should become kernel-native (Stream^ or write-to-Intake); consumed by coaxial
-   Transmissible + jvm socket path. Content-Length probe forces ≤2 cells today.
-2. `Http.Body`: the `Streaming(LazyList[Data])` arm and `def stream: LazyList`
-   go away entirely once no consumer needs them (Flowing(Spring) is the native
-   arm; scintillate/perihelion/cordillera pattern-match Body cases).
-3. telekinesis_jvm:82 `bodyFn().lazyList.inputStream`: needs a kernel-native
-   `Stream[Data]^ → java.io.InputStream` adapter (read() pulls via
-   refill/window/skip) — natural home turbulence, next to httpBody.
-4. scintillate.Acceptable:62 `Multipart.parse(request.body().lazyList, _)`:
-   convert Multipart to cursor/stream parsing.
-5. perihelion.Websocket:236 `Reader(() => request.body().lazyList, channel)`.
-6. Source2.streamableData/Text + Sink2.writableData/Text (transitional givens
-   deriving Source from Streamable / Sink from Writable, turbulence.Source
-   .scala:183 / Sink.scala:191): delete once modules summon native instances —
-   this is the real "Streamable in 44 files" tail; measure per-module fallout.
-7. Delete both `lazyList` defs in turbulence_core (114, 185) + the bridge tests
-   (turbulence_test:538 "lazyList view drains", "Streamable instance is a
-   Source through the bridge"); then sweep any `Http.Body.Streaming` stragglers.
+REMAINING (2026-07-11 end of leg; items 3,4,5 of the original list DONE —
+inputStream adapter committed 71aa56e032, websocket Reader + Multipart interim
+committed 1157194e4b):
+1. The Http wire-form cluster (the finale; single refactor): `Request.serialize`
+   (Http.scala ~275/289) and the Response wire form (~674) build LazyList[Data]
+   from `body().lazyList`; `Body.stream` (~485) is the LazyList accessor. The
+   Content-Length-vs-chunked probe pattern-matches the LazyList (forces <=2
+   cells); a kernel-native version pulls one block: stream ended -> fixed
+   length, else chunked with pulled block + remainder. But serialize RETURNING
+   LazyList inherently needs the seal - the honest fix changes serialize to
+   return (Stream[Data] over Credit)^ (or write to an Intake), which changes
+   coaxial Transmissible + scintillate/servlet/cordillera Body.stream callers,
+   and removes the Body.Streaming(LazyList) arm. Possibly worth Jon input on
+   the Transmissible shape.
+2. Multipart.parse cursor conversion (drops the interim memoize in
+   scintillate.Acceptable) - part of the Streamable tail.
+3. Source2.streamableData/Text + Sink2.writableData/Text transitional givens:
+   delete once modules summon native instances (the 44-file Streamable tail).
+4. Delete both `lazyList` defs in turbulence_core + bridge tests
+   (turbulence_test:538 + "Streamable instance is a Source through the bridge").
 Then dual gates: make attest (3.9) + 3.10 clean gate.
