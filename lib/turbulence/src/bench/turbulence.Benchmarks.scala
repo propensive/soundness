@@ -35,7 +35,7 @@ package turbulence
 import ambience.*, environments.javaEnvironment, systems.javaSystem
 import enigmatic.*, blockCipherMode.cbc, blockCipherPadding.pkcs7
 import gastronomy.providers.javaStdlibProvider, gastronomy.crypto.permitUnauthenticatedCrypto
-import parasite.*, threading.platformThreading, probates.panicProbate
+import parasite.*, threading.virtualThreading, probates.panicProbate
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import fulminate.*
@@ -102,6 +102,10 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   lazy val inputChunks: LazyList[Data] =
     LazyList.from((0 until input.length by 65536).map: offset =>
       input.slice(offset, (offset + 65536).min(input.length)))
+  // The 4 MB split into four equal parts, one per source stream for fan-in.
+  lazy val quarters: IndexedSeq[Data] =
+    val q = input.length/4
+    IndexedSeq.tabulate(4)(i => input.slice(i*q, if i == 3 then input.length else (i + 1)*q))
 
   // ~4 MB of UTF-8 text with multi-byte characters, so the decode exercises the
   // cross-chunk continuation path in every library.
@@ -298,16 +302,18 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   //     bounded-memory guarantee) and re-chunks the 64 KiB inputs to the block
   //     size, so it performs many small copying hand-offs; the queues pass the
   //     chunk REFERENCES with zero copy.
-  //   * Soundness and the JDK use a real OS `Thread` producer; FS2/ZIO run the
-  //     producer as a fiber on the same carrier thread, avoiding OS
-  //     context-switch cost per hand-off.
+  //   * FS2/ZIO run the producer as a fiber; Soundness uses a virtual thread
+  //     (the Loom analogue of a fiber) and the JDK reference a platform thread.
+  //     Switching Soundness between virtual and platform threads makes no
+  //     material difference here, which locates the gap in the copying data
+  //     path above, not the concurrency substrate. The same holds for the
+  //     `Confluence`/`Manifold` fan-in/fan-out primitives below.
 
   def conduitSoundness: Long =
     val (intake, stream) = Conduit[Data]()
-    val producer = new Thread(() =>
+    val producer = Thread.ofVirtual.start(() =>
       inputChunks.foreach(intake.put)
       intake.finish())
-    producer.start()
     var total = 0L
     stream.foreachWindow((_, _, count) => total += count)
     producer.join()
@@ -349,6 +355,54 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         _     <- source.runIntoQueue(queue).fork
         total <- ZStream.fromQueue(queue).flattenTake.runFold(0L)((acc, c) => acc + c.size)
       yield total
+
+  // ── Example M: Confluence fan-in (merge 4 streams) ──────────────────────────
+
+  def confluenceSoundness: Long =
+    supervise:
+      val merged = Confluence(quarters.map(q => Stream(q))*)
+      var total = 0L
+      merged.foreachWindow((_, _, count) => total += count)
+      total
+
+  def confluenceFs2: Long =
+    import cats.effect.unsafe.implicits.global
+    import cats.effect.IO
+    val streams =
+      quarters.map(q => fs2.Stream.chunk(fs2.Chunk.array(q.asInstanceOf[Array[Byte]])).covary[IO])
+    fs2.Stream.emits(streams).parJoinUnbounded.compile.count.unsafeRunSync()
+
+  def confluenceZio: Long =
+    runZio:
+      import zio.*, zio.stream.*
+      val streams = quarters.map(q => ZStream.fromChunk(Chunk.fromArray(q.asInstanceOf[Array[Byte]])))
+      ZStream.mergeAllUnbounded()(streams*).runCount
+
+  // ── Example N: Manifold fan-out (broadcast to 3 consumers) ──────────────────
+
+  def manifoldSoundness: Long =
+    supervise:
+      val subscribers = Manifold(Stream(input), 3)
+      val tasks = subscribers.map: subscriber =>
+        async:
+          var total = 0L
+          subscriber.foreachWindow((_, _, count) => total += count)
+          total
+      tasks.map(_.await()).sum
+
+  def manifoldFs2: Long =
+    import cats.effect.unsafe.implicits.global
+    import cats.effect.IO, cats.syntax.all.*
+    val counter: fs2.Pipe[IO, Byte, Long] = _.chunks.foldMap(chunk => chunk.size.toLong)
+    fs2.Stream.chunk(fs2.Chunk.array(inputArray)).covary[IO]
+    . broadcastThrough(counter, counter, counter).compile.foldMonoid.unsafeRunSync()
+
+  def manifoldZio: Long =
+    runZio:
+      import zio.*, zio.stream.*
+      ZIO.scoped:
+        ZStream.fromChunk(Chunk.fromArray(inputArray)).broadcast(3, 16).flatMap: streams =>
+          ZIO.foreachPar(streams)(_.runCount).map(_.sum)
 
   // ── Example F: public `read` typeclass path vs the bare kernel ──────────────
   // `read[Data]`/`read[Text]` go through the `Readable`/`Source`/`Aggregable`
@@ -429,9 +483,13 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       val n = input.length.toLong
       val conduitOk =
         conduitSoundness == n && conduitJdk == n && conduitFs2 == n && conduitZio == n
+      val fanInOk =
+        confluenceSoundness == n && confluenceFs2 == n && confluenceZio == n
+      val fanOutOk =
+        manifoldSoundness == 3*n && manifoldFs2 == 3*n && manifoldZio == 3*n
       ( roundtripOk, transcodeOk, readOk, base64Ok, readOk2, cursorOk, writeOk, hexOk, flowOk,
-        conduitOk )
-    . assert(_ == (true, true, true, true, true, true, true, true, true, true))
+        conduitOk, fanInOk, fanOutOk )
+    . assert(_ == (true, true, true, true, true, true, true, true, true, true, true, true))
 
     suite(m"Gzip compression (4 MB)"):
       bench(m"Soundness  Stream.compress[Gzip]")
@@ -591,3 +649,25 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
       bench(m"ZIO  Queue.bounded")(target = 1*Second, operationSize = size):
         '{ turbulence.Benchmarks.conduitZio }
+
+    suite(m"Confluence fan-in: merge 4 streams (4 MB)"):
+      bench(m"Soundness  Confluence")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.confluenceSoundness }
+
+      bench(m"FS2  parJoinUnbounded")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.confluenceFs2 }
+
+      bench(m"ZIO  mergeAllUnbounded")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.confluenceZio }
+
+    suite(m"Manifold fan-out: broadcast to 3 (4 MB in, 12 MB consumed)"):
+      bench(m"Soundness  Manifold")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.manifoldSoundness }
+
+      bench(m"FS2  broadcastThrough")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.manifoldFs2 }
+
+      bench(m"ZIO  broadcast")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.manifoldZio }
