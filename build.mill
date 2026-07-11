@@ -386,12 +386,13 @@ object soundness extends Toolchain:
     hieroglyph.core, adversaria.core, turbulence.core, eucalyptus.core, gossamer.core,
     inimitable.core, iridescence.core, kaleidoscope.core, mercator.core, nomenclature.core,
     nomenclature.lexicon,
-    parasite.core, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
+    parasite.core, parasite.jvm, polysyllabic.core, rudiments.core, spectacular.core, symbolism.core,
+    turbulence.jvm,
     prepositional.core, vacuous.core, wisteria.core, vicarious.core, serpentine.core,
     typonym.core, zephyrine.core, frontier.core, gigantism.core, stenography.core)
 
   object cli extends Bundle(burdock.boot, burdock.core, dendrology.tree, dendrology.dag,
-    exoskeleton.completions, escritoire.core, ethereal.core, galilei.jvm, eucalyptus.ansi,
+    exoskeleton.completions, escritoire.core, ethereal.core, galilei.core, galilei.jvm, eucalyptus.ansi,
     eucalyptus.syslog, guillotine.core, escapade.csi, escapade.core, imperial.core, profanity.core,
     surveillance.core, punctuation.ansi, hallucination.ansi, ziggurat.core, ziggurat.packager,
     ultimatum.core, xenophile.native, exoskeleton.args, exoskeleton.core)
@@ -415,7 +416,7 @@ object soundness extends Toolchain:
   object tool extends Bundle(anthology.core, decorum.plugin, harlequin.core, hellenism.core,
     hyperbole.core, octogenarian.core, revolution.core, umbrageous.plugin, anthology.java,
     harlequin.md, harlequin.ansi, austronesian.core, anthology.bundle, anthology.`scala`,
-    exegesis.core)
+    exegesis.core, hellenism.jvm)
 
   object web extends Bundle(archimedes.core, cacophony.core, cataclysm.core, coaxial.core, cosmopolite.core, gesticulate.core,
     honeycomb.core, urticose.core, urticose.url, hallucination.core, phoenicia.core,
@@ -424,9 +425,26 @@ object soundness extends Toolchain:
     legerdemain.core, caduceus.core, caduceus.resend, orthodoxy.core, jacinta.http, jacinta.schema,
     stratiform.http, obligatory.core, obligatory.json, synesthesia.core, apoplexy.core,
     cataclysm.html, querencia.core, cordillera.core, embarcadero.containerd, obligatory.grpc,
-    xenophile.core, xenophile.typescript, xenophile.webidl, xenophile.wit, graffiti.core)
+    xenophile.core, xenophile.js, xenophile.wasm, xenophile.typescript, xenophile.webidl,
+    xenophile.wit, telekinesis.core, graffiti.core)
 
-  object all extends Bundle(base, cli, data, sci, test, tool, web)
+  // The three platform aggregates. `jvm` is every JVM module (the group bundles); `wasi` is the
+  // WASI backends (compiled here as ordinary JVM, which typechecks their deferred `invoke`
+  // navigation — the guard that catches breakage like a streaming-kernel change); `js` is the
+  // Scala.js cross-build of every JS-capable component (including the `.wasi` modules' `.js`
+  // outputs). `all` spans the two JVM-classpath aggregates; the Scala.js surface is a distinct
+  // platform and is built through `js` alongside it (both are compiled by CI).
+  object jvm extends Bundle(base, cli, data, sci, test, tool, web)
+
+  object wasi extends Bundle(ambience.wasi, aviation.wasi, capricious.wasi, galilei.wasi,
+    telekinesis.wasi, turbulence.wasi)
+
+  object js extends ScalaJSModule, Toolchain:
+    def scalaVersion = settings.scalaVersion
+    def scalaJSVersion = settings.scalaJsVersion
+    override def moduleDeps = jsComponents
+
+  object all extends Bundle(jvm, wasi)
 
 object test extends Toolchain:
   def scalaVersion = settings.scalaVersion
@@ -468,7 +486,8 @@ object groupCheck extends Module:
       case c: (Component | BareComponent) => c.moduleSegments.render
     .toSet
     val groupBundles = Seq(soundness.base, soundness.cli, soundness.data,
-                           soundness.sci, soundness.test, soundness.tool, soundness.web)
+                           soundness.sci, soundness.test, soundness.tool, soundness.web,
+                           soundness.wasi)
     val coveredComponents = groupBundles.flatMap(_.moduleDeps.map(_.moduleSegments.render)).toSet
 
     val problems = scala.collection.mutable.Buffer.empty[String]
@@ -2114,18 +2133,13 @@ val allLibraries: Seq[Library] = Seq(
   yossarian, ypsiloid, zephyrine, zeppelin, ziggurat
 )
 
-// Every Scala.js-capable component's `js` cross-module. Compiling `jsAll` cross-compiles the whole
-// JS-capable surface of the build (`./mill jsAll.compile`); JVM-only modules opt out with
-// `override def scalaJs = false` and are skipped here.
+// Every Scala.js-capable component's `js` cross-module — the module deps of `soundness.js`.
+// Compiling `soundness.js` cross-compiles the whole JS-capable surface of the build; JVM-only
+// modules opt out with `override def scalaJs = false` and are skipped here.
 val jsComponents: Seq[ScalaJSModule] =
   allLibraries.flatMap(_.moduleDirectChildren).collect:
     case component: Component if component.scalaJs     => component.js
     case component: BareComponent if component.scalaJs => component.js
-
-object jsAll extends ScalaJSModule, Toolchain:
-  def scalaVersion = settings.scalaVersion
-  def scalaJSVersion = settings.scalaJsVersion
-  override def moduleDeps = jsComponents
 
 // A tiny Scala.js app whose `fastLinkJS` actually LINKS a representative slice of
 // the JS-capable modules, so the linker reports any reachable reference to a
