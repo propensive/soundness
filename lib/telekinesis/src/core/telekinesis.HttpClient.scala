@@ -99,8 +99,7 @@ object HttpClient:
       val url = httpRequest.on(origin)
       Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
 
-      def loop(uri: jn.URI, method: Http.Method, bodyFn: () => (Stream[Data] over Credit)^,
-          remaining: Int)
+      def loop(uri: jn.URI, method: Http.Method, bodyFn: Spring[Data]^, remaining: Int)
       :   Http.Response =
 
         val response = backend.request(uri.toString.tt, method, httpRequest.textHeaders, bodyFn)
@@ -119,7 +118,7 @@ object HttpClient:
               Log.fine(HttpEvent.Redirect(uri.toString.tt, nextUri.toString.tt))
               val nextMethod = redirectMethod(code, method)
 
-              val nextBody: () => (Stream[Data] over Credit)^ =
+              val nextBody: Spring[Data]^ =
                 if nextMethod == method then bodyFn else () => Http.emptyBody()
 
               loop(nextUri, nextMethod, nextBody, remaining - 1)

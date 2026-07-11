@@ -226,8 +226,10 @@ object Http:
   object Request:
     given showable: Request is Showable = request =>
       val bodySample: Text =
-        try request.body().lazyList.read[Data].utf8 catch
-          case error: StreamError  => t"[-/-]"
+        try
+          val stream = request.body()
+          stream.lazyList.read[Data].utf8
+        catch case error: StreamError  => t"[-/-]"
 
       val headers: Text =
         request.textHeaders.map: header =>
@@ -473,7 +475,7 @@ object Http:
 
   enum Body:
     case Streaming(data: LazyList[Data])
-    case Flowing(source: () => (Stream[Data] over Credit)^)
+    case Flowing(source: Spring[Data]^)
     case Fixed(data: Data)
     case Empty
 
@@ -488,7 +490,7 @@ object Http:
 
   // A request body with no bytes; each call constructs a fresh, already-empty
   // pull endpoint, matching the re-materializable contract of `body` thunks.
-  def emptyBody(): Stream[Data] over Credit = Stream(Iterator.empty[Data])
+  def emptyBody(): (Stream[Data] over Credit)^ = Stream(Iterator.empty[Data])
 
   class Request
     ( val method:      Http.Method,
@@ -496,7 +498,7 @@ object Http:
       val host:        Host,
       val target:      Text,
       val textHeaders: List[Http.Header],
-      val body:        () => (Stream[Data] over Credit)^ ):
+      val body:        Spring[Data]^ ):
 
     inline def request: this.type = this
 
@@ -552,7 +554,7 @@ object Http:
       ( url:     Text,
         method:  Http.Method,
         headers: List[Http.Header],
-        body:    () => (Stream[Data] over Credit)^ )
+        body:    Spring[Data]^ )
       ( using Tactic[ConnectError] )
     :   Http.Response
 

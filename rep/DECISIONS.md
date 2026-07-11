@@ -1237,3 +1237,31 @@ consume-to-consume argument forwarding is NOT admitted (neutral-carrier hop);
 `lazyList` seals INSIDE its definition (LazyList is pure — cannot carry the consumed
 stream's capture; `^` on LazyList is a case-2 error); enum payloads holding stream
 thunks type them `() => (Stream[...])^`.
+
+## Spring: fresh scoped results must come from methods, not lambdas (2026-07-11)
+
+Root cause of the telekinesis tail (P12, `p12-thunk-fresh-*.scala`): `Stream` is a
+SCOPED exclusive capability (ExclusiveCapability + Stateful, deliberately not
+Unscoped), and a lambda may not mint a fresh scoped capability as its result — the
+closure's per-call fresh is level-bound to the closure and "not visible from" the
+function type's existential result capture at the binder. So the thunk type
+`() => (Stream[Data] over Credit)^` is UNCONSTRUCTIBLE from any lambda that creates
+a stream (worked for Cursor earlier only because Cursor extends Mutable = Unscoped,
+which waives the level check). This is the level discipline working as designed —
+the same rule that rejects a `Stream^` escaping its scope — NOT a compiler bug.
+
+The legitimate fix: a named SAM trait whose METHOD returns the fresh stream — method
+results are re-leveled at each call site. `zephyrine.Spring[medium]`
+(`def apply(): (Stream[medium] over Credit)^`) replaced the thunk type everywhere
+(telekinesis Request.body / Body.Flowing / Http.Backend / HttpClient, galilei
+Handle.source, apoplexy, obligatory); `Postable.Streamer[content]` is the 1-arg
+analogue (`def stream(content): (Stream[Data] over Credit)^`) for Postable.apply's
+payload parameter. SAM conversion keeps every `() => Stream(...)` construction site
+compiling unchanged; `request.body()` call syntax unchanged via `apply`. In non-CC
+units (telekinesis.jvm/.wasi, like honeycomb.core) write bare `Spring[Data]`.
+
+Also fixed alongside: `Postable.stream`'s result was bare (= read-only) — now `^`;
+the `Showable` given hoists `val stream = request.body()` before `.lazyList`;
+`Http.emptyBody(): (Stream[Data] over Credit)^`. Ascribe vals holding SAM lambdas
+(`val body: Spring[Data] = () => ...`) or the val infers the raw function type
+and fails at use (obligatory.GrpcChannel).

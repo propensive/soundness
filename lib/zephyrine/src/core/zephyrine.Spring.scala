@@ -30,46 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package galilei
+package zephyrine
 
-import anticipation.*
-import contingency.*
+import language.experimental.separationChecking
+
 import prepositional.*
-import turbulence.*
-import zephyrine.*
 
-object Handle:
-  // Polymorphic over the handle's (scoped, capturing) singleton type: `Openable.open`
-  // hands the lambda a capability-refined `Handle^{...}`, and a `Self = Handle` instance
-  // would not be summonable for it under capture checking.
-  given streamable: [handle <: Handle^] => Tactic[StreamError]
-  =>  handle is Streamable by Data = _.reader()
-
-  given writable: [handle <: Handle^] => Emit[StreamError]
-  =>  handle is Writable by Data = _.writer(_)
-
-  given source: [handle <: Handle^] => handle is Source by Data over Credit = _.source()
-  given sink: [handle <: Handle^] => handle is Sink by Data over Credit = _.intake()
-
-// The native `source`/`intake` endpoints default to bridging the legacy
-// `reader`/`writer`; `Openable` supplies channel-native endpoints, so file
-// I/O reads and writes directly through the streaming kernel's buffers.
-// A scoped capability: its `read`/`write` operations are direct methods as well as
-// `Streamable`/`Writable` typeclass givens, because summoning a typeclass on a *scoped*
-// capability's refined type can fail under capture checking (given resolution widens the
-// scoped capture to `{any}`); the direct methods summon typeclasses on the (non-scoped)
-// source/result types instead.
-class Handle
-  ( val reader: () => LazyList[Data], val writer: LazyList[Data] => Unit )
-  ( val source: Spring[Data]^ = () => Stream(reader().iterator),
-    val intake: () => Intake[Data] over Credit =
-      () => Sink.buffered((), (_, stream) => writer(stream)) )
-extends caps.ExclusiveCapability:
-
-  def write[source: Streamable by Data as streamable](source: source): Unit =
-    writer(streamable.stream(source))
-
-  def stream: LazyList[Data] = reader()
-
-  def read[result](using readable: (LazyList[Data] is Readable to result)^): result =
-    readable.read(reader())
+// A re-materializable source of streams: each `apply()` mints a fresh,
+// exclusive pull endpoint over the same content. This is a named trait rather
+// than the function type `() => (Stream[medium] over Credit)^` because
+// `Stream` is a scoped capability: a lambda may not mint a fresh scoped
+// capability as its result (the closure's fresh is not visible from the
+// function type's result capture at the binder's level), but a method may —
+// its result is re-leveled at each call site. Being a SAM trait, `Spring`
+// is still constructed from plain lambdas: `() => Stream(...)`.
+trait Spring[medium]:
+  def apply(): (Stream[medium] over Credit)^

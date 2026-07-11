@@ -53,22 +53,29 @@ import zephyrine.*
 import alphabets.hexLowerCase
 
 object Postable:
+  // The streaming payload as a named SAM rather than the function type
+  // `response => (Stream[Data] over Credit)^`: a lambda may not mint a fresh
+  // scoped capability as its result, but a SAM's method may (see
+  // `zephyrine.Spring`). Lambda call sites are unchanged by SAM conversion.
+  trait Streamer[content]:
+    def stream(content: content): (Stream[Data] over Credit)^
+
   // `stream0` must construct a fresh pull endpoint on each call: the request
   // body may be materialized more than once — for a redirect that preserves
   // the method, and independently by `preview` for logging — and a `Stream`,
   // being a single-use mutable buffer, cannot be re-pulled.
-  def apply[response](mediaType0: MediaType, stream0: response => (Stream[Data] over Credit)^)
+  def apply[response](mediaType0: MediaType, stream0: Streamer[response]^)
   :   response is Postable =
 
     // `Typeclass` instances are `Pure` by infrastructure, but the streaming lambda may capture
     // capabilities with the same lifetime as this instance's given resolution; laundered pure —
     // the jacinta codec-thunk seal pattern (see rep/DECISIONS.md).
-    val stream1: response -> (Stream[Data] over Credit) = caps.unsafe.unsafeAssumePure(stream0)
+    val stream1: Streamer[response] = caps.unsafe.unsafeAssumePure(stream0)
 
     new Postable:
       type Self = response
       def mediaType(response: response): MediaType = mediaType0
-      def stream(response: response): Stream[Data] over Credit = stream1(response)
+      def stream(response: response): (Stream[Data] over Credit)^ = stream1.stream(response)
 
 
   given text: (encoder: CharEncoder) => Text is Postable =
@@ -104,11 +111,11 @@ object Postable:
 
       def mediaType(content: response): MediaType =
         content.generic(0).decode[MediaType](using decoder)
-      def stream(content: response): Stream[Data] over Credit = content.generic(1).stream
+      def stream(content: response): (Stream[Data] over Credit)^ = content.generic(1).stream
 
 trait Postable extends Typeclass:
   def mediaType(content: Self): MediaType
-  def stream(content: Self): Stream[Data] over Credit
+  def stream(content: Self): (Stream[Data] over Credit)^
 
   def preview(value: Self): Text = stream(value).lazyList.prim.lay(t""): data =>
     val sample = data.take(1024)

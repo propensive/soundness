@@ -70,7 +70,7 @@ package httpBackends:
       ( url:     Text,
         method:  Http.Method,
         headers: List[Http.Header],
-        body:    () => (Stream[Data] over Credit)^ )
+        body:    Spring[Data] )
       ( using Tactic[ConnectError] )
     :   Http.Response =
 

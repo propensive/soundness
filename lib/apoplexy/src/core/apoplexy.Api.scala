@@ -94,9 +94,9 @@ object Api:
 
     val url = full.decode[HttpUrl]
 
-    val empty: () => (Stream[Data] over Credit)^ = () => Stream(Iterator.empty[Data])
+    val empty: Spring[Data] = () => Stream(Iterator.empty[Data])
 
-    val (contentType, body): (Optional[Text], () => (Stream[Data] over Credit)^) = request.body match
+    val (contentType, body): (Optional[Text], Spring[Data]) = request.body match
       case Api.Body.Empty       => (Unset, empty)
       case Api.Body.Json(value) => (t"application/json", () => Stream(value.show.data))
       case Api.Body.Xml(value)  => (t"application/xml", () => Stream(value.show.data))
