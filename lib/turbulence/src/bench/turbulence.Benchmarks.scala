@@ -38,7 +38,8 @@ import contingency.*, strategies.throwUnsafely
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
-import hieroglyph.*, charDecoders.utf8Decoder, textSanitizers.strictSanitizer
+import hieroglyph.*, charDecoders.utf8Decoder, charEncoders.utf8Encoder,
+    textSanitizers.strictSanitizer
 import prepositional.*
 import probably.*
 import proscenium.*
@@ -102,6 +103,11 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     Data(builder.toString.getBytes("UTF-8").nn*)
   lazy val textArray: Array[Byte] = textData.asInstanceOf[Array[Byte]]
 
+  // The text corpus pre-compressed with gzip, for the "read a gzipped text
+  // stream" chained pipeline.
+  lazy val gzippedText: Data = Stream(textData).compress[Gzip].memoize
+  lazy val gzippedTextArray: Array[Byte] = gzippedText.asInstanceOf[Array[Byte]]
+
   // ── ZIO / Kyo run entry points ──────────────────────────────────────────────
 
   def runZio[A](effect: zio.ZIO[Any, Throwable, A]): A =
@@ -162,6 +168,58 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     import kyo.*
     Stream.init(inputSeq).fold(0L)((acc, b) => acc + (b & 0xff)).eval
 
+  // ── Chained example A: gzip compress -> decompress roundtrip ────────────────
+
+  def roundtripSoundness: Int = Stream(input).compress[Gzip].decompress[Gzip].memoize.length
+
+  def roundtripFs2: Long =
+    import cats.effect.unsafe.implicits.global
+    val comp = fs2.compression.Compression.forSync[cats.effect.IO]
+    fs2.Stream.chunk(fs2.Chunk.array(inputArray)).covary[cats.effect.IO]
+    . through(comp.gzip()).through(comp.gunzip()).flatMap(_.content)
+    . compile.count.unsafeRunSync()
+
+  def roundtripZio: Long =
+    runZio:
+      zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(inputArray))
+      . via(zio.stream.ZPipeline.gzip()).via(zio.stream.ZPipeline.gunzip())
+      . runCount
+
+  // ── Chained example B: UTF-8 decode -> re-encode transcode roundtrip ────────
+
+  def transcodeSoundness: Int =
+    Stream(textData).through(summon[CharDecoder]).through(summon[CharEncoder]).memoize.length
+
+  def transcodeFs2: Long =
+    import cats.effect.unsafe.implicits.global
+    fs2.Stream.chunk(fs2.Chunk.array(textArray)).covary[cats.effect.IO]
+    . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
+    . compile.count.unsafeRunSync()
+
+  def transcodeZio: Long =
+    runZio:
+      zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(textArray))
+      . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.utf8Encode)
+      . runCount
+
+  // ── Chained example C: gunzip -> UTF-8 decode -> count characters ───────────
+
+  def readGzipSoundness: Int =
+    Stream(gzippedText).decompress[Gzip].through(summon[CharDecoder]).memoize.s.length
+
+  def readGzipFs2: Int =
+    import cats.effect.unsafe.implicits.global
+    val comp = fs2.compression.Compression.forSync[cats.effect.IO]
+    fs2.Stream.chunk(fs2.Chunk.array(gzippedTextArray)).covary[cats.effect.IO]
+    . through(comp.gunzip()).flatMap(_.content)
+    . through(fs2.text.utf8.decode).map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
+
+  def readGzipZio: Int =
+    runZio:
+      zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(gzippedTextArray))
+      . via(zio.stream.ZPipeline.gunzip()).via(zio.stream.ZPipeline.utfDecode)
+      . map(_.length).runSum
+
   def run(): Unit =
     val bench = Bench()
     val size = input.length*Byte
@@ -173,6 +231,16 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       ( checksumSoundness, checksumFs2, checksumZio, checksumKyo )
     . assert: (s, f, z, k) =>
         s == f && f == z && z == k
+
+    // The chained pipelines must do equivalent work: both roundtrips are the
+    // identity on length, and the three gunzip->decode impls must agree on the
+    // decoded character count.
+    test(m"chained pipelines agree"):
+      val roundtripOk = roundtripSoundness == input.length
+      val transcodeOk = transcodeSoundness == textData.length
+      val readOk = readGzipSoundness == readGzipFs2 && readGzipFs2 == readGzipZio
+      ( roundtripOk, transcodeOk, readOk )
+    . assert(_ == (true, true, true))
 
     suite(m"Gzip compression (4 MB)"):
       bench(m"Soundness  Stream.compress[Gzip]")
@@ -209,3 +277,36 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
       bench(m"Kyo  Stream.fold")(target = 1*Second, operationSize = size):
         '{ turbulence.Benchmarks.checksumKyo }
+
+    suite(m"Chained: gzip -> gunzip roundtrip (4 MB)"):
+      bench(m"Soundness  compress[Gzip].decompress[Gzip]")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.roundtripSoundness }
+
+      bench(m"FS2  gzip.gunzip")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.roundtripFs2 }
+
+      bench(m"ZIO  gzip.gunzip")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.roundtripZio }
+
+    suite(m"Chained: UTF-8 decode -> encode transcode (4 MB)"):
+      bench(m"Soundness  through(dec).through(enc)")
+        ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.transcodeSoundness }
+
+      bench(m"FS2  utf8.decode.encode")(target = 1*Second, operationSize = textSize):
+        '{ turbulence.Benchmarks.transcodeFs2 }
+
+      bench(m"ZIO  utfDecode.utf8Encode")(target = 1*Second, operationSize = textSize):
+        '{ turbulence.Benchmarks.transcodeZio }
+
+    suite(m"Chained: gunzip -> UTF-8 decode -> count (gzipped text)"):
+      bench(m"Soundness  decompress.through(dec)")
+        ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.readGzipSoundness }
+
+      bench(m"FS2  gunzip.utf8.decode")(target = 1*Second, operationSize = textSize):
+        '{ turbulence.Benchmarks.readGzipFs2 }
+
+      bench(m"ZIO  gunzip.utfDecode")(target = 1*Second, operationSize = textSize):
+        '{ turbulence.Benchmarks.readGzipZio }
