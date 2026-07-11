@@ -46,4 +46,7 @@ given parserAggregable: Tactic[ParseError] => Json.Ast is Aggregable by Data =
       type Operand = Data
 
       def aggregate(source: LazyList[Data]): Json.Ast = Json.Ast.parse(source.iterator)
-      override def accept(stream: (Stream[Data] over Credit)^): Json.Ast = Json.Ast.parse(stream)
+      override def accept(stream: (Stream[Data] over Credit)^): Json.Ast =
+        // See `readJson`: the non-consume `accept` signature crosses to the
+        // consuming parser as a neutral reference.
+        Json.Ast.parse(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^])

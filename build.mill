@@ -766,7 +766,7 @@ object caduceus extends Library:
 object caesura extends Library:
   object core extends Component(turbulence.core, escritoire.core, panopticon.core):
     override def scalacOptions = Task:
-      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
@@ -1321,7 +1321,7 @@ object honeycomb extends Library:
 object hieroglyph extends Library:
   object core extends Component(kaleidoscope.core):
     override def scalacOptions = Task:
-      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
@@ -1373,7 +1373,7 @@ object iridescence extends Library:
 object jacinta extends Library:
   object core extends Component(zephyrine.core, turbulence.core, urticose.url, panopticon.core, adversaria.core):
     override def scalacOptions = Task:
-      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object time extends Component(core, aviation.core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
@@ -1560,7 +1560,7 @@ object perihelion extends Library:
       hypotenuse.core, contingency.core, parasite.core, eucalyptus.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, jacinta.core)
 
 object phoenicia extends Library:

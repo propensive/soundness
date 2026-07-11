@@ -32,8 +32,6 @@
                                                                                                   */
 package perihelion
 
-import language.experimental.separationChecking
-
 import java.security.SecureRandom
 
 import anticipation.*
@@ -149,12 +147,15 @@ private def readHandshake(chunks: LazyList[Data], acc: Data): (Data, LazyList[Da
   val marker = crlfCrlf(acc)
 
   if marker >= 0 then
-    val leftover = acc.drop(marker + 4)
-    (acc.take(marker + 4), if leftover.length > 0 then leftover #:: chunks else chunks)
+    // Sealed: see `Frame.closeData` — the opaque-Array artifact.
+    val leftover: Data = caps.unsafe.unsafeAssumePure(acc.drop(marker + 4))
+    val head: Data = caps.unsafe.unsafeAssumePure(acc.take(marker + 4))
+    (head, if leftover.length > 0 then leftover #:: chunks else chunks)
   else if chunks.isEmpty then
     (acc, LazyList())
   else
-    readHandshake(chunks.tail, acc ++ chunks.head)
+    // Sealed: see `Frame.closeData` — the opaque-Array artifact.
+    readHandshake(chunks.tail, caps.unsafe.unsafeAssumePure(acc ++ chunks.head))
 
 // Makes a `WsUrl` a Coaxial client transport, so a WebSocket client is just Coaxial's
 // own client loop: `url.react(initialState) { message => … }`, symmetric with the

@@ -83,9 +83,9 @@ class Channel()(using masking: Masking, buffering: Buffering):
   // a shared front-end object. Each has one owner by construction: producers
   // serialize through this object's lock, and the server or client pump is the
   // single consumer of the reader endpoint.
-  private val endpoints: (AnyRef, AnyRef) =
-    val (intake, stream) = Conduit[Data]()
-    (intake.asInstanceOf[AnyRef], stream.asInstanceOf[AnyRef])
+  // Cast whole: a tuple binding of the two exclusive endpoints would place
+  // both in one inferred type, which separation checking rejects.
+  private val endpoints: (AnyRef, AnyRef) = Conduit[Data]().asInstanceOf[(AnyRef, AnyRef)]
 
   private def intake: (Intake[Data] over Credit)^ =
     endpoints(0).asInstanceOf[(Intake[Data] over Credit)^]
@@ -126,7 +126,11 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[WebsocketError]
     // cursor is created only when the first message is forced, so a server
     // can send its `101` response (and a client its first frame) first.
     LazyList.defer:
-      val cursor = Cursor[Data](body())
+      // A neutral reference with an inline accessor: the parsing defs below
+      // close over the cursor, which a capability-typed binding would hide
+      // from them under the statement rule.
+      val cursorRef: AnyRef = Cursor[Data](body()).asInstanceOf[AnyRef]
+      inline def cursor: Cursor[Data, {}]^ = cursorRef.asInstanceOf[Cursor[Data, {}]^]
 
       // Validate `data` as UTF-8. `whole` marks a complete message, where a
       // trailing partial multi-byte sequence is an error; for a fragment prefix it
@@ -182,7 +186,7 @@ class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[WebsocketError]
           case Frame.Continuation(fin, data) =>
             partial.lay(abort(WebsocketError(WebsocketError.Reason.BadFragmentation))):
               (text, accumulated) =>
-                extend(text, accumulated ++ data, fin)
+                extend(text, caps.unsafe.unsafeAssumePure(accumulated ++ data), fin)
 
       recur(Unset)
 
@@ -228,35 +232,50 @@ class Websocket[message, state]
 
   val channel: Channel = Channel()
 
-  private def loop(messages: LazyList[Message], state: state): state = messages.flow(close(state)):
-    Log.fine(WebsocketEvent.Received(next.bytes.length))
+  val task: Task[state] =
+    // Bound before the fiber spawns: the async body must not capture the
+    // instance under construction, so everything it needs becomes a local.
+    val channel0 = channel
+    val bodyRef: AnyRef = request.body.asInstanceOf[AnyRef]
+    val initial0 = initial
+    val decodeRef: AnyRef = decode.asInstanceOf[AnyRef]
+    // A neutral reference: a capability-typed binding of the handler would hide
+    // it from the recursive loop under the statement rule. Repackaged as a plain
+    // curried function since a context function cannot be bound unapplied.
+    val handleRef: AnyRef =
+      { (s: state) => (m: message) => handle(using s)(m) }.asInstanceOf[AnyRef]
 
-    handle(using state)(decode(next)) match
-      case Continue(state2) =>
-        loop(more, state2.or(state))
+    async:
+      recover:
+        case error: WebsocketError =>
+          safely(channel0.close(error.reason.closeCode))
+          initial0
 
-      case Terminate =>
-        channel.stop()
-        state
+      . protect:
+          // Resolved locally: the class-level `Masking` given would re-capture
+          // the instance under construction.
+          given Masking = Masking.Server
 
-      case Reply(bytes, state2) =>
-        channel.enqueue(bytes)
-        loop(more, state2.or(state))
+          def loop(messages: LazyList[Message], state: state): state =
+            messages.flow(channel0.stop() yet state):
+              Log.fine(WebsocketEvent.Received(next.bytes.length))
 
-      case Conclude(bytes, state2) =>
-        channel.enqueue(bytes)
-        channel.stop()
-        state2.or(state)
+              handleRef.asInstanceOf[state => message => Control[state]]
+                (state)(decodeRef.asInstanceOf[Message => message](next)) match
+                case Continue(state2) =>
+                  loop(more, state2.or(state))
 
-  private def close(state: state): state =
-    channel.stop()
-    state
+                case Terminate =>
+                  channel0.stop()
+                  state
 
-  val task: Task[state] = async:
-    recover:
-      case error: WebsocketError =>
-        safely(channel.close(error.reason.closeCode))
-        initial
+                case Reply(bytes, state2) =>
+                  channel0.enqueue(bytes)
+                  loop(more, state2.or(state))
 
-    . protect:
-        loop(Reader(request.body, channel).messages, initial)
+                case Conclude(bytes, state2) =>
+                  channel0.enqueue(bytes)
+                  channel0.stop()
+                  state2.or(state)
+
+          loop(Reader(bodyRef.asInstanceOf[Spring[Data]^], channel0).messages, initial0)

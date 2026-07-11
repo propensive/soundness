@@ -193,11 +193,19 @@ object GraphemeBreak:
 
     val s = text.s
     val n = s.length
-    val builder = ArrayBuilder.make[Int]
 
-    builder.addOne(0)
+    // A pre-sized exclusive array rather than an `ArrayBuilder`: boundary count
+    // is bounded by `n + 2`, and the stdlib builder's internal reads count as
+    // uses the enclosing object would have to declare under separation checking.
+    val breaks: Array[Int]^ = new Array[Int](n + 2)
+    var size = 0
+    breaks(size) = 0
+    size += 1
 
-    if n == 0 then builder.result().immutable(using Unsafe) else
+    if n == 0 then
+      val result: Array[Int]^ = new Array[Int](1)
+      caps.freeze(result).immutable(using Unsafe)
+    else
       var index = 0
       val firstCodepoint = Character.codePointAt(s, 0)
       var prev = property(firstCodepoint)
@@ -235,7 +243,9 @@ object GraphemeBreak:
           then false
           else true
 
-        if brk then builder.addOne(index)
+        if brk then
+          breaks(size) = index
+          size += 1
 
         inEmojiSeq =
           if currExtPict then true
@@ -267,5 +277,11 @@ object GraphemeBreak:
         prev = curr
         index += Character.charCount(codepoint)
 
-      builder.addOne(n)
-      builder.result().immutable(using Unsafe)
+      breaks(size) = n
+      size += 1
+
+      // Trimmed to the exact count, then frozen: the checked build-then-share
+      // conversion.
+      val result: Array[Int]^ = new Array[Int](size)
+      System.arraycopy(breaks, 0, result, 0, size)
+      caps.freeze(result).immutable(using Unsafe)
