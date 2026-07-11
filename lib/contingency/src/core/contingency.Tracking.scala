@@ -37,7 +37,7 @@ import fulminate.*
 import vacuous.*
 
 object Tracking:
-  extension [accrual <: Exception, lambda[_], focus](inline track: Tracking[accrual, lambda, focus])
+  extension [accrual <: Hazard, lambda[_], focus](inline track: Tracking[accrual, lambda, focus])
     inline def protect[result](inline lambda: Foci[focus] ?=> lambda[result])
       ( using tactic: Tactic[accrual]^, diagnostics: Diagnostics )
     :   result =
@@ -47,6 +47,6 @@ object Tracking:
             ( 'track, 'lambda, 'tactic, 'diagnostics )
         }
 
-class Tracking[accrual <: Exception, lambda[_], focus]
+class Tracking[accrual <: Hazard, lambda[_], focus]
   ( val initial: accrual,
     val lambda:  (Optional[focus] aka "prior", accrual aka "accrual") ?=> Exception ~> accrual )

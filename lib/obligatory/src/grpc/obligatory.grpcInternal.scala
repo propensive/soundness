@@ -92,7 +92,7 @@ object grpcInternal:
 
           // The call's error capabilities are captured from the `remote` call site, so
           // the derived methods can have the interface's plain (raises-free) signatures.
-          def tactic[error <: Exception: Type]: Expr[Tactic[error]] =
+          def tactic[error <: Hazard: Type]: Expr[Tactic[error]] =
             Expr.summon[Tactic[error]].getOrElse:
               halt(m"a contextual ${TypeRepr.of[Tactic[error]].show} instance is required")
 

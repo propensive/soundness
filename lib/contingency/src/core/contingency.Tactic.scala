@@ -40,12 +40,12 @@ import fulminate.*
 // error` (`Tactic[error] ?=>`) is therefore the stronger obligation than `emits error`; code with a
 // `Tactic` can satisfy either, but a fire-and-forget context offering only an `Emit` cannot supply
 // the `abort` half. See [[Emit]].
-trait Tactic[-error <: Exception] extends Emit[error]:
+trait Tactic[-error <: Hazard] extends Emit[error]:
   private inline def tactic: this.type = this
   def abort(error: Diagnostics ?=> error): Nothing
   def certify(): Unit
 
-  override def contramap[error2 <: Exception](lambda: error2 => error)
+  override def contramap[error2 <: Hazard](lambda: error2 => error)
   :   Tactic[error2]^ =
 
     new Tactic[error2]:

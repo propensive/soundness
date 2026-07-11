@@ -36,7 +36,7 @@ import language.experimental.pureFunctions
 
 import fulminate.*
 
-class AttemptTactic[error <: Exception, success](label: boundary.Label[Attempt[success, error]])
+class AttemptTactic[error <: Hazard, success](label: boundary.Label[Attempt[success, error]])
   ( using Diagnostics )
 extends Tactic[error]:
   private given boundary.Label[Attempt[success, error]] = label

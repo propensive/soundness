@@ -1347,3 +1347,25 @@ embarcadero duplex fixture) — per-module clean compile loops are the only
 locally trustworthy approximation, and even they missed embarcadero once.
 escritoire.test is pre-existing broken on main and outside the attest suite.
 PR next: title/body awaiting Jon.
+
+## Pure errors: Hazard = Exception & caps.Pure (2026-07-11, branch pure-errors)
+
+Jon's directive: values passed to record/raise MUST be pure, so errors can never
+smuggle capabilities out of scopes through `throw` — the one channel capture
+checking cannot see. P13 probes (both rows green) established that `caps.Pure`
+enforcement is REAL: a Pure subclass with a capability field is rejected with
+E223 ("not included in the allowed capture set {} of the self type").
+
+Design: `fulminate.Error extends caps.Pure` (every Soundness error is pure by
+inheritance), and `fulminate.Hazard = Exception & caps.Pure` names the raisable
+domain — the bound on Tactic/Emit/raise/abort/lest/Attempt/raises and every
+tactic class ("Fault" was taken by parasite's uncaught-task pair). JDK
+exceptions must be wrapped (`Error(throwable)`) to be raised. Macro internals:
+caseDefs/mapping (handler ANALYSIS on PartialFunction[Exception, _]) keep
+Exception bounds; tactic-CONSTRUCTING sites use Hazard. Recovery.Escape (the
+recover-value briefcase) is pure via an AnyRef rim — its payload never leaves a
+scope inside the exception; record unwraps it and escapes through the
+capture-checked boundary.break. throwUnsafely: ThrowTactic[Hazard, success].
+Sweep fallout was small: 13 bounds outside contingency (parasite/zephyrine/
+obligatory), 7 Tactic[Exception]→Tactic[Hazard] sites, one raw test exception
+(zephyrine Mismatch → Error). Suites green incl. contingency 91/parasite 148.

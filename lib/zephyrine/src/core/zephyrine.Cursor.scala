@@ -40,7 +40,7 @@ import anticipation.Data
 import anticipation.Text
 import contingency.*
 import denominative.*
-import fulminate.Diagnostics
+import fulminate.{Diagnostics, Hazard}
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -256,7 +256,7 @@ object Cursor:
   // compiles to a single primitive `int == int`.
   extension [cap^](cursor: Cursor[Data, cap])
     @targetName("expectByte")
-    inline def expect[error <: Exception](target: Char)
+    inline def expect[error <: Hazard](target: Char)
       ( inline failure: Diagnostics ?=> error )
       ( using Tactic[error] )
     :   Unit =
@@ -265,7 +265,7 @@ object Cursor:
 
   extension [cap^](cursor: Cursor[Text, cap])
     @targetName("expectChar")
-    inline def expect[error <: Exception](target: Char)
+    inline def expect[error <: Hazard](target: Char)
       ( inline failure: Diagnostics ?=> error )
       ( using Tactic[error] )
     :   Unit =

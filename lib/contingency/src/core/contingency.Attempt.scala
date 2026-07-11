@@ -32,10 +32,12 @@
                                                                                                   */
 package contingency
 
+import fulminate.Hazard
+
 import language.experimental.pureFunctions
 
 
-enum Attempt[+success, +error <: Exception]:
+enum Attempt[+success, +error <: Hazard]:
   case Success(value: success)
   case Failure(value: error)
 
@@ -50,7 +52,7 @@ enum Attempt[+success, +error <: Exception]:
       case Success(success) => Success(lambda(success))
       case Failure(failure) => Failure(failure)
 
-  def handle(block: error ~> Exception): Attempt[success, Exception] =
+  def handle(block: error ~> Hazard): Attempt[success, Hazard] =
     this match
       case Success(value) => Success(value)
       case Failure(value) => Failure(if block.isDefinedAt(value) then block(value) else value)

@@ -37,7 +37,7 @@ import language.experimental.pureFunctions
 import fulminate.*
 import vacuous.*
 
-class OptionalTactic[error <: Exception, success](label: boundary.Label[Optional[success]])
+class OptionalTactic[error <: Hazard, success](label: boundary.Label[Optional[success]])
 extends Tactic[error]:
   type Result = Optional[success]
   type Return = Optional[success]

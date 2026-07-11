@@ -527,7 +527,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
       suite(m"expect tests"):
         import strategies.throwUnsafely
-        case class Mismatch() extends Exception
+        case class Mismatch()(using Diagnostics) extends Error(m"mismatch")
 
         test(m"Cursor[Data].expect matching advances past the target"):
           val cursor = Cursor[Data](Iterator(Data('a'.toByte, 'b'.toByte)))

@@ -42,7 +42,7 @@ import fulminate.*
 // which really do capture their `Label`, remain scoped.
 // The `CanThrow` evidence lives on the `strategies` givens that mint throwing tactics, not on
 // the class: even an erased constructor parameter is a retained capture under capture checking.
-class ThrowTactic[error <: Exception, success]()
+class ThrowTactic[error <: Hazard, success]()
 extends Tactic[error], caps.Unscoped:
   def diagnostics: Diagnostics = Diagnostics.capture
 

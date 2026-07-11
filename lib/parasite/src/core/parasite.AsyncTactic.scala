@@ -44,7 +44,7 @@ import unsafeExceptions.canThrowAny
 // `boundary.Label`, so it is safe to invoke on the forked worker thread: both `record` and `abort`
 // simply throw the pure error. The worker's `try`/`catch` then stores it as `Fulfillment.Failed`,
 // whence it is delivered — still typed — at the join (`Task#await`) or to the trap (`Probate`).
-class AsyncTactic[error <: Exception]() extends Tactic[error]:
+class AsyncTactic[error <: Hazard]() extends Tactic[error]:
   def diagnostics: Diagnostics = Diagnostics.capture
   def record(error: Diagnostics ?=> error): Unit = throw error(using diagnostics)
   def abort(error: Diagnostics ?=> error): Nothing = throw error(using diagnostics)

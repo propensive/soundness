@@ -42,8 +42,15 @@ import fulminate.*
 // the protected block's result type. `recover { case FooError(n) => fallback }.protect { … }` runs
 // the block and, on the first covered error, escapes with the case body's value instead.
 object Recovery:
-  // A case body's recovered value, escaping the block via `boundary`.
-  final case class Escape[+result](value: result) extends Exception:
+  object Escape:
+    def apply[result](value: result): Escape[result] = new Escape(value.asInstanceOf[AnyRef])
+
+  // A case body's recovered value, escaping the block via `boundary`. Pure by an
+  // `AnyRef` rim: the payload never leaves a scope inside the exception — `record`
+  // unwraps it and escapes through the capture-checked `boundary.break` — so the
+  // briefcase carries it as a neutral reference between two frames of one call.
+  final class Escape[+result](private val value0: AnyRef) extends Exception, caps.Pure:
+    def value: result = value0.asInstanceOf[result]
     override def fillInStackTrace(): Throwable = this
 
   class EscapeTactic[result](label: boundary.Label[result]) extends Tactic[Escape[result]]:

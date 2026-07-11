@@ -36,7 +36,7 @@ import language.experimental.pureFunctions
 
 import fulminate.*
 
-class TrackTactic[error <: Exception, accrual, result, supplement]
+class TrackTactic[error <: Hazard, accrual, result, supplement]
   ( label: boundary.Label[Option[result]], initial: accrual, foci: Foci[supplement] )
   ( using Diagnostics )
 extends Tactic[error]:

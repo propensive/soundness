@@ -37,6 +37,7 @@ import java.security.SecureRandom
 import anticipation.*
 import coaxial.*
 import contingency.*
+import fulminate.Hazard
 import distillate.*
 import gastronomy.*
 import gigantism.*
@@ -108,11 +109,11 @@ given transmissible: [transport, value]
 
 // The decode direction. The `Decodable in Text`/`in transport` instances are
 // `Tactic`-conditional and don't resolve as nested given constraints, so we
-// require a `Tactic[Exception]` directly (satisfied by `strategies.throwUnsafely`;
+// require a `Tactic[Hazard]` directly (satisfied by `strategies.throwUnsafely`;
 // `Tactic` is contravariant) and summon them in the body, where it is in scope.
 given ingressive: [transport, value]
 =>  ( format: transport is Decodable in Text, codec: value is Decodable in transport )
-=>  ( CharDecoder, Tactic[Exception] )
+=>  ( CharDecoder, Tactic[Hazard] )
 =>  (value over transport) is Ingressive =
   bytes => codec.decoded(format.decoded(bytes.text)).over[transport]
 

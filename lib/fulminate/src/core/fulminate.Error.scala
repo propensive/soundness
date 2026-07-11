@@ -34,6 +34,12 @@ package fulminate
 
 import anticipation.*
 
+// The domain of raisable values: any pure exception. `Error` is pure by
+// inheritance, so every Soundness error is a `Hazard`; a JDK exception must be
+// wrapped in an `Error` (e.g. by `Error(throwable)`) to be raised, since
+// purity cannot be established for arbitrary `Throwable` subclasses.
+type Hazard = Exception & caps.Pure
+
 object Error:
   def apply(throwable: Throwable): Error = throwable match
     case error: Error         => error
@@ -42,7 +48,12 @@ object Error:
 transparent abstract class Error(val d: Int, val e: Int)
   ( val message: Message, private val cause: Throwable | Null )
   ( using val diagnostics: Diagnostics )
-extends Exception(message.text.s, cause, false, diagnostics.captureStack):
+// `caps.Pure`: an error may never hold a live capability. `throw` is the one
+// channel capture checking cannot see (an exception caught outside a scope
+// arrives with its captures erased), so purity here guarantees that no error —
+// raised, recorded, aborted or thrown — can smuggle a capability out of the
+// scope that confines it.
+extends Exception(message.text.s, cause, false, diagnostics.captureStack), caps.Pure:
   this: Error =>
 
   def this(d: Int, e: Int)(message: Message)(using Diagnostics) =

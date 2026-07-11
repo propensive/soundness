@@ -37,6 +37,7 @@ import language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
+import fulminate.Hazard
 import digression.*
 import mercator.*
 import nomenclature.*
@@ -44,7 +45,7 @@ import prepositional.*
 import vacuous.*
 
 object Task:
-  def apply[result, error <: Exception](evaluate: Worker => result, name: Optional[Name[Async]])
+  def apply[result, error <: Hazard](evaluate: Worker => result, name: Optional[Name[Async]])
     ( using monitor: Monitor^, codepoint: Codepoint, probate: Probate^ )
   :   Task[result] { type Error = error } =
 
@@ -106,7 +107,7 @@ object Task:
 // `await`, where it is delivered through the caller's in-scope `Tactic`. `AsyncError` (cancellation
 // or timeout) is always a possible outcome, so it is added at the `await` site, not the member.
 trait Task[+result]:
-  type Error <: Exception
+  type Error <: Hazard
 
   def ready: Boolean
   def attend(): Unit
