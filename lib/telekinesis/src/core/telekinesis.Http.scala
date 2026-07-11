@@ -226,10 +226,7 @@ object Http:
   object Request:
     given showable: Request is Showable = request =>
       val bodySample: Text =
-        try
-          val stream = request.body()
-          stream.lazyList.read[Data].utf8
-        catch case error: StreamError  => t"[-/-]"
+        try request.body().memoize.utf8 catch case error: StreamError  => t"[-/-]"
 
       val headers: Text =
         request.textHeaders.map: header =>
@@ -515,8 +512,7 @@ object Http:
     lazy val query: Query =
       contentType.let(_.base.show) match
         case t"application/x-www-form-urlencoded" =>
-          val flowing = body()
-          queryText.decode[Query] ++ flowing.lazyList.read[Data].utf8.decode[Query]
+          queryText.decode[Query] ++ body().memoize.utf8.decode[Query]
 
         case _ =>
           queryText.decode[Query]

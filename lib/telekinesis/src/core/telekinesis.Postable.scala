@@ -117,7 +117,19 @@ trait Postable extends Typeclass:
   def mediaType(content: Self): MediaType
   def stream(content: Self): (Stream[Data] over Credit)^
 
-  def preview(value: Self): Text = stream(value).lazyList.prim.lay(t""): data =>
-    val sample = data.take(1024)
-    val string: Text = sample.serialize[Hex]
-    if data.length > 128 then t"$string..." else string
+  // A sample of the body for logging: a single bounded refill, not a full drain —
+  // the body may be large, and `stream` mints a fresh endpoint anyway.
+  def preview(value: Self): Text =
+    val endpoint = stream(value)
+
+    try endpoint.refill(Credit(1024)) match
+      case count: Int =>
+        val sample =
+          endpoint.addressable.materialize
+            ( endpoint.window(using Unsafe), endpoint.start, count )
+
+        val string: Text = sample.serialize[Hex]
+        if count > 128 then t"$string..." else string
+
+      case _ => t""
+    finally endpoint.close()
