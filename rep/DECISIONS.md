@@ -1051,3 +1051,38 @@ loader in the stream-backed factory; the window is read, transferred and skipped
 fill — the borrow discipline applied manually at the one place a cursor touches a window.
 zephyrine suite 233/233; new benchmark `Cursor[Data].next over Stream, 100 × 100-byte
 blocks`: 12.124 µs → 9.397 µs per 10 KB (82.5k → 106.4k op/s, ~29% more throughput).
+
+## Sepcheck Phase 3: Cursor is now a stateful capability; fork fix #11; the parser wall (2026-07-11)
+
+**Fork fix #11 `inlineupdate`** (both rows, pushed): inline accessors now inherit the
+update classification (`AccessProxies.newAccessorSymbol` sets the Mutable flag, gated on
+separationChecking) — without it every `inline update def` mutating a private var fails
+inside its synthetic accessor. Probe P10 green on both rebuilt rows; build branches
+rebuilt and pushed (3.9 `...-staleread` @016f16e656, `all/3.10.0` @86cd606d28).
+
+**Cursor converted** (zephyrine suite 233/233): `extends caps.ExclusiveCapability,
+caps.Stateful` (NOT Mutable, per P4); ~27 members classified `update` (no pure peek
+exists: anything that can lazily refill mutates); `marks`/`offsets` fields `Array[Long]^`;
+unit is separation-checked. Bare `Cursor` = read-only is enforced in CC-only consumers
+(verified by deliberate-misuse compile).
+
+**Transparent-factory gotcha**: the expansion's type pins the tracked-val refinement to
+expansion-local `$proxy` singletons; avoidance then collapses the fresh capture to `^{}`
+and every update call is rejected as read-only. Fix: all four factories bind and ascribe
+`val cursor: Cursor[data, …]^` internally (load-bearing comment in file). COST: the
+refinement is stripped — `Operand`/`Target` go abstract on factory-built cursors; the
+per-medium extensions (peek/expect/buffer) are unaffected; direct `clone`/`seek`-operand
+users cast (8 sites, zephyrine tests only). Upstream-reportable (with the P7/P9/P5 items).
+The iterator factory's loader is additionally SEALED (`unsafeAssumePure`) and its
+iterator param untracked.
+
+**THE PARSER WALL (decision needed)**: jacinta's pooled `Parser` (ThreadLocal reuse,
+`private var cursor` field) cannot hold an exclusive cursor in a CC-only unit — a fresh
+capability cannot flow into an exclusive var field (`any` vs `any²`; the write-side dual
+of P9), casts don't launder it, and `@untrackedCaptures` doesn't relax it under plain CC.
+Options: (a) separation-check jacinta.Json.scala and classify Parser as
+Stateful+ExclusiveCapability with update methods (~30 methods; the principled path — the
+ThreadLocal pool then also needs a capability-aware shape); (b) fork accommodation
+allowing fresh-into-`@untrackedCaptures`-field assignment under CC; (c) revert Cursor
+exclusivity. jacinta reverted to pristine on this branch pending the decision; the other
+8 parser modules are expected to hit the same pattern wherever they field-hold cursors.
