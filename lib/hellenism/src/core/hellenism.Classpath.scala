@@ -43,6 +43,7 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
+import zephyrine.*
 import vacuous.*
 
 object Classpath extends Root(t""):
@@ -87,6 +88,17 @@ object Classpath extends Root(t""):
       given Tactic[StreamError] = strategies.throwUnsafely
 
       Streamable.inputStream.contramap: path =>
+        classloader.inputStream(path.encode)
+
+  given source: [path <: Path on Classpath] => Tactic[ClasspathError]
+  =>  ( classloader: Classloader, buffering: Buffering )
+  =>  path is Source by Data over Credit =
+
+    // See `streamable` above; laundered pure for the same reason.
+    caps.unsafe.unsafeAssumePure:
+      given Tactic[StreamError] = strategies.throwUnsafely
+
+      Source.inputStream.contramap: path =>
         classloader.inputStream(path.encode)
 
 

@@ -51,6 +51,7 @@ import rudiments.*
 import serpentine.*
 import spectacular.*
 import turbulence.*
+import zephyrine.*
 import vacuous.*
 
 object Zipfile:
@@ -58,6 +59,8 @@ object Zipfile:
   private val u16Max: Int  = 0xffff
 
   given streamable: Zipfile is Streamable by Data = _.serialize
+  given source: Zipfile is Source by Data over Credit = zipfile =>
+    Stream(zipfile.serialize.iterator)
 
   def write[path: Abstractable across Paths to Text]
     (path: path, prefix: Optional[Data] = Unset)(entries: Iterable[Zip.Entry])

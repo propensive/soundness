@@ -47,6 +47,7 @@ import rudiments.*
 import telekinesis.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 import Http2.*
 
@@ -178,10 +179,10 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
 
     . protect:
         val writer = daemon:
-          duplex.send(LazyList(connectionPreface))
+          duplex.send(zephyrine.Stream(connectionPreface))
 
           outbound.stream.each: frame =>
-            duplex.send(LazyList(frame.serialize))
+            duplex.send(zephyrine.Stream(frame.serialize))
 
         val reader = daemon:
           // A protocol error tears down just this connection; throw it to the enclosing
@@ -229,10 +230,9 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
 
     Log.fine(Http2Event.RequestSent(authority))
     val headerBlock = PseudoHeaders.request(request, scheme, authority)
-    val chunks = request.body().lazyList.to(List)
+    val data = request.body().memoize
 
-    val payload: Optional[Bytes] =
-      if chunks.isEmpty then Unset else chunks.foldLeft(IArray.empty[Byte])(_ ++ _)
+    val payload: Optional[Bytes] = if data.isEmpty then Unset else data
 
     val stream = this.request(headerBlock, payload)
     val responseHeaders = stream.headers.await()

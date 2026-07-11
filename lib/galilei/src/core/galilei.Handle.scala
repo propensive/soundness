@@ -61,7 +61,7 @@ object Handle:
 // source/result types instead.
 class Handle
   ( val reader: () => LazyList[Data], val writer: LazyList[Data] => Unit )
-  ( val source: () => Stream[Data] over Credit = () => Stream(reader().iterator),
+  ( val source: Spring[Data]^ = () => Stream(reader().iterator),
     val intake: () => Intake[Data] over Credit =
       () => Sink.buffered((), (_, stream) => writer(stream)) )
 extends caps.ExclusiveCapability:

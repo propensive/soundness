@@ -620,7 +620,7 @@ object Xml extends Tag.Container
     producer.iterator
 
   private def writeDocument
-    ( producer: Producer[Text], formatting: Formatting, document: Document[Xml] )
+    ( producer: (Producer[Text])^, formatting: Formatting, document: Document[Xml] )
   :   Unit =
 
     writeXml(producer, formatting, document.metadata, 0)
@@ -631,7 +631,7 @@ object Xml extends Tag.Container
   // Escape text content so the result is well-formed and round-trips exactly. `&` and `<` must be
   // escaped; `>` is escaped too so the `]]>` sequence can never appear; and a carriage return is
   // written as a character reference so XML line-ending normalization cannot rewrite it to `\n`.
-  private def writeEscapedText(producer: Producer[Text], text: Text): Unit =
+  private def writeEscapedText(producer: (Producer[Text])^, text: Text): Unit =
     val source = text.s
     val length = source.length
     var start = 0
@@ -657,7 +657,7 @@ object Xml extends Tag.Container
   // Escape an attribute value delimited by double quotes. Besides the text escapes, the delimiter
   // and the whitespace characters tab, line feed and carriage return become character references,
   // since attribute-value normalization would otherwise collapse literal whitespace to spaces.
-  private def writeEscapedAttribute(producer: Producer[Text], text: Text): Unit =
+  private def writeEscapedAttribute(producer: (Producer[Text])^, text: Text): Unit =
     val source = text.s
     val length = source.length
     var start = 0
@@ -687,7 +687,7 @@ object Xml extends Tag.Container
   // `showable` through a synchronous one, so the two never drift. When the `Formatting` carries
   // an `indent`, element-only content is laid out one child per indented line; an element that
   // contains any character data is kept inline so its text is never altered.
-  private def writeXml(producer: Producer[Text], formatting: Formatting, node: Xml, depth: Int)
+  private def writeXml(producer: (Producer[Text])^, formatting: Formatting, node: Xml, depth: Int)
   :   Unit =
 
     node match
@@ -772,7 +772,7 @@ object Xml extends Tag.Container
     case _           => false
 
   // In indented mode, emit a newline followed by `depth` indent units.
-  private def newline(producer: Producer[Text], formatting: Formatting, depth: Int): Unit =
+  private def newline(producer: (Producer[Text])^, formatting: Formatting, depth: Int): Unit =
     formatting.indent.let: unit =>
       producer.put("\n")
       var i = 0

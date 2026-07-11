@@ -45,6 +45,7 @@ import hieroglyph.*
 import monotonous.*
 import parasite.*
 import prepositional.*
+import zephyrine.memoize
 import rudiments.*
 import spectacular.*
 import telekinesis.*
@@ -103,7 +104,7 @@ given transmissible: [transport, value]
 =>  ( format: transport is Encodable in Text, codec: value is Encodable in transport )
 =>  CharEncoder
 =>  (value over transport) is Transmissible =
-  payload => LazyList(Frame.Text(true, format.encoded(codec.encoded(payload)).data).encode)
+  payload => zephyrine.Stream(Frame.Text(true, format.encoded(codec.encoded(payload)).data).encode)
 
 // The decode direction. The `Decodable in Text`/`in transport` instances are
 // `Tactic`-conditional and don't resolve as nested given constraints, so we
@@ -254,10 +255,12 @@ given wsClient: ( online:            Online,
 
     def receive(connection: WsConnection): LazyList[Data] =
       given Masking = connection.masking
-      Reader(() => connection.inbound, connection.channel).messages.map(_.bytes)
+      Reader(() => zephyrine.Stream(connection.inbound.iterator), connection.channel).messages.map(_.bytes)
 
-    def transmit(connection: WsConnection, input: LazyList[Data]): Unit =
-      input.each(connection.channel.enqueue(_))
+    def transmit(connection: WsConnection, input: (zephyrine.Stream[Data] over zephyrine.Credit)^): Unit =
+      // One `transmit` carries one message = one complete frame, masked at the
+      // `Channel` boundary; see `Transmissible`.
+      connection.channel.enqueue(input.memoize)
 
     def close(connection: WsConnection): Unit =
       given Masking = connection.masking

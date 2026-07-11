@@ -40,12 +40,14 @@ import zephyrine.*
 // length-delimited wire type). Drive it through `Protobuf.printed` (synchronous) or `Protobuf.emit`
 // (streaming).
 @unexported
-class ProtobufPrinter(out: Producer.Bytes):
-  def byte(value: Int): Unit = out.push(value.toByte)
+// Holds the exclusive producer it drives, so the printer is itself a stateful
+// capability with update-classified writes.
+class ProtobufPrinter(out: (Producer.Bytes)^) extends caps.ExclusiveCapability, caps.Stateful:
+  update def byte(value: Int): Unit = out.push(value.toByte)
 
-  def raw(data: Data): Unit = out.put(data)
+  update def raw(data: Data): Unit = out.put(data)
 
-  def varint(value: Long): Unit =
+  update def varint(value: Long): Unit =
     var rest = value
     var continue = true
 
@@ -57,23 +59,23 @@ class ProtobufPrinter(out: Producer.Bytes):
         byte(septet)
         continue = false
 
-  def fixed32(value: Int): Unit =
+  update def fixed32(value: Int): Unit =
     var i = 0
 
     while i < 4 do
       byte((value >>> (i*8)) & 0xff)
       i += 1
 
-  def fixed64(value: Long): Unit =
+  update def fixed64(value: Long): Unit =
     var i = 0
 
     while i < 8 do
       byte(((value >>> (i*8)) & 0xff).toInt)
       i += 1
 
-  def tag(number: Int, wireType: WireType): Unit = varint((number.toLong << 3) | wireType.id)
+  update def tag(number: Int, wireType: WireType): Unit = varint((number.toLong << 3) | wireType.id)
 
-  def field(number: Int, value: Protobuf): Unit = value match
+  update def field(number: Int, value: Protobuf): Unit = value match
     case Protobuf.Absent           => ()
     case Protobuf.Repeated(values) => values.foreach(field(number, _))
 

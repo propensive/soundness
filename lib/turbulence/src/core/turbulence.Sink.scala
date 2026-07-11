@@ -48,7 +48,7 @@ import zephyrine.*
 // a typed `StreamError` through an `Emit` captured by the given — a writer
 // only reports a cut, never aborts. `finish` closes the underlying resource,
 // matching `Writable`'s end-of-stream behaviour.
-object Sink extends Sink2:
+object Sink:
   given outputStream: [output <: ji.OutputStream] => (streamCut: Emit[StreamError], buffering: Buffering)
   =>  ((output is Sink by Data over Credit)^{streamCut}) =
 
@@ -66,26 +66,26 @@ object Sink extends Sink2:
         protected def buffer0: AnyRef = storage
         def mark: Int = mark0
 
-        def reserve(min: Int): Int =
+        update def reserve(min: Int): Int =
           val free = block - mark0
 
           if free >= min then free else
             drain()
             block
 
-        def commit(count: Int): Unit =
+        update def commit(count: Int): Unit =
           mark0 += count
           if mark0 == block then drain()
 
-        override def flush(): Unit =
+        override update def flush(): Unit =
           drain()
           try value.flush() catch case _: ji.IOException => ()
 
-        def finish(): Unit =
+        update def finish(): Unit =
           drain()
           try value.close() catch case _: ji.IOException => raise(StreamError(total.b))
 
-        private def drain(): Unit =
+        private update def drain(): Unit =
           if mark0 > 0 && !broken then
             try
               value.write(storage, 0, mark0)
@@ -114,24 +114,24 @@ object Sink extends Sink2:
         protected def buffer0: AnyRef = storage
         def mark: Int = mark0
 
-        def reserve(min: Int): Int =
+        update def reserve(min: Int): Int =
           val free = block - mark0
 
           if free >= min then free else
             drain()
             block
 
-        def commit(count: Int): Unit =
+        update def commit(count: Int): Unit =
           mark0 += count
           if mark0 == block then drain()
 
-        override def flush(): Unit = drain()
+        override update def flush(): Unit = drain()
 
-        def finish(): Unit =
+        update def finish(): Unit =
           drain()
           try value.close() catch case _: Exception => raise(StreamError(total.b))
 
-        private def drain(): Unit =
+        private update def drain(): Unit =
           if mark0 > 0 && !broken then
             val buffer = jn.ByteBuffer.wrap(storage, 0, mark0).nn
 
@@ -154,7 +154,7 @@ object Sink extends Sink2:
   def buffered[target, medium]
     ( target: target, write: (target, LazyList[medium]) => Unit )
     ( using addressable0: medium is Addressable )
-  :   (Intake[medium] over Credit)^{write} =
+  :   (Intake[medium] over Credit)^{write, caps.any} =
 
     new Intake[medium]:
       type Transport = Credit
@@ -168,45 +168,30 @@ object Sink extends Sink2:
       protected def buffer0: AnyRef = storage.asInstanceOf[AnyRef]
       def mark: Int = mark0
 
-      def reserve(min: Int): Int =
+      update def reserve(min: Int): Int =
         val free = block - mark0
 
         if free >= min then free else
           drain()
           block
 
-      def commit(count: Int): Unit =
+      update def commit(count: Int): Unit =
         mark0 += count
         if mark0 == block then drain()
 
-      def finish(): Unit =
+      update def finish(): Unit =
         drain()
         write(target, chunks.reverse.to(LazyList))
 
-      private def drain(): Unit =
+      private update def drain(): Unit =
         if mark0 > 0 then
           chunks ::= addressable0.materialize(storage, 0, mark0)
           mark0 = 0
 
-// Transitional: any `Writable` instance over a buffer-backed medium is a
-// `Sink`, at lower priority than the native instances above. Since `Writable`
-// consumes its entire `LazyList` in one call (closing the target at its end),
-// this bridge must accumulate everything written and deliver it at `finish` —
-// memory is unbounded, so native `Sink` instances should replace it.
-trait Sink2:
-  given writableData: [target] => (writable: (target is Writable by Data)^)
-  =>  ((target is Sink by Data over Credit)^{writable}) =
-
-    Sink.buffered(_, writable.write)
-
-  given writableText: [target] => (writable: (target is Writable by Text)^)
-  =>  ((target is Sink by Text over Credit)^{writable}) =
-
-    Sink.buffered(_, writable.write)
 
 trait Sink extends Typeclass, Operable:
   type Transport
-  def intake(target: Self): Intake[Operand] over Transport
+  def intake(target: Self): (Intake[Operand] over Transport)^
 
   def contramap[self2](lambda: self2 => Self)
   :   (self2 is Sink by Operand over Transport)^{this, lambda} =

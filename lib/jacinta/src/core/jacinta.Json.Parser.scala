@@ -185,20 +185,24 @@ private[jacinta] object Parser:
     val raw = caps.unsafe.unsafeAssumePure(parser.parse())
     (raw, parser.rootIndex.nn)
 
-  def parse(input: Stream[Data] over Credit, mode: NumberMode): Raw raises ParseError =
+  def parse(consume input: (Stream[Data] over Credit)^, mode: NumberMode): Raw raises ParseError =
     val parser = borrow()
     parser.tracking = false
-    parser.resetStream(input)
+    // consume-to-consume forwarding is not admitted; the hop re-asserts the transfer
+    val moved: AnyRef = input.asInstanceOf[AnyRef]
+    parser.resetStream(moved.asInstanceOf[(Stream[Data] over Credit)^])
     parser.holes = false
     parser.numberMode = mode
     caps.unsafe.unsafeAssumePure(parser.parse())
 
-  def parseTracked(input: Stream[Data] over Credit, mode: NumberMode)
+  def parseTracked(consume input: (Stream[Data] over Credit)^, mode: NumberMode)
   :   (Raw, IArray[Int]) raises ParseError =
 
     val parser = borrow()
     parser.tracking = true
-    parser.resetStream(input)
+    // consume-to-consume forwarding is not admitted; the hop re-asserts the transfer
+    val moved: AnyRef = input.asInstanceOf[AnyRef]
+    parser.resetStream(moved.asInstanceOf[(Stream[Data] over Credit)^])
     parser.holes = false
     parser.numberMode = mode
     val raw = caps.unsafe.unsafeAssumePure(parser.parse())
@@ -315,7 +319,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     indexBufferId = -1
     rootIndex = null
 
-  update def resetStream(input: Stream[Data] over Credit): Unit =
+  update def resetStream(consume input: (Stream[Data] over Credit)^): Unit =
     if tracking then
       import zephyrine.lineation.linefeedByte
       val fresh = Cursor[Data](input)

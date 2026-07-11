@@ -60,6 +60,7 @@ object Tests extends Suite(m"Coaxial tests"):
     def ascii(text: Text): Data = IArray.from(text.s.getBytes("US-ASCII").nn.to(List))
     def bytes(data: Data): List[Byte] = data.to(List)
     def joined(stream: LazyList[Data]): List[Byte] = stream.to(List).flatMap(_.to(List))
+    def drained(stream: zephyrine.Stream[Data] over Credit): List[Byte] = stream.memoize.to(List)
 
     suite(m"Duplex streaming endpoints"):
       supervise:
@@ -90,25 +91,25 @@ object Tests extends Suite(m"Coaxial tests"):
 
     suite(m"Transmissible serialization"):
       test(m"Data is transmitted as a single chunk"):
-        joined(summon[Data is Transmissible].serialize(ascii(t"abc")))
+        drained(summon[Data is Transmissible].serialize(ascii(t"abc")))
       . assert(_ == bytes(ascii(t"abc")))
 
       test(m"A LazyList[Data] is transmitted unchanged"):
         val stream = LazyList(ascii(t"ab"), ascii(t"cd"))
-        joined(summon[LazyList[Data] is Transmissible].serialize(stream))
+        drained(summon[LazyList[Data] is Transmissible].serialize(stream))
       . assert(_ == bytes(ascii(t"abcd")))
 
       test(m"Text is transmitted via its character encoding"):
-        joined(summon[Text is Transmissible].serialize(t"hello"))
+        drained(summon[Text is Transmissible].serialize(t"hello"))
       . assert(_ == bytes(ascii(t"hello")))
 
       test(m"An Encodable value is transmitted via its Text encoding"):
-        joined(summon[Port is Transmissible].serialize(Port.unsafe[Tcp](8080)))
+        drained(summon[Port is Transmissible].serialize(Port.unsafe[Tcp](8080)))
       . assert(_ == bytes(ascii(t"8080")))
 
       test(m"contramap adapts a Transmissible to a new source type"):
         val ints: Int is Transmissible = summon[Text is Transmissible].contramap[Int](_.show)
-        joined(ints.serialize(42))
+        drained(ints.serialize(42))
       . assert(_ == bytes(ascii(t"42")))
 
     suite(m"Ingressive deserialization"):
@@ -222,7 +223,7 @@ object Tests extends Suite(m"Coaxial tests"):
           // makes any type conform to `Unit`, the `Routable` overload is not
           // reachable by ascription, so its given is exercised directly here.
           val routable = summon[UdpPort is Routable]
-          routable.transmit(routable.connect(port, Unset), LazyList(ascii(t"ping")))
+          routable.transmit(routable.connect(port, Unset), zephyrine.Stream(ascii(t"ping")))
           received.await().also(server.stop())
         . assert(_ == t"ping")
 
@@ -267,7 +268,7 @@ object Tests extends Suite(m"Coaxial tests"):
             IArray.from(buffer.take(count.max(0)).to(List))
 
           val reply = socket.duplex: duplex =>
-            duplex.send(LazyList(ascii(t"ping")))
+            duplex.send(zephyrine.Stream(ascii(t"ping")))
             bytes(duplex.stream.head)
 
           reply.also(server.stop())

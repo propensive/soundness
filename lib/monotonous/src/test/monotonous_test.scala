@@ -212,7 +212,7 @@ object Tests extends Suite(m"Monotonous tests"):
 // Drains a duct-composed pull endpoint, for the streaming serialization
 // tests.
 object Drain:
-  def text(stream: Stream[Text] over Credit, credit: Int = 7): Text =
+  def text(stream: (Stream[Text] over Credit)^, credit: Int = 7): Text =
     val builder = StringBuilder()
 
     def recur(): Unit = stream.refill(Credit(credit)) match
@@ -227,7 +227,7 @@ object Drain:
     recur()
     builder.toString.tt
 
-  def data(stream: Stream[Data] over Credit, credit: Int = 7): Data =
+  def data(stream: (Stream[Data] over Credit)^, credit: Int = 7): Data =
     val target = java.io.ByteArrayOutputStream()
 
     def recur(): Unit = stream.refill(Credit(credit)) match

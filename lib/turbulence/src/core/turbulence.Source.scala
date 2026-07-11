@@ -47,7 +47,7 @@ import zephyrine.*
 // instead of a `LazyList`. Sources needing buffers or error contexts capture
 // them as contextual values of the given (`Buffering`, `Tactic[StreamError]`),
 // so the typeclass itself remains a single abstract method.
-object Source extends Source2:
+object Source:
   given bytes: Data is Source by Data over Credit = Stream(_)
   given text: [textual <: Text] => textual is Source by Text over Credit = value => Stream(value)
 
@@ -90,9 +90,9 @@ object Source extends Source2:
         protected def window0: AnyRef = storage
         def start: Int = start0
         def limit: Int = limit0
-        def skip(count: Int): Unit = start0 += count
+        update def skip(count: Int): Unit = start0 += count
 
-        def refill(demand: Credit): Optional[Int] =
+        update def refill(demand: Credit): Optional[Int] =
           if limit0 > start0 then limit0 - start0
           else if ended then Unset
           else
@@ -118,7 +118,7 @@ object Source extends Source2:
                 try value.close() catch case _: Exception => ()
                 abort(StreamError(total.b))
 
-        override def close(): Unit =
+        override update def close(): Unit =
           ended = true
           try value.close() catch case _: Exception => ()
 
@@ -127,7 +127,7 @@ object Source extends Source2:
   // time.
   private def stream(input: jn.channels.ReadableByteChannel)
     ( using tactic: Tactic[StreamError], buffering: Buffering )
-  :   (Stream[Data] over Credit)^{tactic} =
+  :   (Stream[Data] over Credit)^{tactic, caps.any} =
 
     new Stream[Data]:
       type Transport = Credit
@@ -143,9 +143,9 @@ object Source extends Source2:
       protected def window0: AnyRef = storage
       def start: Int = start0
       def limit: Int = limit0
-      def skip(count: Int): Unit = start0 += count
+      update def skip(count: Int): Unit = start0 += count
 
-      def refill(demand: Credit): Optional[Int] =
+      update def refill(demand: Credit): Optional[Int] =
         if limit0 > start0 then limit0 - start0
         else if ended then Unset
         else
@@ -176,28 +176,14 @@ object Source extends Source2:
               try input.close() catch case _: Exception => ()
               abort(StreamError(total.b))
 
-      override def close(): Unit =
+      override update def close(): Unit =
         ended = true
         try input.close() catch case _: Exception => ()
 
-// Transitional: any `Streamable` instance over a buffer-backed medium is a
-// `Source`, at lower priority than the native instances above, so downstream
-// code migrates without ceremony. Production of the underlying `LazyList` is
-// not demand-controlled.
-trait Source2:
-  given streamableData: [value] => (streamable: (value is Streamable by Data)^)
-  =>  ((value is Source by Data over Credit)^{streamable}) =
-
-    source => Stream(streamable.stream(source).iterator)
-
-  given streamableText: [value] => (streamable: (value is Streamable by Text)^)
-  =>  ((value is Source by Text over Credit)^{streamable}) =
-
-    source => Stream(streamable.stream(source).iterator)
 
 trait Source extends Typeclass, Operable:
   type Transport
-  def stream(value: Self): Stream[Operand] over Transport
+  def stream(value: Self): (Stream[Operand] over Transport)^
 
   def contramap[self2](lambda: self2 => Self)
   :   (self2 is Source by Operand over Transport)^{this, lambda} =

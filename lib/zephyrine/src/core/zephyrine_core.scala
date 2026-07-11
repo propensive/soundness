@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import language.experimental.separationChecking
+
 import fulminate.*
 import prepositional.*
 import rudiments.*
@@ -85,20 +87,106 @@ package parsing:
 
 export Cursor.{Mark, Offset}
 
-extension [in, transport](stream: Stream[in] over transport)
+extension [in, transport](consume stream: (Stream[in] over transport)^)
   // Pull-composition: a differently-typed `Stream` whose refills translate
   // demand through the stage and pull from this stream. Runs entirely on
   // the consumer's thread. The stage may be a raw `Duct` or any descriptor
   // value with a `Ductile` instance.
-  def through[stage](stage: stage)
+  def through[stage](consume stage: stage^)
     ( using ductile: (stage is Ductile by in) { type Upstream = transport },
             buffering: Buffering )
-  :   Stream[ductile.Result] over ductile.Transport =
+  :   (Stream[ductile.Result] over ductile.Transport)^ =
 
-    val duct = ductile.duct(stage)
+    // Constructed in a helper: a local binding of the fresh duct would hide it from the
+    // anonymous class that wraps it (the statement rule); consume parameters carry
+    // explicit capture sets and hide nothing.
+    throughDuct[in, ductile.Result, transport, ductile.Transport]
+      (ductile.duct(stage), stream)
 
-    new Stream[ductile.Result](using duct.output):
-      type Transport = duct.Transport
+  // The pump loop connecting a pull-chain to a push-chain, on the calling
+  // thread: poll the intake's demand, refill with it, transfer the window.
+  // This is the only place data crosses from the pull side to the push side
+  // of a pipeline.
+  def flowTo(consume intake: (Intake[in] over transport)^): Unit =
+    def loop(): Unit =
+      stream.refill(intake.demand) match
+        case Unset =>
+          intake.finish()
+
+        case count: Int =>
+          if count > 0 then
+            intake.absorb
+              ( stream.window(using Unsafe).asInstanceOf[intake.addressable.Storage],
+                stream.start,
+                count )
+
+            stream.skip(count)
+          else
+            intake.reserve(1)
+
+          loop()
+
+    try loop() finally stream.close()
+
+extension [out, transport](consume intake: (Intake[out] over transport)^)
+  // Push-composition: a differently-typed `Intake` which reports translated
+  // demand, and whose commits step synchronously through the stage into
+  // this intake's writable window. The same stage value serves `through`
+  // and `accepting`; only the attachment differs.
+  def accepting[stage](consume stage: stage^)
+    ( using ductile: (stage is Ductile to out) { type Transport = transport },
+            buffering: Buffering )
+  :   (Intake[ductile.Operand] over ductile.Upstream)^ =
+
+    // See `throughDuct` above.
+    acceptingDuct[ductile.Operand, out, ductile.Upstream, transport]
+      (ductile.duct(stage), intake)
+
+
+// ─── terminal operations and explicit replay ───────────────────────────────────────────
+//
+// The safe front-end replacing the LazyList views: pipeline stages compose with the
+// consume-typed `through`, and these terminal operations drain an exclusive endpoint
+// without exposing its window — each borrow is read, used and skipped before the next
+// refill. `memoize` is the explicit replacement for LazyList's implicit caching: it
+// drains the stream once into an immutable value, which may then be shared freely.
+
+extension [medium](consume stream: (Stream[medium] over Credit)^)
+  // Drain the stream, applying `operation` to each successive window. The lambda
+  // receives the storage, start index and element count; it must not retain the storage.
+  def foreachWindow(operation: (AnyRef, Int, Int) => Unit)(using buffering: Buffering): Unit =
+    val block = buffering.capacity(stream.addressable.substrate)
+
+    def loop(): Unit = stream.refill(Credit(block)) match
+      case count: Int =>
+        operation(stream.window(using Unsafe).asInstanceOf[AnyRef], stream.start, count)
+        stream.skip(count)
+        loop()
+
+      case _ => ()
+
+    try loop() finally stream.close()
+
+  // Drain the stream into a single immutable value: the explicit, bounded replacement
+  // for a LazyList's implicit memoization. The result is frozen and freely shareable.
+  def memoize(using buffering: Buffering): medium =
+    val addressable = stream.addressable
+    val target = addressable.blank(buffering.capacity(addressable.substrate))
+
+    foreachWindow: (storage, start, count) =>
+      addressable.cloneStorage(storage.asInstanceOf[addressable.Storage], start, count)(target)
+
+    addressable.build(target)
+
+private def throughDuct[in, out, upTransport, downTransport]
+  ( consume duct:
+      (Duct[in, out] { type Transport = downTransport; type Upstream = upTransport })^,
+    consume stream: (Stream[in] over upTransport)^ )
+  ( using buffering: Buffering )
+:   (Stream[out] over downTransport)^ =
+
+    new Stream[out](using duct.output):
+      type Transport = downTransport
 
       private val capacity: Int =
         buffering.capacity(duct.output.substrate).max(duct.quantum)
@@ -112,9 +200,9 @@ extension [in, transport](stream: Stream[in] over transport)
       protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
-      def skip(count: Int): Unit = start0 += count
+      update def skip(count: Int): Unit = start0 += count
 
-      def refill(demand: duct.Transport): Optional[Int] =
+      update def refill(demand: downTransport): Optional[Int] =
         if limit0 > start0 then limit0 - start0
         else if flushed then Unset
         else
@@ -158,63 +246,33 @@ extension [in, transport](stream: Stream[in] over transport)
 
             if flushed && limit0 == start0 then Unset else limit0 - start0
 
-      override def close(): Unit =
+      override update def close(): Unit =
         duct.close()
         stream.close()
 
-  // The pump loop connecting a pull-chain to a push-chain, on the calling
-  // thread: poll the intake's demand, refill with it, transfer the window.
-  // This is the only place data crosses from the pull side to the push side
-  // of a pipeline.
-  def flowTo(intake: Intake[in] over transport): Unit =
-    def loop(): Unit =
-      stream.refill(intake.demand) match
-        case Unset =>
-          intake.finish()
+private def acceptingDuct[in, out, upTransport, downTransport]
+  ( consume duct:
+      (Duct[in, out] { type Transport = downTransport; type Upstream = upTransport })^,
+    consume intake: (Intake[out] over downTransport)^ )
+  ( using buffering: Buffering )
+:   (Intake[in] over upTransport)^ =
 
-        case count: Int =>
-          if count > 0 then
-            intake.absorb
-              ( stream.window(using Unsafe).asInstanceOf[intake.addressable.Storage],
-                stream.start,
-                count )
-
-            stream.skip(count)
-          else
-            intake.reserve(1)
-
-          loop()
-
-    try loop() finally stream.close()
-
-extension [out, transport](intake: Intake[out] over transport)
-  // Push-composition: a differently-typed `Intake` which reports translated
-  // demand, and whose commits step synchronously through the stage into
-  // this intake's writable window. The same stage value serves `through`
-  // and `accepting`; only the attachment differs.
-  def accepting[stage](stage: stage)
-    ( using ductile: (stage is Ductile to out) { type Transport = transport },
-            buffering: Buffering )
-  :   Intake[ductile.Operand] over ductile.Upstream =
-
-    val duct = ductile.duct(stage)
-
-    new Intake[ductile.Operand](using duct.input):
-      type Transport = duct.Upstream
+    new Intake[in](using duct.input):
+      type Transport = upTransport
 
       private val capacity: Int = buffering.capacity(duct.input.substrate)
       private val storage: duct.input.Storage = duct.input.allocate(capacity)
       private var mark0: Int = 0
 
-      def demand: duct.Upstream = duct.translate(intake.demand)
+      def demand: upTransport = duct.translate(intake.demand)
       protected def buffer0: AnyRef = storage.asInstanceOf[AnyRef]
       def mark: Int = mark0
 
       // `commit` always drains the whole buffer through the duct (partial
       // atoms are carried in duct state, not here), so all space is free.
-      def reserve(min: Int): Int = capacity - mark0
+      update def reserve(min: Int): Int = capacity - mark0
 
-      def commit(count: Int): Unit =
+      update def commit(count: Int): Unit =
         mark0 += count
         var offset: Int = 0
 
@@ -235,9 +293,9 @@ extension [out, transport](intake: Intake[out] over transport)
 
         mark0 = 0
 
-      override def flush(): Unit = intake.flush()
+      override update def flush(): Unit = intake.flush()
 
-      def finish(): Unit =
+      update def finish(): Unit =
         var produced: Int = -1
 
         while produced != 0 do
@@ -254,6 +312,6 @@ extension [out, transport](intake: Intake[out] over transport)
         duct.close()
         intake.finish()
 
-      override def fail(error: Throwable): Unit =
+      override update def fail(error: Throwable): Unit =
         duct.close()
         intake.fail(error)

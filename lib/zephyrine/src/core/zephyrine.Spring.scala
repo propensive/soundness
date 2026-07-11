@@ -30,64 +30,19 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cacophony
+package zephyrine
 
-import java.io as ji
-import javax.sound.sampled as jss
+import language.experimental.separationChecking
 
-import anticipation.*
-import contingency.*
-import gesticulate.*
 import prepositional.*
-import rudiments.*
-import turbulence.*
 
-trait Audible extends Typeclass:
-  audible: Audible =>
-    def name: Text
-    def mediaType: MediaType
-
-    def read[input: Streamable by Data](source: input): Audio in Self raises AudioError =
-      val rawBytes: Array[Byte] = source.stream[Data].read[Data].javaInputStream.readAllBytes.nn
-
-      val fileFormat: jss.AudioFileFormat =
-        try jss.AudioSystem.getAudioFileFormat(ji.ByteArrayInputStream(rawBytes)).nn
-        catch
-          case _: jss.UnsupportedAudioFileException => abort(AudioError(this))
-          case _: ji.IOException                    => abort(AudioError(this))
-
-      if fileFormat.getType.nn.toString != name.s then abort(AudioError(this))
-
-      val raw: jss.AudioInputStream =
-        try jss.AudioSystem.getAudioInputStream(ji.ByteArrayInputStream(rawBytes)).nn
-        catch
-          case _: jss.UnsupportedAudioFileException => abort(AudioError(this))
-          case _: ji.IOException                    => abort(AudioError(this))
-
-      val encoding = raw.getFormat.nn.getEncoding.nn
-
-      val pcm: jss.AudioInputStream =
-        if encoding == jss.AudioFormat.Encoding.PCM_SIGNED ||
-          encoding == jss.AudioFormat.Encoding.PCM_UNSIGNED
-        then raw
-        else
-          val src = raw.getFormat.nn
-
-          val target =
-            jss.AudioFormat
-              ( jss.AudioFormat.Encoding.PCM_SIGNED,
-                src.getSampleRate,
-                16,
-                src.getChannels,
-                src.getChannels*2,
-                src.getSampleRate,
-                false )
-
-          try jss.AudioSystem.getAudioInputStream(target, raw).nn
-          catch case _: IllegalArgumentException => abort(AudioError(this))
-
-      val pcmBytes: Array[Byte] = pcm.readAllBytes.nn
-      val pcmFormat: jss.AudioFormat = pcm.getFormat.nn
-      pcm.close()
-
-      new Audio(pcmFormat, pcmBytes) { type Form = audible.Self }
+// A re-materializable source of streams: each `apply()` mints a fresh,
+// exclusive pull endpoint over the same content. This is a named trait rather
+// than the function type `() => (Stream[medium] over Credit)^` because
+// `Stream` is a scoped capability: a lambda may not mint a fresh scoped
+// capability as its result (the closure's fresh is not visible from the
+// function type's result capture at the binder's level), but a method may —
+// its result is re-leveled at each call site. Being a SAM trait, `Spring`
+// is still constructed from plain lambdas: `() => Stream(...)`.
+trait Spring[medium]:
+  def apply(): (Stream[medium] over Credit)^

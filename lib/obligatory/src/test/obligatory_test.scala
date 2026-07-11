@@ -156,7 +156,8 @@ object Tests extends Suite(m"Obligatory Tests"):
 
         def duplex(inbound: Spool[Data], outbound: Spool[Data]) = new Duplex:
           def stream: LazyList[Data] = inbound.stream
-          def send(data: LazyList[Data]): Unit = data.each(outbound.put)
+          def send(data: zephyrine.Stream[Data] over Credit): Unit =
+            outbound.put(data.memoize)
           def close(): Unit = outbound.stop()
 
         (duplex(serverToClient, clientToServer), duplex(clientToServer, serverToClient))
@@ -178,7 +179,7 @@ object Tests extends Suite(m"Obligatory Tests"):
 
         daemon:
           safely:
-            serverSide.send(LazyList(Frame.Settings(Nil, ack = false).serialize))
+            serverSide.send(zephyrine.Stream(Frame.Settings(Nil, ack = false).serialize))
             val raw = serverSide.stream.iterator
 
             val afterPreface: Iterator[Data] =
@@ -196,11 +197,11 @@ object Tests extends Suite(m"Obligatory Tests"):
 
               case f: Frame => f match
                 case Frame.Settings(_, false) =>
-                  serverSide.send(LazyList(Frame.Settings(Nil, ack = true).serialize))
+                  serverSide.send(zephyrine.Stream(Frame.Settings(Nil, ack = true).serialize))
 
                 case Frame.Headers(id, _, _, _) =>
                   responder(hpack, id).each: frame =>
-                    serverSide.send(LazyList(frame.serialize))
+                    serverSide.send(zephyrine.Stream(frame.serialize))
 
                 case _ => ()
 

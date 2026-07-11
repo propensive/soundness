@@ -226,8 +226,7 @@ object Http:
   object Request:
     given showable: Request is Showable = request =>
       val bodySample: Text =
-        try request.body().lazyList.read[Data].utf8 catch
-          case error: StreamError  => t"[-/-]"
+        try request.body().memoize.utf8 catch case error: StreamError  => t"[-/-]"
 
       val headers: Text =
         request.textHeaders.map: header =>
@@ -255,13 +254,40 @@ object Http:
       ).map { case (key, value) => t"$key = $value" }.join(t", ")
 
     // Serialize the request to its HTTP/1.1 wire form: the request line, `Host`
-    // and framing headers, then the header block and body. Used by transports
-    // that write directly to a socket (e.g. the `coaxial` domain-socket client
-    // in `telekinesis.jvm`, which wraps this in a `Transmissible`).
-    def serialize(request: Request): LazyList[Data] =
+    // and framing headers, then the header block and body, as a fresh pull
+    // endpoint. Used by transports that write directly to a socket (e.g. the
+    // `coaxial` domain-socket client in `telekinesis.jvm`, which wraps this in
+    // a `Transmissible`). The body is probed one block at a time: a body that
+    // ends within the first block is framed with `Content-Length`; anything
+    // longer streams with chunked transfer encoding.
+    def serialize(request: Request)(using buffering: Buffering)
+    :   (Stream[Data] over Credit)^ =
+
       import charEncoders.asciiEncoder
 
-      val text: Text = Text.build:
+      val endpoint = request.body()
+      val block = buffering.capacity(Substrate.Bytes)
+
+      // A zero count (an empty upstream chunk) is retried, never yielded: a
+      // zero-length frame would terminate chunked transfer encoding early.
+      def pull(): Optional[Data] = endpoint.refill(Credit(block)) match
+        case 0 => pull()
+
+        case count: Int =>
+          val chunk =
+            endpoint.addressable.materialize
+              ( endpoint.window(using Unsafe), endpoint.start, count )
+
+          endpoint.skip(count)
+          chunk
+
+        case _ =>
+          Unset
+
+      val first: Optional[Data] = pull()
+      val second: Optional[Data] = if first.absent then Unset else pull()
+
+      def head(framing: Text): Text = Text.build:
         def newline(): Unit = append(t"\r\n")
         append(request.method.show)
         append(t" ")
@@ -272,11 +298,7 @@ object Http:
         append(t"Host: ")
         append(request.host.show)
         newline()
-
-        request.body().lazyList match
-          case LazyList()     => append(t"Content-Length: 0")
-          case LazyList(data) => append(t"Content-Length: ${data.length}")
-          case _              => append(t"Transfer-Encoding: chunked")
+        append(framing)
 
         request.textHeaders.map: parameter =>
           newline()
@@ -287,7 +309,22 @@ object Http:
         newline()
         newline()
 
-      text.data #:: request.body().lazyList
+      def frame(data: Data): Iterator[Data] =
+        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".data, data, t"\r\n".data)
+
+      if second.absent then
+        val data = first.or(IArray.empty[Byte])
+        val text = head(t"Content-Length: ${data.length}")
+        Stream(if data.length == 0 then Iterator(text.data) else Iterator(text.data, data))
+      else
+        val text = head(t"Transfer-Encoding: chunked")
+
+        Stream
+          ( Iterator(text.data)
+            ++ frame(first.vouch)
+            ++ frame(second.vouch)
+            ++ Iterator.continually(pull()).takeWhile(_.present).flatMap { data => frame(data.vouch) }
+            ++ Iterator(t"0\r\n\r\n".data) )
 
     case class Head
       ( method: Method, version: Version, host: Host, target: Text, headers: List[Header] )
@@ -472,21 +509,21 @@ object Http:
       recur()
 
   enum Body:
-    case Streaming(data: LazyList[Data])
-    case Flowing(source: () => Stream[Data] over Credit)
+    case Flowing(source: Spring[Data]^)
     case Fixed(data: Data)
     case Empty
 
-    def stream: LazyList[Data] = this match
-      case Body.Fixed(data)       => LazyList(data)
-      case Body.Empty             => LazyList()
-      case Body.Streaming(stream) => stream
-      case Body.Flowing(source)   => source().lazyList
+    // A fresh pull endpoint over this body's content: mintable repeatedly for
+    // `Fixed`/`Empty`, and per the `Spring` contract for `Flowing`.
+    def stream: (Stream[Data] over Credit)^ = this match
+      case Body.Fixed(data)     => Stream(data)
+      case Body.Empty           => Stream(Iterator.empty[Data])
+      case Body.Flowing(source) => source()
 
 
   // A request body with no bytes; each call constructs a fresh, already-empty
   // pull endpoint, matching the re-materializable contract of `body` thunks.
-  def emptyBody(): Stream[Data] over Credit = Stream(Iterator.empty[Data])
+  def emptyBody(): (Stream[Data] over Credit)^ = Stream(Iterator.empty[Data])
 
   class Request
     ( val method:      Http.Method,
@@ -494,7 +531,7 @@ object Http:
       val host:        Host,
       val target:      Text,
       val textHeaders: List[Http.Header],
-      val body:        () => Stream[Data] over Credit ):
+      val body:        Spring[Data]^ ):
 
     inline def request: this.type = this
 
@@ -511,7 +548,7 @@ object Http:
     lazy val query: Query =
       contentType.let(_.base.show) match
         case t"application/x-www-form-urlencoded" =>
-          queryText.decode[Query] ++ body().lazyList.read[Data].utf8.decode[Query]
+          queryText.decode[Query] ++ body().memoize.utf8.decode[Query]
 
         case _ =>
           queryText.decode[Query]
@@ -549,7 +586,7 @@ object Http:
       ( url:     Text,
         method:  Http.Method,
         headers: List[Http.Header],
-        body:    () => Stream[Data] over Credit )
+        body:    Spring[Data]^ )
       ( using Tactic[ConnectError] )
     :   Http.Response
 
@@ -583,6 +620,14 @@ object Http:
     given streamable: (tactic: Tactic[HttpError])
     =>  ((Response is Streamable by Data)^{tactic}) = response =>
       response.status.category match
+        case Http.Status.Category.Successful => LazyList(response.body.stream.memoize)
+
+        case _ =>
+          abort(HttpError(response.status, response.textHeaders))
+
+    given source: (tactic: Tactic[HttpError])
+    =>  ((Response is Source by Data over Credit)^{tactic}) = response =>
+      response.status.category match
         case Http.Status.Category.Successful => response.body.stream
 
         case _ =>
@@ -598,7 +643,8 @@ object Http:
     // `101` upgrades (where the caller pipes the post-handshake stream raw). The
     // inverse of `parse`.
     def serialize(response: Response, includeBody: Boolean = true, version: Version = 1.1)
-    :   LazyList[Data] =
+      ( using buffering: Buffering )
+    :   (Stream[Data] over Credit)^ =
 
       import charEncoders.asciiEncoder
 
@@ -626,7 +672,7 @@ object Http:
             val length = data.length.toString.tt
             (if hasContentLength then Nil else List(Header(t"content-length", length)), false)
 
-          case Body.Streaming(_) | Body.Flowing(_) =>
+          case Body.Flowing(_) =>
             if explicitChunked && chunkable then (Nil, true)
             else if hasContentLength then (Nil, false)
             else if chunkable then (List(Header(t"transfer-encoding", t"chunked")), true)
@@ -653,27 +699,47 @@ object Http:
 
         append(t"\r\n")
 
-      def chunkedFraming(stream: LazyList[Data]): LazyList[Data] = stream match
-        case block #:: tail =>
-          if block.length == 0 then chunkedFraming(tail) else
-            val size: Text = Integer.toHexString(block.length).nn.tt
-            t"$size\r\n".data #:: block #:: t"\r\n".data #:: chunkedFraming(tail)
+      // Materialize successive blocks off a pull endpoint as a chunk iterator.
+      def pulls(endpoint: (Stream[Data] over Credit)^): Iterator[Data]^{endpoint} =
+        val block = buffering.capacity(Substrate.Bytes)
 
-        case _ =>
-          LazyList(t"0\r\n\r\n".data)
+        Iterator.continually:
+          def pull(): Optional[Data] = endpoint.refill(Credit(block)) match
+            // See `Request.serialize`: empty chunks are retried, never framed.
+            case 0 => pull()
 
-      def bodyBytes: LazyList[Data] =
-        if !includeBody then LazyList() else if upgrade then response.body.stream
+            case count: Int =>
+              val chunk =
+                endpoint.addressable.materialize
+                  ( endpoint.window(using Unsafe), endpoint.start, count )
+
+              endpoint.skip(count)
+              chunk
+
+            case _ =>
+              Unset
+
+          pull()
+
+        . takeWhile(_.present).map(_.vouch)
+
+      def frame(data: Data): Iterator[Data] =
+        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".data, data, t"\r\n".data)
+
+      def bodyBytes: Iterator[Data]^ =
+        if !includeBody then Iterator.empty
+        else if upgrade then pulls(response.body.stream)
         else response.body match
-          case Body.Empty             => LazyList()
-          case Body.Fixed(data)       => LazyList(data)
-          case Body.Streaming(stream) => if chunked then chunkedFraming(stream) else stream
+          case Body.Empty       => Iterator.empty
+          case Body.Fixed(data) => Iterator(data)
 
           case Body.Flowing(source) =>
-            val stream = source().lazyList
-            if chunked then chunkedFraming(stream) else stream
+            if chunked then pulls(source()).flatMap(frame) ++ Iterator(t"0\r\n\r\n".data)
+            else pulls(source())
 
-      head.data #:: bodyBytes
+      // Hoisted: a by-name `++` operand may not mint a fresh capability.
+      val chunks = bodyBytes
+      Stream(Iterator(head.data) ++ chunks)
 
     def parse(stream: LazyList[Data]): Response raises HttpResponseError =
       val cursor = Cursor[Data](stream.filter(_.nonEmpty).iterator)
@@ -765,7 +831,11 @@ object Http:
 
       val headers = readHeaders(Nil)
 
-      val body = Http.Body.Streaming(cursor.remainder)
+      // Sealed: the cursor is single-owner and reachable only through its
+      // memoized `remainder`, so the spring is pure in effect; a capturing
+      // `Body` would cascade `^` through every `Response` value.
+      val spring: Spring[Data]^ = () => Stream(cursor.remainder.iterator)
+      val body = Http.Body.Flowing(caps.unsafe.unsafeAssumePure(spring))
 
       Response(version, status, headers.reverse, body)
 
@@ -781,7 +851,8 @@ object Http:
 
 
     def successBody: Optional[LazyList[Data]] =
-      if status.category != Http.Status.Category.Successful then Unset else body.stream
+      if status.category != Http.Status.Category.Successful then Unset
+      else LazyList(body.stream.memoize)
 
 
     def receive[body](using receivable: (body is Receivable)^): body =

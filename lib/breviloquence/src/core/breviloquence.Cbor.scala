@@ -255,17 +255,17 @@ object Cbor extends Cbor2, Dynamic:
     // shortest of the 1/2/4/8-byte head encodings, floats are always emitted as 64-bit, and arrays
     // and maps are length-prefixed.
     given encodable: Ast is Encodable in Data = cbor =>
-      def u16(out: Producer.Bytes, value: Int): Unit =
+      def u16(out: (Producer.Bytes)^, value: Int): Unit =
         out.push(((value >>> 8) & 0xFF).toByte)
         out.push((value & 0xFF).toByte)
 
-      def u32(out: Producer.Bytes, value: Long): Unit =
+      def u32(out: (Producer.Bytes)^, value: Long): Unit =
         out.push(((value >>> 24) & 0xFF).toByte)
         out.push(((value >>> 16) & 0xFF).toByte)
         out.push(((value >>> 8) & 0xFF).toByte)
         out.push((value & 0xFF).toByte)
 
-      def u64(out: Producer.Bytes, value: Long): Unit =
+      def u64(out: (Producer.Bytes)^, value: Long): Unit =
         out.push(((value >>> 56) & 0xFF).toByte)
         out.push(((value >>> 48) & 0xFF).toByte)
         out.push(((value >>> 40) & 0xFF).toByte)
@@ -275,7 +275,7 @@ object Cbor extends Cbor2, Dynamic:
         out.push(((value >>> 8) & 0xFF).toByte)
         out.push((value & 0xFF).toByte)
 
-      def head(out: Producer.Bytes, major: Int, value: Long): Unit =
+      def head(out: (Producer.Bytes)^, major: Int, value: Long): Unit =
         val majorBits = major << 5
 
         if value < 0 then
@@ -296,7 +296,7 @@ object Cbor extends Cbor2, Dynamic:
           out.push((majorBits | 27).toByte)
           u64(out, value)
 
-      def write(out: Producer.Bytes, cbor: Cbor.Ast): Unit =
+      def write(out: (Producer.Bytes)^, cbor: Cbor.Ast): Unit =
         if cbor.isInteger then
           val long = cbor.asInstanceOf[Long]
 

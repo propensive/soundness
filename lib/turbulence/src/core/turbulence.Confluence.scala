@@ -56,12 +56,12 @@ object Confluence:
 
   private class Block(val storage: AnyRef, val size: Int)
 
-  def apply[medium](sources: Stream[medium] over Credit*)
+  def apply[medium, cap^](sources: (Stream[medium] over Credit)^{cap}*)
     ( using addressable0: medium is Addressable,
             buffering:    Buffering,
             monitor:      Monitor,
             probate:      Probate )
-  :   Stream[medium] over Credit =
+  :   (Stream[medium] over Credit)^ =
 
     val block: Int = buffering.capacity(addressable0.substrate)
 
@@ -73,8 +73,21 @@ object Confluence:
 
     def finish(): Unit = if remaining.decrementAndGet == 0 then queue.put(End)
 
-    sources.each: source =>
+    // Indexed iteration: capture sets do not ride standard-collection elements, so each
+    // source is re-asserted exclusive at its fiber rim — one consuming fiber per source
+    // by construction.
+    var index = 0
+
+    // A while-loop rather than a for-comprehension: the desugared foreach closure would
+    // capture the sources' reach capability. Each element crosses to its fiber as a
+    // neutral carrier and is re-asserted exclusive inside: one consuming fiber per
+    // source by construction.
+    while index < sources.length do
+      val handoff: AnyRef = sources(index).asInstanceOf[AnyRef]
+
       async:
+        val source = handoff.asInstanceOf[(Stream[medium] over Credit)^]
+
         def loop(): Unit = source.refill(Credit(block)) match
           case count: Int =>
             val window = source.window(using Unsafe)
@@ -94,6 +107,8 @@ object Confluence:
           error = exception
           finish()
 
+      index += 1
+
     new Stream[medium](using addressable0):
       type Transport = Credit
 
@@ -106,9 +121,9 @@ object Confluence:
       protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
-      def skip(count: Int): Unit = start0 += count
+      update def skip(count: Int): Unit = start0 += count
 
-      def refill(demand: Credit): Optional[Int] =
+      update def refill(demand: Credit): Optional[Int] =
         if limit0 > start0 then limit0 - start0
         else if ended then Unset
         else

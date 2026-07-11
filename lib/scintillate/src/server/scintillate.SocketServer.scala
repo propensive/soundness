@@ -42,6 +42,7 @@ import denominative.*
 import gossamer.*
 import hieroglyph.charEncoders.asciiEncoder
 import parasite.*
+import prepositional.*
 import rudiments.*
 import telekinesis.*
 import turbulence.*
@@ -68,23 +69,26 @@ extends RequestServable:
 
   private val continueResponse: Data = t"HTTP/1.1 100 Continue\r\n\r\n".data
 
-  private def writeAll(out: ji.OutputStream, stream: LazyList[Data]): Unit raises StreamError =
+  private def writeAll(out: ji.OutputStream, stream: Stream[Data] over Credit)
+  :   Unit raises StreamError =
+
     var count: Int = 0
 
     // Consume the stream one block at a time and flush after each: a streaming
     // body (chunked response, SSE, or an upgraded WebSocket) may never end, so
     // its bytes must reach the client as they are produced rather than be forced
     // into memory or sit unflushed in the buffer.
-    def recur(stream: LazyList[Data]): Unit = stream.flow(()):
-      try
-        out.write(next.mutable(using Unsafe))
-        out.flush()
-        count += next.length
-      catch case _: ji.IOException => abort(StreamError(count.b))
+    var failed: Boolean = false
 
-      recur(more)
+    stream.foreachWindow: (storage, start, size) =>
+      if !failed then
+        try
+          out.write(storage.asInstanceOf[Array[Byte]], start, size)
+          out.flush()
+          count += size
+        catch case error: ji.IOException => failed = true
 
-    recur(stream)
+    if failed then abort(StreamError(count.b))
 
   // Frame the request body off the shared connection cursor: chunked decoding
   // for `Transfer-Encoding: chunked`, otherwise `Content-Length` bytes, or empty
@@ -126,9 +130,8 @@ extends RequestServable:
       header.key.lower == t"expect" && header.value.lower.contains(t"100-continue")
 
   private def streaming(response: Http.Response): Boolean = response.body match
-    case Http.Body.Streaming(_) => true
-    case Http.Body.Flowing(_)   => true
-    case _                      => false
+    case Http.Body.Flowing(_) => true
+    case _                    => false
 
   // Map a request-parsing failure to the status the client should see.
   private def errorStatus(reason: HttpRequestError.Reason): Http.Status =
@@ -172,7 +175,7 @@ extends RequestServable:
           val upgrade = isUpgrade(head)
 
           // Tell a waiting client it may send the body before we read it.
-          if expectsContinue(head) then writeAll(out, LazyList(continueResponse))
+          if expectsContinue(head) then writeAll(out, Stream(continueResponse))
 
           val body = if upgrade then cursor.remainder else requestBody(cursor, head)
 

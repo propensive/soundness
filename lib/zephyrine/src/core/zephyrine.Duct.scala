@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import language.experimental.separationChecking
+
 import prepositional.*
 
 // A synchronous transformation stage, attachable to either end of a pipeline:
@@ -66,8 +68,12 @@ object Duct:
 
   opaque type Progress = Long
 
+// A duct is single-owner mutable state (compressors, partial atoms), so it is a stateful
+// capability: `step`/`flush`/`close` mutate it and require exclusive access, while
+// `translate`/`quantum`/`regulation` are pure queries.
 abstract class Duct[in, out]
-  ( using val input: in is Addressable, val output: out is Addressable ):
+  ( using val input: in is Addressable, val output: out is Addressable )
+extends caps.ExclusiveCapability, caps.Stateful:
 
   type Transport
   type Upstream
@@ -85,7 +91,7 @@ abstract class Duct[in, out]
   // a duct whose smallest output atom is two elements.
   def quantum: Int = 1
 
-  def step
+  update def step
     ( source: input.Storage,
       sourceOffset: Int,
       sourceLength: Int,
@@ -100,6 +106,6 @@ abstract class Duct[in, out]
   // undelivered output than one step's space). A duct whose state can retain
   // output MUST override this; the first `0` it returns is taken as the end
   // of the stream. Called repeatedly until it returns `0`.
-  def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int = 0
+  update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int = 0
 
-  def close(): Unit = ()
+  update def close(): Unit = ()

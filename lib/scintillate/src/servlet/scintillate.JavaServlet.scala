@@ -94,10 +94,6 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
         case Http.Body.Empty =>
           servletResponse.addHeader("content-length", "0")
 
-        case Http.Body.Streaming(stream) =>
-          servletResponse.addHeader("transfer-encoding", "chunked")
-          stream.map(_.mutable(using Unsafe)).each(out.write(_))
-
         case Http.Body.Flowing(source) =>
           servletResponse.addHeader("transfer-encoding", "chunked")
           val stream = source()

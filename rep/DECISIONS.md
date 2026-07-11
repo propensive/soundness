@@ -1188,3 +1188,162 @@ compiles all test sources together, where the implicit scope evidently differs. 
 regression from this branch or from fork fix #11 (which is thereby exonerated of
 CC-only-unit effects). Left as-is; flagged for a separate look at the per-module/umbrella
 implicit-scope divergence.
+
+## Phase 4 in flight: kernel re-parented and Conduit split (2026-07-11, branch sepcheck-kernel)
+
+zephyrine.core GREEN with the full Phase-4 kernel: Producer/Stream/Intake/Duct extend
+`ExclusiveCapability, Stateful` (capture-friendly — NOT Mutable: implementations capture
+iterators/queues/sockets) with honest update classification; Conduit is now a FACTORY
+returning `((Intake[medium] over Credit)^, (Stream[medium] over Credit)^)` over a private
+`SharedCapability` core (queue/atomics; volatiles untracked — JMM-managed);
+through/flowTo/accepting are consume-typed (Phase 5's pipeline semantics), with
+construction hoisted into `throughDuct`/`acceptingDuct` helpers whose consume PARAMETERS
+carry explicit sets — a local binding of the fresh duct would hide it from the anonymous
+class that wraps it (the statement rule); Ductile's `duct` takes `consume stage: Self^`.
+
+New workarounds proven this leg:
+- Overriding/implementing an update method requires RESTATING `update`.
+- Fresh stateful instances capturing evidence type as `^{evidence, caps.any}` results
+  (naming the evidence; hiding only their own state) — Sink.buffered, Source.stream.
+- Varargs of capabilities: follow the compiler's hint — capture-polymorphic
+  `[cap^](sources: (Stream[...])^{cap}*)` fixed Confluence's reach-leak; while-loops
+  instead of for-comprehensions (the desugared foreach closure captures the reach).
+- Collection/fiber rims carry `AnyRef` (the Conduit-queue precedent): Manifold's
+  subscribers and Confluence's per-fiber hand-offs.
+
+REMAINING for the next leg: ~10 errors in turbulence_core.scala (legacy LazyList-view
+sections: freeze-casts + flow sites), then zephyrine tests (Conduit pair destructure),
+coaxial/galilei/hieroglyph/scintillate/telekinesis sweeps (same recipes), Phase 5 surface
+(borrow-based foreach/fold + freeze-based memoize on Stream^; combinators exist via the
+consume-typed through), full gates. LazyList-bridge REMOVAL deliberately deferred: needs
+Jon's API review (public break).
+
+## Phase 4/5 sweep: repo compiles except telekinesis (2026-07-11, sepcheck-kernel)
+
+Full `soundness.all` is green EXCEPT telekinesis.core (three small error classes left):
+1. `Request is Showable` given: lambda param needs the Request refinement ascription
+   (the class type now carries the body-thunk refinement).
+2. `() => Stream(cursor.remainder.iterator)` at Http.scala:386: fresh-in-thunk-result
+   admission ("any not visible from any² in method parse") — p11-family; likely needs a
+   named helper returning the thunk, or a rim.
+3. `Http.emptyBody()` result is bare (read-only) — needs `(Stream[Data] over Credit)^`.
+Then: apoplexy/scintillate knock-ons from the thunk-type sweep (`=> (Stream[Data] over
+Credit)^` swept across galilei/telekinesis/apoplexy), test suites, Phase 5 tests,
+LazyList-bridge removal (Jon approved; NOT yet started — Streamable in 44 files), gates.
+
+This leg's recipes: Producer factory results exclusive; serializer helpers take
+`Writer^`/`ProtobufPrinter^` (capability wrapper classes over their producers);
+consume-to-consume argument forwarding is NOT admitted (neutral-carrier hop);
+`lazyList` seals INSIDE its definition (LazyList is pure — cannot carry the consumed
+stream's capture; `^` on LazyList is a case-2 error); enum payloads holding stream
+thunks type them `() => (Stream[...])^`.
+
+## Spring: fresh scoped results must come from methods, not lambdas (2026-07-11)
+
+Root cause of the telekinesis tail (P12, `p12-thunk-fresh-*.scala`): `Stream` is a
+SCOPED exclusive capability (ExclusiveCapability + Stateful, deliberately not
+Unscoped), and a lambda may not mint a fresh scoped capability as its result — the
+closure's per-call fresh is level-bound to the closure and "not visible from" the
+function type's existential result capture at the binder. So the thunk type
+`() => (Stream[Data] over Credit)^` is UNCONSTRUCTIBLE from any lambda that creates
+a stream (worked for Cursor earlier only because Cursor extends Mutable = Unscoped,
+which waives the level check). This is the level discipline working as designed —
+the same rule that rejects a `Stream^` escaping its scope — NOT a compiler bug.
+
+The legitimate fix: a named SAM trait whose METHOD returns the fresh stream — method
+results are re-leveled at each call site. `zephyrine.Spring[medium]`
+(`def apply(): (Stream[medium] over Credit)^`) replaced the thunk type everywhere
+(telekinesis Request.body / Body.Flowing / Http.Backend / HttpClient, galilei
+Handle.source, apoplexy, obligatory); `Postable.Streamer[content]` is the 1-arg
+analogue (`def stream(content): (Stream[Data] over Credit)^`) for Postable.apply's
+payload parameter. SAM conversion keeps every `() => Stream(...)` construction site
+compiling unchanged; `request.body()` call syntax unchanged via `apply`. In non-CC
+units (telekinesis.jvm/.wasi, like honeycomb.core) write bare `Spring[Data]`.
+
+Also fixed alongside: `Postable.stream`'s result was bare (= read-only) — now `^`;
+the `Showable` given hoists `val stream = request.body()` before `.lazyList`;
+`Http.emptyBody(): (Stream[Data] over Credit)^`. Ascribe vals holding SAM lambdas
+(`val body: Spring[Data] = () => ...`) or the val infers the raw function type
+and fails at use (obligatory.GrpcChannel).
+
+## LazyList-bridge removal: stage map (2026-07-11, in progress)
+
+DONE (committed 72ecfb4aaa, 34aac9e368): all whole-body `.lazyList.read[...]`
+reads → `memoize` (Http Showable/query, synesthesia dispatch, cordillera h2
+payload, wasi payload, telekinesis/scintillate/apoplexy tests); Postable.preview
+= one bounded refill + materialize (no full drain); apoplexy test Recorder takes
+`Spring[Data]^`; Spring/memoize/foreachWindow added to soundness umbrella exports
+(consume-extension export forwarders work — flowTo precedent; only dependent-
+typed ones need hand-written forwarders).
+
+REMAINING (2026-07-11 end of leg; items 3,4,5 of the original list DONE —
+inputStream adapter committed 71aa56e032, websocket Reader + Multipart interim
+committed 1157194e4b):
+1. The Http wire-form cluster (the finale; single refactor): `Request.serialize`
+   (Http.scala ~275/289) and the Response wire form (~674) build LazyList[Data]
+   from `body().lazyList`; `Body.stream` (~485) is the LazyList accessor. The
+   Content-Length-vs-chunked probe pattern-matches the LazyList (forces <=2
+   cells); a kernel-native version pulls one block: stream ended -> fixed
+   length, else chunked with pulled block + remainder. But serialize RETURNING
+   LazyList inherently needs the seal - the honest fix changes serialize to
+   return (Stream[Data] over Credit)^ (or write to an Intake), which changes
+   coaxial Transmissible + scintillate/servlet/cordillera Body.stream callers,
+   and removes the Body.Streaming(LazyList) arm. Possibly worth Jon input on
+   the Transmissible shape.
+2. Multipart.parse cursor conversion (drops the interim memoize in
+   scintillate.Acceptable) - part of the Streamable tail.
+3. Source2.streamableData/Text + Sink2.writableData/Text transitional givens:
+   delete once modules summon native instances (the 44-file Streamable tail).
+4. Delete both `lazyList` defs in turbulence_core + bridge tests
+   (turbulence_test:538 + "Streamable instance is a Source through the bridge").
+Then dual gates: make attest (3.9) + 3.10 clean gate.
+
+## Jon's design decisions for the wire-form finale (2026-07-11)
+
+Verbatim intent: the websocket Channel SHOULD be Conduit-backed, and
+Transmissible.serialize SHOULD return a `Stream^`. "Coaxial's design should be
+adapted to take full advantage of our new mutable streams and separation
+checking." Execution order (bottom-up, compiling commits): coaxial
+Transmissible/transmit layer -> Http wire form (serialize/Response/Body) ->
+perihelion Channel -> scintillate/servlet/cordillera knock-ons -> delete
+lazyList defs + Source2/Sink2 + bridge tests -> dual gates.
+
+## Coaxial kernel-stream redesign executed (2026-07-11, commits c7c25a1903..4f22574f93)
+
+Jon's decisions delivered: Transmissible.serialize returns `(Stream[Data] over
+Credit)^` (one call = one message's wire form; framed transports memoize to one
+unit — UDP datagram, WS frame — byte transports foreachWindow zero-copy);
+Duplex.send takes a kernel stream; Http wire form kernel-native (Request
+probe-one-block for Content-Length vs chunked, empty chunks RETRIED never
+framed; Response framed via chunk iterators; Body.Streaming arm DELETED —
+Flowing(Spring) is the only streaming arm; Body.stream mints a kernel stream);
+websocket Channel is Conduit-backed (bounded => real backpressure; enqueue is
+synchronized multi-producer and FLUSHES per frame — the conduit otherwise
+buffers a block and interactive protocols deadlock; found via jcmd thread-dump);
+Reader.messages defers cursor construction (stream-backed Cursor refills
+EAGERLY at <init> — blocks on live sockets before the 101 goes out; the
+documented cursor-eager-refill gotcha). Stream.apply(iterator) now takes
+`Iterator[medium]^` returning `^{iterator, caps.any}` (iterator-backed streams
+retain their iterator's captures). Response keeps a PURE `body: Body` field —
+a Body^ field cascades ^ through copy/updateDynamic/read(this); the one
+capturing constructor (Response.parse's cursor spring) is sealed with the
+single-owner justification. BRIDGES DELETED: both lazyList views + Source2/
+Sink2; native Source instances added for hellenism Resource + classpath Path,
+Http.Response (raises HttpError on non-2xx), zeppelin Entry/Zipfile,
+hallucination Raster; generic Streamable read-sites route via stream[Data] +
+the native LazyList Source. Receivable/successBody still LazyList-shaped via
+memoize — the remaining Streamable-tail (with Multipart cursor parsing and
+Duplex.stream receive side) is follow-up work, not bridge-blocking.
+
+## DUAL GATES GREEN (2026-07-11, @635fdc5546)
+
+attest (3.9 row): 7905 passed / 0 failed; attestation note pushed
+(refs/notes/ci-attestation @b2811a90f3). 3.10 row: clean-gate compile in
+cc-review (mill clean first — zinc false-greens bit three times today), 10457
+tasks green, only the benign aggregate finalMainClass non-task. Attest caught
+what per-module AND batched clean sweeps missed (monotonous read-only params,
+xylophone/graffiti Document reads, cacophony/gesticulate missing native Source,
+embarcadero duplex fixture) — per-module clean compile loops are the only
+locally trustworthy approximation, and even they missed embarcadero once.
+escritoire.test is pre-existing broken on main and outside the attest suite.
+PR next: title/body awaiting Jon.

@@ -70,7 +70,7 @@ private def buildJavaRequest
   ( uri:         jn.URI,
     method:      Http.Method,
     textHeaders: List[Http.Header],
-    bodyFn:      () => Stream[Data] over Credit )
+    bodyFn:      Spring[Data] )
 :   jnh.HttpRequest =
 
   val request: jnh.HttpRequest.Builder = jnh.HttpRequest.newBuilder().nn.uri(uri).nn
@@ -79,7 +79,7 @@ private def buildJavaRequest
   // JDK may re-subscribe on retry), draining it lazily through an
   // `InputStream` so the body is never held whole in memory.
   lazy val body =
-    jnh.HttpRequest.BodyPublishers.ofInputStream { () => bodyFn().lazyList.inputStream }.nn
+    jnh.HttpRequest.BodyPublishers.ofInputStream { () => bodyFn().inputStream }.nn
 
   method match
     case Http.Delete  => request.DELETE().nn
@@ -146,7 +146,7 @@ package httpBackends:
       ( url:     Text,
         method:  Http.Method,
         headers: List[Http.Header],
-        body:    () => Stream[Data] over Credit )
+        body:    Spring[Data] )
       ( using Tactic[ConnectError] )
     :   Http.Response =
 

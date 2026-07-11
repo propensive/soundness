@@ -32,32 +32,34 @@
                                                                                                   */
 package soundness
 
+import language.experimental.separationChecking
+
 export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum, Duct, Ductile, Pace,
     Format, Formatting, Intake, Lineation, ParseError, PositionTracking, Producer, Positionable,
-    Regulation, Stream, Substrate, flowTo, locate, locateKey}
+    Regulation, Spring, Stream, Substrate, flowTo, foreachWindow, locate, locateKey, memoize}
 
 // Hand-written forwarders: the synthesized export forwarders for these dependent-typed
 // extensions lose the `ductile.Result`/`ductile.Operand` path refinements under capture
 // checking and fail to retypecheck.
-extension [in, transport](stream: Stream[in] over transport)
-  def through[stage](stage: stage)
+extension [in, transport](consume stream: (Stream[in] over transport)^)
+  def through[stage](consume stage: stage^)
     ( using ductile: (stage is Ductile by in) { type Upstream = transport },
             buffering: Buffering )
-  :   Stream[ductile.Result] over ductile.Transport =
+  :   (Stream[ductile.Result] over ductile.Transport)^ =
     // The call's dependent result widens to a `Ductile{...}#Result` projection rather than
     // narrowing back to this forwarder's `ductile.Result`; the value is returned unchanged,
     // so the cast only restores the dependent typing the export forwarder would have lost.
     zephyrine.through[in, transport](stream)[stage](stage)(using ductile, buffering)
-    . asInstanceOf[Stream[ductile.Result] over ductile.Transport]
+    . asInstanceOf[(Stream[ductile.Result] over ductile.Transport)^]
 
-extension [out, transport](intake: Intake[out] over transport)
-  def accepting[stage](stage: stage)
+extension [out, transport](consume intake: (Intake[out] over transport)^)
+  def accepting[stage](consume stage: stage^)
     ( using ductile: (stage is Ductile to out) { type Transport = transport },
             buffering: Buffering )
-  :   Intake[ductile.Operand] over ductile.Upstream =
+  :   (Intake[ductile.Operand] over ductile.Upstream)^ =
     // See `through` above.
     zephyrine.accepting[out, transport](intake)[stage](stage)(using ductile, buffering)
-    . asInstanceOf[Intake[ductile.Operand] over ductile.Upstream]
+    . asInstanceOf[(Intake[ductile.Operand] over ductile.Upstream)^]
 
 package parsing:
   export zephyrine.parsing.trackPositions

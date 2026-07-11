@@ -301,7 +301,7 @@ object internal:
                                     Mcp.TextResourceContents
                                       ( $uri,
                                         mimeType = t"text/html;profile=mcp-app", // FIXME
-                                        text = $value.read[Text] )
+                                        text = $value.stream[Text].read[Text] )
                                 }
 
                             case None => Expr.summon[result is Streamable by Data] match
@@ -312,7 +312,7 @@ object internal:
 
                                     Mcp.Contents:
                                       Mcp.BlobResourceContents
-                                        ( $uri, Unset, blob = $value.read[Data].serialize[Base64] )
+                                        ( $uri, Unset, blob = $value.stream[Data].read[Data].serialize[Base64] )
                                   }
 
                               case None => halt:

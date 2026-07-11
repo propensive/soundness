@@ -82,4 +82,4 @@ object PseudoHeaders:
     val status: Http.Status =
       Http.Status.unapply(code).optional.lest(Http2Error(Reason.Protocol(t"missing :status")))
 
-    status(headers.to(List), Http.Body.Streaming(body))
+    status(headers.to(List), Http.Body.Flowing(() => zephyrine.Stream(body.iterator)))

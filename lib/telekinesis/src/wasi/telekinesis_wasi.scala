@@ -70,7 +70,7 @@ package httpBackends:
       ( url:     Text,
         method:  Http.Method,
         headers: List[Http.Header],
-        body:    () => Stream[Data] over Credit )
+        body:    Spring[Data] )
       ( using Tactic[ConnectError] )
     :   Http.Response =
 
@@ -116,7 +116,7 @@ package httpBackends:
 
       // A method that carries a payload streams it through the request's `outgoing-body`, which
       // must then be `finish`ed (a static function) for the request to be complete.
-      val payload: LazyList[Data] = if method.payload then body().lazyList else LazyList()
+      val payload: Data = if method.payload then body().memoize else IArray.empty[Byte]
 
       val bodyHandles =
         if payload.isEmpty then Unset else
@@ -136,8 +136,7 @@ package httpBackends:
       bodyHandles.let: (bodyHandle, writeHandle) =>
         val outStream: Foreign of "output-stream" from Wit = writeHandle
 
-        payload.each: chunk =>
-          outStream.`blocking-write-and-flush`(chunk).invoke[Unit]
+        outStream.`blocking-write-and-flush`(payload).invoke[Unit]
 
         writeHandle.dispose()
 

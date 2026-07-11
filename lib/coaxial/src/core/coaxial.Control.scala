@@ -34,6 +34,7 @@ package coaxial
 
 import anticipation.*
 import vacuous.*
+import zephyrine.*
 
 object Control:
   sealed trait Interactive
@@ -43,7 +44,7 @@ object Control:
       ( message: transmissible, state: Optional[state] = Unset )
     :   Conclude[state] =
 
-      Conclude(transmissible.serialize(message).foldLeft(Data())(_ ++ _), state)
+      Conclude(transmissible.serialize(message).memoize, state)
 
   case object Terminate extends Control[Nothing]
 
@@ -54,7 +55,7 @@ object Control:
       ( message: transmissible, state: Optional[state] = Unset )
     :   Reply[state] =
 
-      Reply(transmissible.serialize(message).foldLeft(Data())(_ ++ _), state)
+      Reply(transmissible.serialize(message).memoize, state)
 
   case class Conclude[+state](message: Data, state: Optional[state]) extends Control[state]
 

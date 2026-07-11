@@ -800,12 +800,12 @@ object Json extends Json2, Dynamic:
       val (raw, ints) = Parser.parseTracked(input, mode)
       (Json.Ast(raw), Json.PositionIndex(ints))
 
-    private[jacinta] def parse(input: Stream[Data] over Credit)(using mode: NumberMode)
+    private[jacinta] def parse(input: (Stream[Data] over Credit)^)(using mode: NumberMode)
     :   Json.Ast raises ParseError =
 
       Json.Ast(Parser.parse(input, mode))
 
-    private[jacinta] def parseTracked(input: Stream[Data] over Credit)(using mode: NumberMode)
+    private[jacinta] def parseTracked(input: (Stream[Data] over Credit)^)(using mode: NumberMode)
     :   (Json.Ast, Json.PositionIndex) raises ParseError =
 
       val (raw, ints) = Parser.parseTracked(input, mode)
@@ -848,7 +848,7 @@ object Json extends Json2, Dynamic:
 
   // As above, but pulling from a demand-aware stream rather than a chunk
   // iterator.
-  private def readJson(input: Stream[Data] over Credit)
+  private def readJson(input: (Stream[Data] over Credit)^)
     ( using Tactic[ParseError], PositionTracking )
   :   Json =
 
@@ -1233,7 +1233,7 @@ object Json extends Json2, Dynamic:
         type Operand = Data
 
         def aggregate(bytes: LazyList[Data]): Json = readJson(bytes.iterator)
-        override def accept(stream: Stream[Data] over Credit): Json = readJson(stream)
+        override def accept(stream: (Stream[Data] over Credit)^): Json = readJson(stream)
 
 
   // Sealed like `aggregable` above.
@@ -1249,7 +1249,7 @@ object Json extends Json2, Dynamic:
         def aggregate(bytes: LazyList[Data]): value in Json =
           readJson(bytes.iterator).as[value].asInstanceOf[value in Json]
 
-        override def accept(stream: Stream[Data] over Credit): value in Json =
+        override def accept(stream: (Stream[Data] over Credit)^): value in Json =
           readJson(stream).as[value].asInstanceOf[value in Json]
 
 

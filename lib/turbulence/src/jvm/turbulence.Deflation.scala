@@ -67,7 +67,7 @@ extends Duct[Data, Data]:
   // The gzip header (10 bytes) must fit in one step's output space.
   override def quantum: Int = if gzip then 10 else 1
 
-  private def header(target: Array[Byte], offset: Int): Unit =
+  private update def header(target: Array[Byte], offset: Int): Unit =
     target(offset) = 0x1f
     target(offset + 1) = 0x8b.toByte
     target(offset + 2) = 8
@@ -76,7 +76,7 @@ extends Duct[Data, Data]:
 
     target(offset + 9) = -1
 
-  def step
+  update def step
     ( source: input.Storage,
       sourceOffset: Int,
       sourceLength: Int,
@@ -112,7 +112,7 @@ extends Duct[Data, Data]:
 
     Duct.Progress(consumed, produced)
 
-  override def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
+  override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
     val out = target.asInstanceOf[Array[Byte]]
     var produced: Int = 0
 
@@ -173,7 +173,7 @@ extends Duct[Data, Data]:
   def translate(demand: Credit): Credit = demand
 
   // Consume one header byte, returning the successor state.
-  private def advance(byte: Int, position: Int): Header = header match
+  private update def advance(byte: Int, position: Int): Header = header match
     case Header.Fixed(remaining) =>
       if position == 3 then flags = byte
 
@@ -206,21 +206,21 @@ extends Duct[Data, Data]:
     case Header.Done =>
       Header.Done
 
-  private def afterExtra: Header =
+  private update def afterExtra: Header =
     if (flags & 8) != 0 then Header.Name
     else if (flags & 16) != 0 then Header.Comment
     else if (flags & 2) != 0 then Header.Checksum(2)
     else Header.Done
 
-  private def afterName: Header =
+  private update def afterName: Header =
     if (flags & 16) != 0 then Header.Comment
     else if (flags & 2) != 0 then Header.Checksum(2)
     else Header.Done
 
-  private def afterComment: Header =
+  private update def afterComment: Header =
     if (flags & 2) != 0 then Header.Checksum(2) else Header.Done
 
-  def step
+  update def step
     ( source: input.Storage,
       sourceOffset: Int,
       sourceLength: Int,

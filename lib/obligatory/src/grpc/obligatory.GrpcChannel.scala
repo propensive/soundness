@@ -84,7 +84,7 @@ class GrpcChannel
         Http.Header(t"te", t"trailers") ::
         metadataHeaders
 
-    val body = () => Stream(GrpcFraming.encode(message))
+    val body: Spring[Data] = () => Stream(GrpcFraming.encode(message))
     Http.Request(Http.Post, 2.0, host, method.path, headers, body)
 
   // gRPC requires HTTP status 200; anything else is a transport-level failure.

@@ -59,9 +59,9 @@ object Duplex:
 
       recur()
 
-    def send(data: LazyList[Data]): Unit =
-      data.each: bytes =>
-        out.write(bytes.mutable(using Unsafe))
+    def send(data: (Stream[Data] over Credit)^): Unit =
+      data.foreachWindow: (storage, start, count) =>
+        out.write(storage.asInstanceOf[Array[Byte]], start, count)
         out.flush()
 
     def close(): Unit = shutdown()
@@ -86,9 +86,9 @@ object Duplex:
 
       recur()
 
-    def send(data: LazyList[Data]): Unit =
-      data.each: bytes =>
-        val out = ByteBuffer.wrap(bytes.mutable(using Unsafe)).nn
+    def send(data: (Stream[Data] over Credit)^): Unit =
+      data.foreachWindow: (storage, start, count) =>
+        val out = ByteBuffer.wrap(storage.asInstanceOf[Array[Byte]], start, count).nn
         while out.hasRemaining do socketChannel.write(out)
 
     def close(): Unit = socketChannel.close()
@@ -107,9 +107,9 @@ object Duplex:
         protected def window0: AnyRef = storage
         def start: Int = start0
         def limit: Int = limit0
-        def skip(count: Int): Unit = start0 += count
+        update def skip(count: Int): Unit = start0 += count
 
-        def refill(demand: Credit): Optional[Int] =
+        update def refill(demand: Credit): Optional[Int] =
           if limit0 > start0 then limit0 - start0
           else if ended then Unset
           else
@@ -141,7 +141,7 @@ object Duplex:
 // closes; `send` may be called many times and never half-closes the connection.
 trait Duplex:
   def stream: LazyList[Data]
-  def send(data: LazyList[Data]): Unit
+  def send(data: (Stream[Data] over Credit)^): Unit
   def close(): Unit
 
   // Pull endpoint over the read side. The default adapts the legacy
@@ -163,21 +163,21 @@ trait Duplex:
       protected def buffer0: AnyRef = storage
       def mark: Int = mark0
 
-      def reserve(min: Int): Int =
+      update def reserve(min: Int): Int =
         val free = block - mark0
 
         if free >= min then free else
           drain()
           block
 
-      def commit(count: Int): Unit =
+      update def commit(count: Int): Unit =
         mark0 += count
         if mark0 == block then drain()
 
-      override def flush(): Unit = drain()
-      def finish(): Unit = drain()
+      override update def flush(): Unit = drain()
+      update def finish(): Unit = drain()
 
-      private def drain(): Unit =
+      private update def drain(): Unit =
         if mark0 > 0 then
-          send(LazyList(storage.slice(0, mark0).nn.immutable(using Unsafe)))
+          send(Stream(storage.slice(0, mark0).nn.immutable(using Unsafe)))
           mark0 = 0

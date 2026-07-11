@@ -42,11 +42,12 @@ import quantitative.*
 import rudiments.*
 import symbolism.*
 import turbulence.*
+import zephyrine.Credit
 import vacuous.*
 
 object Audio:
   def apply[streamable: Streamable by Data](input: streamable): Audio raises AudioError =
-    val rawBytes: Array[Byte] = input.read[Data].javaInputStream.readAllBytes.nn
+    val rawBytes: Array[Byte] = input.stream[Data].read[Data].javaInputStream.readAllBytes.nn
 
     val raw: jss.AudioInputStream =
       try jss.AudioSystem.getAudioInputStream(ji.ByteArrayInputStream(rawBytes)).nn
@@ -106,11 +107,20 @@ object Audio:
   given streamable: [form: Audible] => (Audio in form) is Streamable by Data = audio =>
     writeAudio(audio, form.name)
 
+  given source: [form: Audible]
+  =>  (Audio in form) is Source by Data over Credit =
+    audio => zephyrine.Stream(writeAudio(audio, form.name).iterator)
+
 
   given streamableAcross: [form: Audible, layout]
   =>  (Audio in form across layout) is Streamable by Data =
 
     audio => writeAudio(audio, form.name)
+
+  given sourceAcross: [form: Audible, layout]
+  =>  (Audio in form across layout) is Source by Data over Credit =
+
+    audio => zephyrine.Stream(writeAudio(audio, form.name).iterator)
 
 
   given abstractable: [format: Audible] => (Audio in format) is Abstractable:
@@ -118,7 +128,7 @@ object Audio:
     type Result = HttpStreams.Content
 
     def genericize(audio: Audio in format): HttpStreams.Content =
-      (format.mediaType.basic, HttpStreams.Body(audio.read[LazyList[Data]].iterator))
+      (format.mediaType.basic, HttpStreams.Body(audio.stream[Data].iterator))
 
   given aggregable: [format: Audible as audible] => (tactic: Tactic[AudioError])
   =>  (((Audio in format) is Aggregable by Data)^{tactic}) =

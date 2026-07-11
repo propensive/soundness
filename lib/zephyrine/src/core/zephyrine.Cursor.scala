@@ -154,7 +154,7 @@ object Cursor:
   // memory stays bounded through a parse of an arbitrarily large input. The window is
   // read and skipped within the fill, before the stream can refill again — the borrow
   // discipline `Stream.window` documents, applied at the one place a cursor touches it.
-  def apply[data](stream: Stream[data] over Credit)
+  def apply[data](consume stream: (Stream[data] over Credit)^)
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand,
             buffering:    Buffering )
@@ -170,16 +170,25 @@ object Cursor:
         DefaultCapacity,
         addressable0,
         lineation0,
-        new Filler[addressable0.Storage]:
-          val block: Int = buffering.capacity(addressable0.substrate)
+        // Sealed like the loader: the filler captures the adopted stream (consumed by
+        // this factory — sole ownership), and Cursor's Unscoped classification cannot
+        // hold a non-Unscoped capture.
+        locally:
+          val filler = new Filler[addressable0.Storage]:
+            val block: Int = buffering.capacity(addressable0.substrate)
 
-          def fill(storage: addressable0.Storage, offset: Int, space: Int): Int =
-            stream.refill(Credit(space.min(block))).lay(-1): count =>
-              val copied = count.min(space)
-              val window = stream.window(using Unsafe).asInstanceOf[addressable0.Storage]
-              addressable0.transfer(window, stream.start, storage, offset, copied)
-              stream.skip(copied)
-              copied )
+            def fill(storage: addressable0.Storage, offset: Int, space: Int): Int =
+              stream.refill(Credit(space.min(block))).lay(-1): count =>
+                val copied = count.min(space)
+                val window = stream.window(using Unsafe).asInstanceOf[addressable0.Storage]
+                addressable0.transfer(window, stream.start, storage, offset, copied)
+                stream.skip(copied)
+                copied
+
+          // Sealed like the loader: the filler captures the adopted stream (consumed by
+          // this factory — sole ownership), and Cursor's Unscoped classification cannot
+          // hold a non-Unscoped capture.
+          caps.unsafe.unsafeAssumePure(filler) )
 
     cursor
 

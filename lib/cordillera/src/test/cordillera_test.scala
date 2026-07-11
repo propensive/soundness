@@ -225,7 +225,8 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
 
         def duplex(inbound: Spool[Data], outbound: Spool[Data]) = new Duplex:
           def stream: LazyList[Data] = inbound.stream
-          def send(data: LazyList[Data]): Unit = data.each(outbound.put)
+          def send(data: (zephyrine.Stream[Data] over Credit)^): Unit =
+            outbound.put(data.memoize)
           def close(): Unit = outbound.stop()
 
         (duplex(serverToClient, clientToServer), duplex(clientToServer, serverToClient))
@@ -237,7 +238,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
       // trailer. Returned as a Daemon so the caller can cancel it.
       def runServer(serverSide: Duplex)(using Monitor, Probate): Daemon = daemon:
         safely:
-          serverSide.send(LazyList(Frame.Settings(Nil, ack = false).serialize))
+          serverSide.send(zephyrine.Stream(Frame.Settings(Nil, ack = false).serialize))
 
           // Skip the 24-byte client connection preface before frame-parsing.
           val raw = serverSide.stream.iterator
@@ -256,16 +257,16 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
             case Unset        => continue = false
             case f: Frame     => f match
               case Frame.Settings(_, false) =>
-                serverSide.send(LazyList(Frame.Settings(Nil, ack = true).serialize))
+                serverSide.send(zephyrine.Stream(Frame.Settings(Nil, ack = true).serialize))
 
               case Frame.Headers(id, _, _, _) =>
                 val respHeaders = hpack.encode(List(HpackEntry(t":status", t"200"),
                     HpackEntry(t"content-type", t"application/grpc")))
 
                 val trailers = hpack.encode(List(HpackEntry(t"grpc-status", t"0")))
-                serverSide.send(LazyList(Frame.Headers(id, respHeaders, false, true).serialize))
-                serverSide.send(LazyList(Frame.Data(id, ascii(t"pong"), false).serialize))
-                serverSide.send(LazyList(Frame.Headers(id, trailers, true, true).serialize))
+                serverSide.send(zephyrine.Stream(Frame.Headers(id, respHeaders, false, true).serialize))
+                serverSide.send(zephyrine.Stream(Frame.Data(id, ascii(t"pong"), false).serialize))
+                serverSide.send(zephyrine.Stream(Frame.Headers(id, trailers, true, true).serialize))
 
               case _ => ()
 
@@ -280,7 +281,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
               t"/echo.Service/Call", Nil, () => Stream(ascii(t"ping")))
 
           val (stream, response) = connection.fetch(request, t"http", t"unix")
-          val bodyText = ascii(t"pong").to(List) == response.body.stream.reduce(_ ++ _).to(List)
+          val bodyText = ascii(t"pong").to(List) == response.body.stream.memoize.to(List)
           val statusCode = response.status.code
           val grpcStatus = stream.trailers.await().find(_.name == t"grpc-status").map(_.value)
           server.cancel()

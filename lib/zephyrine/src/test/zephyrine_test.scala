@@ -637,29 +637,29 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == List[Byte](1, 2, 99))
 
         test(m"conduit transfers data across threads"):
-          val conduit = Conduit[Data]()
+          val (intake, stream) = Conduit[Data]()
           val gather = Gather()
-          val task = async(conduit.stream.flowTo(gather))
-          conduit.put(bytes)
-          conduit.finish()
+          val task = async(stream.flowTo(gather))
+          intake.put(bytes)
+          intake.finish()
           unsafely(task.await())
           gather.data.to(List)
         . assert(_ == bytes.to(List))
 
         test(m"conduit demand reflects buffered data"):
-          val conduit = Conduit[Data]()
-          val before = conduit.demand.count
-          conduit.put(IArray[Byte](1, 2, 3))
-          val after = conduit.demand.count
+          val (intake, stream) = Conduit[Data]()
+          val before = intake.demand.count
+          intake.put(IArray[Byte](1, 2, 3))
+          val after = intake.demand.count
           before - after
         . assert(_ == 3L)
 
         test(m"conduit rethrows producer failure at the reader"):
-          val conduit = Conduit[Data]()
-          conduit.fail(RuntimeException("boom"))
+          val (intake, stream) = Conduit[Data]()
+          intake.fail(RuntimeException("boom"))
 
           try
-            conduit.stream.refill(Credit(1))
+            stream.refill(Credit(1))
             false
           catch case _: RuntimeException => true
         . assert(identity)
@@ -764,6 +764,33 @@ object Tests extends Suite(m"Zephyrine tests"):
             regulation.measured(Pace.Measured) )
         . assert(_ == ((0, true, true)))
 
+        test(m"foreachWindow visits every element in order across chunks"):
+          var collected: List[Byte] = Nil
+
+          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](), IArray[Byte](4, 5)))
+          . foreachWindow: (storage, start, count) =>
+              val bytes = storage.asInstanceOf[Array[Byte]]
+              for index <- 0 until count do collected = bytes(start + index) :: collected
+
+          collected.reverse
+        . assert(_ == List[Byte](1, 2, 3, 4, 5))
+
+        test(m"memoize drains a byte stream into a single immutable value"):
+          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](4, 5))).memoize.to(List)
+        . assert(_ == List[Byte](1, 2, 3, 4, 5))
+
+        test(m"memoize of an empty stream yields an empty value"):
+          Stream(Iterator.empty[Data]).memoize.to(List)
+        . assert(_ == List())
+
+        test(m"memoize reassembles a transformed pipeline"):
+          Stream(small).through(Doubler()).memoize.to(List)
+        . assert(_ == small.to(List).flatMap { byte => List(byte, byte) })
+
+        test(m"memoize drains a text stream into a single text value"):
+          Stream(Iterator(t"ab", t"cd", t"e")).memoize.s
+        . assert(_ == "abcde")
+
 
   // A byte intake that gathers everything written to it, with a configurable
   // reported demand, for asserting demand translation.
@@ -780,24 +807,24 @@ object Tests extends Suite(m"Zephyrine tests"):
     protected def buffer0: AnyRef = storage.asInstanceOf[AnyRef]
     def mark: Int = mark1
 
-    def reserve(min: Int): Int =
+    update def reserve(min: Int): Int =
       val free = block - mark1
 
       if free >= min then free else
         drain()
         block
 
-    def commit(count: Int): Unit =
+    update def commit(count: Int): Unit =
       mark1 += count
       if mark1 == block then drain()
 
-    def finish(): Unit = drain()
+    update def finish(): Unit = drain()
 
-    def data: Data =
+    update def data: Data =
       drain()
       addressable.build(target)
 
-    private def drain(): Unit =
+    private update def drain(): Unit =
       if mark1 > 0 then
         addressable.cloneStorage(storage, 0, mark1)(target)
         mark1 = 0
@@ -849,7 +876,7 @@ object Tests extends Suite(m"Zephyrine tests"):
     def regulation: Credit is Regulation = summon[Credit is Regulation]
     def translate(demand: Credit): Credit = demand
 
-    def step
+    update def step
       ( source: input.Storage,
         sourceOffset: Int,
         sourceLength: Int,
@@ -863,23 +890,32 @@ object Tests extends Suite(m"Zephyrine tests"):
 
       Duct.Progress(count, count)
 
-    override def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
+    override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int): Int =
       if emitted then 0 else
         emitted = true
         output.storageUpdate(target, targetOffset, 99.toByte.asInstanceOf[output.Operand])
         1
 
   // Passes refills through unchanged, recording each demand it receives.
-  class Recorder(underlying: Stream[Data] over Credit) extends Stream[Data]:
+  class Recorder(consume underlying0: (Stream[Data] over Credit)^) extends Stream[Data]:
     type Transport = Credit
+
+    // The adopted stream is held through a neutral carrier: Stream is deliberately not
+    // Unscoped, so an exclusive field would be read-only; the accessor re-asserts the
+    // ownership this wrapper took at construction.
+    private val held: AnyRef = underlying0.asInstanceOf[AnyRef]
+    private def underlying: (Stream[Data] over Credit)^ =
+      held.asInstanceOf[(Stream[Data] over Credit)^]
 
     var demands: List[Long] = Nil
 
-    def refill(demand: Credit): Optional[Int] =
+    update def refill(demand: Credit): Optional[Int] =
       demands ::= demand.count
       underlying.refill(demand)
 
-    protected def window0: AnyRef = unsafely(underlying.window).asInstanceOf[AnyRef]
+    protected def window0: AnyRef =
+      val current = underlying
+      unsafely(current.window).asInstanceOf[AnyRef]
     def start: Int = underlying.start
     def limit: Int = underlying.limit
-    def skip(count: Int): Unit = underlying.skip(count)
+    update def skip(count: Int): Unit = underlying.skip(count)

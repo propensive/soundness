@@ -103,7 +103,7 @@ object Sheet:
         type Operand = Text
 
         def aggregate(text: LazyList[Text]): Sheet = sheet(parse(text))
-        override def accept(stream: Stream[Text] over Credit): Sheet = sheet(parse(stream))
+        override def accept(stream: (Stream[Text] over Credit)^): Sheet = sheet(parse(stream))
 
         private def sheet(rows: LazyList[Dsv]): Sheet =
           if format.header then Sheet(rows, format, rows.prim.let(_.header))
@@ -131,7 +131,7 @@ object Sheet:
 
 
   // Parse rows from a pull endpoint, one block-credit refill per chunk.
-  private def parse(stream: Stream[Text] over Credit)
+  private def parse(consume stream: (Stream[Text] over Credit)^)
     ( using format: DsvFormat, tactic: Tactic[DsvError], buffering: Buffering )
   :   LazyList[Dsv] =
 

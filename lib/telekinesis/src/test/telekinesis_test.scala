@@ -117,7 +117,7 @@ object Tests extends Suite(m"Telekinesis tests"):
         go(0)
 
       def bodyText(response: Http.Response): Text =
-        response.body.stream.read[Data].utf8
+        response.body.stream.memoize.utf8
 
       val blockSizes = List(1, 2, 3, 7, 13, 4096)
 
@@ -302,7 +302,7 @@ object Tests extends Suite(m"Telekinesis tests"):
             data.slice(offset, end) #:: go(end)
         go(0)
 
-      def bodyText(request: Http.Request^): Text = request.body().lazyList.read[Data].utf8
+      def bodyText(request: Http.Request^): Text = request.body().memoize.utf8
 
       val blockSizes = List(1, 2, 3, 7, 13, 4096)
       val fixture = t"GET /path?q=1 HTTP/1.1\r\nHost: example.com\r\nX-Foo: bar\r\n\r\nbody"
@@ -427,10 +427,10 @@ object Tests extends Suite(m"Telekinesis tests"):
             data.slice(offset, end) #:: go(end)
         go(0)
 
-      def bodyText(response: Http.Response): Text = response.body.stream.read[Data].utf8
+      def bodyText(response: Http.Response): Text = response.body.stream.memoize.utf8
 
       def wire(response: Http.Response, includeBody: Boolean = true): Text =
-        Http.Response.serialize(response, includeBody).read[Data].utf8
+        Http.Response.serialize(response, includeBody).memoize.utf8
 
       val blockSizes = List(1, 2, 3, 7, 13, 4096)
 
@@ -458,7 +458,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       . assert(_ == true)
 
       test(m"Streaming body is framed with chunked transfer-encoding"):
-        val body = Http.Body.Streaming(LazyList(t"Hello".data, t"World".data))
+        val body = Http.Body.Flowing(() => Stream(LazyList(t"Hello".data, t"World".data).iterator))
         wire(Http.Response(Http.Ok)(body))
 
       . assert: text =>
@@ -468,7 +468,7 @@ object Tests extends Suite(m"Telekinesis tests"):
           && text.ends(t"0\r\n\r\n")
 
       test(m"Streaming body skips zero-length blocks"):
-        val body = Http.Body.Streaming(LazyList(t"ab".data, t"".data, t"cd".data))
+        val body = Http.Body.Flowing(() => Stream(LazyList(t"ab".data, t"".data, t"cd".data).iterator))
         wire(Http.Response(Http.Ok)(body))
 
       . assert(_.contains(t"2\r\nab\r\n2\r\ncd\r\n"))

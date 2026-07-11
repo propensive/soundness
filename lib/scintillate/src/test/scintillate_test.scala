@@ -97,7 +97,7 @@ object Tests extends Suite(m"Scintillate tests"):
           val port = freePort()
 
           val server = SocketServer(port).handle:
-            Http.Response(Http.Ok)(request.body().lazyList.read[Data].utf8)
+            Http.Response(Http.Ok)(request.body().memoize.utf8)
 
           val response =
             rawRequest(port, t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 5\r\n\r\nhello")
@@ -111,7 +111,7 @@ object Tests extends Suite(m"Scintillate tests"):
           val port = freePort()
 
           val server = SocketServer(port).handle:
-            Http.Response(Http.Ok)(request.body().lazyList.read[Data].utf8)
+            Http.Response(Http.Ok)(request.body().memoize.utf8)
 
           val response =
             rawRequest
@@ -331,7 +331,7 @@ object Tests extends Suite(m"Scintillate tests"):
       . assert(_.contains(t"431"))
 
       test(m"A streaming response to HTTP/1.0 is close-delimited, not chunked"):
-        val body = Http.Body.Streaming(LazyList(t"Hello".data, t"World".data))
+        val body = Http.Body.Flowing(() => Stream(LazyList(t"Hello".data, t"World".data).iterator))
         inProcess(Http.Response(Http.Ok)(body), t"GET / HTTP/1.0\r\nHost: x\r\n\r\n")
 
       . assert: response =>

@@ -1028,7 +1028,11 @@ object Tel extends Tel2:
 
           case _ => ()
 
-        compound.children.each(emitBlock(_, indent + 1, sigil))
+        // indexed: the foreach lambda would capture the exclusive producer transitively
+        var childIndex = 0
+        while childIndex < compound.children.length do
+          emitBlock(compound.children(childIndex), indent + 1, sigil)
+          childIndex += 1
 
       def emitBlock(block: Tel.Block, indent: Int, sigil: Char): Unit =
         val pad = "  "*indent

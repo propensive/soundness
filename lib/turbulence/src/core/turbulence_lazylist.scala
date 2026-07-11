@@ -30,64 +30,44 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package cacophony
+package turbulence
+
+// LazyList streaming utilities: the transitional view layer over the lazy-list
+// representation. Deliberately NOT separation-checked — this unit predates the
+// capability kernel and is scheduled for removal with the LazyList bridges.
+
+import language.adhocExtensions
 
 import java.io as ji
-import javax.sound.sampled as jss
+import java.lang as jl
 
 import anticipation.*
 import contingency.*
-import gesticulate.*
+import denominative.*
+import hypotenuse.*
+import parasite.*
 import prepositional.*
 import rudiments.*
-import turbulence.*
+import symbolism.*
+import vacuous.*
+import zephyrine.*
 
-trait Audible extends Typeclass:
-  audible: Audible =>
-    def name: Text
-    def mediaType: MediaType
+import abstractables.instantAbstractable
+import probates.awaitProbate
 
-    def read[input: Streamable by Data](source: input): Audio in Self raises AudioError =
-      val rawBytes: Array[Byte] = source.stream[Data].read[Data].javaInputStream.readAllBytes.nn
+extension [element](stream: LazyList[element])
+  def rate
+    [ generic: {Abstractable across Durations to Long, Instantiable across Durations from Long} ]
+    ( duration: generic )
+    ( using Monitor )
+  :   LazyList[element] raises AsyncError =
 
-      val fileFormat: jss.AudioFileFormat =
-        try jss.AudioSystem.getAudioFileFormat(ji.ByteArrayInputStream(rawBytes)).nn
-        catch
-          case _: jss.UnsupportedAudioFileException => abort(AudioError(this))
-          case _: ji.IOException                    => abort(AudioError(this))
+    def recur(stream: LazyList[element], last: Long): LazyList[element] =
+      stream.flow(LazyList()):
+        val duration2 =
+          generic(duration.generic - (jl.System.currentTimeMillis - last)*1_000_000L)
 
-      if fileFormat.getType.nn.toString != name.s then abort(AudioError(this))
+        if duration2.generic > 0 then snooze(duration2)
+        stream
 
-      val raw: jss.AudioInputStream =
-        try jss.AudioSystem.getAudioInputStream(ji.ByteArrayInputStream(rawBytes)).nn
-        catch
-          case _: jss.UnsupportedAudioFileException => abort(AudioError(this))
-          case _: ji.IOException                    => abort(AudioError(this))
-
-      val encoding = raw.getFormat.nn.getEncoding.nn
-
-      val pcm: jss.AudioInputStream =
-        if encoding == jss.AudioFormat.Encoding.PCM_SIGNED ||
-          encoding == jss.AudioFormat.Encoding.PCM_UNSIGNED
-        then raw
-        else
-          val src = raw.getFormat.nn
-
-          val target =
-            jss.AudioFormat
-              ( jss.AudioFormat.Encoding.PCM_SIGNED,
-                src.getSampleRate,
-                16,
-                src.getChannels,
-                src.getChannels*2,
-                src.getSampleRate,
-                false )
-
-          try jss.AudioSystem.getAudioInputStream(target, raw).nn
-          catch case _: IllegalArgumentException => abort(AudioError(this))
-
-      val pcmBytes: Array[Byte] = pcm.readAllBytes.nn
-      val pcmFormat: jss.AudioFormat = pcm.getFormat.nn
-      pcm.close()
-
-      new Audio(pcmFormat, pcmBytes) { type Form = audible.Self }
+    async(recur(stream, jl.System.currentTimeMillis)).await()

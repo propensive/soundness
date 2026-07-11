@@ -156,7 +156,7 @@ object Protobuf extends Protobuf2:
       . or(origin)
 
   // Synchronously assemble wire bytes by running `lambda` against a `ProtobufPrinter`.
-  private def printed(lambda: ProtobufPrinter => Unit): Data =
+  private def printed(lambda: ProtobufPrinter^ => Unit): Data =
     Producer.collect[Data](): producer =>
       lambda(ProtobufPrinter(producer))
 

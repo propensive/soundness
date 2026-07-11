@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import language.experimental.separationChecking
+
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -49,7 +51,7 @@ object Stream:
   // A single-chunk in-memory stream. The chunk is copied into fresh storage
   // once, at construction, so the window can be exposed mutably.
   def apply[medium](value: medium)(using addressable0: medium is Addressable)
-  :   Stream[medium] over Credit =
+  :   (Stream[medium] over Credit)^ =
 
     new Stream[medium]:
       type Transport = Credit
@@ -63,9 +65,9 @@ object Stream:
       protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
-      def skip(count: Int): Unit = start0 += count
+      update def skip(count: Int): Unit = start0 += count
 
-      def refill(demand: Credit): Optional[Int] =
+      update def refill(demand: Credit): Optional[Int] =
         if limit0 > start0 then limit0 - start0 else
           if !loaded then
             addressable0.copyChunk(value, 0, storage, 0, size)
@@ -82,9 +84,11 @@ object Stream:
 
   // Adapts a chunk iterator (the legacy interoperation shape) into a stream.
   // Demand bounds only how much of each chunk is exposed per refill, not the
-  // iterator's own production, which is outside this stream's control.
-  def apply[medium](iterator: Iterator[medium])(using addressable0: medium is Addressable)
-  :   Stream[medium] over Credit =
+  // iterator's own production, which is outside this stream's control. The
+  // iterator may itself capture capabilities (e.g. pull from another
+  // endpoint), which the stream then retains alongside its own fresh state.
+  def apply[medium](iterator: Iterator[medium]^)(using addressable0: medium is Addressable)
+  :   (Stream[medium] over Credit)^{iterator, caps.any} =
 
     new Stream[medium]:
       type Transport = Credit
@@ -97,9 +101,9 @@ object Stream:
       protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
-      def skip(count: Int): Unit = start0 += count
+      update def skip(count: Int): Unit = start0 += count
 
-      def refill(demand: Credit): Optional[Int] =
+      update def refill(demand: Credit): Optional[Int] =
         if limit0 > start0 then limit0 - start0 else
           val granted = summon[Credit is Regulation].grant(demand)
 
@@ -124,7 +128,12 @@ object Stream:
 
             advance()
 
-trait Stream[medium](using val addressable: medium is Addressable):
+// A stream is a stateful capability: a bare `Stream` reference is read-only, and the
+// exclusive `Stream[...]^` that factories return is required to refill, skip or close.
+// `ExclusiveCapability, Stateful` rather than `Mutable`, so implementations may freely
+// capture their sources (iterators, queues, sockets), which are not Unscoped.
+trait Stream[medium](using val addressable: medium is Addressable)
+extends caps.ExclusiveCapability, caps.Stateful:
   type Transport
 
   // Ensure at least one element is readable (blocking if necessary),
@@ -132,7 +141,7 @@ trait Stream[medium](using val addressable: medium is Addressable):
   // readable elements, i.e. `limit - start`. Returns `0` only when `demand`
   // grants nothing; returns `Unset` at end-of-stream. If unconsumed elements
   // remain in the window, they are reported without producing more.
-  def refill(demand: Transport): Optional[Int]
+  update def refill(demand: Transport): Optional[Int]
 
   // Zero-copy view of this stream's buffer; elements `start until limit` are
   // readable. Valid only until the next `refill` or `close` — the same
@@ -148,7 +157,7 @@ trait Stream[medium](using val addressable: medium is Addressable):
   def limit: Int
 
   // Consume `count` elements of the window without materializing them.
-  def skip(count: Int): Unit
+  update def skip(count: Int): Unit
 
   // Release resources, propagating upstream through the whole chain.
-  def close(): Unit = ()
+  update def close(): Unit = ()

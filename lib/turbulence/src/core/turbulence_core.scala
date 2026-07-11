@@ -32,6 +32,8 @@
                                                                                                   */
 package turbulence
 
+import language.experimental.separationChecking
+
 import language.adhocExtensions
 
 import java.io as ji
@@ -77,50 +79,82 @@ extension [value: Streamable by Text](value: value)
   :   Document[result] =
     loadable.load(value.stream[Text])
 
-extension [medium, transport](stream: Stream[medium] over transport)
+extension [medium, transport](consume stream: (Stream[medium] over transport)^)
   // The detached pump: `flowTo` on its own parasite task, for fire-and-forget
   // transfers and genuinely concurrent pipeline halves. This is the "one
   // pumping thread" of a pipeline with an asynchronous boundary.
-  def flow(intake: Intake[medium] over transport)(using Monitor, Probate): Task[Unit] =
-    async(stream.flowTo(intake))
+  def flow(consume intake: (Intake[medium] over transport)^)(using Monitor, Probate): Task[Unit] =
+    // Both endpoints move onto the pump fiber as neutral carriers (a consume parameter
+    // cannot be consumed from inside the spawned closure); single ownership transfers
+    // with the spawn.
+    val streamRef: AnyRef = stream.asInstanceOf[AnyRef]
+    val intakeRef: AnyRef = intake.asInstanceOf[AnyRef]
 
-extension (stream: Stream[Data] over Credit)
+    async:
+      streamRef.asInstanceOf[(Stream[medium] over transport)^]
+      . flowTo(intakeRef.asInstanceOf[(Intake[medium] over transport)^])
+
+extension (consume stream: (Stream[Data] over Credit)^)
   def compress[format <: Compressor](using compression: format is Compression, buffering: Buffering)
-  :   Stream[Data] over Credit =
+  :   (Stream[Data] over Credit)^ =
 
     stream.through(compression.compressor())
 
   def decompress[format <: Compressor]
     ( using compression: format is Compression, buffering: Buffering )
-  :   Stream[Data] over Credit =
+  :   (Stream[Data] over Credit)^ =
 
     stream.through(compression.decompressor())
 
-extension [medium](stream: Stream[medium] over Credit)
-  // Legacy view: drain a pull endpoint as a lazy list of materialized chunks,
-  // pulling one block per forced cell. For consumers not yet converted to the
-  // streaming kernel; conversion holds only one block at a time, but the
-  // resulting cells are immutable and GC-managed like any lazy list.
-  def lazyList(using buffering: Buffering): LazyList[medium] =
-    val block = buffering.capacity(stream.addressable.substrate)
+extension (consume stream: (Stream[Data] over Credit)^)
+  // View a pull endpoint as a `java.io.InputStream` for handing to JDK APIs:
+  // each `read` pulls through the window (one block of credit at a time) and
+  // never materializes a chunk; `close` closes the endpoint. The kernel-native
+  // replacement for `lazyList.inputStream`.
+  def inputStream(using buffering: Buffering): ji.InputStream^ =
+    val block = buffering.capacity(Substrate.Bytes)
 
-    def recur(): LazyList[medium] =
-      stream.refill(Credit(block)) match
-        case Unset =>
-          LazyList()
+    new ji.InputStream:
+      // A JDK class cannot extend `Stateful`; the flag is this adapter's only state.
+      @caps.unsafe.untrackedCaptures
+      private var ended: Boolean = false
 
-        case count: Int =>
-          val window = stream.window(using Unsafe)
-          val chunk = stream.addressable.materialize(window, stream.start, count)
-          stream.skip(count)
-          chunk #:: recur()
+      // The count of bytes now readable in the window: refills (skipping
+      // zero-credit grants) until data arrives or the stream ends.
+      private def ensure(): Int =
+        if ended then -1 else stream.refill(Credit(block)) match
+          case count: Int => if count == 0 then ensure() else count
+          case _          =>
+            ended = true
+            stream.close()
+            -1
 
-    LazyList.defer(recur())
+      override def read(): Int =
+        val available = ensure()
 
-extension (stream: Stream[Data] over Credit)
+        if available < 0 then -1 else
+          val byte = stream.window(using Unsafe).asInstanceOf[Array[Byte]](stream.start) & 0xff
+          stream.skip(1)
+          byte
+
+      override def read(target: Array[Byte] | Null, offset: Int, length: Int): Int =
+        if length == 0 then 0 else
+          val available = ensure()
+
+          if available < 0 then -1 else
+            val take = available.min(length)
+            System.arraycopy(stream.window(using Unsafe), stream.start, target, offset, take)
+            stream.skip(take)
+            take
+
+      override def close(): Unit = if !ended then
+        ended = true
+        stream.close()
+
+extension (consume stream: (Stream[Data] over Credit)^)
   // Adapt a pull endpoint to the HTTP-body interchange protocol: each `next`
   // refills with `limit` credit and materializes the delivered window.
-  def httpBody: HttpStreams.Body = limit =>
+  def httpBody: HttpStreams.Body^ = limit =>
     stream.refill(Credit(limit)) match
       case count: Int =>
         val take = count.min(limit)
@@ -134,12 +168,12 @@ extension (stream: Stream[Data] over Credit)
 extension (body: HttpStreams.Body)
   // View an HTTP-body interchange value as a pull endpoint, one chunk per
   // block-sized request.
-  def stream(using buffering: Buffering): Stream[Data] over Credit =
+  def stream(using buffering: Buffering): (Stream[Data] over Credit)^ =
     new Stream[Data]:
       type Transport = Credit
 
       private val block: Int = buffering.capacity(Substrate.Bytes)
-      private var chunk: Data = IArray.empty[Byte]
+      private var chunk: Data = IArray.empty[Byte].asInstanceOf[Data]
       private var start0: Int = 0
       private var limit0: Int = 0
       private var ended: Boolean = false
@@ -148,9 +182,9 @@ extension (body: HttpStreams.Body)
       protected def window0: AnyRef = chunk.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
-      def skip(count: Int): Unit = start0 += count
+      update def skip(count: Int): Unit = start0 += count
 
-      def refill(demand: Credit): Optional[Int] =
+      update def refill(demand: Credit): Optional[Int] =
         if limit0 > start0 then limit0 - start0
         else if ended then Unset
         else
@@ -168,15 +202,6 @@ extension (body: HttpStreams.Body)
                 limit0 = data.length
                 if limit0 == 0 then refill(demand) else limit0
 
-  // Legacy view of an HTTP body as a lazy list of chunks.
-  def lazyList(using buffering: Buffering): LazyList[Data] =
-    val block = buffering.capacity(Substrate.Bytes)
-
-    def recur(): LazyList[Data] = body.next(block) match
-      case null       => LazyList()
-      case data: Data => data #:: recur()
-
-    LazyList.defer(recur())
 
 package stdios:
   given muteStdio: Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)
@@ -194,6 +219,35 @@ package stdios:
         ji.PrintStream(ji.FileOutputStream(ji.FileDescriptor.err)),
         ji.FileInputStream(ji.FileDescriptor.in),
         termcap )
+
+package lineSeparation:
+  given carriageReturnLineSeparation
+  :   LineSeparation(NewlineSeq.Cr, Action.Nl, Action.Skip, Action.Nl, Action.Nl)
+
+  given strictCarriageReturnLineSeparation
+  :   LineSeparation(NewlineSeq.Cr, Action.Nl, Action.Lf, Action.NlLf, Action.LfNl)
+
+  given linefeedLineSeparation
+  :   LineSeparation(NewlineSeq.Lf, Action.Skip, Action.Nl, Action.Nl, Action.Nl)
+
+  given strictLinefeedsLineSeparation
+  :   LineSeparation(NewlineSeq.Lf, Action.Nl, Action.Lf, Action.NlLf, Action.LfNl)
+
+  given carriageReturnLinefeedLineSeparation
+  :   LineSeparation(NewlineSeq.CrLf, Action.Skip, Action.Lf, Action.Nl, Action.LfNl)
+
+  given adaptiveLinefeedLineSeparation
+  :   LineSeparation(NewlineSeq.Lf, Action.Nl, Action.Nl, Action.Nl, Action.Nl)
+
+  given virtualMachineLineSeparation: LineSeparation = jl.System.lineSeparator.nn match
+    case "\r\n"    => carriageReturnLinefeedLineSeparation
+    case "\r"      => carriageReturnLineSeparation
+    case "\n"      => linefeedLineSeparation
+    case _: String => adaptiveLinefeedLineSeparation
+
+def spool[item](using erased void: Void)[result](lambda: Spool[item] => result): result =
+  val spool: Spool[item] = Spool()
+  try lambda(spool) finally spool.stop()
 
 extension [element](stream: LazyList[element])
   def deduplicate: LazyList[element] =
@@ -217,23 +271,6 @@ extension [element](stream: LazyList[element])
 
 
   def strict: LazyList[element] = stream.length yet stream
-
-  def rate
-    [ generic: {Abstractable across Durations to Long, Instantiable across Durations from Long} ]
-    ( duration: generic )
-    ( using Monitor )
-  :   LazyList[element] raises AsyncError =
-
-    def recur(stream: LazyList[element], last: Long): LazyList[element] =
-      stream.flow(LazyList()):
-        val duration2 =
-          generic(duration.generic - (jl.System.currentTimeMillis - last)*1_000_000L)
-
-        if duration2.generic > 0 then snooze(duration2)
-        stream
-
-    async(recur(stream, jl.System.currentTimeMillis)).await()
-
 
   def multiplex(that: LazyList[element])(using Monitor): LazyList[element] =
     LazyList.multiplex(stream, that)
@@ -306,36 +343,11 @@ extension [element](stream: LazyList[element])
 
     out.stream
 
-package lineSeparation:
-  given carriageReturnLineSeparation
-  :   LineSeparation(NewlineSeq.Cr, Action.Nl, Action.Skip, Action.Nl, Action.Nl)
-
-  given strictCarriageReturnLineSeparation
-  :   LineSeparation(NewlineSeq.Cr, Action.Nl, Action.Lf, Action.NlLf, Action.LfNl)
-
-  given linefeedLineSeparation
-  :   LineSeparation(NewlineSeq.Lf, Action.Skip, Action.Nl, Action.Nl, Action.Nl)
-
-  given strictLinefeedsLineSeparation
-  :   LineSeparation(NewlineSeq.Lf, Action.Nl, Action.Lf, Action.NlLf, Action.LfNl)
-
-  given carriageReturnLinefeedLineSeparation
-  :   LineSeparation(NewlineSeq.CrLf, Action.Skip, Action.Lf, Action.Nl, Action.LfNl)
-
-  given adaptiveLinefeedLineSeparation
-  :   LineSeparation(NewlineSeq.Lf, Action.Nl, Action.Nl, Action.Nl, Action.Nl)
-
-  given virtualMachineLineSeparation: LineSeparation = jl.System.lineSeparator.nn match
-    case "\r\n"    => carriageReturnLinefeedLineSeparation
-    case "\r"      => carriageReturnLineSeparation
-    case "\n"      => linefeedLineSeparation
-    case _: String => adaptiveLinefeedLineSeparation
-
 extension (obj: LazyList.type)
   def multiplex[element](streams: LazyList[element]*)(using Monitor): LazyList[element] =
     multiplexer(streams*).stream
 
-  def multiplexer[element](streams: LazyList[element]*)(using Monitor): Multiplexer[Any, element]^ =
+  def multiplexer[element](streams: LazyList[element]*)(using monitor: Monitor): Multiplexer[Any, element]^{monitor} =
     Multiplexer[Any, element]().tap: multiplexer =>
       streams.zipWithIndex.each: (stream, index) =>
         multiplexer.add(index, stream)
@@ -372,7 +384,11 @@ extension (stream: LazyList[Data])
     def recur(stream: LazyList[Data], count: Bytes): LazyList[Data] = stream.flow(LazyList()):
       if next.bytes < count
       then recur(more, count - next.bytes)
-      else next.drop(count.long.toInt) #:: more
+      else
+        // hoisted: a fresh array built inside `#::`'s by-name operand (which would
+        // capture the enclosing context) could not escape it
+        val head: Data = next.drop(count.long.toInt).asInstanceOf[Data]
+        head #:: more
 
     recur(stream, bytes)
 
@@ -385,9 +401,9 @@ extension (stream: LazyList[Data])
   def shred(mean: Double, variance: Double)(using Random): LazyList[Data] =
     given gamma: Distribution = Gamma.approximate(mean, variance)
 
-    def newArray(): Array[Byte] = new Array[Byte](arbitrary[Double]().toInt.max(1))
+    def newArray(): Array[Byte]^ = new Array[Byte](arbitrary[Double]().toInt.max(1))
 
-    def recur(stream: LazyList[Data], sourcePos: Int, dest: Array[Byte], destPos: Int)
+    def recur(stream: LazyList[Data], sourcePos: Int, dest: Array[Byte]^, destPos: Int)
     :   LazyList[Data] =
 
       stream match
@@ -407,15 +423,19 @@ extension (stream: LazyList[Data])
 
         case _ =>
           if destPos == 0 then LazyList()
-          else LazyList(dest.slice(0, destPos).immutable(using Unsafe))
+          else
+            // arraycopy, not `.slice`: the ArrayOps conversion demands a pure array
+            val out = new Array[Byte](destPos)
+            jl.System.arraycopy(dest, 0, out, 0, destPos)
+            LazyList(out.immutable(using Unsafe).asInstanceOf[Data])
 
     recur(stream, 0, newArray(), 0)
 
   def chunked(size: Int, zeroPadding: Boolean = false): LazyList[Data] =
-    def newArray(): Array[Byte] = new Array[Byte](size)
+    def newArray(): Array[Byte]^ = new Array[Byte](size)
 
 
-    def recur(stream: LazyList[Data], sourcePos: Int, dest: Array[Byte], destPos: Int)
+    def recur(stream: LazyList[Data], sourcePos: Int, dest: Array[Byte]^, destPos: Int)
     :   LazyList[Data] =
 
       stream match
@@ -435,8 +455,12 @@ extension (stream: LazyList[Data])
 
         case _ =>
           if destPos == 0 then LazyList()
-          else LazyList:
-            (if zeroPadding then dest else dest.slice(0, destPos)).immutable(using Unsafe)
+          else
+            // arraycopy, not `.slice`: the ArrayOps conversion demands a pure array
+            val length = if zeroPadding then dest.length else destPos
+            val out = new Array[Byte](length)
+            jl.System.arraycopy(dest, 0, out, 0, length)
+            LazyList(out.immutable(using Unsafe).asInstanceOf[Data])
 
 
     recur(stream, 0, newArray(), 0)
@@ -444,15 +468,18 @@ extension (stream: LazyList[Data])
   def take(bytes: Bytes): LazyList[Data] =
     def recur(stream: LazyList[Data], count: Bytes): LazyList[Data] =
       stream.flow(LazyList()):
-        if next.bytes < count then next #:: recur(more, count - next.bytes)
-        else LazyList(next.take(count.long.toInt))
+        if next.bytes < count then
+          val head: Data = next
+          head #:: recur(more, count - next.bytes)
+        else LazyList(next.take(count.long.toInt).asInstanceOf[Data])
 
     recur(stream, bytes)
 
   def inputStream: ji.InputStream = new ji.InputStream:
-    private var current: LazyList[Data] = stream
-    private var offset: Int = 0
-    private var focus: Data = IArray.empty[Byte]
+    // A JDK adapter, not a capability class: its staging slots are untracked.
+    @caps.unsafe.untrackedCaptures private var current: LazyList[Data] = stream
+    @caps.unsafe.untrackedCaptures private var offset: Int = 0
+    @caps.unsafe.untrackedCaptures private var focus: Data = IArray.empty[Byte].asInstanceOf[Data]
 
     override def available(): Int =
       val diff = focus.length - offset
@@ -477,7 +504,3 @@ extension (stream: LazyList[Data])
           if count > 0 then jl.System.arraycopy(focus, offset, array, arrayOffset, count)
           offset += count
           count
-
-def spool[item](using erased void: Void)[result](lambda: Spool[item] => result): result =
-  val spool: Spool[item] = Spool()
-  try lambda(spool) finally spool.stop()
