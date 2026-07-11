@@ -57,7 +57,7 @@ object Routable:
 
       Connection(address, endpoint.port.number, socket)
 
-    def transmit(connection: Connection, input: (Stream[Data] over Credit)^): Unit =
+    def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
       // One `transmit` call carries one message, and UDP frames per datagram.
       val bytes = input.memoize
 
@@ -79,7 +79,7 @@ object Routable:
 
       Connection(port.number, socket)
 
-    def transmit(connection: Connection, input: (Stream[Data] over Credit)^): Unit =
+    def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
       // See `udpEndpoint`: one message, one datagram.
       val bytes = input.memoize
 
@@ -97,4 +97,4 @@ trait Routable extends Findable:
   type Connection
 
   def connect(endpoint: Self, interface: Optional[MacAddress]): Connection
-  def transmit(connection: Connection, input: (Stream[Data] over Credit)^): Unit
+  def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit

@@ -65,7 +65,7 @@ object Serviceable:
 
       Connection(channel)
 
-    def transmit(connection: Connection, input: (Stream[Data] over Credit)^): Unit =
+    def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
       input.foreachWindow: (storage, start, count) =>
         connection.channel.write(ByteBuffer.wrap(storage.asInstanceOf[Array[Byte]], start, count))
 
@@ -91,8 +91,8 @@ object Serviceable:
 
     def close(connection: Connection): Unit = connection.channel.close()
 
-  given tcpEndpoint: (Online, Tactic[StreamError], Every[SocketOption.Tcp])
-  =>  ( (Endpoint[TcpPort] is Serviceable)^ ) = new Serviceable:
+  given tcpEndpoint: Online => (tactic: Tactic[StreamError]) => (options: Every[SocketOption.Tcp])
+  =>  ( (Endpoint[TcpPort] is Serviceable)^{tactic} ) = new Serviceable:
     type Self = Endpoint[TcpPort]
     type Output = Data
     type Connection = jn.Socket
@@ -107,7 +107,7 @@ object Serviceable:
       configure(socket, summon[Every[SocketOption.Tcp]].values)
       socket
 
-    def transmit(socket: jn.Socket, input: (Stream[Data] over Credit)^): Unit =
+    def transmit(socket: jn.Socket, consume input: (Stream[Data] over Credit)^): Unit =
       val out = socket.getOutputStream.nn
 
       input.foreachWindow: (storage, start, count) =>
@@ -117,8 +117,8 @@ object Serviceable:
     def close(socket: jn.Socket): Unit = socket.close()
     def receive(socket: jn.Socket): LazyList[Data] = socket.getInputStream.nn.stream[Data]
 
-  given tcpPort: (Tactic[StreamError], Every[SocketOption.Tcp])
-  =>  ( (TcpPort is Serviceable)^ ) = new Serviceable:
+  given tcpPort: (tactic: Tactic[StreamError]) => (options: Every[SocketOption.Tcp])
+  =>  ( (TcpPort is Serviceable)^{tactic} ) = new Serviceable:
     type Self = TcpPort
     type Output = Data
     type Connection = jn.Socket
@@ -136,7 +136,7 @@ object Serviceable:
     def close(socket: jn.Socket): Unit = socket.close()
     def receive(socket: jn.Socket): LazyList[Data] = socket.getInputStream.nn.stream[Data]
 
-    def transmit(socket: jn.Socket, input: (Stream[Data] over Credit)^): Unit =
+    def transmit(socket: jn.Socket, consume input: (Stream[Data] over Credit)^): Unit =
       val out = socket.getOutputStream.nn
 
       input.foreachWindow: (storage, start, count) =>

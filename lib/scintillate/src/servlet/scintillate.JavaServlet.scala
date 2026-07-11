@@ -98,16 +98,17 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
           servletResponse.addHeader("transfer-encoding", "chunked")
           val stream = source()
 
-          def recur(): Unit = stream.refill(Credit(Long.MaxValue)) match
+          // A while-loop rather than a recursive def: a def capturing the
+          // locally bound exclusive stream may not call itself.
+          var draining = true
+
+          while draining do stream.refill(Credit(Long.MaxValue)) match
             case count: Int =>
               out.write(stream.window(using Unsafe).asInstanceOf[Array[Byte]], stream.start, count)
               out.flush()
               stream.skip(count)
-              recur()
 
-            case _ => ()
-
-          recur()
+            case _ => draining = false
 
       out.close()
 

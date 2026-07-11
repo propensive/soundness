@@ -170,5 +170,6 @@ given domainSocketHttpClient: Tactic[StreamError] => HttpClient onto DomainSocke
   new HttpClient:
     type Target = DomainSocket
 
-    def request(request: Http.Request, socket: DomainSocket): Http.Response logs HttpEvent =
+    def request(request: Http.Request, socket: DomainSocket)(using HttpEvent is Loggable)
+    :   Http.Response =
       unsafely(Http.Response.parse(socket.transmit(request)))

@@ -79,7 +79,8 @@ object Postable:
 
 
   given text: (encoder: CharEncoder) => Text is Postable =
-    Postable(media"text/plain", value => Stream(IArray.from(value.data)))
+    // Sealed: a fresh `IArray` is immutable; fresh-ness is the opaque-Array artifact.
+    Postable(media"text/plain", value => Stream(caps.unsafe.unsafeAssumePure(IArray.from(value.data))))
 
   given textStream: (encoder: CharEncoder) => LazyList[Text] is Postable =
     Postable(media"application/octet-stream", lazyList => Stream(lazyList.map(_.data).iterator))

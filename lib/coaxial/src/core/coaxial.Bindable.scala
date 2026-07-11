@@ -172,8 +172,18 @@ object Bindable:
               jn.InetAddress.getByAddress(array).nn
 
             case ip: Ipv6 =>
-              val array =
-                IArray.from(ip.highBits.bits.bytes ++ ip.lowBits.bits.bytes).mutable(using Unsafe)
+              val array: Array[Byte]^ =
+                val high = ip.highBits.bits.bytes
+                val bytes = new Array[Byte](16)
+                var index = 0
+                while index < 8 do
+                  bytes(index) = high(index)
+                  index += 1
+                val low = ip.lowBits.bits.bytes
+                while index < 16 do
+                  bytes(index) = low(index - 8)
+                  index += 1
+                bytes
 
               jn.InetAddress.getByAddress(array).nn
 

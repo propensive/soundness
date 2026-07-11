@@ -32,6 +32,8 @@
                                                                                                   */
 package perihelion
 
+import language.experimental.separationChecking
+
 import java.security.SecureRandom
 
 import anticipation.*
@@ -258,7 +260,10 @@ given wsClient: ( online:            Online,
       given Masking = connection.masking
       Reader(() => zephyrine.Stream(connection.inbound.iterator), connection.channel).messages.map(_.bytes)
 
-    def transmit(connection: WsConnection, input: (zephyrine.Stream[Data] over zephyrine.Credit)^): Unit =
+    def transmit
+      ( connection: WsConnection,
+        consume input: (zephyrine.Stream[Data] over zephyrine.Credit)^ )
+    :   Unit =
       // One `transmit` carries one message = one complete frame, masked at the
       // `Channel` boundary; see `Transmissible`.
       connection.channel.enqueue(input.memoize)

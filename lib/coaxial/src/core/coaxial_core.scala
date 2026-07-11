@@ -39,6 +39,7 @@ import java.util as ju
 import anticipation.*
 import contingency.*
 import parasite.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
@@ -94,7 +95,8 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
 // the evidence is an explicit capturing using-parameter rather than a context bound, which would
 // demand a pure instance.
 extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint is Serviceable)^)
-  def transmit[message: Transmissible](input: message): LazyList[Data] logs SocketEvent =
+  def transmit[message: Transmissible](input: message)(using SocketEvent is Loggable)
+  :   LazyList[Data] =
     val connection = serviceable.connect(endpoint, Unset)
     Log.fine(SocketEvent.Connected(endpoint.show))
 
@@ -107,7 +109,8 @@ extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint 
   // initiate; a `Duplexable` additionally offers `exchange`, which can also send proactively.
   def react[state](initialState: state)[message: Ingressive]
     ( handle: (state: state) ?=> message => Control[state] )
-  :   state logs SocketEvent =
+    ( using SocketEvent is Loggable )
+  :   state =
 
     val connection = serviceable.connect(endpoint, Unset)
     Log.fine(SocketEvent.Connected(endpoint.show))
@@ -141,12 +144,19 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
   def exchange[state](initialState: state)[message: {Ingressive, Transmissible}]
     ( handle: (state: state) ?=> message => Control[state] )
     ( interact: Sender[message]^ => Unit )
-  :   state logs SocketEvent =
+    ( using SocketEvent is Loggable )
+  :   state =
 
     val connection = duplexable.connect(endpoint, Unset)
     Log.fine(SocketEvent.Connected(endpoint.show))
 
-    interact(Sender[message](duplexable.transmit(connection, _)))
+    // A named `Post` rather than a lambda: forwarding to the consuming `transmit`
+    // requires a `consume` parameter, which only a method can declare.
+    interact:
+      Sender[message]:
+        new Sender.Post:
+          def apply(consume stream: (Stream[Data] over Credit)^): Unit =
+            duplexable.transmit(connection, stream)
 
     def recur(input: LazyList[Data], state: state): state = input.flow(state):
       handle(using state)(message.deserialize(next)) match
@@ -165,8 +175,9 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
 
 
 extension [endpoint: {Routable as routable, Showable}](endpoint: endpoint)
-  def transmit[transmissible: Transmissible](message: transmissible)(using Monitor)
-  :   Unit raises StreamError logs SocketEvent =
+  def transmit[transmissible: Transmissible](message: transmissible)
+    ( using Monitor, Tactic[StreamError], SocketEvent is Loggable )
+  :   Unit =
 
     Log.fine(SocketEvent.Connected(endpoint.show))
     routable.transmit(routable.connect(endpoint, Unset), transmissible.serialize(message))
@@ -180,10 +191,12 @@ extension [endpoint: {Connectable as connectable, Showable}](endpoint: endpoint)
   // connection is never half-closed. A long-lived connection that must outlive any
   // single block keeps `lambda` running (e.g. parked on its supervisor) until the
   // enclosing scope ends, at which point the loan closes the connection.
-  def duplex[result](lambda: Duplex => result): result logs SocketEvent = duplex(lambda)(Unset)
+  def duplex[result](lambda: Duplex => result)(using SocketEvent is Loggable): result =
+    duplex(lambda)(Unset)
 
   def duplex[result](lambda: Duplex => result)(interface: Optional[MacAddress])
-  :   result logs SocketEvent =
+    ( using SocketEvent is Loggable )
+  :   result =
 
     val connection = connectable.connect(endpoint, interface)
     Log.info(SocketEvent.Connected(endpoint.show))

@@ -269,20 +269,30 @@ object Http:
       val block = buffering.capacity(Substrate.Bytes)
 
       // A zero count (an empty upstream chunk) is retried, never yielded: a
-      // zero-length frame would terminate chunked transfer encoding early.
-      def pull(): Optional[Data] = endpoint.refill(Credit(block)) match
-        case 0 => pull()
+      // zero-length frame would terminate chunked transfer encoding early. A
+      // while-loop rather than self-recursion: a def capturing the exclusive
+      // endpoint may not call itself under the statement rule.
+      def pull(): Optional[Data] =
+        var result: Optional[Data] = Unset
+        var continue = true
 
-        case count: Int =>
-          val chunk =
-            endpoint.addressable.materialize
-              ( endpoint.window(using Unsafe), endpoint.start, count )
+        while continue do
+          endpoint.refill(Credit(block)) match
+            case 0 => ()
 
-          endpoint.skip(count)
-          chunk
+            case count: Int =>
+              result =
+                endpoint.addressable.materialize
+                  ( endpoint.window(using Unsafe), endpoint.start, count )
 
-        case _ =>
-          Unset
+              endpoint.skip(count)
+              continue = false
+
+            case _ =>
+              result = Unset
+              continue = false
+
+        result
 
       val first: Optional[Data] = pull()
       val second: Optional[Data] = if first.absent then Unset else pull()
@@ -342,7 +352,8 @@ object Http:
     // unbounded amount) — the scan aborts mid-token once the cap is crossed.
     def parseHead
       ( cursor: Cursor[Data, {}]^, maxRequestLine: Int = 8192, maxHeaders: Int = 65536 )
-    :   Head raises HttpRequestError =
+      ( using Tactic[HttpRequestError] )
+    :   Head =
 
       import HttpRequestError.Reason
 
@@ -704,22 +715,28 @@ object Http:
         val block = buffering.capacity(Substrate.Bytes)
 
         Iterator.continually:
-          def pull(): Optional[Data] = endpoint.refill(Credit(block)) match
-            // See `Request.serialize`: empty chunks are retried, never framed.
-            case 0 => pull()
+          // See `Request.serialize`: empty chunks are retried, never framed, and
+          // the retry is a loop, not self-recursion.
+          var result: Optional[Data] = Unset
+          var continue = true
 
-            case count: Int =>
-              val chunk =
-                endpoint.addressable.materialize
-                  ( endpoint.window(using Unsafe), endpoint.start, count )
+          while continue do
+            endpoint.refill(Credit(block)) match
+              case 0 => ()
 
-              endpoint.skip(count)
-              chunk
+              case count: Int =>
+                result =
+                  endpoint.addressable.materialize
+                    ( endpoint.window(using Unsafe), endpoint.start, count )
 
-            case _ =>
-              Unset
+                endpoint.skip(count)
+                continue = false
 
-          pull()
+              case _ =>
+                result = Unset
+                continue = false
+
+          result
 
         . takeWhile(_.present).map(_.vouch)
 
@@ -803,11 +820,16 @@ object Http:
       cursor.next()
       cursor.expect('\n')(expected('\n'))
 
-      def readHeaders(headers: List[Http.Header]): List[Http.Header] =
+      // A while-loop rather than a recursive def: a def capturing the locally
+      // bound exclusive cursor may not call itself under the statement rule.
+      var headers: List[Http.Header] = Nil
+      var reading = true
+
+      while reading do
         if cursor.peek == '\r' then
           cursor.next()
           cursor.expect('\n')(expected('\n'))
-          headers
+          reading = false
 
         else
           val header: Text = cursor.hold:
@@ -827,9 +849,7 @@ object Http:
 
           cursor.next()
           cursor.expect('\n')(expected('\n'))
-          readHeaders(Http.Header(header, value) :: headers)
-
-      val headers = readHeaders(Nil)
+          headers = Http.Header(header, value) :: headers
 
       // Sealed: the cursor is single-owner and reachable only through its
       // memoized `remainder`, so the spring is pure in effect; a capturing

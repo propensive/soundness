@@ -69,65 +69,76 @@ object HttpClient:
     case 301 | 302 | 303 | 307 | 308 => true
     case _                           => false
 
-  given httpStrict: Tactic[ConnectError]
+  given httpStrict: (tactic: Tactic[ConnectError])
   =>  Online
   =>  Redirects.Disabled
   =>  ( backend: Http.Backend )
-  =>  HttpClient:
-    type Target = Origin["http" | "https"]
+  =>  ( (HttpClient { type Target = Origin["http" | "https"] })^{tactic, caps.any} ) =
+    new HttpClient:
+      type Target = Origin["http" | "https"]
 
-    def request(httpRequest: Http.Request, origin: Origin["http" | "https"])
-    :   Http.Response logs HttpEvent =
+      def request(httpRequest: Http.Request, origin: Origin["http" | "https"])
+        ( using HttpEvent is Loggable )
+      :   Http.Response =
 
-      val url = httpRequest.on(origin)
-      Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
+        val url = httpRequest.on(origin)
+        Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
 
-      logResponse:
-        backend.request(url.show, httpRequest.method, httpRequest.textHeaders, httpRequest.body)
+        logResponse:
+          backend.request(url.show, httpRequest.method, httpRequest.textHeaders, httpRequest.body)
 
-  given http: Tactic[ConnectError]
+  given http: (tactic: Tactic[ConnectError])
   =>  Online
   =>  NotGiven[Redirects.Disabled]
   =>  ( redirection: HttpRedirection )
   =>  ( backend: Http.Backend )
-  =>  HttpClient:
-    type Target = Origin["http" | "https"]
+  =>  ( (HttpClient { type Target = Origin["http" | "https"] })^{tactic, caps.any} ) =
+    new HttpClient:
+      type Target = Origin["http" | "https"]
 
-    def request(httpRequest: Http.Request, origin: Origin["http" | "https"])
-    :   Http.Response logs HttpEvent =
-
-      val url = httpRequest.on(origin)
-      Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
-
-      def loop(uri: jn.URI, method: Http.Method, bodyFn: Spring[Data]^, remaining: Int)
+      def request(httpRequest: Http.Request, origin: Origin["http" | "https"])
+        ( using HttpEvent is Loggable )
       :   Http.Response =
 
-        val response = backend.request(uri.toString.tt, method, httpRequest.textHeaders, bodyFn)
-        val code = response.status.code
+        val url = httpRequest.on(origin)
+        Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
 
-        if !isRedirect(code) || remaining <= 0 then response else
-          response.textHeaders.find(_.key.lower == t"location") match
-            case None =>
-              response
+        // The spring crosses the recursion as a neutral reference: a
+        // capability-typed binding of a parameter would hide it from the
+        // recursive call under the statement rule.
+        def loop(uri: jn.URI, method: Http.Method, bodyRef: AnyRef, remaining: Int)
+        :   Http.Response =
 
-            case Some(header) =>
-              // Drain the discarded intermediate body to free its connection.
-              safely(response.body.stream.foreachWindow { (_, _, _) => () })
+          val bodyFn = bodyRef.asInstanceOf[Spring[Data]^]
+          val response = backend.request(uri.toString.tt, method, httpRequest.textHeaders, bodyFn)
+          val code = response.status.code
 
-              val nextUri = uri.resolve(jn.URI.create(header.value.s).nn).nn
-              Log.fine(HttpEvent.Redirect(uri.toString.tt, nextUri.toString.tt))
-              val nextMethod = redirectMethod(code, method)
+          if !isRedirect(code) || remaining <= 0 then response else
+            response.textHeaders.find(_.key.lower == t"location") match
+              case None =>
+                response
 
-              val nextBody: Spring[Data]^ =
-                if nextMethod == method then bodyFn else () => Http.emptyBody()
+              case Some(header) =>
+                // Drain the discarded intermediate body to free its connection.
+                safely(response.body.stream.foreachWindow { (_, _, _) => () })
 
-              loop(nextUri, nextMethod, nextBody, remaining - 1)
+                val nextUri = uri.resolve(jn.URI.create(header.value.s).nn).nn
+                Log.fine(HttpEvent.Redirect(uri.toString.tt, nextUri.toString.tt))
+                val nextMethod = redirectMethod(code, method)
 
-      logResponse:
-        loop(jn.URI.create(url.show.s).nn, httpRequest.method, httpRequest.body, redirection.value)
+                val nextBody: AnyRef =
+                  if nextMethod == method then bodyRef else
+                    val empty: Spring[Data] = () => Http.emptyBody()
+                    empty.asInstanceOf[AnyRef]
+
+                loop(nextUri, nextMethod, nextBody, remaining - 1)
+
+        logResponse:
+          loop(jn.URI.create(url.show.s).nn, httpRequest.method,
+              httpRequest.body.asInstanceOf[AnyRef], redirection.value)
 
 // An `HttpClient` is a capability: its instances are constructed from other capabilities (a
 // `Tactic`, an `Online` token, a backend) which they retain — a given that takes capabilities
 // as parameters produces a capability (Jon, 2026-07-06; see rep/DECISIONS.md).
 trait HttpClient extends Targetable, caps.ExclusiveCapability:
-  def request(request: Http.Request, target: Target): Http.Response logs HttpEvent
+  def request(request: Http.Request, target: Target)(using HttpEvent is Loggable): Http.Response

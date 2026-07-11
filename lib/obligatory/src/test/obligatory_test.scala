@@ -150,17 +150,7 @@ object Tests extends Suite(m"Obligatory Tests"):
       import probates.cancelProbate
       import errorDiagnostics.stackTracesDiagnostics
 
-      def pair(): (Duplex, Duplex) =
-        val clientToServer = Spool[Data]()
-        val serverToClient = Spool[Data]()
-
-        def duplex(inbound: Spool[Data], outbound: Spool[Data]) = new Duplex:
-          def stream: LazyList[Data] = inbound.stream
-          def send(data: zephyrine.Stream[Data] over Credit): Unit =
-            outbound.put(data.memoize)
-          def close(): Unit = outbound.stop()
-
-        (duplex(serverToClient, clientToServer), duplex(clientToServer, serverToClient))
+      def pair(): (Duplex, Duplex) = Duplex.pair()
 
       def okHeaders(hpack: Hpack, id: Int): Frame =
         val block = hpack.encode(List(HpackEntry(t":status", t"200"),

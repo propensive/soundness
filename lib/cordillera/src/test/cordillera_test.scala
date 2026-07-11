@@ -219,17 +219,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
 
       // An in-memory `Duplex` pair: bytes written to one side surface on the other's
       // stream. Backed by `Spool`s so reads block until data arrives, like a socket.
-      def pair(): (Duplex, Duplex) =
-        val clientToServer = Spool[Data]()
-        val serverToClient = Spool[Data]()
-
-        def duplex(inbound: Spool[Data], outbound: Spool[Data]) = new Duplex:
-          def stream: LazyList[Data] = inbound.stream
-          def send(data: (zephyrine.Stream[Data] over Credit)^): Unit =
-            outbound.put(data.memoize)
-          def close(): Unit = outbound.stop()
-
-        (duplex(serverToClient, clientToServer), duplex(clientToServer, serverToClient))
+      def pair(): (Duplex, Duplex) = Duplex.pair()
 
       // A minimal in-process HTTP/2 server on the given duplex side. It sends its own
       // SETTINGS (so the client's handshake completes), reads the client's preface +

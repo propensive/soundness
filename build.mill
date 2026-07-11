@@ -130,6 +130,15 @@ object settings:
   def cc(options: Seq[String]): Seq[String] =
     options ++ Seq("-Ycc-new", "-language:experimental.captureChecking")
 
+  // Capture checking plus separation checking: `consume` linearity, hidden-set
+  // separation and `freeze` are only diagnosed in units compiled with this flag,
+  // so a module holding exclusive capabilities is not actually checked for
+  // single ownership until it routes through `sep`. Rolled out module-by-module
+  // like `cc`; the flag subsumes the per-file
+  // `import language.experimental.separationChecking`.
+  def sep(options: Seq[String]): Seq[String] =
+    cc(options) :+ "-language:experimental.separationChecking"
+
   // Override `-Xmax-inlines` to `limit`, replacing any existing setting rather
   // than appending a second one (which the compiler reports as "Option
   // -Xmax-inlines was updated"). The base stays 32 everywhere else.
@@ -814,7 +823,7 @@ object coaxial extends Library:
   object core extends Component(galilei.jvm, urticose.core, frontier.core):
     override def scalaJs = false // TCP sockets (`java.nio.channels`)
     override def scalacOptions = Task:
-      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
 
 object contextual extends Library:
@@ -1279,6 +1288,11 @@ object hellenism extends Library:
 object honeycomb extends Library:
   object core extends Component(panopticon.core, gesticulate.core, xylophone.core, urticose.url,
       nomenclature.core, hellenism.core):
+    // NOT capture-checked: the `e`-macro's quoted type patterns
+    // (`case Some('{$renderable: Renderable})`) fail to unify with
+    // capture-decorated `Expr` types under `-Ycc-new` (12 errors, all in the
+    // macro/quotes family). Re-attempt when the quote-pattern/CC interaction
+    // improves upstream; see rep/DECISIONS.md "Sepcheck rollout".
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
   object test extends Tests(core)
@@ -1433,7 +1447,7 @@ object metamorphose extends Library:
 object monotonous extends Library:
   object core extends Component(gossamer.core, zephyrine.core):
     override def scalacOptions = Task:
-      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
@@ -1680,7 +1694,7 @@ object scintillate extends Library:
   object servlet extends Component(server):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def mvnDeps = Seq(mvn"jakarta.servlet:jakarta.servlet-api:6.0.0")
 
   object test extends Tests(server, servlet):
@@ -1811,7 +1825,7 @@ object tarantula extends Library:
 object telekinesis extends Library:
   object core extends Component(monotonous.core, legerdemain.core, turbulence.core):
     override def scalacOptions = Task:
-      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // JVM-only transports split out of `core` so the platform-agnostic HTTP model and client can
   // cross-compile to Scala.js: the `java.net.http` `Http.Backend` (`httpBackends.virtualMachine`)
   // and the `coaxial` domain-socket client.
