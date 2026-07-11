@@ -1307,3 +1307,30 @@ checking." Execution order (bottom-up, compiling commits): coaxial
 Transmissible/transmit layer -> Http wire form (serialize/Response/Body) ->
 perihelion Channel -> scintillate/servlet/cordillera knock-ons -> delete
 lazyList defs + Source2/Sink2 + bridge tests -> dual gates.
+
+## Coaxial kernel-stream redesign executed (2026-07-11, commits c7c25a1903..4f22574f93)
+
+Jon's decisions delivered: Transmissible.serialize returns `(Stream[Data] over
+Credit)^` (one call = one message's wire form; framed transports memoize to one
+unit — UDP datagram, WS frame — byte transports foreachWindow zero-copy);
+Duplex.send takes a kernel stream; Http wire form kernel-native (Request
+probe-one-block for Content-Length vs chunked, empty chunks RETRIED never
+framed; Response framed via chunk iterators; Body.Streaming arm DELETED —
+Flowing(Spring) is the only streaming arm; Body.stream mints a kernel stream);
+websocket Channel is Conduit-backed (bounded => real backpressure; enqueue is
+synchronized multi-producer and FLUSHES per frame — the conduit otherwise
+buffers a block and interactive protocols deadlock; found via jcmd thread-dump);
+Reader.messages defers cursor construction (stream-backed Cursor refills
+EAGERLY at <init> — blocks on live sockets before the 101 goes out; the
+documented cursor-eager-refill gotcha). Stream.apply(iterator) now takes
+`Iterator[medium]^` returning `^{iterator, caps.any}` (iterator-backed streams
+retain their iterator's captures). Response keeps a PURE `body: Body` field —
+a Body^ field cascades ^ through copy/updateDynamic/read(this); the one
+capturing constructor (Response.parse's cursor spring) is sealed with the
+single-owner justification. BRIDGES DELETED: both lazyList views + Source2/
+Sink2; native Source instances added for hellenism Resource + classpath Path,
+Http.Response (raises HttpError on non-2xx), zeppelin Entry/Zipfile,
+hallucination Raster; generic Streamable read-sites route via stream[Data] +
+the native LazyList Source. Receivable/successBody still LazyList-shaped via
+memoize — the remaining Streamable-tail (with Multipart cursor parsing and
+Duplex.stream receive side) is follow-up work, not bridge-blocking.
