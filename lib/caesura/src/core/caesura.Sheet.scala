@@ -103,7 +103,10 @@ object Sheet:
         type Operand = Text
 
         def aggregate(text: LazyList[Text]): Sheet = sheet(parse(text))
-        override def accept(stream: (Stream[Text] over Credit)^): Sheet = sheet(parse(stream))
+        override def accept(stream: (Stream[Text] over Credit)^): Sheet =
+          // The non-consume `accept` crosses to the consuming parser as a
+          // neutral reference; each accept delivers a single-use stream.
+          sheet(parse(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
 
         private def sheet(rows: LazyList[Dsv]): Sheet =
           if format.header then Sheet(rows, format, rows.prim.let(_.header))
@@ -151,7 +154,8 @@ object Sheet:
 
 
   private class Parser(load: () => Optional[Text])
-    ( using format: DsvFormat, tactic: Tactic[DsvError] ):
+    ( using format: DsvFormat, tactic: Tactic[DsvError] )
+  extends caps.ExclusiveCapability, caps.Stateful:
     private var current: String = ""
     private var currentLen: Int = 0
     private var pos: Int = 0
@@ -166,7 +170,7 @@ object Sheet:
     private val quoteChar: Char = format.quote
     private val isHeader: Boolean = format.header
 
-    private def loadChunk(): Boolean =
+    update private def loadChunk(): Boolean =
       if pos < currentLen then true else
         var continue = true
         var result = false
@@ -190,19 +194,20 @@ object Sheet:
       cellsBuf += Text(builder.toString.nn)
       builder.setLength(0)
 
-    private def emitRow(): Dsv =
+    update private def emitRow(): Dsv =
       val n = cellsBuf.length
       val arr = new Array[Text](n)
       cellsBuf.copyToArray(arr)
       cellsBuf.clear()
       rowOrdinal = rowOrdinal.next
-      Dsv(IArray.unsafeFromArray(arr), headings)
+      // Sealed: see `Dsv.apply` — the opaque-Array artifact.
+      Dsv(caps.unsafe.unsafeAssumePure(IArray.unsafeFromArray(arr)), headings)
 
     // Scan ahead in Fresh state for the next delimiter, quote, or line-ending,
     // bulk-appending the run of regular characters in one operation, then
     // dispatch on the trigger char. Returns Unset to continue parsing or a
     // Dsv when a row has just been closed.
-    private def scanFresh(): Optional[Dsv] =
+    update private def scanFresh(): Optional[Dsv] =
       val str = current
       val len = currentLen
       val d = delim
@@ -223,7 +228,13 @@ object Sheet:
           else if ch == q then
             if builder.length > 0 then
               val reason = DsvError.Reason.MisplacedQuote
-              raise(DsvError(format, reason, rowOrdinal, cellsBuf.length.z, consumed + p))
+              // Pre-read into locals: the error's context-function argument may
+              // not read the parser's state from inside `raise`'s
+              // capture-polymorphic parameter.
+              val row = rowOrdinal
+              val cell = cellsBuf.length.z
+              val position = consumed + p
+              raise(DsvError(format, reason, row, cell, position))
 
             state = State.Quoted
             return Unset
@@ -241,7 +252,7 @@ object Sheet:
 
     // Scan ahead in Quoted state for the next quote, bulk-appending all other
     // characters (including delimiters and newlines) verbatim.
-    private def scanQuoted(): Unit =
+    update private def scanQuoted(): Unit =
       val str = current
       val len = currentLen
       val q = quoteChar
@@ -256,7 +267,7 @@ object Sheet:
       else
         pos = p
 
-    private def handleDoubleQuoted(): Optional[Dsv] =
+    update private def handleDoubleQuoted(): Optional[Dsv] =
       val ch = current.charAt(pos)
       pos += 1
 
@@ -276,7 +287,7 @@ object Sheet:
         builder.append(ch)
         Unset
 
-    private def parseRow(): Optional[Dsv] =
+    update private def parseRow(): Optional[Dsv] =
       while loadChunk() do
         val emitted: Optional[Dsv] = state match
           case State.Fresh        => scanFresh()
@@ -293,9 +304,9 @@ object Sheet:
       else
         Unset
 
-    def stream: LazyList[Dsv] = next()
+    update def stream: LazyList[Dsv] = next()
 
-    private def next(): LazyList[Dsv] = parseRow() match
+    update private def next(): LazyList[Dsv] = parseRow() match
       case row: Dsv =>
         if isHeader && headings.absent then
           val data = row.data

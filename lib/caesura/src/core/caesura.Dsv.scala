@@ -58,8 +58,10 @@ trait Dsv2:
     value => decodable.decoded(value.data.head)
 
 object Dsv extends Dsv2:
-  def apply(iterable: Iterable[Text]): Dsv = new Dsv(IArray.from(iterable))
-  def apply(text: Text*): Dsv = new Dsv(IArray.from(text))
+  // Sealed: fresh `IArray`s are immutable (the opaque-Array artifact).
+  def apply(iterable: Iterable[Text]): Dsv =
+    new Dsv(caps.unsafe.unsafeAssumePure(IArray.from(iterable)))
+  def apply(text: Text*): Dsv = new Dsv(caps.unsafe.unsafeAssumePure(IArray.from(text)))
 
   // An absent cell (a short positional row, or a header column missing from the row) decodes
   // to `Unset`; a present cell — even an empty one — decodes its inner value. The product
@@ -171,22 +173,24 @@ object Dsv extends Dsv2:
     EncodableDerivation.derived[value]
 
 
-  given showable: (format: DsvFormat) => Dsv is Showable =
-    _.data.map: cell =>
-      val safe = !cell.contains(format.Quote) && !cell.contains(format.Delimiter) &&
-        !cell.contains('\n') && !cell.contains('\r')
+  given showable: (format: DsvFormat) => Dsv is Showable = dsv =>
+    // Sealed: see `Dsv.apply` — the opaque-Array artifact.
+    val cells = caps.unsafe.unsafeAssumePure:
+      dsv.data.map: cell =>
+        val safe = !cell.contains(format.Quote) && !cell.contains(format.Delimiter) &&
+          !cell.contains('\n') && !cell.contains('\r')
 
-      if safe then cell else
-        Text.build:
-          append(format.quote)
+        if safe then cell else
+          Text.build:
+            append(format.quote)
 
-          cell.chars.each: char =>
-            if char == format.quote then append(char)
-            append(char)
+            cell.chars.each: char =>
+              if char == format.quote then append(char)
+              append(char)
 
-          append(format.quote)
+            append(format.quote)
 
-    . join(format.delimiter.show)
+    cells.join(format.delimiter.show)
 
   object DecodableDerivation extends ProductDerivable[Decodable in Dsv]:
     class DsvProductDecoder[derivation](lambda: Dsv -> derivation)
@@ -247,7 +251,8 @@ case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
 
   def header: Optional[IArray[Text]] = columns.let: map =>
     val columns = map.map(_.swap)
-    IArray.tabulate(columns.size)(columns(_))
+    // Sealed: see `Dsv.apply` — the opaque-Array artifact.
+    caps.unsafe.unsafeAssumePure(IArray.tabulate(columns.size)(columns(_)))
 
 
   def selectDynamic[value: Decodable in Text](field: String)(using erased dynamicDsvEnabler: DynamicDsvEnabler)

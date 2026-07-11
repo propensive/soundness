@@ -44,7 +44,8 @@ object Frame:
   val maxControlPayload: Int = 125
 
   def closeData(code: Int, reason: Data): Data =
-    Data((code >> 8).toByte, code.toByte) ++ reason
+    // Sealed: fresh `IArray`s are immutable (the opaque-Array artifact).
+    caps.unsafe.unsafeAssumePure(Data((code >> 8).toByte, code.toByte) ++ reason)
 
   // Close codes a client may legitimately send (RFC 6455 §7.4.1 plus the
   // registered application range). Everything else — including 1004/1005/1006,
@@ -61,7 +62,8 @@ object Frame:
   // `peek`/`next`/`take` (not `lay`/`seek`), which don't reference the cursor's erased
   // `Operand` type, so it works on a bare `Cursor[Data, ?]` parameter.
   def parse(cursor: Cursor[Data, {}]^)(using masking: Masking)
-  :   Optional[Frame] raises WebsocketError =
+    ( using Tactic[WebsocketError] )
+  :   Optional[Frame] =
     if cursor.finished then Unset else
       val byte0 = cursor.peek.asInt
       cursor.next()
@@ -111,12 +113,13 @@ object Frame:
           // reason; a lone byte is malformed. `1005` is the internal "no code
           // present" sentinel and must never travel on the wire.
           if payload.length == 1 then abort(WebsocketError(WebsocketError.Reason.BadClose))
-          val code = if payload.length >= 2 then B16(payload.take(2)).u16.int else 1005
+          val code =
+            if payload.length >= 2 then B16(caps.unsafe.unsafeAssumePure(payload.take(2))).u16.int else 1005
 
           if payload.length >= 2 && !validCloseCode(code)
           then abort(WebsocketError(WebsocketError.Reason.BadClose))
 
-          val reason = if payload.length > 2 then payload.drop(2) else Data()
+          val reason = if payload.length > 2 then caps.unsafe.unsafeAssumePure(payload.drop(2)) else Data()
           Close(code, reason)
 
         case other => abort(WebsocketError(WebsocketError.Reason.BadOpcode(other)))
@@ -152,4 +155,5 @@ enum Frame(val opcode: Int, val payload: Data):
           ( flags, 127.toByte, 0.toByte, 0.toByte, 0.toByte, 0.toByte, (length >> 24).toByte,
             (length >> 16).toByte, (length >> 8).toByte, length.toByte )
 
-    header ++ payload
+    // Sealed: see `closeData`.
+    caps.unsafe.unsafeAssumePure(header ++ payload)

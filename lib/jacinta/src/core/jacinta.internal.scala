@@ -485,7 +485,7 @@ object internal:
     // at a time as it overflows the in-Long fast path. Keeps a growing
     // `Array[Double]` of completed words and a current 52-bit nibble buffer.
     final class Builder extends caps.Mutable:
-      private var data: Array[Double] = new Array[Double](2)
+      private var data: Array[Double]^ = new Array[Double](2)
       private var wordIdx: Int = 0
       private var word: Long = 0L   // raw nibble buffer; packed into a Double on commit
       private var inWord: Int = 0
@@ -617,7 +617,9 @@ object internal:
   private def arrayElements(arr: IArray[Any]): IArray[Any] =
     val n = arr.length
 
-    if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad) then arr.take(n - 1)
+    // Sealed: fresh `IArray`s are immutable (the opaque-Array artifact).
+    if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad)
+    then caps.unsafe.unsafeAssumePure(arr.take(n - 1))
     else arr
 
   private def hasMarker(s: String): Boolean =
@@ -836,8 +838,10 @@ object internal:
       def serializeArray(elements: IArray[Any]): Expr[Json.Ast] =
         val n = elements.length
 
-        val pieces: List[Expr[Iterable[Json.Ast]]] = elements.zipWithIndex.toList.map:
-          (elem, idx) =>
+        // Sealed: see `arrayElements` — the opaque-Array artifact.
+        val indexed = caps.unsafe.unsafeAssumePure(elements.zipWithIndex)
+
+        val pieces: List[Expr[Iterable[Json.Ast]]] = indexed.toList.map: (elem, idx) =>
             elem.asMatchable match
               case Unset =>
                 if spreads.contains(holeIndex) then
@@ -1049,12 +1053,15 @@ object internal:
             // reuses the numeric-equality cases above.
             val n = nums.length
 
-            val elements: IArray[Any] = IArray.tabulate(n): i =>
+            val elements0 = IArray.tabulate(n): i =>
               val d = nums(i)
 
               if d.isWhole && d >= Long.MinValue.toDouble && d <= Long.MaxValue.toDouble
               then d.toLong
               else d
+
+            // Sealed: see `arrayElements` — the opaque-Array artifact.
+            val elements: IArray[Any] = caps.unsafe.unsafeAssumePure(elements0)
 
             descendArray(array, elements, scrutinee, accept)
 

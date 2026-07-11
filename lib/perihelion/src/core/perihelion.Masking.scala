@@ -75,7 +75,10 @@ object Masking:
       val header: Data = Data.fill(headerLength): index =>
         if index == 1 then (frame(1).toInt | 0x80).toByte else frame(index)
 
-      header ++ key ++ Frame.unmask(frame.drop(headerLength), key)
+      // Sealed: see `Frame.closeData` — the opaque-Array artifact.
+      val prefix: Data = caps.unsafe.unsafeAssumePure(header ++ key)
+      val unmasked = Frame.unmask(caps.unsafe.unsafeAssumePure(frame.drop(headerLength)), key)
+      caps.unsafe.unsafeAssumePure(prefix ++ unmasked)
 
 trait Masking:
   // Mask a complete, self-generated (and therefore well-formed and unmasked) frame, or

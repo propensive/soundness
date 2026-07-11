@@ -67,10 +67,15 @@ class CharDecoder(val encoding: Encoding)(using val sanitizer: TextSanitizer) ex
     val out = jn.CharBuffer.allocate(4096).nn
     val in = jn.ByteBuffer.allocate(4096).nn
 
-    def recur(todo: LazyList[Array[Byte]], offset: Int = 0, total: Int = 0): LazyList[Text] =
+    // The stream stays `Data` (pure): mapping it to mutable arrays up front
+    // would give every element a reach capability that leaks into `recur`. The
+    // buffer only reads from the chunk, so the mutable view is taken at the
+    // single `put` site, under `Unsafe`.
+    def recur(todo: LazyList[Data], offset: Int = 0, total: Int = 0): LazyList[Text] =
       val count = in.remaining
 
-      if !todo.nil then in.put(todo.head, offset, in.remaining.min(todo.head.length - offset))
+      if !todo.nil then
+        in.put(todo.head.mutable(using Unsafe), offset, in.remaining.min(todo.head.length - offset))
       in.flip()
 
       def decode(): jnc.CoderResult =
@@ -94,4 +99,4 @@ class CharDecoder(val encoding: Encoding)(using val sanitizer: TextSanitizer) ex
 
       if text.nil then continue else text #:: continue
 
-    recur(stream.map(_.mutable(using Unsafe)))
+    recur(stream)

@@ -95,7 +95,13 @@ trait Json2 extends Json3:
   =>  ( encodable: inner is Json.Encodable )
   =>  value is Json.Encodable =
 
-    Json.Encodable(Morphology.Opt(encodable.shape())): value =>
+    // Sealed lazily: the shape must stay by-name (recursive derivation
+    // depends on deferral), and its thunk may not capture the evidence.
+    val shape: () -> Morphology =
+      caps.unsafe.unsafeAssumePure(() => Morphology.Opt(encodable.shape()))
+
+
+    Json.Encodable(shape()): value =>
       value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Json.ast(Json.Ast(Unset)))
 
 
@@ -110,7 +116,13 @@ trait Json2 extends Json3:
     // making every codec instance a capability. (The honest alternative — capturing instance
     // types throughout — is the given-captures-context design question; see rep/DECISIONS.md.)
     caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Opt(decodable.shape())): json =>
+      // Hoisted: the by-name shape parameter may not hide `decodable`.
+      // Sealed lazily: the shape must stay by-name (recursive derivation
+      // depends on deferral), and its thunk may not capture the evidence.
+      val shape: () -> Morphology =
+        caps.unsafe.unsafeAssumePure(() => Morphology.Opt(decodable.shape()))
+
+      Json.Decodable(shape()): json =>
         // An `Optional` field reads `Unset` from an absent key *and* from an
         // explicit JSON `null`: both mean "no value" on the wire. (Missing keys
         // arrive here as `Unset`; a present `null` arrives as the `JsonNull`
@@ -524,7 +536,9 @@ object Json extends Json2, Dynamic:
       : JsonString | JsonNumber | JsonBoolean | JsonNull | JsonObject | JsonArray | Unset )
     :   Ast =
 
-      value
+      // Asserted: `JsonArray`'s `Array` members decorate the union read-only under
+      // separation checking, but AST arrays are internal, never-mutated data.
+      value.asInstanceOf[Ast]
 
     // Build an object node from parallel `keys` and `values` arrays. The result
     // is stored as a single `IArray[Any]` of length `2 * keys.length`, with keys
@@ -694,7 +708,8 @@ object Json extends Json2, Dynamic:
             val n = json.arrayLength
 
             if n == full.length then full
-            else IArray.tabulate(n)(full(_))
+            // Sealed: a fresh `IArray` is immutable (the opaque-Array artifact).
+            else caps.unsafe.unsafeAssumePure(IArray.tabulate(n)(full(_)))
           else
             // hoisted: a fresh array built inside `yet`'s by-name operand (which
             // captures the ambient Tactic) could not escape it
@@ -710,14 +725,15 @@ object Json extends Json2, Dynamic:
 
       def bcd: Bcd raises JsonError = json.asMatchable match
         case value: Array[Double] @unchecked => value.asInstanceOf[Bcd]
-        case value: Long                     => Bcd(BigDecimal(value))
-        case value: Double                   => Bcd(BigDecimal(value))
+        case value: Long                     => caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(value)))
+        case value: Double                   => caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(value)))
 
         case value: Int =>
-          Bcd.fromString(Bcd.bcdIntText(value).stripPrefix("-"), value < 0)
+          caps.unsafe.unsafeAssumePure:
+            Bcd.fromString(Bcd.bcdIntText(value).stripPrefix("-"), value < 0)
 
         case _ =>
-          expected(JsonPrimitive.Number) yet Bcd(BigDecimal(0L))
+          expected(JsonPrimitive.Number) yet caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(0L)))
 
       def long: Long raises JsonError = json.asMatchable match
         case value: Long                     => value
@@ -800,13 +816,15 @@ object Json extends Json2, Dynamic:
       val (raw, ints) = Parser.parseTracked(input, mode)
       (Json.Ast(raw), Json.PositionIndex(ints))
 
-    private[jacinta] def parse(input: (Stream[Data] over Credit)^)(using mode: NumberMode)
-    :   Json.Ast raises ParseError =
+    private[jacinta] def parse(consume input: (Stream[Data] over Credit)^)
+      ( using mode: NumberMode, tactic: Tactic[ParseError] )
+    :   Json.Ast =
 
       Json.Ast(Parser.parse(input, mode))
 
-    private[jacinta] def parseTracked(input: (Stream[Data] over Credit)^)(using mode: NumberMode)
-    :   (Json.Ast, Json.PositionIndex) raises ParseError =
+    private[jacinta] def parseTracked(consume input: (Stream[Data] over Credit)^)
+      ( using mode: NumberMode, tactic: Tactic[ParseError] )
+    :   (Json.Ast, Json.PositionIndex) =
 
       val (raw, ints) = Parser.parseTracked(input, mode)
       (Json.Ast(raw), Json.PositionIndex(ints))
@@ -848,17 +866,24 @@ object Json extends Json2, Dynamic:
 
   // As above, but pulling from a demand-aware stream rather than a chunk
   // iterator.
+  // The parameter is not `consume`: `Aggregable.accept`'s signature is pinned
+  // non-consuming by overrides in modules outside separation checking, so the
+  // stream crosses to the consuming parser as a neutral reference — each accept
+  // call delivers a stream that is used exactly once, by construction.
   private def readJson(input: (Stream[Data] over Credit)^)
     ( using Tactic[ParseError], PositionTracking )
   :   Json =
 
+    val ref: AnyRef = input.asInstanceOf[AnyRef]
+
     summon[PositionTracking] match
       case PositionTracking.On =>
-        val (ast, index) = Json.Ast.parseTracked(input)
+        val (ast, index) =
+          Json.Ast.parseTracked(ref.asInstanceOf[(Stream[Data] over Credit)^])
         new Json(ast, index)
 
       case PositionTracking.Off =>
-        Json(Json.Ast.parse(input))
+        Json(Json.Ast.parse(ref.asInstanceOf[(Stream[Data] over Credit)^]))
 
   // Canonical external accessor for the underlying AST. The `root`
   // method on `class Json` is package-private so that breaking through
@@ -1083,14 +1108,26 @@ object Json extends Json2, Dynamic:
   given option: [value: Json.Decodable] => Tactic[JsonError]
   =>  Option[value] is Json.Decodable =
 
-    Json.Decodable(Morphology.Opt(value.shape())): json =>
+    // Sealed lazily: the shape must stay by-name (recursive derivation
+    // depends on deferral), and its thunk may not capture the evidence.
+    val shape: () -> Morphology =
+      caps.unsafe.unsafeAssumePure(() => Morphology.Opt(value.shape()))
+
+
+    Json.Decodable(shape()): json =>
       if json.root.isAbsent then None else Some(value.decoded(json))
 
 
   given optionEncodable: [value] => (encodable: value is Json.Encodable)
   =>  Option[value] is Json.Encodable =
 
-    Json.Encodable(Morphology.Opt(encodable.shape())):
+    // Sealed lazily: the shape must stay by-name (recursive derivation
+    // depends on deferral), and its thunk may not capture the evidence.
+    val shape: () -> Morphology =
+      caps.unsafe.unsafeAssumePure(() => Morphology.Opt(encodable.shape()))
+
+
+    Json.Encodable(shape()):
       case None        => Json.ast(Json.Ast(Unset))
       case Some(value) => encodable.encode(value)
 
@@ -1130,7 +1167,12 @@ object Json extends Json2, Dynamic:
 
     // Laundered pure per the codec-thunk seal pattern; see `optional`'s comment above.
     caps.unsafe.unsafeAssumePure:
-      Json.Encodable(Morphology.Arr(encodable.shape())):
+      // Sealed lazily: the shape must stay by-name (recursive derivation
+      // depends on deferral), and its thunk may not capture the evidence.
+      val shape: () -> Morphology =
+        caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
+
+      Json.Encodable(shape()):
         values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
 
 
@@ -1139,7 +1181,12 @@ object Json extends Json2, Dynamic:
 
     // Laundered pure per the codec-thunk seal pattern; see `optional`'s comment above.
     caps.unsafe.unsafeAssumePure:
-      Json.Encodable(Morphology.Arr(encodable.shape())):
+      // Sealed lazily: the shape must stay by-name (recursive derivation
+      // depends on deferral), and its thunk may not capture the evidence.
+      val shape: () -> Morphology =
+        caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
+
+      Json.Encodable(shape()):
         values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
 
 
@@ -1148,7 +1195,12 @@ object Json extends Json2, Dynamic:
 
     // Laundered pure per the codec-thunk seal pattern; see `optional`'s comment above.
     caps.unsafe.unsafeAssumePure:
-      Json.Encodable(Morphology.Arr(encodable.shape())):
+      // Sealed lazily: the shape must stay by-name (recursive derivation
+      // depends on deferral), and its thunk may not capture the evidence.
+      val shape: () -> Morphology =
+        caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
+
+      Json.Encodable(shape()):
         values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
 
 
@@ -1163,7 +1215,12 @@ object Json extends Json2, Dynamic:
     // given-resolution lifetime; the whole instance is laundered pure (the codec-thunk
     // seal pattern; see rep/DECISIONS.md).
     caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Arr(decodable.shape())): value =>
+      // Sealed lazily: the shape must stay by-name (recursive derivation
+      // depends on deferral), and its thunk may not capture the evidence.
+      val shape: () -> Morphology =
+        caps.unsafe.unsafeAssumePure(() => Morphology.Arr(decodable.shape()))
+
+      Json.Decodable(shape()): value =>
         val builder = factory.newBuilder
 
         value.root.array.each: json =>
@@ -1190,7 +1247,12 @@ object Json extends Json2, Dynamic:
 
     // Laundered pure as for `array` above.
     caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Dict(Morphology.Str, decodable.shape())): value =>
+      // Sealed lazily: the shape must stay by-name (recursive derivation
+      // depends on deferral), and its thunk may not capture the evidence.
+      val shape: () -> Morphology =
+        caps.unsafe.unsafeAssumePure(() => Morphology.Dict(Morphology.Str, decodable.shape()))
+
+      Json.Decodable(shape()): value =>
         val root = value.root
         val n = root.objectSize
         var i = 0
@@ -1211,7 +1273,13 @@ object Json extends Json2, Dynamic:
   =>  ( encodable: element is Json.Encodable )
   =>  Map[key, element] is Json.Encodable =
 
-    Json.Encodable(Morphology.Dict(Morphology.Str, encodable.shape())): map =>
+    // Sealed lazily: the shape must stay by-name (recursive derivation
+    // depends on deferral), and its thunk may not capture the evidence.
+    val shape: () -> Morphology =
+      caps.unsafe.unsafeAssumePure(() => Morphology.Dict(Morphology.Str, encodable.shape()))
+
+
+    Json.Encodable(shape()): map =>
       val keys: List[key] = map.keys.to(List)
       val values = IArray.from(keys.map(map(_).encode.root))
       Json.ast(Json.Ast.obj(IArray.from(keys.map(_.encode.s)).asInstanceOf[IArray[String]], values.asInstanceOf[IArray[Any]]))

@@ -132,7 +132,8 @@ object JsonPointer extends Root(""):
 
 case class JsonPointer(url: Optional[HttpUrl] = Unset, path: Path on JsonPointer = JsonPointer):
   def apply(using registry: (JsonPointer.Registry)^)(document: Json)
-  :   Json raises JsonPointerError =
+    ( using Tactic[JsonPointerError] )
+  :   Json =
     url.let(registry(_).lest(JsonPointerError(JsonPointerError.Reason.UnknownDocument, 0)))
     . or(document)
 

@@ -1393,3 +1393,32 @@ flipping it yields 12 errors, all in the macro-quote/CC unification family
 against capture-decorated Expr types, plus Aggregable given results capturing
 anonymous evidence). Needs a dedicated leg (possibly fork work on quote-pattern
 capture unification); parked with a pointer.
+
+## Sepcheck rollout leg 2 (2026-07-11, branch sepcheck-rollout-2)
+
+Flipped to settings.sep: jacinta.core, hieroglyph.core, caesura.core,
+perihelion.core, cordillera.core (which had NO capture checking at all —
+another silent exclusion, now checked AND sepchecked). jacinta.time/http/schema
+reverted to cc: schema hits derived-given separation failures (recursive codec
+derivation) — satellite modules parked like honeycomb.
+
+CRITICAL LESSON (caught by jacinta tests as a StackOverflow): derived-codec
+shape parameters are by-name BECAUSE recursive derivation depends on deferral —
+"hoist the by-name to a val" is WRONG there. The correct recipe is a sealed
+lazy thunk: `val shape: () -> Morphology = unsafeAssumePure(() => ...)` passed
+as `shape()` — lazy AND pure-captured. Only tests catch this class; sweeps that
+stop at compilation would have shipped it.
+
+Other recipes this leg: CharDecoder keeps its stream as pure Data and takes the
+mutable view per-read (mapping to Array up front gives every element a reach
+capability); GraphemeBreak pre-sizes an exclusive Array (stdlib ArrayBuilder
+reads count as object-level uses — `uses caps.any.rd` clauses cascade
+capability-ness and are disproportionate; caps.freeze on the trimmed copy);
+DSV Parser classified ExclusiveCapability+Stateful with the update fixpoint;
+class-under-construction may not be captured by its own spawned fiber
+(Websocket.task binds locals/rims before async; class-level givens like
+Masking must be re-provided locally); tuple bindings of two exclusive endpoints
+are rejected — cast the pair whole to (AnyRef, AnyRef). ~20 IArray-opacity
+seals added: FORK-FIX CANDIDATE — stdlib IArray ops (from/slice/take/drop/
+++/zipWithIndex/tabulate/updated) should return pure results, eliminating this
+entire seal class.
