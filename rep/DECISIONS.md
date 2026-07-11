@@ -1086,3 +1086,26 @@ ThreadLocal pool then also needs a capability-aware shape); (b) fork accommodati
 allowing fresh-into-`@untrackedCaptures`-field assignment under CC; (c) revert Cursor
 exclusivity. jacinta reverted to pristine on this branch pending the decision; the other
 8 parser modules are expected to hit the same pattern wherever they field-hold cursors.
+
+## Sepcheck jacinta conversion: 95% done, blocked on cap-param field admission (2026-07-11)
+
+Option 1 executed: `Parser` extracted from jacinta.Json.scala into its own separation-
+checked unit (jacinta.Json.Parser.scala — keeps the derivation-bearing Json.scala away
+from the sepcheck import), re-parented `ExclusiveCapability, Stateful`, ~40 methods
+classified `update` by compiler-driven fixpoint sweep, `chars`/keyCache arrays exclusive,
+`StringScanContinue` frozen to `IArray`, pool hand-out cast to `Parser^` (asserts the
+per-thread single-owner invariant the ThreadLocal pool provides by construction).
+
+Lessons that took bisection:
+- A method result must be `Cursor[Data, {}]^` — the `^` matters (bare = implicit read-only
+  `.rd` result) and the WILDCARD cap arg `Cursor[Data, ?]` misbehaves; use the concrete
+  `{}` arg.
+- Method-result freshes ARE admissible into exclusive fields (probe-proven, incl. cross-
+  module and under the full flag set) — EXCEPT for classes with a `cap^` capture-set
+  parameter: `p11-capparam-field.neg` (19 lines, self-contained) shows plain factory,
+  ascribed local, consume adapter, and direct `new` ALL fail with "fresh … is not visible
+  from any in variable …", and `@untrackedCaptures` does not relax it. Cursor has a cap
+  param, so Parser's three cursor-reset assignments are blocked. FORK FIX #12 candidate:
+  the admission logic (maxSubsumes/levelOK — ctxresult-adjacent) treats the CapSet type
+  argument's presence as level-relevant. Until then jacinta.core does not compile; the
+  conversion is committed as WIP.

@@ -127,7 +127,7 @@ object Cursor:
   // Build a Cursor pre-filled with a single chunk; the loader is a no-op.
   // This is the "Direct" mode: parsers that already have all the data in
   // memory pay no per-call refill cost.
-  transparent inline def apply[data](initial: data)
+  def apply[data](initial: data)
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand )
   :   Cursor[data, {}]^ =
@@ -152,7 +152,7 @@ object Cursor:
   // memory stays bounded through a parse of an arbitrarily large input. The window is
   // read and skipped within the fill, before the stream can refill again — the borrow
   // discipline `Stream.window` documents, applied at the one place a cursor touches it.
-  transparent inline def apply[data](stream: Stream[data] over Credit)
+  def apply[data](stream: Stream[data] over Credit)
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand,
             buffering:    Buffering )
@@ -190,7 +190,7 @@ object Cursor:
   // `^{}` at CC-only call sites — every update call through the cursor is rejected as
   // read-only. Re-track the iterator once that interaction is understood (needs a minimal
   // repro; the toy version works).
-  transparent inline def apply[data](iterator: Iterator[data])
+  def apply[data](iterator: Iterator[data])
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand )
   :   Cursor[data, {}]^ =
