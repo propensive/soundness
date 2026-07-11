@@ -991,3 +991,36 @@ tolerates old legerdemain), and harlequin tolerates old punctuation/hellenism.
 
 Every prefix of the final 107-commit series was verified by a full `test.assembly` build
 (clean-retry on zinc cross-batch artifacts), split across two worktrees.
+
+## Separation checking for the streaming kernel: Phase 0 characterization (2026-07-11)
+
+Plan: apply `language.experimental.separationChecking` to the mutable streaming fast paths
+(zephyrine windows/Conduit hand-off/Cursor, then turbulence and the HTTP stack), replacing
+the convention-only single-owner discipline currently gated by `Unsafe`. Full plan in
+`~/.claude/plans/now-that-we-have-expressive-summit.md`; probe suite + findings table in
+`rep/sepcheck-probes/README.md`. All 20 probes green on BOTH rows (3.9.0-RC1-propensive and
+3.10.0-propensive, single-shot fork scalac).
+
+Key decisions established by the probes:
+
+1. **Scoped CPS borrows are the window mechanism.** `reading[T](lambda: (storage, start,
+   limit) ->{caps.any, this.rd} T)` rejects both refill-during-borrow and storage escape.
+   First-class windows stay temporal (unexpressible) — raw accessors that remain keep
+   `Unsafe`.
+2. **Kernel stage types re-parent to `ExclusiveCapability, Stateful` — NOT `Mutable`.**
+   Mutable implies the Unscoped classifier, and an Unscoped capability cannot capture
+   non-Unscoped things (Cursor's `load` thunk, any stage wrapping an upstream). The
+   exclusive/read-only discipline is identical without Unscoped.
+3. **`Addressable.Storage` stays untracked.** The built-in Array-as-Mutable treatment does
+   not compose through an abstract type member (bare abstract param = pure; fresh results
+   don't flow; exclusive abstract fields can't be reassigned). Safety attaches to the
+   STAGE capability; generic storage primitives keep their current typing. Concrete-array
+   code (compaction, ensureCapacity-style swap, freeze) is fully supported.
+4. **The read-only cascade is CC-level**: consumers compiled without the sepcheck import
+   still get bare-ref = read-only against re-parented kernel types. Re-parenting is
+   therefore a repo-visible API change (mechanical `^` sweep), gated behind the plan's
+   decision gate; `consume`/hidden-set/freeze diagnostics remain per-unit.
+5. The 3.9 row needs no SepCheck cherry-pick so far (`562b513a4e` absent but the anonymous
+   factory shape is green). GOTCHA for kernel authors: declare normal members before
+   `consume` methods in a template (later members are "hidden by" the consume result —
+   upstream-reportable, like the abstract-Storage opacity).
