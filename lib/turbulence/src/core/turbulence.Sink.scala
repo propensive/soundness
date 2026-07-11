@@ -48,7 +48,7 @@ import zephyrine.*
 // a typed `StreamError` through an `Emit` captured by the given — a writer
 // only reports a cut, never aborts. `finish` closes the underlying resource,
 // matching `Writable`'s end-of-stream behaviour.
-object Sink extends Sink2:
+object Sink:
   given outputStream: [output <: ji.OutputStream] => (streamCut: Emit[StreamError], buffering: Buffering)
   =>  ((output is Sink by Data over Credit)^{streamCut}) =
 
@@ -188,21 +188,6 @@ object Sink extends Sink2:
           chunks ::= addressable0.materialize(storage, 0, mark0)
           mark0 = 0
 
-// Transitional: any `Writable` instance over a buffer-backed medium is a
-// `Sink`, at lower priority than the native instances above. Since `Writable`
-// consumes its entire `LazyList` in one call (closing the target at its end),
-// this bridge must accumulate everything written and deliver it at `finish` —
-// memory is unbounded, so native `Sink` instances should replace it.
-trait Sink2:
-  given writableData: [target] => (writable: (target is Writable by Data)^)
-  =>  ((target is Sink by Data over Credit)^{writable}) =
-
-    Sink.buffered(_, writable.write)
-
-  given writableText: [target] => (writable: (target is Writable by Text)^)
-  =>  ((target is Sink by Text over Credit)^{writable}) =
-
-    Sink.buffered(_, writable.write)
 
 trait Sink extends Typeclass, Operable:
   type Transport

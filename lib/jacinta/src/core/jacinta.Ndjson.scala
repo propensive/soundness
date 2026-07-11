@@ -34,12 +34,13 @@ package jacinta
 
 import anticipation.*
 import contingency.*
+import hieroglyph.*
 import prepositional.*
 import turbulence.*
 import zephyrine.*
 
 object Ndjson:
-  def parse[source: Streamable by Line](value: source)(using Text is Streamable by Data)
+  def parse[source: Streamable by Line](value: source)(using CharEncoder)
   :   Ndjson raises ParseError =
 
     Ndjson(value.stream[Line].map { line => line.content.read[Json] })

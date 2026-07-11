@@ -39,6 +39,7 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
+import zephyrine.*
 import vacuous.*
 
 object Resource:
@@ -50,6 +51,16 @@ object Resource:
       given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
 
       Streamable.inputStream.contramap: resource =>
+        classloader.inputStream(resource.path.encode)
+
+  given source: [resource <: Resource]
+  =>  ( classloader: Classloader, buffering: Buffering )
+  =>  resource is Source by Data over Credit =
+    // See `streamable` above: unscoped throwing tactic + pure classloader; laundered pure.
+    caps.unsafe.unsafeAssumePure:
+      given Tactic[StreamError | ClasspathError] = strategies.throwUnsafely
+
+      Source.inputStream.contramap: resource =>
         classloader.inputStream(resource.path.encode)
 
   given nominable: [resource <: Resource] => resource is Nominable = _.path.descent.prim.or(t"/")

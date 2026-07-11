@@ -99,18 +99,20 @@ object Tests extends Suite(m"Turbulence tests"):
     val qbfData = qbf.data
 
     object Ref:
-      given Ref is Streamable by Text = ref => LazyList(t"abc", t"def")
-      given Ref is Streamable by Data = ref => LazyList(t"abc".data, t"def".data)
+      given textSource: Ref is Source by Text over Credit =
+        ref => Stream(LazyList(t"abc", t"def").iterator)
+      given dataSource: Ref is Source by Data over Credit =
+        ref => Stream(LazyList(t"abc".data, t"def".data).iterator)
 
     case class Ref()
 
     object Ref2:
-      given Ref2 is Streamable by Text = ref => LazyList(t"abc", t"def")
+      given Ref2 is Source by Text over Credit = ref => Stream(LazyList(t"abc", t"def").iterator)
 
     case class Ref2()
 
     object Ref3:
-      given Ref3 is Streamable by Data = ref => LazyList(t"abc".data, t"def".data)
+      given Ref3 is Source by Data over Credit = ref => Stream(LazyList(t"abc".data, t"def".data).iterator)
 
     case class Ref3()
 
@@ -127,23 +129,23 @@ object Tests extends Suite(m"Turbulence tests"):
         qbf.read[Text].s
       . assert(_ == qbf.s)
 
-      test(m"Read type as Text with Text and Byte Streamable"):
+      test(m"Read type as Text with Text and Byte Source"):
         Ref().read[Text].s
       . assert(_ == t"abcdef".s)
 
-      test(m"Read type as Data with Text and Byte Streamable"):
+      test(m"Read type as Data with Text and Byte Source"):
         Ref().read[Data].to(List)
       . assert(_ == t"abcdef".data.to(List))
 
-      test(m"Read some type as Text with only Text Streamable instance"):
+      test(m"Read some type as Text with only Text Source instance"):
         Ref2().read[Text].s
       . assert(_ == t"abcdef".s)
 
-      test(m"Read some type as Data with only Text Streamable instance"):
+      test(m"Read some type as Data with only Text Source instance"):
         Ref2().read[Data].to(List)
       . assert(_ == t"abcdef".data.to(List))
 
-      test(m"Read some type as Text with only Data Streamable instance"):
+      test(m"Read some type as Text with only Data Source instance"):
         Ref3().read[Text].s
       . assert(_ == t"abcdef".s)
 
@@ -533,33 +535,18 @@ object Tests extends Suite(m"Turbulence tests"):
         builder.toString.tt
       . assert(_ == original)
 
-      test(m"lazyList view drains a stream as chunks"):
+      test(m"memoize view drains a stream as one value"):
         val stream = summon[Data is Source by Data over Credit].stream(payload)
-        stream.lazyList.map(_.to(List)).flatten.to(List)
+        stream.memoize.to(List)
       . assert(_ == payload.to(List))
 
-      test(m"a Streamable instance is a Source through the bridge"):
+      test(m"a LazyList is a Source through its native instance"):
         val output = ji.ByteArrayOutputStream()
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
         val source = summon[LazyList[Data] is Source by Data over Credit]
         source.stream(LazyList(payload, payload)).flowTo(sink.intake(output))
         output.toByteArray.nn.length
       . assert(_ == payload.length*2)
-
-      test(m"a Writable instance is a Sink through the bridge"):
-        class Store():
-          val buffer: scm.ArrayBuffer[Byte] = scm.ArrayBuffer()
-
-        object Store:
-          given Store is Writable by Data = (store, stream) => stream.each: data =>
-            data.each: byte =>
-              store.buffer.append(byte)
-
-        val store = Store()
-        val sink = summon[Store is Sink by Data over Credit]
-        summon[Data is Source by Data over Credit].stream(payload).flowTo(sink.intake(store))
-        store.buffer.length
-      . assert(_ == payload.length)
 
       test(m"a sink write failure raises StreamError"):
         import unsafeExceptions.canThrowAny

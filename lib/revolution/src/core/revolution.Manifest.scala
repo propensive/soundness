@@ -45,7 +45,7 @@ import vacuous.*
 
 object Manifest:
   protected def parse[streamable: Streamable by Data](source: streamable): Manifest =
-    val java = juj.Manifest(source.read[LazyList[Data]].inputStream)
+    val java = juj.Manifest(source.stream[Data].inputStream)
 
     Manifest:
       java.getMainAttributes.nn.asScala.to(List).map: (key, value) =>

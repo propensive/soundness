@@ -47,7 +47,7 @@ import zephyrine.*
 // instead of a `LazyList`. Sources needing buffers or error contexts capture
 // them as contextual values of the given (`Buffering`, `Tactic[StreamError]`),
 // so the typeclass itself remains a single abstract method.
-object Source extends Source2:
+object Source:
   given bytes: Data is Source by Data over Credit = Stream(_)
   given text: [textual <: Text] => textual is Source by Text over Credit = value => Stream(value)
 
@@ -180,20 +180,6 @@ object Source extends Source2:
         ended = true
         try input.close() catch case _: Exception => ()
 
-// Transitional: any `Streamable` instance over a buffer-backed medium is a
-// `Source`, at lower priority than the native instances above, so downstream
-// code migrates without ceremony. Production of the underlying `LazyList` is
-// not demand-controlled.
-trait Source2:
-  given streamableData: [value] => (streamable: (value is Streamable by Data)^)
-  =>  ((value is Source by Data over Credit)^{streamable}) =
-
-    source => Stream(streamable.stream(source).iterator)
-
-  given streamableText: [value] => (streamable: (value is Streamable by Text)^)
-  =>  ((value is Source by Text over Credit)^{streamable}) =
-
-    source => Stream(streamable.stream(source).iterator)
 
 trait Source extends Typeclass, Operable:
   type Transport

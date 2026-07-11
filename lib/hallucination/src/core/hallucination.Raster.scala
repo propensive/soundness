@@ -54,7 +54,7 @@ object Raster:
     new Raster(image)
 
   def apply[streamable: Streamable by Data](input: streamable): Raster =
-    new Raster(ji.ImageIO.read(input.read[Data].javaInputStream).nn)
+    new Raster(ji.ImageIO.read(input.stream[Data].read[Data].javaInputStream).nn)
 
   def apply[form: Rasterizable as rasterizable](image: jai.BufferedImage): Raster in form =
     new Raster(image):
@@ -66,12 +66,20 @@ object Raster:
     out.close()
     out.stream
 
+  given source: [form: Rasterizable]
+  =>  (Raster in form) is Source by Data over zephyrine.Credit =
+    raster =>
+      val out = StreamOutputStream()
+      ji.ImageIO.write(raster.image, form.name.s, out)
+      out.close()
+      zephyrine.Stream(out.stream.iterator)
+
   given abstractable: [format: Rasterizable] => (Raster in format) is Abstractable:
     type Domain = HttpStreams
     type Result = HttpStreams.Content
 
     def genericize(image: Raster in format): HttpStreams.Content =
-      (format.mediaType.basic, HttpStreams.Body(image.read[LazyList[Data]].iterator))
+      (format.mediaType.basic, HttpStreams.Body(image.stream[Data].iterator))
 
   given graphical: Raster is Graphical:
     def pixel(raster: Raster, x: Int, y: Int): Chroma = raster(x, y)

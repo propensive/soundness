@@ -48,7 +48,7 @@ trait Audible extends Typeclass:
     def mediaType: MediaType
 
     def read[input: Streamable by Data](source: input): Audio in Self raises AudioError =
-      val rawBytes: Array[Byte] = source.read[Data].javaInputStream.readAllBytes.nn
+      val rawBytes: Array[Byte] = source.stream[Data].read[Data].javaInputStream.readAllBytes.nn
 
       val fileFormat: jss.AudioFileFormat =
         try jss.AudioSystem.getAudioFileFormat(ji.ByteArrayInputStream(rawBytes)).nn

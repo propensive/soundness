@@ -106,30 +106,6 @@ extension (consume stream: (Stream[Data] over Credit)^)
 
     stream.through(compression.decompressor())
 
-extension [medium](consume stream: (Stream[medium] over Credit)^)
-  // Legacy view: drain a pull endpoint as a lazy list of materialized chunks,
-  // pulling one block per forced cell. For consumers not yet converted to the
-  // streaming kernel; conversion holds only one block at a time, but the
-  // resulting cells are immutable and GC-managed like any lazy list.
-  def lazyList(using buffering: Buffering): LazyList[medium] =
-    val block = buffering.capacity(stream.addressable.substrate)
-
-    def recur(): LazyList[medium] =
-      stream.refill(Credit(block)) match
-        case Unset =>
-          LazyList()
-
-        case count: Int =>
-          val window = stream.window(using Unsafe)
-          val chunk = stream.addressable.materialize(window, stream.start, count)
-          stream.skip(count)
-          chunk #:: recur()
-
-    // The transitional bridge: a LazyList is pure, so it cannot carry the consumed
-    // stream's capture — the well-known confinement gap that motivated the capability
-    // kernel. Sealed here, at the single bridge point (scheduled for removal).
-    caps.unsafe.unsafeAssumePure(LazyList.defer(recur()))
-
 extension (consume stream: (Stream[Data] over Credit)^)
   // View a pull endpoint as a `java.io.InputStream` for handing to JDK APIs:
   // each `read` pulls through the window (one block of credit at a time) and
@@ -226,18 +202,6 @@ extension (body: HttpStreams.Body)
                 limit0 = data.length
                 if limit0 == 0 then refill(demand) else limit0
 
-  // Legacy view of an HTTP body as a lazy list of chunks.
-  def lazyList(using buffering: Buffering): LazyList[Data] =
-    val block = buffering.capacity(Substrate.Bytes)
-
-    def recur(): LazyList[Data] = body.next(block) match
-      case null       => LazyList()
-      case data: Data => data #:: recur()
-
-    // The transitional bridge: a LazyList is pure, so it cannot carry the consumed
-    // stream's capture — the well-known confinement gap that motivated the capability
-    // kernel. Sealed here, at the single bridge point (scheduled for removal).
-    caps.unsafe.unsafeAssumePure(LazyList.defer(recur()))
 
 package stdios:
   given muteStdio: Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)

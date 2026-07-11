@@ -204,8 +204,8 @@ object Repackager:
             // are needed (to rewrite the manifest and read the hash list); read those two. Drop any
             // bundled `burdock/Bootstrap.class` (an app whose `Main-Class` is `burdock.Bootstrap`
             // bundles burdock) since the bootstrap is force-included below, avoiding a duplicate.
-            if name == manifestName then manifestData = entry.read[Data]
-            else if name == resource then depsData = entry.read[Data]
+            if name == manifestName then manifestData = entry.stream[Data].read[Data]
+            else if name == resource then depsData = entry.stream[Data].read[Data]
             else if name == bootstrapName then ()
             else ownBuilder += entry
 

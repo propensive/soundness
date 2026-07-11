@@ -49,7 +49,7 @@ object Vocabulary:
     new Vocabulary(load(adjectives), load(animals)).asInstanceOf[Vocabulary over transport]
 
   private def load[source: Streamable by Data](resource: source): List[Text] =
-    resource.read[Text].cut(t"\n").map(_.trim).filter(_ != t"")
+    resource.stream[Data].read[Text].cut(t"\n").map(_.trim).filter(_ != t"")
 
 class Vocabulary private (adjectives: List[Text], animals: List[Text]):
   type Transport

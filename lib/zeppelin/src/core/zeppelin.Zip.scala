@@ -44,6 +44,7 @@ import prepositional.*
 import rudiments.*
 import serpentine.*
 import turbulence.*
+import zephyrine.*
 import vacuous.*
 
 object Zip:
@@ -144,6 +145,7 @@ object Zip:
           directory, comment)
 
     given streamable: Entry is Streamable by Data = _.contents
+    given source: Entry is Source by Data over Credit = entry => Stream(entry.contents.iterator)
 
   case class Entry
     ( ref:              Path on Zip,

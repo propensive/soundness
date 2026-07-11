@@ -625,6 +625,14 @@ object Http:
         case _ =>
           abort(HttpError(response.status, response.textHeaders))
 
+    given source: (tactic: Tactic[HttpError])
+    =>  ((Response is Source by Data over Credit)^{tactic}) = response =>
+      response.status.category match
+        case Http.Status.Category.Successful => response.body.stream
+
+        case _ =>
+          abort(HttpError(response.status, response.textHeaders))
+
     private[Http] def response(status: Status, headers: List[Header], body: Body): Response =
       new Response(1.1, status, headers, body)
 
