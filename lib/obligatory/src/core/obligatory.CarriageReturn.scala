@@ -40,15 +40,28 @@ import vacuous.*
 import zephyrine.*
 
 object CarriageReturn:
-  given framable: Text is Framable by CarriageReturn = input =>
-    val cursor = Cursor(input)
+  // An explicit `new Framable` rather than a SAM lambda: the Scala.js pipeline, computing the
+  // result's capture set, infers a self-referential union (`input | Framable{…}`) for the
+  // lambda's `this` and rejects it; a named instance gives `this` a concrete type. (Compiler
+  // divergence; the JVM pipeline accepts the lambda.)
+  given framable: (Text is Framable by CarriageReturn) = new Framable:
+    type Self = Text
+    type Operand = CarriageReturn
 
-    Framable.frames[Text]:
-      cursor.hold:
-        val start = cursor.mark
+    def frames(input: Iterator[Text]^): Iterator[Text]^{input, this} =
+      val cursor = Cursor(input)
 
-        if !cursor.finished && cursor.seek(Cr.toByte.asInstanceOf[cursor.addressable.Operand])
-        then cursor.grab(start, cursor.mark).also(cursor.next())
-        else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)
+      val framed =
+        Framable.frames[Text]:
+          cursor.hold:
+            val start = cursor.mark
+
+            if !cursor.finished && cursor.seek(Cr.toByte.asInstanceOf[cursor.addressable.Operand])
+            then cursor.grab(start, cursor.mark).also(cursor.next())
+            else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)
+
+      // The framed iterator captures `cursor`, which is built from (and so reaches) `input`; the
+      // relabel states that reachability, which the JS pipeline does not infer through the local.
+      framed.asInstanceOf[Iterator[Text]^{input, this}]
 
 sealed trait CarriageReturn

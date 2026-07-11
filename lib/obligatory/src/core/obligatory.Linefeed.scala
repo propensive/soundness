@@ -40,15 +40,24 @@ import vacuous.*
 import zephyrine.*
 
 object Linefeed:
-  given framable: Text is Framable by Linefeed = input =>
-    val cursor = Cursor(input)
+  // See `CarriageReturn.framable`: explicit `new` (the Scala.js pipeline mis-infers the SAM
+  // lambda's `this`) plus a relabel of the local cursor's reachability of `input`.
+  given framable: (Text is Framable by Linefeed) = new Framable:
+    type Self = Text
+    type Operand = Linefeed
 
-    Framable.frames[Text]:
-      cursor.hold:
-        val start = cursor.mark
+    def frames(input: Iterator[Text]^): Iterator[Text]^{input, this} =
+      val cursor = Cursor(input)
 
-        if !cursor.finished && cursor.seek(Lf.toByte.asInstanceOf[cursor.addressable.Operand])
-        then cursor.grab(start, cursor.mark).also(cursor.next())
-        else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)
+      val framed =
+        Framable.frames[Text]:
+          cursor.hold:
+            val start = cursor.mark
+
+            if !cursor.finished && cursor.seek(Lf.toByte.asInstanceOf[cursor.addressable.Operand])
+            then cursor.grab(start, cursor.mark).also(cursor.next())
+            else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)
+
+      framed.asInstanceOf[Iterator[Text]^{input, this}]
 
 sealed trait Linefeed

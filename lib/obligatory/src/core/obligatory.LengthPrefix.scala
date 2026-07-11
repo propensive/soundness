@@ -39,29 +39,38 @@ import vacuous.*
 import zephyrine.*
 
 object LengthPrefix:
+  // See `CarriageReturn.framable`: explicit `new` (the Scala.js pipeline mis-infers the SAM
+  // lambda's `this`) plus a relabel of the local cursor's reachability of `input`.
   given framable: (tactic: Tactic[FrameError])
-  =>  ((Data is Framable by LengthPrefix)^{tactic}) = input =>
-    def fail() = abort(FrameError(FrameError.Reason.ShortRead))
+  =>  ( (Data is Framable by LengthPrefix)^{tactic} ) = new Framable:
+    type Self = Data
+    type Operand = LengthPrefix
 
-    val cursor = Cursor(input)
+    def frames(input: Iterator[Data]^): Iterator[Data]^{input, this} =
+      def fail() = abort(FrameError(FrameError.Reason.ShortRead))
 
-    def length: Optional[Int] =
-      cursor.lay(Unset): byte0 =>
-        cursor.next()
+      val cursor = Cursor(input)
 
-        cursor.lay(fail()): byte1 =>
+      def length: Optional[Int] =
+        cursor.lay(Unset): byte0 =>
           cursor.next()
 
-          cursor.lay(fail()): byte2 =>
+          cursor.lay(fail()): byte1 =>
             cursor.next()
 
-            cursor.lay(fail()): byte3 =>
+            cursor.lay(fail()): byte2 =>
               cursor.next()
-              byte0.asInstanceOf[Byte] << 24 | byte1.asInstanceOf[Byte] << 16
-                | byte2.asInstanceOf[Byte] << 8 | byte3.asInstanceOf[Byte]
 
-    Framable.frames[Data]:
-      length.let: length =>
-        cursor.take(fail())(length)
+              cursor.lay(fail()): byte3 =>
+                cursor.next()
+                byte0.asInstanceOf[Byte] << 24 | byte1.asInstanceOf[Byte] << 16 |
+                  byte2.asInstanceOf[Byte] << 8 | byte3.asInstanceOf[Byte]
+
+      val framed =
+        Framable.frames[Data]:
+          length.let: length =>
+            cursor.take(fail())(length)
+
+      framed.asInstanceOf[Iterator[Data]^{input, this}]
 
 sealed trait LengthPrefix

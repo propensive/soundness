@@ -47,71 +47,80 @@ object ContentLength:
   // framer would) coincides with bytes only for ASCII content and corrupts the stream on any
   // multi-byte UTF-8 body. Unrecognised headers are skipped rather than rejected, since clients
   // routinely send headers beyond `Content-Length` and `Content-Type`.
+  // An explicit `new Framable` rather than a SAM lambda, with the result relabelled to state
+  // that the framed iterator (capturing the local `cursor`, built from `input`) reaches
+  // `input` — the Scala.js pipeline infers neither the lambda's `this` nor the local's
+  // reachability. (Compiler divergence; the JVM pipeline accepts the lambda.)
   given framable: (tactic: Tactic[FrameError])
-  =>  ((Data is Framable by ContentLength)^{tactic}) = input =>
-    val cursor = Cursor(input)
+  =>  ( (Data is Framable by ContentLength)^{tactic} ) = new Framable:
+    type Self = Data
+    type Operand = ContentLength
 
-    val cr: Byte = 13
-    val lf: Byte = 10
-    val colon: Byte = 58
-    val space: Byte = 32
+    def frames(input: Iterator[Data]^): Iterator[Data]^{input, this} =
+      val cursor = Cursor(input)
 
-    def fail(): Nothing = abort(FrameError(FrameError.Reason.ShortRead))
-    def lower(byte: Byte): Byte = if byte >= 65 && byte <= 90 then (byte + 32).toByte else byte
+      val cr: Byte = 13
+      val lf: Byte = 10
+      val colon: Byte = 58
+      val space: Byte = 32
 
-    val name: Text = t"content-length"
+      def fail(): Nothing = abort(FrameError(FrameError.Reason.ShortRead))
+      def lower(byte: Byte): Byte = if byte >= 65 && byte <= 90 then (byte + 32).toByte else byte
 
-    def frame(): Optional[Data] =
-      if cursor.finished then Unset else
-        var length: Int = -1
-        var blank = false
+      val name: Text = t"content-length"
 
-        while !blank do
-          if cursor.finished then fail()
+      def frame(): Optional[Data] =
+        if cursor.finished then Unset else
+          var length: Int = -1
+          var blank = false
 
-          if cursor.datum(using Unsafe) == cr then
-            cursor.next()
-            if cursor.finished || cursor.datum(using Unsafe) != lf then fail()
-            cursor.next()
-            blank = true
-          else
-            var matches = true
-            var index = 0
+          while !blank do
+            if cursor.finished then fail()
 
-            while !cursor.finished && cursor.datum(using Unsafe) != colon do
-              val byte = lower(cursor.datum(using Unsafe).asInstanceOf[Byte])
-              if index >= name.length || byte != name.s.charAt(index).toByte then matches = false
-              index += 1
+            if cursor.datum(using Unsafe) == cr then
+              cursor.next()
+              if cursor.finished || cursor.datum(using Unsafe) != lf then fail()
+              cursor.next()
+              blank = true
+            else
+              var matches = true
+              var index = 0
+
+              while !cursor.finished && cursor.datum(using Unsafe) != colon do
+                val byte = lower(cursor.datum(using Unsafe).asInstanceOf[Byte])
+                if index >= name.length || byte != name.s.charAt(index).toByte then matches = false
+                index += 1
+                cursor.next()
+
+              if index != name.length then matches = false
+              if cursor.finished then fail()
               cursor.next()
 
-            if index != name.length then matches = false
-            if cursor.finished then fail()
-            cursor.next()
+              while !cursor.finished && cursor.datum(using Unsafe) == space do cursor.next()
 
-            while !cursor.finished && cursor.datum(using Unsafe) == space do cursor.next()
+              var value = 0
+              var digits = false
 
-            var value = 0
-            var digits = false
+              while !cursor.finished && cursor.datum(using Unsafe) != cr do
+                val byte = cursor.datum(using Unsafe).asInstanceOf[Byte]
 
-            while !cursor.finished && cursor.datum(using Unsafe) != cr do
-              val byte = cursor.datum(using Unsafe).asInstanceOf[Byte]
+                if matches && byte >= 48 && byte <= 57 then
+                  value = value*10 + (byte - 48)
+                  digits = true
 
-              if matches && byte >= 48 && byte <= 57 then
-                value = value*10 + (byte - 48)
-                digits = true
+                cursor.next()
 
+              if cursor.finished then fail()
+              cursor.next()
+              if cursor.finished || cursor.datum(using Unsafe) != lf then fail()
               cursor.next()
 
-            if cursor.finished then fail()
-            cursor.next()
-            if cursor.finished || cursor.datum(using Unsafe) != lf then fail()
-            cursor.next()
+              if matches && digits then length = value
 
-            if matches && digits then length = value
+          if length < 0 then abort(FrameError(FrameError.Reason.MalformedLength))
+          cursor.take(fail())(length)
 
-        if length < 0 then abort(FrameError(FrameError.Reason.MalformedLength))
-        cursor.take(fail())(length)
-
-    Framable.frames[Data](frame())
+      val framed = Framable.frames[Data](frame())
+      framed.asInstanceOf[Iterator[Data]^{input, this}]
 
 sealed trait ContentLength

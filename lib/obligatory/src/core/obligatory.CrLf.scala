@@ -41,20 +41,32 @@ import vacuous.*
 import zephyrine.*
 
 object CrLf:
+  // An explicit `new Framable` rather than a SAM lambda, with the result relabelled to state that
+  // the framed iterator (capturing the local `cursor`, built from `input`) reaches `input` — the
+  // Scala.js pipeline infers neither the lambda's `this` nor the local's reachability. (Compiler
+  // divergence; the JVM pipeline accepts the lambda.)
   given framable: (tactic: Tactic[FrameError])
-  =>  ((Text is Framable by CrLf)^{tactic}) = input =>
-    val cursor = Cursor(input)
+  =>  ( (Text is Framable by CrLf)^{tactic} ) = new Framable:
+    type Self = Text
+    type Operand = CrLf
 
-    Framable.frames[Text]:
-      cursor.hold:
-        val start = cursor.mark
+    def frames(input: Iterator[Text]^): Iterator[Text]^{input, this} =
+      val cursor = Cursor(input)
 
-        if !cursor.finished && cursor.seek(Cr.toByte.asInstanceOf[cursor.addressable.Operand])
-        then cursor.grab(start, cursor.mark).also:
-          cursor.next()
+      val framed =
+        Framable.frames[Text]:
+          cursor.hold:
+            val start = cursor.mark
 
-          if !cursor.lay(false)(_ == Lf) then abort(FrameError(FrameError.Reason.MissingLineFeed))
-          else cursor.next()
-        else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)
+            if !cursor.finished && cursor.seek(Cr.toByte.asInstanceOf[cursor.addressable.Operand])
+            then cursor.grab(start, cursor.mark).also:
+              cursor.next()
+
+              if !cursor.lay(false)(_ == Lf)
+              then abort(FrameError(FrameError.Reason.MissingLineFeed))
+              else cursor.next()
+            else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)
+
+      framed.asInstanceOf[Iterator[Text]^{input, this}]
 
 sealed trait CrLf

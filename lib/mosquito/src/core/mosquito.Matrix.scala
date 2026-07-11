@@ -754,7 +754,20 @@ class Matrix[element, rows <: Int, columns <: Int]
   override def hashCode: Int =
     scala.util.hashing.MurmurHash3.arrayHash(elements.mutable(using Unsafe))
 
-  override def toString(): String = t"[${elements.inspect}]".s
+  // `elements.inspect` derives an `Inspectable` for `IArray[element]` element-wise; under capture
+  // checking in the Scala.js pipeline the derivation leaks the element's capture into the
+  // generated `text` override, so `toString` (debug output only) builds the string from the
+  // elements' own `toString`.
+  override def toString(): String =
+    val builder = StringBuilder("[")
+    var index = 0
+
+    while index < elements.length do
+      if index > 0 then builder.append(", ")
+      builder.append(elements(index).toString)
+      index += 1
+
+    builder.append("]").toString
 
 
   @targetName("scalarMul")
