@@ -64,7 +64,7 @@ object Multipart:
       val start = cursor.mark
       cursor.expect('-')(expected('-'))
       cursor.expect('-')(expected('-'))
-      cursor.seek('\r'.toByte)
+      cursor.seek('\r'.toByte.asInstanceOf[cursor.addressable.Operand])
       cursor.grab(start, cursor.mark)
 
     cursor.next()
@@ -79,7 +79,7 @@ object Multipart:
       else
         val key: Text = cursor.hold:
           val start = cursor.mark
-          cursor.seek(':'.toByte)
+          cursor.seek(':'.toByte.asInstanceOf[cursor.addressable.Operand])
           Text.ascii(cursor.grab(start, cursor.mark))
 
         cursor.next()
@@ -87,7 +87,7 @@ object Multipart:
 
         val value: Text = cursor.hold:
           val start = cursor.mark
-          cursor.seek('\r'.toByte)
+          cursor.seek('\r'.toByte.asInstanceOf[cursor.addressable.Operand])
           Text.ascii(cursor.grab(start, cursor.mark))
 
         cursor.next()

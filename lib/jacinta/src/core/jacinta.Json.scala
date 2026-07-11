@@ -558,12 +558,12 @@ object Json extends Json2, Dynamic:
     // (see `Bcd.packBcdLong`). Each `Long` element carries one number's
     // sign + count + nibbles inline — no per-element `Double` materialisation
     // and no per-element heap allocation.
-    def bcdArr(values: Array[Long]): Ast = values
+    def bcdArr(values: Array[Long]): Ast = values.immutable(using Unsafe)
 
     // Build a number-only array node using the single-Int small-BCD
     // encoding (see `Bcd.packBcdInt`). For arrays where every number
     // fits in 7 nibbles — the half-memory variant of `bcdArr`.
-    def smallBcdArr(values: Array[Int]): Ast = values
+    def smallBcdArr(values: Array[Int]): Ast = values.immutable(using Unsafe)
 
     // Accessors over the opaque AST representation. They live in the `Ast`
     // companion so they are in implicit scope wherever a `Json.Ast` is used,
@@ -624,8 +624,8 @@ object Json extends Json2, Dynamic:
       // The number of user-visible elements in an array node (excludes the
       // sentinel pad of a parity-padded heterogeneous array, if present).
       def arrayLength: Int = (json: @unchecked) match
-        case bcds: Array[Long] @unchecked   => bcds.length
-        case smalls: Array[Int] @unchecked  => smalls.length
+        case bcds: IArray[Long] @unchecked   => bcds.length
+        case smalls: IArray[Int] @unchecked  => smalls.length
 
         case _ =>
           val arr = json.asInstanceOf[Array[?]]
@@ -640,14 +640,14 @@ object Json extends Json2, Dynamic:
       //     small-BCD `JsonNumber`, so it surfaces directly via `Json.Ast(_)`.
       //   - boxed `IArray[Any]`: direct indexed lookup.
       def arrayElement(index: Int): Json.Ast = (json: @unchecked) match
-        case bcds: Array[Long] @unchecked =>
+        case bcds: IArray[Long] @unchecked =>
           val v = bcds(index)
           val text = Bcd.bcdLongText(v)
 
           try Json.Ast(java.lang.Long.parseLong(text))
           catch case _: NumberFormatException => Json.Ast(java.lang.Double.parseDouble(text))
 
-        case smalls: Array[Int] @unchecked =>
+        case smalls: IArray[Int] @unchecked =>
           Json.Ast(smalls(index))
 
         case _ =>
@@ -673,12 +673,20 @@ object Json extends Json2, Dynamic:
           i += 2
         -1
 
-      def array: IArray[Json.Ast] raises JsonError = (json: @unchecked) match
-        case bcds: Array[Long] @unchecked =>
-          IArray.tabulate(bcds.length)(json.arrayElement(_))
+      def array(using Tactic[JsonError]): IArray[Json.Ast] = (json: @unchecked) match
+        // Freshly built, frozen on return; the seal strips the tactic-capture decoration
+        // that `arrayElement`'s raising result leaves on the elements.
+        case bcds: IArray[Long] @unchecked =>
+          val out = new Array[Json.Ast](bcds.length)
+          var i = 0
+          while i < out.length do { out(i) = json.arrayElement(i); i += 1 }
+          out.immutable(using Unsafe).asInstanceOf[IArray[Json.Ast]]
 
-        case smalls: Array[Int] @unchecked =>
-          IArray.tabulate(smalls.length)(json.arrayElement(_))
+        case smalls: IArray[Int] @unchecked =>
+          val out = new Array[Json.Ast](smalls.length)
+          var i = 0
+          while i < out.length do { out(i) = json.arrayElement(i); i += 1 }
+          out.immutable(using Unsafe).asInstanceOf[IArray[Json.Ast]]
 
         case _ =>
           if isArray then
@@ -688,7 +696,10 @@ object Json extends Json2, Dynamic:
             if n == full.length then full
             else IArray.tabulate(n)(full(_))
           else
-            expected(JsonPrimitive.Array) yet IArray[Json.Ast]()
+            // hoisted: a fresh array built inside `yet`'s by-name operand (which
+            // captures the ambient Tactic) could not escape it
+            val empty = IArray[Json.Ast]().asInstanceOf[IArray[Json.Ast]]
+            expected(JsonPrimitive.Array) yet empty
 
       def double: Double raises JsonError = json.asMatchable match
         case value: Double                   => value
@@ -734,9 +745,11 @@ object Json extends Json2, Dynamic:
       // Returns a (keys, values) view over an object node. This *materialises*
       // two new IArrays from the flat alternating layout, so prefer
       // `objectKey`/`objectValue` when you only need a few entries.
-      def obj: (IArray[String], IArray[Json.Ast]) raises JsonError =
+      def obj(using Tactic[JsonError]): (IArray[String], IArray[Json.Ast]) =
         if !isObject
-        then expected(JsonPrimitive.Object) yet (IArray[String]() -> IArray[Json.Ast]())
+        then
+          val empty = (IArray[String](), IArray[Json.Ast]()).asInstanceOf[(IArray[String], IArray[Json.Ast])]
+          expected(JsonPrimitive.Object) yet empty
         else
           val arr = json.asInstanceOf[IArray[Any]]
           val n = arr.length/2
@@ -1118,7 +1131,7 @@ object Json extends Json2, Dynamic:
     // Laundered pure per the codec-thunk seal pattern; see `optional`'s comment above.
     caps.unsafe.unsafeAssumePure:
       Json.Encodable(Morphology.Arr(encodable.shape())):
-        values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
+        values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
 
 
   given setEncodable: [set <: Set, element] => (encodable: => (element is Json.Encodable))
@@ -1127,7 +1140,7 @@ object Json extends Json2, Dynamic:
     // Laundered pure per the codec-thunk seal pattern; see `optional`'s comment above.
     caps.unsafe.unsafeAssumePure:
       Json.Encodable(Morphology.Arr(encodable.shape())):
-        values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
+        values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
 
 
   given seriesEncodable: [series <: Series, element] => (encodable: => (element is Json.Encodable))
@@ -1136,7 +1149,7 @@ object Json extends Json2, Dynamic:
     // Laundered pure per the codec-thunk seal pattern; see `optional`'s comment above.
     caps.unsafe.unsafeAssumePure:
       Json.Encodable(Morphology.Arr(encodable.shape())):
-        values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root))))
+        values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
 
 
   given array: [collection <: Iterable, element]
@@ -1201,7 +1214,7 @@ object Json extends Json2, Dynamic:
     Json.Encodable(Morphology.Dict(Morphology.Str, encodable.shape())): map =>
       val keys: List[key] = map.keys.to(List)
       val values = IArray.from(keys.map(map(_).encode.root))
-      Json.ast(Json.Ast.obj(IArray.from(keys.map(_.encode.s)), values))
+      Json.ast(Json.Ast.obj(IArray.from(keys.map(_.encode.s)).asInstanceOf[IArray[String]], values.asInstanceOf[IArray[Any]]))
 
 
   given jsonEncodableInText: Json is anticipation.Encodable in Text = json =>
@@ -1269,8 +1282,8 @@ object Json extends Json2, Dynamic:
       text => LazyList(text.data(using charEncoders.utf8Encoder)).read[Json]
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Json)*): Json =
-    val keys: IArray[String] = IArray.from(elements.map(_(0)))
-    val values: IArray[Json.Ast] = IArray.from(elements.map(_(1).root))
+    val keys: IArray[String] = IArray.from(elements.map(_(0))).asInstanceOf[IArray[String]]
+    val values: IArray[Json.Ast] = IArray.from(elements.map(_(1).root)).asInstanceOf[IArray[Json.Ast]]
     Json(Json.Ast.obj(keys, values.asInstanceOf[IArray[Any]]))
 
   def discriminatedUnion[value](label: Text): value is Discriminable in Json = new Discriminable:

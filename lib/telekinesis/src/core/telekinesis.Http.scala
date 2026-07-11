@@ -304,7 +304,7 @@ object Http:
     // the header block may occupy, yielding `414`/`431` (rather than reading an
     // unbounded amount) — the scan aborts mid-token once the cap is crossed.
     def parseHead
-      ( cursor: Cursor[Data, ?], maxRequestLine: Int = 8192, maxHeaders: Int = 65536 )
+      ( cursor: Cursor[Data, {}]^, maxRequestLine: Int = 8192, maxHeaders: Int = 65536 )
     :   Head raises HttpRequestError =
 
       import HttpRequestError.Reason
@@ -373,7 +373,7 @@ object Http:
 
       Head(method, version, host, target, headers)
 
-    def parse(stream: LazyList[Data]): Request raises HttpRequestError =
+    def parse(stream: LazyList[Data])(using Tactic[HttpRequestError]): Request^ =
       val cursor = Cursor[Data](stream.filter(_.nonEmpty).iterator)
       val head = parseHead(cursor)
 
@@ -391,7 +391,7 @@ object Http:
     // `next`, so — like `parseHead` — it never reads past the body and so never
     // blocks waiting for bytes that will not arrive until the client has our
     // response.
-    def fixedBody(cursor: Cursor[Data, ?], length: Int): LazyList[Data] =
+    def fixedBody(cursor: Cursor[Data, {}]^, length: Int): LazyList[Data] =
       def recur(remaining: Int): LazyList[Data] =
         if remaining <= 0 || cursor.finished then LazyList() else
           val take = remaining.min(cursor.available)
@@ -415,7 +415,7 @@ object Http:
     // and trailers — i.e. at the next request. Lenient: a malformed length or a
     // truncated stream simply ends the body. Consumes CRLFs with `advance` (not
     // `next`), so it never reads past the body's final `\r\n` (see `parseHead`).
-    def chunkedBody(cursor: Cursor[Data, ?]): LazyList[Data] =
+    def chunkedBody(cursor: Cursor[Data, {}]^): LazyList[Data] =
       def hex(digit: Int): Int =
         if digit >= '0' && digit <= '9' then digit - '0'
         else if digit >= 'a' && digit <= 'f' then digit - 'a' + 10
@@ -688,7 +688,7 @@ object Http:
         cursor.expect('T')(expected('T'))
         cursor.expect('P')(expected('P'))
         cursor.expect('/')(expected('/'))
-        cursor.seek(' '.toByte)
+        cursor.seek(' '.toByte.asInstanceOf[cursor.addressable.Operand])
         Http.Version.parse(Ascii(cursor.grab(start, cursor.mark)).show)
 
       cursor.next()
@@ -733,7 +733,7 @@ object Http:
       val status = Http.Status.unapply(code).optional.or:
         abort(HttpResponseError(HttpResponseError.Reason.Status(code.toString.tt)))
 
-      cursor.seek('\r'.toByte)
+      cursor.seek('\r'.toByte.asInstanceOf[cursor.addressable.Operand])
       cursor.next()
       cursor.expect('\n')(expected('\n'))
 
@@ -746,7 +746,7 @@ object Http:
         else
           val header: Text = cursor.hold:
             val start = cursor.mark
-            cursor.seek(':'.toByte)
+            cursor.seek(':'.toByte.asInstanceOf[cursor.addressable.Operand])
             Ascii(cursor.grab(start, cursor.mark)).show
 
           cursor.next()
@@ -756,7 +756,7 @@ object Http:
 
           val value: Text = cursor.hold:
             val start = cursor.mark
-            cursor.seek('\r'.toByte)
+            cursor.seek('\r'.toByte.asInstanceOf[cursor.addressable.Operand])
             Ascii(cursor.grab(start, cursor.mark)).show
 
           cursor.next()

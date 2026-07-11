@@ -52,9 +52,12 @@ import vacuous.*
 import zephyrine.*
 
 private[jacinta] object Parser:
+  // The number-array AST nodes are IArray (frozen at their single build sites): the
+  // arrays are filled once during the parse and never mutated after, and typing them
+  // immutable keeps `Raw` free of stateful members under separation checking.
   private[jacinta] type Raw =
     Long | Int | Double | Bcd | String | IArray[Any] |
-      Array[Long] | Array[Int] |
+      IArray[Long] | IArray[Int] |
       Boolean | Json.JsonNull.type | Unset
 
   private inline val NumZero       = 0
@@ -134,7 +137,7 @@ private[jacinta] object Parser:
     parser.resetData(source)
     parser.holes = false
     parser.numberMode = mode
-    parser.parse()
+    caps.unsafe.unsafeAssumePure(parser.parse())
 
   def parse(source: Data, holes: Boolean, mode: NumberMode): Raw raises ParseError =
     val parser = borrow()
@@ -142,7 +145,7 @@ private[jacinta] object Parser:
     parser.resetData(source)
     parser.holes = holes
     parser.numberMode = mode
-    parser.parse()
+    caps.unsafe.unsafeAssumePure(parser.parse())
 
   def parse(input: Iterator[Data], mode: NumberMode): Raw raises ParseError =
     val parser = borrow()
@@ -150,7 +153,7 @@ private[jacinta] object Parser:
     parser.resetIterator(input)
     parser.holes = false
     parser.numberMode = mode
-    parser.parse()
+    caps.unsafe.unsafeAssumePure(parser.parse())
 
   def parse(input: Iterator[Data], holes: Boolean, mode: NumberMode): Raw raises ParseError =
     val parser = borrow()
@@ -158,7 +161,7 @@ private[jacinta] object Parser:
     parser.resetIterator(input)
     parser.holes = holes
     parser.numberMode = mode
-    parser.parse()
+    caps.unsafe.unsafeAssumePure(parser.parse())
 
   def parseTracked(source: Data, mode: NumberMode = NumberMode.Full)
   :   (Raw, IArray[Int]) raises ParseError =
@@ -168,7 +171,7 @@ private[jacinta] object Parser:
     parser.resetData(source)
     parser.holes = false
     parser.numberMode = mode
-    val raw = parser.parse()
+    val raw = caps.unsafe.unsafeAssumePure(parser.parse())
     (raw, parser.rootIndex.nn)
 
   def parseTracked(input: Iterator[Data], mode: NumberMode)
@@ -179,7 +182,7 @@ private[jacinta] object Parser:
     parser.resetIterator(input)
     parser.holes = false
     parser.numberMode = mode
-    val raw = parser.parse()
+    val raw = caps.unsafe.unsafeAssumePure(parser.parse())
     (raw, parser.rootIndex.nn)
 
   def parse(input: Stream[Data] over Credit, mode: NumberMode): Raw raises ParseError =
@@ -188,7 +191,7 @@ private[jacinta] object Parser:
     parser.resetStream(input)
     parser.holes = false
     parser.numberMode = mode
-    parser.parse()
+    caps.unsafe.unsafeAssumePure(parser.parse())
 
   def parseTracked(input: Stream[Data] over Credit, mode: NumberMode)
   :   (Raw, IArray[Int]) raises ParseError =
@@ -198,7 +201,7 @@ private[jacinta] object Parser:
     parser.resetStream(input)
     parser.holes = false
     parser.numberMode = mode
-    val raw = parser.parse()
+    val raw = caps.unsafe.unsafeAssumePure(parser.parse())
     (raw, parser.rootIndex.nn)
 
 // The parser is a stateful capability: one exclusive owner per instance (guaranteed by
@@ -213,24 +216,6 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
   import Parser.*
 
-  // The cursor remains the source of truth at refill, mark, slice and error
-  // points, but for the per-byte hot loops (`peek`, `advance`, `more`) the
-  // parser maintains its own snapshot of the current buffer reference and
-  // read position. Keeping `pos` and `bytes` as parser fields (rather than
-  // accessing them through the cursor on every byte) gives the JIT the
-  // freedom to keep both in registers across long inner loops, recovering
-  // most of the per-byte cost of the Direct/Streaming split removed during
-  // the substrate unification.
-  //
-  // Invariant: between `syncTo()` and `syncFrom()` calls, `pos` is the
-  // authoritative read position; `cursor.unsafePos` is allowed to lag.
-  // Whenever a cursor operation that depends on `pos` is performed (refill
-  // via `more`'s slow path, mark, slice, error reporting, BOM probing) the
-  // parser pushes `pos` to the cursor first, then refreshes its snapshot
-  // from the cursor afterwards — refill may compact the buffer, reallocate
-  // it, or reset `pos`.
-  private var cursor:    Cursor[Data, {}]^    = null.asInstanceOf[Cursor[Data, {}]^]
-  private var heldToken: Cursor.Held | Null = null
 
   // Parser-local snapshot (see comment above).
   private var bytes:  Array[Byte] = null.asInstanceOf[Array[Byte]]
@@ -249,6 +234,9 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   protected[jacinta] var numberMode: NumberMode = NumberMode.Full
 
   protected var arraySize:           Int = 16
+  // Exclusive scratch arrays: element reads/writes go through DIRECT field paths only
+  // (`chars(i) = x`) — binding one into a local would hide the parser for the rest of
+  // the scope (see `reconcileLineation`).
   protected var chars:               Array[Char]^ = new Array(arraySize)
   protected var stringCursor:        Int = 0
   protected var arrayBufferId:       Int = -1
@@ -291,7 +279,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   private inline val KeyCacheMaxBytes = 16
   private val keyCache:    Array[String | Null]^ = new Array(KeyCacheSize)
   private val keyCacheLow:  Array[Long]^        = new Array(KeyCacheSize)
-  private val keyCacheHigh: Array[Long]^        = new Array(KeyCacheSize)
+  private val keyCacheHigh: Array[Long]^       = new Array(KeyCacheSize)
 
   update def resetData(input: Data): Unit =
     if tracking then
@@ -309,7 +297,6 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     bcdIntBufferId = -1
     indexBufferId = -1
     rootIndex = null
-    heldToken = null
 
   update def resetIterator(input: Iterator[Data]): Unit =
     if tracking then
@@ -327,7 +314,6 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     bcdIntBufferId = -1
     indexBufferId = -1
     rootIndex = null
-    heldToken = null
 
   update def resetStream(input: Stream[Data] over Credit): Unit =
     if tracking then
@@ -345,7 +331,6 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     bcdIntBufferId = -1
     indexBufferId = -1
     rootIndex = null
-    heldToken = null
 
 
 
@@ -353,13 +338,30 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // ──────────────────────────────────────────────────────────────────────────
   // Substrate.
 
+  // Block-scoped cursor reads: each is a plain (non-inline) method so callers get no
+  // synthesized receiver binder, and the binding inside hides the parser only for the
+  // remainder of the helper body — i.e. nothing (see `reconcileLineation`).
+  private update def cursorLine: Int =
+    val current = cursor
+    current.line.n1
+
+  private update def cursorColumn: Int =
+    val current = cursor
+    current.column.n1
+
+  private update def cursorPosition: Long =
+    val current = cursor
+    current.position.n0.toLong
+
   // Push the parser's local `pos` back to the cursor. Required before any
   // cursor operation that consults `pos` (mark, slice, refill, position).
   // This must stay zero-branch on the hot path; tracking-mode callers
   // separately invoke `reconcileLineation()` when they need accurate
   // `cursor.line` / `cursor.column`.
-  private inline update def syncTo(): Unit =
-    cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
+  private update def syncTo(): Unit =
+    val parserPos = pos
+    val current = cursor
+    current.unsafeAdvanceBy(parserPos - current.unsafePos(using Unsafe))(using Unsafe)
 
   // Walk the buffer bytes between the last lineation-reconciled position
   // and `cursor.unsafePos`, bumping `cursor.lineNo` / `cursor.columnNo`
@@ -409,13 +411,30 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // `lineationPos` is re-anchored to the cursor's current position because
   // refill compacts the buffer (bytes 0..old-pos are discarded; subsequent
   // walks would read different data).
-  private inline update def syncFrom(): Unit =
-    bytes  = cursor.buffer(using Unsafe)
-    pos    = cursor.unsafePos(using Unsafe)
-    bufEnd = cursor.unsafeWriteEnd(using Unsafe)
-    lineationPos = pos
+  private update def syncFrom(): Unit =
+    // Each cursor read is block-scoped so the parser-field writes that follow stay
+    // legal (see `reconcileLineation`).
+    val snapshot =
+      locally:
+        val current = cursor
+        current.buffer(using Unsafe)
 
-  protected inline update def more: Boolean = pos < bufEnd || moreSlow()
+    val readPos =
+      locally:
+        val current = cursor
+        current.unsafePos(using Unsafe)
+
+    val writeEnd =
+      locally:
+        val current = cursor
+        current.unsafeWriteEnd(using Unsafe)
+
+    bytes  = snapshot
+    pos    = readPos
+    bufEnd = writeEnd
+    lineationPos = readPos
+
+  protected update def more: Boolean = pos < bufEnd || moreSlow()
 
   // Out-of-line slow path so the inline budget for `more` stays small enough
   // for the JIT to keep `pos < bufEnd` as a single register comparison in
@@ -452,7 +471,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   :   Nothing =
 
     syncTo()
-    val end = cursor.position.n0
+    val end = cursorPosition.toInt
     val offset: Optional[Int] = start.let(_.absolute.toInt)
     val length: Optional[Int] = start.let: mark => end - mark.absolute.toInt
     abort(ParseError(Json.Ast, Position(0, end, offset = offset, length = length), issue))
@@ -462,33 +481,51 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // for boundary detection.
   type Region = Cursor.Mark
 
-  protected inline update def begin(): Cursor.Mark =
+  protected update def begin()(using held: Cursor.Held): Cursor.Mark =
     syncTo()
-    cursor.mark(using heldToken.nn)
+    val current = cursor
+    current.mark(using held)
 
-  protected inline update def slice(start: Cursor.Mark): String =
+  protected update def slice(start: Cursor.Mark)(using held: Cursor.Held): String =
     syncTo()
-    val end = cursor.mark(using heldToken.nn)
+    val current = cursor
+    val end = current.mark(using held)
 
-    cursor.slice(start, end): (storage, off, len) =>
+    current.slice(start, end): (storage, off, len) =>
       val arr = storage.asInstanceOf[Array[Byte]]
       new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
 
-  protected inline update def appendRegionToBuffer(start: Cursor.Mark): Unit =
+  protected update def appendRegionToBuffer(start: Cursor.Mark)(using held: Cursor.Held): Unit =
     syncTo()
-    val end = cursor.mark(using heldToken.nn)
 
-    cursor.slice(start, end): (storage, off, len) =>
-      if len > 0 then
-        val arr = storage.asInstanceOf[Array[Byte]]
-        ensureStringSpace(len)
-        var i = 0
+    // Two phases: measure the region first (cursor work, block-scoped), then grow the
+    // string buffer (parser work), then copy through pre-read locals — the slice lambda
+    // itself may not touch parser state (see `reconcileLineation`).
+    val end =
+      locally:
+        val current = cursor
+        current.mark(using held)
 
-        while i < len do
-          chars(stringCursor + i) = (arr(off + i) & 0xFF).toChar
-          i += 1
+    val len = (end.absolute - start.absolute).toInt
 
-        stringCursor += len
+    if len > 0 then
+      val copied =
+        locally:
+          val current = cursor
+          current.slice(start, end): (storage, off, len2) =>
+            val arr = storage.asInstanceOf[Array[Byte]]
+            val tmp = new Array[Char](len2)
+            var i = 0
+
+            while i < len2 do
+              tmp(i) = (arr(off + i) & 0xFF).toChar
+              i += 1
+
+            tmp
+
+      ensureStringSpace(len)
+      System.arraycopy(copied, 0, chars, stringCursor, len)
+      stringCursor += len
 
   // BOM probing runs once per parse, and almost no JSON inputs actually
   // start with one. The fast path peeks the first byte directly from the
@@ -521,19 +558,26 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
     syncFrom()
 
-  protected inline update def holding[result](inline action: => result): result =
+  // The action names `this` in its capture set (the documented escape hatch for
+  // capture-polymorphic arguments), and receives the hold token contextually — the
+  // parser no longer round-trips it through a field, which cursor-scope hiding forbids.
+  protected update def holding[result](action: Cursor.Held ?->{caps.any, this} result): result =
     syncTo()
-
-    cursor.hold:
-      heldToken = summon[Cursor.Held]
-      try action finally heldToken = null
+    // The action captures the parser, whose cursor is the held receiver — legitimate
+    // single-threaded reentrancy (parser methods inside a hold use the cursor through
+    // the parser), which the hidden-set check cannot see. Sealed before the cursor
+    // binding hides the parser: the audited rim.
+    val act: Cursor.Held -> result =
+      caps.unsafe.unsafeAssumePure((held: Cursor.Held) => action(using held))
+    val current = cursor
+    current.hold(act(summon[Cursor.Held]))
 
   // ──────────────────────────────────────────────────────────────────────────
   // String buffer plumbing (unchanged).
 
-  protected inline update def resetString(): Unit = stringCursor = 0
+  protected update def resetString(): Unit = stringCursor = 0
 
-  protected inline update def ensureStringSpace(n: Int): Unit =
+  protected update def ensureStringSpace(n: Int): Unit =
     while stringCursor + n > arraySize do arraySize *= 2
 
     if chars.length < arraySize then
@@ -541,7 +585,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       System.arraycopy(chars, 0, newArr, 0, stringCursor)
       chars = newArr
 
-  protected inline update def appendChar(char: Char): Unit =
+  protected update def appendChar(char: Char): Unit =
     if stringCursor == arraySize then
       arraySize *= 2
       val newArray = new Array[Char](arraySize)
@@ -551,7 +595,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     chars(stringCursor) = char
     stringCursor += 1
 
-  protected inline update def getString(): String = String(chars, 0, stringCursor)
+  protected update def getString(): String = String(chars, 0, stringCursor)
 
   protected update def getArrayBuffer(): ArrayBuffer[Any] =
     arrayBufferId += 1
@@ -625,7 +669,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
     syncTo()
     val n = ends.length
-    val sourceLength = (cursor.position.n0 - startMark).toInt
+    val sourceLength = (cursorPosition - startMark).toInt
     val sizeSlot = indexOut.length
 
     indexOut += 0
@@ -710,32 +754,45 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
     if peek != Quote then tail(region)
     else
-      syncTo()
-      val end = cursor.mark(using heldToken.nn)
+      // Parser state used inside the cursor block is read into locals first; the
+      // cursor is bound once and hides the parser for the rest of the block (see
+      // `reconcileLineation`). The `val` array fields alias the same storage, so the
+      // key-cache writes inside the slice lambda land in the parser's caches.
+      val parserPos = pos
+      val held      = summon[Cursor.Held]
+      val kc        = keyCache
+      val kcLow     = keyCacheLow
+      val kcHigh    = keyCacheHigh
 
-      val out = cursor.slice(region, end): (storage, off, len) =>
-        val arr = storage.asInstanceOf[Array[Byte]]
+      val out =
+        locally:
+          val current = cursor
+          current.unsafeAdvanceBy(parserPos - current.unsafePos(using Unsafe))(using Unsafe)
+          val end = current.mark(using held)
 
-        if len > KeyCacheMaxBytes then
-          new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
-        else
-          val packedLow  = packBytes(arr, off, math.min(len, 8))
-          val packedHigh = if len > 8 then packBytes(arr, off + 8, len - 8) else 0L
+          current.slice(region, end): (storage, off, len) =>
+            val arr = storage.asInstanceOf[Array[Byte]]
 
-          val idx        = ((packedLow.toInt ^ (packedLow >>> 32).toInt) ^
-            (packedHigh.toInt ^ (packedHigh >>> 32).toInt)) & (KeyCacheSize - 1)
+            if len > KeyCacheMaxBytes then
+              new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
+            else
+              val packedLow  = packBytes(arr, off, math.min(len, 8))
+              val packedHigh = if len > 8 then packBytes(arr, off + 8, len - 8) else 0L
 
-          val cached     = keyCache(idx)
+              val idx        = ((packedLow.toInt ^ (packedLow >>> 32).toInt) ^
+                (packedHigh.toInt ^ (packedHigh >>> 32).toInt)) & (KeyCacheSize - 1)
 
-          if cached != null && keyCacheLow(idx) == packedLow &&
-            keyCacheHigh(idx) == packedHigh
-          then cached
-          else
-            val fresh = new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
-            keyCache(idx)     = fresh
-            keyCacheLow(idx)  = packedLow
-            keyCacheHigh(idx) = packedHigh
-            fresh
+              val cached     = kc(idx)
+
+              if cached != null && kcLow(idx) == packedLow &&
+                kcHigh(idx) == packedHigh
+              then cached
+              else
+                val fresh = new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
+                kc(idx)     = fresh
+                kcLow(idx)  = packedLow
+                kcHigh(idx) = packedHigh
+                fresh
 
       advance()
       out
@@ -755,7 +812,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
     out
 
-  private update def tail(start: Region): String raises ParseError =
+  private update def tail(start: Region)(using Tactic[ParseError], Cursor.Held): String =
     resetString()
     appendRegionToBuffer(start)
 
@@ -816,10 +873,10 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     advance()
     getString()
 
-  protected inline update def expect(byte: Byte, issue: Issue): Unit raises ParseError =
+  protected inline update def expect(byte: Byte, issue: Issue)(using Tactic[ParseError]): Unit =
     if next() != byte then errorAt(issue)
 
-  private update def parseFalse(): false raises ParseError =
+  private update def parseFalse()(using Tactic[ParseError]): false =
     // Fast path: 5 bytes available in the local buffer. Pack them into a
     // Long and compare against `FalseWord` in one step. Falls back to the
     // byte-by-byte `expect` chain only at a buffer boundary.
@@ -842,7 +899,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       advance()
       false
 
-  private update def parseTrue(): true raises ParseError =
+  private update def parseTrue()(using Tactic[ParseError]): true =
     if pos + 4 <= bufEnd then
       val word: Int =
         (bytes(pos)     & 0xFF)         |
@@ -860,7 +917,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       advance()
       true
 
-  private update def parseNull(): Json.JsonNull.type raises ParseError =
+  private update def parseNull()(using Tactic[ParseError]): Json.JsonNull.type =
     if pos + 4 <= bufEnd then
       val word: Int =
         (bytes(pos)     & 0xFF)         |
@@ -879,7 +936,8 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       Json.JsonNull
 
   private update def parseNumber(first: Int, negative: Boolean, bcdOnly: Boolean = false)
-  :   Double | Long | Bcd raises ParseError =
+    ( using Tactic[ParseError] )
+  :   Double | Long | Bcd =
 
     var content: Long = first.toLong
     var nibbles: Int = 1
@@ -887,7 +945,9 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     var floating: Boolean = false
     var continue: Boolean = true
     var state: Int = if first == 0 then NumZero else NumInt
-    var bcdBuilder: Bcd.Builder | Null = null
+    // Null-free: `| Null` would erase the Unscoped classifier of the union's capture.
+    // `bcdValid` guards every use, matching the parser's cursor-field idiom.
+    var bcdBuilder: Bcd.Builder^ = null.asInstanceOf[Bcd.Builder^]
 
     // When the in-Long fast path overflows (the 16th nibble is about to be
     // appended), behavior depends on `numberMode`:
@@ -905,10 +965,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
         val b = new Bcd.Builder
         b.seedFromLong(content, nibbles)
         b.add(extraNibble)
-        // Bcd.Builder is not (yet) Stateful-classified, so its fresh instances read as
-        // read-only in this separation-checked unit; the builder is method-local scratch
-        // state, never shared, so the seal is sound.
-        bcdBuilder = caps.unsafe.unsafeAssumePure(b)
+        bcdBuilder = b
         bcdValid = false
 
     inline def appendNibble(n: Int): Unit =
@@ -918,11 +975,11 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
           content = (content << 4) | n.toLong
           nibbles += 1
       else
-        bcdBuilder.nn.add(n)
+        bcdBuilder.add(n)
 
     inline def rewriteEAsNeg(): Unit =
       if bcdValid then content = (content & ~0xFL) | 0xCL
-      else bcdBuilder.nn.overwriteLast(0xC)
+      else bcdBuilder.overwriteLast(0xC)
 
     while continue && more do
       val ch = peek
@@ -1028,7 +1085,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
         else
           Bcd.fromContent15(content, negative)
       else
-        bcdBuilder.nn.finish(negative).asInstanceOf[Bcd]  // frozen: Bcd is opaque over a post-finish-immutable array
+        bcdBuilder.finish(negative).asInstanceOf[Bcd]  // frozen: Bcd is opaque over a post-finish-immutable array
     else if bcdValid then
       if numberMode == NumberMode.Bcd then
         // BCD mode: skip the decode loop and hand back the raw in-Long BCD
@@ -1083,7 +1140,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       // High-precision path: hand back the `Bcd` directly. Reached only in
       // `NumberMode.Full`; `Bcd` and `Double` modes leave `bcdValid` true
       // and truncate on overflow rather than allocating a `Bcd.Builder`.
-      bcdBuilder.nn.finish(negative).asInstanceOf[Bcd]  // frozen: Bcd is opaque over a post-finish-immutable array
+      bcdBuilder.finish(negative).asInstanceOf[Bcd]  // frozen: Bcd is opaque over a post-finish-immutable array
 
   // `bcdOnly` propagates through the `Minus` recursion so that `-3.14`
   // parsed from an array context still short-circuits the Double path.
@@ -1130,11 +1187,26 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
     if !more then errorAt(Issue.PrematureEnd)
 
-    syncTo()
+    locally:
+      syncTo()
     reconcileLineation()
-    val startLine   = cursor.line.n1
-    val startColumn = cursor.column.n1
-    val startMark   = cursor.position.n0.toLong
+
+    // Each read is block-scoped: binding the cursor hides the parser for the rest of
+    // the enclosing scope (see `reconcileLineation`).
+    val startLine =
+      locally:
+        val current = cursor
+        current.line.n1
+
+    val startColumn =
+      locally:
+        val current = cursor
+        current.column.n1
+
+    val startMark =
+      locally:
+        val current = cursor
+        current.position.n0.toLong
 
     val ch = peek
 
@@ -1168,7 +1240,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
     if ch != OpenBracket && ch != OpenBrace then
       syncTo()
-      val length = (cursor.position.n0 - startMark).toInt
+      val length = (cursorPosition - startMark).toInt
       indexOut += 4
       indexOut += startLine
       indexOut += startColumn
@@ -1352,14 +1424,14 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
           val out = new Array[Int](src.length)
           src.copyToArray(out)
           relinquishBcdIntBuffer()
-          out
+          out.immutable(using Unsafe)
 
         case ModeBcdLong =>
           val src = longItems.nn
           val out = new Array[Long](src.length)
           src.copyToArray(out)
           relinquishBcdLongBuffer()
-          out
+          out.immutable(using Unsafe)
 
         case _ =>
           // Mixed/boxed array — stored as `IArray[Any]` and parity-padded
@@ -1545,14 +1617,14 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
             val out = new Array[Int](src.length)
             src.copyToArray(out)
             relinquishBcdIntBuffer()
-            out
+            out.immutable(using Unsafe)
 
           case ModeBcdLong =>
             val src = longItems.nn
             val out = new Array[Long](src.length)
             src.copyToArray(out)
             relinquishBcdLongBuffer()
-            out
+            out.immutable(using Unsafe)
 
           case _ =>
             val src = anyItems.nn
@@ -1698,16 +1770,16 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       skip()
       syncTo()
       reconcileLineation()
-      keyLine   = cursor.line.n1
-      keyColumn = cursor.column.n1
-      keyMark   = cursor.position.n0.toLong
+      keyLine   = cursorLine
+      keyColumn = cursorColumn
+      keyMark   = cursorPosition
 
       must() match
         case Quote =>
           advance()
           val string = parseObjectKey()
           syncTo()
-          val keyLength = (cursor.position.n0 - keyMark).toInt
+          val keyLength = (cursorPosition - keyMark).toInt
           skip()
 
           must() match
@@ -1772,8 +1844,8 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
             case Comma =>
               syncTo()
               reconcileLineation()
-              val unsetLine   = cursor.line.n1
-              val unsetColumn = cursor.column.n1
+              val unsetLine   = cursorLine
+              val unsetColumn = cursorColumn
               indexScratch += keyLine
               indexScratch += keyColumn
               indexScratch += keyLength
@@ -1790,8 +1862,8 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
             case CloseBrace =>
               syncTo()
               reconcileLineation()
-              val unsetLine   = cursor.line.n1
-              val unsetColumn = cursor.column.n1
+              val unsetLine   = cursorLine
+              val unsetColumn = cursorColumn
               indexScratch += keyLine
               indexScratch += keyColumn
               indexScratch += keyLength
@@ -1852,3 +1924,26 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     result
 
 
+
+
+  // No INLINE member may read this field: the synthesized `inline$cursor` accessor's
+  // exclusive result type acts as a template-level hider that bars other member
+  // definitions (the member-order rule, rep/sepcheck-probes P7). Methods that touch the
+  // cursor are therefore plain (non-inline).
+  // The cursor remains the source of truth at refill, mark, slice and error
+  // points, but for the per-byte hot loops (`peek`, `advance`, `more`) the
+  // parser maintains its own snapshot of the current buffer reference and
+  // read position. Keeping `pos` and `bytes` as parser fields (rather than
+  // accessing them through the cursor on every byte) gives the JIT the
+  // freedom to keep both in registers across long inner loops, recovering
+  // most of the per-byte cost of the Direct/Streaming split removed during
+  // the substrate unification.
+  //
+  // Invariant: between `syncTo()` and `syncFrom()` calls, `pos` is the
+  // authoritative read position; `cursor.unsafePos` is allowed to lag.
+  // Whenever a cursor operation that depends on `pos` is performed (refill
+  // via `more`'s slow path, mark, slice, error reporting, BOM probing) the
+  // parser pushes `pos` to the cursor first, then refreshes its snapshot
+  // from the cursor afterwards — refill may compact the buffer, reallocate
+  // it, or reset `pos`.
+  private var cursor: Cursor[Data, {}]^ = null.asInstanceOf[Cursor[Data, {}]^]
