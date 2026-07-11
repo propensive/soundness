@@ -42,7 +42,7 @@ import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
 import hieroglyph.*, charDecoders.utf8Decoder, charEncoders.utf8Encoder,
     textSanitizers.strictSanitizer
-import monotonous.*, alphabets.base64Standard
+import monotonous.*, alphabets.base64Standard, alphabets.hexLowerCase, alphabets.base32LowerCase
 import prepositional.*
 import probably.*
 import proscenium.*
@@ -267,6 +267,26 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         javax.crypto.spec.IvParameterSpec(jdkIvBytes) )
     cipher.doFinal(inputArray).length
 
+  // ── Example J: hex / base32 encode (cost by base) ───────────────────────────
+  // Soundness monotonous alphabets at 4, 5 and 6 bits per character
+  // (hex/base32/base64), with the JDK HexFormat as a hex reference. Base32 has
+  // no common JDK/FS2 counterpart, so it stands alone.
+
+  def hexSoundness: Int = input.serialize[Hex].s.length
+  def hexJdk: Int = java.util.HexFormat.of.formatHex(inputArray).length
+  def base32Soundness: Int = input.serialize[Base32].s.length
+
+  // ── Example K: flowTo pump (pull -> push) vs memoize ────────────────────────
+  // `flowTo` pumps a pull `Stream` into a push `Intake` (here an OutputStream
+  // sink); `memoize` collects into a value. Both drain the same 4 MB.
+
+  def flowToSink: Int =
+    val out = new java.io.ByteArrayOutputStream(input.length)
+    Stream(input).flowTo(summon[java.io.OutputStream is Sink by Data over Credit].intake(out))
+    out.size
+
+  def memoizeSingle: Int = Stream(input).memoize.length
+
   // ── Example F: public `read` typeclass path vs the bare kernel ──────────────
   // `read[Data]`/`read[Text]` go through the `Readable`/`Source`/`Aggregable`
   // typeclass machinery; `memoize` is the raw kernel drain. The gap is what the
@@ -341,8 +361,10 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       val readOk2 = readChunked == input.length && memoizeChunked == input.length
       val cursorOk = cursorSum == rawArraySum && cursorSum == checksumSoundness
       val writeOk = writeToSink == input.length && rawWrite == input.length
-      ( roundtripOk, transcodeOk, readOk, base64Ok, readOk2, cursorOk, writeOk )
-    . assert(_ == (true, true, true, true, true, true, true))
+      val hexOk = hexSoundness == hexJdk && hexSoundness == input.length*2
+      val flowOk = flowToSink == input.length && memoizeSingle == input.length
+      ( roundtripOk, transcodeOk, readOk, base64Ok, readOk2, cursorOk, writeOk, hexOk, flowOk )
+    . assert(_ == (true, true, true, true, true, true, true, true, true))
 
     suite(m"Gzip compression (4 MB)"):
       bench(m"Soundness  Stream.compress[Gzip]")
@@ -469,3 +491,22 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
       bench(m"Raw  OutputStream.write")(target = 1*Second, operationSize = size):
         '{ turbulence.Benchmarks.rawWrite }
+
+    suite(m"Hex / Base32 encode (4 MB)"):
+      bench(m"Soundness  serialize[Hex]")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.hexSoundness }
+
+      bench(m"JDK  HexFormat")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.hexJdk }
+
+      bench(m"Soundness  serialize[Base32]")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.base32Soundness }
+
+    suite(m"flowTo pump vs memoize (4 MB)"):
+      bench(m"Soundness  Stream.memoize")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.memoizeSingle }
+
+      bench(m"Soundness  flowTo(sink)")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.flowToSink }
