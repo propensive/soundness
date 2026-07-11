@@ -1334,3 +1334,16 @@ hallucination Raster; generic Streamable read-sites route via stream[Data] +
 the native LazyList Source. Receivable/successBody still LazyList-shaped via
 memoize — the remaining Streamable-tail (with Multipart cursor parsing and
 Duplex.stream receive side) is follow-up work, not bridge-blocking.
+
+## DUAL GATES GREEN (2026-07-11, @635fdc5546)
+
+attest (3.9 row): 7905 passed / 0 failed; attestation note pushed
+(refs/notes/ci-attestation @b2811a90f3). 3.10 row: clean-gate compile in
+cc-review (mill clean first — zinc false-greens bit three times today), 10457
+tasks green, only the benign aggregate finalMainClass non-task. Attest caught
+what per-module AND batched clean sweeps missed (monotonous read-only params,
+xylophone/graffiti Document reads, cacophony/gesticulate missing native Source,
+embarcadero duplex fixture) — per-module clean compile loops are the only
+locally trustworthy approximation, and even they missed embarcadero once.
+escritoire.test is pre-existing broken on main and outside the attest suite.
+PR next: title/body awaiting Jon.
