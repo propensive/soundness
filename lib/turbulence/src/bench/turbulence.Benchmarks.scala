@@ -33,6 +33,8 @@
 package turbulence
 
 import ambience.*, environments.javaEnvironment, systems.javaSystem
+import enigmatic.*, blockCipherMode.cbc, blockCipherPadding.pkcs7
+import gastronomy.providers.javaStdlibProvider, gastronomy.crypto.permitUnauthenticatedCrypto
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import fulminate.*
@@ -40,6 +42,7 @@ import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
 import hieroglyph.*, charDecoders.utf8Decoder, charEncoders.utf8Encoder,
     textSanitizers.strictSanitizer
+import monotonous.*, alphabets.base64Standard
 import prepositional.*
 import probably.*
 import proscenium.*
@@ -107,6 +110,12 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   // stream" chained pipeline.
   lazy val gzippedText: Data = Stream(textData).compress[Gzip].memoize
   lazy val gzippedTextArray: Array[Byte] = gzippedText.asInstanceOf[Array[Byte]]
+
+  // AES-256 key + a fixed key/IV for the JDK reference, generated/derived once.
+  lazy val aesKey: SymmetricKey[Aes[256] over Cbc against Pkcs7] =
+    SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
+  lazy val jdkKeyBytes: Array[Byte] = Array.tabulate(32)(i => (i*7 + 1).toByte)
+  lazy val jdkIvBytes:  Array[Byte] = Array.tabulate(16)(i => (i*13 + 3).toByte)
 
   // ── ZIO / Kyo run entry points ──────────────────────────────────────────────
 
@@ -220,6 +229,39 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       . via(zio.stream.ZPipeline.gunzip()).via(zio.stream.ZPipeline.utfDecode)
       . map(_.length).runSum
 
+  // ── Example D: Base64 encode ────────────────────────────────────────────────
+  // Soundness `monotonous` base-N is a whole-value operation (no streaming duct
+  // today); FS2 has a native streaming base64 pipe; the JDK is the universal
+  // reference. ZIO/Kyo have no native base64.
+
+  def base64Soundness: Int = input.serialize[Base64].s.length
+
+  def base64Fs2: Int =
+    import cats.effect.unsafe.implicits.global
+    fs2.Stream.chunk(fs2.Chunk.array(inputArray)).covary[cats.effect.IO]
+    . through(fs2.text.base64.encode).map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
+
+  def base64Jdk: Int = java.util.Base64.getEncoder.encodeToString(inputArray).length
+
+  // ── Example E: AES-256-CBC encrypt ──────────────────────────────────────────
+  // Soundness `enigmatic` streaming encryption drives the JCE cipher over the
+  // legacy `LazyList` view (enigmatic is not yet on the streaming kernel), and
+  // prepends the IV as the leading chunk. The JDK reference is the same cipher
+  // with no framing. ZIO/FS2/Kyo have no native block cipher — they would wrap
+  // the same `javax.crypto.Cipher`, so only the JDK reference is shown.
+
+  def aesSoundness: Long =
+    aesKey.expose:
+      LazyList(input).encrypt(InitializationVector.random).map(_.length.toLong).sum
+
+  def aesJdk: Int =
+    val cipher = javax.crypto.Cipher.getInstance("AES/CBC/PKCS5Padding")
+    cipher.init
+      ( javax.crypto.Cipher.ENCRYPT_MODE,
+        javax.crypto.spec.SecretKeySpec(jdkKeyBytes, "AES"),
+        javax.crypto.spec.IvParameterSpec(jdkIvBytes) )
+    cipher.doFinal(inputArray).length
+
   def run(): Unit =
     val bench = Bench()
     val size = input.length*Byte
@@ -239,8 +281,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       val roundtripOk = roundtripSoundness == input.length
       val transcodeOk = transcodeSoundness == textData.length
       val readOk = readGzipSoundness == readGzipFs2 && readGzipFs2 == readGzipZio
-      ( roundtripOk, transcodeOk, readOk )
-    . assert(_ == (true, true, true))
+      val base64Ok = base64Soundness == base64Jdk && base64Jdk == base64Fs2
+      ( roundtripOk, transcodeOk, readOk, base64Ok )
+    . assert(_ == (true, true, true, true))
 
     suite(m"Gzip compression (4 MB)"):
       bench(m"Soundness  Stream.compress[Gzip]")
@@ -310,3 +353,22 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
       bench(m"ZIO  gunzip.utfDecode")(target = 1*Second, operationSize = textSize):
         '{ turbulence.Benchmarks.readGzipZio }
+
+    suite(m"Base64 encode (4 MB)"):
+      bench(m"Soundness  serialize[Base64]")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.base64Soundness }
+
+      bench(m"FS2  text.base64.encode")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.base64Fs2 }
+
+      bench(m"JDK  java.util.Base64")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.base64Jdk }
+
+    suite(m"AES-256-CBC encrypt (4 MB)"):
+      bench(m"Soundness  enigmatic encryptStream")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.aesSoundness }
+
+      bench(m"JDK  javax.crypto.Cipher")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.aesJdk }
