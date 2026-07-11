@@ -60,14 +60,14 @@ class Recorder(canned: () => Http.Response) extends Http.Backend:
 
   def request
      ( url: Text, method: Http.Method, headers: List[Http.Header],
-        body: () => (Stream[Data] over Credit)^ )
+        body: Spring[Data]^ )
      ( using Tactic[ConnectError] )
   :   Http.Response =
     lastUrl = url
     lastMethod = method
     lastHeaders = headers
-    val chunks = body().lazyList.to(List)
-    lastBody = if chunks.isEmpty then Unset else chunks.head
+    val data = body().memoize
+    lastBody = if data.isEmpty then Unset else data
     canned()
 
 object ApiTests extends Suite(m"Api client tests"):

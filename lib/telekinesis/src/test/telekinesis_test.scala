@@ -302,7 +302,7 @@ object Tests extends Suite(m"Telekinesis tests"):
             data.slice(offset, end) #:: go(end)
         go(0)
 
-      def bodyText(request: Http.Request^): Text = request.body().lazyList.read[Data].utf8
+      def bodyText(request: Http.Request^): Text = request.body().memoize.utf8
 
       val blockSizes = List(1, 2, 3, 7, 13, 4096)
       val fixture = t"GET /path?q=1 HTTP/1.1\r\nHost: example.com\r\nX-Foo: bar\r\n\r\nbody"

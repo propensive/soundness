@@ -36,7 +36,7 @@ import language.experimental.separationChecking
 
 export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum, Duct, Ductile, Pace,
     Format, Formatting, Intake, Lineation, ParseError, PositionTracking, Producer, Positionable,
-    Regulation, Stream, Substrate, flowTo, locate, locateKey}
+    Regulation, Spring, Stream, Substrate, flowTo, foreachWindow, locate, locateKey, memoize}
 
 // Hand-written forwarders: the synthesized export forwarders for these dependent-typed
 // extensions lose the `ductile.Result`/`ductile.Operand` path refinements under capture

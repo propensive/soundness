@@ -97,7 +97,7 @@ object Tests extends Suite(m"Scintillate tests"):
           val port = freePort()
 
           val server = SocketServer(port).handle:
-            Http.Response(Http.Ok)(request.body().lazyList.read[Data].utf8)
+            Http.Response(Http.Ok)(request.body().memoize.utf8)
 
           val response =
             rawRequest(port, t"POST / HTTP/1.1\r\nHost: x\r\nContent-Length: 5\r\n\r\nhello")
@@ -111,7 +111,7 @@ object Tests extends Suite(m"Scintillate tests"):
           val port = freePort()
 
           val server = SocketServer(port).handle:
-            Http.Response(Http.Ok)(request.body().lazyList.read[Data].utf8)
+            Http.Response(Http.Ok)(request.body().memoize.utf8)
 
           val response =
             rawRequest
