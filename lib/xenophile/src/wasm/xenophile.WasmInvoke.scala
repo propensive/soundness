@@ -232,9 +232,12 @@ object WasmInvoke:
             Select.unique(cast, "value").asExprOf[Any]
 
           // An `Err` raises a `WitError` carrying the error value (e.g. an `error-code` case), so
-          // callers can recover which failure occurred (`WitError.name`) and translate it.
+          // callers can recover which failure occurred (`WitError.name`) and translate it. The
+          // `canThrowAny` import supplies the `CanThrow` capability a checked `throw` needs in
+          // the expansion.
           def raiseError(outcome: Expr[Any]): Expr[Nothing] =
-            '{throw new WitError(${payload(outcome, errType)})}
+            '{  import _root_.scala.unsafeExceptions.canThrowAny
+                throw new WitError(${payload(outcome, errType)})  }
 
           val decode: Expr[Any] => Expr[Any] =
             if scala =:= TypeRepr.of[Unit] then call =>

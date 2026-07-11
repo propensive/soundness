@@ -157,7 +157,7 @@ package httpBackends:
       val responseHandle =
         try future.get.invoke[Optional[WitHandle of "incoming-response"]].or:
           abort(ConnectError(ConnectError.Reason.Unknown))
-        catch case error: RuntimeException => abort(ConnectError(ConnectError.Reason.Unknown))
+        catch case error: WitError => abort(ConnectError(ConnectError.Reason.Unknown))
 
       futureHandle.dispose()
       val response: Foreign of "incoming-response" from Wit = responseHandle
@@ -186,7 +186,7 @@ package httpBackends:
       try
         while true do
           chunks = stream.`blocking-read`(U64(65536L.bits)).invoke[Data] :: chunks
-      catch case error: RuntimeException => ()
+      catch case error: WitError => ()
 
       streamHandle.dispose()
       bodyHandle.dispose()

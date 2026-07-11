@@ -102,7 +102,7 @@ package stdios:
               index += 1
 
             if data.length == 0 then -1 else data.length
-          catch case error: RuntimeException => -1
+          catch case error: WitError => -1
           finally handle.dispose()
 
     def bytes(text: Text): Data = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
