@@ -53,8 +53,8 @@ class Orchestrate[value: Encodable in Query, result](initial: Optional[value] = 
 extends caps.ExclusiveCapability:
   def otherwise(validate: (query: Query) ?=> Validation)(using Formulation, value is Formulaic)
     ( using decodable: Tactic[Hazard] ?=> value is Decodable in Query )
-    ( using request: Http.Request )
-  :   result raises QueryError =
+    ( using request: Http.Request, tactic: Tactic[QueryError] )
+  :   result =
 
     request.method match
       case Http.Post =>
@@ -69,6 +69,6 @@ extends caps.ExclusiveCapability:
 
 def orchestrate[value: Encodable in Query](initial: Optional[value] = Unset)[result]
   ( render: (form: Text => Html of Flow) ?=> (value: Optional[value]) => result )
-:   Orchestrate[value, result] =
+:   Orchestrate[value, result]^{render, caps.any} =
 
   new Orchestrate[value, result](initial)(render(using _))

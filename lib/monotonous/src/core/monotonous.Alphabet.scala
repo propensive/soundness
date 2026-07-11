@@ -101,7 +101,8 @@ object Alphabet:
           :   Duct.Progress =
 
             val bytes = source.asInstanceOf[Array[Byte]]
-            val chars = target.asInstanceOf[Array[Char]]
+            // The stage's own buffer, asserted exclusive at the cast rim.
+            val chars: Array[Char]^ = target.asInstanceOf[Array[Char]^]
             var consumed: Int = 0
             var produced: Int = 0
             var continue: Boolean = true
@@ -129,7 +130,7 @@ object Alphabet:
           override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int)
           :   Int =
 
-            val chars = target.asInstanceOf[Array[Char]]
+            val chars: Array[Char]^ = target.asInstanceOf[Array[Char]^]
             var produced: Int = 0
 
             if !flushing then
@@ -151,11 +152,19 @@ object Alphabet:
 
             produced
 
-  given deserialization: [encoding <: Serialization] => Tactic[SerializationError]
+  given deserialization: [encoding <: Serialization] => (tactic: Tactic[SerializationError])
   =>  Ductile.Of[Alphabet[encoding], Text, Data, Credit, Credit] =
 
-    // Sealed: see `serialization` above.
+    // Sealed: see `serialization` above. The tactic is sealed here too — the duct
+    // raises through the given's resolution-scoped tactic, which shares the
+    // instance's lifetime (the codec-thunk seal pattern); a fresh duct result may
+    // hide only local state, not the enclosing given's parameter.
     caps.unsafe.unsafeAssumePure:
+     // The tactic crosses into the fresh duct as a neutral reference: the duct
+     // raises through the given's resolution-scoped tactic (the codec-thunk seal
+     // pattern), and a fresh result may hide only local state, so even a sealed
+     // capability-typed binding would trip the hiding rule.
+     val tacticRef: AnyRef = tactic.asInstanceOf[AnyRef]
      new Ductile:
       type Self = Alphabet[encoding]
       type Operand = Text
@@ -195,7 +204,8 @@ object Alphabet:
           :   Duct.Progress =
 
             val chars = source.asInstanceOf[Array[Char]]
-            val bytes = target.asInstanceOf[Array[Byte]]
+            // The stage's own buffer, asserted exclusive at the cast rim.
+            val bytes: Array[Byte]^ = target.asInstanceOf[Array[Byte]^]
             var consumed: Int = 0
             var produced: Int = 0
             var continue: Boolean = true
@@ -217,7 +227,9 @@ object Alphabet:
                 // accumulated before them are alignment filler.
                 if stage.padding && char == pad then accumulated = 0
                 else
-                  accumulator = (accumulator << base) | stage.invert(position, char)
+                  accumulator = (accumulator << base)
+                    | stage.invert(position, char)
+                        (using tacticRef.asInstanceOf[Tactic[SerializationError]])
                   accumulated += base
 
                 position += 1
@@ -235,4 +247,6 @@ case class Alphabet[encoding <: Serialization]
   def invert(position: Int, char: Char): Int raises SerializationError =
     inverse.getOrElse(char, abort(SerializationError(position, char)))
 
-  lazy val inverse: Map[Char, Int] = tolerance ++ chars.chars.zipWithIndex.to(Map)
+  // Sealed: an `IArray` zip is immutable; fresh-ness is the opaque-Array artifact.
+  lazy val inverse: Map[Char, Int] =
+    tolerance ++ caps.unsafe.unsafeAssumePure(chars.chars.zipWithIndex).to(Map)

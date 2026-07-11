@@ -359,7 +359,7 @@ object Http2:
       new HttpClient:
         type Target = Endpoint[endpoint]
 
-        def request(request: Http.Request, target: Endpoint[endpoint])
-        :   Http.Response logs HttpEvent =
+        def request(request: Http.Request, target: Endpoint[endpoint])(using HttpEvent is Loggable)
+        :   Http.Response =
 
           target.connect().fetch(request, t"http", target.authority)(1)

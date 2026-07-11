@@ -53,19 +53,30 @@ object Serializable:
 
         val array = new Array[Char](length)
 
-          def recur(current: Int = 0, next: Int = 0, index: Int = 0, loaded: Int = 0): Unit =
-            if index < length then
-              if loaded < bits then
-                if next < bytes.length then
-                  recur((current << 8) | (bytes(next) & 0xff), next + 1, index, loaded + 8)
-                else
-                  array(index) = alphabet((current << (bits - loaded)) & mask)
-                  ((index + 1) until length).each: i => array(i) = alphabet(1 << bits)
-              else
-                array(index) = alphabet((current >>> (loaded - bits)) & mask)
-                recur(current, next, index + 1, loaded - bits)
+        // A while-loop rather than a recursive def: a closure over the exclusive
+        // array would hide it from the statements that follow.
+        var current = 0
+        var next = 0
+        var index = 0
+        var loaded = 0
 
-          recur()
+        while index < length do
+          if loaded < bits then
+            if next < bytes.length then
+              current = (current << 8) | (bytes(next) & 0xff)
+              next += 1
+              loaded += 8
+            else
+              array(index) = alphabet((current << (bits - loaded)) & mask)
+              var filler = index + 1
+              while filler < length do
+                array(filler) = alphabet(1 << bits)
+                filler += 1
+              index = length
+          else
+            array(index) = alphabet((current >>> (loaded - bits)) & mask)
+            index += 1
+            loaded -= bits
 
         Text(array.immutable(using Unsafe))
 

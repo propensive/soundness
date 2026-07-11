@@ -158,17 +158,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       import threading.virtualThreading
       import probates.cancelProbate
 
-      def pair(): (Duplex, Duplex) =
-        val clientToServer = Spool[Data]()
-        val serverToClient = Spool[Data]()
-
-        def duplex(inbound: Spool[Data], outbound: Spool[Data]) = new Duplex:
-          def stream: LazyList[Data] = inbound.stream
-          def send(data: (zephyrine.Stream[Data] over Credit)^): Unit =
-            outbound.put(data.memoize)
-          def close(): Unit = outbound.stop()
-
-        (duplex(serverToClient, clientToServer), duplex(clientToServer, serverToClient))
+      def pair(): (Duplex, Duplex) = Duplex.pair()
 
       // A fake containerd: completes the HTTP/2 handshake, records the namespace header
       // from the request, and replies to the `Version` call with a framed response.

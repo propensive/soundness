@@ -1369,3 +1369,20 @@ capture-checked boundary.break. throwUnsafely: ThrowTactic[Hazard, success].
 Sweep fallout was small: 13 bounds outside contingency (parasite/zephyrine/
 obligatory), 7 Tactic[Exception]→Tactic[Hazard] sites, one raw test exception
 (zephyrine Mismatch → Error). Suites green incl. contingency 91/parasite 148.
+
+## Sepcheck rollout (2026-07-11, branch sepcheck-rollout)
+
+`settings.sep` added to build.mill (cc + separationChecking, module-level).
+MODULE-WIDE SEP ON ZEPHYRINE IS BLOCKED BY P5: flagging the module pulls
+Addressable.scala (deliberately the unchecked interior) into sepcheck. New P5
+data from the attempt: ANNOTATED abstract members DO work — `def allocate(size:
+Int): Storage^` and `storage: Storage^`/`Storage^{caps.any.rd}` params override
+concrete Array signatures cleanly (the probe only tried bare members). What
+remains blocked is the FIELD layer: honest fresh `allocate` means kernel classes
+need `Storage^` fields, and abstract exclusive fields cannot be reassigned
+(Conduit.publish's `current = allocate(block)`). Fix requires per-medium Storage
+concretization or an upstream/fork primitive. Until then zephyrine/turbulence
+keep per-file separationChecking imports; the rollout targets CONSUMER modules
+(which hold capabilities but never implement storage). Also: IArray fresh-ness
+under sepcheck is an opacity artifact (`caps.freeze` accepts `Mutable | Array[?]`
+and cannot see through the opaque type) — upstream stdlib-annotation gap.

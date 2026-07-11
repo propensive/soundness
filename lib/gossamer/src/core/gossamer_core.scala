@@ -80,7 +80,7 @@ inline def appendln[textual: Textual, value](using builder: Builder[textual] aka
 inline def builder[value](using value: value aka "builder"): value = value()
 
 extension (module: IArray.type)
-  def build[element: ClassTag](size: Int)(lambda: Array[element] => Unit): IArray[element] =
+  def build[element: ClassTag](size: Int)(lambda: Array[element]^ => Unit): IArray[element] =
     val array: Array[element] = new Array[element](size)
     lambda(array)
     array.immutable(using Unsafe)

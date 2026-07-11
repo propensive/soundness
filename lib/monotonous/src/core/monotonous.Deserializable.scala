@@ -94,9 +94,10 @@ trait Deserializable extends Findable:
   def deserialize(previous: Text, current: Text, index0: Int, last: Boolean)
   :   Data raises SerializationError
 
-  def deserialize(value: Text): Data raises SerializationError = deserialize(t"", value, 0, true)
+  def deserialize(value: Text)(using Tactic[SerializationError]): Data =
+    deserialize(t"", value, 0, true)
 
-  def deserialize(stream: LazyList[Text]): LazyList[Data] raises SerializationError =
+  def deserialize(stream: LazyList[Text])(using Tactic[SerializationError]): LazyList[Data] =
     def recur(stream: LazyList[Text], previous: Text, carry: Int): LazyList[Data] = stream match
       case head #:: tail =>
         val carry2 = (carry + head.length)%atomicity
