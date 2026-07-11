@@ -96,6 +96,11 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   lazy val inputArray: Array[Byte] = input.asInstanceOf[Array[Byte]]
   lazy val inputSeq: scala.collection.immutable.ArraySeq[Byte] =
     scala.collection.immutable.ArraySeq.unsafeWrapArray(inputArray)
+  // The same 4 MB split into 64 KiB chunks, so aggregation/write loops iterate
+  // (a single in-memory chunk would let `read[Data]` fold to an identity).
+  lazy val inputChunks: LazyList[Data] =
+    LazyList.from((0 until input.length by 65536).map: offset =>
+      input.slice(offset, (offset + 65536).min(input.length)))
 
   // ~4 MB of UTF-8 text with multi-byte characters, so the decode exercises the
   // cross-chunk continuation path in every library.
@@ -262,6 +267,57 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         javax.crypto.spec.IvParameterSpec(jdkIvBytes) )
     cipher.doFinal(inputArray).length
 
+  // ── Example F: public `read` typeclass path vs the bare kernel ──────────────
+  // `read[Data]`/`read[Text]` go through the `Readable`/`Source`/`Aggregable`
+  // typeclass machinery; `memoize` is the raw kernel drain. The gap is what the
+  // high-level public API costs over the endpoint directly.
+
+  def memoizeChunked: Int = Stream(inputChunks.iterator).memoize.length
+  def readChunked: Int = inputChunks.read[Data].length
+  def readText: Int = textData.read[Text].s.length
+
+  // ── Example G: `Buffering` block-size sensitivity (gzip staging buffer) ─────
+  // Each gzip duct stages input in a `Buffering.capacity`-sized buffer; this
+  // sweeps that size to show its effect on streaming-compression throughput.
+
+  def buffering(n: Int): Buffering = new Buffering:
+    def capacity(substrate: Substrate): Int = n
+    def window: Int = 4
+
+  def gzipBlock512: Int   = Stream(input).compress[Gzip](using summon, buffering(512)).memoize.length
+  def gzipBlock4k: Int    = Stream(input).compress[Gzip](using summon, buffering(4096)).memoize.length
+  def gzipBlock64k: Int   = Stream(input).compress[Gzip](using summon, buffering(65536)).memoize.length
+
+  // ── Example H: `Cursor` parser pull-loop vs a raw array loop ────────────────
+  // The hot path jacinta/honeycomb run: pull every byte through the `Cursor`
+  // abstraction (`peek`/`next`), compared against a bare `Array[Byte]` scan.
+
+  def cursorSum: Long =
+    val cursor = Cursor[Data](input)
+    var total = 0L
+    while !cursor.finished do
+      total += cursor.peek.asInt
+      cursor.next()
+    total
+
+  def rawArraySum: Long =
+    var total = 0L
+    var i = 0
+    while i < inputArray.length do { total += (inputArray(i) & 0xff); i += 1 }
+    total
+
+  // ── Example I: `writeTo` sink path vs a raw OutputStream write ──────────────
+
+  def writeToSink: Int =
+    val out = new java.io.ByteArrayOutputStream(input.length)
+    inputChunks.writeTo(out)
+    out.size
+
+  def rawWrite: Int =
+    val out = new java.io.ByteArrayOutputStream(input.length)
+    inputChunks.foreach(chunk => out.write(chunk.asInstanceOf[Array[Byte]]))
+    out.size
+
   def run(): Unit =
     val bench = Bench()
     val size = input.length*Byte
@@ -282,8 +338,11 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       val transcodeOk = transcodeSoundness == textData.length
       val readOk = readGzipSoundness == readGzipFs2 && readGzipFs2 == readGzipZio
       val base64Ok = base64Soundness == base64Jdk && base64Jdk == base64Fs2
-      ( roundtripOk, transcodeOk, readOk, base64Ok )
-    . assert(_ == (true, true, true, true))
+      val readOk2 = readChunked == input.length && memoizeChunked == input.length
+      val cursorOk = cursorSum == rawArraySum && cursorSum == checksumSoundness
+      val writeOk = writeToSink == input.length && rawWrite == input.length
+      ( roundtripOk, transcodeOk, readOk, base64Ok, readOk2, cursorOk, writeOk )
+    . assert(_ == (true, true, true, true, true, true, true))
 
     suite(m"Gzip compression (4 MB)"):
       bench(m"Soundness  Stream.compress[Gzip]")
@@ -372,3 +431,41 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
       bench(m"JDK  javax.crypto.Cipher")(target = 1*Second, operationSize = size):
         '{ turbulence.Benchmarks.aesJdk }
+
+    suite(m"Public read vs kernel memoize (4 MB)"):
+      bench(m"Soundness  Stream.memoize (kernel)")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.memoizeChunked }
+
+      bench(m"Soundness  read[Data]")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.readChunked }
+
+      bench(m"Soundness  read[Text] (decode)")(target = 1*Second, operationSize = textSize):
+        '{ turbulence.Benchmarks.readText }
+
+    suite(m"Buffering block-size sweep: gzip (4 MB)"):
+      bench(m"block 4 KiB (standard)")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.gzipBlock4k }
+
+      bench(m"block 512 B")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.gzipBlock512 }
+
+      bench(m"block 64 KiB")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.gzipBlock64k }
+
+    suite(m"Cursor pull-loop vs raw array scan (4 MB)"):
+      bench(m"Soundness  Cursor peek/next")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.cursorSum }
+
+      bench(m"Raw  Array[Byte] loop")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.rawArraySum }
+
+    suite(m"writeTo sink vs raw OutputStream write (4 MB)"):
+      bench(m"Soundness  writeTo")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.writeToSink }
+
+      bench(m"Raw  OutputStream.write")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.rawWrite }
