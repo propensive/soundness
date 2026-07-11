@@ -180,7 +180,7 @@ object Websocket:
           secWebsocketVersion = 13,
           connection          = t"Upgrade",
           upgrade             = t"websocket" )
-        ( Http.Body.Streaming(websocket.channel.stream) )
+        ( Http.Body.Flowing(() => zephyrine.Stream(websocket.channel.stream.iterator)) )
 
 // The `Servable` carrier for a WebSocket handler. On serve it produces the `101`
 // handshake response whose body is the outgoing frame stream; the handler runs

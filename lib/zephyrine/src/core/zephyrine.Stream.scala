@@ -84,9 +84,11 @@ object Stream:
 
   // Adapts a chunk iterator (the legacy interoperation shape) into a stream.
   // Demand bounds only how much of each chunk is exposed per refill, not the
-  // iterator's own production, which is outside this stream's control.
-  def apply[medium](iterator: Iterator[medium])(using addressable0: medium is Addressable)
-  :   (Stream[medium] over Credit)^ =
+  // iterator's own production, which is outside this stream's control. The
+  // iterator may itself capture capabilities (e.g. pull from another
+  // endpoint), which the stream then retains alongside its own fresh state.
+  def apply[medium](iterator: Iterator[medium]^)(using addressable0: medium is Addressable)
+  :   (Stream[medium] over Credit)^{iterator, caps.any} =
 
     new Stream[medium]:
       type Transport = Credit

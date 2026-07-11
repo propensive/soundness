@@ -153,8 +153,7 @@ package httpBackends:
       buildResponse(send(buildJavaRequest(jn.URI.create(url.s).nn, method, headers, body)))
 
 // A request is transmitted over a raw socket as its HTTP/1.1 wire form.
-given requestTransmissible: Http.Request is Transmissible = request =>
-  zephyrine.Stream(Http.Request.serialize(request).iterator)
+given requestTransmissible: Http.Request is Transmissible = Http.Request.serialize(_)
 
 // Fetch from a Unix domain socket, speaking HTTP/1.1 directly over the socket
 // (e.g. the Docker daemon's API). The request's `Host` is `localhost`.

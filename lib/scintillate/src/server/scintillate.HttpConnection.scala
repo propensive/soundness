@@ -109,7 +109,6 @@ object HttpConnection:
       val length = if chunked then 0 else response.body match
         case Http.Body.Empty        => -1
         case Http.Body.Fixed(data)  => data.length
-        case Http.Body.Streaming(_) => 0
         case Http.Body.Flowing(_)   => 0
 
       exchange.sendResponseHeaders(response.status.code, length)
@@ -124,14 +123,6 @@ object HttpConnection:
             count += data.length
             responseBody.flush()
           catch case _: ji.IOException => abort(StreamError(count.b))
-
-        case Http.Body.Streaming(stream) =>
-          stream.foreach: block =>
-            try
-              responseBody.write(block.mutable(using Unsafe))
-              count += block.length
-              responseBody.flush()
-            catch case _: ji.IOException => abort(StreamError(count.b))
 
         case Http.Body.Flowing(source) =>
           val stream = source()

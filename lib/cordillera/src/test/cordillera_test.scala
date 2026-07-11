@@ -280,7 +280,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
               t"/echo.Service/Call", Nil, () => Stream(ascii(t"ping")))
 
           val (stream, response) = connection.fetch(request, t"http", t"unix")
-          val bodyText = ascii(t"pong").to(List) == response.body.stream.reduce(_ ++ _).to(List)
+          val bodyText = ascii(t"pong").to(List) == response.body.stream.memoize.to(List)
           val statusCode = response.status.code
           val grpcStatus = stream.trailers.await().find(_.name == t"grpc-status").map(_.value)
           server.cancel()

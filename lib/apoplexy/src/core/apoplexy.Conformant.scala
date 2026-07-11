@@ -43,7 +43,7 @@ import turbulence.*
 import xylophone.*
 
 import errorDiagnostics.emptyDiagnostics
-import zephyrine.ParseError
+import zephyrine.{ParseError, memoize}
 
 // Interprets an `Http.Response` as a value of `Self`, reading the body in the wire
 // format `Transport` (`jacinta.Json` or `xylophone.Xml`) the spec dictates.
@@ -67,7 +67,7 @@ trait LowPriorityConformant:
         case ParseError(_, _, _) => ApiError(ApiError.Reason.Malformed)
         case JsonError(_)        => ApiError(ApiError.Reason.Malformed)
 
-      . protect(response.body.stream.read[Json].as[value])
+      . protect(response.body.stream.memoize.read[Json].as[value])
 
   // A 2xx XML body decoded to any XML-decodable type.
   given xmlDecodable: [value: Decodable in Xml]
@@ -79,7 +79,7 @@ trait LowPriorityConformant:
         case ParseError(_, _, _) => ApiError(ApiError.Reason.Malformed)
         case _: XmlError         => ApiError(ApiError.Reason.Malformed)
 
-      . protect(summon[CharDecoder].decoded(response.body.stream).read[Xml].as[value])
+      . protect(summon[CharDecoder].decoded(response.body.stream.memoize).read[Xml].as[value])
 
 object Conformant extends LowPriorityConformant:
   // Raise `ApiError` unless the response status is in the 2xx range.
@@ -104,7 +104,7 @@ object Conformant extends LowPriorityConformant:
     mitigate:
       case ParseError(_, _, _) => ApiError(ApiError.Reason.Malformed)
 
-    . protect(response.body.stream.read[Json])
+    . protect(response.body.stream.memoize.read[Json])
 
   // The raw 2xx body as XML. The body bytes are decoded to `Text` (via the
   // `CharDecoder`) before xylophone parses them.
@@ -115,7 +115,7 @@ object Conformant extends LowPriorityConformant:
       mitigate:
         case ParseError(_, _, _) => ApiError(ApiError.Reason.Malformed)
 
-      . protect(summon[CharDecoder].decoded(response.body.stream).read[Xml])
+      . protect(summon[CharDecoder].decoded(response.body.stream.memoize).read[Xml])
 
 trait Conformant extends Typeclass, Transportive:
   def read(response: Http.Response): Self
