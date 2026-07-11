@@ -188,6 +188,10 @@ object WasmInvoke:
       case Refinement(base, "Topic", _) => base =:= TypeRepr.of[WitHandle]
       case _                            => false
 
+    def isCase(scala: TypeRepr): Boolean = scala.dealias match
+      case Refinement(base, "Topic", _) => base =:= TypeRepr.of[WitCase]
+      case _                            => false
+
     def isTuple(scala: TypeRepr, arity: Int): Boolean = scala.dealias match
       case AppliedType(tuple, arguments) =>
         tuple.typeSymbol == defn.TupleClass(arity) && arguments.length == arity
@@ -348,6 +352,21 @@ object WasmInvoke:
             witType match
               case Foreign.Type.Named(name) if isHandle(scala) =>
                 handleDecode(name, scala)
+
+              // A variant (or enum) result requested as a `WitCase of topic`: the facade case
+              // object arrives, and its lower-kebab-case name is recovered at runtime.
+              // Payload-carrying cases lose their payload.
+              case Foreign.Type.Named(name) if isCase(scala) =>
+                val facade = facadeOf(name)
+
+                val decode: Expr[Any] => Expr[Any] = call => scala.asType.absolve match
+                  case '[scala] =>
+                    val witCase = '{new WitCase(WitCase.caseName($call))}.asTerm
+
+                    TypeApply(Select.unique(witCase, "asInstanceOf"), List(TypeTree.of[scala]))
+                    . asExprOf[Any]
+
+                (facade.typeRef, decode)
 
               // A genuinely void function (`block: func()`): nothing to check or decode.
               case Foreign.Type.Named(name) if name.s == "unit" && scala =:= TypeRepr.of[Unit] =>
@@ -539,12 +558,28 @@ object WasmInvoke:
             (carrierType(encodable), encoded, false)
 
       // A plain (always-present) value against an `option<T>` parameter crosses as a present
-      // `java.util.Optional`, matching the parameter's descriptor.
+      // `java.util.Optional`, and one against a `result<T, E>` parameter as an `Ok` (used by
+      // `wasi:http`'s `response-outparam.set`), matching the parameter's descriptor.
       if optionPayload(parameter).present && !alreadyOption then
         val wrapped = '{java.util.Optional.of(${encoded.asExprOf[Any]}).nn}.asTerm
         (optionClass.typeRef.appliedTo(List(carrier)), wrapped)
       else
-        (carrier, encoded)
+        parameter match
+          case Foreign.Type.Applied(constructor, _) if constructor.s == "result" =>
+            val okClass = Symbol.requiredClass("scala.scalajs.wit.Ok")
+            val resultClass = Symbol.requiredClass("scala.scalajs.wit.Result")
+
+            val wrapped =
+              Apply
+                ( TypeApply
+                    ( Select(New(Inferred(okClass.typeRef)), okClass.primaryConstructor),
+                      List(TypeTree.of[Any]) ),
+                  List(encoded) )
+
+            (resultClass.typeRef, wrapped)
+
+          case _ =>
+            (carrier, encoded)
 
     val argumentPairs: List[Term] =
       argumentTerms.zip(parameterTypes).flatMap: (argument, parameter) =>

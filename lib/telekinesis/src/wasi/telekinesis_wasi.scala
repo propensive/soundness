@@ -44,6 +44,9 @@ import rudiments.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
+import distillate.*
+import soundness.{invoke, dispose}
+import urticose.*
 import xenophile.*
 import zephyrine.*
 
@@ -178,7 +181,7 @@ package httpBackends:
       // is end-of-stream.
       val bodyHandle = response.consume.invoke[WitHandle of "incoming-body"]
       val incomingBody: Foreign of "incoming-body" from Wit = bodyHandle
-      val streamHandle = incomingBody.stream.invoke[WitHandle of "input-stream"]
+      val streamHandle = incomingBody.selectDynamic("stream").invoke[WitHandle of "input-stream"]
       val stream: Foreign of "input-stream" from Wit = streamHandle
 
       var chunks: List[Data] = Nil
@@ -192,4 +195,114 @@ package httpBackends:
       bodyHandle.dispose()
       responseHandle.dispose()
 
-      status(textHeaders, Http.Body.Streaming(chunks.reverse.to(LazyList)))
+      val content: Data = chunks.reverse.foldLeft(IArray.empty[Byte])(_ ++ _)
+      status(textHeaders, Http.Body.Fixed(content))
+
+// Serves HTTP from a Wasm Component: the bridge from `wasi:http/incoming-handler`'s exported
+// `handle` function to a Soundness handler. The application supplies a small `@WitExport` shim
+// (the one piece that must exist, annotated, in the Wasm-compiled application itself) which
+// passes the two facade instances through untyped — they are Wasm-only classes this module never
+// names — and everything else happens here: unmarshalling the request, dispatching to the
+// handler, marshalling the response, and setting the outparam. `inline`, so the `invoke`s expand
+// at the downstream summoning site, exactly as for the backends above.
+object WasiHttpServer:
+  inline def handle(request: Any, responseOut: Any)
+    ( inline handler: Http.Request => Http.Response )
+  :   Unit =
+
+    def bytes(text: Text): Data = text.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+
+    val requestHandle = new WitHandle(request).asInstanceOf[WitHandle of "incoming-request"]
+    val incoming: Foreign of "incoming-request" from Wit = requestHandle
+
+    val method: Http.Method =
+      unsafely(incoming.method.invoke[WitCase of "method"].name.upper.decode[Http.Method])
+
+    val target: Text = incoming.`path-with-query`.invoke[Optional[Text]].or(t"/")
+
+    val headersHandle = incoming.headers.invoke[WitHandle of "fields"]
+    val requestFields: Foreign of "fields" from Wit = headersHandle
+
+    val textHeaders: List[Http.Header] =
+      requestFields.entries.invoke[List[(Text, Data)]].map: (key, value) =>
+        Http.Header(key, value.utf8)
+
+    headersHandle.dispose()
+
+    val bodyHandle = incoming.consume.invoke[WitHandle of "incoming-body"]
+    val incomingBody: Foreign of "incoming-body" from Wit = bodyHandle
+    val streamHandle = incomingBody.selectDynamic("stream").invoke[WitHandle of "input-stream"]
+    val inputStream: Foreign of "input-stream" from Wit = streamHandle
+
+    var chunks: List[Data] = Nil
+
+    try
+      while true do
+        chunks = inputStream.`blocking-read`(U64(65536L.bits)).invoke[Data] :: chunks
+    catch case error: WitError => ()
+
+    streamHandle.dispose()
+    bodyHandle.dispose()
+    requestHandle.dispose()
+
+    val content: Data = chunks.reverse.foldLeft(IArray.empty[Byte])(_ ++ _)
+
+    // The request's host is the server's own; a component behind `wasi:http` is not addressed by
+    // hostname, so `Localhost` stands in (and avoids parsing the authority, which would reach the
+    // wasm javalib's trapping regex engine).
+    val httpRequest =
+      Http.Request
+        ( method,
+          1.1,
+          Localhost,
+          target,
+          textHeaders,
+          () => Stream(Iterator(content)) )
+
+    val response = handler(httpRequest)
+
+    // The response's headers travel in a `fields` whose ownership passes into the
+    // `outgoing-response`, whose ownership passes into `set` — so neither is dropped here.
+    val fieldsHandle = Foreign["fields", Wit].constructor.invoke[WitHandle of "fields"]
+    val fields: Foreign of "fields" from Wit = fieldsHandle
+
+    response.textHeaders.each: header =>
+      fields.append(header.key, bytes(header.value)).invoke[Unit]
+
+    val outgoingResponse =
+      Foreign["outgoing-response", Wit].asInstanceOf[Foreign of "outgoing-response" from Wit]
+
+    val responseHandle =
+      outgoingResponse.constructor(fieldsHandle).invoke[WitHandle of "outgoing-response"]
+
+    val outgoing: Foreign of "outgoing-response" from Wit = responseHandle
+    outgoing.`set-status-code`(U16(response.status.code.toShort.bits)).invoke[Unit]
+
+    val outBodyHandle = outgoing.body.invoke[WitHandle of "outgoing-body"]
+
+    // The outparam is set before the body is written, so the host can stream the response; the
+    // response's ownership passes into `set` (wrapped as the `ok` arm of its `result` parameter).
+    val outparamHandle = new WitHandle(responseOut).asInstanceOf[WitHandle of "response-outparam"]
+
+    val responseOutparam =
+      Foreign["response-outparam", Wit].asInstanceOf[Foreign of "response-outparam" from Wit]
+
+    responseOutparam.set(outparamHandle, responseHandle).invoke[Unit]
+
+    val payload: Data = response.body match
+      case Http.Body.Fixed(data) => data
+      case Http.Body.Empty       => IArray.empty[Byte]
+      case body                  => body.stream.memoize
+
+    val outBody: Foreign of "outgoing-body" from Wit = outBodyHandle
+
+    if !payload.isEmpty then
+      val writeHandle = outBody.write.invoke[WitHandle of "output-stream"]
+      val outputStream: Foreign of "output-stream" from Wit = writeHandle
+      outputStream.`blocking-write-and-flush`(payload).invoke[Unit]
+      writeHandle.dispose()
+
+    val outgoingBody =
+      Foreign["outgoing-body", Wit].asInstanceOf[Foreign of "outgoing-body" from Wit]
+
+    outgoingBody.finish(outBodyHandle, Unset).invoke[Unit]
