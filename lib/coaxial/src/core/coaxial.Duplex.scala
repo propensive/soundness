@@ -107,9 +107,9 @@ object Duplex:
         protected def window0: AnyRef = storage
         def start: Int = start0
         def limit: Int = limit0
-        def skip(count: Int): Unit = start0 += count
+        update def skip(count: Int): Unit = start0 += count
 
-        def refill(demand: Credit): Optional[Int] =
+        update def refill(demand: Credit): Optional[Int] =
           if limit0 > start0 then limit0 - start0
           else if ended then Unset
           else
@@ -163,21 +163,21 @@ trait Duplex:
       protected def buffer0: AnyRef = storage
       def mark: Int = mark0
 
-      def reserve(min: Int): Int =
+      update def reserve(min: Int): Int =
         val free = block - mark0
 
         if free >= min then free else
           drain()
           block
 
-      def commit(count: Int): Unit =
+      update def commit(count: Int): Unit =
         mark0 += count
         if mark0 == block then drain()
 
-      override def flush(): Unit = drain()
-      def finish(): Unit = drain()
+      override update def flush(): Unit = drain()
+      update def finish(): Unit = drain()
 
-      private def drain(): Unit =
+      private update def drain(): Unit =
         if mark0 > 0 then
           send(LazyList(storage.slice(0, mark0).nn.immutable(using Unsafe)))
           mark0 = 0

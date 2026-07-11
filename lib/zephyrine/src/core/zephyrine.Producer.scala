@@ -54,14 +54,14 @@ object Producer:
   // Streaming: chunks are queued (with backpressure) and drained through `iterator`. The producing
   // code must run on a separate fiber, since `put` blocks once the window is full.
   def apply[medium](block: Int = 4096, window: Int = 2)(using addr: medium is Addressable)
-  :   Channel[medium] { type Operand = addr.Operand } =
+  :   (Channel[medium] { type Operand = addr.Operand })^ =
 
     Channel(block, window)(using addr)
 
   // Synchronous: run `body`, accumulating directly into a builder, and return the whole value. No
   // concurrency, no chunk buffer, and none of the streaming path's single-thread deadlock risk.
   def collect[medium](using addressable: medium is Addressable)(hint: Int = 4096)
-    ( body: (Producer[medium] { type Operand = addressable.Operand }) => Unit )
+    ( body: ((Producer[medium] { type Operand = addressable.Operand })^) => Unit )
   :   medium =
 
     val target = addressable.blank(hint)

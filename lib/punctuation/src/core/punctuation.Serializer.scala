@@ -59,7 +59,7 @@ private[punctuation] object Serializer:
           markdown.children,
           protectFirst = false )
 
-  private def writeDocument(writer: Writer, markdown: Markdown of Layout): Unit =
+  private def writeDocument(writer: Writer^, markdown: Markdown of Layout): Unit =
     var first = true
 
     markdown.children.each: node =>
@@ -69,7 +69,7 @@ private[punctuation] object Serializer:
 
     linkRefs(writer, markdown.linkRefs)
 
-  private def linkRefs(writer: Writer, refs: List[Markdown.LinkRef]): Unit =
+  private def linkRefs(writer: Writer^, refs: List[Markdown.LinkRef]): Unit =
     if !refs.nil then
       if writer.written && !writer.atLineStart then writer.newline()
 
@@ -308,7 +308,7 @@ private[punctuation] object Serializer:
 
   // Word-wrap a paragraph's inline content: textual nodes break at their spaces, inline constructs
   // are atomic. `protectFirst` backslash-escapes a leading block-start character.
-  private def flow(writer: Writer, children: Seq[Prose], protectFirst: Boolean): Unit =
+  private def flow(writer: Writer^, children: Seq[Prose], protectFirst: Boolean): Unit =
     if protectFirst then writer.protectNext()
 
     children.each:
@@ -319,7 +319,7 @@ private[punctuation] object Serializer:
 
     writer.endFlow()
 
-  private def layout(writer: Writer, node: Layout): Unit = node match
+  private def layout(writer: Writer^, node: Layout): Unit = node match
     case Layout.Heading(_, level, children*) =>
       writer.raw(t"#"*level)
       writer.raw(t" ")
@@ -377,7 +377,7 @@ private[punctuation] object Serializer:
         n += 1
 
   // Emit a list item: the first line carries the marker, subsequent lines the hanging indent.
-  private def listItem(writer: Writer, item: List[Layout], marker: Text, hanging: Text): Unit =
+  private def listItem(writer: Writer^, item: List[Layout], marker: Text, hanging: Text): Unit =
     if item.nil then writer.newline() else
       var first = true
 
@@ -390,7 +390,10 @@ private[punctuation] object Serializer:
   // A streaming sink for Markdown source. Block separation, indentation and the first-character
   // block-start escape are carried as state (no looking back at emitted output), and paragraph text
   // is word-wrapped at `width` (the default `Int.MaxValue` never wraps, preserving the AST).
-  class Writer(producer: Producer[Text], val width: Int):
+  // Holds the exclusive producer it drives, so the writer is itself a stateful
+  // capability with update-classified writes.
+  class Writer(producer: (Producer[Text])^, val width: Int)
+  extends caps.ExclusiveCapability, caps.Stateful:
     private var trailing = 0          // consecutive trailing newlines just emitted
     private var col = 0               // current column, for wrapping
     private var pendingSpaces = 0     // spaces buffered before the current word
@@ -398,10 +401,10 @@ private[punctuation] object Serializer:
     private var protect = false       // escape the next word's leading block-start char
     var written: Boolean = false
 
-    def atLineStart: Boolean = col == 0
+    update def atLineStart: Boolean = col == 0
 
     // Emit text verbatim (it may contain newlines), tracking the trailing-newline count and column.
-    def raw(text: Text): Unit =
+    update def raw(text: Text): Unit =
       val s = text.s
 
       if s.length > 0 then
@@ -422,14 +425,14 @@ private[punctuation] object Serializer:
           val lastNl = s.lastIndexOf('\n')
           col = if lastNl < 0 then col + s.length else s.length - lastNl - 1
 
-    def newline(): Unit =
+    update def newline(): Unit =
       producer.put(t"\n")
       written = true
       trailing += 1
       col = 0
 
     // Ensure blocks are separated by a blank line (two trailing newlines), once content exists.
-    def blankLine(): Unit =
+    update def blankLine(): Unit =
       if written then
         if trailing == 0 then
           newline()
@@ -437,9 +440,9 @@ private[punctuation] object Serializer:
         else if trailing == 1 then
           newline()
 
-    def protectNext(): Unit = protect = true
+    update def protectNext(): Unit = protect = true
 
-    def text(content: Text): Unit =
+    update def text(content: Text): Unit =
       val s = content.s
       var i = 0
 
@@ -452,14 +455,14 @@ private[punctuation] object Serializer:
 
         i += 1
 
-    def atom(content: Text): Unit = seg.add(content)
+    update def atom(content: Text): Unit = seg.add(content)
 
-    def soft(): Unit =
+    update def soft(): Unit =
       flushSeg()
       pendingSpaces = 0
       newline()
 
-    def hard(): Unit =
+    update def hard(): Unit =
       flushSeg()
       pendingSpaces = 0
       raw(t"\\")

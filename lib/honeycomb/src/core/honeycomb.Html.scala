@@ -173,7 +173,7 @@ object Html extends Tag.Container
         val root = Tag.root(content.reify.map(_.tt).to(Set))
         HtmlParser.fromIterator(input.iterator, permissive = false).parseHtml(root).of[content]
 
-      override def accept(consume stream: (Stream[Text] over Credit)^): Html of content =
+      override def accept(stream: Stream[Text] over Credit): Html of content =
         val root = Tag.root(content.reify.map(_.tt).to(Set))
         HtmlParser.fromStream(stream, permissive = false).parseHtml(root).of[content]
 
@@ -189,7 +189,7 @@ object Html extends Tag.Container
         HtmlParser.fromIterator(input.iterator, permissive = false)
         . parseHtml(dom.generic, doctypes = false)
 
-      override def accept(consume stream: (Stream[Text] over Credit)^): Html =
+      override def accept(stream: Stream[Text] over Credit): Html =
         HtmlParser.fromStream(stream, permissive = false)
         . parseHtml(dom.generic, doctypes = false)
 
@@ -233,7 +233,7 @@ object Html extends Tag.Container
         lenient(Fragment().of[content]):
           HtmlParser.fromIterator(input.iterator, permissive = true).parseHtml(root).of[content]
 
-      override def accept(consume stream: (Stream[Text] over Credit)^): Html of content =
+      override def accept(stream: Stream[Text] over Credit): Html of content =
         given Tactic[ParseError] = lenientTactic
         val root = Tag.root(content.reify.map(_.tt).to(Set))
 
@@ -254,7 +254,7 @@ object Html extends Tag.Container
           HtmlParser.fromIterator(input.iterator, permissive = true)
           . parseHtml(dom.generic, doctypes = false)
 
-      override def accept(consume stream: (Stream[Text] over Credit)^): Html =
+      override def accept(stream: Stream[Text] over Credit): Html =
         given Tactic[ParseError] = lenientTactic
 
         lenient(Fragment()):

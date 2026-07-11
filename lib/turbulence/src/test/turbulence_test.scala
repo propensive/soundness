@@ -577,9 +577,9 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"cancelling a blocked conduit writer releases it"):
         supervise:
-          val conduit = Conduit[Data]()
+          val (intake, stream) = Conduit[Data]()
           val big = Data.fill(100000)(_.toByte)
-          val writer = async(conduit.put(big))
+          val writer = async(intake.put(big))
           writer.cancel()
           true
       . assert(identity)
@@ -587,8 +587,15 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"confluence merges all sources completely"):
         supervise:
           val sources = (1 to 4).map { index => Data.fill(1000)(_ => index.toByte) }
-          val merged = Confluence(sources.map { data =>
-              summon[Data is Source by Data over Credit].stream(data) }*)
+          // built in a while-loop: fresh endpoints cannot leave a `map` lambda
+          val builder = List.newBuilder[AnyRef]
+          var index = 0
+          while index < sources.length do
+            builder += summon[Data is Source by Data over Credit].stream(sources(index)).asInstanceOf[AnyRef]
+            index += 1
+          val endpoints = builder.result()
+
+          val merged = Confluence(endpoints.map(_.asInstanceOf[Stream[Data] over Credit])*)
           val gather = Gather2()
           merged.flowTo(gather)
           gather.data.to(List).sorted
@@ -655,9 +662,9 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"cancelling a detached flow blocked on an empty conduit releases it"):
         supervise:
-          val conduit = Conduit[Data]()
+          val (intake, stream) = Conduit[Data]()
           val gather = Gather2()
-          val pump = conduit.stream.flow(gather)
+          val pump = stream.flow(gather)
           pump.cancel()
           true
       . assert(identity)
@@ -676,24 +683,24 @@ class Gather2() extends Intake[Data]:
   protected def buffer0: AnyRef = storage.asInstanceOf[AnyRef]
   def mark: Int = mark1
 
-  def reserve(min: Int): Int =
+  update def reserve(min: Int): Int =
     val free = block - mark1
 
     if free >= min then free else
       drain()
       block
 
-  def commit(count: Int): Unit =
+  update def commit(count: Int): Unit =
     mark1 += count
     if mark1 == block then drain()
 
-  def finish(): Unit = drain()
+  update def finish(): Unit = drain()
 
-  def data: Data =
+  update def data: Data =
     drain()
     addressable.build(target)
 
-  private def drain(): Unit =
+  private update def drain(): Unit =
     if mark1 > 0 then
       addressable.cloneStorage(storage, 0, mark1)(target)
       mark1 = 0

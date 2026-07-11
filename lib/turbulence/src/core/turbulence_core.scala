@@ -125,7 +125,10 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
           stream.skip(count)
           chunk #:: recur()
 
-    LazyList.defer(recur())
+    // The transitional bridge: a LazyList is pure, so it cannot carry the consumed
+    // stream's capture — the well-known confinement gap that motivated the capability
+    // kernel. Sealed here, at the single bridge point (scheduled for removal).
+    caps.unsafe.unsafeAssumePure(LazyList.defer(recur()))
 
 extension (consume stream: (Stream[Data] over Credit)^)
   // Adapt a pull endpoint to the HTTP-body interchange protocol: each `next`
@@ -186,7 +189,10 @@ extension (body: HttpStreams.Body)
       case null       => LazyList()
       case data: Data => data #:: recur()
 
-    LazyList.defer(recur())
+    // The transitional bridge: a LazyList is pure, so it cannot carry the consumed
+    // stream's capture — the well-known confinement gap that motivated the capability
+    // kernel. Sealed here, at the single bridge point (scheduled for removal).
+    caps.unsafe.unsafeAssumePure(LazyList.defer(recur()))
 
 package stdios:
   given muteStdio: Stdio = Stdio(null, null, null, termcapDefinitions.basicTermcap)

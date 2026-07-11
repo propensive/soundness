@@ -143,6 +143,41 @@ extension [out, transport](consume intake: (Intake[out] over transport)^)
       (ductile.duct(stage), intake)
 
 
+// ─── terminal operations and explicit replay ───────────────────────────────────────────
+//
+// The safe front-end replacing the LazyList views: pipeline stages compose with the
+// consume-typed `through`, and these terminal operations drain an exclusive endpoint
+// without exposing its window — each borrow is read, used and skipped before the next
+// refill. `memoize` is the explicit replacement for LazyList's implicit caching: it
+// drains the stream once into an immutable value, which may then be shared freely.
+
+extension [medium](consume stream: (Stream[medium] over Credit)^)
+  // Drain the stream, applying `operation` to each successive window. The lambda
+  // receives the storage, start index and element count; it must not retain the storage.
+  def foreachWindow(operation: (AnyRef, Int, Int) => Unit)(using buffering: Buffering): Unit =
+    val block = buffering.capacity(stream.addressable.substrate)
+
+    def loop(): Unit = stream.refill(Credit(block)) match
+      case count: Int =>
+        operation(stream.window(using Unsafe).asInstanceOf[AnyRef], stream.start, count)
+        stream.skip(count)
+        loop()
+
+      case _ => ()
+
+    try loop() finally stream.close()
+
+  // Drain the stream into a single immutable value: the explicit, bounded replacement
+  // for a LazyList's implicit memoization. The result is frozen and freely shareable.
+  def memoize(using buffering: Buffering): medium =
+    val addressable = stream.addressable
+    val target = addressable.blank(buffering.capacity(addressable.substrate))
+
+    foreachWindow: (storage, start, count) =>
+      addressable.cloneStorage(storage.asInstanceOf[addressable.Storage], start, count)(target)
+
+    addressable.build(target)
+
 private def throughDuct[in, out, upTransport, downTransport]
   ( consume duct:
       (Duct[in, out] { type Transport = downTransport; type Upstream = upTransport })^,

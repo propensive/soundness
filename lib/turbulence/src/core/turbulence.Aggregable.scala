@@ -62,7 +62,7 @@ object Aggregable:
     type Self = Data
     type Operand = Data
 
-    override def accept(consume stream: (Stream[Data] over Credit)^): Data = gather(stream)
+    override def accept(stream: (Stream[Data] over Credit)^): Data = gather(stream)
 
     def aggregate(source0: LazyList[Data]): Data =
       val size = source0.foldLeft(0)(_ + _.length)
@@ -85,7 +85,7 @@ object Aggregable:
     type Self = Text
     type Operand = Text
 
-    override def accept(consume stream: (Stream[Text] over Credit)^): Text = gather(stream)
+    override def accept(stream: (Stream[Text] over Credit)^): Text = gather(stream)
 
     def aggregate(source0: LazyList[Text]): Text =
       var source = source0
@@ -113,7 +113,7 @@ trait Aggregable extends Typeclass, Operable:
   // Consume a pull endpoint. The default materializes one chunk per refill
   // and delegates to the legacy `aggregate`; instances override it to build
   // directly from the stream's windows.
-  def accept(consume stream: (Stream[Operand] over Credit)^): Self =
+  def accept(stream: (Stream[Operand] over Credit)^): Self =
     def recur(): LazyList[Operand] =
       stream.refill(Credit(Long.MaxValue)) match
         case count: Int =>

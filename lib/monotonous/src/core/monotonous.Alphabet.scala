@@ -66,14 +66,17 @@ object Alphabet:
       type Transport = Credit
       type Upstream = Credit
 
-      def duct(stage: Alphabet[encoding])(using Buffering)
-      :   Duct[Data, Text] { type Transport = Credit; type Upstream = Credit } =
+      def duct(consume stage: Alphabet[encoding]^)(using Buffering)
+      :   (Duct[Data, Text] { type Transport = Credit; type Upstream = Credit })^ =
+
+        // hoisted: a constructor may not read the consumed (exclusive) descriptor
+        val alphabet = caps.unsafe.unsafeAssumePure(stage)
 
         new Duct[Data, Text]:
           type Transport = Credit
           type Upstream = Credit
 
-          private val base: Int = bits(stage)
+          private val base: Int = bits(alphabet)
 
           // Serialized characters per group, for terminal padding.
           private val multiple: Int = 8/base.gcd(8)
@@ -88,7 +91,7 @@ object Alphabet:
           def translate(demand: Credit): Credit =
             Credit((demand.count.min(Long.MaxValue/8)*base/8).max(1))
 
-          def step
+          update def step
             ( source: input.Storage,
               sourceOffset: Int,
               sourceLength: Int,
@@ -107,7 +110,7 @@ object Alphabet:
               if accumulated >= base then
                 if produced < targetSpace then
                   chars(targetOffset + produced) =
-                    stage((accumulator >>> (accumulated - base)) & ((1 << base) - 1))
+                    alphabet((accumulator >>> (accumulated - base)) & ((1 << base) - 1))
 
                   produced += 1
                   accumulated -= base
@@ -123,7 +126,7 @@ object Alphabet:
 
             Duct.Progress(consumed, produced)
 
-          override def flush(target: output.Storage, targetOffset: Int, targetSpace: Int)
+          override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int)
           :   Int =
 
             val chars = target.asInstanceOf[Array[Char]]
@@ -134,7 +137,7 @@ object Alphabet:
 
               if accumulated > 0 then
                 chars(targetOffset) =
-                  stage((accumulator << (base - accumulated)) & ((1 << base) - 1))
+                  alphabet((accumulator << (base - accumulated)) & ((1 << base) - 1))
 
                 produced = 1
                 accumulated = 0
@@ -142,7 +145,7 @@ object Alphabet:
 
             if stage.padding then
               while written%multiple != 0 && produced < targetSpace do
-                chars(targetOffset + produced) = stage(1 << base)
+                chars(targetOffset + produced) = alphabet(1 << base)
                 produced += 1
                 written += 1
 
@@ -160,18 +163,18 @@ object Alphabet:
       type Transport = Credit
       type Upstream = Credit
 
-      def duct(stage: Alphabet[encoding])(using Buffering)
-      :   Duct[Text, Data] { type Transport = Credit; type Upstream = Credit } =
+      def duct(consume stage: Alphabet[encoding]^)(using Buffering)
+      :   (Duct[Text, Data] { type Transport = Credit; type Upstream = Credit })^ =
 
-        // Sealed: the duct closes over the ambient `Buffering`, which is sizing policy
-        // only; the instance performs no effects beyond its own mutable buffers.
-        caps.unsafe.unsafeAssumePure:
-         new Duct[Text, Data]:
+        // hoisted: a constructor may not read the consumed (exclusive) descriptor
+        val alphabet = caps.unsafe.unsafeAssumePure(stage)
+
+        new Duct[Text, Data]:
           type Transport = Credit
           type Upstream = Credit
 
-          private val base: Int = bits(stage)
-          private val pad: Char = if stage.padding then stage(1 << base) else ' '
+          private val base: Int = bits(alphabet)
+          private val pad: Char = if stage.padding then alphabet(1 << base) else ' '
 
           private var accumulator: Int = 0
           private var accumulated: Int = 0
@@ -182,7 +185,7 @@ object Alphabet:
           def translate(demand: Credit): Credit =
             Credit((demand.count.min(Long.MaxValue/8)*8/base).max(1))
 
-          def step
+          update def step
             ( source: input.Storage,
               sourceOffset: Int,
               sourceLength: Int,

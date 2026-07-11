@@ -481,7 +481,9 @@ object Http:
       case Body.Fixed(data)       => LazyList(data)
       case Body.Empty             => LazyList()
       case Body.Streaming(stream) => stream
-      case Body.Flowing(source)   => source().lazyList
+      case Body.Flowing(source)   =>
+        val flowing = source()
+        flowing.lazyList
 
 
   // A request body with no bytes; each call constructs a fresh, already-empty
@@ -511,7 +513,8 @@ object Http:
     lazy val query: Query =
       contentType.let(_.base.show) match
         case t"application/x-www-form-urlencoded" =>
-          queryText.decode[Query] ++ body().lazyList.read[Data].utf8.decode[Query]
+          val flowing = body()
+          queryText.decode[Query] ++ flowing.lazyList.read[Data].utf8.decode[Query]
 
         case _ =>
           queryText.decode[Query]
