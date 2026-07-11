@@ -111,10 +111,12 @@ object Cursor:
             lineation0:   Lineation by addressable0.Operand )
   :   Cursor[data, cap]^ =
 
-    // The ascribed binding is load-bearing — see the iterator factory below.
+    // The ascribed binding is load-bearing — see the iterator factory below. The seal
+    // is the audited unsafety that keeps the class Unscoped; the loader's capabilities
+    // remain visible in the `cap` type argument.
     val cursor: Cursor[data, cap]^ =
       new Cursor[data, cap]
-        ( () => load(),
+        ( caps.unsafe.unsafeAssumePure(() => load()),
           Unset,
           DefaultCapacity,
           addressable0,
@@ -304,14 +306,23 @@ object Cursor:
 // lineation queries only), while `Cursor[...]^` grants the exclusive access that the
 // mutating navigation methods (`update`-classified) require. Separation checking — enabled
 // in this unit — verifies the classification; consumers need only capture checking.
+//
+// The class extends `Mutable` (Unscoped-classified), which is what lets consumers hold a
+// cursor in an exclusive field (e.g. jacinta's pooled parser) — scoped capabilities may
+// not flow into longer-lived locations. Unscoped requires that the class captures nothing
+// non-Unscoped, so the `load` field is PURE and the loader factory seals capturing
+// loaders at construction (the audited point). Confinement is still enforced at the API:
+// the loader's capabilities appear in the `cap` type argument, so a cursor over a scoped
+// loader cannot leave the loader's scope (verified by probe: escaping `withFile` with a
+// file-reading cursor is rejected via the type argument).
 final class Cursor[data, cap^]
-  (             load:        () ->{cap} Optional[data],
+  (             load:        () -> Optional[data],
                 initial:     Optional[data],
                 initialSize: Int,
     tracked val addressable: data is Addressable,
     tracked val lineation:   Lineation by addressable.Operand,
                 filler:      Optional[Cursor.Filler[addressable.Storage]] )
-extends caps.ExclusiveCapability, caps.Stateful:
+extends caps.Mutable:
 
   // ─── state ────────────────────────────────────────────────────────────────
   // A single contiguous buffer holds all currently-live data. `pos` is the

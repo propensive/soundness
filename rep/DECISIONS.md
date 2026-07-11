@@ -1109,3 +1109,38 @@ Lessons that took bisection:
   the admission logic (maxSubsumes/levelOK — ctxresult-adjacent) treats the CapSet type
   argument's presence as level-relevant. Until then jacinta.core does not compile; the
   conversion is committed as WIP.
+
+## Fork fix #12 VERDICT: not a bug — Unscoped is the design; Cursor re-parented to Mutable (2026-07-11)
+
+Jon's constraint (only fix genuine compiler bugs) applied to P11. Root cause found in
+`Capability.acceptsLevelOf`: level checking is waived for Unscoped-classified capabilities
+(`|| classifier.derivesFrom(defn.Caps_Unscoped)`). Scoped exclusive capabilities not
+flowing into longer-lived fields is the INTENDED discipline — it protects a real hazard
+(a pooled parser outlives the method frame; a cursor whose loader captured a `withFile`
+handle must not be smuggled out via a field). NO COMPILER CHANGE.
+
+Sound design instead: **Cursor extends `caps.Mutable`** (Unscoped), with the loader FIELD
+sealed pure at the factory boundary (`unsafeAssumePure`, the one audited point) so the
+class captures nothing non-Unscoped. Confinement moves to the API: the loader's
+capabilities live in the `cap` TYPE ARGUMENT, and probe-verified, a cursor over a
+file-reading loader CANNOT escape `withFile` (type-variable instantiation rejects the
+leaked capability). zephyrine 233/233 green; jacinta's field assignments now admitted.
+
+jacinta status: compiles down to 10 errors, all mechanical, two patterns:
+1. **Cursor-op hiding**: any binding of the exclusive cursor field (explicit val, or the
+   inliner's `Cursor_this` receiver proxy) is typed as a widened fresh whose hidden set
+   covers the Parser itself, so parser state may not be touched afterwards in the same
+   scope. DISCIPLINE (applied to reconcileLineation/moreSlow/bom): pre-read parser state
+   into locals, bind the cursor ONCE inside a `locally:` block, do all cursor work through
+   that binding, write parser state after the block. Remaining sites: holding/tail region
+   (~714-740), parseWord (~826). NOTE: a toy WITHOUT Cursor's `cap^` type parameter does
+   not exhibit the hiding (p14 shape is green) — the widened-fresh typing of
+   cap-parameterized field reads is upstream-discussion-worthy, but the statement rule
+   itself is by-design.
+2. **`raises` result hides this** (line ~758 `tail`): update methods with `raises` sugar
+   get context-function results that capture `this` — the established convention from the
+   3.10 work applies: explicit `(using Tactic[...])` parameter instead of `raises`.
+Also fixed en route: ThreadLocal pool is an erased `AnyRef` boundary with one rim cast
+(`borrow()`), matching the Conduit-queue precedent; `TenPow`/`StringScanContinue` frozen
+to `IArray`; Bcd.finish results freeze-asserted (opaque over post-finish-immutable array);
+buffer-pool getters de-inlined (per-expansion reach caps don't unify).

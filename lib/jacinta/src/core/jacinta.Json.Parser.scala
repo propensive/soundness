@@ -85,11 +85,14 @@ private[jacinta] object Parser:
   private inline val NullWord  = 0x6C6C_756E
   private inline val FalseWord = 0x0000_0065_736C_6166L
 
-  private val TenPow: Array[Double] = Array.tabulate(23): i =>
-    var p = 1.0
-    var n = i
-    while n > 0 do { p *= 10.0; n -= 1 }
-    p
+  // Immutable (frozen) so class methods can index it without a global-mutable uses clause.
+  private val TenPow: IArray[Double] =
+    Array.tabulate(23): i =>
+      var p = 1.0
+      var n = i
+      while n > 0 do { p *= 10.0; n -= 1 }
+      p
+    . immutable(using Unsafe)
 
   // Byte-class table for `parseString`'s fast-scan loop. Entry `i` is
   // 1 when byte `i` keeps the scan going (printable ASCII other than
@@ -115,12 +118,18 @@ private[jacinta] object Parser:
 
     arr.immutable(using Unsafe)
 
-  private val pool: ThreadLocal[Parser] =
-    new ThreadLocal[Parser]:
-      override def initialValue(): Parser = new Parser
+  // The pool is a checker-opaque boundary (like Conduit's queue): ThreadLocal cannot
+  // carry capture-typed arguments. Per-thread single ownership is the pool's construction
+  // guarantee — exactly one Parser per thread, never shared — and `borrow()` reasserts the
+  // exclusive type at the rim.
+  private val pool: ThreadLocal[AnyRef] =
+    new ThreadLocal[AnyRef]:
+      override def initialValue(): AnyRef = (new Parser).asInstanceOf[AnyRef]
+
+  private def borrow(): Parser^ = pool.get.nn.asInstanceOf[Parser^]
 
   def parse(source: Data, mode: NumberMode = NumberMode.Full): Raw raises ParseError =
-    val parser = pool.get.nn.asInstanceOf[Parser^]
+    val parser = borrow()
     parser.tracking = false
     parser.resetData(source)
     parser.holes = false
@@ -128,7 +137,7 @@ private[jacinta] object Parser:
     parser.parse()
 
   def parse(source: Data, holes: Boolean, mode: NumberMode): Raw raises ParseError =
-    val parser = pool.get.nn.asInstanceOf[Parser^]
+    val parser = borrow()
     parser.tracking = false
     parser.resetData(source)
     parser.holes = holes
@@ -136,7 +145,7 @@ private[jacinta] object Parser:
     parser.parse()
 
   def parse(input: Iterator[Data], mode: NumberMode): Raw raises ParseError =
-    val parser = pool.get.nn.asInstanceOf[Parser^]
+    val parser = borrow()
     parser.tracking = false
     parser.resetIterator(input)
     parser.holes = false
@@ -144,7 +153,7 @@ private[jacinta] object Parser:
     parser.parse()
 
   def parse(input: Iterator[Data], holes: Boolean, mode: NumberMode): Raw raises ParseError =
-    val parser = pool.get.nn.asInstanceOf[Parser^]
+    val parser = borrow()
     parser.tracking = false
     parser.resetIterator(input)
     parser.holes = holes
@@ -154,7 +163,7 @@ private[jacinta] object Parser:
   def parseTracked(source: Data, mode: NumberMode = NumberMode.Full)
   :   (Raw, IArray[Int]) raises ParseError =
 
-    val parser = pool.get.nn.asInstanceOf[Parser^]
+    val parser = borrow()
     parser.tracking = true
     parser.resetData(source)
     parser.holes = false
@@ -165,7 +174,7 @@ private[jacinta] object Parser:
   def parseTracked(input: Iterator[Data], mode: NumberMode)
   :   (Raw, IArray[Int]) raises ParseError =
 
-    val parser = pool.get.nn.asInstanceOf[Parser^]
+    val parser = borrow()
     parser.tracking = true
     parser.resetIterator(input)
     parser.holes = false
@@ -174,7 +183,7 @@ private[jacinta] object Parser:
     (raw, parser.rootIndex.nn)
 
   def parse(input: Stream[Data] over Credit, mode: NumberMode): Raw raises ParseError =
-    val parser = pool.get.nn.asInstanceOf[Parser^]
+    val parser = borrow()
     parser.tracking = false
     parser.resetStream(input)
     parser.holes = false
@@ -184,7 +193,7 @@ private[jacinta] object Parser:
   def parseTracked(input: Stream[Data] over Credit, mode: NumberMode)
   :   (Raw, IArray[Int]) raises ParseError =
 
-    val parser = pool.get.nn.asInstanceOf[Parser^]
+    val parser = borrow()
     parser.tracking = true
     parser.resetStream(input)
     parser.holes = false
@@ -358,27 +367,40 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // `parseObject`) and before any refill in `moreSlow()` so that
   // consumed bytes are accounted for before they're discarded.
   private update def reconcileLineation(): Unit =
-    val end = cursor.unsafePos(using Unsafe)
+    // The cursor work is block-scoped: binding an exclusive cursor read (explicitly, or
+    // via an inline method's synthesized receiver proxy) hides this parser's own
+    // capability for as long as the binder is visible, so parser state may not be
+    // touched afterwards in the same scope (cap-parameterized classes only — see
+    // rep/DECISIONS.md). Parser state is read before the block and written after it.
+    val startPos = lineationPos
+    val snapshot = bytes
 
-    if lineationPos < end then
-      var i = lineationPos
-      var newlines = 0
-      var lastNewlineAt = -1
+    val end =
+      locally:
+        val current = cursor
+        val end0 = current.unsafePos(using Unsafe)
 
-      while i < end do
-        if bytes(i) == Newline then
-          newlines += 1
-          lastNewlineAt = i
+        if startPos < end0 then
+          var i = startPos
+          var newlines = 0
+          var lastNewlineAt = -1
 
-        i += 1
+          while i < end0 do
+            if snapshot(i) == Newline then
+              newlines += 1
+              lastNewlineAt = i
 
-      if newlines > 0 then
-        cursor.unsafeBumpLine(newlines)(using Unsafe)
-        cursor.unsafeSetColumn(end - lastNewlineAt - 1)(using Unsafe)
-      else
-        cursor.unsafeBumpColumn(end - lineationPos)(using Unsafe)
+            i += 1
 
-      lineationPos = end
+          if newlines > 0 then
+            current.unsafeBumpLine(newlines)(using Unsafe)
+            current.unsafeSetColumn(end0 - lastNewlineAt - 1)(using Unsafe)
+          else
+            current.unsafeBumpColumn(end0 - startPos)(using Unsafe)
+
+        end0
+
+    if startPos < end then lineationPos = end
 
   // Refresh the parser's snapshot from the cursor. Required after any
   // cursor operation that may have changed the buffer reference, the read
@@ -406,10 +428,17 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // would advance the cursor by a now-stale delta. Lineation also needs
   // to be reconciled before compaction discards the consumed bytes.
   private update def moreSlow(): Boolean =
-    syncTo()
+    locally:
+      syncTo()
     if tracking then reconcileLineation()
 
-    if cursor.more then { syncFrom(); true }
+    // Block-scoped for the same reason as in `reconcileLineation` above.
+    val hasMore =
+      locally:
+        val current = cursor
+        current.more
+
+    if hasMore then { syncFrom(); true }
     else
       if tracking then syncFrom()
       false
@@ -470,17 +499,25 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // semantics (including rolling back if only the first byte matches).
   protected update def bom(): Unit =
     if !more || peek != -17.toByte then return
-    syncTo()
 
-    cursor.hold:
-      val mk = cursor.mark
+    // Block-scoped like `reconcileLineation`, with parser state read before the cursor
+    // binding and one binding used throughout (each cursor access through `this` would
+    // re-hide the parser from the next statement). The first line is `syncTo()` inlined
+    // against the binding.
+    locally:
+      val parserPos = pos
+      val current = cursor
+      current.unsafeAdvanceBy(parserPos - current.unsafePos(using Unsafe))(using Unsafe)
 
-      val bom =
-        cursor.more && cursor.datum(using Unsafe) == -17.toByte &&
-          { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -69.toByte } &&
-          { cursor.next(); cursor.more && cursor.datum(using Unsafe) == -65.toByte }
+      current.hold:
+        val mk = current.mark
 
-      if bom then cursor.next() else cursor.cue(mk)
+        val bom =
+          current.more && current.datum(using Unsafe) == -17.toByte &&
+            { current.next(); current.more && current.datum(using Unsafe) == -69.toByte } &&
+            { current.next(); current.more && current.datum(using Unsafe) == -65.toByte }
+
+        if bom then current.next() else current.cue(mk)
 
     syncFrom()
 
@@ -516,7 +553,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
   protected inline update def getString(): String = String(chars, 0, stringCursor)
 
-  protected inline update def getArrayBuffer(): ArrayBuffer[Any] =
+  protected update def getArrayBuffer(): ArrayBuffer[Any] =
     arrayBufferId += 1
 
     if arrayBuffers.length <= arrayBufferId then
@@ -530,7 +567,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
   protected inline update def relinquishArrayBuffer(): Unit = arrayBufferId -= 1
 
-  protected inline update def getBcdLongBuffer(): ArrayBuffer[Long] =
+  protected update def getBcdLongBuffer(): ArrayBuffer[Long] =
     bcdLongBufferId += 1
 
     if bcdLongBuffers.length <= bcdLongBufferId then
@@ -544,7 +581,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
   protected inline update def relinquishBcdLongBuffer(): Unit = bcdLongBufferId -= 1
 
-  protected inline update def getBcdIntBuffer(): ArrayBuffer[Int] =
+  protected update def getBcdIntBuffer(): ArrayBuffer[Int] =
     bcdIntBufferId += 1
 
     if bcdIntBuffers.length <= bcdIntBufferId then
@@ -558,7 +595,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
   protected inline update def relinquishBcdIntBuffer(): Unit = bcdIntBufferId -= 1
 
-  protected inline update def getIndexBuffer(): ArrayBuffer[Int] =
+  protected update def getIndexBuffer(): ArrayBuffer[Int] =
     indexBufferId += 1
 
     if indexBuffers.length <= indexBufferId then
@@ -779,10 +816,10 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     advance()
     getString()
 
-  protected inline def expect(byte: Byte, issue: Issue): Unit raises ParseError =
+  protected inline update def expect(byte: Byte, issue: Issue): Unit raises ParseError =
     if next() != byte then errorAt(issue)
 
-  private def parseFalse(): false raises ParseError =
+  private update def parseFalse(): false raises ParseError =
     // Fast path: 5 bytes available in the local buffer. Pack them into a
     // Long and compare against `FalseWord` in one step. Falls back to the
     // byte-by-byte `expect` chain only at a buffer boundary.
@@ -805,7 +842,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       advance()
       false
 
-  private def parseTrue(): true raises ParseError =
+  private update def parseTrue(): true raises ParseError =
     if pos + 4 <= bufEnd then
       val word: Int =
         (bytes(pos)     & 0xFF)         |
@@ -823,7 +860,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       advance()
       true
 
-  private def parseNull(): Json.JsonNull.type raises ParseError =
+  private update def parseNull(): Json.JsonNull.type raises ParseError =
     if pos + 4 <= bufEnd then
       val word: Int =
         (bytes(pos)     & 0xFF)         |
@@ -841,7 +878,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       advance()
       Json.JsonNull
 
-  private def parseNumber(first: Int, negative: Boolean, bcdOnly: Boolean = false)
+  private update def parseNumber(first: Int, negative: Boolean, bcdOnly: Boolean = false)
   :   Double | Long | Bcd raises ParseError =
 
     var content: Long = first.toLong
@@ -868,7 +905,10 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
         val b = new Bcd.Builder
         b.seedFromLong(content, nibbles)
         b.add(extraNibble)
-        bcdBuilder = b
+        // Bcd.Builder is not (yet) Stateful-classified, so its fresh instances read as
+        // read-only in this separation-checked unit; the builder is method-local scratch
+        // state, never shared, so the seal is sound.
+        bcdBuilder = caps.unsafe.unsafeAssumePure(b)
         bcdValid = false
 
     inline def appendNibble(n: Int): Unit =
@@ -988,7 +1028,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
         else
           Bcd.fromContent15(content, negative)
       else
-        bcdBuilder.nn.finish(negative): Bcd
+        bcdBuilder.nn.finish(negative).asInstanceOf[Bcd]  // frozen: Bcd is opaque over a post-finish-immutable array
     else if bcdValid then
       if numberMode == NumberMode.Bcd then
         // BCD mode: skip the decode loop and hand back the raw in-Long BCD
@@ -1043,13 +1083,13 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       // High-precision path: hand back the `Bcd` directly. Reached only in
       // `NumberMode.Full`; `Bcd` and `Double` modes leave `bcdValid` true
       // and truncate on overflow rather than allocating a `Bcd.Builder`.
-      bcdBuilder.nn.finish(negative): Bcd
+      bcdBuilder.nn.finish(negative).asInstanceOf[Bcd]  // frozen: Bcd is opaque over a post-finish-immutable array
 
   // `bcdOnly` propagates through the `Minus` recursion so that `-3.14`
   // parsed from an array context still short-circuits the Double path.
   // The flag has no effect on non-number values, so we don't need to
   // propagate it to `parseObject` / `parseArray` / `parseString`.
-  private def parseValue(minus: Boolean = false, bcdOnly: Boolean = false)
+  private update def parseValue(minus: Boolean = false, bcdOnly: Boolean = false)
     ( using Tactic[ParseError] )
   :   Raw =
 
@@ -1081,7 +1121,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // descriptor afterwards for everything else. The `Minus` recursion
   // routes to the untracked variant since the outer call already owns
   // the descriptor for the full `-N` span.
-  private def parseValueTracked
+  private update def parseValueTracked
     ( indexOut: ArrayBuffer[Int],
       minus:    Boolean = false,
       bcdOnly:  Boolean = false )
@@ -1136,7 +1176,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
     result
 
-  private def parseArray()(using Tactic[ParseError]): Raw =
+  private update def parseArray()(using Tactic[ParseError]): Raw =
     // The array starts in "undecided" mode. Each element is parsed with
     // `bcdOnly = true`, so a number comes back as either a single-Long
     // BCD packing (count + sign + nibbles encoded in the Long itself) or
@@ -1345,7 +1385,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // Tracked-mode `parseArray`. Mirrors `parseArray` exactly but uses
   // `parseValueTracked` for children and emits a composite descriptor
   // into `indexOut` at close.
-  private def parseArrayTracked
+  private update def parseArrayTracked
     ( indexOut:    ArrayBuffer[Int],
       startLine:   Int,
       startColumn: Int,
@@ -1543,7 +1583,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // Parse an object directly into the flat alternating-key/value layout. The
   // buffer always grows in pairs, so its length stays even, which is the
   // object/array parity invariant.
-  private def parseObject()(using Tactic[ParseError]): IArray[Any] =
+  private update def parseObject()(using Tactic[ParseError]): IArray[Any] =
     val items: ArrayBuffer[Any] = getArrayBuffer()
     var continue = true
 
@@ -1636,7 +1676,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // Tracked-mode `parseObject`. Mirrors `parseObject` exactly but captures
   // key positions, runs values through `parseValueTracked`, and emits a
   // composite descriptor into `indexOut` at close.
-  private def parseObjectTracked
+  private update def parseObjectTracked
     ( indexOut:    ArrayBuffer[Int],
       startLine:   Int,
       startColumn: Int,
@@ -1787,7 +1827,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
     out.asInstanceOf[IArray[Any]]
 
-  def parse()(using Tactic[ParseError]): Raw =
+  update def parse()(using Tactic[ParseError]): Raw =
     bom()
     skip()
     if !more then abort(ParseError(Json.Ast, Position(0, 0), Issue.EmptyInput))
@@ -1796,7 +1836,9 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       if tracking then
         val rootBuf = getIndexBuffer()
         val r = parseValueTracked(rootBuf)
-        rootIndex = IArray.from(rootBuf)
+        // IArray.from's result carries a spurious fresh via the mutable source's reach;
+        // the copy is immutable — freeze-assert.
+        rootIndex = IArray.from(rootBuf).asInstanceOf[IArray[Int]]
         relinquishIndexBuffer()
         r
       else
