@@ -268,7 +268,7 @@ object Tests extends Suite(m"Coaxial tests"):
             IArray.from(buffer.take(count.max(0)).to(List))
 
           val reply = socket.duplex: duplex =>
-            duplex.send(LazyList(ascii(t"ping")))
+            duplex.send(zephyrine.Stream(ascii(t"ping")))
             bytes(duplex.stream.head)
 
           reply.also(server.stop())

@@ -224,9 +224,7 @@ given wsClient: ( online:            Online,
                 Http.Header(t"Sec-WebSocket-Version", t"13") ),
             () => Http.emptyBody() )
 
-      // The handshake request is a single small chunk; `Duplex.send` still
-      // speaks LazyList until the receive side converts to kernel streams.
-      duplex.send(LazyList(Http.Request.serialize(request).memoize))
+      duplex.send(Http.Request.serialize(request))
 
       // Read the response headers up to the CRLFCRLF terminator *without* over-reading:
       // `Http.Response.parse` on a live socket eagerly refills one chunk past the headers,

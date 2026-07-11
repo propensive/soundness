@@ -74,94 +74,117 @@ enum Message:
     case Text(text)   => text.data
     case Binary(data) => data
 
-// The outgoing side of a connection: a thread-safe spool of encoded frames that
-// the server pumps to the socket as the `101` response body (mirroring Coaxial's
-// `Duplex.send`). The reader and the handler both enqueue here.
-class Channel()(using masking: Masking):
-  private val spool: Spool[Data] = Spool()
+// The outgoing side of a connection: a bounded, thread-safe conduit of encoded
+// frames that the server pumps to the socket as the `101` response body
+// (mirroring Coaxial's `Duplex.send`). The reader and the handler both enqueue
+// here, so a full queue backpressures every producer.
+class Channel()(using masking: Masking, buffering: Buffering):
+  // The endpoints are held at an AnyRef rim: capture sets do not ride fields of
+  // a shared front-end object. Each has one owner by construction: producers
+  // serialize through this object's lock, and the server or client pump is the
+  // single consumer of the reader endpoint.
+  private val endpoints: (AnyRef, AnyRef) =
+    val (intake, stream) = Conduit[Data]()
+    (intake.asInstanceOf[AnyRef], stream.asInstanceOf[AnyRef])
 
-  // Mask each frame once, here, on its way out: every element reaching the spool is
-  // already a complete, unmasked frame (a Reader auto-reply, a handler `Reply`, a
+  private def intake: (Intake[Data] over Credit)^ =
+    endpoints(0).asInstanceOf[(Intake[Data] over Credit)^]
+
+  // The single reader endpoint: consumed exactly once, by the pump that writes
+  // the upgraded connection's outgoing bytes.
+  private[perihelion] def stream: (Stream[Data] over Credit)^ =
+    endpoints(1).asInstanceOf[(Stream[Data] over Credit)^]
+
+  // Mask each frame once, here, on its way out: every frame reaching the conduit
+  // is already complete and unmasked (a Reader auto-reply, a handler `Reply`, a
   // `send`, or a `close`), so a client masks it and a server passes it through.
-  private[perihelion] def enqueue(frame: Data): Unit = spool.put(masking.outbound(frame))
-  private[perihelion] def stream: LazyList[Data] = spool.stream
+  private[perihelion] def enqueue(frame: Data): Unit = synchronized:
+    intake.put(masking.outbound(frame))
+    // Flushed per frame: the conduit otherwise buffers a full block before
+    // publishing, but an interactive protocol must deliver each frame promptly.
+    intake.flush()
 
   def send(message: Message): Unit logs WebsocketEvent =
     Log.fine(WebsocketEvent.Sent(message.bytes.length))
     // One message serializes to one complete frame; see `Transmissible`.
     enqueue(Message.transmissible.serialize(message).memoize)
 
-  def stop(): Unit = spool.stop()
+  def stop(): Unit = synchronized(intake.finish())
 
   def close(code: Int = 1000): Unit logs WebsocketEvent =
     Log.info(WebsocketEvent.Closed(code))
     enqueue(Frame.Close(code, Data()).encode)
-    spool.stop()
+    stop()
 
 // Reads client frames off the connection, reassembles fragmented messages,
 // answers Ping with Pong, and ends (stopping the outgoing side) when the peer
 // sends Close. Protocol violations raise `WebsocketError`.
 class Reader(body: Spring[Data]^, channel: Channel)(using Tactic[WebsocketError], Masking):
   def messages: LazyList[Message] =
-    val cursor = Cursor[Data](body())
+    // Deferred: constructing a stream-backed `Cursor` performs its first
+    // refill, which on a live connection blocks until bytes arrive. The
+    // cursor is created only when the first message is forced, so a server
+    // can send its `101` response (and a client its first frame) first.
+    LazyList.defer:
+      val cursor = Cursor[Data](body())
 
-    // Validate `data` as UTF-8. `whole` marks a complete message, where a
-    // trailing partial multi-byte sequence is an error; for a fragment prefix it
-    // is tolerated, since a code point may straddle a fragment boundary. Used
-    // incrementally so invalid bytes fail the connection at once (RFC 6455 §8.1),
-    // not only once the whole message is in.
-    def validUtf8(data: Data, whole: Boolean): Boolean =
-      val decoder = java.nio.charset.StandardCharsets.UTF_8.nn.newDecoder().nn
-      val in = java.nio.ByteBuffer.wrap(data.mutable(using Unsafe)).nn
-      val out = java.nio.CharBuffer.allocate(data.length + 1).nn
-      !decoder.decode(in, out, whole).nn.isError
+      // Validate `data` as UTF-8. `whole` marks a complete message, where a
+      // trailing partial multi-byte sequence is an error; for a fragment prefix it
+      // is tolerated, since a code point may straddle a fragment boundary. Used
+      // incrementally so invalid bytes fail the connection at once (RFC 6455 §8.1),
+      // not only once the whole message is in.
+      def validUtf8(data: Data, whole: Boolean): Boolean =
+        val decoder = java.nio.charset.StandardCharsets.UTF_8.nn.newDecoder().nn
+        val in = java.nio.ByteBuffer.wrap(data.mutable(using Unsafe)).nn
+        val out = java.nio.CharBuffer.allocate(data.length + 1).nn
+        !decoder.decode(in, out, whole).nn.isError
 
-    def emit(text: Boolean, data: Data): Message =
-      if text then Message.Text(data.utf8) else Message.Binary(data)
+      def emit(text: Boolean, data: Data): Message =
+        if text then Message.Text(data.utf8) else Message.Binary(data)
 
-    // Extend a (new or in-progress) message by `data`, validating a text message
-    // incrementally and emitting it once `fin` is seen.
-    def extend(text: Boolean, data: Data, fin: Boolean): LazyList[Message] =
-      if text && !validUtf8(data, fin)
-      then abort(WebsocketError(WebsocketError.Reason.InvalidText))
+      // Extend a (new or in-progress) message by `data`, validating a text message
+      // incrementally and emitting it once `fin` is seen.
+      def extend(text: Boolean, data: Data, fin: Boolean): LazyList[Message] =
+        if text && !validUtf8(data, fin)
+        then abort(WebsocketError(WebsocketError.Reason.InvalidText))
 
-      if fin then emit(text, data) #:: recur(Unset) else recur((text, data))
+        if fin then emit(text, data) #:: recur(Unset) else recur((text, data))
 
-    // A data frame arriving mid-message (a fragmented message is still open) is a
-    // protocol violation, as is a continuation with nothing to continue.
-    def started(fin: Boolean, text: Boolean, data: Data, partial: Optional[(Boolean, Data)])
-    :   LazyList[Message] =
+      // A data frame arriving mid-message (a fragmented message is still open) is a
+      // protocol violation, as is a continuation with nothing to continue.
+      def started(fin: Boolean, text: Boolean, data: Data, partial: Optional[(Boolean, Data)])
+      :   LazyList[Message] =
 
-      if partial.present then abort(WebsocketError(WebsocketError.Reason.BadFragmentation))
-      else extend(text, data, fin)
+        if partial.present then abort(WebsocketError(WebsocketError.Reason.BadFragmentation))
+        else extend(text, data, fin)
 
-    def recur(partial: Optional[(Boolean, Data)]): LazyList[Message] =
-      (Frame.parse(cursor): @unchecked) match
-        case Unset =>
-          LazyList()
+      def recur(partial: Optional[(Boolean, Data)]): LazyList[Message] =
+        (Frame.parse(cursor): @unchecked) match
+          case Unset =>
+            LazyList()
 
-        case Frame.Ping(data) =>
-          channel.enqueue(Frame.Pong(data).encode)
-          recur(partial)
+          case Frame.Ping(data) =>
+            channel.enqueue(Frame.Pong(data).encode)
+            recur(partial)
 
-        case Frame.Pong(_) =>
-          recur(partial)
+          case Frame.Pong(_) =>
+            recur(partial)
 
-        case Frame.Close(code, reason) =>
-          if !validUtf8(reason, true) then abort(WebsocketError(WebsocketError.Reason.InvalidText))
-          channel.enqueue(Frame.Close(if code == 1005 then 1000 else code, Data()).encode)
-          channel.stop()
-          LazyList()
+          case Frame.Close(code, reason) =>
+            if !validUtf8(reason, true) then abort(WebsocketError(WebsocketError.Reason.InvalidText))
+            channel.enqueue(Frame.Close(if code == 1005 then 1000 else code, Data()).encode)
+            channel.stop()
+            LazyList()
 
-        case Frame.Text(fin, data)   => started(fin, true, data, partial)
-        case Frame.Binary(fin, data) => started(fin, false, data, partial)
+          case Frame.Text(fin, data)   => started(fin, true, data, partial)
+          case Frame.Binary(fin, data) => started(fin, false, data, partial)
 
-        case Frame.Continuation(fin, data) =>
-          partial.lay(abort(WebsocketError(WebsocketError.Reason.BadFragmentation))):
-            (text, accumulated) =>
-              extend(text, accumulated ++ data, fin)
+          case Frame.Continuation(fin, data) =>
+            partial.lay(abort(WebsocketError(WebsocketError.Reason.BadFragmentation))):
+              (text, accumulated) =>
+                extend(text, accumulated ++ data, fin)
 
-    recur(Unset)
+      recur(Unset)
 
 object Websocket:
   val magic: Text = t"258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
@@ -180,7 +203,9 @@ object Websocket:
           secWebsocketVersion = 13,
           connection          = t"Upgrade",
           upgrade             = t"websocket" )
-        ( Http.Body.Flowing(() => zephyrine.Stream(websocket.channel.stream.iterator)) )
+        // The channel's reader endpoint is a singleton: the upgrade body is
+        // materialized exactly once, by the server's response writer.
+        ( Http.Body.Flowing(() => websocket.channel.stream) )
 
 // The `Servable` carrier for a WebSocket handler. On serve it produces the `101`
 // handshake response whose body is the outgoing frame stream; the handler runs

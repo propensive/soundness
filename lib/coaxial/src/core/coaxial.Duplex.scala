@@ -59,9 +59,9 @@ object Duplex:
 
       recur()
 
-    def send(data: LazyList[Data]): Unit =
-      data.each: bytes =>
-        out.write(bytes.mutable(using Unsafe))
+    def send(data: (Stream[Data] over Credit)^): Unit =
+      data.foreachWindow: (storage, start, count) =>
+        out.write(storage.asInstanceOf[Array[Byte]], start, count)
         out.flush()
 
     def close(): Unit = shutdown()
@@ -86,9 +86,9 @@ object Duplex:
 
       recur()
 
-    def send(data: LazyList[Data]): Unit =
-      data.each: bytes =>
-        val out = ByteBuffer.wrap(bytes.mutable(using Unsafe)).nn
+    def send(data: (Stream[Data] over Credit)^): Unit =
+      data.foreachWindow: (storage, start, count) =>
+        val out = ByteBuffer.wrap(storage.asInstanceOf[Array[Byte]], start, count).nn
         while out.hasRemaining do socketChannel.write(out)
 
     def close(): Unit = socketChannel.close()
@@ -141,7 +141,7 @@ object Duplex:
 // closes; `send` may be called many times and never half-closes the connection.
 trait Duplex:
   def stream: LazyList[Data]
-  def send(data: LazyList[Data]): Unit
+  def send(data: (Stream[Data] over Credit)^): Unit
   def close(): Unit
 
   // Pull endpoint over the read side. The default adapts the legacy
@@ -179,5 +179,5 @@ trait Duplex:
 
       private update def drain(): Unit =
         if mark0 > 0 then
-          send(LazyList(storage.slice(0, mark0).nn.immutable(using Unsafe)))
+          send(Stream(storage.slice(0, mark0).nn.immutable(using Unsafe)))
           mark0 = 0
