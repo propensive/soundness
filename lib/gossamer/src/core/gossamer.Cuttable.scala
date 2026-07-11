@@ -73,8 +73,29 @@ object Cuttable:
 
       recur(Prim, Nil).reverse
 
+  // A manual `indexOf` scan rather than `String.split(Pattern.quote(…))`: splitting on a literal
+  // delimiter needs no regex, and the scala-wasm javalib's regex engine traps at runtime
+  // (`allocation size too large`), so the regex form made any wasm-reachable `Text.cut` unusable.
+  // Matches `String.split`'s positive-limit semantics (trailing empties kept).
   given textText: Text is Cuttable by Text = (text, delimiter, limit) =>
-    text.s.split(Pattern.quote(delimiter.s), limit).nn.iterator.map(_.nn.tt).to(List)
+    val string = text.s
+    val delim = delimiter.s
+    val dLength = delim.length
+
+    if dLength == 0 || limit == 1 then List(text) else
+      val buffer = List.newBuilder[Text]
+      var start = 0
+      var count = 1
+      var index = string.indexOf(delim, start)
+
+      while index >= 0 && count < limit do
+        buffer += string.substring(start, index).nn.tt
+        start = index + dLength
+        count += 1
+        index = string.indexOf(delim, start)
+
+      buffer += string.substring(start).nn.tt
+      buffer.result()
 
   given textRegex: Text is Cuttable by Regex = (text, regex, limit) =>
     text.s.split(regex.pattern.s, limit).nn.iterator.map(_.nn.tt).to(List)
