@@ -51,7 +51,7 @@ object Stream:
   // A single-chunk in-memory stream. The chunk is copied into fresh storage
   // once, at construction, so the window can be exposed mutably.
   def apply[medium](value: medium)(using addressable0: medium is Addressable)
-  :   Stream[medium] over Credit =
+  :   (Stream[medium] over Credit)^ =
 
     new Stream[medium]:
       type Transport = Credit
@@ -86,7 +86,7 @@ object Stream:
   // Demand bounds only how much of each chunk is exposed per refill, not the
   // iterator's own production, which is outside this stream's control.
   def apply[medium](iterator: Iterator[medium])(using addressable0: medium is Addressable)
-  :   Stream[medium] over Credit =
+  :   (Stream[medium] over Credit)^ =
 
     new Stream[medium]:
       type Transport = Credit
