@@ -44,14 +44,14 @@ import prepositional.*
 import vacuous.*
 
 package strategies:
-  given throwUnsafely: [success] => (ThrowTactic[Exception, success]^) =
+  given throwUnsafely: [success] => (ThrowTactic[Hazard, success]^) =
     ThrowTactic()
 
-  given throwSafely: [error <: Exception: CanThrow, success] => (ThrowTactic[error, success]^) =
+  given throwSafely: [error <: Hazard: CanThrow, success] => (ThrowTactic[error, success]^) =
     ThrowTactic()
 
 
-  given mitigation: [error <: Exception, error2 <: Exception: Mitigable to error]
+  given mitigation: [error <: Hazard, error2 <: Hazard: Mitigable to error]
   =>  (tactic: Tactic[error]^)
   =>  ( Tactic[error2]^ ) =
 
@@ -61,17 +61,17 @@ package strategies:
   // Like `ThrowTactic`, these ambient strategies are `caps.Unscoped`: they capture no scoped
   // capability (they throw or terminate in place), so a use-site instantiation may flow into the
   // `raises` existential of a non-inline method result.
-  given fatalErrors: [exception <: Exception: Fatal] => (FatalTactic[exception]^) = FatalTactic()
+  given fatalErrors: [exception <: Hazard: Fatal] => (FatalTactic[exception]^) = FatalTactic()
 
-  given uncheckedErrors: [error <: Exception] => (erased unchecked: error is Unchecked)
+  given uncheckedErrors: [error <: Hazard] => (erased unchecked: error is Unchecked)
   =>  ( UncheckedTactic[error]^ ) =
 
     UncheckedTactic()
 
-def certify[error <: Exception](using tactic: Tactic[error]^)(): Unit = tactic.certify()
+def certify[error <: Hazard](using tactic: Tactic[error]^)(): Unit = tactic.certify()
 
 
-def raise[exception <: Exception]
+def raise[exception <: Hazard]
   ( error: Diagnostics ?=> exception )
   ( using emitter: Emit[exception]^ )
 :   Unit =
@@ -79,7 +79,7 @@ def raise[exception <: Exception]
   emitter.record(error)
 
 
-def abort[success, exception <: Exception](error: Diagnostics ?=> exception)
+def abort[success, exception <: Hazard](error: Diagnostics ?=> exception)
   ( using tactic: Tactic[exception]^ )
 :   Nothing =
 
@@ -92,7 +92,7 @@ def abort[success, exception <: Exception](error: Diagnostics ?=> exception)
 // that arrow's capture set cannot be reconciled with the block's expected type (the tactic is
 // created inside `safely`, after the block value). Collapsing the layers makes the block's result
 // the plain `success` value, which retains nothing.
-def safely[error <: Exception](using erased void: Void)[success]
+def safely[error <: Hazard](using erased void: Void)[success]
   ( block: (Diagnostics, OptionalTactic[error, success]^, CanThrow[Exception]) ?=> success )
 :   Optional[success] =
 
@@ -101,7 +101,7 @@ def safely[error <: Exception](using erased void: Void)[success]
   catch case error: Exception => Unset
 
 
-def unsafely[error <: Exception](using erased void: Void)[success]
+def unsafely[error <: Hazard](using erased void: Void)[success]
   ( block: (Unsafe, ThrowTactic[error, success]^, CanThrow[Exception]) ?=> success )
 :   success =
 
@@ -120,14 +120,14 @@ def unsafely[error <: Exception](using erased void: Void)[success]
       throw error
 
 
-def throwErrors[error <: Exception](using CanThrow[error])[success]
+def throwErrors[error <: Hazard](using CanThrow[error])[success]
   ( block: ThrowTactic[error, success]^ ?=> success )
 :   success =
 
   block(using ThrowTactic())
 
 
-def capture[error <: Exception: ClassTag](using erased void: Void)[success]
+def capture[error <: Hazard: ClassTag](using erased void: Void)[success]
   ( block: Tactic[error]^ ?=> success )
   ( using Tactic[ExpectationError[success]]^, Diagnostics )
 :   error =
@@ -145,7 +145,7 @@ def capture[error <: Exception: ClassTag](using erased void: Void)[success]
     case exception: Throwable => throw exception
 
 
-def attempt[error <: Exception](using erased void: Void)[success]
+def attempt[error <: Hazard](using erased void: Void)[success]
   ( block: AttemptTactic[error, success]^ ?=> success )
   ( using Diagnostics )
 :   Attempt[success, error] =
@@ -154,7 +154,7 @@ def attempt[error <: Exception](using erased void: Void)[success]
     Attempt.Success(block(using AttemptTactic(label)))
 
 
-def amalgamate[error <: Exception](using erased void: Void)[success]
+def amalgamate[error <: Hazard](using erased void: Void)[success]
   ( block: AmalgamateTactic[error, success]^ ?=> success )
   ( using Diagnostics )
 :   success | error =
@@ -172,7 +172,7 @@ def abortive[error <: Error](using Quotes)[success]
   block
 
 
-infix type raises [success, error <: Exception] = Tactic[error]^ ?=> success
+infix type raises [success, error <: Hazard] = Tactic[error]^ ?=> success
 
 // `raising` cannot replace `raises` until a Scala 3 compiler bug is fixed: when this match type
 // appears in a method's return type and reduces to a context function, PostTyper attaches
@@ -189,7 +189,7 @@ infix type raising[success, errors] = errors match
   case left *: right   => Tactic[left] ?=> raising[success, right]
   case _               => Tactic[errors] ?=> success
 
-infix type mitigates [error <: Exception, error2 <: Exception] =
+infix type mitigates [error <: Hazard, error2 <: Hazard] =
   error2 is Mitigable to error
 
 infix type tracks [result, focus] = Foci[focus] ?=> result
@@ -209,7 +209,7 @@ inline def focus[focus, result](using foci: Foci[focus])
 inline def accrual[value](using value: value aka "accrual"): value = value()
 
 
-transparent inline def track[focus](using erased void: Void)[accrual <: Exception](accrual: accrual)
+transparent inline def track[focus](using erased void: Void)[accrual <: Hazard](accrual: accrual)
   ( inline block: (Optional[focus] aka "prior", accrual aka "accrual") ?=> Exception ~> accrual )
 :   Tracking[accrual, ?, focus] =
 
@@ -224,7 +224,7 @@ transparent inline def validate[focus](using erased void: Void)[accrual](accrual
 
 
 extension [element](sequence: Iterable[element])
-  transparent inline def survive[result](using erased void: Void)[error <: Exception]
+  transparent inline def survive[result](using erased void: Void)[error <: Hazard]
     ( lambda
     : (OptionalTactic[error, result], Diagnostics, CanThrow[Exception]) ?=> element => result )
   :   Iterable[result] =
@@ -233,11 +233,11 @@ extension [element](sequence: Iterable[element])
 
 
 extension [value](optional: Optional[value])
-  def lest[success, error <: Exception](error: Diagnostics ?=> error)(using Tactic[error]^): value =
+  def lest[success, error <: Hazard](error: Diagnostics ?=> error)(using Tactic[error]^): value =
     optional.or(abort(error))
 
 
-  def dare[error <: Exception](using erased void: Void)[success]
+  def dare[error <: Hazard](using erased void: Void)[success]
     ( block
     : (Diagnostics, OptionalTactic[error, success]^, CanThrow[Exception]) ?=> value => success )
   :   Optional[success] =
@@ -247,7 +247,7 @@ extension [value](optional: Optional[value])
     catch case error: Exception => Unset
 
 
-def defer[result, error <: Exception](body: Tactic[error]^ ?=> result)
+def defer[result, error <: Hazard](body: Tactic[error]^ ?=> result)
 :   Deferred[result, error]^{body} =
 
   Deferred(body)
@@ -261,7 +261,7 @@ transparent inline def mitigate(inline handler: PartialFunction[Exception, Any])
   ${contingency.internal.mitigateBuild('handler)}
 
 
-transparent inline def accrue[accrual <: Exception](initial: accrual)
+transparent inline def accrue[accrual <: Hazard](initial: accrual)
   ( combine: (accrual, Exception) => accrual )
   ( inline handler: PartialFunction[Exception, Any] )
 :   Accrual[accrual, ?] =

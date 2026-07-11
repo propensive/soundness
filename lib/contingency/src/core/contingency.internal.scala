@@ -154,7 +154,7 @@ object internal:
       case other                              => List(other)
 
 
-  def track[accrual <: Exception: Type, focus: Type]
+  def track[accrual <: Hazard: Type, focus: Type]
     ( accrual: Expr[accrual],
       handler: Expr[(Optional[focus] aka "prior", accrual aka "accrual") ?=> Exception ~> accrual] )
   :   Macro[Tracking[accrual, ?, focus]] =
@@ -204,7 +204,7 @@ object internal:
           }
 
 
-  def trackWithin[accrual <: Exception: Type, context[_]: Type, result: Type, focus: Type]
+  def trackWithin[accrual <: Hazard: Type, context[_]: Type, result: Type, focus: Type]
     ( track:       Expr[Tracking[accrual, context, focus]],
       lambda:      Expr[Foci[focus] ?=> context[result]],
       tactic:      Expr[Tactic[accrual]],
@@ -255,7 +255,7 @@ object internal:
       }
 
 
-  def validateWithin[accrual <: Exception: Type, context[_]: Type, focus: Type]
+  def validateWithin[accrual <: Hazard: Type, context[_]: Type, focus: Type]
     ( validate:    Expr[Validate[accrual, context, focus]],
       lambda:      Expr[Foci[focus] ?=> context[Any]],
       diagnostics: Expr[Diagnostics] )
@@ -327,7 +327,7 @@ object internal:
       case '[type typeLambda[_]; typeLambda] => '{Mitigation[typeLambda]($handler)}
 
 
-  def accrueBuild[accrual <: Exception: Type]
+  def accrueBuild[accrual <: Hazard: Type]
     ( initial: Expr[accrual],
       combine: Expr[(accrual, Exception) => accrual],
       handler: Expr[PartialFunction[Exception, Any]] )
@@ -370,7 +370,7 @@ object internal:
 
         mapping[Exception](matches).keys.map: errorType =>
           errorType.typeRef.asType.absolve match
-            case '[type errorType <: Exception; errorType] =>
+            case '[type errorType <: Hazard; errorType] =>
               val handler = '{(error: errorType) => $partialFunction(error)}
               '{Emit($handler)(using $diagnostics)}.asTerm
 
@@ -394,7 +394,7 @@ object internal:
 
         mapping[Exception](matches).values.map: errorType =>
           errorType.typeRef.asType.absolve match
-            case '[type errorType <: Exception; errorType] =>
+            case '[type errorType <: Hazard; errorType] =>
               Expr.summon[Tactic[errorType]] match
                 case Some(errorTactic) =>
                   '{$errorTactic.contramap($partialFunction(_).asInstanceOf[errorType])}.asTerm
@@ -452,7 +452,7 @@ object internal:
       }
 
 
-  def accrueBody[accrual <: Exception: Type, context[_]: Type, result: Type]
+  def accrueBody[accrual <: Hazard: Type, context[_]: Type, result: Type]
     ( w:           Expr[Any],
       initial:     Expr[accrual],
       combine:     Expr[(accrual, Exception) => accrual],
@@ -472,8 +472,8 @@ object internal:
         halt(114, m"argument to `accrue` should be a partial function implemented as match cases")
 
     ' {
-        val acc: Accrual.AccrueTactic[Exception, accrual] =
-          Accrual.AccrueTactic[Exception, accrual]($initial, $combine)(using $diagnostics)
+        val acc: Accrual.AccrueTactic[Hazard, accrual] =
+          Accrual.AccrueTactic[Hazard, accrual]($initial, $combine)(using $diagnostics)
 
         val outcome: Either[accrual, result] =
           try Right:

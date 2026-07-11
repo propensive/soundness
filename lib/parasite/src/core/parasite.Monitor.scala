@@ -248,13 +248,13 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   // `Tactic[error | AsyncError]`. `error` is reconstructed by an unchecked cast that is sound for
   // any failure raised through the body's `AsyncTactic` (the only typed-error path); a genuinely
   // unchecked throwable from the body flows through as the raw `join` would have rethrown it.
-  def deliver[error <: Exception]()(using Tactic[error | AsyncError]^): Result =
+  def deliver[error <: Hazard]()(using Tactic[error | AsyncError]^): Result =
     promise.attend()
     thread.join()
     fulfilment()
 
 
-  def deliver[error <: Exception, abstractable: Abstractable across Durations to Long]
+  def deliver[error <: Hazard, abstractable: Abstractable across Durations to Long]
     ( duration: abstractable )
     ( using Tactic[error | AsyncError]^ )
   :   Result =
@@ -265,7 +265,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
     fulfilment()
 
 
-  private def fulfilment[error <: Exception]()(using Tactic[error | AsyncError]^): Result =
+  private def fulfilment[error <: Hazard]()(using Tactic[error | AsyncError]^): Result =
     state.updateAndGet:
       case Completed(duration, result) => Delivered(duration, result)
       case Delivered(duration, result) => Delivered(duration, result)
@@ -316,7 +316,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
       // installed nearby. This runs before the promise is settled below, so anything attending the
       // worker observes completion only once the trap has run. An error no trap accepts becomes an
       // `escalation`: rethrown after settling, reaching this thread's uncaught-exception handler
-      // (`Fault`, or the JVM default), so that it is never silently dropped.
+      // (`Hazard`, or the JVM default), so that it is never silently dropped.
       def remedy(error: Error): Optional[Throwable] = probate.trap(this, error) match
         case Remedy.Accept          => Unset
         case Remedy.Reject          => error

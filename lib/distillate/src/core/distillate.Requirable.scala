@@ -34,11 +34,12 @@ package distillate
 
 import anticipation.*
 import contingency.*
+import fulminate.Hazard
 import prepositional.*
 import vacuous.*
 
 object Requirable:
-  given decodable: [value] => (decodable: Tactic[Exception]^ ?=> value is Decodable in Text)
+  given decodable: [value] => (decodable: Tactic[Hazard]^ ?=> value is Decodable in Text)
   =>  value is Requirable =
 
     // The `Decodable` is resolved against `throwUnsafely` (a label-free tactic) rather than the

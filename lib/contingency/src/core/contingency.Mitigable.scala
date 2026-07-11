@@ -32,8 +32,10 @@
                                                                                                   */
 package contingency
 
+import fulminate.Hazard
+
 trait Mitigable:
-  type Self <: Exception
-  type Result <: Exception
+  type Self <: Hazard
+  type Result <: Hazard
 
   def mitigate(tactic: Self): Result

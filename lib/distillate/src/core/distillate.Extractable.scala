@@ -37,12 +37,13 @@ import scala.reflect.*
 
 import anticipation.*
 import contingency.*
+import fulminate.Hazard
 import prepositional.*
 import vacuous.*
 
 object Extractable:
   given decodable: [text <: Text, result]
-  =>  ( decodable: Tactic[Exception]^ ?=> result is Decodable in Text )
+  =>  ( decodable: Tactic[Hazard]^ ?=> result is Decodable in Text )
   =>  text is Extractable to result =
 
     // Laundered pure: the retained context function shares the instance's given-resolution

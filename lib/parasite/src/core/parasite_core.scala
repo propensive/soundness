@@ -88,7 +88,7 @@ transparent inline def monitor: Monitor^ = infer[Monitor^]
 // over an outer one. So, like `async`, the daemon supplies its own label-free `AsyncTactic` rather
 // than letting the body capture an ambient `Emit`; a raised error fails the worker and reaches the
 // nearest `contain`/`Probate`.
-def daemon[error <: Exception](using Codepoint)
+def daemon[error <: Hazard](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?->{} Unit )
   ( using Monitor^, Probate^ )
 :   Daemon =
@@ -115,7 +115,7 @@ def contain(handler: PartialFunction[Error, Remedy]^)(using outer: Probate^): Co
 // the side-effect obligation `Emit[error] ?=> X` — the weaker sibling of `raises error`
 // (`Tactic[error] ?=>`). The `Task` branch reduces to a refinement, not a context function, so it
 // avoids the match-type-in-return-position erasure crash documented on `raising`.
-infix type emits[left, error <: Exception] = left match
+infix type emits[left, error <: Hazard] = left match
   case Task[?] => left { type Error <: error }
   case _       => Emit[error] ?=> left
 
@@ -124,7 +124,7 @@ infix type emits[left, error <: Exception] = left match
 // `raises`, and carried in the task's `Error` member so it can be delivered, still typed, at the
 // join. The body is evaluated with an `AsyncTactic[error]` that records a raised error as the
 // worker's `Failed` outcome instead of trying to break a stack-confined `boundary` across threads.
-def async[result, error <: Exception](using Codepoint)
+def async[result, error <: Hazard](using Codepoint)
   ( evaluate: (Worker, Tactic[error]) ?=> result )
   ( using monitor: Monitor^, probate: Probate^ )
 :   Task[result] emits (error | AsyncError) =
@@ -133,7 +133,7 @@ def async[result, error <: Exception](using Codepoint)
   Task[result, error | AsyncError](worker => evaluate(using worker, tactic), name = Unset)
 
 
-def task[result, error <: Exception](using Codepoint)(name: Name[Async])
+def task[result, error <: Hazard](using Codepoint)(name: Name[Async])
   ( evaluate: (Worker, Tactic[error]) ?=> result )
   ( using monitor: Monitor^, probate: Probate^ )
 :   Task[result] emits (error | AsyncError) =

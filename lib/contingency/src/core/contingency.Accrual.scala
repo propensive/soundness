@@ -47,7 +47,7 @@ import fulminate.*
 object Accrual:
   // The `Tactic` injected into an `accrue` block: each covered error is folded into the accrual
   // rather than escaping; `accumulated`/`changed` report the result to `.protect`.
-  class AccrueTactic[error <: Exception, accrual <: Exception]
+  class AccrueTactic[error <: Hazard, accrual <: Hazard]
     ( initial: accrual, combine: (accrual, Exception) => accrual )
     ( using val diagnostics: Diagnostics )
   extends Tactic[error]:
@@ -67,7 +67,7 @@ object Accrual:
     def accumulated: accrual = ref.get().nn
     def changed: Boolean = ref.get().nn != initial
 
-  extension [accrual <: Exception, lambda[_]](inline accrual: Accrual[accrual, lambda])
+  extension [accrual <: Hazard, lambda[_]](inline accrual: Accrual[accrual, lambda])
     inline def protect[result](inline body: lambda[result])
       ( using outer: Tactic[accrual]^, diagnostics: Diagnostics )
     :   result =
@@ -82,7 +82,7 @@ object Accrual:
               'diagnostics )
         }
 
-class Accrual[accrual <: Exception, lambda[_]]
+class Accrual[accrual <: Hazard, lambda[_]]
   ( val handler: PartialFunction[Exception, Any],
     val initial: accrual,
     val combine: (accrual, Exception) => accrual )

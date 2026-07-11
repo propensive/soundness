@@ -36,6 +36,7 @@ import language.dynamics
 
 import anticipation.*
 import contingency.*
+import fulminate.Hazard
 import distillate.*
 import honeycomb.*
 import legerdemain.*
@@ -51,7 +52,7 @@ class Orchestrate[value: Encodable in Query, result](initial: Optional[value] = 
   ( process: (form: Text => Html of Flow) => Optional[value] ->{form, caps.any} result )
 extends caps.ExclusiveCapability:
   def otherwise(validate: (query: Query) ?=> Validation)(using Formulation, value is Formulaic)
-    ( using decodable: Tactic[Exception] ?=> value is Decodable in Query )
+    ( using decodable: Tactic[Hazard] ?=> value is Decodable in Query )
     ( using request: Http.Request )
   :   result raises QueryError =
 

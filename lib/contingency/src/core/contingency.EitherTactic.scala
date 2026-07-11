@@ -36,7 +36,7 @@ import language.experimental.pureFunctions
 
 import fulminate.*
 
-class EitherTactic[error <: Exception, success](label: boundary.Label[Either[error, success]])
+class EitherTactic[error <: Hazard, success](label: boundary.Label[Either[error, success]])
   ( using Diagnostics )
 extends Tactic[error]:
   def diagnostics: Diagnostics = summon[Diagnostics]

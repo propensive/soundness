@@ -36,7 +36,7 @@ import language.experimental.pureFunctions
 
 import fulminate.*
 
-class AmalgamateTactic[error <: Exception, success]
+class AmalgamateTactic[error <: Hazard, success]
   ( label: boundary.Label[success | error] )
   ( using Diagnostics )
 extends Tactic[error]:
