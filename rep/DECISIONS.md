@@ -1217,3 +1217,23 @@ coaxial/galilei/hieroglyph/scintillate/telekinesis sweeps (same recipes), Phase 
 (borrow-based foreach/fold + freeze-based memoize on Stream^; combinators exist via the
 consume-typed through), full gates. LazyList-bridge REMOVAL deliberately deferred: needs
 Jon's API review (public break).
+
+## Phase 4/5 sweep: repo compiles except telekinesis (2026-07-11, sepcheck-kernel)
+
+Full `soundness.all` is green EXCEPT telekinesis.core (three small error classes left):
+1. `Request is Showable` given: lambda param needs the Request refinement ascription
+   (the class type now carries the body-thunk refinement).
+2. `() => Stream(cursor.remainder.iterator)` at Http.scala:386: fresh-in-thunk-result
+   admission ("any not visible from any² in method parse") — p11-family; likely needs a
+   named helper returning the thunk, or a rim.
+3. `Http.emptyBody()` result is bare (read-only) — needs `(Stream[Data] over Credit)^`.
+Then: apoplexy/scintillate knock-ons from the thunk-type sweep (`=> (Stream[Data] over
+Credit)^` swept across galilei/telekinesis/apoplexy), test suites, Phase 5 tests,
+LazyList-bridge removal (Jon approved; NOT yet started — Streamable in 44 files), gates.
+
+This leg's recipes: Producer factory results exclusive; serializer helpers take
+`Writer^`/`ProtobufPrinter^` (capability wrapper classes over their producers);
+consume-to-consume argument forwarding is NOT admitted (neutral-carrier hop);
+`lazyList` seals INSIDE its definition (LazyList is pure — cannot carry the consumed
+stream's capture; `^` on LazyList is a case-2 error); enum payloads holding stream
+thunks type them `() => (Stream[...])^`.

@@ -70,7 +70,7 @@ private def buildJavaRequest
   ( uri:         jn.URI,
     method:      Http.Method,
     textHeaders: List[Http.Header],
-    bodyFn:      () => Stream[Data] over Credit )
+    bodyFn:      () => (Stream[Data] over Credit)^ )
 :   jnh.HttpRequest =
 
   val request: jnh.HttpRequest.Builder = jnh.HttpRequest.newBuilder().nn.uri(uri).nn
@@ -146,7 +146,7 @@ package httpBackends:
       ( url:     Text,
         method:  Http.Method,
         headers: List[Http.Header],
-        body:    () => Stream[Data] over Credit )
+        body:    () => (Stream[Data] over Credit)^ )
       ( using Tactic[ConnectError] )
     :   Http.Response =
 

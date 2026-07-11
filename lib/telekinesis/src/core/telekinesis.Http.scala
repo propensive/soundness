@@ -473,7 +473,7 @@ object Http:
 
   enum Body:
     case Streaming(data: LazyList[Data])
-    case Flowing(source: () => Stream[Data] over Credit)
+    case Flowing(source: () => (Stream[Data] over Credit)^)
     case Fixed(data: Data)
     case Empty
 
@@ -496,7 +496,7 @@ object Http:
       val host:        Host,
       val target:      Text,
       val textHeaders: List[Http.Header],
-      val body:        () => Stream[Data] over Credit ):
+      val body:        () => (Stream[Data] over Credit)^ ):
 
     inline def request: this.type = this
 
@@ -552,7 +552,7 @@ object Http:
       ( url:     Text,
         method:  Http.Method,
         headers: List[Http.Header],
-        body:    () => Stream[Data] over Credit )
+        body:    () => (Stream[Data] over Credit)^ )
       ( using Tactic[ConnectError] )
     :   Http.Response
 

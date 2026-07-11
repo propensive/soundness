@@ -99,7 +99,7 @@ object HttpClient:
       val url = httpRequest.on(origin)
       Log.info(HttpEvent.Send(httpRequest.method, url, httpRequest.textHeaders))
 
-      def loop(uri: jn.URI, method: Http.Method, bodyFn: () => Stream[Data] over Credit,
+      def loop(uri: jn.URI, method: Http.Method, bodyFn: () => (Stream[Data] over Credit)^,
           remaining: Int)
       :   Http.Response =
 
@@ -119,7 +119,7 @@ object HttpClient:
               Log.fine(HttpEvent.Redirect(uri.toString.tt, nextUri.toString.tt))
               val nextMethod = redirectMethod(code, method)
 
-              val nextBody: () => Stream[Data] over Credit =
+              val nextBody: () => (Stream[Data] over Credit)^ =
                 if nextMethod == method then bodyFn else () => Http.emptyBody()
 
               loop(nextUri, nextMethod, nextBody, remaining - 1)

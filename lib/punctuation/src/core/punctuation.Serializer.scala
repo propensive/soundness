@@ -468,9 +468,9 @@ private[punctuation] object Serializer:
       raw(t"\\")
       newline()
 
-    def endFlow(): Unit = flushSeg()
+    update def endFlow(): Unit = flushSeg()
 
-    private def flushSeg(): Unit =
+    private update def flushSeg(): Unit =
       if seg.length > 0 then
         val word = seg.text
         seg.clear()

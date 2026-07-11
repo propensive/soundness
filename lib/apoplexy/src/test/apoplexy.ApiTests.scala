@@ -60,7 +60,7 @@ class Recorder(canned: () => Http.Response) extends Http.Backend:
 
   def request
      ( url: Text, method: Http.Method, headers: List[Http.Header],
-        body: () => Stream[Data] over Credit )
+        body: () => (Stream[Data] over Credit)^ )
      ( using Tactic[ConnectError] )
   :   Http.Response =
     lastUrl = url

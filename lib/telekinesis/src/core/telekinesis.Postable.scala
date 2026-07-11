@@ -57,7 +57,7 @@ object Postable:
   // body may be materialized more than once — for a redirect that preserves
   // the method, and independently by `preview` for logging — and a `Stream`,
   // being a single-use mutable buffer, cannot be re-pulled.
-  def apply[response](mediaType0: MediaType, stream0: response => Stream[Data] over Credit)
+  def apply[response](mediaType0: MediaType, stream0: response => (Stream[Data] over Credit)^)
   :   response is Postable =
 
     // `Typeclass` instances are `Pure` by infrastructure, but the streaming lambda may capture
