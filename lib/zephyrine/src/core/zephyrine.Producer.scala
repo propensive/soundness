@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import language.experimental.separationChecking
+
 import java.util.concurrent as juc
 
 import anticipation.Data
@@ -94,14 +96,14 @@ object Producer:
 
     private inline def free: Int = block - index.n0
 
-    private inline def publish(): Unit =
+    private inline update def publish(): Unit =
       if index != Prim then
         queue.put(addressable.materialize(current, 0, index.n0))
         index = Prim
 
-    def put(source: medium): Unit = put(source, Prim, addressable.length(source))
+    update def put(source: medium): Unit = put(source, Prim, addressable.length(source))
 
-    def put(source: medium, offset: Ordinal, size: Int): Unit =
+    update def put(source: medium, offset: Ordinal, size: Int): Unit =
       var done = 0
 
       while size - done > free do
@@ -115,29 +117,37 @@ object Producer:
 
       if free == 0 then publish()
 
-    def push(operand: Operand): Unit =
+    update def push(operand: Operand): Unit =
       addressable.storageUpdate(current, index.n0, operand)
       index = (index.n0 + 1).z
       if free == 0 then publish()
 
-    def finish(): Unit =
+    update def finish(): Unit =
       publish()
       queue.put(Done)
 
-    lazy val iterator: Iterator[medium] = new Iterator[medium]:
+    // The reader-side view: like a conduit's stream endpoint, it is owned by the
+    // consuming thread and mediated by the queue's happens-before; the seal is that rim.
+    lazy val iterator: Iterator[medium] = caps.unsafe.unsafeAssumePure(new Iterator[medium]:
+      // The iterator is the reader-side view of the channel (non-Stateful by design:
+      // scala.Iterator's methods cannot be update methods); its staging slot is untracked.
+      @caps.unsafe.untrackedCaptures
       private var ready: medium | Done.type = Done
 
       def hasNext: Boolean =
         ready = queue.take().nn
         ready != Done
 
-      def next(): medium = ready.asInstanceOf[medium]
+      def next(): medium = ready.asInstanceOf[medium])
 
 
-trait Producer[medium]:
+// A producer is a stateful capability: writing requires an exclusive reference, and the
+// root classification here lets `Intake` (and every other implementation) mark its
+// writes as update methods.
+trait Producer[medium] extends caps.ExclusiveCapability, caps.Stateful:
   type Operand
-  def put(source: medium): Unit
-  def put(source: medium, offset: Ordinal, size: Int): Unit
+  update def put(source: medium): Unit
+  update def put(source: medium, offset: Ordinal, size: Int): Unit
 
   // Write a single element: a `Char` for `Producer[Text]`, a `Byte` for `Producer[Data]`.
-  def push(operand: Operand): Unit
+  update def push(operand: Operand): Unit

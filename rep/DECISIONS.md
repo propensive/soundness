@@ -1188,3 +1188,32 @@ compiles all test sources together, where the implicit scope evidently differs. 
 regression from this branch or from fork fix #11 (which is thereby exonerated of
 CC-only-unit effects). Left as-is; flagged for a separate look at the per-module/umbrella
 implicit-scope divergence.
+
+## Phase 4 in flight: kernel re-parented and Conduit split (2026-07-11, branch sepcheck-kernel)
+
+zephyrine.core GREEN with the full Phase-4 kernel: Producer/Stream/Intake/Duct extend
+`ExclusiveCapability, Stateful` (capture-friendly — NOT Mutable: implementations capture
+iterators/queues/sockets) with honest update classification; Conduit is now a FACTORY
+returning `((Intake[medium] over Credit)^, (Stream[medium] over Credit)^)` over a private
+`SharedCapability` core (queue/atomics; volatiles untracked — JMM-managed);
+through/flowTo/accepting are consume-typed (Phase 5's pipeline semantics), with
+construction hoisted into `throughDuct`/`acceptingDuct` helpers whose consume PARAMETERS
+carry explicit sets — a local binding of the fresh duct would hide it from the anonymous
+class that wraps it (the statement rule); Ductile's `duct` takes `consume stage: Self^`.
+
+New workarounds proven this leg:
+- Overriding/implementing an update method requires RESTATING `update`.
+- Fresh stateful instances capturing evidence type as `^{evidence, caps.any}` results
+  (naming the evidence; hiding only their own state) — Sink.buffered, Source.stream.
+- Varargs of capabilities: follow the compiler's hint — capture-polymorphic
+  `[cap^](sources: (Stream[...])^{cap}*)` fixed Confluence's reach-leak; while-loops
+  instead of for-comprehensions (the desugared foreach closure captures the reach).
+- Collection/fiber rims carry `AnyRef` (the Conduit-queue precedent): Manifold's
+  subscribers and Confluence's per-fiber hand-offs.
+
+REMAINING for the next leg: ~10 errors in turbulence_core.scala (legacy LazyList-view
+sections: freeze-casts + flow sites), then zephyrine tests (Conduit pair destructure),
+coaxial/galilei/hieroglyph/scintillate/telekinesis sweeps (same recipes), Phase 5 surface
+(borrow-based foreach/fold + freeze-based memoize on Stream^; combinators exist via the
+consume-typed through), full gates. LazyList-bridge REMOVAL deliberately deferred: needs
+Jon's API review (public break).

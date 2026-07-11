@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import language.experimental.separationChecking
+
 import java.util.concurrent as juc
 import java.util.concurrent.atomic as juca
 
@@ -40,128 +42,143 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
-// The asynchronous boundary of a streaming pipeline: an `Intake` on its write
-// side and a `Stream` on its read side, with exactly one thread ever touching
-// each. Data crosses in blocks through a bounded queue, so a writer that
-// outpaces its reader parks in `reserve` — cross-thread backpressure — and
-// the free capacity is the credit this conduit reports as its `demand`. This
-// is the only synchronized component of a pipeline; every other stage is
-// single-owner mutable state on one side of a conduit or the other.
+// The asynchronous boundary of a streaming pipeline: a factory yielding an `Intake` for
+// the writing thread and a `Stream` for the reading thread, with exactly one thread ever
+// touching each. Data crosses in blocks through a bounded queue, so a writer that
+// outpaces its reader parks in `reserve` — cross-thread backpressure — and the free
+// capacity is the credit the intake reports as its `demand`. This is the only
+// synchronized component of a pipeline; every other stage is single-owner mutable state
+// on one side of a conduit or the other.
 //
-// A conduit is the generalization of `Producer.Channel`: block-granular
-// hand-off, but with element-granular credit, storage handed to the reader
-// without materializing an immutable chunk, and failure propagation — a
-// producer-side `fail` is rethrown from the reader's next `refill`.
+// The two endpoints are separate exclusive capabilities: a single object owning both
+// sides could not give two threads separated exclusive access. They share a
+// `SharedCapability`-classified core — correctly exempt from separation checking, since
+// the core's guarantees come from the queue's happens-before and the atomics, not from
+// aliasing analysis. Capture sets are erased crossing the queue (it carries `AnyRef`);
+// single ownership of a published block is discharged on the writer's side before the
+// hand-off, and visibility is the queue's publication guarantee.
 object Conduit:
   private object End
 
   private class Block(val storage: AnyRef, val size: Int)
 
-final class Conduit[medium]
-  (using val addressable0: medium is Addressable)(using buffering: Buffering)
-extends Intake[medium](using addressable0):
-  type Transport = Credit
+  // The synchronized substrate both endpoints capture.
+  private final class Core(window: Int) extends caps.SharedCapability:
+    val queue: juc.ArrayBlockingQueue[AnyRef] = juc.ArrayBlockingQueue(window)
+    val written: juca.AtomicLong = juca.AtomicLong(0)
+    val consumed: juca.AtomicLong = juca.AtomicLong(0)
+    // JMM-managed flags: their safety is the volatile publication guarantee, not
+    // aliasing analysis, so their captures are untracked.
+    @caps.unsafe.untrackedCaptures @volatile var error: Throwable | Null = null
+    @caps.unsafe.untrackedCaptures @volatile var closed: Boolean = false
 
-  private val block: Int = buffering.capacity(addressable0.substrate)
-  private val queue: juc.ArrayBlockingQueue[AnyRef] = juc.ArrayBlockingQueue(buffering.window)
+  def apply[medium]()
+    ( using addressable0: medium is Addressable )(using buffering: Buffering)
+  :   ((Intake[medium] over Credit)^, (Stream[medium] over Credit)^) =
 
-  private val written: juca.AtomicLong = juca.AtomicLong(0)
-  private val consumed: juca.AtomicLong = juca.AtomicLong(0)
-  @volatile private var error: Throwable | Null = null
-  @volatile private var closed: Boolean = false
+    val block: Int = buffering.capacity(addressable0.substrate)
+    val core = new Core(buffering.window)
 
-  private var current: addressable0.Storage = addressable0.allocate(block)
-  private var mark0: Int = 0
+    // Everything this conduit can hold: the queued blocks plus the block being
+    // written. `demand` is this allowance less what is currently buffered, so
+    // it reaches zero exactly when `reserve` would block.
+    val allowance: Long = block.toLong * (buffering.window + 1)
 
-  // Everything this conduit can hold: the queued blocks plus the block being
-  // written. `demand` is this allowance less what is currently buffered, so
-  // it reaches zero exactly when `reserve` would block.
-  private val allowance: Long = block.toLong * (buffering.window + 1)
+    // The write side; single writer.
+    val intake: (Intake[medium] over Credit)^ = new Intake[medium](using addressable0):
+      type Transport = Credit
 
-  def demand: Credit = Credit(allowance - (written.get - consumed.get))
+      private var current: addressable0.Storage = addressable0.allocate(block)
+      private var mark0: Int = 0
 
-  protected def buffer0: AnyRef = current.asInstanceOf[AnyRef]
-  def mark: Int = mark0
+      def demand: Credit = Credit(allowance - (core.written.get - core.consumed.get))
 
-  def reserve(min: Int): Int =
-    val free = block - mark0
+      protected def buffer0: AnyRef = current.asInstanceOf[AnyRef]
+      def mark: Int = mark0
 
-    if free >= min then free else
-      publish()
-      block
+      update def reserve(min: Int): Int =
+        val free = block - mark0
 
-  def commit(count: Int): Unit =
-    mark0 += count
-    written.addAndGet(count)
-    if mark0 == block then publish()
+        if free >= min then free else
+          publish()
+          block
 
-  override def flush(): Unit = if mark0 > 0 then publish()
+      update def commit(count: Int): Unit =
+        mark0 += count
+        core.written.addAndGet(count)
+        if mark0 == block then publish()
 
-  def finish(): Unit =
-    flush()
-    queue.put(Conduit.End)
+      override update def flush(): Unit = if mark0 > 0 then publish()
 
-  override def fail(error: Throwable): Unit =
-    this.error = error
-    queue.clear()
-    queue.put(Conduit.End)
+      update def finish(): Unit =
+        flush()
+        core.queue.put(End)
 
-  private def publish(): Unit =
-    if mark0 > 0 then
-      if closed then
-        written.addAndGet(-mark0)
-        mark0 = 0
-      else
-        queue.put(Conduit.Block(current.asInstanceOf[AnyRef], mark0))
-        current = addressable0.allocate(block)
-        mark0 = 0
+      override update def fail(error: Throwable): Unit =
+        core.error = error
+        core.queue.clear()
+        core.queue.put(End)
 
-  // The read side; single reader. `refill` parks (in `queue.take`) until the
-  // writer publishes a block or finishes.
-  val stream: Stream[medium] over Credit = new Stream[medium](using addressable0):
-    type Transport = Credit
+      private update def publish(): Unit =
+        if mark0 > 0 then
+          if core.closed then
+            core.written.addAndGet(-mark0)
+            mark0 = 0
+          else
+            core.queue.put(Block(current.asInstanceOf[AnyRef], mark0))
+            current = addressable0.allocate(block)
+            mark0 = 0
 
-    private var storage: addressable0.Storage = addressable0.allocate(0)
-    private var start0: Int = 0
-    private var limit0: Int = 0
-    private var size: Int = 0
-    private var ended: Boolean = false
+    // The read side; single reader. `refill` parks (in `queue.take`) until the
+    // writer publishes a block or finishes.
+    val stream: (Stream[medium] over Credit)^ = new Stream[medium](using addressable0):
+      type Transport = Credit
 
-    protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
-    def start: Int = start0
-    def limit: Int = limit0
+      private var storage: addressable0.Storage = addressable0.allocate(0)
+      private var start0: Int = 0
+      private var limit0: Int = 0
+      private var size: Int = 0
+      private var ended: Boolean = false
 
-    def skip(count: Int): Unit =
-      start0 += count
-      consumed.addAndGet(count)
+      protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+      def start: Int = start0
+      def limit: Int = limit0
 
-    def refill(demand: Credit): Optional[Int] =
-      if limit0 > start0 then limit0 - start0
-      else if ended then Unset
-      else
-        val granted = summon[Credit is Regulation].grant(demand)
+      update def skip(count: Int): Unit =
+        start0 += count
+        core.consumed.addAndGet(count)
 
-        if granted == 0 then 0
-        else if limit0 < size then
-          limit0 += (size - limit0).min(granted)
-          limit0 - start0
+      update def refill(demand: Credit): Optional[Int] =
+        if limit0 > start0 then limit0 - start0
+        else if ended then Unset
         else
-          (queue.take().nn: @unchecked) match
-            case Conduit.End =>
-              ended = true
-              val error0 = error
-              if error0 == null then Unset else throw error0
+          val granted = summon[Credit is Regulation].grant(demand)
 
-            case received: Conduit.Block =>
-              storage = received.storage.asInstanceOf[addressable0.Storage]
-              size = received.size
-              start0 = 0
-              limit0 = size.min(granted)
-              limit0
+          if granted == 0 then 0
+          else if limit0 < size then
+            limit0 += (size - limit0).min(granted)
+            limit0 - start0
+          else
+            (core.queue.take().nn: @unchecked) match
+              case End =>
+                ended = true
+                val error0 = core.error
+                if error0 == null then Unset else throw error0
 
-            case _ =>
-              panic(m"unexpected value in conduit queue")
+              case received: Block =>
+                // Single-ownership transfer: the writer never touches a published
+                // block again (proven on its side by the fresh re-mint in `publish`).
+                storage = received.storage.asInstanceOf[addressable0.Storage]
+                size = received.size
+                start0 = 0
+                limit0 = size.min(granted)
+                limit0
 
-    override def close(): Unit =
-      closed = true
-      queue.clear()
+              case _ =>
+                panic(m"unexpected value in conduit queue")
+
+      override update def close(): Unit =
+        core.closed = true
+        core.queue.clear()
+
+    (intake, stream)

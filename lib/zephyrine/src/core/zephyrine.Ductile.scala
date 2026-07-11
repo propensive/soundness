@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import language.experimental.separationChecking
+
 import java.nio as jn, jn.charset as jnc
 
 import anticipation.*
@@ -55,20 +57,30 @@ object Ductile:
     (stage is Ductile by in to out over transport) { type Upstream = upstream }
 
   given duct: [in, out, transport, upstream,
-        stage <: Duct[in, out] { type Transport = transport; type Upstream = upstream }]
+        stage <: (Duct[in, out] { type Transport = transport; type Upstream = upstream })^]
   =>  Of[stage, in, out, transport, upstream] =
 
-    new Ductile:
+    // The identity instance: the cast bridges the capture-decorated inferred member types
+    // against the declared alias (bare `stage` under a stateful bound reads as `.rd`).
+    (new Ductile:
       type Self = stage
       type Operand = in
       type Result = out
       type Transport = transport
       type Upstream = upstream
 
-      def duct(stage0: stage)(using Buffering)
-      :   Duct[in, out] { type Transport = transport; type Upstream = upstream } =
+      def duct(consume stage0: stage^)(using Buffering)
+      :   (Duct[in, out] { type Transport = transport; type Upstream = upstream })^ =
 
-        stage0
+        // consumed pass-through: ownership moves from caller to result (the admission
+        // gap for direct returns is bridged by the erasure cast)
+        stage0.asInstanceOf[(Duct[in, out] { type Transport = transport; type Upstream = upstream })^]
+    ).asInstanceOf[Ductile {
+      type Self = stage^{caps.any.rd}
+      type Operand = in
+      type Result = out
+      type Transport = transport
+      type Upstream = upstream }]
 
   // Character decoding as a pipeline stage. Bytes are staged internally (so
   // multi-byte characters split across refills are carried, and `step`
@@ -82,7 +94,7 @@ object Ductile:
       type Transport = Credit
       type Upstream = Credit
 
-      def duct(stage: CharDecoder)(using buffering: Buffering)
+      def duct(consume stage: CharDecoder^)(using buffering: Buffering)
       :   Duct[Data, Text] { type Transport = Credit; type Upstream = Credit } =
 
         new Duct[Data, Text]:
@@ -103,7 +115,7 @@ object Ductile:
           // sound byte-credit as it stands.
           def translate(demand: Credit): Credit = demand
 
-          private def decode(out: jn.CharBuffer, endOfInput: Boolean): Unit =
+          private update def decode(out: jn.CharBuffer, endOfInput: Boolean): Unit =
             val result = decoder.decode(staging, out, endOfInput).nn
 
             if result.isMalformed then
@@ -111,7 +123,7 @@ object Ductile:
               staging.position(staging.position + result.length)
               decode(out, endOfInput)
 
-          def step
+          update def step
             ( source: input.Storage,
               sourceOffset: Int,
               sourceLength: Int,
@@ -133,7 +145,7 @@ object Ductile:
 
             Duct.Progress(copy, out.position - targetOffset)
 
-          override def flush(target: output.Storage, targetOffset: Int, targetSpace: Int)
+          override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int)
           :   Int =
 
             if ended then 0 else
@@ -159,7 +171,7 @@ object Ductile:
       type Transport = Credit
       type Upstream = Credit
 
-      def duct(stage: CharEncoder)(using buffering: Buffering)
+      def duct(consume stage: CharEncoder^)(using buffering: Buffering)
       :   Duct[Text, Data] { type Transport = Credit; type Upstream = Credit } =
 
         new Duct[Text, Data]:
@@ -208,7 +220,7 @@ object Ductile:
 
             Duct.Progress(copy, out.position - targetOffset)
 
-          override def flush(target: output.Storage, targetOffset: Int, targetSpace: Int)
+          override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int)
           :   Int =
 
             if ended then 0 else
@@ -226,6 +238,6 @@ trait Ductile extends Typeclass, Operable, Resultant:
   type Transport
   type Upstream
 
-  def duct(stage: Self)(using Buffering): Duct[Operand, Result] {
+  def duct(consume stage: Self^)(using Buffering): (Duct[Operand, Result] {
     type Transport = Ductile.this.Transport
-    type Upstream = Ductile.this.Upstream }
+    type Upstream = Ductile.this.Upstream })^

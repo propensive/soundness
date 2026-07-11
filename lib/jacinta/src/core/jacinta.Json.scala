@@ -1233,7 +1233,7 @@ object Json extends Json2, Dynamic:
         type Operand = Data
 
         def aggregate(bytes: LazyList[Data]): Json = readJson(bytes.iterator)
-        override def accept(stream: Stream[Data] over Credit): Json = readJson(stream)
+        override def accept(consume stream: (Stream[Data] over Credit)^): Json = readJson(stream)
 
 
   // Sealed like `aggregable` above.
@@ -1249,7 +1249,7 @@ object Json extends Json2, Dynamic:
         def aggregate(bytes: LazyList[Data]): value in Json =
           readJson(bytes.iterator).as[value].asInstanceOf[value in Json]
 
-        override def accept(stream: Stream[Data] over Credit): value in Json =
+        override def accept(consume stream: (Stream[Data] over Credit)^): value in Json =
           readJson(stream).as[value].asInstanceOf[value in Json]
 
 

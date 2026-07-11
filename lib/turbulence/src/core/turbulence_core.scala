@@ -32,6 +32,8 @@
                                                                                                   */
 package turbulence
 
+import language.experimental.separationChecking
+
 import language.adhocExtensions
 
 import java.io as ji
@@ -77,26 +79,26 @@ extension [value: Streamable by Text](value: value)
   :   Document[result] =
     loadable.load(value.stream[Text])
 
-extension [medium, transport](stream: Stream[medium] over transport)
+extension [medium, transport](consume stream: (Stream[medium] over transport)^)
   // The detached pump: `flowTo` on its own parasite task, for fire-and-forget
   // transfers and genuinely concurrent pipeline halves. This is the "one
   // pumping thread" of a pipeline with an asynchronous boundary.
-  def flow(intake: Intake[medium] over transport)(using Monitor, Probate): Task[Unit] =
+  def flow(consume intake: (Intake[medium] over transport)^)(using Monitor, Probate): Task[Unit] =
     async(stream.flowTo(intake))
 
-extension (stream: Stream[Data] over Credit)
+extension (consume stream: (Stream[Data] over Credit)^)
   def compress[format <: Compressor](using compression: format is Compression, buffering: Buffering)
-  :   Stream[Data] over Credit =
+  :   (Stream[Data] over Credit)^ =
 
     stream.through(compression.compressor())
 
   def decompress[format <: Compressor]
     ( using compression: format is Compression, buffering: Buffering )
-  :   Stream[Data] over Credit =
+  :   (Stream[Data] over Credit)^ =
 
     stream.through(compression.decompressor())
 
-extension [medium](stream: Stream[medium] over Credit)
+extension [medium](consume stream: (Stream[medium] over Credit)^)
   // Legacy view: drain a pull endpoint as a lazy list of materialized chunks,
   // pulling one block per forced cell. For consumers not yet converted to the
   // streaming kernel; conversion holds only one block at a time, but the
@@ -117,10 +119,10 @@ extension [medium](stream: Stream[medium] over Credit)
 
     LazyList.defer(recur())
 
-extension (stream: Stream[Data] over Credit)
+extension (consume stream: (Stream[Data] over Credit)^)
   // Adapt a pull endpoint to the HTTP-body interchange protocol: each `next`
   // refills with `limit` credit and materializes the delivered window.
-  def httpBody: HttpStreams.Body = limit =>
+  def httpBody: HttpStreams.Body^ = limit =>
     stream.refill(Credit(limit)) match
       case count: Int =>
         val take = count.min(limit)
@@ -134,7 +136,7 @@ extension (stream: Stream[Data] over Credit)
 extension (body: HttpStreams.Body)
   // View an HTTP-body interchange value as a pull endpoint, one chunk per
   // block-sized request.
-  def stream(using buffering: Buffering): Stream[Data] over Credit =
+  def stream(using buffering: Buffering): (Stream[Data] over Credit)^ =
     new Stream[Data]:
       type Transport = Credit
 
@@ -148,9 +150,9 @@ extension (body: HttpStreams.Body)
       protected def window0: AnyRef = chunk.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
-      def skip(count: Int): Unit = start0 += count
+      update def skip(count: Int): Unit = start0 += count
 
-      def refill(demand: Credit): Optional[Int] =
+      update def refill(demand: Credit): Optional[Int] =
         if limit0 > start0 then limit0 - start0
         else if ended then Unset
         else
@@ -372,7 +374,11 @@ extension (stream: LazyList[Data])
     def recur(stream: LazyList[Data], count: Bytes): LazyList[Data] = stream.flow(LazyList()):
       if next.bytes < count
       then recur(more, count - next.bytes)
-      else next.drop(count.long.toInt) #:: more
+      else
+        // hoisted: a fresh array built inside `#::`'s by-name operand (which would
+        // capture the enclosing context) could not escape it
+        val head: Data = next.drop(count.long.toInt).asInstanceOf[Data]
+        head #:: more
 
     recur(stream, bytes)
 
@@ -407,7 +413,7 @@ extension (stream: LazyList[Data])
 
         case _ =>
           if destPos == 0 then LazyList()
-          else LazyList(dest.slice(0, destPos).immutable(using Unsafe))
+          else LazyList(dest.slice(0, destPos).immutable(using Unsafe).asInstanceOf[Data])
 
     recur(stream, 0, newArray(), 0)
 

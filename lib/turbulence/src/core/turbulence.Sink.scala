@@ -66,26 +66,26 @@ object Sink extends Sink2:
         protected def buffer0: AnyRef = storage
         def mark: Int = mark0
 
-        def reserve(min: Int): Int =
+        update def reserve(min: Int): Int =
           val free = block - mark0
 
           if free >= min then free else
             drain()
             block
 
-        def commit(count: Int): Unit =
+        update def commit(count: Int): Unit =
           mark0 += count
           if mark0 == block then drain()
 
-        override def flush(): Unit =
+        override update def flush(): Unit =
           drain()
           try value.flush() catch case _: ji.IOException => ()
 
-        def finish(): Unit =
+        update def finish(): Unit =
           drain()
           try value.close() catch case _: ji.IOException => raise(StreamError(total.b))
 
-        private def drain(): Unit =
+        private update def drain(): Unit =
           if mark0 > 0 && !broken then
             try
               value.write(storage, 0, mark0)
@@ -114,24 +114,24 @@ object Sink extends Sink2:
         protected def buffer0: AnyRef = storage
         def mark: Int = mark0
 
-        def reserve(min: Int): Int =
+        update def reserve(min: Int): Int =
           val free = block - mark0
 
           if free >= min then free else
             drain()
             block
 
-        def commit(count: Int): Unit =
+        update def commit(count: Int): Unit =
           mark0 += count
           if mark0 == block then drain()
 
-        override def flush(): Unit = drain()
+        override update def flush(): Unit = drain()
 
-        def finish(): Unit =
+        update def finish(): Unit =
           drain()
           try value.close() catch case _: Exception => raise(StreamError(total.b))
 
-        private def drain(): Unit =
+        private update def drain(): Unit =
           if mark0 > 0 && !broken then
             val buffer = jn.ByteBuffer.wrap(storage, 0, mark0).nn
 
@@ -154,7 +154,7 @@ object Sink extends Sink2:
   def buffered[target, medium]
     ( target: target, write: (target, LazyList[medium]) => Unit )
     ( using addressable0: medium is Addressable )
-  :   (Intake[medium] over Credit)^{write} =
+  :   (Intake[medium] over Credit)^{write, caps.any} =
 
     new Intake[medium]:
       type Transport = Credit
@@ -168,22 +168,22 @@ object Sink extends Sink2:
       protected def buffer0: AnyRef = storage.asInstanceOf[AnyRef]
       def mark: Int = mark0
 
-      def reserve(min: Int): Int =
+      update def reserve(min: Int): Int =
         val free = block - mark0
 
         if free >= min then free else
           drain()
           block
 
-      def commit(count: Int): Unit =
+      update def commit(count: Int): Unit =
         mark0 += count
         if mark0 == block then drain()
 
-      def finish(): Unit =
+      update def finish(): Unit =
         drain()
         write(target, chunks.reverse.to(LazyList))
 
-      private def drain(): Unit =
+      private update def drain(): Unit =
         if mark0 > 0 then
           chunks ::= addressable0.materialize(storage, 0, mark0)
           mark0 = 0
@@ -206,7 +206,7 @@ trait Sink2:
 
 trait Sink extends Typeclass, Operable:
   type Transport
-  def intake(target: Self): Intake[Operand] over Transport
+  def intake(target: Self): (Intake[Operand] over Transport)^
 
   def contramap[self2](lambda: self2 => Self)
   :   (self2 is Sink by Operand over Transport)^{this, lambda} =

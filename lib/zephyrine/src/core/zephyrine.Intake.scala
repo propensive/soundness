@@ -32,6 +32,8 @@
                                                                                                   */
 package zephyrine
 
+import language.experimental.separationChecking
+
 import denominative.*
 import prepositional.*
 import rudiments.*
@@ -48,6 +50,8 @@ import vacuous.*
 // reserves contiguous space, writes directly into the intake's storage at
 // `mark`, then commits. `put`, `push` and `absorb` are final loops over that
 // protocol, so implementations provide only the window and its lifecycle.
+// The intake inherits Producer's capability classification: writes require an exclusive
+// reference; `demand` and `mark` are read-only queries.
 trait Intake[medium](using val addressable: medium is Addressable) extends Producer[medium]:
   type Operand = addressable.Operand
   type Transport
@@ -60,7 +64,7 @@ trait Intake[medium](using val addressable: medium is Addressable) extends Produ
   // Ensure at least `min` elements of contiguous writable space, blocking if
   // necessary, and return the available space. `min` must not exceed the
   // intake's block size.
-  def reserve(min: Int): Int
+  update def reserve(min: Int): Int
 
   // Zero-copy view of this intake's buffer; elements from `mark` are writable
   // up to the last `reserve`d space. Valid only until the next `commit`,
@@ -75,20 +79,20 @@ trait Intake[medium](using val addressable: medium is Addressable) extends Produ
 
   // Declare `count` elements written at `mark`; may synchronously cascade
   // them through downstream stages.
-  def commit(count: Int): Unit
+  update def commit(count: Int): Unit
 
   // Propagate buffered data downstream now, without ending the stream.
-  def flush(): Unit = ()
+  update def flush(): Unit = ()
 
   // End-of-stream: flush, emit any terminal stage state, release downstream.
   // Called exactly once.
-  def finish(): Unit
+  update def finish(): Unit
 
   // Abort: propagate failure downstream so stages can release resources. The
   // error is rethrown to the reader at an asynchronous boundary.
-  def fail(error: Throwable): Unit = finish()
+  update def fail(error: Throwable): Unit = finish()
 
-  final def absorb(source: addressable.Storage, offset: Int, count: Int): Unit =
+  final update def absorb(source: addressable.Storage, offset: Int, count: Int): Unit =
     var done: Int = 0
 
     while done < count do
@@ -98,9 +102,9 @@ trait Intake[medium](using val addressable: medium is Addressable) extends Produ
       commit(size)
       done += size
 
-  final def put(source: medium): Unit = put(source, Prim, addressable.length(source))
+  final update def put(source: medium): Unit = put(source, Prim, addressable.length(source))
 
-  final def put(source: medium, offset: Ordinal, size: Int): Unit =
+  final update def put(source: medium, offset: Ordinal, size: Int): Unit =
     var done: Int = 0
 
     while done < size do
@@ -110,7 +114,7 @@ trait Intake[medium](using val addressable: medium is Addressable) extends Produ
       commit(count)
       done += count
 
-  final def push(operand: Operand): Unit =
+  final update def push(operand: Operand): Unit =
     reserve(1)
     addressable.storageUpdate(buffer(using Unsafe), mark, operand)
     commit(1)
