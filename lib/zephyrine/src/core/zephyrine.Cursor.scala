@@ -58,6 +58,17 @@ object Cursor:
 
   type Loader[data] = () => Optional[data]
 
+  // A direct refill strategy: writes up to `space` elements straight into the cursor's
+  // buffer at `offset`, returning the count written, `0` when nothing was granted (the
+  // cursor retries), or `-1` at end-of-stream. Bypasses the `Loader` chunk protocol so a
+  // pull endpoint's window can be transferred into the cursor in a single copy, instead
+  // of materializing an intermediate chunk that `refill` then copies again. `block` is
+  // the growth hint: the cursor guarantees at least one element of space and grows its
+  // buffer towards `writeEnd + block` before each fill.
+  trait Filler[storage]:
+    def block: Int
+    def fill(storage: storage, offset: Int, space: Int): Int
+
   object Mark:
     final val Initial: Mark = 0L
 
@@ -103,7 +114,8 @@ object Cursor:
         Unset,
         DefaultCapacity,
         addressable0,
-        lineation0 )
+        lineation0,
+        Unset )
 
 
   // Build a Cursor pre-filled with a single chunk; the loader is a no-op.
@@ -119,14 +131,17 @@ object Cursor:
         initial,
         addressable0.length(initial).max(1),
         addressable0,
-        lineation0 )
+        lineation0,
+        Unset )
 
 
-  // Build a Cursor over a pull endpoint: each load refills the stream with a
-  // block-sized credit (from the ambient `Buffering`) and materializes the
-  // delivered window as one chunk. The credit bounds how much any upstream
-  // stage produces per load, so memory stays bounded through a parse of an
-  // arbitrarily large input.
+  // Build a Cursor over a pull endpoint: each fill refills the stream with a credit
+  // bounded by the ambient `Buffering` block size and transfers the delivered window
+  // straight into the cursor's buffer — a single copy, with no intermediate chunk
+  // allocation. The credit bounds how much any upstream stage produces per fill, so
+  // memory stays bounded through a parse of an arbitrarily large input. The window is
+  // read and skipped within the fill, before the stream can refill again — the borrow
+  // discipline `Stream.window` documents, applied at the one place a cursor touches it.
   transparent inline def apply[data](stream: Stream[data] over Credit)
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand,
@@ -136,19 +151,22 @@ object Cursor:
   // capabilities, this factory should be re-typed like the iterator one above.
   :   Cursor[data, {}] =
 
-    val block: Int = buffering.capacity(addressable0.substrate)
-
     new Cursor[data, {}]
-      ( () =>
-          stream.refill(Credit(block)).let: count =>
-            val window = stream.window(using Unsafe).asInstanceOf[addressable0.Storage]
-            val chunk = addressable0.materialize(window, stream.start, count)
-            stream.skip(count)
-            chunk,
+      ( () => Unset,
         Unset,
         DefaultCapacity,
         addressable0,
-        lineation0 )
+        lineation0,
+        new Filler[addressable0.Storage]:
+          val block: Int = buffering.capacity(addressable0.substrate)
+
+          def fill(storage: addressable0.Storage, offset: Int, space: Int): Int =
+            stream.refill(Credit(space.min(block))).lay(-1): count =>
+              val copied = count.min(space)
+              val window = stream.window(using Unsafe).asInstanceOf[addressable0.Storage]
+              addressable0.transfer(window, stream.start, storage, offset, copied)
+              stream.skip(copied)
+              copied )
 
 
   // Backwards-compatible factory that adapts an Iterator to the loader API.
@@ -163,7 +181,8 @@ object Cursor:
         Unset,
         DefaultCapacity,
         addressable0,
-        lineation0 )
+        lineation0,
+        Unset )
 
   // Safe, allocation-free single-element peek. Returns `Datum.End` when the
   // cursor is finished; otherwise the current byte (unsigned, `0..255`) or
@@ -256,7 +275,8 @@ final class Cursor[data, cap^]
                 initial:     Optional[data],
                 initialSize: Int,
     tracked val addressable: data is Addressable,
-    tracked val lineation:   Lineation by addressable.Operand ):
+    tracked val lineation:   Lineation by addressable.Operand,
+                filler:      Optional[Cursor.Filler[addressable.Storage]] ):
 
   // ─── state ────────────────────────────────────────────────────────────────
   // A single contiguous buffer holds all currently-live data. `pos` is the
@@ -334,22 +354,42 @@ final class Cursor[data, cap^]
         writeEnd = live
         if holdStart >= 0 then holdStart = 0
 
-      // Pull chunks until we either receive non-empty data or hit EOF.
-      var loaded = false
+      // Pull until we either receive non-empty data or hit EOF: directly into the
+      // buffer when a `Filler` was provided (single copy), otherwise through the
+      // chunk-materializing `Loader` protocol.
+      filler.lay(pullChunks())(pullDirect(_))
 
-      while !loaded && !ended do
-        val chunk = load()
+  // The single-copy path: grow towards a full block of space, then let the filler
+  // transfer straight into the buffer at `writeEnd`.
+  private def pullDirect(filler: Cursor.Filler[addressable.Storage]): Unit =
+    var loaded = false
 
-        if chunk.absent then ended = true
-        else
-          val data = chunk.vouch
-          val len = addressable.length(data)
+    while !loaded && !ended do
+      ensureCapacity(writeEnd + filler.block)
+      val space = addressable.storageSize(buffer) - writeEnd
+      val count = filler.fill(buffer, writeEnd, space)
 
-          if len > 0 then
-            ensureCapacity(writeEnd + len)
-            addressable.copyChunk(data, 0, buffer, writeEnd, len)
-            writeEnd += len
-            loaded = true
+      if count < 0 then ended = true
+      else if count > 0 then
+        writeEnd += count
+        loaded = true
+
+  private def pullChunks(): Unit =
+    var loaded = false
+
+    while !loaded && !ended do
+      val chunk = load()
+
+      if chunk.absent then ended = true
+      else
+        val data = chunk.vouch
+        val len = addressable.length(data)
+
+        if len > 0 then
+          ensureCapacity(writeEnd + len)
+          addressable.copyChunk(data, 0, buffer, writeEnd, len)
+          writeEnd += len
+          loaded = true
 
   private def ensureCapacity(needed: Int): Unit =
     val cap = addressable.storageSize(buffer)

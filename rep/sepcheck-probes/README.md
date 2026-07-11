@@ -32,9 +32,13 @@ matched. `//LIB: <file>` compiles a prerequisite unit first into the probe's cla
 | P6 | `p6-*` | Under the sepcheck import, mutable fields are only allowed in Stateful classes; `@untrackedCaptures` (from `caps.unsafe`) is the working escape hatch for a file that opts in before its classes are re-parented (the Phase 1 Conduit strategy). |
 | P7 | `p7-*` | `consume` params on constructors and factories work (Cursor-adopts-stream); use-after-consume rejected. **GOTCHA**: in a class body, normal members must be declared BEFORE `consume` methods — a consume method's `Self^` result hides `this` for all later members (template treated as a statement sequence). Upstream-reportable. |
 | P8 | `p8-*` | The safe mutable front-end shape works: `consume`-typed extension combinators chain (`Counter(10).mapped(_ * 2).fold(0)(_ + _)`); pulling from an already-piped upstream is rejected; returning an outer exclusive capability from a fresh-result method is rejected (the confinement LazyList could never have under plain CC). |
+| P9 | `p9-field-move.neg` | **A tracked capability cannot be moved out of a field**: `val slab = current; current = fresh` fails — the field read widens to a fresh `any` hiding the enclosing instance, rejecting the re-mint and all later `this`-rooted access (no take/replace primitive). Also proven en route: `consume` on an untracked abstract-Storage param is VACUOUS (no use-after rejection). Consequence: Conduit publish and Cursor buffer adoption keep one audited Unsafe swap point each; enforceable `consume` applies to values threaded through call chains, and there is no meaningful file-local Phase 1 — enforcement starts at the re-parenting phases. |
 
 ## Upstream-reportable candidates
 
+- P9 field-move: no way to move a tracked capability out of a field (`val slab = current;
+  current = fresh` — the read hides the enclosing instance). Blocks checked hand-off/
+  adoption patterns; see `p9-field-move.neg.scala`.
 - P7 member-order sensitivity (consume method hides `this` from later template members).
 - P5 abstract-type-member opacity to the built-in Array-`Mutable` treatment (may be by
   design; worth asking).

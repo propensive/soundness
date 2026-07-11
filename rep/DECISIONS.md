@@ -1024,3 +1024,30 @@ Key decisions established by the probes:
    factory shape is green). GOTCHA for kernel authors: declare normal members before
    `consume` methods in a template (later members are "hidden by" the consume result —
    upstream-reportable, like the abstract-Storage opacity).
+
+## Sepcheck Phase 1/2 outcome: enforcement needs re-parenting; single-copy loader shipped (2026-07-11)
+
+Two further probes killed Phase 1 as scoped (file-local `consume` in Conduit):
+
+- `consume` on an UNTRACKED abstract-Storage param is VACUOUS — use-after-consume compiles
+  clean. Combined with the P5 finding (Storage can't be tracked through the abstract
+  member), a Conduit-internal consume helper would be safety theater; not shipped.
+- A tracked carrier (concrete `Slab extends Mutable` field) fails differently
+  (`p9-field-move.neg`, both rows): a tracked capability cannot be MOVED out of a field —
+  the field read widens to a fresh `any` hiding the enclosing instance, rejecting the
+  re-mint and everything after. No take/replace primitive exists. And the update-override
+  rule chains commit/flush→publish→update all the way into Intake's public methods, so
+  enforcement anywhere in Conduit requires the Stateful re-parenting of Intake itself.
+
+CONCLUSION: separation checking's enforceable value for the kernel starts at Phase 3/4
+re-parenting (exclusive/read-only stage discipline, consume factories/combinators, borrows,
+freeze) and the hand-off/field-swap points keep one audited Unsafe site each even then.
+Phases 1–2 as originally scoped deliver no checking; dropped in favour of presenting the
+decision gate with this evidence.
+
+Independently shipped (no sepcheck dependency): the stream→cursor single-copy refill.
+`Cursor.Filler` (direct fill into the cursor buffer) replaces the materialize-then-copyChunk
+loader in the stream-backed factory; the window is read, transferred and skipped within one
+fill — the borrow discipline applied manually at the one place a cursor touches a window.
+zephyrine suite 233/233; new benchmark `Cursor[Data].next over Stream, 100 × 100-byte
+blocks`: 12.124 µs → 9.397 µs per 10 KB (82.5k → 106.4k op/s, ~29% more throughput).
