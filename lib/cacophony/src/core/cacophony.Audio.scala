@@ -42,6 +42,7 @@ import quantitative.*
 import rudiments.*
 import symbolism.*
 import turbulence.*
+import zephyrine.Credit
 import vacuous.*
 
 object Audio:
@@ -106,11 +107,20 @@ object Audio:
   given streamable: [form: Audible] => (Audio in form) is Streamable by Data = audio =>
     writeAudio(audio, form.name)
 
+  given source: [form: Audible]
+  =>  (Audio in form) is Source by Data over Credit =
+    audio => zephyrine.Stream(writeAudio(audio, form.name).iterator)
+
 
   given streamableAcross: [form: Audible, layout]
   =>  (Audio in form across layout) is Streamable by Data =
 
     audio => writeAudio(audio, form.name)
+
+  given sourceAcross: [form: Audible, layout]
+  =>  (Audio in form across layout) is Source by Data over Credit =
+
+    audio => zephyrine.Stream(writeAudio(audio, form.name).iterator)
 
 
   given abstractable: [format: Audible] => (Audio in format) is Abstractable:

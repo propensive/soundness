@@ -251,6 +251,6 @@ object Tests extends Suite(m"Graffiti tests"):
       . assert(_.starts(t"text/html"))
 
       test(m"serving an archetype streams the full HTML document, with a doctype"):
-        supervise(Page(t"Demo", Nil).read[Text])
+        supervise(Page(t"Demo", Nil).stream[Text].read[Text])
       . assert: served =>
           served.contains(t"<!DOCTYPE html>") && served.contains(t"Hello, world!")
