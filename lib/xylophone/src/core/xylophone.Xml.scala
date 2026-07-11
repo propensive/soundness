@@ -1474,18 +1474,25 @@ object Xml extends Tag.Container
           while more && peek != ';' do
             val c = peek
 
+            // Reuse the digit-value subtraction as its own range check: the
+            // difference, masked to 16 bits by `.toChar`, is in range iff small,
+            // so the value the decoder already needs doubles as the bounds test.
+            // The hex-letter subtraction is only computed when `c` isn't a digit.
+            val dec = (c - '0').toChar
+
             value =
-              if '0' <= c && c <= '9' then 16*value + (c - '0')
-              else if 'a' <= c && c <= 'f' then 16*value + (c - 87)
-              else if 'A' <= c && c <= 'F' then 16*value + (c - 55)
-              else fail(Issue.Unexpected(c))
+              if dec <= 9 then 16*value + dec
+              else
+                val hex = ((c | 0x20) - 'a').toChar
+                if hex <= 5 then 16*value + hex + 10 else fail(Issue.Unexpected(c))
 
             advance()
         else
           while more && peek != ';' do
             val c = peek
+            val dec = (c - '0').toChar
 
-            if '0' <= c && c <= '9' then value = 10*value + (c - '0')
+            if dec <= 9 then value = 10*value + dec
             else fail(Issue.Unexpected(c))
 
             advance()
