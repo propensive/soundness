@@ -79,7 +79,7 @@ object ContentLength:
             var index = 0
 
             while !cursor.finished && cursor.datum(using Unsafe) != colon do
-              val byte = lower(cursor.datum(using Unsafe))
+              val byte = lower(cursor.datum(using Unsafe).asInstanceOf[Byte])
               if index >= name.length || byte != name.s.charAt(index).toByte then matches = false
               index += 1
               cursor.next()
@@ -94,7 +94,7 @@ object ContentLength:
             var digits = false
 
             while !cursor.finished && cursor.datum(using Unsafe) != cr do
-              val byte = cursor.datum(using Unsafe)
+              val byte = cursor.datum(using Unsafe).asInstanceOf[Byte]
 
               if matches && byte >= 48 && byte <= 57 then
                 value = value*10 + (byte - 48)

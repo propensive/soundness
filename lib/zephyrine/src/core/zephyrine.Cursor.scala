@@ -192,7 +192,7 @@ object Cursor:
   // `^{}` at CC-only call sites — every update call through the cursor is rejected as
   // read-only. Re-track the iterator once that interaction is understood (needs a minimal
   // repro; the toy version works).
-  def apply[data](iterator: Iterator[data])
+  def apply[data](iterator: Iterator[data]^)
     ( using addressable0: data is Addressable,
             lineation0:   Lineation by addressable0.Operand )
   :   Cursor[data, {}]^ =

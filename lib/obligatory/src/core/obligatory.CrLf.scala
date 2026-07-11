@@ -49,7 +49,7 @@ object CrLf:
       cursor.hold:
         val start = cursor.mark
 
-        if !cursor.finished && cursor.seek(Cr)
+        if !cursor.finished && cursor.seek(Cr.toByte.asInstanceOf[cursor.addressable.Operand])
         then cursor.grab(start, cursor.mark).also:
           cursor.next()
 

@@ -1186,17 +1186,22 @@ object Tel extends Tel2:
     // backing bytes valid; the previous arena array stays alive via those
     // Inlines and gets GC'd once all references to the prior Document are
     // released.
-    private val cached: ThreadLocal[Parser] =
-      new ThreadLocal[Parser]:
-        override def initialValue(): Parser = new Parser()
+    // The pool is a checker-opaque boundary (jacinta's Parser pool precedent):
+    // ThreadLocal cannot carry capture-typed arguments; per-thread single ownership is
+    // the pool's construction guarantee, reasserted at the rim by `borrow()`.
+    private val cached: ThreadLocal[AnyRef] =
+      new ThreadLocal[AnyRef]:
+        override def initialValue(): AnyRef = (new Parser()).asInstanceOf[AnyRef]
 
-    def parse(cursor: Cursor[Data, ?]): Tel.Document raises TelError =
-      val p = cached.get.nn
+    private def borrow(): Parser^ = cached.get.nn.asInstanceOf[Parser^]
+
+    def parse(cursor: Cursor[Data, {}]^): Tel.Document raises TelError =
+      val p = borrow()
       p.reset(cursor, Unset)
       p.parse()
 
-    def parse(cursor: Cursor[Data, ?], schema: Tels): Tel.Document raises TelError =
-      val p = cached.get.nn
+    def parse(cursor: Cursor[Data, {}]^, schema: Tels): Tel.Document raises TelError =
+      val p = borrow()
       p.reset(cursor, schema: Optional[Tels])
       p.parse()
 
@@ -1210,13 +1215,13 @@ object Tel extends Tel2:
     // significant wasted work, since the recorded offsets are never consulted.
     def parse(input: Data): Tel.Document raises TelError =
       import zephyrine.Lineation.untrackedData
-      val p = cached.get.nn
+      val p = borrow()
       p.reset(Cursor[Data](input), Unset)
       p.parse()
 
     def parse(input: Data, schema: Tels): Tel.Document raises TelError =
       import zephyrine.Lineation.untrackedData
-      val p = cached.get.nn
+      val p = borrow()
       p.reset(Cursor[Data](input), schema: Optional[Tels])
       p.parse()
 
@@ -1226,7 +1231,7 @@ object Tel extends Tel2:
     // bookkeeping, not the cursor's lineation.
     def parseTracked(input: Data): (Tel.Document, IArray[Int]) raises TelError =
       import zephyrine.Lineation.untrackedData
-      val p = cached.get.nn
+      val p = borrow()
       p.reset(Cursor[Data](input), Unset)
       p.tracking = true
 
@@ -1236,7 +1241,7 @@ object Tel extends Tel2:
     // contains. `parseDocuments` is eager; `parseStream` parses lazily on demand.
     def parseDocuments(input: Data): List[Tel.Document] raises TelError =
       import zephyrine.Lineation.untrackedData
-      val p = cached.get.nn
+      val p = borrow()
       p.reset(Cursor[Data](input), Unset)
       p.parseAllDocuments()
 
@@ -1323,7 +1328,9 @@ object Tel extends Tel2:
       var separator:     Boolean = false
 
 
-  private final class Parser():
+  // Holds an exclusive cursor in a field, so the parser is itself a capability
+  // (fresh per instance; one per thread via the pool).
+  private final class Parser() extends caps.ExclusiveCapability:
     import java.lang as jl
     import java.nio.charset.StandardCharsets
     import scala.language.unsafeNulls
@@ -1343,7 +1350,7 @@ object Tel extends Tel2:
     // the parser is cached per-thread and reset across calls. `reset()`
     // re-binds both before each `parse()` invocation.
 
-    private var cursor: Cursor[Data, ?] = null.asInstanceOf[Cursor[Data, ?]]
+    private var cursor: Cursor[Data, {}]^ = null.asInstanceOf[Cursor[Data, {}]^]
     private var schema: Optional[Tels] = Unset
     private var bytes:  Array[Byte] = null.asInstanceOf[Array[Byte]]
     private var pos:    Int = 0
@@ -1838,7 +1845,7 @@ object Tel extends Tel2:
     // because previously-parsed Inlines reference the old one — we cannot
     // overwrite their bytes. The keyword-fingerprint cache is preserved
     // across resets so frequent keywords stay interned.
-    private[stratiform] def reset(c: Cursor[Data, ?], s: Optional[Tels]): Unit =
+    private[stratiform] def reset(c: Cursor[Data, {}]^, s: Optional[Tels]): Unit =
       cursor = c
       schema = s
       bytes  = null.asInstanceOf[Array[Byte]]

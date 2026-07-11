@@ -427,7 +427,7 @@ object internal:
     // wants a `Bcd` instead of a single-Long packing. Skips the
     // `Bcd.Builder` allocation and the `seedFromLong` re-walk; the layout
     // is fixed (1 header + 1 data word).
-    private[jacinta] inline def fromContent15(content: Long, negative: Boolean): Bcd =
+    private[jacinta] def fromContent15(content: Long, negative: Boolean): Bcd =
       val arr = new Array[Double](2)
       arr(0) = packHeaderDouble(negative, 15)
       arr(1) = packDataDouble(content)

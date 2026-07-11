@@ -47,7 +47,7 @@ object Linefeed:
       cursor.hold:
         val start = cursor.mark
 
-        if !cursor.finished && cursor.seek(Lf)
+        if !cursor.finished && cursor.seek(Lf.toByte.asInstanceOf[cursor.addressable.Operand])
         then cursor.grab(start, cursor.mark).also(cursor.next())
         else if cursor.mark == start then Unset else cursor.grab(start, cursor.mark)
 

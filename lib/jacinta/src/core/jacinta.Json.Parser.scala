@@ -1083,7 +1083,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
         if nibbles <= Bcd.MaxBcdLongNibbles then
           Bcd.packBcdLong(content, nibbles, negative)
         else
-          Bcd.fromContent15(content, negative)
+          Bcd.fromContent15(content, negative).asInstanceOf[Bcd]  // frozen: built fresh, immutable after return
       else
         bcdBuilder.finish(negative).asInstanceOf[Bcd]  // frozen: Bcd is opaque over a post-finish-immutable array
     else if bcdValid then
