@@ -33,16 +33,24 @@
 package xenophile
 
 import anticipation.*
+import fulminate.*
 import gossamer.*
+
+object WitError:
+  // The failing case's lower-kebab-case name (as a `WitCase` would spell it), recovered from the
+  // error value's class.
+  private def nameOf(value: Any): Text =
+    val simple = value.getClass.getSimpleName.nn.tt
+    val stripped = if simple.ends(t"$$") then simple.skip(1, Rtl) else simple
+    stripped.uncamel.kebab
 
 // The `err` arm of a WIT `result<…>`, raised by `invoke`'s decoder. The error value (e.g. a case
 // of `wasi:filesystem`'s `error-code`) is held untyped, so this module never names its
 // (Wasm-only) class; `name` recovers which case it is — the case's lower-kebab-case name, as a
 // `WitCase` would spell it — so callers can translate failures into their own error vocabulary.
-class WitError(val value: Any) extends RuntimeException:
-  def name: Text =
-    val simple = value.getClass.getSimpleName.nn.tt
-    val stripped = if simple.ends(t"$$") then simple.skip(1, Rtl) else simple
-    stripped.uncamel.kebab
+// Raised from generated code, where no `Diagnostics` can be summoned, so it supplies its own.
+case class WitError(value: Any)
+extends Error(m"the WIT import returned the error ${WitError.nameOf(value)}")
+  ( using errorDiagnostics.emptyDiagnostics ):
 
-  override def getMessage: String = "WIT import returned an error: " + name.s
+  def name: Text = WitError.nameOf(value)
