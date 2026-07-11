@@ -65,7 +65,9 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
 
   def parseXylophone(text: Text): Document[Xml] = unsafely(text.load[Xml])
 
-  def parseXylophoneTracked(text: Text): Xml.Tracked = unsafely(Xml.parseTracked(text))
+  def parseXylophoneTracked(text: Text): Document[Xml] =
+    import zephyrine.parsing.trackPositions
+    unsafely(text.load[Xml])
 
   def parseScalaXml(text: String): scala.xml.Elem = scala.xml.XML.loadString(text)
 

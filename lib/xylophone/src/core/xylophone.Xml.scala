@@ -561,46 +561,51 @@ object Xml extends Tag.Container
       XmlParser.fromIterator(input.iterator).parseXml(headers0 = false).as[value]
       . asInstanceOf[value in Xml]
 
-  given loadable: (schema: XmlSchema) => (tactic: Tactic[ParseError])
+  // The single place `.load[Xml]` branches on position tracking. With
+  // `parsing.trackPositions` in scope the parser records source positions and the
+  // resulting `Document[Xml]` carries them in its `Header` metadata, locatable via
+  // `document.locate(path)`; otherwise the untracked throughput path is unchanged.
+  // `headers0 = true` accepts a leading `<?xml …?>` declaration, which is lifted
+  // into the metadata `Header` and dropped from the tree, so the tracked value has
+  // the same shape as a header-less load (keeping it aligned with the index, which
+  // is built from the root element alone).
+  given loadable: (schema: XmlSchema) => (tactic: Tactic[ParseError], tracking: PositionTracking)
   =>  ((Xml is Loadable by Text)^{tactic}) = stream =>
-    XmlParser.fromIterator(stream.iterator).parseXml(headers0 = true) match
+    val parser = tracking match
+      case PositionTracking.On  => XmlParser.fromIteratorTracked(stream.iterator)
+      case PositionTracking.Off => XmlParser.fromIterator(stream.iterator)
+
+    val parsed = parser.parseXml(headers0 = true)
+
+    val positionIndex: Optional[PositionIndex] = tracking match
+      case PositionTracking.On =>
+        val index = parser.rootIndex
+        PositionIndex(if index == null then IArray.empty[Int] else index)
+
+      case PositionTracking.Off =>
+        Unset
+
+    def withIndex(header: Header): Header = header.copy(positionIndex = positionIndex)
+
+    parsed match
       case Fragment((header: Header), rest*) =>
         if rest.nil then abort(ParseError(Xml, Position(1.u, 1.u), Issue.BadDocument))
-        else if rest.length == 1 then Document(rest.head, header)
-        else Document(Fragment(rest*), header)
+        else if rest.length == 1 then Document(rest.head, withIndex(header))
+        else Document(Fragment(rest*), withIndex(header))
 
       case _: Header =>
         abort(ParseError(Xml, Position(1.u, 1.u), Issue.BadDocument))
 
       case fragment: Fragment =>
-        Document(fragment, Xml.header)
+        Document(fragment, withIndex(Xml.header))
 
       case node: Node =>
-        Document(node, Xml.header)
+        Document(node, withIndex(Xml.header))
 
   // `^{monitor}` only: `Probate` is not capture-tracked (see rep/REVIEW.md).
   given streamable: (monitor: Monitor, probate: Probate)
   =>  ((Document[Xml] is Streamable by Text)^{monitor}) =
     emit(_).to(LazyList)
-
-  // Tracking-mode parse entry points. Build the parser with a line-feed
-  // tracking `Lineation` in its cursor, parse, then bundle the resulting
-  // `Xml` with the position index the parser emitted along the way.
-  // `positionIndex` is `Unset` if the input contains no root element.
-  def parseTracked(text: Text)(using schema: XmlSchema, tactic: Tactic[ParseError]): Tracked =
-    val parser = XmlParser.fromTextTracked(text)
-    val xml = parser.parseXml(headers0 = false)
-    val index = parser.rootIndex
-    Tracked(xml, PositionIndex(if index == null then IArray.empty[Int] else index))
-
-  def parseTracked
-    (input: Iterator[Text])(using schema: XmlSchema, tactic: Tactic[ParseError])
-  :   Tracked =
-
-    val parser = XmlParser.fromIteratorTracked(input)
-    val xml = parser.parseXml(headers0 = false)
-    val index = parser.rootIndex
-    Tracked(xml, PositionIndex(if index == null then IArray.empty[Int] else index))
 
   def emit(document: Document[Xml])
     ( using formatting: Formatting, monitor: Monitor, probate: Probate )
@@ -717,7 +722,7 @@ object Xml extends Tag.Container
 
         producer.put("?>")
 
-      case Header(version, encoding, standalone) =>
+      case Header(version, encoding, standalone, _) =>
         producer.put("<?xml version=\"")
         producer.put(version)
         producer.put("\"")
@@ -881,7 +886,7 @@ object Xml extends Tag.Container
   // relative to the start of the containing element descriptor, so any
   // slice extracted at a descriptor boundary is itself a valid
   // `PositionIndex`. See `XmlParser` (tracking mode) for the layout and
-  // `Xml.Tracked#locate` for the navigation algorithm.
+  // `Xml.Locator#walk` for the navigation algorithm.
   opaque type PositionIndex = IArray[Int]
 
   object PositionIndex:
@@ -892,21 +897,24 @@ object Xml extends Tag.Container
 
   // Focus value tracked by Xylophone's path-aware decoders / encoders.
   // `path` is the XPath to the current node; `position` is the source
-  // line/column/length, populated when the root `Xml` was produced by
-  // `parseTracked` and `Unset` otherwise.
+  // line/column/length, populated when the document was loaded with
+  // `parsing.trackPositions` in scope and `Unset` otherwise.
   case class Focus(path: XPath, position: Optional[Xml.Position] = Unset)
   derives CanEqual:
 
-    def withPosition(tracked: Tracked): Focus =
-      copy(position = tracked.locate(path))
+    def withPosition(document: Document[Xml]): Focus =
+      copy(position = document.locate(path))
 
-  object Tracked:
+  // Walks a `Document[Xml]`'s position index (held in its `Header` metadata)
+  // to resolve an `XPath` to a source `Position`; see the descriptor-layout
+  // comment on `PositionIndex` below.
+  private object Locator:
     // `XPath.path.descent` is stored leaf-first (Serpentine's `/`
     // prepends), so the walker iterates it in reverse to descend
     // root-to-leaf. The XPath convention is `/foo/bar/@attr`, so the
     // first element step names the *root* element itself (no descent
     // into children) and subsequent steps descend.
-    private def walk
+    private[xylophone] def walk
       ( xml:      Xml,
         data:     IArray[Int],
         offset:   Int,
@@ -1008,8 +1016,9 @@ object Xml extends Tag.Container
 
       found
 
-  // Wraps a parsed `Xml` with a parallel position index produced by
-  // `parseTracked`. Untracked parses keep returning bare `Xml`.
+  // The position index is produced when a document is loaded with
+  // `parsing.trackPositions` in scope, and held in the `Document[Xml]`'s
+  // `Header` metadata; untracked loads carry `Unset`.
   //
   // Element descriptor layout:
   //
@@ -1024,23 +1033,38 @@ object Xml extends Tag.Container
   // All offsets are relative to the start of the containing element
   // descriptor; any slice at a descriptor boundary is itself a valid
   // `PositionIndex`.
-  case class Tracked(value: Xml, positionIndex: PositionIndex):
-    def locate(path: XPath): Optional[Xml.Position] =
-      Tracked.walk(value, positionIndex.ints, 0, path.path.descent.toIndexedSeq, 0)
 
-    // Decode like `Xml#as` but also populate `position` on every
-    // accumulated `Xml.Focus` by looking up its XPath against this
-    // tracked root's position index. Outside `validate[Xml.Focus]` the
-    // ambient `Foci` is a no-op and `supplement` does nothing, so this
-    // call stays cost-free.
-    def as[result: Decodable in Xml]: result tracks Xml.Focus =
-      val decoded = value match
+  // Resolves an `XPath` to the source `Position` recorded in a tracked
+  // `Document[Xml]`'s `PositionIndex`. Exposed uniformly as
+  // `document.locate(path)` through zephyrine's `Positionable`; returns `Unset`
+  // for a document loaded without `parsing.trackPositions`.
+  given positionable: Document[Xml] is Positionable by XPath to Xml.Position =
+    new Positionable:
+      type Self    = Document[Xml]
+      type Operand = XPath
+      type Result  = Xml.Position
+
+      def locate(document: Document[Xml], path: XPath): Optional[Xml.Position] =
+        document.metadata.positionIndex.let: index =>
+          Locator.walk(document.root, index.ints, 0, path.path.descent.toIndexedSeq, 0)
+
+      // XML has no distinct key positions, so there is nothing to locate by key.
+      def locateKey(document: Document[Xml], path: XPath): Optional[Xml.Position] = Unset
+
+  // Decode a tracked `Document[Xml]` like `Xml#as`, but also populate `position`
+  // on every accumulated `Xml.Focus` by looking its XPath up against the document's
+  // position index. Named `asTracked` rather than `as` because `as` is a generic
+  // decoder extension (and clashes with import-renaming syntax); outside
+  // `validate[Xml.Focus]` the ambient `Foci` is a no-op, so this stays cost-free
+  // and yields `Unset` positions for an untracked document.
+  extension (document: Document[Xml])
+    def asTracked[result: Decodable in Xml]: result tracks Xml.Focus =
+      val decoded = document.root match
         case Fragment(inner) => result.decoded(inner)
         case xml: Xml        => result.decoded(xml)
 
       val foci = summon[Foci[Xml.Focus]]
-      val tracked = this
-      foci.supplement(foci.length, _.let(_.withPosition(tracked)).vouch)
+      foci.supplement(foci.length, _.let(_.withPosition(document)).vouch)
       decoded
 
   enum Hole:
@@ -1226,7 +1250,7 @@ object Xml extends Tag.Container
     // hold attribute descriptors back-to-back and their end positions
     // within `attrDescs`. `childDescs` and `childEnds` hold child element
     // descriptors / their end positions the same way. See the layout
-    // comment on `Xml.Tracked`.
+    // comment on `Xml.PositionIndex`.
     private def emitElementDescriptor
       ( out:         scala.collection.mutable.ArrayBuffer[Int],
         attrDescs:   scala.collection.mutable.ArrayBuffer[Int],
@@ -1474,18 +1498,25 @@ object Xml extends Tag.Container
           while more && peek != ';' do
             val c = peek
 
+            // Reuse the digit-value subtraction as its own range check: the
+            // difference, masked to 16 bits by `.toChar`, is in range iff small,
+            // so the value the decoder already needs doubles as the bounds test.
+            // The hex-letter subtraction is only computed when `c` isn't a digit.
+            val dec = (c - '0').toChar
+
             value =
-              if '0' <= c && c <= '9' then 16*value + (c - '0')
-              else if 'a' <= c && c <= 'f' then 16*value + (c - 87)
-              else if 'A' <= c && c <= 'F' then 16*value + (c - 55)
-              else fail(Issue.Unexpected(c))
+              if dec <= 9 then 16*value + dec
+              else
+                val hex = ((c | 0x20) - 'a').toChar
+                if hex <= 5 then 16*value + hex + 10 else fail(Issue.Unexpected(c))
 
             advance()
         else
           while more && peek != ';' do
             val c = peek
+            val dec = (c - '0').toChar
 
-            if '0' <= c && c <= '9' then value = 10*value + (c - '0')
+            if dec <= 9 then value = 10*value + dec
             else fail(Issue.Unexpected(c))
 
             advance()
@@ -2380,8 +2411,8 @@ sealed into trait Xml extends Dynamic, Topical, Documentary, Formal:
   // via the `decodable` summonFrom (textual decoder, else Wisteria
   // derivation). Errors registered inside the decoder carry `Xml.Focus`
   // values describing the XPath of the failing field. Position information
-  // stays `Unset`; use `Xml.Tracked#as` against a `parseTracked` root if
-  // you also want source line / column.
+  // stays `Unset`; decode a `Document[Xml]` loaded with `parsing.trackPositions`
+  // in scope (`document.as[T]`) if you also want source line / column.
   def as[result: Decodable in Xml]: result tracks Xml.Focus = this match
     case Fragment(value) => result.decoded(value)
     case xml: Xml        => result.decoded(xml)
@@ -2523,7 +2554,17 @@ case class Fragment(nodes: Node*) extends Xml:
     case node: Xml         => nodes.length == 1 && nodes(0) == node
     case _                 => false
 
-case class Header(version: Text, encoding: Optional[Text], standalone: Optional[Boolean])
+// The `positionIndex` rides in the document `Metadata` (a `Document[Xml]`'s
+// `metadata` is its `Header`), carrying the position index produced when the
+// document was loaded with `parsing.trackPositions` in scope. It is deliberately
+// excluded from `equals`/`hashCode`/serialization: it is parse provenance, not
+// part of the document's identity, so a tracked and an untracked load of the same
+// source compare equal.
+case class Header
+    ( version:       Text,
+      encoding:      Optional[Text],
+      standalone:    Optional[Boolean],
+      positionIndex: Optional[Xml.PositionIndex] = Unset )
 extends Node:
   override def hashCode: Int =
     ((version.hashCode*31 + encoding.hashCode)*31 + standalone.hashCode)*31 + 0x48646572
@@ -2531,7 +2572,7 @@ extends Node:
   override def equals(that: Any): Boolean = that match
     case Fragment(header: Header) => equals(header)
 
-    case Header(version0, encoding0, standalone0) =>
+    case Header(version0, encoding0, standalone0, _) =>
       version0 == version && encoding0 == encoding && standalone0 == standalone
 
     case _ =>

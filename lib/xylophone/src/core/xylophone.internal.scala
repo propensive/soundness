@@ -593,7 +593,7 @@ object internal:
       def serialize(xml: Xml): Seq[Expr[Node]] = xml match
         case Fragment(children*) => children.flatMap(serialize(_))
 
-        case Header(version, encoding, standalone) =>
+        case Header(version, encoding, standalone, _) =>
           val encoding2: Expr[Optional[Text]] =
             if encoding == Unset then '{Unset} else Expr(encoding.asInstanceOf[Text])
 

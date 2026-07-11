@@ -36,6 +36,7 @@ import soundness.*
 
 import strategies.throwUnsafely
 import errorDiagnostics.stackTracesDiagnostics
+import parsing.trackPositions
 
 case class DPerson(name: Text, age: Int, email: Text) derives CanEqual
 case class DContact(person: DPerson, company: Text) derives CanEqual
@@ -231,8 +232,8 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
           Tagged(items :+ (focus, line, column))
 
       inline def validateWithPositions[result]
-        ( tracked: Xml.Tracked )
-        ( inline decode: Xml.Tracked => result raises XmlError tracks Xml.Focus )
+        ( document: Document[Xml] )
+        ( inline decode: Document[Xml] => result raises XmlError tracks Xml.Focus )
       :   List[(Text, Optional[Int], Optional[Int])] =
         Validate[Tagged, [r] =>> r raises XmlError, Xml.Focus]
           ( Tagged(),
@@ -241,12 +242,12 @@ object DecoderTests extends Suite(m"Xylophone case-class decoder tests"):
                 accrual + ( prior.let(_.path.encode).or(t"#"),
                             position.let(_.line.n1),
                             position.let(_.column.n1) ) } )
-        . protect(decode(tracked)).items
+        . protect(decode(document)).items
 
       test(m"Missing-field error on a tracked Xml reports the parent's position"):
         val source = t"<root>\n  <name>Alice</name>\n  <age>30</age>\n</root>"
-        val tracked = Xml.parseTracked(source)
-        val results = validateWithPositions(tracked)(_.as[DPerson])
+        val tracked = source.load[Xml]
+        val results = validateWithPositions(tracked)(_.asTracked[DPerson])
         results.find(_(0) == t"/email[1]").map(_(1))
       . assert(_ == Some(Unset))
 
