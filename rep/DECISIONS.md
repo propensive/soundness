@@ -1386,3 +1386,10 @@ keep per-file separationChecking imports; the rollout targets CONSUMER modules
 (which hold capabilities but never implement storage). Also: IArray fresh-ness
 under sepcheck is an opacity artifact (`caps.freeze` accepts `Mutable | Array[?]`
 and cannot see through the opaque type) — upstream stdlib-annotation gap.
+
+honeycomb.core's missing settings.cc is DELIBERATE, now documented in build.mill:
+flipping it yields 12 errors, all in the macro-quote/CC unification family
+(quoted type patterns `'{$renderable: Renderable}` and `'[Map[Text, ...]]`
+against capture-decorated Expr types, plus Aggregable given results capturing
+anonymous evidence). Needs a dedicated leg (possibly fork work on quote-pattern
+capture unification); parked with a pointer.
