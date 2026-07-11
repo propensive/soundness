@@ -1265,3 +1265,36 @@ the `Showable` given hoists `val stream = request.body()` before `.lazyList`;
 `Http.emptyBody(): (Stream[Data] over Credit)^`. Ascribe vals holding SAM lambdas
 (`val body: Spring[Data] = () => ...`) or the val infers the raw function type
 and fails at use (obligatory.GrpcChannel).
+
+## LazyList-bridge removal: stage map (2026-07-11, in progress)
+
+DONE (committed 72ecfb4aaa, 34aac9e368): all whole-body `.lazyList.read[...]`
+reads → `memoize` (Http Showable/query, synesthesia dispatch, cordillera h2
+payload, wasi payload, telekinesis/scintillate/apoplexy tests); Postable.preview
+= one bounded refill + materialize (no full drain); apoplexy test Recorder takes
+`Spring[Data]^`; Spring/memoize/foreachWindow added to soundness umbrella exports
+(consume-extension export forwarders work — flowTo precedent; only dependent-
+typed ones need hand-written forwarders).
+
+REMAINING (each is a real refactor; convert one, compile, test, commit):
+1. `Http.Request.serialize` + `Response` wire form (Http.scala ~278/292/678):
+   return LazyList[Data] built from `request.body().lazyList` — the wire form
+   should become kernel-native (Stream^ or write-to-Intake); consumed by coaxial
+   Transmissible + jvm socket path. Content-Length probe forces ≤2 cells today.
+2. `Http.Body`: the `Streaming(LazyList[Data])` arm and `def stream: LazyList`
+   go away entirely once no consumer needs them (Flowing(Spring) is the native
+   arm; scintillate/perihelion/cordillera pattern-match Body cases).
+3. telekinesis_jvm:82 `bodyFn().lazyList.inputStream`: needs a kernel-native
+   `Stream[Data]^ → java.io.InputStream` adapter (read() pulls via
+   refill/window/skip) — natural home turbulence, next to httpBody.
+4. scintillate.Acceptable:62 `Multipart.parse(request.body().lazyList, _)`:
+   convert Multipart to cursor/stream parsing.
+5. perihelion.Websocket:236 `Reader(() => request.body().lazyList, channel)`.
+6. Source2.streamableData/Text + Sink2.writableData/Text (transitional givens
+   deriving Source from Streamable / Sink from Writable, turbulence.Source
+   .scala:183 / Sink.scala:191): delete once modules summon native instances —
+   this is the real "Streamable in 44 files" tail; measure per-module fallout.
+7. Delete both `lazyList` defs in turbulence_core (114, 185) + the bridge tests
+   (turbulence_test:538 "lazyList view drains", "Streamable instance is a
+   Source through the bridge"); then sweep any `Http.Body.Streaming` stragglers.
+Then dual gates: make attest (3.9) + 3.10 clean gate.
