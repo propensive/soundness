@@ -83,6 +83,24 @@ object SchemaSignature:
     ( using Tactic[BintelError], Tactic[TelError] )
   :   Data =
 
+    val (baseHash, layerHashes) = componentsOf(root, axiom)
+    encode(baseHash :: layerHashes)
+
+  // The component hashes a schema signature is built from: the base-schema hash `h₀`, together with
+  // one layer hash `h_i` per `layer` compound in source order (zip with `Tels.layers` for their
+  // names). `encode(baseHash :: layerHashes)` reproduces `fromDocument`; selecting a sublist of the
+  // layer hashes and re-encoding — `encode(baseHash :: chosen)` — yields the palimpsest of the base
+  // composed with just those layers.
+  def componentHashes(doc: Tel, axiom: Tels)
+    ( using Tactic[BintelError], Tactic[TelError] )
+  :   (Data, List[Data]) =
+
+    componentsOf(Tel.Type.assign(doc, axiom).asInstanceOf[Tel.Element.Node], axiom)
+
+  private def componentsOf(root: Tel.Element.Node, axiom: Tels)
+    ( using Tactic[BintelError], Tactic[TelError] )
+  :   (Data, List[Data]) =
+
     // Resolve the flat keyword index of "layer" and the Layer
     // RecordDefinition's struct from the axiom. If either is missing
     // the axiom does not describe schemas-with-layers; we still
@@ -112,7 +130,7 @@ object SchemaSignature:
 
       .or(Nil)
 
-    encode(baseHash :: layerHashes)
+    (baseHash, layerHashes)
 
   private def keywordIndexOf(element: Tel.Element): Optional[Int] = element match
     case Tel.Element.Node(idx, _, _)  => idx
