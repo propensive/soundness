@@ -178,7 +178,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
 
   def cursorSeekSpace(text: Text): Boolean =
     val c = Cursor(Iterator(text))
-    c.seek(' ')
+    c.seek(' '.asInstanceOf[c.addressable.Operand])
 
   def cursorTake64(text: Text): Int =
     val c = Cursor(Iterator(text))
@@ -198,7 +198,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
     val c = Cursor[Data](Iterator(data))
     var acc = 0
     while !c.finished do
-      val b = c.datum(using Unsafe) & 0xff
+      val b = c.datum(using Unsafe).asInstanceOf[Byte] & 0xff
       acc ^= b
       c.advance()
     acc
