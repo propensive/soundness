@@ -35,6 +35,7 @@ package turbulence
 import ambience.*, environments.javaEnvironment, systems.javaSystem
 import enigmatic.*, blockCipherMode.cbc, blockCipherPadding.pkcs7
 import gastronomy.providers.javaStdlibProvider, gastronomy.crypto.permitUnauthenticatedCrypto
+import parasite.*, threading.platformThreading, probates.panicProbate
 import anticipation.*
 import contingency.*, strategies.throwUnsafely
 import fulminate.*
@@ -287,6 +288,68 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
   def memoizeSingle: Int = Stream(input).memoize.length
 
+  // ── Example L: Conduit cross-thread hand-off ────────────────────────────────
+  // A bounded single-producer/single-consumer boundary: produce the 4 MB in
+  // 64 KiB chunks on one thread/fiber, consume on another. Soundness `Conduit`
+  // against the JDK `ArrayBlockingQueue`, FS2 `Channel` and ZIO `Queue`.
+  //
+  // Two asymmetries dominate and are the point of the comparison:
+  //   * Soundness `Conduit` COPIES data into fixed kernel-block buffers (its
+  //     bounded-memory guarantee) and re-chunks the 64 KiB inputs to the block
+  //     size, so it performs many small copying hand-offs; the queues pass the
+  //     chunk REFERENCES with zero copy.
+  //   * Soundness and the JDK use a real OS `Thread` producer; FS2/ZIO run the
+  //     producer as a fiber on the same carrier thread, avoiding OS
+  //     context-switch cost per hand-off.
+
+  def conduitSoundness: Long =
+    val (intake, stream) = Conduit[Data]()
+    val producer = new Thread(() =>
+      inputChunks.foreach(intake.put)
+      intake.finish())
+    producer.start()
+    var total = 0L
+    stream.foreachWindow((_, _, count) => total += count)
+    producer.join()
+    total
+
+  def conduitJdk: Long =
+    val queue = new java.util.concurrent.ArrayBlockingQueue[AnyRef](8)
+    val end = new Object
+    val producer = new Thread(() =>
+      inputChunks.foreach(chunk => queue.put(chunk.asInstanceOf[AnyRef]))
+      queue.put(end))
+    producer.start()
+    var total = 0L
+    var running = true
+    while running do
+      val item = queue.take()
+      if item eq end then running = false else total += item.asInstanceOf[Data].length
+    producer.join()
+    total
+
+  def conduitFs2: Long =
+    import cats.effect.unsafe.implicits.global
+    import cats.effect.IO, cats.syntax.all.*
+    val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).flatMap: channel =>
+      val produce =
+        inputChunks.foldLeft(IO.unit): (io, chunk) =>
+          io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[Array[Byte]])).void
+        *> channel.close.void
+      produce.start *> channel.stream.compile.fold(0L)((acc, chunk) => acc + chunk.size)
+    program.unsafeRunSync()
+
+  def conduitZio: Long =
+    runZio:
+      import zio.*, zio.stream.*
+      val source =
+        ZStream.fromIterable(inputChunks.map(c => Chunk.fromArray(c.asInstanceOf[Array[Byte]])))
+      for
+        queue <- Queue.bounded[Take[Nothing, Chunk[Byte]]](8)
+        _     <- source.runIntoQueue(queue).fork
+        total <- ZStream.fromQueue(queue).flattenTake.runFold(0L)((acc, c) => acc + c.size)
+      yield total
+
   // ── Example F: public `read` typeclass path vs the bare kernel ──────────────
   // `read[Data]`/`read[Text]` go through the `Readable`/`Source`/`Aggregable`
   // typeclass machinery; `memoize` is the raw kernel drain. The gap is what the
@@ -363,8 +426,12 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       val writeOk = writeToSink == input.length && rawWrite == input.length
       val hexOk = hexSoundness == hexJdk && hexSoundness == input.length*2
       val flowOk = flowToSink == input.length && memoizeSingle == input.length
-      ( roundtripOk, transcodeOk, readOk, base64Ok, readOk2, cursorOk, writeOk, hexOk, flowOk )
-    . assert(_ == (true, true, true, true, true, true, true, true, true))
+      val n = input.length.toLong
+      val conduitOk =
+        conduitSoundness == n && conduitJdk == n && conduitFs2 == n && conduitZio == n
+      ( roundtripOk, transcodeOk, readOk, base64Ok, readOk2, cursorOk, writeOk, hexOk, flowOk,
+        conduitOk )
+    . assert(_ == (true, true, true, true, true, true, true, true, true, true))
 
     suite(m"Gzip compression (4 MB)"):
       bench(m"Soundness  Stream.compress[Gzip]")
@@ -510,3 +577,17 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
       bench(m"Soundness  flowTo(sink)")(target = 1*Second, operationSize = size):
         '{ turbulence.Benchmarks.flowToSink }
+
+    suite(m"Conduit cross-thread hand-off (4 MB in 64 KiB chunks)"):
+      bench(m"Soundness  Conduit")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.conduitSoundness }
+
+      bench(m"JDK  ArrayBlockingQueue")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.conduitJdk }
+
+      bench(m"FS2  Channel.bounded")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.conduitFs2 }
+
+      bench(m"ZIO  Queue.bounded")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.conduitZio }
