@@ -1176,3 +1176,15 @@ separationChecking, CC-only units compiled in the same run exhibit sepcheck-flav
 typing (fresh/rd decorations on Array/IArray construction, Stateful classification
 demands) — the module effectively converts as a whole. Plan the per-module sweeps
 accordingly (the module is the gating unit, not the file).
+
+## Query per-module test failures: pre-existing, both compilers (2026-07-11)
+
+The 5 telekinesis Query tests (`Query.make(...).show` expecting url-encoding) fail in
+per-module `mill telekinesis.test.run` on a CLEAN build of MAIN with BOTH the
+pre-inlineupdate and current compilers (verified via a scratch worktree at c494765a6 and
+a temporary rebuild of the pre-fix compiler): `.show` resolves legerdemain's companion
+`Query is Showable` (debug format). The attested umbrella `soundness.Tests` bundle
+compiles all test sources together, where the implicit scope evidently differs. NOT a
+regression from this branch or from fork fix #11 (which is thereby exonerated of
+CC-only-unit effects). Left as-is; flagged for a separate look at the per-module/umbrella
+implicit-scope divergence.
