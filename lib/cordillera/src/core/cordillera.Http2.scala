@@ -139,16 +139,16 @@ object Http2:
       ((data(offset).toLong & 0xff) << 24) | ((data(offset + 1).toLong & 0xff) << 16) |
         ((data(offset + 2).toLong & 0xff) << 8) | (data(offset + 3).toLong & 0xff)
 
-    private def writeUint24(builder: scm.ArrayBuilder[Byte], value: Int): Unit =
-      builder.addOne(((value >>> 16) & 0xff).toByte)
-      builder.addOne(((value >>> 8) & 0xff).toByte)
-      builder.addOne((value & 0xff).toByte)
+    private def writeUint24(buf: ByteBuf^, value: Int): Unit =
+      buf.add(((value >>> 16) & 0xff).toByte)
+      buf.add(((value >>> 8) & 0xff).toByte)
+      buf.add((value & 0xff).toByte)
 
-    private def writeUint32(builder: scm.ArrayBuilder[Byte], value: Long): Unit =
-      builder.addOne(((value >>> 24) & 0xff).toByte)
-      builder.addOne(((value >>> 16) & 0xff).toByte)
-      builder.addOne(((value >>> 8) & 0xff).toByte)
-      builder.addOne((value & 0xff).toByte)
+    private def writeUint32(buf: ByteBuf^, value: Long): Unit =
+      buf.add(((value >>> 24) & 0xff).toByte)
+      buf.add(((value >>> 16) & 0xff).toByte)
+      buf.add(((value >>> 8) & 0xff).toByte)
+      buf.add((value & 0xff).toByte)
 
     // Decodes a single frame from `data` starting at `offset`; returns the frame and
     // the offset just past it. `data` must already contain the whole frame.
@@ -162,7 +162,8 @@ object Http2:
       val end = start + length
 
       if end > data.length then abort(Http2Error(Reason.Truncated))
-      val body = data.slice(start, end)
+      // Sealed: a fresh `IArray` slice is immutable; the opaque-Array artifact.
+      val body: anticipation.Data = caps.unsafe.unsafeAssumePure(data.slice(start, end))
 
       val frame = FrameType.fromId(typeId).lest(Http2Error(Reason.BadFrameType(typeId))) match
         case FrameType.Data =>
@@ -172,9 +173,10 @@ object Http2:
           val unpadded = stripPadding(body, flags)
           // A PRIORITY prefix (5 bytes: 4-byte dependency + 1-byte weight) precedes
           // the header block when the PRIORITY flag is set; skip it.
-          val block =
+          // Sealed: a fresh `IArray` slice is immutable; the opaque-Array artifact.
+          val block: anticipation.Data =
             if Flags.set(flags, Flags.Priority)
-            then unpadded.slice(5, unpadded.length)
+            then caps.unsafe.unsafeAssumePure(unpadded.slice(5, unpadded.length))
             else unpadded
 
           Frame.Headers
@@ -197,7 +199,11 @@ object Http2:
 
         case FrameType.GoAway =>
           val lastStreamId = (uint32(body, 0) & 0x7fffffffL).toInt
-          Frame.GoAway(lastStreamId, uint32(body, 4), body.slice(8, body.length))
+          Frame.GoAway
+            ( lastStreamId,
+              uint32(body, 4),
+              // Sealed: the opaque-Array artifact.
+              caps.unsafe.unsafeAssumePure(body.slice(8, body.length)) )
 
         case FrameType.WindowUpdate =>
           Frame.WindowUpdate(streamId, (uint32(body, 0) & 0x7fffffffL).toInt)
@@ -211,7 +217,8 @@ object Http2:
         if payload.length < 1 then abort(Http2Error(Reason.Truncated))
         val padLength = payload(0) & 0xff
         if 1 + padLength > payload.length then abort(Http2Error(Reason.Protocol(t"bad padding")))
-        payload.slice(1, payload.length - padLength)
+        // Sealed: the opaque-Array artifact.
+        caps.unsafe.unsafeAssumePure(payload.slice(1, payload.length - padLength))
 
     private def decodeSettings(payload: Bytes): List[Setting] raises Http2Error =
       if payload.length%6 != 0 then abort(Http2Error(Reason.Protocol(t"bad SETTINGS length")))
@@ -245,10 +252,20 @@ object Http2:
       case Frame.Ping(_, ack)                   => if ack then Flags.Ack else 0
       case _                                    => 0
 
-    private def frameBuilder(lambda: scm.ArrayBuilder[Byte] => Unit): Bytes =
-      val builder = scm.ArrayBuilder.make[Byte]
-      lambda(builder)
-      builder.result().immutable(using Unsafe)
+    private def frameBuilder(lambda: ByteBuf^ => Unit): Bytes =
+      val buf: ByteBuf^ = ByteBuf()
+      lambda(buf)
+      buf.data
+
+    private[cordillera] def serializeFrame(frame: Frame): Bytes =
+      val body = payload(frame)
+      val buf: ByteBuf^ = ByteBuf(9 + body.length)
+      writeUint24(buf, body.length)
+      buf.add(frameType(frame).id.toByte)
+      buf.add(frameFlags(frame).toByte)
+      writeUint32(buf, frame.stream.toLong & 0x7fffffffL)
+      buf.addAll(body)
+      buf.data
 
     private def payload(frame: Frame): Bytes = frame match
       case Frame.Headers(_, block, _, _)   => block
@@ -261,17 +278,23 @@ object Http2:
         frameBuilder(writeUint32(_, increment.toLong & 0x7fffffffL))
 
       case Frame.Settings(settings, _) =>
-        frameBuilder: builder =>
-          settings.each: setting =>
-            builder.addOne(((setting.id >>> 8) & 0xff).toByte)
-            builder.addOne((setting.id & 0xff).toByte)
-            writeUint32(builder, setting.value)
+        frameBuilder: buf =>
+          // A while-loop rather than `each`: the closure may not capture the
+          // exclusive buffer.
+          var rest = settings
+
+          while !rest.isEmpty do
+            val setting = rest.head
+            buf.add(((setting.id >>> 8) & 0xff).toByte)
+            buf.add((setting.id & 0xff).toByte)
+            writeUint32(buf, setting.value)
+            rest = rest.tail
 
       case Frame.GoAway(lastStreamId, errorCode, debug) =>
-        frameBuilder: builder =>
-          writeUint32(builder, lastStreamId.toLong & 0x7fffffffL)
-          writeUint32(builder, errorCode)
-          builder.addAll(debug.mutable(using Unsafe))
+        frameBuilder: buf =>
+          writeUint32(buf, lastStreamId.toLong & 0x7fffffffL)
+          writeUint32(buf, errorCode)
+          buf.addAll(debug)
 
   // An HTTP/2 frame (RFC 7540 §6): a 9-byte header — 24-bit length, 8-bit type, 8-bit
   // flags, 1 reserved bit + 31-bit stream id — followed by a type-specific payload.
@@ -311,15 +334,9 @@ object Http2:
       case WindowUpdate(id, _)    => id
 
     // Serialise the frame, including its 9-byte header.
-    def serialize: Bytes =
-      val body = Frame.payload(this)
-      val builder = scm.ArrayBuilder.make[Byte]
-      Frame.writeUint24(builder, body.length)
-      builder.addOne(Frame.frameType(this).id.toByte)
-      builder.addOne(Frame.frameFlags(this).toByte)
-      Frame.writeUint32(builder, stream.toLong & 0x7fffffffL)
-      builder.addAll(body.mutable(using Unsafe))
-      builder.result().immutable(using Unsafe)
+    // Delegates to the companion: builder mutation inside an enum-class method
+    // would force a `uses` clause onto the class itself.
+    def serialize: Bytes = Frame.serializeFrame(this)
 
   // A cleartext-h2c endpoint: a connectable address plus the `:authority` to send.
   // Used as the `Target` of the HTTP/2 `HttpClient` given, distinct from the
@@ -332,20 +349,26 @@ object Http2:
     // parked until the scope is torn down — so the response bodies it streams lazily
     // stay readable for the scope's lifetime instead of being closed per request.
     // Returns once the HTTP/2 handshake has completed.
-    def connect()(using Monitor, Probate): Http2Connection raises AsyncError =
-      val ready: Promise[Http2Connection] = Promise()
+    // Named using-parameters, de-sugared from `raises`: the result retains the
+    // connection's capabilities, so it must name its evidence rather than hide it.
+    def connect()(using monitor: Monitor, probate: Probate, asyncError: Tactic[AsyncError])
+    :   Http2Connection^{monitor, caps.any} =
+
+      // A neutral carrier: the connection (a capability) crosses the daemon and the
+      // promise as an `AnyRef`.
+      val ready: Promise[AnyRef] = Promise()
 
       daemon:
         try
           endpoint.duplex: duplex =>
             val connection = Http2Connection(duplex)
             connection.start()
-            ready.offer(connection)
+            ready.offer(connection.asInstanceOf[AnyRef])
             Promise[Unit]().await()
 
         finally if !ready.ready then ready.cancel()
 
-      ready.await()
+      ready.await().asInstanceOf[Http2Connection^{monitor, caps.any}]
 
   // An `HttpClient` that speaks HTTP/2 (prior-knowledge h2c) to an `Http2.Endpoint`.
   // It captures the ambient `Monitor`/`Probate` from this given's context — the
@@ -353,8 +376,12 @@ object Http2:
   // summoned inside a `supervise` scope. A fresh connection is opened per request for
   // now; pooling is a later refinement.
   object Client:
-    given http2: [endpoint] => (Monitor, Probate, Tactic[Http2Error], Tactic[AsyncError])
-    =>  HttpClient onto Endpoint[endpoint] =
+    given http2: [endpoint]
+    =>  ( monitor:    Monitor,
+          probate:    Probate,
+          http2Error: Tactic[Http2Error],
+          asyncError: Tactic[AsyncError] )
+    =>  ((HttpClient onto Endpoint[endpoint])^{monitor, http2Error, asyncError, caps.any}) =
 
       new HttpClient:
         type Target = Endpoint[endpoint]

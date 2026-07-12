@@ -62,6 +62,63 @@ object Http2Connection:
       ( Setting(SettingId.EnablePush.id, 0),
         Setting(SettingId.InitialWindowSize.id, 0x7fffffff) )
 
+  // Dispatch one decoded frame. Lives on the companion — taking the connection as a
+  // plain parameter — so the reader daemon's body stays free of `this` captures.
+  // The tactic is a plain using-parameter: a context-function result may not hide it.
+  private def dispatch(conn: Http2Connection, frame: Frame, decoder: Hpack)
+    ( using Tactic[Http2Error] )
+  :   Boolean =
+    frame match
+      case Frame.Settings(_, ack) =>
+        if !ack then
+          conn.send(Frame.Settings(Nil, ack = true))
+          conn.started.offer(())
+
+        true
+
+      case Frame.Ping(opaque, ack) =>
+        if !ack then conn.send(Frame.Ping(opaque, ack = true))
+        true
+
+      case Frame.GoAway(lastStreamId, _, _) =>
+        Log.warn(Http2Event.GoAway(lastStreamId))
+        false
+
+      case Frame.Headers(id, block, endStream, _) =>
+        conn.streams.get(id).foreach: stream =>
+          stream.acceptHeaders(decoder.decode(block))
+
+          if endStream then
+            stream.end()
+            conn.streams.remove(id)
+
+        true
+
+      case Frame.Data(id, payload, endStream) =>
+        conn.streams.get(id).foreach: stream =>
+          stream.acceptData(payload)
+          // Replenish the peer's flow-control window for what we consumed.
+          if payload.length > 0 then
+            conn.send(Frame.WindowUpdate(0, payload.length))
+            conn.send(Frame.WindowUpdate(id, payload.length))
+
+          if endStream then
+            stream.end()
+            conn.streams.remove(id)
+
+        true
+
+      case Frame.RstStream(id, _) =>
+        conn.streams.get(id).foreach: stream =>
+          stream.end()
+          conn.streams.remove(id)
+
+        true
+
+      case Frame.WindowUpdate(_, _) | Frame.Continuation(_, _, _) =>
+        true
+
+
 // One outbound request stream's receive side: a promise for its response header
 // block (resolved on the first HEADERS frame), a spool feeding the response body
 // (fed by DATA frames), and a promise for trailers (resolved on a second, end-stream
@@ -71,6 +128,8 @@ class Http2Stream(val id: Int):
   val headers: Promise[List[HpackEntry]] = Promise()
   val trailers: Promise[List[HpackEntry]] = Promise()
   val body: Spool[Bytes] = Spool()
+  // Untracked: written only by the connection's single reader daemon.
+  @caps.unsafe.untrackedCaptures
   private var headersSeen: Boolean = false
 
   // Record an incoming HEADERS block: the first becomes the response headers, a
@@ -105,58 +164,6 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
 
   private def send(frame: Frame): Unit = outbound.put(frame)
 
-  // Dispatch one decoded frame. Separated out so the read loop's `Tactic[Http2Error]`
-  // (for HPACK decoding) is supplied in one place.
-  private def dispatch(frame: Frame, decoder: Hpack): Boolean raises Http2Error =
-    frame match
-      case Frame.Settings(_, ack) =>
-        if !ack then
-          send(Frame.Settings(Nil, ack = true))
-          started.offer(())
-
-        true
-
-      case Frame.Ping(opaque, ack) =>
-        if !ack then send(Frame.Ping(opaque, ack = true))
-        true
-
-      case Frame.GoAway(lastStreamId, _, _) =>
-        Log.warn(Http2Event.GoAway(lastStreamId))
-        false
-
-      case Frame.Headers(id, block, endStream, _) =>
-        streams.get(id).foreach: stream =>
-          stream.acceptHeaders(decoder.decode(block))
-
-          if endStream then
-            stream.end()
-            streams.remove(id)
-
-        true
-
-      case Frame.Data(id, payload, endStream) =>
-        streams.get(id).foreach: stream =>
-          stream.acceptData(payload)
-          // Replenish the peer's flow-control window for what we consumed.
-          if payload.length > 0 then
-            send(Frame.WindowUpdate(0, payload.length))
-            send(Frame.WindowUpdate(id, payload.length))
-
-          if endStream then
-            stream.end()
-            streams.remove(id)
-
-        true
-
-      case Frame.RstStream(id, _) =>
-        streams.get(id).foreach: stream =>
-          stream.end()
-          streams.remove(id)
-
-        true
-
-      case Frame.WindowUpdate(_, _) | Frame.Continuation(_, _, _) =>
-        true
 
   // Tear the connection down after an unrecoverable reader/writer failure: unblock a
   // pending handshake, end every open stream so awaiters of its headers/body/trailers
@@ -178,29 +185,41 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
       case _ => tearDown(); Remedy.Accept
 
     . protect:
-        val writer = daemon:
-          duplex.send(zephyrine.Stream(connectionPreface))
+        // Everything the fibers touch is bound to locals (or neutral carriers)
+        // before they spawn: a daemon body may not capture the instance under
+        // construction, and its context function must stay pure.
+        val duplex0: Duplex = duplex
+        val outbound0: Spool[Frame] = outbound
+        val self: AnyRef = this.asInstanceOf[AnyRef]
 
-          outbound.stream.each: frame =>
-            duplex.send(zephyrine.Stream(frame.serialize))
+        val writer = daemon:
+          duplex0.send(zephyrine.Stream(connectionPreface))
+
+          outbound0.stream.each: frame =>
+            duplex0.send(zephyrine.Stream(frame.serialize))
+
+        val frameReaderRef: AnyRef = FrameReader(duplex0.source).asInstanceOf[AnyRef]
 
         val reader = daemon:
           // A protocol error tears down just this connection; throw it to the enclosing
           // `contain`, which runs `tearDown()` and stops the reader.
           given Tactic[Http2Error] = AsyncTactic()
 
-          val frameReader = FrameReader(duplex.stream.iterator)
+          val frameReader = frameReaderRef.asInstanceOf[FrameReader^]
           val decoder = Hpack()
           var continue = true
 
           while continue do (frameReader.next(): @unchecked) match
             case Unset        => continue = false
-            case frame: Frame => continue = dispatch(frame, decoder)
+            case frame: Frame =>
+              continue = dispatch(self.asInstanceOf[Http2Connection], frame, decoder)
 
         (writer, reader)
 
   // Perform the connection handshake: emit our SETTINGS and await the peer's.
-  def start(): Unit raises AsyncError =
+  // Plain using-parameters, de-sugared from `raises`: a context-function result may
+  // not hide `this`.
+  def start()(using Tactic[AsyncError]): Unit =
     send(Frame.Settings(initialSettings, ack = false))
     started.await()
 
@@ -226,7 +245,8 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
   // pseudo-headers the request type doesn't carry. Trailers (e.g. gRPC status) are
   // available afterwards via `stream.trailers`.
   def fetch(request: Http.Request, scheme: Text, authority: Text)
-  :   (Http2Stream, Http.Response) raises Http2Error raises AsyncError =
+    ( using Tactic[Http2Error], Tactic[AsyncError] )
+  :   (Http2Stream, Http.Response) =
 
     Log.fine(Http2Event.RequestSent(authority))
     val headerBlock = PseudoHeaders.request(request, scheme, authority)
@@ -240,7 +260,8 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
     (stream, PseudoHeaders.response(responseHeaders, stream.body.stream))
 
   def close(): Unit =
-    send(Frame.GoAway(0, ErrorCode.NoError.code, IArray.empty[Byte]))
+    // Sealed: a fresh empty `IArray` is immutable; the opaque-Array artifact.
+    send(Frame.GoAway(0, ErrorCode.NoError.code, caps.unsafe.unsafeAssumePure(IArray.empty[Byte])))
     outbound.stop()
     reader.cancel()
     writer.cancel()

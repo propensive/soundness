@@ -46,6 +46,53 @@ import Http2Error.Reason
 // owns one direction's dynamic table; a connection keeps one for decoding inbound
 // header blocks and one for encoding outbound ones, since the tables evolve
 // independently as fields are added.
+object Hpack:
+  // Builder mutation lives here rather than in class methods, which would force a
+  // `uses` clause onto the class itself.
+  private[cordillera] def encodeEntries(headers: List[HpackEntry], table: HpackTable): Data =
+    val buf: ByteBuf^ = ByteBuf()
+
+    // A while-loop rather than `each`: the closure may not capture the exclusive buffer.
+    var rest = headers
+
+    while !rest.isEmpty do
+      val header = rest.head
+      writeInteger(buf, 0x40, 6, 0)
+      writeString(buf, header.name)
+      writeString(buf, header.value)
+      table.add(header)
+      rest = rest.tail
+
+    buf.data
+
+  // Writes `value` into the low `prefix` bits of `first` (its high bits preserved),
+  // with continuation bytes as needed.
+  private def writeInteger(buf: ByteBuf^, first: Int, prefix: Int, value: Int): Unit =
+    val mask = (1 << prefix) - 1
+
+    if value < mask then buf.add((first | value).toByte) else
+      buf.add((first | mask).toByte)
+      var rest = value - mask
+
+      while rest >= 0x80 do
+        buf.add(((rest & 0x7f) | 0x80).toByte)
+        rest >>>= 7
+
+      buf.add(rest.toByte)
+
+  private def writeString(buf: ByteBuf^, text: Text): Unit =
+    // Sealed: fresh `IArray`s are immutable; the opaque-Array artifact.
+    val raw: Data = caps.unsafe.unsafeAssumePure(text.s.getBytes("US-ASCII").nn.immutable(using Unsafe))
+    val huffed: Data = caps.unsafe.unsafeAssumePure(Huffman.encode(raw))
+
+    // Use whichever encoding is shorter (RFC permits either); flag Huffman in bit 7.
+    if huffed.length < raw.length then
+      writeInteger(buf, 0x80, 7, huffed.length)
+      buf.addAll(huffed)
+    else
+      writeInteger(buf, 0, 7, raw.length)
+      buf.addAll(raw)
+
 class Hpack(maxTableSize: Int = 4096):
   private val table = HpackTable(maxTableSize)
 
@@ -75,23 +122,6 @@ class Hpack(maxTableSize: Int = 4096):
 
       (result, pos)
 
-  // Writes `value` into the low `prefix` bits of `first` (its high bits preserved),
-  // with continuation bytes as needed.
-  private def writeInteger(builder: scm.ArrayBuilder[Byte], first: Int, prefix: Int, value: Int)
-  :   Unit =
-
-    val mask = (1 << prefix) - 1
-
-    if value < mask then builder.addOne((first | value).toByte) else
-      builder.addOne((first | mask).toByte)
-      var rest = value - mask
-
-      while rest >= 0x80 do
-        builder.addOne(((rest & 0x7f) | 0x80).toByte)
-        rest >>>= 7
-
-      builder.addOne(rest.toByte)
-
   // ─── string literal (RFC 7541 §5.2) ───────────────────────────────────────
   //
   // A length-prefixed octet sequence; the prefix's high bit flags Huffman coding.
@@ -99,22 +129,11 @@ class Hpack(maxTableSize: Int = 4096):
     val huffman = (data(offset) & 0x80) != 0
     val (length, start) = readInteger(data, offset, 7)
     if start + length > data.length then abort(Http2Error(Reason.Truncated))
-    val raw = data.slice(start, start + length)
-    val decoded = if huffman then Huffman.decode(raw) else raw
+    // Sealed: fresh `IArray`s are immutable; fresh-ness is the opaque-Array artifact.
+    val raw: Data = caps.unsafe.unsafeAssumePure(data.slice(start, start + length))
+    val decoded: Data = if huffman then caps.unsafe.unsafeAssumePure(Huffman.decode(raw)) else raw
 
     (decoded.utf8, start + length)
-
-  private def writeString(builder: scm.ArrayBuilder[Byte], text: Text): Unit =
-    val raw = text.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
-    val huffed = Huffman.encode(raw)
-
-    // Use whichever encoding is shorter (RFC permits either); flag Huffman in bit 7.
-    if huffed.length < raw.length then
-      writeInteger(builder, 0x80, 7, huffed.length)
-      builder.addAll(huffed.mutable(using Unsafe))
-    else
-      writeInteger(builder, 0, 7, raw.length)
-      builder.addAll(raw.mutable(using Unsafe))
 
   // ─── decode a complete header block ────────────────────────────────────────
 
@@ -167,13 +186,6 @@ class Hpack(maxTableSize: Int = 4096):
   // literal (Huffman-or-raw) name and value. Correct and interoperable; does not
   // yet exploit static-table name matches. Pseudo-headers must already be ordered
   // ahead of regular headers by the caller (RFC 7540 §8.1.2.1).
-  def encode(headers: List[HpackEntry]): Data =
-    val builder = scm.ArrayBuilder.make[Byte]
-
-    headers.each: header =>
-      writeInteger(builder, 0x40, 6, 0)
-      writeString(builder, header.name)
-      writeString(builder, header.value)
-      table.add(header)
-
-    builder.result().immutable(using Unsafe)
+  // Delegates to the companion: builder mutation inside a class method would
+  // force a `uses` clause onto the class itself.
+  def encode(headers: List[HpackEntry]): Data = Hpack.encodeEntries(headers, table)

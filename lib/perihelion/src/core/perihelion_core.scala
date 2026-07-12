@@ -130,11 +130,15 @@ extension [self](value: self)
 // hostname verification by default).
 type WsUrl = Url["ws" | "wss"]
 
-// Split a byte stream at the first CRLFCRLF: returns the header block (up to and
-// including the terminator) and the remaining stream (the trailing bytes of the chunk
-// that completed it, then the untouched rest). Consumes only as many chunks as needed
-// to see the terminator, so it never reads past the `101` into a not-yet-sent frame.
-private def readHandshake(chunks: LazyList[Data], acc: Data): (Data, LazyList[Data]) =
+// Reads the handshake header block — up to and including the CRLFCRLF terminator —
+// from the connection's pull endpoint, consuming *exactly* the header bytes: anything
+// after the terminator stays unread in the endpoint's window, so this never reads past
+// the `101` into a not-yet-sent frame, and the endpoint continues with the first frame
+// bytes. On EOF before the terminator, returns whatever arrived.
+private def readHandshake(input: (zephyrine.Stream[Data] over zephyrine.Credit)^)
+  ( using buffering: zephyrine.Buffering )
+:   Data =
+
   def crlfCrlf(data: Data): Int =
     def matches(i: Int): Boolean =
       data(i) == 13 && data(i + 1) == 10 && data(i + 2) == 13 && data(i + 3) == 10
@@ -144,18 +148,29 @@ private def readHandshake(chunks: LazyList[Data], acc: Data): (Data, LazyList[Da
 
     recur(0)
 
-  val marker = crlfCrlf(acc)
+  val demand = zephyrine.Credit(buffering.capacity(zephyrine.Substrate.Bytes))
+  var acc: Data = Data()
+  var result: Optional[Data] = Unset
 
-  if marker >= 0 then
-    // Sealed: see `Frame.closeData` — the opaque-Array artifact.
-    val leftover: Data = caps.unsafe.unsafeAssumePure(acc.drop(marker + 4))
-    val head: Data = caps.unsafe.unsafeAssumePure(acc.take(marker + 4))
-    (head, if leftover.length > 0 then leftover #:: chunks else chunks)
-  else if chunks.isEmpty then
-    (acc, LazyList())
-  else
-    // Sealed: see `Frame.closeData` — the opaque-Array artifact.
-    readHandshake(chunks.tail, caps.unsafe.unsafeAssumePure(acc ++ chunks.head))
+  while result.absent do input.refill(demand) match
+    case count: Int =>
+      if count > 0 then
+        val window = input.addressable.materialize(input.window(using Unsafe), input.start, count)
+        // Sealed: see `Frame.closeData` — the opaque-Array artifact.
+        val acc2: Data = caps.unsafe.unsafeAssumePure(acc ++ window)
+        val marker = crlfCrlf(acc2)
+
+        if marker >= 0 then
+          input.skip(marker + 4 - acc.length)
+          result = caps.unsafe.unsafeAssumePure(acc2.take(marker + 4))
+        else
+          input.skip(count)
+          acc = acc2
+
+    case _ =>
+      result = acc
+
+  result.vouch
 
 // Makes a `WsUrl` a Coaxial client transport, so a WebSocket client is just Coaxial's
 // own client loop: `url.react(initialState) { message => … }`, symmetric with the
@@ -235,7 +250,14 @@ given wsClient: ( online:            Online,
       // which would block here, since a server that only sends the `101` has no frame to
       // send until we do. So split the header block off the stream and parse just that
       // finite slice; anything after the terminator is the first inbound frame bytes.
-      val (headerBytes, inbound) = readHandshake(duplex.stream, Data())
+      // A neutral reference: the endpoint is read here (for the handshake) and then
+      // stored on the connection for the frame reader; a capability-typed binding
+      // would be hidden from the later use by the statement rule.
+      val inboundRef: AnyRef = duplex.source.asInstanceOf[AnyRef]
+
+      val headerBytes =
+        readHandshake(inboundRef.asInstanceOf[(zephyrine.Stream[Data] over zephyrine.Credit)^])
+
       val response: Http.Response = Http.Response.parse(LazyList(headerBytes))
 
       if response.status != Http.SwitchingProtocols then
@@ -255,11 +277,20 @@ given wsClient: ( online:            Online,
       // reader (`receive`, over `inbound`) share the connection.
       val pump: Daemon = daemon(duplex.send(channel.stream))
 
-      WsConnection(duplex, channel, masking, inbound, pump)
+      WsConnection(duplex, channel, masking, inboundRef, pump)
 
-    def receive(connection: WsConnection): LazyList[Data] =
+    def receive(connection: WsConnection)
+    :   (zephyrine.Stream[Data] over zephyrine.Credit)^{this, caps.any} =
       given Masking = connection.masking
-      Reader(() => zephyrine.Stream(connection.inbound.iterator), connection.channel).messages.map(_.bytes)
+
+      val messages =
+        Reader
+          ( () => connection.inbound.asInstanceOf[(zephyrine.Stream[Data] over zephyrine.Credit)^],
+            connection.channel )
+        . messages.map(_.bytes)
+
+      // One reassembled message per refill window: chunk boundaries frame messages.
+      zephyrine.Stream(messages.iterator)
 
     def transmit
       ( connection: WsConnection,

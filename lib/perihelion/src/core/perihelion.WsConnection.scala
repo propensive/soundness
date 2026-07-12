@@ -45,5 +45,7 @@ class WsConnection
   ( private[perihelion] val duplex:  Duplex,
     private[perihelion] val channel: Channel,
     private[perihelion] val masking: Masking,
-    private[perihelion] val inbound: LazyList[Data],
+    // The connection's pull endpoint (a neutral `AnyRef` carrier for the exclusive
+    // `Stream[Data] over Credit`), already advanced past the `101` handshake.
+    private[perihelion] val inbound: AnyRef,
     private[perihelion] val pump:    Daemon )

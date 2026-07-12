@@ -33,76 +33,47 @@
 package cordillera
 
 import anticipation.{Data as Bytes, *}
-import contingency.*
-import rudiments.*
-import vacuous.*
 import prepositional.*
-import zephyrine.{Stream, Credit, Buffering, Substrate}
+import vacuous.*
+import rudiments.*
 
-import Http2.Frame
-import Http2Error.Reason
-
-// Pulls whole HTTP/2 frames from a connection's pull endpoint, whose bytes arrive
-// in arbitrary chunks (a socket). Buffers leftover bytes between reads and blocks
-// (by refilling the endpoint) until a full frame — its 9-byte header plus declared
-// payload — is available. Returns `Unset` at end of stream. The reader consumes the
-// endpoint: it is the connection's single reader.
-object FrameReader:
-  // Only a method may declare `consume`: the factory takes ownership of the
-  // endpoint and moves it into the reader as a neutral carrier.
-  def apply(consume input: (Stream[Bytes] over Credit)^)(using Buffering): FrameReader^ =
-    new FrameReader(input.asInstanceOf[AnyRef])
-
-// An exclusive, stateful capability, like a parser: it owns the connection's read
-// endpoint and its own reassembly buffer.
-class FrameReader private (input0: AnyRef)(using buffering: Buffering)
+// A minimal growable byte buffer, classified as an exclusive, stateful capability:
+// the separation checker rejects `scala.collection.mutable.ArrayBuilder` mutation
+// outside a `uses`-clause scope, so the HTTP/2 wire encoders append through this
+// instead. `data` copies out, so the internal storage never escapes.
+private[cordillera] class ByteBuf(initial: Int = 32)
 extends caps.ExclusiveCapability, caps.Stateful:
-  private inline def input: (Stream[Bytes] over Credit)^ =
-    input0.asInstanceOf[(Stream[Bytes] over Credit)^]
-
-  private val demand: Credit = Credit(buffering.capacity(Substrate.Bytes))
-
-  // Untracked: the reassembly buffer is reached only through this (exclusive)
-  // reader, and every `slice` copies out of it.
+  // Untracked: reached only through this (exclusive) buffer, and `data` copies out.
   @caps.unsafe.untrackedCaptures
-  private var buffer: Array[Byte] = new Array(0)
-  private var pos: Int = 0
+  private var storage: Array[Byte] = new Array[Byte](initial.max(8))
+  private var size0: Int = 0
 
-  // Ensure at least `n` unread bytes are buffered; false if the stream ends first.
-  private update def ensure(n: Int): Boolean =
-    var ended = false
+  // An exclusive view for writes: the untracked field reads as read-only.
+  private inline def target: Array[Byte]^ = storage.asInstanceOf[Array[Byte]^]
 
-    while buffer.length - pos < n && !ended do input.refill(demand) match
-      case count: Int =>
-        if count > 0 then
-          val remaining = buffer.length - pos
-          val grown = new Array[Byte](remaining + count)
-          System.arraycopy(buffer, pos, grown, 0, remaining)
-          System.arraycopy(input.window(using Unsafe), input.start, grown, remaining, count)
-          input.skip(count)
-          // The cast erases the fresh array's capture: it is confined to this
-          // (exclusive) reader from here on.
-          buffer = grown.asInstanceOf[Array[Byte]]
-          pos = 0
+  def size: Int = size0
 
-      case _ =>
-        ended = true
+  private update def ensure(extra: Int): Unit =
+    if size0 + extra > storage.length then
+      var capacity = storage.length*2
+      while size0 + extra > capacity do capacity *= 2
+      val grown = new Array[Byte](capacity)
+      System.arraycopy(storage, 0, grown, 0, size0)
+      // The cast erases the fresh array's capture: it is confined to this buffer.
+      storage = grown.asInstanceOf[Array[Byte]]
 
-    buffer.length - pos >= n
+  update def add(byte: Byte): Unit =
+    ensure(1)
+    target(size0) = byte
+    size0 += 1
 
-  private update def slice(n: Int): Bytes =
-    val out = new Array[Byte](n)
-    System.arraycopy(buffer, pos, out, 0, n)
-    pos += n
-    out.immutable(using Unsafe)
+  update def addAll(bytes: Bytes): Unit =
+    ensure(bytes.length)
+    System.arraycopy(bytes.mutable(using Unsafe), 0, target, size0, bytes.length)
+    size0 += bytes.length
 
-  // Read the next frame, or `Unset` at clean end of stream. The tactic is a plain
-  // using-parameter: a context-function result may not hide `this`.
-  update def next()(using Tactic[Http2Error]): Optional[Frame] =
-    if !ensure(9) then Unset else
-      val header = slice(9)
-      val length = Frame.uint24(header, 0)
-      if !ensure(length) then abort(Http2Error(Reason.Truncated))
-      // Sealed: a fresh `IArray` is immutable; fresh-ness is the opaque-Array artifact.
-      val whole: Bytes = caps.unsafe.unsafeAssumePure(header ++ slice(length))
-      Frame.decode(whole, 0)(0)
+  def data: Bytes =
+    val out = new Array[Byte](size0)
+    System.arraycopy(storage, 0, out, 0, size0)
+    // Sealed: a fresh copy no alias can reach is immutable.
+    caps.unsafe.unsafeAssumePure(out.immutable(using Unsafe))

@@ -45,7 +45,8 @@ import Http2Error.Reason
 // byte values plus the EOS symbol (index 256), the right-aligned code and its bit
 // length. Codes are most-significant-bit first.
 object Huffman:
-  private val codes: IArray[Int] = IArray[Int](
+  // Sealed: a fresh `IArray` is immutable; fresh-ness is the opaque-Array artifact.
+  private val codes: IArray[Int] = caps.unsafe.unsafeAssumePure(IArray[Int](
     0x1ff8, 0x7fffd8, 0xfffffe2, 0xfffffe3, 0xfffffe4, 0xfffffe5, 0xfffffe6, 0xfffffe7,
     0xfffffe8, 0xffffea, 0x3ffffffc, 0xfffffe9, 0xfffffea, 0x3ffffffd, 0xfffffeb, 0xfffffec,
     0xfffffed, 0xfffffee, 0xfffffef, 0xffffff0, 0xffffff1, 0xffffff2, 0x3ffffffe, 0xffffff3,
@@ -78,9 +79,10 @@ object Huffman:
     0x3fffea, 0x3fffeb, 0x1ffffee, 0x1ffffef, 0xfffff4, 0xfffff5, 0x3ffffea, 0x7ffff4,
     0x3ffffeb, 0x7ffffe6, 0x3ffffec, 0x3ffffed, 0x7ffffe7, 0x7ffffe8, 0x7ffffe9, 0x7ffffea,
     0x7ffffeb, 0xffffffe, 0x7ffffec, 0x7ffffed, 0x7ffffee, 0x7ffffef, 0x7fffff0, 0x3ffffee,
-    0x3fffffff )
+    0x3fffffff ))
 
-  private val lengths: IArray[Int] = IArray[Int](
+  // Sealed: the opaque-Array artifact, as `codes` above.
+  private val lengths: IArray[Int] = caps.unsafe.unsafeAssumePure(IArray[Int](
     13, 23, 28, 28, 28, 28, 28, 28,
     28, 24, 30, 28, 28, 30, 28, 28,
     28, 28, 28, 28, 28, 28, 30, 28,
@@ -113,12 +115,12 @@ object Huffman:
     22, 22, 25, 25, 24, 24, 26, 23,
     26, 27, 26, 26, 27, 27, 27, 27,
     27, 28, 27, 27, 27, 27, 27, 26,
-    30 )
+    30 ))
 
   // Encodes bytes with the HPACK Huffman code, padding the final byte with 1-bits
   // (the most-significant bits of the EOS symbol), per RFC 7541 §5.2.
   def encode(data: Data): Data =
-    val builder = scm.ArrayBuilder.make[Byte]
+    val buf: ByteBuf^ = ByteBuf()
     var bitBuffer = 0L
     var bitCount = 0
     var i = 0
@@ -132,20 +134,21 @@ object Huffman:
 
       while bitCount >= 8 do
         bitCount -= 8
-        builder.addOne(((bitBuffer >>> bitCount) & 0xff).toByte)
+        buf.add(((bitBuffer >>> bitCount) & 0xff).toByte)
 
       i += 1
 
     if bitCount > 0 then
       val pad = 8 - bitCount
-      builder.addOne((((bitBuffer << pad) | ((1L << pad) - 1)) & 0xff).toByte)
+      buf.add((((bitBuffer << pad) | ((1L << pad) - 1)) & 0xff).toByte)
 
-    builder.result().immutable(using Unsafe)
+    buf.data
 
   // Decodes an HPACK Huffman string. Walks the code bit-by-bit against the table;
   // the trailing padding (all 1-bits, fewer than 8) is accepted and discarded.
-  def decode(data: Data): Data raises Http2Error =
-    val builder = scm.ArrayBuilder.make[Byte]
+  // The tactic is a plain using-parameter, de-sugared from `raises`.
+  def decode(data: Data)(using Tactic[Http2Error]): Data =
+    val buf: ByteBuf^ = ByteBuf()
     var current = 0
     var bits = 0
     var matched = false
@@ -164,7 +167,7 @@ object Huffman:
 
         while symbol < 256 && !matched do
           if lengths(symbol) == bits && codes(symbol) == current then
-            builder.addOne(symbol.toByte)
+            buf.add(symbol.toByte)
             current = 0
             bits = 0
             matched = true
@@ -179,4 +182,4 @@ object Huffman:
     // Any leftover bits must be the EOS padding: all ones, fewer than 8 bits.
     if bits >= 8 || (current != ((1 << bits) - 1)) then abort(Http2Error(Reason.BadHuffman))
 
-    builder.result().immutable(using Unsafe)
+    buf.data

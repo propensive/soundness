@@ -53,7 +53,9 @@ object Duplex:
     val rightToLeft: Spool[Data] = Spool()
 
     def side(inbound: Spool[Data], outbound: Spool[Data]): Duplex = new Duplex:
-      def stream: LazyList[Data] = inbound.stream
+      // Each memoized send is exposed as one refill window, preserving the
+      // chunk boundaries the in-memory protocol tests rely on.
+      def source(using Buffering): (Stream[Data] over Credit)^ = Stream(inbound.stream.iterator)
 
       def send(consume data: (Stream[Data] over Credit)^): Unit =
         outbound.put(data.memoize)
@@ -69,17 +71,43 @@ object Duplex:
   // `shutdown` is a pure function: its closures hold only untracked OS resources (like
   // `channel`'s socket), so the `Duplex` remains capture-free under capture checking.
   def streams(in: ji.InputStream, out: ji.OutputStream)(shutdown: () -> Unit): Duplex = new Duplex:
-    // Untracked: `stream` is called by a single reader (the Duplex contract), and
-    // each delivered chunk is copied out of the buffer by `take` before reuse.
-    @caps.unsafe.untrackedCaptures
-    private val buffer: Array[Byte] = new Array[Byte](65536)
+    // Reads directly into the endpoint's own buffer; EOF (`-1`) ends the stream.
+    def source(using buffering: Buffering): (Stream[Data] over Credit)^ =
+      new Stream[Data]:
+        type Transport = Credit
 
-    def stream: LazyList[Data] =
-      def recur(): LazyList[Data] = in.read(buffer) match
-        case -1    => LazyList()
-        case count => buffer.take(count).immutable(using Unsafe) #:: recur()
+        private val capacity: Int = buffering.capacity(Substrate.Bytes)
+        private val storage: Array[Byte] = new Array[Byte](capacity)
+        private var start0: Int = 0
+        private var limit0: Int = 0
+        private var ended: Boolean = false
 
-      recur()
+        protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+        def start: Int = start0
+        def limit: Int = limit0
+        update def skip(count: Int): Unit = start0 += count
+
+        update def refill(demand: Credit): Optional[Int] =
+          if limit0 > start0 then limit0 - start0
+          else if ended then Unset
+          else
+            val granted = summon[Credit is Regulation].grant(demand)
+
+            if granted == 0 then 0 else
+              start0 = 0
+              limit0 = 0
+
+              in.read(storage, 0, capacity.min(granted)) match
+                case -1 =>
+                  ended = true
+                  Unset
+
+                case 0 =>
+                  refill(demand)
+
+                case count =>
+                  limit0 = count
+                  count
 
     def send(consume data: (Stream[Data] over Credit)^): Unit =
       data.foreachWindow: (storage, start, count) =>
@@ -91,23 +119,6 @@ object Duplex:
   // Wraps a blocking `SocketChannel` (TCP or Unix-domain). The read side fills a
   // reusable buffer and blocks in `read`; EOF (`-1`) terminates the stream.
   def channel(socketChannel: jnc.SocketChannel): Duplex = new Duplex:
-    private val buffer = ByteBuffer.allocate(65536).nn
-
-    def stream: LazyList[Data] =
-      def recur(): LazyList[Data] =
-        buffer.clear()
-
-        socketChannel.read(buffer) match
-          case -1 => LazyList()
-
-          case _ =>
-            buffer.flip()
-            val array = new Array[Byte](buffer.remaining)
-            buffer.get(array)
-            array.immutable(using Unsafe) #:: recur()
-
-      recur()
-
     def send(consume data: (Stream[Data] over Credit)^): Unit =
       data.foreachWindow: (storage, start, count) =>
         val out = ByteBuffer.wrap(storage.asInstanceOf[Array[Byte]], start, count).nn
@@ -115,7 +126,8 @@ object Duplex:
 
     def close(): Unit = socketChannel.close()
 
-    override def source(using buffering: Buffering): Stream[Data] over Credit =
+    // Reads directly into the endpoint's buffer, allocation-free.
+    def source(using buffering: Buffering): (Stream[Data] over Credit)^ =
       new Stream[Data]:
         type Transport = Credit
 
@@ -162,14 +174,14 @@ object Duplex:
 // server-initiated frames concurrently. Reads block until data arrives or the peer
 // closes; `send` may be called many times and never half-closes the connection.
 trait Duplex:
-  def stream: LazyList[Data]
   def send(consume data: (Stream[Data] over Credit)^): Unit
   def close(): Unit
 
-  // Pull endpoint over the read side. The default adapts the legacy
-  // `stream`; `Duplex.channel` overrides it to read directly into the
-  // endpoint's buffer, allocation-free.
-  def source(using Buffering): Stream[Data] over Credit = Stream(stream.iterator)
+  // Pull endpoint over the read side: a fresh single-use endpoint whose refill
+  // blocks until data arrives or the peer closes. The `Duplex` contract is a
+  // single reader, so `source` should be opened once. The `^` is load-bearing:
+  // a bare stateful result reads as `.rd` at separation-checked use sites.
+  def source(using Buffering): (Stream[Data] over Credit)^
 
   // Push endpoint over the write side: repeatable, like `send`, and
   // `finish()` flushes without half-closing the connection.
