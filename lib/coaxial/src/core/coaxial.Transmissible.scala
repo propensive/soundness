@@ -54,8 +54,8 @@ object Transmissible:
 // endpoint. Transports with message framing (a UDP datagram, a WebSocket frame)
 // may therefore `memoize` the stream into a single framed unit; byte-stream
 // transports write it through the window, zero-copy.
-trait Transmissible extends Typeclass:
+trait Transmissible extends Typeclass.Pure:
   def serialize(message: Self): (Stream[Data] over Credit)^
 
-  def contramap[self2](lambda: self2 => Self): (self2 is Transmissible)^{this, lambda} =
+  def contramap[self2](lambda: self2 -> Self): self2 is Transmissible =
     message => serialize(lambda(message))

@@ -346,7 +346,7 @@ object Json extends Json2, Dynamic:
 
   object Encodable:
     def apply[value](shape0: => Morphology)(lambda: (value -> Json)^)
-    :   ((value is Json.Encodable)^{lambda}) =
+    :   (value is Json.Encodable) =
 
       // The shape thunk may close over a `Tactic` when field/element codecs are summoned from
       // tactic-taking givens, but `shape()` only reads static metadata and never encodes or
@@ -354,9 +354,15 @@ object Json extends Json2, Dynamic:
       // pure. Invariant: a `shape()` implementation must never invoke its tactic.
       val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure { () => shape0 }
 
+      // The encode lambda may capture the resolution-scoped tactic of field/element codecs,
+      // which shares this instance's given-resolution lifetime; `Json.Encodable` is a pure
+      // typeclass (via `anticipation.Encodable`), so the payload — not the instance — is
+      // sealed here, once, for every codec constructed through this factory.
+      val lambda1: value -> Json = caps.unsafe.unsafeAssumePure(lambda)
+
       new Json.Encodable:
         type Self = value
-        def encoded(value: value): Json = lambda(value)
+        def encoded(value: value): Json = lambda1(value)
         def shape(): Morphology = shape1()
 
   // A JSON encoder that also carries the format-neutral `Morphology` describing exactly
