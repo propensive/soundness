@@ -431,7 +431,7 @@ object Http:
           head.host,
           head.target,
           head.headers,
-          () => Stream(cursor.remainder.iterator) )
+          () => cursor.remainder.iterator.stream )
 
     // LazyList exactly `length` bytes of body off `cursor`, in buffer-sized
     // pieces, leaving it at the first byte after the body (the start of the next
@@ -527,14 +527,14 @@ object Http:
     // A fresh pull endpoint over this body's content: mintable repeatedly for
     // `Fixed`/`Empty`, and per the `Spring` contract for `Flowing`.
     def stream: (Stream[Data] over Credit)^ = this match
-      case Body.Fixed(data)     => Stream(data)
-      case Body.Empty           => Stream(Iterator.empty[Data])
+      case Body.Fixed(data)     => data.stream
+      case Body.Empty           => Iterator.empty[Data].stream
       case Body.Flowing(source) => source()
 
 
   // A request body with no bytes; each call constructs a fresh, already-empty
   // pull endpoint, matching the re-materializable contract of `body` thunks.
-  def emptyBody(): (Stream[Data] over Credit)^ = Stream(Iterator.empty[Data])
+  def emptyBody(): (Stream[Data] over Credit)^ = Iterator.empty[Data].stream
 
   class Request
     ( val method:      Http.Method,
@@ -866,7 +866,7 @@ object Http:
       // Sealed: the cursor is single-owner and reachable only through its
       // memoized `remainder`, so the spring is pure in effect; a capturing
       // `Body` would cascade `^` through every `Response` value.
-      val spring: Spring[Data]^ = () => Stream(cursor.remainder.iterator)
+      val spring: Spring[Data]^ = () => cursor.remainder.iterator.stream
       val body = Http.Body.Flowing(caps.unsafe.unsafeAssumePure(spring))
 
       Response(version, status, headers.reverse, body)

@@ -42,7 +42,7 @@ import zephyrine.*
 
 package postables:
   given jsonPostable: (encoder: CharEncoder, formatting: Json.Formatting) => Json is Postable =
-    Postable(media"application/json"(charset = "UTF-8"), value => Stream(value.show.data))
+    Postable(media"application/json"(charset = "UTF-8"), value => value.show.data.stream)
 
 package servables:
   given jsonServable: (encoder: CharEncoder, formatting: Json.Formatting) => Json is Servable =

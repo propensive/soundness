@@ -137,7 +137,7 @@ object Benchmarks extends Suite(m"Zephyrine benchmarks"):
   // Cursor over a pull endpoint — exercises the stream-backed factory's refill
   // path (window transferred into the cursor's buffer once per fill).
   def cursorNextStreamed(blocks: List[Data]): Int =
-    val c = Cursor[Data](Stream(blocks.iterator))
+    val c = Cursor[Data](blocks.iterator.stream)
     var n = 0
     while c.next() do n += 1
     n

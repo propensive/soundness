@@ -39,16 +39,16 @@ import prepositional.*
 import zephyrine.*
 
 object Transmissible:
-  given bytes: [bytes <: Data] => bytes is Transmissible = Stream(_)
+  given bytes: [bytes <: Data] => bytes is Transmissible = _.stream
 
   given stream: [stream <: LazyList[Data]] => stream is Transmissible = value =>
-    Stream(value.iterator)
+    value.iterator.stream
 
   given text: [text <: Text] => CharEncoder => text is Transmissible =
-    text => Stream(text.data)
+    text => text.data.stream
 
   given encoder: [message: Encodable in Text] => CharEncoder => message is Transmissible =
-    value => Stream(value.encode.data)
+    value => value.encode.data.stream
 
 // One call to `serialize` yields the wire form of one message, as a fresh pull
 // endpoint. Transports with message framing (a UDP datagram, a WebSocket frame)

@@ -89,15 +89,15 @@ object Postable:
   given textStream: (encoder: CharEncoder) => LazyList[Text] is Postable =
     Postable(media"application/octet-stream", lazyList => Stream(lazyList.map(_.data).iterator))
 
-  given unit: Unit is Postable = Postable(media"text/plain", _ => Stream(Iterator.empty[Data]))
-  given data: Data is Postable = Postable(media"application/octet-stream", Stream(_))
+  given unit: Unit is Postable = Postable(media"text/plain", _ => Iterator.empty[Data].stream)
+  given data: Data is Postable = Postable(media"application/octet-stream", _.stream)
 
   given byteStream: LazyList[Data] is Postable =
-    Postable(media"application/octet-stream", lazyList => Stream(lazyList.iterator))
+    Postable(media"application/octet-stream", lazyList => lazyList.iterator.stream)
 
   given query: Query is Postable =
     import charEncoders.utf8Encoder
-    Postable(media"application/x-www-form-urlencoded", query => Stream(query.queryString.data))
+    Postable(media"application/x-www-form-urlencoded", query => query.queryString.data.stream)
 
 
   given dataStream: [response: Abstractable across HttpStreams to HttpStreams.Content]

@@ -54,7 +54,7 @@ object Raster:
     new Raster(image)
 
   def apply[streamable: Streamable by Data](input: streamable): Raster =
-    new Raster(ji.ImageIO.read(input.stream[Data].read[Data].javaInputStream).nn)
+    new Raster(ji.ImageIO.read(input.lazyList[Data].read[Data].javaInputStream).nn)
 
   def apply[form: Rasterizable as rasterizable](image: jai.BufferedImage): Raster in form =
     new Raster(image):
@@ -79,7 +79,7 @@ object Raster:
     type Result = HttpStreams.Content
 
     def genericize(image: Raster in format): HttpStreams.Content =
-      (format.mediaType.basic, HttpStreams.Body(image.stream[Data].iterator))
+      (format.mediaType.basic, HttpStreams.Body(image.lazyList[Data].iterator))
 
   given graphical: Raster is Graphical:
     def pixel(raster: Raster, x: Int, y: Int): Chroma = raster(x, y)

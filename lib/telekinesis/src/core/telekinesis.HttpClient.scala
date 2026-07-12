@@ -120,7 +120,7 @@ object HttpClient:
 
               case Some(header) =>
                 // Drain the discarded intermediate body to free its connection.
-                safely(response.body.stream.foreachWindow { (_, _, _) => () })
+                safely(response.body.stream.sweep { (_, _, _) => () })
 
                 val nextUri = uri.resolve(jn.URI.create(header.value.s).nn).nn
                 Log.fine(HttpEvent.Redirect(uri.toString.tt, nextUri.toString.tt))

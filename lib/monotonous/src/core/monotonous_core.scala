@@ -36,6 +36,7 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import prepositional.*
+import zephyrine.*
 
 package alphabets:
   given binaryStandard: Alphabet[Binary] = Alphabet(t"01", false)
@@ -136,3 +137,19 @@ extension (stream: LazyList[Text])
 extension [value: Encodable in Data](value: value)
   def serialize[scheme <: Serialization](using encodable: Serializable in scheme): Text =
     encodable.encode(value.bytestream)
+
+
+// The streaming forms of `serialize`/`deserialize`: base-N codecs applied as
+// pull stages, in place of `via(summon[Alphabet[scheme]])`.
+extension (consume stream: (Stream[Data] over Credit)^)
+  def serialize[scheme <: Serialization](using Alphabet[scheme], Buffering)
+  :   (Stream[Text] over Credit)^ =
+
+    stream.via(summon[Alphabet[scheme]])
+
+extension (consume stream: (Stream[Text] over Credit)^)
+  def deserialize[scheme <: Serialization]
+    (using Alphabet[scheme], Buffering, Tactic[SerializationError])
+  :   (Stream[Data] over Credit)^ =
+
+    stream.via(summon[Alphabet[scheme]])

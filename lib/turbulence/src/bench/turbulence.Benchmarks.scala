@@ -73,7 +73,7 @@ import zephyrine.*
 //     `Array[Byte]` window with no per-element boxing — the point of that row is
 //     precisely to show that per-element cost.
 //   * FS2/ZIO wrap the input array without copying (`Chunk.array`/`Chunk.fromArray`);
-//     `Stream(value)` copies once at construction. Kyo is fed an `ArraySeq`
+//     `value.stream` copies once at construction. Kyo is fed an `ArraySeq`
 //     wrapper (no copy) but boxes per element.
 //   * Kyo has no gzip pipeline and no incremental UTF-8 decoder, so it appears
 //     only in the checksum fold (like locomotion's "… only" rows).
@@ -119,7 +119,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
   // The text corpus pre-compressed with gzip, for the "read a gzipped text
   // stream" chained pipeline.
-  lazy val gzippedText: Data = Stream(textData).compress[Gzip].memoize
+  lazy val gzippedText: Data = textData.stream.compress[Gzip].memoize
   lazy val gzippedTextArray: Array[Byte] = gzippedText.asInstanceOf[Array[Byte]]
 
   // AES-256 key + a fixed key/IV for the JDK reference, generated/derived once.
@@ -154,7 +154,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     suite(m"Gzip compression (4 MB)"):
       bench(m"Soundness  Stream.compress[Gzip]")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ Stream(turbulence.Benchmarks.input).compress[Gzip].memoize.length }
+        '{ turbulence.Benchmarks.input.stream.compress[Gzip].memoize.length }
 
       bench(m"FS2  Compression[IO].gzip")(target = 1*Second, operationSize = size):
         '{
@@ -174,9 +174,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
     // Example 2: UTF-8 decode (count decoded characters).
     suite(m"UTF-8 decode (4 MB)"):
-      bench(m"Soundness  through(CharDecoder)")
+      bench(m"Soundness  transcribe")
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
-        '{ Stream(turbulence.Benchmarks.textData).through(summon[CharDecoder]).memoize.s.length }
+        '{ turbulence.Benchmarks.textData.stream.transcribe.memoize.s.length }
 
       bench(m"FS2  text.utf8.decode")(target = 1*Second, operationSize = textSize):
         '{
@@ -195,11 +195,11 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // Example 3: byte checksum fold. The Soundness fold runs over the raw window
     // with no per-element boxing; FS2/ZIO/Kyo box each byte as it flows.
     suite(m"Byte checksum fold (4 MB)"):
-      bench(m"Soundness  foreachWindow")
+      bench(m"Soundness  sweep")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
         '{
             var total = 0L
-            Stream(turbulence.Benchmarks.input).foreachWindow: (storage, start, count) =>
+            turbulence.Benchmarks.input.stream.sweep: (storage, start, count) =>
               val arr = storage.asInstanceOf[Array[Byte]]
               var i = start
               while i < start + count do { total += (arr(i) & 0xff); i += 1 }
@@ -230,7 +230,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     suite(m"Chained: gzip -> gunzip roundtrip (4 MB)"):
       bench(m"Soundness  compress[Gzip].decompress[Gzip]")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ Stream(turbulence.Benchmarks.input).compress[Gzip].decompress[Gzip].memoize.length }
+        '{ turbulence.Benchmarks.input.stream.compress[Gzip].decompress[Gzip].memoize.length }
 
       bench(m"FS2  gzip.gunzip")(target = 1*Second, operationSize = size):
         '{
@@ -251,11 +251,11 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
     // Chained example B: UTF-8 decode -> re-encode transcode roundtrip.
     suite(m"Chained: UTF-8 decode -> encode transcode (4 MB)"):
-      bench(m"Soundness  through(dec).through(enc)")
+      bench(m"Soundness  transcribe.inscribe")
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
         '{
-            Stream(turbulence.Benchmarks.textData)
-            . through(summon[CharDecoder]).through(summon[CharEncoder]).memoize.length
+            turbulence.Benchmarks.textData.stream
+            . transcribe.inscribe.memoize.length
         }
 
       bench(m"FS2  utf8.decode.encode")(target = 1*Second, operationSize = textSize):
@@ -276,11 +276,11 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
     // Chained example C: gunzip -> UTF-8 decode -> count characters.
     suite(m"Chained: gunzip -> UTF-8 decode -> count (gzipped text)"):
-      bench(m"Soundness  decompress.through(dec)")
+      bench(m"Soundness  decompress.transcribe")
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
         '{
-            Stream(turbulence.Benchmarks.gzippedText).decompress[Gzip]
-            . through(summon[CharDecoder]).memoize.s.length
+            turbulence.Benchmarks.gzippedText.stream.decompress[Gzip]
+            . transcribe.memoize.s.length
         }
 
       bench(m"FS2  gunzip.utf8.decode")(target = 1*Second, operationSize = textSize):
@@ -308,9 +308,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"Soundness  compress.b64.b64.decompress")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
         '{
-            Stream(turbulence.Benchmarks.input).compress[Gzip]
-            . through(summon[Alphabet[Base64]])
-            . through(summon[Alphabet[Base64]])
+            turbulence.Benchmarks.input.stream.compress[Gzip]
+            . serialize[Base64]
+            . deserialize[Base64]
             . decompress[Gzip].memoize.length
         }
 
@@ -357,17 +357,17 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
         '{
             turbulence.Benchmarks.aesKey.expose:
-              val compressed: Data = Stream(turbulence.Benchmarks.input).compress[Gzip].memoize
+              val compressed: Data = turbulence.Benchmarks.input.stream.compress[Gzip].memoize
               val encrypted: Data = compressed.encrypt(InitializationVector.random)
 
               val recovered: Data =
-                Stream(encrypted)
-                . through(summon[Alphabet[Base64]])
-                . through(summon[Alphabet[Base64]])
+                encrypted.stream
+                . serialize[Base64]
+                . deserialize[Base64]
                 . memoize
 
               val decrypted: Data = recovered.decrypt[Data, Aes[256] over Cbc against Pkcs7]
-              Stream(decrypted).decompress[Gzip].memoize.length
+              decrypted.stream.decompress[Gzip].memoize.length
         }
 
       bench(m"JDK  GZIP/Cipher/Base64 composition")(target = 1*Second, operationSize = size):
@@ -415,10 +415,10 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"Soundness  dec.enc.dec.enc.dec")
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
         '{
-            Stream(turbulence.Benchmarks.textData)
-            . through(summon[CharDecoder]).through(summon[CharEncoder])
-            . through(summon[CharDecoder]).through(summon[CharEncoder])
-            . through(summon[CharDecoder]).memoize.s.length
+            turbulence.Benchmarks.textData.stream
+            . transcribe.inscribe
+            . transcribe.inscribe
+            . transcribe.memoize.s.length
         }
 
       bench(m"FS2  utf8 decode/encode x2.5")(target = 1*Second, operationSize = textSize):
@@ -448,10 +448,10 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"Soundness  dec.enc.b64.b64.dec")
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
         '{
-            Stream(turbulence.Benchmarks.textData)
-            . through(summon[CharDecoder]).through(summon[CharEncoder])
-            . through(summon[Alphabet[Base64]]).through(summon[Alphabet[Base64]])
-            . through(summon[CharDecoder]).memoize.s.length
+            turbulence.Benchmarks.textData.stream
+            . transcribe.inscribe
+            . serialize[Base64].deserialize[Base64]
+            . transcribe.memoize.s.length
         }
 
       bench(m"FS2  utf8/base64 chain")(target = 1*Second, operationSize = textSize):
@@ -472,8 +472,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"Soundness  drop.dec.enc.take.fold")
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
         '{
-            Stream(turbulence.Benchmarks.textData).drop(turbulence.Benchmarks.dropBytes)
-            . through(summon[CharDecoder]).through(summon[CharEncoder])
+            turbulence.Benchmarks.textData.stream.drop(turbulence.Benchmarks.dropBytes)
+            . transcribe.inscribe
             . take(turbulence.Benchmarks.takeBytes)
             . fold(0L)((total, _, _, count) => total + count)
         }
@@ -519,11 +519,11 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // Isolated streaming base64 encode+decode roundtrip, measuring the duct
     // directly (Data -> Text -> Data) against FS2's native base64 pipes.
     suite(m"Streaming base64 encode+decode roundtrip (4 MB)"):
-      bench(m"Soundness  through(b64).through(b64)")
+      bench(m"Soundness  serialize.deserialize")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
         '{
-            Stream(turbulence.Benchmarks.input)
-            . through(summon[Alphabet[Base64]]).through(summon[Alphabet[Base64]]).memoize.length
+            turbulence.Benchmarks.input.stream
+            . serialize[Base64].deserialize[Base64].memoize.length
         }
 
       bench(m"FS2  base64.encode.decode")(target = 1*Second, operationSize = size):
@@ -560,7 +560,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     suite(m"Public read vs kernel memoize (4 MB)"):
       bench(m"Soundness  Stream.memoize (kernel)")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ Stream(turbulence.Benchmarks.inputChunks.iterator).memoize.length }
+        '{ turbulence.Benchmarks.inputChunks.iterator.stream.memoize.length }
 
       bench(m"Soundness  read[Data]")(target = 1*Second, operationSize = size):
         '{ turbulence.Benchmarks.inputChunks.read[Data].length }
@@ -573,19 +573,19 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"block 4 KiB (standard)")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
         '{
-            Stream(turbulence.Benchmarks.input)
+            turbulence.Benchmarks.input.stream
             . compress[Gzip](using summon, turbulence.Benchmarks.buffering(4096)).memoize.length
         }
 
       bench(m"block 512 B")(target = 1*Second, operationSize = size):
         '{
-            Stream(turbulence.Benchmarks.input)
+            turbulence.Benchmarks.input.stream
             . compress[Gzip](using summon, turbulence.Benchmarks.buffering(512)).memoize.length
         }
 
       bench(m"block 64 KiB")(target = 1*Second, operationSize = size):
         '{
-            Stream(turbulence.Benchmarks.input)
+            turbulence.Benchmarks.input.stream
             . compress[Gzip](using summon, turbulence.Benchmarks.buffering(65536)).memoize.length
         }
 
@@ -641,17 +641,17 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       bench(m"Soundness  serialize[Base32]")(target = 1*Second, operationSize = size):
         '{ turbulence.Benchmarks.input.serialize[Base32].s.length }
 
-    // Example K: `flowTo` pump (pull -> push OutputStream sink) vs `memoize`.
-    suite(m"flowTo pump vs memoize (4 MB)"):
+    // Example K: `pump` pump (pull -> push OutputStream sink) vs `memoize`.
+    suite(m"pump pump vs memoize (4 MB)"):
       bench(m"Soundness  Stream.memoize")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ Stream(turbulence.Benchmarks.input).memoize.length }
+        '{ turbulence.Benchmarks.input.stream.memoize.length }
 
-      bench(m"Soundness  flowTo(sink)")(target = 1*Second, operationSize = size):
+      bench(m"Soundness  pump(sink)")(target = 1*Second, operationSize = size):
         '{
             val out = new java.io.ByteArrayOutputStream(turbulence.Benchmarks.input.length)
-            Stream(turbulence.Benchmarks.input)
-            . flowTo(summon[java.io.OutputStream is Sink by Data over Credit].intake(out))
+            turbulence.Benchmarks.input.stream
+            . pump(summon[java.io.OutputStream is Sink by Data over Credit].intake(out))
             out.size
         }
 
@@ -668,7 +668,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               turbulence.Benchmarks.inputChunks.foreach(intake.put)
               intake.finish())
             var total = 0L
-            stream.foreachWindow((_, _, count) => total += count)
+            stream.sweep((_, _, count) => total += count)
             producer.join()
             total
         }
@@ -725,9 +725,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
         '{
             supervise:
-              val merged = Confluence(turbulence.Benchmarks.quarters.map(q => Stream(q))*)
+              val merged = Confluence(turbulence.Benchmarks.quarters.map(q => q.stream)*)
               var total = 0L
-              merged.foreachWindow((_, _, count) => total += count)
+              merged.sweep((_, _, count) => total += count)
               total
         }
 
@@ -750,20 +750,20 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               ZStream.mergeAllUnbounded()(streams*).runCount
         }
 
-    // Example N: `Manifold` fan-out — broadcast to three consumers. The source
+    // Example N: `Divergence` fan-out — broadcast to three consumers. The source
     // chunk is shared read-only between subscribers, so it too passes without
     // copying; the residual gap on fan-out is the thread-vs-fiber wakeup of the
     // subscriber consumers.
-    suite(m"Manifold fan-out: broadcast to 3 (4 MB in, 12 MB consumed)"):
-      bench(m"Soundness  Manifold")
+    suite(m"Divergence fan-out: broadcast to 3 (4 MB in, 12 MB consumed)"):
+      bench(m"Soundness  Divergence")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
         '{
             supervise:
-              val subscribers = Manifold(Stream(turbulence.Benchmarks.input), 3)
+              val subscribers = Divergence(turbulence.Benchmarks.input.stream, 3)
               val tasks = subscribers.map: subscriber =>
                 async:
                   var total = 0L
-                  subscriber.foreachWindow((_, _, count) => total += count)
+                  subscriber.sweep((_, _, count) => total += count)
                   total
               tasks.map(_.await()).sum
         }

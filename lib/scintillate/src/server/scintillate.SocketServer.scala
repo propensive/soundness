@@ -80,7 +80,7 @@ extends RequestServable:
     // into memory or sit unflushed in the buffer.
     var failed: Boolean = false
 
-    stream.foreachWindow: (storage, start, size) =>
+    stream.sweep: (storage, start, size) =>
       if !failed then
         try
           out.write(storage.asInstanceOf[Array[Byte]], start, size)
@@ -175,7 +175,7 @@ extends RequestServable:
           val upgrade = isUpgrade(head)
 
           // Tell a waiting client it may send the body before we read it.
-          if expectsContinue(head) then writeAll(out, Stream(continueResponse))
+          if expectsContinue(head) then writeAll(out, continueResponse.stream)
 
           val body = if upgrade then cursor.remainder else requestBody(cursor, head)
 
@@ -186,7 +186,7 @@ extends RequestServable:
                 head.host,
                 head.target,
                 head.headers,
-                () => Stream(body.iterator) )
+                () => body.iterator.stream )
 
           var upgraded = false
           var keep = keepAlive(head)

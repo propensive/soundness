@@ -44,7 +44,7 @@ import vacuous.*
 
 // Makes a stage-descriptor value — a character decoder, a compression
 // algorithm, a serialization alphabet — instantiable as a `Duct`, so it can
-// be applied directly with `stream.through(stage)` or
+// be applied directly with `stream.via(stage)` or
 // `intake.accepting(stage)`. Instances are typed
 // `X is Ductile by In to Out over Transport`, with `Upstream` (the demand
 // type the stage presents to its upstream) as a further member, `Credit` in

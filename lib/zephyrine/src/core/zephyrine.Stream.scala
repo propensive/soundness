@@ -44,7 +44,7 @@ import vacuous.*
 // nothing — and the `demand` argument of each `refill` call is the reactive
 // message bounding how much the upstream may produce to satisfy it. A `Stream`
 // is transformed into a differently-typed `Stream` with `through`, and
-// connected to an `Intake` with `flowTo`; a chain of `through`s involves no
+// connected to an `Intake` with `pump`; a chain of `through`s involves no
 // threads and no synchronization, executing as nested calls on the consumer's
 // thread.
 object Stream:

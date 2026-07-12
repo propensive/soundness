@@ -44,7 +44,7 @@ import vacuous.*
 object internal:
   import stenography.internal.name
 
-  def stream[source: Type, operand: Type](source: Expr[source]): Macro[LazyList[operand]] =
+  def lazyList[source: Type, operand: Type](source: Expr[source]): Macro[LazyList[operand]] =
     import quotes.reflect.*
 
     val bytes = TypeRepr.of[operand] =:= TypeRepr.of[Data]

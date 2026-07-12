@@ -123,7 +123,7 @@ object Serviceable:
       Connection(channel)
 
     def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
-      input.foreachWindow: (storage, start, count) =>
+      input.sweep: (storage, start, count) =>
         connection.channel.write(ByteBuffer.wrap(storage.asInstanceOf[Array[Byte]], start, count))
 
       connection.channel.shutdownOutput()
@@ -152,7 +152,7 @@ object Serviceable:
     def transmit(socket: jn.Socket, consume input: (Stream[Data] over Credit)^): Unit =
       val out = socket.getOutputStream.nn
 
-      input.foreachWindow: (storage, start, count) =>
+      input.sweep: (storage, start, count) =>
         out.write(storage.asInstanceOf[Array[Byte]], start, count)
         out.flush()
 
@@ -183,7 +183,7 @@ object Serviceable:
     def transmit(socket: jn.Socket, consume input: (Stream[Data] over Credit)^): Unit =
       val out = socket.getOutputStream.nn
 
-      input.foreachWindow: (storage, start, count) =>
+      input.sweep: (storage, start, count) =>
         out.write(storage.asInstanceOf[Array[Byte]], start, count)
         out.flush()
 

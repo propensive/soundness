@@ -59,7 +59,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
     val image    = Image(List(layer), config = ContainerConfig(Cmd = List(t"/bin/sh")))
 
     suite(m"Layer digests"):
-      val raw = bytesOf(layerTar.stream[Data])
+      val raw = bytesOf(layerTar.lazyList[Data])
 
       test(m"diff_id is the sha256 of the uncompressed tar"):
         layer.diffId
@@ -132,7 +132,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == image.manifest)
 
     suite(m"OCI archive"):
-      val entries    = Tarfile.read(image.archive.stream[Data]).to(List)
+      val entries    = Tarfile.read(image.archive.lazyList[Data]).to(List)
       val names      = entries.map(_.entryName)
       val layoutData = entries.collect:
         case file: Tar.Entry.File if file.entryName == t"oci-layout" => bytesOf(file.data)

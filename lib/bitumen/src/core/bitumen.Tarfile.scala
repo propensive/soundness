@@ -362,14 +362,14 @@ object Tarfile:
 case class Tarfile
   ( entries: LazyList[Tar.Entry], longNameFormat: LongNameFormat = LongNameFormat.Pax ):
   // The raw 512-byte blocks of the archive, including the two trailing zero blocks.
-  // Reach this externally through the `Streamable` given, i.e. `tarfile.stream[Data]`.
+  // Reach this externally through the `Streamable` given, i.e. `tarfile.lazyList[Data]`.
   private[bitumen] def blocks: LazyList[Data] =
     entries.flatMap(emitEntry) #::: LazyList(Tarfile.zeroBlock, Tarfile.zeroBlock)
 
   // Compressed views of the archive's TAR stream.
-  def gzip: LazyList[Data] = this.stream[Data].compress[Gzip]
-  def zlib: LazyList[Data] = this.stream[Data].compress[Zlib]
-  def deflate: LazyList[Data] = this.stream[Data].compress[Deflate]
+  def gzip: LazyList[Data] = this.lazyList[Data].compress[Gzip]
+  def zlib: LazyList[Data] = this.lazyList[Data].compress[Zlib]
+  def deflate: LazyList[Data] = this.lazyList[Data].compress[Deflate]
 
   def extractTo[plane <: Posix: Filesystem](root: Path on plane)
     ( using CreateNonexistentParents on plane,

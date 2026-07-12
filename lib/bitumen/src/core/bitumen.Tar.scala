@@ -77,7 +77,7 @@ object Tar:
       val mtimeU32: U32 =
         (mtime.let(_.generic).or(System.currentTimeMillis)/1000).toInt.bits.u32
 
-      Entry.File(name, mode, user, group, mtimeU32, data.stream[Data])
+      Entry.File(name, mode, user, group, mtimeU32, data.lazyList[Data])
 
     private[bitumen] val paxRef: TarRef =
       import strategies.throwUnsafely

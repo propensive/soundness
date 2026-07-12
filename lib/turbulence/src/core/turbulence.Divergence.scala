@@ -48,7 +48,7 @@ import zephyrine.*
 // subscriber queue parks the pump, so the slowest subscriber gates the
 // source — the correct backpressure semantics for replication. A source
 // failure is rethrown from each subscriber's next refill.
-object Manifold:
+object Divergence:
   private class Block(val storage: AnyRef, val start: Int, val size: Int)
 
   def apply[medium](consume source: (Stream[medium] over Credit)^, count: Int)

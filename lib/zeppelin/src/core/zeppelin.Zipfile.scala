@@ -60,7 +60,7 @@ object Zipfile:
 
   given streamable: Zipfile is Streamable by Data = _.serialize
   given source: Zipfile is Source by Data over Credit = zipfile =>
-    Stream(zipfile.serialize.iterator)
+    zipfile.serialize.iterator.stream
 
   def write[path: Abstractable across Paths to Text]
     (path: path, prefix: Optional[Data] = Unset)(entries: Iterable[Zip.Entry])

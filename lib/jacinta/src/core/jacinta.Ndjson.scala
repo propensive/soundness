@@ -43,6 +43,6 @@ object Ndjson:
   def parse[source: Streamable by Line](value: source)(using CharEncoder)
   :   Ndjson raises ParseError =
 
-    Ndjson(value.stream[Line].map { line => line.content.read[Json] })
+    Ndjson(value.lazyList[Line].map { line => line.content.read[Json] })
 
 case class Ndjson(stream: LazyList[Json])

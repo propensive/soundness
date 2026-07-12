@@ -149,7 +149,7 @@ extension [source: Streamable by Data](source: source)
     ( using hashed: Hash in hash, erased weakness: Permit[HashWeakness[hash]] )
   :   Digest in hash =
 
-    source.stream[Data].digest[hash]
+    source.lazyList[Data].digest[hash]
 
 
 // The concession of a hash algorithm: MD5 and SHA-1 are weak; everything else

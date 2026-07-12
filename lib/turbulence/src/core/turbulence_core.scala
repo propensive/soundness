@@ -58,8 +58,10 @@ import probates.awaitProbate
 inline def more[value](using value: value aka "more"): value = value()
 
 extension [value](value: value)
-  inline def stream[element]: LazyList[element] =
-    ${turbulence.internal.stream[value, element]('value)}
+  // The legacy `LazyList` view of a streamable value (the kernel `.stream`
+  // builds a `zephyrine.Stream` instead). Named `lazyList` to free `stream`.
+  inline def lazyList[element]: LazyList[element] =
+    ${turbulence.internal.lazyList[value, element]('value)}
 
   inline def read[result](using readable: (value is Readable to result)^): result =
     readable.read(value)
@@ -77,10 +79,10 @@ extension [value](value: value)
 extension [value: Streamable by Text](value: value)
   def load[result <: Documentary](using loadable: (result is Loadable by Text)^)
   :   Document[result] =
-    loadable.load(value.stream[Text])
+    loadable.load(value.lazyList[Text])
 
 extension [medium, transport](consume stream: (Stream[medium] over transport)^)
-  // The detached pump: `flowTo` on its own parasite task, for fire-and-forget
+  // The detached pump: `pump` on its own parasite task, for fire-and-forget
   // transfers and genuinely concurrent pipeline halves. This is the "one
   // pumping thread" of a pipeline with an asynchronous boundary.
   def flow(consume intake: (Intake[medium] over transport)^)(using Monitor, Probate): Task[Unit] =
@@ -92,19 +94,19 @@ extension [medium, transport](consume stream: (Stream[medium] over transport)^)
 
     async:
       streamRef.asInstanceOf[(Stream[medium] over transport)^]
-      . flowTo(intakeRef.asInstanceOf[(Intake[medium] over transport)^])
+      . pump(intakeRef.asInstanceOf[(Intake[medium] over transport)^])
 
 extension (consume stream: (Stream[Data] over Credit)^)
   def compress[format <: Compressor](using compression: format is Compression, buffering: Buffering)
   :   (Stream[Data] over Credit)^ =
 
-    stream.through(compression.compressor())
+    stream.via(compression.compressor()).asInstanceOf[(Stream[Data] over Credit)^]
 
   def decompress[format <: Compressor]
     ( using compression: format is Compression, buffering: Buffering )
   :   (Stream[Data] over Credit)^ =
 
-    stream.through(compression.decompressor())
+    stream.via(compression.decompressor()).asInstanceOf[(Stream[Data] over Credit)^]
 
 extension (consume stream: (Stream[Data] over Credit)^)
   // View a pull endpoint as a `java.io.InputStream` for handing to JDK APIs:
