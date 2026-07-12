@@ -60,7 +60,7 @@ object Benchmarks extends Suite(m"Breviloquence CBOR parser benchmarks"):
   // is expensive and intended to be amortised in production.
   val jacksonMapper: com.fasterxml.jackson.databind.ObjectMapper =
     new com.fasterxml.jackson.databind.ObjectMapper(
-      new com.fasterxml.jackson.dataformat.in[Cbor].CBORFactory())
+      new com.fasterxml.jackson.dataformat.cbor.CBORFactory())
 
   def parseWithJackson(bytes: Array[Byte]): com.fasterxml.jackson.databind.JsonNode =
     jacksonMapper.readTree(bytes).nn

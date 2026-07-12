@@ -1560,7 +1560,7 @@ object Yaml extends Yaml2, Dynamic:
 
       def genericize(value: Yaml): HttpStreams.Content =
         ( t"application/yaml; charset=${encoder.encoding.name}",
-          HttpStreams.Body(Yaml.unseal(value).show.data) )
+          HttpStreams.Body(Yaml.unseal(value).show.in[Data]) )
 
   given instantiable: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
   =>  ((Yaml is Instantiable across HttpRequests from Text)^{tactic}) =

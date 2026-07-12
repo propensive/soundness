@@ -295,7 +295,7 @@ object Tests extends Suite(m"Perihelion tests"):
         Frame.parse(Cursor[Data](LazyList(bytes).iterator))(using masking)
 
       test(m"A client-masked frame is readable by the server"):
-        val masked: Data = Masking.Client().outbound(Frame.Text(true, t"hi".data).encode)
+        val masked: Data = Masking.Client().outbound(Frame.Text(true, t"hi".in[Data]).encode)
         parseAs(Masking.Server, masked) match
           case Frame.Text(_, data) => data.utf8
           case _                   => t"?"
@@ -303,18 +303,18 @@ object Tests extends Suite(m"Perihelion tests"):
 
       test(m"A client masks with a fresh key each time"):
         val client = Masking.Client()
-        val frame = Frame.Text(true, t"hello".data).encode
+        val frame = Frame.Text(true, t"hello".in[Data]).encode
         client.outbound(frame) != client.outbound(frame)
       . assert(_ == true)
 
       test(m"A client accepts an unmasked server frame"):
-        parseAs(Masking.Client(), Frame.Text(true, t"hi".data).encode) match
+        parseAs(Masking.Client(), Frame.Text(true, t"hi".in[Data]).encode) match
           case Frame.Text(_, data) => data.utf8
           case _                   => t"?"
       . assert(_ == t"hi")
 
       test(m"A client rejects a masked server frame"):
-        val masked: Data = Masking.Client().outbound(Frame.Text(true, t"hi".data).encode)
+        val masked: Data = Masking.Client().outbound(Frame.Text(true, t"hi".in[Data]).encode)
         capture[WebsocketError](parseAs(Masking.Client(), masked)).reason
       . assert(_ == WebsocketError.Reason.Masked)
 

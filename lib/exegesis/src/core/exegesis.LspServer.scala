@@ -523,8 +523,8 @@ trait LspServer() extends Lsp:
     val writer: Task[Unit] = async:
       outgoing.iterator.each: json =>
         val body: Text = json.encode
-        val payload: Data = body.data
-        summon[Stdio].write(t"Content-Length: ${payload.length}\r\n\r\n".data)
+        val payload: Data = body.in[Data]
+        summon[Stdio].write(t"Content-Length: ${payload.length}\r\n\r\n".in[Data])
         summon[Stdio].write(payload)
         summon[Stdio].out.flush()
 

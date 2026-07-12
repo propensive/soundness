@@ -72,7 +72,7 @@ object Sheet:
             case '\t' => t"text/tab-separated-values"
             case _    => t"text/csv"
 
-        (mediaType, HttpStreams.Body(dsv.lazyList[Text].map(_.data).iterator))
+        (mediaType, HttpStreams.Body(dsv.lazyList[Text].map(_.in[Data]).iterator))
 
 
   given tabular: Sheet is Tabular[Text]:

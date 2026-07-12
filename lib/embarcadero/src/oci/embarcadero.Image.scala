@@ -116,7 +116,7 @@ case class Image
           mtime = 0.bits.u32,
           data  = LazyList(content) )
 
-    val layoutEntry = entry(t"oci-layout", t"""{"imageLayoutVersion":"1.0.0"}""".data)
+    val layoutEntry = entry(t"oci-layout", t"""{"imageLayoutVersion":"1.0.0"}""".in[Data])
     val indexEntry  = entry(t"index.json", indexBytes)
 
     val blobEntries = blobs.map: (digest, content) =>

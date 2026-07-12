@@ -83,10 +83,11 @@ object Postable:
 
 
   given text: (encoder: CharEncoder) => Text is Postable =
-    Postable(media"text/plain", value => Stream(IArray.from(value.data)))
+    // Sealed: a fresh `IArray` is immutable; fresh-ness is the opaque-Array artifact.
+    Postable(media"text/plain", value => Stream(caps.unsafe.unsafeAssumePure(IArray.from(value.in[Data]))))
 
   given textStream: (encoder: CharEncoder) => LazyList[Text] is Postable =
-    Postable(media"application/octet-stream", lazyList => Stream(lazyList.map(_.data).iterator))
+    Postable(media"application/octet-stream", lazyList => Stream(lazyList.map(_.in[Data]).iterator))
 
   given unit: Unit is Postable = Postable(media"text/plain", _ => Iterator.empty[Data].stream)
   given data: Data is Postable = Postable(media"application/octet-stream", _.stream)
@@ -96,7 +97,7 @@ object Postable:
 
   given query: Query is Postable =
     import charEncoders.utf8Encoder
-    Postable(media"application/x-www-form-urlencoded", query => query.queryString.data.stream)
+    Postable(media"application/x-www-form-urlencoded", query => query.queryString.in[Data].stream)
 
 
   given dataStream: [response: Abstractable across HttpStreams to HttpStreams.Content]

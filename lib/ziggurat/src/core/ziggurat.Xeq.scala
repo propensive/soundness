@@ -101,7 +101,7 @@ object Xeq:
       builder.add(t"-----END CERTIFICATE-----\n")
 
     builder.add(t"#>\n")
-    builder.text.data(using charEncoders.utf8Encoder)
+    builder.text.in[Data](using charEncoders.utf8Encoder)
 
 
   def downloader(url: Text, hash: Text): Data =
@@ -123,7 +123,7 @@ object Xeq:
     builder.add(hash)
     builder.add('\n')
     builder.add(t"#>\n")
-    builder.text.data(using charEncoders.utf8Encoder)
+    builder.text.in[Data](using charEncoders.utf8Encoder)
 
 
   // The polyglot online launcher. Unlike `installer` (which embeds every bare stub), this
@@ -158,7 +158,7 @@ object Xeq:
     builder.add(rows.join(t","))
     builder.add('\n')
     builder.add(t"#>\n")
-    builder.text.data(using charEncoders.utf8Encoder)
+    builder.text.in[Data](using charEncoders.utf8Encoder)
 
 
   private def write(output: Path on Linux, data: Data): Unit = unsafely:

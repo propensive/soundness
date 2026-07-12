@@ -104,7 +104,7 @@ object Tar:
     private[bitumen] def formatLongOctal(number: Long, width: Int): Data =
       val str: String = java.lang.Long.toOctalString(number).nn
       val pad: Int = (width - 1 - str.length).max(0)
-      (("0"*pad) + str).tt.data
+      (("0"*pad) + str).tt.in[Data]
 
   enum Entry(path: TarRef, mode: UnixMode, user: UnixUser, group: UnixGroup, mtime: U32):
     case File
@@ -197,7 +197,7 @@ object Tar:
     def size: U32 = this match
       case file: File      => file.data.sumBy(_.length).bits.u32
       case pax: Pax        => pax.records.length.bits.u32
-      case long: GnuLong   => (long.content.data.length + 1).bits.u32
+      case long: GnuLong   => (long.content.in[Data].length + 1).bits.u32
       case sparse: Sparse  => sparse.segments.map(_.length).sum.toInt.bits.u32
       case _               => 0
 
@@ -206,7 +206,7 @@ object Tar:
       case pax: Pax        => LazyList(pax.records).chunked(512, zeroPadding = true)
 
       case long: GnuLong =>
-        LazyList(long.content.data ++ IArray.fill[Byte](1)(0)).chunked(512, zeroPadding = true)
+        LazyList(long.content.in[Data] ++ IArray.fill[Byte](1)(0)).chunked(512, zeroPadding = true)
 
       case sparse: Sparse =>
         sparse.data.chunked(512, zeroPadding = true)
@@ -241,26 +241,26 @@ object Tar:
       case special: BlockSpecial => special.device
 
     def format(number: U32, width: Int): Data =
-      number.octal.pad(width - 1).data
+      number.octal.pad(width - 1).in[Data]
 
     def formatLong(number: Long, width: Int): Data =
       val str: String = java.lang.Long.toOctalString(number).nn
       val pad: Int = (width - 1 - str.length).max(0)
-      (("0"*pad) + str).tt.data
+      (("0"*pad) + str).tt.in[Data]
 
     def header: Data = Data.build(512): array =>
-      val nameData = entryName.data
+      val nameData = entryName.in[Data]
       array.place(if nameData.length > 100 then nameData.slice(0, 100) else nameData, Prim)
       array.place(mode.bytes, 100.z)
       array.place(user.bytes, 108.z)
       array.place(group.bytes, 116.z)
       array.place(format(size, 12), 124.z)
       array.place(format(mtime, 12), 136.z)
-      array.place(t"        ".data, 148.z)
+      array.place(t"        ".in[Data], 148.z)
       array(156) = typeFlag.id.toByte
 
       link.let: link =>
-        val linkData = link.data
+        val linkData = link.in[Data]
         array.place(if linkData.length > 100 then linkData.slice(0, 100) else linkData, 157.z)
 
       deviceNumbers.let: (devMajor, devMinor) =>
@@ -268,15 +268,15 @@ object Tar:
         array.place(format(devMinor, 8), 337.z)
 
       user.name.let: name =>
-        val nameData = name.data
+        val nameData = name.in[Data]
         array.place(if nameData.length > 32 then nameData.slice(0, 32) else nameData, 265.z)
 
       group.name.let: name =>
-        val nameData = name.data
+        val nameData = name.in[Data]
         array.place(if nameData.length > 32 then nameData.slice(0, 32) else nameData, 297.z)
 
-      array.place(t"ustar\u0000".data, 257.z)
-      array.place(t"00".data, 263.z)
+      array.place(t"ustar\u0000".in[Data], 257.z)
+      array.place(t"00".in[Data], 263.z)
 
       this.only:
         case sparse: Sparse =>

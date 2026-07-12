@@ -53,7 +53,7 @@ object Sse:
     import charEncoders.utf8Encoder
 
     Servable[LazyList[Sse]](_ => media"text/event-stream"): stream =>
-      Http.Body.Flowing(() => zephyrine.Stream(stream.map(_.encode.data).iterator))
+      Http.Body.Flowing(() => zephyrine.Stream(stream.map(_.encode.in[Data]).iterator))
 
   given framable: Text is Framable by Sse = input =>
     val cursor = Cursor(input)

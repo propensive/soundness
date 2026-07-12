@@ -50,7 +50,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
          user  = UnixUser(0),
          group = UnixGroup(0),
          mtime = 0.bits.u32,
-         data  = LazyList(content.data) )
+         data  = LazyList(content.in[Data]) )
 
     def bytesOf(stream: LazyList[Data]): Data = stream.foldLeft(IArray.empty[Byte])(_ ++ _)
 
@@ -152,7 +152,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"oci-layout declares image layout version 1.0.0"):
         layoutData.map(bytes => bytes.to(List))
-      . assert(_ == List(t"""{"imageLayoutVersion":"1.0.0"}""".data.to(List)))
+      . assert(_ == List(t"""{"imageLayoutVersion":"1.0.0"}""".in[Data].to(List)))
 
     suite(m"containerd over a gRPC loopback"):
       import threading.virtualThreading
@@ -318,7 +318,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           val container = Container(t"web", image = t"img:1",
               runtime = Runtime(t"io.containerd.runc.v2"),
-              spec = AnyMessage(t"oci-spec", t"hello".data))
+              spec = AnyMessage(t"oci-spec", t"hello".in[Data]))
 
           val body = GrpcFraming.encode(CreateContainerResponse(container).in[Protobuf].encode)
           runServer(serverSide, namespace, body)
@@ -330,7 +330,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           val created = Containerd(endpoint, t"example").createContainer(container)
           (created.id, created.runtime.name, created.spec.typeUrl, created.spec.value.to(List))
-      . assert(_ == (t"web", t"io.containerd.runc.v2", t"oci-spec", t"hello".data.to(List)))
+      . assert(_ == (t"web", t"io.containerd.runc.v2", t"oci-spec", t"hello".in[Data].to(List)))
 
       test(m"createTask sends rootfs mounts and returns the task pid"):
         supervise:

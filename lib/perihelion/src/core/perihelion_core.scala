@@ -105,7 +105,7 @@ given transmissible: [transport, value]
 =>  ( format: transport is Encodable in Text, codec: value is Encodable in transport )
 =>  CharEncoder
 =>  (value over transport) is Transmissible =
-  payload => zephyrine.Stream(Frame.Text(true, format.encoded(codec.encoded(payload)).data).encode)
+  payload => zephyrine.Stream(Frame.Text(true, format.encoded(codec.encoded(payload)).in[Data]).encode)
 
 // The decode direction. The `Decodable in Text`/`in transport` instances are
 // `Tactic`-conditional and don't resolve as nested given constraints, so we
@@ -115,7 +115,7 @@ given ingressive: [transport, value]
 =>  ( format: transport is Decodable in Text, codec: value is Decodable in transport )
 =>  ( CharDecoder, Tactic[Hazard] )
 =>  (value over transport) is Ingressive =
-  bytes => codec.decoded(format.decoded(bytes.text)).over[transport]
+  bytes => codec.decoded(format.decoded(summon[CharDecoder].decoded(bytes))).over[transport]
 
 // Tag a value with the transport format it should ride, so a reply resolves the
 // `over`-composed `Transmissible`. `over` is a phantom type member, so this is a

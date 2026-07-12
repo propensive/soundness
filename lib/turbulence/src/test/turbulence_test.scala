@@ -83,26 +83,26 @@ object Tests extends Suite(m"Turbulence tests"):
         bs     <- 1 to 8
       do
         test(m"length tests"):
-          val stream = string.data.grouped(bs).to(LazyList)
+          val stream = string.in[Data].grouped(bs).to(LazyList)
           val result = stream.read[Text]
-          result.data.length
-        . assert(_ == string.data.length)
+          result.in[Data].length
+        . assert(_ == string.in[Data].length)
 
         test(m"roundtrip tests"):
-          val stream = string.data.grouped(bs).to(LazyList)
+          val stream = string.in[Data].grouped(bs).to(LazyList)
           val result = stream.read[Text]
 
           result.s
         . assert(_ == string.s)
 
     val qbf = t"The quick brown fox\njumps over the lazy dog"
-    val qbfData = qbf.data
+    val qbfData = qbf.in[Data]
 
     object Ref:
       given textSource: Ref is Source by Text over Credit =
         ref => Stream(LazyList(t"abc", t"def").iterator)
       given dataSource: Ref is Source by Data over Credit =
-        ref => Stream(LazyList(t"abc".data, t"def".data).iterator)
+        ref => Stream(LazyList(t"abc".in[Data], t"def".in[Data]).iterator)
 
     case class Ref()
 
@@ -112,7 +112,7 @@ object Tests extends Suite(m"Turbulence tests"):
     case class Ref2()
 
     object Ref3:
-      given Ref3 is Source by Data over Credit = ref => Stream(LazyList(t"abc".data, t"def".data).iterator)
+      given Ref3 is Source by Data over Credit = ref => Stream(LazyList(t"abc".in[Data], t"def".in[Data]).iterator)
 
     case class Ref3()
 
@@ -135,7 +135,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read type as Data with Text and Byte Source"):
         Ref().read[Data].to(List)
-      . assert(_ == t"abcdef".data.to(List))
+      . assert(_ == t"abcdef".in[Data].to(List))
 
       test(m"Read some type as Text with only Text Source instance"):
         Ref2().read[Text].s
@@ -143,7 +143,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read some type as Data with only Text Source instance"):
         Ref2().read[Data].to(List)
-      . assert(_ == t"abcdef".data.to(List))
+      . assert(_ == t"abcdef".in[Data].to(List))
 
       test(m"Read some type as Text with only Data Source instance"):
         Ref3().read[Text].s
@@ -151,7 +151,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
       test(m"Read some type as Data with only Data Streamable instance"):
         Ref3().read[Data].to(List)
-      . assert(_ == t"abcdef".data.to(List))
+      . assert(_ == t"abcdef".in[Data].to(List))
 
       test(m"Read Text as LazyList[Text]"):
         qbf.read[LazyList[Text]].join
@@ -201,7 +201,7 @@ object Tests extends Suite(m"Turbulence tests"):
             store.arrayBuffer.append(byte)
 
         given GeneralStore is Writable by Text = (store, texts) => texts.each: text =>
-          text.data.each: byte =>
+          text.in[Data].each: byte =>
             store.arrayBuffer.append(byte)
 
       class ByteStore():
@@ -603,7 +603,7 @@ object Tests extends Suite(m"Turbulence tests"):
       . assert(_ == List.fill(3)(payload.to(List)))
 
       val mixed: Data =
-        Data.fill(50000) { index => (index%251).toByte } ++ (t"repetition "*500).data
+        Data.fill(50000) { index => (index%251).toByte } ++ (t"repetition "*500).in[Data]
 
       test(m"gzip duct roundtrips a byte stream"):
         val gather = Gather2()

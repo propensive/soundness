@@ -853,7 +853,7 @@ object Json extends Json2, Dynamic:
     new Json(ast, index)
 
   def parseTracked(source: Text)(using NumberMode, CharEncoder): Json raises ParseError =
-    parseTracked(source.data)
+    parseTracked(source.in[Data])
 
   // Parse a byte-chunk iterator into a `Json`, honouring the in-scope
   // `PositionTracking` toggle (`parsing.trackPositions`): when on, source
@@ -1343,7 +1343,7 @@ object Json extends Json2, Dynamic:
       type Result = HttpStreams.Content
 
       def genericize(json: Json): HttpStreams.Content =
-        (t"application/json; charset=${encoder.encoding.name}", HttpStreams.Body(json.show.data))
+        (t"application/json; charset=${encoder.encoding.name}", HttpStreams.Body(json.show.in[Data]))
 
 
   // Laundered pure like the primitive codecs above; additionally, this instance is
@@ -1352,12 +1352,12 @@ object Json extends Json2, Dynamic:
   given decodable: (tactic: Tactic[ParseError])
   =>  Json is distillate.Decodable in Text =
     caps.unsafe.unsafeAssumePure:
-      text => LazyList(text.data(using charEncoders.utf8Encoder)).read[Json]
+      text => LazyList(text.in[Data](using charEncoders.utf8Encoder)).read[Json]
 
   given instantiable: (tactic: Tactic[ParseError])
   =>  Json is Instantiable across HttpRequests from Text =
     caps.unsafe.unsafeAssumePure:
-      text => LazyList(text.data(using charEncoders.utf8Encoder)).read[Json]
+      text => LazyList(text.in[Data](using charEncoders.utf8Encoder)).read[Json]
 
   def applyDynamicNamed(methodName: "make")(elements: (String, Json)*): Json =
     val keys: IArray[String] = IArray.from(elements.map(_(0))).asInstanceOf[IArray[String]]

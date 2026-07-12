@@ -108,13 +108,13 @@ object Tests extends Suite(m"Exegesis Tests"):
 
     suite(m"Content-Length framing"):
       test(m"a framed message is unframed to its body"):
-        Iterator(t"Content-Length: 5\r\n\r\n12345".data).frames[ContentLength].map(_.utf8).to(List)
+        Iterator(t"Content-Length: 5\r\n\r\n12345".in[Data]).frames[ContentLength].map(_.utf8).to(List)
       . assert(_ == List(t"12345"))
 
       test(m"a multi-byte UTF-8 body is framed by byte length, not character count"):
         val body = t"""{"k":"café"}"""
-        val message = t"Content-Length: ${body.data.length}\r\n\r\n"+body
-        Iterator(message.data).frames[ContentLength].map(_.utf8).to(List)
+        val message = t"Content-Length: ${body.in[Data].length}\r\n\r\n"+body
+        Iterator(message.in[Data]).frames[ContentLength].map(_.utf8).to(List)
       . assert(_ == List(t"""{"k":"café"}"""))
 
     suite(m"Dispatch"):

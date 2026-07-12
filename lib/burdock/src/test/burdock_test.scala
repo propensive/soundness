@@ -74,7 +74,7 @@ object Tests extends Suite(m"Burdock Tests"):
     suite(m"Repackager partition"):
       val published = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"
       val resolve: Text => Optional[HttpUrl] = h => if h == t"aaa" then published else Unset
-      val classEntry = Zip.Entry(t"pkg/X.class".as[Path on Zip], t"bytes".data)
+      val classEntry = Zip.Entry(t"pkg/X.class".as[Path on Zip], t"bytes".in[Data])
       val cached: Repackager.CacheReader =
         h => if h == t"bbb" then List(classEntry) else Unset
 
@@ -156,19 +156,19 @@ object Tests extends Suite(m"Burdock Tests"):
       val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
 
       Zipfile.write(inputJar):
-        Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.data)
-        #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"aaa\nbbb".data)
-        #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".data)
+        Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
+        #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"aaa\nbbb".in[Data])
+        #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".in[Data])
         #:: LazyList()
 
       val resolve: Repackager.Resolver =
         h => if h == t"aaa" then url"https://repo1.maven.org/maven2/g/a/1/a-1.jar" else Unset
 
       val cached: Repackager.CacheReader =
-        h => if h == t"bbb" then List(Zip.Entry(t"dep/Lib.class".as[Path on Zip], t"lib".data))
+        h => if h == t"bbb" then List(Zip.Entry(t"dep/Lib.class".as[Path on Zip], t"lib".in[Data]))
              else Unset
 
-      Repackager.repackage(inputJar, outputJar, resolve, cached, t"bootstrap-bytes".data)
+      Repackager.repackage(inputJar, outputJar, resolve, cached, t"bootstrap-bytes".in[Data])
 
       val names: List[Text] = Zipfile.read(outputJar).entries.map(_.ref.show).to(List)
 
@@ -211,17 +211,17 @@ object Tests extends Suite(m"Burdock Tests"):
       val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
 
       Zipfile.write(inputJar):
-        Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.data)
-        #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"".data)
-        #:: Zip.Entry(t"com/example".as[Path on Zip], t"".data).copy(directory = true)
-        #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".data)
+        Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
+        #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"".in[Data])
+        #:: Zip.Entry(t"com/example".as[Path on Zip], t"".in[Data]).copy(directory = true)
+        #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".in[Data])
         #:: LazyList()
 
       val resolve: Repackager.Resolver = _ => Unset
       val cached: Repackager.CacheReader = _ => Unset
 
       val summary =
-        Repackager.repackage(inputJar, outputJar, resolve, cached, t"bootstrap".data)
+        Repackager.repackage(inputJar, outputJar, resolve, cached, t"bootstrap".in[Data])
 
       val entries = Zipfile.read(outputJar).entries.to(List)
       val names: List[Text] = entries.map(_.ref.show)
@@ -256,23 +256,23 @@ object Tests extends Suite(m"Burdock Tests"):
       val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
 
       Zipfile.write(inputJar):
-        Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.data)
-        #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"bbb".data)
-        #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".data)
-        #:: Zip.Entry(t"burdock/Bootstrap.class".as[Path on Zip], t"stale-bootstrap".data)
-        #:: Zip.Entry(t"dep/Lib.class".as[Path on Zip], t"bundled-lib".data)
+        Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
+        #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"bbb".in[Data])
+        #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".in[Data])
+        #:: Zip.Entry(t"burdock/Bootstrap.class".as[Path on Zip], t"stale-bootstrap".in[Data])
+        #:: Zip.Entry(t"dep/Lib.class".as[Path on Zip], t"bundled-lib".in[Data])
         #:: LazyList()
 
       val resolve: Repackager.Resolver = _ => Unset
 
       val cached: Repackager.CacheReader = h =>
         if h == t"bbb"
-        then Zip.Entry(t"dep/Lib.class".as[Path on Zip], t"cached-lib".data)
-             :: Zip.Entry(t"burdock/Bootstrap.class".as[Path on Zip], t"cached-bootstrap".data)
+        then Zip.Entry(t"dep/Lib.class".as[Path on Zip], t"cached-lib".in[Data])
+             :: Zip.Entry(t"burdock/Bootstrap.class".as[Path on Zip], t"cached-bootstrap".in[Data])
              :: Nil
         else Unset
 
-      Repackager.repackage(inputJar, outputJar, resolve, cached, t"real-bootstrap".data)
+      Repackager.repackage(inputJar, outputJar, resolve, cached, t"real-bootstrap".in[Data])
 
       val names: List[Text] = Zipfile.read(outputJar).entries.map(_.ref.show).to(List)
 
@@ -301,11 +301,11 @@ object Tests extends Suite(m"Burdock Tests"):
       val manifestText: Text = t"Manifest-Version: 1.0\nMain-Class: com.example.Main\n\n"
 
       Zipfile.write(inputJar):
-        Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.data)
-        #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"pub\nunpub".data)
-        #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".data)
-        #:: Zip.Entry(t"published/Lib.class".as[Path on Zip], t"published-bytes".data)
-        #:: Zip.Entry(t"unpublished/Lib.class".as[Path on Zip], t"unpublished-bytes".data)
+        Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
+        #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"pub\nunpub".in[Data])
+        #:: Zip.Entry(t"com/example/Main.class".as[Path on Zip], t"main".in[Data])
+        #:: Zip.Entry(t"published/Lib.class".as[Path on Zip], t"published-bytes".in[Data])
+        #:: Zip.Entry(t"unpublished/Lib.class".as[Path on Zip], t"unpublished-bytes".in[Data])
         #:: LazyList()
 
       val published = url"https://repo1.maven.org/maven2/g/a/1/a-1.jar"
@@ -313,15 +313,15 @@ object Tests extends Suite(m"Burdock Tests"):
 
       // The published dep's cached JAR lists the class bundled in the assembly (so it can be
       // identified and stripped); the unpublished dep stays bundled.
-      val pubEntry = Zip.Entry(t"published/Lib.class".as[Path on Zip], t"x".data)
-      val unpubEntry = Zip.Entry(t"unpublished/Lib.class".as[Path on Zip], t"y".data)
+      val pubEntry = Zip.Entry(t"published/Lib.class".as[Path on Zip], t"x".in[Data])
+      val unpubEntry = Zip.Entry(t"unpublished/Lib.class".as[Path on Zip], t"y".in[Data])
 
       val cached: Repackager.CacheReader = h =>
         if h == t"pub" then List(pubEntry)
         else if h == t"unpub" then List(unpubEntry)
         else Unset
 
-      Repackager.repackage(inputJar, outputJar, resolve, cached, t"bootstrap".data)
+      Repackager.repackage(inputJar, outputJar, resolve, cached, t"bootstrap".in[Data])
 
       val names: List[Text] = Zipfile.read(outputJar).entries.map(_.ref.show).to(List)
 
@@ -360,20 +360,20 @@ object Tests extends Suite(m"Burdock Tests"):
       // deflate actually wins and the method is recorded as `Deflate`).
       val storedEntry: Zip.Entry =
         given Zip.Compression = Zip.Compression.Stored
-        Zip.Entry(t"pkg/Stored.class".as[Path on Zip], t"stored-payload".data)
+        Zip.Entry(t"pkg/Stored.class".as[Path on Zip], t"stored-payload".in[Data])
 
       val deflateEntry: Zip.Entry =
         given Zip.Compression = Zip.Compression.Deflate(-1)
-        Zip.Entry(t"pkg/Deflated.class".as[Path on Zip], (t"a"*2000).data)
+        Zip.Entry(t"pkg/Deflated.class".as[Path on Zip], (t"a"*2000).in[Data])
 
       Zipfile.write(inputJar):
-        Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.data)
-        #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"".data)
+        Zip.Entry(t"META-INF/MANIFEST.MF".as[Path on Zip], manifestText.in[Data])
+        #:: Zip.Entry(t"META-INF/burdock.deps".as[Path on Zip], t"".in[Data])
         #:: storedEntry
         #:: deflateEntry
         #:: LazyList()
 
-      Repackager.repackage(inputJar, outputJar, _ => Unset, _ => Unset, t"bootstrap".data)
+      Repackager.repackage(inputJar, outputJar, _ => Unset, _ => Unset, t"bootstrap".in[Data])
 
       def entry(jar: Path on Linux, name: Text): Zip.Entry =
         Zipfile.read(jar).entries.find(_.ref.show == name).get

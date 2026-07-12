@@ -294,9 +294,9 @@ object Zipfile:
     // ZIP entry names are relative; absolute `Path on Zip` values encode with a leading
     // slash, which `java -jar` and the spec reject, so strip it.
     val base: Text = if encoded.starts(t"/") then encoded.skip(1) else encoded
-    (if entry.directory then t"$base/" else base).data
+    (if entry.directory then t"$base/" else base).in[Data]
 
-  private def textBytes(text: Text): Data = text.data
+  private def textBytes(text: Text): Data = text.in[Data]
 
   private def utf8Flag(name: Data): Int = if name.exists(_ < 0) then 0x800 else 0
 

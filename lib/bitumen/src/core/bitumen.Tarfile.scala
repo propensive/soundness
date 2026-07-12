@@ -317,18 +317,18 @@ object Tarfile:
 
   private def paxRecordsFor(entry: Tar.Entry): List[(Text, Text)] =
     val builder = List.newBuilder[(Text, Text)]
-    if entry.entryName.data.length > 100 then builder += ((t"path", entry.entryName))
+    if entry.entryName.in[Data].length > 100 then builder += ((t"path", entry.entryName))
 
     entry.link.let: link =>
-      if link.data.length > 100 then builder += ((t"linkpath", link))
+      if link.in[Data].length > 100 then builder += ((t"linkpath", link))
 
     val (user, group) = userAndGroup(entry)
 
     user.name.let: name =>
-      if name.data.length > 32 then builder += ((t"uname", name))
+      if name.in[Data].length > 32 then builder += ((t"uname", name))
 
     group.name.let: name =>
-      if name.data.length > 32 then builder += ((t"gname", name))
+      if name.in[Data].length > 32 then builder += ((t"gname", name))
 
     paxOf(entry).foreach: (k, v) =>
       if !structuralPaxKeys.contains(k) then builder += ((k, v))
@@ -387,12 +387,12 @@ case class Tarfile
 
       case LongNameFormat.Gnu =>
         val nameBlocks =
-          if entry.entryName.data.length > 100
+          if entry.entryName.in[Data].length > 100
           then Tar.Entry.GnuLong(TypeFlag.LongName, entry.entryName).serialize
           else LazyList()
 
         val linkBlocks = entry.link.let: l =>
-          if l.data.length > 100 then Tar.Entry.GnuLong(TypeFlag.LongLink, l).serialize
+          if l.in[Data].length > 100 then Tar.Entry.GnuLong(TypeFlag.LongLink, l).serialize
           else LazyList()
 
         . or(LazyList())

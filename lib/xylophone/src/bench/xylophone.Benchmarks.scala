@@ -69,7 +69,7 @@ object Benchmarks extends Suite(m"Xylophone benchmarks"):
     import zephyrine.parsing.trackPositions
     unsafely(text.load[Xml])
 
-  def parseScalaXml(text: String): scala.in[Xml].Elem = scala.in[Xml].XML.loadString(text)
+  def parseScalaXml(text: String): scala.xml.Elem = scala.xml.XML.loadString(text)
 
   def run(): Unit =
     val bench = Bench()

@@ -98,8 +98,8 @@ object Api:
 
     val (contentType, body): (Optional[Text], Spring[Data]) = request.body match
       case Api.Body.Empty       => (Unset, empty)
-      case Api.Body.Json(value) => (t"application/json", () => value.show.data.stream)
-      case Api.Body.Xml(value)  => (t"application/xml", () => value.show.data.stream)
+      case Api.Body.Json(value) => (t"application/json", () => value.show.in[Data].stream)
+      case Api.Body.Xml(value)  => (t"application/xml", () => value.show.in[Data].stream)
 
     val contentTypeHeader: List[Http.Header] = contentType.lay(Nil): media =>
       List(Http.Header(t"content-type", media))

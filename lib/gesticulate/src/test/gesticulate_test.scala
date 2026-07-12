@@ -47,7 +47,7 @@ object Tests extends Suite(m"Gesticulate tests"):
       // sizes including very small ones to exercise cross-block detection.
 
       def chunks(text: Text, size: Int): LazyList[Data] =
-        val data: Data = text.data
+        val data: Data = text.in[Data]
         def go(offset: Int): LazyList[Data] =
           if offset >= data.length then LazyList() else
             val end = math.min(offset + size, data.length)
@@ -173,14 +173,14 @@ object Tests extends Suite(m"Gesticulate tests"):
 
       test(m"Non-dash leading byte throws Expected('-')"):
         val body = t"X--xyz\r\n\r\n\r\n--xyz--\r\n"
-        capture[MultipartError](Multipart.parse(LazyList(body.data))).reason
+        capture[MultipartError](Multipart.parse(LazyList(body.in[Data]))).reason
 
       . assert(_ == MultipartError.Reason.Expected('-'))
 
       test(m"Single-dash leading sequence throws Expected('-')"):
         val body =
           t"-xyz\r\nContent-Disposition: form-data; name=\"a\"\r\n\r\nv\r\n-xyz--\r\n"
-        capture[MultipartError](Multipart.parse(LazyList(body.data))).reason
+        capture[MultipartError](Multipart.parse(LazyList(body.in[Data]))).reason
 
       . assert(_ == MultipartError.Reason.Expected('-'))
 

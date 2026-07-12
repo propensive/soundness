@@ -40,7 +40,7 @@ import prepositional.*
 
 object Ingressive:
   given bytes: Data is Ingressive = identity(_)
-  given text: CharDecoder => Text is Ingressive = _.text
+  given text: CharDecoder => Text is Ingressive = summon[CharDecoder].decoded(_)
 
   given decoder: [message: Decodable in Text] => CharDecoder => message is Ingressive =
     text.map(_.as[message])

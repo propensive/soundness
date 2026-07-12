@@ -41,10 +41,10 @@ import vacuous.*
 
 object Pax:
   def record(key: Text, value: Text): Data =
-    val payload: Data = (key.s+"="+value.s+"\n").tt.data
+    val payload: Data = (key.s+"="+value.s+"\n").tt.in[Data]
     val payloadLen: Int = payload.length
     val total: Int = computeLength(payloadLen)
-    (total.toString+" "+key.s+"="+value.s+"\n").tt.data
+    (total.toString+" "+key.s+"="+value.s+"\n").tt.in[Data]
 
   def records(pairs: Iterable[(Text, Text)]): Data =
     pairs.foldLeft(IArray.empty[Byte]): (acc, pair) => acc ++ record(pair(0), pair(1))

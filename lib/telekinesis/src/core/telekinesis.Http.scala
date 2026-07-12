@@ -320,21 +320,21 @@ object Http:
         newline()
 
       def frame(data: Data): Iterator[Data] =
-        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".data, data, t"\r\n".data)
+        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
 
       if second.absent then
         val data = first.or(IArray.empty[Byte])
         val text = head(t"Content-Length: ${data.length}")
-        Stream(if data.length == 0 then Iterator(text.data) else Iterator(text.data, data))
+        Stream(if data.length == 0 then Iterator(text.in[Data]) else Iterator(text.in[Data], data))
       else
         val text = head(t"Transfer-Encoding: chunked")
 
         Stream
-          ( Iterator(text.data)
+          ( Iterator(text.in[Data])
             ++ frame(first.vouch)
             ++ frame(second.vouch)
             ++ Iterator.continually(pull()).takeWhile(_.present).flatMap { data => frame(data.vouch) }
-            ++ Iterator(t"0\r\n\r\n".data) )
+            ++ Iterator(t"0\r\n\r\n".in[Data]) )
 
     case class Head
       ( method: Method, version: Version, host: Host, target: Text, headers: List[Header] )
@@ -741,7 +741,7 @@ object Http:
         . takeWhile(_.present).map(_.vouch)
 
       def frame(data: Data): Iterator[Data] =
-        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".data, data, t"\r\n".data)
+        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
 
       def bodyBytes: Iterator[Data]^ =
         if !includeBody then Iterator.empty
@@ -751,12 +751,12 @@ object Http:
           case Body.Fixed(data) => Iterator(data)
 
           case Body.Flowing(source) =>
-            if chunked then pulls(source()).flatMap(frame) ++ Iterator(t"0\r\n\r\n".data)
+            if chunked then pulls(source()).flatMap(frame) ++ Iterator(t"0\r\n\r\n".in[Data])
             else pulls(source())
 
       // Hoisted: a by-name `++` operand may not mint a fresh capability.
       val chunks = bodyBytes
-      Stream(Iterator(head.data) ++ chunks)
+      Stream(Iterator(head.in[Data]) ++ chunks)
 
     def parse(stream: LazyList[Data]): Response raises HttpResponseError =
       parseCursor(Cursor[Data](stream.filter(_.nonEmpty).iterator))

@@ -118,8 +118,6 @@ extension (bytes: Data)
   def utf16: Text = String(bytes.mutable(using Unsafe), "UTF-16").tt
   def ascii: Text = String(bytes.mutable(using Unsafe), "ASCII").tt
 
-  def text(using decoder: CharDecoder): Text = decoder.decoded(bytes)
-
   // Printable Unicode Encoding
   def pue: Text =
     bytes.map: b =>
@@ -505,7 +503,6 @@ extension (text: Text)
   inline def urlEncode: Text = URLEncoder.encode(text.s, "UTF-8").nn.tt
   inline def urlDecode: Text = URLDecoder.decode(text.s, "UTF-8").nn.tt
   inline def punycode: Text = java.net.IDN.toASCII(text.s).nn.tt
-  inline def data(using encoder: CharEncoder): IArray[Byte] = encoder.encode(text)
   inline def sysData: IArray[Byte] = CharEncoder.system.encode(text)
 
   inline def fuzzy[result]

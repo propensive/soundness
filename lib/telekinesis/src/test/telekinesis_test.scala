@@ -109,7 +109,7 @@ object Tests extends Suite(m"Telekinesis tests"):
 
     suite(m"Response parsing"):
       def chunks(text: Text, size: Int): LazyList[Data] =
-        val data: Data = text.data
+        val data: Data = text.in[Data]
         def go(offset: Int): LazyList[Data] =
           if offset >= data.length then LazyList() else
             val end = math.min(offset + size, data.length)
@@ -295,7 +295,7 @@ object Tests extends Suite(m"Telekinesis tests"):
 
     suite(m"Request parsing"):
       def chunks(text: Text, size: Int): LazyList[Data] =
-        val data: Data = text.data
+        val data: Data = text.in[Data]
         def go(offset: Int): LazyList[Data] =
           if offset >= data.length then LazyList() else
             val end = math.min(offset + size, data.length)
@@ -420,7 +420,7 @@ object Tests extends Suite(m"Telekinesis tests"):
 
     suite(m"Response serialization"):
       def chunks(text: Text, size: Int): LazyList[Data] =
-        val data: Data = text.data
+        val data: Data = text.in[Data]
         def go(offset: Int): LazyList[Data] =
           if offset >= data.length then LazyList() else
             val end = math.min(offset + size, data.length)
@@ -458,7 +458,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       . assert(_ == true)
 
       test(m"Streaming body is framed with chunked transfer-encoding"):
-        val body = Http.Body.Flowing(() => Stream(LazyList(t"Hello".data, t"World".data).iterator))
+        val body = Http.Body.Flowing(() => Stream(LazyList(t"Hello".in[Data], t"World".in[Data]).iterator))
         wire(Http.Response(Http.Ok)(body))
 
       . assert: text =>
@@ -468,7 +468,7 @@ object Tests extends Suite(m"Telekinesis tests"):
           && text.ends(t"0\r\n\r\n")
 
       test(m"Streaming body skips zero-length blocks"):
-        val body = Http.Body.Flowing(() => Stream(LazyList(t"ab".data, t"".data, t"cd".data).iterator))
+        val body = Http.Body.Flowing(() => Stream(LazyList(t"ab".in[Data], t"".in[Data], t"cd".in[Data]).iterator))
         wire(Http.Response(Http.Ok)(body))
 
       . assert(_.contains(t"2\r\nab\r\n2\r\ncd\r\n"))
