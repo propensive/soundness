@@ -1307,13 +1307,8 @@ object hellenism extends Library:
 object honeycomb extends Library:
   object core extends Component(panopticon.core, gesticulate.core, xylophone.core, urticose.url,
       nomenclature.core, hellenism.core):
-    // NOT capture-checked: the `e`-macro's quoted type patterns
-    // (`case Some('{$renderable: Renderable})`) fail to unify with
-    // capture-decorated `Expr` types under `-Ycc-new` (12 errors, all in the
-    // macro/quotes family). Re-attempt when the quote-pattern/CC interaction
-    // improves upstream; see rep/DECISIONS.md "Sepcheck rollout".
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(mvn"org.jsoup:jsoup:1.18.3")

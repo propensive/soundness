@@ -160,10 +160,10 @@ object Html extends Tag.Container
 
 
   given strictAggregable: [content <: Label: Reifiable to List[String]]
-  =>  ( dom: Dom )
-  =>  Tactic[ParseError]
-  =>  NotGiven[Html.Recovery.Permissive]
-  =>  (Html of content) is Aggregable by Text =
+  =>  ( dom:    Dom,
+        tactic: Tactic[ParseError],
+        strict: NotGiven[Html.Recovery.Permissive] )
+  =>  (((Html of content) is Aggregable by Text)^{tactic, caps.any}) =
 
     new Aggregable:
       type Self = Html of content
@@ -173,14 +173,13 @@ object Html extends Tag.Container
         val root = Tag.root(content.reify.map(_.tt).to(Set))
         HtmlParser.fromIterator(input.iterator, permissive = false).parseHtml(root).of[content]
 
-      override def accept(stream: Stream[Text] over Credit): Html of content =
+      override def accept(stream: (Stream[Text] over Credit)^): Html of content =
         val root = Tag.root(content.reify.map(_.tt).to(Set))
         HtmlParser.fromStream(stream, permissive = false).parseHtml(root).of[content]
 
-  given strictAggregable2: (dom: Dom)
-  =>  Tactic[ParseError]
-  =>  NotGiven[Html.Recovery.Permissive]
-  =>  Html is Aggregable by Text =
+  given strictAggregable2: (dom: Dom, tactic: Tactic[ParseError])
+  =>  ( strict: NotGiven[Html.Recovery.Permissive] )
+  =>  ((Html is Aggregable by Text)^{tactic, caps.any}) =
     new Aggregable:
       type Self = Html
       type Operand = Text
@@ -189,14 +188,13 @@ object Html extends Tag.Container
         HtmlParser.fromIterator(input.iterator, permissive = false)
         . parseHtml(dom.generic, doctypes = false)
 
-      override def accept(stream: Stream[Text] over Credit): Html =
+      override def accept(stream: (Stream[Text] over Credit)^): Html =
         HtmlParser.fromStream(stream, permissive = false)
         . parseHtml(dom.generic, doctypes = false)
 
-  given strictLoadable: (dom: Dom)
-  =>  Tactic[ParseError]
-  =>  NotGiven[Html.Recovery.Permissive]
-  =>  Html is Loadable by Text = stream =>
+  given strictLoadable: (dom: Dom, tactic: Tactic[ParseError])
+  =>  ( strict: NotGiven[Html.Recovery.Permissive] )
+  =>  ((Html is Loadable by Text)^{tactic, caps.any}) = stream =>
     val root = Tag.root(Set(t"html"))
 
     HtmlParser.fromIterator(stream.iterator, permissive = false)
@@ -233,7 +231,7 @@ object Html extends Tag.Container
         lenient(Fragment().of[content]):
           HtmlParser.fromIterator(input.iterator, permissive = true).parseHtml(root).of[content]
 
-      override def accept(stream: Stream[Text] over Credit): Html of content =
+      override def accept(stream: (Stream[Text] over Credit)^): Html of content =
         given Tactic[ParseError] = lenientTactic
         val root = Tag.root(content.reify.map(_.tt).to(Set))
 
@@ -254,7 +252,7 @@ object Html extends Tag.Container
           HtmlParser.fromIterator(input.iterator, permissive = true)
           . parseHtml(dom.generic, doctypes = false)
 
-      override def accept(stream: Stream[Text] over Credit): Html =
+      override def accept(stream: (Stream[Text] over Credit)^): Html =
         given Tactic[ParseError] = lenientTactic
 
         lenient(Fragment()):
@@ -281,7 +279,8 @@ object Html extends Tag.Container
   // Streams a document's HTML source, using the document's own DOM and the indentation from the
   // contextual `Formatting`. The whole emission lives in this instance so `.stream` is the single
   // route to streamed HTML; the producing code runs on a separate fiber.
-  given streamable: (Monitor, Probate) => Document[Html] is Streamable by Text = document =>
+  given streamable: (monitor: Monitor, probate: Probate)
+  =>  ((Document[Html] is Streamable by Text)^{monitor, caps.any}) = document =>
     val formatting = summon[Formatting]
     val dom = document.metadata
     val producer = Producer[Text](4096)
@@ -303,7 +302,7 @@ object Html extends Tag.Container
 
   // HTML5 text-content escaping: `&`, `<` and `>`. Raw-text elements such as `script` and `style`
   // use `Mode.Raw` and are written verbatim by `writeHtml`.
-  private def writeEscapedText(producer: Producer[Text], text: Text): Unit =
+  private def writeEscapedText(producer: Producer[Text]^, text: Text): Unit =
     val source = text.s
     val length = source.length
     var start = 0
@@ -327,7 +326,7 @@ object Html extends Tag.Container
 
   // HTML5 escaping for a double-quoted attribute value: `&` and the `"` delimiter. `<` and `>` are
   // permitted literally in attribute values.
-  private def writeEscapedAttribute(producer: Producer[Text], text: Text): Unit =
+  private def writeEscapedAttribute(producer: Producer[Text]^, text: Text): Unit =
     val source = text.s
     val length = source.length
     var start = 0
@@ -352,7 +351,7 @@ object Html extends Tag.Container
   // `showable` so the two cannot drift. Void elements omit their close tag; raw-text elements
   // suppress escaping; whitespace-mode elements are indented when `block` is set.
   private def writeHtml
-    ( producer: Producer[Text],
+    ( producer: Producer[Text]^,
       dom:      Dom,
       node:     Html,
       indent:   Int,
@@ -384,15 +383,17 @@ object Html extends Tag.Container
         producer.put("<")
         producer.put(label)
 
-        if !attributes.nil then
-          attributes.each: (key, value) =>
-            producer.put(" ")
-            producer.put(key)
+        // No emptiness guard: `each` no-ops on an empty `Attributes`, and the
+        // inline `nil` extension fails to dealias the opaque through its
+        // capture-decorated pattern proxy under capture checking.
+        attributes.each: (key, value) =>
+          producer.put(" ")
+          producer.put(key)
 
-            value.let: value =>
-              producer.put("=\"")
-              writeEscapedAttribute(producer, value)
-              producer.put("\"")
+          value.let: value =>
+            producer.put("=\"")
+            writeEscapedAttribute(producer, value)
+            producer.put("\"")
 
         producer.put(">")
 
@@ -582,20 +583,24 @@ object Html extends Tag.Container
     // position — an O(buffer) cost paid only on the failure path.
 
     def fromText(text: Text, permissive: Boolean = false)(using Dom): HtmlParser =
-      new HtmlParser(Cursor[Text](text), permissive)
+      new HtmlParser(Cursor[Text](text).asInstanceOf[AnyRef], permissive)
 
     def fromIterator(input: Iterator[Text], permissive: Boolean = false)(using Dom): HtmlParser =
-      new HtmlParser(Cursor[Text](input), permissive)
+      new HtmlParser(Cursor[Text](input).asInstanceOf[AnyRef], permissive)
 
-    def fromStream(input: Stream[Text] over Credit, permissive: Boolean = false)(using Dom)
+    def fromStream(input: (Stream[Text] over Credit)^, permissive: Boolean = false)(using Dom)
     :   HtmlParser =
 
-      new HtmlParser(Cursor[Text](input), permissive)
+      new HtmlParser(Cursor[Text](input).asInstanceOf[AnyRef], permissive)
 
   private[honeycomb] final class HtmlParser
-    ( cursor:        Cursor[Text, ?],
+    ( cursor0:        AnyRef,
       val permissive: Boolean      = false )
     ( using dom: Dom ):
+    // A neutral carrier with an inline accessor (the `perihelion.Reader` pattern):
+    // the parser owns the cursor exclusively, but an exclusive-typed field would
+    // make the parser a capability and hide the cursor from its own methods.
+    private inline def cursor: Cursor[Text, ?]^ = cursor0.asInstanceOf[Cursor[Text, ?]^]
     private var heldToken: Cursor.Held | Null = null
 
     type Region = Cursor.Mark
@@ -682,7 +687,10 @@ object Html extends Tag.Container
       ( target: jl.StringBuilder )
     :   Unit =
 
-      cursor.clone(start, end)(target.asInstanceOf[cursor.addressable.Target])
+      // A stable binding: the inline `cursor` accessor is not a valid prefix for
+      // the path-dependent `addressable.Target`.
+      val cursor1: Cursor[Text, ?]^ = cursor
+      cursor1.clone(start, end)(target.asInstanceOf[cursor1.addressable.Target])
 
     protected def computePosition
       ( start: Optional[Cursor.Mark] = Unset,
@@ -725,6 +733,9 @@ object Html extends Tag.Container
 
     // Optional callback invoked for null-placeholder holes during macro
     // interpolation. Default no-op.
+    // Untracked: the macro-expansion callback is installed and invoked only within
+    // one `parseHtml` call.
+    @caps.unsafe.untrackedCaptures
     var callback: Optional[(Ordinal, Hole) => Unit] = Unset
 
     // Cursor-compat helpers so the algorithm body stays close to the
@@ -857,16 +868,26 @@ object Html extends Tag.Container
 
       def warn(issue: Issue): Unit = raise(ParseError(Html, currentPosition(), issue))
 
-      @tailrec
-      def skip(): Unit = let:
-        case ' ' | '\f' | '\n' | '\r' | '\t' => advance() yet skip()
-        case _                               => ()
+      // While-loops rather than `@tailrec` over the inline `let`/`lay`
+      // combinators: capture checking's beta-reduction of the inline lambdas
+      // leaves the recursive calls in non-tail position.
+      def skip(): Unit =
+        var continue = true
 
-      @tailrec
-      def whitespace(): Unit = lay(()):
-        case ' ' | '\f' | '\n' | '\r' | '\t' => advance() yet whitespace()
-        case '<'                             => ()
-        case char                            => fail(OnlyWhitespace(char))
+        while continue && more do peek match
+          case ' ' | '\f' | '\n' | '\r' | '\t' => advance()
+          case _                               => continue = false
+
+      def whitespace(): Unit =
+        var continue = true
+
+        while continue && more do peek match
+          case ' ' | '\f' | '\n' | '\r' | '\t' => advance()
+          case '<'                             => continue = false
+
+          case char =>
+            fail(OnlyWhitespace(char))
+            continue = false
 
       @tailrec
       def tagname(mark: Mark, node: Int): Tag =
@@ -1732,7 +1753,8 @@ object Html extends Tag.Container
   :   Html raises ParseError =
 
     val parser = HtmlParser.fromIterator(input, permissive = false)
-    parser.callback = callback
+    // Sealed into the untracked field: the callback lives only for this parse.
+    parser.callback = caps.unsafe.unsafeAssumePure(callback)
     parser.parseHtml(root, doctypes)
 
 sealed into trait Html extends Topical, Documentary, Formal:

@@ -305,17 +305,20 @@ object internal:
       case Some(s: String) => s
       case _               => Unset
 
-    val perPart: IndexedSeq[((String, Int), Int => Int)] =
+    val perPart: IndexedSeq[((String, Int), Int -> Int)] =
       parts.zip(partOrigins).map: (part, origin) =>
         val (srcStart, _) = origin
 
-        val mapping: Int => Int = sourceContent.lay[Int => Int](identity(_)): content =>
-          if srcStart > 0 && srcStart < content.length then
-            val upper = (srcStart + part.length * 6 + 16).min(content.length)
-            val sourceText = content.substring(srcStart, upper).nn
-            Interpolation.buildMapping(sourceText, part)
-          else
-            (i: Int) => i
+        // Sealed: the mapping closes over only strings, but its inferred fresh
+        // capture would leak into the collected sequence.
+        val mapping: Int -> Int = caps.unsafe.unsafeAssumePure:
+          sourceContent.lay[Int => Int](identity(_)): content =>
+            if srcStart > 0 && srcStart < content.length then
+              val upper = (srcStart + part.length * 6 + 16).min(content.length)
+              val sourceText = content.substring(srcStart, upper).nn
+              Interpolation.buildMapping(sourceText, part)
+            else
+              (i: Int) => i
 
         ((part, srcStart), mapping)
 
@@ -400,7 +403,10 @@ object internal:
                 ConstantType(StringConstant(tag.s)).asType.absolve match
                   case '[tag] => Expr.summon[(? >: value) is Renderable in (? >: tag)] match
                     case Some('{$renderable: Renderable}) =>
-                      '{$renderable.render($expr)}
+                      // Widened eagerly: joining the branch types under capture
+                      // checking decorates the summoned evidence's skolem, which
+                      // then fails to unify (the macro only needs `Expr[Any]`).
+                      ('{$renderable.render($expr)}: Expr[Any])
 
                     case _ =>
                       halt
@@ -414,7 +420,10 @@ object internal:
                 ConstantType(StringConstant(tag.s)).asType.absolve match
                   case '[tag] => Expr.summon[(? >: value) is Renderable in (? >: tag)] match
                     case Some('{$renderable: Renderable}) =>
-                      '{$renderable.render($expr)}
+                      // Widened eagerly: joining the branch types under capture
+                      // checking decorates the summoned evidence's skolem, which
+                      // then fails to unify (the macro only needs `Expr[Any]`).
+                      ('{$renderable.render($expr)}: Expr[Any])
 
                     case _ =>
                       Expr.summon[(? >: value) is Showable] match
@@ -447,11 +456,11 @@ object internal:
                     ( m"a ${TypeRepr.of[value is Showable].show} is required",
                       expr.asTerm.underlyingArgument.pos )
 
-              case Hole.Tagbody => Type.of[value] match
-                case '[Map[Text, Optional[Text]]] =>
-                  expr
-
-                case _ =>
+              case Hole.Tagbody =>
+                // A reflection-level test rather than a quoted type pattern
+                // (`case '[Map[Text, Optional[Text]]]`), which fails to unify
+                // against the capture-decorated scrutinee under capture checking.
+                if TypeRepr.of[value] <:< TypeRepr.of[Map[Text, Optional[Text]]] then expr else
                   halt
                     ( m"""
                         only a ${TypeRepr.of[Map[Text, Optional[Text]]].show} can be applied in a
@@ -605,7 +614,10 @@ object internal:
   opaque type Attributes = IArray[String | Null]
 
   object Attributes:
-    val empty: Attributes = IArray.empty[String | Null]
+    // Sealed: fresh `IArray`s are immutable; fresh-ness is the opaque-Array
+    // artifact, which would otherwise decorate every constructed `Attributes`
+    // (and, through `Element`'s constructor, every `Tag`).
+    val empty: Attributes = caps.unsafe.unsafeAssumePure(IArray.empty[String | Null])
 
     def apply(pairs: (Text, Optional[Text])*): Attributes =
       if pairs.isEmpty then empty else
@@ -618,7 +630,8 @@ object internal:
           arr(i*2 + 1) = pair._2.lay(null: String | Null)(_.s)
           i += 1
 
-        arr.immutable(using Unsafe)
+        // Sealed: see `empty` — the opaque-Array artifact.
+        caps.unsafe.unsafeAssumePure(arr.immutable(using Unsafe))
 
     def from(map: Map[Text, Optional[Text]]): Attributes =
       if map.isEmpty then empty else
@@ -631,7 +644,8 @@ object internal:
           arr(i*2 + 1) = v.lay(null: String | Null)(_.s)
           i += 1
 
-        arr.immutable(using Unsafe)
+        // Sealed: see `empty` — the opaque-Array artifact.
+        caps.unsafe.unsafeAssumePure(arr.immutable(using Unsafe))
 
     // Construct an `Attributes` directly from an interleaved `IArray`. The
     // caller guarantees the array's length is even and that every key slot

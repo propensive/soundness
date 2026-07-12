@@ -232,7 +232,11 @@ abstract class Tag
     val void:        Boolean                   = false,
     val transparent: Boolean                   = false,
     val boundary:    Boolean                   = false )
-extends Element(label, Attributes.from(presets), IArray(), foreign), Formal, Dynamic:
+// The empty-children `IArray()` is sealed: a fresh `IArray` in the parent
+// constructor call would otherwise decorate `Tag`'s self type, which must stay
+// pure like `Element`'s (the opaque-Array artifact).
+extends Element(label, Attributes.from(presets), caps.unsafe.unsafeAssumePure(IArray()), foreign),
+  Formal, Dynamic, caps.Pure:
   type Result <: Element
 
   // Pre-computed "is this a table-context tag" flag, evaluated once per Tag

@@ -309,7 +309,10 @@ object Honeycomb:
                 ConstantType(StringConstant(tag.s)).asType.absolve match
                   case '[tag] => Expr.summon[(? >: value) is Renderable in (? >: tag)] match
                     case Some('{$renderable: Renderable}) =>
-                      '{$renderable.render($expr)}
+                      // Widened eagerly: joining the branch types under capture
+                      // checking decorates the summoned evidence's skolem, which
+                      // then fails to unify (the macro only needs `Expr[Any]`).
+                      ('{$renderable.render($expr)}: Expr[Any])
 
                     case _ => halt:
                       m"""
@@ -321,7 +324,10 @@ object Honeycomb:
                 ConstantType(StringConstant(tag.s)).asType.absolve match
                   case '[tag] => Expr.summon[(? >: value) is Renderable in (? >: tag)] match
                     case Some('{$renderable: Renderable}) =>
-                      '{$renderable.render($expr)}
+                      // Widened eagerly: joining the branch types under capture
+                      // checking decorates the summoned evidence's skolem, which
+                      // then fails to unify (the macro only needs `Expr[Any]`).
+                      ('{$renderable.render($expr)}: Expr[Any])
 
                     case _ =>
                       Expr.summon[(? >: value) is Showable] match
@@ -348,11 +354,11 @@ object Honeycomb:
                 case None =>
                   halt(m"a ${TypeRepr.of[value is Showable].show} is required")
 
-              case Hole.Tagbody => Type.of[value] match
-                case '[Map[Text, Optional[Text]]] =>
-                  expr
-
-                case _ =>
+              case Hole.Tagbody =>
+                // A reflection-level test rather than a quoted type pattern
+                // (`case '[Map[Text, Optional[Text]]]`), which fails to unify
+                // against the capture-decorated scrutinee under capture checking.
+                if TypeRepr.of[value] <:< TypeRepr.of[Map[Text, Optional[Text]]] then expr else
                   halt:
                     m"""
                       only a ${TypeRepr.of[Map[Text, Optional[Text]]].show} can be applied in a tag
