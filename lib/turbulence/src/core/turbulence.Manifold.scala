@@ -49,7 +49,7 @@ import zephyrine.*
 // source — the correct backpressure semantics for replication. A source
 // failure is rethrown from each subscriber's next refill.
 object Manifold:
-  private class Block(val storage: AnyRef, val size: Int)
+  private class Block(val storage: AnyRef, val start: Int, val size: Int)
 
   def apply[medium](consume source: (Stream[medium] over Credit)^, count: Int)
     ( using addressable0: medium is Addressable,
@@ -73,21 +73,37 @@ object Manifold:
 
     @volatile var error: Throwable | Null = null
 
-    async:
-      def loop(): Unit = source.refill(Credit(block)) match
-        case size: Int =>
-          // Copied once out of the transient source window into fresh storage,
-          // which is then shared read-only between all the subscriber queues —
-          // storage rather than a materialized medium value, so the subscribers
-          // can expose it directly as their windows for any medium.
-          val storage = addressable0.allocate(size)
+    val stable: Boolean = source.windowStable
 
-          addressable0.transfer
-            ( source.window(using Unsafe).asInstanceOf[addressable0.Storage],
-              source.start, storage, 0, size )
+    // A shared (stable) block costs no memory per element, so there is no reason
+    // to bound its size: pull the whole window at once, collapsing the hand-off
+    // count. A copied (transient) block stays transfer-bounded.
+    val pull: Int = if stable then Int.MaxValue else block
+
+    async:
+      def loop(): Unit = source.refill(Credit(pull)) match
+        case size: Int =>
+          // A stable source (a fixed in-memory buffer) is shared by reference,
+          // exactly as ZIO/FS2 pass immutable chunks: every subscriber reads
+          // the same window range, and it is never overwritten. A transient
+          // source is snapshotted once into fresh storage — still shared
+          // read-only between all subscribers, but copied out of the window
+          // before the next refill reuses it.
+          val start = source.start
+
+          val storage =
+            if stable then source.window(using Unsafe)
+            else
+              val fresh = addressable0.allocate(size)
+
+              addressable0.transfer
+                ( source.window(using Unsafe).asInstanceOf[addressable0.Storage],
+                  source.start, fresh, 0, size )
+
+              fresh
 
           source.skip(size)
-          val handoff = Block(storage.asInstanceOf[AnyRef], size)
+          val handoff = Block(storage.asInstanceOf[AnyRef], if stable then start else 0, size)
 
           // While-loops rather than `each`: a closure over the rings would
           // capture their reach capability.
@@ -128,7 +144,7 @@ object Manifold:
           private var storage: AnyRef = addressable0.allocate(0).asInstanceOf[AnyRef]
           private var start0: Int = 0
           private var limit0: Int = 0
-          private var size: Int = 0
+          private var end0: Int = 0
           private var ended: Boolean = false
 
           protected def window0: AnyRef = storage
@@ -143,8 +159,8 @@ object Manifold:
               val granted = summon[Credit is Regulation].grant(demand)
 
               if granted == 0 then 0
-              else if limit0 < size then
-                limit0 += (size - limit0).min(granted)
+              else if limit0 < end0 then
+                limit0 += (end0 - limit0).min(granted)
                 limit0 - start0
               else
                 queue.take() match
@@ -154,11 +170,14 @@ object Manifold:
                     if error0 == null then Unset else throw error0
 
                   case received: Block =>
+                    // A shared block may reference a sub-range of the source's
+                    // buffer, so it carries its own start; subscribers only ever
+                    // read it.
                     storage = received.storage
-                    size = received.size
-                    start0 = 0
-                    limit0 = size.min(granted)
-                    limit0
+                    start0 = received.start
+                    end0 = received.start + received.size
+                    limit0 = start0 + received.size.min(granted)
+                    limit0 - start0
 
                   case _ =>
                     panic(m"unexpected value in manifold hand-off")

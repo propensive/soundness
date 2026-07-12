@@ -62,6 +62,10 @@ object Stream:
       private var limit0: Int = 0
       private var loaded: Boolean = false
 
+      // The single buffer is filled once and only ever read thereafter, so its
+      // window ranges stay valid indefinitely — safe to share by reference.
+      override def windowStable: Boolean = true
+
       protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
@@ -158,6 +162,13 @@ extends caps.ExclusiveCapability, caps.Stateful:
 
   // Consume `count` elements of the window without materializing them.
   update def skip(count: Int): Unit
+
+  // True when the window's backing is never overwritten while earlier ranges
+  // may still be read — a single fixed buffer that `refill` only extends and
+  // `skip` only advances, so a fan-out or fan-in may share window ranges by
+  // reference rather than copying them out. Conservatively `false`: a stream
+  // that reuses its buffer between refills must never claim stability.
+  def windowStable: Boolean = false
 
   // Release resources, propagating upstream through the whole chain.
   update def close(): Unit = ()

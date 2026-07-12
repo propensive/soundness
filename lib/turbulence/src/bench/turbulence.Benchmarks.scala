@@ -498,10 +498,11 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   // (`Buffering.window`) that lockstep producer/consumer pairs exchange
   // several blocks per wakeup. Media without an exposable backing, and small
   // writes, still coalesce through copied transfer blocks — the bounded-memory
-  // path. `Confluence`/`Manifold` below still copy once out of the transient
-  // source window (their sources are windowed streams, not whole chunks),
-  // which is the principal remaining asymmetry against the fan-in/fan-out
-  // references.
+  // path. `Confluence`/`Manifold` below likewise share a stable source's window
+  // by reference (the benchmark sources are fixed in-memory buffers), so they
+  // too pass chunks without copying, exactly as the reference queues do; a
+  // transient (duct-reused) source is snapshotted instead. The residual gap on
+  // fan-out is the thread-vs-fiber wakeup of the several subscriber consumers.
 
   def conduitSoundness: Long =
     val (intake, stream) = Conduit[Data]()
