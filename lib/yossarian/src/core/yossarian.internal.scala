@@ -184,6 +184,11 @@ object internal:
     val Foreground = Bits(40, 0x000000ffffffffffL)
     val Background = Bits(16, 0xffffff000000ffffL)
 
+    // An explicit instance to avoid deriving `Inspectable[Chroma]`, whose derived anon class the
+    // Scala.js pipeline rejects (the `text` parameter acquires a fresh capture var, unlike the JVM
+    // pipeline). Hand-written SAMs like this one are unaffected. (Compiler divergence; see #1520.)
+    given chromaInspectable: Chroma is Inspectable = _.underlying.inspect
+
     given inspectable: Style is Inspectable = style =>
       Map
         ( t"Bo" -> Bit.Bold(style),

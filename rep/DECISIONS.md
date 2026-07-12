@@ -1638,3 +1638,28 @@ Other recipes:
 - RUNTIME LESSON (tests caught it): `.asInstanceOf[List[...]]` on a fresh
   IArray-backed flatMap result CRASHES at macro expansion — cast to the true
   erased shape (`IArray[Expr[Node]]`) and `.to(List)` after.
+
+## Scala.js pipeline: pure-typeclass SAM launders (2026-07-12, branch pure-typeclass-js-launder)
+
+`soundness.js` compiles fully for the first time since the Typeclass.Pure flips.
+Root cause (per issue #1520): under `-scalajs`, ExpandSAMs runs BEFORE capture
+checking and SJSPlatform.isSam rejects arbitrary traits, so SAM givens become
+anonymous classes whose PURE self-types (Typeclass.Pure) may not capture what the
+JVM pipeline's closures may. Three recurring shapes, all laundered:
+
+1. BY-NAME element codecs in collection givens → bind a PURE THUNK before the SAM
+   body: `val enc: () -> (element is Encodable in X) = unsafeAssumePure(() => encodable)`
+   then `enc().…` inside. Keeps laziness (recursive derivation!); the anon class
+   captures a pure value. Applied: spectacular.Inspectable (10 givens), locomotion
+   (2), breviloquence (3), ypsiloid (1). [Pattern verified by the handover session.]
+2. `Filter[X] is Optical` givens → `val predicate: X -> Boolean =
+   unsafeAssumePure(filter.predicate)` before the Optic. Applied: jacinta,
+   breviloquence, ypsiloid (mirrors caesura's rowFilter and panopticon).
+3. DERIVED Inspectable instances whose anon-class `text` param acquires a fresh
+   capture var → hand-written explicit given (chiaroscuro.Decomposition, mirrors
+   yossarian.Chroma).
+
+Also cherry-picked the (previously unpushed) caesura+yossarian launder commit.
+The clean long-term fix is compiler #1520 (run ExpandSAMs after CC), which
+deletes ALL of this; soundness.js is still not CI-gated, so main can regress
+silently until then.

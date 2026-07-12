@@ -46,6 +46,12 @@ object Decomposition:
   def apply(optional: Optional[Decomposition]): Decomposition = optional.or:
     Decomposition.Primitive(t"Unset", t"Unset", Unset)
 
+  // An explicit instance to avoid deriving `Inspectable[Decomposition]`, whose derived anon
+  // class the Scala.js pipeline rejects (the `text` parameter acquires a fresh capture var,
+  // unlike the JVM pipeline). Hand-written SAMs are unaffected. (Compiler divergence; see
+  // #1520 and the identical laundering in `yossarian`.)
+  given inspectable: Decomposition is Inspectable = _.text
+
 enum Decomposition:
   case Primitive(typeName: Text, value: Text, ref: Any)
   case Product(name: Text, values: Map[Text, Decomposition], ref: Any)

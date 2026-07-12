@@ -42,7 +42,12 @@ object Spannable extends ProductDerivable[Spannable]:
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Spannable =
     () => contexts[derivation](): [field] => context => context.spans().sum
 
-  given decoder: [decodable: Decodable in Text] => decodable is Spannable = () => IArray(1)
+  // The Scala.js pipeline treats arrays as mutable capabilities under separation checking, so
+  // this SAM's inferred `IArray[Int]` result is boxed to `^{any}` and fails to override the
+  // trait's pure `spans()`. The JVM pipeline accepts the direct form. (Compiler divergence; see
+  // #1520.)
+  given decoder: [decodable: Decodable in Text] => decodable is Spannable =
+    () => caps.unsafe.unsafeAssumePure(IArray(1))
 
   // An `Optional[T]` field spans exactly as many cells as its inner type: a present value
   // occupies the inner span, and an absent (trailing/missing) value leaves those cells empty.

@@ -86,7 +86,12 @@ given rowOptical: [element] => Ordinal is Optical from Sheet onto Dsv = ordinal 
 given rowEach: Each.type is Optical from Sheet onto Dsv = _ =>
   Optic: (origin, lambda) => origin.copy(rows = origin.rows.map(lambda))
 
+// The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM pipeline —
+// rejects the `Optic`'s capture of `filter.predicate` against the required pure `Optic` type.
+// (Compiler divergence; see #1520 and the identical laundering in `panopticon.Optical.filter`.)
 given rowFilter: Filter[Dsv] is Optical from Sheet onto Dsv = filter =>
+  val predicate: Dsv -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
+
   Optic: (origin, lambda) =>
     origin.copy
-      ( rows = origin.rows.map { row => if filter.predicate(row) then lambda(row) else row } )
+      ( rows = origin.rows.map { row => if predicate(row) then lambda(row) else row } )

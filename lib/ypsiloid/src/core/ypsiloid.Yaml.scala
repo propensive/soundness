@@ -1160,7 +1160,12 @@ object Yaml extends Yaml2, Dynamic:
       else
         origin
 
+  // The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM
+  // pipeline — rejects the `Optic`'s capture of `filter.predicate` against the required
+  // pure `Optic` type. (Compiler divergence; see #1520 and `caesura`'s `rowFilter`.)
   given filterOptical: Filter[Yaml] is Optical from Yaml onto Yaml = filter =>
+    val predicate: Yaml -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
+
     Optic: (origin, lambda) =>
       if origin.root.isArray then
         val n = origin.root.arrayLength
@@ -1171,7 +1176,7 @@ object Yaml extends Yaml2, Dynamic:
 
           while i < n do
             val element = Yaml.ast(origin.root.arrayElement(i))
-            updated(i) = (if filter.predicate(element) then lambda(element) else element).root
+            updated(i) = (if predicate(element) then lambda(element) else element).root
             i += 1
 
           Yaml.Ast.seqFromAnyArray(updated)
@@ -1369,9 +1374,12 @@ object Yaml extends Yaml2, Dynamic:
   given iterableEncodable: [collection <: Iterable, element]
   =>  ( encodable: => element is Encodable in Yaml )
   =>  collection[element] is Encodable in Yaml =
-    // By-name element codec; laundered pure (the codec-thunk seal).
-    caps.unsafe.unsafeAssumePure: values =>
-      val items = IArray.from(values.map(encodable.encode(_).root))
+    // A pure thunk rather than a sealed lambda: under `-scalajs` the SAM expands to an
+    // anonymous class whose pure self-type may not capture the by-name parameter.
+    val enc: () -> (element is Encodable in Yaml) = caps.unsafe.unsafeAssumePure(() => encodable)
+
+    values =>
+      val items = caps.unsafe.unsafeAssumePure(IArray.from(values.map(enc().encode(_).root)))
       Yaml.ast(Yaml.Ast.Sequence(items))
 
 
