@@ -53,8 +53,8 @@ object GrpcChannel:
   // must be called inside a `supervise` scope.
   def apply[endpoint]
     ( endpoint: Http2.Endpoint[endpoint], defaults: Grpc.Metadata = Grpc.Metadata() )
-    ( using Monitor, Probate )
-  :   GrpcChannel raises AsyncError =
+    ( using monitor: Monitor, probate: Probate, asyncError: Tactic[AsyncError] )
+  :   GrpcChannel^{monitor, caps.any} =
 
     new GrpcChannel(endpoint.connect(), endpoint.authority, defaults)
 
@@ -64,8 +64,10 @@ object GrpcChannel:
 // `grpc-status` trailer. v1 supports unary and server-streaming calls; the request
 // is always a single message, so client-streaming and bidirectional streaming wait
 // on a `cordillera` enhancement.
+// The channel retains its connection — a capability holding the ambient `Monitor` —
+// so a channel is itself a capability.
 class GrpcChannel
-  ( connection: Http2Connection, authority: Text, defaults: Grpc.Metadata = Grpc.Metadata() ):
+  ( connection: Http2Connection^, authority: Text, defaults: Grpc.Metadata = Grpc.Metadata() ):
   // The `:authority` pseudo-header is supplied to `fetch` separately; the request's
   // `Host` is unused by the HTTP/2 transport, so the hostname is parsed leniently.
   private val host: Host = unsafely(authority.cut(t":").prim.or(authority).decode[Host])

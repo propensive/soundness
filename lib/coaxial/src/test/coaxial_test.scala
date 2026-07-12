@@ -246,13 +246,13 @@ object Tests extends Suite(m"Coaxial tests"):
           val received: Promise[Text] = Promise()
 
           val server = socket.listen[Data]: connection =>
-            val request = IArray.from(joined(connection.stream()))
+            val request = connection.source().memoize
             received.fulfill(request.utf8)
             request
 
           // The ascription selects the `Serviceable` overload of `transmit`; the
           // client half-closes after sending, so the server reads to EOF.
-          val _: LazyList[Data] = socket.transmit(t"request")
+          val _: zephyrine.Stream[Data] over zephyrine.Credit = socket.transmit(t"request")
           received.await().also(server.stop())
         . assert(_ == t"request")
 
@@ -269,7 +269,12 @@ object Tests extends Suite(m"Coaxial tests"):
 
           val reply = socket.duplex: duplex =>
             duplex.send(zephyrine.Stream(ascii(t"ping")))
-            bytes(duplex.stream.head)
+
+            // One refill window is the server's single reply.
+            val source = duplex.source
+            val count = source.refill(zephyrine.Credit(64)).or(0)
+            val data = source.addressable.materialize(source.window(using Unsafe), source.start, count)
+            bytes(data)
 
           reply.also(server.stop())
         . assert(_ == bytes(ascii(t"ping")))

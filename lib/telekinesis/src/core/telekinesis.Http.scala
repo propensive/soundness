@@ -759,7 +759,19 @@ object Http:
       Stream(Iterator(head.data) ++ chunks)
 
     def parse(stream: LazyList[Data]): Response raises HttpResponseError =
-      val cursor = Cursor[Data](stream.filter(_.nonEmpty).iterator)
+      parseCursor(Cursor[Data](stream.filter(_.nonEmpty).iterator))
+
+    // The endpoint form: the response is parsed straight off the connection's pull
+    // endpoint, with no lazy-list view. The tactic is a plain using-parameter: a
+    // context-function result may not hide the consumed endpoint.
+    def parse(consume input: (Stream[Data] over Credit)^)(using Tactic[HttpResponseError])
+    :   Response =
+
+      parseCursor(Cursor[Data](input))
+
+    private def parseCursor(consume cursor: Cursor[Data, {}]^)(using Tactic[HttpResponseError])
+    :   Response =
+      
 
       inline def expected(char: Char): Diagnostics ?=> HttpResponseError =
         HttpResponseError(HttpResponseError.Reason.Expectation(char, cursor.peek.asInt.toChar))

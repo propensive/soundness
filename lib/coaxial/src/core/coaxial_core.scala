@@ -44,7 +44,7 @@ import rudiments.*
 import spectacular.*
 import turbulence.*
 import urticose.MacAddress
-import zephyrine.{Stream, Credit}
+import zephyrine.{Stream, Credit, Buffering, Substrate}
 import vacuous.*
 
 import Control.*
@@ -96,7 +96,7 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
 // demand a pure instance.
 extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint is Serviceable)^)
   def transmit[message: Transmissible](input: message)(using SocketEvent is Loggable)
-  :   LazyList[Data] =
+  :   (Stream[Data] over Credit)^{serviceable, caps.any} =
     val connection = serviceable.connect(endpoint, Unset)
     Log.fine(SocketEvent.Connected(endpoint.show))
 
@@ -109,26 +109,45 @@ extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint 
   // initiate; a `Duplexable` additionally offers `exchange`, which can also send proactively.
   def react[state](initialState: state)[message: Ingressive]
     ( handle: (state: state) ?=> message => Control[state] )
-    ( using SocketEvent is Loggable )
+    ( using SocketEvent is Loggable )(using buffering: Buffering)
   :   state =
 
     val connection = serviceable.connect(endpoint, Unset)
     Log.fine(SocketEvent.Connected(endpoint.show))
 
-    def recur(input: LazyList[Data], state: state): state = input.flow(state):
-      handle(using state)(message.deserialize(next)) match
-        case Continue(state2) => recur(more, state2.or(state))
-        case Terminate        => state
+    // One refill window is one inbound message: chunk boundaries frame messages,
+    // exactly as each lazy-list element did. A while-loop rather than a
+    // self-recursive local def, which may not capture the exclusive endpoint.
+    try
+      val input = serviceable.receive(connection)
+      val demand = Credit(buffering.capacity(Substrate.Bytes))
+      var state = initialState
+      var done = false
 
-        case Reply(message, state2) =>
-          serviceable.transmit(connection, Stream(message))
-          recur(more, state2.or(state))
+      while !done do input.refill(demand) match
+        case count: Int =>
+          if count > 0 then
+            val data = input.addressable.materialize(input.window(using Unsafe), input.start, count)
+            input.skip(count)
 
-        case Conclude(message, state2) =>
-          serviceable.transmit(connection, Stream(message))
-          state2.or(state)
+            handle(using state)(message.deserialize(data)) match
+              case Continue(state2) => state = state2.or(state)
+              case Terminate        => done = true
 
-    recur(serviceable.receive(connection), initialState).also(serviceable.close(connection))
+              case Reply(message, state2) =>
+                serviceable.transmit(connection, Stream(message))
+                state = state2.or(state)
+
+              case Conclude(message, state2) =>
+                serviceable.transmit(connection, Stream(message))
+                state = state2.or(state)
+                done = true
+
+        case _ =>
+          done = true
+
+      state
+    finally serviceable.close(connection)
 
 
 // As for `Serviceable` above: `Duplexable` instances may be capabilities (a WebSocket client
@@ -144,7 +163,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
   def exchange[state](initialState: state)[message: {Ingressive, Transmissible}]
     ( handle: (state: state) ?=> message => Control[state] )
     ( interact: Sender[message]^ => Unit )
-    ( using SocketEvent is Loggable )
+    ( using SocketEvent is Loggable )(using buffering: Buffering)
   :   state =
 
     val connection = duplexable.connect(endpoint, Unset)
@@ -158,20 +177,37 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
           def apply(consume stream: (Stream[Data] over Credit)^): Unit =
             duplexable.transmit(connection, stream)
 
-    def recur(input: LazyList[Data], state: state): state = input.flow(state):
-      handle(using state)(message.deserialize(next)) match
-        case Continue(state2) => recur(more, state2.or(state))
-        case Terminate        => state
+    // As `react`: one refill window is one inbound message.
+    try
+      val input = duplexable.receive(connection)
+      val demand = Credit(buffering.capacity(Substrate.Bytes))
+      var state = initialState
+      var done = false
 
-        case Reply(message, state2) =>
-          duplexable.transmit(connection, Stream(message))
-          recur(more, state2.or(state))
+      while !done do input.refill(demand) match
+        case count: Int =>
+          if count > 0 then
+            val data = input.addressable.materialize(input.window(using Unsafe), input.start, count)
+            input.skip(count)
 
-        case Conclude(message, state2) =>
-          duplexable.transmit(connection, Stream(message))
-          state2.or(state)
+            handle(using state)(message.deserialize(data)) match
+              case Continue(state2) => state = state2.or(state)
+              case Terminate        => done = true
 
-    recur(duplexable.receive(connection), initialState).also(duplexable.close(connection))
+              case Reply(message, state2) =>
+                duplexable.transmit(connection, Stream(message))
+                state = state2.or(state)
+
+              case Conclude(message, state2) =>
+                duplexable.transmit(connection, Stream(message))
+                state = state2.or(state)
+                done = true
+
+        case _ =>
+          done = true
+
+      state
+    finally duplexable.close(connection)
 
 
 extension [endpoint: {Routable as routable, Showable}](endpoint: endpoint)

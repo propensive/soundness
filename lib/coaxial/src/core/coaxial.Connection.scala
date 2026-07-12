@@ -36,11 +36,15 @@ import java.io as ji
 
 import anticipation.*
 import contingency.*
+import prepositional.*
 import turbulence.*
+import zephyrine.*
 
 case class Connection
   ( private[coaxial] val in: ji.InputStream, private[coaxial] val out: ji.OutputStream ):
-  def stream(): LazyList[Data] raises StreamError = in.stream[Data]
+  // A fresh pull endpoint over the read side; single-use, like the connection.
+  def source()(using Buffering, Tactic[StreamError]): (Stream[Data] over Credit)^ =
+    summon[(ji.InputStream is Source by Data over Credit)^].stream(in)
   def reader: ji.InputStream = in
   def writer: ji.OutputStream = out
 
