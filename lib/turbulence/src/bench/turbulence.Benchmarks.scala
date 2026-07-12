@@ -239,6 +239,91 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       . via(zio.stream.ZPipeline.gunzip()).via(zio.stream.ZPipeline.utfDecode)
       . map(_.length).runSum
 
+  // ── Chained example Q: transcode cascade (no compression, 3-way) ────────────
+  // A long chain of the one non-compression stage all three kernels share
+  // natively — UTF-8 transcoding — with no gzip to dominate the cost and no
+  // per-element boxing to skew it: bytes decode to text and re-encode three
+  // times over, then a final decode counts characters. This isolates the
+  // streaming machinery itself (chunk scheduling, buffer hand-off, duct
+  // composition) across Soundness's pull kernel and the ZIO/FS2 interpreters.
+
+  def transcodeChainSoundness: Int =
+    Stream(textData)
+    . through(summon[CharDecoder]).through(summon[CharEncoder])
+    . through(summon[CharDecoder]).through(summon[CharEncoder])
+    . through(summon[CharDecoder]).memoize.s.length
+
+  def transcodeChainFs2: Int =
+    import cats.effect.unsafe.implicits.global
+    fs2.Stream.chunk(fs2.Chunk.array(textArray)).covary[cats.effect.IO]
+    . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
+    . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
+    . through(fs2.text.utf8.decode)
+    . map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
+
+  def transcodeChainZio: Int =
+    runZio:
+      zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(textArray))
+      . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.utf8Encode)
+      . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.utf8Encode)
+      . via(zio.stream.ZPipeline.utfDecode)
+      . map(_.length).runSum
+
+  // ── Chained example R: transcode + base64 armor (no compression, 2-way) ─────
+  // A more varied chain, combining UTF-8 transcoding with a base64 codec
+  // roundtrip: decode -> encode -> base64 -> debase64 -> decode -> count. FS2
+  // has a native streaming base64 pipe; ZIO-Streams has none, so (as with the
+  // AES rows) only FS2 is the streaming reference here.
+
+  def armorTranscodeSoundness: Int =
+    Stream(textData)
+    . through(summon[CharDecoder]).through(summon[CharEncoder])
+    . through(summon[Alphabet[Base64]]).through(summon[Alphabet[Base64]])
+    . through(summon[CharDecoder]).memoize.s.length
+
+  def armorTranscodeFs2: Int =
+    import cats.effect.unsafe.implicits.global
+    fs2.Stream.chunk(fs2.Chunk.array(textArray)).covary[cats.effect.IO]
+    . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
+    . through(fs2.text.base64.encode).through(fs2.text.base64.decode)
+    . through(fs2.text.utf8.decode)
+    . map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
+
+  // ── Chained example S: slice + transcode (no compression, 3-way) ────────────
+  // A varied byte-level chain combining the new `drop`/`take`/`fold` kernel
+  // operators with transcoding: drop the first 64 KiB, transcode UTF-8 through
+  // decode+encode, keep the first 2 MiB, count. `drop`/`take` are element
+  // (byte) counts in all three libraries and chunk-aware (no unboxing), and the
+  // terminal count folds over whole windows; the byte total is identical across
+  // implementations.
+
+  // Int rather than Long: ZIO's `take`/`drop` are `Int`-counted, and both values
+  // fit; Soundness's and FS2's `Long`-counted versions widen automatically.
+  private val dropBytes: Int = 65536
+  private val takeBytes: Int = 2*1024*1024
+
+  def slicedTranscodeSoundness: Long =
+    Stream(textData).drop(dropBytes)
+    . through(summon[CharDecoder]).through(summon[CharEncoder])
+    . take(takeBytes)
+    . fold(0L)((total, _, _, count) => total + count)
+
+  def slicedTranscodeFs2: Long =
+    import cats.effect.unsafe.implicits.global
+    fs2.Stream.chunk(fs2.Chunk.array(textArray)).covary[cats.effect.IO]
+    . drop(dropBytes)
+    . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
+    . take(takeBytes)
+    . compile.count.unsafeRunSync()
+
+  def slicedTranscodeZio: Long =
+    runZio:
+      zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(textArray))
+      . drop(dropBytes)
+      . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.utf8Encode)
+      . take(takeBytes)
+      . runCount
+
   // ── Chained example O: gzip -> base64 -> debase64 -> gunzip roundtrip ───────
   // The full "armored transport" chain, streaming end-to-end in each library:
   // Soundness runs monotonous `Alphabet` ducts (Data -> Text -> Data) between
@@ -589,10 +674,18 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         confluenceSoundness == n && confluenceFs2 == n && confluenceZio == n
       val fanOutOk =
         manifoldSoundness == 3*n && manifoldFs2 == 3*n && manifoldZio == 3*n
+      val transcodeChainOk =
+        transcodeChainSoundness == transcodeChainFs2
+          && transcodeChainFs2 == transcodeChainZio
+      val armorTranscodeOk = armorTranscodeSoundness == armorTranscodeFs2
+      val slicedOk =
+        slicedTranscodeSoundness == takeBytes && slicedTranscodeFs2 == takeBytes
+          && slicedTranscodeZio == takeBytes
       ( roundtripOk, transcodeOk, readOk, base64Ok, readOk2, cursorOk, writeOk, hexOk, flowOk,
-        conduitOk, fanInOk, fanOutOk, armoredOk, secureOk )
+        conduitOk, fanInOk, fanOutOk, armoredOk, secureOk, transcodeChainOk, armorTranscodeOk,
+        slicedOk )
     . assert(_ == (true, true, true, true, true, true, true, true, true, true, true, true, true,
-        true))
+        true, true, true, true))
 
     suite(m"Gzip compression (4 MB)"):
       bench(m"Soundness  Stream.compress[Gzip]")
@@ -681,6 +774,36 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
       bench(m"JDK  GZIP/Cipher/Base64 composition")(target = 1*Second, operationSize = size):
         '{ turbulence.Benchmarks.secureChainJdk }
+
+    suite(m"Chained: UTF-8 transcode cascade, no compression (4 MB)"):
+      bench(m"Soundness  dec.enc.dec.enc.dec")
+        ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.transcodeChainSoundness }
+
+      bench(m"FS2  utf8 decode/encode x2.5")(target = 1*Second, operationSize = textSize):
+        '{ turbulence.Benchmarks.transcodeChainFs2 }
+
+      bench(m"ZIO  utfDecode/utf8Encode x2.5")(target = 1*Second, operationSize = textSize):
+        '{ turbulence.Benchmarks.transcodeChainZio }
+
+    suite(m"Chained: transcode + base64 armor, no compression (4 MB)"):
+      bench(m"Soundness  dec.enc.b64.b64.dec")
+        ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.armorTranscodeSoundness }
+
+      bench(m"FS2  utf8/base64 chain")(target = 1*Second, operationSize = textSize):
+        '{ turbulence.Benchmarks.armorTranscodeFs2 }
+
+    suite(m"Chained: drop -> transcode -> take -> count (4 MB)"):
+      bench(m"Soundness  drop.dec.enc.take.fold")
+        ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.slicedTranscodeSoundness }
+
+      bench(m"FS2  drop.utf8.take.count")(target = 1*Second, operationSize = textSize):
+        '{ turbulence.Benchmarks.slicedTranscodeFs2 }
+
+      bench(m"ZIO  drop.utf.take.runCount")(target = 1*Second, operationSize = textSize):
+        '{ turbulence.Benchmarks.slicedTranscodeZio }
 
     suite(m"Base64 encode (4 MB)"):
       bench(m"Soundness  serialize[Base64]")
