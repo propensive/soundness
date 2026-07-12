@@ -34,12 +34,22 @@ package zephyrine
 
 import language.experimental.separationChecking
 
+import anticipation.*
 import fulminate.*
+import hieroglyph.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
 
 export zephyrine.internal.{Credit, Datum}
+
+// Fluent construction: build an in-memory pull `Stream` from a streamable value
+// or from a chunk iterator, in place of `Stream(value)` / `Stream(iterator)`.
+extension [medium: Addressable](value: medium)
+  def stream: (Stream[medium] over Credit)^ = Stream(value)
+
+extension [medium: Addressable](iterator: Iterator[medium]^)
+  def stream: (Stream[medium] over Credit)^{iterator, caps.any} = Stream(iterator)
 
 extension [value](value: value)(using positionable: value is Positionable)
   // Locate the source `Position` of the node addressed by `path` within
@@ -92,7 +102,7 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
   // demand through the stage and pull from this stream. Runs entirely on
   // the consumer's thread. The stage may be a raw `Duct` or any descriptor
   // value with a `Ductile` instance.
-  def through[stage](consume stage: stage^)
+  def via[stage](consume stage: stage^)
     ( using ductile: (stage is Ductile by in) { type Upstream = transport },
             buffering: Buffering )
   :   (Stream[ductile.Result] over ductile.Transport)^ =
@@ -107,7 +117,7 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
   // thread: poll the intake's demand, refill with it, transfer the window.
   // This is the only place data crosses from the pull side to the push side
   // of a pipeline.
-  def flowTo(consume intake: (Intake[in] over transport)^): Unit =
+  def pump(consume intake: (Intake[in] over transport)^): Unit =
     def loop(): Unit =
       stream.refill(intake.demand) match
         case Unset =>
@@ -128,10 +138,21 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
 
     try loop() finally stream.close()
 
+// Parameterless character transcoding, using the encoding in scope: `transcribe`
+// decodes a byte stream into a text stream through the `CharDecoder`, and
+// `inscribe` encodes a text stream back into bytes through the `CharEncoder`.
+extension (consume stream: (Stream[Data] over Credit)^)
+  def transcribe(using CharDecoder, Buffering): (Stream[Text] over Credit)^ =
+    stream.via(summon[CharDecoder])
+
+extension (consume stream: (Stream[Text] over Credit)^)
+  def inscribe(using CharEncoder, Buffering): (Stream[Data] over Credit)^ =
+    stream.via(summon[CharEncoder])
+
 extension [out, transport](consume intake: (Intake[out] over transport)^)
   // Push-composition: a differently-typed `Intake` which reports translated
   // demand, and whose commits step synchronously through the stage into
-  // this intake's writable window. The same stage value serves `through`
+  // this intake's writable window. The same stage value serves `via`
   // and `accepting`; only the attachment differs.
   def accepting[stage](consume stage: stage^)
     ( using ductile: (stage is Ductile to out) { type Transport = transport },
@@ -152,9 +173,11 @@ extension [out, transport](consume intake: (Intake[out] over transport)^)
 // drains the stream once into an immutable value, which may then be shared freely.
 
 extension [medium](consume stream: (Stream[medium] over Credit)^)
-  // Drain the stream, applying `operation` to each successive window. The lambda
-  // receives the storage, start index and element count; it must not retain the storage.
-  def foreachWindow(operation: (AnyRef, Int, Int) => Unit)(using buffering: Buffering): Unit =
+  // Drain the stream, applying `operation` to each successive window (its raw
+  // storage, start index and element count); it must not retain the storage.
+  // For a byte stream the `Stream[Data]` overload below types the window as
+  // `Array[Byte]`, so the common case needs no cast.
+  def sweep(operation: (AnyRef, Int, Int) => Unit)(using buffering: Buffering): Unit =
     // A drain loop wants boundary-transfer-sized credit: a staging-block ask
     // would slice each larger window into many partial refills.
     val block = buffering.transfer(stream.addressable.substrate)
@@ -175,17 +198,17 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
     val addressable = stream.addressable
     val target = addressable.blank(buffering.capacity(addressable.substrate))
 
-    foreachWindow: (storage, start, count) =>
+    sweep: (storage, start, count) =>
       addressable.cloneStorage(storage.asInstanceOf[addressable.Storage], start, count)(target)
 
     addressable.build(target)
 
   // Drain the stream, threading an accumulator through each window: the
   // window-level fold, the terminal counterpart to a pull chain. The operation
-  // receives the running state, the window storage, its start index and its
+  // receives the running state, the raw window storage, its start index and its
   // element count; it must not retain the storage. Unlike an element-wise fold,
-  // this exposes the raw window, so a byte reduction runs over the array with
-  // no per-element boxing.
+  // this exposes the raw window, so a byte reduction runs over the array with no
+  // per-element boxing. (The `Stream[Data]` overload below types the window.)
   def fold[state](initial: state)(operation: (state, AnyRef, Int, Int) => state)
     (using buffering: Buffering)
   :   state =

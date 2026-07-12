@@ -109,7 +109,7 @@ extends Interactivity[TerminalEvent]:
 
     . protect:
         daemon:
-          keyboard.process(In.stream[Char]).each:
+          keyboard.process(In.lazyList[Char]).each:
             case resize@TerminalInfo.WindowSize(rows2, columns2) =>
               rows = rows2
               columns = columns2

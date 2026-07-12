@@ -118,11 +118,11 @@ object Tests extends Suite(m"Turbulence tests"):
 
     suite(m"Reading tests"):
       test(m"LazyList Text"):
-        qbf.stream[Text].join
+        qbf.lazyList[Text].join
       . assert(_ == qbf)
 
       test(m"LazyList Data"):
-        qbf.stream[Data].reduce(_ ++ _).to(List)
+        qbf.lazyList[Data].reduce(_ ++ _).to(List)
       . assert(_ == qbfData.to(List))
 
       test(m"Read Text as Text"):
@@ -503,14 +503,14 @@ object Tests extends Suite(m"Turbulence tests"):
         val output = ji.ByteArrayOutputStream()
         val source = summon[ji.ByteArrayInputStream is Source by Data over Credit]
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
-        source.stream(input).flowTo(sink.intake(output))
+        source.stream(input).pump(sink.intake(output))
         output.toByteArray.nn.to(List)
       . assert(_ == payload.to(List))
 
       test(m"in-memory data source flows to output stream sink"):
         val output = ji.ByteArrayOutputStream()
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
-        summon[Data is Source by Data over Credit].stream(payload).flowTo(sink.intake(output))
+        summon[Data is Source by Data over Credit].stream(payload).pump(sink.intake(output))
         output.toByteArray.nn.to(List)
       . assert(_ == payload.to(List))
 
@@ -544,7 +544,7 @@ object Tests extends Suite(m"Turbulence tests"):
         val output = ji.ByteArrayOutputStream()
         val sink = summon[ji.ByteArrayOutputStream is Sink by Data over Credit]
         val source = summon[LazyList[Data] is Source by Data over Credit]
-        source.stream(LazyList(payload, payload)).flowTo(sink.intake(output))
+        source.stream(LazyList(payload, payload)).pump(sink.intake(output))
         output.toByteArray.nn.length
       . assert(_ == payload.length*2)
 
@@ -559,7 +559,7 @@ object Tests extends Suite(m"Turbulence tests"):
         val sink = summon[ji.OutputStream is Sink by Data over Credit]
 
         capture[StreamError]:
-          summon[Data is Source by Data over Credit].stream(payload).flowTo(sink.intake(broken))
+          summon[Data is Source by Data over Credit].stream(payload).pump(sink.intake(broken))
       . assert(_ == StreamError(0.b))
 
       test(m"cancelling a blocked conduit writer releases it"):
@@ -584,19 +584,19 @@ object Tests extends Suite(m"Turbulence tests"):
 
           val merged = Confluence(endpoints.map(_.asInstanceOf[Stream[Data] over Credit])*)
           val gather = Gather2()
-          merged.flowTo(gather)
+          merged.pump(gather)
           gather.data.to(List).sorted
       . assert(_ == (1 to 4).flatMap { index => List.fill(1000)(index.toByte) }.sorted.to(List))
 
       test(m"manifold delivers the whole stream to every subscriber"):
         supervise:
           val source = summon[Data is Source by Data over Credit].stream(payload)
-          val subscribers = Manifold(source, 3)
+          val subscribers = Divergence(source, 3)
 
           val results = subscribers.map: stream =>
             async:
               val gather = Gather2()
-              stream.flowTo(gather)
+              stream.pump(gather)
               gather.data.to(List)
 
           results.map { task => task.await() }.to(List)
@@ -608,7 +608,7 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"gzip duct roundtrips a byte stream"):
         val gather = Gather2()
         summon[Data is Source by Data over Credit].stream(mixed)
-        . compress[Gzip].decompress[Gzip].flowTo(gather)
+        . compress[Gzip].decompress[Gzip].pump(gather)
         gather.data.to(List)
       . assert(_ == mixed.to(List))
 
@@ -620,12 +620,12 @@ object Tests extends Suite(m"Turbulence tests"):
             summon[Data is Source by Data over Credit].stream(mixed)
             . compress[Gzip].decompress[Gzip]
 
-          val subscribers = Manifold(source, 3)
+          val subscribers = Divergence(source, 3)
 
           val results = subscribers.map: stream =>
             async:
               val gather = Gather2()
-              stream.flowTo(gather)
+              stream.pump(gather)
               gather.data.to(List)
 
           results.map { task => task.await() }.to(List)
@@ -643,27 +643,27 @@ object Tests extends Suite(m"Turbulence tests"):
 
           val merged = Confluence(builder.result().map(_.asInstanceOf[Stream[Data] over Credit])*)
           val gather = Gather2()
-          merged.flowTo(gather)
+          merged.pump(gather)
           gather.data.length
       . assert(_ == mixed.length*3)
 
       test(m"deflate duct roundtrips a byte stream"):
         val gather = Gather2()
         summon[Data is Source by Data over Credit].stream(mixed)
-        . compress[Deflate].decompress[Deflate].flowTo(gather)
+        . compress[Deflate].decompress[Deflate].pump(gather)
         gather.data.to(List)
       . assert(_ == mixed.to(List))
 
       test(m"zlib duct roundtrips a byte stream"):
         val gather = Gather2()
         summon[Data is Source by Data over Credit].stream(mixed)
-        . compress[Zlib].decompress[Zlib].flowTo(gather)
+        . compress[Zlib].decompress[Zlib].pump(gather)
         gather.data.to(List)
       . assert(_ == mixed.to(List))
 
       test(m"gzip duct output is genuine gzip"):
         val gather = Gather2()
-        summon[Data is Source by Data over Credit].stream(mixed).compress[Gzip].flowTo(gather)
+        summon[Data is Source by Data over Credit].stream(mixed).compress[Gzip].pump(gather)
         val stream = java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(gather.data.mutable(using Unsafe)))
         stream.readAllBytes().nn.to(List)
       . assert(_ == mixed.to(List))
@@ -677,7 +677,7 @@ object Tests extends Suite(m"Turbulence tests"):
 
         summon[LazyList[Data] is Source by Data over Credit]
         . stream(out.toByteArray.nn.immutable(using Unsafe).grouped(7).to(LazyList))
-        . decompress[Gzip].flowTo(gather)
+        . decompress[Gzip].pump(gather)
 
         gather.data.to(List)
       . assert(_ == mixed.to(List))

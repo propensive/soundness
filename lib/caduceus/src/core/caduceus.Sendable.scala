@@ -46,7 +46,7 @@ object Sendable:
   given htmlDoc: (dom: Dom, monitor: Monitor, probate: Probate)
   =>  ((Document[Html] is Sendable)^{monitor}) =
     html =>
-      Email(Map(), Email.Message(Email.Content(Email.Body.HtmlOnly(html.stream[Text].read[Text]))))
+      Email(Map(), Email.Message(Email.Content(Email.Body.HtmlOnly(html.lazyList[Text].read[Text]))))
 
   given email: Email is Sendable = identity(_)
 

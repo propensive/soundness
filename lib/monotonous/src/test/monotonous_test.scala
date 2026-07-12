@@ -193,20 +193,20 @@ object Tests extends Suite(m"Monotonous tests"):
       val payload = Data.fill(100)(_.toByte)
 
       test(m"hex duct serializes a byte stream"):
-        Drain.text(Stream(payload).through(summon[Alphabet[Hex]]))
+        Drain.text(payload.stream.via(summon[Alphabet[Hex]]))
       . assert(_ == payload.serialize[Hex])
 
       test(m"hex duct deserializes a text stream"):
-        Drain.data(Stream(payload.serialize[Hex]).through(summon[Alphabet[Hex]])).to(List)
+        Drain.data(payload.serialize[Hex].stream.via(summon[Alphabet[Hex]])).to(List)
       . assert(_ == payload.to(List))
 
       test(m"base64 duct emits padding at end of stream"):
-        Drain.text(Stream(Data(1, 2, 3, 4)).through(summon[Alphabet[Base64]]))
+        Drain.text(Stream(Data(1, 2, 3, 4)).via(summon[Alphabet[Base64]]))
       . assert(_ == Data(1, 2, 3, 4).serialize[Base64])
 
       test(m"base64 duct roundtrips through both directions"):
-        val text = Drain.text(Stream(payload).through(summon[Alphabet[Base64]]))
-        Drain.data(Stream(text).through(summon[Alphabet[Base64]])).to(List)
+        val text = Drain.text(payload.stream.via(summon[Alphabet[Base64]]))
+        Drain.data(text.stream.via(summon[Alphabet[Base64]])).to(List)
       . assert(_ == payload.to(List))
 
       // Multi-window payloads whose lengths straddle group and window
@@ -216,12 +216,12 @@ object Tests extends Suite(m"Monotonous tests"):
         val large = Data.fill(size)(index => (index*7).toByte)
 
         test(m"base64 duct serialization matches whole-value ($size bytes)"):
-          Drain.text(Stream(large).through(summon[Alphabet[Base64]]))
+          Drain.text(large.stream.via(summon[Alphabet[Base64]]))
         . assert(_ == large.serialize[Base64])
 
         test(m"base64 duct roundtrips a multi-window payload ($size bytes)"):
-          val text = Drain.text(Stream(large).through(summon[Alphabet[Base64]]))
-          Drain.data(Stream(text).through(summon[Alphabet[Base64]])).to(List)
+          val text = Drain.text(large.stream.via(summon[Alphabet[Base64]]))
+          Drain.data(text.stream.via(summon[Alphabet[Base64]])).to(List)
         . assert(_ == large.to(List))
 
 // Drains a duct-composed pull endpoint, for the streaming serialization

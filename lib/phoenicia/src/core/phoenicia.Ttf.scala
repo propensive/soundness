@@ -46,7 +46,7 @@ import vacuous.*
 
 object Ttf:
   def apply[source: Streamable by Data](source: source): Ttf =
-    val data = source.stream[Data].read[Data]
+    val data = source.lazyList[Data].read[Data]
     Ttf(data)
 
   enum PlatformId:

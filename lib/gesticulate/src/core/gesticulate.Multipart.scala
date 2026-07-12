@@ -55,7 +55,7 @@ object Multipart:
   def parse[input: Streamable by Data](input: input, boundary0: Optional[Text] = Unset)
   :   Multipart raises MultipartError =
 
-    val cursor = Cursor[Data](input.stream[Data].filter(_.nonEmpty).iterator)
+    val cursor = Cursor[Data](input.lazyList[Data].filter(_.nonEmpty).iterator)
 
     inline def expected(char: Char): Diagnostics ?=> MultipartError =
       MultipartError(Reason.Expected(char))

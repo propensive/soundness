@@ -44,7 +44,7 @@ import rudiments.*
 import spectacular.*
 import turbulence.*
 import urticose.MacAddress
-import zephyrine.{Stream, Credit, Buffering, Substrate}
+import zephyrine.{Stream, Credit, Buffering, Substrate, stream}
 import vacuous.*
 
 import Control.*
@@ -135,11 +135,11 @@ extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint 
               case Terminate        => done = true
 
               case Reply(message, state2) =>
-                serviceable.transmit(connection, Stream(message))
+                serviceable.transmit(connection, message.stream)
                 state = state2.or(state)
 
               case Conclude(message, state2) =>
-                serviceable.transmit(connection, Stream(message))
+                serviceable.transmit(connection, message.stream)
                 state = state2.or(state)
                 done = true
 
@@ -195,11 +195,11 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
               case Terminate        => done = true
 
               case Reply(message, state2) =>
-                duplexable.transmit(connection, Stream(message))
+                duplexable.transmit(connection, message.stream)
                 state = state2.or(state)
 
               case Conclude(message, state2) =>
-                duplexable.transmit(connection, Stream(message))
+                duplexable.transmit(connection, message.stream)
                 state = state2.or(state)
                 done = true
 

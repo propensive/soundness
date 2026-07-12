@@ -40,7 +40,10 @@ import contingency.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
-import zephyrine.*
+// The kernel `.stream` constructor is excluded from the wildcard so it does not
+// shadow this module's own `HttpStreams.Body.stream` extension (a same-module
+// package member); downstream sees both as siblings and resolves by receiver.
+import zephyrine.{stream as _, *}
 
 // A value which can be opened as a pull endpoint: the successor to
 // `Streamable`, producing a demand-aware `Stream` over a mutable buffer

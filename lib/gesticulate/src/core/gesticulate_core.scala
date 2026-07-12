@@ -40,4 +40,4 @@ extension (inline context: StringContext)
   transparent inline def media: Interpolation = interpolation[MediaType](context)
 
 extension [media](value: media)
-  inline def ascribe(media: MediaType): Content = Content(media, value.stream[Data])
+  inline def ascribe(media: MediaType): Content = Content(media, value.lazyList[Data])

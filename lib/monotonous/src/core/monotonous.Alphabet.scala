@@ -39,7 +39,7 @@ import hypotenuse.*
 import zephyrine.*
 
 // An `Alphabet` is the stage descriptor for streaming serialization in both
-// directions: `stream.through(alphabets.hex.upperCase)` serializes a byte
+// directions: `stream.via(alphabets.hex.upperCase)` serializes a byte
 // stream to text, or deserializes a text stream to bytes, chosen by the
 // stream's medium. The demand conversion is the exact arithmetic of the
 // base: a downstream credit of 1024 hex chars translates to an upstream

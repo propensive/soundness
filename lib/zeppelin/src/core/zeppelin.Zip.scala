@@ -91,7 +91,7 @@ object Zip:
       ( using Compression )
     :   Entry =
 
-      build(ref, gather(content.stream[Data]))
+      build(ref, gather(content.lazyList[Data]))
 
     def apply(ref: Path on Zip, content: () => LazyList[Data])(using Compression): Entry =
       build(ref, gather(content()))
@@ -103,7 +103,7 @@ object Zip:
     :   Entry =
 
       val (time, date) = dosDateTime(modified.generic)
-      build(ref, gather(content.stream[Data]), time, date)
+      build(ref, gather(content.lazyList[Data]), time, date)
 
     private def build
       ( ref: Path on Zip, raw: Data, time: Int = epochTime, date: Int = epochDate )
@@ -145,7 +145,7 @@ object Zip:
           directory, comment)
 
     given streamable: Entry is Streamable by Data = _.contents
-    given source: Entry is Source by Data over Credit = entry => Stream(entry.contents.iterator)
+    given source: Entry is Source by Data over Credit = entry => entry.contents.iterator.stream
 
   case class Entry
     ( ref:              Path on Zip,

@@ -55,7 +55,7 @@ object Duplex:
     def side(inbound: Spool[Data], outbound: Spool[Data]): Duplex = new Duplex:
       // Each memoized send is exposed as one refill window, preserving the
       // chunk boundaries the in-memory protocol tests rely on.
-      def source(using Buffering): (Stream[Data] over Credit)^ = Stream(inbound.stream.iterator)
+      def source(using Buffering): (Stream[Data] over Credit)^ = inbound.stream.iterator.stream
 
       def send(consume data: (Stream[Data] over Credit)^): Unit =
         outbound.put(data.memoize)
@@ -110,7 +110,7 @@ object Duplex:
                   count
 
     def send(consume data: (Stream[Data] over Credit)^): Unit =
-      data.foreachWindow: (storage, start, count) =>
+      data.sweep: (storage, start, count) =>
         out.write(storage.asInstanceOf[Array[Byte]], start, count)
         out.flush()
 
@@ -120,7 +120,7 @@ object Duplex:
   // reusable buffer and blocks in `read`; EOF (`-1`) terminates the stream.
   def channel(socketChannel: jnc.SocketChannel): Duplex = new Duplex:
     def send(consume data: (Stream[Data] over Credit)^): Unit =
-      data.foreachWindow: (storage, start, count) =>
+      data.sweep: (storage, start, count) =>
         val out = ByteBuffer.wrap(storage.asInstanceOf[Array[Byte]], start, count).nn
         while out.hasRemaining do socketChannel.write(out)
 

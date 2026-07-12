@@ -306,7 +306,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"unix")
 
           val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".decode[Host]),
-              t"/echo.Service/Call", Nil, () => Stream(Iterator.empty[Data]))
+              t"/echo.Service/Call", Nil, () => Iterator.empty[Data].stream)
 
           client.request(request, endpoint).status.code
       . assert(_ == 200)

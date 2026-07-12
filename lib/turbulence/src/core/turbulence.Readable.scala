@@ -58,7 +58,7 @@ trait Readable3:
   =>  ( aggregable: (result is Aggregable by Data)^ )
   =>  ( encoder: CharEncoder, buffering: Buffering )
   =>  ((source is Readable to result)^{source0, aggregable}) =
-    value => aggregable.accept(source0.stream(value).through(encoder))
+    value => aggregable.accept(source0.stream(value).via(encoder))
 
 trait Readable2 extends Readable3:
   given dataToText: [source, result]
@@ -66,7 +66,7 @@ trait Readable2 extends Readable3:
   =>  ( aggregable: (result is Aggregable by Text)^ )
   =>  ( decoder: CharDecoder, buffering: Buffering )
   =>  ((source is Readable to result)^{source0, aggregable}) =
-    value => aggregable.accept(source0.stream(value).through(decoder))
+    value => aggregable.accept(source0.stream(value).via(decoder))
 
 trait Readable1 extends Readable2:
   given textToText: [source, result]

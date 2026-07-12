@@ -43,6 +43,6 @@ import prepositional.*
 // capability as its result (the closure's fresh is not visible from the
 // function type's result capture at the binder's level), but a method may —
 // its result is re-leveled at each call site. Being a SAM trait, `Spring`
-// is still constructed from plain lambdas: `() => Stream(...)`.
+// is still constructed from plain lambdas: `() => ....stream`.
 trait Spring[medium]:
   def apply(): (Stream[medium] over Credit)^

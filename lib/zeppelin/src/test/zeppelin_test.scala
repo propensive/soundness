@@ -141,7 +141,7 @@ object Tests extends Suite(m"Zeppelin tests"):
       . assert(_ == t"Hello world")
 
       test(m"entry is Streamable by Data"):
-        Zip.Entry(zipRef(t"a"), t"xyz".data).stream[Data].read[Text]
+        Zip.Entry(zipRef(t"a"), t"xyz".data).lazyList[Data].read[Text]
       . assert(_ == t"xyz")
 
       test(m"direct constructor accepts lazily-computed content"):

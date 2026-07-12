@@ -80,7 +80,7 @@ object Tests extends Suite(m"Coaxial tests"):
           val client = jnc.SocketChannel.open(jn.InetSocketAddress("127.0.0.1", port)).nn
           val clientDuplex = Duplex.channel(client)
 
-          summon[Data is Source by Data over Credit].stream(payload).flowTo(clientDuplex.intake)
+          summon[Data is Source by Data over Credit].stream(payload).pump(clientDuplex.intake)
           client.shutdownOutput()
 
           val result = received.await()

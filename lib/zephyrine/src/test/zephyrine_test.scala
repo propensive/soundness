@@ -587,29 +587,29 @@ object Tests extends Suite(m"Zephyrine tests"):
       suite(m"Streaming kernel tests"):
         val small = IArray[Byte](1, 2, 3, 4, 5)
 
-        test(m"flowTo transfers a single-chunk stream"):
+        test(m"pump transfers a single-chunk stream"):
           val gather = Gather()
-          Stream(bytes).flowTo(gather)
+          bytes.stream.pump(gather)
           gather.data.to(List)
         . assert(_ == bytes.to(List))
 
         test(m"iterator stream transfers all chunks in order"):
           val gather = Gather()
-          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](), IArray[Byte](4, 5))).flowTo(gather)
+          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](), IArray[Byte](4, 5))).pump(gather)
           gather.data.to(List)
         . assert(_ == List[Byte](1, 2, 3, 4, 5))
 
         test(m"through doubles each byte"):
           val gather = Gather()
-          Stream(small).through(Doubler()).flowTo(gather)
+          small.stream.via(Doubler()).pump(gather)
           gather.data.to(List)
         . assert(_ == small.to(List).flatMap { byte => List(byte, byte) })
 
         test(m"a duct translates downstream demand for its upstream"):
-          val recorder = Recorder(Stream(small))
+          val recorder = Recorder(small.stream)
           val gather = Gather()
           gather.credit = 10
-          recorder.through(Doubler()).flowTo(gather)
+          recorder.via(Doubler()).pump(gather)
           recorder.demands.last
         . assert(_ == 5L)
 
@@ -637,14 +637,14 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         test(m"duct flush emits terminal state at end of a pulled stream"):
           val gather = Gather()
-          Stream(IArray[Byte](1, 2)).through(Trailer()).flowTo(gather)
+          Stream(IArray[Byte](1, 2)).via(Trailer()).pump(gather)
           gather.data.to(List)
         . assert(_ == List[Byte](1, 2, 99))
 
         test(m"conduit transfers data across threads"):
           val (intake, stream) = Conduit[Data]()
           val gather = Gather()
-          val task = async(stream.flowTo(gather))
+          val task = async(stream.pump(gather))
           intake.put(bytes)
           intake.finish()
           unsafely(task.await())
@@ -656,7 +656,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         test(m"conduit passes a large chunk through after a buffered partial block"):
           val (intake, stream) = Conduit[Data]()
           val gather = Gather()
-          val task = async(stream.flowTo(gather))
+          val task = async(stream.pump(gather))
           intake.put(Data(9))
           intake.put(big)
           intake.finish()
@@ -712,7 +712,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         test(m"char decoder duct reassembles multi-byte characters split across refills"):
           val chunks = exotic.s.getBytes("UTF-8").nn.toSeq.map { byte => IArray[Byte](byte) }
-          val stream = Stream(chunks.iterator).through(summon[CharDecoder])
+          val stream = chunks.iterator.stream.transcribe
           val builder = StringBuilder()
 
           def recur(): Unit = stream.refill(Credit(8)) match
@@ -730,14 +730,14 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         test(m"char encoder duct emits UTF-8 for supplementary characters"):
           val gather = Gather()
-          Stream(exotic).through(summon[CharEncoder]).flowTo(gather)
+          exotic.stream.inscribe.pump(gather)
           gather.data.to(List)
         . assert(_ == exotic.s.getBytes("UTF-8").nn.to(List))
 
         test(m"charset ducts roundtrip through both directions"):
           val gather = Gather()
-          Stream(exotic).through(summon[CharEncoder]).flowTo(gather)
-          val decoded = Stream(gather.data).through(summon[CharDecoder])
+          exotic.stream.inscribe.pump(gather)
+          val decoded = gather.data.stream.transcribe
           val builder = StringBuilder()
 
           def recur(): Unit = decoded.refill(Credit(4)) match
@@ -782,11 +782,11 @@ object Tests extends Suite(m"Zephyrine tests"):
             regulation.measured(Pace.Measured) )
         . assert(_ == ((0, true, true)))
 
-        test(m"foreachWindow visits every element in order across chunks"):
+        test(m"sweep visits every element in order across chunks"):
           var collected: List[Byte] = Nil
 
           Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](), IArray[Byte](4, 5)))
-          . foreachWindow: (storage, start, count) =>
+          . sweep: (storage, start, count) =>
               val bytes = storage.asInstanceOf[Array[Byte]]
               for index <- 0 until count do collected = bytes(start + index) :: collected
 
@@ -798,11 +798,11 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == List[Byte](1, 2, 3, 4, 5))
 
         test(m"memoize of an empty stream yields an empty value"):
-          Stream(Iterator.empty[Data]).memoize.to(List)
+          Iterator.empty[Data].stream.memoize.to(List)
         . assert(_ == List())
 
         test(m"memoize reassembles a transformed pipeline"):
-          Stream(small).through(Doubler()).memoize.to(List)
+          small.stream.via(Doubler()).memoize.to(List)
         . assert(_ == small.to(List).flatMap { byte => List(byte, byte) })
 
         test(m"memoize drains a text stream into a single text value"):
@@ -810,7 +810,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == "abcde")
 
         test(m"take limits a stream to its first elements"):
-          Stream(small).take(3).memoize.to(List)
+          small.stream.take(3).memoize.to(List)
         . assert(_ == List[Byte](1, 2, 3))
 
         test(m"take across chunk boundaries"):
@@ -818,15 +818,15 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == List[Byte](1, 2, 3, 4))
 
         test(m"take of more than the stream holds yields the whole stream"):
-          Stream(small).take(100).memoize.to(List)
+          small.stream.take(100).memoize.to(List)
         . assert(_ == small.to(List))
 
         test(m"take zero yields an empty stream"):
-          Stream(small).take(0).memoize.to(List)
+          small.stream.take(0).memoize.to(List)
         . assert(_ == List())
 
         test(m"drop skips a stream's first elements"):
-          Stream(small).drop(2).memoize.to(List)
+          small.stream.drop(2).memoize.to(List)
         . assert(_ == List[Byte](3, 4, 5))
 
         test(m"drop across chunk boundaries"):
@@ -834,7 +834,7 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == List[Byte](5, 6))
 
         test(m"drop of more than the stream holds yields an empty stream"):
-          Stream(small).drop(100).memoize.to(List)
+          small.stream.drop(100).memoize.to(List)
         . assert(_ == List())
 
         test(m"take and drop compose to a slice"):
@@ -842,11 +842,11 @@ object Tests extends Suite(m"Zephyrine tests"):
         . assert(_ == List[Byte](5, 6, 7, 8, 9))
 
         test(m"take composes with a duct"):
-          Stream(small).take(3).through(Doubler()).memoize.to(List)
+          small.stream.take(3).via(Doubler()).memoize.to(List)
         . assert(_ == List[Byte](1, 1, 2, 2, 3, 3))
 
         test(m"fold reduces over windows without boxing"):
-          Stream(bytes).fold(0L): (total, storage, start, count) =>
+          bytes.stream.fold(0L): (total, storage, start, count) =>
             val array = storage.asInstanceOf[Array[Byte]]
             var sum = total
             var index = 0

@@ -55,7 +55,7 @@ object Servable:
     def serve(content: Content): Http.Response =
       val headers = List(Http.Header(t"content-type", content.media.show))
 
-      Http.Ok(headers, Http.Body.Flowing(() => Stream(content.stream.iterator)))
+      Http.Ok(headers, Http.Body.Flowing(() => content.stream.iterator.stream))
 
 
   given bytes: [response: Abstractable across HttpStreams to HttpStreams.Content]
@@ -80,12 +80,12 @@ object Servable:
     case given (`media` is Streamable by Data) =>
       value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Ok(headers, Http.Body.Flowing(() => Stream(value.stream[Data].iterator)))
+        Http.Ok(headers, Http.Body.Flowing(() => value.lazyList[Data].iterator.stream))
 
     case given (`media` is Streamable by Text) =>
       value =>
         val headers = List(Http.Header(t"content-type", media.mediaType(value).show))
-        Http.Ok(headers, Http.Body.Flowing(() => Stream(value.stream[Data].iterator)))
+        Http.Ok(headers, Http.Body.Flowing(() => value.lazyList[Data].iterator.stream))
 
 trait Servable extends Typeclass:
   def serve(content: Self): Http.Response

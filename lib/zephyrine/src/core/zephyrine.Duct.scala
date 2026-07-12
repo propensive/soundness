@@ -37,7 +37,7 @@ import language.experimental.separationChecking
 import prepositional.*
 
 // A synchronous transformation stage, attachable to either end of a pipeline:
-// `stream.through(duct)` yields a differently-typed `Stream`, and
+// `stream.via(duct)` yields a differently-typed `Stream`, and
 // `intake.accepting(duct)` yields a differently-typed `Intake` — the same
 // `Duct` instance serves both, since `translate` converts demand whichever
 // direction it is reported.

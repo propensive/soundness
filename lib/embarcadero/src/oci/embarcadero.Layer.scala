@@ -46,7 +46,7 @@ object Layer:
   def apply(tar: Tarfile): Layer = new Layer(tar)
 
 class Layer(val tar: Tarfile):
-  lazy val raw:        Data       = tar.stream[Data].foldLeft(IArray.empty[Byte])(_ ++ _)
+  lazy val raw:        Data       = tar.lazyList[Data].foldLeft(IArray.empty[Byte])(_ ++ _)
   lazy val diffId:     Text       = sha256(raw)
   lazy val blob:       Data       =
     LazyList(raw).compress[Gzip].foldLeft(IArray.empty[Byte])(_ ++ _)

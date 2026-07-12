@@ -39,7 +39,7 @@ import turbulence.*
 
 object Attachable:
   given generic: [entity: {Nominable, Media, Streamable by Data}] => entity is Attachable =
-    value => Asset(entity.name(value), entity.mediaType(value), value.stream[Data])
+    value => Asset(entity.name(value), entity.mediaType(value), value.lazyList[Data])
 
   given asset: Asset is Attachable = identity(_)
 

@@ -260,7 +260,7 @@ package filesystemBackends:
         try
           lambda:
             Handle
-              ( () => unsafely(Streamable.channel.stream(channel).stream[Data]),
+              ( () => unsafely(Streamable.channel.stream(channel).lazyList[Data]),
                 data => unsafely(Writable.channel.write(channel, data)) )
               ( () => unsafely(Source.channel.stream(channel)),
                 () => unsafely(Sink.channel.intake(channel)) )

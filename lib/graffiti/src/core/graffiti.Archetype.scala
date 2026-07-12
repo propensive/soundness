@@ -56,7 +56,7 @@ object Archetype:
   // `^{monitor}` only: `Probate` is not capture-tracked.
   given streamable: [page <: Archetype] => (monitor: Monitor, probate: Probate)
   =>  ((page is Streamable by Text)^{monitor}) =
-    archetype => archetype.document.stream[Text]
+    archetype => archetype.document.lazyList[Text]
 
 // The base of every page archetype. Concrete pages are built by mixing in feature traits (each a
 // subtype of `Archetype`); their only obligation is to provide `content`, the central matter.

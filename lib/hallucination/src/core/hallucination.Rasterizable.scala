@@ -50,7 +50,7 @@ trait Rasterizable extends Typeclass:
 
     def read[input: Streamable by Data](inputType: input): Raster in Self raises RasterError =
       val reader: ji.ImageReader = ji.ImageIO.getImageReadersByFormatName(name.s).nn.next().nn
-      reader.setInput(ji.ImageIO.createImageInputStream(inputType.stream[Data].read[Data].javaInputStream).nn)
+      reader.setInput(ji.ImageIO.createImageInputStream(inputType.lazyList[Data].read[Data].javaInputStream).nn)
 
       val data = try reader.read(0).nn catch case _: ji.IIOException => abort(RasterError(this))
 
