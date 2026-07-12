@@ -1526,3 +1526,41 @@ jacinta.schema needed one file (JsonSchema.scala):
 
 Laundering the tactic (`given Tactic = unsafeAssumePure(tactic)`) does NOT fix
 the aliasing: the local is still a capability value passed through two channels.
+
+## Coaxial receive side + cordillera sepcheck (2026-07-12, branch coaxial-receive)
+
+Branch merges Jon's `coaxial-react-exchange` rename (react/exchange), then converts
+the RECEIVE side to kernel pull endpoints:
+- `Duplex.stream: LazyList[Data]` DELETED; `source(using Buffering): (Stream[Data]
+  over Credit)^` is the sole read endpoint (`^` LOAD-BEARING: a bare stateful result
+  reads as `.rd` at sep use sites — silently poisons downstream).
+- `Serviceable.receive` returns `(Stream[Data] over Credit)^{this, caps.any}` —
+  INSTANCE-RELATIVE, not fresh: overriding a `^` (fresh) trait result with
+  `^{tactic, caps.any}` is an override error; `{this, caps.any}` admits
+  instance-retained capabilities in both trait and impls.
+- `react`/`exchange`: while-loops over refill windows; ONE WINDOW = ONE MESSAGE
+  (chunk-boundary framing preserved: pair() memoizes each send to one window;
+  perihelion's Duplexable receive wraps reassembled messages one-per-window).
+- Websocket handshake (`readHandshake`) reads the endpoint directly, consuming
+  EXACTLY through CRLFCRLF — trailing bytes stay in the window; no leftover-prepend.
+- `Http.Response.parse` gains an endpoint overload; body refactored to
+  `parseCursor(consume cursor)`. Overload pairs (transmit×2, parse×2) can turn
+  formerly-inferred call sites AMBIGUOUS — disambiguate with a typed binding.
+- cordillera.core: NEVER ACTUALLY CC'd (leg-2 note overstated; even #1498 left it
+  bare) — now sep module-wide. New recipes:
+  * `scm.ArrayBuilder` mutation under sep demands `uses any.rd` at ANY enclosing
+    scope (object-level too) → `cordillera.ByteBuf`: a private exclusive+stateful
+    growable buffer (untracked storage + exclusive-cast write view).
+  * A daemon body must be a PURE context function: bind fields to locals and `this`
+    to an AnyRef rim before `daemon:`; a method called as
+    `ref.asInstanceOf[C].method(...)` still charges `C.this` when the method is
+    CLASS-private — relocate it to the COMPANION taking the instance as a plain
+    parameter (companion sees privates; no this-charge).
+  * `consume` params are METHOD-only: a consuming class constructor = private ctor
+    (AnyRef carrier) + companion `apply(consume ...)` factory (FrameReader).
+- GrpcChannel/Containerd become honestly tracked (`^{monitor, caps.any}` results,
+  `GrpcChannel^`/`Http2Connection^` ctor params): a client retaining a connection
+  retaining a Monitor is a capability.
+- Tests: h2c fake servers skip the preface by consuming exactly 24 bytes off the
+  endpoint; FrameReader then owns it. Suites green: coaxial, cordillera,
+  obligatory, perihelion, scintillate.

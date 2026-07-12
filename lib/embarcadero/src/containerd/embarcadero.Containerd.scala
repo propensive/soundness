@@ -76,15 +76,17 @@ object Containerd:
   // Must be called inside a `supervise` scope (the connection runs background daemons).
   def apply[endpoint]
     ( endpoint: Http2.Endpoint[endpoint], namespace: Text )
-    ( using Monitor, Probate )
-  :   Containerd raises AsyncError =
+    ( using monitor: Monitor, probate: Probate, asyncError: Tactic[AsyncError] )
+  :   Containerd^{monitor, caps.any} =
 
     val metadata = Grpc.Metadata(List(t"containerd-namespace" -> namespace))
     Containerd(GrpcChannel(endpoint, metadata))
 
 // A connected containerd client. Each method maps to one gRPC call over the shared
 // channel; the namespace travels in the channel's default metadata.
-case class Containerd(channel: GrpcChannel):
+// The client retains its channel — a capability holding the ambient `Monitor` — so
+// a client is itself a capability.
+case class Containerd(channel: GrpcChannel^):
   // The daemon's version and build revision (`containerd.services.version.v1.Version`).
   def version()
   ( using Tactic[GrpcError], Tactic[Http2Error], Tactic[AsyncError], Tactic[ProtobufError] )

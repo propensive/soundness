@@ -72,7 +72,12 @@ object AutobahnClient:
               safely(connection.channel.close(error.reason.closeCode))
 
           . protect:
-              Reader(() => zephyrine.Stream(connection.inbound.iterator), connection.channel).messages.each:
+              Reader
+                ( () =>
+                    connection.inbound
+                    . asInstanceOf[zephyrine.Stream[Data] over zephyrine.Credit],
+                  connection.channel )
+              . messages.each:
                 consume(connection.channel)(_)
 
         finally

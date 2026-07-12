@@ -172,4 +172,8 @@ given domainSocketHttpClient: Tactic[StreamError] => HttpClient onto DomainSocke
 
     def request(request: Http.Request, socket: DomainSocket)(using HttpEvent is Loggable)
     :   Http.Response =
-      unsafely(Http.Response.parse(socket.transmit(request)))
+      unsafely:
+        // Typed binding: `transmit` and `parse` are both overloaded (lazy-list and
+        // endpoint forms), so the expected type picks the endpoint pair.
+        val input: zephyrine.Stream[Data] over zephyrine.Credit = socket.transmit(request)
+        Http.Response.parse(input)

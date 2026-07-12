@@ -230,16 +230,22 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
         safely:
           serverSide.send(zephyrine.Stream(Frame.Settings(Nil, ack = false).serialize))
 
-          // Skip the 24-byte client connection preface before frame-parsing.
-          val raw = serverSide.stream.iterator
+          // Skip the 24-byte client connection preface before frame-parsing: consume
+          // exactly the preface; anything after it stays in the endpoint's window.
+          val source = serverSide.source
+          var skipped = 0
 
-          val afterPreface: Iterator[Data] =
-            var buffered = IArray.empty[Byte]
-            while buffered.length < 24 && raw.hasNext do buffered = buffered ++ raw.next()
-            val leftover = buffered.drop(24)
-            (if leftover.isEmpty then Iterator.empty else Iterator(leftover)) ++ raw
+          while skipped < 24 do source.refill(zephyrine.Credit(4096)) match
+            case count: Int =>
+              if count > 0 then
+                val take = count.min(24 - skipped)
+                source.skip(take)
+                skipped += take
 
-          val reader = FrameReader(afterPreface)
+            case _ =>
+              skipped = 24
+
+          val reader = FrameReader(source)
           val hpack = Hpack()
           var continue = true
 
