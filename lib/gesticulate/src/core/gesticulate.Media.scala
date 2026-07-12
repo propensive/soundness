@@ -142,5 +142,5 @@ object Media:
   final private val specials: Set[Char] =
     Set('(', ')', '<', '>', '@', ',', ';', ':', '\\', '"', '/', '[', ']', '?', '=', '+')
 
-trait Media extends Typeclass:
+trait Media extends Typeclass.Pure:
   extension (value: Self) def mediaType: MediaType

@@ -62,7 +62,7 @@ object Regulation:
     def encode(demand: Pace): Long = demand.ordinal
     def decode(bits: Long): Pace = Pace.fromOrdinal(bits.toInt)
 
-trait Regulation extends Typeclass:
+trait Regulation extends Typeclass.Pure:
   def initial: Self
   def grant(demand: Self): Int
   def spend(demand: Self, count: Int): Self

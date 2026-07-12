@@ -80,7 +80,7 @@ object Textual:
     def builder(size: Optional[Int]): Builder[Text] = TextBuilder(size)
     def size(text: Self): Int = text.length
 
-trait Textual extends Typeclass, Countable, Segmentable, Zeroic, Indexable:
+trait Textual extends Typeclass.Pure, Countable, Segmentable, Zeroic, Indexable:
   type Operand = Ordinal
   type Result
   type Show[value]

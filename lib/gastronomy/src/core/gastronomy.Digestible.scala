@@ -136,7 +136,7 @@ object Digestible extends Derivable[Digestible]:
   given encodable: [value: Encodable in Data] => value is Digestible =
     bytes.contramap(value.encode)
 
-trait Digestible extends Typeclass:
+trait Digestible extends Typeclass.Pure:
   digestible: Digestible =>
 
     def digest(digestion: Digestion, value: Self): Unit

@@ -106,9 +106,9 @@ object Showable:
     stack.cause.lay(root): cause =>
       s"$root\ncaused by:\n$cause".tt
 
-trait Showable extends Typeclass, Communicable:
+trait Showable extends Communicable:
   def text(value: Self): Text
   def message(value: Self): Message = Message(text(value))
 
-  override def contramap[self2](lambda: self2 => Self): (self2 is Showable)^{this, lambda} =
+  override def contramap[self2](lambda: self2 -> Self): self2 is Showable =
     value => text(lambda(value))

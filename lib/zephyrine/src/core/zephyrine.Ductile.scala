@@ -259,7 +259,7 @@ object Ductile:
 
               out.position - targetOffset
 
-trait Ductile extends Typeclass, Operable, Resultant:
+trait Ductile extends Typeclass.Pure, Operable, Resultant:
   type Transport
   type Upstream
 

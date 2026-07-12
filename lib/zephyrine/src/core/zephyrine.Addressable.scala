@@ -243,7 +243,7 @@ object Addressable:
       target.append(storage, off, len)
 
 
-trait Addressable extends Typeclass, Operable, Targetable:
+trait Addressable extends Typeclass.Pure, Operable, Targetable:
   // Mutable backing storage for `Cursor`'s single-buffer model. For `Data`,
   // this is `Array[Byte]`; for `Text`, `Array[Char]`. Hot-path reads in
   // `Cursor.peek` / `Cursor.datum` go through `storageAddress` and lower

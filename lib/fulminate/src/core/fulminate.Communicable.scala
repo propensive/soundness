@@ -68,5 +68,5 @@ trait Communicable extends Transcribable:
   def message(value: Self): Message
   def record(value: Self): Message = message(value)
 
-  override def contramap[self](lambda: self => Self): (self is Communicable)^{this, lambda} =
+  override def contramap[self](lambda: self -> Self): self is Communicable =
     value => message(lambda(value))

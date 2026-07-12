@@ -39,5 +39,5 @@ object Measurable:
   given general: (measurable: Char is Measurable) => Text is Measurable =
     _.s.toCharArray.nn.iterator.map(measurable.width(_)).sum
 
-trait Measurable extends Typeclass:
+trait Measurable extends Typeclass.Pure:
   def width(text: Self): Int

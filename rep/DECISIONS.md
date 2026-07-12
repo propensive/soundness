@@ -1422,3 +1422,30 @@ are rejected — cast the pair whole to (AnyRef, AnyRef). ~20 IArray-opacity
 seals added: FORK-FIX CANDIDATE — stdlib IArray ops (from/slice/take/drop/
 ++/zipWithIndex/tabulate/updated) should return pure results, eliminating this
 entire seal class.
+
+## Typeclass purity campaign, leg 1 (2026-07-12, branch typeclass-purity)
+
+Jon's 2026-07-06 decision STANDS: Typeclass in general stays a plain tracked
+class (Decodable has 61 honestly-tracked `^{tactic}` instances, Instantiable 36,
+Aggregable 24, Writable 19 — flipping those to Pure would convert honest
+tracking into assertions). The campaign is the SPLIT: `Typeclass.Pure`
+(prepositional) = the checked-pure subset, enforced by the compiler (P14
+probes, both rows: capability capture in a Pure instance = E223 at definition).
+
+FLIPPED (zero capturing instances, purity now compiler-verified everywhere):
+Transcribable → Communicable → Showable; Inspectable; Addressable; Ductile;
+Regulation; Textual; Nominable; Teletypeable; Media; Digestible; Renderable;
+Measurable. Total fallout: FIVE contramap signatures purified
+(`self2 => Self` → `self2 -> Self`, capture-set results dropped) — nothing
+else in 127 modules. Every Showable/Textual/Addressable/... given is now a
+verified-pure value; a future capability-capturing instance is a compile error.
+
+PATTERN for pure typeclasses that must hold a resolution-scoped capability
+(P14 pos probe): a single `@caps.unsafe.untrackedCaptures` field — narrower and
+greppable vs sealing the whole instance. NOTE (P14): a SEALED capability-class
+value still cannot sit in a Pure class (the monotonous finding); the untracked
+field is the pattern.
+
+FUTURE LEGS: Postable/Transmissible (sealed constructors — need untracked-field
+conversion), Loadable/Computable/near-1-capture audits, converting codec-thunk
+whole-instance seals to untracked fields where traits stay tracked.
