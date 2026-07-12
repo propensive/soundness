@@ -239,6 +239,104 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       . via(zio.stream.ZPipeline.gunzip()).via(zio.stream.ZPipeline.utfDecode)
       . map(_.length).runSum
 
+  // ── Chained example O: gzip -> base64 -> debase64 -> gunzip roundtrip ───────
+  // The full "armored transport" chain, streaming end-to-end in each library:
+  // Soundness runs monotonous `Alphabet` ducts (Data -> Text -> Data) between
+  // its compression ducts; FS2 its native base64 pipes; the JDK composes
+  // `GZIPOutputStream` inside a `Base64` wrapping stream and mirrors it back.
+
+  def armoredGzipSoundness: Int =
+    Stream(input).compress[Gzip]
+    . through(summon[Alphabet[Base64]])
+    . through(summon[Alphabet[Base64]])
+    . decompress[Gzip].memoize.length
+
+  def armoredGzipFs2: Long =
+    import cats.effect.unsafe.implicits.global
+    val comp = fs2.compression.Compression.forSync[cats.effect.IO]
+    fs2.Stream.chunk(fs2.Chunk.array(inputArray)).covary[cats.effect.IO]
+    . through(comp.gzip())
+    . through(fs2.text.base64.encode)
+    . through(fs2.text.base64.decode)
+    . through(comp.gunzip()).flatMap(_.content)
+    . compile.count.unsafeRunSync()
+
+  def armoredGzipJdk: Int =
+    val buffer = new java.io.ByteArrayOutputStream(input.length/2)
+    val out = new java.util.zip.GZIPOutputStream(java.util.Base64.getEncoder.wrap(buffer))
+    out.write(inputArray)
+    out.close()
+
+    val in = new java.util.zip.GZIPInputStream
+      (java.util.Base64.getDecoder.wrap(java.io.ByteArrayInputStream(buffer.toByteArray)))
+
+    val scratch = new Array[Byte](65536)
+    var total = 0
+    var count = in.read(scratch)
+
+    while count >= 0 do
+      total += count
+      count = in.read(scratch)
+
+    total
+
+  // ── Chained example P: gzip -> AES encrypt -> base64 -> decode -> decrypt ->
+  //    gunzip. The "secure archive" chain: compress, then encrypt, then armor
+  //    for transport, and the mirror image back to plaintext. Soundness streams
+  //    the compression and base64 legs on the kernel and applies the cipher as
+  //    whole-value enigmatic operations; the JDK reference composes GZIP,
+  //    Cipher and Base64 streams. FS2/ZIO have no native cipher, so (as in the
+  //    AES suite) only the JDK is shown.
+
+  def secureChainSoundness: Int =
+    aesKey.expose:
+      val compressed: Data = Stream(input).compress[Gzip].memoize
+      val encrypted: Data = compressed.encrypt(InitializationVector.random)
+
+      val recovered: Data =
+        Stream(encrypted)
+        . through(summon[Alphabet[Base64]])
+        . through(summon[Alphabet[Base64]])
+        . memoize
+
+      val decrypted: Data = recovered.decrypt[Data, Aes[256] over Cbc against Pkcs7]
+      Stream(decrypted).decompress[Gzip].memoize.length
+
+  def secureChainJdk: Int =
+    def cipher(mode: Int): javax.crypto.Cipher =
+      val cipher = javax.crypto.Cipher.getInstance("AES/CBC/PKCS5Padding")
+
+      cipher.init
+        ( mode,
+          javax.crypto.spec.SecretKeySpec(jdkKeyBytes, "AES"),
+          javax.crypto.spec.IvParameterSpec(jdkIvBytes) )
+
+      cipher
+
+    val buffer = new java.io.ByteArrayOutputStream(input.length/2)
+
+    val out = new java.util.zip.GZIPOutputStream
+      (javax.crypto.CipherOutputStream
+        (java.util.Base64.getEncoder.wrap(buffer), cipher(javax.crypto.Cipher.ENCRYPT_MODE)))
+
+    out.write(inputArray)
+    out.close()
+
+    val in = new java.util.zip.GZIPInputStream
+      (javax.crypto.CipherInputStream
+        (java.util.Base64.getDecoder.wrap(java.io.ByteArrayInputStream(buffer.toByteArray)),
+         cipher(javax.crypto.Cipher.DECRYPT_MODE)))
+
+    val scratch = new Array[Byte](65536)
+    var total = 0
+    var count = in.read(scratch)
+
+    while count >= 0 do
+      total += count
+      count = in.read(scratch)
+
+    total
+
   // ── Example D: Base64 encode ────────────────────────────────────────────────
   // Soundness `monotonous` base-N is a whole-value operation (no streaming duct
   // today); FS2 has a native streaming base64 pipe; the JDK is the universal
@@ -473,6 +571,10 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     test(m"chained pipelines agree"):
       val roundtripOk = roundtripSoundness == input.length
       val transcodeOk = transcodeSoundness == textData.length
+      val armoredOk =
+        armoredGzipSoundness == input.length && armoredGzipFs2 == input.length
+          && armoredGzipJdk == input.length
+      val secureOk = secureChainSoundness == input.length && secureChainJdk == input.length
       val readOk = readGzipSoundness == readGzipFs2 && readGzipFs2 == readGzipZio
       val base64Ok = base64Soundness == base64Jdk && base64Jdk == base64Fs2
       val readOk2 = readChunked == input.length && memoizeChunked == input.length
@@ -488,8 +590,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       val fanOutOk =
         manifoldSoundness == 3*n && manifoldFs2 == 3*n && manifoldZio == 3*n
       ( roundtripOk, transcodeOk, readOk, base64Ok, readOk2, cursorOk, writeOk, hexOk, flowOk,
-        conduitOk, fanInOk, fanOutOk )
-    . assert(_ == (true, true, true, true, true, true, true, true, true, true, true, true))
+        conduitOk, fanInOk, fanOutOk, armoredOk, secureOk )
+    . assert(_ == (true, true, true, true, true, true, true, true, true, true, true, true, true,
+        true))
 
     suite(m"Gzip compression (4 MB)"):
       bench(m"Soundness  Stream.compress[Gzip]")
@@ -559,6 +662,25 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
       bench(m"ZIO  gunzip.utfDecode")(target = 1*Second, operationSize = textSize):
         '{ turbulence.Benchmarks.readGzipZio }
+
+    suite(m"Chained: gzip -> base64 -> decode -> gunzip (4 MB)"):
+      bench(m"Soundness  compress.b64.b64.decompress")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.armoredGzipSoundness }
+
+      bench(m"FS2  gzip.base64.base64.gunzip")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.armoredGzipFs2 }
+
+      bench(m"JDK  GZIP/Base64 stream composition")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.armoredGzipJdk }
+
+    suite(m"Chained: gzip -> AES -> base64 -> decode -> decrypt -> gunzip (4 MB)"):
+      bench(m"Soundness  full secure-archive chain")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.secureChainSoundness }
+
+      bench(m"JDK  GZIP/Cipher/Base64 composition")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.secureChainJdk }
 
     suite(m"Base64 encode (4 MB)"):
       bench(m"Soundness  serialize[Base64]")
