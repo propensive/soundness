@@ -209,6 +209,21 @@ object Tests extends Suite(m"Monotonous tests"):
         Drain.data(Stream(text).through(summon[Alphabet[Base64]])).to(List)
       . assert(_ == payload.to(List))
 
+      // Multi-window payloads whose lengths straddle group and window
+      // boundaries, exercising the unrolled fast path, its cross-window carry
+      // and the padded tail. Lengths chosen mod 3 = 0, 1, 2.
+      for size <- List(9000, 9001, 9002) do
+        val large = Data.fill(size)(index => (index*7).toByte)
+
+        test(m"base64 duct serialization matches whole-value ($size bytes)"):
+          Drain.text(Stream(large).through(summon[Alphabet[Base64]]))
+        . assert(_ == large.serialize[Base64])
+
+        test(m"base64 duct roundtrips a multi-window payload ($size bytes)"):
+          val text = Drain.text(Stream(large).through(summon[Alphabet[Base64]]))
+          Drain.data(Stream(text).through(summon[Alphabet[Base64]])).to(List)
+        . assert(_ == large.to(List))
+
 // Drains a duct-composed pull endpoint, for the streaming serialization
 // tests.
 object Drain:
