@@ -1686,3 +1686,41 @@ aliasing holes (`unsafeFromArray`, covariance) are unchanged in trust level.
   `mill clean` before trusting anything after a fork rebuild.
 - Upstream-report candidate #3: propose IArray purity upstream alongside the
   quote-pattern and inline-assignment-provenance reports.
+
+## Kernel module-wide separation checking — P5 resolved (2026-07-12, branch kernel-module-sep)
+
+zephyrine.core and turbulence.core flipped from per-file sep imports to
+`settings.sep` MODULE-WIDE. THE P5 WALL IS BROKEN SOURCE-SIDE — no compiler
+primitive needed. What changed since the wall was formulated: the recipes from
+later legs compose to cover it.
+
+- `Addressable`'s storage protocol is now HONESTLY typed and compiler-checked:
+  `allocate(size): Storage^`, writers take `Storage^`
+  (storageUpdate/copyChunk-dest/transfer-dest), readers take
+  `Storage^{caps.any.rd}`; `backing` returns a read-only view.
+- The abstract-exclusive-field reassignment (`current = allocate(block)` in
+  Conduit et al.) takes the untracked-field + cast-erased-assignment +
+  exclusive-cast-write-view treatment (ByteBuf recipe, generalized to the
+  ABSTRACT `Storage` — casts on abstract types mint/erase fine). Eight kernel
+  sites + Confluence + Sink + two test helpers (cc modules see `allocate`'s
+  fresh `^` and need the same cast-erase).
+- turbulence tail: pre-read-before-raise/abort (7 sites), buffer0/window0
+  AnyRef rims, Confluence loop de-recursion, Pulsar untracked flag.
+- ★ NEW FINDING (extends the cordillera companion-relocation finding): inside a
+  fiber closure, even a CAST to a generic class type re-charges `this` through
+  the class type parameters' prefix (`Multiplexer[key, element]` =
+  `Multiplexer.this.key`…). FIX: build the entire body as a lambda BEFORE the
+  spawn and cross it as an `AnyRef` thunk (`AnyRef => Unit` taking the Worker
+  as `AnyRef` too — capability-typed function types re-hide).
+- ★ WRONG TURN, documented: re-typing `Source.stream`/`Sink.intake` results as
+  instance-relative `^{this, caps.any}` fixed the module-sep given errors but
+  BROKE every downstream SAM given under `-scalajs` (the anon class's inherited
+  instance-relative member produces an illegal capture bound — #1520 family) —
+  a viral trait change requiring explicit instances everywhere. REVERTED to
+  fresh `^` members; the module-sep errors were instead fixed locally: the four
+  evidence-carrying Source/Sink givens launder their `Emit`/`Tactic` through
+  NEUTRAL `() -> AnyRef` thunks (a capability-typed thunk result still trips
+  the sep hiding rule — must be AnyRef under sep, unlike the cc-only JS
+  launders of #1528).
+- Per-file `import language.experimental.separationChecking` lines deleted
+  (14 files); the module flag covers them.

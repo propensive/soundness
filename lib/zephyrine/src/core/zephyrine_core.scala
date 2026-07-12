@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import language.experimental.separationChecking
-
 import anticipation.*
 import fulminate.*
 import hieroglyph.*
@@ -249,7 +247,10 @@ private def throughDuct[in, out, upTransport, downTransport]
       private val capacity: Int =
         buffering.capacity(duct.output.substrate).max(duct.quantum)
 
-      private val storage: duct.output.Storage = duct.output.allocate(capacity)
+      // Untracked, cast-erased: reached only through this endpoint.
+      @caps.unsafe.untrackedCaptures
+      private val storage: duct.output.Storage =
+        duct.output.allocate(capacity).asInstanceOf[duct.output.Storage]
       private var start0: Int = 0
       private var limit0: Int = 0
       private var ended: Boolean = false
@@ -382,7 +383,10 @@ private def acceptingDuct[in, out, upTransport, downTransport]
       type Transport = upTransport
 
       private val capacity: Int = buffering.capacity(duct.input.substrate)
-      private val storage: duct.input.Storage = duct.input.allocate(capacity)
+      // Untracked, cast-erased: reached only through this endpoint.
+      @caps.unsafe.untrackedCaptures
+      private val storage: duct.input.Storage =
+        duct.input.allocate(capacity).asInstanceOf[duct.input.Storage]
       private var mark0: Int = 0
 
       def demand: upTransport = duct.translate(intake.demand)

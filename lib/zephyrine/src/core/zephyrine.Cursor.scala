@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import language.experimental.separationChecking
-
 import scala.annotation.targetName
 
 import anticipation.Data
@@ -343,7 +341,11 @@ extends caps.Mutable:
   // region (or -1 when no hold is active); compaction may not advance past
   // it. `ended` becomes true when the loader has returned `Unset`.
 
-  private var buffer:    addressable.Storage = addressable.allocate(initialSize)
+  // Untracked, with cast-erased assignments: the buffer is reached only through
+  // this (exclusive) cursor.
+  @caps.unsafe.untrackedCaptures
+  private var buffer:    addressable.Storage =
+    addressable.allocate(initialSize).asInstanceOf[addressable.Storage]
   private var pos:       Int = 0
   private var writeEnd:  Int = 0
   private var basePos:   Long = 0L
@@ -380,7 +382,7 @@ extends caps.Mutable:
 
       if len > 0 then
         if len > addressable.storageSize(buffer) then
-          buffer = addressable.allocate(len)
+          buffer = addressable.allocate(len).asInstanceOf[addressable.Storage]
 
         addressable.copyChunk(chunk, 0, buffer, 0, len)
         writeEnd = len
@@ -454,7 +456,7 @@ extends caps.Mutable:
       while newCap < needed do newCap *= 2
       val newBuf = addressable.allocate(newCap)
       if writeEnd > 0 then addressable.transfer(buffer, 0, newBuf, 0, writeEnd)
-      buffer = newBuf
+      buffer = newBuf.asInstanceOf[addressable.Storage]
 
   // ─── core navigation ──────────────────────────────────────────────────────
 

@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import language.experimental.separationChecking
-
 import java.util.concurrent as juc
 
 import anticipation.Data
@@ -91,7 +89,10 @@ object Producer:
     private val queue: juc.ArrayBlockingQueue[medium | Done.type] =
       juc.ArrayBlockingQueue(window)
 
-    private val current: addressable.Storage = addressable.allocate(block)
+    // Untracked, cast-erased: reached only through this producer.
+    @caps.unsafe.untrackedCaptures
+    private val current: addressable.Storage =
+      addressable.allocate(block).asInstanceOf[addressable.Storage]
     private var index: Ordinal = Prim
 
     private inline def free: Int = block - index.n0

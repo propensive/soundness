@@ -1862,7 +1862,7 @@ object turbulence extends Library:
   extends Component(hieroglyph.core, parasite.core, capricious.core, stenography.core,
       zephyrine.core):
     override def scalacOptions = Task:
-      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // JVM-only implementations (`java.util.zip` compression) split out of `core` so modules that use
   // only turbulence's platform-agnostic streaming can cross-compile to Scala.js.
   object jvm extends Component(core):
@@ -2080,7 +2080,7 @@ object ypsiloid extends Library:
 object zephyrine extends Library:
   object core extends Component(hieroglyph.core, hypotenuse.core):
     override def scalacOptions = Task:
-      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())

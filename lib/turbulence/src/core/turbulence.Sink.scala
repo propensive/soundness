@@ -51,6 +51,10 @@ import zephyrine.*
 object Sink:
   given outputStream: [output <: ji.OutputStream] => (streamCut: Emit[StreamError], buffering: Buffering)
   =>  ((output is Sink by Data over Credit)^{streamCut}) =
+    // Laundered for the Scala.js pipeline (see #1520): its pre-capture-checking
+    // SAM expansion turns this given into an anonymous class that hides the
+    // evidence; the pure thunk empties the capture.
+    val cut: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => streamCut.asInstanceOf[AnyRef] }
 
     value =>
       new Intake[Data]:
@@ -63,7 +67,7 @@ object Sink:
         private var broken: Boolean = false
 
         def demand: Credit = Credit(if broken then 0 else Long.MaxValue)
-        protected def buffer0: AnyRef = storage
+        protected def buffer0: AnyRef = storage.asInstanceOf[AnyRef]
         def mark: Int = mark0
 
         update def reserve(min: Int): Int =
@@ -83,7 +87,10 @@ object Sink:
 
         update def finish(): Unit =
           drain()
-          try value.close() catch case _: ji.IOException => raise(StreamError(total.b))
+          // Pre-read into a local: `raise`'s capture-polymorphic argument may not
+          // hide this instance's state.
+          val written: Long = total
+          try value.close() catch case _: ji.IOException => raise(StreamError(written.b))(using cut().asInstanceOf[Emit[StreamError]^])
 
         private update def drain(): Unit =
           if mark0 > 0 && !broken then
@@ -93,12 +100,16 @@ object Sink:
               total += mark0
             catch case _: ji.IOException =>
               broken = true
-              raise(StreamError(total.b))
+              { val written: Long = total; raise(StreamError(written.b))(using cut().asInstanceOf[Emit[StreamError]^]) }
 
           mark0 = 0
 
   given channel: (streamCut: Emit[StreamError], buffering: Buffering)
   =>  ((jn.channels.WritableByteChannel is Sink by Data over Credit)^{streamCut}) =
+    // Laundered for the Scala.js pipeline (see #1520): its pre-capture-checking
+    // SAM expansion turns this given into an anonymous class that hides the
+    // evidence; the pure thunk empties the capture.
+    val cut: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => streamCut.asInstanceOf[AnyRef] }
 
     value =>
       new Intake[Data]:
@@ -111,7 +122,7 @@ object Sink:
         private var broken: Boolean = false
 
         def demand: Credit = Credit(if broken then 0 else Long.MaxValue)
-        protected def buffer0: AnyRef = storage
+        protected def buffer0: AnyRef = storage.asInstanceOf[AnyRef]
         def mark: Int = mark0
 
         update def reserve(min: Int): Int =
@@ -129,7 +140,9 @@ object Sink:
 
         update def finish(): Unit =
           drain()
-          try value.close() catch case _: Exception => raise(StreamError(total.b))
+          // Pre-read into a local, as above.
+          val written: Long = total
+          try value.close() catch case _: Exception => raise(StreamError(written.b))(using cut().asInstanceOf[Emit[StreamError]^])
 
         private update def drain(): Unit =
           if mark0 > 0 && !broken then
@@ -139,12 +152,12 @@ object Sink:
               while buffer.hasRemaining do
                 if value.write(buffer) == -1 then
                   broken = true
-                  raise(StreamError(total.b))
+                  { val written: Long = total; raise(StreamError(written.b))(using cut().asInstanceOf[Emit[StreamError]^]) }
 
               total += mark0
             catch case _: Exception =>
               broken = true
-              raise(StreamError(total.b))
+              { val written: Long = total; raise(StreamError(written.b))(using cut().asInstanceOf[Emit[StreamError]^]) }
 
           mark0 = 0
 
@@ -160,7 +173,10 @@ object Sink:
       type Transport = Credit
 
       private val block: Int = 2048
-      private val storage: addressable0.Storage = addressable0.allocate(block)
+      // Untracked, cast-erased: reached only through this endpoint.
+      @caps.unsafe.untrackedCaptures
+      private val storage: addressable0.Storage =
+        addressable0.allocate(block).asInstanceOf[addressable0.Storage]
       private var mark0: Int = 0
       private var chunks: List[medium] = Nil
 

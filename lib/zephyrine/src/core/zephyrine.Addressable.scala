@@ -71,7 +71,7 @@ object Addressable:
     inline def storageSize(storage: Array[Byte]): Int = storage.length
     inline def storageAddress(storage: Array[Byte], index: Int): Byte = storage(index)
 
-    inline def storageUpdate(storage: Array[Byte], index: Int, operand: Byte): Unit =
+    inline def storageUpdate(storage: Array[Byte]^, index: Int, operand: Byte): Unit =
       storage(index) = operand
 
     inline def append(target: ji.ByteArrayOutputStream, operand: Byte): Unit =
@@ -80,7 +80,7 @@ object Addressable:
     inline def copyChunk
       ( source:  Data,
        srcOff:  Int,
-       dest:    Array[Byte],
+       dest:    Array[Byte]^,
        destOff: Int,
        len:     Int )
     :   Unit =
@@ -90,7 +90,7 @@ object Addressable:
     inline def transfer
       ( src:     Array[Byte],
        srcOff:  Int,
-       dest:    Array[Byte],
+       dest:    Array[Byte]^,
        destOff: Int,
        len:     Int )
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
@@ -150,7 +150,7 @@ object Addressable:
     def storageAddress(storage: Array[AnyRef], index: Int): element =
       storage(index).asInstanceOf[element]
 
-    def storageUpdate(storage: Array[AnyRef], index: Int, operand: element): Unit =
+    def storageUpdate(storage: Array[AnyRef]^, index: Int, operand: element): Unit =
       storage(index) = operand
 
     def append(target: scm.ArrayBuffer[element], operand: element): Unit = target += operand
@@ -158,7 +158,7 @@ object Addressable:
     def copyChunk
       ( source:  IArray[element],
        srcOff:  Int,
-       dest:    Array[AnyRef],
+       dest:    Array[AnyRef]^,
        destOff: Int,
        len:     Int )
     :   Unit =
@@ -168,7 +168,7 @@ object Addressable:
     def transfer
       ( src:     Array[AnyRef],
        srcOff:  Int,
-       dest:    Array[AnyRef],
+       dest:    Array[AnyRef]^,
        destOff: Int,
        len:     Int )
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
@@ -215,7 +215,7 @@ object Addressable:
     inline def storageSize(storage: Array[Char]): Int = storage.length
     inline def storageAddress(storage: Array[Char], index: Int): Char = storage(index)
 
-    inline def storageUpdate(storage: Array[Char], index: Int, operand: Char): Unit =
+    inline def storageUpdate(storage: Array[Char]^, index: Int, operand: Char): Unit =
       storage(index) = operand
 
     inline def append(target: jl.StringBuilder, operand: Char): Unit = target.append(operand)
@@ -223,7 +223,7 @@ object Addressable:
     inline def copyChunk
       ( source:  Text,
        srcOff:  Int,
-       dest:    Array[Char],
+       dest:    Array[Char]^,
        destOff: Int,
        len:     Int )
     :   Unit = source.s.getChars(srcOff, srcOff + len, dest, destOff)
@@ -231,7 +231,7 @@ object Addressable:
     inline def transfer
       ( src:     Array[Char],
        srcOff:  Int,
-       dest:    Array[Char],
+       dest:    Array[Char]^,
        destOff: Int,
        len:     Int )
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
@@ -271,25 +271,28 @@ trait Addressable extends Typeclass.Pure, Operable, Targetable:
   def clone(source: Self, start: Ordinal, end: Ordinal)(target: Target): Unit
   def grab(text: Self, start: Ordinal, end: Ordinal): Self
 
-  def allocate(size: Int): Storage
-  def storageSize(storage: Storage): Int
-  def storageAddress(storage: Storage, index: Int): Operand
+  // Honest capture typing for the storage protocol: `allocate` mints a fresh
+  // exclusive buffer; writers take it exclusively (`Storage^`); readers take a
+  // read-only view (`Storage^{caps.any.rd}`).
+  def allocate(size: Int): Storage^
+  def storageSize(storage: Storage^{caps.any.rd}): Int
+  def storageAddress(storage: Storage^{caps.any.rd}, index: Int): Operand
 
   // Single-`Operand` writes: one element into the chunk storage (`storageUpdate`) or appended to
   // the builder (`append`). These back `Producer.push` for element-at-a-time producers.
-  def storageUpdate(storage: Storage, index: Int, operand: Operand): Unit
+  def storageUpdate(storage: Storage^, index: Int, operand: Operand): Unit
   def append(target: Target, operand: Operand): Unit
 
   def copyChunk
-    ( source: Self, srcOff: Int, dest: Storage, destOff: Int, len: Int )
+    ( source: Self, srcOff: Int, dest: Storage^, destOff: Int, len: Int )
   :   Unit
 
   def transfer
-    ( src: Storage, srcOff: Int, dest: Storage, destOff: Int, len: Int )
+    ( src: Storage^{caps.any.rd}, srcOff: Int, dest: Storage^, destOff: Int, len: Int )
   :   Unit
 
-  def materialize(storage: Storage, off: Int, len: Int): Self
-  def cloneStorage(storage: Storage, off: Int, len: Int)(target: Target): Unit
+  def materialize(storage: Storage^{caps.any.rd}, off: Int, len: Int): Self
+  def cloneStorage(storage: Storage^{caps.any.rd}, off: Int, len: Int)(target: Target): Unit
 
   // The value's backing storage, when the medium is immutable and its erased
   // representation *is* its `Storage` type, so a whole chunk can be exposed as
@@ -297,4 +300,4 @@ trait Addressable extends Typeclass.Pure, Operable, Targetable:
   // `Data` returns its backing array; media without a directly-exposable
   // backing (`Text`, whose `String` is not an `Array[Char]`) return `Unset`,
   // and callers copy. Exposed backing must never be mutated.
-  def backing(value: Self): Optional[Storage] = Unset
+  def backing(value: Self): Optional[Storage]^{caps.any.rd} = Unset

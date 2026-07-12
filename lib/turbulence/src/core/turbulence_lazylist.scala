@@ -59,8 +59,8 @@ extension [element](stream: LazyList[element])
   def rate
     [ generic: {Abstractable across Durations to Long, Instantiable across Durations from Long} ]
     ( duration: generic )
-    ( using Monitor )
-  :   LazyList[element] raises AsyncError =
+    ( using Monitor, Tactic[AsyncError] )
+  :   LazyList[element] =
 
     def recur(stream: LazyList[element], last: Long): LazyList[element] =
       stream.flow(LazyList()):
@@ -70,4 +70,6 @@ extension [element](stream: LazyList[element])
         if duration2.generic > 0 then snooze(duration2)
         stream
 
-    async(recur(stream, jl.System.currentTimeMillis)).await()
+    // A neutral thunk: the async body may not hide the method's parameters.
+    val body: AnyRef = (() => recur(stream, jl.System.currentTimeMillis)).asInstanceOf[AnyRef]
+    async(body.asInstanceOf[() => LazyList[element]]()).await()

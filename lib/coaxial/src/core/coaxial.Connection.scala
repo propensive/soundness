@@ -43,7 +43,8 @@ import zephyrine.*
 case class Connection
   ( private[coaxial] val in: ji.InputStream, private[coaxial] val out: ji.OutputStream ):
   // A fresh pull endpoint over the read side; single-use, like the connection.
-  def source()(using Buffering, Tactic[StreamError]): (Stream[Data] over Credit)^ =
+  def source()(using Buffering)(using tactic: Tactic[StreamError])
+  :   (Stream[Data] over Credit)^{tactic, caps.any} =
     summon[(ji.InputStream is Source by Data over Credit)^].stream(in)
   def reader: ji.InputStream = in
   def writer: ji.OutputStream = out

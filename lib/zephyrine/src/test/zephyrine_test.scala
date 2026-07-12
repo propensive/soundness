@@ -861,7 +861,7 @@ object Tests extends Suite(m"Zephyrine tests"):
     type Transport = Credit
 
     private val block: Int = 16
-    private val storage: addressable.Storage = addressable.allocate(block)
+    private val storage: addressable.Storage = addressable.allocate(block).asInstanceOf[addressable.Storage]
     private val target: addressable.Target = addressable.blank(64)
     private var mark1: Int = 0
     var credit: Long = Long.MaxValue
