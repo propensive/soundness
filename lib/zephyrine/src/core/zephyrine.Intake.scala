@@ -108,7 +108,10 @@ trait Intake[medium](using val addressable: medium is Addressable) extends Produ
 
   final update def put(source: medium): Unit = put(source, Prim, addressable.length(source))
 
-  final update def put(source: medium, offset: Ordinal, size: Int): Unit =
+  // Overridable: the default loops the reserve/commit protocol, copying, but an
+  // asynchronous boundary may transfer a large immutable chunk by reference
+  // (via `Addressable.backing`) instead — see `Conduit`.
+  update def put(source: medium, offset: Ordinal, size: Int): Unit =
     var done: Int = 0
 
     while done < size do

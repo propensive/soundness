@@ -44,7 +44,11 @@ object Buffering:
       case Substrate.Chars => 2048
       case Substrate.Boxes => 256
 
-    def window: Int = 4
+    // Deep enough that a producer/consumer pair in lockstep exchange several
+    // transfer blocks per wakeup rather than parking after every few: hand-off
+    // throughput scales almost linearly with depth up to this point, at a
+    // bounded cost of `window` in-flight transfer blocks.
+    def window: Int = 16
 
 // Pure: a `Buffering` is only sizing policy, so instances are untracked under capture
 // checking and closures over them stay pure.

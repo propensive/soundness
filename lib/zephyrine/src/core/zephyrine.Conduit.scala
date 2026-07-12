@@ -34,8 +34,7 @@ package zephyrine
 
 import language.experimental.separationChecking
 
-import java.util.concurrent as juc
-
+import denominative.*
 import fulminate.*
 import prepositional.*
 import rudiments.*
@@ -57,17 +56,18 @@ import vacuous.*
 // single ownership of a published block is discharged on the writer's side before the
 // hand-off, and visibility is the queue's publication guarantee.
 object Conduit:
-  private object End
+  // A queued hand-off: `storage` is either a block the writer minted and
+  // filled (start 0), or the immutable backing of a chunk passed through by
+  // reference, windowed at [start, start + size).
+  private class Block(val storage: AnyRef, val start: Int, val size: Int)
 
-  private class Block(val storage: AnyRef, val size: Int)
-
-  // The synchronized substrate both endpoints capture.
+  // The synchronized substrate both endpoints capture: a spin-then-park SPSC
+  // ring, plus the failure flag.
   private final class Core(val window: Int) extends caps.SharedCapability:
-    val queue: juc.ArrayBlockingQueue[AnyRef] = juc.ArrayBlockingQueue(window)
-    // JMM-managed flags: their safety is the volatile publication guarantee, not
-    // aliasing analysis, so their captures are untracked.
+    val handoff: Handoff = Handoff(window)
+    // A JMM-managed flag: its safety is the volatile publication guarantee, not
+    // aliasing analysis, so its captures are untracked.
     @caps.unsafe.untrackedCaptures @volatile var error: Throwable | Null = null
-    @caps.unsafe.untrackedCaptures @volatile var closed: Boolean = false
 
   def apply[medium]()
     ( using addressable0: medium is Addressable )(using buffering: Buffering)
@@ -89,11 +89,11 @@ object Conduit:
       private var capacity: Int = block
       private var mark0: Int = 0
 
-      // Advisory free space: block-sized credit for each free queue slot, plus
+      // Advisory free space: block-sized credit for each free ring slot, plus
       // the room left in the block being written. Zero exactly when `reserve`
-      // would park on a full queue.
+      // would park on a full ring.
       def demand: Credit =
-        Credit((core.window - core.queue.size).toLong*block + (capacity - mark0))
+        Credit(core.handoff.free.toLong*block + (capacity - mark0))
 
       protected def buffer0: AnyRef = current.asInstanceOf[AnyRef]
       def mark: Int = mark0
@@ -111,23 +111,46 @@ object Conduit:
         mark0 += count
         if mark0 == capacity then publish()
 
+      // Zero-copy pass-through: a chunk at least a block long, whose medium
+      // exposes its immutable backing, crosses the boundary by reference — no
+      // copy, one hand-off. Anything buffered is published first, preserving
+      // order; small chunks take the default coalescing copy path.
+      override update def put(source: medium, offset: Ordinal, size: Int): Unit =
+        val backing: Optional[addressable0.Storage] =
+          if size >= block then addressable0.backing(source) else Unset
+
+        if backing == Unset then
+          // The default coalescing copy loop, inlined: `super` calls on update
+          // methods are not permitted, and the loop reads the minted block
+          // directly in any case.
+          var done: Int = 0
+
+          while done < size do
+            val free = reserve(size - done)
+            val count = free.min(size - done)
+            addressable0.copyChunk(source, offset.n0 + done, current, mark0, count)
+            commit(count)
+            done += count
+        else
+          publish()
+          core.handoff.offer(Block(backing.asInstanceOf[AnyRef], offset.n0, size))
+
       override update def flush(): Unit = publish()
 
       update def finish(): Unit =
         flush()
-        core.queue.put(End)
+        core.handoff.finish()
 
       override update def fail(error: Throwable): Unit =
         core.error = error
-        core.queue.clear()
-        core.queue.put(End)
+        core.handoff.finish()
 
-      // Hand the written block over (or discard it after close). The storage
-      // moves to the queue, so the capacity drops to zero and the next
+      // Hand the written block over (the ring discards it after close). The
+      // storage moves to the ring, so the capacity drops to zero and the next
       // `reserve` mints a fresh block, sized to its request.
       private update def publish(): Unit =
         if mark0 > 0 then
-          if !core.closed then core.queue.put(Block(current.asInstanceOf[AnyRef], mark0))
+          core.handoff.offer(Block(current.asInstanceOf[AnyRef], 0, mark0))
           mark0 = 0
           capacity = 0
 
@@ -139,7 +162,7 @@ object Conduit:
       private var storage: addressable0.Storage = addressable0.allocate(0)
       private var start0: Int = 0
       private var limit0: Int = 0
-      private var size: Int = 0
+      private var end0: Int = 0
       private var ended: Boolean = false
 
       protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
@@ -149,36 +172,41 @@ object Conduit:
       update def skip(count: Int): Unit = start0 += count
 
       update def refill(demand: Credit): Optional[Int] =
-        if limit0 > start0 then limit0 - start0
+        // Fail-fast: a producer failure pre-empts everything buffered, exactly
+        // as the queue-clearing hand-off did.
+        val error0 = if ended then null else core.error
+
+        if error0 != null then
+          ended = true
+          throw error0
+        else if limit0 > start0 then limit0 - start0
         else if ended then Unset
         else
           val granted = summon[Credit is Regulation].grant(demand)
 
           if granted == 0 then 0
-          else if limit0 < size then
-            limit0 += (size - limit0).min(granted)
+          else if limit0 < end0 then
+            limit0 += (end0 - limit0).min(granted)
             limit0 - start0
           else
-            (core.queue.take().nn: @unchecked) match
-              case End =>
+            core.handoff.take() match
+              case null =>
                 ended = true
-                val error0 = core.error
-                if error0 == null then Unset else throw error0
+                Unset
 
               case received: Block =>
-                // Single-ownership transfer: the writer never touches a published
-                // block again (proven on its side by the fresh re-mint in `publish`).
+                // Single-ownership transfer: a minted block is never touched by
+                // the writer again (proven on its side by the fresh re-mint in
+                // `publish`), and a passed-through chunk backing is immutable.
                 storage = received.storage.asInstanceOf[addressable0.Storage]
-                size = received.size
-                start0 = 0
-                limit0 = size.min(granted)
-                limit0
+                start0 = received.start
+                end0 = received.start + received.size
+                limit0 = start0 + received.size.min(granted)
+                limit0 - start0
 
               case _ =>
-                panic(m"unexpected value in conduit queue")
+                panic(m"unexpected value in conduit hand-off")
 
-      override update def close(): Unit =
-        core.closed = true
-        core.queue.clear()
+      override update def close(): Unit = core.handoff.close()
 
     (intake, stream)

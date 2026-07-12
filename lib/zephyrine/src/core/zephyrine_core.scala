@@ -155,7 +155,9 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
   // Drain the stream, applying `operation` to each successive window. The lambda
   // receives the storage, start index and element count; it must not retain the storage.
   def foreachWindow(operation: (AnyRef, Int, Int) => Unit)(using buffering: Buffering): Unit =
-    val block = buffering.capacity(stream.addressable.substrate)
+    // A drain loop wants boundary-transfer-sized credit: a staging-block ask
+    // would slice each larger window into many partial refills.
+    val block = buffering.transfer(stream.addressable.substrate)
 
     def loop(): Unit = stream.refill(Credit(block)) match
       case count: Int =>
