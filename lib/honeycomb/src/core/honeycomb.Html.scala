@@ -107,11 +107,11 @@ object Html extends Tag.Container
 
       for item <- html do item match
         case Fragment(nodes*) => for node <- nodes do
-          array(index) = node
+          writable(array)(index) = node
           index += 1
 
         case node: Node =>
-          array(index) = node
+          writable(array)(index) = node
           index += 1
 
       array.immutable(using Unsafe)
@@ -573,6 +573,17 @@ object Html extends Tag.Container
   // O(1) — the per-byte tracking cost is small and avoids re-walking the
   // source on each error (which used to be O(n)).
 
+  // Exclusive write views over method-local growable arrays: a bare-typed local
+  // reads as `.rd` under separation checking, but a capability-typed binding
+  // would be hidden (by the statement rule) from the local defs that capture it.
+  // `writable` grants a write through a cast; `confined` erases a fresh grown
+  // array's capture as it replaces its confined predecessor.
+  private[honeycomb] inline def writable[element](array: Array[element]): Array[element]^ =
+    array.asInstanceOf[Array[element]^]
+
+  private[honeycomb] inline def confined[element](array: Array[element]^): Array[element] =
+    array.asInstanceOf[Array[element]]
+
   private[honeycomb] object HtmlParser:
     // Use untracked lineation in the cursor: avoids a per-`advance` newline
     // check and a per-`mark` write into the cursor's parallel offsets
@@ -582,24 +593,33 @@ object Html extends Tag.Container
     // scanning the currently-buffered chars from offset 0 to the error
     // position — an O(buffer) cost paid only on the failure path.
 
-    def fromText(text: Text, permissive: Boolean = false)(using Dom): HtmlParser =
-      new HtmlParser(Cursor[Text](text).asInstanceOf[AnyRef], permissive)
+    def fromText(text: Text, permissive: Boolean = false)(using Dom): HtmlParser^ =
+      new HtmlParser(Cursor[Text](text), permissive)
 
-    def fromIterator(input: Iterator[Text], permissive: Boolean = false)(using Dom): HtmlParser =
-      new HtmlParser(Cursor[Text](input).asInstanceOf[AnyRef], permissive)
+    def fromIterator(input: Iterator[Text], permissive: Boolean = false)(using Dom): HtmlParser^ =
+      new HtmlParser(Cursor[Text](input), permissive)
 
     def fromStream(input: (Stream[Text] over Credit)^, permissive: Boolean = false)(using Dom)
-    :   HtmlParser =
+    :   HtmlParser^ =
 
-      new HtmlParser(Cursor[Text](input).asInstanceOf[AnyRef], permissive)
+      // Ownership moves through a neutral carrier: `Aggregable.accept` (this
+      // factory's caller) cannot declare `consume` on its trait signature, so
+      // the endpoint's single-ownership transfer is by convention here.
+      val inputRef: AnyRef = input.asInstanceOf[AnyRef]
 
+      new HtmlParser(Cursor[Text](inputRef.asInstanceOf[(Stream[Text] over Credit)^]), permissive)
+
+  // An exclusive, stateful capability, like `caesura`'s parser: it CONSUMES its
+  // cursor — single ownership moves into the parser — which is what entitles the
+  // buffer-snapshot fields below to hold parameter-derived references.
   private[honeycomb] final class HtmlParser
-    ( cursor0:        AnyRef,
+    ( consume cursor1:  Cursor[Text, ?]^,
       val permissive: Boolean      = false )
-    ( using dom: Dom ):
+    ( using dom: Dom )
+  extends caps.ExclusiveCapability, caps.Stateful:
     // A neutral carrier with an inline accessor (the `perihelion.Reader` pattern):
-    // the parser owns the cursor exclusively, but an exclusive-typed field would
-    // make the parser a capability and hide the cursor from its own methods.
+    // an exclusive-typed field would hide the cursor from the parser's own methods.
+    private val cursor0: AnyRef = cursor1.asInstanceOf[AnyRef]
     private inline def cursor: Cursor[Text, ?]^ = cursor0.asInstanceOf[Cursor[Text, ?]^]
     private var heldToken: Cursor.Held | Null = null
 
@@ -623,14 +643,22 @@ object Html extends Tag.Container
     // backtracking via `cue`) the parser pushes `pos` to the cursor
     // first, then refreshes its snapshot from the cursor afterwards —
     // refill may compact the buffer, reallocate it, or reset `pos`.
-    private var bytes:  Array[Char] = cursor.buffer(using Unsafe)
-    private var pos:    Int = cursor.unsafePos(using Unsafe)
-    private var bufEnd: Int = cursor.unsafeWriteEnd(using Unsafe)
+    // Untracked: the snapshot intentionally aliases the parser-owned cursor's
+    // buffer (see the invariant note below). Initialized empty — a field may
+    // not derive from a constructor parameter under the provenance rule — and
+    // populated by `syncFrom()` at the top of `parseHtml`.
+    @caps.unsafe.untrackedCaptures
+    private var bytes:  Array[Char] = new Array[Char](0)
+    private var pos:    Int = 0
+    private var bufEnd: Int = 0
 
     private inline def syncTo(): Unit =
       cursor.unsafeAdvanceBy(pos - cursor.unsafePos(using Unsafe))(using Unsafe)
 
-    private inline def syncFrom(): Unit =
+    // Non-inline: a field assignment expanded from an inline method falsely
+    // trips the separation checker's provenance rule (the lifted expansion
+    // binding reads as "parameter x$0"). Called on slow paths only.
+    private update def syncFrom(): Unit =
       bytes  = cursor.buffer(using Unsafe)
       pos    = cursor.unsafePos(using Unsafe)
       bufEnd = cursor.unsafeWriteEnd(using Unsafe)
@@ -640,7 +668,7 @@ object Html extends Tag.Container
     // Out-of-line slow path so `more`'s inline budget stays small enough
     // for the JIT to keep `pos < bufEnd` as one register comparison in
     // hot loops.
-    private def moreSlow(): Boolean =
+    update private def moreSlow(): Boolean =
       syncTo()
       if cursor.more then { syncFrom(); true } else false
 
@@ -677,7 +705,7 @@ object Html extends Tag.Container
     protected inline def asciiLower(char: Char): Char =
       if char >= 'A' && char <= 'Z' then (char + 32).toChar else char
 
-    protected def reset(start: Cursor.Mark): Unit =
+    update protected def reset(start: Cursor.Mark): Unit =
       syncTo()
       cursor.cue(start)
       syncFrom()
@@ -736,7 +764,8 @@ object Html extends Tag.Container
     // Untracked: the macro-expansion callback is installed and invoked only within
     // one `parseHtml` call.
     @caps.unsafe.untrackedCaptures
-    var callback: Optional[(Ordinal, Hole) => Unit] = Unset
+    // Pure-typed: the (sealed) callback closes only over the macro's hole map.
+    var callback: Optional[(Ordinal, Hole) -> Unit] = Unset
 
     // Cursor-compat helpers so the algorithm body stays close to the
     // original cursor-based code.
@@ -758,12 +787,18 @@ object Html extends Tag.Container
 
     import Issue.*
 
-    def parseHtml(root: Tag, doctypes: Boolean = false): Html raises ParseError =
+    // The tactic is a plain using-parameter: a context-function result may not
+    // hide `this`.
+    update def parseHtml(root: Tag, doctypes: Boolean = false)(using Tactic[ParseError]): Html =
+      // The snapshot fields initialize empty (a constructor may not derive field
+      // values from its parameters under the provenance rule); sync them here.
+      syncFrom()
       cursor.hold:
         heldToken = summon[Cursor.Held]
         try parseHtml0(root, doctypes) finally heldToken = null
 
-    private def parseHtml0(root: Tag, doctypes: Boolean): Html raises ParseError =
+    update private def parseHtml0(root: Tag, doctypes: Boolean)(using Tactic[ParseError])
+    :   Html =
       val buffer: jl.StringBuilder = jl.StringBuilder()
       def result(): Text = buffer.toString.tt.also(buffer.setLength(0))
       var content: Text = t""
@@ -784,7 +819,8 @@ object Html extends Tag.Container
       var index: Int = 0
       var stack: Array[Tag] = new Array(4)
       var depth: Int = 0
-      var fragment: IArray[Node] = IArray()
+      // Sealed: the opaque-Array artifact.
+      var fragment: IArray[Node] = caps.unsafe.unsafeAssumePure(IArray())
       // Pending formatting tags awaiting reconstruction (see WHATWG "active
       // formatting elements"). Stored as parallel arrays of label/Attributes
       // pairs rather than a `List[(Text, Attributes)]`: `:+` on a `List` is
@@ -822,18 +858,18 @@ object Html extends Tag.Container
         if index >= nodes.length then
           val nodes2 = new Array[Node](nodes.length*2)
           System.arraycopy(nodes, 0, nodes2, 0, nodes.length)
-          nodes = nodes2
+          nodes = confined(nodes2)
 
-        nodes(index) = node
+        writable(nodes)(index) = node
         index += 1
 
       def push(tag: Tag): Unit =
         if depth >= stack.length then
           val stack2 = new Array[Tag](stack.length*2)
           System.arraycopy(stack, 0, stack2, 0, stack.length)
-          stack = stack2
+          stack = confined(stack2)
 
-        stack(depth) = tag
+        writable(stack)(depth) = tag
         depth += 1
 
       def pop(): Unit = depth -= 1
@@ -1057,7 +1093,7 @@ object Html extends Tag.Container
           if 2*n >= attrInterleaved.length then
             val nu = new Array[String | Null](attrInterleaved.length*2)
             jl.System.arraycopy(attrInterleaved, 0, nu, 0, 2*n)
-            attrInterleaved = nu
+            attrInterleaved = confined(nu)
 
         while !done do
           skip()
@@ -1070,8 +1106,8 @@ object Html extends Tag.Container
               next()
               skip()
               ensureCapacity()
-              attrInterleaved(2*n) = "\u0000"
-              attrInterleaved(2*n + 1) = null
+              writable(attrInterleaved)(2*n) = "\u0000"
+              writable(attrInterleaved)(2*n + 1) = null
               n += 1
 
             case _ =>
@@ -1121,8 +1157,8 @@ object Html extends Tag.Container
 
               if !isDuplicate then
                 ensureCapacity()
-                attrInterleaved(2*n) = key2Str
-                attrInterleaved(2*n + 1) = assignment.lay(null: String | Null)(_.s)
+                writable(attrInterleaved)(2*n) = key2Str
+                writable(attrInterleaved)(2*n + 1) = assignment.lay(null: String | Null)(_.s)
                 n += 1
 
         if n == 0 then Attributes.empty
@@ -1430,7 +1466,7 @@ object Html extends Tag.Container
                 current = Element(content, extra, array(count), parent.foreign)
 
               inline def empty(): Unit =
-                current = Element(content, extra, IArray(), parent.foreign)
+                current = Element(content, extra, caps.unsafe.unsafeAssumePure(IArray()), parent.foreign)
 
               inline def close(): Unit =
                 current = Element(parent.label, map, array(count), parent.foreign)
@@ -1545,15 +1581,17 @@ object Html extends Tag.Container
                         if pendingFormattingSize >= pendingFormattingLabels.length then
                           val newCap = pendingFormattingLabels.length*2
                           val nl = new Array[Text](newCap)
-                          val na = new Array[Attributes](newCap)
+                          // Confined at birth: an exclusive-typed local would be
+                          // hidden from the arraycopy below.
+                          val na = confined(new Array[Attributes](newCap))
                           val sz = pendingFormattingSize
                           jl.System.arraycopy(pendingFormattingLabels, 0, nl, 0, sz)
                           jl.System.arraycopy(pendingFormattingAttrs, 0, na, 0, sz)
-                          pendingFormattingLabels = nl
+                          pendingFormattingLabels = confined(nl)
                           pendingFormattingAttrs  = na
 
-                        pendingFormattingLabels(pendingFormattingSize) = parent.label
-                        pendingFormattingAttrs (pendingFormattingSize) = map
+                        writable(pendingFormattingLabels)(pendingFormattingSize) = parent.label
+                        writable(pendingFormattingAttrs)(pendingFormattingSize) = map
                         pendingFormattingSize += 1
 
                       reset(mark)
@@ -1637,17 +1675,17 @@ object Html extends Tag.Container
                     if fosteredAfterSize >= fosteredAfter.length then
                       val nu = new Array[Node](fosteredAfter.length*2)
                       jl.System.arraycopy(fosteredAfter, 0, nu, 0, fosteredAfterSize)
-                      fosteredAfter = nu
+                      fosteredAfter = confined(nu)
 
-                    fosteredAfter(fosteredAfterSize) = child
+                    writable(fosteredAfter)(fosteredAfterSize) = child
                     fosteredAfterSize += 1
                   else
                     if fosteredBeforeSize >= fosteredBefore.length then
                       val nu = new Array[Node](fosteredBefore.length*2)
                       jl.System.arraycopy(fosteredBefore, 0, nu, 0, fosteredBeforeSize)
-                      fosteredBefore = nu
+                      fosteredBefore = confined(nu)
 
-                    fosteredBefore(fosteredBeforeSize) = child
+                    writable(fosteredBefore)(fosteredBeforeSize) = child
                     fosteredBeforeSize += 1
 
                   val added = reconstructPending()
@@ -1691,17 +1729,17 @@ object Html extends Tag.Container
                     if fosteredAfterSize >= fosteredAfter.length then
                       val nu = new Array[Node](fosteredAfter.length*2)
                       jl.System.arraycopy(fosteredAfter, 0, nu, 0, fosteredAfterSize)
-                      fosteredAfter = nu
+                      fosteredAfter = confined(nu)
 
-                    fosteredAfter(fosteredAfterSize) = node
+                    writable(fosteredAfter)(fosteredAfterSize) = node
                     fosteredAfterSize += 1
                   else
                     if fosteredBeforeSize >= fosteredBefore.length then
                       val nu = new Array[Node](fosteredBefore.length*2)
                       jl.System.arraycopy(fosteredBefore, 0, nu, 0, fosteredBeforeSize)
-                      fosteredBefore = nu
+                      fosteredBefore = confined(nu)
 
-                    fosteredBefore(fosteredBeforeSize) = node
+                    writable(fosteredBefore)(fosteredBeforeSize) = node
                     fosteredBeforeSize += 1
 
                 read(parent, admissible, map, count)
@@ -1711,14 +1749,22 @@ object Html extends Tag.Container
             case Mode.Raw =>
               val text = textual(begin(), parent.label, false)
 
-              if text.nil then Element(parent.label, parent.attributes, IArray(), parent.foreign)
-              else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
+              // Sealed: fresh `IArray`s are immutable; the opaque-Array artifact.
+              if text.nil
+              then Element(parent.label, parent.attributes, caps.unsafe.unsafeAssumePure(IArray()), parent.foreign)
+              else
+                Element(parent.label, parent.attributes,
+                  caps.unsafe.unsafeAssumePure(IArray(TextNode(text))), parent.foreign)
 
             case Mode.Rcdata =>
               val text = textual(begin(), parent.label, true)
 
-              if text.nil then Element(parent.label, parent.attributes, IArray(), parent.foreign)
-              else Element(parent.label, parent.attributes, IArray(TextNode(text)), parent.foreign)
+              // Sealed: fresh `IArray`s are immutable; the opaque-Array artifact.
+              if text.nil
+              then Element(parent.label, parent.attributes, caps.unsafe.unsafeAssumePure(IArray()), parent.foreign)
+              else
+                Element(parent.label, parent.attributes,
+                  caps.unsafe.unsafeAssumePure(IArray(TextNode(text))), parent.foreign)
 
             case Mode.Normal =>
               val text = textual(begin(), Unset, true)
@@ -1750,7 +1796,8 @@ object Html extends Tag.Container
       fastforward: Int                               = 0,
       doctypes:    Boolean                           = false )
     ( using dom: Dom )
-  :   Html raises ParseError =
+    ( using Tactic[ParseError] )
+  :   Html =
 
     val parser = HtmlParser.fromIterator(input, permissive = false)
     // Sealed into the untracked field: the callback lives only for this parse.
@@ -1820,18 +1867,28 @@ extends Node, Topical, Transportive, Dynamic:
     val children2 = children.collect:
       case element@Element(tag.label, _, _, _) => element.of[tag.Topic].in[tag.Form]
 
-    Fragment[tag.Topic](children2.mutable(using Unsafe)*).in[tag.Form]
+    // Cast-erased: the vararg splat wants an exclusive array of the refined
+    // element type; the per-element decorations defeat an outer seal.
+    Fragment[tag.Topic]
+      ( caps.unsafe.unsafeAssumePure
+          (children2.mutable(using Unsafe).asInstanceOf[Array[(Element of tag.Topic) { type Form = tag.Form }]])* )
+    . in[tag.Form]
 
   def body: Fragment of Topic over Transport in Form =
-    Fragment[Topic](children.map(_.of[Topic])*).over[Transport].in[Form]
+    Fragment[Topic](children.map(_.of[Topic]).asInstanceOf[IArray[Node of Topic]]*)
+    . over[Transport].in[Form]
 
   def ^+ (html: Html of Transport): Element of Topic over Transport in Form =
     (html: Html).match
       case fragment: Fragment =>
-        Element(label, attributes, IArray.from(fragment.nodes) ++ children, foreign)
+        Element
+          ( label, attributes,
+            (IArray.from(fragment.nodes).asInstanceOf[IArray[Node]] ++ children)
+            . asInstanceOf[IArray[Node]],
+            foreign )
 
       case node: Node =>
-        Element(label, attributes, node +: children, foreign)
+        Element(label, attributes, caps.unsafe.unsafeAssumePure(node +: children), foreign)
 
     . of[Topic]
     . over[Transport]
@@ -1840,10 +1897,10 @@ extends Node, Topical, Transportive, Dynamic:
   def +^ (html: Html of Transport): Element of Topic over Transport in Form =
     (html: Html).match
       case fragment: Fragment =>
-        Element(label, attributes, children ++ fragment.nodes, foreign)
+        Element(label, attributes, caps.unsafe.unsafeAssumePure(children ++ fragment.nodes), foreign)
 
       case node: Node =>
-        Element(label, attributes, children :+ node, foreign)
+        Element(label, attributes, caps.unsafe.unsafeAssumePure(children :+ node), foreign)
 
     . of[Topic]
     . over[Transport]
@@ -1935,3 +1992,4 @@ case class Doctype(text: Text) extends Node:
     case _                        => false
 
   def body: Fragment of Topic over Transport in Form = Fragment[Topic]().over[Transport].in[Form]
+
