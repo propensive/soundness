@@ -34,11 +34,8 @@ package monotonous
 
 import anticipation.*
 import contingency.*
-import denominative.*
 import gossamer.*
 import hypotenuse.*
-import rudiments.*
-import vacuous.*
 import zephyrine.*
 
 // An `Alphabet` is the stage descriptor for streaming serialization in both
@@ -242,11 +239,21 @@ object Alphabet:
 case class Alphabet[encoding <: Serialization]
   ( chars: Text, padding: Boolean, tolerance: Map[Char, Int] = Map() ):
 
-  def apply(index: Int): Char = chars.at(index.z).vouch
+  def apply(index: Int): Char = chars.s.charAt(index)
 
   def invert(position: Int, char: Char): Int raises SerializationError =
-    inverse.getOrElse(char, abort(SerializationError(position, char)))
+    if char < inversions.length && inversions(char) >= 0 then inversions(char)
+    else abort(SerializationError(position, char))
 
   // Sealed: an `IArray` zip is immutable; fresh-ness is the opaque-Array artifact.
   lazy val inverse: Map[Char, Int] =
     tolerance ++ caps.unsafe.unsafeAssumePure(chars.chars.zipWithIndex).to(Map)
+
+  // Dense decode table, indexed directly by character code (-1 = invalid), so the
+  // per-character hot path avoids boxed `Map` lookups.
+  lazy val inversions: IArray[Int] =
+    val max = inverse.keysIterator.max
+
+    caps.unsafe.unsafeAssumePure:
+      IArray.tabulate(max + 1): index =>
+        inverse.getOrElse(index.toChar, -1)

@@ -1883,6 +1883,17 @@ object turbulence extends Library:
   object test extends Tests(core, jvm):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
+  // Comparative streaming benchmarks against the effect-based streaming libraries. External,
+  // benchmark-only deps (resolved from Maven Central) exactly as `jacinta.bench` pulls circe/jsoniter.
+  object bench extends Benchmarks(core, jvm, quantitative.units, monotonous.core, enigmatic.core):
+    def mvnDeps = Seq(
+      mvn"dev.zio::zio-streams:2.1.26",
+      mvn"co.fs2::fs2-core:3.13.0",
+      mvn"io.getkyo::kyo-core:1.0.0-RC5" )
+    // Kyo's `Safepoint`/`Frame` given machinery does not resolve under explicit-nulls and
+    // no-flexible-types; drop just those two for the benchmark sources (which don't rely on them).
+    override def scalacOptions = Task:
+      super.scalacOptions().filterNot(Set("-Yexplicit-nulls", "-Yno-flexible-types"))
 
 object typonym extends Library:
   object core extends Component(proscenium.core, gigantism.core, anticipation.text):

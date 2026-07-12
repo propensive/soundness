@@ -41,7 +41,6 @@ import denominative.*
 import gossamer.*
 import hypotenuse.*
 import prepositional.*
-import rudiments.*
 import vacuous.*
 
 object Deserializable:
@@ -68,7 +67,7 @@ object Deserializable:
             if index == 0 then source = text
 
             if count < length then
-              val value: Int = alphabet.invert(index, source.at(index.z).vouch)
+              val value: Int = alphabet.invert(index, source.s.charAt(index))
               val next: Int = (buffer << base) | value
 
               if bits + base >= 8 then
