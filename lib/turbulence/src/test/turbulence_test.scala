@@ -612,6 +612,41 @@ object Tests extends Suite(m"Turbulence tests"):
         gather.data.to(List)
       . assert(_ == mixed.to(List))
 
+      // A duct-chain source has a transient window (its buffer is reused between
+      // refills), so the fan-out must snapshot each chunk rather than share it.
+      test(m"manifold snapshots a transient source for every subscriber"):
+        supervise:
+          val source =
+            summon[Data is Source by Data over Credit].stream(mixed)
+            . compress[Gzip].decompress[Gzip]
+
+          val subscribers = Manifold(source, 3)
+
+          val results = subscribers.map: stream =>
+            async:
+              val gather = Gather2()
+              stream.flowTo(gather)
+              gather.data.to(List)
+
+          results.map { task => task.await() }.to(List)
+      . assert(_ == List.fill(3)(mixed.to(List)))
+
+      test(m"confluence snapshots transient sources into the merge"):
+        supervise:
+          val builder = List.newBuilder[AnyRef]
+          var index = 0
+          while index < 3 do
+            builder +=
+              summon[Data is Source by Data over Credit].stream(mixed)
+              . compress[Gzip].decompress[Gzip].asInstanceOf[AnyRef]
+            index += 1
+
+          val merged = Confluence(builder.result().map(_.asInstanceOf[Stream[Data] over Credit])*)
+          val gather = Gather2()
+          merged.flowTo(gather)
+          gather.data.length
+      . assert(_ == mixed.length*3)
+
       test(m"deflate duct roundtrips a byte stream"):
         val gather = Gather2()
         summon[Data is Source by Data over Credit].stream(mixed)

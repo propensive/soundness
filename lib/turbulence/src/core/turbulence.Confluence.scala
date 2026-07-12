@@ -54,7 +54,7 @@ import zephyrine.*
 object Confluence:
   private object End
 
-  private class Block(val storage: AnyRef, val size: Int)
+  private class Block(val storage: AnyRef, val start: Int, val size: Int)
 
   def apply[medium, cap^](sources: (Stream[medium] over Credit)^{cap}*)
     ( using addressable0: medium is Addressable,
@@ -90,17 +90,32 @@ object Confluence:
 
       async:
         val source = handoff.asInstanceOf[(Stream[medium] over Credit)^]
+        val stable: Boolean = source.windowStable
 
-        def loop(): Unit = source.refill(Credit(block)) match
+        // A shared (stable) block costs no memory, so pull the whole window at
+        // once and collapse the hand-off count; a copied block stays bounded.
+        val pull: Int = if stable then Int.MaxValue else block
+
+        def loop(): Unit = source.refill(Credit(pull)) match
           case count: Int =>
-            val window = source.window(using Unsafe)
-            val storage = addressable0.allocate(count)
+            // A stable source's window is shared by reference (as ZIO/FS2 pass
+            // immutable chunks); a transient one is snapshotted into fresh
+            // storage before the next refill reuses the buffer.
+            val start = source.start
 
-            addressable0.transfer
-              ( window.asInstanceOf[addressable0.Storage], source.start, storage, 0, count )
+            val storage =
+              if stable then source.window(using Unsafe)
+              else
+                val fresh = addressable0.allocate(count)
+
+                addressable0.transfer
+                  ( source.window(using Unsafe).asInstanceOf[addressable0.Storage],
+                    source.start, fresh, 0, count )
+
+                fresh
 
             source.skip(count)
-            queue.put(Block(storage.asInstanceOf[AnyRef], count))
+            queue.put(Block(storage.asInstanceOf[AnyRef], if stable then start else 0, count))
             loop()
 
           case _ =>
@@ -118,7 +133,7 @@ object Confluence:
       private var storage: addressable0.Storage = addressable0.allocate(0)
       private var start0: Int = 0
       private var limit0: Int = 0
-      private var size: Int = 0
+      private var end0: Int = 0
       private var ended: Boolean = false
 
       protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
@@ -133,8 +148,8 @@ object Confluence:
           val granted = summon[Credit is Regulation].grant(demand)
 
           if granted == 0 then 0
-          else if limit0 < size then
-            limit0 += (size - limit0).min(granted)
+          else if limit0 < end0 then
+            limit0 += (end0 - limit0).min(granted)
             limit0 - start0
           else
             (queue.take().nn: @unchecked) match
@@ -144,11 +159,13 @@ object Confluence:
                 if error0 == null then Unset else throw error0
 
               case received: Block =>
+                // A shared block may reference a sub-range of a source's buffer,
+                // so it carries its own start.
                 storage = received.storage.asInstanceOf[addressable0.Storage]
-                size = received.size
-                start0 = 0
-                limit0 = size.min(granted)
-                limit0
+                start0 = received.start
+                end0 = received.start + received.size
+                limit0 = start0 + received.size.min(granted)
+                limit0 - start0
 
               case _ =>
                 panic(m"unexpected value in confluence queue")
