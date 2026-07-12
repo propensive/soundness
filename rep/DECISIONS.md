@@ -1450,6 +1450,52 @@ FUTURE LEGS: Postable/Transmissible (sealed constructors — need untracked-fiel
 conversion), Loadable/Computable/near-1-capture audits, converting codec-thunk
 whole-instance seals to untracked fields where traits stay tracked.
 
+## Typeclass purity campaign, leg 2 (2026-07-12, branch typeclass-purity-2)
+
+FLIPPED (zero capturing instances remained after the sepcheck rollout):
+Encodable, Abstractable, Transmissible. Contramaps purified as in leg 1.
+Fallout beyond contramaps, all mechanical:
+- `CharEncoder extends Encodable` → CharEncoder is now a PURE TYPE. The
+  zephyrine `Ductile.charEncoder` stage signature drops its `^` (`consume
+  stage: CharEncoder` — a pure stage carries nothing to consume; the duct
+  builds its own jnc encoder from the named encoding). Overriding
+  `duct(consume stage: Self^)` with a pure `Self` collapses `Self^` fine.
+- `nomenclature.Moniker.encodable` was the one remaining honestly-tracked
+  `^{tactic}` Encodable given → converted to the untracked-field pattern.
+- `Json.Encodable.apply` returned `(value is Json.Encodable)^{lambda}` —
+  illegal on a Pure trait. Converted to sealing exactly the payload lambda
+  (`val lambda1: value -> Json = unsafeAssumePure(lambda)`) once in the
+  factory, for every codec built through it.
+
+POSTABLE (untracked-field conversion done): the two whole-value seals in
+`telekinesis.Postable` are gone. `Postable.Streamer` is now
+`caps.SharedCapability` — a value constructed from capabilities is a
+capability (Jon, 2026-07-06) — which is what lets a bare-typed
+`@untrackedCaptures` field hold it under sepcheck. Two field-typing findings
+under SEP modules (telekinesis.core):
+- `@untrackedCaptures` field typed `T^{outerParam}` still fails CC ("cannot
+  flow into {}"): naming the capability in the field TYPE re-introduces the
+  dependency. The field must be typed BARE.
+- A bare field of a NON-capability type cannot take a `^`-typed value (root
+  `any` cannot flow), and typing the field `T^` trips the sep hiding rule
+  ("hides non-local parameter"). So the untracked-field pattern only types
+  under sepcheck when the payload is a CAPABILITY CLASS (bare type carries
+  the implicit capture). Function-typed payloads need a payload seal (or an
+  AnyRef rim) instead.
+
+AUDITED, STAY TRACKED (flipping would convert honest tracking to assertion):
+Servable (`^{mediaType, lambda}` constructor), Sendable (`^{monitor}` given),
+Openable (`FileOpenable^` capturing six filesystem givens), Computable (7),
+Receivable (6), Serviceable (4), and the 1-capture tail (Loggable, Printable,
+Randomizable, ... — each capture is genuine).
+
+SEAL NARROWING: assessed — the remaining codec-thunk seals on tracked traits
+(jacinta/ypsiloid/breviloquence/locomotion `optional`/`list*` givens) are
+lambda-SAM seals: the assertion already lands on exactly the closure, so
+there is no narrower untracked-field form for them. Making those givens
+honestly tracked (`^{tactic, caps.any}` results) is the remaining design
+question, deferred (resolution ripple; needs its own probe).
+
 ## Sepcheck rollout leg 3: jacinta satellites (2026-07-12, branch jacinta-satellites-sepcheck)
 
 jacinta.time and jacinta.http flipped to `settings.sep` with NO source changes —
