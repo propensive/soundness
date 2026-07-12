@@ -180,6 +180,39 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
 
     addressable.build(target)
 
+  // Drain the stream, threading an accumulator through each window: the
+  // window-level fold, the terminal counterpart to a pull chain. The operation
+  // receives the running state, the window storage, its start index and its
+  // element count; it must not retain the storage. Unlike an element-wise fold,
+  // this exposes the raw window, so a byte reduction runs over the array with
+  // no per-element boxing.
+  def fold[state](initial: state)(operation: (state, AnyRef, Int, Int) => state)
+    (using buffering: Buffering)
+  :   state =
+
+    val block = buffering.transfer(stream.addressable.substrate)
+
+    def loop(state: state): state = stream.refill(Credit(block)) match
+      case count: Int =>
+        val state2 =
+          operation(state, stream.window(using Unsafe).asInstanceOf[AnyRef], stream.start, count)
+
+        stream.skip(count)
+        loop(state2)
+
+      case _ => state
+
+    try loop(initial) finally stream.close()
+
+  // The first `count` elements, then end-of-stream. The remainder of the
+  // upstream is released unread on `close`. (FS2 `take`, ZIO `ZStream.take`.)
+  def take(count: Long): (Stream[medium] over Credit)^ = takeStream(stream, count)
+
+  // Skip the first `count` elements, then pass the rest through unchanged. The
+  // skipped elements are pulled and discarded on the first `refill`. (FS2
+  // `drop`, ZIO `ZStream.drop`.)
+  def drop(count: Long): (Stream[medium] over Credit)^ = dropStream(stream, count)
+
 private def throughDuct[in, out, upTransport, downTransport]
   ( consume duct:
       (Duct[in, out] { type Transport = downTransport; type Upstream = upTransport })^,
@@ -251,6 +284,69 @@ private def throughDuct[in, out, upTransport, downTransport]
       override update def close(): Unit =
         duct.close()
         stream.close()
+
+// `take`/`drop` wrappers, in helpers rather than inline in the extension for
+// the same reason as `throughDuct`: a local binding of the upstream would hide
+// it from the anonymous class, whereas the consumed parameter carries its
+// capture explicitly. Each delegates window access to the upstream (zero copy)
+// and only adjusts the element budget.
+
+private def takeStream[medium](consume stream: (Stream[medium] over Credit)^, count: Long)
+:   (Stream[medium] over Credit)^ =
+
+    new Stream[medium](using stream.addressable):
+      type Transport = Credit
+
+      private var remaining: Long = count.max(0)
+
+      protected def window0: AnyRef = stream.window(using Unsafe).asInstanceOf[AnyRef]
+      def start: Int = stream.start
+
+      def limit: Int =
+        val available = stream.limit - stream.start
+        stream.start + (if remaining < available then remaining.toInt else available)
+
+      update def skip(elements: Int): Unit =
+        remaining -= elements
+        stream.skip(elements)
+
+      update def refill(demand: Credit): Optional[Int] =
+        if remaining <= 0 then Unset else stream.refill(demand) match
+          case available: Int =>
+            if remaining < available then remaining.toInt else available
+
+          case _ => Unset
+
+      override update def close(): Unit = stream.close()
+
+private def dropStream[medium](consume stream: (Stream[medium] over Credit)^, count: Long)
+:   (Stream[medium] over Credit)^ =
+
+    new Stream[medium](using stream.addressable):
+      type Transport = Credit
+
+      private var pending: Long = count.max(0)
+
+      protected def window0: AnyRef = stream.window(using Unsafe).asInstanceOf[AnyRef]
+      def start: Int = stream.start
+      def limit: Int = stream.limit
+      update def skip(elements: Int): Unit = stream.skip(elements)
+
+      update def refill(demand: Credit): Optional[Int] =
+        var ended: Boolean = false
+
+        while pending > 0 && !ended do
+          stream.refill(Credit(pending.min(Int.MaxValue.toLong))) match
+            case available: Int =>
+              val discard = available.toLong.min(pending).toInt
+              stream.skip(discard)
+              pending -= discard
+
+            case _ => ended = true
+
+        if ended then Unset else stream.refill(demand)
+
+      override update def close(): Unit = stream.close()
 
 private def acceptingDuct[in, out, upTransport, downTransport]
   ( consume duct:

@@ -34,6 +34,11 @@ package zephyrine
 
 import soundness.*
 
+// The kernel `Stream.take`/`drop` are shadowed here by turbulence's legacy
+// `LazyList[Data]` `take`/`drop` arriving through the `soundness.*` wildcard;
+// the explicit imports restore the kernel versions under test.
+import zephyrine.{take, drop}
+
 import randomization.unseededRandomization
 
 import supervisors.globalSupervisor
@@ -803,6 +808,51 @@ object Tests extends Suite(m"Zephyrine tests"):
         test(m"memoize drains a text stream into a single text value"):
           Stream(Iterator(t"ab", t"cd", t"e")).memoize.s
         . assert(_ == "abcde")
+
+        test(m"take limits a stream to its first elements"):
+          Stream(small).take(3).memoize.to(List)
+        . assert(_ == List[Byte](1, 2, 3))
+
+        test(m"take across chunk boundaries"):
+          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](4, 5, 6))).take(4).memoize.to(List)
+        . assert(_ == List[Byte](1, 2, 3, 4))
+
+        test(m"take of more than the stream holds yields the whole stream"):
+          Stream(small).take(100).memoize.to(List)
+        . assert(_ == small.to(List))
+
+        test(m"take zero yields an empty stream"):
+          Stream(small).take(0).memoize.to(List)
+        . assert(_ == List())
+
+        test(m"drop skips a stream's first elements"):
+          Stream(small).drop(2).memoize.to(List)
+        . assert(_ == List[Byte](3, 4, 5))
+
+        test(m"drop across chunk boundaries"):
+          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](4, 5, 6))).drop(4).memoize.to(List)
+        . assert(_ == List[Byte](5, 6))
+
+        test(m"drop of more than the stream holds yields an empty stream"):
+          Stream(small).drop(100).memoize.to(List)
+        . assert(_ == List())
+
+        test(m"take and drop compose to a slice"):
+          Stream(Data.fill(20)(_.toByte)).drop(5).take(5).memoize.to(List)
+        . assert(_ == List[Byte](5, 6, 7, 8, 9))
+
+        test(m"take composes with a duct"):
+          Stream(small).take(3).through(Doubler()).memoize.to(List)
+        . assert(_ == List[Byte](1, 1, 2, 2, 3, 3))
+
+        test(m"fold reduces over windows without boxing"):
+          Stream(bytes).fold(0L): (total, storage, start, count) =>
+            val array = storage.asInstanceOf[Array[Byte]]
+            var sum = total
+            var index = 0
+            while index < count do { sum += (array(start + index) & 0xff); index += 1 }
+            sum
+        . assert(_ == bytes.to(List).map(_ & 0xff).sum.toLong)
 
 
   // A byte intake that gathers everything written to it, with a configurable
