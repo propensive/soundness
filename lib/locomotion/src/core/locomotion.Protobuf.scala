@@ -75,7 +75,11 @@ trait Protobuf2:
 
   // The collection/optional instances below retain their by-name element codecs (and, where
   // present, a resolution-scoped `Tactic`), which share each instance's given-resolution
-  // lifetime; laundered pure per the codec-thunk seal pattern (see rep/DECISIONS.md).
+  // lifetime. HONESTY BLOCKED AT THE DERIVATION BOUNDARY, not by design (Jon's 2026-07-12
+  // ruling wants these to be capabilities): wisteria's field-instance search
+  // (`fieldInstance`) summons against a BARE expected type, so honest capability-typed
+  // primitives fail resolution inside every derived product. Sealed until that search is
+  // capability-polymorphic; see rep/DECISIONS.md (honest codec capabilities).
   given listEncodable: [collection <: Iterable, element]
   =>  ( encodable: => element is Encodable in Protobuf )
   =>  collection[element] is Encodable in Protobuf =

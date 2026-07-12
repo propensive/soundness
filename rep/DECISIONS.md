@@ -1772,3 +1772,20 @@ REMAINING for later phases: ypsiloid/breviloquence/locomotion/stratiform (cc-onl
 — the sep hiding rules don't apply, so their by-name givens may convert fully);
 distillate's own tactic-taking primitives; DecodableDerivation.conjunction; the
 Pure-Encodable collision (question pending with Jon); gates + PR.
+
+## Honest codec capabilities, phase 2: cc-only siblings (2026-07-12)
+
+- ypsiloid + breviloquence decode sides FULLY honest — including the by-name
+  recursive givens (optional/iterable/collection/map): the sep hiding rules that
+  block jacinta.core do NOT apply under cc-only, confirming blockage #1 is
+  sep-specific.
+- ★ THE DERIVATION BOUNDARY MAPPED (blockage #3 root cause): wisteria's
+  `fieldInstance` searches implicits against a BARE `typeclass[elem]`, so honest
+  capability-typed primitives fail resolution inside every wisteria-derived
+  product. jacinta and ypsiloid ESCAPE it because their own derivations thread
+  tactics explicitly; locomotion (plain wisteria) does not — its conversion
+  produced unbounded site-seals in tests and is REVERTED to sealed with a
+  truthful comment. THE KEY NEXT UNIT: make wisteria's field search
+  capability-polymorphic (search `typeclass[elem]^` — likely an
+  AnnotatedType(retains) at the reflection level), then re-land locomotion and
+  delete the caduceus site seal.

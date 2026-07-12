@@ -77,13 +77,14 @@ trait Yaml2:
         . or(Yaml.ast(Yaml.Ast(Unset)))
 
 
-  given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[YamlError]
-  =>  ( decodable: => inner is Decodable in Yaml )
-  =>  value is Decodable in Yaml =
-    // The by-name inner decoder and resolution-scoped tactic share this instance's
-    // given-resolution lifetime; laundered pure (the codec-thunk seal pattern).
-    caps.unsafe.unsafeAssumePure: yaml =>
-          if yaml.root == Unset then Unset else decodable.decoded(yaml)
+  given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  ( tactic: Tactic[YamlError] )
+  =>  ( decodable: => (inner is Decodable in Yaml)^ )
+  =>  ((value is Decodable in Yaml)^{tactic, caps.any}) =
+    // An honest capability: the instance retains the resolution-scoped tactic and
+    // the by-name inner codec (every given that includes a tactic is a capability;
+    // Jon, 2026-07-12).
+    yaml => if yaml.root == Unset then Unset else decodable.decoded(yaml)
 
 
   // See `decodeMapping`: the `Tactic` is summoned at the SAM and passed to a stable helper, rather
@@ -1113,8 +1114,8 @@ object Yaml extends Yaml2, Dynamic:
 
   // Laundered pure like the primitive codecs (codec-thunk seal; see rep/DECISIONS.md).
   given bytes: (tactic: Tactic[YamlError])
-  =>  Bytes is Decodable in Yaml =
-    caps.unsafe.unsafeAssumePure(_.root.long.b)
+  =>  ((Bytes is Decodable in Yaml)^{tactic, caps.any}) =
+    _.root.long.b
 
   given lens: [name <: Label: ValueOf] => (erased dynamicYamlEnabler: DynamicYamlEnabler) => (tactic: Tactic[YamlError])
   =>  ((name is Lens from Yaml onto Yaml)^{tactic}) =
@@ -1267,10 +1268,10 @@ object Yaml extends Yaml2, Dynamic:
   =>  ( factory:   Factory[element, collection[element]],
         tactic:    Tactic[YamlError],
         foci:      Foci[Yaml.Focus] )
-  =>  ( decodable: => element is Decodable in Yaml )
-  =>  collection[element] is Decodable in Yaml =
-    // By-name element codec + resolution-scoped tactic; laundered pure (the codec-thunk seal).
-    caps.unsafe.unsafeAssumePure: yaml =>
+  =>  ( decodable: => (element is Decodable in Yaml)^ )
+  =>  ((collection[element] is Decodable in Yaml)^{tactic, caps.any}) =
+    // An honest capability, as `optional` above.
+    yaml =>
       yaml.root.asMatchable match
         case xs: IArray[?] @unchecked if (xs.length & 1) == 1 =>
           // Sequence (odd length, possibly with a trailing pad sentinel).
@@ -1302,10 +1303,10 @@ object Yaml extends Yaml2, Dynamic:
 
           factory.newBuilder.result()
 
-  given map: [value: Decodable in Yaml] => Tactic[YamlError]
-  =>  Map[Text, value] is Decodable in Yaml =
-    // Resolution-scoped tactic and value codec; laundered pure (the codec-thunk seal).
-    caps.unsafe.unsafeAssumePure: yaml =>
+  given map: [value: Decodable in Yaml] => (tactic: Tactic[YamlError])
+  =>  ((Map[Text, value] is Decodable in Yaml)^{tactic, caps.any}) =
+    // An honest capability, as `optional` above.
+    yaml =>
       yaml.root.asMatchable match
         case xs: IArray[?] @unchecked if (xs.length & 1) == 0 =>
           // Mapping (even length, alternating keys and values flat).

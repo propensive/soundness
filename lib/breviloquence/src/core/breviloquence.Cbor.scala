@@ -70,13 +70,14 @@ trait Cbor2:
         value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(ast(Ast(Unset)))
 
 
-  given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[CborError]
-  =>  ( decodable: => inner is Decodable in Cbor )
-  =>  value is Decodable in Cbor =
-    // The by-name inner decoder and resolution-scoped tactic share this instance's
-    // given-resolution lifetime; laundered pure (the codec-thunk seal pattern).
-    caps.unsafe.unsafeAssumePure: cbor =>
-      if cbor.root.unset then Unset else decodable.decoded(cbor)
+  given optional: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  ( tactic: Tactic[CborError] )
+  =>  ( decodable: => (inner is Decodable in Cbor)^ )
+  =>  ((value is Decodable in Cbor)^{tactic, caps.any}) =
+    // An honest capability: the instance retains the resolution-scoped tactic and
+    // the by-name inner codec (every given that includes a tactic is a capability;
+    // Jon, 2026-07-12).
+    cbor => if cbor.root.unset then Unset else decodable.decoded(cbor)
 
 
   inline given decodable: [value] => value is Decodable in Cbor = summonFrom:
@@ -648,11 +649,11 @@ object Cbor extends Cbor2, Dynamic:
 
   given collectionDecodable: [collection <: Iterable, element]
   =>  ( factory: sc.Factory[element, collection[element]], tactic:  Tactic[CborError] )
-  =>  ( decodable: => element is Decodable in Cbor )
-  =>  collection[element] is Decodable in Cbor =
+  =>  ( decodable: => (element is Decodable in Cbor)^ )
+  =>  ((collection[element] is Decodable in Cbor)^{tactic, caps.any}) =
 
-    caps.unsafe.unsafeAssumePure:
-      value =>
+    // An honest capability, as `optional` above.
+    value =>
         val builder = factory.newBuilder
         value.root.array.each: cbor => builder += decodable.decoded(ast(cbor))
 
@@ -660,11 +661,12 @@ object Cbor extends Cbor2, Dynamic:
 
 
   given mapDecodable: [key: Decodable in Text, element]
-  =>  ( decodable: => element is Decodable in Cbor )
-  =>  Tactic[CborError]
-  =>  Map[key, element] is Decodable in Cbor =
+  =>  ( decodable: => (element is Decodable in Cbor)^ )
+  =>  ( tactic: Tactic[CborError] )
+  =>  ((Map[key, element] is Decodable in Cbor)^{tactic, caps.any}) =
 
-    caps.unsafe.unsafeAssumePure: value =>
+    // An honest capability, as `optional` above.
+    value =>
         val root = value.root
         val count = if root.isMap then root.entries else 0
         var index = 0
