@@ -1789,3 +1789,19 @@ Pure-Encodable collision (question pending with Jon); gates + PR.
   capability-polymorphic (search `typeclass[elem]^` — likely an
   AnnotatedType(retains) at the reflection level), then re-land locomotion and
   delete the caduceus site seal.
+
+## Honest codec capabilities, phase 3: the derivation boundary opens (2026-07-12)
+
+wisteria's `fieldInstance` now crosses honest capability-typed codecs through a
+SINGLE erasing cast at the engine: resolution readily FINDS `^{tactic, …}`-typed
+instances against bare expected types — only result conformance failed — so no
+capability-decorated retry is needed; the found tree is wrapped
+`asInstanceOf[typeclass[elem]]` unconditionally (identity for pure instances).
+The engine narrows once, documented, instead of N per-site seals. The caduceus
+site seal is DELETED (compiles clean); wisteria tests pass.
+
+REMAINING: a SECOND summon path (`summonInline`-based, hit by locomotion's
+`read[Numbers in Protobuf]` — synthesized tree applied directly at the call
+site) is still bare — locomotion stays sealed (comment updated) until it is
+patched the same way. Then: distillate primitives, jacinta conjunction,
+stratiform, the Pure-Encodable question (open with Jon), gates + PR.
