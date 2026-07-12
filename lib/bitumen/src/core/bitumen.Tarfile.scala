@@ -311,7 +311,7 @@ object Tarfile:
     mitigate:
       case PathError(_, _) => TarError(TarError.Reason.BadName(text))
 
-    . protect(text.decode[Relative on Tar])
+    . protect(text.as[Relative on Tar])
 
   private val structuralPaxKeys: Set[Text] = Set(t"path", t"linkpath", t"uname", t"gname")
 

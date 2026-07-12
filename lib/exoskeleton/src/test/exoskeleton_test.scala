@@ -338,7 +338,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
             val tool = summon[Enclave.Tool].path
 
             test(m"'{admin}' pid returns a positive integer"):
-              sh"$tool '{admin}' pid".exec[Text]().trim.decode[Int]
+              sh"$tool '{admin}' pid".exec[Text]().trim.as[Int]
             .check(_ > 0)
 
             test(m"'{admin}' pid is stable across invocations"):
@@ -359,7 +359,7 @@ object Tests extends Suite(m"Exoskeleton Tests"):
               val output = sh"$tool '{admin}' install".exec[Text]()
               val paths = output.trim.lines.filter(_.length > 0)
               paths.forall: path =>
-                safely(path.decode[Path on Local]).let(_.exists()).or(false)
+                safely(path.as[Path on Local]).let(_.exists()).or(false)
             .assert(_ == true)
 
             test(m"'{admin}' kill terminates the daemon"):

@@ -109,7 +109,7 @@ case class Image
   def archive: Tarfile =
     def entry(path: Text, content: Data): Tar.Entry =
       Tar.Entry.File
-        ( path  = path.decode[Relative on Tar],
+        ( path  = path.as[Relative on Tar],
           mode  = UnixMode(),
           user  = UnixUser(0),
           group = UnixGroup(0),

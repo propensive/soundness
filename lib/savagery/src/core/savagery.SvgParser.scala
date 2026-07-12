@@ -66,7 +66,7 @@ object SvgParser:
 
 
   private def numAttr(elem: Element, name: Text, default: Float = 0.0f): Float =
-    elem.attributes.at(name).let: text => safely(text.decode[Double].toFloat).or(default)
+    elem.attributes.at(name).let: text => safely(text.as[Double].toFloat).or(default)
     . or(default)
 
 
@@ -158,7 +158,7 @@ object SvgParser:
 
   private def decodeStop(elem: Element)(using Tactic[SvgError]): Stop[Color in Srgb] =
     val rawOffset = elem.attributes.at(t"offset")
-      . let: text => safely(text.decode[Double]).or(0.0)
+      . let: text => safely(text.as[Double]).or(0.0)
       . or(0.0)
 
     val clamped = rawOffset.max(0.0).min(1.0)

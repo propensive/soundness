@@ -81,7 +81,7 @@ object Tar:
 
     private[bitumen] val paxRef: TarRef =
       import strategies.throwUnsafely
-      t"PaxHeaders/0".decode[Relative on Tar]
+      t"PaxHeaders/0".as[Relative on Tar]
 
     private[bitumen] def sparseExtensionBlocks(segments: List[SparseSegment]): LazyList[Data] =
       if segments.nil then LazyList()

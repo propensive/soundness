@@ -59,7 +59,7 @@ object Tests extends Suite(m"Zeppelin tests"):
     val workDir: Path on Linux = temporaryDirectory[Path on Linux]/Uuid().show
     workDir.create[Directory]()
 
-    def zipRef(text: Text): Path on Zip = text.decode[Path on Zip]
+    def zipRef(text: Text): Path on Zip = text.as[Path on Zip]
 
     def entry(path: Text, content: Text): Zip.Entry =
       Zip.Entry(zipRef(path), content.data)

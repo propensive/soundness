@@ -80,7 +80,7 @@ case class WebDriver(server: Navigator#Server):
         url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
         . submit()(content)
         . read[Text]
-        . decode[Json]
+        . as[Json]
 
       def click(): Unit logs HttpEvent = post(t"click", t"{}".read[Json])
       def clear(): Unit logs HttpEvent = post(t"clear", t"{}".read[Json])
@@ -119,7 +119,7 @@ case class WebDriver(server: Navigator#Server):
       given online: Online = Online
       url"http://localhost:${server.port}/session/$sessionId/$address".submit()(content)
       . read[Text]
-      . decode[Json]
+      . as[Json]
 
     def navigateTo[url: Abstractable across Urls to Text](url: url): Json logs HttpEvent =
       case class Data(url: Text)
@@ -158,6 +158,6 @@ case class WebDriver(server: Navigator#Server):
     given online: Online = Online
 
     val url = url"http://localhost:${server.port}/session"
-    val json = url.submit()(t"""{"capabilities":{}}""".read[Json]).read[Text].decode[Json]
+    val json = url.submit()(t"""{"capabilities":{}}""".read[Json]).read[Text].as[Json]
 
     Session(json.value.sessionId.as[Text])

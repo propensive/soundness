@@ -66,8 +66,8 @@ extends Interactivity[TerminalEvent]:
       case _ =>
         abort(EnvironmentError(t"TERMINAL_BG"))
 
-  var rows: Optional[Int] = safely(Environment.lines.decode[Int])
-  var columns: Optional[Int] = safely(Environment.columns.decode[Int])
+  var rows: Optional[Int] = safely(Environment.lines.as[Int])
+  var columns: Optional[Int] = safely(Environment.columns.as[Int])
 
   def knownColumns: Int = columns.or(80)
   def knownRows: Int = rows.or(80)

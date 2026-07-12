@@ -110,8 +110,8 @@ case class Cookie[value: {Encodable in Text, Decodable in Text}]
     Cookie.Value(name, value.encode, domain.let(_.show), path, expiry.let(_/1000), secure, httpOnly)
 
   inline def apply()(using Http.Request): Optional[value] =
-    summon[Http.Request].textCookies.at(name).let(_.decode)
+    summon[Http.Request].textCookies.at(name).let(_.as)
 
   object Session:
     def unapply(using request: Http.Request)[result](lambda: value ?=> result): Option[result] =
-      request.textCookies.at(name).let(_.decode).letGiven(lambda).option
+      request.textCookies.at(name).let(_.as).letGiven(lambda).option

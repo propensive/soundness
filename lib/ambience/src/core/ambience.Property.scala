@@ -112,7 +112,7 @@ object Property:
   given javaClassVersion: ("java.runtime.version" is Property of Int) =
     // Decoded under `unsafely`, whose unscoped tactic is minted per call: the lambda captures
     // nothing, so the instance is pure and can be stored as a global given.
-    Property(text => unsafely(text.decode[Int]))
+    Property(text => unsafely(text.as[Int]))
 
 
   // given javaExtDirs: [path: Instantiable across Paths from Text]
@@ -122,8 +122,8 @@ object Property:
   //   _.cut(system(t"path.separator").or(t":")).to(List).map(path(_))
 
 
-  given fileSeparator: ("file.separator" is Property of Char) = Property(_.decode[Char])
-  given pathSeparator: ("path.separator" is Property of Char) = Property(_.decode[Char])
+  given fileSeparator: ("file.separator" is Property of Char) = Property(_.as[Char])
+  given pathSeparator: ("path.separator" is Property of Char) = Property(_.as[Char])
   given lineSeparator: ("line.separator" is Property of Text) = Property(identity)
   given userName: ("user.name" is Property of Text) = Property(identity)
 
@@ -144,7 +144,7 @@ object Property:
   given osVersion: ("os.version" is Property of Text) = Property(identity)
 
   given osArch: ("os.arch" is Property of Architecture) =
-    Property(_.decode[Architecture])
+    Property(_.as[Architecture])
 
 
   given decoder: [label <: Label, property] => (decoder: (property is Decodable in Text)^)

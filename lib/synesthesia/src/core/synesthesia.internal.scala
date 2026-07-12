@@ -217,7 +217,7 @@ object internal:
                                     given param is Decodable in Text = $decodable
                                     val key = ${Expr(param.name)}.tt
 
-                                    if input.defines(key) then input(key).decode[param]
+                                    if input.defines(key) then input(key).as[param]
                                     else
                                       provide[Tactic[McpError]]:
                                         abort(McpError(McpError.Reason.MissingParameter))

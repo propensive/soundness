@@ -61,7 +61,7 @@ object Tests extends Suite(m"Austronesian tests"):
     val group = Group(List(Person("John", 30), Person("Jane", 25)), 2)
 
     test(m"Roundtrip a nested case class"):
-      unsafely(group.pojo.decode[Group])
+      unsafely(group.pojo.as[Group])
     . assert(_ == group)
 
     test(m"Encode an enum"):
@@ -71,11 +71,11 @@ object Tests extends Suite(m"Austronesian tests"):
 
     test(m"Roundtrip an enum"):
       val color: Color = Color.Green
-      unsafely(color.pojo.decode[Color])
+      unsafely(color.pojo.as[Color])
     . assert(_ == Color.Green)
 
     val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
 
     test(m"Roundtrip a type recursive through a List"):
-      unsafely(tree.pojo.decode[Tree])
+      unsafely(tree.pojo.as[Tree])
     . assert(_ == tree)

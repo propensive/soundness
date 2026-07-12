@@ -92,7 +92,7 @@ object Api:
 
         t"${request.base}$substituted?${parameters.join(t"&")}"
 
-    val url = full.decode[HttpUrl]
+    val url = full.as[HttpUrl]
 
     val empty: Spring[Data] = () => Iterator.empty[Data].stream
 

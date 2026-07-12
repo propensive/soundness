@@ -75,7 +75,7 @@ object internal:
     val raw: String = parts.head
     val start: Int = firstOrigin[origins]
 
-    try unsafely(raw.tt.decode[JsonPointer]) catch
+    try unsafely(raw.tt.as[JsonPointer]) catch
       case error: JsonPointerError =>
         val sourceFile = Position.ofMacroExpansion.sourceFile
 
@@ -91,7 +91,7 @@ object internal:
 
         halt(error.message, position)
 
-    '{unsafely(${Expr(raw)}.tt.decode[JsonPointer])}
+    '{unsafely(${Expr(raw)}.tt.as[JsonPointer])}
 
   // Compile-time navigation for schema-typed `Json` values. A `Json of P from R`
   // carries a phantom *position* (`Topic = P`, a Scala model type) within a *root

@@ -123,7 +123,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
         val request: Json =
           t"""{"jsonrpc":"2.0","id":1,"method":"textDocument/hover","params":{"textDocument":{"uri":"file:///x"},"position":{"line":0,"character":0}}}"""
-          . decode[Json]
+          . as[Json]
 
         dispatch(request).let(_.as[JsonRpc.Response].result.as[Lsp.Hover].contents.value)
       . assert(_ == t"hi")
@@ -133,7 +133,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
         val request: Json =
           t"""{"jsonrpc":"2.0","method":"textDocument/didOpen","params":{"textDocument":{"uri":"file:///x","languageId":"text","version":1,"text":"hello"}}}"""
-          . decode[Json]
+          . as[Json]
 
         dispatch(request)
         TestServer.outgoing.iterator.next().as[JsonRpc.Request].method
@@ -144,7 +144,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
         val request: Json =
           t"""{"jsonrpc":"2.0","id":2,"method":"textDocument/documentHighlight","params":{"textDocument":{"uri":"file:///x"},"position":{"line":1,"character":2}}}"""
-          . decode[Json]
+          . as[Json]
 
         dispatch(request).let(_.as[JsonRpc.Response].result.as[List[Lsp.DocumentHighlight]].head.kind)
       . assert(_ == Lsp.DocumentHighlightKind.Write)
@@ -154,7 +154,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
         val request: Json =
           t"""{"jsonrpc":"2.0","id":3,"method":"textDocument/foldingRange","params":{"textDocument":{"uri":"file:///x"}}}"""
-          . decode[Json]
+          . as[Json]
 
         dispatch(request).let(_.as[JsonRpc.Response].result.as[List[Lsp.FoldingRange]].head.endLine)
       . assert(_ == 4)
@@ -164,7 +164,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
         val request: Json =
           t"""{"jsonrpc":"2.0","id":4,"method":"textDocument/prepareRename","params":{"textDocument":{"uri":"file:///x"},"position":{"line":3,"character":5}}}"""
-          . decode[Json]
+          . as[Json]
 
         dispatch(request).let(_.as[JsonRpc.Response].result.as[Lsp.Range].start.line)
       . assert(_ == 3)
@@ -174,7 +174,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
         val request: Json =
           t"""{"jsonrpc":"2.0","id":5,"method":"callHierarchy/incomingCalls","params":{"item":{"name":"foo","kind":12,"uri":"file:///x","range":{"start":{"line":0,"character":0},"end":{"line":0,"character":3}},"selectionRange":{"start":{"line":0,"character":0},"end":{"line":0,"character":3}}}}}"""
-          . decode[Json]
+          . as[Json]
 
         dispatch(request).let: response =>
           response.as[JsonRpc.Response].result.as[List[Lsp.CallHierarchyIncomingCall]].head.from.name
@@ -185,7 +185,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
         val request: Json =
           t"""{"jsonrpc":"2.0","id":6,"method":"textDocument/inlayHint","params":{"textDocument":{"uri":"file:///x"},"range":{"start":{"line":0,"character":0},"end":{"line":0,"character":1}}}}"""
-          . decode[Json]
+          . as[Json]
 
         dispatch(request).let(_.as[JsonRpc.Response].result.as[List[Lsp.InlayHint]].head.kind)
       . assert(_ == Lsp.InlayHintKind.Type)
@@ -195,7 +195,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
         val request: Json =
           t"""{"jsonrpc":"2.0","id":7,"method":"workspace/executeCommand","params":{"command":"do.thing","arguments":[]}}"""
-          . decode[Json]
+          . as[Json]
 
         dispatch(request).let(_.as[JsonRpc.Response].result.as[Text])
       . assert(_ == t"do.thing")
@@ -205,7 +205,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
         val request: Json =
           t"""{"jsonrpc":"2.0","method":"$$/setTrace","params":{"value":"verbose"}}"""
-          . decode[Json]
+          . as[Json]
 
         dispatch(request)
       . assert(_ == Unset)
@@ -215,7 +215,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
         val request: Json =
           t"""{"jsonrpc":"2.0","method":"textDocument/didSave","params":{"textDocument":{"uri":"file:///x"}}}"""
-          . decode[Json]
+          . as[Json]
 
         dispatch(request)
         TestServer.outgoing.iterator.next().as[JsonRpc.Request].method
@@ -226,7 +226,7 @@ object Tests extends Suite(m"Exegesis Tests"):
 
         val request: Json =
           t"""{"jsonrpc":"2.0","id":8,"method":"completionItem/resolve","params":{"label":"foo"}}"""
-          . decode[Json]
+          . as[Json]
 
         dispatch(request).let(_.as[JsonRpc.Response].result.as[Lsp.CompletionItem].detail)
       . assert(_ == t"resolved")

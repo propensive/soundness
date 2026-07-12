@@ -88,7 +88,7 @@ object Url:
 
                   . or(value.limit)
                   val hostname = value.segment((colon + 3) till authEnd)
-                  (authEnd, hostname.decode[Authority])
+                  (authEnd, hostname.as[Authority])
 
             else
               (colon + 1, Unset)
@@ -126,7 +126,7 @@ object Url:
 
   given instantiable: (tactic: Tactic[UrlError])
   =>  ((HttpUrl is Instantiable across Urls from Text)^{tactic}) =
-    _.decode[HttpUrl]
+    _.as[HttpUrl]
 
 class Url[+scheme <: Label]
   ( val origin:   Origin[scheme],
@@ -143,4 +143,4 @@ extends Root(t"${origin.scheme}:${origin.authority.lay(t"")(t"//"+_.show)}$locat
   def requestTarget: Text = location+query.lay(t"")(t"?"+_)
   def host: Optional[Host] = authority.let(_.host)
   // `Www`'s `Radical` always succeeds, so decoding the path cannot fail.
-  def path: Path on Www = unsafely(location.decode[Path on Www])
+  def path: Path on Www = unsafely(location.as[Path on Www])

@@ -373,14 +373,14 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"Update a JSON object dynamically"):
         import dynamicJsonAccess.enabled
-        val john = t"""{"name": "John", "age": 40}""".decode[Json]
+        val john = t"""{"name": "John", "age": 40}""".as[Json]
         val john2 = john.age = 41
         john2.as[Person]
       . assert(_ == Person("John", 41))
 
       test(m"Update a JSON array dynamically"):
         import dynamicJsonAccess.enabled
-        val array = t"""[1, 2, 3]""".decode[Json]
+        val array = t"""[1, 2, 3]""".as[Json]
         val array2 = array(1) = 5
         array2.as[List[Int]]
       . assert(_ == List(1, 5, 3))
@@ -1049,11 +1049,11 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == t"date-time")
 
       test(m"JsonSchema Format decodes from kebab case"):
-        t"date-time".decode[JsonSchema.Format]
+        t"date-time".as[JsonSchema.Format]
       . assert(_ == JsonSchema.Format.DateTime)
 
       test(m"JsonSchema Format roundtrips Email"):
-        JsonSchema.Format.Email.encode.decode[JsonSchema.Format]
+        JsonSchema.Format.Email.encode.as[JsonSchema.Format]
       . assert(_ == JsonSchema.Format.Email)
 
     suite(m"Ndjson tests"):

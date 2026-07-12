@@ -100,7 +100,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
     test(m"typechecked highlighting resolves the type of a val"):
       given Scalac[3.8] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().decode[LocalClasspath])
+      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
       import highlighting.typecheckedScala
 
       typeOf(Scala.highlight(snippet).lines.to(List).flatten, t"xs").or(t"")
@@ -108,7 +108,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
     test(m"typechecked highlighting reports diagnostics for ill-typed code"):
       given Scalac[3.8] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().decode[LocalClasspath])
+      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
       import highlighting.typecheckedScala
 
       Scala.highlight(t"val n: Int = \"oops\"").diagnostics.length
@@ -116,7 +116,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
     test(m"no completions are computed without a caret"):
       given Scalac[3.8] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().decode[LocalClasspath])
+      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
       import highlighting.typecheckedScala
 
       Scala.highlight(snippet).completions
@@ -124,7 +124,7 @@ object Tests extends Suite(m"Harlequin Tests"):
 
     test(m"completions at a member selection include the type's methods"):
       given Scalac[3.8] = Scalac[3.8](Nil)
-      given LocalClasspath = unsafely(System.properties.java.`class`.path().decode[LocalClasspath])
+      given LocalClasspath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
       import highlighting.typecheckedScala
 
       val source = t"val xs = List(1, 2, 3)\nval y = xs.m"

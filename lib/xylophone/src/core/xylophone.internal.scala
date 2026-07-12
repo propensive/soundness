@@ -365,7 +365,7 @@ object internal:
     val raw: String = parts.head
     val start: Int = firstOrigin[origins]
 
-    try unsafely(raw.tt.decode[XPath]) catch
+    try unsafely(raw.tt.as[XPath]) catch
       case error: XPathError =>
         val sourceFile = Position.ofMacroExpansion.sourceFile
 
@@ -381,7 +381,7 @@ object internal:
 
         halt(error.message, position)
 
-    '{unsafely(${Expr(raw)}.tt.decode[XPath])}
+    '{unsafely(${Expr(raw)}.tt.as[XPath])}
 
   def interpolator[parts <: Tuple: Type, origins <: Tuple: Type]
     ( insertions0: Expr[Seq[Any]] )

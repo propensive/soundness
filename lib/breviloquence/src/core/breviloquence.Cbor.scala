@@ -81,7 +81,7 @@ trait Cbor2:
 
   inline given decodable: [value] => value is Decodable in Cbor = summonFrom:
     case given (`value` is Decodable in Text) =>
-      provide[Tactic[CborError]](_.root.string.tt.decode[value])
+      provide[Tactic[CborError]](_.root.string.tt.as[value])
 
     case given Reflection[`value`] =>
       DecodableDerivation.derived
@@ -674,7 +674,7 @@ object Cbor extends Cbor2, Dynamic:
           val key = root.key(index)
 
           if key.isTextString
-          then map = map.updated(key.string.tt.decode, decodable.decoded(ast(root.value(index))))
+          then map = map.updated(key.string.tt.as, decodable.decoded(ast(root.value(index))))
           else abort(CborError(Reason.NonStringKey))
 
           index += 1

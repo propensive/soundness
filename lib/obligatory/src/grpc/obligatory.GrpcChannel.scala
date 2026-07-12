@@ -70,7 +70,7 @@ class GrpcChannel
   ( connection: Http2Connection^, authority: Text, defaults: Grpc.Metadata = Grpc.Metadata() ):
   // The `:authority` pseudo-header is supplied to `fetch` separately; the request's
   // `Host` is unused by the HTTP/2 transport, so the hostname is parsed leniently.
-  private val host: Host = unsafely(authority.cut(t":").prim.or(authority).decode[Host])
+  private val host: Host = unsafely(authority.cut(t":").prim.or(authority).as[Host])
 
   // Build the gRPC HTTP/2 request: POST to `/package.Service/Method` with the
   // mandatory content-type and `te: trailers`, plus any custom metadata, and a body
@@ -108,7 +108,7 @@ class GrpcChannel
 
     val code =
       codeText.lay(Grpc.Status.Unknown.code): text =>
-        safely(text.decode[Int]).or(Grpc.Status.Unknown.code)
+        safely(text.as[Int]).or(Grpc.Status.Unknown.code)
 
     val status = Grpc.Status.of(code).or(Grpc.Status.Unknown)
     if status != Grpc.Status.Ok then abort(GrpcError(status, message))

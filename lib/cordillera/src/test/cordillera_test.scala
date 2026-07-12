@@ -273,7 +273,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           val connection = Http2Connection(clientSide)
           connection.start()
 
-          val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".decode[Host]),
+          val request = Http.Request(Http.Post, 2.0, unsafely(t"unix".as[Host]),
               t"/echo.Service/Call", Nil, () => Stream(ascii(t"ping")))
 
           val (stream, response) = connection.fetch(request, t"http", t"unix")
@@ -305,7 +305,7 @@ object Tests extends Suite(m"Cordillera HTTP/2 Tests"):
           val client = summon[HttpClient onto Http2.Endpoint[Loopback]]
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"unix")
 
-          val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".decode[Host]),
+          val request = Http.Request(Http.Get, 2.0, unsafely(t"unix".as[Host]),
               t"/echo.Service/Call", Nil, () => Iterator.empty[Data].stream)
 
           client.request(request, endpoint).status.code

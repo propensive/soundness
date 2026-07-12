@@ -93,7 +93,7 @@ object Runners:
       case StreamError(_)    => RunnerError(m"The download of the stub $name was interrupted")
 
     . protect:
-        val runner: Data = mute[HttpEvent](t"$baseUrl/$name".decode[HttpUrl].fetch().read[Data])
+        val runner: Data = mute[HttpEvent](t"$baseUrl/$name".as[HttpUrl].fetch().read[Data])
         val actual: Text = runner.digest[Sha2[256]].serialize[Hex]
 
         if actual != expected

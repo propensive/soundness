@@ -46,7 +46,7 @@ object Interpretable:
 
   given decoder: [operand: Decodable in Text] => operand is Interpretable = arguments =>
     arguments.take(1).absolve match
-      case List(value) => value().decode[operand]
+      case List(value) => value().as[operand]
 
 trait Interpretable extends Typeclass:
   def operand: Boolean = true

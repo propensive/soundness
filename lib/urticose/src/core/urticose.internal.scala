@@ -77,8 +77,8 @@ object internal:
 
     lines.flatMap: list =>
       safely:
-        if list(2) == t"tcp" then List((true, list(0)) -> list(1).decode[Int])
-        else if list(2) == t"udp" then List((false, list(0)) -> list(1).decode[Int])
+        if list(2) == t"tcp" then List((true, list(0)) -> list(1).as[Int])
+        else if list(2) == t"udp" then List((false, list(0)) -> list(1).as[Int])
         else Nil
 
       . or(Nil)
@@ -193,7 +193,7 @@ object internal:
 
       given decodable: (numberTactic: Tactic[NumberError], portTactic: Tactic[PortError])
       =>  ((Port is Decodable in Text)^{numberTactic, portTactic}) =
-        text => apply(text.decode[Int])
+        text => apply(text.as[Int])
 
       def unsafe[transport](value: Int): Port over transport =
         value.asInstanceOf[Port over transport]
@@ -286,7 +286,7 @@ object internal:
 
     given hostDecodable: (tactic: Tactic[HostnameError])
     =>  ((urticose.Host is Decodable in Text)^{tactic}) = text =>
-      safely(text.decode[Ipv6]).or(safely(text.decode[Ipv4])).or(text.decode[Hostname])
+      safely(text.as[Ipv6]).or(safely(text.as[Ipv4])).or(text.as[Hostname])
 
     given decodable: (tactic: Tactic[IpAddressError])
     =>  ((Ipv6 is Decodable in Text)^{tactic}) =
@@ -414,7 +414,7 @@ object internal:
     val id = context.valueOrAbort.parts.head.tt
     val portType = if tcp then t"TCP" else t"UDP"
 
-    safely(id.decode[Int]).let: portNumber =>
+    safely(id.as[Int]).let: portNumber =>
       if 1 <= portNumber <= 65535 then
         ConstantType(IntConstant(portNumber)).asType.absolve match
           case '[number] =>
@@ -438,11 +438,11 @@ object internal:
 
     abortive:
       if text.contains(t".") then
-        val ipv4 = text.decode[Ipv4]
+        val ipv4 = text.as[Ipv4]
         '{Ipv4(${Expr(ipv4.byte0)}, ${Expr(ipv4.byte1)}, ${Expr(ipv4.byte2)}, ${Expr(ipv4.byte3)})}
 
       else
-        val ipv6 = text.decode[Ipv6]
+        val ipv6 = text.as[Ipv6]
         '{Ipv6(${Expr(ipv6.highBits)}, ${Expr(ipv6.lowBits)})}
 
   def subnet(context: Expr[StringContext]): Macro[Ipv4Subnet | Ipv6Subnet] =
@@ -459,5 +459,5 @@ object internal:
         '{Ipv6Subnet($ipv6, ${Expr(subnet.size)})}
 
   def mac(context: Expr[StringContext]): Macro[MacAddress] = abortive:
-    val macAddress = context.valueOrAbort.parts.head.tt.decode[MacAddress]
+    val macAddress = context.valueOrAbort.parts.head.tt.as[MacAddress]
     '{MacAddress(${Expr(macAddress.long)})}

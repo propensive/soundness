@@ -120,7 +120,7 @@ object internal:
     given subtractable: Year is Subtractable by Int to Year = Subtractable(_ - _)
 
     given decodable: (Int is Decodable in Text) => Year is Decodable in Text = year =>
-      Year(year.decode[Int])
+      Year(year.as[Int])
 
     given orderable: Year is Orderable:
       inline def compare
@@ -139,7 +139,7 @@ object internal:
       Multiplicable: (n, _) => Timespan(Day, n)
 
     given decodable: (Int is Decodable in Text) => Day is Decodable in Text = day =>
-      Day(day.decode[Int])
+      Day(day.as[Int])
 
     given showable: Day is Showable = _.toString.tt
 

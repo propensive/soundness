@@ -185,27 +185,27 @@ object Tests extends Suite(m"Gesticulate tests"):
       . assert(_ == MultipartError.Reason.Expected('-'))
 
     test(m"parse media type's type"):
-      t"application/json".decode[MediaType].group
+      t"application/json".as[MediaType].group
     . assert(_ == Media.Group.Application)
 
     test(m"parse media type's subtype"):
-      t"application/json".decode[MediaType].subtype
+      t"application/json".as[MediaType].subtype
     . assert(_ == Media.Subtype.Standard(t"json"))
 
     test(m"parse media type suffix"):
-      t"application/epub+zip".decode[MediaType].suffixes
+      t"application/epub+zip".as[MediaType].suffixes
     . assert(_ == List(Media.Suffix.Zip))
 
     test(m"parse full media type"):
-      t"application/json".decode[MediaType]
+      t"application/json".as[MediaType]
     . assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard(t"json")))
 
     test(m"parse full media type with parameter"):
-      t"application/json; charset=UTF-8".decode[MediaType]
+      t"application/json; charset=UTF-8".as[MediaType]
     . assert(_ == MediaType(Media.Group.Application, Media.Subtype.Standard(t"json"),
         parameters = List((t"charset", t"UTF-8"))))
 
     test(m"invalid media type"):
-      capture(t"applicationjson".decode[MediaType])
+      capture(t"applicationjson".as[MediaType])
     . assert(_ == MediaTypeError(t"applicationjson",
         MediaTypeError.Reason.NotOneSlash))

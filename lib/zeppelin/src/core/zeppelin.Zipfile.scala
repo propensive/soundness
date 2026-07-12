@@ -258,7 +258,7 @@ object Zipfile:
           // against `Zip.Rules` (which also forbids the `.`/`..` traversal segments) to
           // make `InvalidName` reachable and reject Zip-Slip / path-traversing entry names.
           cleanName.cut(t"/").each(Name[Zip](_))
-          cleanName.decode[Path on Zip]
+          cleanName.as[Path on Zip]
 
       val payloadOffset = localOffset + prefixDelta
       if payloadOffset < earliestEntry then earliestEntry = payloadOffset

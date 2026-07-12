@@ -404,7 +404,7 @@ object Tests extends Suite(m"Perihelion tests"):
             websocket.channel.send(perihelion.Message.Text(Ping(7).in[Json].show))
             websocket
 
-          val url = t"ws://localhost:$port/".decode[WsUrl]
+          val url = t"ws://localhost:$port/".as[WsUrl]
 
           val value = url.react(0): (ping: Ping over Json) =>
             Conclude(Ping(ping.value + 1).over[Json], ping.value)
@@ -423,7 +423,7 @@ object Tests extends Suite(m"Perihelion tests"):
             webSocket(): (ping: Ping over Json) =>
               Reply(Ping(ping.value + 1).over[Json], ())
 
-          val url = t"ws://localhost:$port/".decode[WsUrl]
+          val url = t"ws://localhost:$port/".as[WsUrl]
 
           val handle: (state: Int) ?=> (Ping over Json) => Control[Int] =
             ping => Conclude(Ping(0).over[Json], ping.value)
@@ -447,7 +447,7 @@ object Tests extends Suite(m"Perihelion tests"):
               Reply(Ping(ping.value + 1).over[Json], ())
 
           given Tls = Tls(clientContext, verify = false)
-          val url = t"wss://localhost:$port/".decode[WsUrl]
+          val url = t"wss://localhost:$port/".as[WsUrl]
 
           val handle: (state: Int) ?=> (Ping over Json) => Control[Int] =
             ping => Conclude(Ping(0).over[Json], ping.value)

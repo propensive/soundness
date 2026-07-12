@@ -79,7 +79,7 @@ object DepsDev:
     val jar: Text = t"$artifact-$version.jar"
 
     val url: HttpUrl =
-      t"https://repo1.maven.org/maven2/$group/$artifact/$version/$jar".decode[HttpUrl]
+      t"https://repo1.maven.org/maven2/$group/$artifact/$version/$jar".as[HttpUrl]
 
     Log.info(DepsEvent.Resolved(sha256Hex, url.show))
     url

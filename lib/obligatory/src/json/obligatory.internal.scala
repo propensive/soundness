@@ -144,7 +144,7 @@ object internal:
                                   $encoder.encode(${application.asExprOf[result]}),
                                   request.id )
 
-                              . json
+                              . in[Json]
                             }
 
                         case None =>
@@ -265,11 +265,12 @@ object internal:
                               val json = Map(${Varargs(entries)}*).in[Json]
 
                               unsafely:
-                                JsonRpc.request($url, $methodName, json)
-                                  ( using $monitor, $probate, $online )
+                                val response =
+                                  JsonRpc.request($url, $methodName, json)
+                                    ( using $monitor, $probate, $online )
+                                  . await()
 
-                                . await()
-                                . decode[result](using $decoder)
+                                $decoder.decoded(response)
                             }
 
                           . asTerm
@@ -375,9 +376,11 @@ object internal:
                       val json = Map(${Varargs(entries)}*).in[Json]
 
                       unsafely:
-                        JsonRpc.request($rpc, $methodName, json)
-                        . await()
-                        . decode[result](using $decoder)
+                        val response =
+                          JsonRpc.request($rpc, $methodName, json)
+                          . await()
+
+                        $decoder.decoded(response)
                     }
 
                   . asTerm

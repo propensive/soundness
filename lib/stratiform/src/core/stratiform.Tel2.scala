@@ -129,7 +129,7 @@ trait Tel2:
 
   inline given decodable: [value] => value is Tel.Decodable = summonFrom:
     case given (`value` is Decodable in Text) =>
-      Tel.Decodable(Morphology.Str)(provide[Tactic[TelError]](_.primaryAtom.decode[value]))
+      Tel.Decodable(Morphology.Str)(provide[Tactic[TelError]](_.primaryAtom.as[value]))
 
     case given Reflection[`value`] => DecodableDerivation.derived
 

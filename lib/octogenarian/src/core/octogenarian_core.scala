@@ -89,6 +89,6 @@ extension (noteRef: NoteRef)
 
     repo.notes.show(noteRef.target, noteRef.namespace)
     . lest(GitError(GitError.Reason.NoteNotFound))
-    . decode[value]
+    . as[value]
 
 private[octogenarian] inline def git(using command: GitCommand): GitCommand = command

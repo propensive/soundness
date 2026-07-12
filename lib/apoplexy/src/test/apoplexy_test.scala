@@ -180,14 +180,14 @@ components:
 
     test(m"a component reference resolves to its schema"):
       given OpenApi = fromJson
-      JsonSchema.Ref(t"#/components/schemas/Pet".decode[JsonPointer])()
+      JsonSchema.Ref(t"#/components/schemas/Pet".as[JsonPointer])()
     .assert:
       case _: JsonSchema.Object => true
       case _                    => false
 
     test(m"a cyclic reference resolves one hop without looping"):
       given OpenApi = fromJson
-      JsonSchema.Ref(t"#/components/schemas/Owner".decode[JsonPointer])()
+      JsonSchema.Ref(t"#/components/schemas/Owner".as[JsonPointer])()
     .assert:
       case _: JsonSchema.Object => true
       case _                    => false

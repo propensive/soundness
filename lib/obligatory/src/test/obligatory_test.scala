@@ -110,13 +110,13 @@ object Tests extends Suite(m"Obligatory Tests"):
       test(m"Typed server-side events"):
         val input = t"event: one\ndata: foobar\ndata: baz\n\ndata: hello world"
 
-        Iterator(input).frames[Sse].map(_.decode[Sse]).to(List)
+        Iterator(input).frames[Sse].map(_.as[Sse]).to(List)
       . assert(_ == List(Sse("one", List("foobar", "baz")), Sse("message", List("hello world"))))
 
       test(m"Typed server-side events with more fields"):
         val input = t"event: one\nid: 123\ndata: foobar\ndata: baz\n\ndata: hello world\nretry: 54321"
 
-        Iterator(input).frames[Sse].map(_.decode[Sse]).to(List)
+        Iterator(input).frames[Sse].map(_.as[Sse]).to(List)
       . assert(_ == List(Sse("one", List("foobar", "baz"), "123"), Sse("message", List("hello world"), Unset, 54321L)))
 
     suite(m"gRPC message framing"):

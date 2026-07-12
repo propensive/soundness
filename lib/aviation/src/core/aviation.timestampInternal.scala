@@ -112,11 +112,11 @@ object timestampInternal:
 
           . protect:
               Timestamp
-                ( Date(Year(yr.decode[Int]), Month(mn.decode[Int]), Day(dy.decode[Int])),
+                ( Date(Year(yr.as[Int]), Month(mn.as[Int]), Day(dy.as[Int])),
                   Clockface
-                    ( Base24(hr.decode[Int]),
-                      Base60(mi.decode[Int]),
-                      Base60(sc.decode[Int]) ) )
+                    ( Base24(hr.as[Int]),
+                      Base60(mi.as[Int]),
+                      Base60(sc.as[Int]) ) )
 
         case value =>
           abort(TimestampError(value, TimestampError.Reason.BadFormat))

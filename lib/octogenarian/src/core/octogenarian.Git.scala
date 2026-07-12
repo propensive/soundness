@@ -84,7 +84,7 @@ object Git:
 
     try
       throwErrors[PathError | IoError]:
-        val target: Path on Linux = targetPath.generic.decode[Path on Linux]
+        val target: Path on Linux = targetPath.generic.as[Path on Linux]
         val branchOpt = initialBranch.lay(sh""): branch => sh"--initial-branch=$branch"
         sh"$command init $branchOpt $target".exec[Exit]()
 
@@ -107,7 +107,7 @@ object Git:
 
     try
       throwErrors[PathError | IoError]:
-        val target: Path on Linux = targetPath.generic.decode[Path on Linux]
+        val target: Path on Linux = targetPath.generic.as[Path on Linux]
         val branchOpt = initialBranch.lay(sh""): branch => sh"--initial-branch=$branch"
         sh"$command init --bare $branchOpt $target".exec[Exit]()
 
@@ -217,7 +217,7 @@ object Git:
   :   GitProcess[Worktree] logs GitEvent =
 
     val target: Path on Linux =
-      try targetPath.generic.decode[Path on Linux]
+      try targetPath.generic.as[Path on Linux]
       catch case error: PathError => abort(GitError(InvalidRepoPath))
 
     val branchOption = branch.lay(sh""): branch => sh"--branch=$branch"
@@ -252,7 +252,7 @@ object Git:
   :   GitProcess[GitRepo] logs GitEvent =
 
     val target: Path on Linux =
-      try targetPath.generic.decode[Path on Linux]
+      try targetPath.generic.as[Path on Linux]
       catch case error: PathError => abort(GitError(InvalidRepoPath))
 
     val branchOption = branch.lay(sh""): branch => sh"--branch=$branch"

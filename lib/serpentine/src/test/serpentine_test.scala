@@ -250,25 +250,25 @@ object Tests extends Suite(m"internal Benchmarks"):
     suite(m"Decoding"):
       test(m"Decode a simple Linux path with a terminal slash"):
         given Tactic[PathError] = strategies.throwUnsafely
-        t"/home/work/".decode[Path on Linux]
+        t"/home/work/".as[Path on Linux]
 
       . assert(_ == % / "home" / "work")
 
       test(m"Decode a simple Linux path without a terminal slash"):
         given Tactic[PathError] = strategies.throwUnsafely
-        t"/home/work".decode[Path on Linux]
+        t"/home/work".as[Path on Linux]
 
       . assert(_ == % / "home" / "work")
 
       test(m"Decode a simple Mac OS path without a terminal slash"):
         unsafely:
-          t"/Users/Admin".decode[Path on MacOs]
+          t"/Users/Admin".as[Path on MacOs]
 
       . assert(_ == % / "Users" / "Admin")
 
       test(m"Decode a simple Mac OS path with a terminal slash"):
         unsafely:
-          t"/Users/Admin/".decode[Path on MacOs]
+          t"/Users/Admin/".as[Path on MacOs]
 
       . assert(_ == % / "Users" / "Admin")
 
@@ -276,49 +276,49 @@ object Tests extends Suite(m"internal Benchmarks"):
 
       test(m"Decode a simple Windows path without a terminal slash"):
         unsafely:
-          t"C:\\Windows\\System".decode[Path on Windows]
+          t"C:\\Windows\\System".as[Path on Windows]
 
       . assert(_ == windowsSystem)
 
       test(m"Decode a simple Windows path with a terminal slash"):
         unsafely:
-          t"C:\\Windows\\System\\".decode[Path on Windows]
+          t"C:\\Windows\\System\\".as[Path on Windows]
 
       . assert(_ == windowsSystem)
 
       test(m"Can't decode a path without knowing plane"):
         demilitarize:
-          t"C:\\Windows\\System\\".decode[Path]
+          t"C:\\Windows\\System\\".as[Path]
 
       . assert(_.nonEmpty)
 
       test(m"Decode a simple relative path"):
-        t"foo".decode[Relative on Linux]
+        t"foo".as[Relative on Linux]
       . assert(_ == ? / "foo")
 
       test(m"Decode a deeper relative path"):
-        t"foo/bar".decode[Relative on Linux]
+        t"foo/bar".as[Relative on Linux]
       . assert(_ == ? / "foo" / "bar")
 
       test(m"Decode a relative path with ascent"):
-        t"../foo/bar".decode[Relative on Linux]
+        t"../foo/bar".as[Relative on Linux]
       . assert(_ == ? / ^ / "foo" / "bar")
 
       test(m"Decode a relative path self-reference"):
-        t".".decode[Relative on Linux]
+        t".".as[Relative on Linux]
       . assert(_ == ?)
 
       test(m"Decode a relative path with greater ascent"):
-        t"../../foo/bar".decode[Relative on Linux]
+        t"../../foo/bar".as[Relative on Linux]
       . assert(_ == ? / ^ / ^ / "foo" / "bar")
 
       test(m"Decode a relative path with greater ascent on Windows"):
-        t"..\\..\\foo\\bar".decode[Relative on Windows]
+        t"..\\..\\foo\\bar".as[Relative on Windows]
       . assert(_ == ? / ^ / ^ / "foo" / "bar")
 
       test(m"Cannot decode a relative path without knowing plane"):
         demilitarize:
-          t"..\\..\\foo\\bar".decode[Relative]
+          t"..\\..\\foo\\bar".as[Relative]
       . assert(_.nonEmpty)
 
     suite(m"Compiletime tests"):

@@ -46,7 +46,7 @@ import filesystemBackends.virtualMachine
 object Tests extends Suite(m"Surveillance tests"):
   def run(): Unit =
     test(m"Watching a path beneath a nonexistent directory raises a WatchError"):
-      val target = t"/surveillance-nonexistent-parent-9d3f17/child".decode[Path on Local]
+      val target = t"/surveillance-nonexistent-parent-9d3f17/child".as[Path on Local]
       capture[WatchError](target.watch(watcher => watcher)).reason
 
     . assert(_ == WatchError.Reason.Nonexistent)

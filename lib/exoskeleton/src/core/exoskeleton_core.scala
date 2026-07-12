@@ -137,7 +137,7 @@ def application(using executive: Executive, interpreter: Interpreter, system: Sy
 
   val entrypoint = new Entrypoint:
     def executable: Path on Local =
-      safely(ProcessHandle.current.nn.info.nn.command.nn.get.nn.tt.decode[Path on Local])
+      safely(ProcessHandle.current.nn.info.nn.command.nn.get.nn.tt.as[Path on Local])
       . or(panic(m"cannot determine java invocation"))
 
     def script: Text = executable.name

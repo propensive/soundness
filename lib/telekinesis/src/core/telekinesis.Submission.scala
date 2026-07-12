@@ -47,11 +47,11 @@ case class Submission[value](query: Optional[Query]):
   def fresh: Boolean = query.absent
 
   def optional(using Tactic[Hazard] ?=> value is Decodable in Query): Optional[value] =
-    safely(query.let(_.decode[value]))
+    safely(query.let(_.as[value]))
 
   def submitted: Boolean = query.present
   def valid(using Tactic[Hazard] ?=> value is Decodable in Query): Boolean = optional.present
-  def value(using value is Decodable in Query): Optional[value] = query.let(_.decode[value])
+  def value(using value is Decodable in Query): Optional[value] = query.let(_.as[value])
 
 
   def form

@@ -182,7 +182,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             import cats.effect.unsafe.implicits.global
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.textArray)).covary[cats.effect.IO]
-            . through(fs2.text.utf8.decode).map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
+            . through(fs2.text.utf8.as).map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
         }
 
       bench(m"ZIO  ZPipeline.utfDecode")(target = 1*Second, operationSize = textSize):
@@ -262,7 +262,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             import cats.effect.unsafe.implicits.global
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.textArray)).covary[cats.effect.IO]
-            . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
+            . through(fs2.text.utf8.as).through(fs2.text.utf8.encode)
             . compile.count.unsafeRunSync()
         }
 
@@ -289,7 +289,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             val comp = fs2.compression.Compression.forSync[cats.effect.IO]
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.gzippedTextArray)).covary[cats.effect.IO]
             . through(comp.gunzip()).flatMap(_.content)
-            . through(fs2.text.utf8.decode).map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
+            . through(fs2.text.utf8.as).map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
         }
 
       bench(m"ZIO  gunzip.utfDecode")(target = 1*Second, operationSize = textSize):
@@ -321,7 +321,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.inputArray)).covary[cats.effect.IO]
             . through(comp.gzip())
             . through(fs2.text.base64.encode)
-            . through(fs2.text.base64.decode)
+            . through(fs2.text.base64.as)
             . through(comp.gunzip()).flatMap(_.content)
             . compile.count.unsafeRunSync()
         }
@@ -425,9 +425,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             import cats.effect.unsafe.implicits.global
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.textArray)).covary[cats.effect.IO]
-            . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
-            . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
-            . through(fs2.text.utf8.decode)
+            . through(fs2.text.utf8.as).through(fs2.text.utf8.encode)
+            . through(fs2.text.utf8.as).through(fs2.text.utf8.encode)
+            . through(fs2.text.utf8.as)
             . map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
         }
 
@@ -458,9 +458,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             import cats.effect.unsafe.implicits.global
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.textArray)).covary[cats.effect.IO]
-            . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
-            . through(fs2.text.base64.encode).through(fs2.text.base64.decode)
-            . through(fs2.text.utf8.decode)
+            . through(fs2.text.utf8.as).through(fs2.text.utf8.encode)
+            . through(fs2.text.base64.encode).through(fs2.text.base64.as)
+            . through(fs2.text.utf8.as)
             . map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
         }
 
@@ -483,7 +483,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             import cats.effect.unsafe.implicits.global
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.textArray)).covary[cats.effect.IO]
             . drop(turbulence.Benchmarks.dropBytes)
-            . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
+            . through(fs2.text.utf8.as).through(fs2.text.utf8.encode)
             . take(turbulence.Benchmarks.takeBytes)
             . compile.count.unsafeRunSync()
         }
@@ -530,7 +530,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         '{
             import cats.effect.unsafe.implicits.global
             fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.inputArray)).covary[cats.effect.IO]
-            . through(fs2.text.base64.encode).through(fs2.text.base64.decode)
+            . through(fs2.text.base64.encode).through(fs2.text.base64.as)
             . compile.count.unsafeRunSync()
         }
 

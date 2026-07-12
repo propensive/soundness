@@ -94,7 +94,7 @@ trait Yaml2:
   :   value =
 
     yaml.root.asMatchable match
-      case s: String => s.tt.decode[value]
+      case s: String => s.tt.as[value]
 
       case _ =>
         abort(YamlError(Reason.NotType(Yaml.primitive(yaml.root), YamlPrimitive.Str)))

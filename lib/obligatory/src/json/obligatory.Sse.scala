@@ -101,7 +101,7 @@ object Sse:
             case "id"    => id = value
 
             case "retry" =>
-              retry = safely(value.decode[Long]).lest(SseError(SseError.Reason.BadRetryValue))
+              retry = safely(value.as[Long]).lest(SseError(SseError.Reason.BadRetryValue))
 
             case _ => raise(SseError(SseError.Reason.UnknownField))
 

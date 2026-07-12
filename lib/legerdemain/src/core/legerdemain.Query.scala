@@ -104,12 +104,12 @@ object Query extends Dynamic:
         provide[Tactic[QueryError]]:
           summonFrom:
             case default: Default[`value`] =>
-              _().let(_.decode).or:
+              _().let(_.as).or:
                 raise(QueryError(QueryError.Reason.Missing))
                 default()
 
             case _ =>
-              _().lest(QueryError(QueryError.Reason.Missing)).decode
+              _().lest(QueryError(QueryError.Reason.Missing)).as
 
       case given ProductReflection[`value` & Product] =>
         DecodableDerivation.conjunction[value & Product].asInstanceOf[value is Decodable in Query]
@@ -153,7 +153,7 @@ case class Query private (values: List[(Text, Text)]) extends Dynamic:
     new Query(values2)
 
 
-  def at[value: Decodable in Text](name: Text): Optional[value] = apply(name)().let(_.decode)
+  def at[value: Decodable in Text](name: Text): Optional[value] = apply(name)().let(_.as)
   def as[value: Decodable in Query]: value tracks Pointer = value.decoded(this)
 
   def apply(): Optional[Text] = values match

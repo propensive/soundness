@@ -179,7 +179,7 @@ private[bitumen] object TarFilesystem:
     mitigate:
       case PathError(_, _) => TarError(TarError.Reason.BadName(relText))
 
-    . protect(relText.decode[Relative on Posix])
+    . protect(relText.as[Relative on Posix])
 
   private def decodePath(text: Text)(using Tactic[TarError]): TarRef =
     import errorDiagnostics.emptyDiagnostics
@@ -187,7 +187,7 @@ private[bitumen] object TarFilesystem:
     mitigate:
       case PathError(_, _) => TarError(TarError.Reason.BadName(text))
 
-    . protect(text.decode[Relative on Tar])
+    . protect(text.as[Relative on Tar])
 
   private def readMode(javaPath: jnf.Path)(using Tactic[IoError]): UnixMode =
     try (jnf.Files.getAttribute(javaPath, "unix:mode").nn: Any) match

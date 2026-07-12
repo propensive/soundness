@@ -150,7 +150,7 @@ trait Json2 extends Json3:
       // instance's given-resolution lifetime; laundered pure per the codec-thunk seal
       // pattern (see rep/DECISIONS.md), like the primitive codecs.
       caps.unsafe.unsafeAssumePure:
-        Json.Decodable(Morphology.Str)(provide[Tactic[JsonError]](_.root.string.decode[value]))
+        Json.Decodable(Morphology.Str)(provide[Tactic[JsonError]](_.root.string.as[value]))
 
     case given Reflection[`value`] =>
       DecodableDerivation.derived
@@ -1271,7 +1271,7 @@ object Json extends Json2, Dynamic:
         while i < n do
           acc =
             acc.updated
-              ( root.objectKey(i).tt.decode,
+              ( root.objectKey(i).tt.as,
                 decodable.decoded(Json.ast(root.objectValue(i))) )
 
           i += 1

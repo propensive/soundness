@@ -55,8 +55,8 @@ class Shader(options: List[String]) extends PluginPhase:
 
     object transformer extends UntypedTreeMap:
       def nameToSegments(tree: Tree): List[String] = tree match
-        case Ident(name)        => List(name.decode.toString)
-        case Select(qual, name) => nameToSegments(qual) :+ name.decode.toString
+        case Ident(name)        => List(name.as.toString)
+        case Select(qual, name) => nameToSegments(qual) :+ name.as.toString
         case _                  => Nil
 
       def peelPackageDefs(name: Tree, stats: List[Tree]): (List[String], List[Tree]) =
@@ -92,7 +92,7 @@ class Shader(options: List[String]) extends PluginPhase:
             Some(acc)
 
           case Select(qual, name) =>
-            collect(qual, name.decode.toString :: acc)
+            collect(qual, name.as.toString :: acc)
 
           case _ =>
             None

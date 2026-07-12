@@ -83,26 +83,26 @@ object Semver:
             case _                => raise(SemverError(text, SemverError.Reason.InvalidCharacter))
 
           val prerelease3: List[Text | Long] = prerelease2.map: element =>
-            safely(element.decode[Long]).or(element)
+            safely(element.as[Long]).or(element)
 
           val build3: List[Text | Long] = build2.map: element =>
-            safely(element.decode[Long]).or(element)
+            safely(element.as[Long]).or(element)
 
           mitigate:
             case NumberError(_, _, _) => SemverError(text, SemverError.Reason.BadFormat)
 
           . protect:
-              val major2 = major.decode[Long]
+              val major2 = major.as[Long]
 
               if major.starts(t"0") && major2 != 0
               then raise(SemverError(text, SemverError.Reason.LeadingZero))
 
-              val minor2 = minor.decode[Long]
+              val minor2 = minor.as[Long]
 
               if minor.starts(t"0") && minor2 != 0
               then raise(SemverError(text, SemverError.Reason.LeadingZero))
 
-              val patch2 = patch.decode[Long]
+              val patch2 = patch.as[Long]
 
               if patch.starts(t"0") && patch2 != 0
               then raise(SemverError(text, SemverError.Reason.LeadingZero))

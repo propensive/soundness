@@ -212,7 +212,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       // A fake bare stub carrying the ETHRCFG marker so `Assembler.patch` can patch it,
       // followed by enough zero bytes for the 24-byte metadata and public-key regions.
       def writeStub(dir: Path on Linux, label: Text): Unit =
-        val file: Path on Linux = t"$dir/runner-$label".decode[Path on Linux]
+        val file: Path on Linux = t"$dir/runner-$label".as[Path on Linux]
 
         val bytes: Array[Byte] =
           Array.fill(64)(0.toByte)

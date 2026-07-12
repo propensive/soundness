@@ -45,7 +45,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
   def run(): Unit =
     def fileEntry(name: Text, content: Text): Tar.Entry =
       Tar.Entry.File
-       ( path  = name.decode[Relative on Tar],
+       ( path  = name.as[Relative on Tar],
          mode  = UnixMode(),
          user  = UnixUser(0),
          group = UnixGroup(0),

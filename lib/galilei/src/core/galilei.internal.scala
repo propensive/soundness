@@ -51,11 +51,11 @@ object internal:
   def path(context: Expr[StringContext]): Macro[Path] =
     val name: String = context.valueOrAbort.parts.head
 
-    safely(name.tt.decode[Path on Posix]).let: path =>
+    safely(name.tt.as[Path on Posix]).let: path =>
       '{Path[Posix, %.type, Tuple](${Expr(path.root)}, ${Expr.ofList(path.descent.map(Expr(_)))})}
 
     . or:
-        safely(name.tt.decode[Path on Windows]).let: path =>
+        safely(name.tt.as[Path on Windows]).let: path =>
           val varargs = Expr.ofList(path.descent.map(Expr(_)))
           '{Path[Windows, Drive, Tuple](${Expr(path.root)}, $varargs)}
 
