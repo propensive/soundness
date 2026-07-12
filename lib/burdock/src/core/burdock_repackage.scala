@@ -91,7 +91,7 @@ def repackage(): Unit = application(Nil):
 
       val inputJar: Path on Linux = connection match
         case jar: jn.JarURLConnection =>
-          jnf.Paths.get(jar.getJarFileURL.nn.toURI.nn).nn.toString.nn.tt.decode[Path on Linux]
+          jnf.Paths.get(jar.getJarFileURL.nn.toURI.nn).nn.toString.nn.tt.as[Path on Linux]
 
         case _ =>
           abort(UserError(m"Burdock can only repackage a JAR file, not a directory"))
@@ -106,7 +106,7 @@ def repackage(): Unit = application(Nil):
       // `~/.cache/burdock/<sha256>.jar` (see `externalize`); published ones resolve via
       // deps.dev and are referenced by URL rather than inlined.
       val home: Text = _root_.java.lang.System.getProperty("user.home").nn.tt
-      val cacheDir: Path on Linux = t"$home/.cache/burdock".decode[Path on Linux]
+      val cacheDir: Path on Linux = t"$home/.cache/burdock".as[Path on Linux]
 
       def cached(hash: Text): Optional[List[Zip.Entry]] =
         val cacheJar: Path on Linux = cacheDir/t"$hash.jar"

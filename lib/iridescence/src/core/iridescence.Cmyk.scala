@@ -42,7 +42,7 @@ object Cmyk:
           color.magenta*(1 - color.key) + color.key,
           color.yellow*(1 - color.key) + color.key )
 
-  given srgb: Cmyk is Perceptual in Srgb = _.in[Cmy].in[Srgb]
+  given srgb: Cmyk is Perceptual in Srgb = _.to[Cmy].to[Srgb]
 
 case class Cmyk(cyan: Double, magenta: Double, yellow: Double, key: Double) extends Color:
   type Form = Cmyk

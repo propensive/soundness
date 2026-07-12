@@ -47,12 +47,12 @@ object Srgb:
 
       Xyz(x, y, z)
 
-  given cielab: Colorimetry => Srgb is Perceptual in Cielab = _.in[Xyz].in[Cielab]
+  given cielab: Colorimetry => Srgb is Perceptual in Cielab = _.to[Xyz].to[Cielab]
 
   given cmy: Srgb is Perceptual in Cmy =
     color => Cmy(1 - color.red, 1 - color.green, 1 - color.blue)
 
-  given cmyk: Srgb is Perceptual in Cmyk = _.in[Cmy].in[Cmyk]
+  given cmyk: Srgb is Perceptual in Cmyk = _.to[Cmy].to[Cmyk]
 
   given hsl: Srgb is Perceptual in Hsl =
     color =>

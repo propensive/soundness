@@ -79,9 +79,9 @@ trait McpClient extends Findable:
   :   Json
 
   def log(message: Text): Unit =
-    `notifications/message`(LoggingLevel.Info, "updates", Map("message" -> message).json)
+    `notifications/message`(LoggingLevel.Info, "updates", Map("message" -> message).in[Json])
 
   def elicit[result: Schematic over JsonSchema](message: Text): Json =
-    `elicitation/create`(t"form", message, result.schema().json)
+    `elicitation/create`(t"form", message, result.schema().in[Json])
 
   def sample(message: Text): Unit = ???

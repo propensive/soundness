@@ -320,21 +320,21 @@ object Http:
         newline()
 
       def frame(data: Data): Iterator[Data] =
-        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".data, data, t"\r\n".data)
+        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
 
       if second.absent then
         val data = first.or(IArray.empty[Byte])
         val text = head(t"Content-Length: ${data.length}")
-        Stream(if data.length == 0 then Iterator(text.data) else Iterator(text.data, data))
+        Stream(if data.length == 0 then Iterator(text.in[Data]) else Iterator(text.in[Data], data))
       else
         val text = head(t"Transfer-Encoding: chunked")
 
         Stream
-          ( Iterator(text.data)
+          ( Iterator(text.in[Data])
             ++ frame(first.vouch)
             ++ frame(second.vouch)
             ++ Iterator.continually(pull()).takeWhile(_.present).flatMap { data => frame(data.vouch) }
-            ++ Iterator(t"0\r\n\r\n".data) )
+            ++ Iterator(t"0\r\n\r\n".in[Data]) )
 
     case class Head
       ( method: Method, version: Version, host: Host, target: Text, headers: List[Header] )
@@ -371,7 +371,7 @@ object Http:
 
       val lineLimit = cursor.position.n0 + maxRequestLine
 
-      val method: Http.Method = upTo(' ', lineLimit, Reason.UriTooLong).decode[Http.Method]
+      val method: Http.Method = upTo(' ', lineLimit, Reason.UriTooLong).as[Http.Method]
       cursor.next()
 
       val target: Text = upTo(' ', lineLimit, Reason.UriTooLong)
@@ -415,8 +415,8 @@ object Http:
 
       val host: Host = hostText.lay(abort(HttpRequestError(HttpRequestError.Reason.Host(t"")))):
         text =>
-          safely(text.decode[Host]).or:
-            safely(text.cut(t":").prim.or(text).decode[Host]).or:
+          safely(text.as[Host]).or:
+            safely(text.cut(t":").prim.or(text).as[Host]).or:
               abort(HttpRequestError(HttpRequestError.Reason.Host(text)))
 
       Head(method, version, host, target, headers)
@@ -548,7 +548,7 @@ object Http:
 
     // `Www`'s `Radical` always succeeds, so decoding the path cannot fail.
     lazy val path: Path on Www under %.type =
-      unsafely(location.decode[Path on Www under %.type])
+      unsafely(location.as[Path on Www under %.type])
 
     def on[scheme <: "http" | "https"](origin: Origin[scheme]): HttpUrl =
       Url[scheme](origin, target)
@@ -559,10 +559,10 @@ object Http:
     lazy val query: Query =
       contentType.let(_.base.show) match
         case t"application/x-www-form-urlencoded" =>
-          queryText.decode[Query] ++ body().memoize.utf8.decode[Query]
+          queryText.as[Query] ++ body().memoize.utf8.as[Query]
 
         case _ =>
-          queryText.decode[Query]
+          queryText.as[Query]
 
     lazy val location: Text =
       target.offsetOf(t"?").lay(target): ordinal => target.keep(ordinal.n0)
@@ -574,7 +574,7 @@ object Http:
       :   List[directive.Topic] =
 
         val name2 = name.tt.uncamel.kebab.lower
-        textHeaders.filter(_.key.lower == name2).map(_.value.decode)
+        textHeaders.filter(_.key.lower == name2).map(_.value.as)
 
     lazy val contentType: Optional[MediaType] = safely(headers.contentType.prim)
 
@@ -741,7 +741,7 @@ object Http:
         . takeWhile(_.present).map(_.vouch)
 
       def frame(data: Data): Iterator[Data] =
-        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".data, data, t"\r\n".data)
+        Iterator(t"${Integer.toHexString(data.length).nn.tt}\r\n".in[Data], data, t"\r\n".in[Data])
 
       def bodyBytes: Iterator[Data]^ =
         if !includeBody then Iterator.empty
@@ -751,12 +751,12 @@ object Http:
           case Body.Fixed(data) => Iterator(data)
 
           case Body.Flowing(source) =>
-            if chunked then pulls(source()).flatMap(frame) ++ Iterator(t"0\r\n\r\n".data)
+            if chunked then pulls(source()).flatMap(frame) ++ Iterator(t"0\r\n\r\n".in[Data])
             else pulls(source())
 
       // Hoisted: a by-name `++` operand may not mint a fresh capability.
       val chunks = bodyBytes
-      Stream(Iterator(head.data) ++ chunks)
+      Stream(Iterator(head.in[Data]) ++ chunks)
 
     def parse(stream: LazyList[Data]): Response raises HttpResponseError =
       parseCursor(Cursor[Data](stream.filter(_.nonEmpty).iterator))
@@ -897,7 +897,7 @@ object Http:
       :   List[directive.Topic] =
 
         val name2 = name.tt.uncamel.kebab.lower
-        textHeaders.filter(_.key.lower == name2).map(_.value.decode)
+        textHeaders.filter(_.key.lower == name2).map(_.value.as)
 
 
     @targetName("add")

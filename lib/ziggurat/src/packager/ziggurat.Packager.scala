@@ -122,7 +122,7 @@ object Packager:
 
           config.runnerSource.absolve match
             case Packaging.RunnerSource.Local(directory) =>
-              val file: Path on Linux = t"$directory/$name".decode[Path on Linux]
+              val file: Path on Linux = t"$directory/$name".as[Path on Linux]
               file.read[Data]
 
             case Packaging.RunnerSource.Remote(baseUrl, hashes) =>
@@ -130,7 +130,7 @@ object Packager:
                 hashes.at(label).lest(PackageError(m"No runner hash given for $label"))
 
               val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
-              val runner: Data = mute[HttpEvent](t"$base$name".decode[HttpUrl].fetch().read[Data])
+              val runner: Data = mute[HttpEvent](t"$base$name".as[HttpUrl].fetch().read[Data])
               val actual: Text = runner.digest[Sha2[256]].serialize[Hex]
 
               if actual != expected

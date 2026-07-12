@@ -712,7 +712,7 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         test(m"char decoder duct reassembles multi-byte characters split across refills"):
           val chunks = exotic.s.getBytes("UTF-8").nn.toSeq.map { byte => IArray[Byte](byte) }
-          val stream = chunks.iterator.stream.transcribe
+          val stream = chunks.iterator.stream.via(summon[CharDecoder])
           val builder = StringBuilder()
 
           def recur(): Unit = stream.refill(Credit(8)) match
@@ -730,14 +730,14 @@ object Tests extends Suite(m"Zephyrine tests"):
 
         test(m"char encoder duct emits UTF-8 for supplementary characters"):
           val gather = Gather()
-          exotic.stream.inscribe.pump(gather)
+          exotic.stream.via(summon[CharEncoder]).pump(gather)
           gather.data.to(List)
         . assert(_ == exotic.s.getBytes("UTF-8").nn.to(List))
 
         test(m"charset ducts roundtrip through both directions"):
           val gather = Gather()
-          exotic.stream.inscribe.pump(gather)
-          val decoded = gather.data.stream.transcribe
+          exotic.stream.via(summon[CharEncoder]).pump(gather)
+          val decoded = gather.data.stream.via(summon[CharDecoder])
           val builder = StringBuilder()
 
           def recur(): Unit = decoded.refill(Credit(4)) match

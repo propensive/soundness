@@ -51,7 +51,7 @@ into trait Palette extends Selectable:
 
   def mix(left: Color in Form, right: Color in Form, balance: Double = 0.5): Color in Srgb =
     def channel(lambda: Srgb => Double): Double =
-      lambda(left.in[Srgb])*(1 - balance) + lambda(right.in[Srgb])*balance
+      lambda(left.to[Srgb])*(1 - balance) + lambda(right.to[Srgb])*balance
 
     Srgb(channel(_.red), channel(_.green), channel(_.blue))
 

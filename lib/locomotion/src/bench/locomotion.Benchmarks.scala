@@ -194,12 +194,12 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   lazy val value6: Deep1 =
     Deep1(t"level0", Deep2(t"level1", Deep3(t"level2", Deep4(t"level3", Deep5(t"level4")))))
 
-  lazy val bytes1: Data = value1.protobuf.encode
-  lazy val bytes2: Data = value2.protobuf.encode
-  lazy val bytes3: Data = value3.protobuf.encode
-  lazy val bytes4: Data = value4.protobuf.encode
-  lazy val bytes5: Data = value5.protobuf.encode
-  lazy val bytes6: Data = value6.protobuf.encode
+  lazy val bytes1: Data = value1.in[Protobuf].encode
+  lazy val bytes2: Data = value2.in[Protobuf].encode
+  lazy val bytes3: Data = value3.in[Protobuf].encode
+  lazy val bytes4: Data = value4.in[Protobuf].encode
+  lazy val bytes5: Data = value5.in[Protobuf].encode
+  lazy val bytes6: Data = value6.in[Protobuf].encode
 
   // Plain Array[Byte] views for protobuf-java (the cast is sound for read-only
   // consumers; CodedInputStream never mutates its input).
@@ -223,12 +223,12 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   def decodeAttributes: Attributes = LazyList(bytes5).read[Attributes in Protobuf]
   def decodeNested:     Deep1      = LazyList(bytes6).read[Deep1 in Protobuf]
 
-  def encodeSmall:      Data = value1.protobuf.encode
-  def encodeUsers:      Data = value2.protobuf.encode
-  def encodeLogs:       Data = value3.protobuf.encode
-  def encodeInts:       Data = value4.protobuf.encode
-  def encodeAttributes: Data = value5.protobuf.encode
-  def encodeNested:     Data = value6.protobuf.encode
+  def encodeSmall:      Data = value1.in[Protobuf].encode
+  def encodeUsers:      Data = value2.in[Protobuf].encode
+  def encodeLogs:       Data = value3.in[Protobuf].encode
+  def encodeInts:       Data = value4.in[Protobuf].encode
+  def encodeAttributes: Data = value5.in[Protobuf].encode
+  def encodeNested:     Data = value6.in[Protobuf].encode
 
   def run(): Unit =
     val bench = Bench()

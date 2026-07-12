@@ -213,7 +213,7 @@ object OpenApi:
     val reference = field[Text]("$ref".tt)
 
     if !reference.absent
-    then JsonSchema.Ref(reference.vouch.decode[JsonPointer], field[Text](t"description"))
+    then JsonSchema.Ref(reference.vouch.as[JsonPointer], field[Text](t"description"))
     else field[Text](t"type") match
       case t"array" =>
         JsonSchema.Array
@@ -293,8 +293,8 @@ object OpenApi:
 
         . protect:
             if text.trim.starts(t"{") || text.trim.starts(t"[")
-            then text.decode[Json].as[OpenApi]
-            else text.decode[Yaml].as[OpenApi]
+            then text.as[Json].as[OpenApi]
+            else text.as[Yaml].as[OpenApi]
 
       if document.openapi.starts(t"3.") then document
       else abort(OpenApiError(OpenApiError.Reason.UnsupportedVersion(document.openapi)))

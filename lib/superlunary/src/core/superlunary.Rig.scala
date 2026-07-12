@@ -70,7 +70,7 @@ trait Rig(using classloader0: Classloader) extends Targetable, Formal, Transport
       case classpath: LocalClasspath => classpath.entries
 
       case _ =>
-        unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries)
+        unsafely(System.properties.java.`class`.path().as[LocalClasspath]).entries)
 
     LocalClasspath(entries*)
 

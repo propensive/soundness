@@ -85,14 +85,14 @@ object Tests extends Suite(m"Obligatory Tests"):
         val input =
           t"Content-Type: x\r\nContent-Length: 5\r\n\r\n12345Content-Length: 3\r\n\r\nabc"
 
-        Iterator(input.data).frames[ContentLength].map(_.utf8).to(List)
+        Iterator(input.in[Data]).frames[ContentLength].map(_.utf8).to(List)
       . assert(_ == List("12345", "abc"))
 
       test(m"Content-Length counts bytes, not characters"):
         val body = t"""{"text":"café"}"""
-        val input = t"Content-Length: ${body.data.length}\r\n\r\n"+body
+        val input = t"Content-Length: ${body.in[Data].length}\r\n\r\n"+body
 
-        Iterator(input.data).frames[ContentLength].map(_.utf8).to(List)
+        Iterator(input.in[Data]).frames[ContentLength].map(_.utf8).to(List)
       . assert(_ == List(t"""{"text":"café"}"""))
 
       test(m"Server-side events"):
@@ -110,13 +110,13 @@ object Tests extends Suite(m"Obligatory Tests"):
       test(m"Typed server-side events"):
         val input = t"event: one\ndata: foobar\ndata: baz\n\ndata: hello world"
 
-        Iterator(input).frames[Sse].map(_.decode[Sse]).to(List)
+        Iterator(input).frames[Sse].map(_.as[Sse]).to(List)
       . assert(_ == List(Sse("one", List("foobar", "baz")), Sse("message", List("hello world"))))
 
       test(m"Typed server-side events with more fields"):
         val input = t"event: one\nid: 123\ndata: foobar\ndata: baz\n\ndata: hello world\nretry: 54321"
 
-        Iterator(input).frames[Sse].map(_.decode[Sse]).to(List)
+        Iterator(input).frames[Sse].map(_.as[Sse]).to(List)
       . assert(_ == List(Sse("one", List("foobar", "baz"), "123"), Sse("message", List("hello world"), Unset, 54321L)))
 
     suite(m"gRPC message framing"):
@@ -211,7 +211,7 @@ object Tests extends Suite(m"Obligatory Tests"):
           runServer(serverSide, (hpack, id) =>
             List
               ( okHeaders(hpack, id),
-                Frame.Data(id, GrpcFraming.encode(Pong(t"pong").protobuf.encode), endStream = false),
+                Frame.Data(id, GrpcFraming.encode(Pong(t"pong").in[Protobuf].encode), endStream = false),
                 trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)
@@ -243,9 +243,9 @@ object Tests extends Suite(m"Obligatory Tests"):
           val (clientSide, serverSide) = pair()
 
           val body =
-            GrpcFraming.encode(Pong(t"a").protobuf.encode)
-            ++ GrpcFraming.encode(Pong(t"b").protobuf.encode)
-            ++ GrpcFraming.encode(Pong(t"c").protobuf.encode)
+            GrpcFraming.encode(Pong(t"a").in[Protobuf].encode)
+            ++ GrpcFraming.encode(Pong(t"b").in[Protobuf].encode)
+            ++ GrpcFraming.encode(Pong(t"c").in[Protobuf].encode)
 
           runServer(serverSide, (hpack, id) =>
             List
@@ -268,7 +268,7 @@ object Tests extends Suite(m"Obligatory Tests"):
           runServer(serverSide, (hpack, id) =>
             List
               ( okHeaders(hpack, id),
-                Frame.Data(id, GrpcFraming.encode(Pong(t"pong").protobuf.encode), endStream = false),
+                Frame.Data(id, GrpcFraming.encode(Pong(t"pong").in[Protobuf].encode), endStream = false),
                 trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)

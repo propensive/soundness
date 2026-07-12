@@ -54,7 +54,7 @@ import Http2.*
 object Http2Connection:
   // The client connection preface (RFC 7540 §3.5): a fixed octet sequence that
   // precedes the first SETTINGS frame in prior-knowledge h2c.
-  private[cordillera] val connectionPreface: Bytes = t"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n".data
+  private[cordillera] val connectionPreface: Bytes = t"PRI * HTTP/2.0\r\n\r\nSM\r\n\r\n".in[Bytes]
 
   // Our advertised SETTINGS: disable server push; a generous stream window.
   private[cordillera] val initialSettings: List[Setting] =

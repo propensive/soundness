@@ -45,12 +45,12 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
   def run(): Unit =
     def fileEntry(name: Text, content: Text): Tar.Entry =
       Tar.Entry.File
-       ( path  = name.decode[Relative on Tar],
+       ( path  = name.as[Relative on Tar],
          mode  = UnixMode(),
          user  = UnixUser(0),
          group = UnixGroup(0),
          mtime = 0.bits.u32,
-         data  = LazyList(content.data) )
+         data  = LazyList(content.in[Data]) )
 
     def bytesOf(stream: LazyList[Data]): Data = stream.foldLeft(IArray.empty[Byte])(_ ++ _)
 
@@ -99,11 +99,11 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == (t"amd64", t"linux"))
 
       test(m"config blob JSON uses the snake_case diff_ids key"):
-        image.imageConfig.json.show.s.contains("\"diff_ids\"")
+        image.imageConfig.in[Json].show.s.contains("\"diff_ids\"")
       . assert(_ == true)
 
       test(m"config blob JSON preserves the capitalised Cmd key"):
-        image.imageConfig.json.show.s.contains("\"Cmd\"")
+        image.imageConfig.in[Json].show.s.contains("\"Cmd\"")
       . assert(_ == true)
 
     suite(m"Manifest"):
@@ -124,11 +124,11 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
       . assert(_ == t"sha256:${image.configBytes.digest[Sha2[256]].serialize[Hex]}")
 
       test(m"manifest JSON renders the exact OCI media-type string"):
-        image.manifest.json.show.s.contains("\"application/vnd.oci.image.manifest.v1+json\"")
+        image.manifest.in[Json].show.s.contains("\"application/vnd.oci.image.manifest.v1+json\"")
       . assert(_ == true)
 
       test(m"manifest JSON round-trips through jacinta"):
-        image.manifest.json.as[Manifest]
+        image.manifest.in[Json].as[Manifest]
       . assert(_ == image.manifest)
 
     suite(m"OCI archive"):
@@ -152,7 +152,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"oci-layout declares image layout version 1.0.0"):
         layoutData.map(bytes => bytes.to(List))
-      . assert(_ == List(t"""{"imageLayoutVersion":"1.0.0"}""".data.to(List)))
+      . assert(_ == List(t"""{"imageLayoutVersion":"1.0.0"}""".in[Data].to(List)))
 
     suite(m"containerd over a gRPC loopback"):
       import threading.virtualThreading
@@ -214,7 +214,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
         supervise:
           val (clientSide, serverSide) = pair()
           val namespace = Promise[Text]()
-          val body = GrpcFraming.encode(VersionResponse(t"1.7.0", t"deadbeef").protobuf.encode)
+          val body = GrpcFraming.encode(VersionResponse(t"1.7.0", t"deadbeef").in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
@@ -235,7 +235,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val list = ListContainersResponse(List(Container(t"alpha", Map(t"tier" -> t"db")),
               Container(t"beta")))
 
-          val body = GrpcFraming.encode(list.protobuf.encode)
+          val body = GrpcFraming.encode(list.in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
@@ -255,7 +255,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val response =
             GetContainerResponse(Container(t"gamma", Map(t"x" -> t"y"), image = t"img:1"))
 
-          val body = GrpcFraming.encode(response.protobuf.encode)
+          val body = GrpcFraming.encode(response.in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
@@ -275,7 +275,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val list = ListNamespacesResponse(List(Namespace(t"default"),
               Namespace(t"k8s.io", Map(t"managed" -> t"true"))))
 
-          val body = GrpcFraming.encode(list.protobuf.encode)
+          val body = GrpcFraming.encode(list.in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
@@ -297,7 +297,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val list = ListImagesResponse(List(ImageRecord(t"docker.io/library/alpine:latest",
               Map(t"arch" -> t"amd64"), target)))
 
-          val body = GrpcFraming.encode(list.protobuf.encode)
+          val body = GrpcFraming.encode(list.in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
@@ -318,9 +318,9 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
           val container = Container(t"web", image = t"img:1",
               runtime = Runtime(t"io.containerd.runc.v2"),
-              spec = AnyMessage(t"oci-spec", t"hello".data))
+              spec = AnyMessage(t"oci-spec", t"hello".in[Data]))
 
-          val body = GrpcFraming.encode(CreateContainerResponse(container).protobuf.encode)
+          val body = GrpcFraming.encode(CreateContainerResponse(container).in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
@@ -330,13 +330,13 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val endpoint = Http2.Endpoint(Loopback(clientSide), t"localhost")
           val created = Containerd(endpoint, t"example").createContainer(container)
           (created.id, created.runtime.name, created.spec.typeUrl, created.spec.value.to(List))
-      . assert(_ == (t"web", t"io.containerd.runc.v2", t"oci-spec", t"hello".data.to(List)))
+      . assert(_ == (t"web", t"io.containerd.runc.v2", t"oci-spec", t"hello".in[Data].to(List)))
 
       test(m"createTask sends rootfs mounts and returns the task pid"):
         supervise:
           val (clientSide, serverSide) = pair()
           val namespace = Promise[Text]()
-          val body = GrpcFraming.encode(CreateTaskResponse(t"web", 4321).protobuf.encode)
+          val body = GrpcFraming.encode(CreateTaskResponse(t"web", 4321).in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
@@ -356,7 +356,7 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
           val list =
             ListTasksResponse(List(Workload(t"web", t"", 4321, ProcessStatus.Running.code)))
 
-          val body = GrpcFraming.encode(list.protobuf.encode)
+          val body = GrpcFraming.encode(list.in[Protobuf].encode)
           runServer(serverSide, namespace, body)
 
           case class Loopback(duplex: Duplex)
@@ -377,6 +377,6 @@ object Tests extends Suite(m"Embarcadero OCI Tests"):
 
       test(m"a Container timestamp round-trips and converts to an Aviation Instant"):
         val container = Container(t"svc", createdAt = embarcadero.Timestamp.of(moment))
-        val restored = LazyList(container.protobuf.encode).read[Container in Protobuf]
+        val restored = LazyList(container.in[Protobuf].encode).read[Container in Protobuf]
         restored.createdAt.instant[Instant over Posix]
       . assert(_ == moment)

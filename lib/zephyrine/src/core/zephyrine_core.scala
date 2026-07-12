@@ -136,17 +136,6 @@ extension [in, transport](consume stream: (Stream[in] over transport)^)
 
     try loop() finally stream.close()
 
-// Parameterless character transcoding, using the encoding in scope: `transcribe`
-// decodes a byte stream into a text stream through the `CharDecoder`, and
-// `inscribe` encodes a text stream back into bytes through the `CharEncoder`.
-extension (consume stream: (Stream[Data] over Credit)^)
-  def transcribe(using CharDecoder, Buffering): (Stream[Text] over Credit)^ =
-    stream.via(summon[CharDecoder])
-
-extension (consume stream: (Stream[Text] over Credit)^)
-  def inscribe(using CharEncoder, Buffering): (Stream[Data] over Credit)^ =
-    stream.via(summon[CharEncoder])
-
 extension [out, transport](consume intake: (Intake[out] over transport)^)
   // Push-composition: a differently-typed `Intake` which reports translated
   // demand, and whose commits step synchronously through the stage into

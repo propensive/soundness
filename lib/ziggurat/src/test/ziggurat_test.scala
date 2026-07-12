@@ -80,7 +80,7 @@ object Tests extends Suite(m"Ziggurat tests"):
 
     val payloads = labels.map: label =>
       val src = t"#!/bin/sh\necho 'hello from $label'\n"
-      Payload(label, src.data, gzip = true)
+      Payload(label, src.in[Data], gzip = true)
 
     val bundleBytes: Data = Xeq.installer(payloads)
 
@@ -131,14 +131,14 @@ object Tests extends Suite(m"Ziggurat tests"):
     :   (Text, Text, Text) =
       val bin = dir / t"bin-$label"
       bin.create[File]()
-      val bytes = body.data
+      val bytes = body.in[Data]
       bin.open: handle =>
         handle.write(LazyList(bytes))
       (label, t"file://$bin", hash.or(bytes.digest[Sha2[256]].serialize[Hex]))
 
     suite(m"onlineLauncher()"):
       val entries = labels.map(fileEntry(tempDir(), _, t"#!/bin/sh\n"))
-      val script: Data = Xeq.onlineLauncher(t"JAR".data, entries)
+      val script: Data = Xeq.onlineLauncher(t"JAR".in[Data], entries)
 
       test(m"output starts with bash shebang"):
         script.utf8.starts(t"#!/usr/bin/env bash")
@@ -160,7 +160,7 @@ object Tests extends Suite(m"Ziggurat tests"):
         val dir = tempDir()
         val entries = labels.map: label =>
           fileEntry(dir, label, t"#!/bin/sh\necho 'fetched $label'\nexit 0\n")
-        sh"${stageDownloader(t"JAR".data, entries)}".exec[Text]().trim
+        sh"${stageDownloader(t"JAR".in[Data], entries)}".exec[Text]().trim
       .assert(_ == t"fetched $hostLabel")
 
       test(m"rejects a binary whose hash does not match"):
@@ -168,7 +168,7 @@ object Tests extends Suite(m"Ziggurat tests"):
         val badHash = t"0"*64
         val entries = labels.map: label =>
           fileEntry(dir, label, t"#!/bin/sh\necho oops\nexit 0\n", badHash)
-        sh"${stageDownloader(t"JAR".data, entries)}".exec[Exit]()
+        sh"${stageDownloader(t"JAR".in[Data], entries)}".exec[Exit]()
       .assert(_ != Exit.Ok)
 
     suite(m"Packager validation"):
@@ -212,7 +212,7 @@ object Tests extends Suite(m"Ziggurat tests"):
       // A fake bare stub carrying the ETHRCFG marker so `Assembler.patch` can patch it,
       // followed by enough zero bytes for the 24-byte metadata and public-key regions.
       def writeStub(dir: Path on Linux, label: Text): Unit =
-        val file: Path on Linux = t"$dir/runner-$label".decode[Path on Linux]
+        val file: Path on Linux = t"$dir/runner-$label".as[Path on Linux]
 
         val bytes: Array[Byte] =
           Array.fill(64)(0.toByte)
@@ -228,7 +228,7 @@ object Tests extends Suite(m"Ziggurat tests"):
 
         val jar: Path on Linux = dir/t"app.jar"
         jar.create[File]()
-        jar.open(LazyList(t"JARBYTES".data).writeTo(_))
+        jar.open(LazyList(t"JARBYTES".in[Data]).writeTo(_))
 
         val out: Path on Linux = dir/t"hello"
 
@@ -253,7 +253,7 @@ object Tests extends Suite(m"Ziggurat tests"):
 
         val jar: Path on Linux = dir/t"app.jar"
         jar.create[File]()
-        jar.open(LazyList(t"JARBYTES".data).writeTo(_))
+        jar.open(LazyList(t"JARBYTES".in[Data]).writeTo(_))
 
         val out: Path on Linux = dir/t"hello"
         val hashes: Map[Text, Text] = labels.map(_ -> t"0"*64).to(Map)
@@ -313,7 +313,7 @@ class Hello { static void Main() { System.Console.WriteLine("hello from windows-
 Add-Type -TypeDefinition $$src -OutputAssembly ziggurat-test-hello.exe -OutputType ConsoleApplication
 """
         compilePs.open: handle =>
-          LazyList(psContent.data).writeTo(handle)
+          LazyList(psContent.in[Data]).writeTo(handle)
 
         val localExe = workDir / t"hello.exe"
 

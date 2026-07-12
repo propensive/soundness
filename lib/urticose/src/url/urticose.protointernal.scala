@@ -63,25 +63,25 @@ object protointernal:
         if !state.ends(t":")
         then throw UrlInterpolatorError(m"a port number must be specified after a colon")
 
-        try throwErrors((state+port.show).decode[HttpUrl]) catch
+        try throwErrors((state+port.show).as[HttpUrl]) catch
           case error: UrlError => throw UrlInterpolatorError(Message(error.message.text))
 
         state+port.show
 
       case UrlFragment.Textual(text) =>
-        try throwErrors((state+text.urlEncode).decode[HttpUrl]) catch
+        try throwErrors((state+text.urlEncode).as[HttpUrl]) catch
           case error: UrlError => throw UrlInterpolatorError(Message(error.message.text))
 
         state+text.urlEncode
 
       case UrlFragment.RawTextual(text) =>
-        try throwErrors((state+text.urlEncode).decode[HttpUrl]) catch
+        try throwErrors((state+text.urlEncode).as[HttpUrl]) catch
           case error: UrlError => throw UrlInterpolatorError(Message(error.message.text))
 
         state+text
 
     def complete(value: Text): Url[Label] =
-      try throwErrors(value.decode[Url[Label]]) catch
+      try throwErrors(value.as[Url[Label]]) catch
         case error: UrlError => throw UrlInterpolatorError(error.message)
 
 

@@ -232,7 +232,7 @@ final class Report(using Environment)(using palette: TestPalette):
   private def terseComplete()(using Stdio): Unit =
     import tableStyles.minimalTableStyle
 
-    val columns: Int = safely(Environment.columns.decode[Int]).or(120)
+    val columns: Int = safely(Environment.columns.as[Int]).or(120)
     val summaryLines = lines.summaries
     val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
     val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
@@ -375,7 +375,7 @@ final class Report(using Environment)(using palette: TestPalette):
           Column(e"$Bold(Max)", textAlign = TextAlignment.Right): s =>
             if s.count < 2 then e"" else s.maxTime )
 
-    val columns: Int = safely(Environment.columns.decode[Int]).or(120)
+    val columns: Int = safely(Environment.columns.as[Int]).or(120)
     val summaryLines = lines.summaries
     val githubActions = Ci.githubActions
 

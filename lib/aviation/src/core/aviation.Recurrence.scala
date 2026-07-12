@@ -107,9 +107,9 @@ object Recurrence:
               then digits.toInt
               else abort(RecurrenceError(text))
 
-          val span = period.decode[Timespan].asInstanceOf[Timespan of topic]
+          val span = period.as[Timespan].asInstanceOf[Timespan of topic]
 
-          Recurrence(start.decode[point], span, repetitions)
+          Recurrence(start.as[point], span, repetitions)
 
         case _ =>
           abort(RecurrenceError(text))

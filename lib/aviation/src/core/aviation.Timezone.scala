@@ -47,7 +47,7 @@ object Timezone:
   private val ids: Set[Text] =
     ju.TimeZone.getAvailableIDs.nn.iterator.map(_.nn).map(Text(_)).to(Set)
 
-  def apply(name: Text): Timezone raises TimezoneError = name.decode[Timezone]
+  def apply(name: Text): Timezone raises TimezoneError = name.as[Timezone]
 
   given decodable: Tactic[TimezoneError] => Timezone is Decodable in Text = name =>
     try jt.ZoneId.of(name.s) yet new Timezone(name)

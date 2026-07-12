@@ -101,7 +101,7 @@ object Xeq:
       builder.add(t"-----END CERTIFICATE-----\n")
 
     builder.add(t"#>\n")
-    builder.text.data(using charEncoders.utf8Encoder)
+    builder.text.in[Data](using charEncoders.utf8Encoder)
 
 
   def downloader(url: Text, hash: Text): Data =
@@ -123,7 +123,7 @@ object Xeq:
     builder.add(hash)
     builder.add('\n')
     builder.add(t"#>\n")
-    builder.text.data(using charEncoders.utf8Encoder)
+    builder.text.in[Data](using charEncoders.utf8Encoder)
 
 
   // The polyglot online launcher. Unlike `installer` (which embeds every bare stub), this
@@ -158,7 +158,7 @@ object Xeq:
     builder.add(rows.join(t","))
     builder.add('\n')
     builder.add(t"#>\n")
-    builder.text.data(using charEncoders.utf8Encoder)
+    builder.text.in[Data](using charEncoders.utf8Encoder)
 
 
   private def write(output: Path on Linux, data: Data): Unit = unsafely:
@@ -171,8 +171,8 @@ object Xeq:
 
 
   private def installerMain(output: Text, stagingDir: Text): Unit = unsafely:
-    val outputPath: Path on Linux = output.decode[Path on Linux]
-    val staging: Path on Linux = stagingDir.decode[Path on Linux]
+    val outputPath: Path on Linux = output.as[Path on Linux]
+    val staging: Path on Linux = stagingDir.as[Path on Linux]
 
     val children: List[Path on Linux] = staging.children.to(List)
 
@@ -205,7 +205,7 @@ object Xeq:
 
 
   private def downloaderMain(output: Text, url: Text, hash: Text): Unit = unsafely:
-    write(output.decode[Path on Linux], downloader(url, hash))
+    write(output.as[Path on Linux], downloader(url, hash))
 
 
   // Builds an online launcher from a JAR plus a runner manifest (`label<TAB>sha256` per
@@ -213,12 +213,12 @@ object Xeq:
   // <label>[.exe]`, where `baseUrl` is the published `runners-<version>` release.
   private def onlineLauncherMain(output: Text, jar: Text, manifest: Text, baseUrl: Text): Unit =
     unsafely:
-      val outputPath: Path on Linux = output.decode[Path on Linux]
-      val jarData: Data = jar.decode[Path on Linux].open(_.read[Data])
+      val outputPath: Path on Linux = output.as[Path on Linux]
+      val jarData: Data = jar.as[Path on Linux].open(_.read[Data])
       val base: Text = if baseUrl.ends(t"/") then baseUrl else t"$baseUrl/"
 
       val entries: List[(Text, Text, Text)] =
-        manifest.decode[Path on Linux].read[Text].cut(t"\n").map(_.trim)
+        manifest.as[Path on Linux].read[Text].cut(t"\n").map(_.trim)
         . filter(_ != t"")
         . map: line =>
             val fields: List[Text] = line.cut(t"\t").to(List)

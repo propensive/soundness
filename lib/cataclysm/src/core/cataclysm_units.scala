@@ -36,7 +36,7 @@ import quantitative.*
 
 // CSS's relative and viewport units are modelled as fresh Quantitative dimensions
 // with no `Ratio` to anything else, so they are deliberately inconvertible:
-// `2.0*Em + 1.0*Vh` and `(1.0*Px).in[Metres]` are compile errors. The physical
+// `2.0*Em + 1.0*Vh` and `(1.0*Px).to[Metres]` are compile errors. The physical
 // units (cm, mm, in, pt, pc) reuse Quantitative's `Distance` dimension and
 // interconvert with one another as usual.
 sealed trait CssPixel extends Dimension

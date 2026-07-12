@@ -258,7 +258,7 @@ object Zipfile:
           // against `Zip.Rules` (which also forbids the `.`/`..` traversal segments) to
           // make `InvalidName` reachable and reject Zip-Slip / path-traversing entry names.
           cleanName.cut(t"/").each(Name[Zip](_))
-          cleanName.decode[Path on Zip]
+          cleanName.as[Path on Zip]
 
       val payloadOffset = localOffset + prefixDelta
       if payloadOffset < earliestEntry then earliestEntry = payloadOffset
@@ -294,9 +294,9 @@ object Zipfile:
     // ZIP entry names are relative; absolute `Path on Zip` values encode with a leading
     // slash, which `java -jar` and the spec reject, so strip it.
     val base: Text = if encoded.starts(t"/") then encoded.skip(1) else encoded
-    (if entry.directory then t"$base/" else base).data
+    (if entry.directory then t"$base/" else base).in[Data]
 
-  private def textBytes(text: Text): Data = text.data
+  private def textBytes(text: Text): Data = text.in[Data]
 
   private def utf8Flag(name: Data): Int = if name.exists(_ < 0) then 0x800 else 0
 

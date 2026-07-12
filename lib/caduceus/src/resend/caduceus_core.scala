@@ -112,7 +112,7 @@ package couriers:
       . protect:
           url"https://api.resend.com/emails".submit
             ( Http.Post, authorization = Auth.Bearer(apiKey.key) )
-            ( request.json )
+            ( request.in[Json] )
 
           . receive[Json]
           . as[Resend.Receipt]

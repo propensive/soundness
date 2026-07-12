@@ -244,10 +244,10 @@ object Repackager:
         // The freshly-built entries — the rewritten manifest and the force-included bootstrap class
         // — are the only two that are compressed here; everything else is a verbatim copy.
         val manifestEntry: Zip.Entry =
-          Zip.Entry(manifestName.decode[Path on Zip], manifest2.serialize)
+          Zip.Entry(manifestName.as[Path on Zip], manifest2.serialize)
 
         val bootstrap: Zip.Entry =
-          Zip.Entry(bootstrapName.decode[Path on Zip], () => LazyList(bootstrapClass))
+          Zip.Entry(bootstrapName.as[Path on Zip], () => LazyList(bootstrapClass))
 
         // Keep the first occurrence of each entry name: the force-included bootstrap over any
         // bundled or inlined copy (an unpublished `burdock` dependency's cached JAR also

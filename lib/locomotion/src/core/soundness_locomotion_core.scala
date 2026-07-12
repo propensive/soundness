@@ -33,4 +33,4 @@
 package soundness
 
 export locomotion.{Protobuf, Protobuf2, protobufConversion, ProtobufError, Packable, WireType,
-    field, protobuf}
+    field}

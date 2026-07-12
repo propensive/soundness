@@ -92,7 +92,7 @@ object Path:
     // minted per call by `unsafely`, so the instance captures only the `radical` context.
     trusted => unsafely:
       given Radical on filesystem = radical
-      trusted.text.decode[Path on filesystem]
+      trusted.text.as[Path on filesystem]
 
 
   given instantiable: [filesystem: Filesystem]
@@ -100,7 +100,7 @@ object Path:
   =>  (tactic: Tactic[PathError])
   =>  (((Path on filesystem) is Instantiable across Paths from Text)^{tactic}) =
 
-    _.decode[Path on filesystem]
+    _.as[Path on filesystem]
 
 
   def unplatformed[root, topic <: Tuple](root: Text, descent: Text*): Path of topic under root =
@@ -194,7 +194,7 @@ case class Path(root: Text, descent: Text*) extends Limited, Topical, Planar:
             ((Relative on Plane) is Decodable in Text)^ )
   :   Path on Plane raises PathError =
 
-    safely(text.decode[Path on Plane]).or(safely(this + text.decode[Relative on Plane])).or:
+    safely(text.as[Path on Plane]).or(safely(this + text.as[Relative on Plane])).or:
       abort(PathError(_.InvalidRoot))
 
 

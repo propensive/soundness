@@ -174,9 +174,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
     // Example 2: UTF-8 decode (count decoded characters).
     suite(m"UTF-8 decode (4 MB)"):
-      bench(m"Soundness  transcribe")
+      bench(m"Soundness  via(CharDecoder)")
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.textData.stream.transcribe.memoize.s.length }
+        '{ turbulence.Benchmarks.textData.stream.via(summon[CharDecoder]).memoize.s.length }
 
       bench(m"FS2  text.utf8.decode")(target = 1*Second, operationSize = textSize):
         '{
@@ -251,11 +251,11 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
     // Chained example B: UTF-8 decode -> re-encode transcode roundtrip.
     suite(m"Chained: UTF-8 decode -> encode transcode (4 MB)"):
-      bench(m"Soundness  transcribe.inscribe")
+      bench(m"Soundness  via(dec).via(enc)")
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
         '{
             turbulence.Benchmarks.textData.stream
-            . transcribe.inscribe.memoize.length
+            . via(summon[CharDecoder]).via(summon[CharEncoder]).memoize.length
         }
 
       bench(m"FS2  utf8.decode.encode")(target = 1*Second, operationSize = textSize):
@@ -276,11 +276,11 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
     // Chained example C: gunzip -> UTF-8 decode -> count characters.
     suite(m"Chained: gunzip -> UTF-8 decode -> count (gzipped text)"):
-      bench(m"Soundness  decompress.transcribe")
+      bench(m"Soundness  decompress.via(summon[CharDecoder])")
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
         '{
             turbulence.Benchmarks.gzippedText.stream.decompress[Gzip]
-            . transcribe.memoize.s.length
+            . via(summon[CharDecoder]).memoize.s.length
         }
 
       bench(m"FS2  gunzip.utf8.decode")(target = 1*Second, operationSize = textSize):
@@ -416,9 +416,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
         '{
             turbulence.Benchmarks.textData.stream
-            . transcribe.inscribe
-            . transcribe.inscribe
-            . transcribe.memoize.s.length
+            . via(summon[CharDecoder]).via(summon[CharEncoder])
+            . via(summon[CharDecoder]).via(summon[CharEncoder])
+            . via(summon[CharDecoder]).memoize.s.length
         }
 
       bench(m"FS2  utf8 decode/encode x2.5")(target = 1*Second, operationSize = textSize):
@@ -449,9 +449,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
         '{
             turbulence.Benchmarks.textData.stream
-            . transcribe.inscribe
+            . via(summon[CharDecoder]).via(summon[CharEncoder])
             . serialize[Base64].deserialize[Base64]
-            . transcribe.memoize.s.length
+            . via(summon[CharDecoder]).memoize.s.length
         }
 
       bench(m"FS2  utf8/base64 chain")(target = 1*Second, operationSize = textSize):
@@ -473,7 +473,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
         '{
             turbulence.Benchmarks.textData.stream.drop(turbulence.Benchmarks.dropBytes)
-            . transcribe.inscribe
+            . via(summon[CharDecoder]).via(summon[CharEncoder])
             . take(turbulence.Benchmarks.takeBytes)
             . fold(0L)((total, _, _, count) => total + count)
         }

@@ -61,6 +61,6 @@ extension [fetchable: Fetchable](endpoint: fetchable)
 extension (url: into[HttpUrl])
   @targetName("withQuery")
   def query(query: Query): HttpUrl =
-    val query2 = url.query.let(query ++ _.decode[Query]).or(query)
+    val query2 = url.query.let(query ++ _.as[Query]).or(query)
     Url(url.origin, url.location, query2.encode, url.fragment)
 

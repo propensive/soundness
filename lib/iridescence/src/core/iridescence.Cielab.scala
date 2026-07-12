@@ -45,7 +45,7 @@ object Cielab:
 
       Xyz(x, y, z)
 
-  given srgb: Colorimetry => Cielab is Perceptual in Srgb = _.in[Xyz].in[Srgb]
+  given srgb: Colorimetry => Cielab is Perceptual in Srgb = _.to[Xyz].to[Srgb]
 
 case class Cielab(lightness: Double, blueYellow: Double, greenRed: Double) extends Color:
   type Form = Cielab

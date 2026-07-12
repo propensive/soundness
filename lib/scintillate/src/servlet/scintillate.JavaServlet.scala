@@ -70,9 +70,9 @@ open class JavaServlet(handle: HttpConnection ?=> Http.Response) extends jsh.Htt
 
     val httpRequest =
       Http.Request
-        ( method      = request.getMethod.nn.show.decode[Http.Method],
+        ( method      = request.getMethod.nn.show.as[Http.Method],
           version     = Http.Version.parse(request.getProtocol.nn.tt),
-          host        = request.getServerName.nn.tt.decode[Hostname],
+          host        = request.getServerName.nn.tt.as[Hostname],
           target      = target,
           body        = () => Stream(streamBody(request).iterator),
           textHeaders = headers )

@@ -357,7 +357,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == YRenamed(t"Ann", 1984))
 
       test(m"@name renames round-trip"):
-        YRenamed(t"Ann", 1984).yaml.as[YRenamed]
+        YRenamed(t"Ann", 1984).in[Yaml].as[YRenamed]
       . assert(_ == YRenamed(t"Ann", 1984))
 
       test(m"Decode a present Option field"):
@@ -678,77 +678,77 @@ object Tests extends Suite(m"Ypsiloid Tests"):
 
     suite(m"Encodable derivation"):
       test(m"Encode an Int"):
-        42.yaml.as[Int]
+        42.in[Yaml].as[Int]
       . assert(_ == 42)
 
       test(m"Encode a Long"):
-        42L.yaml.as[Long]
+        42L.in[Yaml].as[Long]
       . assert(_ == 42L)
 
       test(m"Encode a Double"):
-        3.14.yaml.as[Double]
+        3.14.in[Yaml].as[Double]
       . assert(_ == 3.14)
 
       test(m"Encode a Boolean"):
-        true.yaml.as[Boolean]
+        true.in[Yaml].as[Boolean]
       . assert(identity)
 
       test(m"Encode a Text"):
-        t"hello".yaml.as[Text]
+        t"hello".in[Yaml].as[Text]
       . assert(_ == t"hello")
 
       test(m"Encode a List"):
-        List(1, 2, 3).yaml.as[List[Int]]
+        List(1, 2, 3).in[Yaml].as[List[Int]]
       . assert(_ == List(1, 2, 3))
 
       test(m"Encode a Map"):
-        Map(t"a" -> 1, t"b" -> 2).yaml.as[Map[Text, Int]]
+        Map(t"a" -> 1, t"b" -> 2).in[Yaml].as[Map[Text, Int]]
       . assert(_ == Map(t"a" -> 1, t"b" -> 2))
 
       test(m"Encode Some(value)"):
-        (Some(42): Option[Int]).yaml.as[Option[Int]]
+        (Some(42): Option[Int]).in[Yaml].as[Option[Int]]
       . assert(_ == Some(42))
 
       test(m"Encode None to absent and decode back"):
-        WithOption(t"x", None).yaml.as[WithOption]
+        WithOption(t"x", None).in[Yaml].as[WithOption]
       . assert(_ == WithOption(t"x", None))
 
       test(m"Round-trip a simple case class"):
-        Person(t"Alice", 30).yaml.as[Person]
+        Person(t"Alice", 30).in[Yaml].as[Person]
       . assert(_ == Person(t"Alice", 30))
 
       test(m"Round-trip a nested case class"):
-        NamedOuter(t"x", Inner(7)).yaml.as[NamedOuter]
+        NamedOuter(t"x", Inner(7)).in[Yaml].as[NamedOuter]
       . assert(_ == NamedOuter(t"x", Inner(7)))
 
       test(m"Round-trip a list of case classes"):
-        List(Person(t"A", 1), Person(t"B", 2)).yaml.as[List[Person]]
+        List(Person(t"A", 1), Person(t"B", 2)).in[Yaml].as[List[Person]]
       . assert(_ == List(Person(t"A", 1), Person(t"B", 2)))
 
       val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
 
       test(m"Round-trip a type recursive through a List"):
-        tree.yaml.as[Tree]
+        tree.in[Yaml].as[Tree]
       . assert(_ == tree)
 
       test(m"A generic product over a recursive type stays structurally derived"):
-        Boxed(tree).yaml.as[Boxed[Tree]]
+        Boxed(tree).in[Yaml].as[Boxed[Tree]]
       . assert(_ == Boxed(tree))
 
       test(m"Encoded case class produces a Yaml.Ast.Mapping"):
-        Person(t"Alice", 30).yaml.root match
+        Person(t"Alice", 30).in[Yaml].root match
           case Yaml.Ast.Mapping(entries) => entries.length
           case _                        => -1
       . assert(_ == 2)
 
       test(m"Encoded list produces a Yaml.Ast.Sequence"):
-        List(1, 2, 3).yaml.root match
+        List(1, 2, 3).in[Yaml].root match
           case Yaml.Ast.Sequence(items) => items.length
           case _                       => -1
       . assert(_ == 3)
 
       test(m"Encoding skips Optional fields that are Unset/None"):
-        WithOption(t"x", None).yaml.root match
+        WithOption(t"x", None).in[Yaml].root match
           case Yaml.Ast.Mapping(entries) => entries.length
           case _                        => -1
       . assert(_ == 1)
@@ -758,22 +758,22 @@ object Tests extends Suite(m"Ypsiloid Tests"):
 
       test(m"Round-trip a sum-type variant (Circle)"):
         val shape: Shape = Shape.Circle(2.0)
-        shape.yaml.as[Shape]
+        shape.in[Yaml].as[Shape]
       . assert(_ == Shape.Circle(2.0))
 
       test(m"Round-trip a sum-type variant (Square)"):
         val shape: Shape = Shape.Square(5.0)
-        shape.yaml.as[Shape]
+        shape.in[Yaml].as[Shape]
       . assert(_ == Shape.Square(5.0))
 
       test(m"Round-trip a multi-field variant (Triangle)"):
         val shape: Shape = Shape.Triangle(3.0, 4.0, 5.0)
-        shape.yaml.as[Shape]
+        shape.in[Yaml].as[Shape]
       . assert(_ == Shape.Triangle(3.0, 4.0, 5.0))
 
       test(m"Encoded sum-type variant carries the `type` discriminator"):
         val shape: Shape = Shape.Circle(2.0)
-        shape.yaml.root match
+        shape.in[Yaml].root match
           case Yaml.Ast.Mapping(entries) =>
             entries.collectFirst:
               case (Yaml.Ast.Str(k), Yaml.Ast.Str(v)) if k == t"type" => v.s
@@ -782,7 +782,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == "Circle")
 
       test(m"@name renames a variant's `type` discriminator"):
-        (YStatus.Active(5): YStatus).yaml.root match
+        (YStatus.Active(5): YStatus).in[Yaml].root match
           case Yaml.Ast.Mapping(entries) =>
             entries.collectFirst:
               case (Yaml.Ast.Str(k), Yaml.Ast.Str(v)) if k == t"type" => v.s
@@ -791,7 +791,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       . assert(_ == "ok")
 
       test(m"@name variants round-trip"):
-        List(YStatus.Active(5), YStatus.Removed(9), YStatus.Pending(1)).map(_.yaml.as[YStatus])
+        List(YStatus.Active(5), YStatus.Removed(9), YStatus.Pending(1)).map(_.in[Yaml].as[YStatus])
       . assert(_ == List(YStatus.Active(5), YStatus.Removed(9), YStatus.Pending(1)))
 
       test(m"Decode a sum-type variant from a flow mapping"):
@@ -804,7 +804,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
 
       test(m"Round-trip a list of sum-type variants"):
         val shapes: List[Shape] = List(Shape.Circle(1.0), Shape.Square(2.0))
-        shapes.yaml.as[List[Shape]]
+        shapes.in[Yaml].as[List[Shape]]
       . assert(_ == List(Shape.Circle(1.0), Shape.Square(2.0)))
 
     suite(m"Direct accessors"):
@@ -872,15 +872,15 @@ object Tests extends Suite(m"Ypsiloid Tests"):
 
     suite(m"Yaml.make construction"):
       test(m"Yaml.make with one field"):
-        Yaml.make(name = t"Anna".yaml).as[Map[Text, Text]]
+        Yaml.make(name = t"Anna".in[Yaml]).as[Map[Text, Text]]
       . assert(_ == Map(t"name" -> t"Anna"))
 
       test(m"Yaml.make with multiple fields"):
-        Yaml.make(name = t"Anna".yaml, age = 30.yaml).as[Person]
+        Yaml.make(name = t"Anna".in[Yaml], age = 30.in[Yaml]).as[Person]
       . assert(_ == Person(t"Anna", 30))
 
       test(m"Nested Yaml.make"):
-        Yaml.make(inner = Yaml.make(n = 7.yaml)).as[Outer]
+        Yaml.make(inner = Yaml.make(n = 7.in[Yaml])).as[Outer]
       . assert(_ == Outer(Inner(7)))
 
     suite(m"Bytes decoder"):
@@ -1024,10 +1024,10 @@ object Tests extends Suite(m"Ypsiloid Tests"):
     suite(m"Lens"):
       import dynamicYamlAccess.enabled, yamlConversion.encodable
 
-      val org = Yaml.ast(NamedOuter(t"a", Inner(7)).yaml.root)
+      val org = Yaml.ast(NamedOuter(t"a", Inner(7)).in[Yaml].root)
 
       test(m"Lens update on a nested mapping"):
-        val updated = org.lens(_.inner.n = 99.yaml)
+        val updated = org.lens(_.inner.n = 99.in[Yaml])
         updated.as[NamedOuter]
       . assert(_ == NamedOuter(t"a", Inner(99)))
 
@@ -1048,8 +1048,8 @@ object Tests extends Suite(m"Ypsiloid Tests"):
 
       test(m"Lens.modify transforms a field through a function"):
         val lens = summon["n" is Lens from Yaml onto Yaml]
-        val inner = Yaml.ast(Inner(7).yaml.root)
-        lens.modify(inner)(yaml => (yaml.as[Int] + 1).yaml).as[Inner]
+        val inner = Yaml.ast(Inner(7).in[Yaml].root)
+        lens.modify(inner)(yaml => (yaml.as[Int] + 1).in[Yaml]).as[Inner]
       . assert(_ == Inner(8))
 
       test(m"Each optic updates every sequence element"):
@@ -1072,7 +1072,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       // Encode a value to `Yaml`, render it with the printer, parse the text
       // back, and decode: the full encode → print → parse → decode loop.
       def roundtrip[value: {Encodable in Yaml, Decodable in Yaml}](value: value): value =
-        value.yaml.show.read[Yaml].as[value]
+        value.in[Yaml].show.read[Yaml].as[value]
 
       // Print a parsed AST and re-parse it: print ∘ parse must be the identity
       // on the structural AST (compared by `deepEquals`).
@@ -1209,7 +1209,7 @@ object Tests extends Suite(m"Ypsiloid Tests"):
       import formatting.blockYamlFormatting
 
       test(m"serialises with an application/yaml media type"):
-        Person(t"Jon", 42).yaml.generic(0)
+        Person(t"Jon", 42).in[Yaml].generic(0)
       . assert(_.starts(t"application/yaml"))
 
       test(m"request body parses back via Instantiable"):

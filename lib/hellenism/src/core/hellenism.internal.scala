@@ -63,7 +63,7 @@ object internal extends Hellenism2:
 
     val name: String = context.valueOrAbort.parts.head
 
-    val path = safely(name.tt.decode[Path on Classpath]).or:
+    val path = safely(name.tt.as[Path on Classpath]).or:
       halt(m"hellenism: the path $name is not a valid classpath path")
 
     val relativeName = if name.startsWith("/") then name.substring(1) else name

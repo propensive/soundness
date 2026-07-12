@@ -53,7 +53,7 @@ object Tests extends Suite(m"Proscenium Tests"):
 
     test(m"Decode a classpath"):
       unsafely:
-        t"/scala/Option.class".decode[Path on Classpath]
+        t"/scala/Option.class".as[Path on Classpath]
     . assert(_ == Classpath / "scala" / "Option.class")
 
     test(m"check that a classpath file is streamable"):
@@ -70,6 +70,6 @@ object Tests extends Suite(m"Proscenium Tests"):
 
     test(m"load services from META-INF/services"):
       import systems.javaSystem
-      val classpath = unsafely(System.properties.java.`class`.path().decode[LocalClasspath])
+      val classpath = unsafely(System.properties.java.`class`.path().as[LocalClasspath])
       classpath.services[TestService].map(_.name)
     . assert(_ == Set(t"A", t"B"))

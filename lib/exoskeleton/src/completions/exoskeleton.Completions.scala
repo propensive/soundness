@@ -149,7 +149,7 @@ object Completions:
 
               val dirs =
                 dirNames.filter(_.trim != t"").map: dir =>
-                  safely(dir.decode[Path on Linux])
+                  safely(dir.as[Path on Linux])
 
                 . compact
 

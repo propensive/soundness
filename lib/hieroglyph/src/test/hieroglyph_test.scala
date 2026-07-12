@@ -96,7 +96,7 @@ object Tests extends Suite(m"Hieroglyph tests"):
       test(m"Ensure that decoding is finished"):
         import textSanitizers.strictSanitizer
         given CharEncoder = enc"UTF-8".encoder
-        capture[CharDecodeError](charDecoders.utf8Decoder.decoded(t"café".data.dropRight(1)))
+        capture[CharDecodeError](charDecoders.utf8Decoder.decoded(t"café".in[Data].dropRight(1)))
       . assert(_ == CharDecodeError(4, enc"UTF-8"))
 
     suite(m"Accruing decode errors"):

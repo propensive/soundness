@@ -45,7 +45,7 @@ object internal:
   def semver(context0: Expr[StringContext]): Macro[Semver] =
     val semver0 = context0.valueOrAbort match
       case StringContext(text*) => text match
-        case List(text: String) => safely(text.tt.decode[Semver])
+        case List(text: String) => safely(text.tt.as[Semver])
         case _                  => panic(m"did not expect more than one part in StringContext")
 
     val semver = semver0.or(halt(m"invalid semantic version"))

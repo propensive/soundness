@@ -99,9 +99,9 @@ def cli[bus <: Matchable](using executive: Executive)
     recover:
       case PropertyError(_) =>
         val jarFile: Path on Linux = System.properties.java.`class`.path[Text]().pipe: jarFile =>
-          safely(jarFile.decode[Path on Linux]).or:
+          safely(jarFile.as[Path on Linux]).or:
             val work: Path on Linux = workingDirectory
-            work + jarFile.decode[Relative on Linux]
+            work + jarFile.as[Relative on Linux]
 
         safely(System.properties.build.executable[Text]()).absolve match
           case Unset =>
@@ -126,14 +126,14 @@ def cli[bus <: Matchable](using executive: Executive)
             val javaPreferred = safely(System.properties.build.java.preferred[Int]()).or(24)
             val jdk = safely(System.properties.build.java.bundle[Text]() == t"jdk").or(false)
 
-            val path = safely(destination.decode[Path on Linux]).or:
+            val path = safely(destination.as[Path on Linux]).or:
               val work: Path on Linux = workingDirectory
-              work + destination.decode[Relative on Linux]
+              work + destination.as[Relative on Linux]
 
             val buildIdPath: Path on Classpath = Classpath/"build.id"
 
             val buildId: Long = safely(System.properties.build.id[Long]()).or:
-              safely(buildIdPath.read[Text].trim.decode[Long]).or(0L)
+              safely(buildIdPath.read[Text].trim.as[Long]).or(0L)
 
             val platformLabel: Text = safely(System.properties.build.target[Text]()).or:
               val osName = safely(System.properties.os.name[Text]().lower).or(t"")
@@ -165,7 +165,7 @@ def cli[bus <: Matchable](using executive: Executive)
             val runnersDir: Text =
               safely(System.properties.ethereal.runners[Text]()).or(t"$work/dist/runners")
 
-            val localRunner: Path on Linux = t"$runnersDir/$runnerName".decode[Path on Linux]
+            val localRunner: Path on Linux = t"$runnersDir/$runnerName".as[Path on Linux]
 
             val cacheDir: Path on Linux =
               Directories.cacheHome[Path on Linux]/t"ethereal"/t"runners"/Runners.version
@@ -210,9 +210,9 @@ def cli[bus <: Matchable](using executive: Executive)
                   IArray.fill(Assembler.PublicKeyLength)(0.toByte)   // upgrades blocked
 
                 case keyPath: Text =>
-                  val resolved: Path on Linux = safely(keyPath.decode[Path on Linux]).or:
+                  val resolved: Path on Linux = safely(keyPath.as[Path on Linux]).or:
                     val work: Path on Linux = workingDirectory
-                    work + keyPath.decode[Relative on Linux]
+                    work + keyPath.as[Relative on Linux]
 
                   val raw: Data = resolved.open(_.read[Data])
 
@@ -316,30 +316,30 @@ def cli[bus <: Matchable](using executive: Executive)
 
     val message: Optional[DaemonEvent] = line() match
       case t"e" =>
-        val pid: Pid = line().decode[Pid]
+        val pid: Pid = line().as[Pid]
         DaemonEvent.Stderr(pid)
 
       case t"s" =>
-        val pid: Pid = line().decode[Pid]
+        val pid: Pid = line().as[Pid]
         val name: Text = line()
 
         val signal: UnixSignal | WindowsSignal =
-          safely(name.decode[UnixSignal]).or(name.decode[WindowsSignal])
+          safely(name.as[UnixSignal]).or(name.as[WindowsSignal])
 
         DaemonEvent.Trap(pid, signal)
 
       case t"x" =>
-        DaemonEvent.Exit(line().decode[Pid])
+        DaemonEvent.Exit(line().as[Pid])
 
       case t"i" =>
         val stdin: Stdin = if line() == t"p" then Stdin.Pipe else Stdin.Terminal
-        val pid: Pid = Pid(line().decode[Int])
-        val userId: Int = line().decode[Int]
+        val pid: Pid = Pid(line().as[Int])
+        val userId: Int = line().as[Int]
         val username: Text = line()
         val login = Login(username, userId)
         val script: Text = line()
         val pwd: Text = line()
-        val count: Int = line().decode[Int]
+        val count: Int = line().as[Int]
         val textArguments: List[Text] = chunk().cut(t"\u0000").take(count).to(List)
         val environment: List[Text] = chunk().cut(t"\u0000").init.to(List)
 
@@ -372,7 +372,7 @@ def cli[bus <: Matchable](using executive: Executive)
         Log.fine(DaemonLogEvent.ExitStatusRequest(pid))
         val exitStatus: Exit = client(pid).exitPromise.await()
 
-        rawOut.write(exitStatus().show.data.mutable(using Unsafe))
+        rawOut.write(exitStatus().show.in[Data].mutable(using Unsafe))
         connection.close()
         clients.remove(pid)
         if terminatePid() == pid then termination
@@ -423,7 +423,7 @@ def cli[bus <: Matchable](using executive: Executive)
             if safely(Environment.colorterm[Text]) == t"truecolor" then ColorDepth.TrueColor
             else
               ColorDepth
-                ( safely(mute[ExecEvent](sh"tput colors".exec[Text]().decode[Int])).or(-1) )
+                ( safely(mute[ExecEvent](sh"tput colors".exec[Text]().as[Int])).or(-1) )
 
         val stdio: Stdio =
           Stdio
@@ -448,7 +448,7 @@ def cli[bus <: Matchable](using executive: Executive)
             ( pid,
               () => shutdown(pid),
               shellInput,
-              script.decode[Path on Local],
+              script.as[Path on Local],
               deliver(pid, _),
               clientState.bus.stream,
               name,
@@ -520,7 +520,7 @@ def cli[bus <: Matchable](using executive: Executive)
           Data()
 
       val buildId = safely(System.properties.build.id[Int]()).or:
-        safely((Classpath/"build.id").read[Text].trim.decode[Int]).or(0)
+        safely((Classpath/"build.id").read[Text].trim.as[Int]).or(0)
 
       buildFile.open(_.write(t"$buildId"))
       val pidValue = Process().pid.value.show

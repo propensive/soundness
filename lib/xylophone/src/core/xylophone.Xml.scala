@@ -541,7 +541,7 @@ object Xml extends Tag.Container
       type Result = HttpStreams.Content
 
       def genericize(xml: Xml): HttpStreams.Content =
-        (t"application/xml; charset=${encoder.encoding.name}", HttpStreams.Body(xml.show.data))
+        (t"application/xml; charset=${encoder.encoding.name}", HttpStreams.Body(xml.show.in[Data]))
 
   given instantiable: (schema: XmlSchema) => (tactic: Tactic[ParseError])
   =>  ((Xml is Instantiable across HttpRequests from Text)^{tactic}) =

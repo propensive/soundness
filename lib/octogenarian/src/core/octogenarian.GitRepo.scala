@@ -58,7 +58,7 @@ object GitRepo:
     ( using Tactic[PathError], Tactic[NameError], Tactic[GitError], Tactic[IoError] )
   :   GitRepo =
 
-    unsafely(path.generic.decode[Path on Linux]).pipe: path =>
+    unsafely(path.generic.as[Path on Linux]).pipe: path =>
       if !path.exists() then abort(GitError(RepoDoesNotExist))
 
       if (path / ".git").exists() then GitRepo((path / ".git"))
@@ -105,7 +105,7 @@ case class GitRepo(gitDir: Path on Linux):
       ( using GitCommand, WorkingDirectory, Tactic[GitError], Tactic[ExecError] )
     :   value logs GitEvent =
 
-      sh"$git $repoOptions config --get $variable".exec[Text]().decode[value]
+      sh"$git $repoOptions config --get $variable".exec[Text]().as[value]
 
   def tags()(using GitCommand, WorkingDirectory, Tactic[ExecError]): List[GitTag] logs GitEvent =
     sh"$git $repoOptions tag".exec[LazyList[Text]]().to(List).map(GitTag.unsafe(_))
@@ -384,7 +384,7 @@ case class GitRepo(gitDir: Path on Linux):
 
       block.collect:
         case r"worktree $path(.*)" if !isBare =>
-          val pathOnLinux = unsafely(path.decode[Path on Linux])
+          val pathOnLinux = unsafely(path.as[Path on Linux])
           Worktree(this, pathOnLinux)
 
 
@@ -399,7 +399,7 @@ case class GitRepo(gitDir: Path on Linux):
   :   Worktree raises NameError raises PathError logs GitEvent =
 
     val targetPath: Path on Linux =
-      try target.generic.decode[Path on Linux]
+      try target.generic.as[Path on Linux]
       catch case error: PathError => abort(GitError(WorktreeFailed))
 
     val detachOpt = if detach then sh"--detach" else sh""

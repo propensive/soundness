@@ -57,7 +57,7 @@ object Worktree:
     ( using Tactic[PathError], Tactic[NameError], Tactic[GitError], Tactic[IoError] )
   :   Worktree =
 
-    unsafely(path.generic.decode[Path on Linux]).pipe: path =>
+    unsafely(path.generic.as[Path on Linux]).pipe: path =>
       if !path.exists() then abort(GitError(RepoDoesNotExist))
 
       if (path / ".git").exists() then Worktree(GitRepo((path / ".git")), path)
@@ -157,7 +157,7 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
   :   Unit logs GitEvent =
 
     val relativePath =
-      safely(this.path.toward(file.generic.decode[Path on Linux])).or:
+      safely(this.path.toward(file.generic.as[Path on Linux])).or:
         abort(GitError(AddFailed))
 
     val command = sh"$git $repoOptions add $relativePath"
@@ -182,7 +182,7 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
   :   Unit logs GitEvent =
 
     val relativePath =
-      safely(this.path.toward(file.generic.decode[Path on Linux])).or:
+      safely(this.path.toward(file.generic.as[Path on Linux])).or:
         abort(GitError(ResetFailed))
 
     sh"$git $repoOptions reset HEAD -- $relativePath".exec[Exit]() match
@@ -198,10 +198,10 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
             Tactic[GitError] )
   :   Unit logs GitEvent =
 
-    val fromRel = safely(this.path.toward(from.generic.decode[Path on Linux])).or:
+    val fromRel = safely(this.path.toward(from.generic.as[Path on Linux])).or:
       abort(GitError(MvFailed))
 
-    val toRel = safely(this.path.toward(to.generic.decode[Path on Linux])).or:
+    val toRel = safely(this.path.toward(to.generic.as[Path on Linux])).or:
       abort(GitError(MvFailed))
 
     sh"$git $repoOptions mv $fromRel $toRel".exec[Exit]() match
@@ -291,7 +291,7 @@ case class Worktree(repo: GitRepo, path: Path on Linux):
   :   Worktree raises NameError raises PathError logs GitEvent =
 
     val target: Path on Linux =
-      try newPath.generic.decode[Path on Linux]
+      try newPath.generic.as[Path on Linux]
       catch case error: PathError => abort(GitError(WorktreeFailed))
 
     sh"$git $repoOptions worktree move ${this.path} $target".exec[Exit]() match

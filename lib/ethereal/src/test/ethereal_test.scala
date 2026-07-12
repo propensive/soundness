@@ -68,7 +68,7 @@ object Tests extends Suite(m"Ethereal Tests"):
         Xdg.runtimeDir[Path on Local].or(Xdg.stateHome[Path on Local]) / name
 
       safely:
-        val oldPid = sh"cat $stateDir/pid".exec[Text]().trim.decode[Pid]
+        val oldPid = sh"cat $stateDir/pid".exec[Text]().trim.as[Pid]
         Process(oldPid).abort()
       snooze(0.2*Second)
       sh"rm -f $stateDir/pid $stateDir/build $stateDir/socket $stateDir/fail".exec[Unit]()
@@ -349,13 +349,13 @@ object Tests extends Suite(m"Ethereal Tests"):
             . assert(_ == true)
 
             test(m"daemon restarts after socket file is deleted"):
-              val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim.decode[Pid]
+              val oldPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
               sh"rm -f $stateDir/socket".exec[Unit]()
               val deadline = jl.System.currentTimeMillis + 10000
               while safely(Process(oldPid).alive).or(false) && jl.System.currentTimeMillis < deadline
               do snooze(0.05*Second)
               sh"rm -f $stateDir/fail".exec[Unit]()
-              val newPid = sh"$tool '{admin}' pid".exec[Text]().trim.decode[Pid]
+              val newPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
               newPid != oldPid
 
             . assert(_ == true)
@@ -369,7 +369,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
             test(m"recovery after daemon is killed with SIGKILL"):
               sh"rm -f $stateDir/fail".exec[Unit]()
-              val pid = sh"$tool '{admin}' pid".exec[Text]().trim.decode[Pid]
+              val pid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
               Process(pid).abort()
               snooze(0.1*Second)
               sh"$tool echo recovered".exec[Text]()
@@ -378,7 +378,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
             test(m"stale pid file is cleaned up"):
               sh"$tool echo pretest".exec[Text]()
-              val daemonPid = sh"cat $stateDir/pid".exec[Text]().trim.decode[Pid]
+              val daemonPid = sh"cat $stateDir/pid".exec[Text]().trim.as[Pid]
               Process(daemonPid).abort()
               val deadline = jl.System.currentTimeMillis + 3000
               while safely(Process(daemonPid).alive).or(false)
@@ -447,7 +447,7 @@ object Tests extends Suite(m"Ethereal Tests"):
             test(m"build file contains a single integer build id"):
               sh"$tool echo probe".exec[Unit]()
               val content = sh"cat $stateDir/build".exec[Text]().trim
-              safely(content.decode[Long]).let(_ => true).or(false)
+              safely(content.as[Long]).let(_ => true).or(false)
 
             . assert(_ == true)
 
@@ -459,7 +459,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
             test(m"pid file contains a valid running PID"):
               sh"$tool".exec[Unit]()
-              val pid = sh"$tool '{admin}' pid".exec[Text]().trim.decode[Pid]
+              val pid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
               safely(Process(pid).alive).or(false)
 
             . assert(_ == true)
@@ -483,7 +483,7 @@ object Tests extends Suite(m"Ethereal Tests"):
 
             test(m"killall on the client name terminates the daemon"):
               sh"$tool".exec[Unit]()
-              val jvmPid = sh"$tool '{admin}' pid".exec[Text]().trim.decode[Pid]
+              val jvmPid = sh"$tool '{admin}' pid".exec[Text]().trim.as[Pid]
               sh"killall $name".exec[Exit]()
               val deadline = jl.System.currentTimeMillis + 3000
               while safely(Process(jvmPid).alive).or(false)

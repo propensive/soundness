@@ -90,7 +90,7 @@ object Tests extends Suite(m"Octogenarian Tests"):
     def writeFile(path: Path on Linux, content: Text): Unit =
       if !path.exists() then path.create[File]()
       path.open: handle =>
-        handle.write(LazyList(content.data))
+        handle.write(LazyList(content.in[Data]))
 
     def commitFile(worktree: Worktree, name: Text, content: Text, message: Text): GitHash =
       writeFile(worktree.path / name, content)

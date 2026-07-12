@@ -53,7 +53,7 @@ object Sse:
     import charEncoders.utf8Encoder
 
     Servable[LazyList[Sse]](_ => media"text/event-stream"): stream =>
-      Http.Body.Flowing(() => zephyrine.Stream(stream.map(_.encode.data).iterator))
+      Http.Body.Flowing(() => zephyrine.Stream(stream.map(_.encode.in[Data]).iterator))
 
   given framable: Text is Framable by Sse = input =>
     val cursor = Cursor(input)
@@ -101,7 +101,7 @@ object Sse:
             case "id"    => id = value
 
             case "retry" =>
-              retry = safely(value.decode[Long]).lest(SseError(SseError.Reason.BadRetryValue))
+              retry = safely(value.as[Long]).lest(SseError(SseError.Reason.BadRetryValue))
 
             case _ => raise(SseError(SseError.Reason.UnknownField))
 

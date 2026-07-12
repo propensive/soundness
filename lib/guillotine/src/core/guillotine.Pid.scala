@@ -44,7 +44,7 @@ object Pid:
   given encodable: Pid is Encodable in Text = _.toString.tt
 
   given sshAgentPid: (tactic: Tactic[NumberError]) => ((Variable["sshAgentPid", Pid])^{tactic}) =
-    text => Pid(text.decode[Int])
+    text => Pid(text.as[Int])
 
   given decodable: (tactic: Tactic[NumberError]) => ((Pid is Decodable in Text)^{tactic}) = text =>
     try Pid(text.s.toLong) catch case error: Exception =>

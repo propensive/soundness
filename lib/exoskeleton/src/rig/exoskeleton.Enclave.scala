@@ -79,13 +79,13 @@ object Enclave:
     :   result raises ExecError raises NumberError raises PathError =
 
       val completionScripts = sh"$path '{admin}' install".exec[Text]()
-      val pid = Pid(sh"$path '{admin}' pid".exec[Text]().trim.decode[Int])
+      val pid = Pid(sh"$path '{admin}' pid".exec[Text]().trim.as[Int])
       val tool = Tool(path, pid)
 
       block(using tool).also:
         sh"$path '{admin}' kill".exec[Exit]()
 
-        completionScripts.trim.lines.map(_.decode[Path on Linux]).each: item =>
+        completionScripts.trim.lines.map(_.as[Path on Linux]).each: item =>
           safely(item.delete())
 
 

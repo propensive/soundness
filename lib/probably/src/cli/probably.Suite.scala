@@ -57,31 +57,31 @@ abstract class Suite(suiteName: Message) extends Testable(suiteName):
 
     given palette: (theme: Theme) => TestPalette = new Palette:
       type Form = Srgb
-      val yellow:      Color in Srgb = theme.spectrum.yellow.in[Srgb]
-      val red:         Color in Srgb = theme.spectrum.red.in[Srgb]
-      val blue:        Color in Srgb = theme.spectrum.blue.in[Srgb]
+      val yellow:      Color in Srgb = theme.spectrum.yellow.to[Srgb]
+      val red:         Color in Srgb = theme.spectrum.red.to[Srgb]
+      val blue:        Color in Srgb = theme.spectrum.blue.to[Srgb]
 
       def warning:     Color in Srgb = yellow
-      def critical:    Color in Srgb = theme.spectrum.magenta.in[Srgb]
-      def benchmark:   Color in Srgb = theme.spectrum.cyan.in[Srgb]
+      def critical:    Color in Srgb = theme.spectrum.magenta.to[Srgb]
+      def benchmark:   Color in Srgb = theme.spectrum.cyan.to[Srgb]
       def mixed:       Color in Srgb = blue
       def informative: Color in Srgb = blue
       def cold:        Color in Srgb = mix(yellow, red, 0.2)
       def warm:        Color in Srgb = mix(yellow, red, 0.5)
       def hot:         Color in Srgb = mix(yellow, red, 0.8)
-      def accented:    Color in Srgb = theme.spectrum.cyan.in[Srgb]
+      def accented:    Color in Srgb = theme.spectrum.cyan.to[Srgb]
       def highlight:   Color in Srgb = accent(yellow)
-      def pass:        Color in Srgb = theme.spectrum.green.in[Srgb]
+      def pass:        Color in Srgb = theme.spectrum.green.to[Srgb]
       def fail:        Color in Srgb = red
 
       def aspirePass:  Color in Srgb =
-        mix(theme.spectrum.green.in[Srgb], theme.spectrum.cyan.in[Srgb], 0.5)
+        mix(theme.spectrum.green.to[Srgb], theme.spectrum.cyan.to[Srgb], 0.5)
 
       def aspireFail:  Color in Srgb = subdue(yellow, 0.5)
       def detail:      Color in Srgb = blue
-      def background:  Color in Srgb = theme.background.in[Srgb]
-      def foreground:  Color in Srgb = theme.foreground.in[Srgb]
-      def subdued:     Color in Srgb = subdue(theme.foreground.in[Srgb], 0.5)
+      def background:  Color in Srgb = theme.background.to[Srgb]
+      def foreground:  Color in Srgb = theme.foreground.to[Srgb]
+      def subdued:     Color in Srgb = subdue(theme.foreground.to[Srgb], 0.5)
       def unaccented:  Color in Srgb = subdued
       def positive:    Color in Srgb = pass
       def negative:    Color in Srgb = fail

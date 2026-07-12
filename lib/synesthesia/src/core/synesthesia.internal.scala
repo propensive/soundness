@@ -165,7 +165,7 @@ object internal:
                                     ( "result".tt ->
                                       $encoder.encode(${application.asExprOf[result]}) )
 
-                                output.json
+                                output.in[Json]
                               }
 
                           case None =>
@@ -217,7 +217,7 @@ object internal:
                                     given param is Decodable in Text = $decodable
                                     val key = ${Expr(param.name)}.tt
 
-                                    if input.defines(key) then input(key).decode[param]
+                                    if input.defines(key) then input(key).as[param]
                                     else
                                       provide[Tactic[McpError]]:
                                         abort(McpError(McpError.Reason.MissingParameter))
@@ -396,10 +396,10 @@ object internal:
                 val uiJson: Optional[Json] = $ui.let: resource =>
                   val ui =
                     Map
-                      ( t"visibility"  -> List(t"model", t"app").json,
-                        t"resourceUri" -> resource.json )
+                      ( t"visibility"  -> List(t"model", t"app").in[Json],
+                        t"resourceUri" -> resource.in[Json] )
 
-                  Map(t"ui" -> ui.json).json
+                  Map(t"ui" -> ui.in[Json]).in[Json]
 
                 Mcp.Tool
                   ( name         = ${Expr(method.name)},

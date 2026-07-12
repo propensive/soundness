@@ -52,6 +52,7 @@ import telekinesis.*
 import temporaryDirectories.systemTemporaryDirectory
 import turbulence.*
 import vacuous.*
+import zephyrine.memoize
 import webserverErrorPages.minimalErrorPage
 
 // Benchmarks for the raw-TCP HTTP/1.1 server. The wire-codec benchmarks (parse,
@@ -77,7 +78,7 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
         t"User-Agent: bench" )
 
     . join(t"", t"\r\n", t"\r\n\r\n")
-    . data
+    . in[Data]
 
   lazy val getRequestBytes: Array[Byte] = getRequest.mutable(using Unsafe)
 
@@ -105,7 +106,7 @@ object Benchmarks extends Suite(m"Scintillate socket-server benchmarks"):
 
   // Serialise a fixed response to bytes, forcing the whole stream.
   def serializeResponse(response: Http.Response): Int =
-    Http.Response.serialize(response).read[Data].length
+    Http.Response.serialize(response).memoize.length
 
   // Drive every pipelined request through the full connection loop into a null
   // sink: parse, frame body, dispatch, serialize, write, keep-alive bookkeeping.

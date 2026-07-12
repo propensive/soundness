@@ -34,7 +34,7 @@ package soundness
 
 export
   ypsiloid
-  . { Yaml, yaml, yamlConversion, YamlError, YamlPrimitive, DynamicYamlEnabler, dynamicYamlAccess,
+  . { Yaml, yamlConversion, YamlError, YamlPrimitive, DynamicYamlEnabler, dynamicYamlAccess,
       y, yp, YamlPath, YamlPathError }
 
 package formatting:

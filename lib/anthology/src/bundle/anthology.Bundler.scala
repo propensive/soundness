@@ -66,7 +66,7 @@ object Bundler:
       case classpath: LocalClasspath => classpath.entries
 
       case _ =>
-        unsafely(System.properties.java.`class`.path().decode[LocalClasspath]).entries)
+        unsafely(System.properties.java.`class`.path().as[LocalClasspath]).entries)
 
     LocalClasspath(entries*)
 
@@ -91,7 +91,7 @@ object Bundler:
         Zip.Entry(%.on[Zip] / "META-INF" / "MANIFEST.MF", manifest) ::
           classpath(directory).entries.to(List).flatMap:
           case ClasspathEntry.Directory(directory) =>
-            val root = directory.decode[Path on Linux]
+            val root = directory.as[Path on Linux]
             root.descendants.to(List).filter: entry => !omissions(entry.name)
             . map: file =>
               if file.entry() == Directory then Unset else file.open: handle =>

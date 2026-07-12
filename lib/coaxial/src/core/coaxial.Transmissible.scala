@@ -45,10 +45,10 @@ object Transmissible:
     value.iterator.stream
 
   given text: [text <: Text] => CharEncoder => text is Transmissible =
-    text => text.data.stream
+    text => summon[CharEncoder].encoded(text).stream
 
   given encoder: [message: Encodable in Text] => CharEncoder => message is Transmissible =
-    value => value.encode.data.stream
+    value => value.encode.in[Data].stream
 
 // One call to `serialize` yields the wire form of one message, as a fresh pull
 // endpoint. Transports with message framing (a UDP datagram, a WebSocket frame)

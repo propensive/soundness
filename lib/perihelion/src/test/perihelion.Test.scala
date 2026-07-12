@@ -295,7 +295,7 @@ object Tests extends Suite(m"Perihelion tests"):
         Frame.parse(Cursor[Data](LazyList(bytes).iterator))(using masking)
 
       test(m"A client-masked frame is readable by the server"):
-        val masked: Data = Masking.Client().outbound(Frame.Text(true, t"hi".data).encode)
+        val masked: Data = Masking.Client().outbound(Frame.Text(true, t"hi".in[Data]).encode)
         parseAs(Masking.Server, masked) match
           case Frame.Text(_, data) => data.utf8
           case _                   => t"?"
@@ -303,18 +303,18 @@ object Tests extends Suite(m"Perihelion tests"):
 
       test(m"A client masks with a fresh key each time"):
         val client = Masking.Client()
-        val frame = Frame.Text(true, t"hello".data).encode
+        val frame = Frame.Text(true, t"hello".in[Data]).encode
         client.outbound(frame) != client.outbound(frame)
       . assert(_ == true)
 
       test(m"A client accepts an unmasked server frame"):
-        parseAs(Masking.Client(), Frame.Text(true, t"hi".data).encode) match
+        parseAs(Masking.Client(), Frame.Text(true, t"hi".in[Data]).encode) match
           case Frame.Text(_, data) => data.utf8
           case _                   => t"?"
       . assert(_ == t"hi")
 
       test(m"A client rejects a masked server frame"):
-        val masked: Data = Masking.Client().outbound(Frame.Text(true, t"hi".data).encode)
+        val masked: Data = Masking.Client().outbound(Frame.Text(true, t"hi".in[Data]).encode)
         capture[WebsocketError](parseAs(Masking.Client(), masked)).reason
       . assert(_ == WebsocketError.Reason.Masked)
 
@@ -379,7 +379,7 @@ object Tests extends Suite(m"Perihelion tests"):
           out.flush()
           val head = readHead(in)
 
-          out.write(clientFrame(0x1, Ping(7).json.show.s.getBytes("UTF-8").nn))
+          out.write(clientFrame(0x1, Ping(7).in[Json].show.s.getBytes("UTF-8").nn))
           out.flush()
 
           val (opcode, replyBytes) = serverFrame(in)
@@ -401,10 +401,10 @@ object Tests extends Suite(m"Perihelion tests"):
 
           val server = SocketServer(port).handle:
             val websocket = webSocket(): (message: perihelion.Message) => Continue(())
-            websocket.channel.send(perihelion.Message.Text(Ping(7).json.show))
+            websocket.channel.send(perihelion.Message.Text(Ping(7).in[Json].show))
             websocket
 
-          val url = t"ws://localhost:$port/".decode[WsUrl]
+          val url = t"ws://localhost:$port/".as[WsUrl]
 
           val value = url.react(0): (ping: Ping over Json) =>
             Conclude(Ping(ping.value + 1).over[Json], ping.value)
@@ -423,7 +423,7 @@ object Tests extends Suite(m"Perihelion tests"):
             webSocket(): (ping: Ping over Json) =>
               Reply(Ping(ping.value + 1).over[Json], ())
 
-          val url = t"ws://localhost:$port/".decode[WsUrl]
+          val url = t"ws://localhost:$port/".as[WsUrl]
 
           val handle: (state: Int) ?=> (Ping over Json) => Control[Int] =
             ping => Conclude(Ping(0).over[Json], ping.value)
@@ -447,7 +447,7 @@ object Tests extends Suite(m"Perihelion tests"):
               Reply(Ping(ping.value + 1).over[Json], ())
 
           given Tls = Tls(clientContext, verify = false)
-          val url = t"wss://localhost:$port/".decode[WsUrl]
+          val url = t"wss://localhost:$port/".as[WsUrl]
 
           val handle: (state: Int) ?=> (Ping over Json) => Control[Int] =
             ping => Conclude(Ping(0).over[Json], ping.value)

@@ -85,8 +85,8 @@ object Tests extends Suite(m"Profanity Tests"):
                 case Argument("line-editor-sized") :: Argument(w) :: Argument(h) :: Nil =>
                   execute:
                     interactive: terminal ?=>
-                      terminal.columns = w.decode[Int]
-                      terminal.rows = h.decode[Int]
+                      terminal.columns = w.as[Int]
+                      terminal.rows = h.as[Int]
                       Out.println(t"READY")
                       LineEditor().ask: result =>
                         Out.println(t"RESULT:$result")
@@ -103,8 +103,8 @@ object Tests extends Suite(m"Profanity Tests"):
                 case Argument("select-menu-long-sized") :: Argument(w) :: Argument(h) :: Nil =>
                   execute:
                     interactive: terminal ?=>
-                      terminal.columns = w.decode[Int]
-                      terminal.rows = h.decode[Int]
+                      terminal.columns = w.as[Int]
+                      terminal.rows = h.as[Int]
                       Out.println(t"READY")
                       val opts = List(t"first", t"averyverylongoptionnamethatwraps", t"third")
                       SelectMenu(opts, t"first").ask: result =>

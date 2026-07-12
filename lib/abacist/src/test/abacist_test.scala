@@ -94,7 +94,7 @@ object Tests extends Suite(m"Abacist Tests"):
 
       test(m"Convert a Quanta to a Quantity in pounds"):
         val weight: Weight = Quanta(5, 6)
-        weight.quantity.in[Pounds]
+        weight.quantity.to[Pounds]
       . assert(_ == 5.375*Pound)
 
       test(m"Add two Quantas"):

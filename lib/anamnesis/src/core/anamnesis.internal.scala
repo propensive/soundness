@@ -54,7 +54,7 @@ object internal:
     given decodable: [entity <: Entity: Referenceable] => (entity.Operand is Decodable in Text)
     =>  Reference[entity] is Decodable in Text =
 
-      _.decode
+      _.as
 
 
     def apply[entity <: Entity](entity: Entity): Reference[entity] = entity.ref

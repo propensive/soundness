@@ -128,7 +128,7 @@ object Installer:
         val command: Text = service.script
         val scriptPath = mute[ExecEvent](sh"sh -c 'command -v $command'".exec[Text]())
 
-        if safely(scriptPath.decode[Path on Linux]) == service.executable && !force
+        if safely(scriptPath.as[Path on Linux]) == service.executable && !force
         then Result.AlreadyOnPath(command, service.executable.encode)
         else
           val payloadSize: Bytes = Bytes(System.properties.ethereal.payloadSize[Int]())

@@ -74,7 +74,7 @@ object Tests extends Suite(m"Revolution Tests"):
       for version <- valid do
         test(m"Roundtrip $version"):
           import strategies.throwUnsafely
-          version.decode[Semver].encode
+          version.as[Semver].encode
         . assert(_ == version)
 
       val invalid =
@@ -122,7 +122,7 @@ object Tests extends Suite(m"Revolution Tests"):
 
       for version <- invalid do
         test(m"Parser rejects ${version.keep(20)}"):
-          safely(version.decode[Semver])
+          safely(version.as[Semver])
         . assert(_.absent)
 
     suite(m"Semantic version precedence"):

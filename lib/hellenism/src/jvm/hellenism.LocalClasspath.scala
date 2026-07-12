@@ -84,7 +84,7 @@ object LocalClasspath:
   =>  ((LocalClasspath is Addable by path to LocalClasspath)^{pathTactic, ioTactic}) =
 
     (classpath, path) =>
-      path.generic.decode[Path on Linux].pipe: path =>
+      path.generic.as[Path on Linux].pipe: path =>
         val entry: ClasspathEntry.Directory | ClasspathEntry.Jar = path.entry() match
           case Directory => ClasspathEntry.Directory(path.encode)
           case _         => ClasspathEntry.Jar(path.encode)

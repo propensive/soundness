@@ -53,4 +53,4 @@ package logFormats:
       case Level.Warn => t"WARNING"
       case Level.Fail => t"ERROR"
 
-    GcpLog(severity, event.text).json.show
+    GcpLog(severity, event.text).in[Json].show

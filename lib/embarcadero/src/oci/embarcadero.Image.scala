@@ -109,14 +109,14 @@ case class Image
   def archive: Tarfile =
     def entry(path: Text, content: Data): Tar.Entry =
       Tar.Entry.File
-        ( path  = path.decode[Relative on Tar],
+        ( path  = path.as[Relative on Tar],
           mode  = UnixMode(),
           user  = UnixUser(0),
           group = UnixGroup(0),
           mtime = 0.bits.u32,
           data  = LazyList(content) )
 
-    val layoutEntry = entry(t"oci-layout", t"""{"imageLayoutVersion":"1.0.0"}""".data)
+    val layoutEntry = entry(t"oci-layout", t"""{"imageLayoutVersion":"1.0.0"}""".in[Data])
     val indexEntry  = entry(t"index.json", indexBytes)
 
     val blobEntries = blobs.map: (digest, content) =>

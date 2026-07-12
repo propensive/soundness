@@ -67,7 +67,7 @@ extends RequestServable:
   // connection is closed rather than read in full to reach the next request.
   private val drainLimit: Int = 65536
 
-  private val continueResponse: Data = t"HTTP/1.1 100 Continue\r\n\r\n".data
+  private val continueResponse: Data = t"HTTP/1.1 100 Continue\r\n\r\n".in[Data]
 
   private def writeAll(out: ji.OutputStream, stream: Stream[Data] over Credit)
   :   Unit raises StreamError =

@@ -57,7 +57,7 @@ object HttpConnection:
     val uri = exchange.getRequestURI.nn
     val query = Optional(uri.getQuery)
     val target = uri.getPath.nn.tt+query.let(t"?"+_.tt).or(t"")
-    val method = exchange.getRequestMethod.nn.show.decode[Http.Method]
+    val method = exchange.getRequestMethod.nn.show.as[Http.Method]
 
     val headers: List[Http.Header] =
       exchange.getRequestHeaders.nn.asScala.view.mapValues(_.nn.asScala.to(List)).flatMap: pair =>
@@ -73,7 +73,7 @@ object HttpConnection:
       Optional(uri.getHost).let(_.tt).or:
         exchange.getLocalAddress.nn.getAddress.nn.getCanonicalHostName.nn.tt
 
-      . decode[Hostname]
+      . as[Hostname]
 
     lazy val in = exchange.getRequestBody.nn
 

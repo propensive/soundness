@@ -73,7 +73,7 @@ case class Boxed[value](@field(1) value: value) derives CanEqual
 object Tests extends Suite(m"Locomotion Protobuf Tests"):
   def run(): Unit =
     def wire[value: Encodable in Protobuf](value: value): List[Int] =
-      value.protobuf.encode.to(List).map(_.toInt & 0xff)
+      value.in[Protobuf].encode.to(List).map(_.toInt & 0xff)
 
     suite(m"Wire-format golden vectors"):
       test(m"a single varint field encodes to the canonical bytes"):
@@ -90,36 +90,36 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
 
     suite(m"Round-trips"):
       test(m"single int field"):
-        LazyList(Sample(150).protobuf.encode).read[Sample in Protobuf]
+        LazyList(Sample(150).in[Protobuf].encode).read[Sample in Protobuf]
       . assert(_ == Sample(150))
 
       test(m"two int fields, one at its default"):
-        LazyList(Point(0, 5).protobuf.encode).read[Point in Protobuf]
+        LazyList(Point(0, 5).in[Protobuf].encode).read[Point in Protobuf]
       . assert(_ == Point(0, 5))
 
       test(m"string and int fields"):
-        LazyList(Person(t"Alice", 30).protobuf.encode).read[Person in Protobuf]
+        LazyList(Person(t"Alice", 30).in[Protobuf].encode).read[Person in Protobuf]
       . assert(_ == Person(t"Alice", 30))
 
       test(m"read[Protobuf] then as[T] (two-step)"):
-        LazyList(Person(t"Alice", 30).protobuf.encode).read[Protobuf].as[Person]
+        LazyList(Person(t"Alice", 30).in[Protobuf].encode).read[Protobuf].as[Person]
       . assert(_ == Person(t"Alice", 30))
 
       test(m"nested message"):
-        LazyList(Wrapper(Point(3, 4), t"origin").protobuf.encode).read[Wrapper in Protobuf]
+        LazyList(Wrapper(Point(3, 4), t"origin").in[Protobuf].encode).read[Wrapper in Protobuf]
       . assert(_ == Wrapper(Point(3, 4), t"origin"))
 
       test(m"sparse field numbers"):
-        LazyList(Sparse(9, t"x").protobuf.encode).read[Sparse in Protobuf]
+        LazyList(Sparse(9, t"x").in[Protobuf].encode).read[Sparse in Protobuf]
       . assert(_ == Sparse(9, t"x"))
 
     suite(m"Repeated fields"):
       test(m"repeated strings round-trip in order"):
-        LazyList(Tags(List(t"a", t"b", t"c")).protobuf.encode).read[Tags in Protobuf]
+        LazyList(Tags(List(t"a", t"b", t"c")).in[Protobuf].encode).read[Tags in Protobuf]
       . assert(_ == Tags(List(t"a", t"b", t"c")))
 
       test(m"repeated ints round-trip, keeping default elements"):
-        LazyList(Numbers(List(0, 1, 2)).protobuf.encode).read[Numbers in Protobuf]
+        LazyList(Numbers(List(0, 1, 2)).in[Protobuf].encode).read[Numbers in Protobuf]
       . assert(_ == Numbers(List(0, 1, 2)))
 
       test(m"repeated ints are packed into one length-delimited field"):
@@ -139,31 +139,31 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
 
       test(m"a type recursive through a List round-trips"):
-        LazyList(tree.protobuf.encode).read[Protobuf].as[Tree]
+        LazyList(tree.in[Protobuf].encode).read[Protobuf].as[Tree]
       . assert(_ == tree)
 
       test(m"a generic product over a recursive type stays structurally derived"):
-        LazyList(Boxed(tree).protobuf.encode).read[Protobuf].as[Boxed[Tree]]
+        LazyList(Boxed(tree).in[Protobuf].encode).read[Protobuf].as[Boxed[Tree]]
       . assert(_ == Boxed(tree))
 
     suite(m"Optional presence"):
       test(m"a set optional round-trips"):
-        LazyList(MaybeName(t"set").protobuf.encode).read[MaybeName in Protobuf]
+        LazyList(MaybeName(t"set").in[Protobuf].encode).read[MaybeName in Protobuf]
       . assert(_ == MaybeName(t"set"))
 
       test(m"an unset optional writes nothing and round-trips to Unset"):
-        LazyList(MaybeName(Unset).protobuf.encode).read[MaybeName in Protobuf]
+        LazyList(MaybeName(Unset).in[Protobuf].encode).read[MaybeName in Protobuf]
       . assert(_ == MaybeName(Unset))
 
     suite(m"Sum types (oneof)"):
       test(m"the Circle variant round-trips"):
         val shape: Shape = Shape.Circle(5)
-        LazyList(shape.protobuf.encode).read[Shape in Protobuf]
+        LazyList(shape.in[Protobuf].encode).read[Shape in Protobuf]
       . assert(_ == Shape.Circle(5))
 
       test(m"the Rectangle variant round-trips"):
         val shape: Shape = Shape.Rectangle(3, 4)
-        LazyList(shape.protobuf.encode).read[Shape in Protobuf]
+        LazyList(shape.in[Protobuf].encode).read[Shape in Protobuf]
       . assert(_ == Shape.Rectangle(3, 4))
 
     suite(m"Field-number fallback"):
@@ -172,14 +172,14 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       . assert(_ == List(0x08, 0x96))
 
       test(m"unannotated message round-trips"):
-        LazyList(Unnumbered(7, 9).protobuf.encode).read[Unnumbered in Protobuf]
+        LazyList(Unnumbered(7, 9).in[Protobuf].encode).read[Unnumbered in Protobuf]
       . assert(_ == Unnumbered(7, 9))
 
     suite(m"Typed integer encodings"):
       val typed = Typed(7.bits.u32, 8L.bits.u64, -3.bits.s32, -4L.bits.s64, 5.bits, 6L.bits)
 
       test(m"all typed integers round-trip"):
-        LazyList(typed.protobuf.encode).read[Typed in Protobuf]
+        LazyList(typed.in[Protobuf].encode).read[Typed in Protobuf]
       . assert(_ == typed)
 
       test(m"sint32 uses zig-zag (field 3, -1 ⇒ tag 0x18, 0x01)"):
@@ -193,12 +193,12 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
     suite(m"Maps"):
       test(m"a string→string map round-trips"):
         val labels = Labels(Map(t"a" -> t"1", t"b" -> t"2"))
-        LazyList(labels.protobuf.encode).read[Labels in Protobuf]
+        LazyList(labels.in[Protobuf].encode).read[Labels in Protobuf]
       . assert(_ == Labels(Map(t"a" -> t"1", t"b" -> t"2")))
 
       test(m"a string→int map round-trips"):
         val counts = Counts(Map(t"x" -> 10, t"y" -> 20))
-        LazyList(counts.protobuf.encode).read[Counts in Protobuf]
+        LazyList(counts.in[Protobuf].encode).read[Counts in Protobuf]
       . assert(_ == Counts(Map(t"x" -> 10, t"y" -> 20)))
 
       test(m"an empty map writes nothing"):
@@ -237,11 +237,11 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
 
     suite(m"HTTP content-type integration"):
       test(m"serialises with the application/protobuf media type"):
-        Person(t"Alice", 30).protobuf.generic(0)
+        Person(t"Alice", 30).in[Protobuf].generic(0)
       . assert(_ == t"application/protobuf")
 
       test(m"request/response body round-trips"):
-        val message = Person(t"Alice", 30).protobuf
+        val message = Person(t"Alice", 30).in[Protobuf]
         message.generic(1).read[Person in Protobuf]
       . assert(_ == Person(t"Alice", 30))
 
@@ -249,10 +249,10 @@ object Tests extends Suite(m"Locomotion Protobuf Tests"):
       import protobufConversion.encodable
       // Protobuf is number-keyed: the `Ordinal` selects a field by number (Prim =
       // field 1). Wrapper encodes `point` at field 1 and `label` at field 2.
-      def wrapper: Protobuf = Wrapper(Point(3, 4), t"origin").protobuf
+      def wrapper: Protobuf = Wrapper(Point(3, 4), t"origin").in[Protobuf]
 
       test(m"field optic replaces a sub-message field by number"):
-        wrapper.lens(_(Prim) = Point(7, 8).protobuf).as[Wrapper]
+        wrapper.lens(_(Prim) = Point(7, 8).in[Protobuf]).as[Wrapper]
       . assert(_ == Wrapper(Point(7, 8), t"origin"))
 
       test(m"field optic leaves other fields unchanged"):

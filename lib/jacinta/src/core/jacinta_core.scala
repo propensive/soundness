@@ -211,7 +211,6 @@ given showable: (formatting: Json.Formatting) => Json.Ast is Showable = ast =>
     recur(ast, 1)
     if formatting.trailingNewline then producer.put("\n")
 
-extension [entity: Encodable in Json](value: entity) def json: Json = value.encode
 
 extension (inline context: StringContext)
   transparent inline def j: Interpolation = interpolation[Json](context)

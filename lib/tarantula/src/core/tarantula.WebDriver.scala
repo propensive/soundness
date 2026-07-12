@@ -80,7 +80,7 @@ case class WebDriver(server: Navigator#Server):
         url"http://localhost:${server.port}/session/$sessionId/element/$elementId/$address"
         . submit()(content)
         . read[Text]
-        . decode[Json]
+        . as[Json]
 
       def click(): Unit logs HttpEvent = post(t"click", t"{}".read[Json])
       def clear(): Unit logs HttpEvent = post(t"clear", t"{}".read[Json])
@@ -90,13 +90,13 @@ case class WebDriver(server: Navigator#Server):
 
       def value(text: Text): Unit logs HttpEvent =
         case class Data(text: Text)
-        post(t"value", Data(text).json)
+        post(t"value", Data(text).in[Json])
 
       @targetName("at")
       infix def / [element: Focusable](value: element): List[Element] logs HttpEvent =
         case class Data(`using`: Text, value: Text)
 
-        post(t"elements", Data(element.strategy, element.focus(value)).json)
+        post(t"elements", Data(element.strategy, element.focus(value)).in[Json])
         . value
         . as[List[Json]]
         . map(_(Wei).as[Text])
@@ -105,7 +105,7 @@ case class WebDriver(server: Navigator#Server):
       def element[element: Focusable](value: element): Element logs HttpEvent =
         case class Data(`using`: Text, value: Text)
 
-        val e = post(t"element", Data(element.strategy, element.focus(value)).json)
+        val e = post(t"element", Data(element.strategy, element.focus(value)).in[Json])
         Element(e.value.selectDynamic(Wei.s).as[Text])
 
     private def get(address: Text): Json logs HttpEvent = safe:
@@ -119,11 +119,11 @@ case class WebDriver(server: Navigator#Server):
       given online: Online = Online
       url"http://localhost:${server.port}/session/$sessionId/$address".submit()(content)
       . read[Text]
-      . decode[Json]
+      . as[Json]
 
     def navigateTo[url: Abstractable across Urls to Text](url: url): Json logs HttpEvent =
       case class Data(url: Text)
-      post(t"url", Data(url.generic).json)
+      post(t"url", Data(url.generic).in[Json])
 
     def refresh(): Unit logs HttpEvent = post(t"refresh", t"{}".read[Json]).as[Json]
     def forward(): Unit logs HttpEvent = post(t"forward", t"{}".read[Json]).as[Json]
@@ -138,7 +138,7 @@ case class WebDriver(server: Navigator#Server):
 
       case class Data(`using`: Text, value: Text)
 
-      post(t"elements", Data(element.strategy, element.focus(value)).json)
+      post(t"elements", Data(element.strategy, element.focus(value)).in[Json])
       . value
       . as[List[Json]]
       . map(_(Wei).as[Text])
@@ -147,7 +147,7 @@ case class WebDriver(server: Navigator#Server):
     def element[element: Focusable](value: element): Element logs HttpEvent =
       case class Data(`using`: Text, value: Text)
 
-      val e = post(t"element", Data(element.strategy, element.focus(value)).json)
+      val e = post(t"element", Data(element.strategy, element.focus(value)).in[Json])
 
       Element(e.value.selectDynamic(Wei.s).as[Text])
 
@@ -158,6 +158,6 @@ case class WebDriver(server: Navigator#Server):
     given online: Online = Online
 
     val url = url"http://localhost:${server.port}/session"
-    val json = url.submit()(t"""{"capabilities":{}}""".read[Json]).read[Text].decode[Json]
+    val json = url.submit()(t"""{"capabilities":{}}""".read[Json]).read[Text].as[Json]
 
     Session(json.value.sessionId.as[Text])

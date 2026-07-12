@@ -131,7 +131,7 @@ object Rrule:
         field(t"FREQ").lay(abort(RruleError(text)))(frequencyOf(_, text)),
         field(t"INTERVAL").lay(1)(intOf(_, text)),
         field(t"COUNT").lay(Unset)(intOf(_, text)),
-        field(t"UNTIL").lay(Unset)(_.decode[point]),
+        field(t"UNTIL").lay(Unset)(_.as[point]),
         field(t"BYMONTH").lay(Nil)(ints(_, text).map { n => Month.fromOrdinal(n - 1) }),
         field(t"BYMONTHDAY").lay(Nil)(ints(_, text)),
         field(t"BYDAY").lay(Nil) { value => value.cut(t",").to(List).map(dayOf(_, text)) },

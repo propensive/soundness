@@ -105,7 +105,7 @@ object Tests extends Suite(m"Xylophone tests"):
 
     test(m"extract email address"):
       x"""<email>test@example.com</email>""".as[EmailAddress]
-    . assert(_ == t"test@example.com".decode[EmailAddress])
+    . assert(_ == t"test@example.com".as[EmailAddress])
 
     suite(m"Element parsing"):
       test(m"Empty self-closing element"):

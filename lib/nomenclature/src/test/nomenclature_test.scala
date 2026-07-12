@@ -155,12 +155,12 @@ object Tests extends Suite(m"Nomenclature tests"):
 
     test(m"Decode a friendly name to a moniker"):
       given (Vocabulary over Session) = Vocabulary(adjectives, animals)
-      t"brilliant-leopard".decode[Moniker over Session].ordinal
+      t"brilliant-leopard".as[Moniker over Session].ordinal
     . assert(_ == 10351)
 
     test(m"Round-trip a moniker through its name"):
       given (Vocabulary over Session) = Vocabulary(adjectives, animals)
-      t"brilliant-leopard".decode[Moniker over Session].encode
+      t"brilliant-leopard".as[Moniker over Session].encode
     . assert(_ == t"brilliant-leopard")
 
     test(m"Vocabulary size is the product of the word counts"):
@@ -180,10 +180,10 @@ object Tests extends Suite(m"Nomenclature tests"):
 
     test(m"A malformed name cannot be decoded"):
       given (Vocabulary over Session) = Vocabulary(adjectives, animals)
-      capture[MonikerError](t"justoneword".decode[Moniker over Session]).message.show
+      capture[MonikerError](t"justoneword".as[Moniker over Session]).message.show
     . assert(_ == t"the moniker is not valid because justoneword is not of the form <adjective>-<animal>")
 
     test(m"An unknown word cannot be decoded"):
       given (Vocabulary over Session) = Vocabulary(adjectives, animals)
-      capture[MonikerError](t"notathing-leopard".decode[Moniker over Session]).message.show
+      capture[MonikerError](t"notathing-leopard".as[Moniker over Session]).message.show
     . assert(_ == t"the moniker is not valid because the word notathing does not appear in the vocabulary")

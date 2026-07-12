@@ -58,7 +58,7 @@ object Message:
   // A `Message` serialises to a complete (unmasked) WebSocket frame, so it can
   // flow through Coaxial's `Control.Reply`/`Conclude` and be written verbatim.
   given transmissible: Message is Transmissible =
-    case Text(text)   => zephyrine.Stream(Frame.Text(true, text.data).encode)
+    case Text(text)   => zephyrine.Stream(Frame.Text(true, text.in[Data]).encode)
     case Binary(data) => zephyrine.Stream(Frame.Binary(true, data).encode)
 
 // A complete WebSocket message: text frames are reassembled and UTF-8-decoded;
@@ -71,7 +71,7 @@ enum Message:
   // The raw payload of a message: a Text message's UTF-8 bytes, or a Binary
   // message's bytes verbatim. Used to decode an incoming message to a typed value.
   private[perihelion] def bytes: Data = this match
-    case Text(text)   => text.data
+    case Text(text)   => text.in[Data]
     case Binary(data) => data
 
 // The outgoing side of a connection: a bounded, thread-safe conduit of encoded

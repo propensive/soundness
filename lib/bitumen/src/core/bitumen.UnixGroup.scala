@@ -39,4 +39,4 @@ import hypotenuse.*, arithmeticOptions.overflow.unchecked
 import vacuous.*
 
 case class UnixGroup(value: Int, name: Optional[Text] = Unset):
-  def bytes: Data = value.octal.pad(7, Rtl, '0').data
+  def bytes: Data = value.octal.pad(7, Rtl, '0').in[Data]
