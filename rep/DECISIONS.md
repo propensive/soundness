@@ -1564,3 +1564,41 @@ the RECEIVE side to kernel pull endpoints:
 - Tests: h2c fake servers skip the preface by consuming exactly 24 bytes off the
   endpoint; FrameReader then owns it. Suites green: coaxial, cordillera,
   obligatory, perihelion, scintillate.
+
+## Honeycomb capture checking (2026-07-12, branch honeycomb-cc)
+
+honeycomb.core — the last cc-excluded module — is now capture-checked. The "12
+macro-quote errors" that parked it decomposed into only SIX quote-family errors
+plus ordinary conversion work:
+
+Quote-family fixes (no compiler change needed):
+- `case Some('{$renderable: Renderable}) => '{$renderable.render($expr)}` — the
+  BRANCH JOIN decorates the summoned evidence's skolem with capture variables
+  (`Expr[Html{Topic = ?1.Form^'s}^'s]^'s`) which then fails to unify. FIX: widen
+  each branch eagerly (`('{...}: Expr[Any])`) so the join never sees the skolem —
+  the macro only needs `Expr[Any]`. (4 sites.)
+- `Type.of[value] match { case '[Map[Text, Optional[Text]]] => ... }` — a
+  BINDINGLESS type-quote pattern fails against the capture-decorated scrutinee
+  (`Expr[value^{}]^{}` mismatch). FIX: reflection-level
+  `TypeRepr.of[value] <:< TypeRepr.of[...]`. (2 sites.) A type pattern WITH
+  bindings would still be blocked — none needed here.
+
+Ordinary-CC recipes applied:
+- Tracked given results named their evidence (`^{tactic, caps.any}`) for the
+  Aggregable/Loadable/Streamable instances; `accept` override params need
+  explicit `^` (bare stateful param reads `.rd`).
+- HtmlParser holds its cursor via the perihelion-Reader AnyRef-carrier +
+  inline-accessor pattern; the macro callback var is `@untrackedCaptures` with
+  sealed assignment. NOTE: an inline accessor is NOT a valid prefix for
+  path-dependent types (`cursor.addressable.Target`) — bind a stable local.
+- IArray-opacity seals in `Attributes.empty/apply/from` — sealing at the OPAQUE
+  CONSTRUCTOR removes the artifact for every consumer, including `Tag`'s extends
+  clause (a fresh ctor argument decorates the subclass's SELF TYPE, breaking
+  "pure base class" conformance). An abstract class extending a pure class ALSO
+  needs explicit `caps.Pure` — its default self type is `{any}`.
+- Two `@tailrec` loops over inline `let`/`lay` combinators: CC's beta-reduction
+  leaves the recursive call non-tail → while-loops.
+- The `nil` inline extension on the opaque fails to dealias through a
+  capture-decorated pattern proxy — dropped a redundant emptiness guard.
+
+321 tests pass. Sepcheck for honeycomb.core NOT attempted (separate leg).
