@@ -63,7 +63,10 @@ object Confluence:
             probate:      Probate )
   :   (Stream[medium] over Credit)^ =
 
-    val block: Int = buffering.capacity(addressable0.substrate)
+    // Pumps pull boundary-transfer-sized credits, not staging-block-sized ones:
+    // every block crossing the queue costs a synchronized hand-off, so the
+    // transfer size bounds the hand-off count, not the cache footprint.
+    val block: Int = buffering.transfer(addressable0.substrate)
 
     val queue: juc.ArrayBlockingQueue[AnyRef] =
       juc.ArrayBlockingQueue(buffering.window.max(sources.length))

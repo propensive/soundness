@@ -51,3 +51,10 @@ object Buffering:
 trait Buffering extends caps.Pure:
   def capacity(substrate: Substrate): Int
   def window: Int
+
+  // The preferred size of a block crossing an asynchronous boundary (a `Conduit`
+  // hand-off, or a fan-in/fan-out pump transfer). Staging buffers want to stay
+  // cache-resident, but every asynchronous block costs a synchronized queue
+  // transfer (with a likely park/unpark), so boundary blocks want to be much
+  // larger: the default is sixteen staging blocks.
+  def transfer(substrate: Substrate): Int = capacity(substrate)*16

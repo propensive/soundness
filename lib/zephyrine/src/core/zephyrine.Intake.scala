@@ -61,9 +61,13 @@ trait Intake[medium](using val addressable: medium is Addressable) extends Produ
   // production — `reserve` is what actually blocks.
   def demand: Transport
 
-  // Ensure at least `min` elements of contiguous writable space, blocking if
-  // necessary, and return the available space. `min` must not exceed the
-  // intake's block size.
+  // Ensure contiguous writable space, blocking if necessary, and return the
+  // available space, always at least one element. `min` is a request: an
+  // implementation may return less than was asked for (writers loop over
+  // `reserve`/`commit`, so a short reservation only means another iteration),
+  // but may also use a large request as a sizing hint — a `Conduit` mints a
+  // correspondingly larger transfer block, so bulk writes cross the
+  // asynchronous boundary in fewer synchronized hand-offs.
   update def reserve(min: Int): Int
 
   // Zero-copy view of this intake's buffer; elements from `mark` are writable
@@ -96,7 +100,7 @@ trait Intake[medium](using val addressable: medium is Addressable) extends Produ
     var done: Int = 0
 
     while done < count do
-      val free = reserve(1)
+      val free = reserve(count - done)
       val size = free.min(count - done)
       addressable.transfer(source, offset + done, buffer(using Unsafe), mark, size)
       commit(size)
@@ -108,7 +112,7 @@ trait Intake[medium](using val addressable: medium is Addressable) extends Produ
     var done: Int = 0
 
     while done < size do
-      val free = reserve(1)
+      val free = reserve(size - done)
       val count = free.min(size - done)
       addressable.copyChunk(source, offset.n0 + done, buffer(using Unsafe), mark, count)
       commit(count)

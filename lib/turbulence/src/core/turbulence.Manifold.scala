@@ -58,7 +58,10 @@ object Manifold:
             probate:      Probate )
   :   IndexedSeq[(Stream[medium] over Credit)^] =
 
-    val block: Int = buffering.capacity(addressable0.substrate)
+    // The pump pulls boundary-transfer-sized credits, not staging-block-sized
+    // ones: every chunk is delivered to each subscriber through a synchronized
+    // hand-off, so the transfer size bounds the hand-off count.
+    val block: Int = buffering.transfer(addressable0.substrate)
 
     val queues: IndexedSeq[juc.ArrayBlockingQueue[AnyRef]] =
       IndexedSeq.fill(count)(juc.ArrayBlockingQueue[AnyRef](buffering.window))
