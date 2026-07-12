@@ -646,6 +646,19 @@ object Tests extends Suite(m"Zephyrine tests"):
           gather.data.to(List)
         . assert(_ == bytes.to(List))
 
+        val big: Data = IArray.tabulate[Byte](10000)(index => (index%251).toByte)
+
+        test(m"conduit passes a large chunk through after a buffered partial block"):
+          val (intake, stream) = Conduit[Data]()
+          val gather = Gather()
+          val task = async(stream.flowTo(gather))
+          intake.put(Data(9))
+          intake.put(big)
+          intake.finish()
+          unsafely(task.await())
+          gather.data.to(List)
+        . assert(_ == 9.toByte +: big.to(List))
+
         test(m"conduit demand reflects buffered data"):
           val (intake, stream) = Conduit[Data]()
           val before = intake.demand.count

@@ -49,7 +49,7 @@ import zephyrine.*
 // source — the correct backpressure semantics for replication. A source
 // failure is rethrown from each subscriber's next refill.
 object Manifold:
-  private object End
+  private class Block(val storage: AnyRef, val size: Int)
 
   def apply[medium](consume source: (Stream[medium] over Credit)^, count: Int)
     ( using addressable0: medium is Addressable,
@@ -63,30 +63,56 @@ object Manifold:
     // hand-off, so the transfer size bounds the hand-off count.
     val block: Int = buffering.transfer(addressable0.substrate)
 
-    val queues: IndexedSeq[juc.ArrayBlockingQueue[AnyRef]] =
-      IndexedSeq.fill(count)(juc.ArrayBlockingQueue[AnyRef](buffering.window))
+    // One spin-then-park SPSC ring per subscriber: the pump is the single
+    // producer of each, and each subscriber the single consumer of its own.
+    // Sealed: a ring's guarantees come from volatile publication order, not
+    // aliasing analysis (as `Conduit`'s core), so the capture is erased to let
+    // the rings ride the collection.
+    val queues: IndexedSeq[Handoff] =
+      IndexedSeq.fill(count)(caps.unsafe.unsafeAssumePure(Handoff(buffering.window)))
 
     @volatile var error: Throwable | Null = null
 
     async:
       def loop(): Unit = source.refill(Credit(block)) match
         case size: Int =>
-          val chunk =
-            addressable0.materialize
-              ( source.window(using Unsafe).asInstanceOf[addressable0.Storage],
-                source.start,
-                size )
+          // Copied once out of the transient source window into fresh storage,
+          // which is then shared read-only between all the subscriber queues —
+          // storage rather than a materialized medium value, so the subscribers
+          // can expose it directly as their windows for any medium.
+          val storage = addressable0.allocate(size)
+
+          addressable0.transfer
+            ( source.window(using Unsafe).asInstanceOf[addressable0.Storage],
+              source.start, storage, 0, size )
 
           source.skip(size)
-          queues.each(_.put(chunk.asInstanceOf[AnyRef]))
+          val handoff = Block(storage.asInstanceOf[AnyRef], size)
+
+          // While-loops rather than `each`: a closure over the rings would
+          // capture their reach capability.
+          var index = 0
+
+          while index < queues.length do
+            queues(index).offer(handoff)
+            index += 1
+
           loop()
 
         case _ =>
-          queues.each(_.put(End))
+          var index = 0
+
+          while index < queues.length do
+            queues(index).finish()
+            index += 1
 
       try loop() catch case exception: Exception =>
         error = exception
-        queues.each(_.put(End))
+        var index = 0
+
+        while index < queues.length do
+          queues(index).finish()
+          index += 1
 
     // The subscribers are typed exclusive element-wise at the collection rim: capture
     // sets do not ride standard-collection elements, and each queue feeds exactly one
@@ -96,8 +122,9 @@ object Manifold:
         sealSubscriber(new Stream[medium](using addressable0):
           type Transport = Credit
 
-          // The shared chunk is immutable; subscribers only read the window,
-          // so exposing its backing array directly is safe and copy-free.
+          // The shared storage is written only by the pump, before the
+          // hand-off; subscribers only read the window, so exposing it
+          // directly is safe and copy-free.
           private var storage: AnyRef = addressable0.allocate(0).asInstanceOf[AnyRef]
           private var start0: Int = 0
           private var limit0: Int = 0
@@ -120,18 +147,21 @@ object Manifold:
                 limit0 += (size - limit0).min(granted)
                 limit0 - start0
               else
-                (queue.take().nn: @unchecked) match
-                  case End =>
+                queue.take() match
+                  case null =>
                     ended = true
                     val error0 = error
                     if error0 == null then Unset else throw error0
 
-                  case chunk =>
-                    storage = chunk
-                    size = addressable0.length(chunk.asInstanceOf[medium])
+                  case received: Block =>
+                    storage = received.storage
+                    size = received.size
                     start0 = 0
                     limit0 = size.min(granted)
                     limit0
+
+                  case _ =>
+                    panic(m"unexpected value in manifold hand-off")
         )
 
       subscribers.asInstanceOf[IndexedSeq[(Stream[medium] over Credit)^]]

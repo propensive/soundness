@@ -98,6 +98,9 @@ object Addressable:
     inline def materialize(storage: Array[Byte], off: Int, len: Int): Data =
       java.util.Arrays.copyOfRange(storage, off, off + len).nn.immutable(using Unsafe)
 
+    override inline def backing(value: Data): Optional[Array[Byte]] =
+      value.asInstanceOf[Array[Byte]]
+
     inline def cloneStorage
       (storage: Array[Byte], off: Int, len: Int)(target: ji.ByteArrayOutputStream)
     :   Unit =
@@ -287,3 +290,11 @@ trait Addressable extends Typeclass.Pure, Operable, Targetable:
 
   def materialize(storage: Storage, off: Int, len: Int): Self
   def cloneStorage(storage: Storage, off: Int, len: Int)(target: Target): Unit
+
+  // The value's backing storage, when the medium is immutable and its erased
+  // representation *is* its `Storage` type, so a whole chunk can be exposed as
+  // a window — or handed across an asynchronous boundary — without copying.
+  // `Data` returns its backing array; media without a directly-exposable
+  // backing (`Text`, whose `String` is not an `Array[Char]`) return `Unset`,
+  // and callers copy. Exposed backing must never be mutated.
+  def backing(value: Self): Optional[Storage] = Unset

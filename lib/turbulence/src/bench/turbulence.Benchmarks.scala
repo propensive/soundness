@@ -297,18 +297,17 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   // 64 KiB chunks on one thread/fiber, consume on another. Soundness `Conduit`
   // against the JDK `ArrayBlockingQueue`, FS2 `Channel` and ZIO `Queue`.
   //
-  // Two asymmetries remain and are the point of the comparison:
-  //   * Soundness `Conduit` COPIES data into transfer blocks (its bounded-memory
-  //     guarantee), minted at up to `Buffering.transfer` elements to match bulk
-  //     `put`s, so the hand-off count tracks the input chunking; the reference
-  //     queues pass the chunk REFERENCES with zero copy. The residual gap over
-  //     the JDK reference is that one copy.
-  //   * FS2/ZIO run the producer as a fiber; Soundness uses a virtual thread
-  //     (the Loom analogue of a fiber) and the JDK reference a platform thread.
-  //     Fiber wakeups on a shared worker pool cost less than a thread
-  //     park/unpark (~0.5 µs vs ~1.2 µs per hand-off), a fixed factor visible
-  //     in the reference rows themselves. The same holds for the
-  //     `Confluence`/`Manifold` fan-in/fan-out primitives below.
+  // The comparison is now structurally symmetric for `Conduit`: a bulk `put`
+  // of a medium with an exposable immutable backing (`Data`) crosses the
+  // boundary by reference, exactly as the reference queues pass their chunks,
+  // through a spin-then-park SPSC `Handoff` ring deep enough
+  // (`Buffering.window`) that lockstep producer/consumer pairs exchange
+  // several blocks per wakeup. Media without an exposable backing, and small
+  // writes, still coalesce through copied transfer blocks — the bounded-memory
+  // path. `Confluence`/`Manifold` below still copy once out of the transient
+  // source window (their sources are windowed streams, not whole chunks),
+  // which is the principal remaining asymmetry against the fan-in/fan-out
+  // references.
 
   def conduitSoundness: Long =
     val (intake, stream) = Conduit[Data]()
