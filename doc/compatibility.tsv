@@ -1,0 +1,141 @@
+# Soundness module compatibility by platform target. One row per top-level module.
+# Generated from build.mill (per-core `scalaJs` flag) and per-module platform backends (src/{jvm,wasi,wasm}).
+#
+# jvm : yes  = runs on the JVM (every module).
+# js  : yes  = cross-compiles to Scala.js.
+#       core = shared `core` cross-compiles, but the module's platform functionality has a
+#              JVM-and/or-WASI-only backend (no Scala.js backend) — e.g. galilei's filesystem.
+#       no   = JVM-only (its `core` sets `scalaJs = false`); see notes for why.
+# wasm: wasi = has a native WebAssembly/WASI backend submodule (src/wasi or src/wasm).
+#       js   = no native backend, but compiles to WebAssembly via the Scala.js -> scala-wasm pipeline (pure code).
+#       core = `core` cross-compiles but the backend is JVM-only (no WASM backend).
+#       no   = JVM-only.
+# notes: platform backends present, JVM-only reason, or JVM-only submodules of an otherwise-JS-capable module.
+module	jvm	js	wasm	notes
+abacist	yes	yes	js	
+acyclicity	yes	yes	js	
+adversaria	yes	yes	js	
+ambience	yes	yes	wasi	backends: core+wasi
+anamnesis	yes	yes	js	
+anthology	yes	no	no	Scala compiler / classpath tooling (dotty, `hellenism`)
+anticipation	yes	yes	js	
+apoplexy	yes	no	no	transitively JVM-only (networking/crypto/fs/process)
+archimedes	yes	yes	js	
+austronesian	yes	yes	js	
+aviation	yes	yes	wasi	backends: core+wasi
+baroque	yes	yes	js	
+beneficence	yes	yes	js	JVM-only submodule(s): plugin
+bitumen	yes	no	no	depends on `galilei` (filesystem) and `turbulence.jvm`
+breviloquence	yes	yes	js	
+burdock	yes	no	no	packaging; depends on JVM-only `zeppelin`/`telekinesis`
+cacophony	yes	no	no	audio (`javax.sound.sampled`)
+caduceus	yes	yes	js	JVM-only submodule(s): resend
+caesura	yes	yes	js	
+camouflage	yes	yes	js	
+capricious	yes	yes	wasi	backends: core+wasi
+cardinality	yes	yes	js	
+cataclysm	yes	yes	js	
+charisma	yes	yes	js	
+chiaroscuro	yes	yes	js	
+coaxial	yes	no	no	TCP sockets (`java.nio.channels`)
+contextual	yes	yes	js	
+contingency	yes	yes	js	
+cordillera	yes	yes	js	
+cosmopolite	yes	yes	js	
+decorum	yes	no	no	compiler plugin: uses the JVM-only dotty compiler API
+dendrology	yes	yes	js	
+denominative	yes	yes	js	
+digression	yes	yes	js	
+dissonance	yes	yes	js	
+distillate	yes	yes	js	
+diuretic	yes	no	no	`java.*` type interop (io.File, nio.Path, net.URL, time, util.Date)
+embarcadero	yes	no	no	container runtime; depends on JVM-only `obligatory.grpc`
+enigmatic	yes	no	no	crypto via `gastronomy` (`java.security`/`javax.crypto`)
+escapade	yes	yes	js	
+escritoire	yes	yes	js	
+ethereal	yes	no	no	transitively JVM-only (networking/crypto/fs/process)
+eucalyptus	yes	yes	js	JVM-only submodule(s): syslog
+exegesis	yes	no	no	LSP server; depends on JVM-only `ethereal`/`exoskeleton`
+exoskeleton	yes	no	no	transitively JVM-only (networking/crypto/fs/process)
+frontier	yes	yes	js	
+fulminate	yes	yes	js	
+galilei	yes	core	wasi	backends: core+jvm+wasi; JVM-only submodule(s): jvm
+gastronomy	yes	no	no	hashing (`java.security` MessageDigest)
+geodesy	yes	yes	js	
+gesticulate	yes	yes	js	
+gigantism	yes	yes	js	
+gnossienne	yes	yes	js	
+gossamer	yes	yes	js	
+graffiti	yes	yes	js	
+guillotine	yes	no	no	transitively JVM-only (networking/crypto/fs/process)
+hallucination	yes	no	no	uses `java.awt`/`javax.imageio` (no Scala.js implementation)
+harlequin	yes	no	no	syntax highlighting via `anthology.scala` (the compiler)
+hellenism	yes	core	core	backends: core+jvm; JVM-only submodule(s): jvm
+hieroglyph	yes	yes	js	
+honeycomb	yes	yes	js	
+hyperbole	yes	no	no	depends on JVM-only `harlequin.ansi`
+hypotenuse	yes	yes	js	
+imperial	yes	no	no	transitively JVM-only (networking/crypto/fs/process)
+inimitable	yes	yes	js	
+iridescence	yes	yes	js	
+jacinta	yes	yes	js	JVM-only submodule(s): http, schema
+kaleidoscope	yes	yes	js	
+larceny	yes	no	no	compiler plugin: uses the JVM-only dotty compiler API
+legerdemain	yes	yes	js	
+locomotion	yes	yes	js	
+mandible	yes	no	no	depends on JVM-only `hyperbole`
+mercator	yes	yes	js	
+metamorphose	yes	yes	js	
+monotonous	yes	yes	js	
+mosquito	yes	yes	js	
+nomenclature	yes	yes	js	
+obligatory	yes	yes	js	JVM-only submodule(s): grpc, json
+octogenarian	yes	no	no	transitively JVM-only (networking/crypto/fs/process)
+orthodoxy	yes	no	no	transitively JVM-only (networking/crypto/fs/process)
+panopticon	yes	yes	js	
+parasite	yes	core	core	backends: core+jvm; JVM-only submodule(s): jvm
+perihelion	yes	no	no	transitively JVM-only (networking/crypto/fs/process)
+phoenicia	yes	yes	js	
+plutocrat	yes	yes	js	
+polaris	yes	yes	js	
+polysyllabic	yes	yes	js	
+polyvinyl	yes	yes	js	
+prepositional	yes	yes	js	
+probably	yes	yes	js	
+profanity	yes	yes	js	
+proscenium	yes	yes	js	
+punctuation	yes	yes	js	JVM-only submodule(s): ansi
+quantitative	yes	yes	js	
+querencia	yes	yes	js	
+revolution	yes	no	no	JAR manifests (`java.util.jar`)
+rudiments	yes	yes	js	
+savagery	yes	yes	js	
+scintillate	yes	no	no	HTTP server via `telekinesis`/`coaxial` sockets
+sedentary	yes	no	no	benchmarking via JVM-only `superlunary`/`anthology`
+serpentine	yes	yes	js	
+spectacular	yes	yes	js	
+stenography	yes	yes	js	
+stratiform	yes	yes	js	JVM-only submodule(s): binary, http
+superlunary	yes	no	no	backends: core+jvm; JVM runtime staging backend
+surveillance	yes	no	no	file watching (`java.nio.file` WatchService)
+symbolism	yes	yes	js	
+synesthesia	yes	no	no	transitively JVM-only (networking/crypto/fs/process)
+tarantula	yes	no	no	browser automation; depends on JVM-only `hallucination`
+telekinesis	yes	core	wasi	backends: core+jvm+wasi; JVM-only submodule(s): jvm
+turbulence	yes	core	wasi	backends: core+jvm+wasi; JVM-only submodule(s): jvm
+typonym	yes	yes	js	
+ultimatum	yes	yes	js	
+ulysses	yes	no	no	transitively JVM-only (networking/crypto/fs/process)
+umbrageous	yes	no	no	compiler plugin: uses the JVM-only dotty compiler API
+urticose	yes	yes	js	
+vacuous	yes	yes	js	
+vexillology	yes	yes	js	
+vicarious	yes	yes	js	
+wisteria	yes	yes	js	
+xenophile	yes	yes	wasi	backends: core+wasm; JVM-only submodule(s): native
+xylophone	yes	yes	js	
+yossarian	yes	yes	js	
+ypsiloid	yes	yes	js	
+zephyrine	yes	yes	js	
+zeppelin	yes	no	no	zip archives (`java.util.zip`, `galilei`)
+ziggurat	yes	yes	js	
