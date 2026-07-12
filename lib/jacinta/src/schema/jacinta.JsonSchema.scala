@@ -205,14 +205,19 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
   private def decodeSchema(json: Json)
     ( using jsonError: Tactic[JsonError], pointerError: Tactic[JsonPointerError] )
   :   JsonSchema =
-    given textDecodable: (Text is Json.Decodable) = Json.text
-    given intDecodable: (Int is Json.Decodable) = Json.int
+    // Sealed pure: a capability-typed local would hide the tactic from every
+    // subsequent statement (the statement rule); this whole decoder is already
+    // sealed at the `decodable` given, which documents the honesty blockage.
+    given textDecodable: (Text is Json.Decodable) = caps.unsafe.unsafeAssumePure(Json.text)
+    given intDecodable: (Int is Json.Decodable) = caps.unsafe.unsafeAssumePure(Json.int)
 
-    given doubleDecodable: (Double is Json.Decodable) = Json.double
+    given doubleDecodable: (Double is Json.Decodable) =
+      caps.unsafe.unsafeAssumePure(Json.double)
 
-    given booleanDecodable: (scala.Boolean is Json.Decodable) = Json.boolean
+    given booleanDecodable: (scala.Boolean is Json.Decodable) =
+      caps.unsafe.unsafeAssumePure(Json.boolean)
 
-    def field[value](name: Text)(using decodable: value is Json.Decodable)
+    def field[value](name: Text)(using decodable: (value is Json.Decodable)^)
     :   Optional[value] =
       json(name).as[Optional[value]]
 

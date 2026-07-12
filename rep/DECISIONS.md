@@ -1740,3 +1740,35 @@ later legs compose to cover it.
   launders of #1528).
 - Per-file `import language.experimental.separationChecking` lines deleted
   (14 files); the module flag covers them.
+
+## Honest codec capabilities, phase 1: jacinta decode side (2026-07-12, branch honest-codec-capabilities)
+
+RULING (Jon, 2026-07-12): every given that includes a tactic must honestly be a
+capability — supersedes the 2026-07-06 design-pure position for tactic-retaining
+instances. This phase converts jacinta's decode side and MAPS THE BLOCKAGES.
+
+CONVERTED HONEST (compiler-verified `^{tactic, caps.any}`):
+- All ten primitive Json.Decodable givens (bytes/boolean/double/float/long/int/
+  ordinal/text/string/unit) — seals deleted.
+- The `as` chain: capability-polymorphic evidence param, de-sugared from
+  `raises`/`tracks` (ctx result may not hide capability evidence).
+- `decodableAtFocus` adapter: `(inner)^` param, `^{inner, caps.any}` result.
+- JsonSchema `field` helper param; various re-binds.
+- The QUOTE WALL DID NOT BITE: superlunary + sedentary compile against honest
+  primitives (wisteria's capture handling absorbs derivation).
+
+BLOCKED BY THE CHECKER (sealed with truthful comments; upstream candidate #5):
+- BY-NAME-RECURSIVE givens under SEP (`optional`/`array`/`map`): a by-name param
+  cannot be NAMED in a capture set, so an honest result must illegally hide it
+  ("needs consume"), and the synthesized shape thunk aliases the tactic argument.
+  Their by-name PARAMS are `^` (accept honest evidence); results stay sealed.
+- STATEMENT-RULE LOCALS: a `^{tactic, caps.any}` local hides the tactic from all
+  later statements — locals inside already-sealed deciders stay sealed-pure.
+- DERIVATION-BOUNDARY SUMMONS (caduceus.resend site): wisteria field summons in
+  some contexts expect PURE evidence; one site-local seal, needs a wisteria-level
+  look (why jacinta's own test derivations pass but caduceus's fails is unmapped).
+
+REMAINING for later phases: ypsiloid/breviloquence/locomotion/stratiform (cc-only
+— the sep hiding rules don't apply, so their by-name givens may convert fully);
+distillate's own tactic-taking primitives; DecodableDerivation.conjunction; the
+Pure-Encodable collision (question pending with Jon); gates + PR.

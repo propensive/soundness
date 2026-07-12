@@ -110,6 +110,11 @@ package couriers:
         case MediaTypeError(_, _)     => error
 
       . protect:
+          // Sealed locally: the derivation's field summons expect pure evidence
+          // (the derivation-boundary blockage; see rep/DECISIONS.md, honest
+          // codec capabilities).
+          given (Text is Json.Decodable) = caps.unsafe.unsafeAssumePure(Json.text)
+
           url"https://api.resend.com/emails".submit
             ( Http.Post, authorization = Auth.Bearer(apiKey.key) )
             ( request.in[Json] )
