@@ -49,7 +49,7 @@ object internal:
   opaque type Money = Long
   opaque type Isin = Long
 
-  extension (value: Long) protected def in[currency <: Label]: Money in currency =
+  extension (value: Long) protected def to[currency <: Label]: Money in currency =
     value.asInstanceOf[Money in currency]
 
   object Isin:
@@ -130,7 +130,7 @@ object internal:
 
 
     def apply[currency <: Label: ValueOf](value: Long): Money in currency =
-      apply(valueOf[currency], value).in[currency]
+      apply(valueOf[currency], value).to[currency]
 
 
     given showable: [currency: Currency] => (currencyStyle: CurrencyStyle)
@@ -147,21 +147,21 @@ object internal:
     =>  (Money in currency) is Addable by (Money in currency) to (Money in currency) =
 
       Addable: (left, right) =>
-        Money(left.currency, left.value + right.value).in[currency]
+        Money(left.currency, left.value + right.value).to[currency]
 
 
     given subtractable: [currency <: Label]
     =>  (Money in currency) is Subtractable by (Money in currency) to (Money in currency) =
 
       Subtractable: (left, right) =>
-        Money(left.currency, left.value - right.value).in[currency]
+        Money(left.currency, left.value - right.value).to[currency]
 
 
     given multiplicable: [currency <: Label]
     =>  (Money in currency) is Multiplicable by Double to (Money in currency) =
 
       Multiplicable: (left, right) =>
-        Money(left.currency, left.value*right).in[currency]
+        Money(left.currency, left.value*right).to[currency]
 
 
     given divisible: [currency <: Label, money <: (Money in currency)]
@@ -172,7 +172,7 @@ object internal:
       type Result = Money in currency
 
       def divide(left: money, right: Double): Money in currency =
-        Money(left.currency, left.value/right).in[currency]
+        Money(left.currency, left.value/right).to[currency]
 
 
     given divisible2: [currency <: Label, left <: Money in currency, right <: Money in currency]
@@ -191,7 +191,7 @@ object internal:
       type Result = Money in currency
 
       def divide(left: money, right: Int): Money in currency =
-        Money(left.currency, left.value/right).in[currency]
+        Money(left.currency, left.value/right).to[currency]
 
     inline given orderable: [currency <: Label] => (Money in currency) is Orderable:
       inline def compare
@@ -204,13 +204,13 @@ object internal:
         if left.value == right.value then !strict else (left.value < right.value) ^ greaterThan
 
     given zeroic: [currency <: Label: Currency] => (Money in currency) is Zeroic:
-      def zero: Money in currency = Money(currency.code, 0L).in[currency]
+      def zero: Money in currency = Money(currency.code, 0L).to[currency]
 
     given negatable: [currency <: Label] => (Money in currency) is Negatable:
       type Result = Money in currency
 
       def negate(money: Money in currency): Money in currency =
-        Money(money.currency, -money.value).in[currency]
+        Money(money.currency, -money.value).to[currency]
 
 
   extension (money: Money)
@@ -228,11 +228,11 @@ object internal:
   extension [currency <: Label: ValueOf](left: Money in currency)
     def tax(rate: Double): Price in currency =
 
-      Price(left, Money(left.currency, left.value*rate).in[currency])
+      Price(left, Money(left.currency, left.value*rate).to[currency])
 
     @tailrec
     def share(right: Int, result: List[Money in currency] = Nil): List[Money in currency] =
       if right == 1 then left :: result else
-        val share: Money in currency = (left/right).in[currency]
-        val remainder: Money in currency = (left - share).in[currency]
+        val share: Money in currency = (left/right).to[currency]
+        val remainder: Money in currency = (left - share).to[currency]
         remainder.share(right - 1, share :: result)

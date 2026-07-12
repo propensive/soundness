@@ -40,7 +40,7 @@ import symbolism.*
 object internal2:
   trait Protoquantity:
     extension [units <: Measure](quantity: Quantity[units])
-      transparent inline def in[units2[power <: Nat] <: Units[power, ?]]: Any =
+      transparent inline def to[units2[power <: Nat] <: Units[power, ?]]: Any =
         ${quantitative.internal.norm[units, units2]('quantity)}
 
       transparent inline def invert: Any = Quantity[Measure](1.0)/quantity

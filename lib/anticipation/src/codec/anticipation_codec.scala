@@ -49,3 +49,10 @@ type Data = IArray[Byte]
 
 extension [encodable: Encodable in Data](value: encodable)
   def bytestream: Data = encodable.encode(value)
+
+// The value-level counterpart of the type-level `is Encodable in Form`: `value.in[Json]`
+// encodes `value` into the named carrier/protocol type, replacing `.encode` and the per-format
+// `.json`/`.xml`/… shorthands.
+extension [value](value: value)
+  def in[format](using encodable: value is Encodable in format): format =
+    encodable.encoded(value)

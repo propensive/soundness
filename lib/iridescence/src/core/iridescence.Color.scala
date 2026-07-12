@@ -38,7 +38,7 @@ import prepositional.*
 object Color:
   given chromatic: [form <: Color: Perceptual in Srgb as perceptual] => Color in form is Chromatic =
     color =>
-      val srgb = color.in[Srgb]
+      val srgb = color.to[Srgb]
       Chroma((srgb.red*255).toInt, (srgb.green*255).toInt, (srgb.blue*255).toInt)
 
 
@@ -48,5 +48,5 @@ object Color:
 trait Color extends scala.caps.Pure:
   type Form >: this.type <: Color
 
-  def in[color <: Color](using perceptual: Form is Perceptual in color): color =
+  def to[color <: Color](using perceptual: Form is Perceptual in color): color =
     perceptual.convert(this)

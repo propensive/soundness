@@ -45,7 +45,7 @@ object Spectrum:
       if colors.nil then colors = colors0.to(Set)
 
       val chosen = colors.minBy: candidate =>
-        val srgb = candidate.in[Srgb]
+        val srgb = candidate.to[Srgb]
         val dr = srgb.red - target.red
         val dg = srgb.green - target.green
         val db = srgb.blue - target.blue

@@ -109,6 +109,10 @@ extension (inline context: StringContext)
 extension (context: StringContext)
   def t = SimpleTExtractor(context.parts.head.tt)
 
+// Character decoding as a `Decodable`, so `data.as[Text]` decodes bytes to text through the
+// `CharDecoder` in scope — the counterpart of `Text is Encodable in Data` (a `CharEncoder`).
+given textDecodable: (decoder: CharDecoder) => Text is Decodable in Data = decoder.decoded(_)
+
 extension (bytes: Data)
   def utf8: Text = String(bytes.mutable(using Unsafe), "UTF-8").tt
   def utf16: Text = String(bytes.mutable(using Unsafe), "UTF-16").tt
