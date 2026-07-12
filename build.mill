@@ -1308,7 +1308,7 @@ object honeycomb extends Library:
   object core extends Component(panopticon.core, gesticulate.core, xylophone.core, urticose.url,
       nomenclature.core, hellenism.core):
     override def scalacOptions = Task:
-      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+      settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core)
   object bench extends Benchmarks(core, quantitative.units):
     def mvnDeps = Seq(mvn"org.jsoup:jsoup:1.18.3")

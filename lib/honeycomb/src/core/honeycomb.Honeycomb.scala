@@ -384,7 +384,10 @@ object Honeycomb:
             . asExprOf[(Text, Optional[Text])]
 
           val attrs = '{Attributes(${Expr.ofList(exprs)}*)}
-          val elements = '{IArray(${Expr.ofList(children.flatMap(serialize(_)))}*)}
+          // Cast-erased: the per-element `Expr` types are fresh-decorated, which an
+          // outer seal cannot reach.
+          val elements =
+            '{IArray(${Expr.ofList(children.flatMap(serialize(_)).asInstanceOf[IArray[Expr[Node]]].to(List))}*)}
 
           List('{Element(${Expr(label)}, $attrs, $elements, ${Expr(foreign)})})
 

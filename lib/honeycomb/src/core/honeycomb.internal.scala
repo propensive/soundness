@@ -487,7 +487,10 @@ object internal:
             . asExprOf[(Text, Optional[Text])]
 
           val attrs = '{Attributes(${Expr.ofList(exprs)}*)}
-          val elements = '{IArray(${Expr.ofList(children.flatMap(serialize(_)))}*)}
+          // Cast-erased: the per-element `Expr` types are fresh-decorated, which an
+          // outer seal cannot reach.
+          val elements =
+            '{IArray(${Expr.ofList(children.flatMap(serialize(_)).asInstanceOf[IArray[Expr[Node]]].to(List))}*)}
 
           List('{Element(${Expr(label)}, $attrs, $elements, ${Expr(foreign)})})
 
@@ -695,39 +698,51 @@ object internal:
       def keys: Iterator[Text] =
         val a = storage(attrs)
 
-        new Iterator[Text]:
-          private var i: Int = 0
-          def hasNext: Boolean = i < a.length
+        // Sealed: the iterator reads immutable storage through a read-only view.
+        caps.unsafe.unsafeAssumePure:
+          new Iterator[Text]:
+            // Untracked: a plain index over immutable storage.
+            @caps.unsafe.untrackedCaptures
+            private var i: Int = 0
+            def hasNext: Boolean = i < a.length
 
-          def next(): Text =
-            val k = a(i).asInstanceOf[Text]
-            i += 2
-            k
+            def next(): Text =
+              val k = a(i).asInstanceOf[Text]
+              i += 2
+              k
 
       def values: Iterator[Optional[Text]] =
         val a = storage(attrs)
 
-        new Iterator[Optional[Text]]:
-          private var i: Int = 1
-          def hasNext: Boolean = i < a.length
+        // Sealed: the iterator reads immutable storage through a read-only view.
+        caps.unsafe.unsafeAssumePure:
+          new Iterator[Optional[Text]]:
+            // Untracked: a plain index over immutable storage.
+            @caps.unsafe.untrackedCaptures
+            private var i: Int = 1
+            def hasNext: Boolean = i < a.length
 
-          def next(): Optional[Text] =
-            val v = a(i)
-            i += 2
-            if v == null then Unset else v.asInstanceOf[Text]
+            def next(): Optional[Text] =
+              val v = a(i)
+              i += 2
+              if v == null then Unset else v.asInstanceOf[Text]
 
       def iterator: Iterator[(Text, Optional[Text])] =
         val a = storage(attrs)
 
-        new Iterator[(Text, Optional[Text])]:
-          private var i: Int = 0
-          def hasNext: Boolean = i < a.length
+        // Sealed: the iterator reads immutable storage through a read-only view.
+        caps.unsafe.unsafeAssumePure:
+          new Iterator[(Text, Optional[Text])]:
+            // Untracked: a plain index over immutable storage.
+            @caps.unsafe.untrackedCaptures
+            private var i: Int = 0
+            def hasNext: Boolean = i < a.length
 
-          def next(): (Text, Optional[Text]) =
-            val k = a(i).asInstanceOf[Text]
-            val v = a(i + 1)
-            i += 2
-            (k, if v == null then Unset else v.asInstanceOf[Text])
+            def next(): (Text, Optional[Text]) =
+              val k = a(i).asInstanceOf[Text]
+              val v = a(i + 1)
+              i += 2
+              (k, if v == null then Unset else v.asInstanceOf[Text])
 
       def toList: List[(Text, Optional[Text])] =
         val a = storage(attrs)

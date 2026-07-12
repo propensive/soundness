@@ -1602,3 +1602,39 @@ Ordinary-CC recipes applied:
   capture-decorated pattern proxy — dropped a redundant emptiness guard.
 
 321 tests pass. Sepcheck for honeycomb.core NOT attempted (separate leg).
+
+## Honeycomb separation checking (2026-07-12, branch honeycomb-sep)
+
+honeycomb.core flipped to `settings.sep` the day its CC landed. HtmlParser takes
+the caesura treatment: `extends caps.ExclusiveCapability, caps.Stateful`, a
+CONSUMED cursor (`consume cursor1: Cursor[Text, ?]^` — consume DOES parse on a
+class constructor in a capability class), update-classified methods (fixpoint via
+/tmp/classify3.py), exclusive factories (`HtmlParser^`).
+
+★ NEW CHECKER ARTIFACT (upstream-report candidate): a FIELD ASSIGNMENT expanded
+from an INLINE method falsely trips the provenance rule — "the value assigned to
+val X refers to parameter x$0" — where x$0 is the lifted expansion binding, NOT
+any real parameter. Immune to seals/casts/consume at the call; reproducible
+minimally (inline def assigning an Array-typed var in a Stateful class). FIX:
+de-inline the assigning method. Cost here: none (syncFrom is slow-path).
+
+★ PERF GUARD: the first working fix replaced HtmlParser's register-resident
+buffer-snapshot field with an inline accessor — benchmarks showed a CONSISTENT
+3–8% parse regression (worst on the heaviest example). Restoring the cached
+field via the de-inlined syncFrom recovered it to noise. LESSON: benchmark
+sep conversions that touch documented hot-path invariants; the bench module
+exists for this.
+
+Other recipes:
+- Method-local growable arrays under local defs: bare-typed locals (an
+  exclusive-typed binding is hidden from capturing local defs by the statement
+  rule) + `writable(x)(i) = v` / `x = confined(grown)` inline cast views.
+- Ownership transfer where a trait signature cannot say `consume`
+  (Aggregable.accept): neutral-carrier hop inside the factory, documented.
+- Pure-typed callback field (`(Ordinal, Hole) -> Unit`) collapses a large
+  Optionality-mismatch error family; install sites seal.
+- `let`-style extensions returning iterators over shared storage: seal the
+  iterator (reads immutable storage through a read-only view).
+- RUNTIME LESSON (tests caught it): `.asInstanceOf[List[...]]` on a fresh
+  IArray-backed flatMap result CRASHES at macro expansion — cast to the true
+  erased shape (`IArray[Expr[Node]]`) and `.to(List)` after.

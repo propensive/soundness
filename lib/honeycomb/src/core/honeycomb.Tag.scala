@@ -52,7 +52,8 @@ object Tag:
             case element@Element(tag.label, _, _, _) => lambda(element)
             case other                               => other
 
-          new Element(label, attributes, children2, boundary).asInstanceOf[html]
+          new Element(label, attributes, caps.unsafe.unsafeAssumePure(children2), boundary)
+          . asInstanceOf[html]
 
         case other =>
           other
@@ -157,7 +158,7 @@ object Tag:
       Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].over[Transport].in[Form]
 
     def node(attributes: Attributes): Result =
-      new Element(label, Attributes.from(presets) ++ attributes, IArray(), foreign)
+      new Element(label, Attributes.from(presets) ++ attributes, caps.unsafe.unsafeAssumePure(IArray()), foreign)
       with Html.Populable()
       . of[Topic]
       . over[Transport]
@@ -205,7 +206,7 @@ object Tag:
 
 
     def node(attributes: Attributes): Result =
-      new Element(label, Attributes.from(presets) ++ attributes, IArray(), foreign)
+      new Element(label, Attributes.from(presets) ++ attributes, caps.unsafe.unsafeAssumePure(IArray()), foreign)
       with Html.Transparent()
       . of[Topic]
       . over[Transport]
@@ -217,7 +218,9 @@ object Tag:
     type Result = Element of Topic in Form
 
     def node(attributes: Attributes): Result =
-      new Element(label, Attributes.from(presets) ++ attributes, IArray(), this.foreign)
+      new Element
+        ( label, Attributes.from(presets) ++ attributes,
+          caps.unsafe.unsafeAssumePure(IArray()), this.foreign )
       . of[Topic]
       . in[Form]
 
