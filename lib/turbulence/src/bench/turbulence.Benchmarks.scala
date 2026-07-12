@@ -55,9 +55,10 @@ import vacuous.*
 import zephyrine.*
 
 // Comparative streaming benchmarks: Soundness's pull `Stream` kernel against the
-// effect-based streaming libraries ZIO-Streams, FS2 and Kyo. Three operations,
-// three cost profiles: a heavy CPU transform (gzip), a stateful transcode stage
-// (UTF-8 decode) and bare pipeline overhead (byte checksum fold).
+// effect-based streaming libraries ZIO-Streams, FS2 and Kyo. Each benchmark's
+// implementation is written inline in its `bench` block; the shared data corpora
+// and the `runZio` / `buffering` run helpers below are the only members the
+// staged bodies reference (by fully-qualified name).
 //
 // The comparison is informative but NOT algorithm-symmetric — read it with these
 // architectural differences in mind:
@@ -127,813 +128,660 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   lazy val jdkKeyBytes: Array[Byte] = Array.tabulate(32)(i => (i*7 + 1).toByte)
   lazy val jdkIvBytes:  Array[Byte] = Array.tabulate(16)(i => (i*13 + 3).toByte)
 
-  // ── ZIO / Kyo run entry points ──────────────────────────────────────────────
+  // ── Shared run helpers (referenced from the staged bodies) ──────────────────
 
+  // ZIO's unsafe-run entry point, wrapping each ZIO benchmark's effect.
   def runZio[A](effect: zio.ZIO[Any, Throwable, A]): A =
     zio.Unsafe.unsafe: unsafe ?=>
       zio.Runtime.default.unsafe.run(effect).getOrThrow()
 
-  // ── Example 1: gzip compression (drain, count output bytes) ─────────────────
-
-  def gzipSoundness: Int = Stream(input).compress[Gzip].memoize.length
-
-  def gzipFs2: Long =
-    import cats.effect.unsafe.implicits.global
-    fs2.Stream.chunk(fs2.Chunk.array(inputArray)).covary[cats.effect.IO]
-    . through(fs2.compression.Compression.forSync[cats.effect.IO].gzip())
-    . compile.count.unsafeRunSync()
-
-  def gzipZio: Long =
-    runZio:
-      zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(inputArray))
-      . via(zio.stream.ZPipeline.gzip())
-      . runCount
-
-  // ── Example 2: UTF-8 decode (count decoded characters) ──────────────────────
-
-  def utf8Soundness: Int = Stream(textData).through(summon[CharDecoder]).memoize.s.length
-
-  def utf8Fs2: Int =
-    import cats.effect.unsafe.implicits.global
-    fs2.Stream.chunk(fs2.Chunk.array(textArray)).covary[cats.effect.IO]
-    . through(fs2.text.utf8.decode).map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
-
-  def utf8Zio: Int =
-    runZio:
-      zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(textArray))
-      . via(zio.stream.ZPipeline.utfDecode).map(_.length).runSum
-
-  // ── Example 3: byte checksum fold ───────────────────────────────────────────
-
-  def checksumSoundness: Long =
-    var total = 0L
-    Stream(input).foreachWindow: (storage, start, count) =>
-      val arr = storage.asInstanceOf[Array[Byte]]
-      var i = start
-      while i < start + count do { total += (arr(i) & 0xff); i += 1 }
-    total
-
-  def checksumFs2: Long =
-    import cats.effect.unsafe.implicits.global
-    fs2.Stream.chunk(fs2.Chunk.array(inputArray)).covary[cats.effect.IO]
-    . compile.fold(0L)((acc, b) => acc + (b & 0xff)).unsafeRunSync()
-
-  def checksumZio: Long =
-    runZio:
-      zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(inputArray))
-      . runFold(0L)((acc, b) => acc + (b & 0xff))
-
-  def checksumKyo: Long =
-    import kyo.*
-    Stream.init(inputSeq).fold(0L)((acc, b) => acc + (b & 0xff)).eval
-
-  // ── Chained example A: gzip compress -> decompress roundtrip ────────────────
-
-  def roundtripSoundness: Int = Stream(input).compress[Gzip].decompress[Gzip].memoize.length
-
-  def roundtripFs2: Long =
-    import cats.effect.unsafe.implicits.global
-    val comp = fs2.compression.Compression.forSync[cats.effect.IO]
-    fs2.Stream.chunk(fs2.Chunk.array(inputArray)).covary[cats.effect.IO]
-    . through(comp.gzip()).through(comp.gunzip()).flatMap(_.content)
-    . compile.count.unsafeRunSync()
-
-  def roundtripZio: Long =
-    runZio:
-      zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(inputArray))
-      . via(zio.stream.ZPipeline.gzip()).via(zio.stream.ZPipeline.gunzip())
-      . runCount
-
-  // ── Chained example B: UTF-8 decode -> re-encode transcode roundtrip ────────
-
-  def transcodeSoundness: Int =
-    Stream(textData).through(summon[CharDecoder]).through(summon[CharEncoder]).memoize.length
-
-  def transcodeFs2: Long =
-    import cats.effect.unsafe.implicits.global
-    fs2.Stream.chunk(fs2.Chunk.array(textArray)).covary[cats.effect.IO]
-    . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
-    . compile.count.unsafeRunSync()
-
-  def transcodeZio: Long =
-    runZio:
-      zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(textArray))
-      . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.utf8Encode)
-      . runCount
-
-  // ── Chained example C: gunzip -> UTF-8 decode -> count characters ───────────
-
-  def readGzipSoundness: Int =
-    Stream(gzippedText).decompress[Gzip].through(summon[CharDecoder]).memoize.s.length
-
-  def readGzipFs2: Int =
-    import cats.effect.unsafe.implicits.global
-    val comp = fs2.compression.Compression.forSync[cats.effect.IO]
-    fs2.Stream.chunk(fs2.Chunk.array(gzippedTextArray)).covary[cats.effect.IO]
-    . through(comp.gunzip()).flatMap(_.content)
-    . through(fs2.text.utf8.decode).map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
-
-  def readGzipZio: Int =
-    runZio:
-      zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(gzippedTextArray))
-      . via(zio.stream.ZPipeline.gunzip()).via(zio.stream.ZPipeline.utfDecode)
-      . map(_.length).runSum
-
-  // Isolated streaming base64 encode+decode roundtrip, to measure the duct
-  // directly (Data -> Text -> Data) against FS2's native base64 pipes.
-  def streamBase64Soundness: Int =
-    Stream(input).through(summon[Alphabet[Base64]]).through(summon[Alphabet[Base64]]).memoize.length
-
-  def streamBase64Fs2: Long =
-    import cats.effect.unsafe.implicits.global
-    fs2.Stream.chunk(fs2.Chunk.array(inputArray)).covary[cats.effect.IO]
-    . through(fs2.text.base64.encode).through(fs2.text.base64.decode)
-    . compile.count.unsafeRunSync()
-
-  // ── Chained example Q: transcode cascade (no compression, 3-way) ────────────
-  // A long chain of the one non-compression stage all three kernels share
-  // natively — UTF-8 transcoding — with no gzip to dominate the cost and no
-  // per-element boxing to skew it: bytes decode to text and re-encode three
-  // times over, then a final decode counts characters. This isolates the
-  // streaming machinery itself (chunk scheduling, buffer hand-off, duct
-  // composition) across Soundness's pull kernel and the ZIO/FS2 interpreters.
-
-  def transcodeChainSoundness: Int =
-    Stream(textData)
-    . through(summon[CharDecoder]).through(summon[CharEncoder])
-    . through(summon[CharDecoder]).through(summon[CharEncoder])
-    . through(summon[CharDecoder]).memoize.s.length
-
-  def transcodeChainFs2: Int =
-    import cats.effect.unsafe.implicits.global
-    fs2.Stream.chunk(fs2.Chunk.array(textArray)).covary[cats.effect.IO]
-    . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
-    . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
-    . through(fs2.text.utf8.decode)
-    . map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
-
-  def transcodeChainZio: Int =
-    runZio:
-      zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(textArray))
-      . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.utf8Encode)
-      . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.utf8Encode)
-      . via(zio.stream.ZPipeline.utfDecode)
-      . map(_.length).runSum
-
-  // ── Chained example R: transcode + base64 armor (no compression, 2-way) ─────
-  // A more varied chain, combining UTF-8 transcoding with a base64 codec
-  // roundtrip: decode -> encode -> base64 -> debase64 -> decode -> count. FS2
-  // has a native streaming base64 pipe; ZIO-Streams has none, so (as with the
-  // AES rows) only FS2 is the streaming reference here.
-
-  def armorTranscodeSoundness: Int =
-    Stream(textData)
-    . through(summon[CharDecoder]).through(summon[CharEncoder])
-    . through(summon[Alphabet[Base64]]).through(summon[Alphabet[Base64]])
-    . through(summon[CharDecoder]).memoize.s.length
-
-  def armorTranscodeFs2: Int =
-    import cats.effect.unsafe.implicits.global
-    fs2.Stream.chunk(fs2.Chunk.array(textArray)).covary[cats.effect.IO]
-    . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
-    . through(fs2.text.base64.encode).through(fs2.text.base64.decode)
-    . through(fs2.text.utf8.decode)
-    . map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
-
-  // ── Chained example S: slice + transcode (no compression, 3-way) ────────────
-  // A varied byte-level chain combining the new `drop`/`take`/`fold` kernel
-  // operators with transcoding: drop the first 64 KiB, transcode UTF-8 through
-  // decode+encode, keep the first 2 MiB, count. `drop`/`take` are element
-  // (byte) counts in all three libraries and chunk-aware (no unboxing), and the
-  // terminal count folds over whole windows; the byte total is identical across
-  // implementations.
-
-  // Int rather than Long: ZIO's `take`/`drop` are `Int`-counted, and both values
-  // fit; Soundness's and FS2's `Long`-counted versions widen automatically.
-  private val dropBytes: Int = 65536
-  private val takeBytes: Int = 2*1024*1024
-
-  def slicedTranscodeSoundness: Long =
-    Stream(textData).drop(dropBytes)
-    . through(summon[CharDecoder]).through(summon[CharEncoder])
-    . take(takeBytes)
-    . fold(0L)((total, _, _, count) => total + count)
-
-  def slicedTranscodeFs2: Long =
-    import cats.effect.unsafe.implicits.global
-    fs2.Stream.chunk(fs2.Chunk.array(textArray)).covary[cats.effect.IO]
-    . drop(dropBytes)
-    . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
-    . take(takeBytes)
-    . compile.count.unsafeRunSync()
-
-  def slicedTranscodeZio: Long =
-    runZio:
-      zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(textArray))
-      . drop(dropBytes)
-      . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.utf8Encode)
-      . take(takeBytes)
-      . runCount
-
-  // ── Chained example O: gzip -> base64 -> debase64 -> gunzip roundtrip ───────
-  // The full "armored transport" chain, streaming end-to-end in each library:
-  // Soundness runs monotonous `Alphabet` ducts (Data -> Text -> Data) between
-  // its compression ducts; FS2 its native base64 pipes; the JDK composes
-  // `GZIPOutputStream` inside a `Base64` wrapping stream and mirrors it back.
-
-  def armoredGzipSoundness: Int =
-    Stream(input).compress[Gzip]
-    . through(summon[Alphabet[Base64]])
-    . through(summon[Alphabet[Base64]])
-    . decompress[Gzip].memoize.length
-
-  def armoredGzipFs2: Long =
-    import cats.effect.unsafe.implicits.global
-    val comp = fs2.compression.Compression.forSync[cats.effect.IO]
-    fs2.Stream.chunk(fs2.Chunk.array(inputArray)).covary[cats.effect.IO]
-    . through(comp.gzip())
-    . through(fs2.text.base64.encode)
-    . through(fs2.text.base64.decode)
-    . through(comp.gunzip()).flatMap(_.content)
-    . compile.count.unsafeRunSync()
-
-  def armoredGzipJdk: Int =
-    val buffer = new java.io.ByteArrayOutputStream(input.length/2)
-    val out = new java.util.zip.GZIPOutputStream(java.util.Base64.getEncoder.wrap(buffer))
-    out.write(inputArray)
-    out.close()
-
-    val in = new java.util.zip.GZIPInputStream
-      (java.util.Base64.getDecoder.wrap(java.io.ByteArrayInputStream(buffer.toByteArray)))
-
-    val scratch = new Array[Byte](65536)
-    var total = 0
-    var count = in.read(scratch)
-
-    while count >= 0 do
-      total += count
-      count = in.read(scratch)
-
-    total
-
-  // ── Chained example P: gzip -> AES encrypt -> base64 -> decode -> decrypt ->
-  //    gunzip. The "secure archive" chain: compress, then encrypt, then armor
-  //    for transport, and the mirror image back to plaintext. Soundness streams
-  //    the compression and base64 legs on the kernel and applies the cipher as
-  //    whole-value enigmatic operations; the JDK reference composes GZIP,
-  //    Cipher and Base64 streams. FS2/ZIO have no native cipher, so (as in the
-  //    AES suite) only the JDK is shown.
-
-  def secureChainSoundness: Int =
-    aesKey.expose:
-      val compressed: Data = Stream(input).compress[Gzip].memoize
-      val encrypted: Data = compressed.encrypt(InitializationVector.random)
-
-      val recovered: Data =
-        Stream(encrypted)
-        . through(summon[Alphabet[Base64]])
-        . through(summon[Alphabet[Base64]])
-        . memoize
-
-      val decrypted: Data = recovered.decrypt[Data, Aes[256] over Cbc against Pkcs7]
-      Stream(decrypted).decompress[Gzip].memoize.length
-
-  def secureChainJdk: Int =
-    def cipher(mode: Int): javax.crypto.Cipher =
-      val cipher = javax.crypto.Cipher.getInstance("AES/CBC/PKCS5Padding")
-
-      cipher.init
-        ( mode,
-          javax.crypto.spec.SecretKeySpec(jdkKeyBytes, "AES"),
-          javax.crypto.spec.IvParameterSpec(jdkIvBytes) )
-
-      cipher
-
-    val buffer = new java.io.ByteArrayOutputStream(input.length/2)
-
-    val out = new java.util.zip.GZIPOutputStream
-      (javax.crypto.CipherOutputStream
-        (java.util.Base64.getEncoder.wrap(buffer), cipher(javax.crypto.Cipher.ENCRYPT_MODE)))
-
-    out.write(inputArray)
-    out.close()
-
-    val in = new java.util.zip.GZIPInputStream
-      (javax.crypto.CipherInputStream
-        (java.util.Base64.getDecoder.wrap(java.io.ByteArrayInputStream(buffer.toByteArray)),
-         cipher(javax.crypto.Cipher.DECRYPT_MODE)))
-
-    val scratch = new Array[Byte](65536)
-    var total = 0
-    var count = in.read(scratch)
-
-    while count >= 0 do
-      total += count
-      count = in.read(scratch)
-
-    total
-
-  // ── Example D: Base64 encode ────────────────────────────────────────────────
-  // Soundness `monotonous` base-N is a whole-value operation (no streaming duct
-  // today); FS2 has a native streaming base64 pipe; the JDK is the universal
-  // reference. ZIO/Kyo have no native base64.
-
-  def base64Soundness: Int = input.serialize[Base64].s.length
-
-  def base64Fs2: Int =
-    import cats.effect.unsafe.implicits.global
-    fs2.Stream.chunk(fs2.Chunk.array(inputArray)).covary[cats.effect.IO]
-    . through(fs2.text.base64.encode).map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
-
-  def base64Jdk: Int = java.util.Base64.getEncoder.encodeToString(inputArray).length
-
-  // ── Example E: AES-256-CBC encrypt ──────────────────────────────────────────
-  // Soundness `enigmatic` streaming encryption drives the JCE cipher over the
-  // legacy `LazyList` view (enigmatic is not yet on the streaming kernel), and
-  // prepends the IV as the leading chunk. The JDK reference is the same cipher
-  // with no framing. ZIO/FS2/Kyo have no native block cipher — they would wrap
-  // the same `javax.crypto.Cipher`, so only the JDK reference is shown.
-
-  def aesSoundness: Long =
-    aesKey.expose:
-      LazyList(input).encrypt(InitializationVector.random).map(_.length.toLong).sum
-
-  def aesJdk: Int =
-    val cipher = javax.crypto.Cipher.getInstance("AES/CBC/PKCS5Padding")
-    cipher.init
-      ( javax.crypto.Cipher.ENCRYPT_MODE,
-        javax.crypto.spec.SecretKeySpec(jdkKeyBytes, "AES"),
-        javax.crypto.spec.IvParameterSpec(jdkIvBytes) )
-    cipher.doFinal(inputArray).length
-
-  // ── Example J: hex / base32 encode (cost by base) ───────────────────────────
-  // Soundness monotonous alphabets at 4, 5 and 6 bits per character
-  // (hex/base32/base64), with the JDK HexFormat as a hex reference. Base32 has
-  // no common JDK/FS2 counterpart, so it stands alone.
-
-  def hexSoundness: Int = input.serialize[Hex].s.length
-  def hexJdk: Int = java.util.HexFormat.of.formatHex(inputArray).length
-  def base32Soundness: Int = input.serialize[Base32].s.length
-
-  // ── Example K: flowTo pump (pull -> push) vs memoize ────────────────────────
-  // `flowTo` pumps a pull `Stream` into a push `Intake` (here an OutputStream
-  // sink); `memoize` collects into a value. Both drain the same 4 MB.
-
-  def flowToSink: Int =
-    val out = new java.io.ByteArrayOutputStream(input.length)
-    Stream(input).flowTo(summon[java.io.OutputStream is Sink by Data over Credit].intake(out))
-    out.size
-
-  def memoizeSingle: Int = Stream(input).memoize.length
-
-  // ── Example L: Conduit cross-thread hand-off ────────────────────────────────
-  // A bounded single-producer/single-consumer boundary: produce the 4 MB in
-  // 64 KiB chunks on one thread/fiber, consume on another. Soundness `Conduit`
-  // against the JDK `ArrayBlockingQueue`, FS2 `Channel` and ZIO `Queue`.
-  //
-  // The comparison is now structurally symmetric for `Conduit`: a bulk `put`
-  // of a medium with an exposable immutable backing (`Data`) crosses the
-  // boundary by reference, exactly as the reference queues pass their chunks,
-  // through a spin-then-park SPSC `Handoff` ring deep enough
-  // (`Buffering.window`) that lockstep producer/consumer pairs exchange
-  // several blocks per wakeup. Media without an exposable backing, and small
-  // writes, still coalesce through copied transfer blocks — the bounded-memory
-  // path. `Confluence`/`Manifold` below likewise share a stable source's window
-  // by reference (the benchmark sources are fixed in-memory buffers), so they
-  // too pass chunks without copying, exactly as the reference queues do; a
-  // transient (duct-reused) source is snapshotted instead. The residual gap on
-  // fan-out is the thread-vs-fiber wakeup of the several subscriber consumers.
-
-  def conduitSoundness: Long =
-    val (intake, stream) = Conduit[Data]()
-    val producer = Thread.ofVirtual.start(() =>
-      inputChunks.foreach(intake.put)
-      intake.finish())
-    var total = 0L
-    stream.foreachWindow((_, _, count) => total += count)
-    producer.join()
-    total
-
-  def conduitJdk: Long =
-    val queue = new java.util.concurrent.ArrayBlockingQueue[AnyRef](8)
-    val end = new Object
-    val producer = new Thread(() =>
-      inputChunks.foreach(chunk => queue.put(chunk.asInstanceOf[AnyRef]))
-      queue.put(end))
-    producer.start()
-    var total = 0L
-    var running = true
-    while running do
-      val item = queue.take()
-      if item eq end then running = false else total += item.asInstanceOf[Data].length
-    producer.join()
-    total
-
-  def conduitFs2: Long =
-    import cats.effect.unsafe.implicits.global
-    import cats.effect.IO, cats.syntax.all.*
-    val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).flatMap: channel =>
-      val produce =
-        inputChunks.foldLeft(IO.unit): (io, chunk) =>
-          io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[Array[Byte]])).void
-        *> channel.close.void
-      produce.start *> channel.stream.compile.fold(0L)((acc, chunk) => acc + chunk.size)
-    program.unsafeRunSync()
-
-  def conduitZio: Long =
-    runZio:
-      import zio.*, zio.stream.*
-      val source =
-        ZStream.fromIterable(inputChunks.map(c => Chunk.fromArray(c.asInstanceOf[Array[Byte]])))
-      for
-        queue <- Queue.bounded[Take[Nothing, Chunk[Byte]]](8)
-        _     <- source.runIntoQueue(queue).fork
-        total <- ZStream.fromQueue(queue).flattenTake.runFold(0L)((acc, c) => acc + c.size)
-      yield total
-
-  // ── Example M: Confluence fan-in (merge 4 streams) ──────────────────────────
-
-  def confluenceSoundness: Long =
-    supervise:
-      val merged = Confluence(quarters.map(q => Stream(q))*)
-      var total = 0L
-      merged.foreachWindow((_, _, count) => total += count)
-      total
-
-  def confluenceFs2: Long =
-    import cats.effect.unsafe.implicits.global
-    import cats.effect.IO
-    val streams =
-      quarters.map(q => fs2.Stream.chunk(fs2.Chunk.array(q.asInstanceOf[Array[Byte]])).covary[IO])
-    fs2.Stream.emits(streams).parJoinUnbounded.compile.count.unsafeRunSync()
-
-  def confluenceZio: Long =
-    runZio:
-      import zio.*, zio.stream.*
-      val streams = quarters.map(q => ZStream.fromChunk(Chunk.fromArray(q.asInstanceOf[Array[Byte]])))
-      ZStream.mergeAllUnbounded()(streams*).runCount
-
-  // ── Example N: Manifold fan-out (broadcast to 3 consumers) ──────────────────
-
-  def manifoldSoundness: Long =
-    supervise:
-      val subscribers = Manifold(Stream(input), 3)
-      val tasks = subscribers.map: subscriber =>
-        async:
-          var total = 0L
-          subscriber.foreachWindow((_, _, count) => total += count)
-          total
-      tasks.map(_.await()).sum
-
-  def manifoldFs2: Long =
-    import cats.effect.unsafe.implicits.global
-    import cats.effect.IO, cats.syntax.all.*
-    val counter: fs2.Pipe[IO, Byte, Long] = _.chunks.foldMap(chunk => chunk.size.toLong)
-    fs2.Stream.chunk(fs2.Chunk.array(inputArray)).covary[IO]
-    . broadcastThrough(counter, counter, counter).compile.foldMonoid.unsafeRunSync()
-
-  def manifoldZio: Long =
-    runZio:
-      import zio.*, zio.stream.*
-      ZIO.scoped:
-        ZStream.fromChunk(Chunk.fromArray(inputArray)).broadcast(3, 16).flatMap: streams =>
-          ZIO.foreachPar(streams)(_.runCount).map(_.sum)
-
-  // ── Example F: public `read` typeclass path vs the bare kernel ──────────────
-  // `read[Data]`/`read[Text]` go through the `Readable`/`Source`/`Aggregable`
-  // typeclass machinery; `memoize` is the raw kernel drain. The gap is what the
-  // high-level public API costs over the endpoint directly.
-
-  def memoizeChunked: Int = Stream(inputChunks.iterator).memoize.length
-  def readChunked: Int = inputChunks.read[Data].length
-  def readText: Int = textData.read[Text].s.length
-
-  // ── Example G: `Buffering` block-size sensitivity (gzip staging buffer) ─────
-  // Each gzip duct stages input in a `Buffering.capacity`-sized buffer; this
-  // sweeps that size to show its effect on streaming-compression throughput.
-
+  // A fixed-capacity `Buffering`, for the block-size sweep.
   def buffering(n: Int): Buffering = new Buffering:
     def capacity(substrate: Substrate): Int = n
     def window: Int = 4
 
-  def gzipBlock512: Int   = Stream(input).compress[Gzip](using summon, buffering(512)).memoize.length
-  def gzipBlock4k: Int    = Stream(input).compress[Gzip](using summon, buffering(4096)).memoize.length
-  def gzipBlock64k: Int   = Stream(input).compress[Gzip](using summon, buffering(65536)).memoize.length
-
-  // ── Example H: `Cursor` parser pull-loop vs a raw array loop ────────────────
-  // The hot path jacinta/honeycomb run: pull every byte through the `Cursor`
-  // abstraction (`peek`/`next`), compared against a bare `Array[Byte]` scan.
-
-  def cursorSum: Long =
-    val cursor = Cursor[Data](input)
-    var total = 0L
-    while !cursor.finished do
-      total += cursor.peek.asInt
-      cursor.next()
-    total
-
-  def rawArraySum: Long =
-    var total = 0L
-    var i = 0
-    while i < inputArray.length do { total += (inputArray(i) & 0xff); i += 1 }
-    total
-
-  // ── Example I: `writeTo` sink path vs a raw OutputStream write ──────────────
-
-  def writeToSink: Int =
-    val out = new java.io.ByteArrayOutputStream(input.length)
-    inputChunks.writeTo(out)
-    out.size
-
-  def rawWrite: Int =
-    val out = new java.io.ByteArrayOutputStream(input.length)
-    inputChunks.foreach(chunk => out.write(chunk.asInstanceOf[Array[Byte]]))
-    out.size
+  // Int rather than Long: ZIO's `take`/`drop` are `Int`-counted, and both values
+  // fit; Soundness's and FS2's `Long`-counted versions widen automatically.
+  val dropBytes: Int = 65536
+  val takeBytes: Int = 2*1024*1024
 
   def run(): Unit =
     val bench = Bench()
     val size = input.length*Byte
     val textSize = textData.length*Byte
 
-    // Sanity: the checksum must be identical across all four implementations
-    // (deterministic sum), confirming they fold the same bytes.
-    test(m"checksum agreement"):
-      ( checksumSoundness, checksumFs2, checksumZio, checksumKyo )
-    . assert: (s, f, z, k) =>
-        s == f && f == z && z == k
-
-    // The chained pipelines must do equivalent work: both roundtrips are the
-    // identity on length, and the three gunzip->decode impls must agree on the
-    // decoded character count.
-    test(m"chained pipelines agree"):
-      val roundtripOk = roundtripSoundness == input.length
-      val transcodeOk = transcodeSoundness == textData.length
-      val armoredOk =
-        armoredGzipSoundness == input.length && armoredGzipFs2 == input.length
-          && armoredGzipJdk == input.length
-      val secureOk = secureChainSoundness == input.length && secureChainJdk == input.length
-      val readOk = readGzipSoundness == readGzipFs2 && readGzipFs2 == readGzipZio
-      val base64Ok = base64Soundness == base64Jdk && base64Jdk == base64Fs2
-      val streamBase64Ok = streamBase64Soundness == input.length && streamBase64Fs2 == input.length
-      val readOk2 = readChunked == input.length && memoizeChunked == input.length
-      val cursorOk = cursorSum == rawArraySum && cursorSum == checksumSoundness
-      val writeOk = writeToSink == input.length && rawWrite == input.length
-      val hexOk = hexSoundness == hexJdk && hexSoundness == input.length*2
-      val flowOk = flowToSink == input.length && memoizeSingle == input.length
-      val n = input.length.toLong
-      val conduitOk =
-        conduitSoundness == n && conduitJdk == n && conduitFs2 == n && conduitZio == n
-      val fanInOk =
-        confluenceSoundness == n && confluenceFs2 == n && confluenceZio == n
-      val fanOutOk =
-        manifoldSoundness == 3*n && manifoldFs2 == 3*n && manifoldZio == 3*n
-      val transcodeChainOk =
-        transcodeChainSoundness == transcodeChainFs2
-          && transcodeChainFs2 == transcodeChainZio
-      val armorTranscodeOk = armorTranscodeSoundness == armorTranscodeFs2
-      val slicedOk =
-        slicedTranscodeSoundness == takeBytes && slicedTranscodeFs2 == takeBytes
-          && slicedTranscodeZio == takeBytes
-      ( roundtripOk, transcodeOk, readOk, base64Ok, readOk2, cursorOk, writeOk, hexOk, flowOk,
-        conduitOk, fanInOk, fanOutOk, armoredOk, secureOk, transcodeChainOk, armorTranscodeOk,
-        slicedOk, streamBase64Ok )
-    . assert(_ == (true, true, true, true, true, true, true, true, true, true, true, true, true,
-        true, true, true, true, true))
-
+    // Example 1: gzip compression (drain, count output bytes).
     suite(m"Gzip compression (4 MB)"):
       bench(m"Soundness  Stream.compress[Gzip]")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.gzipSoundness }
+        '{ Stream(turbulence.Benchmarks.input).compress[Gzip].memoize.length }
 
       bench(m"FS2  Compression[IO].gzip")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.gzipFs2 }
+        '{
+            import cats.effect.unsafe.implicits.global
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.inputArray)).covary[cats.effect.IO]
+            . through(fs2.compression.Compression.forSync[cats.effect.IO].gzip())
+            . compile.count.unsafeRunSync()
+        }
 
       bench(m"ZIO  ZPipeline.gzip")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.gzipZio }
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.inputArray))
+              . via(zio.stream.ZPipeline.gzip())
+              . runCount
+        }
 
+    // Example 2: UTF-8 decode (count decoded characters).
     suite(m"UTF-8 decode (4 MB)"):
       bench(m"Soundness  through(CharDecoder)")
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.utf8Soundness }
+        '{ Stream(turbulence.Benchmarks.textData).through(summon[CharDecoder]).memoize.s.length }
 
       bench(m"FS2  text.utf8.decode")(target = 1*Second, operationSize = textSize):
-        '{ turbulence.Benchmarks.utf8Fs2 }
+        '{
+            import cats.effect.unsafe.implicits.global
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.textArray)).covary[cats.effect.IO]
+            . through(fs2.text.utf8.decode).map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
+        }
 
       bench(m"ZIO  ZPipeline.utfDecode")(target = 1*Second, operationSize = textSize):
-        '{ turbulence.Benchmarks.utf8Zio }
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.textArray))
+              . via(zio.stream.ZPipeline.utfDecode).map(_.length).runSum
+        }
 
+    // Example 3: byte checksum fold. The Soundness fold runs over the raw window
+    // with no per-element boxing; FS2/ZIO/Kyo box each byte as it flows.
     suite(m"Byte checksum fold (4 MB)"):
       bench(m"Soundness  foreachWindow")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.checksumSoundness }
+        '{
+            var total = 0L
+            Stream(turbulence.Benchmarks.input).foreachWindow: (storage, start, count) =>
+              val arr = storage.asInstanceOf[Array[Byte]]
+              var i = start
+              while i < start + count do { total += (arr(i) & 0xff); i += 1 }
+            total
+        }
 
       bench(m"FS2  compile.fold")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.checksumFs2 }
+        '{
+            import cats.effect.unsafe.implicits.global
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.inputArray)).covary[cats.effect.IO]
+            . compile.fold(0L)((acc, b) => acc + (b & 0xff)).unsafeRunSync()
+        }
 
       bench(m"ZIO  runFold")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.checksumZio }
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.inputArray))
+              . runFold(0L)((acc, b) => acc + (b & 0xff))
+        }
 
       bench(m"Kyo  Stream.fold")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.checksumKyo }
+        '{
+            import kyo.*
+            Stream.init(turbulence.Benchmarks.inputSeq).fold(0L)((acc, b) => acc + (b & 0xff)).eval
+        }
 
+    // Chained example A: gzip compress -> decompress roundtrip (identity on length).
     suite(m"Chained: gzip -> gunzip roundtrip (4 MB)"):
       bench(m"Soundness  compress[Gzip].decompress[Gzip]")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.roundtripSoundness }
+        '{ Stream(turbulence.Benchmarks.input).compress[Gzip].decompress[Gzip].memoize.length }
 
       bench(m"FS2  gzip.gunzip")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.roundtripFs2 }
+        '{
+            import cats.effect.unsafe.implicits.global
+            val comp = fs2.compression.Compression.forSync[cats.effect.IO]
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.inputArray)).covary[cats.effect.IO]
+            . through(comp.gzip()).through(comp.gunzip()).flatMap(_.content)
+            . compile.count.unsafeRunSync()
+        }
 
       bench(m"ZIO  gzip.gunzip")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.roundtripZio }
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.inputArray))
+              . via(zio.stream.ZPipeline.gzip()).via(zio.stream.ZPipeline.gunzip())
+              . runCount
+        }
 
+    // Chained example B: UTF-8 decode -> re-encode transcode roundtrip.
     suite(m"Chained: UTF-8 decode -> encode transcode (4 MB)"):
       bench(m"Soundness  through(dec).through(enc)")
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.transcodeSoundness }
+        '{
+            Stream(turbulence.Benchmarks.textData)
+            . through(summon[CharDecoder]).through(summon[CharEncoder]).memoize.length
+        }
 
       bench(m"FS2  utf8.decode.encode")(target = 1*Second, operationSize = textSize):
-        '{ turbulence.Benchmarks.transcodeFs2 }
+        '{
+            import cats.effect.unsafe.implicits.global
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.textArray)).covary[cats.effect.IO]
+            . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
+            . compile.count.unsafeRunSync()
+        }
 
       bench(m"ZIO  utfDecode.utf8Encode")(target = 1*Second, operationSize = textSize):
-        '{ turbulence.Benchmarks.transcodeZio }
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.textArray))
+              . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.utf8Encode)
+              . runCount
+        }
 
+    // Chained example C: gunzip -> UTF-8 decode -> count characters.
     suite(m"Chained: gunzip -> UTF-8 decode -> count (gzipped text)"):
       bench(m"Soundness  decompress.through(dec)")
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.readGzipSoundness }
+        '{
+            Stream(turbulence.Benchmarks.gzippedText).decompress[Gzip]
+            . through(summon[CharDecoder]).memoize.s.length
+        }
 
       bench(m"FS2  gunzip.utf8.decode")(target = 1*Second, operationSize = textSize):
-        '{ turbulence.Benchmarks.readGzipFs2 }
+        '{
+            import cats.effect.unsafe.implicits.global
+            val comp = fs2.compression.Compression.forSync[cats.effect.IO]
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.gzippedTextArray)).covary[cats.effect.IO]
+            . through(comp.gunzip()).flatMap(_.content)
+            . through(fs2.text.utf8.decode).map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
+        }
 
       bench(m"ZIO  gunzip.utfDecode")(target = 1*Second, operationSize = textSize):
-        '{ turbulence.Benchmarks.readGzipZio }
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.gzippedTextArray))
+              . via(zio.stream.ZPipeline.gunzip()).via(zio.stream.ZPipeline.utfDecode)
+              . map(_.length).runSum
+        }
 
+    // Chained example O: gzip -> base64 -> debase64 -> gunzip. The "armored
+    // transport" roundtrip: Soundness runs monotonous `Alphabet` ducts between
+    // its compression ducts; FS2 its native base64 pipes; the JDK composes
+    // `GZIPOutputStream` inside a `Base64` wrapping stream and mirrors it back.
     suite(m"Chained: gzip -> base64 -> decode -> gunzip (4 MB)"):
       bench(m"Soundness  compress.b64.b64.decompress")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.armoredGzipSoundness }
+        '{
+            Stream(turbulence.Benchmarks.input).compress[Gzip]
+            . through(summon[Alphabet[Base64]])
+            . through(summon[Alphabet[Base64]])
+            . decompress[Gzip].memoize.length
+        }
 
       bench(m"FS2  gzip.base64.base64.gunzip")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.armoredGzipFs2 }
+        '{
+            import cats.effect.unsafe.implicits.global
+            val comp = fs2.compression.Compression.forSync[cats.effect.IO]
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.inputArray)).covary[cats.effect.IO]
+            . through(comp.gzip())
+            . through(fs2.text.base64.encode)
+            . through(fs2.text.base64.decode)
+            . through(comp.gunzip()).flatMap(_.content)
+            . compile.count.unsafeRunSync()
+        }
 
       bench(m"JDK  GZIP/Base64 stream composition")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.armoredGzipJdk }
+        '{
+            val buffer = new java.io.ByteArrayOutputStream(turbulence.Benchmarks.input.length/2)
+            val out = new java.util.zip.GZIPOutputStream(java.util.Base64.getEncoder.wrap(buffer))
+            out.write(turbulence.Benchmarks.inputArray)
+            out.close()
 
+            val in = new java.util.zip.GZIPInputStream
+              (java.util.Base64.getDecoder.wrap(java.io.ByteArrayInputStream(buffer.toByteArray)))
+
+            val scratch = new Array[Byte](65536)
+            var total = 0
+            var count = in.read(scratch)
+
+            while count >= 0 do
+              total += count
+              count = in.read(scratch)
+
+            total
+        }
+
+    // Chained example P: gzip -> AES encrypt -> base64 -> decode -> decrypt ->
+    // gunzip. The "secure archive" chain: Soundness streams the compression and
+    // base64 legs and applies the cipher as whole-value enigmatic operations;
+    // the JDK reference composes GZIP, Cipher and Base64 streams. FS2/ZIO have
+    // no native cipher, so (as in the AES suite) only the JDK is shown.
     suite(m"Chained: gzip -> AES -> base64 -> decode -> decrypt -> gunzip (4 MB)"):
       bench(m"Soundness  full secure-archive chain")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.secureChainSoundness }
+        '{
+            turbulence.Benchmarks.aesKey.expose:
+              val compressed: Data = Stream(turbulence.Benchmarks.input).compress[Gzip].memoize
+              val encrypted: Data = compressed.encrypt(InitializationVector.random)
+
+              val recovered: Data =
+                Stream(encrypted)
+                . through(summon[Alphabet[Base64]])
+                . through(summon[Alphabet[Base64]])
+                . memoize
+
+              val decrypted: Data = recovered.decrypt[Data, Aes[256] over Cbc against Pkcs7]
+              Stream(decrypted).decompress[Gzip].memoize.length
+        }
 
       bench(m"JDK  GZIP/Cipher/Base64 composition")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.secureChainJdk }
+        '{
+            def cipher(mode: Int): javax.crypto.Cipher =
+              val cipher = javax.crypto.Cipher.getInstance("AES/CBC/PKCS5Padding")
 
+              cipher.init
+                ( mode,
+                  javax.crypto.spec.SecretKeySpec(turbulence.Benchmarks.jdkKeyBytes, "AES"),
+                  javax.crypto.spec.IvParameterSpec(turbulence.Benchmarks.jdkIvBytes) )
+
+              cipher
+
+            val buffer = new java.io.ByteArrayOutputStream(turbulence.Benchmarks.input.length/2)
+
+            val out = new java.util.zip.GZIPOutputStream
+              (javax.crypto.CipherOutputStream
+                (java.util.Base64.getEncoder.wrap(buffer), cipher(javax.crypto.Cipher.ENCRYPT_MODE)))
+
+            out.write(turbulence.Benchmarks.inputArray)
+            out.close()
+
+            val in = new java.util.zip.GZIPInputStream
+              (javax.crypto.CipherInputStream
+                (java.util.Base64.getDecoder.wrap(java.io.ByteArrayInputStream(buffer.toByteArray)),
+                 cipher(javax.crypto.Cipher.DECRYPT_MODE)))
+
+            val scratch = new Array[Byte](65536)
+            var total = 0
+            var count = in.read(scratch)
+
+            while count >= 0 do
+              total += count
+              count = in.read(scratch)
+
+            total
+        }
+
+    // Chained example Q: transcode cascade (no compression, 3-way). A long chain
+    // of the one non-compression stage all three kernels share natively — UTF-8
+    // transcoding — isolating the streaming machinery with no gzip to dominate
+    // and no per-element boxing to skew it.
     suite(m"Chained: UTF-8 transcode cascade, no compression (4 MB)"):
       bench(m"Soundness  dec.enc.dec.enc.dec")
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.transcodeChainSoundness }
+        '{
+            Stream(turbulence.Benchmarks.textData)
+            . through(summon[CharDecoder]).through(summon[CharEncoder])
+            . through(summon[CharDecoder]).through(summon[CharEncoder])
+            . through(summon[CharDecoder]).memoize.s.length
+        }
 
       bench(m"FS2  utf8 decode/encode x2.5")(target = 1*Second, operationSize = textSize):
-        '{ turbulence.Benchmarks.transcodeChainFs2 }
+        '{
+            import cats.effect.unsafe.implicits.global
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.textArray)).covary[cats.effect.IO]
+            . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
+            . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
+            . through(fs2.text.utf8.decode)
+            . map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
+        }
 
       bench(m"ZIO  utfDecode/utf8Encode x2.5")(target = 1*Second, operationSize = textSize):
-        '{ turbulence.Benchmarks.transcodeChainZio }
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.textArray))
+              . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.utf8Encode)
+              . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.utf8Encode)
+              . via(zio.stream.ZPipeline.utfDecode)
+              . map(_.length).runSum
+        }
 
+    // Chained example R: transcode + base64 armor (no compression, 2-way).
+    // FS2 has a native streaming base64 pipe; ZIO-Streams has none, so only FS2
+    // is the streaming reference here.
     suite(m"Chained: transcode + base64 armor, no compression (4 MB)"):
       bench(m"Soundness  dec.enc.b64.b64.dec")
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.armorTranscodeSoundness }
+        '{
+            Stream(turbulence.Benchmarks.textData)
+            . through(summon[CharDecoder]).through(summon[CharEncoder])
+            . through(summon[Alphabet[Base64]]).through(summon[Alphabet[Base64]])
+            . through(summon[CharDecoder]).memoize.s.length
+        }
 
       bench(m"FS2  utf8/base64 chain")(target = 1*Second, operationSize = textSize):
-        '{ turbulence.Benchmarks.armorTranscodeFs2 }
+        '{
+            import cats.effect.unsafe.implicits.global
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.textArray)).covary[cats.effect.IO]
+            . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
+            . through(fs2.text.base64.encode).through(fs2.text.base64.decode)
+            . through(fs2.text.utf8.decode)
+            . map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
+        }
 
+    // Chained example S: slice + transcode (no compression, 3-way), combining
+    // the `drop`/`take`/`fold` kernel operators with transcoding. `drop`/`take`
+    // are chunk-aware byte counts in all three libraries; the terminal count
+    // folds over whole windows.
     suite(m"Chained: drop -> transcode -> take -> count (4 MB)"):
       bench(m"Soundness  drop.dec.enc.take.fold")
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.slicedTranscodeSoundness }
+        '{
+            Stream(turbulence.Benchmarks.textData).drop(turbulence.Benchmarks.dropBytes)
+            . through(summon[CharDecoder]).through(summon[CharEncoder])
+            . take(turbulence.Benchmarks.takeBytes)
+            . fold(0L)((total, _, _, count) => total + count)
+        }
 
       bench(m"FS2  drop.utf8.take.count")(target = 1*Second, operationSize = textSize):
-        '{ turbulence.Benchmarks.slicedTranscodeFs2 }
+        '{
+            import cats.effect.unsafe.implicits.global
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.textArray)).covary[cats.effect.IO]
+            . drop(turbulence.Benchmarks.dropBytes)
+            . through(fs2.text.utf8.decode).through(fs2.text.utf8.encode)
+            . take(turbulence.Benchmarks.takeBytes)
+            . compile.count.unsafeRunSync()
+        }
 
       bench(m"ZIO  drop.utf.take.runCount")(target = 1*Second, operationSize = textSize):
-        '{ turbulence.Benchmarks.slicedTranscodeZio }
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.textArray))
+              . drop(turbulence.Benchmarks.dropBytes)
+              . via(zio.stream.ZPipeline.utfDecode).via(zio.stream.ZPipeline.utf8Encode)
+              . take(turbulence.Benchmarks.takeBytes)
+              . runCount
+        }
 
+    // Example D: base64 encode. Soundness `monotonous` base-N is a whole-value
+    // operation; FS2 has a native streaming base64 pipe; the JDK is the
+    // universal reference. ZIO/Kyo have no native base64.
     suite(m"Base64 encode (4 MB)"):
       bench(m"Soundness  serialize[Base64]")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.base64Soundness }
+        '{ turbulence.Benchmarks.input.serialize[Base64].s.length }
 
       bench(m"FS2  text.base64.encode")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.base64Fs2 }
+        '{
+            import cats.effect.unsafe.implicits.global
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.inputArray)).covary[cats.effect.IO]
+            . through(fs2.text.base64.encode).map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
+        }
 
       bench(m"JDK  java.util.Base64")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.base64Jdk }
+        '{ java.util.Base64.getEncoder.encodeToString(turbulence.Benchmarks.inputArray).length }
 
+    // Isolated streaming base64 encode+decode roundtrip, measuring the duct
+    // directly (Data -> Text -> Data) against FS2's native base64 pipes.
     suite(m"Streaming base64 encode+decode roundtrip (4 MB)"):
       bench(m"Soundness  through(b64).through(b64)")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.streamBase64Soundness }
+        '{
+            Stream(turbulence.Benchmarks.input)
+            . through(summon[Alphabet[Base64]]).through(summon[Alphabet[Base64]]).memoize.length
+        }
 
       bench(m"FS2  base64.encode.decode")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.streamBase64Fs2 }
+        '{
+            import cats.effect.unsafe.implicits.global
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.inputArray)).covary[cats.effect.IO]
+            . through(fs2.text.base64.encode).through(fs2.text.base64.decode)
+            . compile.count.unsafeRunSync()
+        }
 
+    // Example E: AES-256-CBC encrypt. Soundness `enigmatic` streaming encryption
+    // drives the JCE cipher over the legacy `LazyList` view. ZIO/FS2/Kyo have no
+    // native block cipher, so only the JDK reference is shown.
     suite(m"AES-256-CBC encrypt (4 MB)"):
       bench(m"Soundness  enigmatic encryptStream")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.aesSoundness }
+        '{
+            turbulence.Benchmarks.aesKey.expose:
+              LazyList(turbulence.Benchmarks.input).encrypt(InitializationVector.random)
+              . map(_.length.toLong).sum
+        }
 
       bench(m"JDK  javax.crypto.Cipher")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.aesJdk }
+        '{
+            val cipher = javax.crypto.Cipher.getInstance("AES/CBC/PKCS5Padding")
+            cipher.init
+              ( javax.crypto.Cipher.ENCRYPT_MODE,
+                javax.crypto.spec.SecretKeySpec(turbulence.Benchmarks.jdkKeyBytes, "AES"),
+                javax.crypto.spec.IvParameterSpec(turbulence.Benchmarks.jdkIvBytes) )
+            cipher.doFinal(turbulence.Benchmarks.inputArray).length
+        }
 
+    // Example F: public `read` typeclass path vs the bare kernel `memoize`.
     suite(m"Public read vs kernel memoize (4 MB)"):
       bench(m"Soundness  Stream.memoize (kernel)")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.memoizeChunked }
+        '{ Stream(turbulence.Benchmarks.inputChunks.iterator).memoize.length }
 
       bench(m"Soundness  read[Data]")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.readChunked }
+        '{ turbulence.Benchmarks.inputChunks.read[Data].length }
 
       bench(m"Soundness  read[Text] (decode)")(target = 1*Second, operationSize = textSize):
-        '{ turbulence.Benchmarks.readText }
+        '{ turbulence.Benchmarks.textData.read[Text].s.length }
 
+    // Example G: `Buffering` block-size sensitivity for the gzip staging buffer.
     suite(m"Buffering block-size sweep: gzip (4 MB)"):
       bench(m"block 4 KiB (standard)")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.gzipBlock4k }
+        '{
+            Stream(turbulence.Benchmarks.input)
+            . compress[Gzip](using summon, turbulence.Benchmarks.buffering(4096)).memoize.length
+        }
 
       bench(m"block 512 B")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.gzipBlock512 }
+        '{
+            Stream(turbulence.Benchmarks.input)
+            . compress[Gzip](using summon, turbulence.Benchmarks.buffering(512)).memoize.length
+        }
 
       bench(m"block 64 KiB")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.gzipBlock64k }
+        '{
+            Stream(turbulence.Benchmarks.input)
+            . compress[Gzip](using summon, turbulence.Benchmarks.buffering(65536)).memoize.length
+        }
 
+    // Example H: `Cursor` parser pull-loop (peek/next) vs a bare `Array[Byte]` scan.
     suite(m"Cursor pull-loop vs raw array scan (4 MB)"):
       bench(m"Soundness  Cursor peek/next")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.cursorSum }
+        '{
+            val cursor = Cursor[Data](turbulence.Benchmarks.input)
+            var total = 0L
+            while !cursor.finished do
+              total += cursor.peek.asInt
+              cursor.next()
+            total
+        }
 
       bench(m"Raw  Array[Byte] loop")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.rawArraySum }
+        '{
+            val array = turbulence.Benchmarks.inputArray
+            var total = 0L
+            var i = 0
+            while i < array.length do { total += (array(i) & 0xff); i += 1 }
+            total
+        }
 
+    // Example I: `writeTo` sink path vs a raw OutputStream write.
     suite(m"writeTo sink vs raw OutputStream write (4 MB)"):
       bench(m"Soundness  writeTo")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.writeToSink }
+        '{
+            val out = new java.io.ByteArrayOutputStream(turbulence.Benchmarks.input.length)
+            turbulence.Benchmarks.inputChunks.writeTo(out)
+            out.size
+        }
 
       bench(m"Raw  OutputStream.write")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.rawWrite }
+        '{
+            val out = new java.io.ByteArrayOutputStream(turbulence.Benchmarks.input.length)
+            turbulence.Benchmarks.inputChunks.foreach(chunk => out.write(chunk.asInstanceOf[Array[Byte]]))
+            out.size
+        }
 
+    // Example J: hex / base32 encode (cost by base), with the JDK `HexFormat` as
+    // a hex reference. Base32 has no common JDK/FS2 counterpart.
     suite(m"Hex / Base32 encode (4 MB)"):
       bench(m"Soundness  serialize[Hex]")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.hexSoundness }
+        '{ turbulence.Benchmarks.input.serialize[Hex].s.length }
 
       bench(m"JDK  HexFormat")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.hexJdk }
+        '{ java.util.HexFormat.of.formatHex(turbulence.Benchmarks.inputArray).length }
 
       bench(m"Soundness  serialize[Base32]")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.base32Soundness }
+        '{ turbulence.Benchmarks.input.serialize[Base32].s.length }
 
+    // Example K: `flowTo` pump (pull -> push OutputStream sink) vs `memoize`.
     suite(m"flowTo pump vs memoize (4 MB)"):
       bench(m"Soundness  Stream.memoize")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.memoizeSingle }
+        '{ Stream(turbulence.Benchmarks.input).memoize.length }
 
       bench(m"Soundness  flowTo(sink)")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.flowToSink }
+        '{
+            val out = new java.io.ByteArrayOutputStream(turbulence.Benchmarks.input.length)
+            Stream(turbulence.Benchmarks.input)
+            . flowTo(summon[java.io.OutputStream is Sink by Data over Credit].intake(out))
+            out.size
+        }
 
+    // Example L: `Conduit` cross-thread hand-off — a bounded SPSC boundary,
+    // producing 4 MB in 64 KiB chunks on one thread and consuming on another.
+    // The reference queues pass chunk references with zero copy; `Conduit`
+    // shares a `Data` chunk's immutable backing by reference likewise.
     suite(m"Conduit cross-thread hand-off (4 MB in 64 KiB chunks)"):
       bench(m"Soundness  Conduit")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.conduitSoundness }
+        '{
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.foreach(intake.put)
+              intake.finish())
+            var total = 0L
+            stream.foreachWindow((_, _, count) => total += count)
+            producer.join()
+            total
+        }
 
       bench(m"JDK  ArrayBlockingQueue")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.conduitJdk }
+        '{
+            val queue = new java.util.concurrent.ArrayBlockingQueue[AnyRef](8)
+            val end = new Object
+            val producer = new Thread(() =>
+              turbulence.Benchmarks.inputChunks.foreach(chunk => queue.put(chunk.asInstanceOf[AnyRef]))
+              queue.put(end))
+            producer.start()
+            var total = 0L
+            var running = true
+            while running do
+              val item = queue.take()
+              if item eq end then running = false else total += item.asInstanceOf[Data].length
+            producer.join()
+            total
+        }
 
       bench(m"FS2  Channel.bounded")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.conduitFs2 }
+        '{
+            import cats.effect.unsafe.implicits.global
+            import cats.effect.IO, cats.syntax.all.*
+            val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).flatMap: channel =>
+              val produce =
+                turbulence.Benchmarks.inputChunks.foldLeft(IO.unit): (io, chunk) =>
+                  io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[Array[Byte]])).void
+                *> channel.close.void
+              produce.start *> channel.stream.compile.fold(0L)((acc, chunk) => acc + chunk.size)
+            program.unsafeRunSync()
+        }
 
       bench(m"ZIO  Queue.bounded")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.conduitZio }
+        '{
+            turbulence.Benchmarks.runZio:
+              import zio.*, zio.stream.*
+              val source =
+                ZStream.fromIterable
+                  (turbulence.Benchmarks.inputChunks.map(c => Chunk.fromArray(c.asInstanceOf[Array[Byte]])))
+              for
+                queue <- Queue.bounded[Take[Nothing, Chunk[Byte]]](8)
+                _     <- source.runIntoQueue(queue).fork
+                total <- ZStream.fromQueue(queue).flattenTake.runFold(0L)((acc, c) => acc + c.size)
+              yield total
+        }
 
+    // Example M: `Confluence` fan-in — merge four streams. A stable in-memory
+    // source's window is shared by reference, exactly as the references pass
+    // immutable chunks.
     suite(m"Confluence fan-in: merge 4 streams (4 MB)"):
       bench(m"Soundness  Confluence")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.confluenceSoundness }
+        '{
+            supervise:
+              val merged = Confluence(turbulence.Benchmarks.quarters.map(q => Stream(q))*)
+              var total = 0L
+              merged.foreachWindow((_, _, count) => total += count)
+              total
+        }
 
       bench(m"FS2  parJoinUnbounded")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.confluenceFs2 }
+        '{
+            import cats.effect.unsafe.implicits.global
+            import cats.effect.IO
+            val streams =
+              turbulence.Benchmarks.quarters.map: q =>
+                fs2.Stream.chunk(fs2.Chunk.array(q.asInstanceOf[Array[Byte]])).covary[IO]
+            fs2.Stream.emits(streams).parJoinUnbounded.compile.count.unsafeRunSync()
+        }
 
       bench(m"ZIO  mergeAllUnbounded")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.confluenceZio }
+        '{
+            turbulence.Benchmarks.runZio:
+              import zio.*, zio.stream.*
+              val streams =
+                turbulence.Benchmarks.quarters.map(q => ZStream.fromChunk(Chunk.fromArray(q.asInstanceOf[Array[Byte]])))
+              ZStream.mergeAllUnbounded()(streams*).runCount
+        }
 
+    // Example N: `Manifold` fan-out — broadcast to three consumers. The source
+    // chunk is shared read-only between subscribers, so it too passes without
+    // copying; the residual gap on fan-out is the thread-vs-fiber wakeup of the
+    // subscriber consumers.
     suite(m"Manifold fan-out: broadcast to 3 (4 MB in, 12 MB consumed)"):
       bench(m"Soundness  Manifold")
         ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
-        '{ turbulence.Benchmarks.manifoldSoundness }
+        '{
+            supervise:
+              val subscribers = Manifold(Stream(turbulence.Benchmarks.input), 3)
+              val tasks = subscribers.map: subscriber =>
+                async:
+                  var total = 0L
+                  subscriber.foreachWindow((_, _, count) => total += count)
+                  total
+              tasks.map(_.await()).sum
+        }
 
       bench(m"FS2  broadcastThrough")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.manifoldFs2 }
+        '{
+            import cats.effect.unsafe.implicits.global
+            import cats.effect.IO, cats.syntax.all.*
+            val counter: fs2.Pipe[IO, Byte, Long] = _.chunks.foldMap(chunk => chunk.size.toLong)
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.inputArray)).covary[IO]
+            . broadcastThrough(counter, counter, counter).compile.foldMonoid.unsafeRunSync()
+        }
 
       bench(m"ZIO  broadcast")(target = 1*Second, operationSize = size):
-        '{ turbulence.Benchmarks.manifoldZio }
+        '{
+            turbulence.Benchmarks.runZio:
+              import zio.*, zio.stream.*
+              ZIO.scoped:
+                ZStream.fromChunk(Chunk.fromArray(turbulence.Benchmarks.inputArray)).broadcast(3, 16).flatMap: streams =>
+                  ZIO.foreachPar(streams)(_.runCount).map(_.sum)
+        }
