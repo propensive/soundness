@@ -74,9 +74,15 @@ object Alphabet:
           type Upstream = Credit
 
           private val base: Int = bits(alphabet)
+          private val mask: Int = (1 << base) - 1
 
           // Serialized characters per group, for terminal padding.
           private val multiple: Int = 8/base.gcd(8)
+
+          // Character lookup table for the `2^base` data symbols, so the hot
+          // loop indexes an array rather than re-reading the alphabet string.
+          private val table: Array[Char] =
+            caps.unsafe.unsafeAssumePure(Array.tabulate(1 << base)(alphabet(_)))
 
           private var accumulator: Int = 0
           private var accumulated: Int = 0
@@ -105,11 +111,26 @@ object Alphabet:
             var continue: Boolean = true
 
             while continue do
+              // Fast path: while byte-aligned (no carry), emit whole base64
+              // groups — three input bytes to four characters — directly from
+              // the table, skipping the per-character accumulator bookkeeping.
+              if base == 6 then
+                while accumulated == 0 && consumed + 3 <= sourceLength && produced + 4 <= targetSpace
+                do
+                  val b0 = bytes(sourceOffset + consumed) & 0xff
+                  val b1 = bytes(sourceOffset + consumed + 1) & 0xff
+                  val b2 = bytes(sourceOffset + consumed + 2) & 0xff
+                  chars(targetOffset + produced) = table(b0 >>> 2)
+                  chars(targetOffset + produced + 1) = table(((b0 & 0x3) << 4) | (b1 >>> 4))
+                  chars(targetOffset + produced + 2) = table(((b1 & 0xf) << 2) | (b2 >>> 6))
+                  chars(targetOffset + produced + 3) = table(b2 & 0x3f)
+                  consumed += 3
+                  produced += 4
+                  written += 4
+
               if accumulated >= base then
                 if produced < targetSpace then
-                  chars(targetOffset + produced) =
-                    alphabet((accumulator >>> (accumulated - base)) & ((1 << base) - 1))
-
+                  chars(targetOffset + produced) = table((accumulator >>> (accumulated - base)) & mask)
                   produced += 1
                   accumulated -= base
                   written += 1
@@ -182,6 +203,13 @@ object Alphabet:
           private val base: Int = bits(alphabet)
           private val pad: Char = if stage.padding then alphabet(1 << base) else ' '
 
+          // Dense decode table and the largest valid data value, for the fast
+          // path: a character outside `0..dataMax` (invalid, or a pad) bails to
+          // the general path, which reports the error or realigns padding.
+          private val inversions: IArray[Int] = alphabet.inversions
+          private val invLength: Int = inversions.length
+          private val dataMax: Int = (1 << base) - 1
+
           private var accumulator: Int = 0
           private var accumulated: Int = 0
           private var position: Int = 0
@@ -208,6 +236,36 @@ object Alphabet:
             var continue: Boolean = true
 
             while continue do
+              // Fast path: while byte-aligned, decode whole base64 groups — four
+              // characters to three bytes — straight from the table, bailing to
+              // the general path on any pad or invalid character.
+              if base == 6 then
+                var fast: Boolean = true
+
+                while fast && accumulated == 0 && consumed + 4 <= sourceLength
+                    && produced + 3 <= targetSpace do
+
+                  val c0 = chars(sourceOffset + consumed).toInt
+                  val c1 = chars(sourceOffset + consumed + 1).toInt
+                  val c2 = chars(sourceOffset + consumed + 2).toInt
+                  val c3 = chars(sourceOffset + consumed + 3).toInt
+                  val v0 = if c0 < invLength then inversions(c0) else -1
+                  val v1 = if c1 < invLength then inversions(c1) else -1
+                  val v2 = if c2 < invLength then inversions(c2) else -1
+                  val v3 = if c3 < invLength then inversions(c3) else -1
+
+                  if v0 < 0 || v0 > dataMax || v1 < 0 || v1 > dataMax || v2 < 0 || v2 > dataMax
+                      || v3 < 0 || v3 > dataMax
+                  then fast = false
+                  else
+                    val group = (v0 << 18) | (v1 << 12) | (v2 << 6) | v3
+                    bytes(targetOffset + produced) = (group >>> 16).toByte
+                    bytes(targetOffset + produced + 1) = (group >>> 8).toByte
+                    bytes(targetOffset + produced + 2) = group.toByte
+                    consumed += 4
+                    produced += 3
+                    position += 4
+
               if accumulated >= 8 then
                 if produced < targetSpace then
                   bytes(targetOffset + produced) =

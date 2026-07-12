@@ -239,6 +239,17 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       . via(zio.stream.ZPipeline.gunzip()).via(zio.stream.ZPipeline.utfDecode)
       . map(_.length).runSum
 
+  // Isolated streaming base64 encode+decode roundtrip, to measure the duct
+  // directly (Data -> Text -> Data) against FS2's native base64 pipes.
+  def streamBase64Soundness: Int =
+    Stream(input).through(summon[Alphabet[Base64]]).through(summon[Alphabet[Base64]]).memoize.length
+
+  def streamBase64Fs2: Long =
+    import cats.effect.unsafe.implicits.global
+    fs2.Stream.chunk(fs2.Chunk.array(inputArray)).covary[cats.effect.IO]
+    . through(fs2.text.base64.encode).through(fs2.text.base64.decode)
+    . compile.count.unsafeRunSync()
+
   // ── Chained example Q: transcode cascade (no compression, 3-way) ────────────
   // A long chain of the one non-compression stage all three kernels share
   // natively — UTF-8 transcoding — with no gzip to dominate the cost and no
@@ -662,6 +673,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
       val secureOk = secureChainSoundness == input.length && secureChainJdk == input.length
       val readOk = readGzipSoundness == readGzipFs2 && readGzipFs2 == readGzipZio
       val base64Ok = base64Soundness == base64Jdk && base64Jdk == base64Fs2
+      val streamBase64Ok = streamBase64Soundness == input.length && streamBase64Fs2 == input.length
       val readOk2 = readChunked == input.length && memoizeChunked == input.length
       val cursorOk = cursorSum == rawArraySum && cursorSum == checksumSoundness
       val writeOk = writeToSink == input.length && rawWrite == input.length
@@ -683,9 +695,9 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
           && slicedTranscodeZio == takeBytes
       ( roundtripOk, transcodeOk, readOk, base64Ok, readOk2, cursorOk, writeOk, hexOk, flowOk,
         conduitOk, fanInOk, fanOutOk, armoredOk, secureOk, transcodeChainOk, armorTranscodeOk,
-        slicedOk )
+        slicedOk, streamBase64Ok )
     . assert(_ == (true, true, true, true, true, true, true, true, true, true, true, true, true,
-        true, true, true, true))
+        true, true, true, true, true))
 
     suite(m"Gzip compression (4 MB)"):
       bench(m"Soundness  Stream.compress[Gzip]")
@@ -815,6 +827,14 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
 
       bench(m"JDK  java.util.Base64")(target = 1*Second, operationSize = size):
         '{ turbulence.Benchmarks.base64Jdk }
+
+    suite(m"Streaming base64 encode+decode roundtrip (4 MB)"):
+      bench(m"Soundness  through(b64).through(b64)")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.streamBase64Soundness }
+
+      bench(m"FS2  base64.encode.decode")(target = 1*Second, operationSize = size):
+        '{ turbulence.Benchmarks.streamBase64Fs2 }
 
     suite(m"AES-256-CBC encrypt (4 MB)"):
       bench(m"Soundness  enigmatic encryptStream")
