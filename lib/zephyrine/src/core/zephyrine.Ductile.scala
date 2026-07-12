@@ -115,13 +115,18 @@ object Ductile:
           // sound byte-credit as it stands.
           def translate(demand: Credit): Credit = demand
 
-          private update def decode(out: jn.CharBuffer, endOfInput: Boolean): Unit =
-            val result = decoder.decode(staging, out, endOfInput).nn
+          // Decode `in` into `out`, substituting malformed input through the
+          // sanitizer; `base` is the absolute byte offset of `in.position == 0`,
+          // for sanitizer error reporting. Returns the terminal `CoderResult`.
+          private update def decode(in: jn.ByteBuffer, out: jn.CharBuffer, base: Int, last: Boolean)
+          :   jnc.CoderResult =
 
-            if result.isMalformed then
-              stage.sanitizer.sanitize(total + staging.position, stage.encoding).let(out.put(_))
-              staging.position(staging.position + result.length)
-              decode(out, endOfInput)
+            val result = decoder.decode(in, out, last).nn
+
+            if !result.isMalformed then result else
+              stage.sanitizer.sanitize(base + in.position, stage.encoding).let(out.put(_))
+              in.position(in.position + result.length)
+              decode(in, out, base, last)
 
           update def step
             ( source: input.Storage,
@@ -134,16 +139,36 @@ object Ductile:
 
             val bytes = source.asInstanceOf[Array[Byte]]
             val chars = target.asInstanceOf[Array[Char]]
-            val copy = sourceLength.min(staging.remaining)
-            staging.put(bytes, sourceOffset, copy)
-            staging.flip()
-
             val out = jn.CharBuffer.wrap(chars, targetOffset, targetSpace).nn
-            decode(out, false)
-            total += staging.position
-            staging.compact()
 
-            Duct.Progress(copy, out.position - targetOffset)
+            if staging.position == 0 then
+              // Fast path: with no carried bytes, decode straight from the source
+              // window — no intermediate copy of the bulk of the stream.
+              val in = jn.ByteBuffer.wrap(bytes, sourceOffset, sourceLength).nn
+              val result = decode(in, out, total - sourceOffset, false)
+              val consumed = in.position - sourceOffset
+              total += consumed
+
+              if result.isUnderflow && consumed < sourceLength then
+                // An incomplete trailing character: carry its bytes to the next
+                // refill, where they lead the staging buffer.
+                staging.put(bytes, sourceOffset + consumed, sourceLength - consumed)
+                Duct.Progress(sourceLength, out.position - targetOffset)
+              else
+                // Output filled with complete bytes still to come, or input
+                // drained cleanly: leave any remainder for the next window.
+                Duct.Progress(consumed, out.position - targetOffset)
+            else
+              // Carry path: prior incomplete bytes are staged, so append the new
+              // window to make the split character contiguous, then decode.
+              val copy = sourceLength.min(staging.remaining)
+              staging.put(bytes, sourceOffset, copy)
+              staging.flip()
+              decode(staging, out, total, false)
+              total += staging.position
+              staging.compact()
+
+              Duct.Progress(copy, out.position - targetOffset)
 
           override update def flush(target: output.Storage, targetOffset: Int, targetSpace: Int)
           :   Int =
@@ -152,7 +177,7 @@ object Ductile:
               val chars = target.asInstanceOf[Array[Char]]
               val out = jn.CharBuffer.wrap(chars, targetOffset, targetSpace).nn
               staging.flip()
-              decode(out, true)
+              decode(staging, out, total, true)
               total += staging.position
               staging.compact()
 
