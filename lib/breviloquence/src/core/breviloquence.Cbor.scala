@@ -499,7 +499,12 @@ object Cbor extends Cbor2, Dynamic:
       else
         origin
 
+  // The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM
+  // pipeline — rejects the `Optic`'s capture of `filter.predicate` against the required
+  // pure `Optic` type. (Compiler divergence; see #1520 and `caesura`'s `rowFilter`.)
   given filterOptical: Filter[Cbor] is Optical from Cbor onto Cbor = filter =>
+    val predicate: Cbor -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
+
     Optic: (origin, lambda) =>
       if origin.root.isArray then
         val n = origin.root.elements
@@ -510,7 +515,7 @@ object Cbor extends Cbor2, Dynamic:
 
           while i < n do
             val element = Cbor.ast(origin.root.element(i))
-            updated(i) = (if filter.predicate(element) then lambda(element) else element).root
+            updated(i) = (if predicate(element) then lambda(element) else element).root
             i += 1
 
           Cbor.Ast.array(updated.asInstanceOf[IArray[Any]])
@@ -611,22 +616,34 @@ object Cbor extends Cbor2, Dynamic:
   given listEncodable: [list <: List, element] => (encodable: => element is Encodable in Cbor)
   =>  list[element] is Encodable in Cbor =
 
-    caps.unsafe.unsafeAssumePure:
-      values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
+    // A pure thunk rather than a sealed lambda: under `-scalajs` the SAM expands to an
+    // anonymous class whose pure self-type may not capture the by-name parameter.
+    val enc: () -> (element is Encodable in Cbor) = caps.unsafe.unsafeAssumePure(() => encodable)
+
+    values => ast(Ast.array(caps.unsafe.unsafeAssumePure
+      (IArray.from(values.map(enc().encoded(_).root)))))
 
 
   given setEncodable: [set <: Set, element] => (encodable: => element is Encodable in Cbor)
   =>  set[element] is Encodable in Cbor =
 
-    caps.unsafe.unsafeAssumePure:
-      values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
+    // A pure thunk rather than a sealed lambda: under `-scalajs` the SAM expands to an
+    // anonymous class whose pure self-type may not capture the by-name parameter.
+    val enc: () -> (element is Encodable in Cbor) = caps.unsafe.unsafeAssumePure(() => encodable)
+
+    values => ast(Ast.array(caps.unsafe.unsafeAssumePure
+      (IArray.from(values.map(enc().encoded(_).root)))))
 
 
   given seriesEncodable: [series <: Series, element] => (encodable: => element is Encodable in Cbor)
   =>  series[element] is Encodable in Cbor =
 
-    caps.unsafe.unsafeAssumePure:
-      values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
+    // A pure thunk rather than a sealed lambda: under `-scalajs` the SAM expands to an
+    // anonymous class whose pure self-type may not capture the by-name parameter.
+    val enc: () -> (element is Encodable in Cbor) = caps.unsafe.unsafeAssumePure(() => encodable)
+
+    values => ast(Ast.array(caps.unsafe.unsafeAssumePure
+      (IArray.from(values.map(enc().encoded(_).root)))))
 
 
   given collectionDecodable: [collection <: Iterable, element]

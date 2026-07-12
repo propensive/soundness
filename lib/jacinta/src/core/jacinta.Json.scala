@@ -1026,7 +1026,12 @@ object Json extends Json2, Dynamic:
       else
         origin
 
+  // The `predicate` laundering is for the Scala.js pipeline, which — unlike the JVM
+  // pipeline — rejects the `Optic`'s capture of `filter.predicate` against the required
+  // pure `Optic` type. (Compiler divergence; see #1520 and `caesura`'s `rowFilter`.)
   given filterOptical: Filter[Json] is Optical from Json onto Json = filter =>
+    val predicate: Json -> Boolean = caps.unsafe.unsafeAssumePure(filter.predicate)
+
     Optic: (origin, lambda) =>
       if origin.root.isArray then
         val n = origin.root.arrayLength
@@ -1037,7 +1042,7 @@ object Json extends Json2, Dynamic:
 
           while i < n do
             val element = Json.ast(origin.root.arrayElement(i))
-            updated(i) = (if filter.predicate(element) then lambda(element) else element).root
+            updated(i) = (if predicate(element) then lambda(element) else element).root
             i += 1
 
           Json.Ast.arr(updated.asInstanceOf[IArray[Any]])

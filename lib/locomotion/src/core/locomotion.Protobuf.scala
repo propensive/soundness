@@ -80,8 +80,13 @@ trait Protobuf2:
   =>  ( encodable: => element is Encodable in Protobuf )
   =>  collection[element] is Encodable in Protobuf =
 
-    caps.unsafe.unsafeAssumePure: values =>
-      val occurrences = values.to(List).flatMap(encodable.encode(_).occurrences)
+    // A pure thunk rather than a sealed lambda: under `-scalajs` the SAM expands to an
+    // anonymous class whose pure self-type may not capture the by-name parameter.
+    val enc: () -> (element is Encodable in Protobuf) =
+      caps.unsafe.unsafeAssumePure(() => encodable)
+
+    values =>
+      val occurrences = values.to(List).flatMap(enc().encode(_).occurrences)
       if occurrences.isEmpty then Protobuf.Absent else Protobuf.Repeated(occurrences)
 
   given listDecodable: [collection <: Iterable, element]
@@ -318,7 +323,11 @@ object Protobuf extends Protobuf2:
   =>  ( encodable: => element is Encodable in Protobuf, packable: element is Packable )
   =>  collection[element] is Encodable in Protobuf =
 
-    caps.unsafe.unsafeAssumePure: values =>
+    // A pure thunk, as `listEncodable` above.
+    val enc: () -> (element is Encodable in Protobuf) =
+      caps.unsafe.unsafeAssumePure(() => encodable)
+
+    values =>
       val list = values.to(List)
 
       if list.isEmpty then Absent else
@@ -326,7 +335,7 @@ object Protobuf extends Protobuf2:
           var rest = list
 
           while rest.nonEmpty do
-            printer.raw(encodable.encode(rest.head).payload)
+            printer.raw(enc().encode(rest.head).payload)
             rest = rest.tail
 
         Wire(WireType.Len, bytes)
