@@ -162,8 +162,7 @@ object Http2:
       val end = start + length
 
       if end > data.length then abort(Http2Error(Reason.Truncated))
-      // Sealed: a fresh `IArray` slice is immutable; the opaque-Array artifact.
-      val body: anticipation.Data = caps.unsafe.unsafeAssumePure(data.slice(start, end))
+      val body: anticipation.Data = data.slice(start, end)
 
       val frame = FrameType.fromId(typeId).lest(Http2Error(Reason.BadFrameType(typeId))) match
         case FrameType.Data =>
@@ -173,10 +172,9 @@ object Http2:
           val unpadded = stripPadding(body, flags)
           // A PRIORITY prefix (5 bytes: 4-byte dependency + 1-byte weight) precedes
           // the header block when the PRIORITY flag is set; skip it.
-          // Sealed: a fresh `IArray` slice is immutable; the opaque-Array artifact.
           val block: anticipation.Data =
             if Flags.set(flags, Flags.Priority)
-            then caps.unsafe.unsafeAssumePure(unpadded.slice(5, unpadded.length))
+            then unpadded.slice(5, unpadded.length)
             else unpadded
 
           Frame.Headers
@@ -202,8 +200,7 @@ object Http2:
           Frame.GoAway
             ( lastStreamId,
               uint32(body, 4),
-              // Sealed: the opaque-Array artifact.
-              caps.unsafe.unsafeAssumePure(body.slice(8, body.length)) )
+              body.slice(8, body.length) )
 
         case FrameType.WindowUpdate =>
           Frame.WindowUpdate(streamId, (uint32(body, 0) & 0x7fffffffL).toInt)
@@ -217,8 +214,7 @@ object Http2:
         if payload.length < 1 then abort(Http2Error(Reason.Truncated))
         val padLength = payload(0) & 0xff
         if 1 + padLength > payload.length then abort(Http2Error(Reason.Protocol(t"bad padding")))
-        // Sealed: the opaque-Array artifact.
-        caps.unsafe.unsafeAssumePure(payload.slice(1, payload.length - padLength))
+        payload.slice(1, payload.length - padLength)
 
     private def decodeSettings(payload: Bytes): List[Setting] raises Http2Error =
       if payload.length%6 != 0 then abort(Http2Error(Reason.Protocol(t"bad SETTINGS length")))

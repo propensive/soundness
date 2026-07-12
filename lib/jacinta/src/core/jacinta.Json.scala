@@ -714,8 +714,7 @@ object Json extends Json2, Dynamic:
             val n = json.arrayLength
 
             if n == full.length then full
-            // Sealed: a fresh `IArray` is immutable (the opaque-Array artifact).
-            else caps.unsafe.unsafeAssumePure(IArray.tabulate(n)(full(_)))
+            else IArray.tabulate(n)(full(_))
           else
             // hoisted: a fresh array built inside `yet`'s by-name operand (which
             // captures the ambient Tactic) could not escape it

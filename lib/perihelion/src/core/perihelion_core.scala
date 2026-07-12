@@ -156,8 +156,7 @@ private def readHandshake(input: (zephyrine.Stream[Data] over zephyrine.Credit)^
     case count: Int =>
       if count > 0 then
         val window = input.addressable.materialize(input.window(using Unsafe), input.start, count)
-        // Sealed: see `Frame.closeData` — the opaque-Array artifact.
-        val acc2: Data = caps.unsafe.unsafeAssumePure(acc ++ window)
+        val acc2: Data = acc ++ window
         val marker = crlfCrlf(acc2)
 
         if marker >= 0 then

@@ -1663,3 +1663,26 @@ Also cherry-picked the (previously unpushed) caesura+yossarian launder commit.
 The clean long-term fix is compiler #1520 (run ExpandSAMs after CC), which
 deletes ALL of this; soundness.js is still not CI-gated, so main can regress
 silently until then.
+
+## IArray-purity fork fix (2026-07-12, branch iarray-purity + fork feature/3.9/iarraypure)
+
+The opaque-Array artifact is fixed AT THE ROOT: the fork's capture checker now
+treats `IArray` as pure. `derivesFromCapTrait` stops at the IArray head (new
+`defn.IArrayAlias`) instead of dealiasing to (Mutable-classified) `Array` —
+IArray's interface exposes no mutation, so a fresh IArray is immutable from
+birth; construction is semantically `caps.freeze`. The pre-existing unsafe
+aliasing holes (`unsafeFromArray`, covariance) are unchanged in trust level.
+
+- Fork commits: feature/3.9/iarraypure (48f6581dae: Definitions + CaptureOps +
+  pos test), merged into the 3.9 composite (af765df0f6, artifacts 24407a2f49);
+  cherry-picked onto all-main (3.10 row) and rebuilt.
+- Fork captures suite: ZERO new failures (4 pre-existing release-tag failures
+  confirmed by true baseline — mut-iterator4-global, outerRefsUses-global,
+  filevar-expanded-global, fill-cbn; iarray-pure passes only with the fix).
+- Soundness: all ~33 opacity seals DELETED (27 comment-marked + 6 unmarked,
+  incl. caesura.Spannable's -scalajs launder and honeycomb Tag's extends-clause
+  seal). JVM sweep, JS pipeline both green from clean.
+- LESSON: mill does not detect toolchain changes (same version string) — full
+  `mill clean` before trusting anything after a fork rebuild.
+- Upstream-report candidate #3: propose IArray purity upstream alongside the
+  quote-pattern and inline-assignment-provenance reports.

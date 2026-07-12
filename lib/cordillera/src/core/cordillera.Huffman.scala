@@ -45,8 +45,7 @@ import Http2Error.Reason
 // byte values plus the EOS symbol (index 256), the right-aligned code and its bit
 // length. Codes are most-significant-bit first.
 object Huffman:
-  // Sealed: a fresh `IArray` is immutable; fresh-ness is the opaque-Array artifact.
-  private val codes: IArray[Int] = caps.unsafe.unsafeAssumePure(IArray[Int](
+  private val codes: IArray[Int] = IArray[Int](
     0x1ff8, 0x7fffd8, 0xfffffe2, 0xfffffe3, 0xfffffe4, 0xfffffe5, 0xfffffe6, 0xfffffe7,
     0xfffffe8, 0xffffea, 0x3ffffffc, 0xfffffe9, 0xfffffea, 0x3ffffffd, 0xfffffeb, 0xfffffec,
     0xfffffed, 0xfffffee, 0xfffffef, 0xffffff0, 0xffffff1, 0xffffff2, 0x3ffffffe, 0xffffff3,
@@ -79,10 +78,9 @@ object Huffman:
     0x3fffea, 0x3fffeb, 0x1ffffee, 0x1ffffef, 0xfffff4, 0xfffff5, 0x3ffffea, 0x7ffff4,
     0x3ffffeb, 0x7ffffe6, 0x3ffffec, 0x3ffffed, 0x7ffffe7, 0x7ffffe8, 0x7ffffe9, 0x7ffffea,
     0x7ffffeb, 0xffffffe, 0x7ffffec, 0x7ffffed, 0x7ffffee, 0x7ffffef, 0x7fffff0, 0x3ffffee,
-    0x3fffffff ))
+    0x3fffffff )
 
-  // Sealed: the opaque-Array artifact, as `codes` above.
-  private val lengths: IArray[Int] = caps.unsafe.unsafeAssumePure(IArray[Int](
+  private val lengths: IArray[Int] = IArray[Int](
     13, 23, 28, 28, 28, 28, 28, 28,
     28, 24, 30, 28, 28, 30, 28, 28,
     28, 28, 28, 28, 28, 28, 30, 28,
@@ -115,7 +113,7 @@ object Huffman:
     22, 22, 25, 25, 24, 24, 26, 23,
     26, 27, 26, 26, 27, 27, 27, 27,
     27, 28, 27, 27, 27, 27, 27, 26,
-    30 ))
+    30 )
 
   // Encodes bytes with the HPACK Huffman code, padding the final byte with 1-bits
   // (the most-significant bits of the EOS symbol), per RFC 7541 §5.2.

@@ -58,10 +58,9 @@ trait Dsv2:
     value => decodable.decoded(value.data.head)
 
 object Dsv extends Dsv2:
-  // Sealed: fresh `IArray`s are immutable (the opaque-Array artifact).
   def apply(iterable: Iterable[Text]): Dsv =
-    new Dsv(caps.unsafe.unsafeAssumePure(IArray.from(iterable)))
-  def apply(text: Text*): Dsv = new Dsv(caps.unsafe.unsafeAssumePure(IArray.from(text)))
+    new Dsv(IArray.from(iterable))
+  def apply(text: Text*): Dsv = new Dsv(IArray.from(text))
 
   // An absent cell (a short positional row, or a header column missing from the row) decodes
   // to `Unset`; a present cell — even an empty one — decodes its inner value. The product
@@ -174,7 +173,6 @@ object Dsv extends Dsv2:
 
 
   given showable: (format: DsvFormat) => Dsv is Showable = dsv =>
-    // Sealed: see `Dsv.apply` — the opaque-Array artifact.
     val cells = caps.unsafe.unsafeAssumePure:
       dsv.data.map: cell =>
         val safe = !cell.contains(format.Quote) && !cell.contains(format.Delimiter) &&
@@ -251,8 +249,7 @@ case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
 
   def header: Optional[IArray[Text]] = columns.let: map =>
     val columns = map.map(_.swap)
-    // Sealed: see `Dsv.apply` — the opaque-Array artifact.
-    caps.unsafe.unsafeAssumePure(IArray.tabulate(columns.size)(columns(_)))
+    IArray.tabulate(columns.size)(columns(_))
 
 
   def selectDynamic[value: Decodable in Text](field: String)(using erased dynamicDsvEnabler: DynamicDsvEnabler)

@@ -158,7 +158,7 @@ object Tag:
       Element(label, Attributes.from(presets2), nodes, foreign).of[Topic].over[Transport].in[Form]
 
     def node(attributes: Attributes): Result =
-      new Element(label, Attributes.from(presets) ++ attributes, caps.unsafe.unsafeAssumePure(IArray()), foreign)
+      new Element(label, Attributes.from(presets) ++ attributes, IArray(), foreign)
       with Html.Populable()
       . of[Topic]
       . over[Transport]
@@ -206,7 +206,7 @@ object Tag:
 
 
     def node(attributes: Attributes): Result =
-      new Element(label, Attributes.from(presets) ++ attributes, caps.unsafe.unsafeAssumePure(IArray()), foreign)
+      new Element(label, Attributes.from(presets) ++ attributes, IArray(), foreign)
       with Html.Transparent()
       . of[Topic]
       . over[Transport]
@@ -220,7 +220,7 @@ object Tag:
     def node(attributes: Attributes): Result =
       new Element
         ( label, Attributes.from(presets) ++ attributes,
-          caps.unsafe.unsafeAssumePure(IArray()), this.foreign )
+          IArray(), this.foreign )
       . of[Topic]
       . in[Form]
 
@@ -237,8 +237,7 @@ abstract class Tag
     val boundary:    Boolean                   = false )
 // The empty-children `IArray()` is sealed: a fresh `IArray` in the parent
 // constructor call would otherwise decorate `Tag`'s self type, which must stay
-// pure like `Element`'s (the opaque-Array artifact).
-extends Element(label, Attributes.from(presets), caps.unsafe.unsafeAssumePure(IArray()), foreign),
+extends Element(label, Attributes.from(presets), IArray(), foreign),
   Formal, Dynamic, caps.Pure:
   type Result <: Element
 

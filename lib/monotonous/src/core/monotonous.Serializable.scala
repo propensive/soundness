@@ -49,7 +49,7 @@ object Serializable:
       // Sealed: `tabulate` closes over the alphabet, but the resulting table is an
       // immutable `IArray` of bytes that holds no reference to it.
       private val lookup: IArray[Byte] =
-        caps.unsafe.unsafeAssumePure(IArray.tabulate(1 << bits)(alphabet(_).toByte))
+        IArray.tabulate(1 << bits)(alphabet(_).toByte)
 
       private val padding: Boolean = alphabet.padding
       private val padByte: Byte = if padding then alphabet(1 << bits).toByte else 0

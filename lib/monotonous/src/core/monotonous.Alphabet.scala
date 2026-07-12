@@ -303,9 +303,8 @@ case class Alphabet[encoding <: Serialization]
     if char < inversions.length && inversions(char) >= 0 then inversions(char)
     else abort(SerializationError(position, char))
 
-  // Sealed: an `IArray` zip is immutable; fresh-ness is the opaque-Array artifact.
   lazy val inverse: Map[Char, Int] =
-    tolerance ++ caps.unsafe.unsafeAssumePure(chars.chars.zipWithIndex).to(Map)
+    tolerance ++ chars.chars.zipWithIndex.to(Map)
 
   // Dense decode table, indexed directly by character code (-1 = invalid), so the
   // per-character hot path avoids boxed `Map` lookups.

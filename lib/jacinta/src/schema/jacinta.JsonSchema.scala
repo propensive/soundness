@@ -177,10 +177,9 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
     Json.Encodable(Morphology.Any):
       case JsonSchema.Ref(pointer, _, _) =>
         val ref = summon[JsonPointer is Encodable in Text].encoded(pointer).s
-        // Sealed: fresh `IArray`s are immutable; fresh-ness is the opaque-Array artifact.
         Json.ast(Json.Ast.obj
-          ( caps.unsafe.unsafeAssumePure(IArray("$ref")),
-            caps.unsafe.unsafeAssumePure(IArray(Json.Ast(ref))) ))
+          ( IArray("$ref"),
+            IArray(Json.Ast(ref)) ))
 
       case other =>
         derivedEncodable.encoded(other)
