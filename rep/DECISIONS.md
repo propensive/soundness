@@ -1449,3 +1449,34 @@ field is the pattern.
 FUTURE LEGS: Postable/Transmissible (sealed constructors — need untracked-field
 conversion), Loadable/Computable/near-1-capture audits, converting codec-thunk
 whole-instance seals to untracked fields where traits stay tracked.
+
+## Sepcheck rollout leg 3: jacinta satellites (2026-07-12, branch jacinta-satellites-sepcheck)
+
+jacinta.time and jacinta.http flipped to `settings.sep` with NO source changes —
+the derived-given separation failures that parked them have evaporated (the
+typeclass-purity flips and Json.Encodable payload-seal conversion removed the
+tracked instances they tripped on).
+
+jacinta.schema needed one file (JsonSchema.scala):
+- Two `IArray(...)` seals (the opacity artifact) in the `$ref` encoder.
+- THE REAL FINDING — collection-codec aliasing at use sites: `field[List[Text]]`/
+  `field[Map[Text, JsonSchema]]` applications of the `array`/`map` givens fail
+  separation: the capture-polymorphic `Tactic^` formal hides the passed tactic,
+  and the SYNTHESIZED by-name element-codec thunk *re-evaluates* tactic-applying
+  given expansions inside the thunk (even `unsafeAssumePure`-sealed ones — the
+  seal launders the capture set, not the hidden set), overlapping the same
+  tactic. TWO sub-findings:
+  * A local `given x: T = tacticTakingExpr` ALIAS also re-evaluates its RHS
+    inside the thunk (def semantics) — the thunk captures the tactic even when
+    the alias is annotated pure. Bind a plain `val` instead.
+  * References to pure local VALS carry no hidden set, so the recipe is: bind
+    every element codec (including the recursive self-codec) as a sealed-pure
+    local val and pass it EXPLICITLY (`field[...](...)(using theVal)`), which
+    both bypasses resolution and empties the thunk's captures.
+- The decode body moved from the given's lambda to a named private
+  `decodeSchema` so the self-codec can be rebuilt explicitly for recursion.
+- `field[List[Json]](t"enum")` never failed — its element codec is the pure
+  identity — which is what isolated the diagnosis.
+
+Laundering the tactic (`given Tactic = unsafeAssumePure(tactic)`) does NOT fix
+the aliasing: the local is still a capability value passed through two channels.

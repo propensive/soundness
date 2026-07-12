@@ -177,7 +177,10 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
     Json.Encodable(Morphology.Any):
       case JsonSchema.Ref(pointer, _, _) =>
         val ref = summon[JsonPointer is Encodable in Text].encoded(pointer).s
-        Json.ast(Json.Ast.obj(IArray("$ref"), IArray(Json.Ast(ref))))
+        // Sealed: fresh `IArray`s are immutable; fresh-ness is the opaque-Array artifact.
+        Json.ast(Json.Ast.obj
+          ( caps.unsafe.unsafeAssumePure(IArray("$ref")),
+            caps.unsafe.unsafeAssumePure(IArray(Json.Ast(ref))) ))
 
       case other =>
         derivedEncodable.encoded(other)
@@ -186,87 +189,118 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
   // the *value* of its `type` field (and may carry none, for `$ref`), which the
   // `type`-as-Scala-subtype derivation cannot model. Decoding by hand also
   // keeps the recursion on nested schemas pointed back at this same given.
-  given decodable: (Tactic[JsonError], Tactic[JsonPointerError])
+  given decodable: (jsonError: Tactic[JsonError], pointerError: Tactic[JsonPointerError])
   =>  JsonSchema is Json.Decodable =
     // The decoder closes over the two resolution-scoped tactics (and, through the nested-
     // schema recursion, over itself), which share the instance's given-resolution lifetime;
     // the whole instance is laundered pure per the codec-thunk seal pattern (see
-    // rep/DECISIONS.md). The local primitive codecs below re-expose the (sealed-pure)
-    // primitives at a higher priority so the `optional`/`array`/`map` givens' pure by-name
-    // inner codecs (their thunks must remain pure to be expressible inside staged quotes)
-    // resolve without consulting the enclosing tactics.
+    // rep/DECISIONS.md).
     caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Any): json =>
-        given textDecodable: (Text is Json.Decodable) = Json.text
-        given intDecodable: (Int is Json.Decodable) = Json.int
+      Json.Decodable(Morphology.Any)(decodeSchema(_))
 
-        given doubleDecodable: (Double is Json.Decodable) = Json.double
+  // The body of `decodable`, named so the nested-schema recursion below can rebuild its
+  // own element codecs explicitly. The local primitive codecs re-expose the (sealed-pure)
+  // primitives at a higher priority so the `optional`/`array`/`map` givens' pure by-name
+  // inner codecs (their thunks must remain pure to be expressible inside staged quotes)
+  // resolve without consulting the enclosing tactics.
+  private def decodeSchema(json: Json)
+    ( using jsonError: Tactic[JsonError], pointerError: Tactic[JsonPointerError] )
+  :   JsonSchema =
+    given textDecodable: (Text is Json.Decodable) = Json.text
+    given intDecodable: (Int is Json.Decodable) = Json.int
 
-        given booleanDecodable: (scala.Boolean is Json.Decodable) = Json.boolean
+    given doubleDecodable: (Double is Json.Decodable) = Json.double
 
-        def field[value](name: Text)(using decodable: value is Json.Decodable)
-        :   Optional[value] =
-          json(name).as[Optional[value]]
+    given booleanDecodable: (scala.Boolean is Json.Decodable) = Json.boolean
 
-        val reference = json("$ref".tt)
+    def field[value](name: Text)(using decodable: value is Json.Decodable)
+    :   Optional[value] =
+      json(name).as[Optional[value]]
 
-        if !reference.root.isAbsent
-        then JsonSchema.Ref(reference.as[JsonPointer], field[Text](t"description"))
-        else field[Text](t"type") match
-          case t"array" =>
-            JsonSchema.Array
-              ( field[Text](t"description"),
-                field[JsonSchema](t"items"),
-                field[Int](t"minItems"),
-                field[Int](t"maxItems"),
-                false,
-                field[Int](t"maxContains"),
-                field[Int](t"minContains") )
+    val reference = json("$ref".tt)
 
-          case t"string" =>
-            JsonSchema.String
-              ( field[Text](t"description"),
-                field[Int](t"minLength"),
-                field[Int](t"maxLength"),
-                field[Text](t"pattern"),
-                field[JsonSchema.Format](t"format"),
-                false )
+    if !reference.root.isAbsent
+    then JsonSchema.Ref(reference.as[JsonPointer], field[Text](t"description"))
+    else field[Text](t"type") match
+      case t"array" =>
+        JsonSchema.Array
+          ( field[Text](t"description"),
+            field[JsonSchema](t"items"),
+            field[Int](t"minItems"),
+            field[Int](t"maxItems"),
+            false,
+            field[Int](t"maxContains"),
+            field[Int](t"minContains") )
 
-          case t"number" =>
-            JsonSchema.Number
-              ( field[Text](t"description"),
-                field[Double](t"multipleOf"),
-                field[Double](t"maximum"),
-                field[Double](t"minimum"),
-                field[Double](t"exclusiveMinimum"),
-                field[Double](t"exclusiveMaximum"),
-                false )
+      case t"string" =>
+        JsonSchema.String
+          ( field[Text](t"description"),
+            field[Int](t"minLength"),
+            field[Int](t"maxLength"),
+            field[Text](t"pattern"),
+            field[JsonSchema.Format](t"format"),
+            false )
 
-          case t"integer" =>
-            JsonSchema.Integer
-              ( field[Text](t"description"),
-                field[Int](t"maximum"),
-                field[Int](t"minimum"),
-                field[Int](t"exclusiveMinimum"),
-                field[Int](t"exclusiveMaximum"),
-                false )
+      case t"number" =>
+        JsonSchema.Number
+          ( field[Text](t"description"),
+            field[Double](t"multipleOf"),
+            field[Double](t"maximum"),
+            field[Double](t"minimum"),
+            field[Double](t"exclusiveMinimum"),
+            field[Double](t"exclusiveMaximum"),
+            false )
 
-          case t"boolean" =>
-            JsonSchema.Boolean(field[Text](t"description"), false)
+      case t"integer" =>
+        JsonSchema.Integer
+          ( field[Text](t"description"),
+            field[Int](t"maximum"),
+            field[Int](t"minimum"),
+            field[Int](t"exclusiveMinimum"),
+            field[Int](t"exclusiveMaximum"),
+            false )
 
-          case t"null" =>
-            JsonSchema.Null(field[Text](t"description"), false)
+      case t"boolean" =>
+        JsonSchema.Boolean(field[Text](t"description"), false)
 
-          case _ =>
-            // `object`, or an untyped schema (treated as an object).
-            JsonSchema.Object
-              ( field[Text](t"description"),
-                field[Map[Text, JsonSchema]](t"properties").or(Map()),
-                false,
-                field[List[Text]](t"required"),
-                field[List[Json]](t"enum"),
-                json(t"additionalProperties").as[Optional[scala.Boolean]].or(false),
-                field[List[JsonSchema]](t"oneOf") )
+      case t"null" =>
+        JsonSchema.Null(field[Text](t"description"), false)
+
+      case _ =>
+        // `object`, or an untyped schema (treated as an object). The collection reads
+        // take their element codecs explicitly, as sealed-pure vals: resolved
+        // implicitly, the synthesized by-name codec thunks re-evaluate tactic-capturing
+        // given expansions at the application, aliasing the collection givens'
+        // capture-polymorphic tactic parameter — a separation failure. A reference to a
+        // pure local val carries no hidden set. The seals are consistent with (and no
+        // stronger than) the enclosing whole-instance seal on `decodable`.
+        val self: JsonSchema is Json.Decodable =
+          caps.unsafe.unsafeAssumePure(Json.Decodable(Morphology.Any)(decodeSchema(_)))
+
+        // A plain val, not the `textDecodable` given alias: a given alias re-evaluates
+        // its (tactic-applying) right-hand side inside the synthesized thunk.
+        val textDecodable0: Text is Json.Decodable = textDecodable
+
+        val textList: List[Text] is Json.Decodable =
+          caps.unsafe.unsafeAssumePure
+            (Json.array[List, Text](using summon, jsonError, summon)(using textDecodable0))
+
+        val schemaList: List[JsonSchema] is Json.Decodable =
+          caps.unsafe.unsafeAssumePure
+            (Json.array[List, JsonSchema](using summon, jsonError, summon)(using self))
+
+        val schemaMap: Map[Text, JsonSchema] is Json.Decodable =
+          caps.unsafe.unsafeAssumePure
+            (Json.map[Text, JsonSchema](using self)(using summon, jsonError))
+
+        JsonSchema.Object
+          ( field[Text](t"description"),
+            field[Map[Text, JsonSchema]](t"properties")(using schemaMap).or(Map()),
+            false,
+            field[List[Text]](t"required")(using textList),
+            field[List[Json]](t"enum"),
+            field[scala.Boolean](t"additionalProperties").or(false),
+            field[List[JsonSchema]](t"oneOf")(using schemaList) )
 
   given discriminatedUnion: JsonSchema is Discriminable:
     type Form = Json
