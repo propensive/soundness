@@ -617,9 +617,8 @@ object internal:
   private def arrayElements(arr: IArray[Any]): IArray[Any] =
     val n = arr.length
 
-    // Sealed: fresh `IArray`s are immutable (the opaque-Array artifact).
     if n > 0 && (arr(n - 1).asInstanceOf[AnyRef] eq Json.Ast.arrayPad)
-    then caps.unsafe.unsafeAssumePure(arr.take(n - 1))
+    then arr.take(n - 1)
     else arr
 
   private def hasMarker(s: String): Boolean =
@@ -838,8 +837,7 @@ object internal:
       def serializeArray(elements: IArray[Any]): Expr[Json.Ast] =
         val n = elements.length
 
-        // Sealed: see `arrayElements` — the opaque-Array artifact.
-        val indexed = caps.unsafe.unsafeAssumePure(elements.zipWithIndex)
+        val indexed = elements.zipWithIndex
 
         val pieces: List[Expr[Iterable[Json.Ast]]] = indexed.toList.map: (elem, idx) =>
             elem.asMatchable match
@@ -1060,8 +1058,7 @@ object internal:
               then d.toLong
               else d
 
-            // Sealed: see `arrayElements` — the opaque-Array artifact.
-            val elements: IArray[Any] = caps.unsafe.unsafeAssumePure(elements0)
+            val elements: IArray[Any] = elements0
 
             descendArray(array, elements, scrutinee, accept)
 

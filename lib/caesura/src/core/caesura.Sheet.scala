@@ -200,8 +200,7 @@ object Sheet:
       cellsBuf.copyToArray(arr)
       cellsBuf.clear()
       rowOrdinal = rowOrdinal.next
-      // Sealed: see `Dsv.apply` — the opaque-Array artifact.
-      Dsv(caps.unsafe.unsafeAssumePure(IArray.unsafeFromArray(arr)), headings)
+      Dsv(IArray.unsafeFromArray(arr), headings)
 
     // Scan ahead in Fresh state for the next delimiter, quote, or line-ending,
     // bulk-appending the run of regular characters in one operation, then

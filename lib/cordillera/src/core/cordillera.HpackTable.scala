@@ -45,8 +45,7 @@ case class HpackEntry(name: Text, value: Text):
 
 object HpackTable:
   // The 61-entry static table (RFC 7541, Appendix A). Index 1 is element 0 here.
-  // Sealed: a fresh `IArray` is immutable; fresh-ness is the opaque-Array artifact.
-  val static: IArray[HpackEntry] = caps.unsafe.unsafeAssumePure(IArray[HpackEntry](
+  val static: IArray[HpackEntry] = IArray[HpackEntry](
     HpackEntry(t":authority", t""),
     HpackEntry(t":method", t"GET"),
     HpackEntry(t":method", t"POST"),
@@ -107,7 +106,7 @@ object HpackTable:
     HpackEntry(t"user-agent", t""),
     HpackEntry(t"vary", t""),
     HpackEntry(t"via", t""),
-    HpackEntry(t"www-authenticate", t"") ))
+    HpackEntry(t"www-authenticate", t"") )
 
 // The HPACK dynamic table: a FIFO of recently-seen header fields, bounded by a
 // byte-size limit, with oldest-first eviction. Combined with the static table it

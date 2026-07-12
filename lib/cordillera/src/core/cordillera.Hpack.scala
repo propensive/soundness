@@ -81,9 +81,8 @@ object Hpack:
       buf.add(rest.toByte)
 
   private def writeString(buf: ByteBuf^, text: Text): Unit =
-    // Sealed: fresh `IArray`s are immutable; the opaque-Array artifact.
-    val raw: Data = caps.unsafe.unsafeAssumePure(text.s.getBytes("US-ASCII").nn.immutable(using Unsafe))
-    val huffed: Data = caps.unsafe.unsafeAssumePure(Huffman.encode(raw))
+    val raw: Data = text.s.getBytes("US-ASCII").nn.immutable(using Unsafe)
+    val huffed: Data = Huffman.encode(raw)
 
     // Use whichever encoding is shorter (RFC permits either); flag Huffman in bit 7.
     if huffed.length < raw.length then
@@ -129,9 +128,8 @@ class Hpack(maxTableSize: Int = 4096):
     val huffman = (data(offset) & 0x80) != 0
     val (length, start) = readInteger(data, offset, 7)
     if start + length > data.length then abort(Http2Error(Reason.Truncated))
-    // Sealed: fresh `IArray`s are immutable; fresh-ness is the opaque-Array artifact.
-    val raw: Data = caps.unsafe.unsafeAssumePure(data.slice(start, start + length))
-    val decoded: Data = if huffman then caps.unsafe.unsafeAssumePure(Huffman.decode(raw)) else raw
+    val raw: Data = data.slice(start, start + length)
+    val decoded: Data = if huffman then Huffman.decode(raw) else raw
 
     (decoded.utf8, start + length)
 

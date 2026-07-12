@@ -1379,7 +1379,7 @@ object Yaml extends Yaml2, Dynamic:
     val enc: () -> (element is Encodable in Yaml) = caps.unsafe.unsafeAssumePure(() => encodable)
 
     values =>
-      val items = caps.unsafe.unsafeAssumePure(IArray.from(values.map(enc().encode(_).root)))
+      val items = IArray.from(values.map(enc().encode(_).root))
       Yaml.ast(Yaml.Ast.Sequence(items))
 
 

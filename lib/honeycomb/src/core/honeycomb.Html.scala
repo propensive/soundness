@@ -819,8 +819,7 @@ object Html extends Tag.Container
       var index: Int = 0
       var stack: Array[Tag] = new Array(4)
       var depth: Int = 0
-      // Sealed: the opaque-Array artifact.
-      var fragment: IArray[Node] = caps.unsafe.unsafeAssumePure(IArray())
+      var fragment: IArray[Node] = IArray()
       // Pending formatting tags awaiting reconstruction (see WHATWG "active
       // formatting elements"). Stored as parallel arrays of label/Attributes
       // pairs rather than a `List[(Text, Attributes)]`: `:+` on a `List` is
@@ -1749,9 +1748,8 @@ object Html extends Tag.Container
             case Mode.Raw =>
               val text = textual(begin(), parent.label, false)
 
-              // Sealed: fresh `IArray`s are immutable; the opaque-Array artifact.
               if text.nil
-              then Element(parent.label, parent.attributes, caps.unsafe.unsafeAssumePure(IArray()), parent.foreign)
+              then Element(parent.label, parent.attributes, IArray(), parent.foreign)
               else
                 Element(parent.label, parent.attributes,
                   caps.unsafe.unsafeAssumePure(IArray(TextNode(text))), parent.foreign)
@@ -1759,9 +1757,8 @@ object Html extends Tag.Container
             case Mode.Rcdata =>
               val text = textual(begin(), parent.label, true)
 
-              // Sealed: fresh `IArray`s are immutable; the opaque-Array artifact.
               if text.nil
-              then Element(parent.label, parent.attributes, caps.unsafe.unsafeAssumePure(IArray()), parent.foreign)
+              then Element(parent.label, parent.attributes, IArray(), parent.foreign)
               else
                 Element(parent.label, parent.attributes,
                   caps.unsafe.unsafeAssumePure(IArray(TextNode(text))), parent.foreign)

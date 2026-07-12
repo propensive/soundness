@@ -103,6 +103,5 @@ extends caps.ExclusiveCapability, caps.Stateful:
       val header = slice(9)
       val length = Frame.uint24(header, 0)
       if !ensure(length) then abort(Http2Error(Reason.Truncated))
-      // Sealed: a fresh `IArray` is immutable; fresh-ness is the opaque-Array artifact.
-      val whole: Bytes = caps.unsafe.unsafeAssumePure(header ++ slice(length))
+      val whole: Bytes = header ++ slice(length)
       Frame.decode(whole, 0)(0)

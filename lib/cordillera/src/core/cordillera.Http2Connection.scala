@@ -260,8 +260,7 @@ class Http2Connection(duplex: Duplex)(using Monitor, Probate):
     (stream, PseudoHeaders.response(responseHeaders, stream.body.stream))
 
   def close(): Unit =
-    // Sealed: a fresh empty `IArray` is immutable; the opaque-Array artifact.
-    send(Frame.GoAway(0, ErrorCode.NoError.code, caps.unsafe.unsafeAssumePure(IArray.empty[Byte])))
+    send(Frame.GoAway(0, ErrorCode.NoError.code, IArray.empty[Byte]))
     outbound.stop()
     reader.cancel()
     writer.cancel()

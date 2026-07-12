@@ -633,8 +633,7 @@ object internal:
           arr(i*2 + 1) = pair._2.lay(null: String | Null)(_.s)
           i += 1
 
-        // Sealed: see `empty` — the opaque-Array artifact.
-        caps.unsafe.unsafeAssumePure(arr.immutable(using Unsafe))
+        arr.immutable(using Unsafe)
 
     def from(map: Map[Text, Optional[Text]]): Attributes =
       if map.isEmpty then empty else
@@ -647,8 +646,7 @@ object internal:
           arr(i*2 + 1) = v.lay(null: String | Null)(_.s)
           i += 1
 
-        // Sealed: see `empty` — the opaque-Array artifact.
-        caps.unsafe.unsafeAssumePure(arr.immutable(using Unsafe))
+        arr.immutable(using Unsafe)
 
     // Construct an `Attributes` directly from an interleaved `IArray`. The
     // caller guarantees the array's length is even and that every key slot

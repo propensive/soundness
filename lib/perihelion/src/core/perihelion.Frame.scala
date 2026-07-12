@@ -44,8 +44,7 @@ object Frame:
   val maxControlPayload: Int = 125
 
   def closeData(code: Int, reason: Data): Data =
-    // Sealed: fresh `IArray`s are immutable (the opaque-Array artifact).
-    caps.unsafe.unsafeAssumePure(Data((code >> 8).toByte, code.toByte) ++ reason)
+    Data((code >> 8).toByte, code.toByte) ++ reason
 
   // Close codes a client may legitimately send (RFC 6455 §7.4.1 plus the
   // registered application range). Everything else — including 1004/1005/1006,
