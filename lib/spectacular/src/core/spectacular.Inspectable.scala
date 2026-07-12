@@ -226,6 +226,6 @@ trait Inspectable2:
     case given Reflection[`value`] => Inspectable.Derivation.derived[value]
     case _                         => value => ("“"+value+"”").tt
 
-trait Inspectable extends Typeclass:
+trait Inspectable extends Typeclass.Pure:
   def text(value: Self): Text
-  def contramap[self2](lambda: self2 => Self): (self2 is Inspectable)^{this, lambda} = value => text(lambda(value))
+  def contramap[self2](lambda: self2 -> Self): self2 is Inspectable = value => text(lambda(value))

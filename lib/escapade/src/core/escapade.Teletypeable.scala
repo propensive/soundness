@@ -197,8 +197,8 @@ object Teletypeable:
     Teletype.styled[String]
       (throwable.getClass.getName.nn.show.cut(t".").last.s)(_.copy(fg = Chroma(0xdc133b)))
 
-trait Teletypeable extends Typeclass:
+trait Teletypeable extends Typeclass.Pure:
   def teletype(value: Self): Teletype
 
-  def contramap[self2](lambda: self2 => Self): (self2 is Teletypeable)^{this, lambda} =
+  def contramap[self2](lambda: self2 -> Self): self2 is Teletypeable =
     value => teletype(lambda(value))

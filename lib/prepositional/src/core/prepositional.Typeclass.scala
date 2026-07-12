@@ -43,3 +43,16 @@ import beneficence.Findable
 // instances, and the constructing capabilities for the rest, which declare it explicitly.
 trait Typeclass extends Findable:
   type Self
+
+object Typeclass:
+  // The checked-pure subset: a typeclass whose instances hold only data and
+  // logic, never a capability. The compiler enforces it — an instance whose
+  // body references a capability is rejected at its definition — so purity
+  // here is a verified fact, not an assertion. Typeclasses whose instances
+  // legitimately retain capabilities (a `Tactic`, a backend, an encoder that
+  // writes) stay on plain `Typeclass`, with captures tracked explicitly per
+  // the design note above. A pure typeclass instance that must nonetheless
+  // hold a resolution-scoped capability names it in a single
+  // `@caps.unsafe.untrackedCaptures` field — a narrower, greppable assertion
+  // than sealing the whole instance.
+  trait Pure extends Typeclass, caps.Pure
