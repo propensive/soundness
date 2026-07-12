@@ -32,8 +32,6 @@
                                                                                                   */
 package turbulence
 
-import language.experimental.separationChecking
-
 import language.adhocExtensions
 
 import java.io as ji

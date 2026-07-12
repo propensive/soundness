@@ -52,7 +52,7 @@ case class Multiplexer[key, element]()(using Monitor):
   def close(): Unit = active.keys.each(remove(_))
 
   @tailrec
-  private def pump(key: key, stream: LazyList[element])(using Worker): Unit =
+  private[turbulence] final def pump(key: key, stream: LazyList[element])(using Worker): Unit =
     if stream.nil then remove(key) else
       relent()
       queue.put(stream.head)
@@ -68,10 +68,20 @@ case class Multiplexer[key, element]()(using Monitor):
       contain:
         case _ => remove(key); Remedy.Accept
 
-    async:
-      try pump(key, stream) catch case _: Exception => remove(key)
+    // The whole body is built here and crosses to the fiber as a neutral thunk:
+    // an async body may not capture the enclosing instance, and even a cast to
+    // `Multiplexer[key, element]` inside the fiber would re-charge `this`
+    // through the class type parameters' prefix.
+    val body: AnyRef =
+      ((worker: AnyRef) =>
+          try pump(key, stream)(using worker.asInstanceOf[Worker^])
+          catch case _: Exception => remove(key))
+      . asInstanceOf[AnyRef]
 
-  private def remove(key: key): Unit = if !active.nil then queue.put(Removal(key))
+    async:
+      body.asInstanceOf[AnyRef => Unit](summon[Worker].asInstanceOf[AnyRef])
+
+  private[turbulence] def remove(key: key): Unit = if !active.nil then queue.put(Removal(key))
 
   def stream: LazyList[element] = queue.take().nn.absolve match
     case Removal(key) =>

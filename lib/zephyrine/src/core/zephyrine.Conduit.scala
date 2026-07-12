@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import language.experimental.separationChecking
-
 import denominative.*
 import fulminate.*
 import prepositional.*
@@ -85,7 +83,12 @@ object Conduit:
     val intake: (Intake[medium] over Credit)^ = new Intake[medium](using addressable0):
       type Transport = Credit
 
-      private var current: addressable0.Storage = addressable0.allocate(block)
+      // Untracked, with cast-erased assignments and an exclusive write view:
+      // the block is reached only through this (single-writer) intake until
+      // `publish` hands it to the ring.
+      @caps.unsafe.untrackedCaptures
+      private var current: addressable0.Storage =
+        addressable0.allocate(block).asInstanceOf[addressable0.Storage]
       private var capacity: Int = block
       private var mark0: Int = 0
 
@@ -104,7 +107,7 @@ object Conduit:
         if free >= min.max(1) then free else
           publish()
           capacity = min.min(ceiling).max(block)
-          current = addressable0.allocate(capacity)
+          current = addressable0.allocate(capacity).asInstanceOf[addressable0.Storage]
           capacity
 
       update def commit(count: Int): Unit =
@@ -116,7 +119,7 @@ object Conduit:
       // copy, one hand-off. Anything buffered is published first, preserving
       // order; small chunks take the default coalescing copy path.
       override update def put(source: medium, offset: Ordinal, size: Int): Unit =
-        val backing: Optional[addressable0.Storage] =
+        val backing: Optional[addressable0.Storage]^{caps.any.rd} =
           if size >= block then addressable0.backing(source) else Unset
 
         if backing == Unset then
@@ -128,7 +131,8 @@ object Conduit:
           while done < size do
             val free = reserve(size - done)
             val count = free.min(size - done)
-            addressable0.copyChunk(source, offset.n0 + done, current, mark0, count)
+            addressable0.copyChunk
+              (source, offset.n0 + done, current.asInstanceOf[addressable0.Storage^], mark0, count)
             commit(count)
             done += count
         else
@@ -159,7 +163,11 @@ object Conduit:
     val stream: (Stream[medium] over Credit)^ = new Stream[medium](using addressable0):
       type Transport = Credit
 
-      private var storage: addressable0.Storage = addressable0.allocate(0)
+      // Untracked as `current` above: blocks adopted from the ring are owned by
+      // this (single-reader) stream.
+      @caps.unsafe.untrackedCaptures
+      private var storage: addressable0.Storage =
+        addressable0.allocate(0).asInstanceOf[addressable0.Storage]
       private var start0: Int = 0
       private var limit0: Int = 0
       private var end0: Int = 0

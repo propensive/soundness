@@ -62,7 +62,11 @@ object Aggregable:
     type Self = Data
     type Operand = Data
 
-    override def accept(stream: (Stream[Data] over Credit)^): Data = gather(stream)
+    override def accept(stream: (Stream[Data] over Credit)^): Data =
+      // Ownership moves through a neutral carrier: the trait's `accept` cannot
+      // declare `consume`, so the transfer to (consuming) `gather` is by convention.
+      val streamRef: AnyRef = stream.asInstanceOf[AnyRef]
+      gather(streamRef.asInstanceOf[(Stream[Data] over Credit)^])
 
     def aggregate(source0: LazyList[Data]): Data =
       val size = source0.foldLeft(0)(_ + _.length)
@@ -85,7 +89,11 @@ object Aggregable:
     type Self = Text
     type Operand = Text
 
-    override def accept(stream: (Stream[Text] over Credit)^): Text = gather(stream)
+    override def accept(stream: (Stream[Text] over Credit)^): Text =
+      // Ownership moves through a neutral carrier: the trait's `accept` cannot
+      // declare `consume`, so the transfer to (consuming) `gather` is by convention.
+      val streamRef: AnyRef = stream.asInstanceOf[AnyRef]
+      gather(streamRef.asInstanceOf[(Stream[Text] over Credit)^])
 
     def aggregate(source0: LazyList[Text]): Text =
       var source = source0

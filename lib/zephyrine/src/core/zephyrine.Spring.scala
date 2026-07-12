@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import language.experimental.separationChecking
-
 import prepositional.*
 
 // A re-materializable source of streams: each `apply()` mints a fresh,

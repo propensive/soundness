@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import language.experimental.separationChecking
-
 import denominative.*
 import prepositional.*
 import rudiments.*

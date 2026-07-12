@@ -68,16 +68,22 @@ object Source:
 
   given inputStream: [input <: ji.InputStream] => (tactic: Tactic[StreamError], buffering: Buffering)
   =>  ((input is Source by Data over Credit)^{tactic}) =
+    // Laundered for the Scala.js pipeline, as `Sink.outputStream` (see #1520).
+    val t: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => tactic.asInstanceOf[AnyRef] }
 
-    value => Source.stream(jn.channels.Channels.newChannel(value).nn)
+    value =>
+      Source.stream(jn.channels.Channels.newChannel(value).nn)(using t().asInstanceOf[Tactic[StreamError]^], summon[Buffering])
 
   given channel: (tactic: Tactic[StreamError], buffering: Buffering)
   =>  ((jn.channels.ReadableByteChannel is Source by Data over Credit)^{tactic}) =
-
-    Source.stream(_)
+    // Laundered for the Scala.js pipeline, as `Sink.outputStream` (see #1520).
+    val t: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => tactic.asInstanceOf[AnyRef] }
+    value => Source.stream(value)(using t().asInstanceOf[Tactic[StreamError]^], summon[Buffering])
 
   given reader: [input <: ji.Reader] => (tactic: Tactic[StreamError], buffering: Buffering)
   =>  ((input is Source by Text over Credit)^{tactic}) =
+    // Laundered for the Scala.js pipeline, as `Sink.outputStream` (see #1520).
+    val t: () -> AnyRef = caps.unsafe.unsafeAssumePure { () => tactic.asInstanceOf[AnyRef] }
 
     value =>
       new Stream[Text]:
@@ -90,7 +96,7 @@ object Source:
         private var total: Long = 0
         private var ended: Boolean = false
 
-        protected def window0: AnyRef = storage
+        protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
         def start: Int = start0
         def limit: Int = limit0
         update def skip(count: Int): Unit = start0 += count
@@ -119,7 +125,8 @@ object Source:
               catch case error: ji.IOException =>
                 ended = true
                 try value.close() catch case _: Exception => ()
-                abort(StreamError(total.b))
+                { val received: Long = total
+                abort(StreamError(received.b))(using t().asInstanceOf[Tactic[StreamError]^]) }
 
         override update def close(): Unit =
           ended = true
@@ -143,7 +150,7 @@ object Source:
       private var total: Long = 0
       private var ended: Boolean = false
 
-      protected def window0: AnyRef = storage
+      protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
       def limit: Int = limit0
       update def skip(count: Int): Unit = start0 += count
@@ -177,7 +184,7 @@ object Source:
             catch case error: Exception =>
               ended = true
               try input.close() catch case _: Exception => ()
-              abort(StreamError(total.b))
+              { val received: Long = total; abort(StreamError(received.b)) }
 
       override update def close(): Unit =
         ended = true

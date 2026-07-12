@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import language.experimental.separationChecking
-
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -57,7 +55,10 @@ object Stream:
       type Transport = Credit
 
       private val size: Int = addressable0.length(value)
-      private val storage: addressable0.Storage = addressable0.allocate(size.max(1))
+      // Untracked, cast-erased: reached only through this endpoint.
+      @caps.unsafe.untrackedCaptures
+      private val storage: addressable0.Storage =
+        addressable0.allocate(size.max(1)).asInstanceOf[addressable0.Storage]
       private var start0: Int = 0
       private var limit0: Int = 0
       private var loaded: Boolean = false
@@ -97,7 +98,10 @@ object Stream:
     new Stream[medium]:
       type Transport = Credit
 
-      private var storage: addressable0.Storage = addressable0.allocate(0)
+      // Untracked, cast-erased: reached only through this endpoint.
+      @caps.unsafe.untrackedCaptures
+      private var storage: addressable0.Storage =
+        addressable0.allocate(0).asInstanceOf[addressable0.Storage]
       private var start0: Int = 0
       private var limit0: Int = 0
       private var size: Int = 0
@@ -123,9 +127,10 @@ object Stream:
 
                 if size == 0 then advance() else
                   if addressable0.storageSize(storage) < size then
-                    storage = addressable0.allocate(size)
+                    storage = addressable0.allocate(size).asInstanceOf[addressable0.Storage]
 
-                  addressable0.copyChunk(chunk, 0, storage, 0, size)
+                  addressable0.copyChunk
+                    (chunk, 0, storage.asInstanceOf[addressable0.Storage^], 0, size)
                   start0 = 0
                   limit0 = size.min(granted)
                   limit0

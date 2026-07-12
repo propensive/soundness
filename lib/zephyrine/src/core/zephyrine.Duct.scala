@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import language.experimental.separationChecking
-
 import prepositional.*
 
 // A synchronous transformation stage, attachable to either end of a pipeline:

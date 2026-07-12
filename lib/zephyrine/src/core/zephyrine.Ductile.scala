@@ -32,8 +32,6 @@
                                                                                                   */
 package zephyrine
 
-import language.experimental.separationChecking
-
 import java.nio as jn, jn.charset as jnc
 
 import anticipation.*

@@ -96,32 +96,39 @@ object Confluence:
         // once and collapse the hand-off count; a copied block stays bounded.
         val pull: Int = if stable then Int.MaxValue else block
 
-        def loop(): Unit = source.refill(Credit(pull)) match
-          case count: Int =>
-            // A stable source's window is shared by reference (as ZIO/FS2 pass
-            // immutable chunks); a transient one is snapshotted into fresh
-            // storage before the next refill reuses the buffer.
-            val start = source.start
+        // A while-loop rather than a self-recursive local def, which may not
+        // capture the exclusive endpoint under the statement rule.
+        try
+          var continue = true
 
-            val storage =
-              if stable then source.window(using Unsafe)
-              else
-                val fresh = addressable0.allocate(count)
+          while continue do source.refill(Credit(pull)) match
+            case count: Int =>
+              // A stable source's window is shared by reference (as ZIO/FS2 pass
+              // immutable chunks); a transient one is snapshotted into fresh
+              // storage before the next refill reuses the buffer.
+              val start = source.start
 
-                addressable0.transfer
-                  ( source.window(using Unsafe).asInstanceOf[addressable0.Storage],
-                    source.start, fresh, 0, count )
+              val storage =
+                if stable then source.window(using Unsafe)
+                else
+                  val fresh = addressable0.allocate(count)
 
-                fresh
+                  addressable0.transfer
+                    ( source.window(using Unsafe).asInstanceOf[addressable0.Storage],
+                      source.start, fresh, 0, count )
 
-            source.skip(count)
-            queue.put(Block(storage.asInstanceOf[AnyRef], if stable then start else 0, count))
-            loop()
+                  fresh
 
-          case _ =>
-            finish()
+              source.skip(count)
 
-        try loop() catch case exception: Exception =>
+              queue.put
+                (Block(storage.asInstanceOf[AnyRef], if stable then start else 0, count))
+
+            case _ =>
+              continue = false
+              finish()
+
+        catch case exception: Exception =>
           error = exception
           finish()
 
@@ -130,7 +137,10 @@ object Confluence:
     new Stream[medium](using addressable0):
       type Transport = Credit
 
-      private var storage: addressable0.Storage = addressable0.allocate(0)
+      // Untracked, cast-erased: reached only through this endpoint.
+      @caps.unsafe.untrackedCaptures
+      private var storage: addressable0.Storage =
+        addressable0.allocate(0).asInstanceOf[addressable0.Storage]
       private var start0: Int = 0
       private var limit0: Int = 0
       private var end0: Int = 0

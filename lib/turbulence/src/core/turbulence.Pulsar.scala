@@ -37,6 +37,8 @@ import parasite.*
 import prepositional.*
 
 class Pulsar[duration: Abstractable across Durations to Long](duration: duration):
+  // Untracked: a stop flag, set once from any thread and read by the ticking loop.
+  @caps.unsafe.untrackedCaptures
   private var continue: Boolean = true
 
   def stop(): Unit = continue = false

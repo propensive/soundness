@@ -32,8 +32,6 @@
                                                                                                   */
 package soundness
 
-import language.experimental.separationChecking
-
 export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum, Duct, Ductile, Pace,
     Format, Formatting, Intake, Lineation, ParseError, PositionTracking, Producer, Positionable,
     Regulation, Spring, Stream, Substrate, inscribe, locate, locateKey, memoize, pump, stream,
