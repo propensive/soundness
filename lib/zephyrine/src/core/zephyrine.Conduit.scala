@@ -35,7 +35,6 @@ package zephyrine
 import language.experimental.separationChecking
 
 import java.util.concurrent as juc
-import java.util.concurrent.atomic as juca
 
 import fulminate.*
 import prepositional.*
@@ -53,7 +52,7 @@ import vacuous.*
 // The two endpoints are separate exclusive capabilities: a single object owning both
 // sides could not give two threads separated exclusive access. They share a
 // `SharedCapability`-classified core — correctly exempt from separation checking, since
-// the core's guarantees come from the queue's happens-before and the atomics, not from
+// the core's guarantees come from the queue's happens-before and its volatile flags, not from
 // aliasing analysis. Capture sets are erased crossing the queue (it carries `AnyRef`);
 // single ownership of a published block is discharged on the writer's side before the
 // hand-off, and visibility is the queue's publication guarantee.
@@ -63,10 +62,8 @@ object Conduit:
   private class Block(val storage: AnyRef, val size: Int)
 
   // The synchronized substrate both endpoints capture.
-  private final class Core(window: Int) extends caps.SharedCapability:
+  private final class Core(val window: Int) extends caps.SharedCapability:
     val queue: juc.ArrayBlockingQueue[AnyRef] = juc.ArrayBlockingQueue(window)
-    val written: juca.AtomicLong = juca.AtomicLong(0)
-    val consumed: juca.AtomicLong = juca.AtomicLong(0)
     // JMM-managed flags: their safety is the volatile publication guarantee, not
     // aliasing analysis, so their captures are untracked.
     @caps.unsafe.untrackedCaptures @volatile var error: Throwable | Null = null
@@ -77,38 +74,44 @@ object Conduit:
   :   ((Intake[medium] over Credit)^, (Stream[medium] over Credit)^) =
 
     val block: Int = buffering.capacity(addressable0.substrate)
+    val ceiling: Int = buffering.transfer(addressable0.substrate).max(block)
     val core = new Core(buffering.window)
 
-    // Everything this conduit can hold: the queued blocks plus the block being
-    // written. `demand` is this allowance less what is currently buffered, so
-    // it reaches zero exactly when `reserve` would block.
-    val allowance: Long = block.toLong * (buffering.window + 1)
-
-    // The write side; single writer.
+    // The write side; single writer. Blocks are minted at the size `reserve` is
+    // asked for, between `block` and `ceiling`: a bulk `put` crosses the
+    // boundary in ceiling-sized hand-offs rather than being re-chunked to the
+    // staging block size, since each hand-off costs a synchronized queue
+    // transfer. The memory bound is `window + 1` blocks of at most `ceiling`.
     val intake: (Intake[medium] over Credit)^ = new Intake[medium](using addressable0):
       type Transport = Credit
 
       private var current: addressable0.Storage = addressable0.allocate(block)
+      private var capacity: Int = block
       private var mark0: Int = 0
 
-      def demand: Credit = Credit(allowance - (core.written.get - core.consumed.get))
+      // Advisory free space: block-sized credit for each free queue slot, plus
+      // the room left in the block being written. Zero exactly when `reserve`
+      // would park on a full queue.
+      def demand: Credit =
+        Credit((core.window - core.queue.size).toLong*block + (capacity - mark0))
 
       protected def buffer0: AnyRef = current.asInstanceOf[AnyRef]
       def mark: Int = mark0
 
       update def reserve(min: Int): Int =
-        val free = block - mark0
+        val free = capacity - mark0
 
-        if free >= min then free else
+        if free >= min.max(1) then free else
           publish()
-          block
+          capacity = min.min(ceiling).max(block)
+          current = addressable0.allocate(capacity)
+          capacity
 
       update def commit(count: Int): Unit =
         mark0 += count
-        core.written.addAndGet(count)
-        if mark0 == block then publish()
+        if mark0 == capacity then publish()
 
-      override update def flush(): Unit = if mark0 > 0 then publish()
+      override update def flush(): Unit = publish()
 
       update def finish(): Unit =
         flush()
@@ -119,15 +122,14 @@ object Conduit:
         core.queue.clear()
         core.queue.put(End)
 
+      // Hand the written block over (or discard it after close). The storage
+      // moves to the queue, so the capacity drops to zero and the next
+      // `reserve` mints a fresh block, sized to its request.
       private update def publish(): Unit =
         if mark0 > 0 then
-          if core.closed then
-            core.written.addAndGet(-mark0)
-            mark0 = 0
-          else
-            core.queue.put(Block(current.asInstanceOf[AnyRef], mark0))
-            current = addressable0.allocate(block)
-            mark0 = 0
+          if !core.closed then core.queue.put(Block(current.asInstanceOf[AnyRef], mark0))
+          mark0 = 0
+          capacity = 0
 
     // The read side; single reader. `refill` parks (in `queue.take`) until the
     // writer publishes a block or finishes.
@@ -144,9 +146,7 @@ object Conduit:
       def start: Int = start0
       def limit: Int = limit0
 
-      update def skip(count: Int): Unit =
-        start0 += count
-        core.consumed.addAndGet(count)
+      update def skip(count: Int): Unit = start0 += count
 
       update def refill(demand: Credit): Optional[Int] =
         if limit0 > start0 then limit0 - start0
