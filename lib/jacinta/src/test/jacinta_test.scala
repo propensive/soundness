@@ -180,101 +180,101 @@ object Tests extends Suite(m"Jacinta Tests"):
 
     suite(m"Serialization"):
       test(m"Serialize string"):
-        t"foo".json.show
+        t"foo".in[Json].show
       . assert(_ == t""""foo"""")
 
       test(m"Serialize double"):
-        3.14159.json.show
+        3.14159.in[Json].show
       . assert(_ == t"3.14159")
 
       test(m"Serialize true"):
-        true.json.show
+        true.in[Json].show
       . assert(_ == t"true")
 
       test(m"Serialize false"):
-        false.json.show
+        false.in[Json].show
       . assert(_ == t"false")
 
       test(m"Serialize Int"):
-        42.json.show
+        42.in[Json].show
       . assert(_ == t"42")
 
       test(m"Serialize Long"):
-        9876543210L.json.show
+        9876543210L.in[Json].show
       . assert(_ == t"9876543210")
 
       test(m"Serialize Unit as null"):
-        ().json.show
+        ().in[Json].show
       . assert(_ == t"null")
 
       test(m"Serialize a list of integers"):
-        List(1, 2, 3).json.show
+        List(1, 2, 3).in[Json].show
       . assert(_ == t"[1,2,3]")
 
       test(m"Serialize an empty list"):
-        List[Int]().json.show
+        List[Int]().in[Json].show
       . assert(_ == t"[]")
 
       test(m"Serialize a list of strings"):
-        List(t"a", t"b").json.show
+        List(t"a", t"b").in[Json].show
       . assert(_ == t"""["a","b"]""")
 
       test(m"Serialize a map"):
-        Map(t"a" -> 1, t"b" -> 2).json.show
+        Map(t"a" -> 1, t"b" -> 2).in[Json].show
       . assert: result =>
           result == t"""{"a":1,"b":2}""" || result == t"""{"b":2,"a":1}"""
 
       test(m"Serialize a string containing a newline escapes it"):
-        t"a\nb".json.show
+        t"a\nb".in[Json].show
       . assert(_ == t""""a\\nb"""")
 
       test(m"Serialize a string containing a tab escapes it"):
-        t"a\tb".json.show
+        t"a\tb".in[Json].show
       . assert(_ == t""""a\\tb"""")
 
       test(m"Serialize a string containing a backslash escapes it"):
-        t"a\\b".json.show
+        t"a\\b".in[Json].show
       . assert(_ == t""""a\\\\b"""")
 
       test(m"Serialize case class with Option as None"):
-        FooOption(1, None).json.show
+        FooOption(1, None).in[Json].show
       . assert(_ == t"""{"x":1}""")
 
       test(m"Serialize case class with Option as Some"):
-        FooOption(1, Some(2)).json.show
+        FooOption(1, Some(2)).in[Json].show
       . assert(_ == t"""{"x":1,"y":2}""")
 
       test(m"Serialize case class with Optional as Unset"):
-        FooOptional(1, Unset).json.show
+        FooOptional(1, Unset).in[Json].show
       . assert(_ == t"""{"x":1}""")
 
       test(m"Serialize case class with present Optional"):
-        FooOptional(1, 2).json.show
+        FooOptional(1, 2).in[Json].show
       . assert(_ == t"""{"x":1,"y":2}""")
 
       test(m"Serialize a nested case class"):
-        NamedOuter(t"hello", Inner(7)).json.show
+        NamedOuter(t"hello", Inner(7)).in[Json].show
       . assert(_ == t"""{"name":"hello","inner":{"n":7}}""")
 
     suite(m"Misc tests"):
       test(m"Serialize to Json"):
-        Foo(1, t"two").json
-      . assert(_ == Json.make(x = 1.json, y = t"two".json))
+        Foo(1, t"two").in[Json]
+      . assert(_ == Json.make(x = 1.in[Json], y = t"two".in[Json]))
 
       test(m"Parse from JSON"):
         t"""{"x": 1}""".read[Json]
-      . assert(_ == Json.make(x = 1.json))
+      . assert(_ == Json.make(x = 1.in[Json]))
 
       test(m"Read case class"):
         t"""{"x": 1, "y": "two"}""".read[Json].as[Foo]
       . assert(_ == Foo(1, t"two"))
 
       test(m"@name[Json] and bare @name rename keys when encoding"):
-        Renamed(t"Ann", 1984).json.show
+        Renamed(t"Ann", 1984).in[Json].show
       . assert(_ == t"""{"first_name":"Ann","yob":1984}""")
 
       test(m"@name renames round-trip"):
-        Renamed(t"Ann", 1984).json.as[Renamed]
+        Renamed(t"Ann", 1984).in[Json].as[Renamed]
       . assert(_ == Renamed(t"Ann", 1984))
 
       test(m"Extract an absent Option"):
@@ -321,7 +321,7 @@ object Tests extends Suite(m"Jacinta Tests"):
     suite(m"Generic derivation tests"):
       val paul =
         test(m"Serialize a simple case class"):
-          Person(t"Paul", 81).json.show
+          Person(t"Paul", 81).in[Json].show
         .check(_ == t"""{"name":"Paul","age":81}""")
 
       val john = t"""{"name": "John", "age": 40}"""
@@ -348,7 +348,7 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       val paulCoproduct = test(m"Serialize a coproduct"):
         val paul: Player = Player.Bassist(paulObj)
-        paul.json.show
+        paul.in[Json].show
       .check(_ == t"""{"person":{"name":"Paul","age":81},"kind":"Bassist"}""")
 
       test(m"Decode a coproduct"):
@@ -364,7 +364,7 @@ object Tests extends Suite(m"Jacinta Tests"):
           Guitarist(Person(t"George", 58))))
 
       val newBandText = test(m"Serialize NewBand"):
-        newBand.json.show
+        newBand.in[Json].show
       .check(_ == t"""{"members":[{"person":{"name":"Paul","age":81},"kind":"Bassist"},{"person":{"name":"Ringo","age":82},"kind":"Drummer"},{"person":{"name":"John","age":40},"kind":"Guitarist"},{"person":{"name":"George","age":58},"kind":"Guitarist"}]}""")
 
       test(m"Decode a NewBand"):
@@ -385,11 +385,11 @@ object Tests extends Suite(m"Jacinta Tests"):
         array2.as[List[Int]]
       . assert(_ == List(1, 5, 3))
 
-      val org = Org("The Beatles", Entity("John", 40, List(Role("Leader")))).json
+      val org = Org("The Beatles", Entity("John", 40, List(Role("Leader")))).in[Json]
 
       test(m"Lens update on JSON"):
         import dynamicJsonAccess.enabled
-        val org2 = org.lens(_.leader.age = 41.json)
+        val org2 = org.lens(_.leader.age = 41.in[Json])
         org2.as[Org]
       . assert(_ == Org("The Beatles", Entity("John", 41, List(Role("Leader")))))
 
@@ -405,7 +405,7 @@ object Tests extends Suite(m"Jacinta Tests"):
         org2.as[Org]
       . assert(_ == Org("The Beatles", Entity("John", 40, List(Role("-")))))
 
-      val band = Org("Q", Entity("John", 40, List(Role("a"), Role("b"), Role("c")))).json
+      val band = Org("Q", Entity("John", 40, List(Role("a"), Role("b"), Role("c")))).in[Json]
 
       test(m"Lens reads a field by name"):
         import dynamicJsonAccess.enabled
@@ -415,7 +415,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       test(m"Lens.modify transforms a field through a function"):
         import dynamicJsonAccess.enabled
         val lens = summon["name" is Lens from Json onto Json]
-        lens.modify(org)(json => (json.as[String]+"!").json).as[Org]
+        lens.modify(org)(json => (json.as[String]+"!").in[Json]).as[Org]
       . assert(_ == Org("The Beatles!", Entity("John", 40, List(Role("Leader")))))
 
       test(m"Each optic updates every array element"):
@@ -440,7 +440,7 @@ object Tests extends Suite(m"Jacinta Tests"):
         t"""{"value":"root","children":[{"value":"a","children":[]},{"value":"b","children":[{"value":"c","children":[]}]}]}"""
 
       test(m"Derive and encode a tree recursive through a List"):
-        tree.json.show
+        tree.in[Json].show
       . assert(_ == treeJson)
 
       test(m"Derive and decode a tree recursive through a List"):
@@ -449,16 +449,16 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"Round-trip a directly-recursive type via Optional"):
         val value = TreeOpt(t"a", TreeOpt(t"b", Unset))
-        value.json.show.read[Json].as[TreeOpt]
+        value.in[Json].show.read[Json].as[TreeOpt]
       . assert(_ == TreeOpt(t"a", TreeOpt(t"b", Unset)))
 
       test(m"Round-trip recursion through a Map value"):
         val forest = Forest(Map(t"x" -> Tree(t"x", Nil), t"y" -> tree))
-        forest.json.show.read[Json].as[Forest]
+        forest.in[Json].show.read[Json].as[Forest]
       . assert(_ == Forest(Map(t"x" -> Tree(t"x", Nil), t"y" -> tree)))
 
       test(m"A generic product over a recursive type stays structurally derived"):
-        Boxed(tree).json.show.read[Json].as[Boxed[Tree]]
+        Boxed(tree).in[Json].show.read[Json].as[Boxed[Tree]]
       . assert(_ == Boxed(tree))
 
       test(m"Summon a decoder for a collection of a recursive type at the top level"):
@@ -467,15 +467,15 @@ object Tests extends Suite(m"Jacinta Tests"):
 
     suite(m"Json construction"):
       test(m"Json.make with one field"):
-        Json.make(name = t"Anna".json).show
+        Json.make(name = t"Anna".in[Json]).show
       . assert(_ == t"""{"name":"Anna"}""")
 
       test(m"Json.make with multiple fields"):
-        Json.make(a = 1.json, b = t"two".json, c = true.json).show
+        Json.make(a = 1.in[Json], b = t"two".in[Json], c = true.in[Json]).show
       . assert(_ == t"""{"a":1,"b":"two","c":true}""")
 
       test(m"Nested Json.make"):
-        Json.make(outer = Json.make(inner = 1.json)).show
+        Json.make(outer = Json.make(inner = 1.in[Json])).show
       . assert(_ == t"""{"outer":{"inner":1}}""")
 
       test(m"Construct via Json.ast with a long"):
@@ -800,38 +800,38 @@ object Tests extends Suite(m"Jacinta Tests"):
     suite(m"Json printing"):
       test(m"Minimal printer omits whitespace"):
         import formatting.compactJsonFormatting
-        Json.make(a = 1.json, b = 2.json).show
+        Json.make(a = 1.in[Json], b = 2.in[Json]).show
       . assert(_ == t"""{"a":1,"b":2}""")
 
       test(m"Indented printer adds whitespace"):
         import formatting.indentedJsonFormatting
-        val printed = Json.make(a = 1.json, b = 2.json).show
+        val printed = Json.make(a = 1.in[Json], b = 2.in[Json]).show
         printed.contains(t"\n")
       . assert(identity)
 
       test(m"Indented printer pretty-prints arrays"):
         import formatting.indentedJsonFormatting
-        val printed = List(1, 2, 3).json.show
+        val printed = List(1, 2, 3).in[Json].show
         printed.contains(t"\n")
       . assert(identity)
 
     suite(m"Discriminator strategies"):
       test(m"Discriminate by 'kind' (default in this file)"):
         val s: Shape = Shape.Circle(1.0)
-        s.json.show
+        s.in[Json].show
       . assert(_ == t"""{"radius":1.0,"kind":"Circle"}""")
 
       test(m"Decode disjunction by 'kind'"):
         val s: Shape = Shape.Square(2.0)
-        s.json.as[Shape]
+        s.in[Json].as[Shape]
       . assert(_ == Shape.Square(2.0))
 
       test(m"@name renames a variant's discriminator"):
-        (Status.Active(5): Status).json.show
+        (Status.Active(5): Status).in[Json].show
       . assert(_ == t"""{"since":5,"kind":"ok"}""")
 
       test(m"@name variants round-trip"):
-        List(Status.Active(5), Status.Removed(9), Status.Pending(1)).map(_.json.as[Status])
+        List(Status.Active(5), Status.Removed(9), Status.Pending(1)).map(_.in[Json].as[Status])
       . assert(_ == List(Status.Active(5), Status.Removed(9), Status.Pending(1)))
 
       locally:
@@ -839,12 +839,12 @@ object Tests extends Suite(m"Jacinta Tests"):
 
         test(m"Discriminate by 'type'"):
           val a: Animal = Animal.Dog(t"Rex")
-          a.json.show
+          a.in[Json].show
         . assert(_ == t"""{"name":"Rex","type":"Dog"}""")
 
         test(m"Decode disjunction by 'type'"):
           val a: Animal = Animal.Cat(t"Whiskers")
-          a.json.as[Animal]
+          a.in[Json].as[Animal]
         . assert(_ == Animal.Cat(t"Whiskers"))
 
     suite(m"JsonPointer tests"):
@@ -905,7 +905,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       import abstractables.instantAbstractable
 
       test(m"Encode an Instant as a Long"):
-        Instant(1700000000000L).json.show
+        Instant(1700000000000L).in[Json].show
       . assert(_ == t"1700000000000")
 
       test(m"Decode an Instant from a Long"):
@@ -913,11 +913,11 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == 1700000000000L)
 
       test(m"Round-trip an Instant"):
-        Instant(1234567890L).json.as[Instant over Posix].long
+        Instant(1234567890L).in[Json].as[Instant over Posix].long
       . assert(_ == 1234567890L)
 
       test(m"Encode a Duration as a Long of milliseconds"):
-        Duration(5000L).json.show
+        Duration(5000L).in[Json].show
       . assert(_ == t"5000")
 
       test(m"Decode a Duration from a Long of milliseconds"):
@@ -925,7 +925,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == 5.0)
 
       test(m"Round-trip a Duration"):
-        Duration(60_000L).json.as[Duration].value
+        Duration(60_000L).in[Json].as[Duration].value
       . assert(_ == 60.0)
 
     suite(m"JsonSchema tests"):
@@ -1021,27 +1021,27 @@ object Tests extends Suite(m"Jacinta Tests"):
 
       test(m"JsonSchema serializes a String schema with type field"):
         val s: JsonSchema = JsonSchema.String()
-        s.json.show.contains(t""""type":"string"""")
+        s.in[Json].show.contains(t""""type":"string"""")
       . assert(identity)
 
       test(m"JsonSchema serializes an Integer schema with type field"):
         val s: JsonSchema = JsonSchema.Integer()
-        s.json.show.contains(t""""type":"integer"""")
+        s.in[Json].show.contains(t""""type":"integer"""")
       . assert(identity)
 
       test(m"JsonSchema serializes a Boolean schema with type field"):
         val s: JsonSchema = JsonSchema.Boolean()
-        s.json.show.contains(t""""type":"boolean"""")
+        s.in[Json].show.contains(t""""type":"boolean"""")
       . assert(identity)
 
       test(m"JsonSchema serializes a Null schema with type field"):
         val s: JsonSchema = JsonSchema.Null()
-        s.json.show.contains(t""""type":"null"""")
+        s.in[Json].show.contains(t""""type":"null"""")
       . assert(identity)
 
       test(m"JsonSchema serializes an Object schema with type field"):
         val s: JsonSchema = JsonSchema.Object()
-        s.json.show.contains(t""""type":"object"""")
+        s.in[Json].show.contains(t""""type":"object"""")
       . assert(identity)
 
       test(m"JsonSchema Format encodes as kebab case"):
@@ -1231,7 +1231,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       val shout: Text is Json.Encodable = Json.Encodable(Morphology.Str): text => Json(text.upper)
 
       test(m"Without a Specific, all fields use default encoders"):
-        firm.json.show
+        firm.in[Json].show
       . assert(_ == t"""{"boss":{"name":"ann","age":30},"deputy":{"name":"bob","age":40}}""")
 
       test(m"A Specific overrides one field path along its spine only"):
@@ -1239,7 +1239,7 @@ object Tests extends Suite(m"Jacinta Tests"):
           specifically:
             case root.deputy.name() => shout
 
-        firm.json.show
+        firm.in[Json].show
       . assert(_ == t"""{"boss":{"name":"ann","age":30},"deputy":{"name":"BOB","age":40}}""")
 
       test(m"a collection element is overridden via a local given + re-derive"):
@@ -1251,7 +1251,7 @@ object Tests extends Suite(m"Jacinta Tests"):
               given Worker is Json.Encodable = nameOnly
               summon[List[Worker] is Json.Encodable]
 
-        Crew(Worker(t"al", 30), List(Worker(t"bo", 40), Worker(t"cy", 50))).json.show
+        Crew(Worker(t"al", 30), List(Worker(t"bo", 40), Worker(t"cy", 50))).in[Json].show
       . assert(_ == t"""{"lead":{"name":"al","age":30},"members":["bo","cy"]}""")
 
     ValidationTests()

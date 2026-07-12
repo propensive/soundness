@@ -39,7 +39,6 @@ import rudiments.*
 
 import CborError.{Primitive, Reason}
 
-extension [entity: Encodable in Cbor](value: entity) def cbor: Cbor = value.encode
 
 extension (cbor: Cbor.Ast)
   @unexported

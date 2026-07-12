@@ -245,7 +245,7 @@ object internal:
                 case Some(online) =>
                   if notification then Some:
                     ' {
-                        val json = Map(${Varargs(entries)}*).json
+                        val json = Map(${Varargs(entries)}*).in[Json]
 
                         safely[AsyncError]:
                           JsonRpc.notification($url, $methodName, json)
@@ -262,7 +262,7 @@ object internal:
                       case Some(decoder) =>
                         Some:
                           ' {
-                              val json = Map(${Varargs(entries)}*).json
+                              val json = Map(${Varargs(entries)}*).in[Json]
 
                               unsafely:
                                 JsonRpc.request($url, $methodName, json)
@@ -362,7 +362,7 @@ object internal:
 
           if notification then Some:
             ' {
-                val json = Map(${Varargs(entries)}*).json
+                val json = Map(${Varargs(entries)}*).in[Json]
                 JsonRpc.notification($rpc, $methodName, json)
               }
 
@@ -372,7 +372,7 @@ object internal:
               case Some(decoder) =>
                 Some:
                   ' {
-                      val json = Map(${Varargs(entries)}*).json
+                      val json = Map(${Varargs(entries)}*).in[Json]
 
                       unsafely:
                         JsonRpc.request($rpc, $methodName, json)

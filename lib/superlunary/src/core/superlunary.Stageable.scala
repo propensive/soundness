@@ -56,9 +56,9 @@ object Stageable:
         Array.from(provide[Json is Decodable in Text](text.nn.decode[Json].as[List[Json]]))
 
     inline def serialize(value: Array[Object]): Text =
-      value.iterator.to(List).map(_.asInstanceOf[Json]).json.encode
+      value.iterator.to(List).map(_.asInstanceOf[Json]).in[Json].encode
 
-    inline def embed[entity](value: entity): Json = provide[entity is Encodable in Json](value.json)
+    inline def embed[entity](value: entity): Json = provide[entity is Encodable in Json](value.in[Json])
 
     inline def extract[entity](json: Json): entity = provide[Tactic[RemoteError]]:
       given RemoteError mitigates JsonError = error => RemoteError(RemoteError.Reason.Unknown)

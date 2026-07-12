@@ -55,4 +55,4 @@ private[embarcadero] def descriptorOf(mediaType: MediaType, bytes: Data): Descri
 // Renders a JSON-encodable value to its compact UTF-8 byte form — the canonical
 // on-disk representation of an OCI JSON document, and the input to its digest.
 private[embarcadero] def render[entity: Encodable in Json](value: entity): Data =
-  value.json.show.data
+  value.in[Json].show.data

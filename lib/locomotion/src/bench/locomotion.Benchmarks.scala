@@ -81,8 +81,8 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   // Generic field walk — the analog of `read[Protobuf]`. The accumulated
   // checksum is returned so the JIT cannot dead-code-eliminate the reads.
   def walkWithProtobufJava(bytes: Array[Byte]): Long =
-    import com.google.protobuf.WireFormat
-    val in = com.google.protobuf.CodedInputStream.newInstance(bytes).nn
+    import com.google.in[Protobuf].WireFormat
+    val in = com.google.in[Protobuf].CodedInputStream.newInstance(bytes).nn
     var checksum = 0L
     var tag = in.readTag()
     while tag != 0 do
@@ -102,7 +102,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   // hand-writing their wire format adds bulk without changing the picture.
   def encodeSmallWithProtobufJava: Array[Byte] =
     val out = new _root_.java.io.ByteArrayOutputStream(32)
-    val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
+    val cos = com.google.in[Protobuf].CodedOutputStream.newInstance(out).nn
     cos.writeInt64(1, 42L)
     cos.writeString(2, "Alice")
     cos.writeBool(3, true)
@@ -111,11 +111,11 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
   def encodeUsersWithProtobufJava: Array[Byte] =
     val out = new _root_.java.io.ByteArrayOutputStream(8192)
-    val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
+    val cos = com.google.in[Protobuf].CodedOutputStream.newInstance(out).nn
     var index = 0
     while index < 100 do
       val sub = new _root_.java.io.ByteArrayOutputStream(64)
-      val scos = com.google.protobuf.CodedOutputStream.newInstance(sub).nn
+      val scos = com.google.in[Protobuf].CodedOutputStream.newInstance(sub).nn
       scos.writeInt64(1, index.toLong)
       scos.writeString(2, s"user$index")
       scos.writeString(3, s"user$index@example.com")
@@ -123,7 +123,7 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
       scos.writeString(5, if index%10 == 0 then "admin" else "user")
       scos.flush()
       val message = sub.toByteArray.nn
-      cos.writeTag(1, com.google.protobuf.WireFormat.WIRETYPE_LENGTH_DELIMITED)
+      cos.writeTag(1, com.google.in[Protobuf].WireFormat.WIRETYPE_LENGTH_DELIMITED)
       cos.writeUInt32NoTag(message.length)
       cos.writeRawBytes(message)
       index += 1
@@ -132,14 +132,14 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
 
   def encodeIntsWithProtobufJava: Array[Byte] =
     val out = new _root_.java.io.ByteArrayOutputStream(4096)
-    val cos = com.google.protobuf.CodedOutputStream.newInstance(out).nn
+    val cos = com.google.in[Protobuf].CodedOutputStream.newInstance(out).nn
     val body = new _root_.java.io.ByteArrayOutputStream(4096)
-    val bcos = com.google.protobuf.CodedOutputStream.newInstance(body).nn
+    val bcos = com.google.in[Protobuf].CodedOutputStream.newInstance(body).nn
     var index = 0
     while index < 1000 do { bcos.writeInt64NoTag((index*37 + 1).toLong); index += 1 }
     bcos.flush()
     val packed = body.toByteArray.nn
-    cos.writeTag(1, com.google.protobuf.WireFormat.WIRETYPE_LENGTH_DELIMITED)
+    cos.writeTag(1, com.google.in[Protobuf].WireFormat.WIRETYPE_LENGTH_DELIMITED)
     cos.writeUInt32NoTag(packed.length)
     cos.writeRawBytes(packed)
     cos.flush()
@@ -194,12 +194,12 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   lazy val value6: Deep1 =
     Deep1(t"level0", Deep2(t"level1", Deep3(t"level2", Deep4(t"level3", Deep5(t"level4")))))
 
-  lazy val bytes1: Data = value1.protobuf.encode
-  lazy val bytes2: Data = value2.protobuf.encode
-  lazy val bytes3: Data = value3.protobuf.encode
-  lazy val bytes4: Data = value4.protobuf.encode
-  lazy val bytes5: Data = value5.protobuf.encode
-  lazy val bytes6: Data = value6.protobuf.encode
+  lazy val bytes1: Data = value1.in[Protobuf].encode
+  lazy val bytes2: Data = value2.in[Protobuf].encode
+  lazy val bytes3: Data = value3.in[Protobuf].encode
+  lazy val bytes4: Data = value4.in[Protobuf].encode
+  lazy val bytes5: Data = value5.in[Protobuf].encode
+  lazy val bytes6: Data = value6.in[Protobuf].encode
 
   // Plain Array[Byte] views for protobuf-java (the cast is sound for read-only
   // consumers; CodedInputStream never mutates its input).
@@ -223,12 +223,12 @@ object Benchmarks extends Suite(m"Locomotion Protobuf codec benchmarks"):
   def decodeAttributes: Attributes = LazyList(bytes5).read[Attributes in Protobuf]
   def decodeNested:     Deep1      = LazyList(bytes6).read[Deep1 in Protobuf]
 
-  def encodeSmall:      Data = value1.protobuf.encode
-  def encodeUsers:      Data = value2.protobuf.encode
-  def encodeLogs:       Data = value3.protobuf.encode
-  def encodeInts:       Data = value4.protobuf.encode
-  def encodeAttributes: Data = value5.protobuf.encode
-  def encodeNested:     Data = value6.protobuf.encode
+  def encodeSmall:      Data = value1.in[Protobuf].encode
+  def encodeUsers:      Data = value2.in[Protobuf].encode
+  def encodeLogs:       Data = value3.in[Protobuf].encode
+  def encodeInts:       Data = value4.in[Protobuf].encode
+  def encodeAttributes: Data = value5.in[Protobuf].encode
+  def encodeNested:     Data = value6.in[Protobuf].encode
 
   def run(): Unit =
     val bench = Bench()

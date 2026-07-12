@@ -72,11 +72,11 @@ object JsonRpc:
   case class Response(jsonrpc: Text, result: Json, id: Optional[Json])
 
   def error(code: Int, message: Text): Response =
-    Response("2.0", Map(t"code" -> code.json, t"message" -> message.json).json, Unset)
+    Response("2.0", Map(t"code" -> code.in[Json], t"message" -> message.in[Json]).in[Json], Unset)
 
   def notification(target: JsonRpc, method: Text, payload: Json): Promise[Unit] =
 
-    target.put(Request("2.0", method, payload, Unset).json)
+    target.put(Request("2.0", method, payload, Unset).in[Json])
     Promise[Unit]().tap(_.offer(()))
 
   def request(target: JsonRpc, method: Text, payload: Json): Promise[Json] =
@@ -84,7 +84,7 @@ object JsonRpc:
     val promise: Promise[Json] = Promise()
     promises(uuid) = promise
 
-    target.put(Request("2.0", method, payload, uuid.json).json)
+    target.put(Request("2.0", method, payload, uuid.in[Json]).in[Json])
     promise
 
   def receive(id: Text, result: Json): Unit = promises.at(id).let(_.offer(result))
@@ -100,7 +100,7 @@ object JsonRpc:
     import formatting.compactJsonFormatting
     import logging.silentLogging
 
-    val request = Request("2.0", method, payload, uuid.json).json
+    val request = Request("2.0", method, payload, uuid.in[Json]).in[Json]
 
     async:
       recover:
@@ -124,7 +124,7 @@ object JsonRpc:
     import formatting.compactJsonFormatting
     import logging.silentLogging
 
-    val request = Request("2.0", method, payload, Unset).json
+    val request = Request("2.0", method, payload, Unset).in[Json]
 
     recover:
       case MediaTypeError(_, _) => ()

@@ -74,12 +74,12 @@ object TestServer extends LspServer():
     List(Lsp.InlayHint(range.start, label = t": Int", kind = Lsp.InlayHintKind.Type))
 
   override def executeCommand(command: Text, arguments: Optional[List[Json]]): Optional[Json] =
-    command.json
+    command.in[Json]
 
   override def onSave(document: Lsp.TextDocumentIdentifier, text: Optional[Text])(using LspClient)
   :   Unit =
 
-    summon[LspClient].progress(t"token".json, t"begin".json)
+    summon[LspClient].progress(t"token".in[Json], t"begin".in[Json])
 
   override def resolveCompletion(item: Lsp.CompletionItem): Lsp.CompletionItem =
     item.copy(detail = t"resolved")
@@ -93,16 +93,16 @@ object Tests extends Suite(m"Exegesis Tests"):
   def run(): Unit =
     suite(m"Integer enum codecs"):
       test(m"DiagnosticSeverity encodes to its protocol number"):
-        val number: Text = Lsp.DiagnosticSeverity.Warning.json.encode
+        val number: Text = Lsp.DiagnosticSeverity.Warning.in[Json].encode
         number
       . assert(_ == t"2")
 
       test(m"DiagnosticSeverity decodes from its protocol number"):
-        2.json.as[Lsp.DiagnosticSeverity]
+        2.in[Json].as[Lsp.DiagnosticSeverity]
       . assert(_ == Lsp.DiagnosticSeverity.Warning)
 
       test(m"TextDocumentSyncKind is numbered from zero"):
-        val number: Text = Lsp.TextDocumentSyncKind.Full.json.encode
+        val number: Text = Lsp.TextDocumentSyncKind.Full.in[Json].encode
         number
       . assert(_ == t"1")
 

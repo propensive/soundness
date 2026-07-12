@@ -252,7 +252,7 @@ trait LspServer() extends Lsp:
     InitializeResult(this.capabilities, ServerInfo(name, version))
 
   def initialized(): Unit = ()
-  def shutdown(): Json = ().json
+  def shutdown(): Json = ().in[Json]
   def exit(): Unit = ()
 
   def `textDocument/didOpen`(textDocument: TextDocumentItem): Unit =
@@ -530,7 +530,7 @@ trait LspServer() extends Lsp:
 
     summon[Stdio].in.lazyList[Data].iterator.frames[ContentLength].each: frame =>
       try dispatch(frame.utf8.decode[Json]).let(put)
-      catch case error: Exception => put(JsonRpc.error(-32603, t"Internal error").json)
+      catch case error: Exception => put(JsonRpc.error(-32603, t"Internal error").in[Json])
 
     writer.cancel()
 

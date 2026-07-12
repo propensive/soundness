@@ -211,7 +211,7 @@ object Tests extends Suite(m"Obligatory Tests"):
           runServer(serverSide, (hpack, id) =>
             List
               ( okHeaders(hpack, id),
-                Frame.Data(id, GrpcFraming.encode(Pong(t"pong").protobuf.encode), endStream = false),
+                Frame.Data(id, GrpcFraming.encode(Pong(t"pong").in[Protobuf].encode), endStream = false),
                 trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)
@@ -243,9 +243,9 @@ object Tests extends Suite(m"Obligatory Tests"):
           val (clientSide, serverSide) = pair()
 
           val body =
-            GrpcFraming.encode(Pong(t"a").protobuf.encode)
-            ++ GrpcFraming.encode(Pong(t"b").protobuf.encode)
-            ++ GrpcFraming.encode(Pong(t"c").protobuf.encode)
+            GrpcFraming.encode(Pong(t"a").in[Protobuf].encode)
+            ++ GrpcFraming.encode(Pong(t"b").in[Protobuf].encode)
+            ++ GrpcFraming.encode(Pong(t"c").in[Protobuf].encode)
 
           runServer(serverSide, (hpack, id) =>
             List
@@ -268,7 +268,7 @@ object Tests extends Suite(m"Obligatory Tests"):
           runServer(serverSide, (hpack, id) =>
             List
               ( okHeaders(hpack, id),
-                Frame.Data(id, GrpcFraming.encode(Pong(t"pong").protobuf.encode), endStream = false),
+                Frame.Data(id, GrpcFraming.encode(Pong(t"pong").in[Protobuf].encode), endStream = false),
                 trailers(hpack, id, List(HpackEntry(t"grpc-status", t"0")), true) ))
 
           case class Loopback(duplex: Duplex)

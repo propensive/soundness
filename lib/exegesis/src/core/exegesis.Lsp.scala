@@ -382,7 +382,7 @@ object Lsp:
 
   object DiagnosticSeverity:
     given encodable: DiagnosticSeverity is Json.Encodable =
-      Json.Encodable(Morphology.Whole): severity => (severity.ordinal + 1).json
+      Json.Encodable(Morphology.Whole): severity => (severity.ordinal + 1).in[Json]
 
     given decodable: Tactic[JsonError] => DiagnosticSeverity is Json.Decodable =
       Json.Decodable(Morphology.Whole): json => DiagnosticSeverity.fromOrdinal(json.as[Int] - 1)
@@ -392,7 +392,7 @@ object Lsp:
 
   object MessageType:
     given encodable: MessageType is Json.Encodable =
-      Json.Encodable(Morphology.Whole): level => (level.ordinal + 1).json
+      Json.Encodable(Morphology.Whole): level => (level.ordinal + 1).in[Json]
 
     given decodable: Tactic[JsonError] => MessageType is Json.Decodable =
       Json.Decodable(Morphology.Whole): json => MessageType.fromOrdinal(json.as[Int] - 1)
@@ -402,7 +402,7 @@ object Lsp:
 
   object TextDocumentSyncKind:
     given encodable: TextDocumentSyncKind is Json.Encodable =
-      Json.Encodable(Morphology.Whole)(_.ordinal.json)
+      Json.Encodable(Morphology.Whole)(_.ordinal.in[Json])
 
     given decodable: Tactic[JsonError] => TextDocumentSyncKind is Json.Decodable =
       Json.Decodable(Morphology.Whole): json => TextDocumentSyncKind.fromOrdinal(json.as[Int])
@@ -412,7 +412,7 @@ object Lsp:
 
   object CompletionItemKind:
     given encodable: CompletionItemKind is Json.Encodable =
-      Json.Encodable(Morphology.Whole): kind => (kind.ordinal + 1).json
+      Json.Encodable(Morphology.Whole): kind => (kind.ordinal + 1).in[Json]
 
     given decodable: Tactic[JsonError] => CompletionItemKind is Json.Decodable =
       Json.Decodable(Morphology.Whole): json => CompletionItemKind.fromOrdinal(json.as[Int] - 1)
@@ -424,7 +424,7 @@ object Lsp:
 
   object SymbolKind:
     given encodable: SymbolKind is Json.Encodable =
-      Json.Encodable(Morphology.Whole): kind => (kind.ordinal + 1).json
+      Json.Encodable(Morphology.Whole): kind => (kind.ordinal + 1).in[Json]
 
     given decodable: Tactic[JsonError] => SymbolKind is Json.Decodable =
       Json.Decodable(Morphology.Whole): json => SymbolKind.fromOrdinal(json.as[Int] - 1)
@@ -436,7 +436,7 @@ object Lsp:
 
   object DocumentHighlightKind:
     given encodable: DocumentHighlightKind is Json.Encodable =
-      Json.Encodable(Morphology.Whole): kind => (kind.ordinal + 1).json
+      Json.Encodable(Morphology.Whole): kind => (kind.ordinal + 1).in[Json]
 
     given decodable: Tactic[JsonError] => DocumentHighlightKind is Json.Decodable =
       Json.Decodable(Morphology.Whole): json => DocumentHighlightKind.fromOrdinal(json.as[Int] - 1)
@@ -446,7 +446,7 @@ object Lsp:
 
   object TextDocumentSaveReason:
     given encodable: TextDocumentSaveReason is Json.Encodable =
-      Json.Encodable(Morphology.Whole): reason => (reason.ordinal + 1).json
+      Json.Encodable(Morphology.Whole): reason => (reason.ordinal + 1).in[Json]
 
     given decodable: Tactic[JsonError] => TextDocumentSaveReason is Json.Decodable =
       Json.Decodable(Morphology.Whole): json => TextDocumentSaveReason.fromOrdinal(json.as[Int] - 1)
@@ -456,7 +456,7 @@ object Lsp:
 
   object SymbolTag:
     given encodable: SymbolTag is Json.Encodable =
-      Json.Encodable(Morphology.Whole): tag => (tag.ordinal + 1).json
+      Json.Encodable(Morphology.Whole): tag => (tag.ordinal + 1).in[Json]
 
     given decodable: Tactic[JsonError] => SymbolTag is Json.Decodable =
       Json.Decodable(Morphology.Whole): json => SymbolTag.fromOrdinal(json.as[Int] - 1)
@@ -466,7 +466,7 @@ object Lsp:
 
   object InlayHintKind:
     given encodable: InlayHintKind is Json.Encodable =
-      Json.Encodable(Morphology.Whole): kind => (kind.ordinal + 1).json
+      Json.Encodable(Morphology.Whole): kind => (kind.ordinal + 1).in[Json]
 
     given decodable: Tactic[JsonError] => InlayHintKind is Json.Decodable =
       Json.Decodable(Morphology.Whole): json => InlayHintKind.fromOrdinal(json.as[Int] - 1)
@@ -476,7 +476,7 @@ object Lsp:
 
   object FileChangeType:
     given encodable: FileChangeType is Json.Encodable =
-      Json.Encodable(Morphology.Whole): kind => (kind.ordinal + 1).json
+      Json.Encodable(Morphology.Whole): kind => (kind.ordinal + 1).in[Json]
 
     given decodable: Tactic[JsonError] => FileChangeType is Json.Decodable =
       Json.Decodable(Morphology.Whole): json => FileChangeType.fromOrdinal(json.as[Int] - 1)

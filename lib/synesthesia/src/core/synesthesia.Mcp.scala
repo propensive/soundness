@@ -147,13 +147,13 @@ object Mcp:
     recover:
       case error: ParseError =>
         Http.Response(Http.Ok):
-          JsonRpc.error(-32700, t"Parse error: ${error.message}".show).json
+          JsonRpc.error(-32700, t"Parse error: ${error.message}".show).in[Json]
 
         . mcpSessionId = id
 
       case error: JsonError =>
         Http.Response(Http.Ok):
-          JsonRpc.error(-32600, t"Invalid request: ${error.message}".show).json
+          JsonRpc.error(-32600, t"Invalid request: ${error.message}".show).in[Json]
 
         . mcpSessionId = id
 
@@ -207,7 +207,7 @@ object Mcp:
         catch
           case error: Throwable =>
             Http.Response(Http.Ok):
-              JsonRpc.error(-32603, t"Internal error: ${error.toString}".show).json
+              JsonRpc.error(-32603, t"Internal error: ${error.toString}".show).in[Json]
 
 
   case class TaskAugmented(task: Optional[TaskMetadata] = Unset)
@@ -216,8 +216,8 @@ object Mcp:
   object TextInt:
     given encodable: TextInt is Json.Encodable = Json.Encodable(Morphology.Any):
       _.id.absolve match
-        case text: Text => text.json
-        case int: Int   => int.json
+        case text: Text => text.in[Json]
+        case int: Int   => int.in[Json]
 
     given decodable: Tactic[JsonError] => TextInt is Json.Decodable =
       Json.Decodable(Morphology.Any): json => TextInt(safely(json.as[Int]).or(json.as[Text]))
@@ -310,8 +310,8 @@ object Mcp:
   object Contents:
     given encodable: Contents is Json.Encodable = Json.Encodable(Morphology.Any):
       _.contents match
-        case text: TextResourceContents => text.json
-        case blob: BlobResourceContents => blob.json
+        case text: TextResourceContents => text.in[Json]
+        case blob: BlobResourceContents => blob.in[Json]
 
     given decodable: Tactic[JsonError] => Contents is Json.Decodable =
       Json.Decodable(Morphology.Any): json =>
@@ -370,8 +370,8 @@ object Mcp:
 
   object Role:
     given encodable: Role is Json.Encodable = Json.Encodable(Morphology.Str):
-      case Role.User      => t"user".json
-      case Role.Assistant => t"assistant".json
+      case Role.User      => t"user".in[Json]
+      case Role.Assistant => t"assistant".in[Json]
 
     given decodable: Tactic[JsonError] => Role is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
@@ -385,9 +385,9 @@ object Mcp:
 
   object TaskSupport:
     given encodable: TaskSupport is Json.Encodable = Json.Encodable(Morphology.Str):
-      case TaskSupport.Forbidden => t"forbidden".json
-      case TaskSupport.Optional  => t"optional".json
-      case TaskSupport.Required  => t"required".json
+      case TaskSupport.Forbidden => t"forbidden".in[Json]
+      case TaskSupport.Optional  => t"optional".in[Json]
+      case TaskSupport.Required  => t"required".in[Json]
 
     given decodable: Tactic[JsonError] => TaskSupport is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
@@ -402,7 +402,7 @@ object Mcp:
 
   object LoggingLevel:
     given encodable: LoggingLevel is Json.Encodable =
-      Json.Encodable(Morphology.Str)(_.toString.tt.lower.json)
+      Json.Encodable(Morphology.Str)(_.toString.tt.lower.in[Json])
 
     given decodable: Tactic[JsonError] => LoggingLevel is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
@@ -424,11 +424,11 @@ object Mcp:
 
   object TaskStatus:
     given encodable: TaskStatus is Json.Encodable = Json.Encodable(Morphology.Str):
-      case TaskStatus.Working       => t"working".json
-      case TaskStatus.InputRequired => t"input_required".json
-      case TaskStatus.Completed     => t"completed".json
-      case TaskStatus.Failed        => t"failed".json
-      case TaskStatus.Cancelled     => t"cancelled".json
+      case TaskStatus.Working       => t"working".in[Json]
+      case TaskStatus.InputRequired => t"input_required".in[Json]
+      case TaskStatus.Completed     => t"completed".in[Json]
+      case TaskStatus.Failed        => t"failed".in[Json]
+      case TaskStatus.Cancelled     => t"cancelled".in[Json]
 
     given decodable: Tactic[JsonError] => TaskStatus is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
@@ -465,8 +465,8 @@ object Mcp:
     private val typeTag = Json.discriminatedUnion[Reference](t"type")
 
     given encodable: Reference is Json.Encodable = Json.Encodable(Morphology.Any):
-      case ref: PromptReference           => typeTag.rewrite(t"ref/prompt", ref.json)
-      case ref: ResourceTemplateReference => typeTag.rewrite(t"ref/resource", ref.json)
+      case ref: PromptReference           => typeTag.rewrite(t"ref/prompt", ref.in[Json])
+      case ref: ResourceTemplateReference => typeTag.rewrite(t"ref/resource", ref.in[Json])
 
     given decodable: Tactic[JsonError] => Reference is Json.Decodable =
       Json.Decodable(Morphology.Any): json =>
@@ -515,9 +515,9 @@ object Mcp:
 
   object Mode:
     given encodable: Mode is Json.Encodable = Json.Encodable(Morphology.Str):
-      case Mode.Auto     => t"auto".json
-      case Mode.Required => t"required".json
-      case Mode.None     => t"none".json
+      case Mode.Auto     => t"auto".in[Json]
+      case Mode.Required => t"required".in[Json]
+      case Mode.None     => t"none".in[Json]
 
     given decodable: Tactic[JsonError] => Mode is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
@@ -539,11 +539,11 @@ object Mcp:
     private val typeTag = Json.discriminatedUnion[SamplingMessageContentBlock](t"type")
 
     given encodable: SamplingMessageContentBlock is Json.Encodable = Json.Encodable(Morphology.Any):
-      case content: TextContent       => typeTag.rewrite(t"text",        content.json)
-      case content: ImageContent      => typeTag.rewrite(t"image",       content.json)
-      case content: AudioContent      => typeTag.rewrite(t"audio",       content.json)
-      case content: ToolUseContent    => typeTag.rewrite(t"tool_use",    content.json)
-      case content: ToolResultContent => typeTag.rewrite(t"tool_result", content.json)
+      case content: TextContent       => typeTag.rewrite(t"text",        content.in[Json])
+      case content: ImageContent      => typeTag.rewrite(t"image",       content.in[Json])
+      case content: AudioContent      => typeTag.rewrite(t"audio",       content.in[Json])
+      case content: ToolUseContent    => typeTag.rewrite(t"tool_use",    content.in[Json])
+      case content: ToolResultContent => typeTag.rewrite(t"tool_result", content.in[Json])
 
     given decodable: Tactic[JsonError] => SamplingMessageContentBlock is Json.Decodable =
       Json.Decodable(Morphology.Any): json =>
@@ -571,11 +571,11 @@ object Mcp:
     private val typeTag = Json.discriminatedUnion[ContentBlock](t"type")
 
     given encodable: ContentBlock is Json.Encodable = Json.Encodable(Morphology.Any):
-      case content: TextContent      => typeTag.rewrite(t"text",          content.json)
-      case content: ImageContent     => typeTag.rewrite(t"image",         content.json)
-      case content: AudioContent     => typeTag.rewrite(t"audio",         content.json)
-      case content: ResourceLink     => typeTag.rewrite(t"resource_link", content.json)
-      case content: EmbeddedResource => typeTag.rewrite(t"resource", content.json)
+      case content: TextContent      => typeTag.rewrite(t"text",          content.in[Json])
+      case content: ImageContent     => typeTag.rewrite(t"image",         content.in[Json])
+      case content: AudioContent     => typeTag.rewrite(t"audio",         content.in[Json])
+      case content: ResourceLink     => typeTag.rewrite(t"resource_link", content.in[Json])
+      case content: EmbeddedResource => typeTag.rewrite(t"resource", content.in[Json])
 
     given decodable: Tactic[JsonError] => ContentBlock is Json.Decodable =
       Json.Decodable(Morphology.Any): json =>
@@ -645,9 +645,9 @@ object Mcp:
 
   object ElicitAction:
     given encodable: ElicitAction is Json.Encodable = Json.Encodable(Morphology.Str):
-      case ElicitAction.Accept  => t"accept".json
-      case ElicitAction.Decline => t"decline".json
-      case ElicitAction.Cancel  => t"cancel".json
+      case ElicitAction.Accept  => t"accept".in[Json]
+      case ElicitAction.Decline => t"decline".in[Json]
+      case ElicitAction.Cancel  => t"cancel".in[Json]
 
     given decodable: Tactic[JsonError] => ElicitAction is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>

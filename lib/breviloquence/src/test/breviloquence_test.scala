@@ -229,26 +229,26 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
     suite(m"Generic derivation"):
       test(m"Encode Point(1, 2)"):
-        val cbor = Point(1, 2).cbor
+        val cbor = Point(1, 2).in[Cbor]
         val ast = Cbor.unseal(cbor)
         ast.isMap && ast.entries == 2
       . assert(identity)
 
       test(m"Round-trip Point(3, 4)"):
-        val cbor = Point(3, 4).cbor
+        val cbor = Point(3, 4).in[Cbor]
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(cbor))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[Point]
       . assert(_ == Point(3, 4))
 
       test(m"Round-trip Person(\"Ada\", 36)"):
-        val cbor = Person(t"Ada", 36).cbor
+        val cbor = Person(t"Ada", 36).in[Cbor]
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(cbor))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[Person]
       . assert(_ == Person(t"Ada", 36))
 
       test(m"Round-trip Wrapper with list"):
         val original = Wrapper(List(1, 2, 3), t"hello")
-        val cbor = original.cbor
+        val cbor = original.in[Cbor]
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(cbor))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[Wrapper] == original
       . assert(identity)
@@ -256,51 +256,51 @@ object Tests extends Suite(m"Breviloquence Tests"):
       val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
 
       test(m"Round-trip a type recursive through a List"):
-        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(tree.cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(tree.in[Cbor]))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[Tree] == tree
       . assert(identity)
 
       test(m"A generic product over a recursive type stays structurally derived"):
-        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(Boxed(tree).cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(Boxed(tree).in[Cbor]))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[Boxed[Tree]] == Boxed(tree)
       . assert(identity)
 
     suite(m"Aggregable"):
       test(m"Aggregate single-chunk LazyList[Data] to Cbor"):
         val original = Point(3, 4)
-        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
         LazyList(bytes).read[Cbor].as[Point]
       . assert(_ == Point(3, 4))
 
       test(m"Aggregate split-chunk LazyList[Data] to Cbor"):
         val original = Person(t"Ada", 36)
-        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
         val half = bytes.length/2
         LazyList(bytes.slice(0, half), bytes.slice(half, bytes.length)).read[Cbor].as[Person]
       . assert(_ == Person(t"Ada", 36))
 
       test(m"Aggregate single-chunk LazyList[Data] to Cbor.Ast"):
         val original = Wrapper(List(1, 2, 3), t"hi")
-        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
         Cbor.ast(LazyList(bytes).read[Cbor.Ast]).as[Wrapper]
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
 
     suite(m"`in Cbor` decoder shorthand"):
       test(m"`read[T in Cbor]` resolves a value directly from bytes"):
         val original = Point(3, 4)
-        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
         LazyList(bytes).read[Point in Cbor]
       . assert(_ == Point(3, 4))
 
       test(m"`read[T in Cbor]` works for nested case classes"):
         val original = Wrapper(List(1, 2, 3), t"hi")
-        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
         LazyList(bytes).read[Wrapper in Cbor]
       . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
 
     suite(m"@name field renaming"):
       test(m"Encode renames fields to wire keys"):
-        val cbor = Renamed(List(1L, 2L), List(3L)).cbor
+        val cbor = Renamed(List(1L, 2L), List(3L)).in[Cbor]
         val ast = Cbor.unseal(cbor)
         val keys = (0 until ast.entries).map(ast.key(_).string).toSet
         keys == Set("data_files", "index_files")
@@ -308,20 +308,20 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"Decode reads wire keys back into Scala fields"):
         val original = Renamed(List(10L, 20L, 30L), List(99L))
-        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(original.in[Cbor]))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[Renamed]
       . assert(_ == Renamed(List(10L, 20L, 30L), List(99L)))
 
       test(m"No relabelling uses original field names"):
         val original = Wrapper(List(1, 2, 3), t"x")
-        val cbor = original.cbor
+        val cbor = original.in[Cbor]
         val ast = Cbor.unseal(cbor)
         val keys = (0 until ast.entries).map(ast.key(_).string).toSet
         keys == Set("values", "label")
       . assert(identity)
 
       test(m"@name renames a variant's discriminator"):
-        val ast = Cbor.unseal((CStatus.Active(5): CStatus).cbor)
+        val ast = Cbor.unseal((CStatus.Active(5): CStatus).in[Cbor])
         (0 until ast.entries).collectFirst:
           case i if ast.key(i).string == "kind" => ast.value(i).string
         . getOrElse("none")
@@ -329,32 +329,32 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"@name variants round-trip"):
         List(CStatus.Active(5), CStatus.Removed(9), CStatus.Pending(1)).map: status =>
-          val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal((status: CStatus).cbor))
+          val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal((status: CStatus).in[Cbor]))
           Cbor.ast(Cbor.Ast.parse(bytes)).as[CStatus]
       . assert(_ == List(CStatus.Active(5), CStatus.Removed(9), CStatus.Pending(1)))
 
     suite(m"HTTP content-type integration"):
       test(m"serialises with the application/cbor media type"):
-        Person(t"Alice", 30).cbor.generic(0)
+        Person(t"Alice", 30).in[Cbor].generic(0)
       . assert(_ == t"application/cbor")
 
       test(m"request/response body round-trips"):
-        val body = Person(t"Alice", 30).cbor
+        val body = Person(t"Alice", 30).in[Cbor]
         body.generic(1).read[Person in Cbor]
       . assert(_ == Person(t"Alice", 30))
 
     suite(m"Optics"):
       import dynamicCborAccess.enabled, cborConversion.encodable
 
-      val team = Team(Person(t"John", 40), 3).cbor
-      val list = Wrapper(List(1, 2, 3), t"hi").cbor
+      val team = Team(Person(t"John", 40), 3).in[Cbor]
+      val list = Wrapper(List(1, 2, 3), t"hi").in[Cbor]
 
       test(m"lens reads a field by name"):
         summon["size" is Lens from Cbor onto Cbor](team).as[Int]
       . assert(_ == 3)
 
       test(m"lens sets a top-level field"):
-        team.lens(_.size = 5.cbor).as[Team]
+        team.lens(_.size = 5.in[Cbor]).as[Team]
       . assert(_ == Team(Person(t"John", 40), 5))
 
       test(m"lens sets a nested field"):
@@ -363,7 +363,7 @@ object Tests extends Suite(m"Breviloquence Tests"):
 
       test(m"lens.modify transforms a field through a function"):
         val lens = summon["size" is Lens from Cbor onto Cbor]
-        lens.modify(team)(cbor => (cbor.as[Int] + 1).cbor).as[Team]
+        lens.modify(team)(cbor => (cbor.as[Int] + 1).in[Cbor]).as[Team]
       . assert(_ == Team(Person(t"John", 40), 4))
 
       test(m"ordinal optic updates an array element"):
@@ -405,28 +405,28 @@ object Tests extends Suite(m"Breviloquence Tests"):
       import dynamicCborAccess.enabled
 
       test(m"selectDynamic reads a map field by name"):
-        Person(t"Ada", 36).cbor.selectDynamic("name").as[Text]
+        Person(t"Ada", 36).in[Cbor].selectDynamic("name").as[Text]
       . assert(_ == t"Ada")
 
       test(m"applyDynamic indexes into an array-valued field"):
-        Wrapper(List(10, 20, 30), t"hi").cbor.applyDynamic("values")(1).as[Int]
+        Wrapper(List(10, 20, 30), t"hi").in[Cbor].applyDynamic("values")(1).as[Int]
       . assert(_ == 20)
 
       test(m"updateDynamic replaces a field's value"):
-        Person(t"Ada", 36).cbor.updateDynamic("age")(40).as[Person]
+        Person(t"Ada", 36).in[Cbor].updateDynamic("age")(40).as[Person]
       . assert(_ == Person(t"Ada", 40))
 
       test(m"updateDynamic with Unset deletes a field"):
-        Person(t"Ada", 36).cbor.updateDynamic("age")(Unset).as[OptPerson]
+        Person(t"Ada", 36).in[Cbor].updateDynamic("age")(Unset).as[OptPerson]
       . assert(_ == OptPerson(t"Ada", Unset))
 
     suite(m"Optional fields"):
       test(m"an Optional field round-trips when present"):
-        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(OptPerson(t"Ada", 36).cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(OptPerson(t"Ada", 36).in[Cbor]))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[OptPerson]
       . assert(_ == OptPerson(t"Ada", 36))
 
       test(m"an Optional field round-trips when unset"):
-        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(OptPerson(t"Eve", Unset).cbor))
+        val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(OptPerson(t"Eve", Unset).in[Cbor]))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[OptPerson]
       . assert(_ == OptPerson(t"Eve", Unset))

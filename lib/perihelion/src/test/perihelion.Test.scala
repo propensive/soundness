@@ -379,7 +379,7 @@ object Tests extends Suite(m"Perihelion tests"):
           out.flush()
           val head = readHead(in)
 
-          out.write(clientFrame(0x1, Ping(7).json.show.s.getBytes("UTF-8").nn))
+          out.write(clientFrame(0x1, Ping(7).in[Json].show.s.getBytes("UTF-8").nn))
           out.flush()
 
           val (opcode, replyBytes) = serverFrame(in)
@@ -401,7 +401,7 @@ object Tests extends Suite(m"Perihelion tests"):
 
           val server = SocketServer(port).handle:
             val websocket = webSocket(): (message: perihelion.Message) => Continue(())
-            websocket.channel.send(perihelion.Message.Text(Ping(7).json.show))
+            websocket.channel.send(perihelion.Message.Text(Ping(7).in[Json].show))
             websocket
 
           val url = t"ws://localhost:$port/".decode[WsUrl]

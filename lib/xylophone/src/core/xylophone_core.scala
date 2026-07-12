@@ -48,9 +48,6 @@ export xylophone.internal.Attributes
 
 export Xml.attribute
 
-extension [encodable: Encodable in Xml](value: encodable)
-  def xml: Xml = encodable.encoded(value)
-
 extension (inline context: StringContext)
   transparent inline def x: Interpolation = interpolation[Xml](context)
   transparent inline def xp: Interpolation = interpolation[XPath](context)
