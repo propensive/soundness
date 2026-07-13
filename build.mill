@@ -2222,3 +2222,55 @@ object jslink extends ScalaJSModule, Toolchain:
   def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "jslink" / "src")
   override def mainClass = Some("jslink.Main")
   override def moduleDeps = Seq(gossamer.core.js, jacinta.core.js, wisteria.core.js, ypsiloid.core.js, hypotenuse.core.js, spectacular.core.js, aviation.core.js, xenophile.typescript.js, xenophile.js.js)
+
+// The Wasm-component end-to-end check (`etc/ci/wasm-e2e.sh`, `make wasm-e2e`): compiles a small
+// scenario app (tests/wasm/src) against every `.wasi` backend under `-scalajs` — expanding the
+// deferred `invoke` macros the ordinary build only typechecks — and links it as a WasmComponent
+// for wasmtime to run. The link is driven by an in-tree driver (tests/wasm/linker) because
+// mill's Scala.js worker cannot express the fork-only WasmFeatures (WIT directory/world) config.
+object wasm extends Module:
+  object app extends ScalaJSModule, Toolchain:
+    def scalaVersion = settings.scalaVersion
+    def scalaJSVersion = settings.scalaJsVersion
+    // The `wasi*Api`/backend-given imports are load-bearing only inside the deferred `invoke`
+    // expansions, which dotty's usage tracking cannot see — same false-positive class as the
+    // `-Wconf:origin` entries in `settings.scalaOptions`, silenced wholesale for this module.
+    def scalacOptions = settings.cc(settings.scalaOptions :+ "-Wconf:origin=.*wasi.*:s")
+    def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "tests" / "wasm" / "src")
+
+    override def moduleDeps = Seq(
+      ambience.wasi.js, aviation.wasi.js, capricious.wasi.js, coaxial.wasi.js,
+      galilei.wasi.js, telekinesis.wasi.js, turbulence.wasi.js)
+
+  object linker extends ScalaModule, Toolchain:
+    def scalaVersion = settings.scalaVersion
+    def sources = Task.Sources(mill.api.BuildCtx.workspaceRoot / "tests" / "wasm" / "linker")
+    def mvnDeps = Seq(mvn"io.github.scala-wasm:scalajs-linker_2.13:${settings.scalaJsVersion}")
+
+  def witDir = Task.Source(mill.api.BuildCtx.workspaceRoot / "tests" / "wasm" / "wit")
+
+  def component: T[PathRef] = Task:
+    // The WasmComponent link shells out to `wasm-tools component new` and the scala-wasm fork of
+    // `wit-bindgen` (which must answer `wit-bindgen scala`); fail fast with an actionable message
+    // rather than a confusing mid-link error.
+    for tool <- Seq(Seq("wasm-tools", "--version"), Seq("wit-bindgen", "--version")) do
+      val works =
+        try os.proc(tool).call(check = false, stdout = os.Pipe, stderr = os.Pipe).exitCode == 0
+        catch case _: Exception => false
+      if !works then throw Exception(
+        s"`${tool.head}` is unavailable — install wasm-tools and the scala-wasm fork of "
+        + "wit-bindgen (see the CI-workflow tooling notes in .claude/CLAUDE.md)")
+
+    val classpath =
+      (app.compile().classes.path +: app.compileClasspath().toSeq.map(_.path)).filter(os.exists)
+
+    val driverClasspath =
+      linker.runClasspath().map(_.path.toString).mkString(java.io.File.pathSeparator)
+
+    val command: Seq[String] =
+      Seq("java", "-cp", driverClasspath, "wasme2e.Link",
+        Task.dest.toString, witDir().path.toString, "e2e") ++ classpath.map(_.toString)
+
+    os.proc(command).call(stdout = os.Inherit, stderr = os.Inherit)
+
+    PathRef(Task.dest / "main.wasm")

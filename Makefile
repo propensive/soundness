@@ -28,6 +28,9 @@ dev:
 ci:
 	./etc/ci/run-tests.sh
 
+wasm-e2e:
+	./etc/ci/wasm-e2e.sh
+
 attest:
 	./etc/ci/attest.sh
 
@@ -82,4 +85,4 @@ matrix:
 	    $(foreach scala,3.6.1 3.6.2 3.6.3 3.6.4 3.7.0 3.7.1 3.7.1 main, \
 			    $(MAKE) bootstrap/$(scala):$(jdk);))
 
-.PHONY: publishLocal build dev ci test matrix attest verify-attest push release xeq-build runners-build runners-fetch runners-release
+.PHONY: publishLocal build dev ci wasm-e2e test matrix attest verify-attest push release xeq-build runners-build runners-fetch runners-release
