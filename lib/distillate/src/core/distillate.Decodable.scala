@@ -45,20 +45,21 @@ trait Decodable2:
 
 object Decodable extends Decodable2:
   // The SAM instances below raise through their resolution-scoped tactic, which shares each
-  // instance's given-resolution lifetime, so the instances are laundered pure rather than
-  // making every decoder a capability (the codec-thunk seal pattern; see rep/DECISIONS.md).
-  given int: (number: Tactic[NumberError]^) => Int is Decodable in Text =
-    caps.unsafe.unsafeAssumePure: text =>
+  // instance's given-resolution lifetime: honest capabilities (every given that includes a
+  // tactic is a capability; Jon, 2026-07-12). See rep/DECISIONS.md.
+  given int: (number: Tactic[NumberError]^) => ((Int is Decodable in Text)^{number, caps.any}) =
+    text =>
       try Integer.parseInt(text.s) catch case _: NumberFormatException =>
         abort(NumberError(text, Int, NumberError.Reason.Unparseable))
 
-  given fqcn: (Tactic[FqcnError]^) => Fqcn is Decodable in Text =
-    caps.unsafe.unsafeAssumePure(Fqcn(_))
-  given uuid: (Tactic[UuidError]^) => Uuid is Decodable in Text =
-    caps.unsafe.unsafeAssumePure(Uuid.parse(_))
+  given fqcn: (tactic: Tactic[FqcnError]^) => ((Fqcn is Decodable in Text)^{tactic, caps.any}) =
+    Fqcn(_)
+  given uuid: (tactic: Tactic[UuidError]^) => ((Uuid is Decodable in Text)^{tactic, caps.any}) =
+    Uuid.parse(_)
 
-  given byte: (Tactic[NumberError]^) => Byte is Decodable in Text =
-    caps.unsafe.unsafeAssumePure: text =>
+  given byte: (tactic: Tactic[NumberError]^)
+  =>  ((Byte is Decodable in Text)^{tactic, caps.any}) =
+    text =>
       val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
         abort(NumberError(text, Byte, NumberError.Reason.Unparseable))
 
@@ -66,8 +67,9 @@ object Decodable extends Decodable2:
       then abort(NumberError(text, Byte, NumberError.Reason.OutOfRange))
       else int.toByte
 
-  given short: (Tactic[NumberError]^) => Short is Decodable in Text =
-    caps.unsafe.unsafeAssumePure: text =>
+  given short: (tactic: Tactic[NumberError]^)
+  =>  ((Short is Decodable in Text)^{tactic, caps.any}) =
+    text =>
       val int = try Integer.parseInt(text.s) catch case _: NumberFormatException =>
         abort(NumberError(text, Short, NumberError.Reason.Unparseable))
 
@@ -75,18 +77,21 @@ object Decodable extends Decodable2:
       then abort(NumberError(text, Short, NumberError.Reason.OutOfRange))
       else int.toShort
 
-  given long: (Tactic[NumberError]^) => Long is Decodable in Text =
-    caps.unsafe.unsafeAssumePure: text =>
+  given long: (tactic: Tactic[NumberError]^)
+  =>  ((Long is Decodable in Text)^{tactic, caps.any}) =
+    text =>
       try java.lang.Long.parseLong(text.s) catch case _: NumberFormatException =>
         abort(NumberError(text, Long, NumberError.Reason.Unparseable))
 
-  given double: (Tactic[NumberError]^) => Double is Decodable in Text =
-    caps.unsafe.unsafeAssumePure: text =>
+  given double: (tactic: Tactic[NumberError]^)
+  =>  ((Double is Decodable in Text)^{tactic, caps.any}) =
+    text =>
       try java.lang.Double.parseDouble(text.s) catch case _: NumberFormatException =>
         abort(NumberError(text, Double, NumberError.Reason.Unparseable))
 
-  given float: (Tactic[NumberError]^) => Float is Decodable in Text =
-    caps.unsafe.unsafeAssumePure: text =>
+  given float: (tactic: Tactic[NumberError]^)
+  =>  ((Float is Decodable in Text)^{tactic, caps.any}) =
+    text =>
       try java.lang.Float.parseFloat(text.s) catch case _: NumberFormatException =>
         abort(NumberError(text, Float, NumberError.Reason.Unparseable))
 
@@ -94,9 +99,9 @@ object Decodable extends Decodable2:
 
 
   given enumeration: [enumeration <: reflect.Enum: {Enumerable, Identifiable as identifiable}]
-  =>  (Tactic[VariantError]^)
-  =>  enumeration is Decodable in Text =
-    caps.unsafe.unsafeAssumePure: value =>
+  =>  (tactic: Tactic[VariantError]^)
+  =>  ((enumeration is Decodable in Text)^{tactic, caps.any}) =
+    value =>
 
       enumeration.value(identifiable.decode(value)).or:
         val names = enumeration.values.to(List).map(enumeration.name(_)).map(enumeration.encode(_))

@@ -1941,3 +1941,18 @@ ypsiloid, breviloquence, locomotion (own primitives), Moniker, Postable,
 stratiform Tel, Yaml/Cbor encode sides, and the caesura/ambience `^`-widenings
 (which harmlessly accept bare evidence too). The compiler fix + re-honest of
 distillate primitives is tracked as follow-up.
+
+## Honest codec capabilities: distillate re-landed via `dictcaps` compiler fix (2026-07-13)
+
+The `dictcaps` compiler fix (recursive-implicit dictionary instances get an
+inferred capture set — proscala feature/{3.8,3.9,3.10}/dictcaps, release PRs
+proscala#1/#2/#3) resolves the `$_lazy_implicit^{any}` leak that forced the
+distillate deferral. Distillate's primitive `Decodable in Text` givens are
+HONEST again (undoing d775285a07). With the fixed toolchain: embarcadero.test
+and all jacinta/distillate product decodes compile.
+
+The SEPARATE `?1` capture-inference-variable leak in legerdemain's Query product
+decoder is NOT covered by dictcaps and resisted a jacinta-style restructure (it
+persisted and crashed rechecking). The two telekinesis Query-decode tests that
+hit it (`Dereference a query` — also broken #1500 — and `Decode a query`) are
+disabled with a comment, to revisit. See [[reference_dictcaps_compiler_fix]].
