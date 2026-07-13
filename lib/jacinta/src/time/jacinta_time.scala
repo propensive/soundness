@@ -39,10 +39,10 @@ import prepositional.*
 
 package encodables:
   given instantJsonEncodable: (Instant over Posix) is Json.Encodable =
-    Json.Encodable(Morphology.Whole): instant => Json(instant.long)
+    Json.Encodable(() => Morphology.Whole): instant => Json(instant.long)
 
   given durationJsonEncodable: Duration is Json.Encodable =
-    Json.Encodable(Morphology.Whole): duration => Json((duration.value*1000).toLong)
+    Json.Encodable(() => Morphology.Whole): duration => Json((duration.value*1000).toLong)
 
 package decodables:
   // Laundered pure like jacinta's primitive codecs (codec-thunk seal): as derived-product

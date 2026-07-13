@@ -51,13 +51,16 @@ object Encodable:
   given char: Char is Encodable in Text = _.toString.tt
   given string: String is Encodable in Text = _.tt
 
-trait Encodable extends Typeclass.Pure, Formal:
+// A tracked typeclass, not `Typeclass.Pure`: an `Encodable` built from a `Tactic`
+// (field codecs summoned during derivation, tactic-raising encoders) retains it,
+// and a given that includes a tactic is honestly a capability (Jon, 2026-07-13).
+trait Encodable extends Typeclass, Formal:
   private inline def encodable: this.type = this
   def encoded(value: Self): Form
 
   extension (value: Self) def encode: Form = encoded(value)
 
-  def contramap[self2](lambda: self2 -> Self): self2 is Encodable in Form =
+  def contramap[self2](lambda: self2 => Self): (self2 is Encodable in Form)^{this, lambda} =
     new Encodable:
       type Self = self2
       type Form = encodable.Form

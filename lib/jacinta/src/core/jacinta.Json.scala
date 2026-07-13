@@ -101,7 +101,7 @@ trait Json2 extends Json3:
       caps.unsafe.unsafeAssumePure(() => Morphology.Opt(encodable.shape()))
 
 
-    Json.Encodable(shape()): value =>
+    Json.Encodable(shape): value =>
       value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Json.ast(Json.Ast(Unset)))
 
 
@@ -153,7 +153,7 @@ trait Json2 extends Json3:
 
   inline given encodable: [value] => value is Json.Encodable = summonFrom:
     case given (`value` is anticipation.Encodable in Text) =>
-      Json.Encodable(Morphology.Str): value => Json.ast(Json.Ast(value.encode.s))
+      Json.Encodable(() => Morphology.Str): value => Json.ast(Json.Ast(value.encode.s))
 
     case given Reflection[`value`] =>
       EncodableDerivation.derived
@@ -262,7 +262,7 @@ trait Json2 extends Json3:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Json.Encodable =
 
-      Json.Encodable({
+      Json.Encodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
           . to(List)
@@ -304,7 +304,7 @@ trait Json2 extends Json3:
     inline def disjunction[derivation: SumReflection]: derivation is Json.Encodable =
       // See the decoder disjunction: the codec-carried sum shape is permissive
       // (`Any`); precise `oneOf` schemas come from the standalone `Schematic`.
-      Json.Encodable(Morphology.Any):
+      Json.Encodable(() => Morphology.Any):
         value =>
           val discriminable = infer[derivation is Discriminable in Json]
 
@@ -341,25 +341,19 @@ object Json extends Json2, Dynamic:
   type JsonArray   = IArray[Any] | Array[Long] | Array[Int]
 
   object Encodable:
-    def apply[value](shape0: => Morphology)(lambda: (value -> Json)^)
-    :   (value is Json.Encodable) =
+    def apply[value](shape0: () => Morphology)(lambda: (value -> Json)^)
+    :   ((value is Json.Encodable)^{shape0, lambda}) =
 
-      // The shape thunk may close over a `Tactic` when field/element codecs are summoned from
-      // tactic-taking givens, but `shape()` only reads static metadata and never encodes or
-      // raises, so the capture is behaviourally inert; laundered pure to keep codec instances
-      // pure. Invariant: a `shape()` implementation must never invoke its tactic.
-      val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure { () => shape0 }
-
-      // The encode lambda may capture the resolution-scoped tactic of field/element codecs,
-      // which shares this instance's given-resolution lifetime; `Json.Encodable` is a pure
-      // typeclass (via `anticipation.Encodable`), so the payload — not the instance — is
-      // sealed here, once, for every codec constructed through this factory.
-      val lambda1: value -> Json = caps.unsafe.unsafeAssumePure(lambda)
-
+      // An honest capability: the instance retains the encode lambda and the shape
+      // thunk, which may capture the resolution-scoped tactics of field/element
+      // codecs (every given that includes a tactic is a capability; Jon,
+      // 2026-07-13). The shape is an EXPLICIT thunk — nameable in the capture set,
+      // unlike a by-name — so pure call sites yield pure instances, and deferral
+      // (which recursive derivation depends on) is the caller's one-liner.
       new Json.Encodable:
         type Self = value
-        def encoded(value: value): Json = lambda1(value)
-        def shape(): Morphology = shape1()
+        def encoded(value: value): Json = lambda(value)
+        def shape(): Morphology = shape0()
 
   // A JSON encoder that also carries the format-neutral `Morphology` describing exactly
   // what it produces. Making the shape travel *with* the codec is what lets a fused
@@ -1124,39 +1118,39 @@ object Json extends Json2, Dynamic:
       caps.unsafe.unsafeAssumePure(() => Morphology.Opt(encodable.shape()))
 
 
-    Json.Encodable(shape()):
+    Json.Encodable(shape):
       case None        => Json.ast(Json.Ast(Unset))
       case Some(value) => encodable.encode(value)
 
 
   given integralEncodable: [integral: Integral] => integral is Json.Encodable =
-    Json.Encodable(Morphology.Whole): int => Json.ast(Json.Ast(integral.toLong(int)))
+    Json.Encodable(() => Morphology.Whole): int => Json.ast(Json.Ast(integral.toLong(int)))
 
   given textEncodableInJson: Text is Json.Encodable =
-    Json.Encodable(Morphology.Str): text => Json.ast(Json.Ast(text.s))
+    Json.Encodable(() => Morphology.Str): text => Json.ast(Json.Ast(text.s))
 
   given stringEncodable: String is Json.Encodable =
-    Json.Encodable(Morphology.Str): string => Json.ast(Json.Ast(string))
+    Json.Encodable(() => Morphology.Str): string => Json.ast(Json.Ast(string))
 
   given doubleEncodable: Double is Json.Encodable =
-    Json.Encodable(Morphology.Real): double => Json.ast(Json.Ast(double))
+    Json.Encodable(() => Morphology.Real): double => Json.ast(Json.Ast(double))
 
   given intEncodable: Int is Json.Encodable =
-    Json.Encodable(Morphology.Whole): int => Json.ast(Json.Ast(int.toLong))
+    Json.Encodable(() => Morphology.Whole): int => Json.ast(Json.Ast(int.toLong))
 
   given unitEncodable: Unit is Json.Encodable =
-    Json.Encodable(Morphology.Empty): unit => Json.ast(Json.Ast(JsonNull))
+    Json.Encodable(() => Morphology.Empty): unit => Json.ast(Json.Ast(JsonNull))
 
   given ordinalEncodable: Ordinal is Json.Encodable =
-    Json.Encodable(Morphology.Whole): ordinal => Json.ast(Json.Ast(ordinal.n0.toLong))
+    Json.Encodable(() => Morphology.Whole): ordinal => Json.ast(Json.Ast(ordinal.n0.toLong))
 
   given longEncodable: Long is Json.Encodable =
-    Json.Encodable(Morphology.Whole): long => Json.ast(Json.Ast(long))
+    Json.Encodable(() => Morphology.Whole): long => Json.ast(Json.Ast(long))
 
   given booleanEncodable: Boolean is Json.Encodable =
-    Json.Encodable(Morphology.Bool): boolean => Json.ast(Json.Ast(boolean))
+    Json.Encodable(() => Morphology.Bool): boolean => Json.ast(Json.Ast(boolean))
 
-  given jsonEncodable: Json is Json.Encodable = Json.Encodable(Morphology.Any)(identity(_))
+  given jsonEncodable: Json is Json.Encodable = Json.Encodable(() => Morphology.Any)(identity(_))
 
 
   given listEncodable: [list <: List, element] => (encodable: => (element is Json.Encodable))
@@ -1169,7 +1163,7 @@ object Json extends Json2, Dynamic:
       val shape: () -> Morphology =
         caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
 
-      Json.Encodable(shape()):
+      Json.Encodable(shape):
         values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
 
 
@@ -1183,7 +1177,7 @@ object Json extends Json2, Dynamic:
       val shape: () -> Morphology =
         caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
 
-      Json.Encodable(shape()):
+      Json.Encodable(shape):
         values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
 
 
@@ -1197,7 +1191,7 @@ object Json extends Json2, Dynamic:
       val shape: () -> Morphology =
         caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
 
-      Json.Encodable(shape()):
+      Json.Encodable(shape):
         values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
 
 
@@ -1280,7 +1274,7 @@ object Json extends Json2, Dynamic:
       caps.unsafe.unsafeAssumePure(() => Morphology.Dict(Morphology.Str, encodable.shape()))
 
 
-    Json.Encodable(shape()): map =>
+    Json.Encodable(shape): map =>
       val keys: List[key] = map.keys.to(List)
       val values = IArray.from(keys.map(map(_).encode.root))
       Json.ast(Json.Ast.obj(IArray.from(keys.map(_.encode.s)).asInstanceOf[IArray[String]], values.asInstanceOf[IArray[Any]]))

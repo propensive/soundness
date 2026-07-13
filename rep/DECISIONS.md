@@ -1805,3 +1805,25 @@ REMAINING: a SECOND summon path (`summonInline`-based, hit by locomotion's
 site) is still bare — locomotion stays sealed (comment updated) until it is
 patched the same way. Then: distillate primitives, jacinta conjunction,
 stratiform, the Pure-Encodable question (open with Jon), gates + PR.
+
+## Honest codec capabilities, phase 4: Encodable is tracked (2026-07-13)
+
+RULING (Jon, 2026-07-13): a tactic-requiring `Encodable` is a tracked capability
+— strict reading. `anticipation.Encodable` REVERTS from `Typeclass.Pure` to plain
+`Typeclass` (partially undoing #1517; Abstractable/Transmissible stay Pure — their
+instances capture nothing), with the tracked contramap restored. Repo fallout:
+ONE line (zephyrine's charEncoder duct stage back to `consume stage: CharEncoder^`).
+
+`Json.Encodable.apply` is honest: result `^{shape0, lambda}`. KEY DESIGN MOVE: the
+shape parameter became an EXPLICIT `() => Morphology` thunk — nameable in the
+capture set, unlike a by-name — so pure call sites yield pure instances, capability
+call sites yield tracked ones, and deferral (recursive derivation) is the caller's
+one-liner (`Json.Encodable(() => shape)`). ~25 call sites thunked mechanically
+across jacinta/synesthesia/exegesis/tests. The payload and shape-thunk seals are
+DELETED.
+
+REMAINING (phase 5): Moniker/Postable untracked fields → honest results;
+stratiform Tel factories (same explicit-thunk move); encode-side by-name givens
+(jacinta sep-blocked, cc siblings convertible); #1528 JS launders on the
+Encodable family may be removable now the anon-class self-types aren't pure;
+the second wisteria summonInline path; distillate primitives; then gates + PR.
