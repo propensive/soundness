@@ -132,9 +132,13 @@ object Divergence:
 
     // The subscribers are typed exclusive element-wise at the collection rim: capture
     // sets do not ride standard-collection elements, and each queue feeds exactly one
-    // subscriber by construction.
+    // subscriber by construction. Tabulation by index rather than `map`: since reach
+    // capabilities were dropped (scala/scala3#26246), a lambda over the rings' elements
+    // cannot be typed against the collection's decayed element capability, but an
+    // integer-indexed closure carries no capability in its function type.
     locally:
-      val subscribers = queues.map: queue =>
+      val subscribers = IndexedSeq.tabulate(queues.length): index =>
+        val queue = queues(index)
         sealSubscriber(new Stream[medium](using addressable0):
           type Transport = Credit
 
@@ -183,7 +187,11 @@ object Divergence:
                     panic(m"unexpected value in manifold hand-off")
         )
 
-      subscribers.asInstanceOf[IndexedSeq[(Stream[medium] over Credit)^]]
+      // The cast target elides the elements' `^`: the cast is erased either way, and a
+      // bare (pure-typed) element lifts covariantly into the declared result's boxed
+      // element capability, where a `^` type argument would mint an unboxed root that
+      // post-reach-drop capture checking refuses to box.
+      subscribers.asInstanceOf[IndexedSeq[Stream[medium] over Credit]]
 
   // Bridges a fresh subscriber into a collection element: capture sets do not ride
   // standard-collection elements, so the exclusivity is re-asserted element-wise in the
