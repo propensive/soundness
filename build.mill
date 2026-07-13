@@ -488,8 +488,8 @@ object soundness extends Toolchain:
   // platform and is built through `js` alongside it (both are compiled by CI).
   object jvm extends Bundle(base, cli, data, sci, test, tool, web)
 
-  object wasi extends Bundle(ambience.wasi, aviation.wasi, capricious.wasi, galilei.wasi,
-    telekinesis.wasi, turbulence.wasi)
+  object wasi extends Bundle(ambience.wasi, aviation.wasi, capricious.wasi, coaxial.wasi,
+    galilei.wasi, telekinesis.wasi, turbulence.wasi)
 
   object js extends ScalaJSModule, Toolchain:
     def scalaVersion = settings.scalaVersion
@@ -899,6 +899,11 @@ object coaxial extends Library:
   // supply their own backend.
   object jvm extends Component(core):
     override def scalaJs = false
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  // A `SocketBackend` over `wasi:sockets` (TCP only; WASI has no Unix-domain sockets), materialized
+  // by xenophile's `invoke` at the downstream Wasm-linked summoning site.
+  object wasi extends Component(core, xenophile.wasm, xenophile.wit):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, jvm)

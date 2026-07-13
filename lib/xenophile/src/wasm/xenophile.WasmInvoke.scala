@@ -199,6 +199,12 @@ object WasmInvoke:
       case _ =>
         false
 
+    // The element WIT types of a `tuple<…>` parameter (a WIT record, whose ABI it shares, may be
+    // declared as its structural tuple), or `Unset` for any other parameter shape.
+    def parameterTuple(parameter: Foreign.Type): Optional[List[Foreign.Type]] = parameter match
+      case Foreign.Type.Applied(constructor, elements) if constructor.s == "tuple" => elements
+      case _                                                                       => Unset
+
     val listClass = Symbol.requiredClass("scala.collection.immutable.List")
 
     def isList(scala: TypeRepr): Boolean = scala.dealias match
@@ -506,8 +512,135 @@ object WasmInvoke:
 
       (facade.typeRef, Match(selector, caseDefs :+ missing))
 
+    // The base class a (possibly multiply-)refined type refines, and the constant string / aliased
+    // type a named refinement member is set to — used to read `WitVariant`'s `Topic`/`Case`/
+    // `Payload` phantom members regardless of the order the compiler nests them.
+    // `.dealias` at each step because the phantom members are carried through `of` — a type alias
+    // (`X of topic` = `of[X, topic]` = `X { type Topic = topic }`) — so a `WitVariant` argument
+    // reads as `of[WitVariant[payload], topic] { type Case = … }`, whose base and `Topic` member are
+    // hidden inside the unexpanded `of` until dealiased.
+    def refinementBase(tpe: TypeRepr): TypeRepr = tpe.dealias match
+      case Refinement(parent, _, _) => refinementBase(parent)
+      case other                    => other
+
+    def refinedString(tpe: TypeRepr, name: String): Optional[Text] = tpe.dealias match
+      case Refinement(_, `name`, TypeBounds(_, ConstantType(StringConstant(text)))) =>
+        text.tt
+
+      case Refinement(parent, _, _) =>
+        refinedString(parent, name)
+
+      case _ =>
+        Unset
+
+    val witVariantClass = Symbol.requiredClass("xenophile.WitVariant")
+    val witRecordAnnotation = Symbol.requiredClass("scala.scalajs.wit.annotation.WitRecord")
+
+    // Constructs a scala-wasm facade value of WIT type `target` from a Scala `value`, recursing
+    // structurally: a scala-wasm `TupleN` and a `@WitRecord` class are each built element-wise via
+    // their companion `apply` (a record shares the tuple ABI, so its fields map to the Scala
+    // tuple's positionally); a leaf is encoded through its `Encodable in Wasm` codec, whose carrier
+    // is the facade field's type (the `scala.scalajs.wit.unsigned` types are aliases of the boxed
+    // primitives). The facade classes are resolved here, downstream, so they never appear in this
+    // module's own compilation.
+    def buildFacade(target: TypeRepr, value: Term): Term =
+      val symbol = target.typeSymbol
+
+      if symbol.fullName.startsWith("scala.scalajs.wit.Tuple") then
+        val elements = target.typeArgs
+        val applier = Select.unique(Ref(symbol.companionModule), "apply")
+
+        val built = elements.zipWithIndex.map: (element, index) =>
+          buildFacade(element, Select.unique(value, "_" + (index + 1).toString))
+
+        Apply(TypeApply(applier, elements.map(Inferred(_))), built)
+
+      else if symbol.hasAnnotation(witRecordAnnotation) then
+        // Constructor-parameter order, not `declaredFields` (which does not preserve it), so the
+        // record's fields line up with the Scala tuple's positions and the companion `apply`.
+        val params = symbol.primaryConstructor.paramSymss.flatten.filter(!_.isType)
+
+        val built = params.zipWithIndex.map: (param, index) =>
+          val field = symbol.declaredField(param.name)
+          buildFacade(target.memberType(field), Select.unique(value, "_" + (index + 1).toString))
+
+        Apply(Select.unique(Ref(symbol.companionModule), "apply"), built)
+
+      else
+        value.tpe.widen.dealias.asType.absolve match
+          case '[leaf] =>
+            val encodable = Expr.summon[leaf is Encodable in Wasm].getOrElse:
+              halt(m"xenophile: no `Encodable in Wasm` to build a WIT payload of ${value.tpe.show}")
+
+            // `Wasm#value` is `Any`; cast it to the facade field's carrier type (`target`) so it
+            // conforms to the record/tuple `apply`'s parameter.
+            val encoded = '{$encodable.encoded(${value.asExprOf[leaf]}).value}.asTerm
+            TypeApply(Select.unique(encoded, "asInstanceOf"), List(Inferred(target)))
+
+    // A payload-carrying `variant` case argument (a `WitVariant`): the facade case class named by
+    // `caseName` (fixed at compile time, so no runtime dispatch), constructed with its record/
+    // tuple/primitive payload built from the `WitVariant`'s payload — cast back to the Scala type
+    // `payloadType` the phantom `Payload` carried — and encoded element-wise.
+    def variantArgument(topic: Text, caseName: Text, payloadType: TypeRepr, value: Term)
+    :   (TypeRepr, Term) =
+
+      val facade = facadeOf(topic)
+
+      val child = facade.children.find(_.name.tt.uncamel.kebab == caseName).getOrElse:
+        halt(m"xenophile: the variant $topic has no case $caseName")
+
+      val valueField = child.declaredFields.headOption.getOrElse:
+        halt(m"xenophile: the variant case $topic.$caseName carries no payload")
+
+      val caseValueType = child.typeRef.memberType(valueField)
+
+      val castPayload =
+        TypeApply
+          ( Select.unique
+              ( '{${value.asExprOf[Any]}.asInstanceOf[WitVariant[Any]].payload}.asTerm,
+                "asInstanceOf" ),
+            List(Inferred(payloadType)) )
+
+      val built = buildFacade(caseValueType, castPayload)
+      (facade.typeRef, Apply(Select.unique(Ref(child.companionModule), "apply"), List(built)))
+
     def encodedArgument(value: Term, parameter: Foreign.Type): (TypeRepr, Term) =
       val (carrier, encoded, alreadyOption) = value.tpe.widen.dealias match
+        // A `tuple<…>` (or a record, whose ABI it shares) argument with a matching Scala tuple:
+        // element-wise recursion, constructed as the scala-wasm `TupleN` of the element carriers —
+        // the mirror of the decode path. Nested tuples, `option<T>` and `WitCase` elements are
+        // handled by the per-element recursion into `encodedArgument`.
+        case valueType
+        if parameterTuple(parameter).let { es => isTuple(valueType, es.length) }.or(false) =>
+          val elements = parameterTuple(parameter).vouch
+
+          // Explicit loop, not a mapping lambda: minted quote capabilities must not leak into a
+          // closure's capture set (macro-under-cc precedent, rep/DECISIONS.md).
+          val encodedBuffer = List.newBuilder[(TypeRepr, Term)]
+          val indexed = elements.iterator.zipWithIndex
+
+          while indexed.hasNext do
+            val (element, index) = indexed.next()
+            val field = Select.unique(value, "_" + (index + 1).toString)
+            encodedBuffer += encodedArgument(field, element)
+
+          val encodedElements = encodedBuffer.result()
+          val carriers = encodedElements.map(_(0))
+
+          val tupleClass =
+            Symbol.requiredClass("scala.scalajs.wit.Tuple" + elements.length.toString)
+
+          val tupleCarrier = tupleClass.typeRef.appliedTo(carriers)
+
+          val constructed =
+            Apply
+              ( TypeApply
+                  ( Select.unique(Ref(tupleClass.companionModule), "apply"),
+                    carriers.map(Inferred(_)) ),
+                encodedElements.map(_(1)) )
+
+          (tupleCarrier, constructed, false)
+
         // A statically-absent argument (a bare `Unset` against an `option<T>` parameter, e.g. the
         // `option<request-options>` of `wasi:http`'s `handle`) needs no payload codec at all.
         case tpe if tpe =:= TypeRepr.of[Unset] =>
@@ -524,6 +657,16 @@ object WasmInvoke:
         case Refinement(base, "Topic", TypeBounds(_, ConstantType(StringConstant(topic))))
         if base =:= TypeRepr.of[WitCase] =>
           val (carrier, encoded) = caseArgument(topic.tt, value)
+          (carrier, encoded, false)
+
+        // A payload-carrying `variant` case argument (a `WitVariant`, e.g. the `ip-socket-address`
+        // passed to `start-connect`): read its `Topic`/`Case` phantom members and payload type
+        // argument, and build the named facade case around its payload.
+        case tpe if refinementBase(tpe).typeSymbol == witVariantClass =>
+          val topic = refinedString(tpe, "Topic").or(halt(m"xenophile: WitVariant has no Topic"))
+          val caseName = refinedString(tpe, "Case").or(halt(m"xenophile: WitVariant has no Case"))
+          val payloadType = refinementBase(tpe).typeArgs.head
+          val (carrier, encoded) = variantArgument(topic, caseName, payloadType, value)
           (carrier, encoded, false)
 
         case OrType(left, right)
