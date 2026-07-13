@@ -36,26 +36,42 @@ around by cast/launder with a comment; the patched compiler may be used without 
    options = compiler feature work, or a `Validate`/`protect` redesign avoiding function-value
    indirection in tests, or defer the 5 suites.
 
-## Toolchain (CURRENT: the propensive/scala fork — supersedes the 3.8.4-cc1 arrangement below)
+## Toolchain (CURRENT: downloaded from the propensive/proscala releases)
 
-Since 2026-07-05 the build uses `/Users/propensive/work/scala` (fork of scala/scala3) as the
-compiler source. Branches are `feature/<ver>/<feat>`; the case-2 fix is
-`feature/<ver>/unboxedpure`; `feature/<ver>/make` adds a Makefile that builds a full distribution
-into `release/` (12 module jars incl. sbt-bridge, staging, the unified scala-library, the Scala.js
-stdlib, plus `bin/scalac`). Custom compilers = merge same-version feature branches. The active
-build worktree is `/Users/propensive/work/worktrees/scala/soundness-384` on
-`feature/3.8.4/make-unboxedpure` (soundness needs the 3.8.4 row — 3.9.0-RC1 can't parse its
-experimental syntax). Version baked: `3.8.4-propensive`.
+Since 2026-07-13 the build downloads the compiler from the `propensive/proscala` GitHub releases
+instead of reading a locally-built `release/` directory — so no local compiler build (or fork
+checkout) is required to build soundness. `build.mill`'s `object toolchain` fetches the
+`SOUNDNESS_SCALA_RELEASE` tag (default `3.9.0-RC1-p1`, the latest in the 3.9.0 stream) into a
+shared cache `~/.cache/soundness/proscala/<tag>/lib`: it lists the release's assets via the GitHub
+API, `curl`s each, verifies it against the published sha256, and writes a `.complete` sentinel so a
+warm cache is a no-op (no network, offline-safe, and reused by the throwaway-worktree attest
+build). Each release ships only the fork's own jars (`scala-library.jar`, `scala3-compiler.jar`,
+the sbt bridge, the Scala.js stdlib, and the two `io.github.scala-wasm` Scala.js `1.22.0-wasm.4`
+jars); everything else (scala-asm, the sbt compiler/util interfaces, jline, pprint …) resolves from
+Maven Central. The coordinate version baked into the jars is `3.9.0-RC1-propensive` (distinct from
+the `-p1` release tag).
 
-Mill consumes the jars DIRECTLY (no publishing): `build.mill`'s `object toolchain` lays out a
-Maven-format repository view (versioned copies + minimal POMs) from `release/lib` into its own
-task dest; `trait Toolchain` adds it via `repositories` (covering scala-library force-versions,
-scala3-compiler_3/staging_3 module deps, the sbt bridge, and scala3-library_sjs1_3 uniformly) and
-overrides `scalaCompilerClasspath`/`scalaCompilerBridge` with content-hashed paths so a rebuilt
-compiler is picked up automatically. NB Zinc finds the stdlib in the compiler classpath BY
-FILENAME, so that classpath uses the repo's versioned copies. `SOUNDNESS_SCALA_HOME` switches
-distributions. After a fork rebuild: `./mill clean` (and re-attest — the compiler lives outside
-the CI input digest).
+Mill consumes the jars via a Maven-format repository view: `object toolchain` copies the fork jars
+to versioned coordinates with minimal POMs (each entry carries its own coordinate version — the
+Scala.js runtime jars keep the `1.22.0-wasm.4` Scala.js coordinate, everything else the Scala
+coordinate); `trait Toolchain` adds it via `repositories` and overrides
+`scalaCompilerClasspath`/`scalaCompilerBridge`. NB Zinc finds the stdlib in the compiler classpath
+BY FILENAME, so that classpath uses the repo's versioned copies; the compiler's own third-party
+runtime deps (scala-asm, compiler-interface, util-interface — not shipped in the release) are
+coursier-resolved onto it. `SOUNDNESS_SCALA_HOME` still overrides with a locally-built `release`
+directory (fork developers building the compiler themselves); the older
+`/Users/propensive/work/worktrees/scala/soundness-*` worktrees are that local mode. After switching
+toolchains: `./mill clean` (the compiler lives outside the CI input digest, so it does not
+invalidate attestations).
+
+**Scala.js / WIT note.** The `3.9.0-RC1-p1` compiler's Scala.js backend requires
+`scala.scalajs.wit.witImportCall` (+ the `witPrim`/`witNamed`/`witList`/`witTuple`/`witOption`/
+`witResult`/`witUnit`/`witParam` structural descriptors) as a member of `scala.scalajs.wit`. These
+are NOT in upstream `io.github.scala-wasm`'s library — they are the intrinsic markers from the
+`propensive/scala-wasm@witimportcall-marker` work. The proscala release therefore ships a
+marker-patched `scalajs-library_2.13-1.22.0-wasm.4.jar` (its `wit.package$.class` carries those
+methods); a plain upstream library makes every `-scalajs` compile fail with "package
+scala.scalajs.wit does not have a member method witImportCall".
 
 New compiler bugfixes: create `feature/3.8.4/<fix>` in the fork, merge into the build worktree's
 branch, `make`, `./mill clean`. First candidate: the inliner-proxy bug (see the anon-instance
