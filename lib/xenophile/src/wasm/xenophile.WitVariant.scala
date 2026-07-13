@@ -30,23 +30,37 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xenophile
 
-export xenophile.{Wasm, WasmInvoke, WitCase, WitError, WitHandle, WitVariant}
+import prepositional.*
 
-// Materializes a fully-applied WIT `Foreign` invocation into a real Wasm Component Model import
-// call. Must be applied directly to an inline navigation chain — e.g.
-// `Foreign["random", Wit].\`get-random-u64\`().invoke[U64]` — not to a value bound to a `val`.
-// Plain `inline` (not `transparent`): the return type is fully determined by the type argument,
-// and non-transparency defers the macro when `invoke` appears inside another `inline` definition,
-// so a library can publish an inline given whose import call only materializes at the downstream
-// (Wasm-linked) call site — where `scala.scalajs.wit.witImportCall` is on the classpath.
-extension (foreign: xenophile.Foreign)
-  inline def invoke[result]: result =
-    ${xenophile.WasmInvoke.invoke[result]('foreign)}
+// A payload-carrying case of a WIT `variant`, for passing as an argument to a WIT function — such
+// as the `ip-socket-address` (an `ipv4`/`ipv6` case wrapping a socket-address record) taken by
+// `wasi:sockets`'s `start-connect`. The phantom `Topic` records the variant type and `Case` the
+// selected case (both lower-kebab-case names, given as literal type arguments), while `Payload`
+// preserves the argument's Scala type so `invoke` can encode it; the case must be a compile-time
+// literal because the payload type differs per case, so the facade case is built with no runtime
+// dispatch. `WitCase` is the payload-less counterpart.
+//
+// Written `WitVariant["ip-socket-address", "ipv4"](payload)`: the topic and case are explicit type
+// arguments, the payload is inferred. At the downstream Wasm-link site `invoke` resolves the
+// variant's facade, selects the named case, and constructs it — building any nested record/tuple
+// payload from `payload` element-wise.
+object WitVariant:
+  transparent inline def apply[topic <: Label, name <: Label]: Applier[topic, name] =
+    Applier()
 
-// Releases a WIT resource handle, emitting its `[resource-drop]` Component Model import. Like
-// `invoke`, plain `inline` so the import materializes at the downstream (Wasm-linked) call site.
-extension (handle: xenophile.WitHandle)
-  inline def dispose(): Unit =
-    ${xenophile.WasmInvoke.dispose('handle)}
+  // The topic and case are fixed by the type arguments above; this second application infers the
+  // payload's Scala type (which a single explicit type-argument list could not do alongside them).
+  // `invoke` reads the payload type from the `WitVariant`'s type argument and the topic and case
+  // from its phantom `Topic`/`Case` members.
+  class Applier[topic <: Label, name <: Label]():
+    transparent inline def apply[payload](payload: payload)
+    :   (WitVariant[payload] of topic) { type Case = name } =
+      new WitVariant(payload).asInstanceOf[(WitVariant[payload] of topic) { type Case = name }]
+
+  given interoperable: [topic <: Label, name <: Label, payload]
+  =>  ((WitVariant[payload] of topic) { type Case = name } is Interoperable in Wit of topic) =
+    Interoperable()
+
+final class WitVariant[payload](val payload: payload) extends Topical
