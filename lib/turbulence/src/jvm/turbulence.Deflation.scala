@@ -40,9 +40,10 @@ import zephyrine.*
 // Streaming compression as a pipeline stage, over `juz.Deflater`. The three
 // compression formats differ only in framing: `Zlib` is the deflater's own
 // wrapper, `Deflate` is the raw stream, and `Gzip` adds a manual header,
-// CRC-32 and trailer around a raw stream. Input is staged in a duct-owned
-// buffer, since the deflater holds a reference to (not a copy of) its input
-// array, which would otherwise outlive the source window's validity.
+// CRC-32 and trailer around a raw stream. The deflater is fed zero-copy from
+// the source window: it holds a reference to (not a copy of) its input array,
+// but that reference is released before each step returns, so it never
+// outlives the window's validity — the same discipline as `Inflation`.
 //
 // Compression ratios are unknowable, so `translate` is a pass-through: the
 // duct's own bounded buffer and the retained-surplus rule absorb expansion.
@@ -55,7 +56,7 @@ extends Duct[Data, Data]:
     juz.Deflater(juz.Deflater.DEFAULT_COMPRESSION, nowrap || gzip)
 
   private val crc: juz.CRC32 = juz.CRC32()
-  private val staging: Array[Byte] = new Array[Byte](summon[Buffering].capacity(Substrate.Bytes))
+  private val empty: Array[Byte] = new Array[Byte](0)
   private var headerDone: Boolean = !gzip
   private var size: Long = 0
   private var finishing: Boolean = false
@@ -95,20 +96,28 @@ extends Duct[Data, Data]:
       produced += 10
       headerDone = true
 
-    if deflater.needsInput && sourceLength > 0 then
-      consumed = sourceLength.min(staging.length)
-      System.arraycopy(bytes, sourceOffset, staging, 0, consumed)
-      deflater.setInput(staging, 0, consumed)
+    // Feed the deflater directly from the source window — no staging copy. As
+    // in `Inflation`, the reference is released before this step returns, and
+    // only the bytes the deflater actually consumed (`getBytesRead` measures
+    // them; `Deflater` has no `getRemaining`) are claimed; the remainder stays
+    // in the window for the next step to re-feed.
+    if sourceLength > 0 then deflater.setInput(bytes, sourceOffset, sourceLength)
 
-      if gzip then
-        crc.update(staging, 0, consumed)
-        size += consumed
-
+    val before: Long = deflater.getBytesRead
     var run: Int = 1
 
     while run > 0 && produced < targetSpace do
       run = deflater.deflate(out, targetOffset + produced, targetSpace - produced)
       produced += run
+
+    consumed = (deflater.getBytesRead - before).toInt
+    deflater.setInput(empty)
+
+    // The consumed range is a contiguous prefix of the window, so the checksum
+    // sees exactly the stream the deflater compressed, in order.
+    if gzip && consumed > 0 then
+      crc.update(bytes, sourceOffset, consumed)
+      size += consumed
 
     Duct.Progress(consumed, produced)
 
@@ -163,7 +172,7 @@ extends Duct[Data, Data]:
     case Done
 
   private val inflater: juz.Inflater = juz.Inflater(nowrap || gzip)
-  private val staging: Array[Byte] = new Array[Byte](summon[Buffering].capacity(Substrate.Bytes))
+  private val empty: Array[Byte] = new Array[Byte](0)
   private var header: Header = if gzip then Header.Fixed(10) else Header.Done
   private var flags: Int = 0
   private var headerPosition: Int = 0
@@ -241,11 +250,15 @@ extends Duct[Data, Data]:
 
     if header == Header.Done then
       if !inflater.finished then
-        if inflater.needsInput && consumed < sourceLength then
-          val copy = (sourceLength - consumed).min(staging.length)
-          System.arraycopy(bytes, sourceOffset + consumed, staging, 0, copy)
-          inflater.setInput(staging, 0, copy)
-          consumed += copy
+        // Feed the inflater directly from the source window — no staging copy.
+        // The reference cannot outlive the window's validity, because the input
+        // is unconditionally released before this step returns: only the bytes
+        // the inflater actually consumed are claimed, and the remainder stays
+        // in the window for the next step to re-feed. (zlib's own position is
+        // held bit-exactly in the inflater's state, so re-supplying the unread
+        // whole bytes later is the same stream.)
+        val fed = sourceLength - consumed
+        if fed > 0 then inflater.setInput(bytes, sourceOffset + consumed, fed)
 
         var run: Int = 1
 
@@ -256,11 +269,12 @@ extends Duct[Data, Data]:
 
           produced += run
 
-      if inflater.finished && trailer > 0 then
-        // Any input the inflater over-read belongs to the trailer.
-        trailer -= inflater.getRemaining.min(trailer)
-        inflater.setInput(staging, 0, 0)
+        consumed += fed - inflater.getRemaining
+        inflater.setInput(empty)
 
+      if inflater.finished && trailer > 0 then
+        // Unconsumed input was never claimed, so the trailer begins exactly at
+        // `consumed`; skip as much of it as this window holds.
         val skip = trailer.min(sourceLength - consumed)
         consumed += skip
         trailer -= skip

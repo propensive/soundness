@@ -664,6 +664,34 @@ object Tests extends Suite(m"Zephyrine tests"):
           gather.data.to(List)
         . assert(_ == 9.toByte +: big.to(List))
 
+        // Pump a payload many times the transfer-block size across the conduit,
+        // so the reader drains and returns ceiling-sized blocks that the writer
+        // reuses from the pool: the data must survive the recycling intact.
+        test(m"conduit recycles transfer blocks across many hand-offs"):
+          val payload: Data = IArray.tabulate[Byte](1000000)(index => (index%251).toByte)
+          val (intake, stream) = Conduit[Data]()
+          val gather = Gather()
+          val task = async(stream.pump(gather))
+          payload.stream.pump(intake)
+          unsafely(task.await())
+          gather.data.to(List) == payload.to(List)
+        . assert(identity)
+
+        // A chunk passed through by reference is the caller's immutable data, so
+        // the reader must never return its backing to the pool: were it recycled,
+        // the ceiling-sized blocks minted for `extra` would overwrite `original`.
+        test(m"conduit never recycles a passed-through backing"):
+          val original: Data = IArray.tabulate[Byte](80000)(index => (index%251).toByte)
+          val extra: Data = IArray.tabulate[Byte](300000)(index => ((index + 1)%251).toByte)
+          val (intake, stream) = Conduit[Data]()
+          val gather = Gather()
+          val task = async(stream.pump(gather))
+          intake.put(original)
+          extra.stream.pump(intake)
+          unsafely(task.await())
+          original.to(List) == IArray.tabulate[Byte](80000)(index => (index%251).toByte).to(List)
+        . assert(identity)
+
         test(m"conduit demand reflects buffered data"):
           val (intake, stream) = Conduit[Data]()
           val before = intake.demand.count
@@ -733,6 +761,33 @@ object Tests extends Suite(m"Zephyrine tests"):
           exotic.stream.via(summon[CharEncoder]).pump(gather)
           gather.data.to(List)
         . assert(_ == exotic.s.getBytes("UTF-8").nn.to(List))
+
+        // Malformed input — a stray continuation, an overlong lead, a
+        // truncated sequence mid-stream and a bad continuation — must decode
+        // through the duct exactly as the whole-value decoder sanitizes it.
+        val malformed = IArray[Byte](
+          'a'.toByte, 0x80.toByte, 'b'.toByte,                              // stray continuation
+          0xc0.toByte, 0xaf.toByte, 'c'.toByte,                             // overlong lead
+          0xe4.toByte, 0xb8.toByte, 'd'.toByte,                             // truncated 3-byte
+          0xf0.toByte, 0x9f.toByte, 0x8e.toByte, 0x89.toByte, 'e'.toByte,  // valid 🎉
+          0xc3.toByte)                                                      // truncated at end
+
+        test(m"char decoder duct sanitizes malformed input like whole-value decoding"):
+          val stream = malformed.stream.via(summon[CharDecoder])
+          val builder = StringBuilder()
+
+          def recur(): Unit = stream.refill(Credit(8)) match
+            case count: Int =>
+              val window = unsafely(stream.window).asInstanceOf[Array[Char]]
+              builder.append(String(window, stream.start, count))
+              stream.skip(count)
+              recur()
+
+            case _ => ()
+
+          recur()
+          builder.toString.tt
+        . assert(_ == summon[CharDecoder].decoded(malformed))
 
         test(m"charset ducts roundtrip through both directions"):
           val gather = Gather()

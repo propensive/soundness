@@ -101,6 +101,13 @@ object Ductile:
 
           private val decoder: jnc.CharsetDecoder = stage.encoding.charset.newDecoder().nn
 
+          // UTF-8 gets a hand-rolled kernel, as the base64 ducts do: the
+          // charset decoder's scalar loop is the bottleneck against
+          // implementations built on the JDK's intrinsified `String`
+          // constructor, and UTF-8's structure (ASCII bytes are exactly the
+          // non-negative ones) admits a much faster split.
+          private val utf8: Boolean = stage.encoding.charset == jnc.StandardCharsets.UTF_8
+
           private val staging: jn.ByteBuffer =
             jn.ByteBuffer.allocate(buffering.capacity(Substrate.Bytes)).nn
 
@@ -112,6 +119,10 @@ object Ductile:
           // At most one output char per input byte, so char-credit is a
           // sound byte-credit as it stands.
           def translate(demand: Credit): Credit = demand
+
+          // An astral character emits a surrogate pair — two chars at once —
+          // so guaranteed progress needs a two-slot output floor.
+          override def quantum: Int = 2
 
           // Decode `in` into `out`, substituting malformed input through the
           // sanitizer; `base` is the absolute byte offset of `in.position == 0`,
@@ -126,6 +137,160 @@ object Ductile:
               in.position(in.position + result.length)
               decode(in, out, base, last)
 
+          // Decode window bytes `[start, sourceOffset + sourceLength)` through
+          // the charset decoder into `[first, targetOffset + targetSpace)`:
+          // the whole window for a non-UTF-8 charset, or the remainder after
+          // the point where the UTF-8 kernel encountered malformed input.
+          private update def stepDecoder
+            ( bytes: Array[Byte],
+              sourceOffset: Int,
+              sourceLength: Int,
+              start: Int,
+              chars: Array[Char]^,
+              targetOffset: Int,
+              targetSpace: Int,
+              first: Int )
+          :   Duct.Progress =
+
+            val in = jn.ByteBuffer.wrap(bytes, start, sourceOffset + sourceLength - start).nn
+            val out = jn.CharBuffer.wrap(chars, first, targetOffset + targetSpace - first).nn
+            val result = decode(in, out, total - sourceOffset, false)
+            val consumed = in.position - sourceOffset
+            total += consumed
+
+            if result.isUnderflow && consumed < sourceLength then
+              // An incomplete trailing character: carry its bytes to the next
+              // refill, where they lead the staging buffer.
+              staging.put(bytes, sourceOffset + consumed, sourceLength - consumed)
+              Duct.Progress(sourceLength, out.position - targetOffset)
+            else
+              // Output filled with complete bytes still to come, or input
+              // drained cleanly: leave any remainder for the next window.
+              Duct.Progress(consumed, out.position - targetOffset)
+
+          // The UTF-8 kernel: ASCII runs widen through an unrolled block copy
+          // (an `|`-reduction spots any high bit), multi-byte sequences decode
+          // inline with strict validity (overlongs, the surrogate range and
+          // anything above U+10FFFF all reject), and only exceptional input
+          // leaves the loop: a valid-but-incomplete tail is carried exactly as
+          // the decoder path carries it, and malformed input falls back to the
+          // charset decoder for the window remainder, which owns sanitizer
+          // semantics unchanged.
+          private update def stepUtf8
+            ( bytes: Array[Byte],
+              sourceOffset: Int,
+              sourceLength: Int,
+              chars: Array[Char]^,
+              targetOffset: Int,
+              targetSpace: Int )
+          :   Duct.Progress =
+
+            val srcEnd = sourceOffset + sourceLength
+            val dstEnd = targetOffset + targetSpace
+            var src = sourceOffset
+            var dst = targetOffset
+
+            inline def continuation(index: Int): Boolean = (bytes(index) & 0xc0) == 0x80
+
+            // 0 = advancing; 1 = incomplete tail (carry); 2 = malformed
+            // (decoder fallback); 3 = surrogate pair with one slot left (stop
+            // before the sequence).
+            var mode: Int = 0
+
+            while mode == 0 && src < srcEnd && dst < dstEnd do
+              while src + 8 <= srcEnd && dst + 8 <= dstEnd &&
+                (bytes(src) | bytes(src + 1) | bytes(src + 2) | bytes(src + 3) |
+                  bytes(src + 4) | bytes(src + 5) | bytes(src + 6) | bytes(src + 7)) >= 0
+              do
+                chars(dst) = bytes(src).toChar
+                chars(dst + 1) = bytes(src + 1).toChar
+                chars(dst + 2) = bytes(src + 2).toChar
+                chars(dst + 3) = bytes(src + 3).toChar
+                chars(dst + 4) = bytes(src + 4).toChar
+                chars(dst + 5) = bytes(src + 5).toChar
+                chars(dst + 6) = bytes(src + 6).toChar
+                chars(dst + 7) = bytes(src + 7).toChar
+                src += 8
+                dst += 8
+
+              while src < srcEnd && dst < dstEnd && bytes(src) >= 0 do
+                chars(dst) = bytes(src).toChar
+                src += 1
+                dst += 1
+
+              if src < srcEnd && dst < dstEnd then
+                val b0 = bytes(src) & 0xff
+                val remaining = srcEnd - src
+
+                if b0 >= 0xc2 && b0 <= 0xdf then
+                  if remaining < 2 then mode = 1
+                  else if !continuation(src + 1) then mode = 2
+                  else
+                    chars(dst) = (((b0 & 0x1f) << 6) | (bytes(src + 1) & 0x3f)).toChar
+                    src += 2
+                    dst += 1
+                else if (b0 & 0xf0) == 0xe0 then
+                  // The second byte's range depends on the lead: E0 rejects
+                  // overlongs, ED rejects the surrogate range.
+                  inline def second(index: Int): Boolean =
+                    val b1 = bytes(index) & 0xff
+
+                    if b0 == 0xe0 then b1 >= 0xa0 && b1 <= 0xbf
+                    else if b0 == 0xed then b1 >= 0x80 && b1 <= 0x9f
+                    else continuation(index)
+
+                  if remaining >= 2 && !second(src + 1) then mode = 2
+                  else if remaining < 3 then mode = 1
+                  else if !continuation(src + 2) then mode = 2
+                  else
+                    chars(dst) =
+                      (((b0 & 0xf) << 12) | ((bytes(src + 1) & 0x3f) << 6) |
+                        (bytes(src + 2) & 0x3f)).toChar
+
+                    src += 3
+                    dst += 1
+                else if b0 >= 0xf0 && b0 <= 0xf4 then
+                  // The second byte's range depends on the lead: F0 rejects
+                  // overlongs, F4 rejects anything above U+10FFFF.
+                  inline def second(index: Int): Boolean =
+                    val b1 = bytes(index) & 0xff
+
+                    if b0 == 0xf0 then b1 >= 0x90 && b1 <= 0xbf
+                    else if b0 == 0xf4 then b1 >= 0x80 && b1 <= 0x8f
+                    else continuation(index)
+
+                  if remaining >= 2 && !second(src + 1) then mode = 2
+                  else if remaining >= 3 && !continuation(src + 2) then mode = 2
+                  else if remaining < 4 then mode = 1
+                  else if !continuation(src + 3) then mode = 2
+                  else if dst + 2 > dstEnd then mode = 3
+                  else
+                    val point =
+                      (((b0 & 0x7) << 18) | ((bytes(src + 1) & 0x3f) << 12) |
+                        ((bytes(src + 2) & 0x3f) << 6) | (bytes(src + 3) & 0x3f)) - 0x10000
+
+                    chars(dst) = (0xd800 | (point >> 10)).toChar
+                    chars(dst + 1) = (0xdc00 | (point & 0x3ff)).toChar
+                    src += 4
+                    dst += 2
+                else
+                  // A stray continuation byte, an overlong lead (C0/C1) or an
+                  // out-of-range lead (F5..FF).
+                  mode = 2
+
+            if mode == 2 then
+              stepDecoder
+                ( bytes, sourceOffset, sourceLength, src, chars, targetOffset, targetSpace,
+                  dst )
+            else
+              total += src - sourceOffset
+
+              if mode == 1 then
+                staging.put(bytes, src, srcEnd - src)
+                Duct.Progress(sourceLength, dst - targetOffset)
+              else
+                Duct.Progress(src - sourceOffset, dst - targetOffset)
+
           update def step
             ( source: input.Storage,
               sourceOffset: Int,
@@ -136,29 +301,23 @@ object Ductile:
           :   Duct.Progress =
 
             val bytes = source.asInstanceOf[Array[Byte]]
-            val chars = target.asInstanceOf[Array[Char]]
-            val out = jn.CharBuffer.wrap(chars, targetOffset, targetSpace).nn
+            // The exclusive cast is sound for the same reason as `Conduit.put`'s:
+            // the target is the stage's single-owner output buffer.
+            val chars = target.asInstanceOf[Array[Char]^]
 
             if staging.position == 0 then
               // Fast path: with no carried bytes, decode straight from the source
               // window — no intermediate copy of the bulk of the stream.
-              val in = jn.ByteBuffer.wrap(bytes, sourceOffset, sourceLength).nn
-              val result = decode(in, out, total - sourceOffset, false)
-              val consumed = in.position - sourceOffset
-              total += consumed
-
-              if result.isUnderflow && consumed < sourceLength then
-                // An incomplete trailing character: carry its bytes to the next
-                // refill, where they lead the staging buffer.
-                staging.put(bytes, sourceOffset + consumed, sourceLength - consumed)
-                Duct.Progress(sourceLength, out.position - targetOffset)
+              if utf8 then
+                stepUtf8(bytes, sourceOffset, sourceLength, chars, targetOffset, targetSpace)
               else
-                // Output filled with complete bytes still to come, or input
-                // drained cleanly: leave any remainder for the next window.
-                Duct.Progress(consumed, out.position - targetOffset)
+                stepDecoder
+                  ( bytes, sourceOffset, sourceLength, sourceOffset,
+                    chars, targetOffset, targetSpace, targetOffset )
             else
               // Carry path: prior incomplete bytes are staged, so append the new
               // window to make the split character contiguous, then decode.
+              val out = jn.CharBuffer.wrap(chars, targetOffset, targetSpace).nn
               val copy = sourceLength.min(staging.remaining)
               staging.put(bytes, sourceOffset, copy)
               staging.flip()
