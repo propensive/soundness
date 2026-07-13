@@ -1901,3 +1901,19 @@ breviloquence 67/67, ypsiloid 623 passed (14 aspire-failures pre-existing).
 REMAINING: jacinta's sep-blocked encode-side by-name givens (truthful comments
 in place); the Derivable-signature-bare conjunction/disjunction seals (jacinta,
 locomotion — one remaining boundary); then dual gates + PR.
+
+## Honest codec capabilities, phase 8: caesura bridge evidence (2026-07-13)
+
+Attest (which compiles every test module — per-module sweeps do not) caught
+the one remaining consumer of bare `Decodable in Text` evidence: caesura.
+`Dsv2.decoder` and `Spannable.decoder` context bounds, and `Dsv.selectDynamic`/
+`Dsv.apply`, widened to `(value is Decodable in Text)^` (decoder result
+honestly `^{decodable}`). caesura.test compiles; a full `mill __.test.compile`
+shows only the pre-existing-broken escritoire.test (outside the attest suite).
+
+Operational note: the cc-review 3.10 gate needs `mill clean` after any fork
+rebuild AND for env toggles to take effect — `SOUNDNESS_SCALA_VERSION` was
+silently stale (cached tasks) through daemon shutdowns, --no-daemon and
+build.mill touches; only clean reset it. The 3.10 toolchain moved to
+worktrees/scala/all-main/release/trunk/3.10 (Jon's release-layout work; the
+sibling dist/ carries the new 3.10.0-dev-p1 versioning).
