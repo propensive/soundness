@@ -427,7 +427,7 @@ trait Tel2:
   // Helpers used by encoders to construct Tel values.
 
   def scalar(text: Text): Tel =
-    Tel(Tel.Compound(t"", IArray(Tel.Atom.Inline(text, 1)), Unset, IArray.empty))
+    Tel.make(Tel.Compound(t"", IArray(Tel.Atom.Inline(text, 1)), Unset, IArray.empty))
 
   def compound
     ( keyword: Text, atoms: IArray[Tel.Atom], compounds: IArray[Tel.Compound] )
@@ -437,9 +437,9 @@ trait Tel2:
       if compounds.nil then IArray.empty[Tel.Block]
       else IArray(Tel.Block(IArray.empty, Unset, compounds, 0))
 
-    Tel(Tel.Compound(keyword, atoms, Unset, children))
+    Tel.make(Tel.Compound(keyword, atoms, Unset, children))
 
-  def empty: Tel = Tel(Tel.Compound(t"", IArray.empty, Unset, IArray.empty))
+  def empty: Tel = Tel.make(Tel.Compound(t"", IArray.empty, Unset, IArray.empty))
 
 // `value.encode` (provided by the Encodable typeclass extension defined in
 // anticipation) is the idiomatic call site producing a Tel from any
