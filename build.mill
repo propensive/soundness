@@ -1007,7 +1007,7 @@ object polysyllabic extends Library:
   object bench extends Benchmarks(core, escritoire.core, hellenism.core, quantitative.units)
 
 object ethereal extends Library:
-  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.core, quantitative.units, telekinesis.jvm, urticose.url, gastronomy.core):
+  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.jvm, quantitative.units, telekinesis.jvm, urticose.url, gastronomy.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -1557,7 +1557,7 @@ object parasite extends Library:
   object test extends Tests(core, jvm, quantitative.units)
 
 object perihelion extends Library:
-  object core extends Component(scintillate.server, coaxial.core, gastronomy.core, monotonous.core,
+  object core extends Component(scintillate.server, coaxial.jvm, gastronomy.core, monotonous.core,
       hypotenuse.core, contingency.core, parasite.core, eucalyptus.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
@@ -1849,7 +1849,7 @@ object telekinesis extends Library:
   // JVM-only transports split out of `core` so the platform-agnostic HTTP model and client can
   // cross-compile to Scala.js: the `java.net.http` `Http.Backend` (`httpBackends.virtualMachine`)
   // and the `coaxial` domain-socket client.
-  object jvm extends Component(core, coaxial.core, gastronomy.core):
+  object jvm extends Component(core, coaxial.jvm, gastronomy.core):
     override def scalaJs = false
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")

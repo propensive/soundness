@@ -514,10 +514,9 @@ def cli[bus <: Matchable](using executive: Executive)
       // binds synchronously and serves on its own daemon, so the bound socket
       // queues connections immediately even before the files are created.)
       safely:
-        domainSocket.listen: connection =>
+        domainSocket.listenConnections: connection =>
           inactivityTimer.nudge()
           safely(makeClient(connection))
-          Data()
 
       val buildId = safely(System.properties.build.id[Int]()).or:
         safely((Classpath/"build.id").read[Text].trim.as[Int]).or(0)
