@@ -1917,3 +1917,27 @@ silently stale (cached tasks) through daemon shutdowns, --no-daemon and
 build.mill touches; only clean reset it. The 3.10 toolchain moved to
 worktrees/scala/all-main/release/trunk/3.10 (Jon's release-layout work; the
 sibling dist/ carries the new 3.10.0-dev-p1 versioning).
+
+## Honest codec capabilities: distillate primitives DEFERRED (2026-07-13)
+
+Rebased the 8-phase campaign onto origin/main (#1534, encode/decode→in/as).
+Then `make attest` surfaced a genuine compiler blocker: phase 7's honest
+`Int is Decodable in Text` (`^{tactic, caps.any}`) leaks `caps.any` into a
+capture inference variable (`Illegal capture reference: (?1 : Any)`) at ANY
+`summon[Product is Decodable in Query].decoded(...)` — legerdemain's inline
+`Decodable in Query` given reduces a product derivation whose field decoder
+reaches the honest leaf via `contingency.provide`, and the leak surfaces at the
+use-site inference (NOT the given body — sealing the Text branch, the Product
+branch, both, or adding explicit concrete primitive givens all fail; none relax
+honesty). This breaks legitimate Query product-decoding, not just the broken
+#1500 `query.second` test.
+
+DECISION (Jon, 2026-07-13): option B — defer ONLY distillate's primitive
+honesty. `distillate.Decodable.scala` restored to its laundered form (the
+`unsafeAssumePure` seals on int/byte/short/long/double/float/fqcn/uuid/
+enumeration), pending a compiler fix for the honest-leaf / inline-summonFrom-
+derivation / use-site-inference leak. Every OTHER phase stands: jacinta,
+ypsiloid, breviloquence, locomotion (own primitives), Moniker, Postable,
+stratiform Tel, Yaml/Cbor encode sides, and the caesura/ambience `^`-widenings
+(which harmlessly accept bare evidence too). The compiler fix + re-honest of
+distillate primitives is tracked as follow-up.
