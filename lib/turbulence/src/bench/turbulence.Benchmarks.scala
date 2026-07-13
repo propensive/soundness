@@ -122,6 +122,11 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   lazy val gzippedText: Data = textData.stream.compress[Gzip].memoize
   lazy val gzippedTextArray: Array[Byte] = gzippedText.asInstanceOf[Array[Byte]]
 
+  // The byte corpus pre-compressed with gzip, for the standalone decompression
+  // suite.
+  lazy val gzippedInput: Data = input.stream.compress[Gzip].memoize
+  lazy val gzippedInputArray: Array[Byte] = gzippedInput.asInstanceOf[Array[Byte]]
+
   // AES-256 key + a fixed key/IV for the JDK reference, generated/derived once.
   lazy val aesKey: SymmetricKey[Aes[256] over Cbc against Pkcs7] =
     SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
@@ -170,6 +175,50 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
               zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.inputArray))
               . via(zio.stream.ZPipeline.gzip())
               . runCount
+        }
+
+    // Example 1b: gzip decompression alone (drain, count output bytes) — the
+    // inverse of example 1, on the pre-gzipped corpus, so inflate performance
+    // is visible unchained. `GZIPInputStream` (64 KiB buffer) is the JDK
+    // reference.
+    suite(m"Gzip decompression (4 MB)"):
+      bench(m"Soundness  Stream.decompress[Gzip]")
+        ( target = 1*Second, operationSize = size, baseline = Baseline(compare = Min) ):
+        '{ turbulence.Benchmarks.gzippedInput.stream.decompress[Gzip].memoize.length }
+
+      bench(m"FS2  Compression[IO].gunzip")(target = 1*Second, operationSize = size):
+        '{
+            import cats.effect.unsafe.implicits.global
+            val comp = fs2.compression.Compression.forSync[cats.effect.IO]
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.gzippedInputArray))
+            . covary[cats.effect.IO]
+            . through(comp.gunzip()).flatMap(_.content)
+            . compile.count.unsafeRunSync()
+        }
+
+      bench(m"ZIO  ZPipeline.gunzip")(target = 1*Second, operationSize = size):
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.gzippedInputArray))
+              . via(zio.stream.ZPipeline.gunzip())
+              . runCount
+        }
+
+      bench(m"JDK  GZIPInputStream")(target = 1*Second, operationSize = size):
+        '{
+            val in =
+              java.util.zip.GZIPInputStream
+                (java.io.ByteArrayInputStream(turbulence.Benchmarks.gzippedInputArray), 65536)
+
+            val buffer = new Array[Byte](65536)
+            var total = 0L
+            var count = in.read(buffer)
+
+            while count >= 0 do
+              total += count
+              count = in.read(buffer)
+
+            total
         }
 
     // Example 2: UTF-8 decode (count decoded characters).

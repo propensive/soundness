@@ -668,6 +668,54 @@ object Tests extends Suite(m"Turbulence tests"):
         stream.readAllBytes().nn.to(List)
       . assert(_ == mixed.to(List))
 
+      // JDK-produced gzip, delivered one byte per chunk: the header state
+      // machine, the inflater's window re-feed and the trailer all span many
+      // steps, each offered a single byte.
+      test(m"gzip duct decompresses JDK gzip fed one byte at a time"):
+        val buffer = ji.ByteArrayOutputStream()
+        val zipped = java.util.zip.GZIPOutputStream(buffer)
+        zipped.write(mixed.mutable(using Unsafe))
+        zipped.close()
+        val chunks = buffer.toByteArray.nn.iterator.map { byte => Data(byte) }
+        val gather = Gather2()
+        Stream(chunks).decompress[Gzip].pump(gather)
+        gather.data.to(List)
+      . assert(_ == mixed.to(List))
+
+      // The mirror image: compress fed one byte per chunk, so the CRC and size
+      // accumulate over single-byte consumptions, validated by the JDK.
+      test(m"gzip duct compresses correctly when fed one byte at a time"):
+        val chunks = mixed.to(List).iterator.map { byte => Data(byte) }
+        val gather = Gather2()
+        Stream(chunks).compress[Gzip].pump(gather)
+        val stream = java.util.zip.GZIPInputStream(ji.ByteArrayInputStream(gather.data.mutable(using Unsafe)))
+        stream.readAllBytes().nn.to(List)
+      . assert(_ == mixed.to(List))
+
+      // Tiny demand: each refill grants a few bytes, so the inflater retains
+      // pending output and unconsumed input across many output-bound steps,
+      // exercising the un-claim/re-feed path.
+      test(m"gzip duct decompresses correctly under three-byte demand"):
+        val stream = summon[Data is Source by Data over Credit].stream(mixed)
+                     . compress[Gzip].decompress[Gzip]
+        val builder = List.newBuilder[Byte]
+
+        def recur(): Unit = stream.refill(Credit(3)) match
+          case count: Int =>
+            val window = unsafely(stream.window).asInstanceOf[Array[Byte]]
+            var index = 0
+            while index < count do
+              builder += window(stream.start + index)
+              index += 1
+            stream.skip(count)
+            recur()
+
+          case _ => ()
+
+        recur()
+        builder.result()
+      . assert(_ == mixed.to(List))
+
       test(m"gzip duct decompresses JDK-produced gzip"):
         val out = ji.ByteArrayOutputStream()
         val zipped = java.util.zip.GZIPOutputStream(out)
