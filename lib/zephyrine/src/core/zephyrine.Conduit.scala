@@ -56,13 +56,18 @@ import vacuous.*
 object Conduit:
   // A queued hand-off: `storage` is either a block the writer minted and
   // filled (start 0), or the immutable backing of a chunk passed through by
-  // reference, windowed at [start, start + size).
-  private class Block(val storage: AnyRef, val start: Int, val size: Int)
+  // reference, windowed at [start, start + size). `recyclable` is true only for
+  // writer-minted blocks, whose storage the reader may return to the freelist
+  // for reuse; a passed-through backing is the caller's immutable data and must
+  // never be recycled.
+  private class Block(val storage: AnyRef, val start: Int, val size: Int, val recyclable: Boolean)
 
   // The synchronized substrate both endpoints capture: a spin-then-park SPSC
-  // ring, plus the failure flag.
+  // ring, the failure flag, and a non-blocking pool of spent blocks the reader
+  // returns to the writer for reuse.
   private final class Core(val window: Int) extends caps.SharedCapability:
     val handoff: Handoff = Handoff(window)
+    val freelist: Freelist = Freelist(window + 1)
     // A JMM-managed flag: its safety is the volatile publication guarantee, not
     // aliasing analysis, so its captures are untracked.
     @caps.unsafe.untrackedCaptures @volatile var error: Throwable | Null = null
@@ -75,11 +80,20 @@ object Conduit:
     val ceiling: Int = buffering.transfer(addressable0.substrate).max(block)
     val core = new Core(buffering.window)
 
-    // The write side; single writer. Blocks are minted at the size `reserve` is
-    // asked for, between `block` and `ceiling`: a bulk `put` crosses the
-    // boundary in ceiling-sized hand-offs rather than being re-chunked to the
-    // staging block size, since each hand-off costs a synchronized queue
-    // transfer. The memory bound is `window + 1` blocks of at most `ceiling`.
+    // Whether to recycle drained transfer blocks. When on, every minted block is
+    // physically `ceiling`-sized, so the pool holds a single size and a reused
+    // block always fits any reservation — no size matching, no wasted re-zeroing.
+    val recycle: Boolean = buffering.recycle
+
+    // The write side; single writer. Without recycling, blocks are minted at the
+    // size `reserve` is asked for, between `block` and `ceiling`: a bulk `put`
+    // crosses the boundary in ceiling-sized hand-offs rather than being
+    // re-chunked to the staging block size, since each hand-off costs a
+    // synchronized queue transfer. With recycling, every block is physically
+    // `ceiling`-sized (so any drained block fits any future reservation and the
+    // pool stays single-size), while `capacity` still bounds the usable prefix,
+    // leaving the publish cadence unchanged. The memory bound is `window + 1`
+    // blocks of at most `ceiling` either way.
     val intake: (Intake[medium] over Credit)^ = new Intake[medium](using addressable0):
       type Transport = Credit
 
@@ -88,7 +102,8 @@ object Conduit:
       // `publish` hands it to the ring.
       @caps.unsafe.untrackedCaptures
       private var current: addressable0.Storage =
-        addressable0.allocate(block).asInstanceOf[addressable0.Storage]
+        addressable0.allocate(if recycle then ceiling else block).asInstanceOf[addressable0.Storage]
+
       private var capacity: Int = block
       private var mark0: Int = 0
 
@@ -107,7 +122,21 @@ object Conduit:
         if free >= min.max(1) then free else
           publish()
           capacity = min.min(ceiling).max(block)
-          current = addressable0.allocate(capacity).asInstanceOf[addressable0.Storage]
+
+          // With recycling, mint a physically `ceiling`-sized block — reused from
+          // the pool of blocks the reader has drained (overwritten in place, so
+          // never re-zeroed) or freshly allocated when the pool is empty — and
+          // let `capacity` bound the usable prefix. Without recycling, mint at
+          // exactly the requested size, as before.
+          current =
+            if recycle then
+              val reused = core.freelist.poll()
+
+              (if reused != null then reused else addressable0.allocate(ceiling))
+              . asInstanceOf[addressable0.Storage]
+            else
+              addressable0.allocate(capacity).asInstanceOf[addressable0.Storage]
+
           capacity
 
       update def commit(count: Int): Unit =
@@ -137,7 +166,9 @@ object Conduit:
             done += count
         else
           publish()
-          core.handoff.offer(Block(backing.asInstanceOf[AnyRef], offset.n0, size))
+
+          core.handoff.offer
+            ( Block(backing.asInstanceOf[AnyRef], offset.n0, size, recyclable = false) )
 
       override update def flush(): Unit = publish()
 
@@ -154,7 +185,7 @@ object Conduit:
       // `reserve` mints a fresh block, sized to its request.
       private update def publish(): Unit =
         if mark0 > 0 then
-          core.handoff.offer(Block(current.asInstanceOf[AnyRef], 0, mark0))
+          core.handoff.offer(Block(current.asInstanceOf[AnyRef], 0, mark0, recyclable = true))
           mark0 = 0
           capacity = 0
 
@@ -172,6 +203,10 @@ object Conduit:
       private var limit0: Int = 0
       private var end0: Int = 0
       private var ended: Boolean = false
+      // Whether the block currently in `storage` was writer-minted (so its
+      // storage may be returned to the pool once drained) or a passed-through
+      // backing (the caller's immutable data, never to be recycled).
+      private var recyclable0: Boolean = false
 
       protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
       def start: Int = start0
@@ -206,7 +241,17 @@ object Conduit:
                 // Single-ownership transfer: a minted block is never touched by
                 // the writer again (proven on its side by the fresh re-mint in
                 // `publish`), and a passed-through chunk backing is immutable.
+                //
+                // The outgoing block is fully drained (this branch runs only
+                // once `limit0` reached `end0`) and its window is relinquished
+                // the moment this `refill` returns a new one, so a ceiling-sized
+                // minted block is safe to return to the writer for reuse. The
+                // freelist's publication order carries the ownership across.
+                if recycle && recyclable0 && addressable0.storageSize(storage) == ceiling
+                then core.freelist.offer(storage.asInstanceOf[AnyRef])
+
                 storage = received.storage.asInstanceOf[addressable0.Storage]
+                recyclable0 = received.recyclable
                 start0 = received.start
                 end0 = received.start + received.size
                 limit0 = start0 + received.size.min(granted)

@@ -664,6 +664,34 @@ object Tests extends Suite(m"Zephyrine tests"):
           gather.data.to(List)
         . assert(_ == 9.toByte +: big.to(List))
 
+        // Pump a payload many times the transfer-block size across the conduit,
+        // so the reader drains and returns ceiling-sized blocks that the writer
+        // reuses from the pool: the data must survive the recycling intact.
+        test(m"conduit recycles transfer blocks across many hand-offs"):
+          val payload: Data = IArray.tabulate[Byte](1000000)(index => (index%251).toByte)
+          val (intake, stream) = Conduit[Data]()
+          val gather = Gather()
+          val task = async(stream.pump(gather))
+          payload.stream.pump(intake)
+          unsafely(task.await())
+          gather.data.to(List) == payload.to(List)
+        . assert(identity)
+
+        // A chunk passed through by reference is the caller's immutable data, so
+        // the reader must never return its backing to the pool: were it recycled,
+        // the ceiling-sized blocks minted for `extra` would overwrite `original`.
+        test(m"conduit never recycles a passed-through backing"):
+          val original: Data = IArray.tabulate[Byte](80000)(index => (index%251).toByte)
+          val extra: Data = IArray.tabulate[Byte](300000)(index => ((index + 1)%251).toByte)
+          val (intake, stream) = Conduit[Data]()
+          val gather = Gather()
+          val task = async(stream.pump(gather))
+          intake.put(original)
+          extra.stream.pump(intake)
+          unsafely(task.await())
+          original.to(List) == IArray.tabulate[Byte](80000)(index => (index%251).toByte).to(List)
+        . assert(identity)
+
         test(m"conduit demand reflects buffered data"):
           val (intake, stream) = Conduit[Data]()
           val before = intake.demand.count
