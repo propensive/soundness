@@ -70,19 +70,15 @@ import zephyrine.*
 trait SocketBackend:
   //── Stream server (`Bindable` over TCP / Unix-domain) ────────────────────────────────────────
   type ServerSocket
-  type ServerChannel
 
   def listenTcp(port: TcpPort, interface: Optional[MacAddress], options: List[SocketOption])
   :   ServerSocket
 
   def listenDomain(address: DomainSocket, options: List[SocketOption]): ServerSocket
 
-  // Accept the next incoming connection, blocking until one arrives.
-  def accept(socket: ServerSocket): ServerChannel raises ConnectionError
-
-  // Write a whole response buffer and flush it, then close the connection.
-  def serve(channel: ServerChannel, bytes: Data): Unit raises ConnectionError
-  def hangUp(channel: ServerChannel): Unit raises ConnectionError
+  // Accept the next incoming connection, blocking until one arrives, as a `Duplex`: the handler
+  // reads the request from its `source` and the accept loop writes the response with `send`.
+  def accept(socket: ServerSocket): Duplex raises ConnectionError
   def shutdown(socket: ServerSocket): Unit
 
   //── Datagram server (`Bindable` over UDP) ────────────────────────────────────────────────────

@@ -60,11 +60,6 @@ private enum ServerBinding:
   case Tcp(socket: jn.ServerSocket)
   case Domain(channel: jnc.ServerSocketChannel)
 
-// One accepted server-side connection, written to and then closed.
-private enum ServerLink:
-  case Tcp(socket: jn.Socket)
-  case Domain(connection: Connection)
-
 // A request/response client connection.
 private enum ClientExchange:
   case Tcp(socket: jn.Socket)
@@ -76,7 +71,6 @@ private case class UdpCourier(address: jn.InetAddress, port: Int, socket: jn.Dat
 package socketBackends:
   given virtualMachine: SocketBackend = new SocketBackend:
     type ServerSocket = ServerBinding
-    type ServerChannel = ServerLink
     type DatagramSocket = jn.DatagramSocket
     type Exchange = ClientExchange
     type Courier = UdpCourier
@@ -158,42 +152,16 @@ package socketBackends:
       channel.bind(socketAddress)
       ServerBinding.Domain(channel)
 
-    def accept(socket: ServerBinding): ServerLink raises ConnectionError = socket match
+    def accept(socket: ServerBinding): Duplex raises ConnectionError = socket match
       case ServerBinding.Tcp(server) =>
-        try ServerLink.Tcp(server.accept().nn)
+        try
+          val client = server.accept().nn
+          Duplex.streams(client.getInputStream.nn, client.getOutputStream.nn)(() => client.close())
         catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Accept))
 
       case ServerBinding.Domain(channel) =>
-        try
-          val client: jnc.SocketChannel = channel.accept().nn
-          val in = jnc.Channels.newInputStream(client).nn
-          val out = jnc.Channels.newOutputStream(client).nn
-          ServerLink.Domain(Connection(in, out))
+        try Duplex.channel(channel.accept().nn)
         catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Accept))
-
-    def serve(channel: ServerLink, bytes: Data): Unit raises ConnectionError = channel match
-      case ServerLink.Tcp(socket) =>
-        try
-          socket.getOutputStream.nn.write(bytes.mutable(using Unsafe))
-          socket.getOutputStream.nn.flush()
-        catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Transmit))
-
-      case ServerLink.Domain(connection) =>
-        try
-          connection.out.write(bytes.mutable(using Unsafe))
-          connection.out.flush()
-        catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Transmit))
-
-    def hangUp(channel: ServerLink): Unit raises ConnectionError = channel match
-      case ServerLink.Tcp(socket) =>
-        try socket.close()
-        catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Close))
-
-      case ServerLink.Domain(connection) =>
-        try
-          connection.in.close()
-          connection.out.close()
-        catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Close))
 
     def shutdown(socket: ServerBinding): Unit = socket match
       case ServerBinding.Tcp(server)     => server.close()

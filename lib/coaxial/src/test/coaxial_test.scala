@@ -51,6 +51,7 @@ import probates.awaitProbate
 import Control.*
 
 import filesystemBackends.virtualMachine
+import socketBackends.virtualMachine
 
 object Tests extends Suite(m"Coaxial tests"):
   def run(): Unit = unsafely:
@@ -246,7 +247,7 @@ object Tests extends Suite(m"Coaxial tests"):
           val received: Promise[Text] = Promise()
 
           val server = socket.listen[Data]: connection =>
-            val request = connection.source().memoize
+            val request = connection.source.memoize
             received.fulfill(request.utf8)
             request
 
@@ -263,9 +264,10 @@ object Tests extends Suite(m"Coaxial tests"):
           val socket = DomainSocket(path)
 
           val server = socket.listen[Data]: connection =>
-            val buffer = new Array[Byte](64)
-            val count = connection.in.read(buffer)
-            IArray.from(buffer.take(count.max(0)).to(List))
+            // One refill window is the client's single message (no half-close on a duplex).
+            val source = connection.source
+            val count = source.refill(zephyrine.Credit(64)).or(0)
+            source.addressable.materialize(source.window(using Unsafe), source.start, count)
 
           val reply = socket.duplex: duplex =>
             duplex.send(zephyrine.Stream(ascii(t"ping")))
@@ -280,16 +282,18 @@ object Tests extends Suite(m"Coaxial tests"):
         . assert(_ == bytes(ascii(t"ping")))
 
     suite(m"Socket options"):
-      test(m"reuseAddress sets SO_REUSEADDR on a bound TCP server socket"):
+      test(m"reuseAddress sets SO_REUSEADDR on a configured TCP server socket"):
         import socketOptions.reuseAddressSocketOption
-        val server = summon[TcpPort is Bindable].bind(Port[Tcp](), Unset)
+        val server = jn.ServerSocket()
+        configure(server, summon[Every[SocketOption.Tcp]].values)
         server.getOption(java.net.StandardSocketOptions.SO_REUSEADDR).nn.booleanValue
           .also(server.close())
       . assert(_ == true)
 
-      test(m"broadcast sets SO_BROADCAST on a bound UDP socket"):
+      test(m"broadcast sets SO_BROADCAST on a configured UDP socket"):
         import socketOptions.broadcastSocketOption
-        val socket = summon[UdpPort is Bindable].bind(Port[Udp](), Unset)
+        val socket = jn.DatagramSocket()
+        configure(socket, summon[Every[SocketOption.Udp]].values)
         socket.getOption(java.net.StandardSocketOptions.SO_BROADCAST).nn.booleanValue
           .also(socket.close())
       . assert(_ == true)
