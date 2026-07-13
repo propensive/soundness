@@ -1347,8 +1347,8 @@ object Yaml extends Yaml2, Dynamic:
 
   // ── Encodable givens ────────────────────────────────────────────────────
 
-  given optionEncodable: [value] => (encodable: value is Encodable in Yaml)
-  =>  Option[value] is Encodable in Yaml =
+  given optionEncodable: [value] => (encodable: (value is Encodable in Yaml)^)
+  =>  ((Option[value] is Encodable in Yaml)^{encodable}) =
 
     new Encodable:
       type Self = Option[value]
@@ -1373,20 +1373,18 @@ object Yaml extends Yaml2, Dynamic:
 
 
   given iterableEncodable: [collection <: Iterable, element]
-  =>  ( encodable: => element is Encodable in Yaml )
-  =>  collection[element] is Encodable in Yaml =
-    // A pure thunk rather than a sealed lambda: under `-scalajs` the SAM expands to an
-    // anonymous class whose pure self-type may not capture the by-name parameter.
-    val enc: () -> (element is Encodable in Yaml) = caps.unsafe.unsafeAssumePure(() => encodable)
-
+  =>  ( encodable: => (element is Encodable in Yaml)^ )
+  =>  ((collection[element] is Encodable in Yaml)^) =
+    // An honest capability: the instance retains the by-name element codec (every
+    // given that includes a tactic is a capability; Jon, 2026-07-12).
     values =>
-      val items = IArray.from(values.map(enc().encode(_).root))
+      val items = IArray.from(values.map(encodable.encode(_).root))
       Yaml.ast(Yaml.Ast.Sequence(items))
 
 
   given mapEncodable: [key: Encodable in Text, element]
-  =>  ( encodable: element is Encodable in Yaml )
-  =>  Map[key, element] is Encodable in Yaml = map =>
+  =>  ( encodable: (element is Encodable in Yaml)^ )
+  =>  ((Map[key, element] is Encodable in Yaml)^{encodable, caps.any}) = map =>
     val keys: List[key] = map.keys.to(List)
     val arr = new Array[Any](keys.size*2)
     var i = 0

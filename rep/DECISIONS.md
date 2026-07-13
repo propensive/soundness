@@ -1877,3 +1877,27 @@ the module are deleted except the two derivation `conjunction`/`disjunction`
 seals, whose bare result type is fixed by wisteria's `Derivable` signature
 (same state as jacinta's derivation — the one remaining boundary). 38/38
 tests; full sweep and soundness.js green.
+
+## Honest codec capabilities, phase 7: distillate primitives + encode sides (2026-07-13)
+
+The deepest layer went honest with astonishingly small fallout: distillate's
+tactic-taking `Decodable in Text` primitives (int/byte/short/long/double/
+float/fqcn/uuid/enumeration) are `^{tactic, caps.any}` and ALL their launders
+are deleted. Repo-wide fallout was ONE given: ambience's `Variable["columns",
+Int]` summoned bare evidence (fix: `^` param, honest `^{decodable}` result).
+Everything else already flowed: `decode` takes `^` evidence, derivations cross
+wisteria's single cast.
+
+Encode sides of the cc-only Yaml/Cbor modules converted too: breviloquence's
+list/set/series Encodable givens and ypsiloid's option/iterable/map Encodable
+givens are honest (`^` results; strict params named in `^{...}`), deleting the
+#1528 -scalajs pure-thunk launders AND the IArray seal they carried — possible
+now that `anticipation.Encodable` is no longer `Typeclass.Pure` (phase 4), so
+the SAM anon-class self-types may capture.
+
+Gate: full sweep clean, soundness.js green; distillate 5/5, jacinta 298/298,
+breviloquence 67/67, ypsiloid 623 passed (14 aspire-failures pre-existing).
+
+REMAINING: jacinta's sep-blocked encode-side by-name givens (truthful comments
+in place); the Derivable-signature-bare conjunction/disjunction seals (jacinta,
+locomotion — one remaining boundary); then dual gates + PR.

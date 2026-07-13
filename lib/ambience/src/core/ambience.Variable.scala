@@ -178,7 +178,9 @@ object Variable extends Protovariable:
     pathVariable(instantiable)
 
 
-  given columns: (Int is Decodable in Text) => Variable["columns", Int] = _.as[Int]
+  given columns: (decodable: (Int is Decodable in Text)^)
+  =>  ((Variable["columns", Int])^{decodable}) =
+    _.as[Int]
   given lang: Variable["lang", Text] = identity(_)
   given display: Variable["display", Text] = identity(_)
   given term: Variable["term", Text] = identity(_)

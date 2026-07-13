@@ -611,40 +611,26 @@ object Cbor extends Cbor2, Dynamic:
   given cborEncodable: Cbor is Encodable in Cbor = identity(_)
 
 
-  // The collection instances below retain their by-name element codecs (and, where present,
-  // a resolution-scoped `Tactic`), which share each instance's given-resolution lifetime;
-  // laundered pure per the codec-thunk seal pattern (see rep/DECISIONS.md).
-  given listEncodable: [list <: List, element] => (encodable: => element is Encodable in Cbor)
-  =>  list[element] is Encodable in Cbor =
-
-    // A pure thunk rather than a sealed lambda: under `-scalajs` the SAM expands to an
-    // anonymous class whose pure self-type may not capture the by-name parameter.
-    val enc: () -> (element is Encodable in Cbor) = caps.unsafe.unsafeAssumePure(() => encodable)
-
-    values => ast(Ast.array(caps.unsafe.unsafeAssumePure
-      (IArray.from(values.map(enc().encoded(_).root)))))
+  // The collection instances below are honest capabilities: each retains its by-name
+  // element codec (and, where present, a resolution-scoped `Tactic`), which share the
+  // instance's given-resolution lifetime (every given that includes a tactic is a
+  // capability; Jon, 2026-07-12). See rep/DECISIONS.md.
+  given listEncodable: [list <: List, element]
+  =>  ( encodable: => (element is Encodable in Cbor)^ )
+  =>  ((list[element] is Encodable in Cbor)^) =
+    values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
 
 
-  given setEncodable: [set <: Set, element] => (encodable: => element is Encodable in Cbor)
-  =>  set[element] is Encodable in Cbor =
-
-    // A pure thunk rather than a sealed lambda: under `-scalajs` the SAM expands to an
-    // anonymous class whose pure self-type may not capture the by-name parameter.
-    val enc: () -> (element is Encodable in Cbor) = caps.unsafe.unsafeAssumePure(() => encodable)
-
-    values => ast(Ast.array(caps.unsafe.unsafeAssumePure
-      (IArray.from(values.map(enc().encoded(_).root)))))
+  given setEncodable: [set <: Set, element]
+  =>  ( encodable: => (element is Encodable in Cbor)^ )
+  =>  ((set[element] is Encodable in Cbor)^) =
+    values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
 
 
-  given seriesEncodable: [series <: Series, element] => (encodable: => element is Encodable in Cbor)
-  =>  series[element] is Encodable in Cbor =
-
-    // A pure thunk rather than a sealed lambda: under `-scalajs` the SAM expands to an
-    // anonymous class whose pure self-type may not capture the by-name parameter.
-    val enc: () -> (element is Encodable in Cbor) = caps.unsafe.unsafeAssumePure(() => encodable)
-
-    values => ast(Ast.array(caps.unsafe.unsafeAssumePure
-      (IArray.from(values.map(enc().encoded(_).root)))))
+  given seriesEncodable: [series <: Series, element]
+  =>  ( encodable: => (element is Encodable in Cbor)^ )
+  =>  ((series[element] is Encodable in Cbor)^) =
+    values => ast(Ast.array(IArray.from(values.map(encodable.encoded(_).root))))
 
 
   given collectionDecodable: [collection <: Iterable, element]
