@@ -48,19 +48,15 @@ object Moniker:
 
   extension (moniker: Moniker) def ordinal: Int = moniker
 
+  // An honest capability: the instance retains the resolution-scoped tactic
+  // (every given that includes a tactic is a capability; Jon, 2026-07-13).
   given encodable: [transport] => (vocabulary: Vocabulary over transport, tactic: Tactic[MonikerError])
-  =>  (Moniker over transport) is Encodable in Text =
+  =>  (((Moniker over transport) is Encodable in Text)^{tactic, caps.any}) =
     new Encodable:
       type Self = Moniker over transport
       type Form = Text
 
-      // `vocabulary.name` raises through the resolution-scoped tactic, which shares this
-      // instance's lifetime; contained in a single untracked field (see
-      // `prepositional.Typeclass.Pure`).
-      @caps.unsafe.untrackedCaptures
-      private val tactic0: Tactic[MonikerError] = tactic
-
-      def encoded(moniker: Self): Text = vocabulary.name(moniker.ordinal)(using tactic0)
+      def encoded(moniker: Self): Text = vocabulary.name(moniker.ordinal)
 
   given decodable: [transport] => (vocabulary: Vocabulary over transport, tactic: Tactic[MonikerError])
   =>  (((Moniker over transport) is Decodable in Text)^{tactic}) =

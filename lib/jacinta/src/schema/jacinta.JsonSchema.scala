@@ -157,7 +157,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
   // `Json.Encodable` so generic derivation resolves it as a leaf rather than structurally
   // deriving `serpentine.Path`.
   given pointerEncodable: JsonPointer is Json.Encodable =
-    Json.Encodable(Morphology.Str): pointer =>
+    Json.Encodable(() => Morphology.Str): pointer =>
       Json.ast(Json.Ast(pointer.encode.s))
 
   // `$ref` schemas have no `type` discriminator, so they are handled here
@@ -174,7 +174,7 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
   // hand-written instance instead of recursively deriving a schema-of-schemas
   // (which would diverge). The carried `schema()` is a fixed permissive object.
   given encodable: JsonSchema is Json.Encodable =
-    Json.Encodable(Morphology.Any):
+    Json.Encodable(() => Morphology.Any):
       case JsonSchema.Ref(pointer, _, _) =>
         val ref = summon[JsonPointer is Encodable in Text].encoded(pointer).s
         Json.ast(Json.Ast.obj
@@ -205,14 +205,19 @@ object JsonSchema extends Derivable[Schematic over JsonSchema]:
   private def decodeSchema(json: Json)
     ( using jsonError: Tactic[JsonError], pointerError: Tactic[JsonPointerError] )
   :   JsonSchema =
-    given textDecodable: (Text is Json.Decodable) = Json.text
-    given intDecodable: (Int is Json.Decodable) = Json.int
+    // Sealed pure: a capability-typed local would hide the tactic from every
+    // subsequent statement (the statement rule); this whole decoder is already
+    // sealed at the `decodable` given, which documents the honesty blockage.
+    given textDecodable: (Text is Json.Decodable) = caps.unsafe.unsafeAssumePure(Json.text)
+    given intDecodable: (Int is Json.Decodable) = caps.unsafe.unsafeAssumePure(Json.int)
 
-    given doubleDecodable: (Double is Json.Decodable) = Json.double
+    given doubleDecodable: (Double is Json.Decodable) =
+      caps.unsafe.unsafeAssumePure(Json.double)
 
-    given booleanDecodable: (scala.Boolean is Json.Decodable) = Json.boolean
+    given booleanDecodable: (scala.Boolean is Json.Decodable) =
+      caps.unsafe.unsafeAssumePure(Json.boolean)
 
-    def field[value](name: Text)(using decodable: value is Json.Decodable)
+    def field[value](name: Text)(using decodable: (value is Json.Decodable)^)
     :   Optional[value] =
       json(name).as[Optional[value]]
 

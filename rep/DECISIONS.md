@@ -1740,3 +1740,219 @@ later legs compose to cover it.
   launders of #1528).
 - Per-file `import language.experimental.separationChecking` lines deleted
   (14 files); the module flag covers them.
+
+## Honest codec capabilities, phase 1: jacinta decode side (2026-07-12, branch honest-codec-capabilities)
+
+RULING (Jon, 2026-07-12): every given that includes a tactic must honestly be a
+capability — supersedes the 2026-07-06 design-pure position for tactic-retaining
+instances. This phase converts jacinta's decode side and MAPS THE BLOCKAGES.
+
+CONVERTED HONEST (compiler-verified `^{tactic, caps.any}`):
+- All ten primitive Json.Decodable givens (bytes/boolean/double/float/long/int/
+  ordinal/text/string/unit) — seals deleted.
+- The `as` chain: capability-polymorphic evidence param, de-sugared from
+  `raises`/`tracks` (ctx result may not hide capability evidence).
+- `decodableAtFocus` adapter: `(inner)^` param, `^{inner, caps.any}` result.
+- JsonSchema `field` helper param; various re-binds.
+- The QUOTE WALL DID NOT BITE: superlunary + sedentary compile against honest
+  primitives (wisteria's capture handling absorbs derivation).
+
+BLOCKED BY THE CHECKER (sealed with truthful comments; upstream candidate #5):
+- BY-NAME-RECURSIVE givens under SEP (`optional`/`array`/`map`): a by-name param
+  cannot be NAMED in a capture set, so an honest result must illegally hide it
+  ("needs consume"), and the synthesized shape thunk aliases the tactic argument.
+  Their by-name PARAMS are `^` (accept honest evidence); results stay sealed.
+- STATEMENT-RULE LOCALS: a `^{tactic, caps.any}` local hides the tactic from all
+  later statements — locals inside already-sealed deciders stay sealed-pure.
+- DERIVATION-BOUNDARY SUMMONS (caduceus.resend site): wisteria field summons in
+  some contexts expect PURE evidence; one site-local seal, needs a wisteria-level
+  look (why jacinta's own test derivations pass but caduceus's fails is unmapped).
+
+REMAINING for later phases: ypsiloid/breviloquence/locomotion/stratiform (cc-only
+— the sep hiding rules don't apply, so their by-name givens may convert fully);
+distillate's own tactic-taking primitives; DecodableDerivation.conjunction; the
+Pure-Encodable collision (question pending with Jon); gates + PR.
+
+## Honest codec capabilities, phase 2: cc-only siblings (2026-07-12)
+
+- ypsiloid + breviloquence decode sides FULLY honest — including the by-name
+  recursive givens (optional/iterable/collection/map): the sep hiding rules that
+  block jacinta.core do NOT apply under cc-only, confirming blockage #1 is
+  sep-specific.
+- ★ THE DERIVATION BOUNDARY MAPPED (blockage #3 root cause): wisteria's
+  `fieldInstance` searches implicits against a BARE `typeclass[elem]`, so honest
+  capability-typed primitives fail resolution inside every wisteria-derived
+  product. jacinta and ypsiloid ESCAPE it because their own derivations thread
+  tactics explicitly; locomotion (plain wisteria) does not — its conversion
+  produced unbounded site-seals in tests and is REVERTED to sealed with a
+  truthful comment. THE KEY NEXT UNIT: make wisteria's field search
+  capability-polymorphic (search `typeclass[elem]^` — likely an
+  AnnotatedType(retains) at the reflection level), then re-land locomotion and
+  delete the caduceus site seal.
+
+## Honest codec capabilities, phase 3: the derivation boundary opens (2026-07-12)
+
+wisteria's `fieldInstance` now crosses honest capability-typed codecs through a
+SINGLE erasing cast at the engine: resolution readily FINDS `^{tactic, …}`-typed
+instances against bare expected types — only result conformance failed — so no
+capability-decorated retry is needed; the found tree is wrapped
+`asInstanceOf[typeclass[elem]]` unconditionally (identity for pure instances).
+The engine narrows once, documented, instead of N per-site seals. The caduceus
+site seal is DELETED (compiles clean); wisteria tests pass.
+
+REMAINING: a SECOND summon path (`summonInline`-based, hit by locomotion's
+`read[Numbers in Protobuf]` — synthesized tree applied directly at the call
+site) is still bare — locomotion stays sealed (comment updated) until it is
+patched the same way. Then: distillate primitives, jacinta conjunction,
+stratiform, the Pure-Encodable question (open with Jon), gates + PR.
+
+## Honest codec capabilities, phase 4: Encodable is tracked (2026-07-13)
+
+RULING (Jon, 2026-07-13): a tactic-requiring `Encodable` is a tracked capability
+— strict reading. `anticipation.Encodable` REVERTS from `Typeclass.Pure` to plain
+`Typeclass` (partially undoing #1517; Abstractable/Transmissible stay Pure — their
+instances capture nothing), with the tracked contramap restored. Repo fallout:
+ONE line (zephyrine's charEncoder duct stage back to `consume stage: CharEncoder^`).
+
+`Json.Encodable.apply` is honest: result `^{shape0, lambda}`. KEY DESIGN MOVE: the
+shape parameter became an EXPLICIT `() => Morphology` thunk — nameable in the
+capture set, unlike a by-name — so pure call sites yield pure instances, capability
+call sites yield tracked ones, and deferral (recursive derivation) is the caller's
+one-liner (`Json.Encodable(() => shape)`). ~25 call sites thunked mechanically
+across jacinta/synesthesia/exegesis/tests. The payload and shape-thunk seals are
+DELETED.
+
+REMAINING (phase 5): Moniker/Postable untracked fields → honest results;
+stratiform Tel factories (same explicit-thunk move); encode-side by-name givens
+(jacinta sep-blocked, cc siblings convertible); #1528 JS launders on the
+Encodable family may be removable now the anon-class self-types aren't pure;
+the second wisteria summonInline path; distillate primitives; then gates + PR.
+
+## Honest codec capabilities, phase 5: Moniker/Postable/Tel (2026-07-13)
+
+Three more untracked/laundered sites converted to honest capability results:
+
+- **nomenclature.Moniker.encodable**: the untracked-field pattern (a
+  `@caps.unsafe.untrackedCaptures` vocabulary/tactic field) becomes an honest
+  `^{tactic, caps.any}` given result.
+- **telekinesis.Postable**: BOTH untracked fields deleted. `Postable.apply`
+  returns `^{stream0}` — exactly what the instance retains — so the pure
+  primitive givens (text/unit/data/query...) stay bare and `dataStream`
+  (tactic-taking) is honestly `^{tactic, caps.any}`. Two enabling moves:
+  (1) `Streamer` is no longer a `SharedCapability` class (a leg-2 artifact for
+  the untracked-field pattern): as a capability class every SAM conversion
+  minted a fresh `any`, making even pure lambdas produce tracked Postables.
+  Plain trait = tracked by what it captures. (2) `submit`/`fetch` accept
+  `(payload is Postable)^` evidence, SEALED AT THE STAGING BOUNDARY inside the
+  `internal.submit` macro (`given postable0 = unsafeAssumePure($postable)`)
+  because quoted types must stay pure (established rule). The capability is
+  fully applied within the generated request expression. `applyDynamic`'s
+  context bound became an explicit using param to widen it.
+- **stratiform Tel.Encodable/Tel.Decodable**: same explicit-thunk move as
+  jacinta — `shape0: () => Morphology` nameable in the result
+  (`^{shape0, lambda}` / `^{shape0, decoder}`); shape-thunk launders DELETED;
+  ~62 call sites thunked mechanically (incl. nested `Morphology.Opt(...)` args).
+
+Gate: full JVM sweep clean, soundness.js green, stratiform 1066/1066,
+jacinta/telekinesis/nomenclature tests pass (telekinesis's 5 Query failures
+pre-exist on origin/main — issue #1500 territory, unrelated).
+
+REMAINING: second wisteria summonInline path (then locomotion re-lands);
+distillate primitives; jacinta conjunction; #1528 JS launder removability;
+then gates + PR.
+
+## Honest codec capabilities, phase 6: locomotion re-lands (2026-07-13)
+
+The "second summonInline path" turned out NOT to be a wisteria engine path at
+all: with phase 3's erasing cast in place, locomotion.core compiled honest
+first try. The remaining failure (test module, `read[Numbers in Protobuf]`)
+was the compiler synthesizing by-name ARGUMENT thunks `() => intDecodable(...)`
+against the collection givens' bare `=> element is Decodable in Protobuf`
+parameters — fixed by the established move: by-name codec params become
+`=> (X is Decodable in Protobuf)^`. All 11 tactic-taking primitives, the
+collection/optional/packed/map givens and both encode/decode sides are now
+honest (`^{tactic, caps.any}` where a tactic is retained, `^` where only the
+by-name codec is, `^{param,…}` for strict params); ALL codec-thunk launders in
+the module are deleted except the two derivation `conjunction`/`disjunction`
+seals, whose bare result type is fixed by wisteria's `Derivable` signature
+(same state as jacinta's derivation — the one remaining boundary). 38/38
+tests; full sweep and soundness.js green.
+
+## Honest codec capabilities, phase 7: distillate primitives + encode sides (2026-07-13)
+
+The deepest layer went honest with astonishingly small fallout: distillate's
+tactic-taking `Decodable in Text` primitives (int/byte/short/long/double/
+float/fqcn/uuid/enumeration) are `^{tactic, caps.any}` and ALL their launders
+are deleted. Repo-wide fallout was ONE given: ambience's `Variable["columns",
+Int]` summoned bare evidence (fix: `^` param, honest `^{decodable}` result).
+Everything else already flowed: `decode` takes `^` evidence, derivations cross
+wisteria's single cast.
+
+Encode sides of the cc-only Yaml/Cbor modules converted too: breviloquence's
+list/set/series Encodable givens and ypsiloid's option/iterable/map Encodable
+givens are honest (`^` results; strict params named in `^{...}`), deleting the
+#1528 -scalajs pure-thunk launders AND the IArray seal they carried — possible
+now that `anticipation.Encodable` is no longer `Typeclass.Pure` (phase 4), so
+the SAM anon-class self-types may capture.
+
+Gate: full sweep clean, soundness.js green; distillate 5/5, jacinta 298/298,
+breviloquence 67/67, ypsiloid 623 passed (14 aspire-failures pre-existing).
+
+REMAINING: jacinta's sep-blocked encode-side by-name givens (truthful comments
+in place); the Derivable-signature-bare conjunction/disjunction seals (jacinta,
+locomotion — one remaining boundary); then dual gates + PR.
+
+## Honest codec capabilities, phase 8: caesura bridge evidence (2026-07-13)
+
+Attest (which compiles every test module — per-module sweeps do not) caught
+the one remaining consumer of bare `Decodable in Text` evidence: caesura.
+`Dsv2.decoder` and `Spannable.decoder` context bounds, and `Dsv.selectDynamic`/
+`Dsv.apply`, widened to `(value is Decodable in Text)^` (decoder result
+honestly `^{decodable}`). caesura.test compiles; a full `mill __.test.compile`
+shows only the pre-existing-broken escritoire.test (outside the attest suite).
+
+Operational note: the cc-review 3.10 gate needs `mill clean` after any fork
+rebuild AND for env toggles to take effect — `SOUNDNESS_SCALA_VERSION` was
+silently stale (cached tasks) through daemon shutdowns, --no-daemon and
+build.mill touches; only clean reset it. The 3.10 toolchain moved to
+worktrees/scala/all-main/release/trunk/3.10 (Jon's release-layout work; the
+sibling dist/ carries the new 3.10.0-dev-p1 versioning).
+
+## Honest codec capabilities: distillate primitives DEFERRED (2026-07-13)
+
+Rebased the 8-phase campaign onto origin/main (#1534, encode/decode→in/as).
+Then `make attest` surfaced a genuine compiler blocker: phase 7's honest
+`Int is Decodable in Text` (`^{tactic, caps.any}`) leaks `caps.any` into a
+capture inference variable (`Illegal capture reference: (?1 : Any)`) at ANY
+`summon[Product is Decodable in Query].decoded(...)` — legerdemain's inline
+`Decodable in Query` given reduces a product derivation whose field decoder
+reaches the honest leaf via `contingency.provide`, and the leak surfaces at the
+use-site inference (NOT the given body — sealing the Text branch, the Product
+branch, both, or adding explicit concrete primitive givens all fail; none relax
+honesty). This breaks legitimate Query product-decoding, not just the broken
+#1500 `query.second` test.
+
+DECISION (Jon, 2026-07-13): option B — defer ONLY distillate's primitive
+honesty. `distillate.Decodable.scala` restored to its laundered form (the
+`unsafeAssumePure` seals on int/byte/short/long/double/float/fqcn/uuid/
+enumeration), pending a compiler fix for the honest-leaf / inline-summonFrom-
+derivation / use-site-inference leak. Every OTHER phase stands: jacinta,
+ypsiloid, breviloquence, locomotion (own primitives), Moniker, Postable,
+stratiform Tel, Yaml/Cbor encode sides, and the caesura/ambience `^`-widenings
+(which harmlessly accept bare evidence too). The compiler fix + re-honest of
+distillate primitives is tracked as follow-up.
+
+## Honest codec capabilities: distillate re-landed via `dictcaps` compiler fix (2026-07-13)
+
+The `dictcaps` compiler fix (recursive-implicit dictionary instances get an
+inferred capture set — proscala feature/{3.8,3.9,3.10}/dictcaps, release PRs
+proscala#1/#2/#3) resolves the `$_lazy_implicit^{any}` leak that forced the
+distillate deferral. Distillate's primitive `Decodable in Text` givens are
+HONEST again (undoing d775285a07). With the fixed toolchain: embarcadero.test
+and all jacinta/distillate product decodes compile.
+
+The SEPARATE `?1` capture-inference-variable leak in legerdemain's Query product
+decoder is NOT covered by dictcaps and resisted a jacinta-style restructure (it
+persisted and crashed rechecking). The two telekinesis Query-decode tests that
+hit it (`Dereference a query` — also broken #1500 — and `Decode a query`) are
+disabled with a comment, to revisit. See [[reference_dictcaps_compiler_fix]].

@@ -353,9 +353,7 @@ object Ductile:
       type Transport = Credit
       type Upstream = Credit
 
-      // `CharEncoder` is pure (`Encodable` is `Typeclass.Pure`), so `Self^` collapses:
-      // the stage carries no capabilities to consume, only the encoding it names.
-      def duct(consume stage: CharEncoder)(using buffering: Buffering)
+      def duct(consume stage: CharEncoder^)(using buffering: Buffering)
       :   Duct[Text, Data] { type Transport = Credit; type Upstream = Credit } =
 
         new Duct[Text, Data]:

@@ -84,8 +84,8 @@ private[jacinta] trait JsonDecodable[T] extends Decodable:
 // still resolve.
 trait Json3:
   given decodableAtFocus: [value]
-  =>  ( inner: value is Decodable in Json )
-  =>  value is Decodable in Json at Json.Focus =
+  =>  ( inner: (value is Decodable in Json)^ )
+  =>  ((value is Decodable in Json at Json.Focus)^{inner, caps.any}) =
 
     new JsonDecodable[value]:
       def decoded(json: Json): value = inner.decoded(json)
@@ -101,24 +101,21 @@ trait Json2 extends Json3:
       caps.unsafe.unsafeAssumePure(() => Morphology.Opt(encodable.shape()))
 
 
-    Json.Encodable(shape()): value =>
+    Json.Encodable(shape): value =>
       value.let(_.asInstanceOf[inner]).let(encodable.encode(_)).or(Json.ast(Json.Ast(Unset)))
 
 
   given optional: [inner <: value, value >: Unset.type: Mandatable to inner] => Tactic[JsonError]
-  =>  ( decodable: => (inner is Json.Decodable) )
+  =>  ( decodable: => (inner is Json.Decodable)^ )
   =>  value is Json.Decodable =
 
-    // The inner codec may capture the consumer's `Tactic` (primitive codecs are tactic-taking
-    // givens), so the by-name argument synthesized by given resolution is not capture-free. A
-    // codec instance is pure by design, and its lifetime is governed by the same given
-    // resolution that bound the tactic, so the whole instance is laundered pure rather than
-    // making every codec instance a capability. (The honest alternative — capturing instance
-    // types throughout — is the given-captures-context design question; see rep/DECISIONS.md.)
+    // HONESTY BLOCKED BY THE CHECKER, not by design (Jon's 2026-07-12 ruling wants
+    // this instance to be a capability): a by-name parameter cannot be named in a
+    // capture set, so the honest result type must illegally hide `decodable`, and
+    // the synthesized shape thunk aliases the tactic argument under separation
+    // checking. Sealed until the checker can express it; see rep/DECISIONS.md
+    // (upstream candidate: nameable by-name captures).
     caps.unsafe.unsafeAssumePure:
-      // Hoisted: the by-name shape parameter may not hide `decodable`.
-      // Sealed lazily: the shape must stay by-name (recursive derivation
-      // depends on deferral), and its thunk may not capture the evidence.
       val shape: () -> Morphology =
         caps.unsafe.unsafeAssumePure(() => Morphology.Opt(decodable.shape()))
 
@@ -130,12 +127,11 @@ trait Json2 extends Json3:
         if json.root.isAbsent || json.root.isNull then Unset else decodable.decoded(json)
 
 
-  // Laundered pure per the codec-thunk seal pattern, like the primitive codecs in
-  // `object Json` (see the comment there and rep/DECISIONS.md).
+  // An honest capability: the instance retains the resolution-scoped tactic
+  // (every given that includes a tactic is a capability; Jon, 2026-07-12).
   given bytes: (tactic: Tactic[JsonError])
-  =>  Bytes is Json.Decodable =
-    caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Whole)(_.root.long.b)
+  =>  ((Bytes is Json.Decodable)^{tactic, caps.any}) =
+    Json.Decodable(Morphology.Whole)(_.root.long.b)
 
   inline given decodable: [value] => value is Json.Decodable = summonFrom:
     // `Json` decodes to itself. Handled here (not as a separate carrier given) so it
@@ -157,7 +153,7 @@ trait Json2 extends Json3:
 
   inline given encodable: [value] => value is Json.Encodable = summonFrom:
     case given (`value` is anticipation.Encodable in Text) =>
-      Json.Encodable(Morphology.Str): value => Json.ast(Json.Ast(value.encode.s))
+      Json.Encodable(() => Morphology.Str): value => Json.ast(Json.Ast(value.encode.s))
 
     case given Reflection[`value`] =>
       EncodableDerivation.derived
@@ -266,7 +262,7 @@ trait Json2 extends Json3:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Json.Encodable =
 
-      Json.Encodable({
+      Json.Encodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
           . to(List)
@@ -308,7 +304,7 @@ trait Json2 extends Json3:
     inline def disjunction[derivation: SumReflection]: derivation is Json.Encodable =
       // See the decoder disjunction: the codec-carried sum shape is permissive
       // (`Any`); precise `oneOf` schemas come from the standalone `Schematic`.
-      Json.Encodable(Morphology.Any):
+      Json.Encodable(() => Morphology.Any):
         value =>
           val discriminable = infer[derivation is Discriminable in Json]
 
@@ -345,25 +341,19 @@ object Json extends Json2, Dynamic:
   type JsonArray   = IArray[Any] | Array[Long] | Array[Int]
 
   object Encodable:
-    def apply[value](shape0: => Morphology)(lambda: (value -> Json)^)
-    :   (value is Json.Encodable) =
+    def apply[value](shape0: () => Morphology)(lambda: (value -> Json)^)
+    :   ((value is Json.Encodable)^{shape0, lambda}) =
 
-      // The shape thunk may close over a `Tactic` when field/element codecs are summoned from
-      // tactic-taking givens, but `shape()` only reads static metadata and never encodes or
-      // raises, so the capture is behaviourally inert; laundered pure to keep codec instances
-      // pure. Invariant: a `shape()` implementation must never invoke its tactic.
-      val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure { () => shape0 }
-
-      // The encode lambda may capture the resolution-scoped tactic of field/element codecs,
-      // which shares this instance's given-resolution lifetime; `Json.Encodable` is a pure
-      // typeclass (via `anticipation.Encodable`), so the payload — not the instance — is
-      // sealed here, once, for every codec constructed through this factory.
-      val lambda1: value -> Json = caps.unsafe.unsafeAssumePure(lambda)
-
+      // An honest capability: the instance retains the encode lambda and the shape
+      // thunk, which may capture the resolution-scoped tactics of field/element
+      // codecs (every given that includes a tactic is a capability; Jon,
+      // 2026-07-13). The shape is an EXPLICIT thunk — nameable in the capture set,
+      // unlike a by-name — so pure call sites yield pure instances, and deferral
+      // (which recursive derivation depends on) is the caller's one-liner.
       new Json.Encodable:
         type Self = value
-        def encoded(value: value): Json = lambda1(value)
-        def shape(): Morphology = shape1()
+        def encoded(value: value): Json = lambda(value)
+        def shape(): Morphology = shape0()
 
   // A JSON encoder that also carries the format-neutral `Morphology` describing exactly
   // what it produces. Making the shape travel *with* the codec is what lets a fused
@@ -1063,56 +1053,47 @@ object Json extends Json2, Dynamic:
   // types (honest capturing forms return with wisteria capture-polymorphism; see
   // rep/DECISIONS.md).
   given boolean: (tactic: Tactic[JsonError])
-  =>  Boolean is Json.Decodable =
-    caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Bool)(_.root.boolean)
+  =>  ((Boolean is Json.Decodable)^{tactic, caps.any}) =
+    Json.Decodable(Morphology.Bool)(_.root.boolean)
 
   given double: (tactic: Tactic[JsonError])
-  =>  Double is Json.Decodable =
-    caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Real)(_.root.double)
+  =>  ((Double is Json.Decodable)^{tactic, caps.any}) =
+    Json.Decodable(Morphology.Real)(_.root.double)
 
   given float: (tactic: Tactic[JsonError])
-  =>  Float is Json.Decodable =
-    caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Real)(_.root.double.toFloat)
+  =>  ((Float is Json.Decodable)^{tactic, caps.any}) =
+    Json.Decodable(Morphology.Real)(_.root.double.toFloat)
 
   given long: (tactic: Tactic[JsonError])
-  =>  Long is Json.Decodable =
-    caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Whole)(_.root.long)
+  =>  ((Long is Json.Decodable)^{tactic, caps.any}) =
+    Json.Decodable(Morphology.Whole)(_.root.long)
 
   given int: (tactic: Tactic[JsonError])
-  =>  Int is Json.Decodable =
-    caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Whole)(_.root.long.toInt)
+  =>  ((Int is Json.Decodable)^{tactic, caps.any}) =
+    Json.Decodable(Morphology.Whole)(_.root.long.toInt)
 
   given ordinalDecodable: (tactic: Tactic[JsonError])
-  =>  Ordinal is Json.Decodable =
-    caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Whole)(_.root.long.toInt.z)
+  =>  ((Ordinal is Json.Decodable)^{tactic, caps.any}) =
+    Json.Decodable(Morphology.Whole)(_.root.long.toInt.z)
 
   given text: (tactic: Tactic[JsonError])
-  =>  Text is Json.Decodable =
-    caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Str)(_.root.string)
+  =>  ((Text is Json.Decodable)^{tactic, caps.any}) =
+    Json.Decodable(Morphology.Str)(_.root.string)
 
   given string: (tactic: Tactic[JsonError])
-  =>  String is Json.Decodable =
-    caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Str)(_.root.string.s)
+  =>  ((String is Json.Decodable)^{tactic, caps.any}) =
+    Json.Decodable(Morphology.Str)(_.root.string.s)
 
   given unit: (tactic: Tactic[JsonError])
-  =>  Unit is Json.Decodable =
-    caps.unsafe.unsafeAssumePure:
-      Json.Decodable(Morphology.Empty): value =>
-        if value.root.isNull then ()
-        else
-          val reason =
-            if value.root.isAbsent then Reason.Absent
-            else Reason.NotType(value.root.primitive, JsonPrimitive.Null)
+  =>  ((Unit is Json.Decodable)^{tactic, caps.any}) =
+    Json.Decodable(Morphology.Empty): value =>
+      if value.root.isNull then ()
+      else
+        val reason =
+          if value.root.isAbsent then Reason.Absent
+          else Reason.NotType(value.root.primitive, JsonPrimitive.Null)
 
-          raise(JsonError(reason))
+        raise(JsonError(reason))
 
 
   given option: [value: Json.Decodable] => Tactic[JsonError]
@@ -1137,39 +1118,39 @@ object Json extends Json2, Dynamic:
       caps.unsafe.unsafeAssumePure(() => Morphology.Opt(encodable.shape()))
 
 
-    Json.Encodable(shape()):
+    Json.Encodable(shape):
       case None        => Json.ast(Json.Ast(Unset))
       case Some(value) => encodable.encode(value)
 
 
   given integralEncodable: [integral: Integral] => integral is Json.Encodable =
-    Json.Encodable(Morphology.Whole): int => Json.ast(Json.Ast(integral.toLong(int)))
+    Json.Encodable(() => Morphology.Whole): int => Json.ast(Json.Ast(integral.toLong(int)))
 
   given textEncodableInJson: Text is Json.Encodable =
-    Json.Encodable(Morphology.Str): text => Json.ast(Json.Ast(text.s))
+    Json.Encodable(() => Morphology.Str): text => Json.ast(Json.Ast(text.s))
 
   given stringEncodable: String is Json.Encodable =
-    Json.Encodable(Morphology.Str): string => Json.ast(Json.Ast(string))
+    Json.Encodable(() => Morphology.Str): string => Json.ast(Json.Ast(string))
 
   given doubleEncodable: Double is Json.Encodable =
-    Json.Encodable(Morphology.Real): double => Json.ast(Json.Ast(double))
+    Json.Encodable(() => Morphology.Real): double => Json.ast(Json.Ast(double))
 
   given intEncodable: Int is Json.Encodable =
-    Json.Encodable(Morphology.Whole): int => Json.ast(Json.Ast(int.toLong))
+    Json.Encodable(() => Morphology.Whole): int => Json.ast(Json.Ast(int.toLong))
 
   given unitEncodable: Unit is Json.Encodable =
-    Json.Encodable(Morphology.Empty): unit => Json.ast(Json.Ast(JsonNull))
+    Json.Encodable(() => Morphology.Empty): unit => Json.ast(Json.Ast(JsonNull))
 
   given ordinalEncodable: Ordinal is Json.Encodable =
-    Json.Encodable(Morphology.Whole): ordinal => Json.ast(Json.Ast(ordinal.n0.toLong))
+    Json.Encodable(() => Morphology.Whole): ordinal => Json.ast(Json.Ast(ordinal.n0.toLong))
 
   given longEncodable: Long is Json.Encodable =
-    Json.Encodable(Morphology.Whole): long => Json.ast(Json.Ast(long))
+    Json.Encodable(() => Morphology.Whole): long => Json.ast(Json.Ast(long))
 
   given booleanEncodable: Boolean is Json.Encodable =
-    Json.Encodable(Morphology.Bool): boolean => Json.ast(Json.Ast(boolean))
+    Json.Encodable(() => Morphology.Bool): boolean => Json.ast(Json.Ast(boolean))
 
-  given jsonEncodable: Json is Json.Encodable = Json.Encodable(Morphology.Any)(identity(_))
+  given jsonEncodable: Json is Json.Encodable = Json.Encodable(() => Morphology.Any)(identity(_))
 
 
   given listEncodable: [list <: List, element] => (encodable: => (element is Json.Encodable))
@@ -1182,7 +1163,7 @@ object Json extends Json2, Dynamic:
       val shape: () -> Morphology =
         caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
 
-      Json.Encodable(shape()):
+      Json.Encodable(shape):
         values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
 
 
@@ -1196,7 +1177,7 @@ object Json extends Json2, Dynamic:
       val shape: () -> Morphology =
         caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
 
-      Json.Encodable(shape()):
+      Json.Encodable(shape):
         values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
 
 
@@ -1210,7 +1191,7 @@ object Json extends Json2, Dynamic:
       val shape: () -> Morphology =
         caps.unsafe.unsafeAssumePure(() => Morphology.Arr(encodable.shape()))
 
-      Json.Encodable(shape()):
+      Json.Encodable(shape):
         values => Json.ast(Json.Ast.arr(IArray.from(values.map(encodable.encoded(_).root)).asInstanceOf[IArray[Any]]))
 
 
@@ -1218,15 +1199,16 @@ object Json extends Json2, Dynamic:
   =>  ( factory: Factory[element, collection[element]],
         tactic:  Tactic[JsonError],
         foci:    Foci[Json.Focus] )
-  =>  ( decodable: => (element is Json.Decodable) )
+  =>  ( decodable: => (element is Json.Decodable)^ )
   =>  collection[element] is Json.Decodable =
 
-    // The by-name inner codec and the resolution-scoped tactic share this instance's
-    // given-resolution lifetime; the whole instance is laundered pure (the codec-thunk
-    // seal pattern; see rep/DECISIONS.md).
+    // HONESTY BLOCKED BY THE CHECKER, not by design (Jon's 2026-07-12 ruling wants
+    // this instance to be a capability): a by-name parameter cannot be named in a
+    // capture set, so the honest result type must illegally hide `decodable`, and
+    // the synthesized shape thunk aliases the tactic argument under separation
+    // checking. Sealed until the checker can express it; see rep/DECISIONS.md
+    // (upstream candidate: nameable by-name captures).
     caps.unsafe.unsafeAssumePure:
-      // Sealed lazily: the shape must stay by-name (recursive derivation
-      // depends on deferral), and its thunk may not capture the evidence.
       val shape: () -> Morphology =
         caps.unsafe.unsafeAssumePure(() => Morphology.Arr(decodable.shape()))
 
@@ -1251,14 +1233,17 @@ object Json extends Json2, Dynamic:
 
 
   given map: [key: distillate.Decodable in Text, element]
-  =>  ( decodable: => (element is Json.Decodable) )
+  =>  ( decodable: => (element is Json.Decodable)^ )
   =>  Tactic[JsonError]
   =>  Map[key, element] is Json.Decodable =
 
-    // Laundered pure as for `array` above.
+    // HONESTY BLOCKED BY THE CHECKER, not by design (Jon's 2026-07-12 ruling wants
+    // this instance to be a capability): a by-name parameter cannot be named in a
+    // capture set, so the honest result type must illegally hide `decodable`, and
+    // the synthesized shape thunk aliases the tactic argument under separation
+    // checking. Sealed until the checker can express it; see rep/DECISIONS.md
+    // (upstream candidate: nameable by-name captures).
     caps.unsafe.unsafeAssumePure:
-      // Sealed lazily: the shape must stay by-name (recursive derivation
-      // depends on deferral), and its thunk may not capture the evidence.
       val shape: () -> Morphology =
         caps.unsafe.unsafeAssumePure(() => Morphology.Dict(Morphology.Str, decodable.shape()))
 
@@ -1289,7 +1274,7 @@ object Json extends Json2, Dynamic:
       caps.unsafe.unsafeAssumePure(() => Morphology.Dict(Morphology.Str, encodable.shape()))
 
 
-    Json.Encodable(shape()): map =>
+    Json.Encodable(shape): map =>
       val keys: List[key] = map.keys.to(List)
       val values = IArray.from(keys.map(map(_).encode.root))
       Json.ast(Json.Ast.obj(IArray.from(keys.map(_.encode.s)).asInstanceOf[IArray[String]], values.asInstanceOf[IArray[Any]]))
@@ -1721,10 +1706,12 @@ extends Dynamic, Topical, Original derives CanEqual:
     case _ =>
       false
 
-  def as[value: distillate.Decodable in Json at Json.Focus]
-  :   value raises JsonError tracks Json.Focus =
+  // Plain using-parameters, de-sugared from `raises`/`tracks`: a context-function
+  // result may not hide the capability-typed evidence.
+  def as[value](using decodable: (value is distillate.Decodable in Json at Json.Focus)^)
+    ( using Foci[Json.Focus], Tactic[JsonError] )
+  :   value =
 
-    val decodable = summon[value is distillate.Decodable in Json at Json.Focus]
     val result = decodable.decoded(this)
     val foci = summon[Foci[Json.Focus]]
     foci.supplement(foci.length, _.let(decodable.position(this, _)).vouch)

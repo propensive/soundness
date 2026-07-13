@@ -54,7 +54,8 @@ trait Dsv2:
   // `Decodable in Dsv` givens in `object Dsv` (which accrue errors via raise+yet)
   // so those win for Int/Long/Double/… where a `Decodable in Text` also exists —
   // mirroring how distillate keeps its generic instance in `Decodable2`.
-  given decoder: [decodable: Decodable in Text] => decodable is Decodable in Dsv =
+  given decoder: [decodable] => (decodable: (decodable is Decodable in Text)^)
+  =>  ((decodable is Decodable in Dsv)^{decodable}) =
     value => decodable.decoded(value.data.head)
 
 object Dsv extends Dsv2:
@@ -252,14 +253,15 @@ case class Dsv(data: IArray[Text], columns: Optional[Map[Text, Int]] = Unset) ex
     IArray.tabulate(columns.size)(columns(_))
 
 
-  def selectDynamic[value: Decodable in Text](field: String)(using erased dynamicDsvEnabler: DynamicDsvEnabler)
+  def selectDynamic[value](field: String)(using erased dynamicDsvEnabler: DynamicDsvEnabler)
+    ( using value: (value is Decodable in Text)^ )
     ( using DsvRedesignation )
   :   Optional[value] =
 
     apply(summon[DsvRedesignation].transform(field.tt))
 
 
-  def apply[value: Decodable in Text](field: Text): Optional[value] =
+  def apply[value](using value: (value is Decodable in Text)^)(field: Text): Optional[value] =
     columns.let(_.at(field)).let { index => data.at(index.z) }.let(value.decoded(_))
 
   override def hashCode: Int = data.indices.fuse(0)(state*31 + data(next).hashCode)

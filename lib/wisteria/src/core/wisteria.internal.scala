@@ -344,8 +344,17 @@ object internal:
       case success: ImplicitSearchSuccess => success
       case _                              => Implicits.search(instance)
 
+    // The found instance crosses the derivation boundary through a single erasing
+    // cast: resolution readily finds honest capability-typed codecs (every given
+    // that includes a tactic is a capability), but their `^{tactic, …}` types do
+    // not conform to the bare expected form. The derived instance consuming the
+    // field codec is itself honestly typed at its own given, so the engine narrows
+    // here, once, rather than requiring a seal at every derivation site.
     result.absolve match
-      case success: ImplicitSearchSuccess => success.tree.asExprOf[typeclass[elem]]
+      case success: ImplicitSearchSuccess =>
+        success.tree.asExpr match
+          case '{$found: any} => '{$found.asInstanceOf[typeclass[elem]]}
+
       case failure: ImplicitSearchFailure => report.errorAndAbort(failure.explanation)
 
   // `self.derivedOne[elem]`, built in the given nested `Quotes` (a sibling val's scope).

@@ -42,7 +42,7 @@ object Spannable extends ProductDerivable[Spannable]:
   inline def conjunction[derivation <: Product: ProductReflection]: derivation is Spannable =
     () => contexts[derivation](): [field] => context => context.spans().sum
 
-  given decoder: [decodable: Decodable in Text] => decodable is Spannable =
+  given decoder: [decodable] => ((decodable is Decodable in Text)^) => decodable is Spannable =
     () => IArray(1)
 
   // An `Optional[T]` field spans exactly as many cells as its inner type: a present value

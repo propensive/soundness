@@ -1228,7 +1228,7 @@ object Tests extends Suite(m"Jacinta Tests"):
 
     suite(m"Specific per-path overrides"):
       val firm = Firm(Worker(t"ann", 30), Worker(t"bob", 40))
-      val shout: Text is Json.Encodable = Json.Encodable(Morphology.Str): text => Json(text.upper)
+      val shout: Text is Json.Encodable = Json.Encodable(() => Morphology.Str): text => Json(text.upper)
 
       test(m"Without a Specific, all fields use default encoders"):
         firm.in[Json].show
@@ -1243,7 +1243,7 @@ object Tests extends Suite(m"Jacinta Tests"):
       . assert(_ == t"""{"boss":{"name":"ann","age":30},"deputy":{"name":"BOB","age":40}}""")
 
       test(m"a collection element is overridden via a local given + re-derive"):
-        val nameOnly: Worker is Json.Encodable = Json.Encodable(Morphology.Str): w => Json(w.name)
+        val nameOnly: Worker is Json.Encodable = Json.Encodable(() => Morphology.Str): w => Json(w.name)
 
         given (Crew is Specific over Json.Encodable) =
           specifically:

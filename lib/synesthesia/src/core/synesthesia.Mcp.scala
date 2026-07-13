@@ -214,7 +214,7 @@ object Mcp:
   case class Error(code: Int, message: Text, data: Optional[Json] = Unset)
 
   object TextInt:
-    given encodable: TextInt is Json.Encodable = Json.Encodable(Morphology.Any):
+    given encodable: TextInt is Json.Encodable = Json.Encodable(() => Morphology.Any):
       _.id.absolve match
         case text: Text => text.in[Json]
         case int: Int   => int.in[Json]
@@ -308,7 +308,7 @@ object Mcp:
       tasks:        Optional[Tasks]           = Unset )
 
   object Contents:
-    given encodable: Contents is Json.Encodable = Json.Encodable(Morphology.Any):
+    given encodable: Contents is Json.Encodable = Json.Encodable(() => Morphology.Any):
       _.contents match
         case text: TextResourceContents => text.in[Json]
         case blob: BlobResourceContents => blob.in[Json]
@@ -369,7 +369,7 @@ object Mcp:
     ( values: List[Text] = Nil, total: Optional[Int] = Unset, hasMore: Optional[Boolean] = Unset )
 
   object Role:
-    given encodable: Role is Json.Encodable = Json.Encodable(Morphology.Str):
+    given encodable: Role is Json.Encodable = Json.Encodable(() => Morphology.Str):
       case Role.User      => t"user".in[Json]
       case Role.Assistant => t"assistant".in[Json]
 
@@ -384,7 +384,7 @@ object Mcp:
     case User, Assistant
 
   object TaskSupport:
-    given encodable: TaskSupport is Json.Encodable = Json.Encodable(Morphology.Str):
+    given encodable: TaskSupport is Json.Encodable = Json.Encodable(() => Morphology.Str):
       case TaskSupport.Forbidden => t"forbidden".in[Json]
       case TaskSupport.Optional  => t"optional".in[Json]
       case TaskSupport.Required  => t"required".in[Json]
@@ -402,7 +402,7 @@ object Mcp:
 
   object LoggingLevel:
     given encodable: LoggingLevel is Json.Encodable =
-      Json.Encodable(Morphology.Str)(_.toString.tt.lower.in[Json])
+      Json.Encodable(() => Morphology.Str)(_.toString.tt.lower.in[Json])
 
     given decodable: Tactic[JsonError] => LoggingLevel is Json.Decodable =
       Json.Decodable(Morphology.Str): json =>
@@ -423,7 +423,7 @@ object Mcp:
   case class LoggingMessage(level: LoggingLevel, logger: Optional[Text] = Unset, data: Json)
 
   object TaskStatus:
-    given encodable: TaskStatus is Json.Encodable = Json.Encodable(Morphology.Str):
+    given encodable: TaskStatus is Json.Encodable = Json.Encodable(() => Morphology.Str):
       case TaskStatus.Working       => t"working".in[Json]
       case TaskStatus.InputRequired => t"input_required".in[Json]
       case TaskStatus.Completed     => t"completed".in[Json]
@@ -464,7 +464,7 @@ object Mcp:
 
     private val typeTag = Json.discriminatedUnion[Reference](t"type")
 
-    given encodable: Reference is Json.Encodable = Json.Encodable(Morphology.Any):
+    given encodable: Reference is Json.Encodable = Json.Encodable(() => Morphology.Any):
       case ref: PromptReference           => typeTag.rewrite(t"ref/prompt", ref.in[Json])
       case ref: ResourceTemplateReference => typeTag.rewrite(t"ref/resource", ref.in[Json])
 
@@ -514,7 +514,7 @@ object Mcp:
   case class ToolChoice(mode: Optional[Mode] = Unset)
 
   object Mode:
-    given encodable: Mode is Json.Encodable = Json.Encodable(Morphology.Str):
+    given encodable: Mode is Json.Encodable = Json.Encodable(() => Morphology.Str):
       case Mode.Auto     => t"auto".in[Json]
       case Mode.Required => t"required".in[Json]
       case Mode.None     => t"none".in[Json]
@@ -538,7 +538,7 @@ object Mcp:
 
     private val typeTag = Json.discriminatedUnion[SamplingMessageContentBlock](t"type")
 
-    given encodable: SamplingMessageContentBlock is Json.Encodable = Json.Encodable(Morphology.Any):
+    given encodable: SamplingMessageContentBlock is Json.Encodable = Json.Encodable(() => Morphology.Any):
       case content: TextContent       => typeTag.rewrite(t"text",        content.in[Json])
       case content: ImageContent      => typeTag.rewrite(t"image",       content.in[Json])
       case content: AudioContent      => typeTag.rewrite(t"audio",       content.in[Json])
@@ -570,7 +570,7 @@ object Mcp:
 
     private val typeTag = Json.discriminatedUnion[ContentBlock](t"type")
 
-    given encodable: ContentBlock is Json.Encodable = Json.Encodable(Morphology.Any):
+    given encodable: ContentBlock is Json.Encodable = Json.Encodable(() => Morphology.Any):
       case content: TextContent      => typeTag.rewrite(t"text",          content.in[Json])
       case content: ImageContent     => typeTag.rewrite(t"image",         content.in[Json])
       case content: AudioContent     => typeTag.rewrite(t"audio",         content.in[Json])
@@ -644,7 +644,7 @@ object Mcp:
   case class CreateTaskResult(task: Task)
 
   object ElicitAction:
-    given encodable: ElicitAction is Json.Encodable = Json.Encodable(Morphology.Str):
+    given encodable: ElicitAction is Json.Encodable = Json.Encodable(() => Morphology.Str):
       case ElicitAction.Accept  => t"accept".in[Json]
       case ElicitAction.Decline => t"decline".in[Json]
       case ElicitAction.Cancel  => t"cancel".in[Json]

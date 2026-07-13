@@ -57,29 +57,24 @@ object Postable:
   // `response => (Stream[Data] over Credit)^`: a lambda may not mint a fresh
   // scoped capability as its result, but a SAM's method may (see
   // `zephyrine.Spring`). Lambda call sites are unchanged by SAM conversion.
-  // It is a capability class: a value constructed from capabilities is a
-  // capability (Jon, 2026-07-06; see rep/DECISIONS.md).
-  trait Streamer[content] extends caps.SharedCapability:
+  // A plain trait, not a capability class: instances are tracked by what they
+  // capture, so a pure lambda yields a pure streamer.
+  trait Streamer[content]:
     def stream(content: content): (Stream[Data] over Credit)^
 
   // `stream0` must construct a fresh pull endpoint on each call: the request
   // body may be materialized more than once — for a redirect that preserves
   // the method, and independently by `preview` for logging — and a `Stream`,
   // being a single-use mutable buffer, cannot be re-pulled.
+  // An honest result: the instance retains exactly the streamer, so a pure
+  // lambda yields a pure instance and a capability-capturing one is tracked.
   def apply[response](mediaType0: MediaType, stream0: Streamer[response]^)
-  :   response is Postable =
+  :   ((response is Postable)^{stream0}) =
 
     new Postable:
       type Self = response
-
-      // The streaming lambda may capture capabilities with the same lifetime as this
-      // instance's given resolution; contained in a single untracked field rather than
-      // sealing the whole value (see `prepositional.Typeclass.Pure`).
-      @caps.unsafe.untrackedCaptures
-      private val streamer: Streamer[response] = stream0
-
       def mediaType(response: response): MediaType = mediaType0
-      def stream(response: response): (Stream[Data] over Credit)^ = streamer.stream(response)
+      def stream(response: response): (Stream[Data] over Credit)^ = stream0.stream(response)
 
 
   given text: (encoder: CharEncoder) => Text is Postable =
@@ -102,17 +97,13 @@ object Postable:
 
   given dataStream: [response: Abstractable across HttpStreams to HttpStreams.Content]
   =>  ( tactic: Tactic[MediaTypeError] )
-  =>  response is Postable =
+  =>  ((response is Postable)^{tactic, caps.any}) =
+
+    // An honest capability: the tactic-capturing decoder is retained by the instance.
+    val decoder: (MediaType is Decodable in Text)^ = summon[(MediaType is Decodable in Text)^]
 
     new Postable:
       type Self = response
-
-      // The instance's `mediaType` raises through the resolution-scoped tactic, which
-      // shares the instance's lifetime; the tactic-capturing decoder is contained in a
-      // single untracked field (see `prepositional.Typeclass.Pure`).
-      @caps.unsafe.untrackedCaptures
-      private val decoder: MediaType is Decodable in Text =
-        summon[(MediaType is Decodable in Text)^]
 
       def mediaType(content: response): MediaType =
         content.generic(0).as[MediaType](using decoder)
