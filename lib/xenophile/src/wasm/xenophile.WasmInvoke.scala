@@ -199,6 +199,12 @@ object WasmInvoke:
       case _ =>
         false
 
+    // The element WIT types of a `tuple<…>` parameter (a WIT record, whose ABI it shares, may be
+    // declared as its structural tuple), or `Unset` for any other parameter shape.
+    def parameterTuple(parameter: Foreign.Type): Optional[List[Foreign.Type]] = parameter match
+      case Foreign.Type.Applied(constructor, elements) if constructor.s == "tuple" => elements
+      case _                                                                       => Unset
+
     val listClass = Symbol.requiredClass("scala.collection.immutable.List")
 
     def isList(scala: TypeRepr): Boolean = scala.dealias match
@@ -508,6 +514,38 @@ object WasmInvoke:
 
     def encodedArgument(value: Term, parameter: Foreign.Type): (TypeRepr, Term) =
       val (carrier, encoded, alreadyOption) = value.tpe.widen.dealias match
+        // A `tuple<…>` (or a record, whose ABI it shares) argument with a matching Scala tuple:
+        // element-wise recursion, constructed as the scala-wasm `TupleN` of the element carriers —
+        // the mirror of the decode path. `WitCase` payloads and nested `option<T>`/`result` elements
+        // are handled by the per-element recursion into `encodedArgument`.
+        case valueType
+        if parameterTuple(parameter).let { es => isTuple(valueType, es.length) }.or(false) =>
+          val elements = parameterTuple(parameter).vouch
+
+          // Explicit loop, not a mapping lambda: minted quote capabilities must not leak into a
+          // closure's capture set (macro-under-cc precedent, rep/DECISIONS.md).
+          val encodedBuffer = List.newBuilder[(TypeRepr, Term)]
+          val indexed = elements.iterator.zipWithIndex
+
+          while indexed.hasNext do
+            val (element, index) = indexed.next()
+            val field = Select.unique(value, "_" + (index + 1).toString)
+            encodedBuffer += encodedArgument(field, element)
+
+          val encodedElements = encodedBuffer.result()
+          val carriers = encodedElements.map(_(0))
+          val tupleClass = Symbol.requiredClass("scala.scalajs.wit.Tuple" + elements.length.toString)
+          val tupleCarrier = tupleClass.typeRef.appliedTo(carriers)
+
+          val constructed =
+            Apply
+              ( TypeApply
+                  ( Select.unique(Ref(tupleClass.companionModule), "apply"),
+                    carriers.map(Inferred(_)) ),
+                encodedElements.map(_(1)) )
+
+          (tupleCarrier, constructed, false)
+
         // A statically-absent argument (a bare `Unset` against an `option<T>` parameter, e.g. the
         // `option<request-options>` of `wasi:http`'s `handle`) needs no payload codec at all.
         case tpe if tpe =:= TypeRepr.of[Unset] =>
