@@ -36,6 +36,7 @@ import java.security.SecureRandom
 
 import anticipation.*
 import coaxial.*
+import coaxial.socketBackends.virtualMachine
 import contingency.*
 import fulminate.Hazard
 import distillate.*

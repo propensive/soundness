@@ -32,76 +32,25 @@
                                                                                                   */
 package coaxial
 
+import java.io as ji
+
 import anticipation.*
 import contingency.*
-import gigantism.*
 import prepositional.*
-import urticose.*
-import vacuous.*
+import turbulence.*
 import zephyrine.*
 
-object Bindable:
-  given domainSocket: (backend: SocketBackend, options: Every[SocketOption.Domain])
-  =>  DomainSocket is Bindable:
-    type Binding = backend.ServerSocket
-    type Input = Duplex
-    type Output = Data
+case class Connection
+  ( private[coaxial] val in: ji.InputStream, private[coaxial] val out: ji.OutputStream ):
+  // A fresh pull endpoint over the read side; single-use, like the connection.
+  def source()(using Buffering)(using tactic: Tactic[StreamError])
+  :   (Stream[Data] over Credit)^{tactic, caps.any} =
 
-    // A Unix-domain socket has no network interface, so `interface` is not applicable here.
-    def bind(domainSocket: DomainSocket, interface: Optional[MacAddress]): Binding =
-      backend.listenDomain(domainSocket, options.values)
+    summon[(ji.InputStream is Source by Data over Credit)^].stream(in)
 
-    def connect(binding: Binding): Duplex raises ConnectionError = backend.accept(binding)
+  def reader: ji.InputStream = in
+  def writer: ji.OutputStream = out
 
-    def transmit(binding: Binding, input: Duplex, bytes: Data): Unit raises ConnectionError =
-      input.send(Stream(bytes))
-
-    def stop(binding: Binding): Unit = backend.shutdown(binding)
-    def close(connection: Duplex): Unit raises ConnectionError = connection.close()
-
-  given tcpPort: (backend: SocketBackend, options: Every[SocketOption.Tcp]) => TcpPort is Bindable:
-    type Binding = backend.ServerSocket
-    type Input = Duplex
-    type Output = Data
-
-    def bind(port: TcpPort, interface: Optional[MacAddress]): Binding =
-      backend.listenTcp(port, interface, options.values)
-
-    def connect(binding: Binding): Duplex raises ConnectionError = backend.accept(binding)
-
-    def transmit(binding: Binding, input: Duplex, bytes: Data): Unit raises ConnectionError =
-      input.send(Stream(bytes))
-
-    def close(connection: Duplex): Unit raises ConnectionError = connection.close()
-    def stop(binding: Binding): Unit = backend.shutdown(binding)
-
-  given udpPort: (backend: SocketBackend, options: Every[SocketOption.Udp]) => UdpPort is Bindable:
-    type Binding = backend.DatagramSocket
-    type Input = Packet
-    type Output = UdpResponse
-
-    def bind(port: UdpPort, interface: Optional[MacAddress]): Binding =
-      backend.listenUdp(port, interface, options.values)
-
-    def connect(binding: Binding): Packet raises ConnectionError = backend.receive(binding)
-
-    def transmit(binding: Binding, input: Packet, response: UdpResponse)
-    :   Unit raises ConnectionError =
-
-      response match
-        case UdpResponse.Ignore      => ()
-        case UdpResponse.Reply(data) => backend.reply(binding, input.sender, input.port, data)
-
-    def stop(binding: Binding): Unit = backend.unbind(binding)
-    def close(input: Packet): Unit raises ConnectionError = ()
-
-trait Bindable extends Typeclass:
-  type Binding
-  type Input
-  type Output
-
-  def bind(socket: Self, interface: Optional[MacAddress]): Binding
-  def connect(binding: Binding): Input raises ConnectionError
-  def transmit(binding: Binding, input: Input, output: Output): Unit raises ConnectionError
-  def close(connection: Input): Unit raises ConnectionError
-  def stop(binding: Binding): Unit
+  def close(): Unit =
+    safely(in.close())
+    safely(out.close())

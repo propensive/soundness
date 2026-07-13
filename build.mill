@@ -839,11 +839,17 @@ object chiaroscuro extends Library:
       settings.cc(super.scalacOptions())
 
 object coaxial extends Library:
-  object core extends Component(galilei.jvm, urticose.core, frontier.core):
-    override def scalaJs = false // TCP sockets (`java.nio.channels`)
+  object core extends Component(urticose.core, frontier.core, turbulence.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
-  object test extends Tests(core)
+  // The `java.net`/`java.nio.channels` `SocketBackend` (`socketBackends.virtualMachine`), split out
+  // of `core` so the platform-neutral socket API can cross-compile; other platforms (e.g. WASI)
+  // supply their own backend.
+  object jvm extends Component(core):
+    override def scalaJs = false
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, jvm)
 
 object contextual extends Library:
   object core extends Component(rudiments.core):
@@ -1001,7 +1007,7 @@ object polysyllabic extends Library:
   object bench extends Benchmarks(core, escritoire.core, hellenism.core, quantitative.units)
 
 object ethereal extends Library:
-  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.core, quantitative.units, telekinesis.jvm, urticose.url, gastronomy.core):
+  object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.jvm, quantitative.units, telekinesis.jvm, urticose.url, gastronomy.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -1551,7 +1557,7 @@ object parasite extends Library:
   object test extends Tests(core, jvm, quantitative.units)
 
 object perihelion extends Library:
-  object core extends Component(scintillate.server, coaxial.core, gastronomy.core, monotonous.core,
+  object core extends Component(scintillate.server, coaxial.jvm, gastronomy.core, monotonous.core,
       hypotenuse.core, contingency.core, parasite.core, eucalyptus.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
@@ -1828,7 +1834,7 @@ object synesthesia extends Library:
       settings.cc(super.scalacOptions())
 
 object tarantula extends Library:
-  object core extends Component(jacinta.core, telekinesis.jvm, cataclysm.core, hallucination.core, diuretic.core, gastronomy.core):
+  object core extends Component(jacinta.core, telekinesis.jvm, cataclysm.core, hallucination.core, diuretic.core, gastronomy.core, guillotine.core):
     override def scalaJs = false // browser automation; depends on JVM-only `hallucination`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
@@ -1843,7 +1849,7 @@ object telekinesis extends Library:
   // JVM-only transports split out of `core` so the platform-agnostic HTTP model and client can
   // cross-compile to Scala.js: the `java.net.http` `Http.Backend` (`httpBackends.virtualMachine`)
   // and the `coaxial` domain-socket client.
-  object jvm extends Component(core, coaxial.core, gastronomy.core):
+  object jvm extends Component(core, coaxial.jvm, gastronomy.core):
     override def scalaJs = false
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")

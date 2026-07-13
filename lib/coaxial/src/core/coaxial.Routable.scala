@@ -32,65 +32,33 @@
                                                                                                   */
 package coaxial
 
-import java.net as jn
-
 import anticipation.*
 import beneficence.*
 import gigantism.*
 import prepositional.*
-import rudiments.*
 import urticose.*
 import zephyrine.*
 import vacuous.*
 
 object Routable:
-  given udpEndpoint: Every[SocketOption.Udp] => Endpoint[UdpPort] is Routable:
-    case class Connection(address: jn.InetAddress, port: Int, socket: jn.DatagramSocket)
+  given udpEndpoint: (backend: SocketBackend, options: Every[SocketOption.Udp])
+  =>  Endpoint[UdpPort] is Routable:
+    type Connection = backend.Courier
 
     def connect(endpoint: Endpoint[UdpPort], interface: Optional[MacAddress]): Connection =
-      val address = jn.InetAddress.getByName(endpoint.remote.s).nn
-      val socket = jn.DatagramSocket()
-      configure(socket, summon[Every[SocketOption.Udp]].values)
-
-      interface.let(interfaceFor(_)).let: nic =>
-        socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
-
-      Connection(address, endpoint.port.number, socket)
+      backend.routeUdp(endpoint, interface, options.values)
 
     def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
-      // One `transmit` call carries one message, and UDP frames per datagram.
-      val bytes = input.memoize
+      backend.dispatch(connection, input)
 
-      val packet =
-        jn.DatagramPacket
-          ( bytes.mutable(using Unsafe), bytes.length, connection.address, connection.port )
-
-      connection.socket.send(packet)
-
-  given udpPort: Every[SocketOption.Udp] => UdpPort is Routable:
-    case class Connection(port: Int, socket: jn.DatagramSocket)
+  given udpPort: (backend: SocketBackend, options: Every[SocketOption.Udp]) => UdpPort is Routable:
+    type Connection = backend.Courier
 
     def connect(port: UdpPort, interface: Optional[MacAddress]): Connection =
-      val socket = jn.DatagramSocket()
-      configure(socket, summon[Every[SocketOption.Udp]].values)
-
-      interface.let(interfaceFor(_)).let: nic =>
-        socket.setOption(jn.StandardSocketOptions.IP_MULTICAST_IF, nic)
-
-      Connection(port.number, socket)
+      backend.routeUdpPort(port, interface, options.values)
 
     def transmit(connection: Connection, consume input: (Stream[Data] over Credit)^): Unit =
-      // See `udpEndpoint`: one message, one datagram.
-      val bytes = input.memoize
-
-      val packet =
-        jn.DatagramPacket
-          ( bytes.mutable(using Unsafe),
-            bytes.length,
-            jn.InetAddress.getLocalHost.nn,
-            connection.port )
-
-      connection.socket.send(packet)
+      backend.dispatch(connection, input)
 
 trait Routable extends Findable:
   type Self

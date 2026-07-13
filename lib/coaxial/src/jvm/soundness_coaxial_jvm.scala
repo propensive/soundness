@@ -30,43 +30,9 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package coaxial
+package soundness
 
-import java.net as jn
-import java.util as ju
-import javax.net.ssl as jns
+export coaxial.{Connection, SecureEndpoint, Tls}
 
-import anticipation.*
-import gigantism.*
-import urticose.*
-import vacuous.*
-
-// A secure (TLS) TCP endpoint — a `host:port` reached over TLS, the counterpart of the
-// plaintext `Endpoint[TcpPort]`. Its `Connectable` opens an `SSLSocket` (trust and keys
-// from `Tls.context`, or the system default), sets SNI to `host`, verifies the peer
-// hostname unless `Tls.verify` is off, then presents the socket's streams as a `Duplex`.
-object SecureEndpoint:
-  given connectable: (Online, Every[SocketOption.Tcp], Tls) => SecureEndpoint is Connectable:
-    def connect(endpoint: SecureEndpoint, interface: Optional[MacAddress]): Duplex =
-      val tls = summon[Tls]
-      val context = tls.context.or(jns.SSLContext.getDefault.nn)
-      val socket = context.getSocketFactory.nn.createSocket().nn.asInstanceOf[jns.SSLSocket]
-      configure(socket, summon[Every[SocketOption.Tcp]].values)
-
-      interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
-        socket.bind(jn.InetSocketAddress(local, 0))
-
-      // SNI lets the server select its certificate; endpoint identification then checks
-      // that certificate against the hostname (skipped only when verification is off).
-      val params = socket.getSSLParameters.nn
-      params.setServerNames(ju.List.of(jns.SNIHostName(endpoint.host.s)))
-      if tls.verify then params.setEndpointIdentificationAlgorithm("HTTPS")
-      socket.setSSLParameters(params)
-
-      socket.connect(jn.InetSocketAddress(endpoint.host.s, endpoint.port))
-      socket.startHandshake()
-
-      Duplex.streams(socket.getInputStream.nn, socket.getOutputStream.nn): () =>
-        socket.close()
-
-case class SecureEndpoint(host: Text, port: Int)
+package socketBackends:
+  export coaxial.socketBackends.virtualMachine

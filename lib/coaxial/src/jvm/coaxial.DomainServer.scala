@@ -32,23 +32,48 @@
                                                                                                   */
 package coaxial
 
-import java.io as ji
+import java.net as jn
+import java.nio.channels as jnc
 
 import anticipation.*
+import beneficence.*
 import contingency.*
+import parasite.*
 import prepositional.*
-import turbulence.*
-import zephyrine.*
+import rudiments.*
+import vacuous.*
 
-case class Connection
-  ( private[coaxial] val in: ji.InputStream, private[coaxial] val out: ji.OutputStream ):
-  // A fresh pull endpoint over the read side; single-use, like the connection.
-  def source()(using Buffering)(using tactic: Tactic[StreamError])
-  :   (Stream[Data] over Credit)^{tactic, caps.any} =
-    summon[(ji.InputStream is Source by Data over Credit)^].stream(in)
-  def reader: ji.InputStream = in
-  def writer: ji.OutputStream = out
+// A JVM-only Unix-domain server that hands each accepted connection to `handler` as a raw
+// `Connection` — the blocking `InputStream`/`OutputStream` pair. This is the shape a consumer
+// needs when it must build a subprocess `Stdio` (an `ji.PrintStream` over the socket, streams
+// handed to a child process) rather than the platform-neutral `Duplex` that `Bindable.listen`
+// exposes; `ethereal`'s daemon is the motivating case. The accept loop and per-connection
+// supervision mirror `listen`: each connection is served by its own `async` task (so a handler
+// failure or a dropped client only ends its own task, and the connection is always closed),
+// while a failure to *accept* skips one loop iteration; `stop()` unwinds the parked `accept()`.
+extension (domainSocket: DomainSocket)
+  def listenConnections(using Monitor, Probate)(handler: Connection => Unit)
+    ( using SocketEvent is Loggable )
+  :   SocketService^ =
 
-  def close(): Unit =
-    safely(in.close())
-    safely(out.close())
+    val channel = jnc.ServerSocketChannel.open(jn.StandardProtocolFamily.UNIX).nn
+    channel.configureBlocking(true)
+    channel.bind(jn.UnixDomainSocketAddress.of(domainSocket.address.s))
+    Log.info(SocketEvent.Listening(domainSocket.address))
+
+    val bindLoop = loop:
+      safely:
+        val client = channel.accept().nn
+        Connection(jnc.Channels.newInputStream(client).nn, jnc.Channels.newOutputStream(client).nn)
+
+      . let: connection =>
+          async:
+            safely(try handler(connection) finally connection.close())
+
+    val task = async(bindLoop.run())
+
+    SocketService: () =>
+      bindLoop.stop()
+      channel.close()
+      safely(task.await())
+      Log.fine(SocketEvent.Closed(domainSocket.address))

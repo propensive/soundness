@@ -32,9 +32,6 @@
                                                                                                   */
 package coaxial
 
-import java.net as jn
-import java.nio.channels as jnc
-import java.util as ju
 
 import anticipation.*
 import contingency.*
@@ -240,100 +237,6 @@ extension [endpoint: {Connectable as connectable, Showable}](endpoint: endpoint)
     try lambda(connection) finally
       connection.close()
       Log.fine(SocketEvent.Closed(endpoint.show))
-
-
-// Applies `SocketOption`s to freshly-constructed sockets and resolves a `MacAddress` to a network
-// interface. The Java socket kinds share no common Scala interface for `setOption`/`setSoTimeout`,
-// so each is adapted to a small `Configurable` and the option-mapping is written once. Options a
-// particular socket does not support are silently skipped (guarded by `supportedOptions`), which
-// is the runtime backstop for socket-kind nuances within a transport (e.g. a server socket has no
-// `TCP_NODELAY`).
-private[coaxial] trait Configurable:
-  def supported: ju.Set[jn.SocketOption[?]]
-  def soTimeout(milliseconds: Int): Unit
-  def option[value](socketOption: jn.SocketOption[value], value: value): Unit
-
-  def set[value](socketOption: jn.SocketOption[value], value: value): Unit =
-    if supported.contains(socketOption) then option(socketOption, value)
-
-private[coaxial] def applyOptions(options: List[SocketOption])(target: Configurable): Unit =
-  import jn.StandardSocketOptions.*
-  val yes: java.lang.Boolean = Boolean.box(true)
-
-  options.each:
-    case SocketOption.ReuseAddress          => target.set(SO_REUSEADDR.nn, yes)
-    case SocketOption.ReusePort             => target.set(SO_REUSEPORT.nn, yes)
-    case SocketOption.NoDelay               => target.set(TCP_NODELAY.nn, yes)
-    case SocketOption.KeepAlive             => target.set(SO_KEEPALIVE.nn, yes)
-    case SocketOption.Broadcast             => target.set(SO_BROADCAST.nn, yes)
-    case SocketOption.ReceiveBuffer(n)      => target.set(SO_RCVBUF.nn, Int.box(n))
-    case SocketOption.SendBuffer(n)         => target.set(SO_SNDBUF.nn, Int.box(n))
-    case SocketOption.TrafficClass(n)       => target.set(IP_TOS.nn, Int.box(n))
-    case SocketOption.Linger(seconds)       => target.set(SO_LINGER.nn, Int.box(seconds.or(-1)))
-    case SocketOption.Timeout(milliseconds) => target.soTimeout(milliseconds)
-
-private[coaxial] def configure(channel: jnc.NetworkChannel, options: List[SocketOption]): Unit =
-  applyOptions(options):
-    new Configurable:
-      def supported: ju.Set[jn.SocketOption[?]] = channel.supportedOptions.nn
-      def soTimeout(milliseconds: Int): Unit = ()  // not meaningful for a (selectable) channel
-
-      def option[value](socketOption: jn.SocketOption[value], value: value): Unit =
-        channel.setOption(socketOption, value)
-
-private[coaxial] def configure(socket: jn.Socket, options: List[SocketOption]): Unit =
-  applyOptions(options):
-    new Configurable:
-      def supported: ju.Set[jn.SocketOption[?]] = socket.supportedOptions.nn
-      def soTimeout(milliseconds: Int): Unit = socket.setSoTimeout(milliseconds)
-
-      def option[value](socketOption: jn.SocketOption[value], value: value): Unit =
-        socket.setOption(socketOption, value)
-
-private[coaxial] def configure(socket: jn.ServerSocket, options: List[SocketOption]): Unit =
-  applyOptions(options):
-    new Configurable:
-      def supported: ju.Set[jn.SocketOption[?]] = socket.supportedOptions.nn
-      def soTimeout(milliseconds: Int): Unit = socket.setSoTimeout(milliseconds)
-
-      def option[value](socketOption: jn.SocketOption[value], value: value): Unit =
-        socket.setOption(socketOption, value)
-
-private[coaxial] def configure(socket: jn.DatagramSocket, options: List[SocketOption]): Unit =
-  applyOptions(options):
-    new Configurable:
-      def supported: ju.Set[jn.SocketOption[?]] = socket.supportedOptions.nn
-      def soTimeout(milliseconds: Int): Unit = socket.setSoTimeout(milliseconds)
-
-      def option[value](socketOption: jn.SocketOption[value], value: value): Unit =
-        socket.setOption(socketOption, value)
-
-// Resolves a `MacAddress` to the local network interface whose hardware address matches, if any.
-private[coaxial] def interfaceFor(mac: MacAddress): Optional[jn.NetworkInterface] =
-  val target: Array[Byte] =
-    Array(mac.byte0, mac.byte1, mac.byte2, mac.byte3, mac.byte4, mac.byte5).map(_.toByte)
-
-  def recur(interfaces: ju.Enumeration[jn.NetworkInterface]): Optional[jn.NetworkInterface] =
-    if !interfaces.hasMoreElements then Unset else
-      val nic = interfaces.nextElement.nn
-      val hardware = nic.getHardwareAddress
-
-      if hardware != null && ju.Arrays.equals(hardware, target) then nic else recur(interfaces)
-
-  recur(jn.NetworkInterface.getNetworkInterfaces.nn)
-
-// Picks a bind address from a resolved interface, preferring an IPv4 address.
-private[coaxial] def bindAddress(nic: jn.NetworkInterface): Optional[jn.InetAddress] =
-  def recur(addresses: ju.Enumeration[jn.InetAddress], fallback: Optional[jn.InetAddress])
-  :   Optional[jn.InetAddress] =
-
-    if !addresses.hasMoreElements then fallback else
-      val address = addresses.nextElement.nn
-
-      if address.isInstanceOf[jn.Inet4Address] then address
-      else recur(addresses, fallback.or(address))
-
-  recur(nic.getInetAddresses.nn, Unset)
 
 
 // Importable socket-option contributions. Each flag is a named `given` declared at its concrete

@@ -32,76 +32,41 @@
                                                                                                   */
 package coaxial
 
+import java.net as jn
+import java.util as ju
+import javax.net.ssl as jns
+
 import anticipation.*
-import contingency.*
 import gigantism.*
-import prepositional.*
 import urticose.*
 import vacuous.*
-import zephyrine.*
 
-object Bindable:
-  given domainSocket: (backend: SocketBackend, options: Every[SocketOption.Domain])
-  =>  DomainSocket is Bindable:
-    type Binding = backend.ServerSocket
-    type Input = Duplex
-    type Output = Data
+// A secure (TLS) TCP endpoint — a `host:port` reached over TLS, the counterpart of the
+// plaintext `Endpoint[TcpPort]`. Its `Connectable` opens an `SSLSocket` (trust and keys
+// from `Tls.context`, or the system default), sets SNI to `host`, verifies the peer
+// hostname unless `Tls.verify` is off, then presents the socket's streams as a `Duplex`.
+object SecureEndpoint:
+  given connectable: (Online, Every[SocketOption.Tcp], Tls) => SecureEndpoint is Connectable:
+    def connect(endpoint: SecureEndpoint, interface: Optional[MacAddress]): Duplex =
+      val tls = summon[Tls]
+      val context = tls.context.or(jns.SSLContext.getDefault.nn)
+      val socket = context.getSocketFactory.nn.createSocket().nn.asInstanceOf[jns.SSLSocket]
+      configure(socket, summon[Every[SocketOption.Tcp]].values)
 
-    // A Unix-domain socket has no network interface, so `interface` is not applicable here.
-    def bind(domainSocket: DomainSocket, interface: Optional[MacAddress]): Binding =
-      backend.listenDomain(domainSocket, options.values)
+      interface.let(interfaceFor(_)).let(bindAddress(_)).let: local =>
+        socket.bind(jn.InetSocketAddress(local, 0))
 
-    def connect(binding: Binding): Duplex raises ConnectionError = backend.accept(binding)
+      // SNI lets the server select its certificate; endpoint identification then checks
+      // that certificate against the hostname (skipped only when verification is off).
+      val params = socket.getSSLParameters.nn
+      params.setServerNames(ju.List.of(jns.SNIHostName(endpoint.host.s)))
+      if tls.verify then params.setEndpointIdentificationAlgorithm("HTTPS")
+      socket.setSSLParameters(params)
 
-    def transmit(binding: Binding, input: Duplex, bytes: Data): Unit raises ConnectionError =
-      input.send(Stream(bytes))
+      socket.connect(jn.InetSocketAddress(endpoint.host.s, endpoint.port))
+      socket.startHandshake()
 
-    def stop(binding: Binding): Unit = backend.shutdown(binding)
-    def close(connection: Duplex): Unit raises ConnectionError = connection.close()
+      streamsDuplex(socket.getInputStream.nn, socket.getOutputStream.nn): () =>
+        socket.close()
 
-  given tcpPort: (backend: SocketBackend, options: Every[SocketOption.Tcp]) => TcpPort is Bindable:
-    type Binding = backend.ServerSocket
-    type Input = Duplex
-    type Output = Data
-
-    def bind(port: TcpPort, interface: Optional[MacAddress]): Binding =
-      backend.listenTcp(port, interface, options.values)
-
-    def connect(binding: Binding): Duplex raises ConnectionError = backend.accept(binding)
-
-    def transmit(binding: Binding, input: Duplex, bytes: Data): Unit raises ConnectionError =
-      input.send(Stream(bytes))
-
-    def close(connection: Duplex): Unit raises ConnectionError = connection.close()
-    def stop(binding: Binding): Unit = backend.shutdown(binding)
-
-  given udpPort: (backend: SocketBackend, options: Every[SocketOption.Udp]) => UdpPort is Bindable:
-    type Binding = backend.DatagramSocket
-    type Input = Packet
-    type Output = UdpResponse
-
-    def bind(port: UdpPort, interface: Optional[MacAddress]): Binding =
-      backend.listenUdp(port, interface, options.values)
-
-    def connect(binding: Binding): Packet raises ConnectionError = backend.receive(binding)
-
-    def transmit(binding: Binding, input: Packet, response: UdpResponse)
-    :   Unit raises ConnectionError =
-
-      response match
-        case UdpResponse.Ignore      => ()
-        case UdpResponse.Reply(data) => backend.reply(binding, input.sender, input.port, data)
-
-    def stop(binding: Binding): Unit = backend.unbind(binding)
-    def close(input: Packet): Unit raises ConnectionError = ()
-
-trait Bindable extends Typeclass:
-  type Binding
-  type Input
-  type Output
-
-  def bind(socket: Self, interface: Optional[MacAddress]): Binding
-  def connect(binding: Binding): Input raises ConnectionError
-  def transmit(binding: Binding, input: Input, output: Output): Unit raises ConnectionError
-  def close(connection: Input): Unit raises ConnectionError
-  def stop(binding: Binding): Unit
+case class SecureEndpoint(host: Text, port: Int)
