@@ -117,10 +117,8 @@ package socketBackends:
         val (input, output) =
           socket.`finish-connect`.invoke[(WitHandle of "input-stream", WitHandle of "output-stream")]
 
-        net.dispose()
         WasiExchange(input, output, socketHandle)
       catch case error: WitError =>
-        net.dispose()
         socketHandle.dispose()
         abort(ConnectionError(ConnectionError.Reason.Accept))
 
@@ -161,7 +159,8 @@ package socketBackends:
               val stream: Foreign of "input-stream" from Wit = inputHandle
 
               try
-                val data = stream.`blocking-read`(U64(capacity.min(granted).toLong.bits)).invoke[Data]
+                val want = if capacity < granted then capacity else granted
+                val data = stream.`blocking-read`(U64(want.toLong.bits)).invoke[Data]
                 chunk = data.mutable(using Unsafe)
                 start0 = 0
                 limit0 = chunk.length
@@ -206,7 +205,6 @@ package socketBackends:
         socket.`finish-bind`.invoke[Unit]
         socket.`start-listen`.invoke[Unit]
         socket.`finish-listen`.invoke[Unit]
-        net.dispose()
         socketHandle
 
     def listenDomain(address: DomainSocket, options: List[SocketOption]): WitHandle of "tcp-socket" =

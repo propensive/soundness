@@ -26,7 +26,7 @@ interface streams {
 package wasi:sockets@0.2.0;
 
 interface network {
-  resource network {}
+  resource network;
   variant error-code {}
   variant ip-address-family {}
   variant ip-socket-address {}
@@ -44,12 +44,12 @@ interface tcp {
   variant shutdown-type {}
 
   resource tcp-socket {
-    start-bind: func(network: borrow<network>, local-address: ip-socket-address)
+    start-bind: func(network: network, local-address: ip-socket-address)
       -> result<_, error-code>;
 
     finish-bind: func() -> result<_, error-code>;
 
-    start-connect: func(network: borrow<network>, remote-address: ip-socket-address)
+    start-connect: func(network: network, remote-address: ip-socket-address)
       -> result<_, error-code>;
 
     finish-connect: func() -> result<tuple<input-stream, output-stream>, error-code>;

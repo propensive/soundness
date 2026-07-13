@@ -183,11 +183,15 @@ object WitDialect extends Dialect:
     :   (Map[Text, Map[Text, Prototype]], Map[Text, Foreign.Type], List[String]) =
 
       todo match
+        // Merge, rather than overwrite: a resource or variant sharing the interface's own name
+        // (e.g. the `network` resource in `interface network`) has already recorded its module
+        // under this key, which a plain overwrite with the interface's (possibly empty) functions
+        // would discard.
         case "}" :: rest =>
-          (types.updated(name, functions), typedefs, rest)
+          (types.updated(name, types.at(name).lay(functions)(_ ++ functions)), typedefs, rest)
 
         case Nil =>
-          (types.updated(name, functions), typedefs, Nil)
+          (types.updated(name, types.at(name).lay(functions)(_ ++ functions)), typedefs, Nil)
 
         case "record" :: record :: "{" :: rest =>
           val (fields, after) = recordFields(rest, ListMap())

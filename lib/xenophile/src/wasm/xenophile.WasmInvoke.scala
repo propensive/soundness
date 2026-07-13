@@ -515,11 +515,15 @@ object WasmInvoke:
     // The base class a (possibly multiply-)refined type refines, and the constant string / aliased
     // type a named refinement member is set to — used to read `WitVariant`'s `Topic`/`Case`/
     // `Payload` phantom members regardless of the order the compiler nests them.
-    def refinementBase(tpe: TypeRepr): TypeRepr = tpe match
+    // `.dealias` at each step because the phantom members are carried through `of` — a type alias
+    // (`X of topic` = `of[X, topic]` = `X { type Topic = topic }`) — so a `WitVariant` argument
+    // reads as `of[WitVariant[payload], topic] { type Case = … }`, whose base and `Topic` member are
+    // hidden inside the unexpanded `of` until dealiased.
+    def refinementBase(tpe: TypeRepr): TypeRepr = tpe.dealias match
       case Refinement(parent, _, _) => refinementBase(parent)
       case other                    => other
 
-    def refinedString(tpe: TypeRepr, name: String): Optional[Text] = tpe match
+    def refinedString(tpe: TypeRepr, name: String): Optional[Text] = tpe.dealias match
       case Refinement(_, `name`, TypeBounds(_, ConstantType(StringConstant(text)))) =>
         text.tt
 
@@ -552,9 +556,12 @@ object WasmInvoke:
         Apply(TypeApply(applier, elements.map(Inferred(_))), built)
 
       else if symbol.hasAnnotation(witRecordAnnotation) then
-        val fields = symbol.declaredFields
+        // Constructor-parameter order, not `declaredFields` (which does not preserve it), so the
+        // record's fields line up with the Scala tuple's positions and the companion `apply`.
+        val params = symbol.primaryConstructor.paramSymss.flatten.filter(!_.isType)
 
-        val built = fields.zipWithIndex.map: (field, index) =>
+        val built = params.zipWithIndex.map: (param, index) =>
+          val field = symbol.declaredField(param.name)
           buildFacade(target.memberType(field), Select.unique(value, "_" + (index + 1).toString))
 
         Apply(Select.unique(Ref(symbol.companionModule), "apply"), built)
@@ -565,7 +572,10 @@ object WasmInvoke:
             val encodable = Expr.summon[leaf is Encodable in Wasm].getOrElse:
               halt(m"xenophile: no `Encodable in Wasm` to build a WIT payload of ${value.tpe.show}")
 
-            '{$encodable.encoded(${value.asExprOf[leaf]}).value}.asTerm
+            // `Wasm#value` is `Any`; cast it to the facade field's carrier type (`target`) so it
+            // conforms to the record/tuple `apply`'s parameter.
+            val encoded = '{$encodable.encoded(${value.asExprOf[leaf]}).value}.asTerm
+            TypeApply(Select.unique(encoded, "asInstanceOf"), List(Inferred(target)))
 
     // A payload-carrying `variant` case argument (a `WitVariant`): the facade case class named by
     // `caseName` (fixed at compile time, so no runtime dispatch), constructed with its record/
