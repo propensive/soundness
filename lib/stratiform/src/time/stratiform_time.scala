@@ -44,21 +44,21 @@ import prepositional.*
 
 package encodables:
   given instantTelEncodable: (Instant over Posix) is Tel.Encodable =
-    Tel.Encodable(Morphology.Whole): instant => Tel.scalar(instant.long.toString.tt)
+    Tel.Encodable(() => Morphology.Whole): instant => Tel.scalar(instant.long.toString.tt)
 
   given durationTelEncodable: Duration is Tel.Encodable =
-    Tel.Encodable(Morphology.Whole): duration =>
+    Tel.Encodable(() => Morphology.Whole): duration =>
       Tel.scalar((duration.value*1000).toLong.toString.tt)
 
 package decodables:
   given instantTelDecodable: (tactic: Tactic[TelError])
   =>  (((Instant over Posix) is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(Morphology.Whole): tel =>
+    Tel.Decodable(() => Morphology.Whole): tel =>
       try Instant.of[Posix](tel.primaryAtom.s.toLong)
       catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
 
   given durationTelDecodable: (tactic: Tactic[TelError])
   =>  ((Duration is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(Morphology.Whole): tel =>
+    Tel.Decodable(() => Morphology.Whole): tel =>
       try Duration(tel.primaryAtom.s.toLong)
       catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))

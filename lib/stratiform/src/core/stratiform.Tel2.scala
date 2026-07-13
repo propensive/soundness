@@ -129,13 +129,13 @@ trait Tel2:
 
   inline given decodable: [value] => value is Tel.Decodable = summonFrom:
     case given (`value` is Decodable in Text) =>
-      Tel.Decodable(Morphology.Str)(provide[Tactic[TelError]](_.primaryAtom.as[value]))
+      Tel.Decodable(() => Morphology.Str)(provide[Tactic[TelError]](_.primaryAtom.as[value]))
 
     case given Reflection[`value`] => DecodableDerivation.derived
 
   inline given encodable: [value] => value is Tel.Encodable = summonFrom:
     case given (`value` is Encodable in Text) =>
-      Tel.Encodable(Morphology.Str): v => Tel.scalar(v.encode)
+      Tel.Encodable(() => Morphology.Str): v => Tel.scalar(v.encode)
 
     case given Reflection[`value`] => EncodableDerivation.derived
 
@@ -147,7 +147,7 @@ trait Tel2:
       // inlined `contexts` traversal — kept here, not factored out, so it does not
       // perturb the `build` traversal), keeping a fused `Decodable & Schematic`
       // coherent. Built by-name so recursive types compile.
-      Tel.Decodable({
+      Tel.Decodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
           . to(List)
@@ -199,7 +199,7 @@ trait Tel2:
       // (`delegate`) is `fallible` and would leak a `Tactic[VariantError]` requirement
       // onto every codec; the precise select schema comes from the standalone
       // `Schematic` / `Tels.tels`.
-      Tel.Decodable(Morphology.Any):
+      Tel.Decodable(() => Morphology.Any):
         telVal =>
           provide[Foci[Tel.Focus]]:
             provide[Tactic[TelError]]:
@@ -219,7 +219,7 @@ trait Tel2:
     inline def conjunction[derivation <: Product: ProductReflection]
     :   derivation is Tel.Encodable =
 
-      Tel.Encodable({
+      Tel.Encodable({ () =>
         val fields: List[(Text, Morphology)] =
           contexts[derivation](): [field] => context => (label, context.shape())
           . to(List)
@@ -258,7 +258,7 @@ trait Tel2:
       // round-trips identically to the same document parsed from text. The codec-carried
       // shape stays permissive (`Any`); the precise select schema comes from the standalone
       // `Schematic` / `Tels.tels`.
-      Tel.Encodable(Morphology.Any):
+      Tel.Encodable(() => Morphology.Any):
         value =>
           variant(value): [variant <: derivation] =>
             v =>
@@ -277,59 +277,59 @@ trait Tel2:
 
 
   given textDecodable: (tactic: Tactic[TelError]) => ((Text is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(Morphology.Str): tel =>
+    Tel.Decodable(() => Morphology.Str): tel =>
       primitiveFault(tel, t"Text", t""): atom =>
         atom
 
   given stringDecodable: (tactic: Tactic[TelError]) => ((String is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(Morphology.Str): tel =>
+    Tel.Decodable(() => Morphology.Str): tel =>
       primitiveFault(tel, t"String", ""): atom =>
         atom.s
 
   given intDecodable: (tactic: Tactic[TelError]) => ((Int is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(Morphology.Whole): tel =>
+    Tel.Decodable(() => Morphology.Whole): tel =>
       primitiveFault(tel, t"Int", 0): atom =>
         try atom.s.toInt catch case _: NumberFormatException => Unset
 
   given longDecodable: (tactic: Tactic[TelError]) => ((Long is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(Morphology.Whole): tel =>
+    Tel.Decodable(() => Morphology.Whole): tel =>
       primitiveFault(tel, t"Long", 0L): atom =>
         try atom.s.toLong catch case _: NumberFormatException => Unset
 
   given doubleDecodable: (tactic: Tactic[TelError]) => ((Double is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(Morphology.Real): tel =>
+    Tel.Decodable(() => Morphology.Real): tel =>
       primitiveFault(tel, t"Double", 0.0): atom =>
         try atom.s.toDouble catch case _: NumberFormatException => Unset
 
   given booleanDecodable: (tactic: Tactic[TelError]) => ((Boolean is Tel.Decodable)^{tactic}) =
-    Tel.Decodable(Morphology.Bool): tel =>
+    Tel.Decodable(() => Morphology.Bool): tel =>
       primitiveFault(tel, t"Boolean", false): atom =>
         atom.s match
           case "true"  => true
           case "false" => false
           case _       => Unset
 
-  given telDecodable: Tel is Tel.Decodable = Tel.Decodable(Morphology.Any)(identity(_))
+  given telDecodable: Tel is Tel.Decodable = Tel.Decodable(() => Morphology.Any)(identity(_))
 
   given textEncodable: Text is Tel.Encodable =
-    Tel.Encodable(Morphology.Str): text => Tel.scalar(text)
+    Tel.Encodable(() => Morphology.Str): text => Tel.scalar(text)
 
   given stringEncodable: String is Tel.Encodable =
-    Tel.Encodable(Morphology.Str): s => Tel.scalar(Text(s))
+    Tel.Encodable(() => Morphology.Str): s => Tel.scalar(Text(s))
 
   given intEncodable: Int is Tel.Encodable =
-    Tel.Encodable(Morphology.Whole): i => Tel.scalar(Text(i.toString))
+    Tel.Encodable(() => Morphology.Whole): i => Tel.scalar(Text(i.toString))
 
   given longEncodable: Long is Tel.Encodable =
-    Tel.Encodable(Morphology.Whole): l => Tel.scalar(Text(l.toString))
+    Tel.Encodable(() => Morphology.Whole): l => Tel.scalar(Text(l.toString))
 
   given doubleEncodable: Double is Tel.Encodable =
-    Tel.Encodable(Morphology.Real): d => Tel.scalar(Text(d.toString))
+    Tel.Encodable(() => Morphology.Real): d => Tel.scalar(Text(d.toString))
 
   given booleanEncodable: Boolean is Tel.Encodable =
-    Tel.Encodable(Morphology.Bool): b => Tel.scalar(Text(b.toString))
+    Tel.Encodable(() => Morphology.Bool): b => Tel.scalar(Text(b.toString))
 
-  given telEncodable: Tel is Tel.Encodable = Tel.Encodable(Morphology.Any)(identity(_))
+  given telEncodable: Tel is Tel.Encodable = Tel.Encodable(() => Morphology.Any)(identity(_))
 
   // Optional / List support — repeatable scalar fields produce multiple
   // compounds with the same keyword; we return a Document-rooted Tel
@@ -339,14 +339,14 @@ trait Tel2:
   given optionalEncodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  ( encodable: inner is Tel.Encodable )
   =>  value is Tel.Encodable =
-    Tel.Encodable(Morphology.Opt(encodable.shape())): opt =>
+    Tel.Encodable(() => Morphology.Opt(encodable.shape())): opt =>
       opt.let(_.asInstanceOf[inner]).lay(Tel.empty)(_.encode)
 
   given optionalDecodable: [inner <: value, value >: Unset.type: Mandatable to inner]
   =>  Tactic[TelError]
   =>  ( decodable: -> (inner is Tel.Decodable) )
   =>  value is Tel.Decodable =
-    Tel.Decodable(Morphology.Opt(decodable.shape())): telVal =>
+    Tel.Decodable(() => Morphology.Opt(decodable.shape())): telVal =>
       if telVal.childCompounds.nil && telVal.atomTexts.nil then Unset
       else decodable.decoded(telVal)
 
@@ -361,17 +361,17 @@ trait Tel2:
   // Re-keys an encoded value's compound (or wraps a document) under `keyword`.
   given listEncodable: [list <: List, element] => (encodable: -> (element is Tel.Encodable))
   =>  list[element] is Tel.Encodable =
-    Tel.Encodable(Morphology.Arr(encodable.shape())): values =>
+    Tel.Encodable(() => Morphology.Arr(encodable.shape())): values =>
       collectionDocument(values)(using encodable)
 
   given setEncodable: [set <: Set, element] => (encodable: -> (element is Tel.Encodable))
   =>  set[element] is Tel.Encodable =
-    Tel.Encodable(Morphology.Arr(encodable.shape())): values =>
+    Tel.Encodable(() => Morphology.Arr(encodable.shape())): values =>
       collectionDocument(values)(using encodable)
 
   given seriesEncodable: [series <: Series, element] => (encodable: -> (element is Tel.Encodable))
   =>  series[element] is Tel.Encodable =
-    Tel.Encodable(Morphology.Arr(encodable.shape())): values =>
+    Tel.Encodable(() => Morphology.Arr(encodable.shape())): values =>
       collectionDocument(values)(using encodable)
 
   given collectionDecodable: [collection <: Iterable, element]
@@ -403,7 +403,7 @@ trait Tel2:
 
   given mapEncodable: [key: Tel.Encodable, value: Tel.Encodable]
   =>  Map[key, value] is Tel.Encodable =
-    Tel.Encodable(Morphology.Dict(key.shape(), value.shape())): map =>
+    Tel.Encodable(() => Morphology.Dict(key.shape(), value.shape())): map =>
       val entries = IArray.from:
         map.map: (k, v) =>
           val keyChild   = reKey(key.encoded(k), t"key")
@@ -414,7 +414,7 @@ trait Tel2:
 
   given mapDecodable: [key: Tel.Decodable, value: Tel.Decodable] => Tactic[TelError]
   =>  Map[key, value] is Tel.Decodable =
-    Tel.Decodable(Morphology.Dict(key.shape(), value.shape())): telVal =>
+    Tel.Decodable(() => Morphology.Dict(key.shape(), value.shape())): telVal =>
       var accumulator = Map.empty[key, value]
 
       for entry <- telVal.fields(t"entries") do

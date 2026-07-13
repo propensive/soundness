@@ -92,17 +92,16 @@ object Tel extends Tel2:
       tel.asInstanceOf[Tel of topic from topic]
 
   object Encodable:
-    def apply[value](shape0: => Morphology)(lambda: value -> Tel): value is Tel.Encodable =
-      // The shape thunk may close over a `Tactic` when field/element codecs are summoned from
-      // tactic-taking givens, but `shape()` only reads static metadata and never encodes or
-      // raises, so the capture is behaviourally inert; laundered pure to keep codec instances
-      // pure. Invariant: a `shape()` implementation must never invoke its tactic. Mirrors
-      // jacinta's codec-thunk seal (see jacinta.Json.scala and rep/DECISIONS.md).
-      val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure(() => shape0)
+    // The shape is an explicit, nameable thunk (not by-name) so the instance's
+    // capture set can name it: an honest result rather than a laundered-pure one.
+    // Mirrors jacinta's `Json.Encodable.apply` (see rep/DECISIONS.md).
+    def apply[value](shape0: () => Morphology)(lambda: (value -> Tel)^)
+    :   ((value is Tel.Encodable)^{shape0, lambda}) =
+
       new Tel.Encodable:
         type Self = value
         def encoded(value: value): Tel = lambda(value)
-        def shape(): Morphology = shape1()
+        def shape(): Morphology = shape0()
 
   // A TEL encoder/decoder that also carries the format-neutral `Morphology` of exactly
   // what it reads/writes, so a fused `Encodable & Schematic` / `Decodable &
@@ -115,14 +114,14 @@ object Tel extends Tel2:
     def shape(): Morphology
 
   object Decodable:
-    def apply[value](shape0: => Morphology)(decoder: (value is distillate.Decodable in Tel)^)
-    :   ((value is Tel.Decodable)^{decoder}) =
-      // Same shape-thunk laundering as `Tel.Encodable.apply`; see the comment there.
-      val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure(() => shape0)
+    // Explicit shape thunk, as in `Tel.Encodable.apply`.
+    def apply[value](shape0: () => Morphology)(decoder: (value is distillate.Decodable in Tel)^)
+    :   ((value is Tel.Decodable)^{shape0, decoder}) =
+
       new Tel.Decodable:
         type Self = value
         def decoded(tel: Tel): value = decoder.decoded(tel)
-        def shape(): Morphology = shape1()
+        def shape(): Morphology = shape0()
 
   trait Decodable extends distillate.Decodable:
     type Form = Tel

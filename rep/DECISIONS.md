@@ -1827,3 +1827,36 @@ stratiform Tel factories (same explicit-thunk move); encode-side by-name givens
 (jacinta sep-blocked, cc siblings convertible); #1528 JS launders on the
 Encodable family may be removable now the anon-class self-types aren't pure;
 the second wisteria summonInline path; distillate primitives; then gates + PR.
+
+## Honest codec capabilities, phase 5: Moniker/Postable/Tel (2026-07-13)
+
+Three more untracked/laundered sites converted to honest capability results:
+
+- **nomenclature.Moniker.encodable**: the untracked-field pattern (a
+  `@caps.unsafe.untrackedCaptures` vocabulary/tactic field) becomes an honest
+  `^{tactic, caps.any}` given result.
+- **telekinesis.Postable**: BOTH untracked fields deleted. `Postable.apply`
+  returns `^{stream0}` — exactly what the instance retains — so the pure
+  primitive givens (text/unit/data/query...) stay bare and `dataStream`
+  (tactic-taking) is honestly `^{tactic, caps.any}`. Two enabling moves:
+  (1) `Streamer` is no longer a `SharedCapability` class (a leg-2 artifact for
+  the untracked-field pattern): as a capability class every SAM conversion
+  minted a fresh `any`, making even pure lambdas produce tracked Postables.
+  Plain trait = tracked by what it captures. (2) `submit`/`fetch` accept
+  `(payload is Postable)^` evidence, SEALED AT THE STAGING BOUNDARY inside the
+  `internal.submit` macro (`given postable0 = unsafeAssumePure($postable)`)
+  because quoted types must stay pure (established rule). The capability is
+  fully applied within the generated request expression. `applyDynamic`'s
+  context bound became an explicit using param to widen it.
+- **stratiform Tel.Encodable/Tel.Decodable**: same explicit-thunk move as
+  jacinta — `shape0: () => Morphology` nameable in the result
+  (`^{shape0, lambda}` / `^{shape0, decoder}`); shape-thunk launders DELETED;
+  ~62 call sites thunked mechanically (incl. nested `Morphology.Opt(...)` args).
+
+Gate: full JVM sweep clean, soundness.js green, stratiform 1066/1066,
+jacinta/telekinesis/nomenclature tests pass (telekinesis's 5 Query failures
+pre-exist on origin/main — issue #1500 territory, unrelated).
+
+REMAINING: second wisteria summonInline path (then locomotion re-lands);
+distillate primitives; jacinta conjunction; #1528 JS launder removability;
+then gates + PR.

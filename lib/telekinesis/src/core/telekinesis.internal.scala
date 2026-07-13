@@ -117,7 +117,7 @@ object internal:
       online:   Expr[Online],
       loggable: Expr[HttpEvent is Loggable],
       payload:  Expr[payload],
-      postable: Expr[payload is Postable],
+      postable: Expr[(payload is Postable)^],
       client:   Expr[HttpClient onto target] )
   :   Macro[Http.Response] =
 
@@ -131,11 +131,17 @@ object internal:
 
         ' {
             given online0: Online = $online
-            given payload is Postable = $postable
+
+            // Staging-boundary seal: quoted types must stay pure, so the (honestly
+            // tracked) evidence is sealed on entry to the generated code. The
+            // capability is fully applied within this request expression.
+            given postable0: (payload is Postable) =
+              caps.unsafe.unsafeAssumePure($postable)
+
             given loggable0: HttpEvent is Loggable = $loggable
             val host: Host = $submit.host
             val path = $submit.originForm
-            val contentType = Http.Header("content-type".tt, $postable.mediaType($payload).show)
+            val contentType = Http.Header("content-type".tt, postable0.mediaType($payload).show)
 
             val request =
               Http.Request
@@ -144,7 +150,7 @@ object internal:
                   host,
                   path,
                   contentType :: $headers.to(List),
-                  () => $postable.stream($payload) )
+                  () => postable0.stream($payload) )
 
             $client.request(request, $submit.target)
           }
