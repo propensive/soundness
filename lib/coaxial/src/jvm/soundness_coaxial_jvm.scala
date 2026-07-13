@@ -32,5 +32,7 @@
                                                                                                   */
 package soundness
 
+export coaxial.{Connection, SecureEndpoint, Tls}
+
 package socketBackends:
   export coaxial.socketBackends.virtualMachine

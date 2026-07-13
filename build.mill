@@ -839,8 +839,7 @@ object chiaroscuro extends Library:
       settings.cc(super.scalacOptions())
 
 object coaxial extends Library:
-  object core extends Component(galilei.jvm, urticose.core, frontier.core):
-    override def scalaJs = false // TCP sockets (`java.nio.channels`)
+  object core extends Component(urticose.core, frontier.core, turbulence.core):
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   // The `java.net`/`java.nio.channels` `SocketBackend` (`socketBackends.virtualMachine`), split out

@@ -32,10 +32,6 @@
                                                                                                   */
 package coaxial
 
-import java.io as ji
-import java.nio.ByteBuffer
-import java.nio.channels as jnc
-
 import anticipation.*
 import prepositional.*
 import rudiments.*
@@ -63,109 +59,6 @@ object Duplex:
       def close(): Unit = outbound.stop()
 
     (side(leftToRight, rightToLeft), side(rightToLeft, leftToRight))
-
-  // Wraps a blocking `InputStream`/`OutputStream` pair — the shape a socket that has no
-  // `SocketChannel` exposes (e.g. an `SSLSocket`). `shutdown` closes the underlying
-  // resource. The read side blocks in `read` and copies each fill; EOF (`-1`) ends the
-  // stream. The stream/write shape mirrors `channel` and `Serviceable`'s socket path.
-  // `shutdown` is a pure function: its closures hold only untracked OS resources (like
-  // `channel`'s socket), so the `Duplex` remains capture-free under capture checking.
-  def streams(in: ji.InputStream, out: ji.OutputStream)(shutdown: () -> Unit): Duplex = new Duplex:
-    // Reads directly into the endpoint's own buffer; EOF (`-1`) ends the stream.
-    def source(using buffering: Buffering): (Stream[Data] over Credit)^ =
-      new Stream[Data]:
-        type Transport = Credit
-
-        private val capacity: Int = buffering.capacity(Substrate.Bytes)
-        private val storage: Array[Byte] = new Array[Byte](capacity)
-        private var start0: Int = 0
-        private var limit0: Int = 0
-        private var ended: Boolean = false
-
-        protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
-        def start: Int = start0
-        def limit: Int = limit0
-        update def skip(count: Int): Unit = start0 += count
-
-        update def refill(demand: Credit): Optional[Int] =
-          if limit0 > start0 then limit0 - start0
-          else if ended then Unset
-          else
-            val granted = summon[Credit is Regulation].grant(demand)
-
-            if granted == 0 then 0 else
-              start0 = 0
-              limit0 = 0
-
-              in.read(storage, 0, capacity.min(granted)) match
-                case -1 =>
-                  ended = true
-                  Unset
-
-                case 0 =>
-                  refill(demand)
-
-                case count =>
-                  limit0 = count
-                  count
-
-    def send(consume data: (Stream[Data] over Credit)^): Unit =
-      data.sweep: (storage, start, count) =>
-        out.write(storage.asInstanceOf[Array[Byte]], start, count)
-        out.flush()
-
-    def close(): Unit = shutdown()
-
-  // Wraps a blocking `SocketChannel` (TCP or Unix-domain). The read side fills a
-  // reusable buffer and blocks in `read`; EOF (`-1`) terminates the stream.
-  def channel(socketChannel: jnc.SocketChannel): Duplex = new Duplex:
-    def send(consume data: (Stream[Data] over Credit)^): Unit =
-      data.sweep: (storage, start, count) =>
-        val out = ByteBuffer.wrap(storage.asInstanceOf[Array[Byte]], start, count).nn
-        while out.hasRemaining do socketChannel.write(out)
-
-    def close(): Unit = socketChannel.close()
-
-    // Reads directly into the endpoint's buffer, allocation-free.
-    def source(using buffering: Buffering): (Stream[Data] over Credit)^ =
-      new Stream[Data]:
-        type Transport = Credit
-
-        private val capacity: Int = buffering.capacity(Substrate.Bytes)
-        private val storage: Array[Byte] = new Array[Byte](capacity)
-        private val wrapped: ByteBuffer = ByteBuffer.wrap(storage).nn
-        private var start0: Int = 0
-        private var limit0: Int = 0
-        private var ended: Boolean = false
-
-        protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
-        def start: Int = start0
-        def limit: Int = limit0
-        update def skip(count: Int): Unit = start0 += count
-
-        update def refill(demand: Credit): Optional[Int] =
-          if limit0 > start0 then limit0 - start0
-          else if ended then Unset
-          else
-            val granted = summon[Credit is Regulation].grant(demand)
-
-            if granted == 0 then 0 else
-              start0 = 0
-              limit0 = 0
-              wrapped.clear()
-              wrapped.limit(capacity.min(granted))
-
-              socketChannel.read(wrapped) match
-                case -1 =>
-                  ended = true
-                  Unset
-
-                case 0 =>
-                  refill(demand)
-
-                case count =>
-                  limit0 = count
-                  count
 
 // A persistent, bidirectional connection: unlike `Serviceable`'s request/response
 // `transmit`/`receive` (which shuts down the output side after sending), a `Duplex`

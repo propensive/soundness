@@ -66,7 +66,7 @@ object SecureEndpoint:
       socket.connect(jn.InetSocketAddress(endpoint.host.s, endpoint.port))
       socket.startHandshake()
 
-      Duplex.streams(socket.getInputStream.nn, socket.getOutputStream.nn): () =>
+      streamsDuplex(socket.getInputStream.nn, socket.getOutputStream.nn): () =>
         socket.close()
 
 case class SecureEndpoint(host: Text, port: Int)

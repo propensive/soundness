@@ -50,7 +50,6 @@ import probates.awaitProbate
 
 import Control.*
 
-import filesystemBackends.virtualMachine
 import socketBackends.virtualMachine
 
 object Tests extends Suite(m"Coaxial tests"):
@@ -75,11 +74,11 @@ object Tests extends Suite(m"Coaxial tests"):
           val port = server.socket.nn.getLocalPort
 
           val received = async:
-            val serverDuplex = Duplex.channel(server.accept().nn)
+            val serverDuplex = channelDuplex(server.accept().nn)
             summon[Data is Aggregable by Data].accept(serverDuplex.source)
 
           val client = jnc.SocketChannel.open(jn.InetSocketAddress("127.0.0.1", port)).nn
-          val clientDuplex = Duplex.channel(client)
+          val clientDuplex = channelDuplex(client)
 
           summon[Data is Source by Data over Credit].stream(payload).pump(clientDuplex.intake)
           client.shutdownOutput()

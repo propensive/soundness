@@ -37,6 +37,7 @@ import java.net as jn
 import java.nio.ByteBuffer
 import java.nio.channels as jnc
 import java.nio.file as jnf
+import java.util as ju
 
 import anticipation.*
 import contingency.*
@@ -156,11 +157,14 @@ package socketBackends:
       case ServerBinding.Tcp(server) =>
         try
           val client = server.accept().nn
-          Duplex.streams(client.getInputStream.nn, client.getOutputStream.nn)(() => client.close())
+
+          streamsDuplex(client.getInputStream.nn, client.getOutputStream.nn): () =>
+            client.close()
+
         catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Accept))
 
       case ServerBinding.Domain(channel) =>
-        try Duplex.channel(channel.accept().nn)
+        try channelDuplex(channel.accept().nn)
         catch case _: ji.IOException => abort(ConnectionError(ConnectionError.Reason.Accept))
 
     def shutdown(socket: ServerBinding): Unit = socket match
@@ -320,7 +324,7 @@ package socketBackends:
         channel.bind(jn.InetSocketAddress(local, 0))
 
       channel.connect(address)
-      Duplex.channel(channel)
+      channelDuplex(channel)
 
     def duplexDomain(address: DomainSocket, options: List[SocketOption]): Duplex =
       val socketAddress = jn.UnixDomainSocketAddress.of(jnf.Path.of(address.address.s))
@@ -328,7 +332,7 @@ package socketBackends:
       channel.configureBlocking(true)
       configure(channel, options)
       channel.connect(socketAddress)
-      Duplex.channel(channel)
+      channelDuplex(channel)
 
     //── Fire-and-forget datagram courier (`Routable`) ──────────────────────────────────────────
     def routeUdp
@@ -363,3 +367,203 @@ package socketBackends:
         jn.DatagramPacket(bytes.mutable(using Unsafe), bytes.length, courier.address, courier.port)
 
       courier.socket.send(packet)
+
+
+// Applies `SocketOption`s to freshly-constructed sockets and resolves a `MacAddress` to a network
+// interface. The Java socket kinds share no common Scala interface for `setOption`/`setSoTimeout`,
+// so each is adapted to a small `Configurable` and the option-mapping is written once. Options a
+// particular socket does not support are silently skipped (guarded by `supportedOptions`), which
+// is the runtime backstop for socket-kind nuances within a transport (e.g. a server socket has no
+// `TCP_NODELAY`).
+private[coaxial] trait Configurable:
+  def supported: ju.Set[jn.SocketOption[?]]
+  def soTimeout(milliseconds: Int): Unit
+  def option[value](socketOption: jn.SocketOption[value], value: value): Unit
+
+  def set[value](socketOption: jn.SocketOption[value], value: value): Unit =
+    if supported.contains(socketOption) then option(socketOption, value)
+
+private[coaxial] def applyOptions(options: List[SocketOption])(target: Configurable): Unit =
+  import jn.StandardSocketOptions.*
+  val yes: java.lang.Boolean = Boolean.box(true)
+
+  options.each:
+    case SocketOption.ReuseAddress          => target.set(SO_REUSEADDR.nn, yes)
+    case SocketOption.ReusePort             => target.set(SO_REUSEPORT.nn, yes)
+    case SocketOption.NoDelay               => target.set(TCP_NODELAY.nn, yes)
+    case SocketOption.KeepAlive             => target.set(SO_KEEPALIVE.nn, yes)
+    case SocketOption.Broadcast             => target.set(SO_BROADCAST.nn, yes)
+    case SocketOption.ReceiveBuffer(n)      => target.set(SO_RCVBUF.nn, Int.box(n))
+    case SocketOption.SendBuffer(n)         => target.set(SO_SNDBUF.nn, Int.box(n))
+    case SocketOption.TrafficClass(n)       => target.set(IP_TOS.nn, Int.box(n))
+    case SocketOption.Linger(seconds)       => target.set(SO_LINGER.nn, Int.box(seconds.or(-1)))
+    case SocketOption.Timeout(milliseconds) => target.soTimeout(milliseconds)
+
+private[coaxial] def configure(channel: jnc.NetworkChannel, options: List[SocketOption]): Unit =
+  applyOptions(options):
+    new Configurable:
+      def supported: ju.Set[jn.SocketOption[?]] = channel.supportedOptions.nn
+      def soTimeout(milliseconds: Int): Unit = ()  // not meaningful for a (selectable) channel
+
+      def option[value](socketOption: jn.SocketOption[value], value: value): Unit =
+        channel.setOption(socketOption, value)
+
+private[coaxial] def configure(socket: jn.Socket, options: List[SocketOption]): Unit =
+  applyOptions(options):
+    new Configurable:
+      def supported: ju.Set[jn.SocketOption[?]] = socket.supportedOptions.nn
+      def soTimeout(milliseconds: Int): Unit = socket.setSoTimeout(milliseconds)
+
+      def option[value](socketOption: jn.SocketOption[value], value: value): Unit =
+        socket.setOption(socketOption, value)
+
+private[coaxial] def configure(socket: jn.ServerSocket, options: List[SocketOption]): Unit =
+  applyOptions(options):
+    new Configurable:
+      def supported: ju.Set[jn.SocketOption[?]] = socket.supportedOptions.nn
+      def soTimeout(milliseconds: Int): Unit = socket.setSoTimeout(milliseconds)
+
+      def option[value](socketOption: jn.SocketOption[value], value: value): Unit =
+        socket.setOption(socketOption, value)
+
+private[coaxial] def configure(socket: jn.DatagramSocket, options: List[SocketOption]): Unit =
+  applyOptions(options):
+    new Configurable:
+      def supported: ju.Set[jn.SocketOption[?]] = socket.supportedOptions.nn
+      def soTimeout(milliseconds: Int): Unit = socket.setSoTimeout(milliseconds)
+
+      def option[value](socketOption: jn.SocketOption[value], value: value): Unit =
+        socket.setOption(socketOption, value)
+
+// Resolves a `MacAddress` to the local network interface whose hardware address matches, if any.
+private[coaxial] def interfaceFor(mac: MacAddress): Optional[jn.NetworkInterface] =
+  val target: Array[Byte] =
+    Array(mac.byte0, mac.byte1, mac.byte2, mac.byte3, mac.byte4, mac.byte5).map(_.toByte)
+
+  def recur(interfaces: ju.Enumeration[jn.NetworkInterface]): Optional[jn.NetworkInterface] =
+    if !interfaces.hasMoreElements then Unset else
+      val nic = interfaces.nextElement.nn
+      val hardware = nic.getHardwareAddress
+
+      if hardware != null && ju.Arrays.equals(hardware, target) then nic else recur(interfaces)
+
+  recur(jn.NetworkInterface.getNetworkInterfaces.nn)
+
+// Picks a bind address from a resolved interface, preferring an IPv4 address.
+private[coaxial] def bindAddress(nic: jn.NetworkInterface): Optional[jn.InetAddress] =
+  def recur(addresses: ju.Enumeration[jn.InetAddress], fallback: Optional[jn.InetAddress])
+  :   Optional[jn.InetAddress] =
+
+    if !addresses.hasMoreElements then fallback else
+      val address = addresses.nextElement.nn
+
+      if address.isInstanceOf[jn.Inet4Address] then address
+      else recur(addresses, fallback.or(address))
+
+  recur(nic.getInetAddresses.nn, Unset)
+
+// Wraps a blocking `InputStream`/`OutputStream` pair — the shape a socket that has no
+// `SocketChannel` exposes (e.g. an `SSLSocket`). `shutdown` closes the underlying
+// resource. The read side blocks in `read` and copies each fill; EOF (`-1`) ends the
+// stream. The stream/write shape mirrors `channelDuplex` and `Serviceable`'s socket path.
+// `shutdown` is a pure function: its closures hold only untracked OS resources (like
+// `channelDuplex`'s socket), so the `Duplex` remains capture-free under capture checking.
+private[coaxial] def streamsDuplex(in: ji.InputStream, out: ji.OutputStream)(shutdown: () -> Unit)
+:   Duplex =
+
+  new Duplex:
+    // Reads directly into the endpoint's own buffer; EOF (`-1`) ends the stream.
+    def source(using buffering: Buffering): (Stream[Data] over Credit)^ =
+      new Stream[Data]:
+        type Transport = Credit
+
+        private val capacity: Int = buffering.capacity(Substrate.Bytes)
+        private val storage: Array[Byte] = new Array[Byte](capacity)
+        private var start0: Int = 0
+        private var limit0: Int = 0
+        private var ended: Boolean = false
+
+        protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+        def start: Int = start0
+        def limit: Int = limit0
+        update def skip(count: Int): Unit = start0 += count
+
+        update def refill(demand: Credit): Optional[Int] =
+          if limit0 > start0 then limit0 - start0
+          else if ended then Unset
+          else
+            val granted = summon[Credit is Regulation].grant(demand)
+
+            if granted == 0 then 0 else
+              start0 = 0
+              limit0 = 0
+
+              in.read(storage, 0, capacity.min(granted)) match
+                case -1 =>
+                  ended = true
+                  Unset
+
+                case 0 =>
+                  refill(demand)
+
+                case count =>
+                  limit0 = count
+                  count
+
+    def send(consume data: (Stream[Data] over Credit)^): Unit =
+      data.sweep: (storage, start, count) =>
+        out.write(storage.asInstanceOf[Array[Byte]], start, count)
+        out.flush()
+
+    def close(): Unit = shutdown()
+
+// Wraps a blocking `SocketChannel` (TCP or Unix-domain). The read side fills a
+// reusable buffer and blocks in `read`; EOF (`-1`) terminates the stream.
+private[coaxial] def channelDuplex(socketChannel: jnc.SocketChannel): Duplex = new Duplex:
+  def send(consume data: (Stream[Data] over Credit)^): Unit =
+    data.sweep: (storage, start, count) =>
+      val out = ByteBuffer.wrap(storage.asInstanceOf[Array[Byte]], start, count).nn
+      while out.hasRemaining do socketChannel.write(out)
+
+  def close(): Unit = socketChannel.close()
+
+  // Reads directly into the endpoint's buffer, allocation-free.
+  def source(using buffering: Buffering): (Stream[Data] over Credit)^ =
+    new Stream[Data]:
+      type Transport = Credit
+
+      private val capacity: Int = buffering.capacity(Substrate.Bytes)
+      private val storage: Array[Byte] = new Array[Byte](capacity)
+      private val wrapped: ByteBuffer = ByteBuffer.wrap(storage).nn
+      private var start0: Int = 0
+      private var limit0: Int = 0
+      private var ended: Boolean = false
+
+      protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+      def start: Int = start0
+      def limit: Int = limit0
+      update def skip(count: Int): Unit = start0 += count
+
+      update def refill(demand: Credit): Optional[Int] =
+        if limit0 > start0 then limit0 - start0
+        else if ended then Unset
+        else
+          val granted = summon[Credit is Regulation].grant(demand)
+
+          if granted == 0 then 0 else
+            start0 = 0
+            limit0 = 0
+            wrapped.clear()
+            wrapped.limit(capacity.min(granted))
+
+            socketChannel.read(wrapped) match
+              case -1 =>
+                ended = true
+                Unset
+
+              case 0 =>
+                refill(demand)
+
+              case count =>
+                limit0 = count
+                count
