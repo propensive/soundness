@@ -843,7 +843,14 @@ object coaxial extends Library:
     override def scalaJs = false // TCP sockets (`java.nio.channels`)
     override def scalacOptions = Task:
       settings.sep(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
-  object test extends Tests(core)
+  // The `java.net`/`java.nio.channels` `SocketBackend` (`socketBackends.virtualMachine`), split out
+  // of `core` so the platform-neutral socket API can cross-compile; other platforms (e.g. WASI)
+  // supply their own backend.
+  object jvm extends Component(core):
+    override def scalaJs = false
+    override def scalacOptions = Task:
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
+  object test extends Tests(core, jvm)
 
 object contextual extends Library:
   object core extends Component(rudiments.core):
