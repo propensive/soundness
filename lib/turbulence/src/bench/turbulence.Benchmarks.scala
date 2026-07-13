@@ -227,6 +227,18 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         ( target = 1*Second, operationSize = textSize, baseline = Baseline(compare = Min) ):
         '{ turbulence.Benchmarks.textData.stream.via(summon[CharDecoder]).memoize.s.length }
 
+      // The memoize row above concatenates the full 5 MB Text; this row counts
+      // chars per window, the same aggregation shape as the FS2/ZIO rows.
+      bench(m"Soundness  via(CharDecoder) fold")(target = 1*Second, operationSize = textSize):
+        '{
+            var total = 0L
+
+            turbulence.Benchmarks.textData.stream.via(summon[CharDecoder])
+            . sweep((_, _, count) => total += count)
+
+            total
+        }
+
       bench(m"FS2  text.utf8.decode")(target = 1*Second, operationSize = textSize):
         '{
             import cats.effect.unsafe.implicits.global

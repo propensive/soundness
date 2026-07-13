@@ -762,6 +762,33 @@ object Tests extends Suite(m"Zephyrine tests"):
           gather.data.to(List)
         . assert(_ == exotic.s.getBytes("UTF-8").nn.to(List))
 
+        // Malformed input — a stray continuation, an overlong lead, a
+        // truncated sequence mid-stream and a bad continuation — must decode
+        // through the duct exactly as the whole-value decoder sanitizes it.
+        val malformed = IArray[Byte](
+          'a'.toByte, 0x80.toByte, 'b'.toByte,                              // stray continuation
+          0xc0.toByte, 0xaf.toByte, 'c'.toByte,                             // overlong lead
+          0xe4.toByte, 0xb8.toByte, 'd'.toByte,                             // truncated 3-byte
+          0xf0.toByte, 0x9f.toByte, 0x8e.toByte, 0x89.toByte, 'e'.toByte,  // valid 🎉
+          0xc3.toByte)                                                      // truncated at end
+
+        test(m"char decoder duct sanitizes malformed input like whole-value decoding"):
+          val stream = malformed.stream.via(summon[CharDecoder])
+          val builder = StringBuilder()
+
+          def recur(): Unit = stream.refill(Credit(8)) match
+            case count: Int =>
+              val window = unsafely(stream.window).asInstanceOf[Array[Char]]
+              builder.append(String(window, stream.start, count))
+              stream.skip(count)
+              recur()
+
+            case _ => ()
+
+          recur()
+          builder.toString.tt
+        . assert(_ == summon[CharDecoder].decoded(malformed))
+
         test(m"charset ducts roundtrip through both directions"):
           val gather = Gather()
           exotic.stream.via(summon[CharEncoder]).pump(gather)
