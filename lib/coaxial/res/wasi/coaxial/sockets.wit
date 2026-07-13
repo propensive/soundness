@@ -1,0 +1,65 @@
+// The subset of the WASI sockets and I/O interfaces that coaxial's Wasm backend uses. As in
+// galilei's `filesystem.wit`, the named types (`error-code`, `ip-socket-address`,
+// `ip-address-family`, `shutdown-type`) are declared with empty bodies: their shapes are derived
+// from their facade classes, and only their names and defining interface matter to this subset.
+// The socket-address records `ipv4`/`ipv6` wrap are likewise supplied by the facades — coaxial
+// builds them through `WitVariant`, so they need no structural declaration here.
+
+package wasi:io@0.2.0;
+
+interface poll {
+  resource pollable {
+    block: func();
+  }
+}
+
+interface streams {
+  resource input-stream {
+    blocking-read: func(len: u64) -> result<list<u8>, stream-error>;
+  }
+
+  resource output-stream {
+    blocking-write-and-flush: func(contents: list<u8>) -> result<_, stream-error>;
+  }
+}
+
+package wasi:sockets@0.2.0;
+
+interface network {
+  resource network {}
+  variant error-code {}
+  variant ip-address-family {}
+  variant ip-socket-address {}
+}
+
+interface instance-network {
+  instance-network: func() -> network;
+}
+
+interface tcp-create-socket {
+  create-tcp-socket: func(address-family: ip-address-family) -> result<tcp-socket, error-code>;
+}
+
+interface tcp {
+  variant shutdown-type {}
+
+  resource tcp-socket {
+    start-bind: func(network: borrow<network>, local-address: ip-socket-address)
+      -> result<_, error-code>;
+
+    finish-bind: func() -> result<_, error-code>;
+
+    start-connect: func(network: borrow<network>, remote-address: ip-socket-address)
+      -> result<_, error-code>;
+
+    finish-connect: func() -> result<tuple<input-stream, output-stream>, error-code>;
+
+    start-listen: func() -> result<_, error-code>;
+    finish-listen: func() -> result<_, error-code>;
+
+    accept: func() -> result<tuple<tcp-socket, input-stream, output-stream>, error-code>;
+
+    subscribe: func() -> pollable;
+    shutdown: func(shutdown-type: shutdown-type) -> result<_, error-code>;
+  }
+}
