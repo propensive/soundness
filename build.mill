@@ -45,26 +45,37 @@ import publish.*
 import os.Path
 
 object settings:
-  // A locally-built Scala compiler from the propensive/scala fork: the `make` build of the
-  // 3.9.0-RC1 tree merged with the capture-checking fix branches (currently
-  // `feature/3.9.0/make-unboxedpure-splicealias-aliascap-ctxresult-castbox-permitlazy`; the
-  // stock compiler mis-boxes pure values, mishandles quote type-holes, alias and
-  // context-result capabilities, cast type-arguments, and cycles on JDK 25 sealed-classfile
-  // parsing — see rep/DECISIONS.md). Build it with `make` in the fork worktree;
-  // the `toolchain` module below exposes its `release/lib` jars to every coursier resolution,
-  // so no publishing step is needed. Point `SOUNDNESS_SCALA_HOME` at a different `release`
-  // directory to switch compilers. After rebuilding the compiler, run `./mill clean`: the
-  // compiler and sbt-bridge paths are content-hashed, but coursier may serve other repo
-  // artifacts from its cache under this unchanging version string.
-  // `SOUNDNESS_SCALA_VERSION`/`SOUNDNESS_SCALA_HOME` switch toolchains together (the version
-  // string must match what the `release` was built with, or coursier/zinc caches poison each
-  // other across compilers). Defaults target the 3.9.0 row; the 3.10.0 row (tracking
-  // upstream/main) lives at ../scala/all-main/release with version "3.10.0-propensive".
+  // The Scala compiler is the propensive/scala fork: the 3.9.0-RC1 tree merged with the
+  // capture-checking fix branches (the stock compiler mis-boxes pure values, mishandles quote
+  // type-holes, alias and context-result capabilities, cast type-arguments, and cycles on JDK 25
+  // sealed-classfile parsing — see rep/DECISIONS.md). It is consumed in one of two modes:
+  //
+  //   1. Released (the default). The fork is published at
+  //      https://github.com/propensive/proscala/releases; each release's assets are exactly the
+  //      contents of a `release/lib` directory (the unversioned core jars plus the versioned
+  //      third-party jars). The `toolchain` module below downloads `SOUNDNESS_SCALA_RELEASE`
+  //      (default `3.9.0-RC1-p1`, the latest in the 3.9.0 stream) into a shared cache and exposes
+  //      its jars to every coursier resolution — no local compiler build and no publishing step
+  //      needed. Switch streams by setting `SOUNDNESS_SCALA_RELEASE` (e.g. `3.10.0-dev-p1`).
+  //
+  //   2. Local (fork developers). Point `SOUNDNESS_SCALA_HOME` at a `make`-built `release`
+  //      directory to use its `release/lib` jars directly instead of downloading. After
+  //      rebuilding the compiler, run `./mill clean`: the compiler and sbt-bridge paths are
+  //      content-hashed, but coursier may serve other repo artifacts from its cache under this
+  //      unchanging version string.
+  //
+  // `scalaVersion` is the *coordinate* version the toolchain force-versions every artifact to; it
+  // must match the version string the jars were built with (`compiler.properties`), or
+  // coursier/zinc caches poison each other across compilers. The release tag
+  // (`SOUNDNESS_SCALA_RELEASE`) is a separate concept: `3.9.0-RC1-p1` ships jars built as
+  // `3.9.0-RC1-propensive`. Override the coordinate with `SOUNDNESS_SCALA_VERSION` (e.g. the
+  // 3.10.0 row is version "3.10.0-propensive").
   val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION", "3.9.0-RC1-propensive")
-  val scalaHome =
-    sys.env.getOrElse
-      ("SOUNDNESS_SCALA_HOME", "/Users/propensive/work/worktrees/scala/soundness-390/release")
-  val scalaJsVersion = "1.20.2"
+  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "3.9.0-RC1-p1")
+  // Empty by default → download `scalaRelease`. Set to a local `release` directory to use its
+  // `release/lib` jars directly (fork-developer mode).
+  val scalaHome = sys.env.getOrElse("SOUNDNESS_SCALA_HOME", "")
+  val scalaJsVersion = "1.22.0-wasm.4"
   val scalaOptions = Seq(
     "-experimental",
     "-new-syntax",
@@ -150,74 +161,113 @@ object settings:
 
     strip(options.to(List)) ++ Seq("-Xmax-inlines", limit)
 
-// Exposes the fork compiler's `release/lib` directory (see `settings.scalaHome`) as a
-// Maven-layout repository, generated on demand into the task's own dest: the unversioned jars
-// are copied to versioned coordinates with minimal POMs. Everything coursier resolves for
-// `settings.scalaVersion` — the unified `scala-library` (force-versioned into every module's
-// resolution), `scala3-compiler_3` (including the modules that depend on the compiler API),
-// `scala3-staging_3`, the sbt bridge, and the Scala.js stdlib — is served from here.
+// Exposes the fork compiler's `release/lib` jars (from a local build via `settings.scalaHome`, or
+// downloaded from the `settings.scalaRelease` GitHub release) as a Maven-layout repository,
+// generated on demand into the task's own dest: the unversioned jars are copied to versioned
+// coordinates with minimal POMs. Everything coursier resolves for `settings.scalaVersion` — the
+// unified `scala-library` (force-versioned into every module's resolution), `scala3-compiler_3`
+// (including the modules that depend on the compiler API), `scala3-staging_3`, the sbt bridge, and
+// the Scala.js stdlib — is served from here.
 object toolchain extends Module:
-  // Content-fingerprints the fork's jars so a rebuilt compiler regenerates the repository.
+  // Downloads the `settings.scalaRelease` assets from propensive/proscala into a *shared* cache
+  // dir outside the Mill `out/` tree, so the throwaway-worktree `make attest` build (clean `out/`
+  // every time) reuses them and stays offline after the first fetch. A `.complete` sentinel makes
+  // a fully-populated cache a no-op — no network, no GitHub API call. Returns the `lib` dir.
+  def downloadRelease(tag: String): os.Path =
+    val lib = os.home / ".cache" / "soundness" / "proscala" / tag / "lib"
+    val sentinel = lib / ".complete"
+    if os.exists(sentinel) then lib else
+      os.makeDir.all(lib)
+      val api = s"https://api.github.com/repos/propensive/proscala/releases/tags/$tag"
+      val json = ujson.read(os.proc("curl", "-fsSL", api).call().out.text())
+      json("assets").arr.foreach: asset =>
+        val name = asset("name").str
+        val url = asset("browser_download_url").str
+        val target = lib / name
+        if !os.exists(target) then
+          os.proc("curl", "-fsSL", "-o", target.toString, url).call()
+        // Verify against the published digest when the API supplies one ("sha256:<hex>").
+        asset.obj.get("digest").flatMap(_.strOpt).foreach: digest =>
+          if digest.startsWith("sha256:") then
+            val md = java.security.MessageDigest.getInstance("SHA-256")
+            val hex = md.digest(os.read.bytes(target)).map("%02x".format(_)).mkString
+            if hex != digest.stripPrefix("sha256:") then
+              os.remove(target)
+              throw new Exception(s"checksum mismatch for $name (expected $digest, got sha256:$hex)")
+      os.write(sentinel, "")
+      lib
+
+  // Content-fingerprints the fork's jars so a rebuilt or re-released compiler regenerates the
+  // repository. `SOUNDNESS_SCALA_HOME` (if set) points at a local `release`; otherwise the
+  // `settings.scalaRelease` assets are downloaded and cached.
   def distribution: T[PathRef] = Task.Input:
-    PathRef(os.Path(settings.scalaHome) / "lib")
+    if settings.scalaHome.nonEmpty then PathRef(os.Path(settings.scalaHome) / "lib")
+    else PathRef(downloadRelease(settings.scalaRelease))
 
   def repo: T[PathRef] = Task:
     val lib = distribution().path
     val v = settings.scalaVersion
+    val js = settings.scalaJsVersion
     val sl = "org.scala-lang"
     val sjs = "org.scala-js"
 
-    // (group, artifactId, jar filename in release/lib, dependencies as (group, id, version))
+    // (group, artifactId, jar filename in release/lib, coordinate version, dependencies as
+    // (group, id, version)). The fork's own jars are versioned to the Scala coordinate `v`; the
+    // Scala.js runtime jars — which the fork builds against a custom (non-Central) Scala.js and
+    // ships under their own `-<jsVersion>` filenames — keep the Scala.js coordinate `js`.
     val artifacts = Seq(
-      (sl, "scala-library", "scala-library.jar", Seq()),
-      (sl, "scala3-library_3", "scala3-library.jar", Seq((sl, "scala-library", v))),
-      (sl, "scala3-interfaces", "scala3-interfaces.jar", Seq()),
-      (sl, "tasty-core_3", "tasty-core.jar", Seq((sl, "scala-library", v))),
-      (sl, "scala3-compiler_3", "scala3-compiler.jar", Seq(
+      (sl, "scala-library", "scala-library.jar", v, Seq()),
+      (sl, "scala3-library_3", "scala3-library.jar", v, Seq((sl, "scala-library", v))),
+      (sl, "scala3-interfaces", "scala3-interfaces.jar", v, Seq()),
+      (sl, "tasty-core_3", "tasty-core.jar", v, Seq((sl, "scala-library", v))),
+      (sl, "scala3-compiler_3", "scala3-compiler.jar", v, Seq(
         (sl, "scala3-interfaces", v),
         (sl, "tasty-core_3", v),
         (sl, "scala3-library_3", v),
         ("org.scala-lang.modules", "scala-asm", "9.9.0-scala-1"),
-        ("org.scala-sbt", "compiler-interface", "1.10.7"),
-        ("org.scala-sbt", "util-interface", "1.10.7"))),
-      (sl, "scala3-repl_3", "scala3-repl.jar", Seq(
+        ("org.scala-sbt", "compiler-interface", "1.12.0"),
+        ("org.scala-sbt", "util-interface", "1.11.5"))),
+      (sl, "scala3-repl_3", "scala3-repl.jar", v, Seq(
         (sl, "scala3-compiler_3", v),
-        ("org.jline", "jline-reader", "3.29.0"),
-        ("org.jline", "jline-terminal", "3.29.0"),
-        ("org.jline", "jline-terminal-jni", "3.29.0"),
-        ("io.get-coursier", "interface", "1.0.28"),
+        ("org.jline", "jline-reader", "4.0.14"),
+        ("org.jline", "jline-terminal", "4.0.14"),
+        ("org.jline", "jline-terminal-jni", "4.0.14"),
+        ("io.get-coursier", "interface", "1.0.29-M4"),
         ("org.virtuslab", "using_directives", "1.1.4"),
         ("com.lihaoyi", "pprint_3", "0.9.3"))),
-      (sl, "scala3-sbt-bridge", "scala3-sbt-bridge.jar", Seq(
+      (sl, "scala3-sbt-bridge", "scala3-sbt-bridge.jar", v, Seq(
         (sl, "scala3-compiler_3", v),
         (sl, "scala3-repl_3", v))),
-      (sl, "scala3-staging_3", "scala3-staging.jar", Seq((sl, "scala3-compiler_3", v))),
-      (sl, "scala3-tasty-inspector_3", "scala3-tasty-inspector.jar", Seq(
+      (sl, "scala3-staging_3", "scala3-staging.jar", v, Seq((sl, "scala3-compiler_3", v))),
+      (sl, "scala3-tasty-inspector_3", "scala3-tasty-inspector.jar", v, Seq(
         (sl, "scala3-compiler_3", v))),
-      (sjs, "scalajs-scalalib_2.13", "scalajs-scalalib_2.13.jar", Seq(
-        (sjs, "scalajs-javalib", settings.scalaJsVersion))),
-      (sl, "scala3-library_sjs1_3", "scala3-library_sjs1.jar", Seq(
+      (sjs, "scalajs-javalib", s"scalajs-javalib-$js.jar", js, Seq()),
+      (sjs, "scalajs-library_2.13", s"scalajs-library_2.13-$js.jar", js, Seq(
+        (sjs, "scalajs-javalib", js))),
+      (sjs, "scalajs-scalalib_2.13", "scalajs-scalalib_2.13.jar", v, Seq(
+        (sjs, "scalajs-javalib", js))),
+      (sl, "scala3-library_sjs1_3", "scala3-library_sjs1.jar", v, Seq(
         (sl, "scala-library", v),
-        (sjs, "scalajs-library_2.13", settings.scalaJsVersion),
+        (sjs, "scalajs-library_2.13", js),
         (sjs, "scalajs-scalalib_2.13", v))))
 
-    artifacts.map: (group, id, jar, dependencies) =>
-      val dir = Task.dest / os.SubPath(group.replace('.', '/')) / id / v
+    artifacts.map: (group, id, jar, version, dependencies) =>
+      val dir = Task.dest / os.SubPath(group.replace('.', '/')) / id / version
       os.makeDir.all(dir)
-      os.copy(lib / jar, dir / s"$id-$v.jar", replaceExisting = true)
+      os.copy(lib / jar, dir / s"$id-$version.jar", replaceExisting = true)
 
       val deps = dependencies.map: (dGroup, dId, dVersion) =>
         s"<dependency><groupId>$dGroup</groupId><artifactId>$dId</artifactId>" +
           s"<version>$dVersion</version></dependency>"
       . mkString
 
-      os.write.over(dir / s"$id-$v.pom",
+      os.write.over(dir / s"$id-$version.pom",
         s"""<?xml version="1.0" encoding="UTF-8"?>
            |<project xmlns="http://maven.apache.org/POM/4.0.0">
            |  <modelVersion>4.0.0</modelVersion>
            |  <groupId>$group</groupId>
            |  <artifactId>$id</artifactId>
-           |  <version>$v</version>
+           |  <version>$version</version>
            |  <dependencies>$deps</dependencies>
            |</project>
            |""".stripMargin)
@@ -235,14 +285,16 @@ trait Toolchain extends ScalaModule:
   override def scalaCompilerClasspath: T[Seq[PathRef]] = Task:
     // The fork-built jars come from the repository view because Zinc locates the standard
     // library within this classpath BY FILENAME (`scala-library-<version>*.jar`), and the
-    // distribution's own filenames are unversioned. Third-party jars (already versioned
-    // filenames) come straight from the distribution.
-    val versioned = os.walk(toolchain.repo().path).filter(_.ext == "jar")
-    val thirdParty =
-      os.list(toolchain.distribution().path).filter: jar =>
-        jar.ext == "jar" && jar.baseName.exists(_.isDigit)
+    // distribution's own filenames are unversioned. The compiler's own third-party runtime
+    // dependencies (scala-asm for bytecode, the sbt compiler/util interfaces for the bridge) are
+    // not shipped in the release, so they are resolved from the ordinary repositories.
+    val versioned = os.walk(toolchain.repo().path).filter(_.ext == "jar").map(PathRef(_))
+    val thirdParty = defaultResolver().classpath(Seq(
+      mvn"org.scala-lang.modules:scala-asm:9.9.0-scala-1",
+      mvn"org.scala-sbt:compiler-interface:1.12.0",
+      mvn"org.scala-sbt:util-interface:1.11.5"))
 
-    (versioned ++ thirdParty).map(PathRef(_))
+    versioned ++ thirdParty
 
   override def scalaCompilerBridge: T[Option[PathRef]] = Task:
     Some(PathRef(toolchain.distribution().path / "scala3-sbt-bridge.jar"))
