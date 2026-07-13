@@ -1,0 +1,26 @@
+package test:e2e;
+
+// The world the wasm e2e component (tests/wasm/src) is linked against: every WASI
+// interface the seven `.wasi` backends import, so one link exercises them all.
+world e2e {
+  import wasi:cli/environment@0.2.0;
+  import wasi:cli/stdin@0.2.0;
+  import wasi:cli/stdout@0.2.0;
+  import wasi:cli/stderr@0.2.0;
+  import wasi:clocks/monotonic-clock@0.2.0;
+  import wasi:clocks/wall-clock@0.2.0;
+  import wasi:random/random@0.2.0;
+  import wasi:filesystem/types@0.2.0;
+  import wasi:filesystem/preopens@0.2.0;
+  import wasi:io/error@0.2.0;
+  import wasi:io/poll@0.2.0;
+  import wasi:io/streams@0.2.0;
+  import wasi:sockets/network@0.2.0;
+  import wasi:sockets/instance-network@0.2.0;
+  import wasi:sockets/tcp-create-socket@0.2.0;
+  import wasi:sockets/tcp@0.2.0;
+  import wasi:http/types@0.2.0;
+  import wasi:http/outgoing-handler@0.2.0;
+
+  export wasi:cli/run@0.2.0;
+}

@@ -261,6 +261,7 @@ package socketBackends:
 
     def hangUp(exchange: WasiExchange): Unit =
       exchange.input.dispose()
+      exchange.output.dispose()
       exchange.socket.dispose()
 
     //── Persistent duplex client (TCP; Unix-domain unsupported) ───────────────────────────────────

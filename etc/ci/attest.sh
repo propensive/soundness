@@ -129,11 +129,14 @@ if [[ "${SOUNDNESS_CI_SKIP_BUILD:-0}" != "1" ]]; then
     # whole Scala.js-capable surface under `-scalajs`, which the JVM pipeline can't
     # catch — gating it here stops `main` from silently drifting into `-scalajs`-only
     # capture-checking breakage (there are no JS tests to run; compiling is the check).
+    # `make wasm-e2e` then links the `.wasi` backends into a real Wasm component and runs
+    # its scenarios under wasmtime — the only stage that exercises the WIT ABI at runtime.
     make runners-build \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.all.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false soundness.js.compile \
       && CLAUDECODE=1 ./mill --no-daemon -j "$JOBS" --ticker false test.assembly \
-      && CLAUDECODE=1 make ci
+      && CLAUDECODE=1 make ci \
+      && CLAUDECODE=1 make wasm-e2e
   ) 2>&1 | tee "$LOG"
   rc=${PIPESTATUS[0]}
   set -e
@@ -171,8 +174,10 @@ statement = {
     "predicate": {
         "commands": [
             "./mill --no-daemon -j 6 --ticker false soundness.all.compile",
+            "./mill --no-daemon -j 6 --ticker false soundness.js.compile",
             "./mill --no-daemon -j 6 --ticker false test.assembly",
             "make ci",
+            "make wasm-e2e",
         ],
         "ranAt": now,
         "ranBy": signer,

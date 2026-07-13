@@ -491,16 +491,20 @@ object WasmInvoke:
     if arity != argumentTerms.length then
       halt(m"xenophile: $owner.$function takes $arity parameters, not ${argumentTerms.length}")
 
+    // A facade child's WIT case name: its lower-kebab-case simple name (`DnsTimeout` matches
+    // `dns-timeout`). Case objects loaded from Scala 2 classfiles (rather than Tasty) report
+    // their module-class name, with a trailing `$` to strip.
+    def caseNameOf(child: Symbol): Text = child.name.stripSuffix("$").tt.uncamel.kebab
+
     // A payload-less `variant` case argument (a `WitCase of topic`): the facade case object,
-    // selected by name at runtime from the sealed facade trait's children. The case-object names
-    // are matched in their lower-kebab-case form (`DnsTimeout` matches `dns-timeout`).
+    // selected by name at runtime from the sealed facade trait's children.
     def caseArgument(topic: Text, value: Term): (TypeRepr, Term) =
       val facade = facadeOf(topic)
       val selector = '{${value.asExprOf[Any]}.asInstanceOf[WitCase].name.s}.asTerm
 
       val caseDefs: List[CaseDef] = facade.children.flatMap: child =>
         if child.flags.is(Flags.Module) then
-          val name = child.name.tt.uncamel.kebab
+          val name = caseNameOf(child)
           List(CaseDef(Literal(StringConstant(name.s)), None, Ref(child.companionModule)))
         else
           List()
@@ -586,7 +590,7 @@ object WasmInvoke:
 
       val facade = facadeOf(topic)
 
-      val child = facade.children.find(_.name.tt.uncamel.kebab == caseName).getOrElse:
+      val child = facade.children.find(caseNameOf(_) == caseName).getOrElse:
         halt(m"xenophile: the variant $topic has no case $caseName")
 
       val valueField = child.declaredFields.headOption.getOrElse:
