@@ -93,7 +93,11 @@ package filesystemBackends:
         case "io"                                          => Reason.Physical
         case _                                             => Reason.Unsupported
 
-      private def protect[result](path: Path on Plane, operation: Operation)(block: => result)
+      // The block's by-name thunk carries a capture set: it closes over the backend instance
+      // and the `Tactic`, which a plain (pure) `=> result` rejects when the enclosing
+      // `inline given` expands at a downstream summoning site under capture checking.
+      private def protect[result](path: Path on Plane, operation: Operation)
+        ( block: ->{caps.any} result )
         ( using Tactic[IoError] )
       :   result =
 
@@ -399,5 +403,14 @@ package filesystemBackends:
 
               streamHandle.dispose()
 
-            try lambda(Handle(() => read(), write(_))()) finally opened.dispose()
+            // The `source`/`intake` endpoints are spelled out rather than defaulted: the
+            // defaults' thunks carry root capabilities in the default-getter methods' result
+            // types, which are not visible from the downstream site this `inline given`
+            // expands at under capture checking.
+            val handle =
+              Handle(() => read(), write(_))
+                ( () => zephyrine.Stream(read().iterator),
+                  () => turbulence.Sink.buffered((), (_, stream) => write(stream)) )
+
+            try lambda(handle) finally opened.dispose()
           finally descriptor.dispose()

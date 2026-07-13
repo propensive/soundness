@@ -1247,7 +1247,7 @@ object galilei extends Library:
   // as a component.
   object wasi extends Component(core, xenophile.wasm, xenophile.wit):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, jvm):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
