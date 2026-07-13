@@ -1860,3 +1860,20 @@ pre-exist on origin/main — issue #1500 territory, unrelated).
 REMAINING: second wisteria summonInline path (then locomotion re-lands);
 distillate primitives; jacinta conjunction; #1528 JS launder removability;
 then gates + PR.
+
+## Honest codec capabilities, phase 6: locomotion re-lands (2026-07-13)
+
+The "second summonInline path" turned out NOT to be a wisteria engine path at
+all: with phase 3's erasing cast in place, locomotion.core compiled honest
+first try. The remaining failure (test module, `read[Numbers in Protobuf]`)
+was the compiler synthesizing by-name ARGUMENT thunks `() => intDecodable(...)`
+against the collection givens' bare `=> element is Decodable in Protobuf`
+parameters — fixed by the established move: by-name codec params become
+`=> (X is Decodable in Protobuf)^`. All 11 tactic-taking primitives, the
+collection/optional/packed/map givens and both encode/decode sides are now
+honest (`^{tactic, caps.any}` where a tactic is retained, `^` where only the
+by-name codec is, `^{param,…}` for strict params); ALL codec-thunk launders in
+the module are deleted except the two derivation `conjunction`/`disjunction`
+seals, whose bare result type is fixed by wisteria's `Derivable` signature
+(same state as jacinta's derivation — the one remaining boundary). 38/38
+tests; full sweep and soundness.js green.
