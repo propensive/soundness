@@ -153,6 +153,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
   def run(): Unit =
     val bench = Bench()
     val stress = Stress()
+    val constrained = Stress(heap = t"128m")
     val size = input.length*Byte
     val textSize = textData.length*Byte
 
@@ -880,6 +881,51 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
         }
 
       stress(m"ZIO  Queue.bounded")(target = 2*Second, concurrency = 16):
+        '{
+            turbulence.Benchmarks.runZio:
+              import zio.*, zio.stream.*
+              val source =
+                ZStream.fromIterable
+                  (turbulence.Benchmarks.inputChunks.map(c => Chunk.fromArray(c.asInstanceOf[Array[Byte]])))
+              for
+                queue <- Queue.bounded[Take[Nothing, Chunk[Byte]]](8)
+                _     <- source.runIntoQueue(queue).fork
+                total <- ZStream.fromQueue(queue).flattenTake.runFold(0L)((acc, c) => acc + c.size)
+              yield total
+        }
+    // Example P: constrained-heap scaling sweep — the same hand-off pipeline in a
+    // pinned 128 MB heap, with the pipeline count doubling from 1 towards 64.
+    // Each step is reported as its own row, so the table reads as the
+    // throughput/latency/memory-vs-N curve, and the sweep stops at the largest N
+    // the heap sustains (OutOfMemoryError, or over half the window spent in GC) —
+    // the bounded-buffer design should sustain more pipelines in the same heap.
+    suite(m"Stress: constrained-heap scaling sweep (128 MB heap, N ≤ 64)"):
+      constrained(m"Soundness  Conduit")(target = 1*Second, sweep = 64):
+        '{
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.foreach(intake.put)
+              intake.finish())
+            var total = 0L
+            stream.sweep((_, _, count) => total += count)
+            producer.join()
+            total
+        }
+
+      constrained(m"FS2  Channel.bounded")(target = 1*Second, sweep = 64):
+        '{
+            import cats.effect.unsafe.implicits.global
+            import cats.effect.IO
+            val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).flatMap: channel =>
+              val produce =
+                turbulence.Benchmarks.inputChunks.foldLeft(IO.unit): (io, chunk) =>
+                  io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[Array[Byte]])).void
+                *> channel.close.void
+              produce.start *> channel.stream.compile.fold(0L)((acc, chunk) => acc + chunk.size)
+            program.unsafeRunSync()
+        }
+
+      constrained(m"ZIO  Queue.bounded")(target = 1*Second, sweep = 64):
         '{
             turbulence.Benchmarks.runZio:
               import zio.*, zio.stream.*

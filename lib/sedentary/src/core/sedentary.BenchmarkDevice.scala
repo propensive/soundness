@@ -37,12 +37,14 @@ import anticipation.*
 import contingency.*
 import eucalyptus.*
 import galilei.*
+import gossamer.*
 import guillotine.*
 import inimitable.*
 import prepositional.*
 import rudiments.*
 import serpentine.*
 import urticose.*
+import vacuous.*
 
 import logging.silentLogging
 import workingDirectories.javaWorkingDirectory
@@ -50,20 +52,29 @@ import beneficence.*
 
 trait BenchmarkDevice extends Findable:
   def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError
-  def invoke(path: Path on Linux, input: Text): Text raises BenchError
+
+  // `heap` overrides the measurement JVM's fixed heap size (both `-Xms` and `-Xmx`), in
+  // `-Xmx` syntax, e.g. `t"256m"`; when unset, the default of `1g` applies. Constrained-heap
+  // stress tests use this to demonstrate what a workload sustains in a small, pinned heap.
+  def invoke(path: Path on Linux, input: Text, heap: Optional[Text] = Unset)
+  :   Text raises BenchError
+
   def undeploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError
 
 class NetworkDevice(user: Text, host: Hostname) extends BenchmarkDevice:
   def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError =
     safely(sh"scp $path $user@$host:$uuid.jar".exec[Exit]()).lest(BenchError())
 
-  def invoke(path: Path on Linux, input: Text): Text raises BenchError =
+  def invoke(path: Path on Linux, input: Text, heap: Optional[Text] = Unset)
+  :   Text raises BenchError =
+    val size = heap.or(t"1g")
+
     val command =
       sh"""
         java
           -XX:+AlwaysPreTouch
-          -Xms1g
-          -Xmx1g
+          -Xms$size
+          -Xmx$size
           -XX:CICompilerCount=2
           -XX:+UseSerialGC
           -jar ${path.name}
@@ -79,8 +90,10 @@ class NetworkDevice(user: Text, host: Hostname) extends BenchmarkDevice:
 object LocalhostDevice extends BenchmarkDevice:
   def deploy(path: Path on Linux, uuid: Uuid): Unit raises BenchError = ()
 
-  def invoke(path: Path on Linux, input: Text): Text raises BenchError =
-    val opts = sh"-XX:+AlwaysPreTouch -Xms1g -Xmx1g -XX:CICompilerCount=2 -XX:+UseSerialGC"
+  def invoke(path: Path on Linux, input: Text, heap: Optional[Text] = Unset)
+  :   Text raises BenchError =
+    val size = heap.or(t"1g")
+    val opts = sh"-XX:+AlwaysPreTouch -Xms$size -Xmx$size -XX:CICompilerCount=2 -XX:+UseSerialGC"
     val cmd = sh"java $opts -jar $path $input"
     safely(cmd.exec[Text]()).lest(BenchError())
 
