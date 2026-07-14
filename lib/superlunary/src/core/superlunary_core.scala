@@ -62,13 +62,31 @@ object embeddings:
         }
 
 
-def deleteOnShutdown(directory: jnf.Path): Unit =
-  val runnable: Runnable = () =>
-    if jnf.Files.exists(directory) then
-      val stream = jnf.Files.walk(directory).nn
+// The staging directories awaiting deletion at shutdown. A single shared hook drains them
+// sequentially: one hook per directory would have the JVM start them all concurrently at
+// exit, each walking a directory tree with open directory streams — enough, after a run
+// with many dispatches, to exhaust the process's file-descriptor limit at the very moment
+// cleanup runs.
+private val doomed: ju.concurrent.ConcurrentLinkedQueue[jnf.Path] =
+  ju.concurrent.ConcurrentLinkedQueue()
 
-      try stream.sorted(ju.Comparator.reverseOrder).nn.forEach: path =>
-        try jnf.Files.deleteIfExists(path.nn) catch case _: Throwable => ()
-      finally stream.close()
+private lazy val shutdownHook: Unit =
+  val runnable: Runnable = () =>
+    var directory = doomed.poll()
+
+    while directory != null do
+      if jnf.Files.exists(directory) then
+        val stream = jnf.Files.walk(directory).nn
+
+        try stream.sorted(ju.Comparator.reverseOrder).nn.forEach: path =>
+          try jnf.Files.deleteIfExists(path.nn) catch case _: Throwable => ()
+        catch case _: Throwable => ()
+        finally stream.close()
+
+      directory = doomed.poll()
 
   jl.Runtime.getRuntime.nn.addShutdownHook(jl.Thread(runnable))
+
+def deleteOnShutdown(directory: jnf.Path): Unit =
+  doomed.add(directory)
+  shutdownHook
