@@ -65,6 +65,12 @@ case class BenchUsers(users: List[BenchUser])
 object BenchUsers:
   given parsable: BenchUsers is Json.Parsable = Json.Parsable.derived
 
+// Jsoniter's view of the same records, with `String` fields as a Jsoniter
+// user would declare them (`Text` is an opaque zero-cost wrapper over
+// `String`, so the two targets are materially identical).
+case class JsoniterUser(id: Int, username: String, email: String, active: Boolean, role: String)
+case class JsoniterUsers(users: List[JsoniterUser])
+
 object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   sealed trait Information extends Dimension
   sealed trait Bytes[Power <: Nat] extends Units[Power, Information]
@@ -95,10 +101,19 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   def parseWithJackson(text: String): com.fasterxml.jackson.databind.JsonNode =
     jacksonMapper.readTree(text).nn
 
-  // The two decode arms: materialize the AST and walk it with `Decodable`,
-  // or parse tokens straight into the records with `Parsable`.
+  // The decode arms: materialize the AST and walk it with `Decodable`;
+  // parse tokens straight into the records with `Parsable`; or use
+  // Jsoniter's macro-generated direct codec (the state of the art for
+  // direct-to-case-class parsing on the JVM).
   def decodeUsersAst(): BenchUsers = LazyList(jsonBytes4).read[Json].as[BenchUsers]
   def decodeUsersDirect(): BenchUsers = LazyList(jsonBytes4).read[BenchUsers in Json]
+
+  val jsoniterUsersCodec: com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[JsoniterUsers] =
+    com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
+
+  def decodeUsersJsoniter(): JsoniterUsers =
+    com.github.plokhotnyuk.jsoniter_scala.core.readFromArray[JsoniterUsers]
+      ( jsonBytes4.mutable(using Unsafe) )(using jsoniterUsersCodec)
 
   def run(): Unit =
     val bench = Bench()
@@ -209,6 +224,9 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
       bench(m"Decode directly with Parsable")(target = 1*Second, operationSize = size4):
         '{ jacinta.Benchmarks.decodeUsersDirect() }
+
+      bench(m"Decode directly with Jsoniter")(target = 1*Second, operationSize = size4):
+        '{ jacinta.Benchmarks.decodeUsersJsoniter() }
 
     suite(m"Parse example 5 (500 log entries)"):
       bench(m"Parse file with Merino")
