@@ -30,7 +30,20 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package probably
 
-export sedentary.{Bench, BenchError, BenchmarkDevice, LocalhostDevice, NetworkDevice,
-    OperationSize, Profile, Stress}
+import anticipation.*
+
+object Hotspots:
+  given inclusion: Inclusion[Report, Hotspots]:
+    def include(report: Report, testId: TestId, hotspots: Hotspots): Report =
+      report.addHotspots(testId, hotspots)
+
+  // One hot method: the (demangled) class and method names, and how many execution samples
+  // landed in it — self time, i.e. the sample's top frame.
+  case class Frame(className: Text, method: Text, samples: Long)
+
+// The measured response to a profile test: `total` execution samples were taken over the
+// profiling window, and `frames` are the hottest methods in descending order of sample
+// count. Rendered in the report as a histogram, with methods coloured by package.
+case class Hotspots(total: Long, frames: List[Hotspots.Frame])
