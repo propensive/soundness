@@ -30,17 +30,35 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package probably
 
-export
-  probably
-  . { !==, +/-, ===, Arithmetic, Autopsy, Baseline, Benchmark, Cadential, Checkable, Ci, debug,
-      Geometric, GithubActions, Harness, Inclusion, Max, Mean, Min, Report, Reporter, Runner,
-      Strain, suite, Temporal, Test, test, Testable, TestId, TestPalette, Tolerance, Trial, Verdict,
-      ± }
+import anticipation.*
+import vacuous.*
 
-package harnesses:
-  export probably.harnesses.threadLocal
+object Strain:
+  given inclusion: Inclusion[Report, Strain]:
+    def include(report: Report, testId: TestId, strain: Strain): Report =
+      report.addStrain(testId, strain)
 
-package autopsies:
-  export probably.autopsies.{contrastExpectations, none}
+// The measured response to a stress test — the memory/scaling counterpart of `Benchmark`.
+// `concurrency` workers ran a body repeatedly
+// for a fixed wall-clock window of `nanoseconds`, completing `operations` operations in total.
+// `allocation` is the total heap allocation over the window; `peakHeap` the high-water mark of
+// the heap pools; `retained` the live set remaining after a post-run GC (bounded-memory designs
+// show a flat, small value here); `gcCount`/`gcTime` are the collector deltas over the window
+// (time in milliseconds).
+case class Strain
+  ( concurrency: Int,
+    operations:  Long,
+    nanoseconds: Long,
+    allocation:  Long,
+    peakHeap:    Long,
+    retained:    Long,
+    gcCount:     Long,
+    gcTime:      Long,
+    baseline:    Optional[Baseline] ):
+
+  def throughput: Long = if nanoseconds == 0L then 0L else (operations*1e9/nanoseconds).toLong
+
+  def allocationRate: Double =
+    if operations == 0L then 0.0 else allocation.toDouble/operations
