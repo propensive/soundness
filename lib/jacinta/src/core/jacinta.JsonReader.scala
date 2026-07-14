@@ -39,6 +39,11 @@ import vacuous.*
 import zephyrine.*
 
 object JsonReader:
+  // Sentinels of `keyWord()`; impossible as packed keys, whose bytes are
+  // all printable ASCII.
+  inline final val KeyEnd = -1L
+  inline final val KeyOpaque = -2L
+
   // Only jacinta's read path (`Json.parseDirect`) constructs readers, so the
   // parser-pool invariants (one exclusive `Parser` per thread) and the
   // resolution scope of the carried tactic are preserved by construction. The
@@ -96,10 +101,22 @@ extends caps.ExclusiveCapability, caps.Stateful:
 
   // As `key()`, but resolving against a precomputed key table without
   // materializing the key at all: the table index, `KeyTable.Unknown`, or
-  // `KeyTable.End` once the closing brace is consumed.
-  private[jacinta] update def keyIndex(table: Json.KeyTable): Int =
+  // `KeyTable.End` once the closing brace is consumed. Public because
+  // staged parsers are generated into user modules; also the fastest way
+  // for a hand-written parser to dispatch on keys.
+  update def keyIndex(table: Json.KeyTable): Int =
     val fast = parser.directKeyIndexFast(table)
     if fast != Int.MinValue then fast else parser.directKeyIndexGeneral(table)(using tactic)
+
+  // The next key step in packed form, for parsers that compare keys against
+  // literal constants (staged parsers compile field names to immediates):
+  // the packed low word of the key (its high word from `keyWordHigh`),
+  // `KeyEnd` once the closing brace is consumed, or `KeyOpaque` when the key
+  // cannot be scanned in place — the caller then takes the `keyIndex` step
+  // instead, which consumes it generally.
+  update def keyWord(): Long = parser.directKeyWordFast()
+
+  update def keyWordHigh: Long = parser.directKeyWordHigh
 
   update def openArray(): Unit = parser.directOpenArray()(using tactic)
   update def element(): Boolean = parser.directElement()(using tactic)

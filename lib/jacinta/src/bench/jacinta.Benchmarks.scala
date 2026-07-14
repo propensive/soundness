@@ -165,6 +165,11 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     given BenchUsers is Json.Parsable = handUsersParsable
     jsonBytes4.read[BenchUsers in Json]
 
+  def decodeUsersStaged(): BenchUsers =
+    given BenchUser is Json.Parsable = Json.Parsable.staged
+    given BenchUsers is Json.Parsable = Json.Parsable.staged
+    jsonBytes4.read[BenchUsers in Json]
+
   val jsoniterUsersCodec: com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[JsoniterUsers] =
     com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
 
@@ -291,6 +296,9 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
       bench(m"Decode with a hand-written Parsable")(target = 1*Second, operationSize = size4):
         '{ jacinta.Benchmarks.decodeUsersHand() }
+
+      bench(m"Decode with a staged Parsable")(target = 1*Second, operationSize = size4):
+        '{ jacinta.Benchmarks.decodeUsersStaged() }
 
       bench(m"Decode directly with Jsoniter")(target = 1*Second, operationSize = size4):
         '{ jacinta.Benchmarks.decodeUsersJsoniter() }

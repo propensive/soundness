@@ -1336,3 +1336,332 @@ object internal:
           . absolve match
             case '[type result <: Tuple; result] =>
               '{$result.asInstanceOf[Option[result]]}
+
+
+  // ── Staged parser generation ──────────────────────────────────────────────
+  // Generates a monomorphic `Json.Parsable` for a case class: field values
+  // live in typed locals, keys dispatch through a precomputed `KeyTable`
+  // into an integer switch, builtin primitives read inline off the token
+  // stream, and the record is built by a direct constructor call — no
+  // `Array[Any]` buffer, no `Mirror`, no per-field boxing. Field types
+  // beyond the builtins resolve through `Json.Field` instances (summoned at
+  // expansion, initialized lazily so recursive references stay deferred),
+  // so semantics — defaults, `@name`, absent-vs-null, unknown keys,
+  // duplicates, error foci — are identical to `ParsableDerivation`. The
+  // body is assembled from reflection trees with only small, immediately-
+  // scoped quotes: chained quotes carrying `Type` bindings through closures
+  // are unpicklable.
+
+  private enum StagedKind:
+    case IntK, LongK, DoubleK, FloatK, BooleanK, TextK, StringK, InstanceK
+
+  def stagedParsable[value: Type](renames: Expr[Map[Text, Text]])(using Quotes)
+  :   Expr[value is Json.Parsable] =
+
+    import quotes.reflect.*
+    import StagedKind.*
+
+    val tpe = TypeRepr.of[value].dealias
+
+    val classSymbol = tpe.classSymbol.getOrElse:
+      report.errorAndAbort("jacinta: staged parsing requires a case class")
+
+    if !classSymbol.flags.is(Flags.Case) then
+      report.errorAndAbort
+        ("jacinta: staged parsing requires a case class; sums and other types use "+
+          "`Json.Parsable.derived`")
+
+    if classSymbol.owner.isTerm then
+      report.errorAndAbort
+        ("jacinta: staged parsing requires a top-level or object-nested case class; "+
+          "method-local classes use `Json.Parsable.derived`")
+
+    val ctor = classSymbol.primaryConstructor
+
+    if ctor.paramSymss.filterNot(_.exists(_.isTypeParam)).length != 1 then
+      report.errorAndAbort
+        ("jacinta: staged parsing requires a single parameter list; use "+
+          "`Json.Parsable.derived`")
+
+    val fields = classSymbol.caseFields
+    val arity = fields.length
+    val fieldNames: List[String] = fields.map(_.name)
+    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
+
+    def kindOf(fieldType: TypeRepr): StagedKind =
+      if fieldType =:= TypeRepr.of[Int] then IntK
+      else if fieldType =:= TypeRepr.of[Long] then LongK
+      else if fieldType =:= TypeRepr.of[Double] then DoubleK
+      else if fieldType =:= TypeRepr.of[Float] then FloatK
+      else if fieldType =:= TypeRepr.of[Boolean] then BooleanK
+      else if fieldType =:= TypeRepr.of[Text] then TextK
+      else if fieldType =:= TypeRepr.of[String] then StringK
+      else InstanceK
+
+    val kinds: List[StagedKind] = fieldTypes.map(kindOf)
+
+    // Keys compile to literal packed-word comparisons when no `@name`
+    // annotation can rename them (renames resolve at runtime, so annotated
+    // classes keep the table-resolving step). A field whose name itself
+    // cannot pack still parses: an unpackable wire key always takes the
+    // general `keyIndex` step, which matches all fields by string.
+    val literalKeys: Boolean =
+      val annotated = ctor.paramSymss.flatten.filterNot(_.isTypeParam).flatMap(_.annotations)
+        ++ fields.flatMap(_.annotations)
+
+      !annotated.exists { annotation =>
+        annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+
+    def packedName(index: Int): Option[(Long, Long)] =
+      val name = fieldNames(index)
+      val length = name.length
+
+      val packs = length > 0 && length <= 16 &&
+        name.forall { char => char >= ' ' && char < 127 }
+
+      if !packs then None else
+        var low = 0L
+        var high = 0L
+        var position = 0
+
+        while position < length do
+          val byte = name.charAt(position).toLong & 0xFF
+          if position < 8 then low |= byte << (position*8)
+          else high |= byte << ((position - 8)*8)
+          position += 1
+
+        Some((low, high))
+
+    val packedNames: List[Option[(Long, Long)]] = List.range(0, arity).map(packedName)
+
+    def summonField(index: Int): Expr[Json.Field | Null] =
+      if kinds(index) != InstanceK then '{null}
+      else fieldTypes(index).asType match
+        case '[fieldType] =>
+          Expr.summon[fieldType is Json.Field].getOrElse:
+            report.errorAndAbort
+              (s"jacinta: no Json.Field instance for field ${fieldNames(index)}: "+
+                fieldTypes(index).show)
+
+    def declaredDefault(index: Int): Expr[Any] = fieldTypes(index).asType match
+      case '[fieldType] =>
+        '{ wisteria.internal.default[value, fieldType](${Expr(index)}): Any }
+
+    def zero(fieldType: TypeRepr): Term =
+      if fieldType =:= TypeRepr.of[Int] then Literal(IntConstant(0))
+      else if fieldType =:= TypeRepr.of[Long] then Literal(LongConstant(0L))
+      else if fieldType =:= TypeRepr.of[Double] then Literal(DoubleConstant(0.0))
+      else if fieldType =:= TypeRepr.of[Float] then Literal(FloatConstant(0.0f))
+      else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
+      else fieldType.asType match
+        case '[fieldType] => '{ null.asInstanceOf[fieldType] }.asTerm
+
+    def body
+      ( reader:    Expr[JsonReader],
+        foci:      Expr[Foci[Json.Focus]],
+        tactic:    Expr[Tactic[JsonError]],
+        keys:      Expr[IArray[String]],
+        table:     Expr[Json.KeyTable],
+        instances: Expr[IArray[Json.Field | Null]],
+        fallbacks: Expr[IArray[Any]] )
+    :   Expr[value] =
+
+      val owner = Symbol.spliceOwner
+
+      val slots = List.range(0, arity).map: index =>
+        Symbol.newVal(owner, "slot"+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
+
+      val seens = List.range(0, arity).map: index =>
+        Symbol.newVal(owner, "seen"+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+
+      val cursor = Symbol.newVal(owner, "index", TypeRepr.of[Int], Flags.Mutable, Symbol.noSymbol)
+
+      val slotDefs = List.range(0, arity).map: index =>
+        ValDef(slots(index), Some(zero(fieldTypes(index))))
+
+      val seenDefs = List.range(0, arity).map: index =>
+        ValDef(seens(index), Some(Literal(BooleanConstant(false))))
+
+      // One switch arm per field: read the value (with focus bookkeeping),
+      // assign it and mark it seen.
+      val arms = List.range(0, arity).map: index =>
+        val read: Term = fieldTypes(index).asType match
+          case '[fieldType] =>
+            val raw: Expr[fieldType] = kinds(index) match
+              case IntK     => '{ $reader.long().toInt }.asExprOf[fieldType]
+              case LongK    => '{ $reader.long() }.asExprOf[fieldType]
+              case DoubleK  => '{ $reader.double() }.asExprOf[fieldType]
+              case FloatK   => '{ $reader.double().toFloat }.asExprOf[fieldType]
+              case BooleanK => '{ $reader.boolean() }.asExprOf[fieldType]
+              case TextK    => '{ $reader.string() }.asExprOf[fieldType]
+              case StringK  => '{ $reader.string().s }.asExprOf[fieldType]
+
+              case InstanceK =>
+                '{
+                  $instances(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
+                  . parse($reader)
+                }
+
+            '{ Json.Parsable.focusing($foci, $keys(${Expr(index)}).tt)($raw) }.asTerm
+
+        val rhs =
+          Block
+            ( List(Assign(Ref(slots(index)), read),
+                Assign(Ref(seens(index)), Literal(BooleanConstant(true)))),
+              Literal(UnitConstant()) )
+
+        CaseDef(Literal(IntConstant(index)), None, rhs)
+
+      val fallthrough = CaseDef(Wildcard(), None, '{ $reader.skipValue() }.asTerm)
+
+      // The key loop. With literal keys, each step scans the key in place
+      // and compares its packed words against the field names as immediate
+      // constants; otherwise (or whenever the in-place scan cannot run) the
+      // general step resolves the key through the table.
+      val loop: List[Statement] =
+        if literalKeys then
+          val owner2 = owner
+          val run = Symbol.newVal(owner2, "run", TypeRepr.of[Boolean], Flags.Mutable,
+            Symbol.noSymbol)
+
+          val word = Symbol.newVal(owner2, "word", TypeRepr.of[Long], Flags.EmptyFlags,
+            Symbol.noSymbol)
+
+          val high = Symbol.newVal(owner2, "high", TypeRepr.of[Long], Flags.EmptyFlags,
+            Symbol.noSymbol)
+
+          val found = Symbol.newVal(owner2, "found", TypeRepr.of[Int], Flags.EmptyFlags,
+            Symbol.noSymbol)
+
+          val wordRef = Ref(word).asExprOf[Long]
+          val highRef = Ref(high).asExprOf[Long]
+
+          def chain(index: Int): Term =
+            if index == arity then '{ Json.KeyTable.Unknown }.asTerm
+            else packedNames(index) match
+              case None => chain(index + 1)
+
+              case Some((low, highWord)) =>
+                If
+                  ( '{ $wordRef == ${Expr(low)} && $highRef == ${Expr(highWord)} }.asTerm,
+                    Literal(IntConstant(index)),
+                    chain(index + 1) )
+
+          val resolve: Term =
+            If
+              ( '{ $wordRef == JsonReader.KeyOpaque }.asTerm,
+                '{ $reader.keyIndex($table) }.asTerm,
+                Block(List(ValDef(high, Some('{ $reader.keyWordHigh }.asTerm))), chain(0)) )
+
+          val step: Term =
+            Block
+              ( List(ValDef(word, Some('{ $reader.keyWord() }.asTerm))),
+                If
+                  ( '{ $wordRef == JsonReader.KeyEnd }.asTerm,
+                    Assign(Ref(run), Literal(BooleanConstant(false))),
+                    Block
+                      ( List(ValDef(found, Some(resolve))),
+                        If
+                          ( '{ ${Ref(found).asExprOf[Int]} == Json.KeyTable.End }.asTerm,
+                            Assign(Ref(run), Literal(BooleanConstant(false))),
+                            Match(Ref(found), arms :+ fallthrough) ) ) ) )
+
+          List
+            ( ValDef(run, Some(Literal(BooleanConstant(true)))),
+              While(Ref(run), step) )
+        else
+          val next: Term = '{ $reader.keyIndex($table) }.asTerm
+          val dispatch = Match(Ref(cursor), arms :+ fallthrough)
+
+          List
+            ( ValDef(cursor, Some(next)),
+              While
+                ( '{ ${Ref(cursor).asExprOf[Int]} != Json.KeyTable.End }.asTerm,
+                  Block(List(dispatch), Assign(Ref(cursor), next)) ) )
+
+      // Fields whose keys never arrived: the declared default, else the
+      // field's absent value (`Unset`/`None` for optional shapes, an
+      // `Absent` error otherwise).
+      val absents: List[Term] = List.range(0, arity).map: index =>
+        fieldTypes(index).asType match
+          case '[fieldType] =>
+            val onAbsent: Expr[fieldType] = kinds(index) match
+              case InstanceK =>
+                '{
+                  $instances(${Expr(index)}).asInstanceOf[fieldType is Json.Field]
+                  . absent()(using $tactic)
+                }
+
+              case _ => '{ Json.Parsable.missing[fieldType]()(using $tactic) }
+
+            val resolve: Term =
+              '{
+                val declared = $fallbacks(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+
+                if !declared.absent then declared.asInstanceOf[fieldType]
+                else Json.Parsable.focusing($foci, $keys(${Expr(index)}).tt)($onAbsent)
+              }.asTerm
+
+            If
+              ( '{ !${Ref(seens(index)).asExprOf[Boolean]} }.asTerm,
+                Assign(Ref(slots(index)), resolve),
+                Literal(UnitConstant()) )
+
+      val construct: Term =
+        val typeArguments = tpe match
+          case AppliedType(_, arguments) => arguments
+          case _                         => Nil
+
+        val newTerm = Select(New(Inferred(tpe)), ctor)
+
+        val applied =
+          if typeArguments.isEmpty then newTerm
+          else TypeApply(newTerm, typeArguments.map { argument => Inferred(argument) })
+
+        Apply(applied, slots.map { slot => Ref(slot) })
+
+      Block
+        ( '{ $reader.openObject() }.asTerm
+            :: slotDefs ::: seenDefs
+            ::: loop
+            ::: absents,
+          construct )
+      . asExprOf[value]
+
+    def summonOrAbort[required: Type](role: String): Expr[required] =
+      Expr.summon[required].getOrElse:
+        report.errorAndAbort(s"jacinta: staged parsing needs a contextual $role")
+
+    val fociExpr = summonOrAbort[Foci[Json.Focus]]("Foci[Json.Focus]")
+    val tacticExpr = summonOrAbort[Tactic[JsonError]]("Tactic[JsonError]")
+    val nameExprs = fieldNames.map { name => Expr(name) }
+    val instanceExprs = List.range(0, arity).map(summonField)
+    val fallbackExprs = List.range(0, arity).map(declaredDefault)
+
+    '{
+      // Sealed per the codec-thunk pattern, like the derived instances: the
+      // generated parser captures the resolution-scoped tactic and foci.
+      // The instance and default arrays are single lazy vals, so recursive
+      // self-references stay deferred until the first parse.
+      caps.unsafe.unsafeAssumePure:
+        val foci: Foci[Json.Focus] = $fociExpr
+        val tactic: Tactic[JsonError] = $tacticExpr
+
+        val keys: IArray[String] =
+          Json.Parsable.wireKeys(IArray[String](${Varargs(nameExprs)}*), $renames)
+
+        val table: Json.KeyTable = Json.KeyTable(keys)
+        lazy val instances: IArray[Json.Field | Null] = IArray(${Varargs(instanceExprs)}*)
+        lazy val fallbacks: IArray[Any] = IArray[Any](${Varargs(fallbackExprs)}*)
+
+        new Json.Parsable:
+          type Self = value
+          def shape(): Morphology = Morphology.Any
+
+          def parse(reader: JsonReader^): value =
+            ${
+              body
+                ( '{reader}, '{foci}, '{tactic}, '{keys}, '{table}, '{instances},
+                  '{fallbacks} )
+            }
+    }

@@ -1013,6 +1013,70 @@ object Tests extends Suite(m"Jacinta Tests"):
         t"""\"Syd\"""".read[Worker in Json]
       . assert(_ == Worker(t"Syd", 0))
 
+    suite(m"Staged direct parsing tests"):
+      given Person is Json.Parsable = Json.Parsable.staged
+      given Band is Json.Parsable = Json.Parsable.staged
+      given WithDefault is Json.Parsable = Json.Parsable.staged
+      given Renamed is Json.Parsable = Json.Parsable.staged
+      given FooOptional is Json.Parsable = Json.Parsable.staged
+      given Tree is Json.Parsable = Json.Parsable.staged
+      given Boxed[Int] is Json.Parsable = Json.Parsable.staged
+
+      inline def agree[record](json: Text)(using record is Json.Parsable, record is Json.Decodable)
+      :   Boolean =
+        json.read[record in Json] == json.read[Json].as[record]
+
+      test(m"A staged parser reads a simple record"):
+        t"""{"name": "Amy", "age": 50}""".read[Person in Json]
+      . assert(_ == Person(t"Amy", 50))
+
+      test(m"A staged parser accepts reordered and unknown fields"):
+        t"""{"extra": [{}], "age": 50, "name": "Amy"}""".read[Person in Json]
+      . assert(_ == Person(t"Amy", 50))
+
+      test(m"A staged parser takes declared defaults"):
+        t"""{"name": "Kid"}""".read[WithDefault in Json]
+      . assert(_ == WithDefault(t"Kid", 18))
+
+      test(m"A staged parser raises Absent for missing required fields"):
+        capture[JsonError](t"""{"age": 50}""".read[Person in Json]).reason
+      . assert(_ == JsonError.Reason.Absent)
+
+      test(m"A staged parser honors @name renames"):
+        agree[Renamed](t"""{"first_name": "Jon", "yob": 1983}""")
+      . assert(identity)
+
+      test(m"A staged parser handles Optional null-vs-absent"):
+        ( t"""{"x": 1}""".read[FooOptional in Json],
+          t"""{"x": 1, "y": null}""".read[FooOptional in Json],
+          t"""{"x": 1, "y": 2}""".read[FooOptional in Json] )
+      . assert(_ == (FooOptional(1, Unset), FooOptional(1, Unset), FooOptional(1, 2)))
+
+      test(m"A staged parser reads collection and option fields"):
+        val json = t"""{"guitarists": [{"name": "John", "age": 40}], "drummer":
+            {"name": "Ringo", "age": 82}, "bassist": {"name": "Paul", "age": 81}}"""
+
+        agree[Band](json)
+      . assert(identity)
+
+      test(m"A staged parser handles recursive types"):
+        agree[Tree](t"""{"value": "a", "children": [{"value": "b", "children": []}]}""")
+      . assert(identity)
+
+      test(m"A staged parser handles generic products"):
+        t"""{"value": 42}""".read[Boxed[Int] in Json]
+      . assert(_ == Boxed(42))
+
+      test(m"A staged parser is last-wins for duplicate keys"):
+        agree[Person](t"""{"name": "Amy", "name": "Bea", "age": 50}""")
+      . assert(identity)
+
+      test(m"A staged parser rejects mistyped fields with ParseError"):
+        capture[ParseError](t"""{"name": "Amy", "age": "x"}""".read[Person in Json])
+      . assert(_.issue match
+          case Json.Ast.Issue.ExpectedNumber('"') => true
+          case _                                  => false)
+
     suite(m"Sum encoding tests"):
       test(m"Wrapper encoding writes a single-key object"):
         given Shape is Discriminable in Json = Json.DiscriminantWrapper()

@@ -2463,6 +2463,103 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     pos = k + 1
     table.indexOf(low, high)
 
+  // High word of the key most recently scanned by `directKeyWordFast`.
+  private var directKeyHigh: Long = 0L
+
+  private[jacinta] update def directKeyWordHigh: Long = directKeyHigh
+
+  // As `directKeyIndexFast`, but exposing the key's packed form instead of
+  // resolving it against a table, so generated (staged) parsers can compare
+  // against literal constants. Returns the packed low word (the high word is
+  // left in `directKeyHigh`), `-1L` after consuming the closing brace, or
+  // `-2L` when the fast path cannot run here (window edge, escapes,
+  // oversized or empty keys, or malformed input) — both sentinels are
+  // impossible as packed keys, whose bytes are all printable ASCII. On
+  // `-2L`, nothing is committed: the caller falls back to the general,
+  // table-resolving step.
+  private[jacinta] update def directKeyWordFast(): Long =
+    val limit = bufEnd
+    var i = pos
+
+    while
+      i < limit && {
+        val b = bytes(i)
+        b == Space || b == Tab || b == Newline || b == Return
+      }
+    do i += 1
+
+    if i >= limit then return -2L
+    val seen = directSeen()
+    var b = bytes(i)
+
+    if b == CloseBrace then
+      pos = i + 1
+      directPop()
+      return -1L
+
+    if seen then
+      if b != Comma then return -2L
+      i += 1
+
+      while
+        i < limit && {
+          val b2 = bytes(i)
+          b2 == Space || b2 == Tab || b2 == Newline || b2 == Return
+        }
+      do i += 1
+
+      if i >= limit then return -2L
+      b = bytes(i)
+
+    if b != Quote then return -2L
+    val start = i + 1
+    var j = start
+    var scanning = true
+
+    while scanning && j <= limit - 8 do
+      val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], j)
+      val stops = stringStops(word)
+
+      if stops == 0L then j += 8
+      else
+        j += java.lang.Long.numberOfTrailingZeros(stops) >> 3
+        scanning = false
+
+    if scanning then while j < limit && StringScanContinue(bytes(j) & 0xFF) != 0 do j += 1
+
+    if j >= limit || bytes(j) != Quote || j == start || j - start > 16 then return -2L
+    val length = j - start
+
+    val low =
+      if start + 8 <= limit then
+        val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start)
+        if length >= 8 then word else word & ((1L << (length*8)) - 1)
+      else packBytes(bytes, start, math.min(length, 8))
+
+    val high =
+      if length > 8 then
+        if start + 16 <= limit then
+          val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start + 8)
+          if length == 16 then word else word & ((1L << ((length - 8)*8)) - 1)
+        else packBytes(bytes, start + 8, length - 8)
+      else 0L
+
+    var k = j + 1
+
+    while
+      k < limit && {
+        val b3 = bytes(k)
+        b3 == Space || b3 == Tab || b3 == Newline || b3 == Return
+      }
+    do k += 1
+
+    if k >= limit || bytes(k) != Colon then return -2L
+
+    if !seen then directMark()
+    pos = k + 1
+    directKeyHigh = high
+    low
+
   private[jacinta] update def directKeyIndexGeneral(table: Json.KeyTable)(using Tactic[ParseError])
   :   Int =
 

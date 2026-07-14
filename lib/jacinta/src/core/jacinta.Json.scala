@@ -633,6 +633,13 @@ object Json extends Json2, Dynamic:
     inline def derived[value](using Reflection[value]): value is Json.Parsable =
       fromField(ParsableDerivation.derivedOne[value])
 
+    // Generates a monomorphic parser for a case class at compile time — the
+    // staged counterpart of `derived`, with identical semantics but no
+    // interpretive machinery at runtime. Sums, method-local classes and
+    // curried case classes stay on `derived`.
+    inline def staged[value]: value is Json.Parsable =
+      ${ jacinta.internal.stagedParsable[value]('{ relabelling[value, Json] }) }
+
     def fromField[value](field0: (value is Json.Parsing)^)
     :   ((value is Json.Parsable)^{field0}) =
 
@@ -730,6 +737,23 @@ object Json extends Json2, Dynamic:
               name = reader.keyName()
 
             entries
+
+    // Support points for staged parsers, which are generated into user
+    // modules and so may only reference public members.
+
+    // The wire keys of a product's fields, `@name` renames applied.
+    def wireKeys(names: IArray[String], renames: Map[Text, Text]): IArray[String] =
+      names.map { name => renames.at(name.tt).or(name.tt).s }
+
+    // A required field whose key was absent from the object.
+    def missing[value]()(using Tactic[JsonError]): value = abort(JsonError(Reason.Absent))
+
+    // Focus bookkeeping for one field read, compiled away when the ambient
+    // `Foci` is the inert default — the same short-circuit as the derived
+    // parser's loop.
+    inline def focusing[result](foci: Foci[Json.Focus], key: Text)(inline block: => result)
+    :   result =
+      if foci.active then focus(using foci)(descend(prior, key))(block) else block
 
     // The prior focus's pointer, extended by one step. Called inside
     // `focus`'s transform context, so it only runs at error-registration
