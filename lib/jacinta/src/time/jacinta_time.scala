@@ -57,3 +57,13 @@ package decodables:
   =>  Duration is Json.Decodable =
     caps.unsafe.unsafeAssumePure:
       Json.Decodable(Morphology.Whole): json => Duration(json.root.long)
+
+package parsables:
+  // Direct-parsing counterparts: the epoch number is read straight off the
+  // token stream, with no intermediate AST node or string. Genuinely pure —
+  // raising happens inside the `JsonReader`, through the tactic it carries.
+  given instantJsonParsable: (Instant over Posix) is Json.Parsable =
+    Json.Parsable(Morphology.Whole): reader => Instant.of[Posix](reader.long())
+
+  given durationJsonParsable: Duration is Json.Parsable =
+    Json.Parsable(Morphology.Whole): reader => Duration(reader.long())

@@ -106,6 +106,10 @@ case class TreeOpt(value: Text, child: Optional[TreeOpt]) derives CanEqual
 case class Forest(trees: Map[Text, Tree]) derives CanEqual
 case class Boxed[value](value: value) derives CanEqual
 
+// Read by a hand-written `Json.Parsable` in the direct-parsing tests.
+case class DirectPoint(x: Int, y: Int) derives CanEqual
+
+
 object Tests extends Suite(m"Jacinta Tests"):
   def run(): Unit =
     suite(m"Parsing tests"):
@@ -767,6 +771,217 @@ object Tests extends Suite(m"Jacinta Tests"):
       test(m"primitive of null is Null"):
         Json.unseal(t"null".read[Json]).primitive
       . assert(_ == JsonPrimitive.Null)
+
+    suite(m"Direct parsing tests"):
+      test(m"Read an Int directly"):
+        t"42".read[Int in Json]
+      . assert(_ == 42)
+
+      test(m"Read a Long directly"):
+        t"1234567890123".read[Long in Json]
+      . assert(_ == 1234567890123L)
+
+      test(m"Read a Double directly"):
+        t"3.1415926".read[Double in Json]
+      . assert(_ == 3.1415926)
+
+      test(m"Read a Boolean directly"):
+        t"true".read[Boolean in Json]
+      . assert(identity)
+
+      test(m"Read a Text directly"):
+        t"\"hello world\"".read[Text in Json]
+      . assert(_ == t"hello world")
+
+      test(m"Read a string with escapes directly"):
+        t"\"a\\nb\\u0041\"".read[Text in Json]
+      . assert(_ == t"a\nbA")
+
+      test(m"Read with surrounding whitespace"):
+        t"  42  ".read[Int in Json]
+      . assert(_ == 42)
+
+      test(m"Direct number coercion matches the AST path"):
+        t"3.9".read[Long in Json]
+      . assert(_ == 3L)
+
+      test(m"Read a Json value through the direct path"):
+        t"""{"a": 1}""".read[Json in Json].as[Json]
+      . assert: json =>
+          import dynamicJsonAccess.enabled
+          unsafely(json.a.as[Int]) == 1
+
+      test(m"A hand-written Parsable reads an object without an AST"):
+        given DirectPoint is Json.Parsable = Json.Parsable(Morphology.Any): reader =>
+          reader.openObject()
+          var x = 0
+          var y = 0
+
+          while
+            reader.key().lay(false): key =>
+              if key == t"x" then x = reader.int()
+              else if key == t"y" then y = reader.int()
+              else reader.skipValue()
+              true
+          do ()
+
+          DirectPoint(x, y)
+
+        t"""{"y": 3, "unknown": [1, {"a": false}], "x": 2}""".read[DirectPoint in Json]
+      . assert(_ == DirectPoint(2, 3))
+
+      test(m"Trailing content after a direct read raises ParseError"):
+        capture[ParseError](t"42 true".read[Int in Json])
+      . assert(_.issue match
+          case Json.Ast.Issue.SpuriousContent(_) => true
+          case _                                 => false)
+
+      test(m"Type mismatch on a direct read raises ParseError"):
+        capture[ParseError](t"\"abc\"".read[Int in Json])
+      . assert(_.issue match
+          case Json.Ast.Issue.ExpectedNumber('"') => true
+          case _                                  => false)
+
+      test(m"Malformed JSON on a direct read raises ParseError"):
+        capture[ParseError](t"tru".read[Boolean in Json])
+      . assert(_.issue match
+          case Json.Ast.Issue.PrematureEnd | Json.Ast.Issue.ExpectedTrue => true
+          case _                                                         => false)
+
+    suite(m"Derived direct parsing tests"):
+      given Person is Json.Parsable = Json.Parsable.derived
+      given Band is Json.Parsable = Json.Parsable.derived
+      given WithDefault is Json.Parsable = Json.Parsable.derived
+      given Renamed is Json.Parsable = Json.Parsable.derived
+      given FooOption is Json.Parsable = Json.Parsable.derived
+      given FooOptional is Json.Parsable = Json.Parsable.derived
+      given Org is Json.Parsable = Json.Parsable.derived
+      given Tree is Json.Parsable = Json.Parsable.derived
+      given TreeOpt is Json.Parsable = Json.Parsable.derived
+      given Forest is Json.Parsable = Json.Parsable.derived
+      given Empty is Json.Parsable = Json.Parsable.derived
+      given NewBand is Json.Parsable = Json.Parsable.derived
+      given Status is Json.Parsable = Json.Parsable.derived
+      given Boxed[Int] is Json.Parsable = Json.Parsable.derived
+
+      // The acceptance criterion for derivation: the direct read must equal
+      // the AST-path read, for the same input.
+      inline def parity[value](json: Text)
+        ( using value is Json.Parsable, value is Json.Decodable )
+      :   Boolean =
+        json.read[value in Json] == json.read[Json].as[value]
+
+      test(m"Derive a direct product parser"):
+        t"""{"name": "Amy", "age": 50}""".read[Person in Json]
+      . assert(_ == Person(t"Amy", 50))
+
+      test(m"Derived parser accepts reordered fields"):
+        t"""{"age": 50, "name": "Amy"}""".read[Person in Json]
+      . assert(_ == Person(t"Amy", 50))
+
+      test(m"Derived parser skips unknown fields, including nested ones"):
+        t"""{"name": "Amy", "extra": {"deep": [1, {"x": null}]}, "age": 50}"""
+        . read[Person in Json]
+      . assert(_ == Person(t"Amy", 50))
+
+      test(m"Duplicate keys are last-wins, as on the AST path"):
+        parity[Person](t"""{"name": "Amy", "name": "Bea", "age": 50}""")
+      . assert(identity)
+
+      test(m"A missing field takes the declared default"):
+        t"""{"name": "Kid"}""".read[WithDefault in Json]
+      . assert(_ == WithDefault(t"Kid", 18))
+
+      test(m"A missing required field raises JsonError Absent"):
+        capture[JsonError](t"""{"age": 50}""".read[Person in Json])
+      . assert(_.reason match
+          case JsonError.Reason.Absent => true
+          case _                       => false)
+
+      test(m"@name renames apply to direct parsing"):
+        parity[Renamed](t"""{"first_name": "Jon", "yob": 1983}""")
+      . assert(identity)
+
+      test(m"An absent Option field is None"):
+        t"""{"x": 1}""".read[FooOption in Json]
+      . assert(_ == FooOption(1, None))
+
+      test(m"An Optional field reads null and absent as Unset, a value as itself"):
+        ( t"""{"x": 1}""".read[FooOptional in Json],
+          t"""{"x": 1, "y": null}""".read[FooOptional in Json],
+          t"""{"x": 1, "y": 2}""".read[FooOptional in Json] )
+      . assert(_ == (FooOptional(1, Unset), FooOptional(1, Unset), FooOptional(1, 2)))
+
+      test(m"Nested products and collections parse directly"):
+        val json = t"""{"name": "Acme", "leader":
+            {"name": "Bob", "age": 40, "roles": [{"name": "CEO"}, {"name": "CTO"}]}}"""
+
+        json.read[Org in Json]
+      . assert(_ == Org("Acme", Entity("Bob", 40, List(Role("CEO"), Role("CTO")))))
+
+      test(m"A full record round-trips equally on both paths"):
+        val json = t"""{"guitarists": [{"name": "John", "age": 40}, {"name": "George", "age":
+            58}], "drummer": {"name": "Ringo", "age": 82}, "bassist": {"name": "Paul", "age":
+            81}}"""
+
+        parity[Band](json)
+      . assert(identity)
+
+      test(m"Recursive types parse directly"):
+        parity[Tree](t"""{"value": "a", "children": [{"value": "b", "children": []}]}""")
+      . assert(identity)
+
+      test(m"Recursion through an Optional parses directly"):
+        parity[TreeOpt](t"""{"value": "a", "child": {"value": "b"}}""")
+      . assert(identity)
+
+      test(m"Recursion through a Map parses directly"):
+        parity[Forest](t"""{"trees": {"oak": {"value": "a", "children": []}}}""")
+      . assert(identity)
+
+      test(m"An empty case class parses from an object with spurious fields"):
+        t"""{"whatever": 42}""".read[Empty in Json]
+      . assert(_ == Empty())
+
+      test(m"A generic product parses directly"):
+        t"""{"value": 42}""".read[Boxed[Int] in Json]
+      . assert(_ == Boxed(42))
+
+      test(m"A sum dispatches by discriminator, anywhere in the object"):
+        parity[Status](t"""{"since": 2020, "kind": "ok"}""")
+      . assert(identity)
+
+      test(m"A collection of a derived sum parses equally on both paths"):
+        val json = t"""{"members": [{"person": {"name": "Paul", "age": 81}, "kind": "Bassist"},
+            {"person": {"name": "Ringo", "age": 82}, "kind": "Drummer"}]}"""
+
+        parity[NewBand](json)
+      . assert(identity)
+
+      test(m"A top-level collection of an opted-in element reads directly"):
+        t"""[{"name": "Amy", "age": 50}, {"name": "Bea", "age": 60}]"""
+        . read[List[Person] in Json]
+      . assert(_ == List(Person(t"Amy", 50), Person(t"Bea", 60)))
+
+      test(m"A mistyped directly-parsed field raises ParseError"):
+        // On the AST path this is a `JsonError`; token-level readers report
+        // type mismatches as parse errors, with source positions.
+        capture[ParseError](t"""{"name": "Amy", "age": "x"}""".read[Person in Json])
+      . assert(_.issue match
+          case Json.Ast.Issue.ExpectedNumber('"') => true
+          case _                                  => false)
+
+      test(m"A custom Decodable beats derivation via fromDecodable"):
+        // The documented escape hatch for a type whose hand-written decoder
+        // must win over structural derivation.
+        val decodable: Worker is Json.Decodable =
+          Json.Decodable(Morphology.Str): json =>
+            unsafely(Worker(json.root.string, 0))
+
+        given Worker is Json.Parsable = Json.Parsable.fromDecodable(decodable)
+
+        t"""\"Syd\"""".read[Worker in Json]
+      . assert(_ == Worker(t"Syd", 0))
 
     suite(m"Json error handling"):
       test(m"Decode wrong type raises JsonError NotType"):

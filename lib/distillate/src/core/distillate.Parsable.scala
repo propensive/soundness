@@ -30,9 +30,24 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package distillate
 
-export
-  distillate
-  . { As, as, Decodable, Decodable2, Enumerable, Extractable, Identifiable, Irrefutable,
-      NumberError, Parsable, Requirable }
+import prepositional.*
+
+// The streaming counterpart of `Decodable`: instead of receiving an
+// already-materialized `Form` value (a `Json`, an `Xml`), a `Parsable` instance
+// drives a format-specific token reader directly over the input, so composite
+// values are instantiated without an intermediate syntax tree. `Transport`
+// names the format (`value is Parsable over Json`); `Reader` is the format's
+// token-reader capability, fixed by each format's subtrait (Jacinta's
+// `Json.Parsable` sets `Reader = JsonReader`).
+//
+// The reader is an exclusive, stateful capability owned by the caller for the
+// duration of the call; nothing of it may be retained in `Self`. Parse errors
+// flow through the reader (which carries its own tactic) or through a
+// resolution-scoped `Tactic` captured at instance construction (codec-thunk
+// seal; see rep/DECISIONS.md), so `parse` itself needs no error vocabulary and
+// the generic trait needs no dependency on any parsing substrate.
+trait Parsable extends Typeclass, Transportive:
+  type Reader
+  def parse(reader: Reader^): Self

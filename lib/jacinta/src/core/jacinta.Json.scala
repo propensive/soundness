@@ -83,6 +83,35 @@ private[jacinta] trait JsonDecodable[T] extends Decodable:
 // `Json.Decodable`) so generic `as[T]` callers bounded on `Decodable in Json`
 // still resolve.
 trait Json3:
+  // The universal fallback for `Json.Field` — the typeclass the product
+  // derivation resolves per field — mirroring `Json2.decodable`'s dispatch
+  // order so a field's wire format is identical on both paths: an explicit
+  // (or derived) direct parser; a string codec; structural derivation; or
+  // the AST bridge over any remaining `Json.Decodable` (opaque leaf types
+  // like `Instant`). A case class with both a `Reflection` and a custom
+  // hand-written `Json.Decodable` derives here, diverging from its custom
+  // decoder — the documented remedy is one line:
+  // `given MyType is Json.Parsable = Json.Parsable.fromDecodable(...)`.
+  // Lowest priority so `Json2`'s element-wise field givens match collection
+  // types first (a `List`'s own `Mirror` would otherwise derive it as a
+  // sum).
+  inline given field: [value] => value is Json.Field = summonFrom:
+    case parsable: (`value` is Json.Parsable) =>
+      Json.Field(parsable)
+
+    case given (`value` is distillate.Decodable in Text) =>
+      // Laundered pure per the codec-thunk seal pattern: the parse lambda
+      // closes over the resolution-scoped text decodable.
+      caps.unsafe.unsafeAssumePure:
+        Json.Field(Json.Parsable(Morphology.Str)(_.string().as[value]))
+
+    case given Reflection[`value`] =>
+      Json.ParsableDerivation.derived
+
+    case given (`value` is Json.Decodable) =>
+      caps.unsafe.unsafeAssumePure:
+        Json.Field(Json.Parsable.fromDecodable(infer[`value` is Json.Decodable]))
+
   given decodableAtFocus: [value]
   =>  ( inner: (value is Decodable in Json)^ )
   =>  ((value is Decodable in Json at Json.Focus)^{inner, caps.any}) =
@@ -132,6 +161,63 @@ trait Json2 extends Json3:
   given bytes: (tactic: Tactic[JsonError])
   =>  ((Bytes is Json.Decodable)^{tactic, caps.any}) =
     Json.Decodable(Morphology.Whole)(_.root.long.b)
+
+  // Element-wise `Json.Field` instances resolved during derivation: the
+  // element's own parser comes from the fallback chain, so nested products
+  // still parse directly. This layer beats `Json3`'s fallback, so collection
+  // types never reach its `Reflection` case (a `List`'s own `Mirror` would
+  // otherwise derive it as a sum).
+  given fieldOptional: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  Tactic[JsonError]
+  =>  ( field: => (inner is Json.Field)^ )
+  =>  value is Json.Field =
+    Json.Field(Json.Parsable.optionality[inner, value](field))
+
+  given fieldOption: [value] => (field: => (value is Json.Field)^)
+  =>  Option[value] is Json.Field =
+    Json.Field(Json.Parsable.boxed(field))
+
+  given fieldArray: [collection <: Iterable, element]
+  =>  ( factory: Factory[element, collection[element]],
+        tactic:  Tactic[JsonError],
+        foci:    Foci[Json.Focus] )
+  =>  ( field: => (element is Json.Field)^ )
+  =>  collection[element] is Json.Field =
+    Json.Field(Json.Parsable.iterable[collection, element](field))
+
+  given fieldMap: [key: distillate.Decodable in Text, element]
+  =>  Tactic[JsonError]
+  =>  ( field: => (element is Json.Field)^ )
+  =>  Map[key, element] is Json.Field =
+    Json.Field(Json.Parsable.dictionary[key, element](field))
+
+  // The nominal counterpart of `fieldOptional`: an `Optional` reads
+  // directly only when its element has opted in.
+  given optionalParsable: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  Tactic[JsonError]
+  =>  ( parsable: => (inner is Json.Parsable)^ )
+  =>  value is Json.Parsable =
+    Json.Parsable.optionality[inner, value](parsable)
+
+  // The AST-materializing read path: parse the whole input into a `Json`,
+  // then decode. Lives at this priority so `object Json`'s direct-parsing
+  // `aggregableParsed` wins whenever the value has a `Json.Parsable`; when it
+  // does not (all pre-`Parsable` code), this resolves exactly as before.
+  // Sealed like `Json.aggregable`; see the comment there.
+  given aggregableDirect: [value: distillate.Decodable in Json]
+  =>  (tactic: Tactic[ParseError], jsonTactic: Tactic[JsonError], tracking: PositionTracking)
+  =>  ((value in Json) is Aggregable by Data) =
+
+    caps.unsafe.unsafeAssumePure:
+      new Aggregable:
+        type Self = value in Json
+        type Operand = Data
+
+        def aggregate(bytes: LazyList[Data]): value in Json =
+          Json.readJson(bytes.iterator).as[value].asInstanceOf[value in Json]
+
+        override def accept(stream: (Stream[Data] over Credit)^): value in Json =
+          Json.readJson(stream).as[value].asInstanceOf[value in Json]
 
   inline given decodable: [value] => value is Json.Decodable = summonFrom:
     // `Json` decodes to itself. Handled here (not as a separate carrier given) so it
@@ -257,6 +343,41 @@ trait Json2 extends Json3:
 
               delegate(discriminant): [variant <: derivation] =>
                 context => context.decoded(json)
+
+  object ParsableDerivation extends Derivable[Json.Field]:
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   derivation is Json.Field =
+
+      // Like `DecodableDerivation.conjunction`: the capabilities are summoned
+      // at the derivation site and the instance is sealed per the codec-thunk
+      // pattern. A single `contexts` traversal collects, per field, its wire
+      // key (`@name`-aware), its parser (via the `Field` fallback chain) and
+      // its declared default; `Json.Parsable.product` owns the parse loop, so
+      // no per-field lambda ever closes over the reader.
+      caps.unsafe.unsafeAssumePure:
+        val reflection = infer[ProductReflection[derivation]]
+
+        Json.Parsable.product[derivation](
+          { () =>
+            val renames: Map[Text, Text] = relabelling[derivation, Json]
+
+            contexts[derivation]():
+              [field] => context =>
+                ( renames.at(label).or(label).s,
+                  context: Json.Parsing,
+                  default[Optional[field]]: Any )
+          },
+          values => Json.Parsable.assemble(reflection, values))
+          ( using infer[Foci[Json.Focus]], infer[Tactic[JsonError]] )
+
+    inline def disjunction[derivation: SumReflection]: derivation is Json.Field =
+      // A sum materializes one value's AST and dispatches through its
+      // decoder — the same discriminated-object handling as the AST path,
+      // byte for byte, honoring any custom `Json.Decodable` the sum has.
+      // Token-level sum parsing (discriminator scan-ahead with rewind) is a
+      // later optimization.
+      caps.unsafe.unsafeAssumePure:
+        Json.Field(Json.Parsable.fromDecodable(infer[derivation is Json.Decodable]))
 
   object EncodableDerivation extends Derivable[Json.Encodable]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -386,6 +507,299 @@ object Json extends Json2, Dynamic:
     type Form = Json
     def shape(): Morphology
 
+  object Parsable:
+    def apply[value](shape0: => Morphology)(parser: (reader: JsonReader^) => value)
+    :   ((value is Json.Parsable)^{parser}) =
+      // Same shape-thunk laundering as `Encodable.apply`; see the comment there.
+      val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure { () => shape0 }
+
+      new Json.Parsable:
+        type Self = value
+        def parse(reader: JsonReader^): value = parser(reader)
+        def shape(): Morphology = shape1()
+
+    // The universal bridge from the AST world: parse one whole value into a
+    // `Json` and decode it. Field types with only a `Decodable in Json` keep
+    // working through this, and it is the user's one-line escape hatch when a
+    // custom decoder must beat a derived direct parser.
+    def fromDecodable[value](decodable: (value is Json.Decodable)^)
+    :   ((value is Json.Parsable)^{decodable}) =
+
+      new Json.Parsable:
+        type Self = value
+        def parse(reader: JsonReader^): value = decodable.decoded(reader.value())
+        def shape(): Morphology = decodable.shape()
+
+        override def absent()(using Tactic[JsonError]): value =
+          decodable.decoded(Json.ast(Json.Ast(Unset)))
+
+    // The one-line opt-in to direct parsing for a structural type:
+    // `given MyType is Json.Parsable = Json.Parsable.derived` — a
+    // Wisteria-derived direct parser, wrapped as a *nominal* `Parsable` so
+    // it participates in the read trigger. Deliberately a method, not a
+    // blanket given: a type parses directly only once it has opted in.
+    inline def derived[value](using Reflection[value]): value is Json.Parsable =
+      fromField(ParsableDerivation.derivedOne[value])
+
+    def fromField[value](field0: (value is Json.Parsing)^)
+    :   ((value is Json.Parsable)^{field0}) =
+
+      new Json.Parsable:
+        type Self = value
+        def parse(reader: JsonReader^): value = field0.parse(reader)
+        def shape(): Morphology = field0.shape()
+        override def absent()(using Tactic[JsonError]): value = field0.absent()
+
+    // Shared element-wise implementations, used by the nominal
+    // `Json.Parsable` givens (elements must themselves be nominally
+    // `Parsable`, so the read trigger stays opt-in) and by the `Field`
+    // givens above (elements resolve through the fallback chain). Each is
+    // sealed per the codec-thunk pattern: a by-name parameter cannot be
+    // named in a capture set (see `Json2.optional`).
+    def optionality[inner <: value, value >: Unset.type]
+      ( field: => (inner is Json.Parsing)^ )
+      ( using tactic: Tactic[JsonError] )
+    :   value is Json.Parsable =
+
+      caps.unsafe.unsafeAssumePure:
+        new Json.Parsable:
+          type Self = value
+          def shape(): Morphology = Morphology.Opt(field.shape())
+
+          // A wire `null` reads as `Unset`, and so does an absent key: both
+          // mean "no value", exactly as the AST decoder's `optional`.
+          def parse(reader: JsonReader^): value =
+            if reader.hasNull then
+              reader.nullValue()
+              Unset
+            else field.parse(reader)
+
+          override def absent()(using Tactic[JsonError]): value = Unset
+
+    def boxed[value](field: => (value is Json.Parsing)^)
+    :   Option[value] is Json.Parsable =
+
+      caps.unsafe.unsafeAssumePure:
+        new Json.Parsable:
+          type Self = Option[value]
+          def shape(): Morphology = Morphology.Opt(field.shape())
+
+          // A present key always reads the value — a wire `null` flows to
+          // the element, preserving the AST decoder's `Option` asymmetry —
+          // while an absent key yields `None`.
+          def parse(reader: JsonReader^): Option[value] = Some(field.parse(reader))
+          override def absent()(using Tactic[JsonError]): Option[value] = None
+
+    def iterable[collection <: Iterable, element]
+      ( field: => (element is Json.Parsing)^ )
+      ( using factory: Factory[element, collection[element]],
+              tactic:  Tactic[JsonError],
+              foci:    Foci[Json.Focus] )
+    :   collection[element] is Json.Parsable =
+
+      caps.unsafe.unsafeAssumePure:
+        new Json.Parsable:
+          type Self = collection[element]
+          def shape(): Morphology = Morphology.Arr(field.shape())
+
+          def parse(reader: JsonReader^): collection[element] =
+            val builder = factory.newBuilder
+            reader.openArray()
+            var index = 0
+
+            while reader.element() do
+              builder += focus(descend(prior, index.toString.tt))(field.parse(reader))
+              index += 1
+
+            builder.result()
+
+    def dictionary[key: distillate.Decodable in Text, element]
+      ( field: => (element is Json.Parsing)^ )
+      ( using tactic: Tactic[JsonError] )
+    :   Map[key, element] is Json.Parsable =
+
+      caps.unsafe.unsafeAssumePure:
+        new Json.Parsable:
+          type Self = Map[key, element]
+          def shape(): Morphology = Morphology.Dict(Morphology.Str, field.shape())
+
+          def parse(reader: JsonReader^): Map[key, element] =
+            var entries = Map.empty[key, element]
+            reader.openObject()
+            var name: String | Null = reader.keyName()
+
+            while name != null do
+              entries = entries.updated(name.nn.tt.as[key], field.parse(reader))
+              name = reader.keyName()
+
+            entries
+
+    // The prior focus's pointer, extended by one step. Called inside
+    // `focus`'s transform context, so it only runs at error-registration
+    // time — the success path pays nothing.
+    private def descend(base0: Optional[Json.Focus], key: Text): Json.Focus =
+      val base = base0.let(_.pointer).or(JsonPointer())
+
+      val pointer =
+        JsonPointer
+          ( base.url,
+            Path[JsonPointer, JsonPointer.type, Tuple]
+              ( base.path.root, base.path.descent :+ key ) )
+
+      Json.Focus(pointer)
+
+    // Sentinel for the derived product parser's value buffer: a slot still
+    // `AbsentSlot` after the key loop had no key on the wire (`null`-checking
+    // would be unsound — `Optional` fields legitimately store a null-backed
+    // `Unset`, and a bitmask would cap the field count).
+    private[jacinta] val AbsentSlot: AnyRef = new Object
+
+    // Positional construction through the threaded `Mirror`, from the value
+    // buffer the parse loop filled. `fromProduct` is the only construction
+    // form that works for method-local and object-nested case classes; see
+    // the note on `ProductDerivation.build`.
+    def assemble[derivation <: Product]
+      ( reflection: ProductReflection[derivation], values: IArray[Any] )
+    :   derivation =
+
+      reflection.fromProduct(ArrayProduct(values))
+
+    private final class ArrayProduct(values: IArray[Any]) extends Product:
+      def canEqual(that: Any): Boolean = true
+      def productArity: Int = values.length
+      def productElement(index: Int): Any = values(index)
+
+    // The derived product parser's engine. `fields0` is an explicit thunk
+    // (nameable in the capture set, unlike a by-name) evaluated lazily, so
+    // recursive derivation can defer sibling resolution; it yields, per
+    // field, the wire key, the field's parser and its declared default (or
+    // `Unset`). The parse loop lives here, in an ordinary method body —
+    // no Wisteria per-field lambda ever closes over the reader, which is
+    // what lets the whole construction respect the checker.
+    def product[derivation]
+      ( fields0: () => IArray[(String, Json.Parsing, Any)],
+        make:    IArray[Any] -> derivation )
+      ( using foci: Foci[Json.Focus], tactic: Tactic[JsonError] )
+    :   ((derivation is Json.Field)^{fields0, tactic}) =
+
+      new Json.Field:
+        type Self = derivation
+
+        private lazy val fields: IArray[(String, Json.Parsing, Any)] = fields0()
+        private lazy val keys: IArray[String] = fields.map(_(0))
+
+        def shape(): Morphology =
+          val entries: List[(Text, Morphology)] =
+            fields.map { (key, parser, _) => (key.tt, parser.shape()) }.to(List)
+
+          Morphology.Obj
+            ( entries, entries.collect { case (key, shape) if !shape.optional => key } )
+
+        // Reference equality first: object keys of up to 16 bytes come out
+        // of the tokenizer's per-thread intern cache, so a steady-state
+        // lookup is a scan of pointer compares. The `equals` pass covers
+        // cache evictions, longer keys and escaped keys.
+        private def indexOf(key: String): Int =
+          val named = keys
+          val count = named.length
+          var index = 0
+
+          while index < count do
+            if named(index) eq key then return index
+            index += 1
+
+          index = 0
+
+          while index < count do
+            if named(index) == key then return index
+            index += 1
+
+          -1
+
+        def parse(reader: JsonReader^): derivation =
+          val entries = fields
+          val count = entries.length
+          val values = new Array[Any](count)
+          var index = 0
+
+          while index < count do
+            values(index) = AbsentSlot
+            index += 1
+
+          reader.openObject()
+          var key: String | Null = reader.keyName()
+
+          while key != null do
+            val found = indexOf(key.nn)
+
+            if found < 0 then reader.skipValue()
+            else values(found) =
+              focus(descend(prior, keys(found).tt))(entries(found)(1).parse(reader))
+
+            key = reader.keyName()
+
+          index = 0
+
+          while index < count do
+            if values(index).asInstanceOf[AnyRef] eq AbsentSlot then
+              val fallback = entries(index)(2).asInstanceOf[Optional[Any]]
+
+              values(index) =
+                if fallback.present then fallback
+                else focus(descend(prior, keys(index).tt))(entries(index)(1).absent())
+
+            index += 1
+
+          make(values.immutable(using Unsafe))
+
+  // The direct-parsing counterpart of `Json.Decodable`: consumes JSON tokens
+  // from a `JsonReader` instead of walking a materialized `Json`, so
+  // `read[value in Json]` can instantiate values without building the AST.
+  // Carries the same `Morphology` so a direct parser stays coherent with the
+  // schema machinery. `Parsable` is the opt-in surface: explicit instances,
+  // `Json.Parsable.derived`, and the read trigger. It has no blanket
+  // fallback given, so no read changes behavior until a type opts in; the
+  // fallback belongs to its operational sibling, `Json.Field`.
+  trait Parsable extends Parsing
+
+  // The shared substance of `Json.Parsable` and `Json.Field`. The two
+  // subtraits add nothing: they exist so that neither is a subtype of the
+  // other. A subtype relation in either direction would make one family's
+  // givens candidates for the other's queries — nominal instances would
+  // clash ambiguously with the field fallback, and Wisteria's codec probe
+  // would find a generic type's own `Parsable` given while deriving it, a
+  // lazy-val self-reference.
+  trait Parsing extends distillate.Parsable:
+    type Transport = Json
+    type Reader = JsonReader
+    def shape(): Morphology
+
+    // What a field of this type yields when its key is absent from the
+    // object: an error unless overridden (`Unset` for `Optional`s, `None`
+    // for `Option`s; the bridge delegates to its decoder). A wire `null` is
+    // never routed here: the parse method consumes it itself.
+    def absent()(using Tactic[JsonError]): Self = abort(JsonError(Reason.Absent))
+
+  object Field:
+    // Adapts an opted-in nominal instance (or any other `Parsing`) for use
+    // as a field parser.
+    def apply[value](parsing: (value is Json.Parsing)^)
+    :   ((value is Json.Field)^{parsing}) =
+
+      new Json.Field:
+        type Self = value
+        def parse(reader: JsonReader^): value = parsing.parse(reader)
+        def shape(): Morphology = parsing.shape()
+        override def absent()(using Tactic[JsonError]): value = parsing.absent()
+
+  // The operational face of direct parsing: how a value is read from a
+  // `JsonReader`, whether directly or through the AST bridge. This is the
+  // typeclass the product derivation resolves per field: `Json2` carries its
+  // element-wise instances and `Json3` the universal fallback — declared as
+  // members of this companion (like `Json2.decodable`) so Wisteria's wrapper
+  // detection excludes the fallback during codec probing.
+  trait Field extends Parsing
+
   // All internal references in a `PositionIndex` are stored as offsets
   // relative to the start of the containing node descriptor, so any slice
   // extracted at a descriptor boundary is itself a valid `PositionIndex`.
@@ -448,6 +862,13 @@ object Json extends Json2, Dynamic:
       case MultipleDecimalPoints
       case ExpectedDigit(found: Char)
 
+      // Raised only on the direct-parsing path (`Json.Parsable`), where a
+      // typed reader knows which kind of value it expects next.
+      case ExpectedNumber(found: Char)
+      case ExpectedBoolean(found: Char)
+      case ExpectedObject(found: Char)
+      case ExpectedArray(found: Char)
+
       def describe: Message = this match
         case EmptyInput              => m"the input was empty"
         case UnexpectedChar(found)   => m"the character $found was not expected here"
@@ -465,6 +886,10 @@ object Json extends Json2, Dynamic:
         case NotEscaped(char)        => m"the character $char must be escaped with a backslash"
         case ExpectedDigit(found)    => m"a digit was expected but $found was found instead"
         case MultipleDecimalPoints   => m"a number cannot contain more than one decimal point"
+        case ExpectedNumber(found)   => m"a number was expected but $found was found instead"
+        case ExpectedBoolean(found)  => m"a boolean was expected but $found was found instead"
+        case ExpectedObject(found)   => m"an object was expected but $found was found instead"
+        case ExpectedArray(found)    => m"an array was expected but $found was found instead"
 
         case NumberHasLeadingZero =>
           m"a number cannot start with a zero except when followed by a decimal point"
@@ -850,7 +1275,8 @@ object Json extends Json2, Dynamic:
   // positions are recorded and retained on the `Json` (locatable via
   // `Positionable`); when off, the throughput path is unchanged. This is the
   // single place the `read`/`load` givens branch on tracking.
-  private def readJson(input: Iterator[Data])(using Tactic[ParseError], PositionTracking): Json =
+  private[jacinta] def readJson(input: Iterator[Data])(using Tactic[ParseError], PositionTracking)
+  :   Json =
     summon[PositionTracking] match
       case PositionTracking.On =>
         val (ast, index) = Json.Ast.parseTracked(input)
@@ -865,7 +1291,7 @@ object Json extends Json2, Dynamic:
   // non-consuming by overrides in modules outside separation checking, so the
   // stream crosses to the consuming parser as a neutral reference — each accept
   // call delivers a stream that is used exactly once, by construction.
-  private def readJson(input: (Stream[Data] over Credit)^)
+  private[jacinta] def readJson(input: (Stream[Data] over Credit)^)
     ( using Tactic[ParseError], PositionTracking )
   :   Json =
 
@@ -879,6 +1305,45 @@ object Json extends Json2, Dynamic:
 
       case PositionTracking.Off =>
         Json(Json.Ast.parse(ref.asInstanceOf[(Stream[Data] over Credit)^]))
+
+  // Direct-parsing counterpart of `readJson`: drives a `Json.Parsable`
+  // instance over the input through a `JsonReader`, so no AST is built for
+  // the values the instance reads directly. Under `parsing.trackPositions`
+  // the parser's lineation is enabled so parse errors carry real source
+  // coordinates; there is no `PositionIndex` (nothing to index — the result
+  // is the caller's value, not a `Json`).
+  private def parseDirect[value]
+    ( input: Iterator[Data], parsable: (value is Json.Parsable)^ )
+    ( using tactic: Tactic[ParseError], tracking: PositionTracking, mode: NumberMode )
+  :   value =
+
+    val parser = Parser.borrow()
+    parser.tracking = tracking == PositionTracking.On
+    parser.resetIterator(input)
+    parser.holes = false
+    parser.numberMode = mode
+    parser.directBegin()
+    val result = parsable.parse(JsonReader(parser, tactic))
+    parser.directEnd()
+    result
+
+  // As above, but pulling from a demand-aware stream; see `readJson`'s note
+  // on the neutral-reference hop.
+  private def parseDirect[value]
+    ( input: (Stream[Data] over Credit)^, parsable: (value is Json.Parsable)^ )
+    ( using tactic: Tactic[ParseError], tracking: PositionTracking, mode: NumberMode )
+  :   value =
+
+    val ref: AnyRef = input.asInstanceOf[AnyRef]
+    val parser = Parser.borrow()
+    parser.tracking = tracking == PositionTracking.On
+    parser.resetStream(ref.asInstanceOf[(Stream[Data] over Credit)^])
+    parser.holes = false
+    parser.numberMode = mode
+    parser.directBegin()
+    val result = parsable.parse(JsonReader(parser, tactic))
+    parser.directEnd()
+    result
 
   // Canonical external accessor for the underlying AST. The `root`
   // method on `class Json` is package-private so that breaking through
@@ -1096,6 +1561,52 @@ object Json extends Json2, Dynamic:
         raise(JsonError(reason))
 
 
+  // Direct-parsing primitives. Genuinely pure — no tactic and no seal: all
+  // raising happens inside the `JsonReader`, through the tactic it carries.
+  given booleanParsable: Boolean is Json.Parsable =
+    Json.Parsable(Morphology.Bool)(_.boolean())
+
+  given doubleParsable: Double is Json.Parsable =
+    Json.Parsable(Morphology.Real)(_.double())
+
+  given floatParsable: Float is Json.Parsable =
+    Json.Parsable(Morphology.Real)(_.double().toFloat)
+
+  given longParsable: Long is Json.Parsable =
+    Json.Parsable(Morphology.Whole)(_.long())
+
+  given intParsable: Int is Json.Parsable =
+    Json.Parsable(Morphology.Whole)(_.long().toInt)
+
+  given textParsable: Text is Json.Parsable =
+    Json.Parsable(Morphology.Str)(_.string())
+
+  given stringParsable: String is Json.Parsable =
+    Json.Parsable(Morphology.Str)(_.string().s)
+
+  given jsonParsable: Json is Json.Parsable =
+    Json.Parsable(Morphology.Any)(_.value())
+
+  // Nominal counterparts of the `Json.Field` element-wise givens:
+  // a collection reads directly only when its element type has opted in.
+  given optionParsable: [value] => (parsable: => (value is Json.Parsable)^)
+  =>  Option[value] is Json.Parsable =
+    Json.Parsable.boxed(parsable)
+
+  given arrayParsable: [collection <: Iterable, element]
+  =>  ( factory: Factory[element, collection[element]],
+        tactic:  Tactic[JsonError],
+        foci:    Foci[Json.Focus] )
+  =>  ( parsable: => (element is Json.Parsable)^ )
+  =>  collection[element] is Json.Parsable =
+    Json.Parsable.iterable[collection, element](parsable)
+
+  given mapParsable: [key: distillate.Decodable in Text, element]
+  =>  Tactic[JsonError]
+  =>  ( parsable: => (element is Json.Parsable)^ )
+  =>  Map[key, element] is Json.Parsable =
+    Json.Parsable.dictionary[key, element](parsable)
+
   given option: [value: Json.Decodable] => Tactic[JsonError]
   =>  Option[value] is Json.Decodable =
 
@@ -1299,9 +1810,14 @@ object Json extends Json2, Dynamic:
         override def accept(stream: (Stream[Data] over Credit)^): Json = readJson(stream)
 
 
-  // Sealed like `aggregable` above.
-  given aggregableDirect: [value: distillate.Decodable in Json]
-  =>  (tactic: Tactic[ParseError], jsonTactic: Tactic[JsonError], tracking: PositionTracking)
+  // Direct parsing: when the value knows how to consume JSON tokens itself,
+  // the AST is never materialized. Declared here (not in `Json2`, where the
+  // `Decodable`-based `aggregableDirect` lives) so it wins whenever a
+  // `Json.Parsable` exists, and is otherwise inapplicable — existing code
+  // resolves exactly as before. Sealed like `aggregable` above.
+  given aggregableParsed: [value]
+  =>  (parsable: (value is Json.Parsable)^)
+  =>  (tactic: Tactic[ParseError], tracking: PositionTracking)
   =>  ((value in Json) is Aggregable by Data) =
 
     caps.unsafe.unsafeAssumePure:
@@ -1310,10 +1826,10 @@ object Json extends Json2, Dynamic:
         type Operand = Data
 
         def aggregate(bytes: LazyList[Data]): value in Json =
-          readJson(bytes.iterator).as[value].asInstanceOf[value in Json]
+          parseDirect(bytes.iterator, parsable).asInstanceOf[value in Json]
 
         override def accept(stream: (Stream[Data] over Credit)^): value in Json =
-          readJson(stream).as[value].asInstanceOf[value in Json]
+          parseDirect(stream, parsable).asInstanceOf[value in Json]
 
 
   given showable: Formatting => Json is Showable = _.root.show

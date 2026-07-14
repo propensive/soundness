@@ -39,3 +39,7 @@ package encodables:
 package decodables:
   export jacinta.decodables.instantJsonDecodable
   export jacinta.decodables.durationJsonDecodable
+
+package parsables:
+  export jacinta.parsables.instantJsonParsable
+  export jacinta.parsables.durationJsonParsable
