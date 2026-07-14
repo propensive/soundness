@@ -300,7 +300,7 @@ object Timespan:
 
       val advanced = summon[LeapMode] match
         case LeapMode.Lenient => zoned.instant + seconds
-        case LeapMode.Exact   => (zoned.instant.over[Tai] + seconds).over[Posix]
+        case LeapMode.Exact   => (zoned.instant.over[Tai] + seconds).over[Unix]
 
       advanced.in(moment.timezone)
 

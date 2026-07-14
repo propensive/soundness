@@ -62,6 +62,6 @@ package clocks:
   // boundary as a `(seconds: U64, nanoseconds: U32)` pair, converted to POSIX millisecond ticks.
   @nowarn("msg=New anonymous class definition will be duplicated at each inline site")
   inline given wasiClock: Clock = new Clock:
-    def apply(): Instant over Posix =
+    def apply(): Instant over Unix =
       val (seconds, nanoseconds) = Foreign["wall-clock", Wit].`now`.invoke[(U64, U32)]
-      Instant.of[Posix](seconds.bits.s64.long*1000 + nanoseconds.bits.s32.int/1000000)
+      Instant.of[Unix](seconds.bits.s64.long*1000 + nanoseconds.bits.s32.int/1000000)
