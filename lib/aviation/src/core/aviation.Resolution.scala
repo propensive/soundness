@@ -35,12 +35,12 @@ package aviation
 import prepositional.*
 
 // How many nanoseconds one unit of an `Instant over X`'s underlying `Long` represents. Millisecond
-// timelines (`Posix`, `Tai`) tick every 1_000_000 ns; `Monotonic` (a `System.nanoTime` reading)
+// timelines (`Unix`, `Tai`) tick every 1_000_000 ns; `Monotonic` (a `System.nanoTime` reading)
 // ticks every nanosecond. Instant arithmetic uses this to convert between a `Duration` (in seconds)
 // and the timeline's own ticks, so adding "one second" advances the right number of ticks whatever
 // the resolution.
 object Resolution:
-  given posix: Posix is Resolution:
+  given unix: Unix is Resolution:
     def nanos: Long = 1_000_000L
 
   given tai: Tai is Resolution:

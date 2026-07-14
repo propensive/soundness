@@ -38,7 +38,7 @@ import contingency.*
 import prepositional.*
 
 package encodables:
-  given instantJsonEncodable: (Instant over Posix) is Json.Encodable =
+  given instantJsonEncodable: (Instant over Unix) is Json.Encodable =
     Json.Encodable(() => Morphology.Whole): instant => Json(instant.long)
 
   given durationJsonEncodable: Duration is Json.Encodable =
@@ -48,10 +48,10 @@ package decodables:
   // Laundered pure like jacinta's primitive codecs (codec-thunk seal): as derived-product
   // field codecs these are summoned against pure expected types.
   given instantJsonDecodable: (tactic: Tactic[JsonError])
-  =>  (Instant over Posix) is Json.Decodable =
+  =>  (Instant over Unix) is Json.Decodable =
     caps.unsafe.unsafeAssumePure:
       Json.Decodable(Morphology.Whole): json =>
-        Instant.of[Posix](json.root.long)
+        Instant.of[Unix](json.root.long)
 
   given durationJsonDecodable: (tactic: Tactic[JsonError])
   =>  Duration is Json.Decodable =
@@ -62,8 +62,8 @@ package parsables:
   // Direct-parsing counterparts: the epoch number is read straight off the
   // token stream, with no intermediate AST node or string. Genuinely pure —
   // raising happens inside the `JsonReader`, through the tactic it carries.
-  given instantJsonParsable: (Instant over Posix) is Json.Parsable =
-    Json.Parsable(Morphology.Whole): reader => Instant.of[Posix](reader.long())
+  given instantJsonParsable: (Instant over Unix) is Json.Parsable =
+    Json.Parsable(Morphology.Whole): reader => Instant.of[Unix](reader.long())
 
   given durationJsonParsable: Duration is Json.Parsable =
     Json.Parsable(Morphology.Whole): reader => Duration(reader.long())

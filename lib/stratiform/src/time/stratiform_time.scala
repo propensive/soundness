@@ -43,7 +43,7 @@ import prepositional.*
 // clash with project-wide default encodings.
 
 package encodables:
-  given instantTelEncodable: (Instant over Posix) is Tel.Encodable =
+  given instantTelEncodable: (Instant over Unix) is Tel.Encodable =
     Tel.Encodable(() => Morphology.Whole): instant => Tel.scalar(instant.long.toString.tt)
 
   given durationTelEncodable: Duration is Tel.Encodable =
@@ -52,9 +52,9 @@ package encodables:
 
 package decodables:
   given instantTelDecodable: (tactic: Tactic[TelError])
-  =>  (((Instant over Posix) is Tel.Decodable)^{tactic}) =
+  =>  (((Instant over Unix) is Tel.Decodable)^{tactic}) =
     Tel.Decodable(() => Morphology.Whole): tel =>
-      try Instant.of[Posix](tel.primaryAtom.s.toLong)
+      try Instant.of[Unix](tel.primaryAtom.s.toLong)
       catch case _: NumberFormatException => abort(TelError(TelError.Reason.BadVersion))
 
   given durationTelDecodable: (tactic: Tactic[TelError])

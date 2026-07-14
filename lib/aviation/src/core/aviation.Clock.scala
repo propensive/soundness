@@ -36,16 +36,16 @@ import beneficence.*
 import prepositional.*
 import symbolism.*
 
-// A `Clock` reads the wall clock, which is Unix/POSIX time, so it produces `Instant over Posix`.
+// A `Clock` reads the wall clock, which is Unix/POSIX time, so it produces `Instant over Unix`.
 object Clock:
   given current: Clock:
-    def apply(): Instant over Posix = Instant.of[Posix](System.currentTimeMillis)
+    def apply(): Instant over Unix = Instant.of[Unix](System.currentTimeMillis)
 
-  def fixed(instant: Instant over Posix): Clock = new Clock():
-    def apply(): Instant over Posix = instant
+  def fixed(instant: Instant over Unix): Clock = new Clock():
+    def apply(): Instant over Unix = instant
 
   def offset(diff: into[Duration]): Clock = new Clock():
-    def apply(): Instant over Posix = Instant.of[Posix](System.currentTimeMillis) + diff
+    def apply(): Instant over Unix = Instant.of[Unix](System.currentTimeMillis) + diff
 
 abstract class Clock() extends Findable:
-  def apply(): Instant over Posix
+  def apply(): Instant over Unix

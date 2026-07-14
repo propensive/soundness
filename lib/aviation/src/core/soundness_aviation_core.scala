@@ -45,7 +45,7 @@ export
       Meridiem, Minute, Moment, Mon, monotonic, Monotonic, MonotonicClock, Month, Months,
       Monthstamp, Nov, now,
       Occurrence, Oct, OffsetCalendar, OrdinalCalendar, Period, PersianCalendar, PersianMonth, pm,
-      following, occurrences, Posix, rec, Recurrence, RecurrenceError, recInterpolator,
+      following, occurrences, Unix, rec, Recurrence, RecurrenceError, recInterpolator,
       RecurrenceLiteral, RecurrenceSet, Recurrent, Regime, Resolution, Rfc1123, RomanCalendar,
       Rrule, RruleError, Tai, until, WeekdayOrdinal, within,
       Sat, Sep, Sun, Thu, TimeError, TimeEvent, TimeFormat, TimeNumerics,
@@ -72,7 +72,7 @@ package leapModes:
   export aviation.leapModes.exact
 
 package chronometries:
-  export aviation.chronometries.{posix, atomic}
+  export aviation.chronometries.{unix, atomic}
 
 package dateFormats:
   export aviation.dateFormats.{americanDateFormat, europeanDateFormat, iso8601DateFormat,

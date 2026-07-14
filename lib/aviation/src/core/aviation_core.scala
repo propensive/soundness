@@ -78,19 +78,19 @@ trait Minute
 trait Second
 
 // Phantom chronometry markers for `Instant over <chronometry>` (the `Transport` type member): which
-// timeline an instant's `Long` counts on. `Tai` is atomic time; `Posix` is leap-free Unix time;
+// timeline an instant's `Long` counts on. `Tai` is atomic time; `Unix` is leap-free Unix time;
 // `Monotonic` is a `System.nanoTime` reading (nanosecond resolution, arbitrary origin). `Tai` and
-// `Posix` have a `Chronometry` (so they ground/convert); `Monotonic` does not — with no fixed
+// `Unix` have a `Chronometry` (so they ground/convert); `Monotonic` does not — with no fixed
 // relation to wall-clock time it only measures elapsed time. Purely type-level tags.
 trait Tai
-trait Posix
+trait Unix
 trait Monotonic
 
 package instantDecodables:
-  given iso8601InstantDecodable: Tactic[TimeError] => (Instant over Posix) is Decodable in Text =
+  given iso8601InstantDecodable: Tactic[TimeError] => (Instant over Unix) is Decodable in Text =
     Iso8601.parse(_)
 
-  given rfc1123InstantDecodable: Tactic[TimeError] => (Instant over Posix) is Decodable in Text =
+  given rfc1123InstantDecodable: Tactic[TimeError] => (Instant over Unix) is Decodable in Text =
     Rfc1123.parse(_)
 
 package dateFormats:
@@ -460,10 +460,10 @@ package calendars:
 // The default interpretation of an `Instant`'s `Long` (used by `Instant(…)`, decoding, etc.).
 // Import one of these to choose the timeline bare instants count on; convert with `.over[…]`.
 package chronometries:
-  given posix: (Chronometry.Ambient { type Transport = Posix }) =
+  given unix: (Chronometry.Ambient { type Transport = Unix }) =
     new Chronometry.Ambient:
-      type Transport = Posix
-      def chronometry: Posix is Chronometry = Chronometry.posix
+      type Transport = Unix
+      def chronometry: Unix is Chronometry = Chronometry.unix
 
   given atomic: (Chronometry.Ambient { type Transport = Tai }) =
     new Chronometry.Ambient:
@@ -501,7 +501,7 @@ package monthEnds:
     def resolve(using calendar: Calendar)(year: Year, month: calendar.Mensual, day: Int): Date =
       abort(TimeError(_.Invalid(year(), calendar.monthOrdinal(year, month) + 1, day, calendar)))
 
-def now()(using clock: Clock): Instant over Posix = clock()
+def now()(using clock: Clock): Instant over Unix = clock()
 
 // A reading of the monotonic system clock, for measuring elapsed time. It has an arbitrary origin,
 // so it can only be compared/subtracted with other `Monotonic` readings, never grounded to a

@@ -355,7 +355,7 @@ object timestampInternal:
     // Grounding goes through `Moment`, the single civil↔absolute bridge, so a `Timestamp` honours
     // the same `GapPolicy` as a `Moment` (a bare wall-clock time carries no overlap selector, so it
     // grounds at the earlier offset — `Occurrence.First`).
-    def instant(using Timezone, RomanCalendar, GapPolicy): Instant over Posix =
+    def instant(using Timezone, RomanCalendar, GapPolicy): Instant over Unix =
       timestamp.in(summon[Timezone]).instant
 
   // Comparisons are defined on `Timestamp` (the whole grid is monotonic); `Date`, being a

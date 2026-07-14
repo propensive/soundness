@@ -50,4 +50,4 @@ object GapPolicy:
   given pushForward: GapPolicy = (forward, _) => forward
 
 trait GapPolicy:
-  def resolve(forward: Instant over Posix, backward: Instant over Posix): Instant over Posix
+  def resolve(forward: Instant over Unix, backward: Instant over Unix): Instant over Unix

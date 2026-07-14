@@ -56,7 +56,7 @@ object Rfc1123 extends Date.Format(t"RFC 1123"):
     case Expect(char: Char)
     case Digit
 
-  def parse(text: Text): Instant over Posix raises TimeError =
+  def parse(text: Text): Instant over Unix raises TimeError =
     import Rfc1123.Issue.*
     import Weekday.*
 

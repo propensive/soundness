@@ -45,7 +45,7 @@ import symbolism.*
 object protointernal:
   // An `Instant` is an absolute point in time, stored as a `Long` whose interpretation — which
   // timeline it counts on (Unix/POSIX, TAI, …) — is the phantom `Transport` set by `over`. So
-  // `Instant over Posix` and `Instant over Tai` are distinct types over the same grid; a
+  // `Instant over Unix` and `Instant over Tai` are distinct types over the same grid; a
   // `Chronometry` given converts between them (through TAI). The unrefined `Instant` is abstract in
   // its chronometry and is rarely used directly.
   opaque type Instant = Long
@@ -78,7 +78,7 @@ object protointernal:
     def Max[transport]: Instant over transport = Long.MaxValue.asInstanceOf[Instant over transport]
 
     // Construct in an explicit chronometry from its raw tick value (grounding code uses
-    // `Instant.of[Posix]` with epoch milliseconds; `monotonic` uses `Instant.of[Monotonic]` with
+    // `Instant.of[Unix]` with epoch milliseconds; `monotonic` uses `Instant.of[Monotonic]` with
     // nanoseconds).
     def of[transport](ticks: Long): Instant over transport =
       ticks.asInstanceOf[Instant over transport]
@@ -119,7 +119,7 @@ object protointernal:
 
 
     // Arithmetic converts a `Duration` (seconds) to the timeline's own ticks via its `Resolution`,
-    // so it works whatever the resolution (milliseconds for `Posix`/`Tai`, nanoseconds for
+    // so it works whatever the resolution (milliseconds for `Unix`/`Tai`, nanoseconds for
     // `Monotonic`).
     private def ticks(seconds: Double, resolution: Long): Long =
       (seconds*1_000_000_000.0/resolution).toLong
@@ -158,7 +158,7 @@ object protointernal:
       Period(instant, that)
 
     infix def in (using RomanCalendar, transport is Chronometry)(timezone: Timezone): Moment =
-      val unix = instant.over[Posix].long
+      val unix = instant.over[Unix].long
       val zone = jt.ZoneId.of(timezone.name.s).nn
       val zonedTime = jt.Instant.ofEpochMilli(unix).nn.atZone(zone).nn
 

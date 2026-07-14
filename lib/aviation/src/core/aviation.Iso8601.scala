@@ -63,7 +63,7 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
   import Issue.*
 
-  def parse(text: Text): Instant over Posix raises TimeError =
+  def parse(text: Text): Instant over Unix raises TimeError =
     import calendars.gregorianCalendar
 
     given Timezone = tz"UTC"
@@ -144,14 +144,14 @@ object Iso8601 extends Date.Format(t"ISO 8601"):
 
     // A `:60` second is a leap second; on the (leap-free) Unix line it collapses onto the next
     // second (`23:59:60` ≡ the following `00:00:00`), so store `:59` and add one second.
-    def clockInstant(hour: Int, minute: Int, second: Int): Instant over Posix =
+    def clockInstant(hour: Int, minute: Int, second: Int): Instant over Unix =
       if second == 60 then
         Clockface(Base24(hour), Base60(minute), Base60(59)).on(date).instant +
           Quantity[Seconds[1]](1.0)
       else
         Clockface(Base24(hour), Base60(minute), Base60(second)).on(date).instant
 
-    val instant: Instant over Posix = next() match
+    val instant: Instant over Unix = next() match
       case '\u0000' => Clockface(Base24(0), Base60(0), Base60(0)).on(date).instant
 
       case 'T' =>
