@@ -129,7 +129,7 @@ private[jacinta] object Parser:
     new ThreadLocal[AnyRef]:
       override def initialValue(): AnyRef = (new Parser).asInstanceOf[AnyRef]
 
-  private def borrow(): Parser^ = pool.get.nn.asInstanceOf[Parser^]
+  private[jacinta] def borrow(): Parser^ = pool.get.nn.asInstanceOf[Parser^]
 
   def parse(source: Data, mode: NumberMode = NumberMode.Full): Raw raises ParseError =
     val parser = borrow()
@@ -1926,6 +1926,242 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
         case char                           => errorAt(Issue.SpuriousContent(char.toChar))
 
     result
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Direct-parsing rim (used by `JsonReader`). The token-level operations
+  // behind `Json.Parsable` instances: each consumes exactly one token (or one
+  // structural step) from the input, without building AST nodes for the values
+  // the caller reads directly. Container stepping (`directKey`,
+  // `directElement`) tracks a first-entry bit per nesting level so separator
+  // commas are enforced exactly as strictly as the AST parser's loops, and
+  // each error mirrors the `Issue` the corresponding AST loop would raise.
+
+  // Bit `level & 63` of `directMask(level >> 6)` is set once the container
+  // open at that nesting level has consumed its first entry (so a separator
+  // comma is required before the next). Exclusive scratch: reached only
+  // through this (exclusive) parser.
+  private var directDepth: Int = 0
+  private var directMask: Array[Long]^ = new Array[Long](1)
+
+  private update def directPush(): Unit =
+    val level = directDepth
+    val word = level >> 6
+
+    if directMask.length <= word then
+      val grown = new Array[Long](directMask.length*2)
+      System.arraycopy(directMask, 0, grown, 0, directMask.length)
+      directMask = grown
+
+    directMask(word) &= ~(1L << (level & 63))
+    directDepth = level + 1
+
+  private update def directSeen(): Boolean =
+    val level = directDepth - 1
+    (directMask(level >> 6) & (1L << (level & 63))) != 0
+
+  private update def directMark(): Unit =
+    val level = directDepth - 1
+    directMask(level >> 6) |= 1L << (level & 63)
+
+  private update def directPop(): Unit = directDepth -= 1
+
+  private[jacinta] update def directBegin()(using Tactic[ParseError]): Unit =
+    directDepth = 0
+    bom()
+    skip()
+    if !more then abort(ParseError(Json.Ast, Position(0, 0), Issue.EmptyInput))
+
+  // Trailing-content check, identical to the tail of `parse()`.
+  private[jacinta] update def directEnd()(using Tactic[ParseError]): Unit =
+    while more do
+      peek match
+        case Tab | Return | Newline | Space => advance()
+        case char                           => errorAt(Issue.SpuriousContent(char.toChar))
+
+  private[jacinta] update def directValue()(using Tactic[ParseError]): Raw =
+    skip()
+    parseValue()
+
+  // Structure-aware skip of one whole value. Parses and discards for now; a
+  // non-materializing scanner is a later optimization, invisible to callers.
+  private[jacinta] update def directSkipValue()(using Tactic[ParseError]): Unit =
+    skip()
+    parseValue()
+    ()
+
+  private[jacinta] update def directString()(using Tactic[ParseError]): String =
+    skip()
+    if must() == Quote then
+      advance()
+      parseString()
+    else errorAt(Issue.ExpectedString(peek.toChar))
+
+  private[jacinta] update def directBoolean()(using Tactic[ParseError]): Boolean =
+    skip()
+    must() match
+      case LowerT => parseTrue()
+      case LowerF => parseFalse()
+      case ch     => errorAt(Issue.ExpectedBoolean(ch.toChar))
+
+  private[jacinta] update def directNull()(using Tactic[ParseError]): Unit =
+    skip()
+    if must() == LowerN then { parseNull(); () } else errorAt(Issue.ExpectedNull)
+
+  // Non-consuming: is the next value a `null`? False at end of input (the
+  // subsequent read reports the missing value with its own expectation).
+  private[jacinta] update def directIsNull(): Boolean =
+    skip()
+    more && peek == LowerN
+
+  // One number token, in the same `Raw` forms the AST parser produces for a
+  // top-level number (`Long`, `Double` or `Bcd` under `bcdOnly = false`).
+  private update def directNumber()(using Tactic[ParseError]): Raw =
+    skip()
+    val ch = must()
+
+    if (ch & 0xF8) == Num0 || (ch & 0xFE) == 0x38 then
+      advance()
+      parseNumber(ch & 0x0F, false)
+    else if ch == Minus then
+      advance()
+      val digit = must()
+
+      if (digit & 0xF8) == Num0 || (digit & 0xFE) == 0x38 then
+        advance()
+        parseNumber(digit & 0x0F, true)
+      else errorAt(Issue.ExpectedDigit(digit.toChar))
+    else errorAt(Issue.ExpectedNumber(ch.toChar))
+
+  // The numeric coercions mirror the `Json.Ast` accessors (`long`, `double`,
+  // `bcd`) exactly, so a direct read of a number yields the same value the
+  // AST path would decode.
+  private[jacinta] update def directLong()(using Tactic[ParseError]): Long =
+    val raw: Any = directNumber()
+
+    raw.asMatchable match
+      case value: Long                     => value
+      case value: Double                   => value.toLong
+      case value: Int                      => Bcd.bcdIntToDouble(value).toLong
+      case value: Array[Double] @unchecked => value.asInstanceOf[Bcd].toLong.or(0L)
+      case _                               => 0L // unreachable: only number forms are produced
+
+  private[jacinta] update def directDouble()(using Tactic[ParseError]): Double =
+    val raw: Any = directNumber()
+
+    raw.asMatchable match
+      case value: Double                   => value
+      case value: Long                     => value.toDouble
+      case value: Int                      => Bcd.bcdIntToDouble(value)
+      case value: Array[Double] @unchecked => value.asInstanceOf[Bcd].toDouble
+      case _                               => 0.0 // unreachable: only number forms are produced
+
+  private[jacinta] update def directBcd()(using Tactic[ParseError]): Bcd =
+    val raw: Any = directNumber()
+
+    raw.asMatchable match
+      case value: Array[Double] @unchecked => value.asInstanceOf[Bcd]
+      case value: Long                     => caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(value)))
+      case value: Double                   => caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(value)))
+
+      case value: Int =>
+        caps.unsafe.unsafeAssumePure:
+          Bcd.fromString(Bcd.bcdIntText(value).stripPrefix("-"), value < 0)
+
+      case _ =>
+        caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(0L))) // unreachable
+
+  private[jacinta] update def directOpenObject()(using Tactic[ParseError]): Unit =
+    skip()
+
+    if must() == OpenBrace then
+      advance()
+      directPush()
+    else errorAt(Issue.ExpectedObject(peek.toChar))
+
+  // The next key of the current object (consuming any separator comma, the
+  // key and its colon), or `null` after consuming the closing brace.
+  private[jacinta] update def directKey()(using Tactic[ParseError]): String | Null =
+    skip()
+
+    if directSeen() then
+      must() match
+        case CloseBrace =>
+          advance()
+          directPop()
+          null
+
+        case Comma =>
+          advance()
+          skip()
+
+          must() match
+            case Quote      => advance() yet directKeyTail()
+            case CloseBrace => errorAt(Issue.ExpectedSomeValue('}'))
+            case ch         => errorAt(Issue.ExpectedString(ch.toChar))
+
+        case ch => errorAt(Issue.UnexpectedChar(ch.toChar))
+    else
+      must() match
+        case CloseBrace =>
+          advance()
+          directPop()
+          null
+
+        case Quote =>
+          advance()
+          directMark()
+          directKeyTail()
+
+        case ch => errorAt(Issue.ExpectedString(ch.toChar))
+
+  // After the opening quote: the key itself and its trailing colon.
+  private update def directKeyTail()(using Tactic[ParseError]): String =
+    val key = parseObjectKey()
+    skip()
+
+    if must() == Colon then
+      advance()
+      key
+    else errorAt(Issue.ExpectedColon(peek.toChar))
+
+  private[jacinta] update def directOpenArray()(using Tactic[ParseError]): Unit =
+    skip()
+
+    if must() == OpenBracket then
+      advance()
+      directPush()
+    else errorAt(Issue.ExpectedArray(peek.toChar))
+
+  // True when another element follows (positioned at it, with any separator
+  // comma consumed); false after consuming the closing bracket.
+  private[jacinta] update def directElement()(using Tactic[ParseError]): Boolean =
+    skip()
+
+    if directSeen() then
+      must() match
+        case CloseBracket =>
+          advance()
+          directPop()
+          false
+
+        case Comma =>
+          advance()
+          true
+
+        case ch => errorAt(Issue.ExpectedSomeValue(ch.toChar))
+    else
+      must() match
+        case CloseBracket =>
+          advance()
+          directPop()
+          false
+
+        case _ =>
+          directMark()
+          true
+
+  private[jacinta] update def directFail(issue: Issue)(using Tactic[ParseError]): Nothing =
+    errorAt(issue)
 
 
 

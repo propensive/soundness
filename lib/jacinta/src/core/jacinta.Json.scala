@@ -133,6 +133,26 @@ trait Json2 extends Json3:
   =>  ((Bytes is Json.Decodable)^{tactic, caps.any}) =
     Json.Decodable(Morphology.Whole)(_.root.long.b)
 
+  // The AST-materializing read path: parse the whole input into a `Json`,
+  // then decode. Lives at this priority so `object Json`'s direct-parsing
+  // `aggregableParsed` wins whenever the value has a `Json.Parsable`; when it
+  // does not (all pre-`Parsable` code), this resolves exactly as before.
+  // Sealed like `Json.aggregable`; see the comment there.
+  given aggregableDirect: [value: distillate.Decodable in Json]
+  =>  (tactic: Tactic[ParseError], jsonTactic: Tactic[JsonError], tracking: PositionTracking)
+  =>  ((value in Json) is Aggregable by Data) =
+
+    caps.unsafe.unsafeAssumePure:
+      new Aggregable:
+        type Self = value in Json
+        type Operand = Data
+
+        def aggregate(bytes: LazyList[Data]): value in Json =
+          Json.readJson(bytes.iterator).as[value].asInstanceOf[value in Json]
+
+        override def accept(stream: (Stream[Data] over Credit)^): value in Json =
+          Json.readJson(stream).as[value].asInstanceOf[value in Json]
+
   inline given decodable: [value] => value is Json.Decodable = summonFrom:
     // `Json` decodes to itself. Handled here (not as a separate carrier given) so it
     // does not compete — as a `Json.Decodable` subtype — with the plain
@@ -386,6 +406,39 @@ object Json extends Json2, Dynamic:
     type Form = Json
     def shape(): Morphology
 
+  object Parsable:
+    def apply[value](shape0: => Morphology)(parser: (reader: JsonReader^) => value)
+    :   ((value is Json.Parsable)^{parser}) =
+      // Same shape-thunk laundering as `Encodable.apply`; see the comment there.
+      val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure { () => shape0 }
+
+      new Json.Parsable:
+        type Self = value
+        def parse(reader: JsonReader^): value = parser(reader)
+        def shape(): Morphology = shape1()
+
+    // The universal bridge from the AST world: parse one whole value into a
+    // `Json` and decode it. Field types with only a `Decodable in Json` keep
+    // working through this, and it is the user's one-line escape hatch when a
+    // custom decoder must beat a derived direct parser.
+    def fromDecodable[value](decodable: (value is Json.Decodable)^)
+    :   ((value is Json.Parsable)^{decodable}) =
+
+      new Json.Parsable:
+        type Self = value
+        def parse(reader: JsonReader^): value = decodable.decoded(reader.value())
+        def shape(): Morphology = decodable.shape()
+
+  // The direct-parsing counterpart of `Json.Decodable`: consumes JSON tokens
+  // from a `JsonReader` instead of walking a materialized `Json`, so
+  // `read[value in Json]` can instantiate values without building the AST.
+  // Carries the same `Morphology` so a direct parser stays coherent with the
+  // schema machinery.
+  trait Parsable extends distillate.Parsable:
+    type Transport = Json
+    type Reader = JsonReader
+    def shape(): Morphology
+
   // All internal references in a `PositionIndex` are stored as offsets
   // relative to the start of the containing node descriptor, so any slice
   // extracted at a descriptor boundary is itself a valid `PositionIndex`.
@@ -448,6 +501,13 @@ object Json extends Json2, Dynamic:
       case MultipleDecimalPoints
       case ExpectedDigit(found: Char)
 
+      // Raised only on the direct-parsing path (`Json.Parsable`), where a
+      // typed reader knows which kind of value it expects next.
+      case ExpectedNumber(found: Char)
+      case ExpectedBoolean(found: Char)
+      case ExpectedObject(found: Char)
+      case ExpectedArray(found: Char)
+
       def describe: Message = this match
         case EmptyInput              => m"the input was empty"
         case UnexpectedChar(found)   => m"the character $found was not expected here"
@@ -465,6 +525,10 @@ object Json extends Json2, Dynamic:
         case NotEscaped(char)        => m"the character $char must be escaped with a backslash"
         case ExpectedDigit(found)    => m"a digit was expected but $found was found instead"
         case MultipleDecimalPoints   => m"a number cannot contain more than one decimal point"
+        case ExpectedNumber(found)   => m"a number was expected but $found was found instead"
+        case ExpectedBoolean(found)  => m"a boolean was expected but $found was found instead"
+        case ExpectedObject(found)   => m"an object was expected but $found was found instead"
+        case ExpectedArray(found)    => m"an array was expected but $found was found instead"
 
         case NumberHasLeadingZero =>
           m"a number cannot start with a zero except when followed by a decimal point"
@@ -850,7 +914,8 @@ object Json extends Json2, Dynamic:
   // positions are recorded and retained on the `Json` (locatable via
   // `Positionable`); when off, the throughput path is unchanged. This is the
   // single place the `read`/`load` givens branch on tracking.
-  private def readJson(input: Iterator[Data])(using Tactic[ParseError], PositionTracking): Json =
+  private[jacinta] def readJson(input: Iterator[Data])(using Tactic[ParseError], PositionTracking)
+  :   Json =
     summon[PositionTracking] match
       case PositionTracking.On =>
         val (ast, index) = Json.Ast.parseTracked(input)
@@ -865,7 +930,7 @@ object Json extends Json2, Dynamic:
   // non-consuming by overrides in modules outside separation checking, so the
   // stream crosses to the consuming parser as a neutral reference — each accept
   // call delivers a stream that is used exactly once, by construction.
-  private def readJson(input: (Stream[Data] over Credit)^)
+  private[jacinta] def readJson(input: (Stream[Data] over Credit)^)
     ( using Tactic[ParseError], PositionTracking )
   :   Json =
 
@@ -879,6 +944,45 @@ object Json extends Json2, Dynamic:
 
       case PositionTracking.Off =>
         Json(Json.Ast.parse(ref.asInstanceOf[(Stream[Data] over Credit)^]))
+
+  // Direct-parsing counterpart of `readJson`: drives a `Json.Parsable`
+  // instance over the input through a `JsonReader`, so no AST is built for
+  // the values the instance reads directly. Under `parsing.trackPositions`
+  // the parser's lineation is enabled so parse errors carry real source
+  // coordinates; there is no `PositionIndex` (nothing to index — the result
+  // is the caller's value, not a `Json`).
+  private def parseDirect[value]
+    ( input: Iterator[Data], parsable: (value is Json.Parsable)^ )
+    ( using tactic: Tactic[ParseError], tracking: PositionTracking, mode: NumberMode )
+  :   value =
+
+    val parser = Parser.borrow()
+    parser.tracking = tracking == PositionTracking.On
+    parser.resetIterator(input)
+    parser.holes = false
+    parser.numberMode = mode
+    parser.directBegin()
+    val result = parsable.parse(JsonReader(parser, tactic))
+    parser.directEnd()
+    result
+
+  // As above, but pulling from a demand-aware stream; see `readJson`'s note
+  // on the neutral-reference hop.
+  private def parseDirect[value]
+    ( input: (Stream[Data] over Credit)^, parsable: (value is Json.Parsable)^ )
+    ( using tactic: Tactic[ParseError], tracking: PositionTracking, mode: NumberMode )
+  :   value =
+
+    val ref: AnyRef = input.asInstanceOf[AnyRef]
+    val parser = Parser.borrow()
+    parser.tracking = tracking == PositionTracking.On
+    parser.resetStream(ref.asInstanceOf[(Stream[Data] over Credit)^])
+    parser.holes = false
+    parser.numberMode = mode
+    parser.directBegin()
+    val result = parsable.parse(JsonReader(parser, tactic))
+    parser.directEnd()
+    result
 
   // Canonical external accessor for the underlying AST. The `root`
   // method on `class Json` is package-private so that breaking through
@@ -1096,6 +1200,32 @@ object Json extends Json2, Dynamic:
         raise(JsonError(reason))
 
 
+  // Direct-parsing primitives. Genuinely pure — no tactic and no seal: all
+  // raising happens inside the `JsonReader`, through the tactic it carries.
+  given booleanParsable: Boolean is Json.Parsable =
+    Json.Parsable(Morphology.Bool)(_.boolean())
+
+  given doubleParsable: Double is Json.Parsable =
+    Json.Parsable(Morphology.Real)(_.double())
+
+  given floatParsable: Float is Json.Parsable =
+    Json.Parsable(Morphology.Real)(_.double().toFloat)
+
+  given longParsable: Long is Json.Parsable =
+    Json.Parsable(Morphology.Whole)(_.long())
+
+  given intParsable: Int is Json.Parsable =
+    Json.Parsable(Morphology.Whole)(_.long().toInt)
+
+  given textParsable: Text is Json.Parsable =
+    Json.Parsable(Morphology.Str)(_.string())
+
+  given stringParsable: String is Json.Parsable =
+    Json.Parsable(Morphology.Str)(_.string().s)
+
+  given jsonParsable: Json is Json.Parsable =
+    Json.Parsable(Morphology.Any)(_.value())
+
   given option: [value: Json.Decodable] => Tactic[JsonError]
   =>  Option[value] is Json.Decodable =
 
@@ -1299,9 +1429,14 @@ object Json extends Json2, Dynamic:
         override def accept(stream: (Stream[Data] over Credit)^): Json = readJson(stream)
 
 
-  // Sealed like `aggregable` above.
-  given aggregableDirect: [value: distillate.Decodable in Json]
-  =>  (tactic: Tactic[ParseError], jsonTactic: Tactic[JsonError], tracking: PositionTracking)
+  // Direct parsing: when the value knows how to consume JSON tokens itself,
+  // the AST is never materialized. Declared here (not in `Json2`, where the
+  // `Decodable`-based `aggregableDirect` lives) so it wins whenever a
+  // `Json.Parsable` exists, and is otherwise inapplicable — existing code
+  // resolves exactly as before. Sealed like `aggregable` above.
+  given aggregableParsed: [value]
+  =>  (parsable: (value is Json.Parsable)^)
+  =>  (tactic: Tactic[ParseError], tracking: PositionTracking)
   =>  ((value in Json) is Aggregable by Data) =
 
     caps.unsafe.unsafeAssumePure:
@@ -1310,10 +1445,10 @@ object Json extends Json2, Dynamic:
         type Operand = Data
 
         def aggregate(bytes: LazyList[Data]): value in Json =
-          readJson(bytes.iterator).as[value].asInstanceOf[value in Json]
+          parseDirect(bytes.iterator, parsable).asInstanceOf[value in Json]
 
         override def accept(stream: (Stream[Data] over Credit)^): value in Json =
-          readJson(stream).as[value].asInstanceOf[value in Json]
+          parseDirect(stream, parsable).asInstanceOf[value in Json]
 
 
   given showable: Formatting => Json is Showable = _.root.show

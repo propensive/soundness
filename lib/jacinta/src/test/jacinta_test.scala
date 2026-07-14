@@ -106,6 +106,9 @@ case class TreeOpt(value: Text, child: Optional[TreeOpt]) derives CanEqual
 case class Forest(trees: Map[Text, Tree]) derives CanEqual
 case class Boxed[value](value: value) derives CanEqual
 
+// Read by a hand-written `Json.Parsable` in the direct-parsing tests.
+case class DirectPoint(x: Int, y: Int) derives CanEqual
+
 object Tests extends Suite(m"Jacinta Tests"):
   def run(): Unit =
     suite(m"Parsing tests"):
@@ -767,6 +770,82 @@ object Tests extends Suite(m"Jacinta Tests"):
       test(m"primitive of null is Null"):
         Json.unseal(t"null".read[Json]).primitive
       . assert(_ == JsonPrimitive.Null)
+
+    suite(m"Direct parsing tests"):
+      test(m"Read an Int directly"):
+        t"42".read[Int in Json]
+      . assert(_ == 42)
+
+      test(m"Read a Long directly"):
+        t"1234567890123".read[Long in Json]
+      . assert(_ == 1234567890123L)
+
+      test(m"Read a Double directly"):
+        t"3.1415926".read[Double in Json]
+      . assert(_ == 3.1415926)
+
+      test(m"Read a Boolean directly"):
+        t"true".read[Boolean in Json]
+      . assert(identity)
+
+      test(m"Read a Text directly"):
+        t"\"hello world\"".read[Text in Json]
+      . assert(_ == t"hello world")
+
+      test(m"Read a string with escapes directly"):
+        t"\"a\\nb\\u0041\"".read[Text in Json]
+      . assert(_ == t"a\nbA")
+
+      test(m"Read with surrounding whitespace"):
+        t"  42  ".read[Int in Json]
+      . assert(_ == 42)
+
+      test(m"Direct number coercion matches the AST path"):
+        t"3.9".read[Long in Json]
+      . assert(_ == 3L)
+
+      test(m"Read a Json value through the direct path"):
+        t"""{"a": 1}""".read[Json in Json].as[Json]
+      . assert: json =>
+          import dynamicJsonAccess.enabled
+          unsafely(json.a.as[Int]) == 1
+
+      test(m"A hand-written Parsable reads an object without an AST"):
+        given DirectPoint is Json.Parsable = Json.Parsable(Morphology.Any): reader =>
+          reader.openObject()
+          var x = 0
+          var y = 0
+
+          while
+            reader.key().lay(false): key =>
+              if key == t"x" then x = reader.int()
+              else if key == t"y" then y = reader.int()
+              else reader.skipValue()
+              true
+          do ()
+
+          DirectPoint(x, y)
+
+        t"""{"y": 3, "unknown": [1, {"a": false}], "x": 2}""".read[DirectPoint in Json]
+      . assert(_ == DirectPoint(2, 3))
+
+      test(m"Trailing content after a direct read raises ParseError"):
+        capture[ParseError](t"42 true".read[Int in Json])
+      . assert(_.issue match
+          case Json.Ast.Issue.SpuriousContent(_) => true
+          case _                                 => false)
+
+      test(m"Type mismatch on a direct read raises ParseError"):
+        capture[ParseError](t"\"abc\"".read[Int in Json])
+      . assert(_.issue match
+          case Json.Ast.Issue.ExpectedNumber('"') => true
+          case _                                  => false)
+
+      test(m"Malformed JSON on a direct read raises ParseError"):
+        capture[ParseError](t"tru".read[Boolean in Json])
+      . assert(_.issue match
+          case Json.Ast.Issue.PrematureEnd | Json.Ast.Issue.ExpectedTrue => true
+          case _                                                         => false)
 
     suite(m"Json error handling"):
       test(m"Decode wrong type raises JsonError NotType"):
