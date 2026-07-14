@@ -154,6 +154,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     val bench = Bench()
     val stress = Stress()
     val constrained = Stress(heap = t"128m")
+    val gated = Stress(heap = t"2g", cpus = 4)
     val size = input.length*Byte
     val textSize = textData.length*Byte
 
@@ -1006,4 +1007,55 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             turbulence.Benchmarks.runZio:
               zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.textArray))
               . via(zio.stream.ZPipeline.utfDecode).map(_.length).runSum
+        }
+
+    // Example S: SLO-constrained capacity search — the maximum sustained hand-off
+    // throughput such that 99% of operations complete within 5 ms, in a 2 GB heap
+    // on 4 CPUs (advisory on macOS; see `BenchmarkDevice.invoke`). The search
+    // doubles the pipeline count while each window meets the target,
+    // binary-searches the compliant/non-compliant boundary to ~12% resolution,
+    // then confirms the winner over a window three times longer. The probes form
+    // the curve; the `(sustained, N = …)` row is the answer: each library's
+    // maximum sustained ops/sec under identical constraints.
+    suite(m"Stress: capacity search (99% ≤ 5 ms, 2 GB heap, 4 CPUs)"):
+      gated(m"Soundness  Conduit")
+        ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+        '{
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.foreach(intake.put)
+              intake.finish())
+            var total = 0L
+            stream.sweep((_, _, count) => total += count)
+            producer.join()
+            total
+        }
+
+      gated(m"FS2  Channel.bounded")
+        ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+        '{
+            import cats.effect.unsafe.implicits.global
+            import cats.effect.IO
+            val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).flatMap: channel =>
+              val produce =
+                turbulence.Benchmarks.inputChunks.foldLeft(IO.unit): (io, chunk) =>
+                  io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[Array[Byte]])).void
+                *> channel.close.void
+              produce.start *> channel.stream.compile.fold(0L)((acc, chunk) => acc + chunk.size)
+            program.unsafeRunSync()
+        }
+
+      gated(m"ZIO  Queue.bounded")
+        ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+        '{
+            turbulence.Benchmarks.runZio:
+              import zio.*, zio.stream.*
+              val source =
+                ZStream.fromIterable
+                  (turbulence.Benchmarks.inputChunks.map(c => Chunk.fromArray(c.asInstanceOf[Array[Byte]])))
+              for
+                queue <- Queue.bounded[Take[Nothing, Chunk[Byte]]](8)
+                _     <- source.runIntoQueue(queue).fork
+                total <- ZStream.fromQueue(queue).flattenTake.runFold(0L)((acc, c) => acc + c.size)
+              yield total
         }
