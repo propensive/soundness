@@ -88,6 +88,37 @@ private[jacinta] object Parser:
   private inline val NullWord  = 0x6C6C_756E
   private inline val FalseWord = 0x0000_0065_736C_6166L
 
+  // Little-endian 64-bit view over the byte buffer, for SWAR scans: eight
+  // input bytes per step instead of one. Little-endian regardless of the
+  // platform so `numberOfTrailingZeros(mask) >> 3` is always the offset of
+  // the first flagged byte.
+  private val WordAccess: java.lang.invoke.VarHandle =
+    // `Class.forName("[J")` rather than `classOf[Array[Long]]`: under
+    // capture checking the latter's type does not adapt to the JDK
+    // signature's wildcard.
+    java.lang.invoke.MethodHandles
+      . byteArrayViewVarHandle(Class.forName("[J").nn, java.nio.ByteOrder.LITTLE_ENDIAN)
+      . nn
+
+  private inline val HighBits = 0x8080808080808080L
+  private inline val EveryByte = 0x0101010101010101L
+
+  // The classic has-byte trick: the high bit of each byte of the result is
+  // set exactly where `word` holds `target` (for targets < 0x80).
+  private inline def matchByte(word: Long, inline target: Long): Long =
+    val x = word ^ (target*EveryByte)
+    (x - EveryByte) & ~x & HighBits
+
+  // High bit set where a byte is < 0x20 (valid for bytes < 0x80; bytes with
+  // their own high bit set are caught separately by masking `HighBits`).
+  private inline def below32(word: Long): Long =
+    (word - (0x20L*EveryByte)) & ~word & HighBits
+
+  // A string scan's stop bytes — quote, backslash, control, non-ASCII — in
+  // one mask; zero means all eight bytes are plain string content.
+  private inline def stringStops(word: Long): Long =
+    matchByte(word, 0x22L) | matchByte(word, 0x5CL) | below32(word) | (word & HighBits)
+
   // Immutable (frozen) so class methods can index it without a global-mutable uses clause.
   private val TenPow: IArray[Double] =
     Array.tabulate(23): i =>
@@ -497,7 +528,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
     current.slice(start, end): (storage, off, len) =>
       val arr = storage.asInstanceOf[Array[Byte]]
-      new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
+      new String(arr, off, len, java.nio.charset.StandardCharsets.ISO_8859_1)
 
   protected update def appendRegionToBuffer(start: Cursor.Mark)(using held: Cursor.Held): Unit =
     syncTo()
@@ -778,7 +809,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
             val arr = storage.asInstanceOf[Array[Byte]]
 
             if len > KeyCacheMaxBytes then
-              new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
+              new String(arr, off, len, java.nio.charset.StandardCharsets.ISO_8859_1)
             else
               val packedLow  = packBytes(arr, off, math.min(len, 8))
               val packedHigh = if len > 8 then packBytes(arr, off + 8, len - 8) else 0L
@@ -792,7 +823,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
                 kcHigh(idx) == packedHigh
               then cached
               else
-                val fresh = new String(arr, off, len, java.nio.charset.StandardCharsets.US_ASCII)
+                val fresh = new String(arr, off, len, java.nio.charset.StandardCharsets.ISO_8859_1)
                 kc(idx)     = fresh
                 kcLow(idx)  = packedLow
                 kcHigh(idx) = packedHigh
@@ -2088,6 +2119,22 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     var continue = true
 
     while continue do
+      // SWAR within the window, then the general per-byte loop across
+      // refills.
+      var i = pos
+      val limit = bufEnd
+      var scanning = true
+
+      while scanning && i <= limit - 8 do
+        val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], i)
+        val stops = stringStops(word)
+
+        if stops == 0L then i += 8
+        else
+          i += java.lang.Long.numberOfTrailingZeros(stops) >> 3
+          scanning = false
+
+      pos = i
       while more && StringScanContinue(peek & 0xFF) != 0 do advance()
       if !more then errorAt(Issue.PrematureEnd)
       val ch = peek
@@ -2132,16 +2179,27 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       advance()
       // Buffer-local fast path: a plain-ASCII string that closes inside the
       // current window is materialized straight from the local snapshot —
-      // no marks, no hold, no cursor sync. Falls back (without moving) for
-      // escapes, control or non-ASCII bytes, and the window's end.
+      // no marks, no hold, no cursor sync — scanning eight bytes per step.
+      // Falls back (without moving) for escapes, control or non-ASCII
+      // bytes, and the window's end.
       val start = pos
       val limit = bufEnd
       var i = start
+      var scanning = true
 
-      while i < limit && StringScanContinue(bytes(i) & 0xFF) != 0 do i += 1
+      while scanning && i <= limit - 8 do
+        val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], i)
+        val stops = stringStops(word)
+
+        if stops == 0L then i += 8
+        else
+          i += java.lang.Long.numberOfTrailingZeros(stops) >> 3
+          scanning = false
+
+      if scanning then while i < limit && StringScanContinue(bytes(i) & 0xFF) != 0 do i += 1
 
       if i < limit && bytes(i) == Quote then
-        val out = new String(bytes, start, i - start, java.nio.charset.StandardCharsets.US_ASCII)
+        val out = new String(bytes, start, i - start, java.nio.charset.StandardCharsets.ISO_8859_1)
         pos = i + 1
         out
       else parseString()
@@ -2306,6 +2364,167 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
         case ch => errorAt(Issue.ExpectedString(ch.toChar))
 
+  // As `directKey`, but resolving the key against a precomputed table
+  // instead of materializing it: `KeyTable.End` after consuming the closing
+  // brace, `KeyTable.Unknown` for a key not in the table (the caller skips
+  // its value), else the key's table index.
+  private[jacinta] update def directKeyIndex(table: Json.KeyTable)(using Tactic[ParseError])
+  :   Int =
+
+    val fast = directKeyIndexFast(table)
+    if fast != Int.MinValue then fast else directKeyIndexGeneral(table)
+
+  // The whole step — whitespace, separator, key, colon — as one scan of the
+  // current window, committing no state until the outcome is certain, so
+  // any interruption (the window's end, an escaped or oversized key, or
+  // malformed input, which must raise the general path's exact issue) can
+  // fall back by simply returning `MinValue`. Tactic-free, so `JsonReader`
+  // calls it directly on the hot path.
+  private[jacinta] update def directKeyIndexFast(table: Json.KeyTable): Int =
+    val limit = bufEnd
+    var i = pos
+
+    while
+      i < limit && {
+        val b = bytes(i)
+        b == Space || b == Tab || b == Newline || b == Return
+      }
+    do i += 1
+
+    if i >= limit then return Int.MinValue
+    val seen = directSeen()
+    var b = bytes(i)
+
+    if b == CloseBrace then
+      pos = i + 1
+      directPop()
+      return Json.KeyTable.End
+
+    if seen then
+      if b != Comma then return Int.MinValue
+      i += 1
+
+      while
+        i < limit && {
+          val b2 = bytes(i)
+          b2 == Space || b2 == Tab || b2 == Newline || b2 == Return
+        }
+      do i += 1
+
+      if i >= limit then return Int.MinValue
+      b = bytes(i)
+
+    if b != Quote then return Int.MinValue
+    val start = i + 1
+    var j = start
+    var scanning = true
+
+    while scanning && j <= limit - 8 do
+      val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], j)
+      val stops = stringStops(word)
+
+      if stops == 0L then j += 8
+      else
+        j += java.lang.Long.numberOfTrailingZeros(stops) >> 3
+        scanning = false
+
+    if scanning then while j < limit && StringScanContinue(bytes(j) & 0xFF) != 0 do j += 1
+
+    if j >= limit || bytes(j) != Quote || j == start || j - start > 16 then return Int.MinValue
+    val length = j - start
+
+    // Word loads instead of byte-by-byte packing; a short key's over-read is
+    // in bounds (the closing quote is at `j < limit`) and masked away.
+    val low =
+      if start + 8 <= limit then
+        val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start)
+        if length >= 8 then word else word & ((1L << (length*8)) - 1)
+      else packBytes(bytes, start, math.min(length, 8))
+
+    val high =
+      if length > 8 then
+        if start + 16 <= limit then
+          val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start + 8)
+          if length == 16 then word else word & ((1L << ((length - 8)*8)) - 1)
+        else packBytes(bytes, start + 8, length - 8)
+      else 0L
+    var k = j + 1
+
+    while
+      k < limit && {
+        val b3 = bytes(k)
+        b3 == Space || b3 == Tab || b3 == Newline || b3 == Return
+      }
+    do k += 1
+
+    if k >= limit || bytes(k) != Colon then return Int.MinValue
+
+    if !seen then directMark()
+    pos = k + 1
+    table.indexOf(low, high)
+
+  private[jacinta] update def directKeyIndexGeneral(table: Json.KeyTable)(using Tactic[ParseError])
+  :   Int =
+
+    skip()
+
+    if directSeen() then
+      must() match
+        case CloseBrace =>
+          advance()
+          directPop()
+          Json.KeyTable.End
+
+        case Comma =>
+          advance()
+          skip()
+
+          must() match
+            case Quote      => advance() yet directKeyIndexTail(table)
+            case CloseBrace => errorAt(Issue.ExpectedSomeValue('}'))
+            case ch         => errorAt(Issue.ExpectedString(ch.toChar))
+
+        case ch => errorAt(Issue.UnexpectedChar(ch.toChar))
+    else
+      must() match
+        case CloseBrace =>
+          advance()
+          directPop()
+          Json.KeyTable.End
+
+        case Quote =>
+          advance()
+          directMark()
+          directKeyIndexTail(table)
+
+        case ch => errorAt(Issue.ExpectedString(ch.toChar))
+
+  // After the opening quote: pack the key straight from the window and look
+  // it up, falling back to a materialized key (escapes, long keys, or the
+  // window's end) compared by string; then the trailing colon.
+  private update def directKeyIndexTail(table: Json.KeyTable)(using Tactic[ParseError]): Int =
+    val start = pos
+    val limit = bufEnd
+    var i = start
+
+    while i < limit && StringScanContinue(bytes(i) & 0xFF) != 0 do i += 1
+
+    val index =
+      if i < limit && bytes(i) == Quote && i - start <= 16 && i > start then
+        val length = i - start
+        val low = packBytes(bytes, start, math.min(length, 8))
+        val high = if length > 8 then packBytes(bytes, start + 8, length - 8) else 0L
+        pos = i + 1
+        table.indexOf(low, high)
+      else table.indexOfName(parseObjectKey())
+
+    skip()
+
+    if must() == Colon then
+      advance()
+      index
+    else errorAt(Issue.ExpectedColon(peek.toChar))
+
   // After the opening quote: the key itself and its trailing colon.
   private update def directKeyTail()(using Tactic[ParseError]): String =
     val key = directKeyName()
@@ -2345,13 +2564,13 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
         if cached != null && keyCacheLow(index) == packedLow && keyCacheHigh(index) == packedHigh
         then cached
         else
-          val fresh = new String(bytes, start, length, java.nio.charset.StandardCharsets.US_ASCII)
+          val fresh = new String(bytes, start, length, java.nio.charset.StandardCharsets.ISO_8859_1)
           keyCache(index) = fresh
           keyCacheLow(index) = packedLow
           keyCacheHigh(index) = packedHigh
           fresh
       else
-        val out = new String(bytes, start, length, java.nio.charset.StandardCharsets.US_ASCII)
+        val out = new String(bytes, start, length, java.nio.charset.StandardCharsets.ISO_8859_1)
         pos = i + 1
         out
     else parseObjectKey()
@@ -2367,6 +2586,37 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // True when another element follows (positioned at it, with any separator
   // comma consumed); false after consuming the closing bracket.
   private[jacinta] update def directElement()(using Tactic[ParseError]): Boolean =
+    // Buffer-local fast path, mirroring `directKeyIndexFast`.
+    val limit = bufEnd
+    var i = pos
+
+    while
+      i < limit && {
+        val b = bytes(i)
+        b == Space || b == Tab || b == Newline || b == Return
+      }
+    do i += 1
+
+    if i < limit then
+      val b = bytes(i)
+
+      if b == CloseBracket then
+        pos = i + 1
+        directPop()
+        return false
+
+      if directSeen() then
+        if b == Comma then
+          pos = i + 1
+          return true
+      else
+        directMark()
+        pos = i
+        return true
+
+    directElementGeneral()
+
+  private update def directElementGeneral()(using Tactic[ParseError]): Boolean =
     skip()
 
     if directSeen() then

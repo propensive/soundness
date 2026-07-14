@@ -109,6 +109,62 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   def decodeUsersDirect(): BenchUsers = LazyList(jsonBytes4).read[BenchUsers in Json]
   def decodeUsersDirectData(): BenchUsers = jsonBytes4.read[BenchUsers in Json]
 
+  // A hand-written parser over the public reader API: the "ceiling" for
+  // monomorphic user code, isolating the derivation interpreter's overhead
+  // from the tokenizer's.
+  val handUsersParsable: BenchUsers is Json.Parsable =
+    Json.Parsable(Morphology.Any): reader =>
+      def user(): BenchUser =
+        reader.openObject()
+        var id = 0
+        var username: Text = t""
+        var email: Text = t""
+        var active = false
+        var role: Text = t""
+
+        while
+          reader.key().lay(false): key =>
+            if key == t"id" then id = reader.int()
+            else if key == t"username" then username = reader.string()
+            else if key == t"email" then email = reader.string()
+            else if key == t"active" then active = reader.boolean()
+            else if key == t"role" then role = reader.string()
+            else reader.skipValue()
+            true
+        do ()
+
+        BenchUser(id, username, email, active, role)
+
+      reader.openObject()
+      var users: List[BenchUser] = Nil
+
+      while
+        reader.key().lay(false): key =>
+          if key == t"users" then
+            val builder = List.newBuilder[BenchUser]
+            reader.openArray()
+            while reader.element() do builder += user()
+            users = builder.result()
+          else reader.skipValue()
+          true
+      do ()
+
+      BenchUsers(users)
+
+  // Scans and validates every token of the document but materializes
+  // nothing: the tokenizer's floor, separating scan cost from the cost of
+  // building strings and records.
+  val skimParsable: Unit is Json.Parsable =
+    Json.Parsable(Morphology.Any)(_.skipValue())
+
+  def skimUsers(): Unit =
+    given Unit is Json.Parsable = skimParsable
+    jsonBytes4.read[Unit in Json]
+
+  def decodeUsersHand(): BenchUsers =
+    given BenchUsers is Json.Parsable = handUsersParsable
+    jsonBytes4.read[BenchUsers in Json]
+
   val jsoniterUsersCodec: com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[JsoniterUsers] =
     com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
 
@@ -229,6 +285,12 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       bench(m"Decode directly with Parsable (whole Data)")
         ( target = 1*Second, operationSize = size4 ):
         '{ jacinta.Benchmarks.decodeUsersDirectData() }
+
+      bench(m"Scan all tokens, materialize nothing")(target = 1*Second, operationSize = size4):
+        '{ jacinta.Benchmarks.skimUsers() }
+
+      bench(m"Decode with a hand-written Parsable")(target = 1*Second, operationSize = size4):
+        '{ jacinta.Benchmarks.decodeUsersHand() }
 
       bench(m"Decode directly with Jsoniter")(target = 1*Second, operationSize = size4):
         '{ jacinta.Benchmarks.decodeUsersJsoniter() }

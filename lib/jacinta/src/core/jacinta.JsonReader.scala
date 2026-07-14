@@ -94,6 +94,13 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // a reference-equality scan in the steady state.
   private[jacinta] update def keyName(): String | Null = parser.directKey()(using tactic)
 
+  // As `key()`, but resolving against a precomputed key table without
+  // materializing the key at all: the table index, `KeyTable.Unknown`, or
+  // `KeyTable.End` once the closing brace is consumed.
+  private[jacinta] update def keyIndex(table: Json.KeyTable): Int =
+    val fast = parser.directKeyIndexFast(table)
+    if fast != Int.MinValue then fast else parser.directKeyIndexGeneral(table)(using tactic)
+
   update def openArray(): Unit = parser.directOpenArray()(using tactic)
   update def element(): Boolean = parser.directElement()(using tactic)
 
