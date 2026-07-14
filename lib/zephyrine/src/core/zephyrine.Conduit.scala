@@ -85,6 +85,12 @@ object Conduit:
     // block always fits any reservation — no size matching, no wasted re-zeroing.
     val recycle: Boolean = buffering.recycle
 
+    // The storage class this medium mints (e.g. `Array[Byte]`), keying the shared
+    // `Blockpool` so a block reused across conduit instances is always type-correct.
+    // The cast erases the allocation's fresh capture before `getClass`, which needs
+    // no capability: only the runtime class is retained.
+    val storageClass: Class[?] = addressable0.allocate(0).asInstanceOf[AnyRef].getClass.nn
+
     // The write side; single writer. Without recycling, blocks are minted at the
     // size `reserve` is asked for, between `block` and `ceiling`: a bulk `put`
     // crosses the boundary in ceiling-sized hand-offs rather than being
@@ -100,12 +106,34 @@ object Conduit:
       // Untracked, with cast-erased assignments and an exclusive write view:
       // the block is reached only through this (single-writer) intake until
       // `publish` hands it to the ring.
+      //
+      // The first real block is minted lazily, by the first `reserve` that will
+      // actually write into it (`minted` marks the pristine state), so a conduit
+      // whose chunks all take the zero-copy pass-through path never allocates one at
+      // all — the dominant per-instance cost for short-lived, by-reference
+      // pipelines. `capacity` still reports `block` from construction, so advisory
+      // `demand` is unchanged by the deferral.
       @caps.unsafe.untrackedCaptures
       private var current: addressable0.Storage =
-        addressable0.allocate(if recycle then ceiling else block).asInstanceOf[addressable0.Storage]
+        addressable0.allocate(0).asInstanceOf[addressable0.Storage]
 
+      private var minted: Boolean = false
       private var capacity: Int = block
       private var mark0: Int = 0
+
+      // A physically `size`-sized block: reused from this conduit's own freelist,
+      // from the shared cross-conduit `Blockpool` (recycling mode mints only
+      // `ceiling`-sized blocks, so any pooled block fits), or freshly allocated.
+      private def mint(size: Int): addressable0.Storage =
+        ( if recycle then
+            val reused = core.freelist.poll()
+
+            if reused != null then reused else
+              val pooled = Blockpool.poll(storageClass, ceiling)
+              if pooled != null then pooled else addressable0.allocate(ceiling)
+          else addressable0.allocate(size) )
+
+        . asInstanceOf[addressable0.Storage]
 
       // Advisory free space: block-sized credit for each free ring slot, plus
       // the room left in the block being written. Zero exactly when `reserve`
@@ -119,24 +147,21 @@ object Conduit:
       update def reserve(min: Int): Int =
         val free = capacity - mark0
 
-        if free >= min.max(1) then free else
+        if free >= min.max(1) then
+          if !minted then
+            current = mint(block)
+            minted = true
+
+          free
+        else
           publish()
           capacity = min.min(ceiling).max(block)
 
-          // With recycling, mint a physically `ceiling`-sized block — reused from
-          // the pool of blocks the reader has drained (overwritten in place, so
-          // never re-zeroed) or freshly allocated when the pool is empty — and
-          // let `capacity` bound the usable prefix. Without recycling, mint at
-          // exactly the requested size, as before.
-          current =
-            if recycle then
-              val reused = core.freelist.poll()
-
-              (if reused != null then reused else addressable0.allocate(ceiling))
-              . asInstanceOf[addressable0.Storage]
-            else
-              addressable0.allocate(capacity).asInstanceOf[addressable0.Storage]
-
+          // With recycling, mint a physically `ceiling`-sized block and let
+          // `capacity` bound the usable prefix. Without recycling, mint at exactly
+          // the requested size, as before.
+          current = mint(capacity)
+          minted = true
           capacity
 
       update def commit(count: Int): Unit =
@@ -235,6 +260,28 @@ object Conduit:
             core.handoff.take() match
               case null =>
                 ended = true
+
+                // The writer has finished, so no further mint will consult the
+                // freelist: this (reader) thread is now its only user, and the blocks
+                // it still caches — along with the last drained block held here —
+                // would otherwise die with the conduit. Demote them to the shared
+                // `Blockpool` so the next conduit instance mints from them instead
+                // of allocating afresh.
+                if recycle then
+                  if recyclable0 && addressable0.storageSize(storage) == ceiling then
+                    Blockpool.offer(storageClass, ceiling, storage.asInstanceOf[AnyRef])
+                    storage = addressable0.allocate(0).asInstanceOf[addressable0.Storage]
+                    recyclable0 = false
+                    start0 = 0
+                    limit0 = 0
+                    end0 = 0
+
+                  var cached = core.freelist.poll()
+
+                  while cached != null do
+                    Blockpool.offer(storageClass, ceiling, cached)
+                    cached = core.freelist.poll()
+
                 Unset
 
               case received: Block =>
@@ -246,9 +293,14 @@ object Conduit:
                 // once `limit0` reached `end0`) and its window is relinquished
                 // the moment this `refill` returns a new one, so a ceiling-sized
                 // minted block is safe to return to the writer for reuse. The
-                // freelist's publication order carries the ownership across.
+                // freelist's publication order carries the ownership across; a
+                // block the freelist declines (it is bounded) demotes to the
+                // shared cross-conduit `Blockpool` rather than dropping to the
+                // collector.
                 if recycle && recyclable0 && addressable0.storageSize(storage) == ceiling
-                then core.freelist.offer(storage.asInstanceOf[AnyRef])
+                then
+                  if !core.freelist.offer(storage.asInstanceOf[AnyRef])
+                  then Blockpool.offer(storageClass, ceiling, storage.asInstanceOf[AnyRef])
 
                 storage = received.storage.asInstanceOf[addressable0.Storage]
                 recyclable0 = received.recyclable

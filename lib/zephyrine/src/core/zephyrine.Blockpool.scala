@@ -32,61 +32,70 @@
                                                                                                   */
 package zephyrine
 
+import java.util.concurrent as juc
 import java.util.concurrent.atomic as juca
 
-// A bounded single-producer/single-consumer pool of spent blocks, the return
-// path that lets a `Conduit`'s reader hand a drained block back to its writer
-// for reuse instead of dropping it to the collector while the writer mints a
-// fresh (zero-filled) replacement. Exactly one thread offers (the reader) and
-// exactly one polls (the writer) — the same discipline the endpoints already
-// enforce for the forward `Handoff`.
+// A process-wide, bounded pool of spent transfer blocks, shared across conduits: the
+// second-level cache behind each `Conduit`'s per-instance `Freelist`. The freelist
+// recycles blocks between one writer/reader pair over a conduit's lifetime; this pool
+// carries them *across* lifetimes, so a short-lived conduit (one hand-off pipeline per
+// operation) mints its blocks from its predecessors' instead of allocating afresh and
+// abandoning a whole pool to the collector each time.
 //
-// Unlike `Handoff`, neither side ever blocks: this is a best-effort cache, not
-// a rendezvous. A `poll` on an empty pool returns `null` (the writer allocates
-// instead) and an `offer` to a full pool discards the block (the collector
-// reclaims it). So the writer can never stall on an empty pool — which would
-// deadlock against a reader parked waiting for that same writer — and the
-// reader never stalls returning a block.
+// Blocks are pooled by their storage class and exact physical size, so a reused block is
+// always type- and size-correct for the mint that requests it — the same single-size
+// discipline as the freelist (a conduit only ever offers and polls `ceiling`-sized
+// blocks). Each (class, size) class is bounded, targeting a fixed retained budget, so an
+// idle process caches a bounded, small number of blocks and everything beyond the bound
+// goes to the collector exactly as before.
 //
-// A `SharedCapability`, like `Handoff`: the block ownership transfer is
-// discharged by the ring's volatile publication order (a returned block is one
-// the reader has finished reading and released), not by aliasing analysis.
-final class Freelist(slots0: Int) extends caps.SharedCapability:
-  private val capacity: Int = Integer.highestOneBit((slots0.max(1)*2) - 1)
-  private val mask: Int = capacity - 1
-  private val slots: juca.AtomicReferenceArray[AnyRef] = juca.AtomicReferenceArray(capacity)
+// Unlike `Handoff` and `Freelist`, this pool is multi-producer/multi-consumer: any
+// conduit's writer may poll and any reader may offer, concurrently. Both operations are
+// non-blocking and best-effort: a `poll` miss means the caller allocates; an `offer`
+// over the bound discards. Contents are never read — a reused block is overwritten in
+// place before publication — so the only transfer discharged here is reachability, via
+// the queue's own publication order.
+object Blockpool:
+  // The retained budget per (class, size): about 16 MiB, floored so tiny blocks still
+  // pool usefully and capped so huge blocks cannot make even a few retained instances
+  // enormous.
+  private def bound(size: Int): Int = ((16 << 20)/size.max(1)).max(4).min(256)
 
-  // `tail` is written only by the producer (reader), `head` only by the
-  // consumer (writer); each publishes its index with a volatile write the other
-  // reads to bound occupancy, exactly as `Handoff`.
-  private val head: juca.AtomicLong = juca.AtomicLong(0)
-  private val tail: juca.AtomicLong = juca.AtomicLong(0)
+  private final class Pool(size: Int):
+    val queue: juc.ConcurrentLinkedQueue[AnyRef] = juc.ConcurrentLinkedQueue()
+    val count: juca.AtomicInteger = juca.AtomicInteger(0)
+    val limit: Int = bound(size)
 
-  // Producer side (the reader thread): cache a spent block, returning whether it was
-  // accepted; a full pool declines, and the caller either drops the block to the
-  // collector or demotes it to the shared `Blockpool`. The block must be one the reader
-  // has fully drained and will never touch again — its contents are irrelevant, since
-  // the writer overwrites before publishing.
-  def offer(item: AnyRef): Boolean =
-    val position = tail.get
+  private final case class Key(cls: Class[?], size: Int)
 
-    if position - head.get < capacity then
-      slots.lazySet((position & mask).toInt, item)
-      tail.set(position + 1)
-      true
-    else
-      false
+  private val pools: juc.ConcurrentHashMap[Key, Pool] = juc.ConcurrentHashMap()
 
-  // Consumer side (the writer thread): take a cached block to reuse, or `null`
-  // if the pool is empty, in which case the writer allocates a fresh block.
-  def poll(): AnyRef | Null =
-    val position = head.get
+  private def pool(cls: Class[?], size: Int): Pool =
+    val key = Key(cls, size)
+    val existing = pools.get(key)
 
-    if position < tail.get then
-      val index = (position & mask).toInt
-      val item = slots.get(index)
-      slots.lazySet(index, null)
-      head.set(position + 1)
-      item
-    else
-      null
+    if existing != null then existing else
+      val created = new Pool(size)
+      val race = pools.putIfAbsent(key, created)
+      if race == null then created else race
+
+  // Cache a spent block, or discard it if its class is at bound. `size` must be the
+  // block's exact physical size; the block must be fully relinquished by its offerer.
+  def offer(cls: Class[?], size: Int, block: AnyRef): Unit =
+    val pool0 = pool(cls, size)
+
+    // The count is raised before the block is enqueued (and lowered again if that
+    // overshot the bound), so it is always an upper estimate of the queue's length and
+    // the bound is strict.
+    if pool0.count.incrementAndGet() <= pool0.limit then pool0.queue.offer(block)
+    else pool0.count.decrementAndGet()
+
+  // A pooled block of exactly this class and physical size, or `null`, in which case
+  // the caller allocates afresh.
+  def poll(cls: Class[?], size: Int): AnyRef | Null =
+    val pool0 = pools.get(Key(cls, size))
+
+    if pool0 == null then null else
+      val block = pool0.queue.poll()
+      if block != null then pool0.count.decrementAndGet()
+      block
