@@ -45,6 +45,7 @@ import gossamer.*
 import panopticon.*
 import prepositional.*
 import rudiments.*
+import turbulence.*
 import vacuous.*
 import wisteria.*
 
@@ -77,7 +78,7 @@ private[stratiform] def primitiveFault[value]
   else parse(tel.primaryAtom).or:
     raise(TelError(TelError.Reason.NotScalar(tel.primaryAtom, expected))) yet sentinel
 
-trait Tel2:
+trait Tel2 extends Tel3:
   // Field-keyed lens: a name `<: Label` resolves to a Lens from `Tel`
   // onto `Tel`. The getter delegates to `selectDynamic`; the setter
   // routes through `Tel.modify`, which replaces an existing child
@@ -138,6 +139,84 @@ trait Tel2:
       Tel.Encodable(() => Morphology.Str): v => Tel.scalar(v.encode)
 
     case given Reflection[`value`] => EncodableDerivation.derived
+
+  // ── Direct parsing: element-wise `Tel.Field` instances and the read path ──
+
+  // Element-wise `Tel.Field` for collections, resolved during derivation:
+  // the element's own parser comes from the fallback chain, so nested
+  // products still parse directly. This layer beats `Tel3`'s fallback, so
+  // collection types never reach its `Reflection` case (a `List`'s own
+  // `Mirror` would otherwise derive it as a sum). The instance is
+  // repeatable: the product engine gathers every same-keyword occurrence,
+  // exactly as the AST derivation collects all matching compounds.
+  given fieldCollection: [collection <: Iterable, element]
+  =>  ( factory: Factory[element, collection[element]],
+        tactic:  Tactic[TelError] )
+  =>  ( field: => (element is Tel.Field)^ )
+  =>  collection[element] is Tel.Field =
+    Tel.Field(Tel.Parsable.iterable[collection, element](field))
+
+  // Element-wise `Tel.Field` for `Optional`, resolved during derivation:
+  // the inner instance comes from the field fallback chain (by-name, so
+  // recursive types resolve, exactly like collections), and the wrapper's
+  // semantics mirror the AST `optionalDecodable`: an entry with neither an
+  // inline atom nor a child compound reads as `Unset`, as does a missing
+  // keyword. Above the blanket so an `Optional` field resolves here with
+  // the same specificity preference the AST derivation's `Tel.Decodable`
+  // summon exhibits.
+  given fieldOptional: [inner <: value, value >: Unset.type: Mandatable to inner]
+  =>  ( tactic: Tactic[TelError] )
+  =>  ( field: => (inner is Tel.Field)^ )
+  =>  value is Tel.Field =
+    Tel.Field(Tel.Parsable.optionality[inner, value](field))
+
+  // The AST-materializing read path: `source.read[Foo in Tel]` shorthand for
+  // `source.read[Tel].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect` for
+  // `value in Json`. The `Form` type-tag is added by an `asInstanceOf` cast —
+  // `value in Tel` is just `value { type Form = Tel }` so the cast is a no-op
+  // at runtime. Lives at this priority so `object Tel`'s direct-parsing
+  // `aggregableParsed` wins whenever the value has a `Tel.Parsable`; when it
+  // does not (all pre-`Parsable` code), this resolves exactly as before.
+  given aggregableIn: [value: distillate.Decodable in Tel] => (tactic: Tactic[TelError])
+  =>  (((value in Tel) is Aggregable by Data)^{tactic}) =
+    source => Tel.parse(Tel.concatenate(source)).as[value].asInstanceOf[value in Tel]
+
+  object ParsableDerivation extends Derivable[Tel.Field]:
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   derivation is Tel.Field =
+
+      // Like `DecodableDerivation.conjunction`: the capabilities are summoned
+      // at the derivation site and the instance is sealed per the codec-thunk
+      // pattern. A single `contexts` traversal collects, per field, its wire
+      // keyword (`@name[Tel]`-aware, camel→kebab otherwise — the same mapping
+      // as the AST derivation), its parser (via the `Field` fallback chain)
+      // and its declared default; `Tel.Parsable.product` owns the entry loop,
+      // so no per-field lambda ever closes over the reader.
+      caps.unsafe.unsafeAssumePure:
+        val reflection = infer[ProductReflection[derivation]]
+
+        Tel.Parsable.product[derivation](
+          { () =>
+            val renames: Map[Text, Text] = relabelling[derivation, Tel]
+
+            contexts[derivation]():
+              [field] => context =>
+                ( renames.getOrElse(label, Tel.camelToKebab(label.s)).s,
+                  context: Tel.Parsing,
+                  default[Optional[field]]: Any )
+          },
+          values => Tel.Parsable.assemble(reflection, values))
+          ( using infer[Foci[Tel.Focus]], infer[Tactic[TelError]] )
+
+    inline def disjunction[derivation: SumReflection]: derivation is Tel.Field =
+      // A sum's wire form is a single child compound keyed by the variant's
+      // name, which cannot be recognised before the entry itself is read —
+      // so a sum always takes the AST bridge over its derived (or custom)
+      // decoder, keeping the two paths identical by construction. Sealed per
+      // the codec-thunk pattern: the instance captures a resolution-scoped
+      // decoder.
+      caps.unsafe.unsafeAssumePure:
+        Tel.Field(Tel.Parsable.fromDecodable(infer[derivation is Tel.Decodable]))
 
   object DecodableDerivation extends Derivable[Tel.Decodable]:
     inline def conjunction[derivation <: Product: ProductReflection]
