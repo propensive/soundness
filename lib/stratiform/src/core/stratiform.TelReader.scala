@@ -87,6 +87,23 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // primitive parsers.
   update def atom(): Optional[Text] = parser.directAtomText()(using errorTactic)
 
+  // The entry's primary atom parsed straight from its arena bytes as an
+  // integer / boolean, or `Unset` for a missing or wrong-shaped atom — the
+  // number/boolean readers, saving the value `String` the `atom()` path would
+  // materialize only for the primitive to re-scan. After an `Unset`,
+  // `primaryPresent` says whether an atom was there (missing → `Absent`,
+  // present-but-unparseable → `NotScalar`) and `primaryText` gives that atom's
+  // text for the error, matching the AST path byte-for-byte.
+  update def int(): Optional[Int] = parser.directAtomInt()(using errorTactic)
+  update def long(): Optional[Long] = parser.directAtomLong()(using errorTactic)
+  update def boolean(): Optional[Boolean] = parser.directAtomBoolean()(using errorTactic)
+
+  update def primaryPresent: Boolean = parser.directPrimaryPresent
+
+  update def primaryText: Optional[Text] =
+    val text = parser.directPrimaryText
+    if text == null then Unset else Optional(Text(text))
+
   // Consumes only the entry's own line (and any source/literal
   // continuation), leaving its children for the caller to parse one level
   // deeper — the step before a nested record's field loop.
