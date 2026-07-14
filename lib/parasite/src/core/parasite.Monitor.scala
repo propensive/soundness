@@ -222,18 +222,21 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
       case _         => ()
 
   def result()(using cancel: Tactic[AsyncError]^): Result =
-    state.updateAndGet:
-      case null                        => abort(AsyncError(Reason.Incomplete))
-      case Initializing                => abort(AsyncError(Reason.Incomplete))
-      case Active(_)                   => abort(AsyncError(Reason.Incomplete))
-      case Completed(duration, result) => Delivered(duration, result)
-      case Delivered(duration, result) => Delivered(duration, result)
-      case Failed(error)               => throw error
-      case Cancelled                   => abort(AsyncError(Reason.Cancelled))
+    state.get() match
+      case Delivered(_, result) => result // Repeated joins skip the CAS and allocation below.
+      case _ =>
+        state.updateAndGet:
+          case null                        => abort(AsyncError(Reason.Incomplete))
+          case Initializing                => abort(AsyncError(Reason.Incomplete))
+          case Active(_)                   => abort(AsyncError(Reason.Incomplete))
+          case Completed(duration, result) => Delivered(duration, result)
+          case state@Delivered(_, _)       => state
+          case Failed(error)               => throw error
+          case Cancelled                   => abort(AsyncError(Reason.Cancelled))
 
-    . match
-      case Delivered(_, result) => result
-      case other                => panic(m"impossible state")
+        . match
+          case Delivered(_, result) => result
+          case other                => panic(m"impossible state")
 
 
   // The raw, untyped join: the original exception of a `Failed` worker is rethrown verbatim (under
@@ -278,19 +281,22 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
 
 
   private def fulfilment[error <: Hazard]()(using Tactic[error | AsyncError]^): Result =
-    state.updateAndGet:
-      case Completed(duration, result) => Delivered(duration, result)
-      case Delivered(duration, result) => Delivered(duration, result)
-      case other                       => other
+    state.get() match
+      case Delivered(_, result) => result // Repeated joins skip the CAS and allocation below.
+      case _ =>
+        state.updateAndGet:
+          case Completed(duration, result) => Delivered(duration, result)
+          case state@Delivered(_, _)       => state
+          case other                       => other
 
-    . match
-      case Completed(_, result)        => result
-      case Delivered(_, result)        => result
-      case Failed(failure: AsyncError) => abort(failure)
-      case Failed(failure: Exception)  => abort(failure.asInstanceOf[error])
-      case Failed(failure)             => throw failure
-      case Cancelled                   => abort(AsyncError(Reason.Cancelled))
-      case _                           => abort(AsyncError(Reason.Incomplete))
+        . match
+          case Completed(_, result)        => result
+          case Delivered(_, result)        => result
+          case Failed(failure: AsyncError) => abort(failure)
+          case Failed(failure: Exception)  => abort(failure.asInstanceOf[error])
+          case Failed(failure)             => throw failure
+          case Cancelled                   => abort(AsyncError(Reason.Cancelled))
+          case _                           => abort(AsyncError(Reason.Incomplete))
 
   private lazy val thread: Thread = parent.supervisor.fork(stack):
     val started: Boolean = state.updateAndGet:
