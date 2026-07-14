@@ -61,7 +61,7 @@ import wisteria.*
 import zephyrine.*
 
 object Xml extends Tag.Container
-  ( label = "xml", admissible = Set("head", "body") ), Format:
+  ( label = "xml", admissible = Set("head", "body") ), Format, Xml2:
   // Controls how an `Xml` tree is serialized. `indent` is the whitespace unit emitted per nesting
   // level when indenting element-only content; `Unset` (the default) keeps everything on a single
   // line. `trailingNewline` appends a final newline. Bundled as `formatting.compactFormatting`
@@ -462,6 +462,426 @@ object Xml extends Tag.Container
             val label = wisteria.label[Text]
             discriminable.rewrite(variantNames.getOrElse(label, label), contextual.encode(value))
 
+  // ── Direct parsing ─────────────────────────────────────────────────────
+  //
+  // The shared substance of `Xml.Parsable` and `Xml.Field`, mirroring
+  // jacinta's `Json.Parsing`. The two subtraits add nothing: they exist so
+  // that neither is a subtype of the other — a subtype relation in either
+  // direction would make one family's givens candidates for the other's
+  // queries (nominal instances clashing ambiguously with the field fallback,
+  // and Wisteria's codec probe finding a generic type's own `Parsable` given
+  // while deriving it).
+  //
+  // `parse` is invoked with the current element just *opened* on the reader
+  // (its name and attributes consumed) and must consume the element's
+  // content and close tag in full. Unlike jacinta's `Json.Parsing`, there is
+  // no `shape()`: xylophone's codecs are shape-free (`Decodable in Xml`
+  // carries no `Morphology`), so their direct counterparts are too.
+  trait Parsing extends distillate.Parsable:
+    type Transport = Xml
+    type Reader = XmlReader
+
+    // What a field of this type yields when no child element (or attribute)
+    // carries its name — the direct counterpart of the AST derivation
+    // handing the `Absent` sentinel to the field's decoder: an abort unless
+    // overridden (the primitives raise and continue with a zero sentinel;
+    // the bridge delegates to its decoder over `Absent`; a derived product
+    // expands per sub-field). Takes the read-site `Foci` so that per-sub-
+    // field expansion registers the same paths as the AST path's.
+    def absent()(using Tactic[XmlError], Foci[Xml.Focus]): Self = abort(XmlError())
+
+    // How a field of this type reads from an attribute value — the direct
+    // counterpart of the AST derivation decoding `TextNode(text)` for a
+    // field marked `@attribute`. For any shape that cannot read from a text
+    // leaf, a `TextNode` is wrong-shape input on the AST path, which is
+    // exactly `absent()`'s behavior — hence the default.
+    def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): Self = absent()
+
+  object Parsable:
+    def apply[value](parser: (reader: XmlReader^) => value)
+    :   ((value is Xml.Parsable)^{parser}) =
+
+      new Xml.Parsable:
+        type Self = value
+        def parse(reader: XmlReader^): value = parser(reader)
+
+    // The universal bridge from the AST world: materialize one element as an
+    // `Xml` and decode it. Field types with only a `Decodable in Xml` keep
+    // working through this, and it is the user's one-line escape hatch when
+    // a custom decoder must beat a derived direct parser. Absence and
+    // attribute reads delegate to the decoder over the same sentinel inputs
+    // the AST derivation would hand it, so the two paths stay identical by
+    // construction.
+    def fromDecodable[value](decodable: (value is Decodable in Xml)^)
+    :   ((value is Xml.Parsable)^{decodable}) =
+
+      new Xml.Parsable:
+        type Self = value
+        def parse(reader: XmlReader^): value = decodable.decoded(reader.element())
+
+        override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): value =
+          decodable.decoded(Absent)
+
+        override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): value =
+          decodable.decoded(TextNode(text))
+
+    // The one-line opt-in to direct parsing for a structural type:
+    // `given MyType is Xml.Parsable = Xml.Parsable.derived` — a
+    // Wisteria-derived direct parser, wrapped as a *nominal* `Parsable` so
+    // it participates in the read trigger. Deliberately a method, not a
+    // blanket given: a type parses directly only once it has opted in.
+    inline def derived[value](using Reflection[value]): value is Xml.Parsable =
+      fromField(ParsableDerivation.derivedOne[value])
+
+    def fromField[value](field0: (value is Xml.Parsing)^)
+    :   ((value is Xml.Parsable)^{field0}) =
+
+      new Xml.Parsable:
+        type Self = value
+        def parse(reader: XmlReader^): value = field0.parse(reader)
+        override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): value = field0.absent()
+
+        override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): value =
+          field0.attribute(text)
+
+    // Sentinel for the derived product parser's value buffer: a slot still
+    // `AbsentSlot` after the child loop had no matching element
+    // (`null`-checking would be unsound — a null-backed `Unset` is a
+    // legitimate stored value).
+    private[xylophone] val AbsentSlot: AnyRef = new Object
+
+    // Positional construction through the threaded `Mirror`, from the value
+    // buffer the parse loop filled. `fromProduct` is the only construction
+    // form that works for method-local and object-nested case classes.
+    def assemble[derivation <: Product]
+      ( reflection: ProductReflection[derivation], values: IArray[Any] )
+    :   derivation =
+
+      reflection.fromProduct(ArrayProduct(values))
+
+    private final class ArrayProduct(values: IArray[Any]) extends Product:
+      def canEqual(that: Any): Boolean = true
+      def productArity: Int = values.length
+      def productElement(index: Int): Any = values(index)
+
+    // The prior focus's path, extended by one step — evaluated only at
+    // error-registration time, exactly as the AST derivation builds its
+    // per-field focus (`base.prepend(wireName, 1)`).
+    private def descend(base0: Optional[Xml.Focus], name: Text): Xml.Focus =
+      Xml.Focus(base0.let(_.path).or(XPath()).prepend(name, 1))
+
+    // The derived product parser's engine. `fields0` is an explicit thunk
+    // (nameable in the capture set, unlike a by-name) evaluated lazily, so
+    // recursive derivation can defer sibling resolution; it yields, per
+    // field, the wire name (`@name`-aware), the field's parser, its declared
+    // default (or `Unset`) and whether it is an `@attribute` field.
+    // `fallback` is the user-supplied `Default[derivation]` sentinel thunk,
+    // when one exists. The parse loop lives here, in an ordinary method body
+    // — no Wisteria per-field lambda ever closes over the reader.
+    //
+    // Unlike jacinta's engine, no `Tactic` or `Foci` is captured at
+    // derivation time: every raise and focus goes through the capabilities
+    // the reader carries, which are resolved at the *read* site — so a
+    // `Parsable` given instantiated outside a `validate` boundary still
+    // accrues to it, exactly like the AST path (whose derivation is
+    // inline-expanded at the `.as` call).
+    def product[derivation]
+      ( fields0:  () => IArray[(String, Xml.Parsing, Any, Boolean)],
+        fallback: Optional[() => derivation],
+        make:     IArray[Any] -> derivation )
+    :   ((derivation is Xml.Field)^{fields0, fallback}) =
+
+      new Xml.Field:
+        type Self = derivation
+
+        private lazy val fields: IArray[(String, Xml.Parsing, Any, Boolean)] = fields0()
+        private lazy val keys: IArray[String] = fields.map(_(0))
+
+        // Element dispatch. An `@attribute` field never matches a child
+        // element: the AST derivation checks the annotation before looking
+        // at the children, so a like-named child is simply ignored there —
+        // skipped here.
+        private def indexOf(label: Text): Int =
+          val named = keys
+          val count = named.length
+          val name: String = label.s
+          var index = 0
+
+          while index < count do
+            if !fields(index)(3) && named(index) == name then return index
+            index += 1
+
+          -1
+
+        def parse(reader: XmlReader^): derivation =
+          given foci: Foci[Xml.Focus] = reader.foci
+          given tactic: Tactic[XmlError] = reader.errorTactic
+          val entries = fields
+          val count = entries.length
+          val values = new Array[Any](count)
+          var index = 0
+
+          while index < count do
+            values(index) = AbsentSlot
+            index += 1
+
+          // With the inert default `Foci`, per-field `focus` wrapping would
+          // observably do nothing, so the hot paths skip it.
+          val focused = foci.active
+
+          // `@attribute` fields first: they are available from the element's
+          // open tag, before any child is consumed. A missing attribute is
+          // handled by the absent-fill loop below, exactly like a missing
+          // child element — both mirror the AST's
+          // `default.or(context.decoded(Absent))`.
+          val attributes = reader.attributes()
+          index = 0
+
+          while index < count do
+            if entries(index)(3) then
+              attributes.at(keys(index).tt).let: text =>
+                values(index) =
+                  if focused
+                  then focus(descend(prior, keys(index).tt))(entries(index)(1).attribute(text))
+                  else entries(index)(1).attribute(text)
+
+            index += 1
+
+          var label: Optional[Text] = reader.nextChild()
+
+          while label.present do
+            val found = indexOf(label.vouch)
+
+            // Unknown children are skipped, and a duplicate child keeps the
+            // first occurrence — the AST derivation's `HashMap` inserts only
+            // when the label is not yet present.
+            if found < 0 || !(values(found).asInstanceOf[AnyRef] eq AbsentSlot)
+            then reader.skipElement()
+            else values(found) =
+              if focused
+              then focus(descend(prior, keys(found).tt))(entries(found)(1).parse(reader))
+              else entries(found)(1).parse(reader)
+
+            label = reader.nextChild()
+
+          index = 0
+
+          while index < count do
+            if values(index).asInstanceOf[AnyRef] eq AbsentSlot then
+              val declared = entries(index)(2).asInstanceOf[Optional[Any]]
+
+              values(index) =
+                if declared.present then declared
+                else if focused
+                then focus(descend(prior, keys(index).tt))(entries(index)(1).absent())
+                else entries(index)(1).absent()
+
+            index += 1
+
+          make(values.immutable(using Unsafe))
+
+        // A missing (or wrong-shape) product value: one raise at the current
+        // focus, then the user-supplied `Default[derivation]` sentinel, or
+        // an absent-build in which every sub-field takes its declared
+        // default or raises at its own focus — exactly the AST derivation's
+        // `decodeElement` wrong-shape fallback, so a missing nested case
+        // class expands per sub-field on both paths (or collapses to one
+        // error under a `Default`).
+        override def absent()(using tactic: Tactic[XmlError], foci: Foci[Xml.Focus])
+        :   derivation =
+
+          raise(XmlError())
+          fallback.lay(absentBuild()): instantiate => instantiate()
+
+        private def absentBuild()(using tactic: Tactic[XmlError], foci: Foci[Xml.Focus])
+        :   derivation =
+
+          val entries = fields
+          val count = entries.length
+          val values = new Array[Any](count)
+          val focused = foci.active
+          var index = 0
+
+          while index < count do
+            val declared = entries(index)(2).asInstanceOf[Optional[Any]]
+
+            values(index) =
+              if declared.present then declared
+              else if focused
+              then focus(descend(prior, keys(index).tt))(entries(index)(1).absent())
+              else entries(index)(1).absent()
+
+            index += 1
+
+          make(values.immutable(using Unsafe))
+
+  // The direct-parsing counterpart of `Decodable in Xml`: consumes elements
+  // from an `XmlReader` instead of walking a materialized `Xml`, so
+  // `read[value in Xml]` can instantiate values without building the tree.
+  // `Parsable` is the opt-in surface: explicit instances,
+  // `Xml.Parsable.derived`, and the read trigger. It has no blanket fallback
+  // given, so no read changes behavior until a type opts in; the fallback
+  // belongs to its operational sibling, `Xml.Field`.
+  trait Parsable extends Parsing
+
+  object Field:
+    // Adapts an opted-in nominal instance (or any other `Parsing`) for use
+    // as a field parser. A named class (with the wrapped instance held as a
+    // neutral carrier and reasserted at the rim, preserving the declared
+    // capture), following jacinta's `Json.Field.Adapter`.
+    private[xylophone] final class Adapter[value](source0: AnyRef) extends Xml.Field:
+      type Self = value
+
+      private[xylophone] def source: value is Xml.Parsing =
+        source0.asInstanceOf[value is Xml.Parsing]
+
+      def parse(reader: XmlReader^): value = source.parse(reader)
+
+      override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): value = source.absent()
+
+      override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): value =
+        source.attribute(text)
+
+    def apply[value](parsing: (value is Xml.Parsing)^): ((value is Xml.Field)^{parsing}) =
+      Adapter[value](parsing.asInstanceOf[AnyRef])
+      . asInstanceOf[(value is Xml.Field)^{parsing}]
+
+  // The operational face of direct parsing: how a field's value is read from
+  // an `XmlReader`, whether directly or through the AST bridge. This is the
+  // typeclass the product derivation resolves per field; `Xml3` carries the
+  // universal fallback — declared as an (inherited) member of this companion
+  // so Wisteria's wrapper detection excludes the fallback during codec
+  // probing.
+  trait Field extends Parsing
+
+  // Direct-parsing primitives, mirroring the primitive `Decodable in Xml`
+  // givens above exactly: a missing or wrong-shape element and an
+  // unparseable value are *raised* (not aborted) with the same zero / false
+  // sentinel continuation, so per-field accrual under a
+  // `validate[Xml.Focus]` boundary behaves identically on both paths.
+  // Genuinely pure — parse-time raising happens through the tactics the
+  // reader carries.
+  private def primitiveParsable[value](sentinel: value)(convert: Text -> Optional[value])
+  :   value is Xml.Parsable =
+
+    new Xml.Parsable:
+      type Self = value
+
+      def parse(reader: XmlReader^): value =
+        reader.text().lay(reader.fault() yet sentinel): text =>
+          convert(text).or(reader.fault() yet sentinel)
+
+      override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): value =
+        raise(XmlError()) yet sentinel
+
+      override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): value =
+        convert(text).or(raise(XmlError()) yet sentinel)
+
+  given intParsable: Int is Xml.Parsable = primitiveParsable(0): text =>
+    try Integer.parseInt(text.s) catch case _: NumberFormatException => Unset
+
+  given longParsable: Long is Xml.Parsable = primitiveParsable(0L): text =>
+    try jl.Long.parseLong(text.s) catch case _: NumberFormatException => Unset
+
+  given shortParsable: Short is Xml.Parsable = primitiveParsable(0.toShort): text =>
+    try jl.Short.parseShort(text.s) catch case _: NumberFormatException => Unset
+
+  given byteParsable: Byte is Xml.Parsable = primitiveParsable(0.toByte): text =>
+    try jl.Byte.parseByte(text.s) catch case _: NumberFormatException => Unset
+
+  given doubleParsable: Double is Xml.Parsable = primitiveParsable(0.0): text =>
+    try jl.Double.parseDouble(text.s) catch case _: NumberFormatException => Unset
+
+  given floatParsable: Float is Xml.Parsable = primitiveParsable(0.0f): text =>
+    try jl.Float.parseFloat(text.s) catch case _: NumberFormatException => Unset
+
+  given booleanParsable: Boolean is Xml.Parsable = primitiveParsable(false): text =>
+    text.s match
+      case "true"  => true
+      case "false" => false
+      case _       => Unset
+
+  // The direct read of a field type carried by a plain text codec — the
+  // direct counterpart of the `decodable` blanket's `Decodable in Text`
+  // branch, including its absence behavior: a missing field raises and then
+  // decodes the empty text, exactly as the AST branch decodes the `Absent`
+  // sentinel.
+  private[xylophone] def textCodecParsable[value]
+    ( using codec: value is Decodable in Text )
+  :   value is Xml.Parsable =
+
+    new Xml.Parsable:
+      type Self = value
+
+      def parse(reader: XmlReader^): value =
+        codec.decoded(reader.text().or(reader.fault() yet t""))
+
+      override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): value =
+        raise(XmlError())
+        codec.decoded(t"")
+
+      override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): value =
+        codec.decoded(text)
+
+  object ParsableDerivation extends Derivable[Xml.Field]:
+    inline def conjunction[derivation <: Product: ProductReflection]
+    :   derivation is Xml.Field =
+
+      // Like `DecodableDerivation.conjunction`: a single `contexts`
+      // traversal collects, per field, its wire name (`@name`-aware), its
+      // parser (via the `Field` fallback chain), its declared default and
+      // its `@attribute` marking; `Xml.Parsable.product` owns the parse
+      // loop, so no per-field lambda ever closes over the reader. Sealed per
+      // the codec-thunk pattern: the field parsers the thunk resolves may
+      // capture resolution-scoped capabilities (the AST bridge does).
+      caps.unsafe.unsafeAssumePure:
+        val reflection = infer[ProductReflection[derivation]]
+
+        // A user-supplied `Default[derivation]` collapses a missing nested
+        // value to a single error, exactly as `decodeElement`'s wrong-shape
+        // fallback does on the AST path.
+        val fallback: Optional[() => derivation] = summonFrom:
+          case derivationDefault: Default[`derivation`] =>
+            val instantiate: () => derivation = () => derivationDefault()
+            Optional(instantiate)
+
+          case _ =>
+            Unset
+
+        Xml.Parsable.product[derivation](
+          { () =>
+            val attributeFields: Map[Text, Set[attribute]] =
+              fieldAnnotations[derivation, attribute]
+
+            // `@name[Xml]` / bare `@name` renames: field name ->
+            // element/attribute name on the wire, read back the same way
+            // they are written.
+            val renames: Map[Text, Text] = relabelling[derivation, Xml]
+
+            contexts[derivation]():
+              [field] => context =>
+                val fieldLabel: Text = wisteria.label[Text]
+
+                ( renames.at(fieldLabel).or(fieldLabel).s,
+                  context: Xml.Parsing,
+                  default[Optional[field]]: Any,
+                  attributeFields.contains(fieldLabel) )
+          },
+          fallback,
+          values => Xml.Parsable.assemble(reflection, values))
+
+    inline def disjunction[derivation: SumReflection]: derivation is Xml.Field =
+      // A sum's variant is the element's own label, which the AST path
+      // resolves through `Discriminable` (possibly a custom instance), with
+      // `variantLabels` screening and `Default`-or-abort handling for an
+      // unknown discriminator — so a sum always takes the AST bridge over
+      // its derived (or custom) decoder, keeping the two paths identical by
+      // construction, as stratiform's TEL derivation does. Sealed per the
+      // codec-thunk pattern: the instance captures a resolution-scoped
+      // decoder.
+      caps.unsafe.unsafeAssumePure:
+        Xml.Field(Xml.Parsable.fromDecodable(infer[derivation is Decodable in Xml]))
+
   case class attribute() extends StaticAnnotation
 
   case class XmlAttribute(label: Text, elements: Set[Text], global: Boolean):
@@ -548,18 +968,59 @@ object Xml extends Tag.Container
 
     text => LazyList(text).read[Xml]
 
-  // `source.read[Foo in Xml]` shorthand for
-  // `source.read[Xml].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`
-  // for `value in Json`. The `Form` type-tag is added by an
-  // `asInstanceOf` cast — `value in Xml` is just `value { type
-  // Form = Xml }` so the cast is a no-op at runtime.
-  given aggregableIn: [value: Decodable in Xml] => (schema: XmlSchema)
-  =>  ( tactic: Tactic[ParseError], xmlTactic: Tactic[XmlError] )
-  =>  (((value in Xml) is Aggregable by Text)^{tactic, xmlTactic}) =
+  // Direct parsing: when the value knows how to consume elements itself, the
+  // `Xml` tree is never materialized. Declared here (not in `Xml2`, where the
+  // `Decodable`-based `aggregableIn` now lives) so it wins whenever an
+  // `Xml.Parsable` exists, and is otherwise inapplicable — existing code
+  // resolves exactly as before. The read-site `Foci` travels with the reader
+  // so direct decode errors accrue with the same field foci as the AST
+  // path's.
+  given aggregableParsed: [value]
+  =>  ( parsable: (value is Xml.Parsable)^ )
+  =>  ( schema: XmlSchema )
+  =>  ( tactic: Tactic[ParseError], xmlTactic: Tactic[XmlError], foci: Foci[Xml.Focus] )
+  =>  ( ((value in Xml) is Aggregable by Text)^{parsable, tactic, xmlTactic} ) =
 
-    input =>
-      XmlParser.fromIterator(input.iterator).parseXml(headers0 = false).as[value]
-      . asInstanceOf[value in Xml]
+    input => parseDirect(input.iterator, parsable).asInstanceOf[value in Xml]
+
+  // Direct-parsing counterpart of `Xml2.aggregableIn`: drives an
+  // `Xml.Parsable` instance over the input through an `XmlReader`, so no
+  // tree is built for the values the instance reads directly. Like
+  // `aggregableIn`, the direct read path does not thread position tracking
+  // (there is no `PositionIndex` — the result is the caller's value, not an
+  // `Xml`).
+  //
+  // The root dispatch mirrors `parseXml(headers0 = false)` composed with
+  // `Xml#as`: a root element is opened and handed to the instance; root
+  // character data decodes as a text leaf (a `Fragment(TextNode(…))` on the
+  // AST path); trailing content — a multi-node `Fragment`, which `as`
+  // decodes as wrong-shape — and an absent root take the instance's
+  // `absent()` fallback, the exact wrong-shape continuation of the AST
+  // derivation. (A degenerate root — a comment, PI or doctype where the
+  // value should be — also lands on `absent()`, where the AST path may
+  // instead report a `ParseError`; the divergence is confined to inputs
+  // that fail on both paths.)
+  private def parseDirect[value](input: Iterator[Text], parsable: (value is Xml.Parsable)^)
+    ( using schema:    XmlSchema,
+            tactic:    Tactic[ParseError],
+            xmlTactic: Tactic[XmlError],
+            foci:      Foci[Xml.Focus] )
+  :   value =
+
+    val parser = XmlParser.fromIterator(input)
+
+    parser.directSession:
+      parser.directRoot() match
+        case 0 =>
+          val result = parsable.parse(XmlReader(parser, tactic, xmlTactic, foci))
+          if parser.directTrailing() then parsable.absent() else result
+
+        case 1 =>
+          val text = parser.directRootText()
+          if parser.directTrailing() then parsable.absent() else parsable.attribute(text)
+
+        case _ =>
+          parsable.absent()
 
   // The single place `.load[Xml]` branches on position tracking. With
   // `parsing.trackPositions` in scope the parser records source positions and the
@@ -2377,6 +2838,288 @@ object Xml extends Tag.Container
         if !matches then fail(Issue.Unexpected(got))
         advance()
         i += 1
+
+    // ── Direct parsing rim ─────────────────────────────────────────────────
+    //
+    // The pull-event surface behind `XmlReader`, letting an `Xml.Parsable`
+    // instance consume the input element by element without materializing
+    // the document's tree. The rim reuses the tree-building parser's own
+    // token readers (`readName`, `readAttributes`, `readText`,
+    // `readComment`, `readCdata`, `readProcessingInstruction`,
+    // `readChildren`), so tokenization, entity expansion and error
+    // reporting are identical on both paths. Position tracking is not
+    // threaded through the direct path (there is no `PositionIndex` — the
+    // result is the caller's value, not an `Xml`), as in jacinta and
+    // stratiform.
+    //
+    // The stepping protocol: `directRoot()` or `directNextChild()` *opens*
+    // an element — consuming `<name attrs…>` and pushing the name onto an
+    // explicit stack — and exactly one content consumer (`directNextChild`
+    // until `null`, `directText`, `directSkipElement` or `directElement`)
+    // then consumes its content *and its close tag*, validating the close
+    // name against the stack (the `MismatchedTag` check) and popping it. A
+    // self-closing element is opened with `directEmpty` set, and the first
+    // content consumer pops it immediately without touching the input.
+
+    private val directNames: scala.collection.mutable.ArrayBuffer[Text] =
+      scala.collection.mutable.ArrayBuffer.empty
+
+    private var directAttributes1: Attributes = Attributes.empty
+    private var directEmpty: Boolean = false
+
+    private inline def directPop(): Text = directNames.remove(directNames.length - 1)
+
+    // Establishes the cursor hold for a whole direct-parsing session,
+    // exactly as `parseXml` does for one tree-building parse: every rim
+    // method uses `begin()`/`slice()`, which require the held token.
+    private[xylophone] def directSession[result](body: => result): result =
+      cursor.hold:
+        heldToken = summon[Cursor.Held]
+
+        try body finally heldToken = null
+
+    // Positions the parser at the document's root value, mirroring
+    // `parseXml0(headers0 = false)`'s dispatch composed with `Xml#as`'s
+    // shape rules:
+    //   0 — a root element was opened (its name and attributes consumed);
+    //   1 — the root begins with character data (`directRootText` reads
+    //       it), the direct counterpart of decoding `Fragment(TextNode…)`;
+    //   2 — nothing decodable is present: the end of the input, or a root
+    //       comment / PI / doctype / close tag, which the AST path decodes
+    //       as a wrong-shape `Fragment` — the caller continues with
+    //       `absent()`.
+    private[xylophone] def directRoot()(using Tactic[ParseError]): Int =
+      headers = false
+      skipWs()
+
+      if !more then 2
+      else if peek != '<' then 1
+      else
+        advance()
+        if !more then fail(Issue.ExpectedMore)
+        val c2 = peek
+
+        if c2 == '/' || c2 == '!' || c2 == '?' then 2
+        else
+          directOpen()
+          0
+
+    // The root character data, up to the next markup or the end of the
+    // input — read exactly as `parseXml0` reads a root-level text run.
+    private[xylophone] def directRootText()(using Tactic[ParseError]): Text = readText(t"")
+
+    // The attributes of the element opened most recently. Valid until the
+    // next element is opened.
+    private[xylophone] def directAttributes(): Attributes = directAttributes1
+
+    // True when non-whitespace content follows the root value — the direct
+    // counterpart of the AST path's multi-node `Fragment`, which decodes as
+    // wrong-shape. (`parseXml0` consumes root-level whitespace with
+    // `skipWs` between nodes.)
+    private[xylophone] def directTrailing(): Boolean =
+      skipWs()
+      more
+
+    // Opens an element whose `<` has been consumed: reads the name and the
+    // attributes, consumes `>` or `/>`, and pushes the name. Reuses
+    // `readName` and `readAttributes`, so validation (name syntax,
+    // duplicate attributes) is identical to `readElement`'s.
+    private def directOpen()(using Tactic[ParseError]): Text =
+      val name = readName()
+      directAttributes1 = readAttributes(name)
+      if !more then fail(Issue.ExpectedMore)
+
+      if peek == '/' then
+        advance()
+        if !more then fail(Issue.ExpectedMore)
+        if peek != '>' then fail(Issue.Unexpected(peek))
+        advance()
+        directEmpty = true
+      else
+        if peek != '>' then fail(Issue.Unexpected(peek))
+        advance()
+        directEmpty = false
+
+      directNames += name
+      name
+
+    // Consumes and validates the current element's close tag; the position
+    // is just after `</`. Mirrors `readChildren`'s close-tag arm, including
+    // the `MismatchedTag` check against the opening name.
+    private def directClose()(using Tactic[ParseError]): Unit =
+      val parent = directNames(directNames.length - 1)
+      val closeStart = begin()
+      val close = readName()
+      skipWs()
+      if !more then fail(Issue.ExpectedMore, closeStart)
+      if peek != '>' then fail(Issue.Unexpected(peek), closeStart)
+      advance()
+      if close != parent then fail(Issue.MismatchedTag(parent, close), closeStart)
+      directPop()
+
+    // Consumes a comment or a CDATA section, discarding it; the position is
+    // just after `<!`. Mirrors `readChildren`'s `!` arm.
+    private def directBang()(using Tactic[ParseError]): Unit =
+      if more && peek == '-' then
+        advance()
+        if !more then fail(Issue.ExpectedMore)
+        if peek != '-' then fail(Issue.Unexpected(peek))
+        advance()
+        readComment()
+      else if more && peek == '[' then
+        advance()
+        consumeLiteral("CDATA[")
+        readCdata()
+      else
+        if !more then fail(Issue.ExpectedMore)
+        fail(Issue.Unexpected(peek))
+
+    // Steps to the current element's next child *element*, opening it and
+    // returning its name, or consumes the close tag and returns `null` once
+    // the element ends. Character data, comments, CDATA sections and
+    // processing instructions between child elements are consumed and
+    // discarded — mirroring the AST derivation, whose `buildWith` collects
+    // nothing but `Element`s from `element.children`.
+    private[xylophone] def directNextChild()(using Tactic[ParseError]): Text | Null =
+      if directEmpty then
+        directEmpty = false
+        directPop()
+        null
+      else
+        val parent = directNames(directNames.length - 1)
+        var result: Text | Null = null
+        var done = false
+
+        while !done do
+          if !more then fail(Issue.Incomplete(parent))
+
+          if peek == '<' then
+            advance()
+            if !more then fail(Issue.ExpectedMore)
+            val c2 = peek
+
+            if c2 == '/' then
+              advance()
+              directClose()
+              done = true
+            else if c2 == '!' then
+              advance()
+              directBang()
+            else if c2 == '?' then
+              advance()
+              readProcessingInstruction()
+            else
+              result = directOpen()
+              done = true
+          else
+            readText(parent)
+
+        result
+
+    // The current element's text content, consumed together with its close
+    // tag: the text when the content is exactly one text run (or empty), or
+    // `null` for any other shape — mirroring `textOf`, which accepts only
+    // `Element(_, _, IArray(TextNode(text)))` and `Element(_, _, IArray())`.
+    // A CDATA section, a comment, a processing instruction or a child
+    // element therefore makes a leaf wrong-shaped on both paths.
+    private[xylophone] def directText()(using Tactic[ParseError]): Text | Null =
+      if directEmpty then
+        directEmpty = false
+        directPop()
+        t""
+      else
+        val parent = directNames(directNames.length - 1)
+        var nodes = 0
+        var single: Text | Null = null
+        var done = false
+
+        while !done do
+          if !more then fail(Issue.Incomplete(parent))
+
+          if peek == '<' then
+            advance()
+            if !more then fail(Issue.ExpectedMore)
+            val c2 = peek
+
+            if c2 == '/' then
+              advance()
+              directClose()
+              done = true
+            else if c2 == '!' then
+              advance()
+              directBang()
+              nodes += 1
+            else if c2 == '?' then
+              advance()
+              readProcessingInstruction()
+              nodes += 1
+            else
+              directOpen()
+              directSkipElement()
+              nodes += 1
+          else
+            val text = readText(parent)
+
+            if text.length > 0 then
+              if nodes == 0 then single = text
+              nodes += 1
+
+        if nodes == 0 then t"" else if nodes == 1 then single else null
+
+    // Skips the current element's entire remaining subtree, consuming and
+    // validating every close tag on the way, building nothing. Used for
+    // unknown child elements and for duplicate occurrences of a field (the
+    // AST derivation's first-match-wins `HashMap`).
+    private[xylophone] def directSkipElement()(using Tactic[ParseError]): Unit =
+      if directEmpty then
+        directEmpty = false
+        directPop()
+      else
+        val baseDepth = directNames.length
+
+        while directNames.length >= baseDepth do
+          val parent = directNames(directNames.length - 1)
+          if !more then fail(Issue.Incomplete(parent))
+
+          if peek == '<' then
+            advance()
+            if !more then fail(Issue.ExpectedMore)
+            val c2 = peek
+
+            if c2 == '/' then
+              advance()
+              directClose()
+            else if c2 == '!' then
+              advance()
+              directBang()
+            else if c2 == '?' then
+              advance()
+              readProcessingInstruction()
+            else
+              directOpen()
+
+              if directEmpty then
+                directEmpty = false
+                directPop()
+          else
+            readText(parent)
+
+    // Materializes the current element as an `Element` — the bridge for
+    // field types that only carry a `Decodable in Xml`. The children are
+    // read with `readChildren`, so the materialized subtree (and its
+    // close-tag validation) is exactly what `readElement` would have built.
+    private[xylophone] def directElement()(using Tactic[ParseError]): Element =
+      val name = directPop()
+      val attributes = directAttributes1
+
+      val children =
+        if directEmpty then
+          directEmpty = false
+          IArray.empty[Node]
+        else
+          readChildren(name)
+
+      Element(name, attributes, children)
 
   // ───────────────────────────────────────────────────────────────────────
   // Public entry points.

@@ -30,14 +30,29 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xylophone
 
-// `Attributive`, `Renderable` and `Tag` clash with `honeycomb`'s names in the umbrella;
-// reach xylophone's via `xylophone.Attributive` etc.
-export
-  xylophone
-  . { Xml, Xml2, Xml3, XmlError, XmlReader, XmlSchema, DynamicXmlEnabler, dynamicXmlAccess, x, xp,
-      XPath, XPathError }
+import anticipation.*
+import contingency.*
+import distillate.*
+import prepositional.*
+import turbulence.*
+import zephyrine.*
 
-package formatting:
-  export xylophone.formatting.{compactXmlFormatting, indentedXmlFormatting}
+// The lower-priority layer of `object Xml` (which extends it), holding the
+// AST-materializing read path so that `object Xml`'s direct-parsing
+// `aggregableParsed` — a direct member, hence more specific — wins whenever
+// the value has an `Xml.Parsable`; when it does not (all pre-`Parsable`
+// code), this resolves exactly as before.
+trait Xml2 extends Xml3:
+  // `source.read[Foo in Xml]` shorthand for `source.read[Xml].as[Foo]`.
+  // Mirrors `jacinta`'s `aggregableDirect` for `value in Json`. The `Form`
+  // type-tag is added by an `asInstanceOf` cast — `value in Xml` is just
+  // `value { type Form = Xml }` so the cast is a no-op at runtime.
+  given aggregableIn: [value: Decodable in Xml] => (schema: XmlSchema)
+  =>  ( tactic: Tactic[ParseError], xmlTactic: Tactic[XmlError] )
+  =>  ( ((value in Xml) is Aggregable by Text)^{tactic, xmlTactic} ) =
+
+    input =>
+      Xml.XmlParser.fromIterator(input.iterator).parseXml(headers0 = false).as[value]
+      . asInstanceOf[value in Xml]
