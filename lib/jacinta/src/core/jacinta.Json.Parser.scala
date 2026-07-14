@@ -755,7 +755,35 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     acc |= fromHex(next())
     acc.toChar
 
-  private update def parseString()(using Tactic[ParseError]): String = holding:
+  private update def parseString()(using Tactic[ParseError]): String =
+    // Buffer-local fast path, as `directString`: a plain-ASCII string that
+    // closes inside the current window is materialized straight from the
+    // local snapshot — no marks, no hold, no cursor sync — scanning eight
+    // bytes per step. Falls back (without moving) for escapes, control or
+    // non-ASCII bytes, and the window's end.
+    val start = pos
+    val limit = bufEnd
+    var i = start
+    var scanning = true
+
+    while scanning && i <= limit - 8 do
+      val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], i)
+      val stops = stringStops(word)
+
+      if stops == 0L then i += 8
+      else
+        i += java.lang.Long.numberOfTrailingZeros(stops) >> 3
+        scanning = false
+
+    if scanning then while i < limit && StringScanContinue(bytes(i) & 0xFF) != 0 do i += 1
+
+    if i < limit && bytes(i) == Quote then
+      val out = new String(bytes, start, i - start, java.nio.charset.StandardCharsets.ISO_8859_1)
+      pos = i + 1
+      out
+    else parseStringGeneral()
+
+  private update def parseStringGeneral()(using Tactic[ParseError]): String = holding:
     val region = begin()
 
     // Fast scan for plain printable ASCII that needs no escape handling.
@@ -780,7 +808,59 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // alias another key), so the lookup needs only two Long equality
   // checks — no byte-by-byte comparison and no hash-collision false
   // positives. Keys longer than 16 bytes bypass the cache.
-  private update def parseObjectKey()(using Tactic[ParseError]): String = holding:
+  private update def parseObjectKey()(using Tactic[ParseError]): String =
+    // Buffer-local fast path, as `directKeyName`: scan to the closing quote
+    // within the current window and probe the intern cache straight from
+    // the local snapshot; the general path (marks + slice) handles escapes
+    // and window-crossing keys. The cache arrays are indexed through direct
+    // field paths only — binding one to a local would hide the parser (see
+    // `reconcileLineation`).
+    val start = pos
+    val limit = bufEnd
+    var i = start
+    var scanning = true
+
+    while scanning && i <= limit - 8 do
+      val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], i)
+      val stops = stringStops(word)
+
+      if stops == 0L then i += 8
+      else
+        i += java.lang.Long.numberOfTrailingZeros(stops) >> 3
+        scanning = false
+
+    if scanning then while i < limit && StringScanContinue(bytes(i) & 0xFF) != 0 do i += 1
+
+    if i < limit && bytes(i) == Quote then
+      val length = i - start
+
+      if length <= KeyCacheMaxBytes && length > 0 then
+        val packedLow = packBytes(bytes, start, math.min(length, 8))
+        val packedHigh = if length > 8 then packBytes(bytes, start + 8, length - 8) else 0L
+
+        val index = ((packedLow.toInt ^ (packedLow >>> 32).toInt) ^
+          (packedHigh.toInt ^ (packedHigh >>> 32).toInt)) & (KeyCacheSize - 1)
+
+        val cached = keyCache(index)
+        pos = i + 1
+
+        if cached != null && keyCacheLow(index) == packedLow && keyCacheHigh(index) == packedHigh
+        then cached
+        else
+          val fresh =
+            new String(bytes, start, length, java.nio.charset.StandardCharsets.ISO_8859_1)
+
+          keyCache(index) = fresh
+          keyCacheLow(index) = packedLow
+          keyCacheHigh(index) = packedHigh
+          fresh
+      else
+        val out = new String(bytes, start, length, java.nio.charset.StandardCharsets.ISO_8859_1)
+        pos = i + 1
+        out
+    else parseObjectKeyGeneral()
+
+  private update def parseObjectKeyGeneral()(using Tactic[ParseError]): String = holding:
     val region = begin()
 
     while more && StringScanContinue(peek & 0xFF) != 0 do advance()
