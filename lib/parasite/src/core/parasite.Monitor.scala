@@ -104,7 +104,12 @@ sealed trait Monitor extends Resultant, Findable, caps.ExclusiveCapability:
 // locally per `supervise` block by a `Root`.
 trait Supervisor:
   def name: Name[Async]
-  def fork(name: Optional[Text])(block: => Unit): Thread
+
+  // `name` is a thunk: computing a worker's name (`Worker.stack`) walks the whole parent chain
+  // building strings, and `VirtualSupervisor` — the default — never evaluates it. (A thunk, not
+  // a by-name parameter, because a by-name `Optional[Text]` crashes the capture checker's Setup
+  // phase on the union type.)
+  def fork(name: () => Optional[Text])(block: => Unit): Thread
 
 // The local root of a supervision tree, created by `supervise`. A `Monitor` (hence a capability),
 // but its lifetime is the `supervise` block, so it does not escape as a global capability.
@@ -122,24 +127,35 @@ class Root(val supervisor: Supervisor) extends Monitor:
 object VirtualSupervisor extends Supervisor:
   def name: Name[Async] = n"virtual"
 
-  def fork(name: Optional[Text])(block: => Unit): Thread =
+  def fork(name: () => Optional[Text])(block: => Unit): Thread =
     Thread.ofVirtual().nn.start{ () => block }.nn
 
 object AdaptiveSupervisor extends Supervisor:
   def name: Name[Async] = n"adaptive"
 
-  def fork(name: Optional[Text])(block: => Unit): Thread =
-    try VirtualSupervisor.fork(name)(block) catch case error: Throwable =>
-      PlatformSupervisor.fork(name)(block)
+  // Virtual-thread support is a deterministic property of the JVM, so it is probed once with a
+  // no-op thread rather than trial-forked per task. A dedicated probe means a transient failure
+  // (e.g. OutOfMemoryError) on a real fork cannot mis-pin the process to platform threads: only
+  // `UnsupportedOperationException` — the deterministic outcome — is cached; anything else
+  // propagates and the probe is retried on the next fork.
+  private lazy val virtual: Boolean =
+    try
+      Thread.ofVirtual().nn.start{ () => () }
+      true
+    catch case error: UnsupportedOperationException => false
+
+  def fork(name: () => Optional[Text])(block: => Unit): Thread =
+    if virtual then VirtualSupervisor.fork(name)(block)
+    else PlatformSupervisor.fork(name)(block)
 
 object PlatformSupervisor extends Supervisor:
   def name: Name[Async] = n"platform"
 
-  def fork(name: Optional[Text])(block: => Unit): Thread =
+  def fork(name: () => Optional[Text])(block: => Unit): Thread =
     val runnable: Runnable^ = () => block
 
     new Thread(runnable).tap: thread =>
-      name.let(_.s).let(thread.setName(_))
+      name().let(_.s).let(thread.setName(_))
       thread.start()
 
 abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) extends Monitor:
@@ -160,9 +176,8 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   def apply(): Optional[Result] = promise()
   def relentlessness: Double = (jl.System.currentTimeMillis - startTime).toDouble/relents
 
-  def delegate(lambda: Monitor^ => Unit): Unit = state.updateAndGet: state =>
+  def delegate(lambda: Monitor^ => Unit): Unit =
     workers.each: child => if child.daemon then child.cancel() else lambda(child)
-    state
 
   def stack: Text =
     val ref = // The `(x: Text)` ascriptions widen singleton-bounded values (case-2 pure-value box).
@@ -203,49 +218,61 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
     async(lambda(join()).join())
 
 
-  def cancel(): Unit =
-    val state2 = state.updateAndGet:
+  // An explicit CAS loop rather than `updateAndGet`, whose update function may be re-run under
+  // contention: the cancellation effects must fire exactly once, and only *after* the `Cancelled`
+  // state is visible, so that a joiner woken by `promise.cancel()` cannot observe a stale
+  // `Active` state. The final `thread.join()` happens whenever the state is `Cancelled`, even if
+  // another cancellation won the race.
+  @tailrec
+  final def cancel(): Unit =
+    val current = state.get().nn
+
+    current match
       case Initializing | Active(_) =>
-        promise.cancel()
-        thread.interrupt()
-        Cancelled
+        if !state.compareAndSet(current, Cancelled) then cancel() else
+          promise.cancel()
+          thread.interrupt()
+          thread.join()
 
-      case other =>
-        other
-
-    if state2 == Cancelled then thread.join()
+      case Cancelled => thread.join()
+      case _         => ()
 
   def result()(using cancel: Tactic[AsyncError]^): Result =
-    state.updateAndGet:
-      case null                        => abort(AsyncError(Reason.Incomplete))
-      case Initializing                => abort(AsyncError(Reason.Incomplete))
-      case Active(_)                   => abort(AsyncError(Reason.Incomplete))
-      case Completed(duration, result) => Delivered(duration, result)
-      case Delivered(duration, result) => Delivered(duration, result)
-      case Failed(error)               => throw error
-      case Cancelled                   => abort(AsyncError(Reason.Cancelled))
+    state.get() match
+      case Delivered(_, result) => result // Repeated joins skip the CAS and allocation below.
+      case _ =>
+        state.updateAndGet:
+          case null                        => abort(AsyncError(Reason.Incomplete))
+          case Initializing                => abort(AsyncError(Reason.Incomplete))
+          case Active(_)                   => abort(AsyncError(Reason.Incomplete))
+          case Completed(duration, result) => Delivered(duration, result)
+          case state@Delivered(_, _)       => state
+          case Failed(error)               => throw error
+          case Cancelled                   => abort(AsyncError(Reason.Cancelled))
 
-    . match
-      case Delivered(_, result) => result
-      case other                => panic(m"impossible state")
+        . match
+          case Delivered(_, result) => result
+          case other                => panic(m"impossible state")
 
 
   // The raw, untyped join: the original exception of a `Failed` worker is rethrown verbatim (under
   // `canThrowAny`), so the static error is only `AsyncError`. Used internally (`map`/`bind`/
   // `sequence`/`race`) where the body's error type is not tracked. Public callers go via the typed
   // `Task#await`, which routes through `deliver` instead.
+  // No `thread.join()`: the promise is settled in the worker thread's `finally` block, strictly
+  // after the state is terminal and probate cleanup has run, so `attend` returning already
+  // guarantees everything a join would. (A trailing unbounded `thread.join()` would also defeat
+  // the timed variants' deadline.)
   def join[abstractable: Abstractable across Durations to Long](duration: abstractable)
   :   Result raises AsyncError =
 
     promise.attend(duration)
     if !promise.ready then abort(AsyncError(Reason.Timeout))
-    thread.join()
     result()
 
 
   def join(): Result raises AsyncError =
     promise.attend()
-    thread.join()
     result()
 
 
@@ -256,7 +283,6 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   // unchecked throwable from the body flows through as the raw `join` would have rethrown it.
   def deliver[error <: Hazard]()(using Tactic[error | AsyncError]^): Result =
     promise.attend()
-    thread.join()
     fulfilment()
 
 
@@ -267,26 +293,28 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
 
     promise.attend(duration)
     if !promise.ready then abort(AsyncError(Reason.Timeout))
-    thread.join()
     fulfilment()
 
 
   private def fulfilment[error <: Hazard]()(using Tactic[error | AsyncError]^): Result =
-    state.updateAndGet:
-      case Completed(duration, result) => Delivered(duration, result)
-      case Delivered(duration, result) => Delivered(duration, result)
-      case other                       => other
+    state.get() match
+      case Delivered(_, result) => result // Repeated joins skip the CAS and allocation below.
+      case _ =>
+        state.updateAndGet:
+          case Completed(duration, result) => Delivered(duration, result)
+          case state@Delivered(_, _)       => state
+          case other                       => other
 
-    . match
-      case Completed(_, result)        => result
-      case Delivered(_, result)        => result
-      case Failed(failure: AsyncError) => abort(failure)
-      case Failed(failure: Exception)  => abort(failure.asInstanceOf[error])
-      case Failed(failure)             => throw failure
-      case Cancelled                   => abort(AsyncError(Reason.Cancelled))
-      case _                           => abort(AsyncError(Reason.Incomplete))
+        . match
+          case Completed(_, result)        => result
+          case Delivered(_, result)        => result
+          case Failed(failure: AsyncError) => abort(failure)
+          case Failed(failure: Exception)  => abort(failure.asInstanceOf[error])
+          case Failed(failure)             => throw failure
+          case Cancelled                   => abort(AsyncError(Reason.Cancelled))
+          case _                           => abort(AsyncError(Reason.Incomplete))
 
-  private lazy val thread: Thread = parent.supervisor.fork(stack):
+  private lazy val thread: Thread = parent.supervisor.fork(() => stack):
     val started: Boolean = state.updateAndGet:
       case Initializing => Active(jl.System.currentTimeMillis)
       case other        => other
@@ -337,17 +365,19 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
         case Completed(_, _)      => Unset
         case Delivered(_, _)      => Unset
 
-      state.updateAndGet: state =>
-        parent.remove(this)
+      parent.remove(this)
 
-        state match
-          case null                             => Cancelled.also(promise.cancel())
-          case Initializing                     => Cancelled.also(promise.cancel())
-          case Active(_)                        => Cancelled.also(promise.cancel())
-          case state@Completed(duration, value) => state.also(promise.offer(value))
-          case state@Delivered(duration, value) => state
-          case state@Failed(_)                  => state.also(promise.cancel())
-          case Cancelled                        => Cancelled
+      // The transition is pure — `updateAndGet` may re-run it under contention — and the promise
+      // is settled exactly once afterwards, from the installed state. Ordering matters: the state
+      // must be terminal before the promise wakes any joiner.
+      state.updateAndGet:
+        case null | Initializing | Active(_) => Cancelled
+        case state                           => state
+
+      . match
+        case Completed(_, value) => promise.offer(value)
+        case Delivered(_, _)     => ()
+        case _                   => promise.cancel()
 
       escalation.let(throw _)
 
