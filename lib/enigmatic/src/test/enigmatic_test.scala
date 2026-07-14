@@ -404,3 +404,5 @@ object Tests extends Suite(m"Gastronomy tests"):
           val chunks = LazyList(t"Hello, ".in[Data], t"streaming ".in[Data], t"world!".in[Data])
           chunks.encrypt(InitializationVector.random).reduce(_ ++ _).decrypt.as[Text]
       . assert(_ == t"Hello, streaming world!")
+
+    CaptureTests()
