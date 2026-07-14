@@ -48,6 +48,7 @@ import hellenism.*
 import inimitable.*
 import jacinta.*
 import nomenclature.*
+import parasite.*
 import prepositional.*
 import probably.*
 import rudiments.*
@@ -81,6 +82,14 @@ import vacuous.*
 //
 // `cpus` limits the measurement JVM's processors (see `BenchmarkDevice.invoke` for the
 // pinning caveat), and `heap` its memory, so the search runs under pinned resources.
+//
+// The contextual `Threading` (from parasite: `threading.platformThreading`,
+// `threading.virtualThreading` or `threading.adaptiveThreading`) selects the workers' thread
+// kind. Under virtual threading, a high-concurrency measurement multiplexes its pipelines
+// over the carrier pool rather than asking the OS scheduler to juggle one thread per worker —
+// the model a massively-concurrent application would use. Worker allocation is still fully
+// accounted: virtual-thread allocation is attributed to its carrier, which
+// `getTotalThreadAllocatedBytes` covers.
 case class Stress(heap: Optional[Text] = Unset, cpus: Optional[Int] = Unset)
   ( using Classloader, Environment )
   ( using device: BenchmarkDevice )
@@ -103,12 +112,17 @@ extends Rig:
     ( using System, TemporaryDirectory, Stageable over Transport in Form )
     ( using runner:    Runner[report],
             inclusion: Inclusion[report, Strain],
+            threading: Threading,
             suite:     Testable,
             codepoint: Codepoint )
   :   Unit raises CompilerError raises RemoteError =
 
     val concurrency0: Optional[Int] = concurrency
     val start: Int = concurrency0.or(1)
+    // Whether the ambient `Threading` forks virtual threads, probed with a no-op fork so
+    // adaptive and custom supervisors classify by what they actually do. The remote JVM runs
+    // the same `java`, so the probe's answer holds there.
+    val virtual2: Boolean = threading.supervisor().fork(() => Unset)(()).isVirtual
     val threshold0: Optional[Long] = threshold.let(_.generic)
     val compliance0: Optional[Int] = compliance
 
@@ -247,9 +261,14 @@ extends Rig:
 
                 catch case error: java.lang.OutOfMemoryError => oom.set(true)
 
-              val thread = new java.lang.Thread(runnable)
+              val thread =
+                if ${Expr(virtual2)} then java.lang.Thread.ofVirtual.nn.start(runnable).nn
+                else
+                  val started = new java.lang.Thread(runnable)
+                  started.start()
+                  started
+
               threads(k) = thread
-              thread.start()
               k += 1
 
             k = 0

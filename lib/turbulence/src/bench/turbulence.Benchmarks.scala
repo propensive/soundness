@@ -856,6 +856,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // the axis the bounded-buffer design targets: allocation per pipeline, peak
     // heap, and a retained live set that stays flat under concurrency.
     suite(m"Stress: cross-thread hand-off memory (4 MB in 64 KiB chunks, N=16)"):
+      import threading.platformThreading
+
       stress(m"Soundness  Conduit")(target = 2*Second, concurrency = 16, baseline = Baseline()):
         '{
             val (intake, stream) = Conduit[Data]()
@@ -901,6 +903,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // the heap sustains (OutOfMemoryError, or over half the window spent in GC) —
     // the bounded-buffer design should sustain more pipelines in the same heap.
     suite(m"Stress: constrained-heap scaling sweep (128 MB heap, N ≤ 64)"):
+      import threading.platformThreading
+
       constrained(m"Soundness  Conduit")(target = 1*Second, sweep = 64):
         '{
             val (intake, stream) = Conduit[Data]()
@@ -950,6 +954,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // corpus deflates to a few dozen kB, so the output-side allocation vanishes
     // and the figure is dominated by how each library ingests the 4 MB input.)
     suite(m"Stress: gzip decompression memory (4 MB out, N=8)"):
+      import threading.platformThreading
+
       stress(m"Soundness  Stream.decompress[Gzip]")
         ( target = 2*Second, concurrency = 8, baseline = Baseline() ):
         '{
@@ -984,6 +990,8 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // chunk (the fold shape), so the contrast is the per-chunk text allocation of
     // the decode stage itself.
     suite(m"Stress: UTF-8 decode memory (4 MB, N=8)"):
+      import threading.platformThreading
+
       stress(m"Soundness  via(CharDecoder)")
         ( target = 2*Second, concurrency = 8, baseline = Baseline() ):
         '{
@@ -1018,7 +1026,58 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     // the curve; the `(sustained, N = …)` row is the answer: each library's
     // maximum sustained ops/sec under identical constraints.
     suite(m"Stress: capacity search (99% ≤ 5 ms, 2 GB heap, 4 CPUs)"):
-      gated(m"Soundness  Conduit")
+      locally:
+        import threading.platformThreading
+
+        gated(m"Soundness  Conduit")
+          ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+          '{
+              val (intake, stream) = Conduit[Data]()
+              val producer = Thread.ofVirtual.start(() =>
+                turbulence.Benchmarks.inputChunks.foreach(intake.put)
+                intake.finish())
+              var total = 0L
+              stream.sweep((_, _, count) => total += count)
+              producer.join()
+              total
+          }
+
+        gated(m"FS2  Channel.bounded")
+          ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+          '{
+              import cats.effect.unsafe.implicits.global
+              import cats.effect.IO
+              val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).flatMap: channel =>
+                val produce =
+                  turbulence.Benchmarks.inputChunks.foldLeft(IO.unit): (io, chunk) =>
+                    io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[Array[Byte]])).void
+                  *> channel.close.void
+                produce.start *> channel.stream.compile.fold(0L)((acc, chunk) => acc + chunk.size)
+              program.unsafeRunSync()
+          }
+
+        gated(m"ZIO  Queue.bounded")
+          ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
+          '{
+              turbulence.Benchmarks.runZio:
+                import zio.*, zio.stream.*
+                val source =
+                  ZStream.fromIterable
+                    (turbulence.Benchmarks.inputChunks.map(c => Chunk.fromArray(c.asInstanceOf[Array[Byte]])))
+                for
+                  queue <- Queue.bounded[Take[Nothing, Chunk[Byte]]](8)
+                  _     <- source.runIntoQueue(queue).fork
+                  total <- ZStream.fromQueue(queue).flattenTake.runFold(0L)((acc, c) => acc + c.size)
+                yield total
+          }
+
+      // The same Soundness pipeline with the harness workers on virtual threads
+      // (the file's ambient `virtualThreading`, where the rows above pin
+      // `platformThreading`): pipelines multiplex over the carrier pool instead
+      // of one OS thread each, the model a massively-concurrent application
+      // would use — and the fair comparison against the fiber runtimes'
+      // sustained concurrency.
+      gated(m"Soundness  Conduit (virtual workers)")
         ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
         '{
             val (intake, stream) = Conduit[Data]()
@@ -1029,33 +1088,4 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             stream.sweep((_, _, count) => total += count)
             producer.join()
             total
-        }
-
-      gated(m"FS2  Channel.bounded")
-        ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
-        '{
-            import cats.effect.unsafe.implicits.global
-            import cats.effect.IO
-            val program = fs2.concurrent.Channel.bounded[IO, fs2.Chunk[Byte]](8).flatMap: channel =>
-              val produce =
-                turbulence.Benchmarks.inputChunks.foldLeft(IO.unit): (io, chunk) =>
-                  io *> channel.send(fs2.Chunk.array(chunk.asInstanceOf[Array[Byte]])).void
-                *> channel.close.void
-              produce.start *> channel.stream.compile.fold(0L)((acc, chunk) => acc + chunk.size)
-            program.unsafeRunSync()
-        }
-
-      gated(m"ZIO  Queue.bounded")
-        ( target = 1*Second, threshold = 5*Milli(Second), compliance = 99 ):
-        '{
-            turbulence.Benchmarks.runZio:
-              import zio.*, zio.stream.*
-              val source =
-                ZStream.fromIterable
-                  (turbulence.Benchmarks.inputChunks.map(c => Chunk.fromArray(c.asInstanceOf[Array[Byte]])))
-              for
-                queue <- Queue.bounded[Take[Nothing, Chunk[Byte]]](8)
-                _     <- source.runIntoQueue(queue).fork
-                total <- ZStream.fromQueue(queue).flattenTake.runFold(0L)((acc, c) => acc + c.size)
-              yield total
         }
