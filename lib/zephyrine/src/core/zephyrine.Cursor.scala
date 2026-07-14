@@ -132,15 +132,32 @@ object Cursor:
             lineation0:   Lineation by addressable0.Operand )
   :   Cursor[data, {}]^ =
 
+    // Zero-copy when the medium exposes its backing storage (an immutable
+    // value's own array): the cursor borrows it as a `preset` and never
+    // writes it — see the `preset` note on the class. Otherwise the block
+    // is copied into a fresh buffer as before.
+    val backing: Optional[AnyRef] =
+      addressable0.backing(initial).asInstanceOf[Optional[AnyRef]]
+
     // The ascribed binding is load-bearing — see the iterator factory below.
     val cursor: Cursor[data, {}]^ =
-      new Cursor[data, {}]
-        ( () => Unset,
-          initial,
-          addressable0.length(initial).max(1),
-          addressable0,
-          lineation0,
-          Unset )
+      backing.lay
+        ( new Cursor[data, {}]
+            ( () => Unset,
+              initial,
+              addressable0.length(initial).max(1),
+              addressable0,
+              lineation0,
+              Unset ) ): storage =>
+
+        new Cursor[data, {}]
+          ( () => Unset,
+            Unset,
+            addressable0.length(initial),
+            addressable0,
+            lineation0,
+            Unset,
+            preset = storage )
 
     cursor
 
@@ -328,7 +345,8 @@ final class Cursor[data, cap^]
                 initialSize: Int,
     tracked val addressable: data is Addressable,
     tracked val lineation:   Lineation by addressable.Operand,
-                filler:      Optional[Cursor.Filler[addressable.Storage]] )
+                filler:      Optional[Cursor.Filler[addressable.Storage]],
+                preset:      Optional[AnyRef] = Unset )
 extends caps.Mutable:
 
   // ─── state ────────────────────────────────────────────────────────────────
@@ -341,11 +359,21 @@ extends caps.Mutable:
   // region (or -1 when no hold is active); compaction may not advance past
   // it. `ended` becomes true when the loader has returned `Unset`.
 
+  // A `preset` cursor BORROWS its storage (a neutral carrier for
+  // `addressable.Storage`, typically an immutable value's backing array) and
+  // is `static`: it never writes the buffer — no seed copy, and `refill`
+  // neither compacts nor pulls — so the borrow is sound despite the
+  // buffer's writable type. The reads-only discipline is this class's; the
+  // factory cast below is the audited point.
+  private val static: Boolean = preset.present
+
   // Untracked, with cast-erased assignments: the buffer is reached only through
   // this (exclusive) cursor.
   @caps.unsafe.untrackedCaptures
   private var buffer:    addressable.Storage =
-    addressable.allocate(initialSize).asInstanceOf[addressable.Storage]
+    preset.lay(addressable.allocate(initialSize).asInstanceOf[addressable.Storage]): storage =>
+      storage.asInstanceOf[addressable.Storage]
+
   private var pos:       Int = 0
   private var writeEnd:  Int = 0
   private var basePos:   Long = 0L
@@ -377,15 +405,17 @@ extends caps.Mutable:
   // `Cursor.apply` behaviour, which pre-loads the first block so `datum` is
   // valid before any `next()` call.
   locally:
-    initial.let: chunk =>
-      val len = addressable.length(chunk)
+    if static then writeEnd = initialSize
+    else
+      initial.let: chunk =>
+        val len = addressable.length(chunk)
 
-      if len > 0 then
-        if len > addressable.storageSize(buffer) then
-          buffer = addressable.allocate(len).asInstanceOf[addressable.Storage]
+        if len > 0 then
+          if len > addressable.storageSize(buffer) then
+            buffer = addressable.allocate(len).asInstanceOf[addressable.Storage]
 
-        addressable.copyChunk(chunk, 0, buffer, 0, len)
-        writeEnd = len
+          addressable.copyChunk(chunk, 0, buffer, 0, len)
+          writeEnd = len
 
     if writeEnd == 0 then refill()
 
@@ -394,7 +424,11 @@ extends caps.Mutable:
   // doesn't push `next()` past the JIT's inline budgets. Mirrors the rationale
   // for the original `Cursor.forward()`.
   private update def refill(): Unit =
-    if !ended then
+    // A static cursor holds everything it will ever hold, in borrowed
+    // storage: nothing to pull, and compaction (which writes the buffer)
+    // must not run.
+    if static then ended = true
+    else if !ended then
       // Compact: drop any data that is no longer reachable. Outside a hold,
       // everything before `pos` is dead; inside a hold, everything before
       // `holdStart` is dead. `keep` is capped at `writeEnd` because `pos` may

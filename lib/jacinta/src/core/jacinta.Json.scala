@@ -633,6 +633,13 @@ object Json extends Json2, Dynamic:
     inline def derived[value](using Reflection[value]): value is Json.Parsable =
       fromField(ParsableDerivation.derivedOne[value])
 
+    // Generates a monomorphic parser for a case class at compile time — the
+    // staged counterpart of `derived`, with identical semantics but no
+    // interpretive machinery at runtime. Sums, method-local classes and
+    // curried case classes stay on `derived`.
+    inline def staged[value]: value is Json.Parsable =
+      ${ jacinta.internal.stagedParsable[value]('{ relabelling[value, Json] }) }
+
     def fromField[value](field0: (value is Json.Parsing)^)
     :   ((value is Json.Parsable)^{field0}) =
 
@@ -731,6 +738,23 @@ object Json extends Json2, Dynamic:
 
             entries
 
+    // Support points for staged parsers, which are generated into user
+    // modules and so may only reference public members.
+
+    // The wire keys of a product's fields, `@name` renames applied.
+    def wireKeys(names: IArray[String], renames: Map[Text, Text]): IArray[String] =
+      names.map { name => renames.at(name.tt).or(name.tt).s }
+
+    // A required field whose key was absent from the object.
+    def missing[value]()(using Tactic[JsonError]): value = abort(JsonError(Reason.Absent))
+
+    // Focus bookkeeping for one field read, compiled away when the ambient
+    // `Foci` is the inert default — the same short-circuit as the derived
+    // parser's loop.
+    inline def focusing[result](foci: Foci[Json.Focus], key: Text)(inline block: => result)
+    :   result =
+      if foci.active then focus(using foci)(descend(prior, key))(block) else block
+
     // The prior focus's pointer, extended by one step. Called inside
     // `focus`'s transform context, so it only runs at error-registration
     // time — the success path pays nothing.
@@ -744,6 +768,33 @@ object Json extends Json2, Dynamic:
               ( base.path.root, base.path.descent :+ key ) )
 
       Json.Focus(pointer)
+
+    // Wire kinds of the builtin primitive instances, so the derived product
+    // parser can read them with a direct call on the reader instead of three
+    // megamorphic hops (adapter, instance, lambda). Each case mirrors the
+    // corresponding singleton's lambda exactly.
+    private[jacinta] inline final val KindOther = 0
+    private[jacinta] inline final val KindInt = 1
+    private[jacinta] inline final val KindLong = 2
+    private[jacinta] inline final val KindDouble = 3
+    private[jacinta] inline final val KindFloat = 4
+    private[jacinta] inline final val KindText = 5
+    private[jacinta] inline final val KindString = 6
+    private[jacinta] inline final val KindBoolean = 7
+
+    private[jacinta] def kindOf(parsing: Json.Parsing): Byte =
+      val actual = parsing match
+        case adapter: Json.Field.Adapter[?] => adapter.source
+        case other                          => other
+
+      if actual eq Json.intParsable then KindInt
+      else if actual eq Json.longParsable then KindLong
+      else if actual eq Json.doubleParsable then KindDouble
+      else if actual eq Json.floatParsable then KindFloat
+      else if actual eq Json.textParsable then KindText
+      else if actual eq Json.stringParsable then KindString
+      else if actual eq Json.booleanParsable then KindBoolean
+      else KindOther
 
     // Sentinel for the derived product parser's value buffer: a slot still
     // `AbsentSlot` after the key loop had no key on the wire (`null`-checking
@@ -784,6 +835,8 @@ object Json extends Json2, Dynamic:
 
         private lazy val fields: IArray[(String, Json.Parsing, Any)] = fields0()
         private lazy val keys: IArray[String] = fields.map(_(0))
+        private lazy val table: Json.KeyTable = Json.KeyTable(keys)
+        private lazy val kinds: IArray[Byte] = fields.map { field => kindOf(field(1)) }
 
         def shape(): Morphology =
           val entries: List[(Text, Morphology)] =
@@ -829,18 +882,25 @@ object Json extends Json2, Dynamic:
           val focused = foci.active
 
           reader.openObject()
-          var key: String | Null = reader.keyName()
+          var found = reader.keyIndex(table)
 
-          while key != null do
-            val found = indexOf(key.nn)
-
+          while found != Json.KeyTable.End do
             if found < 0 then reader.skipValue()
             else values(found) =
               if focused
               then focus(descend(prior, keys(found).tt))(entries(found)(1).parse(reader))
-              else entries(found)(1).parse(reader)
+              else
+                (kinds(found): @scala.annotation.switch) match
+                  case KindInt     => reader.long().toInt
+                  case KindLong    => reader.long()
+                  case KindDouble  => reader.double()
+                  case KindFloat   => reader.double().toFloat
+                  case KindText    => reader.string()
+                  case KindString  => reader.string().s
+                  case KindBoolean => reader.boolean()
+                  case _           => entries(found)(1).parse(reader)
 
-            key = reader.keyName()
+            found = reader.keyIndex(table)
 
           index = 0
 
@@ -886,17 +946,154 @@ object Json extends Json2, Dynamic:
     // never routed here: the parse method consumes it itself.
     def absent()(using Tactic[JsonError]): Self = abort(JsonError(Reason.Absent))
 
+  object KeyTable:
+    inline final val Unknown = -1
+    inline final val End = -2
+
+    // Fibonacci hashing multiplier (2^64 / phi), spreading low-byte entropy
+    // across the sign-discarded upper bits of the product.
+    private[jacinta] inline final val Scramble = -7046029254386353131L
+
+    def apply(keys: IArray[String]): KeyTable =
+      val count = keys.length
+      val lows = new Array[Long](count)
+      val highs = new Array[Long](count)
+      val packable = new Array[Boolean](count)
+      var index = 0
+
+      while index < count do
+        val key = keys(index)
+        val length = key.length
+        var fits = length > 0 && length <= 16
+        var position = 0
+
+        while fits && position < length do
+          val char = key.charAt(position)
+          if char < ' ' || char >= 127 then fits = false
+          position += 1
+
+        if fits then
+          var low = 0L
+          var high = 0L
+          position = 0
+
+          while position < length do
+            val byte = key.charAt(position).toLong & 0xFF
+            if position < 8 then low |= byte << (position*8)
+            else high |= byte << ((position - 8)*8)
+            position += 1
+
+          lows(index) = low
+          highs(index) = high
+          packable(index) = true
+
+        index += 1
+
+      // Direct-mapped hash over the packed forms: capacity is the smallest
+      // power of two holding all keys at load factor <= 1/2, retried at
+      // double the size when two keys collide. Lookups are then one
+      // multiply-shift and one slot probe. `slots(slot)` holds the key's
+      // index + 1 (0 = empty). Degenerates to `capacity = 0` (linear scan)
+      // only if collisions persist at 4x — practically never for the small,
+      // distinct key sets of a case class.
+      var capacity = Integer.highestOneBit(count.max(1))*4
+      var slots: Array[Int] | Null = null
+
+      while slots == null && capacity <= count*16 do
+        val attempt = new Array[Int](capacity)
+        var clash = false
+        index = 0
+
+        while index < count && !clash do
+          if packable(index) then
+            val slot = (((lows(index)*KeyTable.Scramble) ^ highs(index)).toInt
+              & (capacity - 1)).abs
+
+            if attempt(slot) == 0 then attempt(slot) = index + 1 else clash = true
+
+          index += 1
+
+        if clash then capacity *= 2 else slots = attempt
+
+      if slots == null then capacity = 0
+
+      new KeyTable
+        ( keys,
+          lows.immutable(using Unsafe),
+          highs.immutable(using Unsafe),
+          packable.immutable(using Unsafe),
+          (if slots == null then new Array[Int](0) else slots.nn).immutable(using Unsafe),
+          capacity )
+
+  // Precomputed packed-byte forms of a fixed key set (a derived product's
+  // wire keys): matching a wire key against the table needs no `String`
+  // materialization, no intern-cache probe and no equality scan — a
+  // multiply-shift hash into a direct-mapped slot table, then two `Long`
+  // compares, against bytes packed straight from the input window. Only
+  // non-empty ASCII keys of up to 16 bytes pack (the same packing as the
+  // tokenizer's intern cache); any other key, or any wire key the fast scan
+  // cannot handle, falls back to string comparison.
+  final class KeyTable private
+    ( keys:     IArray[String],
+      lows:     IArray[Long],
+      highs:    IArray[Long],
+      packable: IArray[Boolean],
+      slots:    IArray[Int],
+      capacity: Int ):
+
+    private val count = keys.length
+
+    def indexOf(low: Long, high: Long): Int =
+      if capacity != 0 then
+        val slot = (((low*KeyTable.Scramble) ^ high).toInt & (capacity - 1)).abs
+        val found = slots(slot) - 1
+
+        if found >= 0 && lows(found) == low && highs(found) == high then found
+        else KeyTable.Unknown
+      else
+        var index = 0
+
+        while index < count do
+          if packable(index) && lows(index) == low && highs(index) == high then return index
+          index += 1
+
+        KeyTable.Unknown
+
+    def indexOfName(name: String): Int =
+      var index = 0
+
+      while index < count do
+        if keys(index) eq name then return index
+        index += 1
+
+      index = 0
+
+      while index < count do
+        if keys(index) == name then return index
+        index += 1
+
+      KeyTable.Unknown
+
   object Field:
     // Adapts an opted-in nominal instance (or any other `Parsing`) for use
-    // as a field parser.
+    // as a field parser. A named class (with the wrapped instance held as a
+    // neutral carrier and reasserted at the rim, preserving the declared
+    // capture) so the derived product parser can recognize builtin
+    // primitives through it and devirtualize them.
+    private[jacinta] final class Adapter[value](source0: AnyRef) extends Json.Field:
+      type Self = value
+
+      private[jacinta] def source: value is Json.Parsing =
+        source0.asInstanceOf[value is Json.Parsing]
+
+      def parse(reader: JsonReader^): value = source.parse(reader)
+      def shape(): Morphology = source.shape()
+      override def absent()(using Tactic[JsonError]): value = source.absent()
+
     def apply[value](parsing: (value is Json.Parsing)^)
     :   ((value is Json.Field)^{parsing}) =
-
-      new Json.Field:
-        type Self = value
-        def parse(reader: JsonReader^): value = parsing.parse(reader)
-        def shape(): Morphology = parsing.shape()
-        override def absent()(using Tactic[JsonError]): value = parsing.absent()
+      Adapter[value](parsing.asInstanceOf[AnyRef])
+      . asInstanceOf[(value is Json.Field)^{parsing}]
 
   // The operational face of direct parsing: how a value is read from a
   // `JsonReader`, whether directly or through the AST bridge. This is the
