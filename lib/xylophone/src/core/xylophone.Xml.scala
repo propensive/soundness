@@ -37,6 +37,7 @@ import language.dynamics
 import java.lang as jl
 import java.util as ju
 
+import scala.collection.Factory
 import scala.collection.mutable as scm
 import scala.compiletime.*
 import scala.quoted.*
@@ -204,6 +205,92 @@ object Xml extends Tag.Container
       . or:
           raise(XmlError()) yet false
 
+  // The encoding counterpart of the `boolean` decodable above. The other
+  // primitives encode through the blanket `encodable`'s `Encodable in Text`
+  // branch, but no `Boolean is Encodable in Text` exists, so without this a
+  // `Boolean` field cannot be written at all despite reading fine.
+  given booleanEncodable: Boolean is Encodable in Xml =
+    value => TextNode(if value then t"true" else t"false")
+
+  // Marks a `Decodable in Xml` / `Encodable in Xml` as *repeatable* —
+  // xylophone's counterpart of stratiform's `Tel.Decodable.repeatable` flag.
+  // The wire form of a repeatable (collection) field is *all* the child
+  // elements sharing the field's name, one per collection element, rather
+  // than a single first-matching child. The `distillate` codec traits are
+  // format-neutral and cannot carry the flag themselves, so it rides on this
+  // mixin; a codec without the mixin is implicitly `repeatable = false`, and
+  // the collection codecs below mix it in with the flag left `true`.
+  trait Repeatable:
+    def repeatable: Boolean = true
+
+  // AST-path collection decoding: a field of type `List[value]` / `Set[value]`
+  // etc. decodes from *all* the child elements labelled with the field's name,
+  // in document order, each element decoding as one collection element. The
+  // product derivation (`buildWith`) recognises the `Repeatable` mixin and
+  // hands over a synthetic `Fragment` of the matching children — stratiform's
+  // synthetic-document idea. A lone `Element` decodes as a single-element
+  // collection (the shape `Xml#as` sees at a document root, where the parsed
+  // `Fragment(root)` wraps it).
+  given collectionDecodable: [collection <: Iterable, element]
+  =>  ( factory: Factory[element, collection[element]] )
+  =>  ( element0: => (element is Decodable in Xml)^ )
+  =>  collection[element] is Decodable in Xml =
+
+    // Sealed per the codec-thunk pattern: a by-name parameter cannot be
+    // named in a capture set, so the honest capture of `element0` cannot be
+    // expressed; see rep/DECISIONS.md.
+    caps.unsafe.unsafeAssumePure:
+      new distillate.Decodable with Repeatable:
+        type Self = collection[element]
+        type Form = Xml
+
+        def decoded(xml: Xml): collection[element] =
+          val builder = factory.newBuilder
+
+          xml match
+            case Fragment(nodes*) =>
+              // The synthetic wrapper (or the `Absent` sentinel, an empty
+              // `Fragment`): each element node is one collection element.
+              // Zero nodes build the empty collection — a missing repeated
+              // field is empty, never an error.
+              nodes.each:
+                case child: Element => builder += element0.decoded(child)
+                case _              => ()
+
+            case node: Node =>
+              builder += element0.decoded(node)
+
+          builder.result()
+
+  // The mirror of `collectionDecodable`: a collection encodes to a `Fragment`
+  // holding one node per element, which the product derivation (recognising
+  // the `Repeatable` mixin) flattens into repeated same-named children.
+  given collectionEncodable: [collection <: Iterable, element]
+  =>  ( encodable: => (element is Encodable in Xml)^ )
+  =>  collection[element] is Encodable in Xml =
+
+    // Sealed per the codec-thunk pattern, as in `collectionDecodable`.
+    caps.unsafe.unsafeAssumePure:
+      new anticipation.Encodable with Repeatable:
+        type Self = collection[element]
+        type Form = Xml
+
+        def encoded(values: collection[element]): Xml =
+          val nodes: scm.ArrayBuffer[Node] = scm.ArrayBuffer()
+
+          values.each: value =>
+            encodable.encoded(value) match
+              case node: Node           => nodes += node
+              case Fragment(node: Node) => nodes += node
+
+              // A multi-node fragment (itself a repeated form — a nested
+              // collection) has no per-element XML shape; it nests under an
+              // unnamed element, relabelled by the enclosing product.
+              case Fragment(nested*) =>
+                nodes += Element(t"", Attributes.empty, IArray.from(nested))
+
+          Fragment(nodes.toSeq*)
+
   // Single entry-point for resolving `Decodable in Xml`. Prefers a textual
   // decoder when one exists (so any `Decodable in Text` value works as a
   // field type); otherwise falls back to Wisteria-derived case-class /
@@ -341,15 +428,39 @@ object Xml extends Tag.Container
               element.attributes.at(wireName).lay(default.or(context.decoded(Absent))): text =>
                 context.decoded(TextNode(text))
             else
-              children.get(wireName.s) match
-                case Some(child) => context.decoded(child)
-                // Missing field: fall back to the case-class declared
-                // default (Wisteria's `default`); if absent, hand the
-                // `Absent` sentinel to the field's decoder. Primitives
-                // detect it and `raise + continue`; nested conjunctions
-                // detect it and may further short-circuit via a
-                // user-supplied `Default[Nested]`.
-                case None        => default.or(context.decoded(Absent))
+              // The `AnyRef` cast (rather than `asMatchable`) sidesteps the
+              // capture-refined singleton type the checker would otherwise
+              // require of the scrutinee.
+              context.asInstanceOf[AnyRef] match
+                case marked: Repeatable if marked.repeatable =>
+                  // A repeatable (collection) field gathers *all* same-label
+                  // children, in document order, into a synthetic `Fragment`
+                  // for the collection decoder — stratiform's synthetic-
+                  // document idea. Zero matches decode the empty fragment
+                  // (an empty collection): the declared default is never
+                  // consulted, exactly as on the direct path.
+                  val gathered: scm.ArrayBuffer[Node] = scm.ArrayBuffer()
+                  var child = 0
+
+                  while child < element.children.length do
+                    element.children(child) match
+                      case node: Element => if node.label == wireName then gathered += node
+                      case _             => ()
+
+                    child += 1
+
+                  context.decoded(Fragment(gathered.toSeq*))
+
+                case _ =>
+                  children.get(wireName.s) match
+                    case Some(child) => context.decoded(child)
+                    // Missing field: fall back to the case-class declared
+                    // default (Wisteria's `default`); if absent, hand the
+                    // `Absent` sentinel to the field's decoder. Primitives
+                    // detect it and `raise + continue`; nested conjunctions
+                    // detect it and may further short-circuit via a
+                    // user-supplied `Default[Nested]`.
+                    case None        => default.or(context.decoded(Absent))
 
     // Sealed-trait disjunction picks a variant by element label. We screen
     // the discriminator against `variantLabels` *before* `delegate`-ing so
@@ -436,13 +547,34 @@ object Xml extends Tag.Container
           field =>
             val fieldLabel: Text = wisteria.label[Text]
             val wireName: Text = renames.at(fieldLabel).or(fieldLabel)
-            val encoded: Xml = contextual.encode(field)
+            val encoder: field is Encodable in Xml = wisteria.contextual
+            val encoded: Xml = encoder.encoded(field)
 
             // `@attribute` fields become attributes carrying the encoded leaf's
             // text; every other field becomes a child element via `wrap`.
             if attributeFields.contains(fieldLabel)
             then attributes += wireName -> textOf(encoded).or(t"")
-            else children += wrap(wireName, encoded)
+            else
+              // The `AnyRef` cast (rather than `asMatchable`) sidesteps the
+              // capture-refined singleton type the checker would otherwise
+              // require of the scrutinee.
+              encoder.asInstanceOf[AnyRef] match
+                case marked: Repeatable if marked.repeatable =>
+                  // A repeatable (collection) field encodes as repeated
+                  // child elements — one per collection element, each
+                  // relabelled with the field's wire name — the exact
+                  // inverse of the decoder gathering all same-label
+                  // children.
+                  encoded match
+                    case Fragment(nodes*) =>
+                      nodes.each: node =>
+                        children += wrap(wireName, node)
+
+                    case other =>
+                      children += wrap(wireName, other)
+
+                case _ =>
+                  children += wrap(wireName, encoded)
 
         Element
           ( typeName,
@@ -481,6 +613,11 @@ object Xml extends Tag.Container
     type Transport = Xml
     type Reader = XmlReader
 
+    // True for collection parsers: a repeated field, gathered occurrence by
+    // occurrence by the derived product parser — the direct counterpart of a
+    // `Repeatable`-marked `Decodable in Xml`.
+    def repeatable: Boolean = false
+
     // What a field of this type yields when no child element (or attribute)
     // carries its name — the direct counterpart of the AST derivation
     // handing the `Absent` sentinel to the field's decoder: an abort unless
@@ -515,15 +652,44 @@ object Xml extends Tag.Container
     def fromDecodable[value](decodable: (value is Decodable in Xml)^)
     :   ((value is Xml.Parsable)^{decodable}) =
 
-      new Xml.Parsable:
-        type Self = value
-        def parse(reader: XmlReader^): value = decodable.decoded(reader.element())
+      // The `AnyRef` cast (rather than `asMatchable`) sidesteps the capture-
+      // refined singleton type the checker would otherwise require of the
+      // scrutinee.
+      val repeated: Boolean = decodable.asInstanceOf[AnyRef] match
+        case marked: Repeatable => marked.repeatable
+        case _                  => false
 
-        override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): value =
-          decodable.decoded(Absent)
+      // A repeatable decoder (a custom collection) keeps its gathering
+      // semantics: each occurrence is materialized separately and the
+      // occurrences are decoded together as a synthetic fragment, exactly as
+      // the AST derivation hands them over.
+      if repeated then
+        new Xml.Parsable with Gathering:
+          type Self = value
+          override def repeatable: Boolean = true
+          def parse(reader: XmlReader^): value = decodable.decoded(reader.element())
 
-        override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): value =
-          decodable.decoded(TextNode(text))
+          override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): value =
+            decodable.decoded(Absent)
+
+          override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): value =
+            decodable.decoded(TextNode(text))
+
+          def parseElement(reader: XmlReader^): Any = reader.element()
+
+          def gathered(elements: List[Any]): value =
+            // `XmlReader.element()` materializes exactly one `Element`.
+            decodable.decoded(Fragment(elements.map(_.asInstanceOf[Node])*))
+      else
+        new Xml.Parsable:
+          type Self = value
+          def parse(reader: XmlReader^): value = decodable.decoded(reader.element())
+
+          override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): value =
+            decodable.decoded(Absent)
+
+          override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): value =
+            decodable.decoded(TextNode(text))
 
     // The one-line opt-in to direct parsing for a structural type:
     // `given MyType is Xml.Parsable = Xml.Parsable.derived` — a
@@ -539,10 +705,68 @@ object Xml extends Tag.Container
       new Xml.Parsable:
         type Self = value
         def parse(reader: XmlReader^): value = field0.parse(reader)
+        override def repeatable: Boolean = field0.repeatable
         override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): value = field0.absent()
 
         override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): value =
           field0.attribute(text)
+
+    // The element-wise hooks of a repeatable (collection) parser. The
+    // derived product parser gathers each same-label occurrence through
+    // `parseElement` and builds the collection once the element's children
+    // end — the direct counterpart of the AST derivation collecting all
+    // matching children into a synthetic `Fragment` for the collection
+    // decoder. The self type is capturing so implementing instances may
+    // capture their element parser or decoder, like any other `Parsing`
+    // instance.
+    private[xylophone] trait Gathering:
+      self: Xml.Parsing^ =>
+      def parseElement(reader: XmlReader^): Any
+      def gathered(elements: List[Any]): Self
+
+    // Shared collection implementation, backing the `fieldCollection` given
+    // (elements resolve through the field fallback chain, so nested products
+    // still parse directly). Sealed per the codec-thunk pattern: a by-name
+    // parameter cannot be named in a capture set.
+    def iterable[collection <: Iterable, element]
+      ( field: => (element is Xml.Parsing)^ )
+      ( using factory: Factory[element, collection[element]] )
+    :   collection[element] is Xml.Parsable =
+
+      caps.unsafe.unsafeAssumePure:
+        new Xml.Parsable with Gathering:
+          type Self = collection[element]
+          override def repeatable: Boolean = true
+
+          def parseElement(reader: XmlReader^): Any = field.parse(reader)
+
+          def gathered(elements: List[Any]): collection[element] =
+            val builder = factory.newBuilder
+            elements.each: item => builder += item.asInstanceOf[element]
+            builder.result()
+
+          // A single element read as a collection: one element — the AST
+          // collection decoder's behavior when handed a lone element (a
+          // whole-document read of a collection value).
+          def parse(reader: XmlReader^): collection[element] =
+            val builder = factory.newBuilder
+            builder += field.parse(reader)
+            builder.result()
+
+          // A missing collection field is the empty collection on both
+          // paths (the AST decoder receives an empty synthetic fragment);
+          // the engine routes repeatable fields through `gathered`, so this
+          // covers only the wrong-shape and root fallbacks.
+          override def absent()(using Tactic[XmlError], Foci[Xml.Focus])
+          :   collection[element] =
+
+            factory.newBuilder.result()
+
+    // Field instances travel wrapped in the `Field.Adapter`; the engine
+    // looks through it for repeatability and the element-wise hooks.
+    private def unwrap(parsing: Xml.Parsing): Xml.Parsing = parsing match
+      case adapter: Xml.Field.Adapter[?] => adapter.source
+      case other                         => other
 
     // Sentinel for the derived product parser's value buffer: a slot still
     // `AbsentSlot` after the child loop had no matching element
@@ -652,29 +876,64 @@ object Xml extends Tag.Container
           while label.present do
             val found = indexOf(label.vouch)
 
-            // Unknown children are skipped, and a duplicate child keeps the
-            // first occurrence — the AST derivation's `HashMap` inserts only
-            // when the label is not yet present.
-            if found < 0 || !(values(found).asInstanceOf[AnyRef] eq AbsentSlot)
-            then reader.skipElement()
-            else values(found) =
-              if focused
-              then focus(descend(prior, keys(found).tt))(entries(found)(1).parse(reader))
-              else entries(found)(1).parse(reader)
+            if found < 0 then reader.skipElement()
+            else Xml.Parsable.unwrap(entries(found)(1)) match
+              case gathering: Gathering if entries(found)(1).repeatable =>
+                // Every occurrence of a repeatable field accumulates, in
+                // document order — the AST derivation's gather-all
+                // semantics.
+                val buffer = values(found) match
+                  case buffer: scm.ListBuffer[?] => buffer.asInstanceOf[scm.ListBuffer[Any]]
+
+                  case _ =>
+                    val buffer = scm.ListBuffer.empty[Any]
+                    values(found) = buffer
+                    buffer
+
+                buffer +=
+                  ( if focused
+                    then focus(descend(prior, keys(found).tt))(gathering.parseElement(reader))
+                    else gathering.parseElement(reader) )
+
+              case _ =>
+                // Unknown children are skipped, and a duplicate child keeps
+                // the first occurrence — the AST derivation's `HashMap`
+                // inserts only when the label is not yet present.
+                if !(values(found).asInstanceOf[AnyRef] eq AbsentSlot)
+                then reader.skipElement()
+                else values(found) =
+                  if focused
+                  then focus(descend(prior, keys(found).tt))(entries(found)(1).parse(reader))
+                  else entries(found)(1).parse(reader)
 
             label = reader.nextChild()
 
           index = 0
 
           while index < count do
-            if values(index).asInstanceOf[AnyRef] eq AbsentSlot then
-              val declared = entries(index)(2).asInstanceOf[Optional[Any]]
+            Xml.Parsable.unwrap(entries(index)(1)) match
+              case gathering: Gathering if entries(index)(1).repeatable =>
+                // A repeatable field never consults the declared default:
+                // zero occurrences build the empty collection, exactly as
+                // the AST derivation decodes an empty synthetic fragment.
+                val elements: List[Any] = values(index) match
+                  case buffer: scm.ListBuffer[?] => buffer.toList
+                  case _                         => Nil
 
-              values(index) =
-                if declared.present then declared
-                else if focused
-                then focus(descend(prior, keys(index).tt))(entries(index)(1).absent())
-                else entries(index)(1).absent()
+                values(index) =
+                  if focused
+                  then focus(descend(prior, keys(index).tt))(gathering.gathered(elements))
+                  else gathering.gathered(elements)
+
+              case _ =>
+                if values(index).asInstanceOf[AnyRef] eq AbsentSlot then
+                  val declared = entries(index)(2).asInstanceOf[Optional[Any]]
+
+                  values(index) =
+                    if declared.present then declared
+                    else if focused
+                    then focus(descend(prior, keys(index).tt))(entries(index)(1).absent())
+                    else entries(index)(1).absent()
 
             index += 1
 
@@ -703,13 +962,22 @@ object Xml extends Tag.Container
           var index = 0
 
           while index < count do
-            val declared = entries(index)(2).asInstanceOf[Optional[Any]]
+            values(index) = Xml.Parsable.unwrap(entries(index)(1)) match
+              // A repeatable field builds the empty collection, exactly as
+              // the AST derivation's wrong-shape fallback gathers zero
+              // children — the declared default is never consulted.
+              case gathering: Gathering if entries(index)(1).repeatable =>
+                if focused
+                then focus(descend(prior, keys(index).tt))(gathering.gathered(Nil))
+                else gathering.gathered(Nil)
 
-            values(index) =
-              if declared.present then declared
-              else if focused
-              then focus(descend(prior, keys(index).tt))(entries(index)(1).absent())
-              else entries(index)(1).absent()
+              case _ =>
+                val declared = entries(index)(2).asInstanceOf[Optional[Any]]
+
+                if declared.present then declared
+                else if focused
+                then focus(descend(prior, keys(index).tt))(entries(index)(1).absent())
+                else entries(index)(1).absent()
 
             index += 1
 
@@ -736,6 +1004,7 @@ object Xml extends Tag.Container
         source0.asInstanceOf[value is Xml.Parsing]
 
       def parse(reader: XmlReader^): value = source.parse(reader)
+      override def repeatable: Boolean = source.repeatable
 
       override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): value = source.absent()
 
@@ -800,6 +1069,19 @@ object Xml extends Tag.Container
       case "true"  => true
       case "false" => false
       case _       => Unset
+
+  // Element-wise `Xml.Field` for collections, resolved during derivation:
+  // the element's own parser comes from the fallback chain, so nested
+  // products still parse directly. Declared here (not in `Xml3`) so it beats
+  // the fallback, and collection types never reach its `Reflection` case (a
+  // `List`'s own `Mirror` would otherwise derive it as a sum). The instance
+  // is repeatable: the product engine gathers every same-label occurrence,
+  // exactly as the AST derivation collects all matching children.
+  given fieldCollection: [collection <: Iterable, element]
+  =>  ( factory: Factory[element, collection[element]] )
+  =>  ( field: => (element is Xml.Field)^ )
+  =>  collection[element] is Xml.Field =
+    Xml.Field(Xml.Parsable.iterable[collection, element](field))
 
   // The direct read of a field type carried by a plain text codec — the
   // direct counterpart of the `decodable` blanket's `Decodable in Text`

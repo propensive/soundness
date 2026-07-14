@@ -56,6 +56,12 @@ case class PTemperature(celsius: Int) derives CanEqual
 case class PBoxed[value](value: value) derives CanEqual
 case class PReading(temp: PTemperature, station: Text) derives CanEqual
 
+// Collection fixtures: a `List` field decodes from *all* same-label children,
+// in document order — one with a leaf-element list, one with a nested-record
+// list.
+case class PPlaylist(name: Text, songs: List[Text]) derives CanEqual
+case class PTeam(name: Text, members: List[PWorker]) derives CanEqual
+
 case class PIssues(items: List[(Text, XmlError)] = Nil)(using Diagnostics)
 extends Error(m"${items.length} XML decoding issues"):
   def +(focus: Text, error: XmlError): PIssues = PIssues(items :+ (focus, error))
@@ -104,6 +110,8 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
     given PTemperature is Xml.Parsable =
       Xml.Parsable.fromDecodable(summon[PTemperature is Decodable in Xml])
     given PReading is Xml.Parsable = Xml.Parsable.derived
+    given PPlaylist is Xml.Parsable = Xml.Parsable.derived
+    given PTeam is Xml.Parsable = Xml.Parsable.derived
 
     // The acceptance criterion: the direct read must equal the AST-path
     // read (parse to an `Xml` tree, then decode), for the same input.
@@ -232,6 +240,43 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
         capture[XmlError](t"<Triangle><foo>1</foo></Triangle>".read[PShape in Xml])
         true
       . assert(identity)
+
+    suite(m"Collections"):
+      test(m"Contiguous repeated elements gather in order, equally on both paths"):
+        val input = t"<root><name>Mix</name><songs>A</songs><songs>B</songs><songs>C</songs></root>"
+        (input.read[PPlaylist in Xml], parity[PPlaylist](input))
+      . assert(_ == (PPlaylist(t"Mix", List(t"A", t"B", t"C")), true))
+
+      test(m"Non-contiguous repeated elements still gather in document order"):
+        val input = t"<root><songs>A</songs><name>Mix</name><songs>B</songs></root>"
+        (input.read[PPlaylist in Xml], parity[PPlaylist](input))
+      . assert(_ == (PPlaylist(t"Mix", List(t"A", t"B")), true))
+
+      test(m"No matching children decode as the empty list on both paths"):
+        val input = t"<root><name>Mix</name></root>"
+        (input.read[PPlaylist in Xml], parity[PPlaylist](input))
+      . assert(_ == (PPlaylist(t"Mix", Nil), true))
+
+      test(m"Nested record elements in lists decode equally on both paths"):
+        val input = t"""<root>
+                          <name>Reds</name>
+                          <members><name>Ann</name><age>1</age></members>
+                          <extra>skipme</extra>
+                          <members><name>Bob</name><age>2</age></members>
+                        </root>"""
+        (input.read[PTeam in Xml], parity[PTeam](input))
+      . assert(_ == (PTeam(t"Reds", List(PWorker(t"Ann", 1), PWorker(t"Bob", 2))), true))
+
+      test(m"A list round-trips through the encoder, equally on both paths"):
+        val team = PTeam(t"Blues", List(PWorker(t"Cyd", 3), PWorker(t"Dee", 4)))
+        val input = team.in[Xml].show
+        (input.read[PTeam in Xml], parity[PTeam](input))
+      . assert(_ == (PTeam(t"Blues", List(PWorker(t"Cyd", 3), PWorker(t"Dee", 4))), true))
+
+      test(m"An empty list encodes to no children and round-trips"):
+        val input = PPlaylist(t"Quiet", Nil).in[Xml].show
+        (input.read[PPlaylist in Xml], parity[PPlaylist](input))
+      . assert(_ == (PPlaylist(t"Quiet", Nil), true))
 
     suite(m"Custom-Decodable bridge"):
       test(m"A type with only a custom Decodable reads through the bridge"):
