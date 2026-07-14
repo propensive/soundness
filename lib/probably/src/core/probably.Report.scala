@@ -357,6 +357,53 @@ final class Report(using Environment)(using palette: TestPalette):
       Out.println(t"")
       if suiteName.length > 0 then Out.println(suiteName)
 
+      // The same comparison panel as the human report, uncoloured: one throughput
+      // sparkline per test across the probed concurrencies.
+      val series: List[(Text, Map[Int, probably.Strain], Optional[probably.Strain])] =
+        rows.groupBy(_.test.codepoint).to(List)
+        . sortBy(_(1).map(_.test.timestamp).min)
+        . map: (_, group) =>
+            val name = group.head.test.name.text
+            val cut1 = name.s.indexOf(" (N = ")
+            val cut2 = name.s.indexOf(" (sustained, N = ")
+            val cut = if cut1 < 0 then cut2 else if cut2 < 0 then cut1 else cut1.min(cut2)
+            val label = if cut < 0 then name else name.keep(cut)
+            val curve = group.map { row => row.strain.concurrency -> row.strain }.to(Map)
+            val sustained: Optional[probably.Strain] = group.find(_.strain.sustained).map(_.strain).getOrElse(Unset)
+            (label, curve, sustained)
+
+      val steps: List[Int] =
+        val all = series.flatMap(_(1).keys)
+
+        val shared =
+          if series.length < 2 then all.distinct
+          else all.groupBy(identity).filter(_(1).length > 1).keys.to(List)
+
+        (if shared.length > 1 then shared else all.distinct).sorted
+
+      if steps.length > 1 then
+        val labelWidth = series.map(_(0).length).max
+        val peak = series.flatMap(_(1).values).map(_.throughput).max.max(1L)
+        val blocks = List(t"▁", t"▂", t"▃", t"▄", t"▅", t"▆", t"▇", t"█")
+        val stepWidth = steps.map(_.show.length).max + 2
+        Out.println(t"  ${t"N".pad(labelWidth)}${steps.map(_.show.pad(stepWidth, Rtl)).join}")
+
+        series.each: (label, curve, sustained) =>
+          val cells: Text =
+            steps.map: step =>
+              curve.at(step).lay(t"·".pad(stepWidth, Rtl)): strain =>
+                val level = ((strain.throughput*8L + peak - 1L)/peak).toInt.min(8).max(1)
+                blocks(level - 1).pad(stepWidth, Rtl)
+
+            . join
+
+          val summary: Text = sustained.lay(t""): strain =>
+            t"  sustained ${strain.concurrency} @ ${strain.throughput} op/s"
+
+          Out.println(t"  ${label.pad(labelWidth)}$cells$summary")
+
+        Out.println(t"")
+
       Scaffold[ReportLine.Strain]
         ( Column(e"Hash"): s =>
             e"${s.test.id}",
@@ -839,6 +886,71 @@ final class Report(using Environment)(using palette: TestPalette):
       Out.println:
         ribbon.fill(e"${suite.lay(t"")(_.id.id)}", e"Stress", suiteName)
 
+      // Comparison panel: when the suite has a scaling dimension, one sparkline per test —
+      // throughput across N, scaled against the suite's fastest window — makes the tests
+      // comparable at a glance ahead of the detailed table. Probes of one test share their
+      // call site, so grouping is by codepoint; `·` marks an unprobed N, and cells beyond a
+      // test's sustained concurrency are subdued.
+      val series: List[(Text, Map[Int, probably.Strain], Optional[probably.Strain])] =
+        rows.to(List).groupBy(_.test.codepoint).to(List)
+        . sortBy(_(1).map(_.test.timestamp).min)
+        . map: (_, group) =>
+            val name = group.head.test.name.text
+            val cut1 = name.s.indexOf(" (N = ")
+            val cut2 = name.s.indexOf(" (sustained, N = ")
+            val cut = if cut1 < 0 then cut2 else if cut2 < 0 then cut1 else cut1.min(cut2)
+            val label = if cut < 0 then name else name.keep(cut)
+            val curve = group.map { row => row.strain.concurrency -> row.strain }.to(Map)
+            val sustained: Optional[probably.Strain] = group.find(_.strain.sustained).map(_.strain).getOrElse(Unset)
+            (label, curve, sustained)
+
+      val steps: List[Int] =
+        val all = series.flatMap(_(1).keys)
+
+        val shared =
+          if series.length < 2 then all.distinct
+          else all.groupBy(identity).filter(_(1).length > 1).keys.to(List)
+
+        (if shared.length > 1 then shared else all.distinct).sorted
+
+      if steps.length > 1 then
+        val stackPalette = summon[StackTrace.Palette]
+
+        def accent(level: Int): Color in Srgb =
+          stackPalette.selectDynamic(s"accent${(level%5) + 1}")
+
+        val labelWidth = series.map(_(0).length).max
+        val peak = series.flatMap(_(1).values).map(_.throughput).max.max(1L)
+        val blocks = List(t"▁", t"▂", t"▃", t"▄", t"▅", t"▆", t"▇", t"█")
+        val stepWidth = steps.map(_.show.length).max + 2
+
+        Out.println:
+          val headings = steps.map(_.show.pad(stepWidth, Rtl)).join
+          e"  ${Fg(palette.subdued)}(${t"N".pad(labelWidth)}$headings)"
+
+        series.zipWithIndex.each: (data, index) =>
+          val (label, curve, sustained) = data
+          val color = accent(index)
+          val limit = sustained.lay(Int.MaxValue)(_.concurrency)
+
+          val cells: Teletype =
+            steps.map: step =>
+              curve.at(step).lay(e"${Fg(palette.subdued)}(${t"·".pad(stepWidth, Rtl)})"): strain =>
+                val level = ((strain.throughput*8L + peak - 1L)/peak).toInt.min(8).max(1)
+                val cell = blocks(level - 1).pad(stepWidth, Rtl)
+                if step <= limit then e"$color($cell)"
+                else e"${Fg(palette.subdued)}($cell)"
+
+            . join
+
+          val summary: Teletype = sustained.lay(e""): strain =>
+            val rate = e"${Fg(palette.foreground)}(${strain.throughput})"
+            e"  sustained $Bold(${Fg(palette.foreground)}(${strain.concurrency})) @ $rate ${Fg(palette.accented)}(op${Fg(palette.subdued)}(·)s¯¹)"
+
+          Out.println(e"  $color(${label.pad(labelWidth)})$cells$summary")
+
+        Out.println(e"")
+
       val comparisons: List[ReportLine.Strain] =
         rows.filter(!_.strain.baseline.absent).to(List)
 
@@ -916,7 +1028,7 @@ final class Report(using Environment)(using palette: TestPalette):
         )*
       )
 
-      strain.tabulate(rows.to(List).sortBy(_.strain.allocationRate))
+      strain.tabulate(rows.to(List).sortBy(_.test.timestamp))
       . grid(columns).render.each(Out.println(_))
 
       if githubActions then GithubActions.endGroup()
