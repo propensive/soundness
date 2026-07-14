@@ -53,7 +53,9 @@ object Promise:
     case Complete(value: value)
     case Cancelled
 
-final case class Promise[value]():
+// A plain class, not a case class: a zero-field case class would make every promise `==` every
+// other, and promises are meaningful only by identity (`LockSupport.park` blocks on `this`).
+final class Promise[value]():
   import Promise.State, State.{Incomplete, Complete, Cancelled}
 
   private val state: juca.AtomicReference[State[value]] =
