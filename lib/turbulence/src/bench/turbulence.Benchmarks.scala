@@ -938,3 +938,72 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
                 total <- ZStream.fromQueue(queue).flattenTake.runFold(0L)((acc, c) => acc + c.size)
               yield total
         }
+
+    // Example Q: gzip-decompression memory — the pipeline from Example 1b run as
+    // 8 concurrent pipelines. The compressed corpus is small, so the measured
+    // allocation is almost entirely output-side handling of the inflated 4 MB —
+    // precisely what recycled conduit blocks eliminate, against per-chunk output
+    // allocation. Every row drains without retaining: the Soundness body counts
+    // output bytes through `sweep`, the same shape as FS2's `compile.count` and
+    // ZIO's `runCount`. (Compression is the wrong direction to measure here: this
+    // corpus deflates to a few dozen kB, so the output-side allocation vanishes
+    // and the figure is dominated by how each library ingests the 4 MB input.)
+    suite(m"Stress: gzip decompression memory (4 MB out, N=8)"):
+      stress(m"Soundness  Stream.decompress[Gzip]")
+        ( target = 2*Second, concurrency = 8, baseline = Baseline() ):
+        '{
+            var total = 0L
+
+            turbulence.Benchmarks.gzippedInput.stream.decompress[Gzip]
+            . sweep((_, _, count) => total += count)
+
+            total
+        }
+
+      stress(m"FS2  Compression[IO].gunzip")(target = 2*Second, concurrency = 8):
+        '{
+            import cats.effect.unsafe.implicits.global
+            val comp = fs2.compression.Compression.forSync[cats.effect.IO]
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.gzippedInputArray))
+            . covary[cats.effect.IO]
+            . through(comp.gunzip()).flatMap(_.content)
+            . compile.count.unsafeRunSync()
+        }
+
+      stress(m"ZIO  ZPipeline.gunzip")(target = 2*Second, concurrency = 8):
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.gzippedInputArray))
+              . via(zio.stream.ZPipeline.gunzip())
+              . runCount
+        }
+
+    // Example R: UTF-8 decode memory — the pipeline from Example 2 run as 8
+    // concurrent pipelines. All three rows aggregate decoded character counts per
+    // chunk (the fold shape), so the contrast is the per-chunk text allocation of
+    // the decode stage itself.
+    suite(m"Stress: UTF-8 decode memory (4 MB, N=8)"):
+      stress(m"Soundness  via(CharDecoder)")
+        ( target = 2*Second, concurrency = 8, baseline = Baseline() ):
+        '{
+            var total = 0L
+
+            turbulence.Benchmarks.textData.stream.via(summon[CharDecoder])
+            . sweep((_, _, count) => total += count)
+
+            total
+        }
+
+      stress(m"FS2  text.utf8.decode")(target = 2*Second, concurrency = 8):
+        '{
+            import cats.effect.unsafe.implicits.global
+            fs2.Stream.chunk(fs2.Chunk.array(turbulence.Benchmarks.textArray)).covary[cats.effect.IO]
+            . through(fs2.text.utf8.decode).map(_.length).compile.fold(0)(_ + _).unsafeRunSync()
+        }
+
+      stress(m"ZIO  ZPipeline.utfDecode")(target = 2*Second, concurrency = 8):
+        '{
+            turbulence.Benchmarks.runZio:
+              zio.stream.ZStream.fromChunk(zio.Chunk.fromArray(turbulence.Benchmarks.textArray))
+              . via(zio.stream.ZPipeline.utfDecode).map(_.length).runSum
+        }
