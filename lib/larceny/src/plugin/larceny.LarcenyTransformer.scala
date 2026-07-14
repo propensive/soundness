@@ -116,6 +116,12 @@ class LarcenyTransformer() extends PluginPhase:
     val classpath = ctx.settings.classpath.value
     val language = ctx.settings.language.value
 
+    // `-Ycc-new` selects the capture checker but is not a `-language` setting, so
+    // it must be propagated separately or sub-compilations of capture-checked
+    // sources would be checked by the old scheme (which misses level violations
+    // such as stashing a local capability in an outer mutable variable).
+    val ccNew = ctx.settings.YccNew.value
+
     object collector extends UntypedTreeMap:
       val regions: scm.ListBuffer[(Int, Int)] = scm.ListBuffer()
 
@@ -141,7 +147,7 @@ class LarcenyTransformer() extends PluginPhase:
       ctx.settings.plugin.value.filterNot(LarcenyTransformer.isLarceny)
 
     val errors: List[CompileError] =
-      Subcompiler.compile(language, classpath, source, regions, plugins)
+      Subcompiler.compile(language, classpath, source, regions, plugins, ccNew)
 
     object transformer extends UntypedTreeMap:
       override def transform(tree: Tree)(using Context): Tree = tree match
