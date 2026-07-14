@@ -75,7 +75,7 @@ object Report:
   given detail: Inclusion[Report, Verdict.Detail] = _.addDetail(_, _)
 
   enum Status:
-    case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench, AspirePass, AspireFail
+    case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench, Stress, AspirePass, AspireFail
 
     private val nbsp = '\u00a0'
 
@@ -87,6 +87,7 @@ object Report:
       case Mixed       => e"${Bg(palette.mixed)}($Bold(${Fg(palette.black)}( ? )))"
       case Suite       => e"   "
       case Bench       => e"${Bg(palette.benchmark)}($Bold(${Fg(palette.black)}($nbsp*$nbsp)))"
+      case Stress      => e"${Bg(palette.benchmark)}($Bold(${Fg(palette.black)}($nbsp≈$nbsp)))"
       case AspirePass  => e"${Bg(palette.aspirePass)}($Bold(${Fg(palette.black)}( ↑ )))"
       case AspireFail  => e"${Bg(palette.aspireFail)}($Bold(${Fg(palette.black)}( ↓ )))"
 
@@ -98,6 +99,7 @@ object Report:
       case Mixed       => e"Mixed"
       case Suite       => e"Suite"
       case Bench       => e"Benchmark"
+      case Stress      => e"Stress"
       case AspirePass  => e"Aspire passed"
       case AspireFail  => e"Aspire failed"
 
@@ -142,6 +144,7 @@ final class Report(using Environment)(using palette: TestPalette):
     case Suite(suite: Optional[Testable], tests: TestsMap = TestsMap())
     case Test(test: TestId, verdicts: scm.ArrayBuffer[Verdict] = scm.ArrayBuffer())
     case Bench(test: TestId, benchmark: Benchmark)
+    case Strain(test: TestId, strain: probably.Strain)
 
     def summaries: List[Summary] = this match
       case Suite(suite, tests) =>
@@ -152,6 +155,9 @@ final class Report(using Environment)(using palette: TestPalette):
 
       case Bench(testId, bench@Benchmark(_, _, _, _, _, _, _, _, _, _, _)) =>
         List(Summary(Status.Bench, testId, 0, 0, 0, 0))
+
+      case Strain(testId, _) =>
+        List(Summary(Status.Stress, testId, 0, 0, 0, 0))
 
       case Test(testId, buffer) =>
         val status =
@@ -185,6 +191,10 @@ final class Report(using Environment)(using palette: TestPalette):
     val benchmarks = resolve(testId.suite).tests
     benchmarks.getOrElseUpdate(testId, ReportLine.Bench(testId, benchmark))
 
+  def addStrain(testId: TestId, strain: probably.Strain): Report = this.also:
+    val strains = resolve(testId.suite).tests
+    strains.getOrElseUpdate(testId, ReportLine.Strain(testId, strain))
+
   def addVerdict(testId: TestId, verdict: Verdict): Report = this.also:
     val tests = resolve(testId.suite).tests
 
@@ -199,6 +209,11 @@ final class Report(using Environment)(using palette: TestPalette):
     case ReportLine.Suite(_, tests)   => tests.list.flatMap: (_, line) => benches(line)
     case _                            => Nil
 
+  private def strains(line: ReportLine): Iterable[ReportLine.Strain] = line match
+    case strain@ReportLine.Strain(_, _) => Iterable(strain)
+    case ReportLine.Suite(_, tests)     => tests.list.flatMap: (_, line) => strains(line)
+    case _                              => Nil
+
   val unitsSeq: List[Teletype] =
     List(e"${Fg(palette.cold)}(µs)", e"${Fg(palette.warm)}(ms)", e"${Fg(palette.hot)}(s) ")
 
@@ -207,6 +222,18 @@ final class Report(using Environment)(using palette: TestPalette):
 
     case unit :: rest =>
       if n > 100000L then showTime(n/1000L, rest) else
+        val sig = (n/1000L).show
+        val frac = (n%1000).show.pad(3, Rtl, '0')
+        e"${Fg(palette.foreground)}(${sig}.$frac) ${unit}"
+
+  val memoryUnitsSeq: List[Teletype] =
+    List(e"${Fg(palette.cold)}(kB)", e"${Fg(palette.warm)}(MB)", e"${Fg(palette.hot)}(GB)")
+
+  def showMemory(n: Long, units: List[Teletype] = memoryUnitsSeq): Teletype = units match
+    case Nil => n.show.teletype
+
+    case unit :: rest =>
+      if n > 100000L then showMemory(n/1000L, rest) else
         val sig = (n/1000L).show
         val frac = (n%1000).show.pad(3, Rtl, '0')
         e"${Fg(palette.foreground)}(${sig}.$frac) ${unit}"
@@ -235,7 +262,10 @@ final class Report(using Environment)(using palette: TestPalette):
     val columns: Int = safely(Environment.columns.as[Int]).or(120)
     val summaryLines = lines.summaries
     val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
-    val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
+    val passed: Int =
+      totals.getOrElse(Status.Pass, 0)
+      + totals.getOrElse(Status.Bench, 0)
+      + totals.getOrElse(Status.Stress, 0)
     val aspirePassed: Int = totals.getOrElse(Status.AspirePass, 0)
     val aspireFailed: Int = totals.getOrElse(Status.AspireFail, 0)
     val total: Int = totals.values.sum
@@ -258,6 +288,7 @@ final class Report(using Environment)(using palette: TestPalette):
       case Status.Mixed       => t"mixed"
       case Status.Suite       => t"suite"
       case Status.Bench       => t"bench"
+      case Status.Stress      => t"stress"
       case Status.AspirePass  => t"aspire-pass"
       case Status.AspireFail  => t"aspire-fail"
 
@@ -289,6 +320,38 @@ final class Report(using Environment)(using palette: TestPalette):
             if tp == 0 then e"" else e"$tp op/s" )
 
       . tabulate(benchmarks.sortBy(_.test.timestamp)).grid(columns).render
+      . each(Out.println(_))
+
+    val strainBySuite = strains(lines).to(List).groupBy(_.test.suite).to(List)
+      . sortBy(_(1).iterator.map(_.test.timestamp).min)
+
+    strainBySuite.each: (suite, rows) =>
+      val suiteName = suite.let(_.name.text).or(t"")
+      Out.println(t"")
+      if suiteName.length > 0 then Out.println(suiteName)
+
+      Scaffold[ReportLine.Strain]
+        ( Column(e"Hash"): s =>
+            e"${s.test.id}",
+          Column(e"Stress"): s =>
+            e"${s.test.name}",
+          Column(e"N", textAlign = TextAlignment.Right): s =>
+            e"${s.strain.concurrency}",
+          Column(e"Ops", textAlign = TextAlignment.Right): s =>
+            e"${s.strain.operations}",
+          Column(e"Throughput", textAlign = TextAlignment.Right): s =>
+            val tp = s.strain.throughput
+            if tp == 0 then e"" else e"$tp op/s",
+          Column(e"Alloc/op", textAlign = TextAlignment.Right): s =>
+            showMemory(s.strain.allocationRate.toLong),
+          Column(e"Peak", textAlign = TextAlignment.Right): s =>
+            showMemory(s.strain.peakHeap),
+          Column(e"Retained", textAlign = TextAlignment.Right): s =>
+            showMemory(s.strain.retained),
+          Column(e"GC", textAlign = TextAlignment.Right): s =>
+            e"${s.strain.gcCount}" )
+
+      . tabulate(rows.sortBy(_.test.timestamp)).grid(columns).render
       . each(Out.println(_))
 
     val failureStatuses: Set[Status] =
@@ -494,7 +557,10 @@ final class Report(using Environment)(using palette: TestPalette):
     def totals(tabulation: Boolean): Unit =
       if summaryLines.exists(_.count > 0) then
         val totals = summaryLines.groupBy(_.status).view.mapValues(_.size).to(Map) - Status.Suite
-        val passed: Int = totals.getOrElse(Status.Pass, 0) + totals.getOrElse(Status.Bench, 0)
+        val passed: Int =
+          totals.getOrElse(Status.Pass, 0)
+          + totals.getOrElse(Status.Bench, 0)
+          + totals.getOrElse(Status.Stress, 0)
         val aspirePassed: Int = totals.getOrElse(Status.AspirePass, 0)
         val aspireFailed: Int = totals.getOrElse(Status.AspireFail, 0)
         val total: Int = totals.values.sum
@@ -569,7 +635,7 @@ final class Report(using Environment)(using palette: TestPalette):
         import Status.*
 
         val allStatuses =
-          List(Pass, Bench, AspirePass, Throws, Fail, AspireFail, Mixed, CheckThrows)
+          List(Pass, Bench, Stress, AspirePass, Throws, Fail, AspireFail, Mixed, CheckThrows)
 
         // Printed with index loops rather than `grouped(_).each`/`map` closures: a lambda whose
         // parameter is a `List` and whose body uses the `Stdio` capability leaks the list's reach
@@ -692,6 +758,87 @@ final class Report(using Environment)(using palette: TestPalette):
       )
 
       bench.tabulate(benchmarks.to(List).sortBy(-_.benchmark.throughput))
+      . grid(columns).render.each(Out.println(_))
+
+      if githubActions then GithubActions.endGroup()
+
+    strains(lines).groupBy(_.test.suite).each: (suite, rows) =>
+      val ribbon =
+        Ribbon
+          ( palette.subdue(palette.detail, 0.3),
+            palette.subdue(palette.detail, 0.6),
+            palette.subdue(palette.detail, 0.9) )
+
+      val suiteName = suite.let(_.name.teletype).or(e"")
+
+      if githubActions then
+        GithubActions.group(t"Stress: ${suite.let(_.name.text).or(t"")}")
+
+      Out.println:
+        ribbon.fill(e"${suite.lay(t"")(_.id.id)}", e"Stress", suiteName)
+
+      val comparisons: List[ReportLine.Strain] =
+        rows.filter(!_.strain.baseline.absent).to(List)
+
+      def frequency(strain: probably.Strain): Teletype =
+        if strain.throughput == 0 then e""
+        else
+          val tp = e"${Fg(palette.foreground)}(${strain.throughput})"
+          e"$tp ${Fg(palette.accented)}(op${Fg(palette.subdued)}(·)s¯¹)"
+
+      val strain: Scaffold[ReportLine.Strain, Teletype] = Scaffold[ReportLine.Strain](
+        (List(
+          Column(e"$Bold(Hash)"): s =>
+            e"${Fg(palette.informative)}(${s.test.id})",
+          Column(e"$Bold(Test)"): s =>
+            e"${s.test.name}",
+          Column(e"$Bold(N)", textAlign = TextAlignment.Right): s =>
+            s.strain.concurrency,
+          Column(e"$Bold(Ops)", textAlign = TextAlignment.Right): s =>
+            s.strain.operations,
+          Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): s =>
+            frequency(s.strain),
+          Column(e"$Bold(Alloc·op¯¹)", textAlign = TextAlignment.Right): s =>
+            showMemory(s.strain.allocationRate.toLong),
+          Column(e"$Bold(Peak)", textAlign = TextAlignment.Right): s =>
+            showMemory(s.strain.peakHeap),
+          Column(e"$Bold(Retained)", textAlign = TextAlignment.Right): s =>
+            showMemory(s.strain.retained),
+          Column(e"$Bold(GC n)", textAlign = TextAlignment.Right): s =>
+            s.strain.gcCount,
+          Column(e"$Bold(GC t)", textAlign = TextAlignment.Right): s =>
+            showTime(s.strain.gcTime*1000000L)) :::
+          comparisons.map: comparison =>
+          import Baseline.*
+          val baseline = comparison.strain.baseline.vouch
+
+          val title = e"$Bold(${Fg(palette.informative)}(${comparison.test.id}))"
+
+          // The relative column compares allocation per operation: the `Compare`/`Metric`
+          // axes of `Baseline` describe timing distributions and don't apply to memory.
+          Column(title, textAlign = TextAlignment.Right):
+            (row: ReportLine.Strain) =>
+              val value = baseline.mode match
+                case Arithmetic =>
+                  row.strain.allocationRate - comparison.strain.allocationRate
+
+                case Geometric =>
+                  if comparison.strain.allocationRate == 0.0 then 0.0
+                  else row.strain.allocationRate/comparison.strain.allocationRate
+
+              baseline.mode match
+                case Arithmetic =>
+                  if value == 0 then e"★"
+                  else if value < 0
+                  then e"${Fg(palette.accented)}(-)${showMemory((-value).toLong)}"
+                  else e"${Fg(palette.accented)}(+)${showMemory(value.toLong)}"
+
+                case Geometric =>
+                  if value == 1 then e"★" else e"${Fg(palette.foreground)}($value)"
+        )*
+      )
+
+      strain.tabulate(rows.to(List).sortBy(_.strain.allocationRate))
       . grid(columns).render.each(Out.println(_))
 
       if githubActions then GithubActions.endGroup()
