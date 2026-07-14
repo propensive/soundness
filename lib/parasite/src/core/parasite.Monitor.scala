@@ -104,7 +104,12 @@ sealed trait Monitor extends Resultant, Findable, caps.ExclusiveCapability:
 // locally per `supervise` block by a `Root`.
 trait Supervisor:
   def name: Name[Async]
-  def fork(name: Optional[Text])(block: => Unit): Thread
+
+  // `name` is a thunk: computing a worker's name (`Worker.stack`) walks the whole parent chain
+  // building strings, and `VirtualSupervisor` — the default — never evaluates it. (A thunk, not
+  // a by-name parameter, because a by-name `Optional[Text]` crashes the capture checker's Setup
+  // phase on the union type.)
+  def fork(name: () => Optional[Text])(block: => Unit): Thread
 
 // The local root of a supervision tree, created by `supervise`. A `Monitor` (hence a capability),
 // but its lifetime is the `supervise` block, so it does not escape as a global capability.
@@ -122,24 +127,35 @@ class Root(val supervisor: Supervisor) extends Monitor:
 object VirtualSupervisor extends Supervisor:
   def name: Name[Async] = n"virtual"
 
-  def fork(name: Optional[Text])(block: => Unit): Thread =
+  def fork(name: () => Optional[Text])(block: => Unit): Thread =
     Thread.ofVirtual().nn.start{ () => block }.nn
 
 object AdaptiveSupervisor extends Supervisor:
   def name: Name[Async] = n"adaptive"
 
-  def fork(name: Optional[Text])(block: => Unit): Thread =
-    try VirtualSupervisor.fork(name)(block) catch case error: Throwable =>
-      PlatformSupervisor.fork(name)(block)
+  // Virtual-thread support is a deterministic property of the JVM, so it is probed once with a
+  // no-op thread rather than trial-forked per task. A dedicated probe means a transient failure
+  // (e.g. OutOfMemoryError) on a real fork cannot mis-pin the process to platform threads: only
+  // `UnsupportedOperationException` — the deterministic outcome — is cached; anything else
+  // propagates and the probe is retried on the next fork.
+  private lazy val virtual: Boolean =
+    try
+      Thread.ofVirtual().nn.start{ () => () }
+      true
+    catch case error: UnsupportedOperationException => false
+
+  def fork(name: () => Optional[Text])(block: => Unit): Thread =
+    if virtual then VirtualSupervisor.fork(name)(block)
+    else PlatformSupervisor.fork(name)(block)
 
 object PlatformSupervisor extends Supervisor:
   def name: Name[Async] = n"platform"
 
-  def fork(name: Optional[Text])(block: => Unit): Thread =
+  def fork(name: () => Optional[Text])(block: => Unit): Thread =
     val runnable: Runnable^ = () => block
 
     new Thread(runnable).tap: thread =>
-      name.let(_.s).let(thread.setName(_))
+      name().let(_.s).let(thread.setName(_))
       thread.start()
 
 abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) extends Monitor:
@@ -298,7 +314,7 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
           case Cancelled                   => abort(AsyncError(Reason.Cancelled))
           case _                           => abort(AsyncError(Reason.Incomplete))
 
-  private lazy val thread: Thread = parent.supervisor.fork(stack):
+  private lazy val thread: Thread = parent.supervisor.fork(() => stack):
     val started: Boolean = state.updateAndGet:
       case Initializing => Active(jl.System.currentTimeMillis)
       case other        => other
