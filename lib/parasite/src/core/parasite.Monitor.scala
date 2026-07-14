@@ -160,9 +160,8 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   def apply(): Optional[Result] = promise()
   def relentlessness: Double = (jl.System.currentTimeMillis - startTime).toDouble/relents
 
-  def delegate(lambda: Monitor^ => Unit): Unit = state.updateAndGet: state =>
+  def delegate(lambda: Monitor^ => Unit): Unit =
     workers.each: child => if child.daemon then child.cancel() else lambda(child)
-    state
 
   def stack: Text =
     val ref = // The `(x: Text)` ascriptions widen singleton-bounded values (case-2 pure-value box).
@@ -203,17 +202,24 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
     async(lambda(join()).join())
 
 
-  def cancel(): Unit =
-    val state2 = state.updateAndGet:
+  // An explicit CAS loop rather than `updateAndGet`, whose update function may be re-run under
+  // contention: the cancellation effects must fire exactly once, and only *after* the `Cancelled`
+  // state is visible, so that a joiner woken by `promise.cancel()` cannot observe a stale
+  // `Active` state. The final `thread.join()` happens whenever the state is `Cancelled`, even if
+  // another cancellation won the race.
+  @tailrec
+  final def cancel(): Unit =
+    val current = state.get().nn
+
+    current match
       case Initializing | Active(_) =>
-        promise.cancel()
-        thread.interrupt()
-        Cancelled
+        if !state.compareAndSet(current, Cancelled) then cancel() else
+          promise.cancel()
+          thread.interrupt()
+          thread.join()
 
-      case other =>
-        other
-
-    if state2 == Cancelled then thread.join()
+      case Cancelled => thread.join()
+      case _         => ()
 
   def result()(using cancel: Tactic[AsyncError]^): Result =
     state.updateAndGet:
@@ -337,17 +343,19 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
         case Completed(_, _)      => Unset
         case Delivered(_, _)      => Unset
 
-      state.updateAndGet: state =>
-        parent.remove(this)
+      parent.remove(this)
 
-        state match
-          case null                             => Cancelled.also(promise.cancel())
-          case Initializing                     => Cancelled.also(promise.cancel())
-          case Active(_)                        => Cancelled.also(promise.cancel())
-          case state@Completed(duration, value) => state.also(promise.offer(value))
-          case state@Delivered(duration, value) => state
-          case state@Failed(_)                  => state.also(promise.cancel())
-          case Cancelled                        => Cancelled
+      // The transition is pure — `updateAndGet` may re-run it under contention — and the promise
+      // is settled exactly once afterwards, from the installed state. Ordering matters: the state
+      // must be terminal before the promise wakes any joiner.
+      state.updateAndGet:
+        case null | Initializing | Active(_) => Cancelled
+        case state                           => state
+
+      . match
+        case Completed(_, value) => promise.offer(value)
+        case Delivered(_, _)     => ()
+        case _                   => promise.cancel()
 
       escalation.let(throw _)
 

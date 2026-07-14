@@ -72,18 +72,24 @@ final case class Promise[value]():
     case Complete(_) => true
     case _           => false
 
+  // The transition is pure — `getAndUpdate` may re-run it under contention — so the waiters are
+  // unparked exactly once afterwards, from the returned previous state. No wakeup can be lost:
+  // once `Complete` is installed, `enqueue` adds no further waiters.
   private def completeIncomplete(supplied: value)(current: State[value] | Null): State[value] =
     current.nn match
-      case Incomplete(waiting) => Complete(supplied.nn).also(waiting.each(jucl.LockSupport.unpark))
-      case current             => current
+      case Incomplete(_) => Complete(supplied.nn)
+      case current       => current
 
   def fulfill(supplied: => value): Unit raises AsyncError =
     state.getAndUpdate(completeIncomplete(supplied)).nn match
       case Cancelled           => raise(AsyncError(AsyncError.Reason.Cancelled))
       case Complete(_)         => raise(AsyncError(AsyncError.Reason.AlreadyComplete))
-      case Incomplete(waiting) => ()
+      case Incomplete(waiting) => waiting.each(jucl.LockSupport.unpark)
 
-  def offer(supplied: => value): Unit = state.updateAndGet(completeIncomplete(supplied))
+  def offer(supplied: => value): Unit =
+    state.getAndUpdate(completeIncomplete(supplied)).nn match
+      case Incomplete(waiting) => waiting.each(jucl.LockSupport.unpark)
+      case _                   => ()
 
   private def enqueue(thread: Thread)(current: State[value] | Null): State[value] =
     current.nn match
