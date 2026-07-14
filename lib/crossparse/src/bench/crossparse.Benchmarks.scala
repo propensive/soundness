@@ -282,6 +282,7 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     assert(decodeJsoniterAst() == jsoniterExpected, "Jsoniter AST decode disagrees")
 
     val bench = Bench()
+    val profile = Profile()
 
     suite(m"Decode a ~10 KB order corpus to case classes"):
       bench(m"JSON direct")(target = 1*Second, baseline = Baseline(compare = Min)):
@@ -312,3 +313,19 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
 
       bench(m"Jsoniter via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeJsoniterAst() }
+
+    // Where the self-time actually goes in each direct arm — a JFR hotspot
+    // histogram per parser, coloured by package. Jsoniter direct is the
+    // reference. Longer targets so the sampler gathers enough execution samples.
+    suite(m"Profile: direct-parser hotspots"):
+      profile(m"TEL direct")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeTelDirect() }
+
+      profile(m"XML direct")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeXmlDirect() }
+
+      profile(m"JSON direct")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeJsonDirect() }
+
+      profile(m"Jsoniter direct")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeJsoniterDirect() }
