@@ -1947,6 +1947,15 @@ object Tel extends Tel2:
     private var arenaPos:      Int = 0
     private var inFlightStart: Int = -1
 
+    // Direct-primary-atom capture: when `directPrimaryOnly` is set (by
+    // `directAtomText`), `commit()` materializes the first inline atom's text
+    // straight into `directPrimaryText` and allocates no `Tel.Atom.Inline` at
+    // all — a scalar leaf then costs exactly its one value `String`. The text
+    // is decoded on capture (not deferred) because a later atom on the same
+    // line may grow the arena and move the bytes.
+    private var directPrimaryOnly: Boolean       = false
+    private var directPrimaryText: String | Null = null
+
     private inline def beginInFlightAtom(): Unit = inFlightStart = arenaPos
 
     private inline def endInFlightAtom(): Int =
@@ -3770,7 +3779,14 @@ object Tel extends Tel2:
         if atomOpen then
           val off = arenaInFlightOffset
           val len = endInFlightAtom()
-          pushAtom(Tel.Atom.Inline.fromArena(atomArena, off, len, precedingSpaces))
+
+          if directPrimaryOnly then
+            // Keep only the first inline atom's text; later atoms are consumed
+            // but neither materialized nor allocated.
+            if directPrimaryText == null then
+              directPrimaryText = new String(atomArena, off, len, StandardCharsets.UTF_8)
+          else pushAtom(Tel.Atom.Inline.fromArena(atomArena, off, len, precedingSpaces))
+
           atomOpen = false
 
       var stopped = false
@@ -4110,39 +4126,33 @@ object Tel extends Tel2:
     // `Tel#primaryAtom`, where a source/literal atom never supplies the
     // primary text. Backs the primitive parsers.
     //
-    // Unlike `directCompound`, this does not materialize a `Tel.Compound`,
-    // its `IArray[Atom]` (`takeAtoms`) or its children: it reads the inline
-    // atoms into scratch, pulls the first one's text, rewinds the scratch
-    // index without copying, and consumes (discarding) the source/literal
-    // continuation and child subtree so the reader still lands on the next
-    // sibling. For a scalar leaf that is one `String` allocation and nothing
-    // more — the direct path made genuinely direct.
+    // Unlike `directCompound`, this materializes no `Tel.Compound`, no
+    // `IArray[Atom]` (`takeAtoms`) and — via `directPrimaryOnly` — not even an
+    // `Tel.Atom.Inline`: `parseCompoundLineRest` decodes the first inline
+    // atom's text straight into `directPrimaryText`, and the source/literal
+    // continuation and child subtree are consumed (discarded) so the reader
+    // still lands on the next sibling. For a scalar leaf that is exactly one
+    // value `String` and nothing else — the direct path made genuinely direct.
     private[stratiform] def directAtomText(): Optional[Text] raises TelError =
       val spaces = directEntrySpaces
       val indent = directEntryIndent
       val tabulated = directTabulation.present
-      val atomsStart = atomScratchIx
-      parseCompoundLineRest(directEntryLine)
+
+      directPrimaryText = null
+      directPrimaryOnly = true
+      try parseCompoundLineRest(directEntryLine) finally directPrimaryOnly = false
+
+      // The primary text is the first inline atom's, decoded on capture; a
+      // source/literal atom never supplies it.
+      val captured = directPrimaryText
+      val result: Optional[Text] = if captured == null then Unset else Optional(Text(captured))
+
       prevContentLeadingSpaces = spaces
       prevLineWasBoundary = false
       fillHead()
 
       val extraAtom: Optional[Tel.Atom] =
         if tabulated then Unset else parseSourceOrLiteralAtomIfPresent(spaces)
-
-      // The primary text is the first inline atom's; a source/literal atom
-      // never supplies it, so `extraAtom` is only consumed, not inspected.
-      var result: Optional[Text] = Unset
-      var index = atomsStart
-
-      while index < atomScratchIx do
-        scratchAtoms(index) match
-          case inline: Tel.Atom.Inline => if result.absent then result = Optional(inline.text)
-          case _                       => ()
-
-        index += 1
-
-      atomScratchIx = atomsStart
 
       // Mirror `directCompound`: children are parsed (and here discarded) only
       // when no source/literal atom and no tabulation intervened; otherwise a
