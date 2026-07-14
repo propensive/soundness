@@ -32,7 +32,7 @@
                                                                                                   */
 package soundness
 
-export telekinesis.{requestTransmissible, domainSocketFetchable, domainSocketHttpClient, Tls,
+export telekinesis.{requestTransmissible, domainSocketFetchable, domainSocketHttpClient, Trust,
     TlsAcceptance}
 
 package httpBackends:

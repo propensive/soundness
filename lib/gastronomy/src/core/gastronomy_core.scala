@@ -63,7 +63,7 @@ package crypto:
     caps.unsafe.unsafeErasedValue
 
   // Deprecated TLS protocol versions, key sizes and cipher families. Note that
-  // re-enabling these is process-wide (see `telekinesis.Tls.unlock`).
+  // re-enabling these is process-wide (see `telekinesis.Trust.unlock`).
   erased given permitLegacyTls
   :   Permit[Concession.Tls10] & Permit[Concession.Tls11] & Permit[Concession.SmallDh] &
     Permit[Concession.CbcCipher] =

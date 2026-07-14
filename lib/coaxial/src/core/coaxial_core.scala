@@ -151,7 +151,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint 
 // retains a `Monitor` and its tactics), so the evidence is a capturing using-parameter.
 extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint is Duplexable)^)
   // A full-duplex exchange: as soon as the connection opens — before the `handle` loop
-  // begins — `interact` is handed a `Sender`, so a client can send *proactively* (send
+  // begins — `interact` is handed a `Transmitter`, so a client can send *proactively* (send
   // first, or push from a task it spawns), concurrently with the reactive `handle` loop
   // (which still replies via `Control`). `handle` precedes `interact` so the message type
   // is fixed by the (annotated) handler. Available only for a `Duplexable` transport,
@@ -159,7 +159,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
   // only the reactive `react`.
   def exchange[state](initialState: state)[message: {Ingressive, Transmissible}]
     ( handle: (state: state) ?=> message => Control[state] )
-    ( interact: Sender[message]^ => Unit )
+    ( interact: Transmitter[message]^ => Unit )
     ( using SocketEvent is Loggable )(using buffering: Buffering)
   :   state =
 
@@ -169,8 +169,8 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
     // A named `Post` rather than a lambda: forwarding to the consuming `transmit`
     // requires a `consume` parameter, which only a method can declare.
     interact:
-      Sender[message]:
-        new Sender.Post:
+      Transmitter[message]:
+        new Transmitter.Post:
           def apply(consume stream: (Stream[Data] over Credit)^): Unit =
             duplexable.transmit(connection, stream)
 

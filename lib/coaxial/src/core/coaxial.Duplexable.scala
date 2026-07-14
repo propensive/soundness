@@ -36,6 +36,6 @@ package coaxial
 // called repeatedly, and concurrently with `receive` and with itself, without ever
 // half-closing the connection. Only such a transport can send *proactively* — before
 // the first inbound message, or from another task — so `exchange` (which hands the caller
-// a `Sender`) is offered only for a `Duplexable`, while a request/response `Serviceable`
+// a `Transmitter`) is offered only for a `Duplexable`, while a request/response `Serviceable`
 // (which may shut its output down after transmitting) has only the reactive `react`.
 trait Duplexable extends Serviceable

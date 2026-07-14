@@ -414,7 +414,7 @@ object Tests extends Suite(m"Perihelion tests"):
 
         . assert(_ == 7)
 
-        // The full-duplex `exchange` gives the caller a `Sender` before the loop, so
+        // The full-duplex `exchange` gives the caller a `Transmitter` before the loop, so
         // the client speaks first: it sends `Ping(7)`, the server replies `Ping(8)`.
         test(m"A client sends proactively, then reacts to the reply"):
           val port = freePort()
