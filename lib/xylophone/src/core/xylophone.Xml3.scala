@@ -30,9 +30,39 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xylophone
 
-export
-  stratiform
-  . { DynamicTelEnabler, dynamicTelAccess, Revision, Mutation, MutationError, Stratiform, Tel, Tel2,
-      Tel3, telConversion, TelError, TelPath, TelReader, Tels, Tels2, tel }
+import scala.compiletime.*
+
+import anticipation.*
+import distillate.*
+import prepositional.*
+import wisteria.*
+
+// Lowest-priority layer (extended by `Xml2`), holding the universal fallback
+// for `Xml.Field` — the typeclass the product derivation resolves per field —
+// mirroring `Xml.decodable`'s dispatch order so a field's wire format is
+// identical on both the direct and the AST paths: an explicit (or derived)
+// direct parser; a text codec; structural derivation; or the AST bridge over
+// any remaining `Decodable in Xml` (opaque leaf types). A case class with
+// both a `Reflection` and a custom hand-written `Decodable in Xml` derives
+// here, diverging from its custom decoder — the documented remedy is one
+// line: `given MyType is Xml.Parsable = Xml.Parsable.fromDecodable(...)`.
+trait Xml3:
+  inline given field: [value] => value is Xml.Field = summonFrom:
+    case parsable: (`value` is Xml.Parsable) =>
+      Xml.Field(parsable)
+
+    case given (`value` is distillate.Decodable in Text) =>
+      // Laundered pure per the codec-thunk seal pattern (see
+      // rep/DECISIONS.md): the parser closes over the resolution-scoped
+      // text codec.
+      caps.unsafe.unsafeAssumePure:
+        Xml.Field(Xml.textCodecParsable[value])
+
+    case given Reflection[`value`] =>
+      Xml.ParsableDerivation.derived
+
+    case given (`value` is Decodable in Xml) =>
+      caps.unsafe.unsafeAssumePure:
+        Xml.Field(Xml.Parsable.fromDecodable(infer[`value` is Decodable in Xml]))

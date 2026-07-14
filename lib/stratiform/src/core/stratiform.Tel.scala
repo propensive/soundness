@@ -32,6 +32,7 @@
                                                                                                   */
 package stratiform
 
+import scala.collection.Factory
 import scala.language.dynamics
 
 import anticipation.*
@@ -43,6 +44,7 @@ import rudiments.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
+import wisteria.*
 import zephyrine.*
 
 // Presentation model from §17 of the TEL specification. The Scala AST is
@@ -131,6 +133,410 @@ object Tel extends Tel2:
     // decoder gathers all same-keyword sibling compounds for such a field and hands
     // them here as a Document; other fields read a single matching compound.
     def repeatable: Boolean = false
+
+  // The shared substance of `Tel.Parsable` and `Tel.Field`, mirroring
+  // jacinta's `Json.Parsing`. The two subtraits add nothing: they exist so
+  // that neither is a subtype of the other — a subtype relation in either
+  // direction would make one family's givens candidates for the other's
+  // queries (nominal instances clashing ambiguously with the field fallback,
+  // and Wisteria's codec probe finding a generic type's own `Parsable` given
+  // while deriving it).
+  //
+  // Unlike JSON — whose reader is at a self-describing token whenever a value
+  // begins — a TEL value is an *entry*: a keyword line plus its subtree, whose
+  // extent depends on the entry's indent. The operative method is therefore
+  // `parse(reader, indent)`, invoked with the reader positioned right after
+  // the entry's keyword; the instance consumes the entire entry (line
+  // remainder plus subtree). The inherited no-indent `parse(reader)` is the
+  // whole-document form used at the top level, where there is no entry line:
+  // its default mirrors the AST's decode-of-a-document for a scalar (no
+  // atoms, hence absent).
+  trait Parsing extends distillate.Parsable:
+    type Transport = Tel
+    type Reader = TelReader
+    def shape(): Morphology
+
+    // True for collection parsers: a repeated field, gathered occurrence by
+    // occurrence by the derived product parser — the direct counterpart of
+    // `Tel.Decodable.repeatable`.
+    def repeatable: Boolean = false
+
+    def parse(reader: TelReader^, indent: Int): Self
+
+    def parse(reader: TelReader^): Self = absent()(using reader.errorTactic)
+
+    // What a field of this type yields when no child compound carries its
+    // keyword: an error unless overridden (the bridge delegates to its
+    // decoder over an empty `Tel`, exactly like the AST derivation's
+    // missing-field fallback).
+    def absent()(using Tactic[TelError]): Self = abort(TelError(TelError.Reason.Absent))
+
+  object Parsable:
+    def apply[value](shape0: => Morphology)(parser: (reader: TelReader^) => value)
+    :   ((value is Tel.Parsable)^{parser}) =
+
+      // Shape-thunk laundering as in `Tel.Encodable.apply`.
+      val shape1: () -> Morphology = caps.unsafe.unsafeAssumePure:
+        () => shape0
+
+      new Tel.Parsable:
+        type Self = value
+        def parse(reader: TelReader^, indent: Int): value = parser(reader)
+        def shape(): Morphology = shape1()
+
+    // The universal bridge from the AST world: materialize one entry (or, at
+    // the top level, the whole document) as a `Tel` and decode it. Field
+    // types with only a `Tel.Decodable` keep working through this, and it is
+    // the user's one-line escape hatch when a custom decoder must beat a
+    // derived direct parser. A repeatable decoder (a custom collection)
+    // keeps its gathering semantics: each occurrence is materialized
+    // separately and the occurrences are decoded together as a synthetic
+    // document, exactly as the AST derivation hands them over.
+    def fromDecodable[value](decodable: (value is Tel.Decodable)^)
+    :   ((value is Tel.Parsable)^{decodable}) =
+
+      if decodable.repeatable then
+        new Tel.Parsable with Gathering:
+          type Self = value
+          def shape(): Morphology = decodable.shape()
+          override def repeatable: Boolean = true
+
+          def parse(reader: TelReader^, indent: Int): value =
+            decodable.decoded(reader.value(indent))
+
+          override def parse(reader: TelReader^): value = decodable.decoded(reader.document())
+          override def absent()(using Tactic[TelError]): value = decodable.decoded(Tel.empty)
+          def parseElement(reader: TelReader^, indent: Int): Any = reader.value(indent)
+
+          def gathered(elements: List[Any]): value =
+            val compounds = IArray.from:
+              elements.map: element =>
+                element.asInstanceOf[Tel].subtree.absolve match
+                  case compound: Tel.Compound => compound
+
+            decodable.decoded(Tel.make(gatheredDocument(compounds)))
+      else
+        new Tel.Parsable:
+          type Self = value
+          def shape(): Morphology = decodable.shape()
+
+          def parse(reader: TelReader^, indent: Int): value =
+            decodable.decoded(reader.value(indent))
+
+          override def parse(reader: TelReader^): value = decodable.decoded(reader.document())
+          override def absent()(using Tactic[TelError]): value = decodable.decoded(Tel.empty)
+
+    // The one-line opt-in to direct parsing for a structural type:
+    // `given MyType is Tel.Parsable = Tel.Parsable.derived` — a
+    // Wisteria-derived direct parser, wrapped as a *nominal* `Parsable` so
+    // it participates in the read trigger. Deliberately a method, not a
+    // blanket given: a type parses directly only once it has opted in.
+    inline def derived[value](using Reflection[value]): value is Tel.Parsable =
+      fromField(ParsableDerivation.derivedOne[value])
+
+    def fromField[value](field0: (value is Tel.Parsing)^)
+    :   ((value is Tel.Parsable)^{field0}) =
+
+      new Tel.Parsable:
+        type Self = value
+        def parse(reader: TelReader^, indent: Int): value = field0.parse(reader, indent)
+        override def parse(reader: TelReader^): value = field0.parse(reader)
+        def shape(): Morphology = field0.shape()
+        override def repeatable: Boolean = field0.repeatable
+        override def absent()(using Tactic[TelError]): value = field0.absent()
+
+    // The element-wise hooks of a repeatable (collection) parser. The
+    // derived product parser gathers each same-keyword occurrence through
+    // `parseElement` and builds the collection once the entry region ends —
+    // the direct counterpart of the AST derivation collecting all matching
+    // compounds into a synthetic document for the collection decoder.
+    // The self type is capturing so implementing instances may capture their
+    // element parser or decoder, like any other `Parsing` instance.
+    private[stratiform] trait Gathering:
+      self: Tel.Parsing^ =>
+      def parseElement(reader: TelReader^, indent: Int): Any
+      def gathered(elements: List[Any]): Self
+
+    // The synthetic document the AST derivation hands to a repeatable
+    // decoder: one block containing the gathered compounds.
+    private[stratiform] def gatheredDocument(compounds: IArray[Tel.Compound]): Tel.Document =
+      Tel.Document
+        ( Unset, Unset, Tel.LineEndings.Lf,
+          IArray(Tel.Block(IArray.empty[Tel.Comment], Unset, compounds, 0)) )
+
+    // Shared collection implementation, used by the nominal `Tel.Parsable`
+    // given (elements must themselves be nominally `Parsable`, so the read
+    // trigger stays opt-in) and by the `Tel.Field` given in `Tel2` (elements
+    // resolve through the fallback chain). Sealed per the codec-thunk
+    // pattern: a by-name parameter cannot be named in a capture set.
+    def iterable[collection <: Iterable, element]
+      ( field: => (element is Tel.Parsing)^ )
+      ( using factory: Factory[element, collection[element]], tactic: Tactic[TelError] )
+    :   collection[element] is Tel.Parsable =
+
+      caps.unsafe.unsafeAssumePure:
+        new Tel.Parsable with Gathering:
+          type Self = collection[element]
+          def shape(): Morphology = Morphology.Arr(field.shape())
+          override def repeatable: Boolean = true
+
+          def parseElement(reader: TelReader^, indent: Int): Any = field.parse(reader, indent)
+
+          def gathered(elements: List[Any]): collection[element] =
+            val builder = factory.newBuilder
+            elements.each: item => builder += item.asInstanceOf[element]
+            builder.result()
+
+          // A single entry decoded as a collection: one element — the AST
+          // collection decoder's behavior when handed a lone compound.
+          def parse(reader: TelReader^, indent: Int): collection[element] =
+            val builder = factory.newBuilder
+            builder += field.parse(reader, indent)
+            builder.result()
+
+          // A whole document decoded as a collection: every top-level entry
+          // is an element, whatever its keyword — as on the AST path.
+          override def parse(reader: TelReader^): collection[element] =
+            val builder = factory.newBuilder
+            var keyword = reader.keyword(0)
+
+            while keyword.present do
+              builder += field.parse(reader, 0)
+              keyword = reader.keyword(0)
+
+            builder.result()
+
+    // Shared `Optional` implementation, mirroring the AST `optionalDecodable`
+    // exactly: an entry with neither an inline atom nor a child compound
+    // reads as `Unset` (and so does a missing keyword); anything else flows
+    // to the inner parser. Stays in the `Field` world (the inner instance is
+    // by-name, so recursive types tie their knot here, like collections) and
+    // decides via a non-consuming reader probe. Sealed per the codec-thunk
+    // pattern: a by-name parameter cannot be named in a capture set.
+    def optionality[inner <: value, value >: Unset.type]
+      ( field: => (inner is Tel.Parsing)^ )
+      ( using tactic: Tactic[TelError] )
+    :   value is Tel.Parsable =
+
+      caps.unsafe.unsafeAssumePure:
+        new Tel.Parsable:
+          type Self = value
+          def shape(): Morphology = Morphology.Opt(field.shape())
+
+          def parse(reader: TelReader^, indent: Int): value =
+            if reader.hasSubstance then field.parse(reader, indent)
+            else
+              reader.skipEntry(indent)
+              Unset
+
+          override def absent()(using Tactic[TelError]): value = Unset
+
+    // Sentinel for the derived product parser's value buffer: a slot still
+    // `AbsentSlot` after the entry loop had no matching keyword
+    // (`null`-checking would be unsound — `Optional` fields legitimately
+    // store a null-backed `Unset`).
+    private[stratiform] val AbsentSlot: AnyRef = new Object
+
+    // Positional construction through the threaded `Mirror`, from the value
+    // buffer the parse loop filled. `fromProduct` is the only construction
+    // form that works for method-local and object-nested case classes.
+    def assemble[derivation <: Product]
+      ( reflection: ProductReflection[derivation], values: IArray[Any] )
+    :   derivation =
+
+      reflection.fromProduct(ArrayProduct(values))
+
+    private final class ArrayProduct(values: IArray[Any]) extends Product:
+      def canEqual(that: Any): Boolean = true
+      def productArity: Int = values.length
+      def productElement(index: Int): Any = values(index)
+
+    // The prior focus's pointer, extended by one step — evaluated only at
+    // error-registration time, exactly as the AST derivation builds its
+    // per-field focus.
+    private def descend(base0: Optional[Tel.Focus], keyword: Text): Tel.Focus =
+      Tel.Focus(base0.let(_.pointer).or(TelPath.Root).prepend(keyword))
+
+    // Field instances travel wrapped in the `Field.Adapter`; the engine
+    // looks through it for repeatability and element hooks.
+    private def unwrap(parsing: Tel.Parsing): Tel.Parsing = parsing match
+      case adapter: Tel.Field.Adapter[?] => adapter.source
+      case other                         => other
+
+    // The derived product parser's engine. `fields0` is an explicit thunk
+    // (nameable in the capture set, unlike a by-name) evaluated lazily, so
+    // recursive derivation can defer sibling resolution; it yields, per
+    // field, the wire keyword, the field's parser and its declared default
+    // (or `Unset`). The entry loop lives here, in an ordinary method body —
+    // no Wisteria per-field lambda ever closes over the reader.
+    def product[derivation]
+      ( fields0: () => IArray[(String, Tel.Parsing, Any)],
+        make:    IArray[Any] -> derivation )
+      ( using foci: Foci[Tel.Focus], tactic: Tactic[TelError] )
+    :   ((derivation is Tel.Field)^{fields0, tactic}) =
+
+      new Tel.Field:
+        type Self = derivation
+
+        private lazy val fields: IArray[(String, Tel.Parsing, Any)] = fields0()
+        private lazy val keys: IArray[String] = fields.map(_(0))
+
+        def shape(): Morphology =
+          val entries: List[(Text, Morphology)] =
+            fields.map { (key, parser, _) => (Text(key), parser.shape()) }.to(List)
+
+          Morphology.Obj
+            ( entries, entries.collect { case (key, shape) if !shape.optional => key } )
+
+        private def indexOf(keyword: Text): Int =
+          val named = keys
+          val count = named.length
+          val name: String = keyword.s
+          var index = 0
+
+          while index < count do
+            if named(index) == name then return index
+            index += 1
+
+          -1
+
+        // The value of a record field is its children, one level deeper than
+        // its own entry line.
+        def parse(reader: TelReader^, indent: Int): derivation =
+          reader.finishLine()
+          parseFields(reader, indent + 1)
+
+        // A whole document's fields sit at indent zero.
+        override def parse(reader: TelReader^): derivation = parseFields(reader, 0)
+
+        private def parseFields(reader: TelReader^, indent: Int): derivation =
+          val entries = fields
+          val count = entries.length
+          val values = new Array[Any](count)
+          var index = 0
+
+          while index < count do
+            values(index) = AbsentSlot
+            index += 1
+
+          // With the inert default `Foci`, per-field `focus` wrapping would
+          // observably do nothing, so the hot loop skips it.
+          val focused = foci.active
+          var next: Optional[Text] = reader.keyword(indent)
+
+          while next.present do
+            val found = indexOf(next.vouch)
+
+            if found < 0 then reader.skipEntry(indent)
+            else
+              val parsing = unwrap(entries(found)(1))
+
+              parsing match
+                case gathering: Gathering if parsing.repeatable =>
+                  // Every occurrence of a repeatable field accumulates, in
+                  // document order — the AST's gather-all semantics.
+                  val buffer = values(found) match
+                    case buffer: scala.collection.mutable.ListBuffer[?] =>
+                      buffer.asInstanceOf[scala.collection.mutable.ListBuffer[Any]]
+
+                    case _ =>
+                      val buffer = scala.collection.mutable.ListBuffer.empty[Any]
+                      values(found) = buffer
+                      buffer
+
+                  buffer +=
+                    ( if focused
+                      then focus(descend(prior, Text(keys(found)))):
+                        gathering.parseElement(reader, indent)
+                      else gathering.parseElement(reader, indent) )
+
+                case _ =>
+                  // A non-repeatable field keeps its first occurrence — the
+                  // AST's `field()` semantics — and skips the rest.
+                  if !(values(found).asInstanceOf[AnyRef] eq AbsentSlot)
+                  then reader.skipEntry(indent)
+                  else values(found) =
+                    if focused
+                    then focus(descend(prior, Text(keys(found)))):
+                      entries(found)(1).parse(reader, indent)
+                    else entries(found)(1).parse(reader, indent)
+
+            next = reader.keyword(indent)
+
+          index = 0
+
+          while index < count do
+            val parsing = unwrap(entries(index)(1))
+
+            if parsing.repeatable then
+              val elements: List[Any] = values(index) match
+                case buffer: scala.collection.mutable.ListBuffer[?] => buffer.toList
+                case _                                              => Nil
+
+              parsing match
+                case gathering: Gathering =>
+                  // A repeatable field never consults the declared default:
+                  // zero occurrences build the empty collection, as the AST
+                  // derivation decodes an empty synthetic document.
+                  values(index) =
+                    if focused
+                    then focus(descend(prior, Text(keys(index))))(gathering.gathered(elements))
+                    else gathering.gathered(elements)
+
+                case _ => ()
+            else if values(index).asInstanceOf[AnyRef] eq AbsentSlot then
+              val fallback = entries(index)(2).asInstanceOf[Optional[Any]]
+
+              values(index) =
+                if fallback.present then fallback
+                else if focused
+                then focus(descend(prior, Text(keys(index))))(entries(index)(1).absent())
+                else entries(index)(1).absent()
+
+            index += 1
+
+          make(values.asInstanceOf[IArray[Any]])
+
+  // The direct-parsing counterpart of `Tel.Decodable`: consumes compound
+  // entries from a `TelReader` instead of walking a materialized `Tel`, so
+  // `read[value in Tel]` can instantiate values without building the
+  // document's AST. `Parsable` is the opt-in surface: explicit instances,
+  // `Tel.Parsable.derived`, and the read trigger. It has no blanket fallback
+  // given, so no read changes behavior until a type opts in; the fallback
+  // belongs to its operational sibling, `Tel.Field`.
+  trait Parsable extends Parsing
+
+  object Field:
+    // Adapts an opted-in nominal instance (or any other `Parsing`) for use
+    // as a field parser. A named class (with the wrapped instance held as a
+    // neutral carrier and reasserted at the rim, preserving the declared
+    // capture) so the derived product parser can look through it when it
+    // needs the underlying instance's repeatability and element hooks.
+    private[stratiform] final class Adapter[value](source0: AnyRef) extends Tel.Field:
+      type Self = value
+
+      private[stratiform] def source: value is Tel.Parsing =
+        source0.asInstanceOf[value is Tel.Parsing]
+
+      def parse(reader: TelReader^, indent: Int): value = source.parse(reader, indent)
+      override def parse(reader: TelReader^): value = source.parse(reader)
+      def shape(): Morphology = source.shape()
+      override def repeatable: Boolean = source.repeatable
+      override def absent()(using Tactic[TelError]): value = source.absent()
+
+    def apply[value](parsing: (value is Tel.Parsing)^)
+    :   ((value is Tel.Field)^{parsing}) =
+
+      Adapter[value](parsing.asInstanceOf[AnyRef])
+      . asInstanceOf[(value is Tel.Field)^{parsing}]
+
+  // The operational face of direct parsing: how a field's value is read from
+  // a `TelReader`, whether directly or through the AST bridge. This is the
+  // typeclass the product derivation resolves per field: `Tel2` carries its
+  // element-wise instances and `Tel3` the universal fallback — declared as
+  // members of this companion (like `Tel2.decodable`) so Wisteria's wrapper
+  // detection excludes the fallback during codec probing.
+  trait Field extends Parsing
 
   // Type assignment algorithm per §20.2 of the TEL specification.
   object Type:
@@ -232,7 +638,7 @@ object Tel extends Tel2:
 
       while idx < parent.members.length do
         parent.members(idx) match
-          case f: Field =>
+          case f: Tels.Field =>
             builder(f.keyword) = KeywordEntry(flatIdx, f.fieldType, f)
             flatIdx += 1
 
@@ -260,7 +666,7 @@ object Tel extends Tel2:
 
     private def atomAssignable(member: Member, schema: Tels): Boolean raises TelError =
       member match
-        case f: Field =>
+        case f: Tels.Field =>
           resolveType(f.fieldType, schema) match
             case _: Scalar => true
             case Flag      => true
@@ -292,8 +698,8 @@ object Tel extends Tel2:
       var i = 0
 
       def flatWidthOf(member: Member): Int = member match
-        case _: Field    => 1
-        case _: Exclude  => 0
+        case _: Tels.Field => 1
+        case _: Exclude    => 0
 
         case s: SelectRef =>
           schema.selects.find(_.name == s.reference) match
@@ -314,7 +720,7 @@ object Tel extends Tel2:
             pos += 1
           else
             parent.members(pos) match
-              case f: Field =>
+              case f: Tels.Field =>
                 resolveType(f.fieldType, schema) match
                   case s: Scalar =>
                     results += Tel.Element.Value(flatPos, s, atomText)
@@ -399,8 +805,8 @@ object Tel extends Tel2:
       results ++= childElements
 
       def flatWidth(member: Member): Int = member match
-        case _: Field   => 1
-        case _: Exclude => 0
+        case _: Tels.Field => 1
+        case _: Exclude    => 0
 
         case s: SelectRef =>
           schema.selects.find(_.name == s.reference) match
@@ -414,7 +820,7 @@ object Tel extends Tel2:
         val width = flatWidth(parent.members(memberIdx))
 
         parent.members(memberIdx) match
-          case f: Field if f.required != Polarity.Loose =>
+          case f: Tels.Field if f.required != Polarity.Loose =>
             val filled = results.exists:
               case Tel.Element.Node(idx, _, _)  => idx == Optional(flatStart)
               case Tel.Element.Value(idx, _, _) => idx == flatStart
@@ -889,7 +1295,7 @@ object Tel extends Tel2:
       else walkIndex(children(k), data, offset + data(offset + 5 + k), segments, i + 1, keyMode)
 
   // Concatenate the chunks of a `LazyList[Data]` source into a single byte array.
-  private def concatenate(source: LazyList[Data]): Data =
+  private[stratiform] def concatenate(source: LazyList[Data]): Data =
     import denominative.nil
     var acc    = IArray.empty[Byte]
     var stream = source
@@ -908,14 +1314,107 @@ object Tel extends Tel2:
   given aggregable: (tactic: Tactic[TelError]) => ((Tel is Aggregable by Data)^{tactic}) =
     source => parse(concatenate(source))
 
-  // `source.read[Foo in Tel]` shorthand for
-  // `source.read[Tel].as[Foo]`. Mirrors `jacinta`'s `aggregableDirect`
-  // for `value in Json`. The `Form` type-tag is added by an
-  // `asInstanceOf` cast — `value in Tel` is just
-  // `value { type Form = Tel }` so the cast is a no-op at runtime.
-  given aggregableIn: [value: distillate.Decodable in Tel] => (tactic: Tactic[TelError])
-  =>  (((value in Tel) is Aggregable by Data)^{tactic}) =
-    source => parse(concatenate(source)).as[value].asInstanceOf[value in Tel]
+  // Direct parsing: when the value knows how to consume compound entries
+  // itself, the document's AST is never materialized. Declared here (not in
+  // `Tel2`, where the `Decodable`-based `aggregableIn` lives) so it wins
+  // whenever a `Tel.Parsable` exists, and is otherwise inapplicable —
+  // existing code resolves exactly as before.
+  given aggregableParsed: [value]
+  =>  ( parsable: (value is Tel.Parsable)^ )
+  =>  ( tactic: Tactic[TelError] )
+  =>  ( ((value in Tel) is Aggregable by Data)^{parsable, tactic} ) =
+    source => parseDirect(concatenate(source), parsable).asInstanceOf[value in Tel]
+
+  // Direct-parsing counterpart of `parse`: drives a `Tel.Parsable` instance
+  // over the input through a `TelReader`, so no document AST is built for the
+  // values the instance reads directly. Like `aggregableIn`, the direct read
+  // path does not thread position tracking (there is no `PositionIndex` —
+  // the result is the caller's value, not a `Tel`).
+  private def parseDirect[value](input: Data, parsable: (value is Tel.Parsable)^)
+    ( using tactic: Tactic[TelError] )
+  :   value =
+
+    import zephyrine.Lineation.untrackedData
+    val parser = Tel.Parser.borrow()
+    parser.reset(Cursor[Data](input), Unset)
+    parser.directProlog()
+    parsable.parse(TelReader(parser, tactic))
+
+  // Direct-parsing primitives, mirroring the `Tel2` primitive decodables
+  // exactly: a missing atom is `Absent` and an unparseable one is
+  // `NotScalar`, each raised (not aborted) with the same sentinel
+  // continuation as `primitiveFault`, so per-field accrual under a
+  // `validate[Tel.Focus]` boundary behaves identically on both paths.
+  // Genuinely pure — parse-time raising happens through the tactic the
+  // `TelReader` carries.
+  private def primitiveParsable[value](shape0: Morphology, expected: Text, sentinel: value)
+    ( convert: Text -> Optional[value] )
+  :   value is Tel.Parsable =
+
+    new Tel.Parsable:
+      type Self = value
+      def shape(): Morphology = shape0
+
+      def parse(reader: TelReader^, indent: Int): value =
+        reader.atom().lay(reader.fault(TelError.Reason.Absent) yet sentinel): atom =>
+          convert(atom).or:
+            reader.fault(TelError.Reason.NotScalar(atom, expected)) yet sentinel
+
+      override def absent()(using Tactic[TelError]): value =
+        raise(TelError(TelError.Reason.Absent)) yet sentinel
+
+  given textParsable: Text is Tel.Parsable =
+    primitiveParsable(Morphology.Str, t"Text", t""): atom => atom
+
+  given stringParsable: String is Tel.Parsable =
+    primitiveParsable(Morphology.Str, t"String", ""): atom => atom.s
+
+  given intParsable: Int is Tel.Parsable =
+    primitiveParsable(Morphology.Whole, t"Int", 0): atom =>
+      try atom.s.toInt catch case _: NumberFormatException => Unset
+
+  given longParsable: Long is Tel.Parsable =
+    primitiveParsable(Morphology.Whole, t"Long", 0L): atom =>
+      try atom.s.toLong catch case _: NumberFormatException => Unset
+
+  given doubleParsable: Double is Tel.Parsable =
+    primitiveParsable(Morphology.Real, t"Double", 0.0): atom =>
+      try atom.s.toDouble catch case _: NumberFormatException => Unset
+
+  given booleanParsable: Boolean is Tel.Parsable =
+    primitiveParsable(Morphology.Bool, t"Boolean", false): atom =>
+      atom.s match
+        case "true"  => true
+        case "false" => false
+        case _       => Unset
+
+  // `Tel` reads itself directly through the AST bridge — the direct
+  // counterpart of `telDecodable`.
+  given telParsable: Tel is Tel.Parsable =
+    Tel.Parsable.fromDecodable(Tel.telDecodable)
+
+  // Nominal counterpart of `Tel2.fieldCollection`: a collection reads
+  // directly only when its element type has opted in.
+  given iterableParsable: [collection <: Iterable, element]
+  =>  ( factory: Factory[element, collection[element]], tactic: Tactic[TelError] )
+  =>  ( parsable: => (element is Tel.Parsable)^ )
+  =>  collection[element] is Tel.Parsable =
+    Tel.Parsable.iterable[collection, element](parsable)
+
+  // The direct read of a field type carried by a plain text codec — the
+  // direct counterpart of `Tel2.decodable`'s `Decodable in Text` branch,
+  // including its absence behavior (an empty `Tel`'s primary atom is the
+  // empty text, which the codec receives verbatim).
+  private[stratiform] def textCodecParsable[value]
+    ( using codec: value is distillate.Decodable in Text )
+  :   (value is Tel.Parsable) =
+
+    new Tel.Parsable:
+      type Self = value
+      def shape(): Morphology = Morphology.Str
+      def parse(reader: TelReader^, indent: Int): value = codec.decoded(reader.atom().or(t""))
+      override def parse(reader: TelReader^): value = codec.decoded(t"")
+      override def absent()(using Tactic[TelError]): value = codec.decoded(t"")
 
   // `source.read[List[Tel]]` / `read[LazyList[Tel]]` for a multi-document source
   // (§6.1). `List[Tel]` parses every document eagerly; `LazyList[Tel]` parses
@@ -1196,7 +1695,7 @@ object Tel extends Tel2:
       new ThreadLocal[AnyRef]:
         override def initialValue(): AnyRef = (new Parser()).asInstanceOf[AnyRef]
 
-    private def borrow(): Parser^ = cached.get.nn.asInstanceOf[Parser^]
+    private[stratiform] def borrow(): Parser^ = cached.get.nn.asInstanceOf[Parser^]
 
     def parse(cursor: Cursor[Data, {}]^): Tel.Document raises TelError =
       val p = borrow()
@@ -1333,7 +1832,7 @@ object Tel extends Tel2:
 
   // Holds an exclusive cursor in a field, so the parser is itself a capability
   // (fresh per instance; one per thread via the pool).
-  private final class Parser() extends caps.ExclusiveCapability:
+  private[stratiform] final class Parser() extends caps.ExclusiveCapability:
     import java.lang as jl
     import java.nio.charset.StandardCharsets
     import scala.language.unsafeNulls
@@ -3246,7 +3745,16 @@ object Tel extends Tel2:
         recoverAt(Reason.PragmaNotFirst, lineNumber, 1)(())
 
       hasConsumedNonBlankLine = true
+      parseCompoundLineRest(lineNumber)
+      compoundLineKeyword = keyword
 
+    // The remainder of a compound line once the keyword has been consumed:
+    // inline atoms (pushed onto `scratchAtoms`), the optional remark
+    // (deposited in `compoundLineRemark`), the E108 trailing-space check and
+    // the line ending. Factored out of `parseCompoundLine` so the direct
+    // parsing rim, which reads the keyword itself (`directKeyword`), can
+    // consume the rest of the line through the same scan.
+    private def parseCompoundLineRest(lineNumber: Int): Unit raises TelError = inHold:
       var remark: Optional[Text] = Unset
       // Read atom bytes directly into the parser's atom-bytes arena. With
       // narrow holds, parseCompoundLine's hold has holdStart > 0, so refills
@@ -3357,7 +3865,6 @@ object Tel extends Tel2:
       then recoverAt(Reason.TrailingSpaces, lineNumber, head.leadingSpaces + 1)(())
 
       consumeLineEnding()
-      compoundLineKeyword = keyword
       compoundLineRemark  = remark
 
     // Read a keyword from the current position. The keyword runs until SP, LF,
@@ -3415,6 +3922,302 @@ object Tel extends Tel2:
 
         if result != null then Text(result)
         else Text(sliceText(startMark))
+
+    // ── Direct parsing rim ───────────────────────────────────────────────────
+    //
+    // The token-level surface behind `TelReader`, letting a `Tel.Parsable`
+    // instance consume one compound entry at a time without materializing the
+    // whole document's AST. The rim follows the AST parser's own recursive
+    // structure: `directKeyword` plays the role of `parseChildren`'s dispatch
+    // (blanks, comments, tabulation headers and separators are handled exactly
+    // as `parseBlock` would), and the per-entry consumers (`directAtomText`,
+    // `directValue`, `directSkipEntry`, `directFinishLine`) mirror the single-
+    // compound path of `parseBlock`. No §19.5 recovery happens here beyond what
+    // the reused helpers already do: an over-indented line fails fast with the
+    // same `Reason` the AST path would record.
+
+    // The entry most recently stepped to by `directKeyword`: its leading
+    // spaces, indent level, source line and keyword. Consulted by the
+    // per-entry consumers, which always run immediately after the
+    // `directKeyword` that parked on the entry.
+    private var directEntrySpaces:  Int = 0
+    private var directEntryIndent:  Int = 0
+    private var directEntryLine:    Int = 1
+    private var directEntryKeyword: Text = t""
+
+    // The tabulation header governing subsequent rows at the same indent, and
+    // the classification of the most recent group of consumed lines — the
+    // direct-path stand-in for `parseChildren`'s "last block", from which the
+    // over-indentation `Reason` is chosen exactly as the AST path chooses it.
+    private var directTabulation: Optional[Tel.Tabulation] = Unset
+    private final val DirectFresh = 0
+    private final val DirectComments = 1
+    private final val DirectTabulationHeader = 2
+    private final val DirectTabulationRows = 3
+    private final val DirectCompound = 4
+    private var directGroup: Int = 0
+
+    // Mirrors `parseChildren`'s reason selection for an over-indented line:
+    // the shape of the preceding block determines whether the line is a
+    // misplaced row, a child of a non-compound, or plain over-indentation.
+    private def directOverIndentReason: Reason = directGroup match
+      case DirectComments         => Reason.ChildOfNonCompound
+      case DirectTabulationHeader => Reason.RowWrongIndent
+      case DirectTabulationRows   => Reason.ChildOfNonCompound
+      case _                      => Reason.OverIndentation
+
+    // The prologue of `parseOneDocument` without its body: BOM, interpreter
+    // directive, pragma, and margin determination, leaving `head` parked on
+    // the first content line (or EOF). The direct driver runs this before
+    // handing the reader to a `Tel.Parsable`.
+    private[stratiform] def directProlog(): Unit raises TelError =
+      syncFrom()
+      checkBom()
+      val directive = parseInterpreterDirective()
+      val pragma = parsePragma()
+      fillHead()
+
+      if directive.absent && pragma.absent then determineMargin()
+      else
+        margin = 0
+        while head.blank && !head.eof do fillHead()
+
+      directTabulation = Unset
+      directGroup = DirectFresh
+
+    // Step to the next compound entry at exactly `indent`, transparently
+    // consuming blank lines, comment lines and tabulation headers on the way
+    // (with the same side effects and checks as `parseBlock`). Returns null
+    // when the entry region ends: EOF, a document separator, a shallower
+    // line, or — matching the AST path, which leaves such a tail unconsumed —
+    // blank lines followed by a deeper line. A deeper line reached without an
+    // intervening blank fails fast with the `Reason` the AST path would
+    // record. On a compound line, consumes the keyword (leaving the parser
+    // mid-line, right after it) and records the entry state for the
+    // per-entry consumers.
+    private[stratiform] def directKeyword(indent: Int): Text | Null raises TelError =
+      var result: Text | Null = null
+      var done = false
+
+      while !done do
+        if head.eof || head.separator then done = true
+        else if head.blank then
+          // A blank line ends the current block: any active tabulation stops
+          // applying to what follows.
+          directTabulation = Unset
+          while !head.eof && head.blank do fillHead()
+
+          // Blanks followed by a deeper line: the AST path leaves the blanks
+          // unclaimed and every `parseChildren` level exits, silently ending
+          // the document — mirrored by ending the entry region at every level.
+          if !head.eof && !head.separator && head.indentLevels > indent then done = true
+        else if head.indentLevels < indent then
+          done = true
+        else if head.indentLevels > indent then
+          errorAt(directOverIndentReason, head.startLine, 1)
+        else if isCommentBody() then
+          // §9 E109 check, exactly as `parseBlock` performs it before
+          // consuming a comment line.
+          if !prevLineWasBoundary && prevContentLeadingSpaces >= 0 &&
+            prevContentLeadingSpaces >= margin + indent*2
+          then recoverAt(Reason.CommentNotPreceded, head.startLine, 1)(())
+
+          directTabulation = Unset
+          directGroup = DirectComments
+          parseCommentLine()
+          prevLineWasBoundary = true
+          hasConsumedNonBlankLine = true
+          fillHead()
+        else if isTabulationBody() then
+          val leadingSpaces = head.leadingSpaces
+          directTabulation = Optional(parseTabulationLine())
+          directGroup = DirectTabulationHeader
+          prevContentLeadingSpaces = leadingSpaces
+          prevLineWasBoundary = false
+          hasConsumedNonBlankLine = true
+          fillHead()
+        else
+          // A compound line. §16.2 row validation runs before any of the
+          // row's bytes are consumed, exactly as in `parseBlock`.
+          directTabulation.let: tabulation =>
+            validateTabulatedRowInline(head.leadingSpaces, tabulation, head.startLine)
+
+          directEntrySpaces = head.leadingSpaces
+          directEntryIndent = head.indentLevels
+          directEntryLine = head.startLine
+
+          val keyword = inHold:
+            val mayBeMisplacedPragma = head.leadingSpaces == 0 && hasConsumedNonBlankLine
+            val keyword = readKeyword()
+
+            // E102 / §19.5 RestartFromPragma, as in `parseCompoundLine`.
+            if mayBeMisplacedPragma && keyword == t"tel" then
+              recoverAt(Reason.PragmaNotFirst, directEntryLine, 1)(())
+
+            hasConsumedNonBlankLine = true
+            keyword
+
+          directEntryKeyword = keyword
+
+          directGroup =
+            if directGroup == DirectTabulationHeader || directGroup == DirectTabulationRows
+            then DirectTabulationRows
+            else DirectCompound
+
+          result = keyword
+          done = true
+
+      result
+
+    // Consume the current entry in full — line remainder, source/literal
+    // continuation, and children — materializing it as the single compound
+    // the AST path would have built. The direct seam for every consumer that
+    // needs AST-identical semantics.
+    private def directCompound(indent: Int): Tel.Compound raises TelError =
+      val spaces = directEntrySpaces
+      val keyword = directEntryKeyword
+      val tabulated = directTabulation.present
+      val atomsStart = atomScratchIx
+      parseCompoundLineRest(directEntryLine)
+      val remark = compoundLineRemark
+      prevContentLeadingSpaces = spaces
+      prevLineWasBoundary = false
+      fillHead()
+
+      // Tabulated rows never carry a source/literal atom or children,
+      // exactly as in `parseBlock` (both are gated on `tabulation.absent`).
+      val extraAtom: Optional[Tel.Atom] =
+        if tabulated then Unset else parseSourceOrLiteralAtomIfPresent(spaces)
+
+      if extraAtom.present then pushAtom(extraAtom.vouch)
+
+      val children: IArray[Tel.Block] =
+        if !tabulated && extraAtom.absent then parseChildren(indent)
+        else IArray.empty[Tel.Block]
+
+      // When children were not parsed (extra atom or tabulated row), a
+      // following deeper line is over-indented — the enclosing AST loop
+      // would fail on it, so fail here with the same classification.
+      if (tabulated || extraAtom.present) && !head.eof && !head.separator && !head.blank &&
+        head.indentLevels > indent
+      then errorAt(directOverIndentReason, head.startLine, 1)
+
+      val atoms = takeAtoms(atomScratchIx - atomsStart)
+      Tel.Compound(keyword, atoms, remark, children)
+
+    // The entry's primary atom, consuming the whole entry: the first inline
+    // atom's text, or Unset when the line carries none — mirroring
+    // `Tel#primaryAtom`, where a source/literal atom never supplies the
+    // primary text. Backs the primitive parsers.
+    private[stratiform] def directAtomText(): Optional[Text] raises TelError =
+      val compound = directCompound(directEntryIndent)
+      var index = 0
+
+      while index < compound.atoms.length do
+        compound.atoms(index) match
+          case atom: Tel.Atom.Inline => return Optional(atom.text)
+          case _                     => index += 1
+
+      Unset
+
+    // Consume the rest of the entry's own line (atoms, remark) and any
+    // source/literal continuation, but not its child lines — the step before
+    // a nested record parses those children one level deeper.
+    private[stratiform] def directFinishLine(): Unit raises TelError =
+      val spaces = directEntrySpaces
+      val indent = directEntryIndent
+      val tabulated = directTabulation.present
+      val atomsStart = atomScratchIx
+      parseCompoundLineRest(directEntryLine)
+      atomScratchIx = atomsStart
+      prevContentLeadingSpaces = spaces
+      prevLineWasBoundary = false
+      fillHead()
+
+      val extraAtom: Optional[Tel.Atom] =
+        if tabulated then Unset else parseSourceOrLiteralAtomIfPresent(spaces)
+
+      // After a source/literal atom (or on a tabulated row) the AST path
+      // parses no children, so a deeper line is over-indented there; fail
+      // the same way rather than letting the nested field loop consume it.
+      if (tabulated || extraAtom.present) && !head.eof && !head.separator && !head.blank &&
+        head.indentLevels > indent
+      then errorAt(directOverIndentReason, head.startLine, 1)
+
+    // Skip the whole entry — line remainder, continuation and subtree —
+    // discarding it. Used for unknown keywords and duplicate non-repeatable
+    // fields (where the AST's `field()` keeps the first match).
+    private[stratiform] def directSkipEntry(indent: Int): Unit raises TelError =
+      directCompound(indent)
+
+    // Materialize this one entry as a `Tel` — the AST bridge for field types
+    // that only carry a `Tel.Decodable`.
+    private[stratiform] def directValue(indent: Int): Tel raises TelError =
+      Tel.make(directCompound(indent))
+
+    // Materialize everything that remains as a document-rooted `Tel` — the
+    // AST bridge for a whole-input read of a `Decodable`-only type.
+    private[stratiform] def directDocument(): Tel raises TelError =
+      Tel.make(Tel.Document(Unset, Unset, lineEndings, parseChildren(-1)))
+
+    // Peek whether the current entry has substance — an inline atom on its
+    // line, or a child compound beneath it — the exact test the AST's
+    // `optionalDecodable` performs (a source/literal atom is not an inline
+    // atom and contributes none). The entry is parsed in full under a mark
+    // and then rewound, restoring every piece of parser state the parse
+    // touched, so the caller can still consume the entry either way.
+    private[stratiform] def directEntrySubstance(): Boolean raises TelError = inHold:
+      val mk = beginMark()
+
+      val savedHead = (head.leadingSpaces, head.indentLevels, head.blank, head.eof,
+                       head.startLine, head.separator)
+
+      val savedLineNo = lineNo
+      val savedBoundary = prevLineWasBoundary
+      val savedContentSpaces = prevContentLeadingSpaces
+      val savedNonBlank = hasConsumedNonBlankLine
+      val savedEndsLf = documentEndsWithLf
+      val savedArenaPos = arenaPos
+      val savedInFlight = inFlightStart
+      val savedAtomIx = atomScratchIx
+      val savedCommentIx = commentScratchIx
+      val savedCompoundIx = compoundScratchIx
+      val savedBlockIx = blockScratchIx
+
+      val compound = directCompound(directEntryIndent)
+
+      var hasInlineAtom = false
+      var index = 0
+
+      while index < compound.atoms.length do
+        if compound.atoms(index).isInstanceOf[Tel.Atom.Inline] then hasInlineAtom = true
+        index += 1
+
+      val substance = hasInlineAtom || compound.children.exists(_.compounds.length > 0)
+
+      syncTo()
+      cursor.cue(mk)
+      syncFrom()
+      head.leadingSpaces = savedHead._1
+      head.indentLevels  = savedHead._2
+      head.blank         = savedHead._3
+      head.eof           = savedHead._4
+      head.startLine     = savedHead._5
+      head.separator     = savedHead._6
+      lineNo = savedLineNo
+      prevLineWasBoundary = savedBoundary
+      prevContentLeadingSpaces = savedContentSpaces
+      hasConsumedNonBlankLine = savedNonBlank
+      documentEndsWithLf = savedEndsLf
+      // The probe's atoms are discarded; only the write positions rewind
+      // (atoms committed before the probe are self-contained slices).
+      arenaPos = savedArenaPos
+      inFlightStart = savedInFlight
+      atomScratchIx = savedAtomIx
+      commentScratchIx = savedCommentIx
+      compoundScratchIx = savedCompoundIx
+      blockScratchIx = savedBlockIx
+      substance
 
 
 class Tel private[stratiform]

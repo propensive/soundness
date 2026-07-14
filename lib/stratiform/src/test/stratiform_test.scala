@@ -73,6 +73,16 @@ object Tests extends Suite(m"Stratiform Tests"):
   case class TreeOpt(value: Text, child: Optional[TreeOpt]) derives CanEqual
   case class Boxed[value](value: value) derives CanEqual
 
+  // Fixtures for the direct-parsing suite: a declared default, camel→kebab
+  // keywords, a nested record, an `Optional` field, and a type with only a
+  // custom decoder (read through the AST bridge).
+  case class WithDefault(name: Text, age: Int = 18) derives CanEqual
+  case class KebabRecord(firstName: Text, shoeSize: Int) derives CanEqual
+  case class Company(title: Text, boss: Person) derives CanEqual
+  case class OptField(x: Int, note: Optional[Text]) derives CanEqual
+  case class Worker(name: Text, rank: Int) derives CanEqual
+  case class Crew(worker: Worker, size: Int) derives CanEqual
+
   enum Shape2 derives CanEqual:
     case Circle(radius: Int)
     case Rectangle(width: Int, height: Int)
@@ -302,6 +312,112 @@ object Tests extends Suite(m"Stratiform Tests"):
       test(m"`read[T in Tel]` resolves a value directly from text"):
         t"name Alice\nage 30\n".read[Tests.Person in Tel]
       . assert(_ == Tests.Person(t"Alice", 30))
+
+    suite(m"Direct parsing tests"):
+      given Tests.Person is Tel.Parsable = Tel.Parsable.derived
+      given Tests.Team is Tel.Parsable = Tel.Parsable.derived
+      given Tests.Renamed is Tel.Parsable = Tel.Parsable.derived
+      given Tests.WithDefault is Tel.Parsable = Tel.Parsable.derived
+      given Tests.KebabRecord is Tel.Parsable = Tel.Parsable.derived
+      given Tests.Company is Tel.Parsable = Tel.Parsable.derived
+      given Tests.OptField is Tel.Parsable = Tel.Parsable.derived
+      given Tests.Tree is Tel.Parsable = Tel.Parsable.derived
+      given Tests.TreeOpt is Tel.Parsable = Tel.Parsable.derived
+
+      // The acceptance criterion for derivation: the direct read must equal
+      // the AST-path read, for the same input.
+      inline def parity[value](tel: Text)(using value is Tel.Parsable, value is Tel.Decodable)
+      :   Boolean =
+        tel.read[value in Tel] == tel.read[Tel].as[value]
+
+      test(m"Derive a direct product parser"):
+        t"name Alice\nage 30\n".read[Tests.Person in Tel]
+      . assert(_ == Tests.Person(t"Alice", 30))
+
+      test(m"Derived parser accepts reordered fields, equally on both paths"):
+        parity[Tests.Person](t"age 30\nname Alice\n")
+      . assert(identity)
+
+      test(m"Field names map to kebab-case keywords"):
+        t"first-name Jo\nshoe-size 9\n".read[Tests.KebabRecord in Tel]
+      . assert(_ == Tests.KebabRecord(t"Jo", 9))
+
+      test(m"@name renames apply to direct parsing"):
+        parity[Tests.Renamed](t"full_name Jon\nyob 1983\n")
+      . assert(identity)
+
+      test(m"A missing field takes the declared default"):
+        t"name Kid\n".read[Tests.WithDefault in Tel]
+      . assert(_ == Tests.WithDefault(t"Kid", 18))
+
+      test(m"A missing required field raises TelError Absent"):
+        capture[TelError](t"age 30\n".read[Tests.Person in Tel]).reason
+      . assert(_ == TelError.Reason.Absent)
+
+      test(m"A repeatable field gathers scattered occurrences, as on the AST path"):
+        val doc = t"members\n  name Amy\n  age 1\nname Alpha\nmembers\n  name Bea\n  age 2\n"
+        (doc.read[Tests.Team in Tel], parity[Tests.Team](doc))
+      . assert(_ == (Tests.Team(t"Alpha", List(Tests.Person(t"Amy", 1), Tests.Person(t"Bea", 2))),
+          true))
+
+      test(m"A duplicate non-repeatable keyword keeps the first match, as on the AST path"):
+        val doc = t"name Amy\nname Bea\nage 50\n"
+        (doc.read[Tests.Person in Tel], parity[Tests.Person](doc))
+      . assert(_ == (Tests.Person(t"Amy", 50), true))
+
+      test(m"Nested records parse directly"):
+        val doc = t"title Acme\nboss\n  name Bob\n  age 40\n"
+        (doc.read[Tests.Company in Tel], parity[Tests.Company](doc))
+      . assert(_ == (Tests.Company(t"Acme", Tests.Person(t"Bob", 40)), true))
+
+      test(m"An absent Optional field reads as Unset, equally on both paths"):
+        val doc = t"x 1\n"
+        (doc.read[Tests.OptField in Tel], parity[Tests.OptField](doc))
+      . assert(_ == (Tests.OptField(1, Unset), true))
+
+      test(m"A present Optional field reads its value, equally on both paths"):
+        val doc = t"x 1\nnote hello\n"
+        (doc.read[Tests.OptField in Tel], parity[Tests.OptField](doc))
+      . assert(_ == (Tests.OptField(1, t"hello"), true))
+
+      test(m"Unknown keywords are skipped, including their child subtrees"):
+        t"name Amy\nextra one two\n  deep 1\n  deeper\n    x 9\nage 50\n"
+        . read[Tests.Person in Tel]
+      . assert(_ == Tests.Person(t"Amy", 50))
+
+      test(m"Comments and blank lines between fields are transparent"):
+        parity[Tests.Person](t"# leading\nname Amy\n\n# interlude\nage 50\n")
+      . assert(identity)
+
+      test(m"Recursive types parse directly"):
+        val doc = t"value a\nchildren\n  value b\nchildren\n  value c\n"
+        (doc.read[Tests.Tree in Tel], parity[Tests.Tree](doc))
+      . assert(_ == (Tests.Tree(t"a", List(Tests.Tree(t"b", Nil), Tests.Tree(t"c", Nil))), true))
+
+      test(m"Recursion through an Optional parses directly"):
+        val doc = t"value a\nchild\n  value b\n"
+        (doc.read[Tests.TreeOpt in Tel], parity[Tests.TreeOpt](doc))
+      . assert(_ == (Tests.TreeOpt(t"a", Tests.TreeOpt(t"b", Unset)), true))
+
+      test(m"A top-level collection reads every entry as an element"):
+        val doc = t"p\n  name Amy\n  age 1\nq\n  name Bea\n  age 2\n"
+        (doc.read[List[Tests.Person] in Tel], parity[List[Tests.Person]](doc))
+      . assert(_ == (List(Tests.Person(t"Amy", 1), Tests.Person(t"Bea", 2)), true))
+
+      test(m"A field type with only a custom Decodable reads through the bridge"):
+        // The documented escape hatch for a type whose hand-written decoder
+        // must win over structural derivation.
+        given Tests.Worker is Tel.Decodable =
+          Tel.Decodable(() => Morphology.Str) { tel => Tests.Worker(tel.primaryAtom, 0) }
+
+        given Tests.Worker is Tel.Parsable =
+          Tel.Parsable.fromDecodable(summon[Tests.Worker is Tel.Decodable])
+
+        given Tests.Crew is Tel.Parsable = Tel.Parsable.derived
+
+        val doc = t"worker Syd\nsize 3\n"
+        (doc.read[Tests.Crew in Tel], parity[Tests.Crew](doc))
+      . assert(_ == (Tests.Crew(Tests.Worker(t"Syd", 0), 3), true))
 
     suite(m"tel\"…\" interpolator"):
       test(m"simple literal"):

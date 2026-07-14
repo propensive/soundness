@@ -36,8 +36,8 @@ package soundness
 // reach xylophone's via `xylophone.Attributive` etc.
 export
   xylophone
-  . { Xml, XmlError, XmlSchema, DynamicXmlEnabler, dynamicXmlAccess, x, xp, XPath,
-      XPathError }
+  . { Xml, Xml2, Xml3, XmlError, XmlReader, XmlSchema, DynamicXmlEnabler, dynamicXmlAccess, x, xp,
+      XPath, XPathError }
 
 package formatting:
   export xylophone.formatting.{compactXmlFormatting, indentedXmlFormatting}

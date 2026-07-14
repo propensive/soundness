@@ -30,9 +30,29 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package xylophone
 
-export
-  stratiform
-  . { DynamicTelEnabler, dynamicTelAccess, Revision, Mutation, MutationError, Stratiform, Tel, Tel2,
-      Tel3, telConversion, TelError, TelPath, TelReader, Tels, Tels2, tel }
+import anticipation.*
+import contingency.*
+import distillate.*
+import prepositional.*
+import turbulence.*
+import zephyrine.*
+
+// The lower-priority layer of `object Xml` (which extends it), holding the
+// AST-materializing read path so that `object Xml`'s direct-parsing
+// `aggregableParsed` — a direct member, hence more specific — wins whenever
+// the value has an `Xml.Parsable`; when it does not (all pre-`Parsable`
+// code), this resolves exactly as before.
+trait Xml2 extends Xml3:
+  // `source.read[Foo in Xml]` shorthand for `source.read[Xml].as[Foo]`.
+  // Mirrors `jacinta`'s `aggregableDirect` for `value in Json`. The `Form`
+  // type-tag is added by an `asInstanceOf` cast — `value in Xml` is just
+  // `value { type Form = Xml }` so the cast is a no-op at runtime.
+  given aggregableIn: [value: Decodable in Xml] => (schema: XmlSchema)
+  =>  ( tactic: Tactic[ParseError], xmlTactic: Tactic[XmlError] )
+  =>  ( ((value in Xml) is Aggregable by Text)^{tactic, xmlTactic} ) =
+
+    input =>
+      Xml.XmlParser.fromIterator(input.iterator).parseXml(headers0 = false).as[value]
+      . asInstanceOf[value in Xml]
