@@ -37,6 +37,8 @@ import contextual.*
 import gossamer.*
 import prepositional.*
 
+import Mathml.*
+
 // The MathML namespace URI, written as the `xmlns` attribute on the root
 // `<math>` element.
 val mathmlNamespace: Text = t"http://www.w3.org/1998/Math/MathML"

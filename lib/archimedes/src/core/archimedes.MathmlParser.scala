@@ -39,6 +39,8 @@ import rudiments.*
 import vacuous.*
 import xylophone.*
 
+import Mathml.*
+
 // Decodes a xylophone `Xml` tree into the Archimedes model by dispatching on
 // each element's label. Every element's attributes are preserved verbatim in
 // the node's `attributes` bag (except `xmlns`/`display` on the root, which are

@@ -32,10 +32,9 @@
                                                                                                   */
 package soundness
 
-export archimedes.{Math, Mathml, Token, Mi, Mn, Mo, Mtext, Ms, Mspace, Mglyph, Layout, Mrow,
-    Mfrac, Msqrt, Mroot, Mstyle, Merror, Mpadded, Mphantom, Menclose, Mfenced, Script, Msub, Msup,
-    Msubsup, Munder, Mover, Munderover, Mmultiscripts, Mprescripts, Mnone, Tabular, Mtable, Mtr,
-    Mlabeledtr, Mtd, Maligngroup, Malignmark, Elementary, Mstack, Mlongdiv, Msgroup, Msrow,
-    Mscarries, Mscarry, Msline, Semantic, Maction, Semantics, Annotation, AnnotationXml, Display,
-    MathmlError, MathmlParser, MathmlReader, mathmlNamespace, Ergo, ErgoError, ergo,
-    ergoInterpolable, mathml, math, Cell, cell, draw}
+// The MathML element types (`Mi`, `Mrow`, `Token`, `Layout`, `Ms`, …) are nested inside the
+// `Mathml` object (as `Mathml.Mi`, `Mathml.Mrow`, …) rather than exported flat, so their generic
+// names do not collide with unrelated modules in the `soundness` namespace. Import
+// `soundness.Mathml.*` for the bare element names where MathML is being authored by hand.
+export archimedes.{Math, Mathml, Display, MathmlError, MathmlParser, MathmlReader, mathmlNamespace,
+    Ergo, ErgoError, ergo, ergoInterpolable, mathml, math, Cell, cell, draw}

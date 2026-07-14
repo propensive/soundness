@@ -33,6 +33,7 @@
 package archimedes
 
 import soundness.*
+import Mathml.*
 
 import errorDiagnostics.stackTracesDiagnostics
 import strategies.throwUnsafely
