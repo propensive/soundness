@@ -4109,16 +4109,49 @@ object Tel extends Tel2:
     // atom's text, or Unset when the line carries none — mirroring
     // `Tel#primaryAtom`, where a source/literal atom never supplies the
     // primary text. Backs the primitive parsers.
+    //
+    // Unlike `directCompound`, this does not materialize a `Tel.Compound`,
+    // its `IArray[Atom]` (`takeAtoms`) or its children: it reads the inline
+    // atoms into scratch, pulls the first one's text, rewinds the scratch
+    // index without copying, and consumes (discarding) the source/literal
+    // continuation and child subtree so the reader still lands on the next
+    // sibling. For a scalar leaf that is one `String` allocation and nothing
+    // more — the direct path made genuinely direct.
     private[stratiform] def directAtomText(): Optional[Text] raises TelError =
-      val compound = directCompound(directEntryIndent)
-      var index = 0
+      val spaces = directEntrySpaces
+      val indent = directEntryIndent
+      val tabulated = directTabulation.present
+      val atomsStart = atomScratchIx
+      parseCompoundLineRest(directEntryLine)
+      prevContentLeadingSpaces = spaces
+      prevLineWasBoundary = false
+      fillHead()
 
-      while index < compound.atoms.length do
-        compound.atoms(index) match
-          case atom: Tel.Atom.Inline => return Optional(atom.text)
-          case _                     => index += 1
+      val extraAtom: Optional[Tel.Atom] =
+        if tabulated then Unset else parseSourceOrLiteralAtomIfPresent(spaces)
 
-      Unset
+      // The primary text is the first inline atom's; a source/literal atom
+      // never supplies it, so `extraAtom` is only consumed, not inspected.
+      var result: Optional[Text] = Unset
+      var index = atomsStart
+
+      while index < atomScratchIx do
+        scratchAtoms(index) match
+          case inline: Tel.Atom.Inline => if result.absent then result = Optional(inline.text)
+          case _                       => ()
+
+        index += 1
+
+      atomScratchIx = atomsStart
+
+      // Mirror `directCompound`: children are parsed (and here discarded) only
+      // when no source/literal atom and no tabulation intervened; otherwise a
+      // following deeper line is over-indented and fails with the same reason.
+      if !tabulated && extraAtom.absent then parseChildren(indent)
+      else if !head.eof && !head.separator && !head.blank && head.indentLevels > indent
+      then errorAt(directOverIndentReason, head.startLine, 1)
+
+      result
 
     // Consume the rest of the entry's own line (atoms, remark) and any
     // source/literal continuation, but not its child lines — the step before
