@@ -48,6 +48,8 @@ import vacuous.*
 import xylophone.*
 import zephyrine.ParseError
 
+import Mathml.*
+
 // The root `<math>` element and Archimedes' integration points.
 //
 //   - `Aggregable`/`Loadable` parse MathML text into `Math` (delegating the raw

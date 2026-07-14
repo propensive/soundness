@@ -38,6 +38,8 @@ import hieroglyph.Measurable
 import hieroglyph.textMetrics.wideCharacterWidthMetric
 import vacuous.*
 
+import Mathml.*
+
 // A `Cell` is a rectangular block of monospaced character cells with a `baseline`
 // — the row index (from the top) of the mathematical axis that composition aligns
 // on. Lines are `Writing` (grapheme-aware `Text`) so that combining accents, ZWJ

@@ -39,6 +39,8 @@ import contingency.*
 import gossamer.*
 import vacuous.*
 
+import Mathml.*
+
 // A parser for "ergo": a one-line shorthand for Presentation MathML that emits
 // `archimedes` nodes. The whole expression is delimited by a bracket pair; the
 // first character chooses which pair (`(`/`[`/`{`/`⟨`) acts as grouping syntax,

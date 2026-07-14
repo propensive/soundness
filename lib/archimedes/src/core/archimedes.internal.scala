@@ -43,6 +43,8 @@ import prepositional.*
 import rudiments.*
 import vacuous.*
 
+import Mathml.*
+
 object internal:
   // The macro behind the `ergo""` interpolator. It recovers the literal parts and
   // converts each `$`-substitution (any value that is `Encodable in Math`) into a
