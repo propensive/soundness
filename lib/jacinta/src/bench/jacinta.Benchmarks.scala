@@ -40,6 +40,7 @@ import contingency.*, strategies.throwUnsafely
 import fulminate.*
 import gossamer.*
 import hellenism.*, classloaders.threadContextClassloader
+import prepositional.*
 import probably.*
 import proscenium.*
 import quantitative.*
@@ -48,7 +49,21 @@ import sedentary.*
 import spectacular.*
 import symbolism.*
 import temporaryDirectories.systemTemporaryDirectory
+import turbulence.*
 import vacuous.*
+
+// Typed targets for the decode benchmarks (Example 4's shape). `BenchUsers`
+// opts in to direct parsing, so `read[BenchUsers in Json]` never builds the
+// AST that the `read[Json].as[BenchUsers]` arm materializes.
+case class BenchUser(id: Int, username: Text, email: Text, active: Boolean, role: Text)
+
+object BenchUser:
+  given parsable: BenchUser is Json.Parsable = Json.Parsable.derived
+
+case class BenchUsers(users: List[BenchUser])
+
+object BenchUsers:
+  given parsable: BenchUsers is Json.Parsable = Json.Parsable.derived
 
 object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   sealed trait Information extends Dimension
@@ -79,6 +94,11 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
   def parseWithJackson(text: String): com.fasterxml.jackson.databind.JsonNode =
     jacksonMapper.readTree(text).nn
+
+  // The two decode arms: materialize the AST and walk it with `Decodable`,
+  // or parse tokens straight into the records with `Parsable`.
+  def decodeUsersAst(): BenchUsers = LazyList(jsonBytes4).read[Json].as[BenchUsers]
+  def decodeUsersDirect(): BenchUsers = LazyList(jsonBytes4).read[BenchUsers in Json]
 
   def run(): Unit =
     val bench = Bench()
@@ -181,6 +201,14 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
       bench(m"Parse file with Jackson")(target = 1*Second, operationSize = size4):
         '{ jacinta.Benchmarks.parseWithJackson(jacinta.Benchmarks.jsonText4) }
+
+    suite(m"Decode example 4 into records (100 user records)"):
+      bench(m"Decode via the Json AST")
+        ( target = 1*Second, operationSize = size4, baseline = Baseline(compare = Min) ):
+        '{ jacinta.Benchmarks.decodeUsersAst() }
+
+      bench(m"Decode directly with Parsable")(target = 1*Second, operationSize = size4):
+        '{ jacinta.Benchmarks.decodeUsersDirect() }
 
     suite(m"Parse example 5 (500 log entries)"):
       bench(m"Parse file with Merino")
