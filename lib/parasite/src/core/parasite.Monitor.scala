@@ -240,18 +240,20 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   // `canThrowAny`), so the static error is only `AsyncError`. Used internally (`map`/`bind`/
   // `sequence`/`race`) where the body's error type is not tracked. Public callers go via the typed
   // `Task#await`, which routes through `deliver` instead.
+  // No `thread.join()`: the promise is settled in the worker thread's `finally` block, strictly
+  // after the state is terminal and probate cleanup has run, so `attend` returning already
+  // guarantees everything a join would. (A trailing unbounded `thread.join()` would also defeat
+  // the timed variants' deadline.)
   def join[abstractable: Abstractable across Durations to Long](duration: abstractable)
   :   Result raises AsyncError =
 
     promise.attend(duration)
     if !promise.ready then abort(AsyncError(Reason.Timeout))
-    thread.join()
     result()
 
 
   def join(): Result raises AsyncError =
     promise.attend()
-    thread.join()
     result()
 
 
@@ -262,7 +264,6 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
   // unchecked throwable from the body flows through as the raw `join` would have rethrown it.
   def deliver[error <: Hazard]()(using Tactic[error | AsyncError]^): Result =
     promise.attend()
-    thread.join()
     fulfilment()
 
 
@@ -273,7 +274,6 @@ abstract class Worker(frame: Codepoint, parent: Monitor^, probate: Probate^) ext
 
     promise.attend(duration)
     if !promise.ready then abort(AsyncError(Reason.Timeout))
-    thread.join()
     fulfilment()
 
 
