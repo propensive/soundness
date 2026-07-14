@@ -48,6 +48,15 @@ object Buffering:
     // transfer blocks per wakeup rather than parking after every few: hand-off
     // throughput scales almost linearly with depth up to this point, at a
     // bounded cost of `window` in-flight transfer blocks.
+    //
+    // The capacity-search stress tests show hand-off throughput under high
+    // concurrency keeps improving well past this depth: a window covering a whole
+    // burst, so the producer streams it without ever parking, more than doubled
+    // sustained throughput at 64. But a deeper window multiplies the worst-case
+    // in-flight bound of every copy-path conduit, so the default stays
+    // conservative; burst-heavy pipelines should override `window` to their burst
+    // size in hand-off blocks, and the shared `Blockpool` keeps the deeper ring's
+    // allocation amortised across conduit instances.
     def window: Int = 16
 
 // Pure: a `Buffering` is only sizing policy, so instances are untracked under capture

@@ -1788,7 +1788,9 @@ object scintillate extends Library:
   object bench extends Benchmarks(server, eucalyptus.core, quantitative.units)
 
 object sedentary extends Library:
-  object core extends Component(superlunary.jvm, anthology.bundle, diuretic.core, quantitative.units):
+  object core
+  extends Component
+    (superlunary.jvm, anthology.bundle, diuretic.core, parasite.core, quantitative.units):
     override def scalaJs = false // benchmarking via JVM-only `superlunary`/`anthology`
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
