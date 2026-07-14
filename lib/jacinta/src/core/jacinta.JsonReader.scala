@@ -103,6 +103,15 @@ extends caps.ExclusiveCapability, caps.Stateful:
   update def value(): Json = Json.ast(Json.Ast(parser.directValue()(using tactic)))
   update def skipValue(): Unit = parser.directSkipValue()(using tactic)
 
+  // Scans the upcoming object for the given key and returns its string
+  // value, leaving the reader where it started — the dispatch primitive for
+  // an internal discriminator field that may appear anywhere in the object.
+  // `Unset` when the object has no such key or its value is not a string.
+  update def discriminant(key: Text): Optional[Text] =
+    parser.directDiscriminant(key.s)(using tactic) match
+      case null        => Unset
+      case tag: String => tag.tt
+
   // Abort through the reader's tactic, positioned at the current input
   // offset — for leaf instances that reject a well-formed token's content.
   update def fail(issue: Json.Ast.Issue): Nothing = parser.directFail(issue)(using tactic)

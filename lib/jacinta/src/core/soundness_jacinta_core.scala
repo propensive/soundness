@@ -47,3 +47,5 @@ package numberModes:
 package discriminables:
   export jacinta.discriminables.jsonByTypeDiscriminable
   export jacinta.discriminables.jsonByKindDiscriminable
+  export jacinta.discriminables.jsonWrapperDiscriminable
+  export jacinta.discriminables.jsonEnvelopeDiscriminable

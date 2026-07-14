@@ -1982,12 +1982,149 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     skip()
     parseValue()
 
-  // Structure-aware skip of one whole value. Parses and discards for now; a
-  // non-materializing scanner is a later optimization, invisible to callers.
+  // Structure-aware skip of one whole value: a validated scan that enforces
+  // the same grammar (and raises the same `Issue`s) as `parseValue`'s loops,
+  // but builds nothing — no AST nodes, no scratch buffers, no key strings.
   private[jacinta] update def directSkipValue()(using Tactic[ParseError]): Unit =
     skip()
-    parseValue()
-    ()
+    skipValue1()
+
+  // Positioned at the first byte of a value (no leading whitespace).
+  private update def skipValue1()(using Tactic[ParseError]): Unit =
+    val ch = must()
+
+    if (ch & 0xF8) == Num0 || (ch & 0xFE) == 0x38 then
+      advance()
+      parseNumber(ch & 0x0F, false)
+      ()
+    else
+      (ch: @switch) match
+        case Quote       => advance() yet skipString()
+        case OpenBracket => advance() yet skipArrayBody()
+        case LowerF      => parseFalse() yet ()
+        case LowerN      => parseNull() yet ()
+        case LowerT      => parseTrue() yet ()
+        case OpenBrace   => advance() yet skipObjectBody()
+
+        case Minus =>
+          advance()
+          val digit = must()
+
+          if (digit & 0xF8) == Num0 || (digit & 0xFE) == 0x38 then
+            advance()
+            parseNumber(digit & 0x0F, true)
+            ()
+          else errorAt(Issue.ExpectedDigit(digit.toChar))
+
+        case other => errorAt(Issue.ExpectedSomeValue(other.toChar))
+
+  // Mirrors `parseObject`'s loop structure and issues, without materializing
+  // keys or values.
+  private update def skipObjectBody()(using Tactic[ParseError]): Unit =
+    var continue = true
+    var first = true
+
+    while continue do
+      skip()
+
+      must() match
+        case Quote =>
+          advance()
+          skipString()
+          skip()
+
+          must() match
+            case Colon =>
+              advance()
+              skip()
+              skipValue1()
+              skip()
+
+              must() match
+                case Comma      => advance()
+                case CloseBrace => advance() yet { continue = false }
+                case ch         => errorAt(Issue.UnexpectedChar(ch.toChar))
+
+            case ch => errorAt(Issue.ExpectedColon(ch.toChar))
+
+        case CloseBrace =>
+          if !first then errorAt(Issue.ExpectedSomeValue('}'))
+          advance()
+          continue = false
+
+        case ch => errorAt(Issue.ExpectedString(ch.toChar))
+
+      first = false
+
+  // Mirrors `parseArray`'s loop structure and issues.
+  private update def skipArrayBody()(using Tactic[ParseError]): Unit =
+    var continue = true
+    var first = true
+
+    while continue do
+      skip()
+
+      must() match
+        case CloseBracket =>
+          if !first then errorAt(Issue.ExpectedSomeValue(']'))
+          advance()
+          continue = false
+
+        case _ =>
+          skipValue1()
+          skip()
+
+          must() match
+            case Comma        => advance()
+            case CloseBracket => advance() yet { continue = false }
+            case ch           => errorAt(Issue.ExpectedSomeValue(ch.toChar))
+
+      first = false
+
+  // Skips a string, validating escapes, hex digits and character legality
+  // exactly as `tail` does, without accumulating characters. Positioned
+  // after the opening quote; consumes the closing quote.
+  private update def skipString()(using Tactic[ParseError]): Unit =
+    var continue = true
+
+    while continue do
+      while more && StringScanContinue(peek & 0xFF) != 0 do advance()
+      if !more then errorAt(Issue.PrematureEnd)
+      val ch = peek
+
+      ch match
+        case Quote =>
+          advance()
+          continue = false
+
+        case Tab | Newline | Return =>
+          errorAt(Issue.InvalidWhitespace)
+
+        case Backslash =>
+          advance()
+          if !more then errorAt(Issue.PrematureEnd)
+
+          (peek: @switch) match
+            case Quote | Slash | Backslash | LowerB | LowerF | LowerN | LowerR | LowerT =>
+              advance()
+
+            case LowerU =>
+              parseUnicode()
+              advance()
+
+            case bad => errorAt(Issue.IncorrectEscape(bad.toChar))
+
+        case _ =>
+          if ch == 0 && holes then advance()
+          else ((ch >> 5): @switch) match
+            case 0                 => errorAt(Issue.NotEscaped(ch.toChar))
+            case 1 | 2 | 3 | 4 | 5 => advance()
+
+            case _ =>
+              if (ch & 0xE0) == 0xC0 then { next(); advance() }
+              else if (ch & 0xF0) == 0xE0 then { next(); next(); advance() }
+              else if (ch & 0xF8) == 0xF0 then { next(); next(); next(); advance() }
+              else advance()
 
   private[jacinta] update def directString()(using Tactic[ParseError]): String =
     skip()
@@ -2254,6 +2391,58 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
         case _ =>
           directMark()
           true
+
+  // Reposition at a previously-taken mark. Only valid inside the `holding`
+  // block that produced the mark (which pins the buffer region).
+  private update def rewind(start: Cursor.Mark)(using held: Cursor.Held): Unit =
+    syncTo()
+
+    // Block-scoped like `begin`; the parser snapshot is refreshed afterwards.
+    locally:
+      val current = cursor
+      current.cue(start)
+
+    syncFrom()
+
+  // Scans the upcoming object for the given key and returns its string
+  // value, leaving the reader where it started (the `hold` pins the region
+  // so the whole object can be re-read afterwards). This is the dispatch
+  // primitive for an internal discriminator field that may appear anywhere
+  // in the object. `null` when the object ends without the key, or when its
+  // value is not a string — mirroring `discriminate`'s `Unset` on the AST
+  // path. Malformed content raises exactly as parsing it would.
+  private[jacinta] update def directDiscriminant(key: String)(using Tactic[ParseError])
+  :   String | Null =
+
+    skip()
+    val savedDepth = directDepth
+    var result: String | Null = null
+
+    holding:
+      val start = begin()
+
+      if must() != OpenBrace then errorAt(Issue.ExpectedObject(peek.toChar))
+      advance()
+      directPush()
+      var name: String | Null = directKey()
+
+      while name != null do
+        if key == name then
+          val raw: Any = directValue()
+
+          raw.asMatchable match
+            case tag: String => result = tag
+            case _           => ()
+
+          name = null
+        else
+          directSkipValue()
+          name = directKey()
+
+      rewind(start)
+
+    directDepth = savedDepth
+    result
 
   private[jacinta] update def directFail(issue: Issue)(using Tactic[ParseError]): Nothing =
     errorAt(issue)

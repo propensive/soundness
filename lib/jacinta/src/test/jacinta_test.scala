@@ -990,6 +990,17 @@ object Tests extends Suite(m"Jacinta Tests"):
         t"""{"name": "Amy", "age": -3}""".read[Person in Json]
       . assert(_ == Person(t"Amy", -3))
 
+      test(m"Malformed content inside a skipped field raises ParseError"):
+        capture[ParseError](t"""{"name": "Amy", "junk": {"x": }, "age": 50}""".read[Person in Json])
+      . assert(_.issue match
+          case Json.Ast.Issue.ExpectedSomeValue(_) => true
+          case _                                   => false)
+
+      test(m"Deeply nested skipped values are scanned correctly"):
+        t"""{"junk": [[[{"a": [1, {"b": "x\\n"}, null, true]}]]], "name": "Amy", "age": 50}"""
+        . read[Person in Json]
+      . assert(_ == Person(t"Amy", 50))
+
       test(m"A custom Decodable beats derivation via fromDecodable"):
         // The documented escape hatch for a type whose hand-written decoder
         // must win over structural derivation.
@@ -1001,6 +1012,81 @@ object Tests extends Suite(m"Jacinta Tests"):
 
         t"""\"Syd\"""".read[Worker in Json]
       . assert(_ == Worker(t"Syd", 0))
+
+    suite(m"Sum encoding tests"):
+      test(m"Wrapper encoding writes a single-key object"):
+        given Shape is Discriminable in Json = Json.DiscriminantWrapper()
+        (Shape.Circle(1.0): Shape).in[Json].show
+      . assert(_ == t"""{"Circle":{"radius":1.0}}""")
+
+      test(m"Wrapper encoding decodes via the AST"):
+        given Shape is Discriminable in Json = Json.DiscriminantWrapper()
+        t"""{"Circle": {"radius": 2.5}}""".read[Json].as[Shape]
+      . assert(_ == Shape.Circle(2.5))
+
+      test(m"Wrapper encoding parses directly"):
+        given Shape is Discriminable in Json = Json.DiscriminantWrapper()
+        given Shape is Json.Parsable = Json.Parsable.derived
+        t"""{"Circle": {"radius": 2.5}}""".read[Shape in Json]
+      . assert(_ == Shape.Circle(2.5))
+
+      test(m"A multi-key wrapper raises JsonError Absent on both paths"):
+        given Shape is Discriminable in Json = Json.DiscriminantWrapper()
+        given Shape is Json.Parsable = Json.Parsable.derived
+        val json = t"""{"Circle": {"radius": 1.0}, "junk": 1}"""
+
+        ( capture[JsonError](json.read[Shape in Json]).reason,
+          capture[JsonError](json.read[Json].as[Shape]).reason )
+      . assert(_ == (JsonError.Reason.Absent, JsonError.Reason.Absent))
+
+      test(m"Envelope encoding writes tag and value fields"):
+        given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
+        (Shape.Square(2.0): Shape).in[Json].show
+      . assert(_ == t"""{"type":"Square","value":{"side":2.0}}""")
+
+      test(m"Envelope encoding decodes via the AST"):
+        given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
+        t"""{"type": "Square", "value": {"side": 3.0}}""".read[Json].as[Shape]
+      . assert(_ == Shape.Square(3.0))
+
+      test(m"Envelope encoding parses directly, tag first"):
+        given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
+        given Shape is Json.Parsable = Json.Parsable.derived
+        t"""{"type": "Square", "value": {"side": 3.0}}""".read[Shape in Json]
+      . assert(_ == Shape.Square(3.0))
+
+      test(m"Envelope encoding parses directly, tag last"):
+        given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
+        given Shape is Json.Parsable = Json.Parsable.derived
+        t"""{"value": {"side": 3.0}, "type": "Square"}""".read[Shape in Json]
+      . assert(_ == Shape.Square(3.0))
+
+      test(m"Envelope encoding decodes via the AST, tag last"):
+        given Shape is Discriminable in Json = Json.DiscriminantEnvelope(t"type", t"value")
+        t"""{"value": {"side": 3.0}, "type": "Square"}""".read[Json].as[Shape]
+      . assert(_ == Shape.Square(3.0))
+
+      test(m"An internal-field sum parses directly with the tag anywhere"):
+        given Status is Json.Parsable = Json.Parsable.derived
+        t"""{"since": 2020, "kind": "ok"}""".read[Status in Json]
+      . assert(_ == Status.Active(2020))
+
+      test(m"An internal-field sum with a missing tag raises Absent directly"):
+        given Status is Json.Parsable = Json.Parsable.derived
+        capture[JsonError](t"""{"since": 2020}""".read[Status in Json]).reason
+      . assert(_ == JsonError.Reason.Absent)
+
+      test(m"A custom Discriminable falls back to the AST bridge"):
+        given Shape is Discriminable in Json = new Discriminable:
+          type Form = Json
+          type Self = Shape
+          def rewrite(kind: Text, json: Json): Json = Json.DiscriminantWrapper[Shape]().rewrite(kind, json)
+          def discriminate(json: Json): Optional[Text] = Json.DiscriminantWrapper[Shape]().discriminate(json)
+          def variant(json: Json): Json = Json.DiscriminantWrapper[Shape]().variant(json)
+
+        given Shape is Json.Parsable = Json.Parsable.derived
+        t"""{"Circle": {"radius": 4.5}}""".read[Shape in Json]
+      . assert(_ == Shape.Circle(4.5))
 
     suite(m"Json error handling"):
       test(m"Decode wrong type raises JsonError NotType"):

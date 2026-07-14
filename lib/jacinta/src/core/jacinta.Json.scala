@@ -325,6 +325,12 @@ trait Json2 extends Json3:
       // codec-carried shape is kept permissive (`Any`) because the only way to walk
       // the variants here (`delegate`) is `fallible` and would leak a
       // `Tactic[VariantError]` requirement onto every codec.
+      // The shape test happens once, outside the decode lambda: a reference
+      // to the shape class inside the nested context functions poisons
+      // their capture sets.
+      val fieldShaped: Boolean =
+        infer[derivation is Discriminable in Json].isInstanceOf[Json.DiscriminantField[?]]
+
       Json.Decodable(Morphology.Any):
         json =>
           provide[Tactic[JsonError]]:
@@ -341,8 +347,14 @@ trait Json2 extends Json3:
 
               val discriminant: Text = variantNames.getOrElse(wire, wire)
 
+              // The variant decodes the whole value for the internal-field
+              // shape (its tag is simply skipped as an unknown key — no need
+              // to rebuild the object without it), and the extracted payload
+              // for every other shape.
+              val payload = if fieldShaped then json else discriminable.variant(json)
+
               delegate(discriminant): [variant <: derivation] =>
-                context => context.decoded(json)
+                context => context.decoded(payload)
 
   object ParsableDerivation extends Derivable[Json.Field]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -371,13 +383,93 @@ trait Json2 extends Json3:
           ( using infer[Foci[Json.Focus]], infer[Tactic[JsonError]] )
 
     inline def disjunction[derivation: SumReflection]: derivation is Json.Field =
-      // A sum materializes one value's AST and dispatches through its
-      // decoder — the same discriminated-object handling as the AST path,
-      // byte for byte, honoring any custom `Json.Decodable` the sum has.
-      // Token-level sum parsing (discriminator scan-ahead with rewind) is a
-      // later optimization.
+      // Dispatch strategy by wire shape: a wrapper's tag is its first token,
+      // so it streams with no lookahead at all; an envelope and an internal
+      // field locate the tag with a bounded scan-ahead (`discriminant`
+      // skips values without materializing them, then rewinds), after which
+      // the chosen variant parses directly from the tokens. Any custom
+      // `Discriminable` falls back to materializing one value's AST and
+      // dispatching through the decoder. Sealed per the codec-thunk
+      // pattern: each instance captures resolution-scoped tactics.
       caps.unsafe.unsafeAssumePure:
-        Json.Field(Json.Parsable.fromDecodable(infer[derivation is Json.Decodable]))
+        infer[derivation is Discriminable in Json] match
+          case fielded: Json.DiscriminantField[?] =>
+            new Json.Field:
+              type Self = derivation
+              def shape(): Morphology = Morphology.Any
+
+              def parse(reader: JsonReader^): derivation =
+                provide[Tactic[JsonError]]:
+                  provide[Tactic[VariantError]]:
+                    val variantNames: Map[Text, Text] =
+                      variantRelabelling[derivation, Json].map: (variant, wire) =>
+                        wire -> variant
+
+                    val wire: Text = reader.discriminant(fielded.field).or:
+                      abort(JsonError(Reason.Absent))
+
+                    // The variant re-reads the whole object, skipping the
+                    // tag as an unknown key.
+                    delegate(variantNames.getOrElse(wire, wire)):
+                      [variant <: derivation] => context => context.parse(reader)
+
+          case wrapper: Json.DiscriminantWrapper[?] =>
+            new Json.Field:
+              type Self = derivation
+              def shape(): Morphology = Morphology.Any
+
+              def parse(reader: JsonReader^): derivation =
+                provide[Tactic[JsonError]]:
+                  provide[Tactic[VariantError]]:
+                    val variantNames: Map[Text, Text] =
+                      variantRelabelling[derivation, Json].map: (variant, wire) =>
+                        wire -> variant
+
+                    reader.openObject()
+                    val wire: Text = reader.key().or(abort(JsonError(Reason.Absent)))
+
+                    val result =
+                      delegate(variantNames.getOrElse(wire, wire)):
+                        [variant <: derivation] => context => context.parse(reader)
+
+                    // A wrapper is a single-key object; anything more means
+                    // no tag is identifiable, as on the AST path.
+                    if !reader.key().absent then abort(JsonError(Reason.Absent))
+                    result
+
+          case envelope: Json.DiscriminantEnvelope[?] =>
+            new Json.Field:
+              type Self = derivation
+              def shape(): Morphology = Morphology.Any
+
+              def parse(reader: JsonReader^): derivation =
+                provide[Tactic[JsonError]]:
+                  provide[Tactic[VariantError]]:
+                    val variantNames: Map[Text, Text] =
+                      variantRelabelling[derivation, Json].map: (variant, wire) =>
+                        wire -> variant
+
+                    val wire: Text = reader.discriminant(envelope.tagField).or:
+                      abort(JsonError(Reason.Absent))
+
+                    val name = variantNames.getOrElse(wire, wire)
+                    reader.openObject()
+                    var result: Optional[derivation] = Unset
+                    var continue = true
+
+                    while continue do
+                      val key = reader.key()
+
+                      if key.absent then continue = false
+                      else if key.or(t"") == envelope.valueField && result.absent then
+                        result = delegate(name):
+                          [variant <: derivation] => context => context.parse(reader)
+                      else reader.skipValue()
+
+                    result.or(abort(JsonError(Reason.Absent)))
+
+          case other =>
+            Json.Field(Json.Parsable.fromDecodable(infer[derivation is Json.Decodable]))
 
   object EncodableDerivation extends Derivable[Json.Encodable]:
     inline def conjunction[derivation <: Product: ProductReflection]
@@ -1913,10 +2005,24 @@ object Json extends Json2, Dynamic:
     val values: IArray[Json.Ast] = IArray.from(elements.map(_(1).root)).asInstanceOf[IArray[Json.Ast]]
     Json(Json.Ast.obj(keys, values.asInstanceOf[IArray[Any]]))
 
-  def discriminatedUnion[value](label: Text): value is Discriminable in Json = new Discriminable:
+  def discriminatedUnion[value](label: Text): value is Discriminable in Json =
+    DiscriminantField(label)
+
+  // The three standard shapes a discriminated sum takes on the wire. Each is
+  // a NAMED class so both derivations can recognize the shape: the AST
+  // decoder knows whether to decode the whole value or the variant payload,
+  // and the direct parser picks the most streaming-friendly token-level
+  // dispatch for each — a wrapper's tag is always its first token, an
+  // envelope's usually is, and an internal field needs a bounded scan-ahead.
+  // Any other (custom) `Discriminable` still works through the AST bridge.
+
+  // `{"radius": 1.0, "type": "Circle"}` — the tag is a field of the
+  // variant's own object, under `label`.
+  class DiscriminantField[value](label: Text) extends Discriminable:
     type Form = Json
     type Self = value
 
+    private[jacinta] def field: Text = label
     protected def key: String = label.s
 
     import dynamicJsonAccess.enabled
@@ -1927,6 +2033,39 @@ object Json extends Json2, Dynamic:
     // invariant `Self` bound cannot absorb.
     def discriminate(json: Json): Optional[Text] = safely(json.selectField(key).root.string)
     def variant(json: Json): Json = unsafely(json.updateDynamic(key)(Unset))
+
+  // `{"Circle": {"radius": 1.0}}` — a single-key object whose key is the
+  // tag and whose value is the variant's payload.
+  class DiscriminantWrapper[value]() extends Discriminable:
+    type Form = Json
+    type Self = value
+
+    def rewrite(kind: Text, json: Json): Json =
+      Json.ast(Json.Ast.obj(IArray(kind.s), IArray(json.root)))
+
+    def discriminate(json: Json): Optional[Text] =
+      if json.root.isObject && json.root.objectSize == 1
+      then json.root.objectKey(0).tt
+      else Unset
+
+    def variant(json: Json): Json = Json.ast(json.root.objectValue(0))
+
+  // `{"type": "Circle", "value": {"radius": 1.0}}` — the tag and the
+  // variant's payload are adjacent fields of an enclosing object.
+  class DiscriminantEnvelope[value](tagLabel: Text, valueLabel: Text) extends Discriminable:
+    type Form = Json
+    type Self = value
+
+    private[jacinta] def tagField: Text = tagLabel
+    private[jacinta] def valueField: Text = valueLabel
+
+    def rewrite(kind: Text, json: Json): Json =
+      Json.ast(Json.Ast.obj(IArray(tagLabel.s, valueLabel.s), IArray(kind.s, json.root)))
+
+    def discriminate(json: Json): Optional[Text] =
+      safely(json.selectField(tagLabel.s).root.string)
+
+    def variant(json: Json): Json = json.selectField(valueLabel.s)
 
 class Json(rootValue: Any, positions: Optional[Json.PositionIndex] = Unset)
 extends Dynamic, Topical, Original derives CanEqual:
