@@ -229,6 +229,15 @@ package discriminables:
   given jsonByKindDiscriminable: [value] => value is Discriminable in Json =
     Json.discriminatedUnion[value]("kind")
 
+  // `{"Circle": {"radius": 1.0}}` — the streaming-friendliest shape: the
+  // tag is always the first token of the value.
+  given jsonWrapperDiscriminable: [value] => value is Discriminable in Json =
+    Json.DiscriminantWrapper[value]()
+
+  // `{"type": "Circle", "value": {"radius": 1.0}}`
+  given jsonEnvelopeDiscriminable: [value] => value is Discriminable in Json =
+    Json.DiscriminantEnvelope[value]("type", "value")
+
 
 package numberModes:
   given fullNumberMode:   NumberMode = NumberMode.Full
