@@ -59,8 +59,8 @@ import vacuous.*
 // algorithm constraints as purely additional to the process-wide
 // `jdk.tls.disabledAlgorithms` security property, so those relaxations can
 // only be unlocked process-wide, once, before JSSE initializes — see
-// `Tls.unlock`.
-object Tls:
+// `Trust.unlock`.
+object Trust:
   enum Version:
     case Tls12, Tls13
     case Tls10, Tls11
@@ -74,16 +74,7 @@ object Tls:
   enum Revocation:
     case Required, SoftFail, Unchecked
 
-  object Trust:
-    val Strict: Trust = Trust()
-
-  // Which certificate chains to trust beyond an intact, current chain to a
-  // platform anchor.
-  case class Trust
-    ( expired:    Boolean = false,
-      selfSigned: Boolean = false,
-      hostname:   Boolean = true,
-      anchors:    List[jsc.X509Certificate] = Nil )
+  val Strict: Trust = Trust()
 
   // Process-wide re-enablement of deprecated protocol versions and key sizes.
   // Must run before any JSSE machinery is initialized; later calls have no
@@ -101,6 +92,14 @@ object Tls:
       !versions.exists(_.id.s == entry)
 
     js.Security.setProperty("jdk.tls.disabledAlgorithms", String.join(", ", retained*))
+
+// Which certificate chains to trust beyond an intact, current chain to a
+// platform anchor.
+case class Trust
+  ( expired:    Boolean = false,
+    selfSigned: Boolean = false,
+    hostname:   Boolean = true,
+    anchors:    List[jsc.X509Certificate] = Nil )
 
 // The runtime acceptance value, resolved contextually wherever a TLS
 // connection is made. The companion default is strict; relaxed instances are
@@ -176,11 +175,11 @@ object TlsAcceptance:
             acceptance.trust.expired
 
           case jsc.CertPathValidatorException.BasicReason.REVOKED =>
-            acceptance.revocation != Tls.Revocation.Required
+            acceptance.revocation != Trust.Revocation.Required
 
           case jsc.CertPathValidatorException.BasicReason.UNDETERMINED_REVOCATION_STATUS =>
-            acceptance.revocation == Tls.Revocation.Unchecked ||
-              acceptance.revocation == Tls.Revocation.SoftFail
+            acceptance.revocation == Trust.Revocation.Unchecked ||
+              acceptance.revocation == Trust.Revocation.SoftFail
 
           case _ =>
             tolerable(error.getCause)
@@ -255,9 +254,9 @@ object TlsAcceptance:
         attempt(platform.checkServerTrusted(chain, authType, engine))
 
 case class TlsAcceptance
-  ( versions:   List[Tls.Version] = Nil, // Nil selects the platform default set
-    trust:      Tls.Trust = Tls.Trust.Strict,
-    revocation: Tls.Revocation = Tls.Revocation.SoftFail ):
+  ( versions:   List[Trust.Version] = Nil, // Nil selects the platform default set
+    trust:      Trust = Trust.Strict,
+    revocation: Trust.Revocation = Trust.Revocation.SoftFail ):
 
   def permitExpired(using erased permit: Permit[Concession.ExpiredCertificate]): TlsAcceptance =
     copy(trust = trust.copy(expired = true))
@@ -268,10 +267,10 @@ case class TlsAcceptance
   def permitHostnameMismatch(using erased permit: Permit[Concession.UnverifiedHostname]): TlsAcceptance =
     copy(trust = trust.copy(hostname = false))
 
-  def requireRevocationChecks: TlsAcceptance = copy(revocation = Tls.Revocation.Required)
+  def requireRevocationChecks: TlsAcceptance = copy(revocation = Trust.Revocation.Required)
 
   def permitRevoked(using erased permit: Permit[Concession.UncheckedRevocation]): TlsAcceptance =
-    copy(revocation = Tls.Revocation.Unchecked)
+    copy(revocation = Trust.Revocation.Unchecked)
 
   def trusting(anchors: List[jsc.X509Certificate]): TlsAcceptance =
     copy(trust = trust.copy(anchors = anchors))

@@ -40,11 +40,11 @@ import zephyrine.*
 // before the first inbound message arrives, or concurrently from another task — rather
 // than only in reply to one. Handed to the `interact` block of `exchange` on a
 // `Duplexable` transport, whose `transmit` is safe to call concurrently.
-object Sender:
+object Transmitter:
   // A consuming postal target: a named SAM rather than a function type, because
   // only a method parameter can be marked `consume`.
   trait Post:
     def apply(consume stream: (Stream[Data] over Credit)^): Unit
 
-class Sender[message: Transmissible as transmissible](post: Sender.Post^):
+class Transmitter[message: Transmissible as transmissible](post: Transmitter.Post^):
   def send(message: message): Unit = post(transmissible.serialize(message))

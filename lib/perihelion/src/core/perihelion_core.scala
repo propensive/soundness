@@ -176,7 +176,7 @@ private def readHandshake(input: (zephyrine.Stream[Data] over zephyrine.Credit)^
 // own client loop: `url.react(initialState) { message => … }`, symmetric with the
 // server's `webSocket(initial) { … }`. It is a `Duplexable` (not merely a `Serviceable`)
 // because its `transmit` spools through a thread-safe `Channel`, so Coaxial's `exchange`
-// (the `Sender`-carrying, full-duplex counterpart of `react`) also works — a client can
+// (the `Transmitter`-carrying, full-duplex counterpart of `react`) also works — a client can
 // send proactively (`url.exchange(state) { reply => … } { sender => sender.send(request) }`),
 // not only in reply. `connect` opens the TCP connection and performs the RFC 6455 handshake;
 // `receive` runs the shared `Reader` (Ping/Pong and Close handled there) and yields one

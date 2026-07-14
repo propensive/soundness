@@ -622,7 +622,7 @@ object Tests extends Suite(m"Telekinesis tests"):
       . assert(identity)
 
       test(m"protocol restriction is applied to parameters"):
-        val acceptance = TlsAcceptance(versions = List(Tls.Version.Tls13))
+        val acceptance = TlsAcceptance(versions = List(Trust.Version.Tls13))
         val (_, parameters) = acceptance.materialize()
         parameters.getProtocols.nn.to(List).map(_.nn.tt)
       . assert(_ == List(t"TLSv1.3"))
