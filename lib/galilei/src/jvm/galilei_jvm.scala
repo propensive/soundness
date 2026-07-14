@@ -139,9 +139,21 @@ package filesystemBackends:
         protect(path, Operation.Read):
           if !jnf.Files.isDirectory(javaPath(path)) then LazyList()
           else
-            jnf.Files.list(javaPath(path)).nn.iterator().nn.asScala
-            . map(_.getFileName.nn.toString.tt)
-            . to(LazyList)
+            // `Files.list` holds the directory's file descriptor until the stream is
+            // closed — exhausting its iterator does not release it, and a `LazyList` would
+            // defer even that — so the names are materialized strictly and the stream
+            // closed before returning. Left unclosed, each directory listed leaks a
+            // descriptor until its stream is garbage-collected, which a low-allocation
+            // process may never do: a long traversal-heavy run then exhausts the process's
+            // file-descriptor limit.
+            val stream = jnf.Files.list(javaPath(path)).nn
+
+            try
+              stream.iterator().nn.asScala
+              . map(_.getFileName.nn.toString.tt)
+              . to(List)
+              . to(LazyList)
+            finally stream.close()
 
       def createDirectory(path: Path on Plane)(using Tactic[IoError]): Unit =
         protect(path, Operation.Create)(jnf.Files.createDirectory(javaPath(path)))
