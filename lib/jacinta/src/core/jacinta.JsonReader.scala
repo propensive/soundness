@@ -89,6 +89,11 @@ extends caps.ExclusiveCapability, caps.Stateful:
     case null        => Unset
     case key: String => key.tt
 
+  // As `key()`, but exposing the tokenizer's interned `String` (repeated keys
+  // return the same reference), so the derived product parser's key lookup is
+  // a reference-equality scan in the steady state.
+  private[jacinta] update def keyName(): String | Null = parser.directKey()(using tactic)
+
   update def openArray(): Unit = parser.directOpenArray()(using tactic)
   update def element(): Boolean = parser.directElement()(using tactic)
 
