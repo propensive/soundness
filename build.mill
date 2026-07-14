@@ -942,6 +942,16 @@ object cosmopolite extends Library:
       settings.cc(super.scalacOptions())
     override def enabled = false
 
+object crossparse extends Library:
+  object bench extends Benchmarks(jacinta.core, stratiform.core, xylophone.core, ypsiloid.core,
+      quantitative.units):
+    def mvnDeps = Seq(
+      mvn"io.circe::circe-parser:0.14.13",
+      mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.35.3",
+      mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-circe:2.35.3",
+      mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:2.35.3"
+    )
+
 object dendrology extends Library:
   object tree extends Component(gossamer.core):
     override def scalacOptions = Task:
