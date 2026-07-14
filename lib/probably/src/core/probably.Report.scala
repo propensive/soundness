@@ -47,6 +47,7 @@ import fulminate.*
 import gossamer.*
 import hieroglyph.*
 import iridescence.*
+import prepositional.*
 import rudiments.*
 import spectacular.*
 import symbolism.*
@@ -75,7 +76,8 @@ object Report:
   given detail: Inclusion[Report, Verdict.Detail] = _.addDetail(_, _)
 
   enum Status:
-    case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench, Stress, AspirePass, AspireFail
+    case Pass, Fail, Throws, CheckThrows, Mixed, Suite, Bench, Stress, Profile, AspirePass,
+        AspireFail
 
     private val nbsp = '\u00a0'
 
@@ -88,6 +90,7 @@ object Report:
       case Suite       => e"   "
       case Bench       => e"${Bg(palette.benchmark)}($Bold(${Fg(palette.black)}($nbsp*$nbsp)))"
       case Stress      => e"${Bg(palette.benchmark)}($Bold(${Fg(palette.black)}($nbsp≈$nbsp)))"
+      case Profile     => e"${Bg(palette.benchmark)}($Bold(${Fg(palette.black)}($nbsp%$nbsp)))"
       case AspirePass  => e"${Bg(palette.aspirePass)}($Bold(${Fg(palette.black)}( ↑ )))"
       case AspireFail  => e"${Bg(palette.aspireFail)}($Bold(${Fg(palette.black)}( ↓ )))"
 
@@ -100,6 +103,7 @@ object Report:
       case Suite       => e"Suite"
       case Bench       => e"Benchmark"
       case Stress      => e"Stress"
+      case Profile     => e"Profile"
       case AspirePass  => e"Aspire passed"
       case AspireFail  => e"Aspire failed"
 
@@ -145,6 +149,7 @@ final class Report(using Environment)(using palette: TestPalette):
     case Test(test: TestId, verdicts: scm.ArrayBuffer[Verdict] = scm.ArrayBuffer())
     case Bench(test: TestId, benchmark: Benchmark)
     case Strain(test: TestId, strain: probably.Strain)
+    case Hotspots(test: TestId, hotspots: probably.Hotspots)
 
     def summaries: List[Summary] = this match
       case Suite(suite, tests) =>
@@ -158,6 +163,9 @@ final class Report(using Environment)(using palette: TestPalette):
 
       case Strain(testId, _) =>
         List(Summary(Status.Stress, testId, 0, 0, 0, 0))
+
+      case Hotspots(testId, _) =>
+        List(Summary(Status.Profile, testId, 0, 0, 0, 0))
 
       case Test(testId, buffer) =>
         val status =
@@ -195,6 +203,10 @@ final class Report(using Environment)(using palette: TestPalette):
     val strains = resolve(testId.suite).tests
     strains.getOrElseUpdate(testId, ReportLine.Strain(testId, strain))
 
+  def addHotspots(testId: TestId, hotspots: probably.Hotspots): Report = this.also:
+    val profiles = resolve(testId.suite).tests
+    profiles.getOrElseUpdate(testId, ReportLine.Hotspots(testId, hotspots))
+
   def addVerdict(testId: TestId, verdict: Verdict): Report = this.also:
     val tests = resolve(testId.suite).tests
 
@@ -213,6 +225,19 @@ final class Report(using Environment)(using palette: TestPalette):
     case strain@ReportLine.Strain(_, _) => Iterable(strain)
     case ReportLine.Suite(_, tests)     => tests.list.flatMap: (_, line) => strains(line)
     case _                              => Nil
+
+  private def profiles(line: ReportLine): Iterable[ReportLine.Hotspots] = line match
+    case profile@ReportLine.Hotspots(_, _) => Iterable(profile)
+    case ReportLine.Suite(_, tests)        => tests.list.flatMap: (_, line) => profiles(line)
+    case _                                 => Nil
+
+  // A histogram bar of `samples` scaled against `max` over a 40-cell span: full blocks
+  // with a final fractional character from the eighth-block series. Any nonzero count
+  // shows at least the thinnest bar.
+  private def bar(samples: Long, max: Long): Text =
+    val eighths = (if max == 0L then 0L else samples*320L/max).max(if samples > 0L then 1L else 0L)
+    val partial = List(t"", t"▏", t"▎", t"▍", t"▌", t"▋", t"▊", t"▉")
+    t"█"*(eighths/8L).toInt + partial((eighths%8L).toInt)
 
   val unitsSeq: List[Teletype] =
     List(e"${Fg(palette.cold)}(µs)", e"${Fg(palette.warm)}(ms)", e"${Fg(palette.hot)}(s) ")
@@ -266,6 +291,7 @@ final class Report(using Environment)(using palette: TestPalette):
       totals.getOrElse(Status.Pass, 0)
       + totals.getOrElse(Status.Bench, 0)
       + totals.getOrElse(Status.Stress, 0)
+      + totals.getOrElse(Status.Profile, 0)
     val aspirePassed: Int = totals.getOrElse(Status.AspirePass, 0)
     val aspireFailed: Int = totals.getOrElse(Status.AspireFail, 0)
     val total: Int = totals.values.sum
@@ -289,6 +315,7 @@ final class Report(using Environment)(using palette: TestPalette):
       case Status.Suite       => t"suite"
       case Status.Bench       => t"bench"
       case Status.Stress      => t"stress"
+      case Status.Profile     => t"profile"
       case Status.AspirePass  => t"aspire-pass"
       case Status.AspireFail  => t"aspire-fail"
 
@@ -358,6 +385,34 @@ final class Report(using Environment)(using palette: TestPalette):
 
       . tabulate(rows.sortBy(_.test.timestamp)).grid(columns).render
       . each(Out.println(_))
+
+    val profileBySuite = profiles(lines).to(List).groupBy(_.test.suite).to(List)
+      . sortBy(_(1).iterator.map(_.test.timestamp).min)
+
+    profileBySuite.each: (suite, rows) =>
+      val suiteName = suite.let(_.name.text).or(t"")
+      Out.println(t"")
+      if suiteName.length > 0 then Out.println(suiteName)
+
+      rows.sortBy(_.test.timestamp).each: row =>
+        Out.println(t"${row.test.id}  ${row.test.name.text}")
+        val max = row.hotspots.frames.map(_.samples).maxOption.getOrElse(0L)
+
+        def name(frame: probably.Hotspots.Frame): Text =
+          val method = StackTrace.Method(frame.className, frame.method)
+          val cls = if method.cls.starts(t"Ξ") then method.cls.skip(1) else method.cls
+          t"${method.prefix}.$cls#${frame.method}"
+
+        val width = row.hotspots.frames.map(name(_).length).maxOption.getOrElse(0)
+
+        row.hotspots.frames.each: frame =>
+          val basisPoints =
+            if row.hotspots.total == 0L then 0L else frame.samples*10000L/row.hotspots.total
+
+          val percent = t"${basisPoints/100}.${(basisPoints%100).show.pad(2, Rtl, '0')}"
+
+          Out.println:
+            t"  ${name(frame).pad(width, Rtl)} ${percent.pad(6, Rtl)}% ${bar(frame.samples, max)}"
 
     val failureStatuses: Set[Status] =
       Set(Status.Fail, Status.Throws, Status.CheckThrows, Status.Mixed)
@@ -566,6 +621,7 @@ final class Report(using Environment)(using palette: TestPalette):
           totals.getOrElse(Status.Pass, 0)
           + totals.getOrElse(Status.Bench, 0)
           + totals.getOrElse(Status.Stress, 0)
+          + totals.getOrElse(Status.Profile, 0)
         val aspirePassed: Int = totals.getOrElse(Status.AspirePass, 0)
         val aspireFailed: Int = totals.getOrElse(Status.AspireFail, 0)
         val total: Int = totals.values.sum
@@ -640,7 +696,8 @@ final class Report(using Environment)(using palette: TestPalette):
         import Status.*
 
         val allStatuses =
-          List(Pass, Bench, Stress, AspirePass, Throws, Fail, AspireFail, Mixed, CheckThrows)
+          List(Pass, Bench, Stress, Profile, AspirePass, Throws, Fail, AspireFail, Mixed,
+              CheckThrows)
 
         // Printed with index loops rather than `grouped(_).each`/`map` closures: a lambda whose
         // parameter is a `List` and whose body uses the `Stdio` capability leaks the list's reach
@@ -861,6 +918,72 @@ final class Report(using Environment)(using palette: TestPalette):
 
       strain.tabulate(rows.to(List).sortBy(_.strain.allocationRate))
       . grid(columns).render.each(Out.println(_))
+
+      if githubActions then GithubActions.endGroup()
+
+    profiles(lines).groupBy(_.test.suite).each: (suite, rows) =>
+      val ribbon =
+        Ribbon
+          ( palette.subdue(palette.detail, 0.3),
+            palette.subdue(palette.detail, 0.6),
+            palette.subdue(palette.detail, 0.9) )
+
+      val suiteName = suite.let(_.name.teletype).or(e"")
+
+      if githubActions then
+        GithubActions.group(t"Profile: ${suite.let(_.name.text).or(t"")}")
+
+      Out.println:
+        ribbon.fill(e"${suite.lay(t"")(_.id.id)}", e"Profile", suiteName)
+
+      val stackPalette = summon[StackTrace.Palette]
+
+      // The digression convention: packages in first-appearance order take the accent
+      // colours cyclically, exactly as coloured stack traces do.
+      def accent(level: Int): Color in Srgb =
+        stackPalette.selectDynamic(s"accent${(level%5) + 1}")
+
+      rows.to(List).sortBy(_.test.timestamp).each: row =>
+        Out.println(e"$Bold(${Fg(palette.foreground)}(${row.test.name}))")
+        val max = row.hotspots.frames.map(_.samples).maxOption.getOrElse(0L)
+
+        val packages: Map[Text, Color in Srgb] =
+          row.hotspots.frames.map: frame =>
+            StackTrace.Method(frame.className, frame.method).prefix
+
+          . distinct.zipWithIndex.map: (prefix, index) =>
+              prefix -> accent(index)
+
+          . to(Map)
+
+        // The method column is leftmost and right-aligned against the bars, so the names
+        // read into their histogram rows; the plain width is measured before styling.
+        val width: Int =
+          row.hotspots.frames.map: frame =>
+            val method = StackTrace.Method(frame.className, frame.method)
+            val cls = if method.cls.starts(t"Ξ") then method.cls.skip(1) else method.cls
+            method.prefix.length + 1 + cls.length + 1 + frame.method.length
+
+          . maxOption.getOrElse(0)
+
+        row.hotspots.frames.each: frame =>
+          val method = StackTrace.Method(frame.className, frame.method)
+          val color = packages(method.prefix)
+
+          val basisPoints =
+            if row.hotspots.total == 0L then 0L else frame.samples*10000L/row.hotspots.total
+
+          val percent = t"${basisPoints/100}.${(basisPoints%100).show.pad(2, Rtl, '0')}"
+          val obj = method.cls.starts(t"Ξ")
+          val cls = if obj then method.cls.skip(1) else method.cls
+          val separator = if obj then t"." else t"⌗"
+          val length = method.prefix.length + 1 + cls.length + 1 + frame.method.length
+          val margin = t" "*(width - length)
+
+          Out.println:
+            e"  $margin${stackPalette.subdue(color, 0.5)}(${method.prefix}.$Bold($color($cls)))${stackPalette.separator}($separator)${stackPalette.method}(${frame.method}) ${Fg(palette.foreground)}(${percent.pad(6, Rtl)}%) $color(${bar(frame.samples, max)})"
+
+        Out.println(e"")
 
       if githubActions then GithubActions.endGroup()
 

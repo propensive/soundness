@@ -155,6 +155,7 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
     val stress = Stress()
     val constrained = Stress(heap = t"128m")
     val gated = Stress(heap = t"2g", cpus = 4)
+    val profile = Profile()
     val size = input.length*Byte
     val textSize = textData.length*Byte
 
@@ -1087,5 +1088,31 @@ object Benchmarks extends Suite(m"Streaming benchmarks: Soundness vs ZIO / FS2 /
             var total = 0L
             stream.sweep((_, _, count) => total += count)
             producer.join()
+            total
+        }
+
+    // Example T: profiles — where the time actually goes in the two pipelines the
+    // stress suites measure. Each renders as a histogram of the hottest methods
+    // (self time, from JFR execution samples), coloured by package.
+    suite(m"Profile: pipeline hotspots"):
+      profile(m"Conduit hand-off (4 MB in 64 KiB chunks)")(target = 5*Second):
+        '{
+            val (intake, stream) = Conduit[Data]()
+            val producer = Thread.ofVirtual.start(() =>
+              turbulence.Benchmarks.inputChunks.foreach(intake.put)
+              intake.finish())
+            var total = 0L
+            stream.sweep((_, _, count) => total += count)
+            producer.join()
+            total
+        }
+
+      profile(m"Stream.decompress[Gzip] (4 MB out)")(target = 5*Second):
+        '{
+            var total = 0L
+
+            turbulence.Benchmarks.gzippedInput.stream.decompress[Gzip]
+            . sweep((_, _, count) => total += count)
+
             total
         }
