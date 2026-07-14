@@ -46,7 +46,8 @@ object Strain:
 // `allocation` is the total heap allocation over the window; `peakHeap` the high-water mark of
 // the heap pools; `retained` the live set remaining after a post-run GC (bounded-memory designs
 // show a flat, small value here); `gcCount`/`gcTime` are the collector deltas over the window
-// (time in milliseconds).
+// (time in milliseconds). The optional `p50`/`p90`/`p99`/`p999` fields are per-operation
+// latency percentiles in nanoseconds, taken from a histogram accumulated across all workers.
 case class Strain
   ( concurrency: Int,
     operations:  Long,
@@ -56,7 +57,11 @@ case class Strain
     retained:    Long,
     gcCount:     Long,
     gcTime:      Long,
-    baseline:    Optional[Baseline] ):
+    baseline:    Optional[Baseline],
+    p50:         Optional[Long] = Unset,
+    p90:         Optional[Long] = Unset,
+    p99:         Optional[Long] = Unset,
+    p999:        Optional[Long] = Unset ):
 
   def throughput: Long = if nanoseconds == 0L then 0L else (operations*1e9/nanoseconds).toLong
 

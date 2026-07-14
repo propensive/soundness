@@ -342,6 +342,8 @@ final class Report(using Environment)(using palette: TestPalette):
           Column(e"Throughput", textAlign = TextAlignment.Right): s =>
             val tp = s.strain.throughput
             if tp == 0 then e"" else e"$tp op/s",
+          Column(e"p99", textAlign = TextAlignment.Right): s =>
+            s.strain.p99.lay(e"")(showTime(_)),
           Column(e"Alloc/op", textAlign = TextAlignment.Right): s =>
             showMemory(s.strain.allocationRate.toLong),
           Column(e"Peak", textAlign = TextAlignment.Right): s =>
@@ -799,15 +801,25 @@ final class Report(using Environment)(using palette: TestPalette):
           Column(e"$Bold(Throughput)", textAlign = TextAlignment.Right): s =>
             frequency(s.strain),
           Column(e"$Bold(Alloc·op¯¹)", textAlign = TextAlignment.Right): s =>
-            showMemory(s.strain.allocationRate.toLong),
-          Column(e"$Bold(Peak)", textAlign = TextAlignment.Right): s =>
-            showMemory(s.strain.peakHeap),
-          Column(e"$Bold(Retained)", textAlign = TextAlignment.Right): s =>
-            showMemory(s.strain.retained),
-          Column(e"$Bold(GC n)", textAlign = TextAlignment.Right): s =>
-            s.strain.gcCount,
-          Column(e"$Bold(GC t)", textAlign = TextAlignment.Right): s =>
-            showTime(s.strain.gcTime*1000000L)) :::
+            showMemory(s.strain.allocationRate.toLong)) :::
+          (
+          if rows.exists(_.strain.p50.present) then List(
+            Column(e"$Bold(p50)", textAlign = TextAlignment.Right):
+              (s: ReportLine.Strain) => s.strain.p50.lay(e"")(showTime(_)),
+            Column(e"$Bold(p99)", textAlign = TextAlignment.Right):
+              (s: ReportLine.Strain) => s.strain.p99.lay(e"")(showTime(_)),
+            Column(e"$Bold(p999)", textAlign = TextAlignment.Right):
+              (s: ReportLine.Strain) => s.strain.p999.lay(e"")(showTime(_)))
+          else Nil) :::
+          List(
+          Column(e"$Bold(Peak)", textAlign = TextAlignment.Right):
+            (s: ReportLine.Strain) => showMemory(s.strain.peakHeap),
+          Column(e"$Bold(Retained)", textAlign = TextAlignment.Right):
+            (s: ReportLine.Strain) => showMemory(s.strain.retained),
+          Column(e"$Bold(GC n)", textAlign = TextAlignment.Right):
+            (s: ReportLine.Strain) => e"${s.strain.gcCount}",
+          Column(e"$Bold(GC t)", textAlign = TextAlignment.Right):
+            (s: ReportLine.Strain) => showTime(s.strain.gcTime*1000000L)) :::
           comparisons.map: comparison =>
           import Baseline.*
           val baseline = comparison.strain.baseline.vouch
