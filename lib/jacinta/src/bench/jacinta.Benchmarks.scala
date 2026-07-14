@@ -170,6 +170,248 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
     given BenchUsers is Json.Parsable = Json.Parsable.staged
     jsonBytes4.read[BenchUsers in Json]
 
+  // ── Fused-tokenizer spike ─────────────────────────────────────────────────
+  // Hand-written approximation of what a builder-parameterized staged
+  // tokenizer would GENERATE for `BenchUsers`: one function, parser state in
+  // locals only, bytes read directly, keys compared as packed-Long literals,
+  // scans inlined. Happy-path only (bails by exception on anything the
+  // generator would route to a slow path); exists purely to measure the
+  // ceiling of fully-fused generated code before building the generator.
+  object FusedSpike:
+    private val words: java.lang.invoke.VarHandle =
+      java.lang.invoke.MethodHandles
+        . byteArrayViewVarHandle(Class.forName("[J").nn, java.nio.ByteOrder.LITTLE_ENDIAN)
+        . nn
+
+    private inline val HighBits = 0x8080808080808080L
+    private inline val EveryByte = 0x0101010101010101L
+
+    private def pack(name: String): Long =
+      var low = 0L
+      var index = 0
+
+      while index < name.length do
+        low |= (name.charAt(index).toLong & 0xFF) << (index*8)
+        index += 1
+
+      low
+
+    private val UsersKey = pack("users")
+    private val IdKey = pack("id")
+    private val UsernameKey = pack("username")
+    private val EmailKey = pack("email")
+    private val ActiveKey = pack("active")
+    private val RoleKey = pack("role")
+
+    private def bail(): Nothing = sys.error("fused spike: unsupported input shape")
+
+    def decode(buffer: Array[Byte]): BenchUsers =
+      val limit = buffer.length
+
+      inline def ws(p0: Int): Int =
+        var p = p0
+
+        while
+          p < limit && {
+            val b = buffer(p)
+            b == ' ' || b == '\t' || b == '\n' || b == '\r'
+          }
+        do p += 1
+
+        p
+
+      // At the first content byte; the index of the closing quote.
+      inline def scanString(p0: Int): Int =
+        var p = p0
+        var stop = -1
+
+        while stop < 0 && p <= limit - 8 do
+          val word: Long = words.get(buffer, p)
+          val x22 = word ^ (0x22L*EveryByte)
+          val x5c = word ^ (0x5CL*EveryByte)
+
+          val stops =
+            ((x22 - EveryByte) & ~x22 & HighBits)
+              | ((x5c - EveryByte) & ~x5c & HighBits)
+              | ((word - (0x20L*EveryByte)) & ~word & HighBits)
+              | (word & HighBits)
+
+          if stops == 0L then p += 8
+          else
+            p += java.lang.Long.numberOfTrailingZeros(stops) >> 3
+            stop = p
+
+        if stop < 0 then
+          while p < limit && buffer(p) >= ' ' && buffer(p) != '"' && buffer(p) != '\\' do p += 1
+          stop = p
+
+        if stop >= limit || buffer(stop) != '"' then bail()
+        stop
+
+      // Key step: whitespace, separator (unless first), quote, key content,
+      // quote, colon. Result packs the new position (high 32) with the key's
+      // packed word truncated to 32 bits... keys here are <= 8 bytes, so the
+      // packed low word is matched in full via the `key` local instead.
+      var keyWord = 0L
+
+      inline def keyStep(p0: Int, first: Boolean): Int =
+        var p = ws(p0)
+        if p >= limit then bail()
+
+        if buffer(p) == '}' then
+          keyWord = -1L
+          p + 1
+        else
+          if !first then
+            if buffer(p) != ',' then bail()
+            p = ws(p + 1)
+
+          if p >= limit || buffer(p) != '"' then bail()
+          p += 1
+          val start = p
+          val end = scanString(p)
+          val length = end - start
+          if length == 0 || length > 8 then bail()
+          val word: Long = words.get(buffer, start)
+          keyWord = if length == 8 then word else word & ((1L << (length*8)) - 1)
+          p = ws(end + 1)
+          if p >= limit || buffer(p) != ':' then bail()
+          p + 1
+
+      var intValue = 0
+
+      inline def parseInt(p0: Int): Int =
+        var p = ws(p0)
+        var negative = false
+
+        if p < limit && buffer(p) == '-' then
+          negative = true
+          p += 1
+
+        val start = p
+        var value = 0
+
+        while p < limit && buffer(p) >= '0' && buffer(p) <= '9' do
+          value = value*10 + (buffer(p) - '0')
+          p += 1
+
+        if p == start || p - start > 9 then bail()
+        intValue = if negative then -value else value
+        p
+
+      var stringValue: String = ""
+
+      inline def parseString(p0: Int): Int =
+        var p = ws(p0)
+        if p >= limit || buffer(p) != '"' then bail()
+        p += 1
+        val end = scanString(p)
+        stringValue = new String(buffer, p, end - p, java.nio.charset.StandardCharsets.ISO_8859_1)
+        end + 1
+
+      var booleanValue = false
+
+      inline def parseBoolean(p0: Int): Int =
+        val p = ws(p0)
+
+        if p + 4 <= limit && buffer(p) == 't' && buffer(p + 1) == 'r' && buffer(p + 2) == 'u'
+            && buffer(p + 3) == 'e'
+        then
+          booleanValue = true
+          p + 4
+        else if p + 5 <= limit && buffer(p) == 'f' && buffer(p + 1) == 'a'
+            && buffer(p + 2) == 'l' && buffer(p + 3) == 's' && buffer(p + 4) == 'e'
+        then
+          booleanValue = false
+          p + 5
+        else bail()
+
+      // ── the generated shape for BenchUsers begins here ──
+      var p = ws(0)
+      if p >= limit || buffer(p) != '{' then bail()
+      p += 1
+
+      var users: List[BenchUser] = Nil
+      var usersSeen = false
+      var firstKey = true
+      var scanning = true
+
+      while scanning do
+        p = keyStep(p, firstKey)
+        firstKey = false
+
+        if keyWord == -1L then scanning = false
+        else if keyWord == UsersKey then
+          usersSeen = true
+          p = ws(p)
+          if p >= limit || buffer(p) != '[' then bail()
+          p += 1
+          val builder = List.newBuilder[BenchUser]
+          p = ws(p)
+
+          if p < limit && buffer(p) == ']' then p += 1
+          else
+            var elements = true
+
+            while elements do
+              // ── inlined generated shape for BenchUser ──
+              p = ws(p)
+              if p >= limit || buffer(p) != '{' then bail()
+              p += 1
+
+              var id = 0
+              var username = ""
+              var email = ""
+              var active = false
+              var role = ""
+              var seen = 0
+              var userFirst = true
+              var inUser = true
+
+              while inUser do
+                p = keyStep(p, userFirst)
+                userFirst = false
+
+                if keyWord == -1L then inUser = false
+                else if keyWord == IdKey then { p = parseInt(p); id = intValue; seen |= 1 }
+                else if keyWord == UsernameKey then
+                  p = parseString(p)
+                  username = stringValue
+                  seen |= 2
+                else if keyWord == EmailKey then
+                  p = parseString(p)
+                  email = stringValue
+                  seen |= 4
+                else if keyWord == ActiveKey then
+                  p = parseBoolean(p)
+                  active = booleanValue
+                  seen |= 8
+                else if keyWord == RoleKey then
+                  p = parseString(p)
+                  role = stringValue
+                  seen |= 16
+                else bail()
+
+              if seen != 31 then bail()
+              builder += BenchUser(id, username.tt, email.tt, active, role.tt)
+              p = ws(p)
+
+              if p < limit && buffer(p) == ',' then p += 1
+              else if p < limit && buffer(p) == ']' then
+                p += 1
+                elements = false
+              else bail()
+
+          users = builder.result()
+        else bail()
+
+      if !usersSeen then bail()
+      BenchUsers(users)
+
+  lazy val jsonArray4: Array[Byte] = jsonText4.getBytes("UTF-8").nn
+
+  def decodeUsersFused(): BenchUsers = FusedSpike.decode(jsonArray4)
+
   val jsoniterUsersCodec: com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[JsoniterUsers] =
     com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
 
@@ -178,6 +420,9 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
       ( jsonBytes4.mutable(using Unsafe) )(using jsoniterUsersCodec)
 
   def run(): Unit =
+    // The spike must agree with the production decoder before being timed.
+    assert(decodeUsersFused() == decodeUsersDirectData(), "fused spike disagrees")
+
     val bench = Bench()
 
     val size1 = jsonBytes1.length*Byte
@@ -299,6 +544,10 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
       bench(m"Decode with a staged Parsable")(target = 1*Second, operationSize = size4):
         '{ jacinta.Benchmarks.decodeUsersStaged() }
+
+      bench(m"Decode with a hand-fused parser (spike)")
+        ( target = 1*Second, operationSize = size4 ):
+        '{ jacinta.Benchmarks.decodeUsersFused() }
 
       bench(m"Decode directly with Jsoniter")(target = 1*Second, operationSize = size4):
         '{ jacinta.Benchmarks.decodeUsersJsoniter() }
