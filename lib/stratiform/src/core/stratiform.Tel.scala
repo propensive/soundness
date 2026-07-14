@@ -1369,24 +1369,57 @@ object Tel extends Tel2:
   given stringParsable: String is Tel.Parsable =
     primitiveParsable(Morphology.Str, t"String", ""): atom => atom.s
 
+  // Distinguish the two ways a byte-parsed primitive can be `Unset`: a missing
+  // atom raises `Absent`, a present-but-unparseable one raises
+  // `NotScalar(text, expected)` with the offending atom's text — exactly the
+  // `primitiveFault` split the AST path performs, so the two paths' errors agree.
+  private def byteScalarFault[value](reader: TelReader^, expected: Text, sentinel: value): value =
+    if reader.primaryPresent
+    then reader.fault(TelError.Reason.NotScalar(reader.primaryText.or(t""), expected)) yet sentinel
+    else reader.fault(TelError.Reason.Absent) yet sentinel
+
+  // `Int`/`Long`/`Boolean` read their value straight from the atom's arena
+  // bytes (`reader.int()`/`long()`/`boolean()`), so a valid scalar never
+  // materializes the value `String` that `atom()` would — only a rejected one
+  // does, for its error. `Double` keeps the text path: replicating
+  // `Double.parseDouble`'s grammar in bytes buys little (doubles are the
+  // rarest leaf and the format is broad).
   given intParsable: Int is Tel.Parsable =
-    primitiveParsable(Morphology.Whole, t"Int", 0): atom =>
-      try atom.s.toInt catch case _: NumberFormatException => Unset
+    new Tel.Parsable:
+      type Self = Int
+      def shape(): Morphology = Morphology.Whole
+
+      def parse(reader: TelReader^, indent: Int): Int =
+        reader.int().lay(byteScalarFault(reader, t"Int", 0))(identity)
+
+      override def absent()(using Tactic[TelError]): Int =
+        raise(TelError(TelError.Reason.Absent)) yet 0
 
   given longParsable: Long is Tel.Parsable =
-    primitiveParsable(Morphology.Whole, t"Long", 0L): atom =>
-      try atom.s.toLong catch case _: NumberFormatException => Unset
+    new Tel.Parsable:
+      type Self = Long
+      def shape(): Morphology = Morphology.Whole
+
+      def parse(reader: TelReader^, indent: Int): Long =
+        reader.long().lay(byteScalarFault(reader, t"Long", 0L))(identity)
+
+      override def absent()(using Tactic[TelError]): Long =
+        raise(TelError(TelError.Reason.Absent)) yet 0L
 
   given doubleParsable: Double is Tel.Parsable =
     primitiveParsable(Morphology.Real, t"Double", 0.0): atom =>
       try atom.s.toDouble catch case _: NumberFormatException => Unset
 
   given booleanParsable: Boolean is Tel.Parsable =
-    primitiveParsable(Morphology.Bool, t"Boolean", false): atom =>
-      atom.s match
-        case "true"  => true
-        case "false" => false
-        case _       => Unset
+    new Tel.Parsable:
+      type Self = Boolean
+      def shape(): Morphology = Morphology.Bool
+
+      def parse(reader: TelReader^, indent: Int): Boolean =
+        reader.boolean().lay(byteScalarFault(reader, t"Boolean", false))(identity)
+
+      override def absent()(using Tactic[TelError]): Boolean =
+        raise(TelError(TelError.Reason.Absent)) yet false
 
   // `Tel` reads itself directly through the AST bridge — the direct
   // counterpart of `telDecodable`.
@@ -1947,14 +1980,58 @@ object Tel extends Tel2:
     private var arenaPos:      Int = 0
     private var inFlightStart: Int = -1
 
-    // Direct-primary-atom capture: when `directPrimaryOnly` is set (by
-    // `directAtomText`), `commit()` materializes the first inline atom's text
-    // straight into `directPrimaryText` and allocates no `Tel.Atom.Inline` at
-    // all — a scalar leaf then costs exactly its one value `String`. The text
-    // is decoded on capture (not deferred) because a later atom on the same
-    // line may grow the arena and move the bytes.
-    private var directPrimaryOnly: Boolean       = false
-    private var directPrimaryText: String | Null = null
+    // Direct-primary-atom capture: when `directPrimaryOnly` is set (by the
+    // primitive readers), `commit()` consumes the first inline atom's bytes
+    // straight into the mode-appropriate slot and allocates no `Tel.Atom.Inline`
+    // at all. Numeric modes parse the value out of the arena bytes with no
+    // `String` at all; only the `Text` mode materializes one. The value is
+    // captured on commit (not deferred) because a later atom on the same line
+    // may grow the arena and move the bytes.
+    private inline val PrimaryText = 0
+    private inline val PrimaryLong = 1
+    private inline val PrimaryBoolean = 2
+    private inline val PrimaryInt = 3
+
+    private var directPrimaryOnly:    Boolean       = false
+    private var directPrimaryMode:    Int           = PrimaryText
+    private[stratiform] var directPrimaryPresent: Boolean       = false
+    private var directPrimaryOk:      Boolean       = false
+    private[stratiform] var directPrimaryText:    String | Null = null
+    private var directPrimaryLongVal: Long          = 0L
+    private var directPrimaryBoolVal: Boolean       = false
+
+    // Parse `atomArena[off until off+len]` as a base-10 integer with exactly
+    // `java.lang.Long.parseLong`'s acceptance (optional single leading `+`/`-`,
+    // then ASCII digits, in `Long` range) — accumulating as a negative so
+    // `Long.MinValue` is representable. Sets `directPrimaryLongVal` and returns
+    // whether the slice parsed; on `false` the caller reproduces the AST path's
+    // `NumberFormatException => Unset`, so semantics match byte-for-byte.
+    private def parseArenaLong(off: Int, len: Int): Boolean =
+      if len == 0 then false else
+        var i = 0
+        var negative = false
+        val first = atomArena(off)
+
+        if first == '-'.toByte then { negative = true; i = 1 }
+        else if first == '+'.toByte then i = 1
+
+        if i == len then false else
+          var result = 0L
+          val limit = if negative then Long.MinValue else -Long.MaxValue
+          val multMin = limit / 10L
+          var ok = true
+
+          while ok && i < len do
+            val digit = atomArena(off + i) - '0'.toByte
+
+            if digit < 0 || digit > 9 || result < multMin then ok = false
+            else
+              result *= 10L
+              if result < limit + digit then ok = false
+              else { result -= digit; i += 1 }
+
+          if ok then directPrimaryLongVal = if negative then result else -result
+          ok
 
     private inline def beginInFlightAtom(): Unit = inFlightStart = arenaPos
 
@@ -3781,10 +3858,45 @@ object Tel extends Tel2:
           val len = endInFlightAtom()
 
           if directPrimaryOnly then
-            // Keep only the first inline atom's text; later atoms are consumed
-            // but neither materialized nor allocated.
-            if directPrimaryText == null then
-              directPrimaryText = new String(atomArena, off, len, StandardCharsets.UTF_8)
+            // Consume only the first inline atom, in the reader's requested mode;
+            // later atoms on the line are consumed but neither parsed nor allocated.
+            if !directPrimaryPresent then
+              directPrimaryPresent = true
+
+              directPrimaryMode match
+                case PrimaryLong =>
+                  directPrimaryOk = parseArenaLong(off, len)
+                  // Only a rejected value needs its text — for the `NotScalar`
+                  // error, byte-for-byte with the AST path. The happy path
+                  // allocates no `String`.
+                  if !directPrimaryOk then
+                    directPrimaryText = new String(atomArena, off, len, StandardCharsets.UTF_8)
+
+                case PrimaryInt =>
+                  // As `PrimaryLong`, but an out-of-`Int`-range (yet valid Long)
+                  // value is also a `NotScalar`, exactly as `_.toInt` throws —
+                  // so it too captures its text.
+                  directPrimaryOk =
+                    parseArenaLong(off, len)
+                    && directPrimaryLongVal >= Int.MinValue && directPrimaryLongVal <= Int.MaxValue
+
+                  if !directPrimaryOk then
+                    directPrimaryText = new String(atomArena, off, len, StandardCharsets.UTF_8)
+
+                case PrimaryBoolean =>
+                  if len == 4 && atomArena(off) == 't'.toByte && atomArena(off + 1) == 'r'.toByte
+                    && atomArena(off + 2) == 'u'.toByte && atomArena(off + 3) == 'e'.toByte
+                  then { directPrimaryBoolVal = true; directPrimaryOk = true }
+                  else if len == 5 && atomArena(off) == 'f'.toByte
+                    && atomArena(off + 1) == 'a'.toByte && atomArena(off + 2) == 'l'.toByte
+                    && atomArena(off + 3) == 's'.toByte && atomArena(off + 4) == 'e'.toByte
+                  then { directPrimaryBoolVal = false; directPrimaryOk = true }
+                  else
+                    directPrimaryOk = false
+                    directPrimaryText = new String(atomArena, off, len, StandardCharsets.UTF_8)
+
+                case _ =>
+                  directPrimaryText = new String(atomArena, off, len, StandardCharsets.UTF_8)
           else pushAtom(Tel.Atom.Inline.fromArena(atomArena, off, len, precedingSpaces))
 
           atomOpen = false
@@ -4121,31 +4233,24 @@ object Tel extends Tel2:
       val atoms = takeAtoms(atomScratchIx - atomsStart)
       Tel.Compound(keyword, atoms, remark, children)
 
-    // The entry's primary atom, consuming the whole entry: the first inline
-    // atom's text, or Unset when the line carries none — mirroring
-    // `Tel#primaryAtom`, where a source/literal atom never supplies the
-    // primary text. Backs the primitive parsers.
-    //
-    // Unlike `directCompound`, this materializes no `Tel.Compound`, no
-    // `IArray[Atom]` (`takeAtoms`) and — via `directPrimaryOnly` — not even an
-    // `Tel.Atom.Inline`: `parseCompoundLineRest` decodes the first inline
-    // atom's text straight into `directPrimaryText`, and the source/literal
-    // continuation and child subtree are consumed (discarded) so the reader
-    // still lands on the next sibling. For a scalar leaf that is exactly one
-    // value `String` and nothing else — the direct path made genuinely direct.
-    private[stratiform] def directAtomText(): Optional[Text] raises TelError =
+    // Consume the whole entry in the given primary-capture `mode`, leaving the
+    // captured value in the mode's slot (`directPrimaryText` /
+    // `directPrimaryLongVal` / `directPrimaryBoolVal`, with `directPrimaryPresent`
+    // and `directPrimaryOk`). Materializes no `Tel.Compound`, no `IArray[Atom]`
+    // (`takeAtoms`) and no `Tel.Atom.Inline`: the first inline atom is consumed
+    // straight into the slot, and the source/literal continuation and child
+    // subtree are consumed (discarded) so the reader lands on the next sibling.
+    private def consumeDirectEntry(mode: Int): Unit raises TelError =
       val spaces = directEntrySpaces
       val indent = directEntryIndent
       val tabulated = directTabulation.present
 
+      directPrimaryMode = mode
+      directPrimaryPresent = false
+      directPrimaryOk = false
       directPrimaryText = null
       directPrimaryOnly = true
       try parseCompoundLineRest(directEntryLine) finally directPrimaryOnly = false
-
-      // The primary text is the first inline atom's, decoded on capture; a
-      // source/literal atom never supplies it.
-      val captured = directPrimaryText
-      val result: Optional[Text] = if captured == null then Unset else Optional(Text(captured))
 
       prevContentLeadingSpaces = spaces
       prevLineWasBoundary = false
@@ -4161,7 +4266,31 @@ object Tel extends Tel2:
       else if !head.eof && !head.separator && !head.blank && head.indentLevels > indent
       then errorAt(directOverIndentReason, head.startLine, 1)
 
-      result
+    // The entry's primary atom as text — the first inline atom's, or Unset when
+    // the line carries none (a source/literal atom never supplies it), mirroring
+    // `Tel#primaryAtom`. Backs the `Text`/text-codec primitive readers.
+    private[stratiform] def directAtomText(): Optional[Text] raises TelError =
+      consumeDirectEntry(PrimaryText)
+      val captured = directPrimaryText
+      if captured == null then Unset else Optional(Text(captured))
+
+    // The entry's primary atom parsed straight from its bytes as an integer, or
+    // Unset for a missing / non-integer atom — the `Int`/`Long` readers, saving
+    // the value `String` the `Text` path would materialize only to re-scan.
+    private[stratiform] def directAtomLong(): Optional[Long] raises TelError =
+      consumeDirectEntry(PrimaryLong)
+      if directPrimaryPresent && directPrimaryOk then Optional(directPrimaryLongVal) else Unset
+
+    // As `directAtomLong`, additionally requiring the value to fit `Int`.
+    private[stratiform] def directAtomInt(): Optional[Int] raises TelError =
+      consumeDirectEntry(PrimaryInt)
+      if directPrimaryPresent && directPrimaryOk then Optional(directPrimaryLongVal.toInt) else Unset
+
+    // The entry's primary atom parsed straight from its bytes as a boolean, or
+    // Unset for a missing atom or anything but `true` / `false`.
+    private[stratiform] def directAtomBoolean(): Optional[Boolean] raises TelError =
+      consumeDirectEntry(PrimaryBoolean)
+      if directPrimaryPresent && directPrimaryOk then Optional(directPrimaryBoolVal) else Unset
 
     // Consume the rest of the entry's own line (atoms, remark) and any
     // source/literal continuation, but not its child lines — the step before
