@@ -103,18 +103,24 @@ extension (data: Data)
 
     decodable.decoded(plaintext)
 
-// `expose` lends the key to the block as an `Encryptor`/`Decryptor` capability.
-// Capture checking (which would confine the capability to this scope) is not yet
-// enabled; the capability types are kept so it can be turned on as an enhancement.
+// `expose` lends the key to the block as an `Encryptor`/`Decryptor` capability,
+// and capture checking confines it there: `result` is instantiated at the call
+// site, so returning the capability — or any closure over it — is a compile
+// error ("leaks into outer capture set"). The capabilities are `SharedCapability`
+// because they are stateless key wrappers, freely aliasable within the block
+// (the symmetric variant lends two at once), so separation checking is
+// deliberately not used. The streaming caveat above stands: a lazily-encrypted
+// `LazyList[Data]` is pure (the key bytes are already baked in) and escapes
+// tracking by design. Confinement is regression-tested in `CaptureTests`.
 
 extension [cipher <: Cipher](key: PublicKey[cipher])
-  def expose[result](block: Encryptor[cipher] ?=> result): result =
+  def expose[result](block: Encryptor[cipher]^ ?=> result): result =
     block(using Encryptor(key.bytes))
 
 extension [cipher <: Cipher](key: PrivateKey[cipher])
-  def expose[result](block: Decryptor[cipher] ?=> result): result =
+  def expose[result](block: Decryptor[cipher]^ ?=> result): result =
     block(using Decryptor(key.privateData))
 
 extension [cipher <: Cipher](key: SymmetricKey[cipher])
-  def expose[result](block: (Encryptor[cipher], Decryptor[cipher]) ?=> result): result =
+  def expose[result](block: (Encryptor[cipher]^, Decryptor[cipher]^) ?=> result): result =
     block(using Encryptor(key.bytes), Decryptor(key.bytes))

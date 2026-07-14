@@ -135,20 +135,24 @@ object Subcompiler:
   // computes this from the parent compilation's `-Xplugin` settings minus
   // larceny itself, so the inner compile sees the same plugin pipeline that
   // production code would see — except for larceny, whose recursion would
-  // re-fire on any `demilitarize(...)` calls in the sub-source.
+  // re-fire on any `demilitarize(...)` calls in the sub-source. `ccNew`
+  // propagates the parent's `-Ycc-new`, which selects the capture-checking
+  // scheme but is not part of the `-language` settings.
   def compile
     ( language:  List[Settings.Setting.ChoiceWithHelp[String]],
       classpath: String,
       source:    String,
       regions:   Set[(Int, Int)],
-      plugins:   List[String] )
+      plugins:   List[String],
+      ccNew:     Boolean = false )
   :   List[CompileError] =
 
     object driver extends Driver:
       val currentContext: Context =
         val context = initCtx.fresh
         val context2 = context.setSetting(context.settings.classpath, classpath)
-        val args = Array[String]("") ++ plugins.map: p => s"-Xplugin:$p"
+        val ccOptions = if ccNew then List("-Ycc-new") else Nil
+        val args = Array[String]("") ++ ccOptions ++ plugins.map: p => s"-Xplugin:$p"
         setup(args, context2).map(_(1)).get
 
 

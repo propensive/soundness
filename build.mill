@@ -1032,6 +1032,13 @@ object enigmatic extends Library:
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, cose, openssl):
+    // Not `settings.cc`: the suite's `NoPadding` tests trip the tactic-capturing
+    // padding given (pure `using cipher` params can't accept capturing evidence
+    // yet); `CaptureTests` opts into capture checking per-file instead. `-Ycc-new`
+    // alone is inert for files without the import, but selects the new checker for
+    // that file — and larceny propagates it into `demilitarize` sub-compilations.
+    override def scalacOptions = Task:
+      super.scalacOptions() :+ "-Ycc-new"
     override def forkArgs: T[Seq[String]] = Task:
       super.forkArgs() ++ Seq("--enable-native-access=ALL-UNNAMED")
 

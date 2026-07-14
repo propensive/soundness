@@ -33,8 +33,16 @@
 package larceny
 
 object CompileError:
+  // An ordinal from a newer compiler than this enum knows about must not raise (a
+  // raising `apply` would make `doReport` silently drop the diagnostic, and every
+  // `demilitarize` test expecting it would quietly stop testing anything); map
+  // unknown ordinals to `NoExplanation` so the message still comes through.
   def apply(ordinal: Int, message: String, focus: String, start: Int, offset: Int): CompileError =
-    new CompileError(CompileError.Reason.fromOrdinal(ordinal), message, focus, start, offset)
+    val reason =
+      if ordinal < CompileError.Reason.values.length then CompileError.Reason.fromOrdinal(ordinal)
+      else CompileError.Reason.NoExplanation
+
+    new CompileError(reason, message, focus, start, offset)
 
   enum Reason:
     case NoExplanation
@@ -250,6 +258,26 @@ object CompileError:
     case FormatInterpolationError
     case ValueClassCannotExtendAliasOfAnyVal
     case MatchIsNotPartialFunction
+    case OnlyFullyDependentAppliedConstructorType
+    case PointlessAppliedConstructorType
+    case IllegalContextBounds
+    case NamedPatternNotApplicable
+    case UnnecessaryNn
+    case ErasedNotPure
+    case IllegalErasedDef
+    case CannotInstantiateQuotedTypeVar
+    case DefaultShadowsGiven
+    case RecurseWithDefault
+    case EncodedPackageName
+    case CannotBeIncluded
+    case OverrideClass
+    case InferUnionWarning
+    case TypeParameterShadowsType
+    case PrivateShadowsType
+    case AmbiguousTemplateName
+    case IndentationWarning
+    case IllegalIdentifier
+    case ConcreteClassHasUnimplementedMethods
 
 case class CompileError
   ( reason: CompileError.Reason, message: String, focus: String, start: Int, offset: Int ):
