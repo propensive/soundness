@@ -971,6 +971,25 @@ object Tests extends Suite(m"Jacinta Tests"):
           case Json.Ast.Issue.ExpectedNumber('"') => true
           case _                                  => false)
 
+      test(m"A whole Data block reads directly, without stream plumbing"):
+        t"""{"name": "Amy", "age": 50}""".in[Data].read[Person in Json]
+      . assert(_ == Person(t"Amy", 50))
+
+      test(m"An 18-digit-plus integer falls back to the general number path"):
+        parity[Person](t"""{"name": "Old", "age": 99999999999999999999}""")
+      . assert(identity)
+
+      test(m"A leading zero raises the same issue on both paths"):
+        val direct = capture[ParseError](t"""{"name": "Amy", "age": 0123}""".read[Person in Json])
+        val ast = capture[ParseError](t"""{"name": "Amy", "age": 0123}""".read[Json])
+        (direct.issue, ast.issue)
+      . assert: (directIssue, astIssue) =>
+          directIssue == astIssue
+
+      test(m"A negative integer reads on the fast path"):
+        t"""{"name": "Amy", "age": -3}""".read[Person in Json]
+      . assert(_ == Person(t"Amy", -3))
+
       test(m"A custom Decodable beats derivation via fromDecodable"):
         // The documented escape hatch for a type whose hand-written decoder
         // must win over structural derivation.

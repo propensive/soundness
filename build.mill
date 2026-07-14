@@ -1461,6 +1461,7 @@ object jacinta extends Library:
       mvn"io.circe::circe-parser:0.14.13",
       mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.35.3",
       mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-circe:2.35.3",
+      mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-macros:2.35.3",
       mvn"com.fasterxml.jackson.core:jackson-databind:2.21.3"
     )
 

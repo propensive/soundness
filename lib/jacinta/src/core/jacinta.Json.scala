@@ -604,11 +604,16 @@ object Json extends Json2, Dynamic:
 
           def parse(reader: JsonReader^): collection[element] =
             val builder = factory.newBuilder
+            // See the derived product parser: skip inert focus wrapping.
+            val focused = foci.active
             reader.openArray()
             var index = 0
 
             while reader.element() do
-              builder += focus(descend(prior, index.toString.tt))(field.parse(reader))
+              builder +=
+                ( if focused
+                  then focus(descend(prior, index.toString.tt))(field.parse(reader))
+                  else field.parse(reader) )
               index += 1
 
             builder.result()
@@ -726,6 +731,11 @@ object Json extends Json2, Dynamic:
             values(index) = AbsentSlot
             index += 1
 
+          // With the inert default `Foci`, per-field `focus` wrapping (a
+          // try/finally and two closures per field) would observably do
+          // nothing, so the hot loop skips it.
+          val focused = foci.active
+
           reader.openObject()
           var key: String | Null = reader.keyName()
 
@@ -734,7 +744,9 @@ object Json extends Json2, Dynamic:
 
             if found < 0 then reader.skipValue()
             else values(found) =
-              focus(descend(prior, keys(found).tt))(entries(found)(1).parse(reader))
+              if focused
+              then focus(descend(prior, keys(found).tt))(entries(found)(1).parse(reader))
+              else entries(found)(1).parse(reader)
 
             key = reader.keyName()
 
@@ -746,7 +758,9 @@ object Json extends Json2, Dynamic:
 
               values(index) =
                 if fallback.present then fallback
-                else focus(descend(prior, keys(index).tt))(entries(index)(1).absent())
+                else if focused
+                then focus(descend(prior, keys(index).tt))(entries(index)(1).absent())
+                else entries(index)(1).absent()
 
             index += 1
 
@@ -1327,6 +1341,23 @@ object Json extends Json2, Dynamic:
     parser.directEnd()
     result
 
+  // As above, but parsing a single in-memory block: no stream, no filler,
+  // no credit — the cursor reads the block in place.
+  private def parseDirect[value]
+    ( input: Data, parsable: (value is Json.Parsable)^ )
+    ( using tactic: Tactic[ParseError], tracking: PositionTracking, mode: NumberMode )
+  :   value =
+
+    val parser = Parser.borrow()
+    parser.tracking = tracking == PositionTracking.On
+    parser.resetData(input)
+    parser.holes = false
+    parser.numberMode = mode
+    parser.directBegin()
+    val result = parsable.parse(JsonReader(parser, tactic))
+    parser.directEnd()
+    result
+
   // As above, but pulling from a demand-aware stream; see `readJson`'s note
   // on the neutral-reference hop.
   private def parseDirect[value]
@@ -1826,11 +1857,28 @@ object Json extends Json2, Dynamic:
         type Operand = Data
 
         def aggregate(bytes: LazyList[Data]): value in Json =
-          parseDirect(bytes.iterator, parsable).asInstanceOf[value in Json]
+          // A single in-memory block — the common case — skips the iterator
+          // plumbing entirely.
+          if !bytes.isEmpty && bytes.tail.isEmpty
+          then parseDirect(bytes.head, parsable).asInstanceOf[value in Json]
+          else parseDirect(bytes.iterator, parsable).asInstanceOf[value in Json]
 
         override def accept(stream: (Stream[Data] over Credit)^): value in Json =
           parseDirect(stream, parsable).asInstanceOf[value in Json]
 
+
+  // Whole-`Data` direct read: when the entire content is already in hand,
+  // parse it in place rather than wrapping it in a one-element stream —
+  // the `Readable.dataData` precedent. Concrete in `Data`, so it beats the
+  // composed `dataToData` pipeline by specificity. Sealed like
+  // `aggregableParsed` above.
+  given readableParsed: [value]
+  =>  (parsable: (value is Json.Parsable)^)
+  =>  (tactic: Tactic[ParseError], tracking: PositionTracking)
+  =>  (Data is Readable to (value in Json)) =
+
+    caps.unsafe.unsafeAssumePure:
+      data => parseDirect(data, parsable).asInstanceOf[value in Json]
 
   given showable: Formatting => Json is Showable = _.root.show
 
