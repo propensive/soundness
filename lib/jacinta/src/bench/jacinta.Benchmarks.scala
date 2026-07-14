@@ -107,6 +107,7 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
   // direct-to-case-class parsing on the JVM).
   def decodeUsersAst(): BenchUsers = LazyList(jsonBytes4).read[Json].as[BenchUsers]
   def decodeUsersDirect(): BenchUsers = LazyList(jsonBytes4).read[BenchUsers in Json]
+  def decodeUsersDirectData(): BenchUsers = jsonBytes4.read[BenchUsers in Json]
 
   val jsoniterUsersCodec: com.github.plokhotnyuk.jsoniter_scala.core.JsonValueCodec[JsoniterUsers] =
     com.github.plokhotnyuk.jsoniter_scala.macros.JsonCodecMaker.make
@@ -224,6 +225,10 @@ object Benchmarks extends Suite(m"Jacinta JSON parser benchmarks"):
 
       bench(m"Decode directly with Parsable")(target = 1*Second, operationSize = size4):
         '{ jacinta.Benchmarks.decodeUsersDirect() }
+
+      bench(m"Decode directly with Parsable (whole Data)")
+        ( target = 1*Second, operationSize = size4 ):
+        '{ jacinta.Benchmarks.decodeUsersDirectData() }
 
       bench(m"Decode directly with Jsoniter")(target = 1*Second, operationSize = size4):
         '{ jacinta.Benchmarks.decodeUsersJsoniter() }

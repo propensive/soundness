@@ -1993,7 +1993,21 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     skip()
     if must() == Quote then
       advance()
-      parseString()
+      // Buffer-local fast path: a plain-ASCII string that closes inside the
+      // current window is materialized straight from the local snapshot —
+      // no marks, no hold, no cursor sync. Falls back (without moving) for
+      // escapes, control or non-ASCII bytes, and the window's end.
+      val start = pos
+      val limit = bufEnd
+      var i = start
+
+      while i < limit && StringScanContinue(bytes(i) & 0xFF) != 0 do i += 1
+
+      if i < limit && bytes(i) == Quote then
+        val out = new String(bytes, start, i - start, java.nio.charset.StandardCharsets.US_ASCII)
+        pos = i + 1
+        out
+      else parseString()
     else errorAt(Issue.ExpectedString(peek.toChar))
 
   private[jacinta] update def directBoolean()(using Tactic[ParseError]): Boolean =
@@ -2032,10 +2046,51 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       else errorAt(Issue.ExpectedDigit(digit.toChar))
     else errorAt(Issue.ExpectedNumber(ch.toChar))
 
+  // Buffer-local fast path: scan a sign and up to 18 digits against the
+  // current window, without BCD packing — a bare digit loop, as Jsoniter
+  // reads integers. Everything here reads the local snapshot directly and
+  // never refills, so bailing out is a plain `pos` reset: the buffer cannot
+  // have been compacted underneath it. Bails to the general path for
+  // fractions and exponents, a 19th digit, a leading zero (which must
+  // raise), and numbers touching the window's end (more digits may follow
+  // in the next chunk).
+  private[jacinta] update def directLong()(using Tactic[ParseError]): Long =
+    skip()
+    val start = pos
+    val limit = bufEnd
+    var i = start
+    var negative = false
+
+    if i < limit && bytes(i) == Minus then
+      negative = true
+      i += 1
+
+    val first = i
+    var value = 0L
+
+    while i < limit && i - first < 18 && bytes(i) >= Num0 && bytes(i) <= Num9 do
+      value = value*10 + (bytes(i) - Num0)
+      i += 1
+
+    val digits = i - first
+
+    if digits >= 1 && i < limit then
+      val next = bytes(i)
+
+      val numberContinues =
+        (next >= Num0 && next <= Num9) || next == Period || next == LowerE || next == UpperE
+
+      if !numberContinues && !(digits > 1 && bytes(first) == Num0) then
+        pos = i
+        return if negative then -value else value
+
+    pos = start
+    directLongGeneral()
+
   // The numeric coercions mirror the `Json.Ast` accessors (`long`, `double`,
   // `bcd`) exactly, so a direct read of a number yields the same value the
   // AST path would decode.
-  private[jacinta] update def directLong()(using Tactic[ParseError]): Long =
+  private update def directLongGeneral()(using Tactic[ParseError]): Long =
     val raw: Any = directNumber()
 
     raw.asMatchable match
@@ -2116,13 +2171,53 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
   // After the opening quote: the key itself and its trailing colon.
   private update def directKeyTail()(using Tactic[ParseError]): String =
-    val key = parseObjectKey()
+    val key = directKeyName()
     skip()
 
     if must() == Colon then
       advance()
       key
     else errorAt(Issue.ExpectedColon(peek.toChar))
+
+  // Buffer-local fast path for an object key: scan to the closing quote
+  // within the current window and probe the intern cache straight from the
+  // local snapshot (same packed-Long scheme as `parseObjectKey`, which
+  // handles escapes and window-crossing keys as the fallback). The cache
+  // arrays are indexed through direct field paths only — binding one to a
+  // local would hide the parser (see `reconcileLineation`).
+  private update def directKeyName()(using Tactic[ParseError]): String =
+    val start = pos
+    val limit = bufEnd
+    var i = start
+
+    while i < limit && StringScanContinue(bytes(i) & 0xFF) != 0 do i += 1
+
+    if i < limit && bytes(i) == Quote then
+      val length = i - start
+
+      if length <= KeyCacheMaxBytes then
+        val packedLow = packBytes(bytes, start, math.min(length, 8))
+        val packedHigh = if length > 8 then packBytes(bytes, start + 8, length - 8) else 0L
+
+        val index = ((packedLow.toInt ^ (packedLow >>> 32).toInt) ^
+          (packedHigh.toInt ^ (packedHigh >>> 32).toInt)) & (KeyCacheSize - 1)
+
+        val cached = keyCache(index)
+        pos = i + 1
+
+        if cached != null && keyCacheLow(index) == packedLow && keyCacheHigh(index) == packedHigh
+        then cached
+        else
+          val fresh = new String(bytes, start, length, java.nio.charset.StandardCharsets.US_ASCII)
+          keyCache(index) = fresh
+          keyCacheLow(index) = packedLow
+          keyCacheHigh(index) = packedHigh
+          fresh
+      else
+        val out = new String(bytes, start, length, java.nio.charset.StandardCharsets.US_ASCII)
+        pos = i + 1
+        out
+    else parseObjectKey()
 
   private[jacinta] update def directOpenArray()(using Tactic[ParseError]): Unit =
     skip()

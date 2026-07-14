@@ -40,6 +40,7 @@ import vacuous.*
 
 object Foci:
   given default: [focus] => Foci[focus]:
+    override def active: Boolean = false
     def length: Int = 0
     def success: Boolean = false
     def register(error: Exception): Unit = ()
@@ -54,6 +55,11 @@ object Foci:
     def supplement(count: Int, transform: Optional[focus] => focus): Unit = ()
 
 trait Foci[focus] extends Findable:
+  // False only for the inert default instance, whose `register` and
+  // `supplement` discard everything: a hot decode loop may then skip its
+  // per-field `focus` wrapping (and the closure each wrap allocates)
+  // entirely, since no focus would ever be observed.
+  def active: Boolean = true
   def length: Int
   def success: Boolean
   def register(error: Exception): Unit
