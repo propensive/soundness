@@ -344,6 +344,9 @@ final class Report(using Environment)(using palette: TestPalette):
             if tp == 0 then e"" else e"$tp op/s",
           Column(e"p99", textAlign = TextAlignment.Right): s =>
             s.strain.p99.lay(e"")(showTime(_)),
+          Column(e"SLO", textAlign = TextAlignment.Right): s =>
+            s.strain.compliance.lay(e""): compliance =>
+              e"${compliance*100}%",
           Column(e"Alloc/op", textAlign = TextAlignment.Right): s =>
             showMemory(s.strain.allocationRate.toLong),
           Column(e"Peak", textAlign = TextAlignment.Right): s =>
@@ -810,6 +813,12 @@ final class Report(using Environment)(using palette: TestPalette):
               (s: ReportLine.Strain) => s.strain.p99.lay(e"")(showTime(_)),
             Column(e"$Bold(p999)", textAlign = TextAlignment.Right):
               (s: ReportLine.Strain) => s.strain.p999.lay(e"")(showTime(_)))
+          else Nil) :::
+          (
+          if rows.exists(_.strain.compliance.present) then List(
+            Column(e"$Bold(SLO)", textAlign = TextAlignment.Right):
+              (s: ReportLine.Strain) => s.strain.compliance.lay(e""): compliance =>
+                e"${Fg(palette.foreground)}(${compliance*100})%")
           else Nil) :::
           List(
           Column(e"$Bold(Peak)", textAlign = TextAlignment.Right):

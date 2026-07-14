@@ -48,6 +48,9 @@ object Strain:
 // show a flat, small value here); `gcCount`/`gcTime` are the collector deltas over the window
 // (time in milliseconds). The optional `p50`/`p90`/`p99`/`p999` fields are per-operation
 // latency percentiles in nanoseconds, taken from a histogram accumulated across all workers.
+// In a capacity search, `compliance` is the measured fraction of operations completing
+// within the latency threshold, and `sustained` marks the winning row: the highest
+// concurrency whose (extended) window still met the compliance target.
 case class Strain
   ( concurrency: Int,
     operations:  Long,
@@ -58,10 +61,12 @@ case class Strain
     gcCount:     Long,
     gcTime:      Long,
     baseline:    Optional[Baseline],
-    p50:         Optional[Long] = Unset,
-    p90:         Optional[Long] = Unset,
-    p99:         Optional[Long] = Unset,
-    p999:        Optional[Long] = Unset ):
+    p50:         Optional[Long]   = Unset,
+    p90:         Optional[Long]   = Unset,
+    p99:         Optional[Long]   = Unset,
+    p999:        Optional[Long]   = Unset,
+    compliance:  Optional[Double] = Unset,
+    sustained:   Boolean          = false ):
 
   def throughput: Long = if nanoseconds == 0L then 0L else (operations*1e9/nanoseconds).toLong
 
