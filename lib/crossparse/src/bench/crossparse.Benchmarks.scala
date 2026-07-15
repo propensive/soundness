@@ -69,56 +69,6 @@ import ypsiloid.formatting.blockYamlFormatting
 // member), so it must be imported by name.
 import ypsiloid.showable
 
-// The shared structure decoded by every format: varied primitive types, a
-// nested record, a sequence and a coproduct.
-enum Payment:
-  case Card(number: Text, expiry: Text, secure: Boolean)
-  case Transfer(iban: Text, reference: Long)
-
-object Payment:
-  // An XML sum nested inside a product cannot use xylophone's label-based
-  // default `Discriminable`: the product encoder relabels the variant
-  // element with the *field's* name, which destroys the discriminator. The
-  // variant rides in a `type` attribute instead — `<payment type="Card">` —
-  // mirroring the discriminator key the JSON and YAML corpora carry.
-  given xmlDiscriminable: Payment is Discriminable in Xml = new Discriminable:
-    type Self = Payment
-    type Form = Xml
-
-    def discriminate(xml: Xml): Optional[Text] = xml match
-      case Element(_, attributes, _)           => attributes.at(t"type")
-      case Fragment(Element(_, attributes, _)) => attributes.at(t"type")
-      case _                                   => Unset
-
-    def rewrite(kind: Text, xml: Xml): Xml = xml match
-      case Element(label, attributes, children) =>
-        Element(label, attributes.updated(t"type", kind), children)
-
-      case Fragment(Element(label, attributes, children)) =>
-        Element(label, attributes.updated(t"type", kind), children)
-
-      case other =>
-        other
-
-    def variant(xml: Xml): Xml = xml
-
-case class LineItem(sku: Text, description: Text, quantity: Int, price: Double, taxed: Boolean)
-case class Customer(id: Long, name: Text, email: Text, region: Text)
-
-case class Order
-  ( reference: Text, customer: Customer, items: List[LineItem], payment: Payment,
-    priority: Boolean, discount: Double )
-
-case class Orders(orders: List[Order])
-
-object Orders:
-  // Direct parsing is opt-in per format; only the top type needs a nominal
-  // instance — nested types resolve through each format's field fallback
-  // chain.
-  given jsonParsable: Orders is Json.Parsable = Json.Parsable.derived
-  given telParsable: Orders is Tel.Parsable = Tel.Parsable.derived
-  given xmlParsable: Orders is Xml.Parsable = Xml.Parsable.derived
-
 // Jsoniter/circe mirrors of the corpus structure, with `String` fields as
 // those libraries expect; the `kind` discriminator matches the JSON corpus.
 sealed trait JsoniterPayment derives io.circe.derivation.ConfiguredDecoder
@@ -233,8 +183,19 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     given xmlOrder: Order is Xml.Parsable = Xml.Parsable.staged
     given xmlOrders: Orders is Xml.Parsable = Xml.Parsable.staged
 
+    // The Inlinable-composed parser: the whole instance graph (records,
+    // collection loops, leaf parsers) resolves live inside an in-macro
+    // staging compiler — the model component's companion givens — and
+    // inlines into one flat parser. `payment` (a sum) has no Inlinable and
+    // splices a runtime call to the sibling staged sum given above.
+    given inlinedOrders: Orders is Json.Parsable = Inlinable.parsable[Orders]
+
   def decodeJsonStaged(): Orders =
     import staged.orders
+    jsonData.read[Orders in Json]
+
+  def decodeJsonInlined(): Orders =
+    import staged.inlinedOrders
     jsonData.read[Orders in Json]
 
   def decodeTelStaged(): Orders =
@@ -307,6 +268,7 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     // before anything is timed.
     assert(decodeJsonDirect() == corpus, "JSON direct decode disagrees with the corpus")
     assert(decodeJsonStaged() == corpus, "JSON staged decode disagrees with the corpus")
+    assert(decodeJsonInlined() == corpus, "JSON inlined decode disagrees with the corpus")
     assert(decodeJsonAst() == corpus, "JSON AST decode disagrees with the corpus")
     assert(decodeTelDirect() == corpus, "TEL direct decode disagrees with the corpus")
     assert(decodeTelStaged() == corpus, "TEL staged decode disagrees with the corpus")
@@ -329,6 +291,9 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
 
       bench(m"JSON staged")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeJsonStaged() }
+
+      bench(m"JSON inlined")(target = 1*Second):
+        '{ crossparse.Benchmarks.decodeJsonInlined() }
 
       bench(m"JSON via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeJsonAst() }
@@ -383,6 +348,9 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
 
       profile(m"JSON staged")(target = 5*Second):
         '{ crossparse.Benchmarks.decodeJsonStaged() }
+
+      profile(m"JSON inlined")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeJsonInlined() }
 
       profile(m"Jsoniter direct")(target = 5*Second):
         '{ crossparse.Benchmarks.decodeJsoniterDirect() }

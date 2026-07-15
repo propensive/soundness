@@ -943,8 +943,15 @@ object cosmopolite extends Library:
     override def enabled = false
 
 object crossparse extends Library:
-  object bench extends Benchmarks(jacinta.core, stratiform.core, xylophone.core, ypsiloid.core,
-      quantitative.units):
+  // The corpus's domain types, compiled one phase before the benchmarks so
+  // that `Json.Inlinable`'s expansion-time instance evaluation can load them
+  // (and resolve the companion `Inlinable` givens) at the bench's expansion.
+  object model extends Component(jacinta.staged, stratiform.core, xylophone.core, ypsiloid.core):
+    override def scalaJs = false // depends on jacinta.staged (compiler jars)
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+
+  object bench extends Benchmarks(model, quantitative.units):
     def mvnDeps = Seq(
       mvn"io.circe::circe-parser:0.14.13",
       mvn"com.github.plokhotnyuk.jsoniter-scala::jsoniter-scala-core:2.35.3",
@@ -1463,6 +1470,17 @@ object jacinta extends Library:
   object records extends Component(core, polyvinyl.core):
     override def scalacOptions = Task:
       super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+  // The Expr-level `Json.Inlinable` typeclass and its expansion-time instance
+  // evaluation (an in-macro staging compiler), kept out of `core` so jacinta
+  // users don't inherit the compiler jars unless they opt in.
+  object staged extends Component(core):
+    override def scalaJs = false // expansion-time instance evaluation via staging
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+    def mvnDeps = Seq(
+      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+      mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
+    )
   object test extends Tests(time, http, schema, records, sedentary.core, diuretic.core,
     galilei.jvm, octogenarian.core, eucalyptus.core)
   object bench extends Benchmarks(core, quantitative.units):
