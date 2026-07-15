@@ -2160,3 +2160,25 @@ REMAINING un-CC'd (per-class deferral list unchanged): ethereal.core (Phase 5),
 quantitative.core, cataclysm.core, synesthesia.core, apoplexy.core, zeppelin.core (⚑5),
 burdock.core, exegesis.*, aviation.core, superlunary.core, anthology.bundle + platform
 variants.
+
+## Capture-honesty Phase 4 remainder: Tool/Tmux + confinement regression tests (2026-07-15)
+
+Most of Phase 4 (the scope-method honesty conversions) was pulled forward into the Phase 3
+enablement legs, since the modules would not compile under CC without them. The remainder:
+
+- `Enclave.Tool` and `Tmux` → `caps.ExclusiveCapability` (live spawned process / tmux session,
+  torn down after their `sandbox`/`tmux` blocks). exoskeleton.rig compiled clean immediately.
+- CaptureTests-style negative regression suites (the enigmatic pattern: `demilitarize` blocks
+  asserting compile errors) added for profanity (Terminal × 3), exoskeleton.rig (Tool × 2) and
+  scintillate (HttpConnection stash × 1), wired into each module's Tests.
+- ★ FINDING (documented in profanity.CaptureTests): selecting a PURE field from a capability
+  path DISCHARGES the path under CC — `() => terminal.events.stop()` escapes `interactive`
+  legally because `events` is a plain `Spool`. Negative tests must charge the capability
+  itself (a method call); and pure-field escape is a real, if benign, hole to remember when
+  classifying: state that must not escape a scope must live in capability-typed (or
+  method-mediated) members, not pure public fields.
+- Random/Internet get NO confinement tests: they are `caps.Unscoped` (deliberately
+  ambient-storable), so blocks may legally leak them; the tracking is effect-visibility, not
+  scoping.
+
+Suites: profanity 54/0, exoskeleton 69/0, scintillate 20/0.

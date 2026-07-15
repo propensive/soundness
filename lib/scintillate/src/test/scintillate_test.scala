@@ -43,6 +43,8 @@ import probates.awaitProbate
 
 object Tests extends Suite(m"Scintillate tests"):
   def run(): Unit =
+    CaptureTests()
+
     def freePort(): Int =
       val socket = java.net.ServerSocket(0)
       val port = socket.getLocalPort

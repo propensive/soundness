@@ -51,6 +51,8 @@ import filesystemBackends.virtualMachine
 
 object Tests extends Suite(m"Exoskeleton Tests"):
   def run(): Unit =
+    CaptureTests()
+
     supervise:
       val foo: Text = "hello"
       Enclave(t"abcd").dispatch:

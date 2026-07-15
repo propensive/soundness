@@ -32,102 +32,24 @@
                                                                                                   */
 package exoskeleton
 
-import ambience.*
-import anthology.*
-import anticipation.*
-import contingency.*
-import digression.*
-import distillate.*
-import eucalyptus.*
-import galilei.*
-import gossamer.*
-import guillotine.*
-import hellenism.*
-import jacinta.*
-import parasite.*
-import prepositional.*
-import rudiments.*
-import serpentine.*
-import spectacular.*
-import superlunary.*
-import symbolism.*
-import vacuous.*
+import soundness.*
 
-import filesystemOptions.deleteRecursively.disabled
-import logging.silentLogging
-import probates.cancelProbate
-import workingDirectories.javaWorkingDirectory
+import strategies.throwUnsafely
 
-import filesystemBackends.virtualMachine
+// `sandbox` lends the installed daemon to its block as a `Tool` capability, and `tmux` lends
+// the live tmux session as a `Tmux` capability; capture checking confines each to its block
+// (the process is killed, and the session ended, afterwards).
+object CaptureTests extends Suite(m"Rig confinement tests"):
+  def run(): Unit =
+    test(m"the Tool capability cannot be returned from sandbox"):
+      demilitarize:
+        def attempt(launcher: Enclave.Launcher): Enclave.Tool =
+          launcher.sandbox(summon[Enclave.Tool])
+      . map(_.message)
+    . assert(_.nonEmpty)
 
-
-object Enclave:
-  // A `Tool` is a *capability*: it references a live installed daemon process whose lifetime
-  // is the `sandbox` block that spawns it (killed, and its files deleted, after the block).
-  case class Tool(path: Path on Linux, pid: Pid) extends caps.ExclusiveCapability:
-    def command: Text = path.name
-
-    def completions(using Monitor)[result](block: => Unit): Optional[Text] =
-      val promise = Promise[Text]()
-
-      async:
-        promise.offer(safely(sh"$path '{admin}' await".exec[Text]()).or(t"failed"))
-
-      block
-      safely(promise.await())
-
-  case class Launcher(path: Path on Linux):
-    def sandbox[result](block: (tool: Tool) ?=> result)
-    :   result raises ExecError raises NumberError raises PathError =
-
-      val completionScripts = sh"$path '{admin}' install".exec[Text]()
-      val pid = Pid(sh"$path '{admin}' pid".exec[Text]().trim.as[Int])
-      val tool = Tool(path, pid)
-
-      block(using tool).also:
-        sh"$path '{admin}' kill".exec[Exit]()
-
-        completionScripts.trim.lines.map(_.as[Path on Linux]).each: item =>
-          safely(item.delete())
-
-
-case class Enclave(name: Text, buildId: Optional[Int] = Unset)(using Classloader, Environment)
-extends Rig:
-  type Result[output] = Enclave.Launcher
-  type Form = Text
-  type Target = Path on Linux
-  type Transport = Json
-
-  def stage(out: Path on Linux): Path on Linux =
-    val target = unsafely(out.peer(name))
-
-    unsafely:
-      val name2 = t"$name.jar"
-      val jarfile = out.peer(name2)
-      // `Fqcn.apply` rather than the `fqcn""` interpolator: the macro's synthesized tree
-      // fails capture-variable unification when expanded in a capture-checked module.
-      val executor: Fqcn = safely(Fqcn(t"superlunary.Executor2")).vouch
-      val bundle = Bundler.bundle(out, jarfile, executor)
-
-      val cmd = (buildId: @unchecked) match
-        case id: Int => sh"java -Dbuild.id=$id -Dbuild.executable=$target -jar $jarfile '[]'"
-        case Unset   => sh"java -Dbuild.executable=$target -jar $jarfile '[]'"
-
-      cmd.exec[Exit]() match
-        case Exit.Ok         => target
-        case Exit.Fail(fail) => ???
-
-  protected val scalac: Scalac[3.8] = Scalac(List(scalacOptions.experimental))
-
-
-  protected def invoke[output](stage: Stage[output, Text, Path on Linux])
-  :   Enclave.Launcher =
-
-    stage.remote: input =>
-      unsafely:
-        variables(inputParameters = input):
-          sh"${stage.target}".exec[Exit]()
-
-      t"""[""]"""
-
-    Enclave.Launcher(stage.target)
+    test(m"a closure over the Tool cannot escape sandbox"):
+      demilitarize:
+        def attempt(launcher: Enclave.Launcher): () => Text =
+          launcher.sandbox(() => summon[Enclave.Tool].command)
+    . assert(_.nonEmpty)
