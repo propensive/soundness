@@ -27,10 +27,11 @@
 ┃    License is distributed on an "AS IS" BASIS,  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND,    ┃
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
-┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
 package enigmatic
+
+import java.lang as jl
 
 import anticipation.*
 import contingency.*
@@ -38,37 +39,124 @@ import fulminate.*
 import gossamer.*
 import kaleidoscope.*
 import monotonous.*, alphabets.base64Standard
+import prepositional.*
 import rudiments.*
+import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 object Pem:
-  def parse(text: Text)(using Diagnostics): Pem raises PemError =
-    val lines = text.trim.cut(t"\n")
+  // Streaming, cursor-based parsing: the input is consumed line by line, and
+  // the base64 body accumulates in a single builder — nothing else of the
+  // input is retained, so a PEM document parses from any source in bounded
+  // memory (modulo its payload).
+  def parse(text: Text)(using Diagnostics): Pem raises PemError = parse(Cursor(text))
 
-    val label = lines.prim match
-      case Unset =>
-        abort(PemError(PemError.Reason.EmptyFile))
+  // The first PEM block of the input: leading whitespace is skipped (the
+  // legacy parser trimmed the whole document), then the first line must be a
+  // `BEGIN` boundary.
+  private def parse[cap^](cursor: Cursor[Text, cap]^)(using Diagnostics)
+  :   Pem raises PemError =
 
-      case r"-----* *BEGIN ${PemLabel(label)}([ A-Z]+) *-----*" =>
-        label
+    while !cursor.finished
+          && (cursor.peek == ' ' || cursor.peek == '\t'
+              || cursor.peek == '\n' || cursor.peek == '\r')
+    do cursor.next()
 
-      case _ =>
-        abort(PemError(PemError.Reason.BeginMissing))
+    nextLine(cursor).lay(abort(PemError(PemError.Reason.BeginMissing))):
+      case r"-----* *BEGIN ${PemLabel(label)}([ A-Z]+) *-----*" => block(cursor, label)
+      case _                                                    => abort:
+                                                                     PemError:
+                                                                       PemError.Reason.BeginMissing
 
-    lines.tail.indexWhere:
-      case r"-----* *END $label([ A-Z]+) *-----*" => true
-      case _                                      => false
+  // Every PEM block of the input, lazily: one block parses per forced cell,
+  // and content between blocks (comments, subject lines in certificate
+  // chains) is skipped. An input with no blocks yields the empty list.
+  private def parseAll[cap^](cursor: Cursor[Text, cap]^)
+    ( using Diagnostics, Tactic[PemError] )
+  :   LazyList[Pem] =
 
-    . match
-      case -1 => abort(PemError(PemError.Reason.EndMissing))
+    def recur(): LazyList[Pem] = nextLine(cursor).lay(LazyList()):
+      case r"-----* *BEGIN ${PemLabel(label)}([ A-Z]+) *-----*" => block(cursor, label) #:: recur()
+      case _                                                    => recur()
 
-      case index =>
-        val joined: Text = lines.tail.take(index).join
+    LazyList.defer(recur())
 
-        mitigate:
-          case SerializationError(_, _) => PemError(PemError.Reason.BadBase64)
+  // The body of a block, after its `BEGIN` line: base64 lines accumulate
+  // (verbatim, as the legacy parser joined them) until an `END` boundary.
+  // Like the legacy parser, the `END` label is not required to match the
+  // `BEGIN` label, though the line is trimmed before matching (a relaxation).
+  private def block[cap^](cursor: Cursor[Text, cap]^, label: PemLabel)(using Diagnostics)
+  :   Pem raises PemError =
 
-        . protect(Pem(label, joined.deserialize[Base64]))
+    val body = jl.StringBuilder()
+    var data: Optional[Data] = Unset
+
+    while data.absent do
+      nextLine(cursor).lay(abort(PemError(PemError.Reason.EndMissing))): line =>
+        line.trim match
+          case r"-----* *END $endLabel([ A-Z]+) *-----*" =>
+            data =
+              mitigate:
+                case SerializationError(_, _) => PemError(PemError.Reason.BadBase64)
+
+              . protect(body.toString.tt.deserialize[Base64])
+
+          case _ =>
+            body.append(line.s)
+
+    Pem(label, data.vouch)
+
+  // The next line of the input (excluding its terminator), or `Unset` at
+  // end-of-stream. Only `\n` terminates a line, as the legacy `cut(t"\n")`
+  // did; a trailing `\r` stays on the line (and fails the boundary patterns).
+  private def nextLine[cap^](cursor: Cursor[Text, cap]^): Optional[Text] =
+    if cursor.finished then Unset else cursor.hold:
+      val start = cursor.mark
+
+      while !cursor.finished && !(cursor.peek == '\n') do cursor.next()
+
+      val line = cursor.grab(start, cursor.mark)
+      if !cursor.finished then cursor.next()
+      line
+
+  // Sealed per the codec-thunk pattern (see rep/DECISIONS.md): the
+  // resolution-scoped tactic shares the instance's given-resolution lifetime.
+  given aggregable: (Diagnostics, Tactic[PemError]) => Pem is Aggregable by Text =
+    caps.unsafe.unsafeAssumePure:
+      new Aggregable:
+        type Self = Pem
+        type Operand = Text
+
+        def aggregate(stream: LazyList[Text]): Pem = parse(Cursor(stream.iterator))
+
+        override def accept(stream: (Stream[Text] over Credit)^): Pem =
+          // The non-consume `accept` crosses to the consuming factory as a
+          // neutral reference; each accept delivers a single-use stream.
+          parse(Cursor(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
+
+  // A certificate chain (or any multi-block document) as a lazy sequence of
+  // its blocks.
+  given aggregableAll: (Diagnostics, Tactic[PemError]) => LazyList[Pem] is Aggregable by Text =
+    caps.unsafe.unsafeAssumePure:
+      new Aggregable:
+        type Self = LazyList[Pem]
+        type Operand = Text
+
+        def aggregate(stream: LazyList[Text]): LazyList[Pem] = parseAll(Cursor(stream.iterator))
+
+        override def accept(stream: (Stream[Text] over Credit)^): LazyList[Pem] =
+          // See `aggregable` above.
+          parseAll(Cursor(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
+
+  // The armored form, one line at a time: the `serialize` counterpart for
+  // streaming consumers (each line carries its terminator).
+  given streamable: Pem is Streamable by Text = pem =>
+    def groups(index: Int): LazyList[Text] =
+      if index >= pem.data.length then LazyList(t"-----END ${pem.label}-----\n")
+      else t"${pem.data.slice(index, index + 48).serialize[Base64]}\n" #:: groups(index + 48)
+
+    t"-----BEGIN ${pem.label}-----\n" #:: LazyList.defer(groups(0))
 
 case class Pem(label: PemLabel, data: Data):
   def serialize: Text =
