@@ -1141,11 +1141,32 @@ object Xml extends Tag.Container
       override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): value =
         convert(text).or(raise(XmlError()) yet sentinel)
 
-  given intParsable: Int is Xml.Parsable = primitiveParsable(0): text =>
-    try Integer.parseInt(text.s) catch case _: NumberFormatException => Unset
+  // `Int`/`Long`/`Double`/`Boolean` read their value straight from the
+  // buffered content chars (`reader.int()`/`long()`/`double()`/`boolean()`),
+  // so a valid scalar never materializes the value `Text` that `text()`
+  // would — only exotic content does, through the reader's internal general
+  // fallback, which parses exactly as the primitives here would have.
+  given intParsable: Int is Xml.Parsable = new Xml.Parsable:
+    type Self = Int
+    def parse(reader: XmlReader^): Int = reader.int().or(reader.fault() yet 0)
 
-  given longParsable: Long is Xml.Parsable = primitiveParsable(0L): text =>
-    try jl.Long.parseLong(text.s) catch case _: NumberFormatException => Unset
+    override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): Int =
+      raise(XmlError()) yet 0
+
+    override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): Int =
+      try Integer.parseInt(text.s)
+      catch case _: NumberFormatException => raise(XmlError()) yet 0
+
+  given longParsable: Long is Xml.Parsable = new Xml.Parsable:
+    type Self = Long
+    def parse(reader: XmlReader^): Long = reader.long().or(reader.fault() yet 0L)
+
+    override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): Long =
+      raise(XmlError()) yet 0L
+
+    override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): Long =
+      try jl.Long.parseLong(text.s)
+      catch case _: NumberFormatException => raise(XmlError()) yet 0L
 
   given shortParsable: Short is Xml.Parsable = primitiveParsable(0.toShort): text =>
     try jl.Short.parseShort(text.s) catch case _: NumberFormatException => Unset
@@ -1153,17 +1174,32 @@ object Xml extends Tag.Container
   given byteParsable: Byte is Xml.Parsable = primitiveParsable(0.toByte): text =>
     try jl.Byte.parseByte(text.s) catch case _: NumberFormatException => Unset
 
-  given doubleParsable: Double is Xml.Parsable = primitiveParsable(0.0): text =>
-    try jl.Double.parseDouble(text.s) catch case _: NumberFormatException => Unset
+  given doubleParsable: Double is Xml.Parsable = new Xml.Parsable:
+    type Self = Double
+    def parse(reader: XmlReader^): Double = reader.double().or(reader.fault() yet 0.0)
+
+    override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): Double =
+      raise(XmlError()) yet 0.0
+
+    override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): Double =
+      try jl.Double.parseDouble(text.s)
+      catch case _: NumberFormatException => raise(XmlError()) yet 0.0
 
   given floatParsable: Float is Xml.Parsable = primitiveParsable(0.0f): text =>
     try jl.Float.parseFloat(text.s) catch case _: NumberFormatException => Unset
 
-  given booleanParsable: Boolean is Xml.Parsable = primitiveParsable(false): text =>
-    text.s match
-      case "true"  => true
-      case "false" => false
-      case _       => Unset
+  given booleanParsable: Boolean is Xml.Parsable = new Xml.Parsable:
+    type Self = Boolean
+    def parse(reader: XmlReader^): Boolean = reader.boolean().or(reader.fault() yet false)
+
+    override def absent()(using Tactic[XmlError], Foci[Xml.Focus]): Boolean =
+      raise(XmlError()) yet false
+
+    override def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): Boolean =
+      text.s match
+        case "true"  => true
+        case "false" => false
+        case _       => raise(XmlError()) yet false
 
   // Element-wise `Xml.Field` for collections, resolved during derivation:
   // the element's own parser comes from the fallback chain, so nested
@@ -1370,7 +1406,7 @@ object Xml extends Tag.Container
   =>  ( tactic: Tactic[ParseError], xmlTactic: Tactic[XmlError], foci: Foci[Xml.Focus] )
   =>  ( (Text is Readable to (value in Xml))^{parsable, tactic, xmlTactic} ) =
 
-    text => parseDirect(Iterator(text), parsable).asInstanceOf[value in Xml]
+    text => parseDirect(text, parsable).asInstanceOf[value in Xml]
 
   // Direct-parsing counterpart of `Xml2.aggregableIn`: drives an
   // `Xml.Parsable` instance over the input through an `XmlReader`, so no
@@ -1396,7 +1432,25 @@ object Xml extends Tag.Container
             foci:      Foci[Xml.Focus] )
   :   value =
 
-    val parser = XmlParser.fromIterator(input)
+    parseWith(XmlParser.fromIterator(input), parsable)
+
+  // Whole-`Text` form: a pre-filled single-chunk cursor, no iterator
+  // plumbing (the `readableParsed` entry).
+  private def parseDirect[value](input: Text, parsable: (value is Xml.Parsable)^)
+    ( using schema:    XmlSchema,
+            tactic:    Tactic[ParseError],
+            xmlTactic: Tactic[XmlError],
+            foci:      Foci[Xml.Focus] )
+  :   value =
+
+    parseWith(XmlParser.fromText(input), parsable)
+
+  private def parseWith[value](parser: XmlParser^, parsable: (value is Xml.Parsable)^)
+    ( using schema:    XmlSchema,
+            tactic:    Tactic[ParseError],
+            xmlTactic: Tactic[XmlError],
+            foci:      Foci[Xml.Focus] )
+  :   value =
 
     parser.directSession:
       parser.directRoot() match
@@ -1947,6 +2001,21 @@ object Xml extends Tag.Container
   // base class.
 
   private[xylophone] object XmlParser:
+    // Exact powers of ten for the Clinger double fast path: every entry is
+    // exactly representable, so `mantissa.toDouble / TenPow(scale)` is
+    // correctly rounded whenever the mantissa fits in 53 bits.
+    private[xylophone] val TenPow: Array[Double] =
+      Array(1e0, 1e1, 1e2, 1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11, 1e12, 1e13, 1e14, 1e15)
+
+    // `true` and `false` packed LSB-first, for the boolean content fast path.
+    private[xylophone] val TrueWord: Long =
+      ('t'.toLong & 0xFF) | (('r'.toLong & 0xFF) << 8) | (('u'.toLong & 0xFF) << 16)
+        | (('e'.toLong & 0xFF) << 24)
+
+    private[xylophone] val FalseWord: Long =
+      ('f'.toLong & 0xFF) | (('a'.toLong & 0xFF) << 8) | (('l'.toLong & 0xFF) << 16)
+        | (('s'.toLong & 0xFF) << 24) | (('e'.toLong & 0xFF) << 32)
+
     // Use untracked lineation in the cursor: avoids a per-`advance` branch
     // (newline detection) and a per-`mark` write into the cursor's parallel
     // offsets array. Errors still carry an accurate absolute `offset` /
@@ -3494,6 +3563,168 @@ object Xml extends Tag.Container
               nodes += 1
 
         if nodes == 0 then t"" else if nodes == 1 then single else null
+
+    // ── Byte-parsed scalar content ─────────────────────────────────────────
+    // The current element's text content parsed straight from the buffered
+    // chars as a primitive, consumed together with its close tag, or `Unset`
+    // for missing, wrong-shaped or unparseable content — saving the value
+    // `Text` that `directText` would materialize only for the primitive to
+    // re-scan. The fast path accepts only content whose parse is provably
+    // identical to the `String`-parsing primitives'; anything else — an
+    // entity, an interior node, an exotic spelling, a value outside the
+    // exact range — rewinds to the content's start (the `readAttrValue`
+    // precedent) and takes the general `directText` path, so the two routes
+    // agree by construction.
+
+    private def directTextLongFallback()(using Tactic[ParseError]): Optional[Long] =
+      directText() match
+        case null       => Unset
+        case text: Text =>
+          try Optional(jl.Long.parseLong(text.s)) catch case _: NumberFormatException => Unset
+
+    private[xylophone] def directTextLong()(using Tactic[ParseError]): Optional[Long] =
+      if directEmpty then
+        directText()
+        Unset
+      else
+        val start = begin()
+        var value = 0L
+        var digits = 0
+        var neg = false
+        var bad = false
+        var c = ' '
+
+        while !bad && more && { c = peek; c != '<' } do
+          if c >= '0' && c <= '9' then
+            // Eighteen digits can never overflow; longer runs fall back.
+            if digits == 18 then bad = true else
+              value = value*10 + (c - '0')
+              digits += 1
+              advance()
+          else if c == '-' && digits == 0 && !neg then
+            neg = true
+            advance()
+          else bad = true
+
+        if !bad && more && digits > 0 then
+          advance()
+
+          if more && peek == '/' then
+            advance()
+            directClose()
+            Optional(if neg then -value else value)
+          else
+            reset(start)
+            directTextLongFallback()
+        else
+          reset(start)
+          directTextLongFallback()
+
+    private[xylophone] def directTextInt()(using Tactic[ParseError]): Optional[Int] =
+      val value = directTextLong()
+
+      if value.absent then Unset else
+        val long = value.vouch
+        if long >= Int.MinValue.toLong && long <= Int.MaxValue.toLong
+        then Optional(long.toInt)
+        else Unset
+
+    private def directTextDoubleFallback()(using Tactic[ParseError]): Optional[Double] =
+      directText() match
+        case null       => Unset
+        case text: Text =>
+          try Optional(jl.Double.parseDouble(text.s))
+          catch case _: NumberFormatException => Unset
+
+    private[xylophone] def directTextDouble()(using Tactic[ParseError]): Optional[Double] =
+      if directEmpty then
+        directText()
+        Unset
+      else
+        val start = begin()
+        var mantissa = 0L
+        var digits = 0
+        var decimals = -1
+        var neg = false
+        var bad = false
+        var c = ' '
+
+        while !bad && more && { c = peek; c != '<' } do
+          if c >= '0' && c <= '9' then
+            // Fifteen mantissa digits stay below 2^53, so `toDouble` is
+            // exact and the division below is correctly rounded — the
+            // Clinger fast path, bit-identical to `Double.parseDouble`.
+            if digits == 15 then bad = true else
+              mantissa = mantissa*10 + (c - '0')
+              digits += 1
+              if decimals >= 0 then decimals += 1
+              advance()
+          else if c == '.' && decimals < 0 then
+            decimals = 0
+            advance()
+          else if c == '-' && digits == 0 && decimals < 0 && !neg then
+            neg = true
+            advance()
+          else bad = true
+
+        if !bad && more && digits > 0 then
+          advance()
+
+          if more && peek == '/' then
+            advance()
+            directClose()
+            val scale = if decimals > 0 then decimals else 0
+            val magnitude = mantissa.toDouble/XmlParser.TenPow(scale)
+            Optional(if neg then -magnitude else magnitude)
+          else
+            reset(start)
+            directTextDoubleFallback()
+        else
+          reset(start)
+          directTextDoubleFallback()
+
+    private def directTextBooleanFallback()(using Tactic[ParseError]): Optional[Boolean] =
+      directText() match
+        case null       => Unset
+        case text: Text => text.s match
+          case "true"  => Optional(true)
+          case "false" => Optional(false)
+          case _       => Unset
+
+    private[xylophone] def directTextBoolean()(using Tactic[ParseError]): Optional[Boolean] =
+      if directEmpty then
+        directText()
+        Unset
+      else
+        val start = begin()
+        var word = 0L
+        var length = 0
+        var bad = false
+        var c = ' '
+
+        while !bad && more && { c = peek; c != '<' } do
+          if c >= 'a' && c <= 'z' && length < 5 then
+            word |= (c.toLong & 0xFF) << (length*8)
+            length += 1
+            advance()
+          else bad = true
+
+        val isTrue = length == 4 && word == XmlParser.TrueWord
+        val isFalse = length == 5 && word == XmlParser.FalseWord
+
+        if !bad && more && (isTrue || isFalse) then
+          advance()
+
+          if more && peek == '/' then
+            advance()
+            directClose()
+            Optional(isTrue)
+          else
+            reset(start)
+            directTextBooleanFallback()
+        else
+          reset(start)
+          directTextBooleanFallback()
 
     // Skips the current element's entire remaining subtree, consuming and
     // validating every close tag on the way, building nothing. Used for
