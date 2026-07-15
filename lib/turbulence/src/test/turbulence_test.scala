@@ -495,6 +495,105 @@ object Tests extends Suite(m"Turbulence tests"):
         LazyList[Data]().framed[U32]().to(List)
       . assert(_ == Nil)
 
+    suite(m"Line splitting"):
+      // Split whole, or fragmented into `chunk`-char pieces — the fragmented
+      // rows exercise separator sequences spanning window boundaries.
+      def splitLines(input: Text, chunk: Int)(using LineSeparation): List[Text] =
+        if chunk == 0 then input.stream.delineate.elements.to(List)
+        else input.s.grouped(chunk).map(_.tt).stream.delineate.elements.to(List)
+
+      def check(policy: Text, cases: List[(Text, List[Text])])(using LineSeparation): Unit =
+        for fragment <- List(0, 1, 3) do
+          cases.zipWithIndex.each: (row, index) =>
+            test(m"$policy, case $index, chunk size $fragment"):
+              splitLines(row(0), fragment)
+            . assert(_ == row(1))
+
+      suite(m"adaptive linefeeds"):
+        import lineSeparation.adaptiveLinefeedLineSeparation
+
+        check(t"adaptive", List(
+          (t"", List()),
+          (t"a", List(t"a")),
+          (t"a\nb", List(t"a", t"b")),
+          (t"a\nb\n", List(t"a", t"b")),
+          (t"a\rb", List(t"a", t"b")),
+          (t"a\r\nb", List(t"a", t"b")),
+          (t"a\n\rb", List(t"a", t"b")),
+          (t"a\n\nb", List(t"a", t"", t"b")),
+          (t"a\r", List(t"a")),
+          (t"\n", List(t"")),
+          (t"one two\nthree four\r\nfive", List(t"one two", t"three four", t"five"))))
+
+      suite(m"linefeeds"):
+        import lineSeparation.linefeedLineSeparation
+
+        check(t"linefeed", List(
+          (t"a\nb", List(t"a", t"b")),
+          (t"a\rb", List(t"ab")),
+          (t"a\r\nb", List(t"a", t"b")),
+          (t"a\n\rb", List(t"a", t"b")),
+          (t"a\r", List(t"a"))))
+
+      suite(m"strict linefeeds"):
+        import lineSeparation.strictLinefeedsLineSeparation
+
+        // NOTE: the packaged policy's action table is (cr = Nl, lf = Lf, ...) —
+        // identical to strictCarriageReturn's, which looks inverted for a
+        // "linefeeds" policy, but the duct must match the table as it stands.
+        check(t"strict linefeed", List(
+          (t"a\nb", List(t"a\nb")),
+          (t"a\rb", List(t"a", t"b")),
+          (t"a\r\nb", List(t"a", t"\nb")),
+          (t"a\n\rb", List(t"a\n", t"b"))))
+
+      suite(m"carriage returns"):
+        import lineSeparation.carriageReturnLineSeparation
+
+        check(t"carriage return", List(
+          (t"a\rb", List(t"a", t"b")),
+          (t"a\nb", List(t"ab")),
+          (t"a\r\nb", List(t"a", t"b")),
+          (t"a\n\rb", List(t"a", t"b")),
+          (t"a\r", List(t"a"))))
+
+      suite(m"strict carriage returns"):
+        import lineSeparation.strictCarriageReturnLineSeparation
+
+        check(t"strict carriage return", List(
+          (t"a\rb", List(t"a", t"b")),
+          (t"a\nb", List(t"a\nb")),
+          (t"a\r\nb", List(t"a", t"\nb")),
+          (t"a\n\rb", List(t"a\n", t"b"))))
+
+      suite(m"carriage return linefeeds"):
+        import lineSeparation.carriageReturnLinefeedLineSeparation
+
+        check(t"crlf", List(
+          (t"a\r\nb", List(t"a", t"b")),
+          (t"a\nb", List(t"a\nb")),
+          (t"a\rb", List(t"ab")),
+          (t"a\n\rb", List(t"a\n", t"b")),
+          (t"a\r\n", List(t"a")),
+          (t"a\r", List(t"a"))))
+
+      suite(m"byte streams and long lines"):
+        import lineSeparation.adaptiveLinefeedLineSeparation
+
+        test(m"lines splits a byte stream through the character decoder"):
+          t"first\nsecond\r\nthird".in[Data].stream.delineate.elements.to(List)
+        . assert(_ == List(t"first", t"second", t"third"))
+
+        test(m"a line spanning many windows is reassembled"):
+          val long = Text(String(Array.fill(10000)('x')))
+          val input = long + t"\ny"
+          input.s.grouped(7).map(_.tt).stream.delineate.elements.to(List)
+        . assert(_ == List(Text(String(Array.fill(10000)('x'))), t"y"))
+
+        test(m"lines of an empty byte stream is empty"):
+          Iterator.empty[Data].stream.delineate.elements.to(List)
+        . assert(_ == List())
+
     suite(m"Source and Sink tests"):
       val payload: Data = Data.fill(10000)(_.toByte)
 

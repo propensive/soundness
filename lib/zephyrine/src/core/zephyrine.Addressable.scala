@@ -189,6 +189,97 @@ object Addressable:
         index += 1
 
 
+  // Chunks of `Text` records (lines, tokens): `Text` is opaquely
+  // `String & caps.Pure`, not `<: AnyRef`, so the generic `boxed` instance
+  // above does not admit it, and it gets the same treatment spelled out. The
+  // element bound on `boxed` is load-bearing (it keeps `IArray[Byte]` — the
+  // transparent `Data` alias — from resolving ambiguously), so it cannot
+  // simply be relaxed.
+  given texts: IArray[Text] is Addressable:
+    type Operand = Text
+    type Target = scm.ArrayBuffer[Text]
+    type Storage = Array[AnyRef]
+
+    // `IArray[Text]` erases to `String[]` (unlike `boxed`'s `Object[]`, whose
+    // element type is generic), so materialized chunks must really be
+    // `String[]`s; the storage stays `Array[AnyRef]`, which `String[]` enters
+    // covariantly.
+    val empty: IArray[Text] = new Array[String](0).asInstanceOf[IArray[Text]]
+
+    def substrate: Substrate = Substrate.Boxes
+    def blank(size: Int): scm.ArrayBuffer[Text] = scm.ArrayBuffer[Text]()
+
+    def build(target: scm.ArrayBuffer[Text]): IArray[Text] =
+      val array = new Array[String](target.length)
+      var index = 0
+
+      while index < target.length do
+        array(index) = target(index).s
+        index += 1
+
+      array.asInstanceOf[IArray[Text]]
+
+    def length(block: IArray[Text]): Int = block.length
+    def address(block: IArray[Text], index: Ordinal): Text = block(index.n0)
+
+    def grab(block: IArray[Text], start: Ordinal, end: Ordinal): IArray[Text] =
+      block.slice(start.n0, end.n0)
+
+    def clone(source: IArray[Text], start: Ordinal, end: Ordinal)
+      ( target: scm.ArrayBuffer[Text] )
+    :   Unit =
+
+      var index = start.n0
+
+      while index <= end.n0 do
+        target += source(index)
+        index += 1
+
+    def allocate(size: Int): Array[AnyRef] = new Array[AnyRef](size)
+    def storageSize(storage: Array[AnyRef]): Int = storage.length
+
+    def storageAddress(storage: Array[AnyRef], index: Int): Text =
+      storage(index).asInstanceOf[Text]
+
+    def storageUpdate(storage: Array[AnyRef]^, index: Int, operand: Text): Unit =
+      storage(index) = operand.asInstanceOf[AnyRef]
+
+    def append(target: scm.ArrayBuffer[Text], operand: Text): Unit = target += operand
+
+    def copyChunk
+      ( source:  IArray[Text],
+       srcOff:  Int,
+       dest:    Array[AnyRef]^,
+       destOff: Int,
+       len:     Int )
+    :   Unit =
+
+      System.arraycopy(source.asInstanceOf[Array[AnyRef]], srcOff, dest, destOff, len)
+
+    def transfer
+      ( src:     Array[AnyRef],
+       srcOff:  Int,
+       dest:    Array[AnyRef]^,
+       destOff: Int,
+       len:     Int )
+    :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
+
+    def materialize(storage: Array[AnyRef], off: Int, len: Int): IArray[Text] =
+      val array = new Array[String](len)
+      System.arraycopy(storage, off, array, 0, len)
+      array.asInstanceOf[IArray[Text]]
+
+    def cloneStorage
+      (storage: Array[AnyRef], off: Int, len: Int)(target: scm.ArrayBuffer[Text])
+    :   Unit =
+
+      var index = off
+
+      while index < off + len do
+        target += storage(index).asInstanceOf[Text]
+        index += 1
+
+
   inline given text: Text is Addressable:
     type Operand = Char
     type Target = jl.StringBuilder
