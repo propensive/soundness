@@ -36,4 +36,4 @@ import rudiments.*
 import telekinesis.*
 
 open class JavaServletFn(handle: HttpConnection => Http.Response)
-extends JavaServlet(handle.context)
+extends JavaServlet(handle)

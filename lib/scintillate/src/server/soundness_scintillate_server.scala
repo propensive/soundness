@@ -42,7 +42,30 @@ export
       WebserverErrorPage }
 
 package httpServers:
-  export scintillate.httpServers.{stdlibHttpServer, stdlibPublicHttpServer}
+  // Hand-written forwarders rather than an `export`: synthesized export forwarders lose the
+  // givens' capture-annotated refinement types (the zephyrine through/accepting finding).
+  given stdlibHttpServer: [port <: (80 | 443 | 8080 | 8000)]
+  =>  ( tactic:  contingency.Tactic[scintillate.ServerError],
+        monitor: parasite.Monitor,
+        probate: parasite.Probate )
+  =>  ( loggable:  scintillate.HttpServerEvent is anticipation.Loggable,
+        errorPage: scintillate.WebserverErrorPage )
+  =>  ((scintillate.httpServers.HttpServerFor[port])^{tactic, monitor, caps.any}) =
+    // One erasing cast at the forwarding boundary (the wisteria `fieldInstance` pattern):
+    // resolution finds the annotated instance, but its capture roots do not re-root through
+    // a second given; the declared result type above restores the honest captures.
+    scintillate.httpServers.stdlibHttpServer[port]
+    . asInstanceOf[scintillate.httpServers.HttpServerFor[port]]
+
+  given stdlibPublicHttpServer: [port <: (80 | 443 | 8080 | 8000)]
+  =>  ( tactic:  contingency.Tactic[scintillate.ServerError],
+        monitor: parasite.Monitor,
+        probate: parasite.Probate )
+  =>  ( loggable:  scintillate.HttpServerEvent is anticipation.Loggable,
+        errorPage: scintillate.WebserverErrorPage )
+  =>  ((scintillate.httpServers.HttpServerFor[port])^{tactic, monitor, caps.any}) =
+    scintillate.httpServers.stdlibPublicHttpServer[port]
+    . asInstanceOf[scintillate.httpServers.HttpServerFor[port]]
 
 package webserverErrorPages:
   export scintillate.webserverErrorPages.{minimalErrorPage, stackTracesErrorPage, standardErrorPage}

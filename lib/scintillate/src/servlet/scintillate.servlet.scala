@@ -50,12 +50,16 @@ class servlet extends MacroAnnotation:
           if !(result.tpe <:< TypeRepr.of[Http.Response])
           then halt(m"the return type ${result.show} is not a subtype of HttpResponse[?]")
 
+          // Typed `Any` at the hole and cast inside the quote: `HttpConnection` is a
+          // capability class, and a capability-typed quote hole fails capture-root
+          // unification (the quote wall; see rep/DECISIONS.md).
           val ref =
             Ref(defDef.symbol)
             . etaExpand(tree.symbol.owner)
-            . asExprOf[HttpConnection => Http.Response]
+            . asExprOf[Any]
 
-          val parents0 = List('{new JavaServletFn($ref)}.asTerm)
+          val parents0 =
+            List('{new JavaServletFn($ref.asInstanceOf[HttpConnection => Http.Response])}.asTerm)
           val parents = List(TypeTree.of[HttpConnection])
           val newClassName = Symbol.freshName(name)
 

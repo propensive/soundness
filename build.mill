@@ -1227,7 +1227,7 @@ object exoskeleton extends Library:
 
   object rig extends Internal(completions, superlunary.core, ethereal.core, anthology.bundle, quantitative.units):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     def mvnDeps =
       Seq
        (mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
@@ -1827,7 +1827,7 @@ object scintillate extends Library:
   object server extends Component(telekinesis.core):
     override def scalaJs = false // HTTP server via `telekinesis`/`coaxial` sockets
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
 
   object servlet extends Component(server):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)

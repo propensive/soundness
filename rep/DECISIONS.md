@@ -2114,3 +2114,49 @@ surveillance recipes:
 - Inside inline `Mutex.apply` blocks, the object-field `watches` HashMap is bound to a local
   first: the `at` extension's evidence summon against the object-field singleton path fails
   to unify under CC.
+
+## Capture-honesty Phase 3b: scintillate.server + exoskeleton.rig capture-checked (2026-07-15)
+
+`settings.cc` flipped on scintillate.server and exoskeleton.rig (branch capture-honesty).
+The `HttpConnection` capability classification planned for Phase 4d was pulled forward — the
+module does not compile under CC without it. Gates: JVM 10301/10301, JS 8006/8006; suites
+scintillate 19/0, exoskeleton 67/0, profanity 51/0, ethereal 49/0.
+
+scintillate recipes:
+- `HttpConnection extends ..., caps.ExclusiveCapability` (one live exchange, single owner,
+  respond-once); ctor takes `request: Http.Request^` and the response-first respond sink
+  `Http.Response => Tactic[StreamError] ?=> Unit` — the tactic-first nesting would need the
+  inner arrow to capture the outer ?=>-bound tactic (the ⚑7 dependent-capture restriction).
+- The four `Protocolic` server givens are honest capabilities (`^{tactic, monitor, caps.any}`)
+  over ONE named `HttpProtocolic` class (anonymous instances freshen inferred type members —
+  the galilei finding); `type Request = HttpConnection^` (a BARE capability-class alias
+  decorates the trait's `Request ?=>` param on only one side of the override);
+  `Protocolic.server` and the `serve` extension return `Server^`. The soundness bundle's
+  exports became hand-written forwarder givens (synthesized forwarders lose the annotated
+  refinement) with ONE erasing cast each (capture roots do not re-root through a second
+  given; the wisteria fieldInstance pattern).
+- `handle`/`HttpConnection.apply` de-sugared (`logs`/`raises` → explicit using). SocketServer's
+  accept/connection daemons take the full AnyRef-rim treatment, with the handler crossing as a
+  capture-neutral eta-wrapped `AnyRef => AnyRef` (a context-function value applies itself in
+  any non-CFT position). Cursor params follow the `Cursor[Data, {}]^` convention; `writeAll`
+  takes `(Stream[Data] over Credit)^`.
+- servlet (SEP module): `JavaServlet` now takes a PLAIN `HttpConnection => Http.Response`
+  (a CFT class param cannot be applied from a subclass's synthesized superArg);
+  `makeConnection` returns fresh `HttpConnection^` with rims for everything the connection
+  retains (a fresh capability result may not hide the method's parameters — and the
+  parameter-relative `^{streamError, ...}` alternative cannot absorb the ctor's fresh).
+  The `@servlet` macro types its hole `Any` and casts inside the quote (capability-typed
+  quote holes fail capture-root unification).
+- `request` accessor returns `Http.Request^`; the ws-upgrade TEST seals its flowing-body
+  thunk (a streamed response legitimately retains the live connection — the pure-`Response`
+  handler shape cannot express it; the honest `Response^{connection}` form is the recorded
+  future option).
+
+exoskeleton.rig: one real fix — `Fqcn.apply` instead of the `fqcn""` interpolator (the
+macro's synthesized tree fails capture-variable unification when expanded in a CC module;
+same family as the harlequin/honeycomb quote shapes; possible fork follow-up).
+
+REMAINING un-CC'd (per-class deferral list unchanged): ethereal.core (Phase 5),
+quantitative.core, cataclysm.core, synesthesia.core, apoplexy.core, zeppelin.core (⚑5),
+burdock.core, exegesis.*, aviation.core, superlunary.core, anthology.bundle + platform
+variants.
