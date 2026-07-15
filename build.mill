@@ -1669,6 +1669,30 @@ object polyvinyl extends Library:
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
 
+// Proof of concept: a typeclass whose methods are macro-time code generators
+// (`Expr` in, `Expr` out), with instances evaluated at expansion time — by
+// loading precompiled singletons through the macro classloader, or through an
+// in-macro `staging.Compiler`. The `leaves` component exists to give instance
+// objects a compilation phase strictly before the `test` use site.
+object prescience extends Library:
+  object core extends Component(prepositional.core, fulminate.core, gossamer.core):
+    override def scalaJs = false // compile-time instance evaluation via the macro classloader
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+    def mvnDeps = Seq(
+      mvn"org.scala-lang:scala3-compiler_3:${scalaVersion()}",
+      mvn"org.scala-lang:scala3-staging_3:${scalaVersion()}"
+    )
+
+  object leaves extends Component(core):
+    override def scalaJs = false // exists only to precede `test` in compilation order
+    override def scalacOptions = Task:
+      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+
+  object test extends Tests(leaves):
+    override def scalacOptions = Task:
+      super.scalacOptions()
+
 object prepositional extends Library:
   object core extends Component:
     override def scalacOptions = Task:
@@ -2213,8 +2237,8 @@ val allLibraries: Seq[Library] = Seq(
   kaleidoscope, larceny, legerdemain, locomotion, mandible, mercator, metamorphose,
   monotonous,
   mosquito, nomenclature, obligatory, octogenarian, orthodoxy, panopticon, parasite,
-  perihelion, phoenicia, plutocrat, polaris, polysyllabic, polyvinyl, prepositional, probably,
-  profanity,
+  perihelion, phoenicia, plutocrat, polaris, polysyllabic, polyvinyl, prepositional, prescience,
+  probably, profanity,
   proscenium, punctuation, quantitative, querencia, revolution, rudiments, savagery,
   scintillate, sedentary, serpentine, spectacular, stenography, stratiform, superlunary,
   surveillance, symbolism, synesthesia, tarantula, telekinesis, turbulence, typonym,
