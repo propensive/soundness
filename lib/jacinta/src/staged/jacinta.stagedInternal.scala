@@ -466,55 +466,92 @@ object stagedInternal:
           Some('{ $parser.directString()(using $ptactic) })
         else None
 
-      // Per-field parse and absent expressions, through the ladder.
-      def fieldExprs(index: Int): (Expr[Any], Expr[Any]) =
+      // The absent expression per field, through the ladder.
+      def fieldAbsent(index: Int): Expr[Any] =
         fieldTypes(index).asType match
           case '[fieldType] =>
-            builtinDirect(fieldTypes(index)) match
-              case Some(direct) =>
-                return (direct, '{ Json.Parsable.missing[fieldType]()(using $tactic) })
-
-              case None =>
-                ()
-
-            resolve[fieldType](cache) match
+            if builtinDirect(fieldTypes(index)).isDefined then
+              '{ Json.Parsable.missing[fieldType]()(using $tactic) }
+            else resolve[fieldType](cache) match
               case Some(instance0) =>
-                val instance = instance0.asInstanceOf[Inlinable { type Self = fieldType }]
-                (nested[fieldType](instance, reader), instance.absent(tactic))
+                instance0.asInstanceOf[Inlinable { type Self = fieldType }].absent(tactic)
 
               case None =>
-                // A nominal `Parsable` (a staged sum, a custom instance) is
-                // called directly, skipping the `Field.Adapter` the fallback
-                // chain would otherwise construct per occurrence.
-                ( '{ stagedInternal.fieldSeam[fieldType]($reader) },
-                  '{
-                    scala.compiletime.summonInline[fieldType is Json.Field]
-                    . absent()(using $tactic)
-                  } )
+                '{
+                  scala.compiletime.summonInline[fieldType is Json.Field]
+                  . absent()(using $tactic)
+                }
 
-      val fieldCode: List[(Expr[Any], Expr[Any])] = List.range(0, arity).map(fieldExprs)
+      val fieldCode: List[(Expr[Any], Expr[Any])] = List.range(0, arity).map: index =>
+        (Expr(0), fieldAbsent(index))
 
-      // Each field's read is generated once, as a local def both key steps'
-      // arms call — the arms themselves are regenerated per step (trees may
-      // not be shared), but stay one call each.
+      // Per field, up to three local defs, shaped for the JIT: a nested
+      // body (generated exactly once and *called* from both branches), a
+      // cold def holding the focusing machinery, and the hot `readField`,
+      // which shrinks to a flag test and a call — small enough that the
+      // key-step arms always inline it.
       val readDefs = List.range(0, arity).map: index =>
         Symbol.newMethod
           ( owner, "readField"+index,
             MethodType(Nil)(_ => Nil, _ => fieldTypes(index)) )
 
-      val readDefDefs = List.range(0, arity).map: index =>
-        val rhs: Term =
-          fieldTypes(index).asType match
-            case '[fieldType] =>
-              val raw = fieldCode(index)(0).asExprOf[fieldType]
+      val slowDefs = List.range(0, arity).map: index =>
+        Symbol.newMethod
+          ( owner, "readFieldSlow"+index,
+            MethodType(Nil)(_ => Nil, _ => fieldTypes(index)) )
 
+      val readDefDefs: List[Statement] = List.range(0, arity).flatMap: index =>
+        fieldTypes(index).asType match
+          case '[fieldType] =>
+            def rawParse(): Expr[fieldType] =
+              builtinDirect(fieldTypes(index)) match
+                case Some(direct) =>
+                  direct.asExprOf[fieldType]
+
+                case None =>
+                  resolve[fieldType](cache) match
+                    case Some(instance0) =>
+                      instance0.asInstanceOf[Inlinable { type Self = fieldType }]
+                      . parse(reader)
+
+                    case None =>
+                      '{ stagedInternal.fieldSeam[fieldType]($reader) }
+
+            val builtin = builtinDirect(fieldTypes(index)).isDefined
+
+            // Non-builtin bodies are potentially large: emit once as a def
+            // and call it from both temperature branches.
+            val nestedDef: Option[(Symbol, Statement)] =
+              if builtin then None else
+                val symbol =
+                  Symbol.newMethod
+                    ( owner, "readNested"+index,
+                      MethodType(Nil)(_ => Nil, _ => fieldTypes(index)) )
+
+                val rhs = rawParse().asTerm.changeOwner(symbol)
+                Some((symbol, DefDef(symbol, _ => Some(rhs))))
+
+            def call(symbol: Symbol): Expr[fieldType] =
+              Apply(Ref(symbol), Nil).asExprOf[fieldType]
+
+            def hot(): Expr[fieldType] =
+              nestedDef match
+                case Some((symbol, _)) => call(symbol)
+                case None              => rawParse()
+
+            val slowRhs: Term =
               '{
-                if $focused then
-                  Json.Parsable.focusing($foci, ${Expr(fieldNames(index))}.tt)($raw)
-                else $raw
-              }.asTerm
+                Json.Parsable.focusing($foci, ${Expr(fieldNames(index))}.tt)(${ hot() })
+              }.asTerm.changeOwner(slowDefs(index))
 
-        DefDef(readDefs(index), _ => Some(rhs.changeOwner(readDefs(index))))
+            val readRhs: Term =
+              '{ if $focused then ${ call(slowDefs(index)) } else ${ hot() } }
+              . asTerm.changeOwner(readDefs(index))
+
+            nestedDef.map(_(1)).toList
+              ::: List
+                    ( DefDef(slowDefs(index), _ => Some(slowRhs)),
+                      DefDef(readDefs(index), _ => Some(readRhs)) )
 
       def arms: List[CaseDef] = List.range(0, arity).map: index =>
         val rhs =

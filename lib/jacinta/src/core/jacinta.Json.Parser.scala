@@ -243,8 +243,10 @@ private[jacinta] object Parser:
 // the per-thread pool), with every state-mutating method classified `update`. This unit
 // is separation-checked; consumers (capture-checked only) interact through the exclusive
 // reference the pool hands out.
-// EXPERIMENT(cc-bypass): temporarily public so staged-generated code can be
-// measured calling the parser directly, without the JsonReader rim.
+// Public as a type — generated parsers hold a `Parser` in a local and read
+// through its direct rim — but acquiring the instance behind a live read is
+// sealed inside `JsonReader.rawParser`, which only jacinta's own generated
+// splices can reach; the pool and every reset entry point remain private.
 final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   import scala.annotation.switch
   import scala.collection.mutable.ArrayBuffer

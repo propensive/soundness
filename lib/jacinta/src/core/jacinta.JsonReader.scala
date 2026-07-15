@@ -68,11 +68,14 @@ final class JsonReader private (parser0: AnyRef, tactic0: AnyRef)
 extends caps.ExclusiveCapability, caps.Stateful:
   private inline def parser: Parser^ = parser0.asInstanceOf[Parser^]
 
-  // EXPERIMENT(cc-bypass): the wrapped capabilities as neutral carriers, so
-  // staged-generated code (in unchecked modules) can bind the parser once
-  // per record and bypass this rim — measuring what the rim costs.
-  def rawParser: AnyRef = parser0
-  def rawTactic: AnyRef = tactic0
+  // The sealed conduit for generated parsers: package-private, so the only
+  // path to the wrapped capabilities from outside jacinta is through the
+  // accessor the compiler synthesizes for jacinta's own macro-generated
+  // splices — hand-written code cannot name it. Generated code binds the
+  // parser once per record and reads through `Parser`'s direct rim without
+  // this class's per-token forwarders (measured at ~3% of a parse).
+  private[jacinta] def rawParser: AnyRef = parser0
+  private[jacinta] def rawTactic: AnyRef = tactic0
   private inline def tactic: Tactic[ParseError] = tactic0.asInstanceOf[Tactic[ParseError]]
 
   // ── Scalars: one JSON value each. Numbers coerce exactly as the
