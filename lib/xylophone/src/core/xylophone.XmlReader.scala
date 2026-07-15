@@ -105,7 +105,14 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // tag is consumed and validated. Character data, comments, CDATA sections
   // and processing instructions between child elements are consumed
   // transparently — the AST derivation looks only at `Element` children.
-  update def nextChild(): Optional[Text] =
+  //
+  // The hot forwarders are `inline` (enabled by the toolchain's
+  // inline-update receiver fix), so the derived engine's steps reach the
+  // parser without a call through the rim. Methods that appear inside
+  // xylophone's macro quotes stay non-inline: the spliced reader there is
+  // capture-erased, and an inline update method requires an exclusive
+  // receiver.
+  inline update def nextChild(): Optional[Text] =
     val name = parser.directNextChild()(using parseTactic)
     if name == null then Unset else name.nn
 
@@ -137,7 +144,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
 
   // The fallback seam: materialize the current element as an `Xml` tree, for
   // field types that only carry a `Decodable in Xml`.
-  update def element(): Xml = parser.directElement()(using parseTactic)
+  inline update def element(): Xml = parser.directElement()(using parseTactic)
 
   // Raise an `XmlError` through the read-site tactic and continue — for leaf
   // instances that reject an element's content, preserving the AST

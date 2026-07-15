@@ -278,16 +278,19 @@ trait Tel2 extends Tel3:
       // (`delegate`) is `fallible` and would leak a `Tactic[VariantError]` requirement
       // onto every codec; the precise select schema comes from the standalone
       // `Schematic` / `Tels.tels`.
+      // Kebab keyword → variant label (the label `delegate` dispatches on), a
+      // per-derivation constant: built once here rather than on every decode
+      // call, whose profile it dominated (map building plus generic-equality
+      // lookups, per occurrence) — jacinta's map hoist.
+      val labels: Map[Text, Text] =
+        variantLabels.map: label => Tel.camelToKebab(label.s) -> label
+        . to(Map)
+
       Tel.Decodable(() => Morphology.Any):
         telVal =>
           provide[Foci[Tel.Focus]]:
             provide[Tactic[TelError]]:
               provide[Tactic[VariantError]]:
-                // Map the variant's kebab keyword back to the label `delegate` dispatches on.
-                val labels: Map[Text, Text] =
-                  variantLabels.map: label => Tel.camelToKebab(label.s) -> label
-                  . to(Map)
-
                 val variant: Tel = Tel.make(telVal.childCompounds.head)
                 val variantKeyword: Text = labels.getOrElse(variant.keyword, variant.keyword)
 

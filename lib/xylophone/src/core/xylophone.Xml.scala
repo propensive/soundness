@@ -472,17 +472,21 @@ object Xml extends Tag.Container
     inline def disjunction[derivation: SumReflection]
     :   derivation is Decodable in Xml =
 
+      // The label list and the `@name[Xml]` / bare `@name` variant-rename map
+      // (serialized element label back to the variant name) are
+      // per-derivation constants: built once here rather than on every
+      // decode call, whose profile they dominated (map building plus
+      // generic-equality lookups, per occurrence) — jacinta's map hoist.
+      val labels: List[Text] = variantLabels
+
+      val variantNames: Map[Text, Text] =
+        variantRelabelling[derivation, Xml].map: (variant, wire) => wire -> variant
+
       xml =>
         provide[Foci[Xml.Focus]]:
           provide[Tactic[XmlError]]:
             provide[Tactic[VariantError]]:
               val discriminable = infer[derivation is Discriminable in Xml]
-              val labels: List[Text]    = variantLabels
-
-              // `@name[Xml]` / bare `@name` variant renames: map the serialized
-              // element label back to the variant name before delegating.
-              val variantNames: Map[Text, Text] =
-                variantRelabelling[derivation, Xml].map: (variant, wire) => wire -> variant
 
               val resolved: Optional[Text] =
                 discriminable.discriminate(xml).let: wire =>
