@@ -41,6 +41,7 @@ import anticipation.*
 import capricious.*
 import contingency.*
 import denominative.*
+import hieroglyph.*
 import hypotenuse.*
 import parasite.*
 import prepositional.*
@@ -93,6 +94,28 @@ extension [medium, transport](consume stream: (Stream[medium] over transport)^)
     async:
       streamRef.asInstanceOf[(Stream[medium] over transport)^]
       . pump(intakeRef.asInstanceOf[(Intake[medium] over transport)^])
+
+extension (consume stream: (Stream[Text] over Credit)^)
+  // Split a character stream into a record stream of its lines (each `Text`,
+  // without its terminator), under the ambient `LineSeparation` policy. Drain
+  // with `.records`/`.memoize`, or compose onward like any record stream.
+  // (Named to steer clear of gossamer's value-level `lines` — same-named
+  // extensions from different modules shadow, not overload, under the flat
+  // `soundness.*` re-export.)
+  def delineate(using lineSeparation: LineSeparation, buffering: Buffering)
+  :   (Stream[IArray[Text]] over Credit)^ =
+
+    stream.via(lineSeparation).asInstanceOf[(Stream[IArray[Text]] over Credit)^]
+
+extension (consume stream: (Stream[Data] over Credit)^)
+  // Split a byte stream into its lines: character decoding under the ambient
+  // `CharDecoder`, then line splitting as above.
+  @targetName("delineateData")
+  def delineate
+    ( using decoder: CharDecoder, lineSeparation: LineSeparation, buffering: Buffering )
+  :   (Stream[IArray[Text]] over Credit)^ =
+
+    stream.via(decoder).asInstanceOf[(Stream[Text] over Credit)^].delineate
 
 extension (consume stream: (Stream[Data] over Credit)^)
   def compress[format <: Compressor](using compression: format is Compression, buffering: Buffering)

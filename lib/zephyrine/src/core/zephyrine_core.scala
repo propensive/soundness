@@ -95,6 +95,17 @@ package parsing:
 
 export Cursor.{Mark, Offset}
 
+// A stream of parsed records: each window is an `IArray` chunk of them (the boxed
+// medium), so credit counts records and `Buffering` sizes stage buffers by
+// reference count. Records are immutable values, so they cross stage and thread
+// boundaries by reference; a record must not itself hold a live endpoint. This
+// alias is the conventional shape for record-granularity streaming (rows, events,
+// frames, messages) between the windowed media (`Data`, `Text`) and materialized
+// collections. The record type is unbounded here — the `Addressable` given that
+// admits a record type governs at stream construction — but it must erase to a
+// reference type.
+type Records[record] = Stream[IArray[record]] over Credit
+
 extension [in, transport](consume stream: (Stream[in] over transport)^)
   // Pull-composition: a differently-typed `Stream` whose refills translate
   // demand through the stage and pull from this stream. Runs entirely on
@@ -222,6 +233,149 @@ extension [medium](consume stream: (Stream[medium] over Credit)^)
   // skipped elements are pulled and discarded on the first `refill`. (FS2
   // `drop`, ZIO `ZStream.drop`.)
   def drop(count: Long): (Stream[medium] over Credit)^ = dropStream(stream, count)
+
+  // The legacy view: a lazy `LazyList` of one materialized chunk per refill,
+  // strictly demand-driven — construction pulls nothing, and each forced cell
+  // pulls at most one refill (the deferral `Cursor.remainder` documents). This
+  // is the audited bridge for consumers not yet converted to the kernel:
+  // `LazyList` is pure, so it cannot carry the endpoint capability its cells
+  // close over, and the ownership discipline is suspended beyond this point —
+  // implicit memoization retains every forced chunk. Prefer the kernel
+  // terminals above; never introduce new bridges elsewhere.
+  def toLazyList(using buffering: Buffering): LazyList[medium] =
+    val block = buffering.transfer(stream.addressable.substrate)
+
+    def recur(): LazyList[medium] = stream.refill(Credit(block)) match
+      case count: Int =>
+        val chunk =
+          stream.addressable.materialize(stream.window(using Unsafe), stream.start, count)
+
+        stream.skip(count)
+        chunk #:: recur()
+
+      case _ =>
+        stream.close()
+        LazyList.empty
+
+    LazyList.empty.lazyAppendedAll(recur())
+
+extension [record](consume stream: (Stream[IArray[record]] over Credit)^)
+  // Element-wise access to a stream of records: a single-consumer iterator over
+  // the records of successive windows, in order. The iterator owns the endpoint:
+  // it closes the stream when it reports exhaustion, so a consumer must drain it
+  // (or close the stream by other means) to release the upstream. Per-record
+  // combinators come free from the `Iterator` interface (and rudiments' `each`);
+  // window-level access for hot loops is `sweep`/`fold` above.
+  def records(using Buffering): Iterator[record]^ = recordIterator(stream)
+
+// A pull endpoint lending a bounded view of a cursor: the next `length` elements
+// (or all remaining, if `Unset`), exposed zero-copy — the cursor's own buffer
+// backs each window, and skipping the stream advances the cursor. The cursor is
+// LENT, not consumed: closing this stream leaves it open, positioned at the
+// boundary, and the caller resumes it there. This is the shape of a delimited
+// payload inside a longer parse: an HTTP body before the next pipelined request,
+// an archive entry before the next header, a multipart part before the next
+// boundary.
+//
+// While the lent stream is live, the caller must not touch the cursor: the
+// aliasing is deliberate, and the result's capture of the cursor is what the
+// checker has to reason about it — temporal validity is not fully expressible,
+// so this factory is an audited point. Bulk skips bypass lineation, so lend only
+// cursors whose position tracking is inactive (the default for protocol and
+// binary parsing).
+def streamOf[data](cursor: Cursor[data, {}]^, length: Optional[Long] = Unset)
+:   (Stream[data] over Credit)^{cursor, caps.any} =
+
+    new Stream[data](using cursor.addressable):
+      type Transport = Credit
+
+      private var remaining: Long = length.or(Long.MaxValue)
+
+      // A snapshot of the cursor's buffer state, taken by `refill`: only update
+      // methods may access the exclusive cursor, so the read-only accessors
+      // below serve the snapshot. The buffer reference is cast-erased and never
+      // exposed before the first refill (hence the pure placeholder initial).
+      private var storage: AnyRef = ""
+      private var start0: Int = 0
+      private var limit0: Int = 0
+
+      protected def window0: AnyRef = storage
+      def start: Int = start0
+      def limit: Int = limit0
+
+      update def skip(count: Int): Unit =
+        remaining -= count
+        start0 += count
+        cursor.unsafeAdvanceBy(count)(using Unsafe)
+
+      // Demand does not bound exposure: the cursor refills by its own bounded
+      // block, which is what bounds memory (as the iterator factory on
+      // `Stream`'s companion notes of its chunks). An unconsumed window is
+      // reported, not extended: `cursor.more` short-circuits while buffered
+      // elements remain, so re-snapshotting it is free.
+      update def refill(demand: Credit): Optional[Int] =
+        if remaining <= 0 then Unset
+        else if cursor.more then
+          storage = cursor.unsafeBuffer(using Unsafe).asInstanceOf[AnyRef]
+          start0 = cursor.unsafePos(using Unsafe)
+          val available = cursor.unsafeWriteEnd(using Unsafe) - start0
+          val readable = if remaining < available then remaining.toInt else available
+          limit0 = start0 + readable
+          readable
+        else Unset
+
+      // Deliberately not overridden: `close()` must leave the lent cursor open
+      // for the caller to resume.
+
+private def recordIterator[record]
+  ( consume stream: (Stream[IArray[record]] over Credit)^ )
+  ( using buffering: Buffering )
+:   Iterator[record]^ =
+
+    new Iterator[record]:
+      private val block: Int = buffering.transfer(Substrate.Boxes)
+
+      // The current window: records `index until limit` of `storage` are
+      // unread; `consumed` is skipped lazily, just before the next refill, per
+      // the refill contract (an unskipped window is reported, not extended).
+      // A stdlib class cannot extend `Stateful`, so its state is untracked
+      // (the `inputStream` adapter's precedent).
+      @caps.unsafe.untrackedCaptures
+      private var storage: Array[AnyRef] = new Array[AnyRef](0)
+      @caps.unsafe.untrackedCaptures
+      private var index: Int = 0
+      @caps.unsafe.untrackedCaptures
+      private var limit: Int = 0
+      @caps.unsafe.untrackedCaptures
+      private var consumed: Int = 0
+      @caps.unsafe.untrackedCaptures
+      private var done: Boolean = false
+
+      def hasNext: Boolean = index < limit || (!done && replenish())
+
+      private def replenish(): Boolean =
+        if consumed > 0 then
+          stream.skip(consumed)
+          consumed = 0
+
+        stream.refill(Credit(block)) match
+          case count: Int =>
+            storage = stream.window(using Unsafe).asInstanceOf[Array[AnyRef]]
+            index = stream.start
+            limit = stream.start + count
+            consumed = count
+            index < limit
+
+          case _ =>
+            done = true
+            stream.close()
+            false
+
+      def next(): record =
+        if !hasNext then panic(m"the record stream is exhausted")
+        val result = storage(index).asInstanceOf[record]
+        index += 1
+        result
 
 private def throughDuct[in, out, upTransport, downTransport]
   ( consume duct:

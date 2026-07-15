@@ -30,25 +30,93 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package turbulence
 
-export
-  turbulence
-  . { Aggregable, chunked, cluster, compress, Compression, Compressor, decompress, deduplicate,
-      defer, delineate, discard, Document, Documentary, Eof, Err, In, inputStream,
-      Io, Line, LineSeparation, load, Loadable, metronome, more, multiplex, Multiplexer,
-      multiplexer, Out, parallelMap, Pistol, Pulsar, rate, read, regulate, Relay, shred, Spool,
-      spool,
-      Confluence, Divergence, Readable, Sink, Source, Stdio, lazyList, Streamable, StreamError,
-      StreamOutputStream, strict, take, Tap, Writable, writeTo, framed, flow }
+import java.util.concurrent as juc
 
-package stdios:
-  export turbulence.stdios.{muteStdio, systemStdio, virtualMachineStdio}
+import vacuous.*
+import prepositional.*
+import zephyrine.*
 
-package lineSeparation:
-  export
-    turbulence.lineSeparation
-    . { adaptiveLinefeedLineSeparation, carriageReturnLineSeparation,
-        carriageReturnLinefeedLineSeparation, linefeedLineSeparation,
-        strictCarriageReturnLineSeparation, strictLinefeedsLineSeparation,
-        virtualMachineLineSeparation }
+// The push-side bridge from any number of producer threads to a pull endpoint
+// of record chunks: `Spool`'s kernel successor. Producers `put` records (an
+// unbounded MPSC queue insertion — producers never block on the reader), and
+// one of them eventually calls `stop`; the single reader owns `stream`, whose
+// refill blocks for the first record and then drains whatever else has already
+// arrived into the same window — records batch across the thread boundary
+// instead of paying one hand-off per element. (`Conduit` is the byte/char
+// counterpart: strictly SPSC and block-structured. A relay is for
+// many-producer, record-granularity traffic: events, notifications, messages.)
+object Relay:
+  private object Termination extends scala.caps.Pure
+
+class Relay[record]():
+  private val queue: juc.LinkedBlockingQueue[record | Relay.Termination.type] =
+    juc.LinkedBlockingQueue()
+
+  def put(record: record): Unit = queue.put(record)
+  def stop(): Unit = queue.put(Relay.Termination)
+
+  // The pull endpoint over this relay's records: single-owner, drained by one
+  // thread; create it once. Records arriving after `stop` are not delivered.
+  // The medium evidence resolves at the (concretely-typed) call site — the
+  // generic `Addressable.boxed` for ordinary reference-typed records.
+  @scala.annotation.nowarn("msg=match may not be exhaustive")
+  def stream(using addressable: IArray[record] is Addressable, buffering: Buffering)
+  :   (Stream[IArray[record]] over Credit)^ =
+
+    new Stream[IArray[record]](using addressable):
+      type Transport = Credit
+
+      private val capacity: Int = buffering.capacity(Substrate.Boxes)
+
+      // Untracked, cast-erased: reached only through this endpoint. All
+      // `Substrate.Boxes` media store records erased (`boxed`, `texts`), so
+      // the window storage is written directly.
+      @caps.unsafe.untrackedCaptures
+      private val storage: Array[AnyRef] =
+        new Array[AnyRef](capacity).asInstanceOf[Array[AnyRef]]
+
+      private var start0: Int = 0
+      private var limit0: Int = 0
+      private var ended: Boolean = false
+
+      protected def window0: AnyRef = storage.asInstanceOf[AnyRef]
+      def start: Int = start0
+      def limit: Int = limit0
+      update def skip(count: Int): Unit = start0 += count
+
+      update def refill(demand: Credit): Optional[Int] =
+        if limit0 > start0 then limit0 - start0
+        else if ended then Unset
+        else
+          val granted = summon[Credit is Regulation].grant(demand)
+
+          if granted == 0 then 0 else
+            start0 = 0
+            limit0 = 0
+            val space = capacity.min(granted)
+
+            queue.take().nn match
+              case Relay.Termination =>
+                ended = true
+                Unset
+
+              case first =>
+                storage.asInstanceOf[Array[AnyRef]^](0) = first.asInstanceOf[AnyRef]
+                limit0 = 1
+
+                // Opportunistic batching: whatever else has already arrived
+                // joins the same window, up to its space. A termination found
+                // mid-drain still delivers the batch; the next refill ends.
+                var draining = true
+
+                while draining && limit0 < space do queue.poll() match
+                  case null              => draining = false
+                  case Relay.Termination => ended = true
+                                            draining = false
+                  case record            => storage.asInstanceOf[Array[AnyRef]^](limit0) =
+                                              record.asInstanceOf[AnyRef]
+                                            limit0 += 1
+
+                limit0

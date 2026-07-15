@@ -34,7 +34,8 @@ package soundness
 
 export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum, Duct, Ductile, Pace,
     Format, Formatting, Intake, Lineation, ParseError, PositionTracking, Producer, Positionable,
-    Regulation, Spring, Stream, Substrate, locate, locateKey, memoize, pump, stream, sweep}
+    Records, records, Regulation, Spring, Stream, Substrate, locate, locateKey, memoize, pump,
+    stream, streamOf, sweep, toLazyList}
 
 // Hand-written forwarders: the synthesized export forwarders for these dependent-typed
 // extensions lose the `ductile.Result`/`ductile.Operand` path refinements under capture

@@ -414,6 +414,67 @@ object Tests extends Suite(m"Turbulence tests"):
         supervise(l1.multiplex(l2).filter(_%2 == 1))
       . assert(_ == l2)
 
+    suite(m"Relay tests"):
+      test(m"records put before draining arrive in order"):
+        val relay = Relay[Text]()
+        relay.put(t"one")
+        relay.put(t"two")
+        relay.put(t"three")
+        relay.stop()
+        relay.stream.records.to(List)
+      . assert(_ == List(t"one", t"two", t"three"))
+
+      test(m"records already queued batch into one window"):
+        val relay = Relay[Text]()
+        relay.put(t"a")
+        relay.put(t"b")
+        relay.put(t"c")
+        relay.stop()
+        var windows: Int = 0
+
+        relay.stream.sweep: (storage, start, count) =>
+          windows += 1
+
+        windows
+      . assert(_ == 1)
+
+      test(m"an immediately-stopped relay yields no records"):
+        val relay = Relay[Text]()
+        relay.stop()
+        relay.stream.records.to(List)
+      . assert(_ == List())
+
+      test(m"records after stop are not delivered"):
+        val relay = Relay[Text]()
+        relay.put(t"before")
+        relay.stop()
+        relay.put(t"after")
+        relay.stream.records.to(List)
+      . assert(_ == List(t"before"))
+
+      test(m"the reader blocks for records from concurrent producers"):
+        supervise:
+          val relay = Relay[Text]()
+          val producers = (1 to 4).map: index =>
+            async:
+              for value <- 1 to 25 do relay.put(t"${index*100 + value}")
+
+          val reader = async(relay.stream.records.to(Set))
+          producers.each(_.await())
+          relay.stop()
+          unsafely(reader.await())
+      . assert(_ == (for index <- 1 to 4; value <- 1 to 25 yield t"${index*100 + value}").to(Set))
+
+      test(m"per-producer order is preserved through the relay"):
+        supervise:
+          val relay = Relay[Text]()
+          val producer = async:
+            for value <- 1 to 100 do relay.put(t"$value")
+            relay.stop()
+
+          unsafely(async(relay.stream.records.to(List)).await())
+      . assert(_ == (1 to 100).to(List).map { value => t"$value" })
+
     suite(m"Compression tests"):
       test(m"Compress a single block with GZip"):
         LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].to(List).map(_.to(List))
@@ -494,6 +555,105 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"Empty stream yields empty result"):
         LazyList[Data]().framed[U32]().to(List)
       . assert(_ == Nil)
+
+    suite(m"Line splitting"):
+      // Split whole, or fragmented into `chunk`-char pieces — the fragmented
+      // rows exercise separator sequences spanning window boundaries.
+      def splitLines(input: Text, chunk: Int)(using LineSeparation): List[Text] =
+        if chunk == 0 then input.stream.delineate.records.to(List)
+        else input.s.grouped(chunk).map(_.tt).stream.delineate.records.to(List)
+
+      def check(policy: Text, cases: List[(Text, List[Text])])(using LineSeparation): Unit =
+        for fragment <- List(0, 1, 3) do
+          cases.zipWithIndex.each: (row, index) =>
+            test(m"$policy, case $index, chunk size $fragment"):
+              splitLines(row(0), fragment)
+            . assert(_ == row(1))
+
+      suite(m"adaptive linefeeds"):
+        import lineSeparation.adaptiveLinefeedLineSeparation
+
+        check(t"adaptive", List(
+          (t"", List()),
+          (t"a", List(t"a")),
+          (t"a\nb", List(t"a", t"b")),
+          (t"a\nb\n", List(t"a", t"b")),
+          (t"a\rb", List(t"a", t"b")),
+          (t"a\r\nb", List(t"a", t"b")),
+          (t"a\n\rb", List(t"a", t"b")),
+          (t"a\n\nb", List(t"a", t"", t"b")),
+          (t"a\r", List(t"a")),
+          (t"\n", List(t"")),
+          (t"one two\nthree four\r\nfive", List(t"one two", t"three four", t"five"))))
+
+      suite(m"linefeeds"):
+        import lineSeparation.linefeedLineSeparation
+
+        check(t"linefeed", List(
+          (t"a\nb", List(t"a", t"b")),
+          (t"a\rb", List(t"ab")),
+          (t"a\r\nb", List(t"a", t"b")),
+          (t"a\n\rb", List(t"a", t"b")),
+          (t"a\r", List(t"a"))))
+
+      suite(m"strict linefeeds"):
+        import lineSeparation.strictLinefeedsLineSeparation
+
+        // NOTE: the packaged policy's action table is (cr = Nl, lf = Lf, ...) —
+        // identical to strictCarriageReturn's, which looks inverted for a
+        // "linefeeds" policy, but the duct must match the table as it stands.
+        check(t"strict linefeed", List(
+          (t"a\nb", List(t"a\nb")),
+          (t"a\rb", List(t"a", t"b")),
+          (t"a\r\nb", List(t"a", t"\nb")),
+          (t"a\n\rb", List(t"a\n", t"b"))))
+
+      suite(m"carriage returns"):
+        import lineSeparation.carriageReturnLineSeparation
+
+        check(t"carriage return", List(
+          (t"a\rb", List(t"a", t"b")),
+          (t"a\nb", List(t"ab")),
+          (t"a\r\nb", List(t"a", t"b")),
+          (t"a\n\rb", List(t"a", t"b")),
+          (t"a\r", List(t"a"))))
+
+      suite(m"strict carriage returns"):
+        import lineSeparation.strictCarriageReturnLineSeparation
+
+        check(t"strict carriage return", List(
+          (t"a\rb", List(t"a", t"b")),
+          (t"a\nb", List(t"a\nb")),
+          (t"a\r\nb", List(t"a", t"\nb")),
+          (t"a\n\rb", List(t"a\n", t"b"))))
+
+      suite(m"carriage return linefeeds"):
+        import lineSeparation.carriageReturnLinefeedLineSeparation
+
+        check(t"crlf", List(
+          (t"a\r\nb", List(t"a", t"b")),
+          (t"a\nb", List(t"a\nb")),
+          (t"a\rb", List(t"ab")),
+          (t"a\n\rb", List(t"a\n", t"b")),
+          (t"a\r\n", List(t"a")),
+          (t"a\r", List(t"a"))))
+
+      suite(m"byte streams and long lines"):
+        import lineSeparation.adaptiveLinefeedLineSeparation
+
+        test(m"lines splits a byte stream through the character decoder"):
+          t"first\nsecond\r\nthird".in[Data].stream.delineate.records.to(List)
+        . assert(_ == List(t"first", t"second", t"third"))
+
+        test(m"a line spanning many windows is reassembled"):
+          val long = Text(String(Array.fill(10000)('x')))
+          val input = long + t"\ny"
+          input.s.grouped(7).map(_.tt).stream.delineate.records.to(List)
+        . assert(_ == List(Text(String(Array.fill(10000)('x'))), t"y"))
+
+        test(m"lines of an empty byte stream is empty"):
+          Iterator.empty[Data].stream.delineate.records.to(List)
+        . assert(_ == List())
 
     suite(m"Source and Sink tests"):
       val payload: Data = Data.fill(10000)(_.toByte)
