@@ -67,15 +67,24 @@ object JsonReader:
 final class JsonReader private (parser0: AnyRef, tactic0: AnyRef)
 extends caps.ExclusiveCapability, caps.Stateful:
   private inline def parser: Parser^ = parser0.asInstanceOf[Parser^]
+
+  // The sealed conduit for generated parsers: package-private, so the only
+  // path to the wrapped capabilities from outside jacinta is through the
+  // accessor the compiler synthesizes for jacinta's own macro-generated
+  // splices — hand-written code cannot name it. Generated code binds the
+  // parser once per record and reads through `Parser`'s direct rim without
+  // this class's per-token forwarders (measured at ~3% of a parse).
+  private[jacinta] def rawParser: AnyRef = parser0
+  private[jacinta] def rawTactic: AnyRef = tactic0
   private inline def tactic: Tactic[ParseError] = tactic0.asInstanceOf[Tactic[ParseError]]
 
   // ── Scalars: one JSON value each. Numbers coerce exactly as the
   // `Json.Ast` accessors do, so direct and AST reads yield equal values. ──
-  update def string(): Text = parser.directString()(using tactic).tt
-  update def boolean(): Boolean = parser.directBoolean()(using tactic)
-  update def long(): Long = parser.directLong()(using tactic)
-  update def int(): Int = parser.directLong()(using tactic).toInt
-  update def double(): Double = parser.directDouble()(using tactic)
+  inline update def string(): Text = parser.directString()(using tactic).tt
+  inline update def boolean(): Boolean = parser.directBoolean()(using tactic)
+  inline update def long(): Long = parser.directLong()(using tactic)
+  inline update def int(): Int = parser.directLong()(using tactic).toInt
+  inline update def double(): Double = parser.directDouble()(using tactic)
   update def bcd(): Bcd = parser.directBcd()(using tactic)
 
   // ── Null handling: `hasNull` peeks without consuming, for optional
@@ -88,7 +97,7 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // brace is consumed. After `openArray()`, `element()` is true while
   // another element follows (positioned at it) and false once the closing
   // bracket is consumed. ──
-  update def openObject(): Unit = parser.directOpenObject()(using tactic)
+  inline update def openObject(): Unit = parser.directOpenObject()(using tactic)
 
   update def key(): Optional[Text] = parser.directKey()(using tactic) match
     case null        => Unset
@@ -116,16 +125,22 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // instead, which consumes it generally.
   update def keyWord(): Long = parser.directKeyWordFast()
 
-  update def keyWordHigh: Long = parser.directKeyWordHigh
+  // The split protocol for generated parsers whose loop statically knows
+  // which step is first — the steady-state step consults no per-key state.
+  inline update def keyWordFirst(): Long = parser.directKeyWordFirst()
 
-  update def openArray(): Unit = parser.directOpenArray()(using tactic)
-  update def element(): Boolean = parser.directElement()(using tactic)
+  inline update def keyWordNext(): Long = parser.directKeyWordNext()
+
+  inline update def keyWordHigh: Long = parser.directKeyWordHigh
+
+  inline update def openArray(): Unit = parser.directOpenArray()(using tactic)
+  inline update def element(): Boolean = parser.directElement()(using tactic)
 
   // ── The fallback seam: parse one whole value into an AST (for field types
   // that only have a `Decodable in Json`), or skip one whole value (for
   // unknown keys). ──
   update def value(): Json = Json.ast(Json.Ast(parser.directValue()(using tactic)))
-  update def skipValue(): Unit = parser.directSkipValue()(using tactic)
+  inline update def skipValue(): Unit = parser.directSkipValue()(using tactic)
 
   // Scans the upcoming object for the given key and returns its string
   // value, leaving the reader where it started — the dispatch primitive for

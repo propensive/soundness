@@ -38,6 +38,7 @@ import anticipation.*
 import contingency.*
 import fulminate.*
 import gigantism.*
+import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
@@ -456,3 +457,420 @@ object internal:
           local += Tel.scalar(Text(s.substring(pos, end).nn))
           out ++= local
           true
+
+  // ── Staged parser generation ──────────────────────────────────────────────
+  // Generates a monomorphic `Tel.Parsable` for a case class: field values
+  // live in typed locals, keywords dispatch through packed-`Long` literal
+  // comparisons (with a linear text step for unpackable keywords), builtin
+  // primitives read inline off the reader, and the record is built by a
+  // direct constructor call — no `Array[Any]` buffer, no `Mirror`, no
+  // per-field boxing. Field types beyond the builtins resolve through
+  // `Tel.Field` instances (summoned at expansion, initialized lazily so
+  // recursive references stay deferred), so semantics — wire keywords,
+  // gathering of repeatable fields, first-match-wins duplicates, defaults,
+  // absents, error foci — are identical to `ParsableDerivation`. The body is
+  // assembled from reflection trees with only small, immediately-scoped
+  // quotes: chained quotes carrying `Type` bindings through closures are
+  // unpicklable.
+
+  private enum StagedKind:
+    case IntK, LongK, BooleanK, TextK, StringK, InstanceK
+
+  def stagedParsable[value: Type](renames: Expr[Map[Text, Text]])(using Quotes)
+  :   Expr[value is Tel.Parsable] =
+
+    import quotes.reflect.*
+    import StagedKind.*
+
+    val tpe = TypeRepr.of[value].dealias
+
+    val classSymbol = tpe.classSymbol.getOrElse:
+      report.errorAndAbort("stratiform: staged parsing requires a case class")
+
+    if !classSymbol.flags.is(Flags.Case) then
+      report.errorAndAbort
+        ("stratiform: staged parsing requires a case class; sums and other types use "+
+          "`Tel.Parsable.derived`")
+
+    if classSymbol.owner.isTerm then
+      report.errorAndAbort
+        ("stratiform: staged parsing requires a top-level or object-nested case class; "+
+          "method-local classes use `Tel.Parsable.derived`")
+
+    val ctor = classSymbol.primaryConstructor
+
+    if ctor.paramSymss.filterNot(_.exists(_.isTypeParam)).length != 1 then
+      report.errorAndAbort
+        ("stratiform: staged parsing requires a single parameter list; use "+
+          "`Tel.Parsable.derived`")
+
+    val fields = classSymbol.caseFields
+    val arity = fields.length
+    val fieldNames: List[String] = fields.map(_.name)
+    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
+
+    def kindOf(fieldType: TypeRepr): StagedKind =
+      if fieldType =:= TypeRepr.of[Int] then IntK
+      else if fieldType =:= TypeRepr.of[Long] then LongK
+      else if fieldType =:= TypeRepr.of[Boolean] then BooleanK
+      else if fieldType =:= TypeRepr.of[Text] then TextK
+      else if fieldType =:= TypeRepr.of[String] then StringK
+      else InstanceK
+
+    val kinds: List[StagedKind] = fieldTypes.map(kindOf)
+
+    // Keywords compile to literal packed-word comparisons when no `@name`
+    // annotation can rename them (renames resolve at runtime, so annotated
+    // classes keep the linear text step for every keyword). The literals use
+    // the same camel→kebab mapping `Tel.Parsable.wireKeywords` applies at
+    // runtime. A wire keyword that cannot pack (longer than eight bytes)
+    // still parses: it always arrives as `KeywordOpaque` and takes the
+    // general text step, which matches all fields by string.
+    val literalKeys: Boolean =
+      val annotated = ctor.paramSymss.flatten.filterNot(_.isTypeParam).flatMap(_.annotations)
+        ++ fields.flatMap(_.annotations)
+
+      !annotated.exists { annotation =>
+        annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+
+    val wireNames: List[String] = fieldNames.map { name => Tel.camelToKebab(name).s }
+
+    def packedKeyword(index: Int): Option[Long] =
+      val name = wireNames(index)
+      val length = name.length
+
+      val packs = length > 0 && length <= 8 &&
+        name.forall { char => char >= '!' && char <= '~' }
+
+      if !packs then None else
+        var word = 0L
+        var position = 0
+
+        while position < length do
+          word |= (name.charAt(position).toLong & 0xFF) << (position*8)
+          position += 1
+
+        Some(word)
+
+    val packedKeywords: List[Option[Long]] = List.range(0, arity).map(packedKeyword)
+
+    def summonField(index: Int): Expr[Tel.Field | Null] =
+      if kinds(index) != InstanceK then '{null}
+      else fieldTypes(index).asType match
+        case '[fieldType] =>
+          Expr.summon[fieldType is Tel.Field].getOrElse:
+            report.errorAndAbort
+              (s"stratiform: no Tel.Field instance for field ${fieldNames(index)}: "+
+                fieldTypes(index).show)
+
+    def declaredDefault(index: Int): Expr[Any] = fieldTypes(index).asType match
+      case '[fieldType] =>
+        '{ wisteria.internal.default[value, fieldType](${Expr(index)}): Any }
+
+    def zero(fieldType: TypeRepr): Term =
+      if fieldType =:= TypeRepr.of[Int] then Literal(IntConstant(0))
+      else if fieldType =:= TypeRepr.of[Long] then Literal(LongConstant(0L))
+      else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
+      else fieldType.asType match
+        case '[fieldType] => '{ null.asInstanceOf[fieldType] }.asTerm
+
+    def body
+      ( reader:      Expr[TelReader],
+        indent:      Expr[Int],
+        foci:        Expr[Foci[Tel.Focus]],
+        tactic:      Expr[Tactic[TelError]],
+        keys:        Expr[IArray[String]],
+        instances:   Expr[IArray[Tel.Field | Null]],
+        repeatables: Expr[IArray[Boolean]],
+        fallbacks:   Expr[IArray[Any]] )
+    :   Expr[value] =
+
+      val owner = Symbol.spliceOwner
+      val bufferType = TypeRepr.of[scala.collection.mutable.ListBuffer[Any] | Null]
+
+      val slots = List.range(0, arity).map: index =>
+        Symbol.newVal(owner, "slot"+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
+
+      val seens = List.range(0, arity).map: index =>
+        Symbol.newVal(owner, "seen"+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+
+      // Occurrence buffers for the fields that may gather (repeatable
+      // instances), allocated lazily on the first occurrence.
+      val buffers: List[Option[Symbol]] = List.range(0, arity).map: index =>
+        if kinds(index) != InstanceK then None else
+          Some(Symbol.newVal(owner, "gather"+index, bufferType, Flags.Mutable, Symbol.noSymbol))
+
+      val slotDefs = List.range(0, arity).map: index =>
+        ValDef(slots(index), Some(zero(fieldTypes(index))))
+
+      val seenDefs = List.range(0, arity).map: index =>
+        ValDef(seens(index), Some(Literal(BooleanConstant(false))))
+
+      val bufferDefs = List.range(0, arity).flatMap: index =>
+        buffers(index).map: symbol =>
+          ValDef(symbol, Some('{ null }.asTerm))
+
+      val unit = Literal(UnitConstant())
+
+      // One dispatch arm per field: read the value (with focus bookkeeping),
+      // honoring the derived engine's semantics — a repeatable field gathers
+      // every occurrence, a non-repeatable one keeps its first and skips the
+      // rest.
+      val arms = List.range(0, arity).map: index =>
+        val keyText: Expr[Text] = '{ $keys(${Expr(index)}).tt }
+
+        def firstWins(read: Term): Term =
+          If
+            ( Ref(seens(index)),
+              '{ $reader.skipEntry($indent) }.asTerm,
+              Block
+                ( List
+                    ( Assign(Ref(slots(index)), read),
+                      Assign(Ref(seens(index)), Literal(BooleanConstant(true))) ),
+                  unit ) )
+
+        val rhs: Term = fieldTypes(index).asType match
+          case '[fieldType] =>
+            kinds(index) match
+              case IntK =>
+                firstWins:
+                  '{
+                    Tel.Parsable.focusing($foci, $keyText):
+                      $reader.int().lay(Tel.Parsable.scalarFault($reader, t"Int", 0))(identity)
+                  }.asTerm
+
+              case LongK =>
+                firstWins:
+                  '{
+                    Tel.Parsable.focusing($foci, $keyText):
+                      $reader.long().lay(Tel.Parsable.scalarFault($reader, t"Long", 0L))(identity)
+                  }.asTerm
+
+              case BooleanK =>
+                firstWins:
+                  '{
+                    Tel.Parsable.focusing($foci, $keyText):
+                      $reader.boolean()
+                      . lay(Tel.Parsable.scalarFault($reader, t"Boolean", false))(identity)
+                  }.asTerm
+
+              case TextK =>
+                firstWins:
+                  '{
+                    Tel.Parsable.focusing($foci, $keyText):
+                      $reader.atom()
+                      . lay { $reader.fault(TelError.Reason.Absent); t"" } (identity)
+                  }.asTerm
+
+              case StringK =>
+                firstWins:
+                  '{
+                    Tel.Parsable.focusing($foci, $keyText):
+                      $reader.atom()
+                      . lay { $reader.fault(TelError.Reason.Absent); "" } { atom => atom.s }
+                  }.asTerm
+
+              case InstanceK =>
+                val bufferRef = Ref(buffers(index).get)
+
+                val bufferExpr =
+                  bufferRef.asExprOf[scala.collection.mutable.ListBuffer[Any] | Null]
+
+                val ensure: Term =
+                  If
+                    ( '{ $bufferExpr == null }.asTerm,
+                      Assign
+                        ( bufferRef,
+                          '{ scala.collection.mutable.ListBuffer.empty[Any] }.asTerm ),
+                      unit )
+
+                val append: Term =
+                  '{
+                    $bufferExpr.asInstanceOf[scala.collection.mutable.ListBuffer[Any]].addOne
+                      ( Tel.Parsable.focusing($foci, $keyText):
+                          Tel.Parsable.parseElement
+                            ( $instances(${Expr(index)}).asInstanceOf[Tel.Parsing],
+                              $reader,
+                              $indent ) )
+                  }.asTerm
+
+                val read: Term =
+                  '{
+                    Tel.Parsable.focusing($foci, $keyText):
+                      $instances(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
+                      . parse($reader, $indent)
+                  }.asTerm
+
+                If
+                  ( '{ $repeatables(${Expr(index)}) }.asTerm,
+                    Block(List(ensure, append), unit),
+                    firstWins(read) )
+
+        CaseDef(Literal(IntConstant(index)), None, rhs)
+
+      val fallthrough = CaseDef(Wildcard(), None, '{ $reader.skipEntry($indent) }.asTerm)
+
+      // The keyword loop. With literal keywords, each step compares the
+      // packed word against the wire keywords as immediate constants,
+      // resolving an opaque keyword through the linear text step; otherwise
+      // (runtime renames) every keyword resolves through the text step.
+      val run = Symbol.newVal(owner, "run", TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+      val word = Symbol.newVal(owner, "word", TypeRepr.of[Long], Flags.EmptyFlags, Symbol.noSymbol)
+      val found = Symbol.newVal(owner, "found", TypeRepr.of[Int], Flags.EmptyFlags, Symbol.noSymbol)
+      val wordRef = Ref(word).asExprOf[Long]
+
+      def chain(index: Int): Term =
+        if index == arity then Literal(IntConstant(-1))
+        else packedKeywords(index) match
+          case None => chain(index + 1)
+
+          case Some(packed) =>
+            If
+              ( '{ $wordRef == ${Expr(packed)} }.asTerm,
+                Literal(IntConstant(index)),
+                chain(index + 1) )
+
+      val textStep: Term = '{ Tel.Parsable.keywordIndex($keys, $reader.keywordText) }.asTerm
+
+      val resolve: Term =
+        if literalKeys then
+          If('{ $wordRef == TelReader.KeywordOpaque }.asTerm, textStep, chain(0))
+        else textStep
+
+      val step: Term =
+        Block
+          ( List(ValDef(word, Some('{ $reader.keywordWord($indent) }.asTerm))),
+            If
+              ( '{ $wordRef == TelReader.KeywordEnd }.asTerm,
+                Assign(Ref(run), Literal(BooleanConstant(false))),
+                Block
+                  ( List(ValDef(found, Some(resolve))),
+                    Match(Ref(found), arms :+ fallthrough) ) ) )
+
+      val loop: List[Statement] =
+        List(ValDef(run, Some(Literal(BooleanConstant(true)))), While(Ref(run), step))
+
+      // Fields whose keywords never arrived — and repeatable fields, whose
+      // collection is always built from the gathered occurrences (zero
+      // occurrences build the empty collection; a repeatable field never
+      // consults the declared default), exactly as the derived engine does.
+      val absents: List[Term] = List.range(0, arity).map: index =>
+        fieldTypes(index).asType match
+          case '[fieldType] =>
+            val keyText: Expr[Text] = '{ $keys(${Expr(index)}).tt }
+
+            val onAbsent: Expr[fieldType] = kinds(index) match
+              case InstanceK =>
+                '{
+                  $instances(${Expr(index)}).asInstanceOf[fieldType is Tel.Field]
+                  . absent()(using $tactic)
+                }
+
+              case IntK     => '{ Tel.Parsable.missing[Int](0)(using $tactic) }.asExprOf[fieldType]
+              case LongK    => '{ Tel.Parsable.missing[Long](0L)(using $tactic) }.asExprOf[fieldType]
+              case TextK    => '{ Tel.Parsable.missing[Text](t"")(using $tactic) }.asExprOf[fieldType]
+              case StringK  => '{ Tel.Parsable.missing[String]("")(using $tactic) }.asExprOf[fieldType]
+
+              case BooleanK =>
+                '{ Tel.Parsable.missing[Boolean](false)(using $tactic) }.asExprOf[fieldType]
+
+            val resolveAbsent: Term =
+              Assign
+                ( Ref(slots(index)),
+                  '{
+                    val declared = $fallbacks(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+
+                    if !declared.absent then declared.asInstanceOf[fieldType]
+                    else Tel.Parsable.focusing($foci, $keyText)($onAbsent)
+                  }.asTerm )
+
+            val whenUnseen: Term =
+              If('{ !${Ref(seens(index)).asExprOf[Boolean]} }.asTerm, resolveAbsent, unit)
+
+            kinds(index) match
+              case InstanceK =>
+                val bufferExpr =
+                  Ref(buffers(index).get)
+                  . asExprOf[scala.collection.mutable.ListBuffer[Any] | Null]
+
+                val gatherFinish: Term =
+                  Assign
+                    ( Ref(slots(index)),
+                      '{
+                        Tel.Parsable.focusing($foci, $keyText):
+                          Tel.Parsable.gathered[fieldType]
+                            ( $instances(${Expr(index)}).asInstanceOf[Tel.Parsing],
+                              $bufferExpr match
+                                case null   => Nil
+                                case buffer => buffer.toList )
+                      }.asTerm )
+
+                If('{ $repeatables(${Expr(index)}) }.asTerm, gatherFinish, whenUnseen)
+
+              case _ =>
+                whenUnseen
+
+      val construct: Term =
+        val typeArguments = tpe match
+          case AppliedType(_, arguments) => arguments
+          case _                         => Nil
+
+        val newTerm = Select(New(Inferred(tpe)), ctor)
+
+        val applied =
+          if typeArguments.isEmpty then newTerm
+          else TypeApply(newTerm, typeArguments.map { argument => Inferred(argument) })
+
+        Apply(applied, slots.map { slot => Ref(slot) })
+
+      Block(slotDefs ::: seenDefs ::: bufferDefs ::: loop ::: absents, construct)
+      . asExprOf[value]
+
+    def summonOrAbort[required: Type](role: String): Expr[required] =
+      Expr.summon[required].getOrElse:
+        report.errorAndAbort(s"stratiform: staged parsing needs a contextual $role")
+
+    val fociExpr = summonOrAbort[Foci[Tel.Focus]]("Foci[Tel.Focus]")
+    val tacticExpr = summonOrAbort[Tactic[TelError]]("Tactic[TelError]")
+    val nameExprs = fieldNames.map { name => Expr(name) }
+    val instanceExprs = List.range(0, arity).map(summonField)
+    val fallbackExprs = List.range(0, arity).map(declaredDefault)
+
+    '{
+      // Sealed per the codec-thunk pattern, like the derived instances: the
+      // generated parser captures the resolution-scoped tactic and foci.
+      // The instance and default arrays are single lazy vals, so recursive
+      // self-references stay deferred until the first parse.
+      caps.unsafe.unsafeAssumePure:
+        val foci: Foci[Tel.Focus] = $fociExpr
+        val tactic: Tactic[TelError] = $tacticExpr
+
+        val keys: IArray[String] =
+          Tel.Parsable.wireKeywords(IArray[String](${Varargs(nameExprs)}*), $renames)
+
+        lazy val instances: IArray[Tel.Field | Null] = IArray(${Varargs(instanceExprs)}*)
+
+        lazy val repeatables: IArray[Boolean] =
+          instances.map { instance => instance != null && Tel.Parsable.repeats(instance) }
+
+        lazy val fallbacks: IArray[Any] = IArray[Any](${Varargs(fallbackExprs)}*)
+
+        new Tel.Parsable:
+          type Self = value
+          def shape(): Morphology = Morphology.Any
+
+          def parse(reader: TelReader^, indent: Int): value =
+            reader.finishLine()
+            ${
+              body
+                ( '{reader}, '{indent + 1}, '{foci}, '{tactic}, '{keys}, '{instances},
+                  '{repeatables}, '{fallbacks} )
+            }
+
+          override def parse(reader: TelReader^): value =
+            ${
+              body
+                ( '{reader}, '{0}, '{foci}, '{tactic}, '{keys}, '{instances},
+                  '{repeatables}, '{fallbacks} )
+            }
+    }

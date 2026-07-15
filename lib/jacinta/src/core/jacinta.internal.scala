@@ -46,6 +46,7 @@ import gossamer.*
 import prepositional.*
 import rudiments.*
 import vacuous.*
+import wisteria.{Discriminable, VariantError}
 import zephyrine.*
 
 object internal:
@@ -1664,4 +1665,118 @@ object internal:
                 ( '{reader}, '{foci}, '{tactic}, '{keys}, '{table}, '{instances},
                   '{fallbacks} )
             }
+    }
+
+  // Generates a monomorphic `Json.Parsable` for a sealed sum with a
+  // field-discriminated wire shape: the tag is located with `discriminant`'s
+  // bounded scan-ahead (which rewinds), dispatched through a chain of
+  // monomorphic string comparisons against the wire variant names (renames
+  // applied once, at instance construction), and the chosen variant parses
+  // the whole object directly through its `Json.Field` instance (summoned at
+  // expansion, so a sibling staged given composes) — no per-occurrence map
+  // building, no generic-equality dispatch, no `delegate` fold. A missing
+  // tag and an unknown tag raise exactly as `ParsableDerivation.disjunction`
+  // does: `JsonError(Absent)` and wisteria's `VariantError`, each through
+  // the same deferred `provide` summons the derived engine uses.
+  def stagedSum[value: Type](renames: Expr[Map[Text, Text]])(using Quotes)
+  :   Expr[value is Json.Parsable] =
+
+    import quotes.reflect.*
+
+    val tpe = TypeRepr.of[value].dealias
+
+    val classSymbol = tpe.classSymbol.getOrElse:
+      report.errorAndAbort("jacinta: staged sum parsing requires a sealed trait or enum")
+
+    tpe match
+      case AppliedType(_, _) =>
+        report.errorAndAbort
+          ("jacinta: staged parsing does not support generic sums; use `Json.Parsable.derived`")
+
+      case _ =>
+        ()
+
+    val children = classSymbol.children
+
+    if children.isEmpty then
+      report.errorAndAbort("jacinta: staged sum parsing requires at least one variant")
+
+    if !children.forall { child => child.isClassDef && child.flags.is(Flags.Case) } then
+      report.errorAndAbort
+        ("jacinta: staged sum parsing requires every variant to be a case class; singleton "+
+          "variants use `Json.Parsable.derived`")
+
+    val variantTypes: List[TypeRepr] = children.map(_.typeRef)
+    val variantNames: List[String] = children.map(_.name)
+    val arity = children.length
+
+    def summonVariant(index: Int): Expr[Json.Field] =
+      variantTypes(index).asType match
+        case '[variantType] =>
+          Expr.summon[variantType is Json.Field].getOrElse:
+            report.errorAndAbort
+              (s"jacinta: no Json.Field instance for variant ${variantNames(index)}: "+
+                variantTypes(index).show)
+
+    val discriminableExpr: Expr[value is Discriminable in Json] =
+      Expr.summon[value is Discriminable in Json].getOrElse:
+        report.errorAndAbort
+          ("jacinta: staged sum parsing needs a contextual `Discriminable in Json`, like "+
+            "`jacinta.discriminables.jsonByKindDiscriminable`")
+
+    val nameExprs = variantNames.map { name => Expr(name) }
+    val variantExprs = List.range(0, arity).map(summonVariant)
+
+    // The dispatch chain: one monomorphic comparison per variant, ending in
+    // the derived engine's unknown-variant raise.
+    def dispatch
+      ( index:        Int,
+        reader:       Expr[JsonReader],
+        wire:         Expr[Text],
+        wireString:   Expr[String],
+        variants:     Expr[IArray[Json.Field]],
+        wireVariants: Expr[IArray[String]] )
+    :   Expr[value] =
+
+      if index == arity then
+        '{
+          provide[Tactic[VariantError]]:
+            abort(VariantError[value]($wire))
+        }
+      else variantTypes(index).asType match
+        case '[type variantType <: value; variantType] =>
+          '{
+            if $wireVariants(${Expr(index)}) == $wireString then
+              $variants(${Expr(index)}).asInstanceOf[variantType is Json.Field].parse($reader)
+            else ${ dispatch(index + 1, reader, wire, wireString, variants, wireVariants) }
+          }
+
+    '{
+      // Sealed per the codec-thunk pattern, like the derived instances: the
+      // variant instances may capture resolution-scoped tactics. The variant
+      // array is a single lazy val, so recursive references stay deferred.
+      caps.unsafe.unsafeAssumePure:
+        val discriminable: value is Discriminable in Json = $discriminableExpr
+        val tagField: Text = Json.Parsable.discriminantField(discriminable)
+
+        val wireVariants: IArray[String] =
+          Json.Parsable.wireKeys(IArray[String](${Varargs(nameExprs)}*), $renames)
+
+        lazy val variants: IArray[Json.Field] = IArray(${Varargs(variantExprs)}*)
+
+        new Json.Parsable:
+          type Self = value
+          def shape(): Morphology = Morphology.Any
+
+          def parse(reader: JsonReader^): value =
+            provide[Tactic[JsonError]]:
+              val wire: Text = reader.discriminant(tagField).or:
+                abort(JsonError(JsonError.Reason.Absent))
+
+              val wireString: String = wire.s
+
+              ${
+                dispatch
+                  ( 0, '{reader}, '{wire}, '{wireString}, '{variants}, '{wireVariants} )
+              }
     }

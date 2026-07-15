@@ -829,6 +829,21 @@ object internal:
 
         throw new NoSuchElementException(s"key not found: $key")
 
+      // `at` without the `Indexable` detour, whose resolution is ambiguous
+      // against the `IArray` instance under the opaque bound — used by
+      // staged parsers' generated `@attribute` steps.
+      def fetch(key: Text): Optional[Text] =
+        val a = storage(attrs)
+        val keyStr: String = key.s
+        val n = a.length
+        var i = 0
+
+        while i < n do
+          if a(i) == keyStr then return a(i + 1).asInstanceOf[Text]
+          i += 2
+
+        Unset
+
       def contains(key: Text): Boolean =
         val a = storage(attrs)
         val keyStr: String = key.s
@@ -1064,3 +1079,586 @@ object internal:
           i += 2
 
         h
+
+  // ── Staged parser generation ──────────────────────────────────────────────
+  // Generates a monomorphic `Xml.Parsable` for a case class: field values
+  // live in typed locals, child elements dispatch through packed-`Long`
+  // literal comparisons (with a linear text step for unpackable names),
+  // builtin primitives read through direct static calls, `@attribute` fields
+  // fill from the open tag before the child loop, and the record is built by
+  // a direct constructor call — no `Array[Any]` buffer, no `Mirror`, no
+  // per-field boxing. Field types beyond the builtins resolve through
+  // `Xml.Field` instances (summoned at expansion, initialized lazily so
+  // recursive references stay deferred), so semantics — wire names,
+  // gathering of repeatable fields, first-match-wins duplicates, defaults,
+  // absents, error foci — are identical to `ParsableDerivation`. Like the
+  // derived engine (and unlike jacinta's staged parser), no `Tactic` or
+  // `Foci` is captured at expansion: both come from the reader at the read
+  // site. The body is assembled from reflection trees with only small,
+  // immediately-scoped quotes: chained quotes carrying `Type` bindings
+  // through closures are unpicklable.
+
+  private enum StagedKind:
+    case IntK, LongK, DoubleK, FloatK, BooleanK, TextK, StringK, InstanceK
+
+  def stagedParsable[value: Type](renames: Expr[Map[Text, Text]])(using Quotes)
+  :   Expr[value is Xml.Parsable] =
+
+    import quotes.reflect.*
+    import StagedKind.*
+
+    val tpe = TypeRepr.of[value].dealias
+
+    val classSymbol = tpe.classSymbol.getOrElse:
+      report.errorAndAbort("xylophone: staged parsing requires a case class")
+
+    if !classSymbol.flags.is(Flags.Case) then
+      report.errorAndAbort
+        ("xylophone: staged parsing requires a case class; sums and other types use "+
+          "`Xml.Parsable.derived`")
+
+    if classSymbol.owner.isTerm then
+      report.errorAndAbort
+        ("xylophone: staged parsing requires a top-level or object-nested case class; "+
+          "method-local classes use `Xml.Parsable.derived`")
+
+    val ctor = classSymbol.primaryConstructor
+
+    if ctor.paramSymss.filterNot(_.exists(_.isTypeParam)).length != 1 then
+      report.errorAndAbort
+        ("xylophone: staged parsing requires a single parameter list; use "+
+          "`Xml.Parsable.derived`")
+
+    val fields = classSymbol.caseFields
+    val arity = fields.length
+    val fieldNames: List[String] = fields.map(_.name)
+    val fieldTypes: List[TypeRepr] = fields.map { field => tpe.memberType(field).dealias }
+
+    def kindOf(fieldType: TypeRepr): StagedKind =
+      if fieldType =:= TypeRepr.of[Int] then IntK
+      else if fieldType =:= TypeRepr.of[Long] then LongK
+      else if fieldType =:= TypeRepr.of[Double] then DoubleK
+      else if fieldType =:= TypeRepr.of[Float] then FloatK
+      else if fieldType =:= TypeRepr.of[Boolean] then BooleanK
+      else if fieldType =:= TypeRepr.of[Text] then TextK
+      else if fieldType =:= TypeRepr.of[String] then StringK
+      else InstanceK
+
+    val kinds: List[StagedKind] = fieldTypes.map(kindOf)
+
+    def annotationsOf(index: Int): List[Term] =
+      val params = ctor.paramSymss.flatten.filterNot(_.isTypeParam)
+      params(index).annotations ++ fields(index).annotations
+
+    // `@attribute` fields fill from the open tag and never match a child.
+    val attrFlags: List[Boolean] = List.range(0, arity).map: index =>
+      annotationsOf(index).exists { annotation => annotation.tpe <:< TypeRepr.of[Xml.attribute] }
+
+    // Names compile to literal packed-word comparisons when no `@name`
+    // annotation can rename them (renames resolve at runtime, so annotated
+    // classes keep the linear text step for every child). A field name that
+    // cannot pack still parses: it always arrives as `NameOpaque` and takes
+    // the general text step, which matches all fields by string.
+    val literalKeys: Boolean =
+      !List.range(0, arity).exists: index =>
+        annotationsOf(index).exists { annotation =>
+          annotation.tpe <:< TypeRepr.of[adversaria.name[?]] }
+
+    def packedName(index: Int): Option[(Long, Long)] =
+      val name = fieldNames(index)
+      val length = name.length
+
+      val packs = length > 0 && length <= 16 &&
+        name.forall { char => char >= '!' && char < 127 }
+
+      if !packs then None else
+        var low = 0L
+        var high = 0L
+        var position = 0
+
+        while position < length do
+          val byte = name.charAt(position).toLong & 0xFF
+          if position < 8 then low |= byte << (position*8)
+          else high |= byte << ((position - 8)*8)
+          position += 1
+
+        Some((low, high))
+
+    val packedNames: List[Option[(Long, Long)]] = List.range(0, arity).map(packedName)
+
+    def summonField(index: Int): Expr[Xml.Field | Null] =
+      if kinds(index) != InstanceK then '{null}
+      else fieldTypes(index).asType match
+        case '[fieldType] =>
+          Expr.summon[fieldType is Xml.Field].getOrElse:
+            report.errorAndAbort
+              (s"xylophone: no Xml.Field instance for field ${fieldNames(index)}: "+
+                fieldTypes(index).show)
+
+    def declaredDefault(index: Int): Expr[Any] = fieldTypes(index).asType match
+      case '[fieldType] =>
+        '{ wisteria.internal.default[value, fieldType](${Expr(index)}): Any }
+
+    def zero(fieldType: TypeRepr): Term =
+      if fieldType =:= TypeRepr.of[Int] then Literal(IntConstant(0))
+      else if fieldType =:= TypeRepr.of[Long] then Literal(LongConstant(0L))
+      else if fieldType =:= TypeRepr.of[Double] then Literal(DoubleConstant(0.0))
+      else if fieldType =:= TypeRepr.of[Float] then Literal(FloatConstant(0.0f))
+      else if fieldType =:= TypeRepr.of[Boolean] then Literal(BooleanConstant(false))
+      else fieldType.asType match
+        case '[fieldType] => '{ null.asInstanceOf[fieldType] }.asTerm
+
+    def construct(arguments: List[Term]): Term =
+      val typeArguments = tpe match
+        case AppliedType(_, applied) => applied
+        case _                       => Nil
+
+      val newTerm = Select(New(Inferred(tpe)), ctor)
+
+      val applied =
+        if typeArguments.isEmpty then newTerm
+        else TypeApply(newTerm, typeArguments.map { argument => Inferred(argument) })
+
+      Apply(applied, arguments)
+
+    def body
+      ( reader:      Expr[XmlReader],
+        keys:        Expr[IArray[String]],
+        attrs:       Expr[IArray[Boolean]],
+        instances:   Expr[IArray[Xml.Field | Null]],
+        repeatables: Expr[IArray[Boolean]],
+        fallbacks:   Expr[IArray[Any]] )
+    :   Expr[value] =
+
+      val owner = Symbol.spliceOwner
+      val bufferType = TypeRepr.of[scala.collection.mutable.ListBuffer[Any] | Null]
+
+      // The read-site capabilities, bound once per record.
+      val fociSymbol =
+        Symbol.newVal(owner, "foci", TypeRepr.of[Foci[Xml.Focus]], Flags.EmptyFlags,
+          Symbol.noSymbol)
+
+      val tacticSymbol =
+        Symbol.newVal(owner, "tactic", TypeRepr.of[Tactic[XmlError]], Flags.EmptyFlags,
+          Symbol.noSymbol)
+
+      val fociDef = ValDef(fociSymbol, Some('{ $reader.foci }.asTerm))
+      val tacticDef = ValDef(tacticSymbol, Some('{ $reader.errorTactic }.asTerm))
+      val foci = Ref(fociSymbol).asExprOf[Foci[Xml.Focus]]
+      val tactic = Ref(tacticSymbol).asExprOf[Tactic[XmlError]]
+
+      val slots = List.range(0, arity).map: index =>
+        Symbol.newVal(owner, "slot"+index, fieldTypes(index), Flags.Mutable, Symbol.noSymbol)
+
+      val seens = List.range(0, arity).map: index =>
+        Symbol.newVal(owner, "seen"+index, TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+
+      // Occurrence buffers for the fields that may gather (repeatable
+      // instances), allocated lazily on the first occurrence.
+      val buffers: List[Option[Symbol]] = List.range(0, arity).map: index =>
+        if kinds(index) != InstanceK then None else
+          Some(Symbol.newVal(owner, "gather"+index, bufferType, Flags.Mutable, Symbol.noSymbol))
+
+      val slotDefs = List.range(0, arity).map: index =>
+        ValDef(slots(index), Some(zero(fieldTypes(index))))
+
+      val seenDefs = List.range(0, arity).map: index =>
+        ValDef(seens(index), Some(Literal(BooleanConstant(false))))
+
+      val bufferDefs = List.range(0, arity).flatMap: index =>
+        buffers(index).map: symbol =>
+          ValDef(symbol, Some('{ null }.asTerm))
+
+      val unit = Literal(UnitConstant())
+
+      // `@attribute` fields first: they are available from the element's
+      // open tag, before any child is consumed.
+      val attributesSymbol =
+        Symbol.newVal(owner, "attributes", TypeRepr.of[Attributes], Flags.EmptyFlags,
+          Symbol.noSymbol)
+
+      val attributesDef = ValDef(attributesSymbol, Some('{ $reader.attributes() }.asTerm))
+      val attributes = Ref(attributesSymbol).asExprOf[Attributes]
+
+      val attributeSteps: List[Term] = List.range(0, arity).flatMap: index =>
+        if !attrFlags(index) then None else fieldTypes(index).asType match
+          case '[fieldType] =>
+            val keyText: Expr[Text] = '{ $keys(${Expr(index)}).tt }
+
+            val valueSymbol =
+              Symbol.newVal(owner, "attr"+index, TypeRepr.of[Optional[Text]], Flags.EmptyFlags,
+                Symbol.noSymbol)
+
+            val valueDef =
+              ValDef(valueSymbol, Some('{ Attributes.fetch($attributes)($keyText) }.asTerm))
+
+            val valueRef = Ref(valueSymbol).asExprOf[Optional[Text]]
+
+            val read: Expr[fieldType] = kinds(index) match
+              case IntK     => '{ Xml.intParsable.attribute($valueRef.vouch)(using $tactic, $foci) }
+                               . asExprOf[fieldType]
+              case LongK    => '{ Xml.longParsable.attribute($valueRef.vouch)(using $tactic, $foci) }
+                               . asExprOf[fieldType]
+              case DoubleK  => '{ Xml.doubleParsable.attribute($valueRef.vouch)(using $tactic, $foci) }
+                               . asExprOf[fieldType]
+              case FloatK   => '{ Xml.floatParsable.attribute($valueRef.vouch)(using $tactic, $foci) }
+                               . asExprOf[fieldType]
+              case BooleanK => '{ Xml.booleanParsable.attribute($valueRef.vouch)(using $tactic, $foci) }
+                               . asExprOf[fieldType]
+              case TextK    => '{ $valueRef.vouch }.asExprOf[fieldType]
+              case StringK  => '{ $valueRef.vouch.s }.asExprOf[fieldType]
+
+              case InstanceK =>
+                '{
+                  $instances(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
+                  . attribute($valueRef.vouch)(using $tactic, $foci)
+                }
+
+            val focused: Term =
+              '{ Xml.Parsable.focusing($foci, $keyText)($read) }.asTerm
+
+            Some:
+              Block
+                ( List(valueDef),
+                  If
+                    ( '{ $valueRef.present }.asTerm,
+                      Block
+                        ( List
+                            ( Assign(Ref(slots(index)), focused),
+                              Assign(Ref(seens(index)), Literal(BooleanConstant(true))) ),
+                          unit ),
+                      unit ) )
+
+      // One dispatch arm per child-matching field: read the value (with
+      // focus bookkeeping), honoring the derived engine's semantics — a
+      // repeatable field gathers every occurrence, a non-repeatable one
+      // keeps its first and skips the rest.
+      val arms = List.range(0, arity).map: index =>
+        val keyText: Expr[Text] = '{ $keys(${Expr(index)}).tt }
+
+        def firstWins(read: Term): Term =
+          If
+            ( Ref(seens(index)),
+              '{ $reader.skipElement() }.asTerm,
+              Block
+                ( List
+                    ( Assign(Ref(slots(index)), read),
+                      Assign(Ref(seens(index)), Literal(BooleanConstant(true))) ),
+                  unit ) )
+
+        val rhs: Term = fieldTypes(index).asType match
+          case '[fieldType] =>
+            kinds(index) match
+              case IntK =>
+                firstWins:
+                  '{ Xml.Parsable.focusing($foci, $keyText)(Xml.intParsable.parse($reader)) }
+                  . asTerm
+
+              case LongK =>
+                firstWins:
+                  '{ Xml.Parsable.focusing($foci, $keyText)(Xml.longParsable.parse($reader)) }
+                  . asTerm
+
+              case DoubleK =>
+                firstWins:
+                  '{ Xml.Parsable.focusing($foci, $keyText)(Xml.doubleParsable.parse($reader)) }
+                  . asTerm
+
+              case FloatK =>
+                firstWins:
+                  '{ Xml.Parsable.focusing($foci, $keyText)(Xml.floatParsable.parse($reader)) }
+                  . asTerm
+
+              case BooleanK =>
+                firstWins:
+                  '{ Xml.Parsable.focusing($foci, $keyText)(Xml.booleanParsable.parse($reader)) }
+                  . asTerm
+
+              case TextK =>
+                firstWins:
+                  '{
+                    Xml.Parsable.focusing($foci, $keyText):
+                      $reader.text().or { $reader.fault(); t"" }
+                  }.asTerm
+
+              case StringK =>
+                firstWins:
+                  '{
+                    Xml.Parsable.focusing($foci, $keyText):
+                      ($reader.text().or { $reader.fault(); t"" }).s
+                  }.asTerm
+
+              case InstanceK =>
+                val bufferRef = Ref(buffers(index).get)
+
+                val bufferExpr =
+                  bufferRef.asExprOf[scala.collection.mutable.ListBuffer[Any] | Null]
+
+                val ensure: Term =
+                  If
+                    ( '{ $bufferExpr == null }.asTerm,
+                      Assign
+                        ( bufferRef,
+                          '{ scala.collection.mutable.ListBuffer.empty[Any] }.asTerm ),
+                      unit )
+
+                val append: Term =
+                  '{
+                    $bufferExpr.asInstanceOf[scala.collection.mutable.ListBuffer[Any]].addOne
+                      ( Xml.Parsable.focusing($foci, $keyText):
+                          Xml.Parsable.parseElement
+                            ( $instances(${Expr(index)}).asInstanceOf[Xml.Parsing], $reader ) )
+                  }.asTerm
+
+                val read: Term =
+                  '{
+                    Xml.Parsable.focusing($foci, $keyText):
+                      $instances(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
+                      . parse($reader)
+                  }.asTerm
+
+                If
+                  ( '{ $repeatables(${Expr(index)}) }.asTerm,
+                    Block(List(ensure, append), unit),
+                    firstWins(read) )
+
+        CaseDef(Literal(IntConstant(index)), None, rhs)
+
+      val fallthrough = CaseDef(Wildcard(), None, '{ $reader.skipElement() }.asTerm)
+
+      // The child loop. With literal names, each step compares the packed
+      // words against the field names as immediate constants, resolving an
+      // opaque name through the linear text step; otherwise (runtime
+      // renames) every child resolves through the text step.
+      val run = Symbol.newVal(owner, "run", TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
+      val word = Symbol.newVal(owner, "word", TypeRepr.of[Long], Flags.EmptyFlags, Symbol.noSymbol)
+      val high = Symbol.newVal(owner, "high", TypeRepr.of[Long], Flags.EmptyFlags, Symbol.noSymbol)
+      val found = Symbol.newVal(owner, "found", TypeRepr.of[Int], Flags.EmptyFlags, Symbol.noSymbol)
+      val wordRef = Ref(word).asExprOf[Long]
+      val highRef = Ref(high).asExprOf[Long]
+
+      def chain(index: Int): Term =
+        if index == arity then Literal(IntConstant(-1))
+        else if attrFlags(index) then chain(index + 1)
+        else packedNames(index) match
+          case None => chain(index + 1)
+
+          case Some((low, highWord)) =>
+            If
+              ( '{ $wordRef == ${Expr(low)} && $highRef == ${Expr(highWord)} }.asTerm,
+                Literal(IntConstant(index)),
+                chain(index + 1) )
+
+      val textStep: Term =
+        '{ Xml.Parsable.childIndex($keys, $attrs, $reader.childLabel) }.asTerm
+
+      val resolve: Term =
+        if literalKeys then
+          If
+            ( '{ $wordRef == XmlReader.NameOpaque }.asTerm,
+              textStep,
+              Block(List(ValDef(high, Some('{ $reader.childWordHigh }.asTerm))), chain(0)) )
+        else textStep
+
+      val step: Term =
+        Block
+          ( List(ValDef(word, Some('{ $reader.childWord() }.asTerm))),
+            If
+              ( '{ $wordRef == XmlReader.NameEnd }.asTerm,
+                Assign(Ref(run), Literal(BooleanConstant(false))),
+                Block
+                  ( List(ValDef(found, Some(resolve))),
+                    Match(Ref(found), arms :+ fallthrough) ) ) )
+
+      val loop: List[Statement] =
+        List(ValDef(run, Some(Literal(BooleanConstant(true)))), While(Ref(run), step))
+
+      // Fields whose names never arrived — and repeatable fields, whose
+      // collection is always built from the gathered occurrences (zero
+      // occurrences build the empty collection; a repeatable field never
+      // consults the declared default), exactly as the derived engine does.
+      val absents: List[Term] = List.range(0, arity).map: index =>
+        fieldTypes(index).asType match
+          case '[fieldType] =>
+            val keyText: Expr[Text] = '{ $keys(${Expr(index)}).tt }
+
+            val onAbsent: Expr[fieldType] = kinds(index) match
+              case InstanceK =>
+                '{
+                  $instances(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
+                  . absent()(using $tactic, $foci)
+                }
+
+              case IntK     => '{ Xml.Parsable.missing[Int](0)(using $tactic) }
+                               . asExprOf[fieldType]
+              case LongK    => '{ Xml.Parsable.missing[Long](0L)(using $tactic) }
+                               . asExprOf[fieldType]
+              case DoubleK  => '{ Xml.Parsable.missing[Double](0.0)(using $tactic) }
+                               . asExprOf[fieldType]
+              case FloatK   => '{ Xml.Parsable.missing[Float](0.0f)(using $tactic) }
+                               . asExprOf[fieldType]
+              case BooleanK => '{ Xml.Parsable.missing[Boolean](false)(using $tactic) }
+                               . asExprOf[fieldType]
+              case TextK    => '{ Xml.Parsable.missing[Text](t"")(using $tactic) }
+                               . asExprOf[fieldType]
+              case StringK  => '{ Xml.Parsable.missing[String]("")(using $tactic) }
+                               . asExprOf[fieldType]
+
+            val resolveAbsent: Term =
+              Assign
+                ( Ref(slots(index)),
+                  '{
+                    val declared = $fallbacks(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+
+                    if !declared.absent then declared.asInstanceOf[fieldType]
+                    else Xml.Parsable.focusing($foci, $keyText)($onAbsent)
+                  }.asTerm )
+
+            val whenUnseen: Term =
+              If('{ !${Ref(seens(index)).asExprOf[Boolean]} }.asTerm, resolveAbsent, unit)
+
+            kinds(index) match
+              case InstanceK =>
+                val bufferExpr =
+                  Ref(buffers(index).get)
+                  . asExprOf[scala.collection.mutable.ListBuffer[Any] | Null]
+
+                val gatherFinish: Term =
+                  Assign
+                    ( Ref(slots(index)),
+                      '{
+                        Xml.Parsable.focusing($foci, $keyText):
+                          Xml.Parsable.gathered[fieldType]
+                            ( $instances(${Expr(index)}).asInstanceOf[Xml.Parsing],
+                              $bufferExpr match
+                                case null   => Nil
+                                case buffer => buffer.toList )
+                      }.asTerm )
+
+                If('{ $repeatables(${Expr(index)}) }.asTerm, gatherFinish, whenUnseen)
+
+              case _ =>
+                whenUnseen
+
+      Block
+        ( fociDef :: tacticDef :: slotDefs ::: seenDefs ::: bufferDefs
+            ::: (attributesDef :: attributeSteps)
+            ::: loop
+            ::: absents,
+          construct(slots.map { slot => Ref(slot) }) )
+      . asExprOf[value]
+
+    // The absent-build: what a missing (or wrong-shape) occurrence of this
+    // record yields when no user-supplied `Default` collapses it — every
+    // sub-field takes its declared default or raises at its own focus,
+    // mirroring the derived engine's `absentBuild`.
+    def absentBody(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+      ( keys:        Expr[IArray[String]],
+        instances:   Expr[IArray[Xml.Field | Null]],
+        repeatables: Expr[IArray[Boolean]],
+        fallbacks:   Expr[IArray[Any]] )
+    :   Expr[value] =
+
+      val arguments: List[Term] = List.range(0, arity).map: index =>
+        fieldTypes(index).asType match
+          case '[fieldType] =>
+            val keyText: Expr[Text] = '{ $keys(${Expr(index)}).tt }
+
+            val onAbsent: Expr[fieldType] = kinds(index) match
+              case InstanceK =>
+                '{
+                  $instances(${Expr(index)}).asInstanceOf[fieldType is Xml.Field]
+                  . absent()(using $tactic, $foci)
+                }
+
+              case IntK     => '{ Xml.Parsable.missing[Int](0)(using $tactic) }
+                               . asExprOf[fieldType]
+              case LongK    => '{ Xml.Parsable.missing[Long](0L)(using $tactic) }
+                               . asExprOf[fieldType]
+              case DoubleK  => '{ Xml.Parsable.missing[Double](0.0)(using $tactic) }
+                               . asExprOf[fieldType]
+              case FloatK   => '{ Xml.Parsable.missing[Float](0.0f)(using $tactic) }
+                               . asExprOf[fieldType]
+              case BooleanK => '{ Xml.Parsable.missing[Boolean](false)(using $tactic) }
+                               . asExprOf[fieldType]
+              case TextK    => '{ Xml.Parsable.missing[Text](t"")(using $tactic) }
+                               . asExprOf[fieldType]
+              case StringK  => '{ Xml.Parsable.missing[String]("")(using $tactic) }
+                               . asExprOf[fieldType]
+
+            val declared: Expr[fieldType] =
+              '{
+                val declared = $fallbacks(${Expr(index)}).asInstanceOf[Optional[fieldType]]
+
+                if !declared.absent then declared.asInstanceOf[fieldType]
+                else Xml.Parsable.focusing($foci, $keyText)($onAbsent)
+              }
+
+            val argument: Expr[fieldType] = kinds(index) match
+              case InstanceK =>
+                '{
+                  if $repeatables(${Expr(index)}) then
+                    Xml.Parsable.focusing($foci, $keyText):
+                      Xml.Parsable.gathered[fieldType]
+                        ( $instances(${Expr(index)}).asInstanceOf[Xml.Parsing], Nil )
+                  else $declared
+                }
+
+              case _ =>
+                declared
+
+            argument.asTerm
+
+      construct(arguments).asExprOf[value]
+
+    val nameExprs = fieldNames.map { name => Expr(name) }
+    val attrExprs = attrFlags.map { flag => Expr(flag) }
+    val instanceExprs = List.range(0, arity).map(summonField)
+    val fallbackExprs = List.range(0, arity).map(declaredDefault)
+
+    // A user-supplied `Default[value]` collapses a missing nested value to a
+    // single error, exactly as the derived engine's `fallback` does.
+    val defaultExpr: Expr[Optional[() => value]] =
+      Expr.summon[Default[value]] match
+        case Some(default) => '{ Optional({ () => $default() }: () => value) }
+        case None          => '{ Unset }
+
+    '{
+      // Sealed per the codec-thunk pattern, like the derived instances: the
+      // field parsers the instance array resolves may capture resolution-
+      // scoped capabilities (the AST bridge does). The instance and default
+      // arrays are single lazy vals, so recursive self-references stay
+      // deferred until the first parse.
+      caps.unsafe.unsafeAssumePure:
+        val keys: IArray[String] =
+          Xml.Parsable.wireNames(IArray[String](${Varargs(nameExprs)}*), $renames)
+
+        val attrs: IArray[Boolean] = IArray[Boolean](${Varargs(attrExprs)}*)
+
+        lazy val instances: IArray[Xml.Field | Null] = IArray(${Varargs(instanceExprs)}*)
+
+        lazy val repeatables: IArray[Boolean] =
+          instances.map { instance => instance != null && Xml.Parsable.repeats(instance) }
+
+        lazy val fallbacks: IArray[Any] = IArray[Any](${Varargs(fallbackExprs)}*)
+        val fallback: Optional[() => value] = $defaultExpr
+
+        new Xml.Parsable:
+          type Self = value
+
+          def parse(reader: XmlReader^): value =
+            ${
+              body
+                ( '{reader}, '{keys}, '{attrs}, '{instances}, '{repeatables}, '{fallbacks} )
+            }
+
+          override def absent()(using tactic: Tactic[XmlError], foci: Foci[Xml.Focus]): value =
+            raise(XmlError())
+
+            fallback.lay
+              ( ${
+                  absentBody('{tactic}, '{foci})
+                    ('{keys}, '{instances}, '{repeatables}, '{fallbacks})
+                } )
+              { instantiate => instantiate() }
+    }

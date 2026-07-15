@@ -1077,6 +1077,39 @@ object Tests extends Suite(m"Jacinta Tests"):
           case Json.Ast.Issue.ExpectedNumber('"') => true
           case _                                  => false)
 
+      test(m"A staged sum parser dispatches on the discriminator field"):
+        given Shape.Circle is Json.Parsable = Json.Parsable.staged
+        given Shape.Square is Json.Parsable = Json.Parsable.staged
+        given Shape is Json.Parsable = Json.Parsable.staged
+
+        ( t"""{"radius": 2.5, "kind": "Circle"}""".read[Shape in Json],
+          t"""{"kind": "Square", "side": 3.0}""".read[Shape in Json] )
+      . assert(_ == (Shape.Circle(2.5), Shape.Square(3.0)))
+
+      test(m"A staged sum parser agrees with the AST path"):
+        given Shape.Circle is Json.Parsable = Json.Parsable.staged
+        given Shape.Square is Json.Parsable = Json.Parsable.staged
+        given Shape is Json.Parsable = Json.Parsable.staged
+        agree[Shape](t"""{"radius": 2.5, "kind": "Circle"}""")
+      . assert(identity)
+
+      test(m"A staged sum parser raises Absent for a missing discriminator"):
+        given Shape is Json.Parsable = Json.Parsable.staged
+        capture[JsonError](t"""{"radius": 2.5}""".read[Shape in Json]).reason
+      . assert(_ == JsonError.Reason.Absent)
+
+      test(m"A staged sum parser raises VariantError for an unknown tag"):
+        given Shape is Json.Parsable = Json.Parsable.staged
+        capture[VariantError](t"""{"radius": 2.5, "kind": "Blob"}""".read[Shape in Json])
+        . inputLabel
+      . assert(_ == t"Blob")
+
+      test(m"A staged sum parser honors variant renames"):
+        given Status.Active is Json.Parsable = Json.Parsable.staged
+        given Status is Json.Parsable = Json.Parsable.staged
+        t"""{"since": 3, "kind": "ok"}""".read[Status in Json]
+      . assert(_ == Status.Active(3))
+
     suite(m"Sum encoding tests"):
       test(m"Wrapper encoding writes a single-key object"):
         given Shape is Discriminable in Json = Json.DiscriminantWrapper()

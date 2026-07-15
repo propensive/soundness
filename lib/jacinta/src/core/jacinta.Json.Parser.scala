@@ -243,7 +243,11 @@ private[jacinta] object Parser:
 // the per-thread pool), with every state-mutating method classified `update`. This unit
 // is separation-checked; consumers (capture-checked only) interact through the exclusive
 // reference the pool hands out.
-private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.Stateful:
+// Public as a type — generated parsers hold a `Parser` in a local and read
+// through its direct rim — but acquiring the instance behind a live read is
+// sealed inside `JsonReader.rawParser`, which only jacinta's own generated
+// splices can reach; the pool and every reset entry point remain private.
+final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   import scala.annotation.switch
   import scala.collection.mutable.ArrayBuffer
   import Json.Ast.AsciiByte.*
@@ -738,7 +742,9 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     while
       more && {
         val ch = peek
-        ch == Space || ch == Tab || ch == Newline || ch == Return
+        // One comparison for the common non-whitespace byte; the full test
+        // only for bytes at or below the space character.
+        ch <= Space && (ch == Space || ch == Tab || ch == Newline || ch == Return)
       }
     do advance()
 
@@ -2052,27 +2058,39 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // comma is required before the next). Exclusive scratch: reached only
   // through this (exclusive) parser.
   private var directDepth: Int = 0
+  private var directMask0: Long = 0L
   private var directMask: Array[Long]^ = new Array[Long](1)
 
+  // Depths zero to sixty-three — all realistic JSON — keep their seen-bits
+  // in a single `Long` field, so the per-key `directSeen` test is two
+  // register operations; the array carries deeper nesting only.
   private update def directPush(): Unit =
     val level = directDepth
-    val word = level >> 6
 
-    if directMask.length <= word then
-      val grown = new Array[Long](directMask.length*2)
-      System.arraycopy(directMask, 0, grown, 0, directMask.length)
-      directMask = grown
+    if level < 64 then directMask0 &= ~(1L << level)
+    else
+      val word = (level - 64) >> 6
 
-    directMask(word) &= ~(1L << (level & 63))
+      if directMask.length <= word then
+        val grown = new Array[Long](directMask.length*2)
+        System.arraycopy(directMask, 0, grown, 0, directMask.length)
+        directMask = grown
+
+      directMask(word) &= ~(1L << ((level - 64) & 63))
+
     directDepth = level + 1
 
   private update def directSeen(): Boolean =
     val level = directDepth - 1
-    (directMask(level >> 6) & (1L << (level & 63))) != 0
+
+    if level < 64 then (directMask0 & (1L << level)) != 0
+    else (directMask((level - 64) >> 6) & (1L << ((level - 64) & 63))) != 0
 
   private update def directMark(): Unit =
     val level = directDepth - 1
-    directMask(level >> 6) |= 1L << (level & 63)
+
+    if level < 64 then directMask0 |= 1L << level
+    else directMask((level - 64) >> 6) |= 1L << ((level - 64) & 63)
 
   private update def directPop(): Unit = directDepth -= 1
 
@@ -2096,7 +2114,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // Structure-aware skip of one whole value: a validated scan that enforces
   // the same grammar (and raises the same `Issue`s) as `parseValue`'s loops,
   // but builds nothing — no AST nodes, no scratch buffers, no key strings.
-  private[jacinta] update def directSkipValue()(using Tactic[ParseError]): Unit =
+  update def directSkipValue()(using Tactic[ParseError]): Unit =
     skip()
     skipValue1()
 
@@ -2253,7 +2271,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
               else if (ch & 0xF8) == 0xF0 then { next(); next(); next(); advance() }
               else advance()
 
-  private[jacinta] update def directString()(using Tactic[ParseError]): String =
+  update def directString()(using Tactic[ParseError]): String =
     skip()
     if must() == Quote then
       advance()
@@ -2285,7 +2303,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       else parseString()
     else errorAt(Issue.ExpectedString(peek.toChar))
 
-  private[jacinta] update def directBoolean()(using Tactic[ParseError]): Boolean =
+  update def directBoolean()(using Tactic[ParseError]): Boolean =
     skip()
     must() match
       case LowerT => parseTrue()
@@ -2329,7 +2347,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // fractions and exponents, a 19th digit, a leading zero (which must
   // raise), and numbers touching the window's end (more digits may follow
   // in the next chunk).
-  private[jacinta] update def directLong()(using Tactic[ParseError]): Long =
+  update def directLong()(using Tactic[ParseError]): Long =
     skip()
     val start = pos
     val limit = bufEnd
@@ -2375,7 +2393,104 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       case value: Array[Double] @unchecked => value.asInstanceOf[Bcd].toLong.or(0L)
       case _                               => 0L // unreachable: only number forms are produced
 
-  private[jacinta] update def directDouble()(using Tactic[ParseError]): Double =
+  // Buffer-local fast path for the overwhelmingly common double shape:
+  // optional sign, up to fifteen mantissa digits with one optional decimal
+  // point, an optional short exponent, closing inside the current window.
+  // The value is composed exactly as `parseNumber`'s in-Long path composes
+  // it — `mantissa.toDouble` scaled by `TenPow` within Clinger's exact range
+  // (mantissa < 2^53, |exp| <= 22) — so the fast path is bit-identical to
+  // the general path and bails out (a plain `pos` reset; nothing here
+  // refills) for everything else: a sixteenth digit, a leading zero before
+  // a digit, an out-of-range exponent, or the window's end.
+  update def directDouble()(using Tactic[ParseError]): Double =
+    skip()
+    val start = pos
+    val limit = bufEnd
+    var i = start
+    var negative = false
+
+    if i < limit && bytes(i) == Minus then
+      negative = true
+      i += 1
+
+    val digitsStart = i
+    var mantissa = 0L
+    var digits = 0
+    var decimalDigits = 0
+    var ok = i < limit
+
+    while i < limit && digits < 16 && bytes(i) >= Num0 && bytes(i) <= Num9 do
+      mantissa = mantissa*10 + (bytes(i) - Num0)
+      digits += 1
+      i += 1
+
+    val integerDigits = digits
+
+    // JSON forbids a leading zero before another digit, and requires at
+    // least one integer digit; the general path raises the exact error.
+    if integerDigits == 0 || digits >= 16 then ok = false
+    if integerDigits > 1 && bytes(digitsStart) == Num0 then ok = false
+
+    if ok && i < limit && bytes(i) == Period then
+      i += 1
+      val fractionStart = i
+
+      while i < limit && digits < 16 && bytes(i) >= Num0 && bytes(i) <= Num9 do
+        mantissa = mantissa*10 + (bytes(i) - Num0)
+        digits += 1
+        decimalDigits += 1
+        i += 1
+
+      if i == fractionStart || digits >= 16 then ok = false
+
+    var explicitExp = 0
+    var expSign = 1
+    var floating = decimalDigits > 0
+
+    if ok && i < limit && (bytes(i) == LowerE || bytes(i) == UpperE) then
+      floating = true
+      i += 1
+
+      if i < limit && (bytes(i) == Minus || bytes(i) == Plus) then
+        if bytes(i) == Minus then expSign = -1
+        i += 1
+
+      val expStart = i
+
+      while i < limit && explicitExp < 1000 && bytes(i) >= Num0 && bytes(i) <= Num9 do
+        explicitExp = explicitExp*10 + (bytes(i) - Num0)
+        i += 1
+
+      if i == expStart || explicitExp >= 1000 then ok = false
+
+    // The number must demonstrably end inside the window: at the window's
+    // edge more digits may follow in the next chunk.
+    if ok && i < limit then
+      val next = bytes(i)
+      if next >= Num0 && next <= Num9 then ok = false
+    else ok = false
+
+    if ok then
+      val totalExp = expSign*explicitExp - decimalDigits
+
+      if !floating then
+        pos = i
+        val signed = if negative then -mantissa else mantissa
+        return signed.toDouble
+      else if totalExp >= -22 && totalExp <= 22 then
+        pos = i
+
+        val mag =
+          if mantissa == 0L then 0.0
+          else if totalExp >= 0 then mantissa.toDouble * TenPow(totalExp)
+          else mantissa.toDouble / TenPow(-totalExp)
+
+        return if negative then -mag else mag
+
+    pos = start
+    directDoubleGeneral()
+
+  private update def directDoubleGeneral()(using Tactic[ParseError]): Double =
     val raw: Any = directNumber()
 
     raw.asMatchable match
@@ -2400,7 +2515,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       case _ =>
         caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(0L))) // unreachable
 
-  private[jacinta] update def directOpenObject()(using Tactic[ParseError]): Unit =
+  update def directOpenObject()(using Tactic[ParseError]): Unit =
     skip()
 
     if must() == OpenBrace then
@@ -2467,7 +2582,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     while
       i < limit && {
         val b = bytes(i)
-        b == Space || b == Tab || b == Newline || b == Return
+        b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
       }
     do i += 1
 
@@ -2487,7 +2602,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       while
         i < limit && {
           val b2 = bytes(i)
-          b2 == Space || b2 == Tab || b2 == Newline || b2 == Return
+          b2 <= Space && (b2 == Space || b2 == Tab || b2 == Newline || b2 == Return)
         }
       do i += 1
 
@@ -2496,44 +2611,44 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
     if b != Quote then return Int.MinValue
     val start = i + 1
-    var j = start
-    var scanning = true
 
-    while scanning && j <= limit - 8 do
-      val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], j)
-      val stops = stringStops(word)
+    // Fused scan-and-pack, as in `directKeyWordFast`: the words loaded to
+    // find the closing quote are the packed form. Window-edge keys take the
+    // general step.
+    if start + 8 > limit then return Int.MinValue
+    val word0: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start)
+    val stops0 = stringStops(word0)
+    var low = 0L
+    var high = 0L
+    var j = 0
 
-      if stops == 0L then j += 8
+    if stops0 != 0L then
+      val length = java.lang.Long.numberOfTrailingZeros(stops0) >> 3
+      j = start + length
+      if ((word0 >>> (length*8)) & 0xFFL) != Quote || length == 0 then return Int.MinValue
+      low = word0 & ((1L << (length*8)) - 1)
+    else
+      if start + 16 > limit then return Int.MinValue
+      val word1: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start + 8)
+      val stops1 = stringStops(word1)
+      low = word0
+
+      if stops1 != 0L then
+        val length1 = java.lang.Long.numberOfTrailingZeros(stops1) >> 3
+        j = start + 8 + length1
+        if ((word1 >>> (length1*8)) & 0xFFL) != Quote then return Int.MinValue
+        if length1 > 0 then high = word1 & ((1L << (length1*8)) - 1)
       else
-        j += java.lang.Long.numberOfTrailingZeros(stops) >> 3
-        scanning = false
+        j = start + 16
+        if j >= limit || bytes(j) != Quote then return Int.MinValue
+        high = word1
 
-    if scanning then while j < limit && StringScanContinue(bytes(j) & 0xFF) != 0 do j += 1
-
-    if j >= limit || bytes(j) != Quote || j == start || j - start > 16 then return Int.MinValue
-    val length = j - start
-
-    // Word loads instead of byte-by-byte packing; a short key's over-read is
-    // in bounds (the closing quote is at `j < limit`) and masked away.
-    val low =
-      if start + 8 <= limit then
-        val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start)
-        if length >= 8 then word else word & ((1L << (length*8)) - 1)
-      else packBytes(bytes, start, math.min(length, 8))
-
-    val high =
-      if length > 8 then
-        if start + 16 <= limit then
-          val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start + 8)
-          if length == 16 then word else word & ((1L << ((length - 8)*8)) - 1)
-        else packBytes(bytes, start + 8, length - 8)
-      else 0L
     var k = j + 1
 
     while
       k < limit && {
         val b3 = bytes(k)
-        b3 == Space || b3 == Tab || b3 == Newline || b3 == Return
+        b3 <= Space && (b3 == Space || b3 == Tab || b3 == Newline || b3 == Return)
       }
     do k += 1
 
@@ -2546,7 +2661,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // High word of the key most recently scanned by `directKeyWordFast`.
   private var directKeyHigh: Long = 0L
 
-  private[jacinta] update def directKeyWordHigh: Long = directKeyHigh
+  update def directKeyWordHigh: Long = directKeyHigh
 
   // As `directKeyIndexFast`, but exposing the key's packed form instead of
   // resolving it against a table, so generated (staged) parsers can compare
@@ -2564,7 +2679,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     while
       i < limit && {
         val b = bytes(i)
-        b == Space || b == Tab || b == Newline || b == Return
+        b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
       }
     do i += 1
 
@@ -2584,7 +2699,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       while
         i < limit && {
           val b2 = bytes(i)
-          b2 == Space || b2 == Tab || b2 == Newline || b2 == Return
+          b2 <= Space && (b2 == Space || b2 == Tab || b2 == Newline || b2 == Return)
         }
       do i += 1
 
@@ -2593,49 +2708,221 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
     if b != Quote then return -2L
     val start = i + 1
-    var j = start
-    var scanning = true
 
-    while scanning && j <= limit - 8 do
-      val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], j)
-      val stops = stringStops(word)
+    // Fused scan-and-pack: the word loaded to find the key's closing quote
+    // *is* its packed form, so a short key costs one load and a 16-byte key
+    // two — where the two-pass shape re-loaded the same words to pack after
+    // scanning. A key at the window's edge takes the general step, exactly
+    // like an escaped or oversized one.
+    if start + 8 > limit then return -2L
+    val word0: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start)
+    val stops0 = stringStops(word0)
+    var low = 0L
+    var high = 0L
+    var j = 0
 
-      if stops == 0L then j += 8
+    if stops0 != 0L then
+      val length = java.lang.Long.numberOfTrailingZeros(stops0) >> 3
+      j = start + length
+      // The stop byte is already in the loaded word: verify it there rather
+      // than through a bounds-checked array read.
+      if ((word0 >>> (length*8)) & 0xFFL) != Quote || length == 0 then return -2L
+      low = word0 & ((1L << (length*8)) - 1)
+    else
+      if start + 16 > limit then return -2L
+      val word1: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start + 8)
+      val stops1 = stringStops(word1)
+      low = word0
+
+      if stops1 != 0L then
+        val length1 = java.lang.Long.numberOfTrailingZeros(stops1) >> 3
+        j = start + 8 + length1
+        if ((word1 >>> (length1*8)) & 0xFFL) != Quote then return -2L
+        if length1 > 0 then high = word1 & ((1L << (length1*8)) - 1)
       else
-        j += java.lang.Long.numberOfTrailingZeros(stops) >> 3
-        scanning = false
-
-    if scanning then while j < limit && StringScanContinue(bytes(j) & 0xFF) != 0 do j += 1
-
-    if j >= limit || bytes(j) != Quote || j == start || j - start > 16 then return -2L
-    val length = j - start
-
-    val low =
-      if start + 8 <= limit then
-        val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start)
-        if length >= 8 then word else word & ((1L << (length*8)) - 1)
-      else packBytes(bytes, start, math.min(length, 8))
-
-    val high =
-      if length > 8 then
-        if start + 16 <= limit then
-          val word: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start + 8)
-          if length == 16 then word else word & ((1L << ((length - 8)*8)) - 1)
-        else packBytes(bytes, start + 8, length - 8)
-      else 0L
+        // Exactly sixteen bytes, or too long for the fast path.
+        j = start + 16
+        if j >= limit || bytes(j) != Quote then return -2L
+        high = word1
 
     var k = j + 1
 
     while
       k < limit && {
         val b3 = bytes(k)
-        b3 == Space || b3 == Tab || b3 == Newline || b3 == Return
+        b3 <= Space && (b3 == Space || b3 == Tab || b3 == Newline || b3 == Return)
       }
     do k += 1
 
     if k >= limit || bytes(k) != Colon then return -2L
 
     if !seen then directMark()
+    pos = k + 1
+    directKeyHigh = high
+    low
+
+  // The split key protocol for generated parsers whose loop statically
+  // knows which step is first: `directKeyWordFirst` expects no separator and
+  // marks the depth's seen-bit; `directKeyWordNext` expects a comma and
+  // consults no per-key state at all. Both preserve `directKeyWordFast`'s
+  // exact sentinels and fallback discipline, so an opaque outcome still
+  // resolves through the general, state-aware step.
+  update def directKeyWordFirst(): Long =
+    val limit = bufEnd
+    var i = pos
+
+    while
+      i < limit && {
+        val b = bytes(i)
+        b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
+      }
+    do i += 1
+
+    if i >= limit then return -2L
+    val b = bytes(i)
+
+    if b == CloseBrace then
+      pos = i + 1
+      directPop()
+      return -1L
+
+    if b != Quote then return -2L
+    val start = i + 1
+
+    // Fused scan-and-pack: the word loaded to find the key's closing quote
+    // *is* its packed form, so a short key costs one load and a 16-byte key
+    // two — where the two-pass shape re-loaded the same words to pack after
+    // scanning. A key at the window's edge takes the general step, exactly
+    // like an escaped or oversized one.
+    if start + 8 > limit then return -2L
+    val word0: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start)
+    val stops0 = stringStops(word0)
+    var low = 0L
+    var high = 0L
+    var j = 0
+
+    if stops0 != 0L then
+      val length = java.lang.Long.numberOfTrailingZeros(stops0) >> 3
+      j = start + length
+      // The stop byte is already in the loaded word: verify it there rather
+      // than through a bounds-checked array read.
+      if ((word0 >>> (length*8)) & 0xFFL) != Quote || length == 0 then return -2L
+      low = word0 & ((1L << (length*8)) - 1)
+    else
+      if start + 16 > limit then return -2L
+      val word1: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start + 8)
+      val stops1 = stringStops(word1)
+      low = word0
+
+      if stops1 != 0L then
+        val length1 = java.lang.Long.numberOfTrailingZeros(stops1) >> 3
+        j = start + 8 + length1
+        if ((word1 >>> (length1*8)) & 0xFFL) != Quote then return -2L
+        if length1 > 0 then high = word1 & ((1L << (length1*8)) - 1)
+      else
+        // Exactly sixteen bytes, or too long for the fast path.
+        j = start + 16
+        if j >= limit || bytes(j) != Quote then return -2L
+        high = word1
+
+    var k = j + 1
+
+    while
+      k < limit && {
+        val b3 = bytes(k)
+        b3 <= Space && (b3 == Space || b3 == Tab || b3 == Newline || b3 == Return)
+      }
+    do k += 1
+
+    if k >= limit || bytes(k) != Colon then return -2L
+
+    directMark()
+    pos = k + 1
+    directKeyHigh = high
+    low
+
+  update def directKeyWordNext(): Long =
+    val limit = bufEnd
+    var i = pos
+
+    while
+      i < limit && {
+        val b = bytes(i)
+        b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
+      }
+    do i += 1
+
+    if i >= limit then return -2L
+    var b = bytes(i)
+
+    if b == CloseBrace then
+      pos = i + 1
+      directPop()
+      return -1L
+
+    if b != Comma then return -2L
+    i += 1
+
+    while
+      i < limit && {
+        val b2 = bytes(i)
+        b2 <= Space && (b2 == Space || b2 == Tab || b2 == Newline || b2 == Return)
+      }
+    do i += 1
+
+    if i >= limit then return -2L
+    b = bytes(i)
+
+    if b != Quote then return -2L
+    val start = i + 1
+
+    // Fused scan-and-pack: the word loaded to find the key's closing quote
+    // *is* its packed form, so a short key costs one load and a 16-byte key
+    // two — where the two-pass shape re-loaded the same words to pack after
+    // scanning. A key at the window's edge takes the general step, exactly
+    // like an escaped or oversized one.
+    if start + 8 > limit then return -2L
+    val word0: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start)
+    val stops0 = stringStops(word0)
+    var low = 0L
+    var high = 0L
+    var j = 0
+
+    if stops0 != 0L then
+      val length = java.lang.Long.numberOfTrailingZeros(stops0) >> 3
+      j = start + length
+      // The stop byte is already in the loaded word: verify it there rather
+      // than through a bounds-checked array read.
+      if ((word0 >>> (length*8)) & 0xFFL) != Quote || length == 0 then return -2L
+      low = word0 & ((1L << (length*8)) - 1)
+    else
+      if start + 16 > limit then return -2L
+      val word1: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start + 8)
+      val stops1 = stringStops(word1)
+      low = word0
+
+      if stops1 != 0L then
+        val length1 = java.lang.Long.numberOfTrailingZeros(stops1) >> 3
+        j = start + 8 + length1
+        if ((word1 >>> (length1*8)) & 0xFFL) != Quote then return -2L
+        if length1 > 0 then high = word1 & ((1L << (length1*8)) - 1)
+      else
+        // Exactly sixteen bytes, or too long for the fast path.
+        j = start + 16
+        if j >= limit || bytes(j) != Quote then return -2L
+        high = word1
+
+    var k = j + 1
+
+    while
+      k < limit && {
+        val b3 = bytes(k)
+        b3 <= Space && (b3 == Space || b3 == Tab || b3 == Newline || b3 == Return)
+      }
+    do k += 1
+
+    if k >= limit || bytes(k) != Colon then return -2L
+
     pos = k + 1
     directKeyHigh = high
     low
@@ -2752,7 +3039,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
         out
     else parseObjectKey()
 
-  private[jacinta] update def directOpenArray()(using Tactic[ParseError]): Unit =
+  update def directOpenArray()(using Tactic[ParseError]): Unit =
     skip()
 
     if must() == OpenBracket then
@@ -2762,7 +3049,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
   // True when another element follows (positioned at it, with any separator
   // comma consumed); false after consuming the closing bracket.
-  private[jacinta] update def directElement()(using Tactic[ParseError]): Boolean =
+  update def directElement()(using Tactic[ParseError]): Boolean =
     // Buffer-local fast path, mirroring `directKeyIndexFast`.
     val limit = bufEnd
     var i = pos
@@ -2770,7 +3057,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     while
       i < limit && {
         val b = bytes(i)
-        b == Space || b == Tab || b == Newline || b == Return
+        b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
       }
     do i += 1
 
@@ -2789,6 +3076,61 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       else
         directMark()
         pos = i
+        return true
+
+    directElementGeneral()
+
+  // The split element protocol for generated collection loops that know
+  // which step is first: `directElementFirst` expects a value or the closing
+  // bracket and marks the depth; `directElementNext` expects a comma or the
+  // closing bracket and consults no per-element state. Fallbacks preserve
+  // `directElement`'s exact semantics.
+  update def directElementFirst()(using Tactic[ParseError]): Boolean =
+    val limit = bufEnd
+    var i = pos
+
+    while
+      i < limit && {
+        val b = bytes(i)
+        b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
+      }
+    do i += 1
+
+    if i < limit then
+      val b = bytes(i)
+
+      if b == CloseBracket then
+        pos = i + 1
+        directPop()
+        return false
+
+      directMark()
+      pos = i
+      return true
+
+    directElementGeneral()
+
+  update def directElementNext()(using Tactic[ParseError]): Boolean =
+    val limit = bufEnd
+    var i = pos
+
+    while
+      i < limit && {
+        val b = bytes(i)
+        b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
+      }
+    do i += 1
+
+    if i < limit then
+      val b = bytes(i)
+
+      if b == CloseBracket then
+        pos = i + 1
+        directPop()
+        return false
+
+      if b == Comma then
+        pos = i + 1
         return true
 
     directElementGeneral()

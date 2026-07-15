@@ -699,6 +699,18 @@ object Xml extends Tag.Container
     inline def derived[value](using Reflection[value]): value is Xml.Parsable =
       fromField(ParsableDerivation.derivedOne[value])
 
+    // The staged counterpart of `derived`: a macro-generated monomorphic
+    // parser whose field values live in typed locals, whose child elements
+    // dispatch through packed-`Long` literal comparisons, and whose record
+    // is built by a direct constructor call — no `Array[Any]` buffer, no
+    // `Mirror`, no per-field boxing. Semantics (wire names, `@attribute`
+    // fields, gathering, first-match-wins duplicates, defaults, absents,
+    // error foci) mirror `derived` exactly. Requires a top-level or
+    // object-nested case class with a single parameter list — sums,
+    // method-local classes and other shapes use `derived`.
+    inline def staged[value]: value is Xml.Parsable =
+      ${ xylophone.internal.stagedParsable[value]('{ adversaria.relabelling[value, Xml] }) }
+
     def fromField[value](field0: (value is Xml.Parsing)^)
     :   ((value is Xml.Parsable)^{field0}) =
 
@@ -793,6 +805,56 @@ object Xml extends Tag.Container
     // per-field focus (`base.prepend(wireName, 1)`).
     private def descend(base0: Optional[Xml.Focus], name: Text): Xml.Focus =
       Xml.Focus(base0.let(_.path).or(XPath()).prepend(name, 1))
+
+    // Support points for staged parsers, which are generated into user
+    // modules and so may only reference public members.
+
+    // The wire names of a product's fields, `@name` renames applied.
+    def wireNames(names: IArray[String], renames: Map[Text, Text]): IArray[String] =
+      names.map { name => renames.at(name.tt).or(name.tt).s }
+
+    // A required primitive field whose name never arrived: the primitives'
+    // `absent()` semantics — raise and continue with the sentinel.
+    def missing[value](sentinel: value)(using Tactic[XmlError]): value =
+      raise(XmlError()) yet sentinel
+
+    // Focus bookkeeping for one field read, compiled away when the read
+    // site's `Foci` is the inert default — the same short-circuit as the
+    // derived parser's loop.
+    inline def focusing[result](foci: Foci[Xml.Focus], name: Text)(inline block: => result)
+    :   result =
+      if foci.active then focus(using foci)(descend(prior, name))(block) else block
+
+    // Linear child dispatch for the general step — an unpackable child name,
+    // or any child of a `@name`-annotated record. An `@attribute` field
+    // never matches a child element, exactly as the derived engine's
+    // `indexOf` skips them.
+    def childIndex(keys: IArray[String], attributes: IArray[Boolean], label: Text): Int =
+      val count = keys.length
+      val name: String = label.s
+      var index = 0
+
+      while index < count do
+        if !attributes(index) && keys(index) == name then return index
+        index += 1
+
+      -1
+
+    // The repeatable-field hooks, looking through the `Field.Adapter` — for
+    // staged parsers, which cannot name the private `Gathering` trait. A
+    // field gathers only when its (unwrapped) instance is a repeatable
+    // `Gathering`, exactly the derived engine's test.
+    def repeats(parsing: Xml.Parsing): Boolean =
+      val actual = unwrap(parsing)
+      actual.repeatable && actual.isInstanceOf[Gathering]
+
+    def parseElement(parsing: Xml.Parsing, reader: XmlReader^): Any =
+      (unwrap(parsing): @unchecked) match
+        case gathering: Gathering => gathering.parseElement(reader)
+
+    def gathered[value](parsing: Xml.Parsing, elements: List[Any]): value =
+      (unwrap(parsing): @unchecked) match
+        case gathering: Gathering => gathering.gathered(elements).asInstanceOf[value]
 
     // The derived product parser's engine. `fields0` is an explicit thunk
     // (nameable in the capture set, unlike a by-name) evaluated lazily, so
@@ -1912,6 +1974,13 @@ object Xml extends Tag.Container
     private val tagCacheLow:  Array[Long]        = new Array(TagCacheSize)
     private val tagCacheHigh: Array[Long]        = new Array(TagCacheSize)
 
+    // Fingerprint of the name most recently read by `readName` — the packed
+    // words it computes anyway for the tag cache, and whether they identify
+    // the name losslessly (ASCII, at most `TagCacheMaxChars` chars).
+    private var nameLow:      Long = 0L
+    private var nameHigh:     Long = 0L
+    private var namePackable: Boolean = false
+
     private inline def getNodeBuffer(): scala.collection.mutable.ArrayBuffer[Node] =
       nodeBufferId += 1
 
@@ -2206,6 +2275,10 @@ object Xml extends Tag.Container
 
         len += 1
         advance()
+
+      nameLow = packedLow
+      nameHigh = packedHigh
+      namePackable = ascii && len <= TagCacheMaxChars
 
       if !ascii || len > TagCacheMaxChars then slice(start)
       else
@@ -3149,6 +3222,14 @@ object Xml extends Tag.Container
     private var directAttributes1: Attributes = Attributes.empty
     private var directEmpty: Boolean = false
 
+    // The most recently opened child's name fingerprint (snapshotted in
+    // `directOpen` before `readAttributes` clobbers `readName`'s), and the
+    // child's interned name for the `NameOpaque` general dispatch.
+    private var directChildLow:      Long = 0L
+    private var directChildHigh:     Long = 0L
+    private var directChildPackable: Boolean = false
+    private var directChildName:     Text = t""
+
     private inline def directPop(): Text = directNames.remove(directNames.length - 1)
 
     // Establishes the cursor hold for a whole direct-parsing session,
@@ -3208,6 +3289,9 @@ object Xml extends Tag.Container
     // duplicate attributes) is identical to `readElement`'s.
     private def directOpen()(using Tactic[ParseError]): Text =
       val name = readName()
+      directChildLow = nameLow
+      directChildHigh = nameHigh
+      directChildPackable = namePackable
       directAttributes1 = readAttributes(name)
       if !more then fail(Issue.ExpectedMore)
 
@@ -3297,6 +3381,24 @@ object Xml extends Tag.Container
             readText(parent)
 
         result
+
+    // As `directNextChild`, but returning the child's name in packed form
+    // for staged parsers that compare names against literal constants: the
+    // packed low word (its high word from `directChildWordHigh`),
+    // `XmlReader.NameEnd` once the close tag is consumed, or
+    // `XmlReader.NameOpaque` when the name cannot pack (non-ASCII, or longer
+    // than sixteen chars) — the child is still opened, and
+    // `directChildLabel` identifies it for the general dispatch.
+    private[xylophone] def directNextChildWord()(using Tactic[ParseError]): Long =
+      val name = directNextChild()
+
+      if name == null then XmlReader.NameEnd
+      else
+        directChildName = name.nn
+        if !directChildPackable then XmlReader.NameOpaque else directChildLow
+
+    private[xylophone] def directChildWordHigh: Long = directChildHigh
+    private[xylophone] def directChildLabel: Text = directChildName
 
     // The current element's text content, consumed together with its close
     // tag: the text when the content is exactly one text run (or empty), or

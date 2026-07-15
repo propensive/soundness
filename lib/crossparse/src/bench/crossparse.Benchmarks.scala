@@ -69,56 +69,6 @@ import ypsiloid.formatting.blockYamlFormatting
 // member), so it must be imported by name.
 import ypsiloid.showable
 
-// The shared structure decoded by every format: varied primitive types, a
-// nested record, a sequence and a coproduct.
-enum Payment:
-  case Card(number: Text, expiry: Text, secure: Boolean)
-  case Transfer(iban: Text, reference: Long)
-
-object Payment:
-  // An XML sum nested inside a product cannot use xylophone's label-based
-  // default `Discriminable`: the product encoder relabels the variant
-  // element with the *field's* name, which destroys the discriminator. The
-  // variant rides in a `type` attribute instead — `<payment type="Card">` —
-  // mirroring the discriminator key the JSON and YAML corpora carry.
-  given xmlDiscriminable: Payment is Discriminable in Xml = new Discriminable:
-    type Self = Payment
-    type Form = Xml
-
-    def discriminate(xml: Xml): Optional[Text] = xml match
-      case Element(_, attributes, _)           => attributes.at(t"type")
-      case Fragment(Element(_, attributes, _)) => attributes.at(t"type")
-      case _                                   => Unset
-
-    def rewrite(kind: Text, xml: Xml): Xml = xml match
-      case Element(label, attributes, children) =>
-        Element(label, attributes.updated(t"type", kind), children)
-
-      case Fragment(Element(label, attributes, children)) =>
-        Element(label, attributes.updated(t"type", kind), children)
-
-      case other =>
-        other
-
-    def variant(xml: Xml): Xml = xml
-
-case class LineItem(sku: Text, description: Text, quantity: Int, price: Double, taxed: Boolean)
-case class Customer(id: Long, name: Text, email: Text, region: Text)
-
-case class Order
-  ( reference: Text, customer: Customer, items: List[LineItem], payment: Payment,
-    priority: Boolean, discount: Double )
-
-case class Orders(orders: List[Order])
-
-object Orders:
-  // Direct parsing is opt-in per format; only the top type needs a nominal
-  // instance — nested types resolve through each format's field fallback
-  // chain.
-  given jsonParsable: Orders is Json.Parsable = Json.Parsable.derived
-  given telParsable: Orders is Tel.Parsable = Tel.Parsable.derived
-  given xmlParsable: Orders is Xml.Parsable = Xml.Parsable.derived
-
 // Jsoniter/circe mirrors of the corpus structure, with `String` fields as
 // those libraries expect; the `kind` discriminator matches the JSON corpus.
 sealed trait JsoniterPayment derives io.circe.derivation.ConfiguredDecoder
@@ -208,6 +158,53 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
   // AST-only (YAML aliases require materialized subtrees).
   def decodeJsonDirect(): Orders = jsonData.read[Orders in Json]
   def decodeJsonAst(): Orders = jsonData.read[Json].as[Orders]
+
+  // The staged arm: monomorphic generated parsers for each record type,
+  // hoisted so the KeyTables and instance arrays are built once. The nested
+  // record types' staged givens are siblings, so each expansion finds them;
+  // `items` (a `List`) and `payment` (a sum) still cross runtime `Json.Field`
+  // seams — the current staged composition boundary.
+  object staged:
+    given lineItem: LineItem is Json.Parsable = Json.Parsable.staged
+    given customer: Customer is Json.Parsable = Json.Parsable.staged
+    given card: Payment.Card is Json.Parsable = Json.Parsable.staged
+    given transfer: Payment.Transfer is Json.Parsable = Json.Parsable.staged
+    given payment: Payment is Json.Parsable = Json.Parsable.staged
+    given order: Order is Json.Parsable = Json.Parsable.staged
+    given orders: Orders is Json.Parsable = Json.Parsable.staged
+
+    given telLineItem: LineItem is Tel.Parsable = Tel.Parsable.staged
+    given telCustomer: Customer is Tel.Parsable = Tel.Parsable.staged
+    given telOrder: Order is Tel.Parsable = Tel.Parsable.staged
+    given telOrders: Orders is Tel.Parsable = Tel.Parsable.staged
+
+    given xmlLineItem: LineItem is Xml.Parsable = Xml.Parsable.staged
+    given xmlCustomer: Customer is Xml.Parsable = Xml.Parsable.staged
+    given xmlOrder: Order is Xml.Parsable = Xml.Parsable.staged
+    given xmlOrders: Orders is Xml.Parsable = Xml.Parsable.staged
+
+    // The Inlinable-composed parser: the whole instance graph (records,
+    // collection loops, leaf parsers) resolves live inside an in-macro
+    // staging compiler — the model component's companion givens — and
+    // inlines into one flat parser. `payment` (a sum) has no Inlinable and
+    // splices a runtime call to the sibling staged sum given above.
+    given inlinedOrders: Orders is Json.Parsable = Inlinable.parsable[Orders]
+
+  def decodeJsonStaged(): Orders =
+    import staged.orders
+    jsonData.read[Orders in Json]
+
+  def decodeJsonInlined(): Orders =
+    import staged.inlinedOrders
+    jsonData.read[Orders in Json]
+
+  def decodeTelStaged(): Orders =
+    import staged.telOrders
+    telData.read[Orders in Tel]
+
+  def decodeXmlStaged(): Orders =
+    import staged.xmlOrders
+    xmlText.read[Orders in Xml]
   def decodeTelDirect(): Orders = telData.read[Orders in Tel]
   def decodeTelAst(): Orders = telData.read[Tel].as[Orders]
   def decodeXmlDirect(): Orders = xmlText.read[Orders in Xml]
@@ -270,10 +267,14 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     // The correctness gate: every arm must reproduce the original value
     // before anything is timed.
     assert(decodeJsonDirect() == corpus, "JSON direct decode disagrees with the corpus")
+    assert(decodeJsonStaged() == corpus, "JSON staged decode disagrees with the corpus")
+    assert(decodeJsonInlined() == corpus, "JSON inlined decode disagrees with the corpus")
     assert(decodeJsonAst() == corpus, "JSON AST decode disagrees with the corpus")
     assert(decodeTelDirect() == corpus, "TEL direct decode disagrees with the corpus")
+    assert(decodeTelStaged() == corpus, "TEL staged decode disagrees with the corpus")
     assert(decodeTelAst() == corpus, "TEL AST decode disagrees with the corpus")
     assert(decodeXmlDirect() == corpus, "XML direct decode disagrees with the corpus")
+    assert(decodeXmlStaged() == corpus, "XML staged decode disagrees with the corpus")
     assert(decodeXmlAst() == corpus, "XML AST decode disagrees with the corpus")
     assert(decodeYamlAst() == corpus, "YAML AST decode disagrees with the corpus")
 
@@ -282,10 +283,17 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     assert(decodeJsoniterAst() == jsoniterExpected, "Jsoniter AST decode disagrees")
 
     val bench = Bench()
+    val profile = Profile()
 
     suite(m"Decode a ~10 KB order corpus to case classes"):
       bench(m"JSON direct")(target = 1*Second, baseline = Baseline(compare = Min)):
         '{ crossparse.Benchmarks.decodeJsonDirect() }
+
+      bench(m"JSON staged")(target = 1*Second):
+        '{ crossparse.Benchmarks.decodeJsonStaged() }
+
+      bench(m"JSON inlined")(target = 1*Second):
+        '{ crossparse.Benchmarks.decodeJsonInlined() }
 
       bench(m"JSON via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeJsonAst() }
@@ -293,11 +301,17 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
       bench(m"TEL direct")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeTelDirect() }
 
+      bench(m"TEL staged")(target = 1*Second):
+        '{ crossparse.Benchmarks.decodeTelStaged() }
+
       bench(m"TEL via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeTelAst() }
 
       bench(m"XML direct")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeXmlDirect() }
+
+      bench(m"XML staged")(target = 1*Second):
+        '{ crossparse.Benchmarks.decodeXmlStaged() }
 
       bench(m"XML via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeXmlAst() }
@@ -312,3 +326,31 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
 
       bench(m"Jsoniter via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeJsoniterAst() }
+
+    // Where the self-time actually goes in each direct arm — a JFR hotspot
+    // histogram per parser, coloured by package. Jsoniter direct is the
+    // reference. Longer targets so the sampler gathers enough execution samples.
+    suite(m"Profile: direct-parser hotspots"):
+      profile(m"TEL direct")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeTelDirect() }
+
+      profile(m"TEL staged")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeTelStaged() }
+
+      profile(m"XML direct")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeXmlDirect() }
+
+      profile(m"XML staged")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeXmlStaged() }
+
+      profile(m"JSON direct")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeJsonDirect() }
+
+      profile(m"JSON staged")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeJsonStaged() }
+
+      profile(m"JSON inlined")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeJsonInlined() }
+
+      profile(m"Jsoniter direct")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeJsoniterDirect() }

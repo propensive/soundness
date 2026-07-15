@@ -38,6 +38,11 @@ import vacuous.*
 import zephyrine.*
 
 object XmlReader:
+  // Sentinels of `childWord()`; impossible as packed names, whose chars are
+  // all 7-bit ASCII.
+  inline final val NameEnd = -1L
+  inline final val NameOpaque = -2L
+
   // Only xylophone's read path (`Xml.parseDirect`) constructs readers, so the
   // exclusivity of the wrapped parser and the resolution scope of the carried
   // capabilities are preserved by construction. The wrapped capabilities
@@ -82,10 +87,13 @@ extends caps.ExclusiveCapability, caps.Stateful:
   private[xylophone] inline def parseTactic: Tactic[ParseError] =
     tactic0.asInstanceOf[Tactic[ParseError]]
 
-  private[xylophone] inline def errorTactic: Tactic[XmlError] =
+  // The read-site capabilities, public because staged parsers — generated
+  // into user modules — bind them once per record for focus bookkeeping and
+  // absent-field raising, exactly as the derived engine does.
+  inline def errorTactic: Tactic[XmlError] =
     xmlTactic0.asInstanceOf[Tactic[XmlError]]
 
-  private[xylophone] inline def foci: Foci[Xml.Focus] = foci0.asInstanceOf[Foci[Xml.Focus]]
+  inline def foci: Foci[Xml.Focus] = foci0.asInstanceOf[Foci[Xml.Focus]]
 
   // The attributes of the just-opened element, valid until the next element
   // is opened. The derived product parser reads them before its child loop,
@@ -100,6 +108,19 @@ extends caps.ExclusiveCapability, caps.Stateful:
   update def nextChild(): Optional[Text] =
     val name = parser.directNextChild()(using parseTactic)
     if name == null then Unset else name.nn
+
+  // The next child step in packed form, for parsers that compare names
+  // against literal constants (staged parsers compile field names to
+  // immediates): the packed low word of the child's name (its high word from
+  // `childWordHigh`), `NameEnd` once the close tag is consumed, or
+  // `NameOpaque` when the name cannot pack — the child is still opened, and
+  // `childLabel` identifies it for a general dispatch. Public because staged
+  // parsers are generated into user modules.
+  update def childWord(): Long = parser.directNextChildWord()(using parseTactic)
+
+  update def childWordHigh: Long = parser.directChildWordHigh
+
+  update def childLabel: Text = parser.directChildLabel
 
   // The current element's text content, consumed together with its close
   // tag: `Unset` when the content is not exactly one text run (mirroring
