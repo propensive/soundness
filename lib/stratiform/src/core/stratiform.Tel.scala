@@ -2075,6 +2075,11 @@ object Tel extends Tel2:
     private inline val PrimaryBoolean = 2
     private inline val PrimaryInt = 3
 
+    // `true` and `false` packed LSB-first, for the leaf fast path's boolean
+    // comparison.
+    private inline val TrueWord = 0x65757274L
+    private inline val FalseWord = 0x65736C6166L
+
     private var directPrimaryOnly:    Boolean       = false
     private var directPrimaryMode:    Int           = PrimaryText
     private[stratiform] var directPrimaryPresent: Boolean       = false
@@ -2506,6 +2511,13 @@ object Tel extends Tel2:
         val arr = storage.asInstanceOf[Array[Byte]]
         if len <= 0 then "" else new String(arr, off, len, StandardCharsets.UTF_8)
 
+    // Rewind to a held mark — the bail of a speculative fast scan (the
+    // `directEntrySubstance` idiom).
+    private def rewindTo(mark: Cursor.Mark): Unit =
+      syncTo()
+      cursor.cue(mark)
+      syncFrom()
+
     // ── Reset (per-thread reuse) ──────────────────────────────────────────────
     //
     // Re-initialise the parser for a new parse. Called by the cached factory
@@ -2826,7 +2838,7 @@ object Tel extends Tel2:
     // the document — used by consumeTrailingBlanksFor to count the virtual
     // empty trailing line that Parser surfaces when its lines array ends
     // with a sentinel empty entry.
-    private def consumeLineEnding(): Unit raises TelError =
+    private def consumeLineEnding()(using Tactic[TelError]): Unit =
       if !more then ()
       else if peek == LF then
         // §19.5 CollapseLineEndings: accept the inconsistent ending and carry on.
@@ -3108,7 +3120,7 @@ object Tel extends Tel2:
     // intermediate `consumeLineEnding` (which calls `peekNext` → `ensureLookahead`,
     // a mark-using lookahead) and `recoverOddIndent` (which calls `peekKeyword`,
     // also mark-using) execute inside an active `cursor.hold` scope.
-    private def fillHead(): Unit raises TelError = inHold:
+    private def fillHead()(using Tactic[TelError]): Unit = inHold:
       head.startLine = lineNo
       head.separator = false
 
@@ -3923,7 +3935,7 @@ object Tel extends Tel2:
     // the line ending. Factored out of `parseCompoundLine` so the direct
     // parsing rim, which reads the keyword itself (`directKeyword`), can
     // consume the rest of the line through the same scan.
-    private def parseCompoundLineRest(lineNumber: Int): Unit raises TelError = inHold:
+    private def parseCompoundLineRest(lineNumber: Int)(using Tactic[TelError]): Unit = inHold:
       var remark: Optional[Text] = Unset
       // Read atom bytes directly into the parser's atom-bytes arena. With
       // narrow holds, parseCompoundLine's hold has holdStart > 0, so refills
@@ -4086,7 +4098,7 @@ object Tel extends Tel2:
     // runs has `holdStart > 0`, so a refill inside the loop can compact the
     // buffer and shift live content toward index 0 — the absolute-position
     // mark survives that, a buffer-offset would not.
-    private def readKeyword(): Text raises TelError =
+    private def readKeyword()(using Tactic[TelError]): Text =
       val startMark = beginMark()
       var low:  Long = 0L
       var high: Long = 0L
@@ -4138,6 +4150,108 @@ object Tel extends Tel2:
         if result != null then Text(result)
         else Text(sliceText(startMark))
 
+    // As `readKeyword`, but for the packed-dispatch step: the keyword is
+    // *not* interned or sliced when it packs — the fingerprint the scan
+    // computes anyway is the whole result (`directKeywordPacked`), and its
+    // text materializes only if `directKeywordText` is later consulted (an
+    // opaque general dispatch, an unknown sum variant, an error). A keyword
+    // that cannot pack — empty, longer than eight bytes, or carrying bytes
+    // outside printable ASCII, whose packed form could alias a shorter
+    // keyword's or a sentinel — is sliced eagerly, exactly as `readKeyword`
+    // would, and reported `KeywordOpaque`.
+    private def readKeywordFast()(using Tactic[TelError]): Unit =
+      val startMark = beginMark()
+      var low:  Long = 0L
+      var high: Long = 0L
+      var len = 0
+
+      while
+        while pos < bufEnd && bytes(pos) != SP && bytes(pos) != LF && bytes(pos) != CR do
+          val b = bytes(pos)
+
+          if len < 4 then
+            low |= (b & 0xff).toLong << (len * 8)
+          else if len < 8 then
+            high |= (b & 0xff).toLong << ((len - 4) * 8)
+
+          len += 1
+          pos += 1
+
+        pos == bufEnd && more
+      do ()
+
+      directKeywordLow = low
+      directKeywordHigh = high
+      directKeywordLen = len
+
+      val packed = (low & 0xFFFFFFFFL) | (high << 32)
+
+      // SWAR printability test on the first `len` bytes, with the tail
+      // filled printable so only real content can trip the below-0x21, DEL
+      // or high-bit conditions (see `directKeywordWord`'s former test).
+      val printable =
+        len >= 1 && len <= 8 && {
+          val tail = if len == 8 then 0L else -1L << (len*8)
+          val filled = packed | (tail & 0x2121212121212121L)
+          val below = (filled - 0x2121212121212121L) & ~filled & 0x8080808080808080L
+          val del = { val x = filled ^ 0x7F7F7F7F7F7F7F7FL
+                      (x - 0x0101010101010101L) & ~x & 0x8080808080808080L }
+
+          (below | del | (packed & 0x8080808080808080L)) == 0L
+        }
+
+      if printable then
+        directKeywordPacked = packed
+        directEntryKeywordLazy = true
+      else
+        directKeywordPacked = TelReader.KeywordOpaque
+        directEntryKeywordLazy = false
+        directEntryKeyword = if len == 0 then t"" else Text(sliceText(startMark))
+
+    // The lazily-materialized text of a fast-stepped keyword: rebuilt from
+    // the fingerprint (byte-exact — the packed bytes are printable ASCII)
+    // through the intern cache, so repeated requests share one `String`.
+    private def internFingerprint(): Text =
+      val low = directKeywordLow
+      val high = directKeywordHigh
+      val hash = ((low ^ (low >>> 32)) ^ (high ^ (high >>> 17))).toInt
+      var slot = hash & 0x3F
+      var probes = 0
+      var result: String = null
+
+      while result == null && probes < 4 do
+        val existing = keyCache(slot)
+
+        if existing == null then
+          val s = fingerprintString()
+          keyCache(slot) = s
+          keyCacheLow(slot) = low
+          keyCacheHigh(slot) = high
+          result = s
+        else if keyCacheLow(slot) == low && keyCacheHigh(slot) == high then
+          result = existing
+        else
+          slot = (slot + 1) & 0x3F
+          probes += 1
+
+      if result == null then result = fingerprintString()
+      Text(result)
+
+    private def fingerprintString(): String =
+      val len = directKeywordLen
+      val chars = new Array[Char](len)
+      var index = 0
+
+      while index < len do
+        val byte =
+          if index < 4 then (directKeywordLow >>> (index*8)) & 0xFF
+          else (directKeywordHigh >>> ((index - 4)*8)) & 0xFF
+
+        chars(index) = byte.toChar
+        index += 1
+
+      new String(chars)
+
     // ── Direct parsing rim ───────────────────────────────────────────────────
     //
     // The token-level surface behind `TelReader`, letting a `Tel.Parsable`
@@ -4167,6 +4281,12 @@ object Tel extends Tel2:
     private var directKeywordHigh: Long = 0L
     private var directKeywordLen:  Int = 0
 
+    // The fast step's result — the keyword's packed bytes, or
+    // `TelReader.KeywordOpaque` — and whether `directEntryKeyword` is stale,
+    // its text pending lazy materialization from the fingerprint.
+    private var directKeywordPacked:    Long = 0L
+    private var directEntryKeywordLazy: Boolean = false
+
     // The tabulation header governing subsequent rows at the same indent, and
     // the classification of the most recent group of consumed lines — the
     // direct-path stand-in for `parseChildren`'s "last block", from which the
@@ -4192,7 +4312,7 @@ object Tel extends Tel2:
     // directive, pragma, and margin determination, leaving `head` parked on
     // the first content line (or EOF). The direct driver runs this before
     // handing the reader to a `Tel.Parsable`.
-    private[stratiform] def directProlog(): Unit raises TelError =
+    private[stratiform] def directProlog()(using Tactic[TelError]): Unit =
       syncFrom()
       checkBom()
       val directive = parseInterpreterDirective()
@@ -4217,8 +4337,17 @@ object Tel extends Tel2:
     // record. On a compound line, consumes the keyword (leaving the parser
     // mid-line, right after it) and records the entry state for the
     // per-entry consumers.
-    private[stratiform] def directKeyword(indent: Int): Text | Null raises TelError =
-      var result: Text | Null = null
+    private[stratiform] def directKeyword(indent: Int)(using Tactic[TelError]): Text | Null =
+      if directKeywordAdvance(indent, textual = true) then directEntryKeyword else null
+
+    // The step's shared line-classification loop. With `textual = true` the
+    // keyword is read interned (`readKeyword`); otherwise through the
+    // pack-only fast scan (`readKeywordFast`), whose text materializes only
+    // on demand. Returns whether an entry was found (false once the entry
+    // region ends).
+    private def directKeywordAdvance(indent: Int, textual: Boolean)(using Tactic[TelError])
+    :   Boolean =
+      var result = false
       var done = false
 
       while !done do
@@ -4268,33 +4397,48 @@ object Tel extends Tel2:
           directEntryIndent = head.indentLevels
           directEntryLine = head.startLine
 
-          val keyword = inHold:
+          inHold:
             val mayBeMisplacedPragma = head.leadingSpaces == 0 && hasConsumedNonBlankLine
-            val keyword = readKeyword()
 
-            // E102 / §19.5 RestartFromPragma, as in `parseCompoundLine`.
-            if mayBeMisplacedPragma && keyword == t"tel" then
-              recoverAt(Reason.PragmaNotFirst, directEntryLine, 1)(())
+            if textual then
+              val keyword = readKeyword()
+
+              // E102 / §19.5 RestartFromPragma, as in `parseCompoundLine`.
+              if mayBeMisplacedPragma && keyword == t"tel" then
+                recoverAt(Reason.PragmaNotFirst, directEntryLine, 1)(())
+
+              directEntryKeyword = keyword
+              directEntryKeywordLazy = false
+            else
+              readKeywordFast()
+
+              // The same E102 check against the packed form of `tel`.
+              if mayBeMisplacedPragma && directKeywordLen == 3
+                && directKeywordLow == 0x6C6574L
+              then recoverAt(Reason.PragmaNotFirst, directEntryLine, 1)(())
 
             hasConsumedNonBlankLine = true
-            keyword
-
-          directEntryKeyword = keyword
 
           directGroup =
             if directGroup == DirectTabulationHeader || directGroup == DirectTabulationRows
             then DirectTabulationRows
             else DirectCompound
 
-          result = keyword
+          result = true
           done = true
 
       result
 
     // The keyword most recently stepped to, as interned text — behind
     // `TelReader.keywordText`, for staged parsers whose packed step reported
-    // the keyword opaque.
-    private[stratiform] def directKeywordText: Text = directEntryKeyword
+    // the keyword opaque (and for errors and the AST bridge). A fast-stepped
+    // keyword materializes here, lazily, from its fingerprint.
+    private[stratiform] def directKeywordText: Text =
+      if directEntryKeywordLazy then
+        directEntryKeyword = internFingerprint()
+        directEntryKeywordLazy = false
+
+      directEntryKeyword
 
     // As `directKeyword`, but returning the keyword in packed form for staged
     // parsers that compare keywords against literal constants: the keyword's
@@ -4304,35 +4448,17 @@ object Tel extends Tel2:
     // ASCII, whose packed form could alias a shorter keyword's or a
     // sentinel). An opaque keyword is still consumed: `directKeywordText`
     // identifies it for the caller's general dispatch.
-    private[stratiform] def directKeywordWord(indent: Int): Long raises TelError =
-      if directKeyword(indent) == null then TelReader.KeywordEnd
-      else
-        val len = directKeywordLen
-
-        if len < 1 || len > 8 then TelReader.KeywordOpaque
-        else
-          val packed = (directKeywordLow & 0xFFFFFFFFL) | (directKeywordHigh << 32)
-
-          // SWAR printability test on the first `len` bytes: the tail is
-          // filled with a printable byte so only real content can trip the
-          // below-0x21, DEL or high-bit conditions.
-          val tail = if len == 8 then 0L else -1L << (len*8)
-          val filled = packed | (tail & 0x2121212121212121L)
-          val below = (filled - 0x2121212121212121L) & ~filled & 0x8080808080808080L
-          val del = { val x = filled ^ 0x7F7F7F7F7F7F7F7FL
-                      (x - 0x0101010101010101L) & ~x & 0x8080808080808080L }
-
-          if (below | del | (packed & 0x8080808080808080L)) != 0L
-          then TelReader.KeywordOpaque
-          else packed
+    private[stratiform] def directKeywordWord(indent: Int)(using Tactic[TelError]): Long =
+      if !directKeywordAdvance(indent, textual = false) then TelReader.KeywordEnd
+      else directKeywordPacked
 
     // Consume the current entry in full — line remainder, source/literal
     // continuation, and children — materializing it as the single compound
     // the AST path would have built. The direct seam for every consumer that
     // needs AST-identical semantics.
-    private def directCompound(indent: Int): Tel.Compound raises TelError =
+    private def directCompound(indent: Int)(using Tactic[TelError]): Tel.Compound =
       val spaces = directEntrySpaces
-      val keyword = directEntryKeyword
+      val keyword = directKeywordText
       val tabulated = directTabulation.present
       val atomsStart = atomScratchIx
       parseCompoundLineRest(directEntryLine)
@@ -4369,7 +4495,7 @@ object Tel extends Tel2:
     // (`takeAtoms`) and no `Tel.Atom.Inline`: the first inline atom is consumed
     // straight into the slot, and the source/literal continuation and child
     // subtree are consumed (discarded) so the reader lands on the next sibling.
-    private def consumeDirectEntry(mode: Int): Unit raises TelError =
+    private def consumeDirectEntry(mode: Int)(using Tactic[TelError]): Unit =
       val spaces = directEntrySpaces
       val indent = directEntryIndent
       val tabulated = directTabulation.present
@@ -4378,8 +4504,10 @@ object Tel extends Tel2:
       directPrimaryPresent = false
       directPrimaryOk = false
       directPrimaryText = null
-      directPrimaryOnly = true
-      try parseCompoundLineRest(directEntryLine) finally directPrimaryOnly = false
+
+      if !directLeafLine(mode) then
+        directPrimaryOnly = true
+        try parseCompoundLineRest(directEntryLine) finally directPrimaryOnly = false
 
       prevContentLeadingSpaces = spaces
       prevLineWasBoundary = false
@@ -4395,10 +4523,132 @@ object Tel extends Tel2:
       else if !head.eof && !head.separator && !head.blank && head.indentLevels > indent
       then errorAt(directOverIndentReason, head.startLine, 1)
 
+    // The leaf fast path, entered with the cursor right after the keyword:
+    // handles the dominant data shapes — a bare `keyword` line, and
+    // `keyword value` with a single inline atom, no remark, no hard spaces
+    // and no trailing space — parsing (or slicing) the value straight from
+    // the cursor buffer, with no arena copy and no `parseCompoundLineRest`
+    // scan. The numeric capture accepts only spellings whose parse is
+    // provably identical to `parseArenaLong`'s (an optional `-` and one to
+    // eighteen digits); any other line shape rewinds to the line's remainder
+    // and takes the general path, so the two routes agree by construction.
+    // Returns whether the line was consumed.
+    private def directLeafLine(mode: Int)(using Tactic[TelError]): Boolean = inHold:
+      val entry = beginMark()
+
+      if !more then false
+      else if peek == LF || peek == CR then
+        // A bare keyword line: no inline atoms.
+        consumeLineEnding()
+        compoundLineRemark = Unset
+        true
+      else if peek != SP then false
+      else
+        advance()
+
+        if !more then { rewindTo(entry); false }
+        else
+          val b1 = peek
+
+          // A second space (hard-space mode), a sigil (a remark, or an atom
+          // opening with one) or a line ending (a trailing space) all take
+          // the general path.
+          if b1 == SP || b1 == LF || b1 == CR || b1 == sigil then
+            rewindTo(entry)
+            false
+          else
+            val atomStart = beginMark()
+            var word = 0L
+            var value = 0L
+            var digits = 0
+            var len = 0
+            var neg = false
+            var numeric = true
+
+            while
+              while pos < bufEnd && bytes(pos) != SP && bytes(pos) != LF && bytes(pos) != CR do
+                val b = bytes(pos)
+
+                if len < 8 then word |= (b & 0xFF).toLong << (len*8)
+
+                if b >= '0'.toByte && b <= '9'.toByte then
+                  // Eighteen digits can never overflow; longer runs are
+                  // `parseArenaLong`'s to judge.
+                  if digits >= 18 then numeric = false else
+                    value = value*10L + (b - '0'.toByte)
+                    digits += 1
+                else if b == '-'.toByte && len == 0 then neg = true
+                else numeric = false
+
+                len += 1
+                pos += 1
+
+              pos == bufEnd && more
+            do ()
+
+            if more && peek == SP then
+              // More atoms, a remark or a trailing space follow: general.
+              rewindTo(entry)
+              false
+            else
+              // A single-atom line: capture the primary in the requested
+              // mode, then consume the ending — `parseCompoundLineRest`'s
+              // exit, with no trailing space possible (the atom's last byte
+              // precedes the ending).
+              inline def finish(): Boolean =
+                consumeLineEnding()
+                compoundLineRemark = Unset
+                true
+
+              mode match
+                case PrimaryLong | PrimaryInt =>
+                  if numeric && digits > 0 && digits + (if neg then 1 else 0) == len then
+                    val signed = if neg then -value else value
+
+                    directPrimaryPresent = true
+
+                    if mode == PrimaryInt
+                      && (signed < Int.MinValue.toLong || signed > Int.MaxValue.toLong)
+                    then
+                      // In `Long` range but not `Int`: `NotScalar`, with the
+                      // atom's text for the error.
+                      directPrimaryOk = false
+                      directPrimaryText = sliceText(atomStart)
+                    else
+                      directPrimaryOk = true
+                      directPrimaryLongVal = signed
+
+                    finish()
+                  else
+                    // An exotic spelling (`+`, nineteen digits, non-digits):
+                    // `parseArenaLong` decides, on the general path.
+                    rewindTo(entry)
+                    false
+
+                case PrimaryBoolean =>
+                  directPrimaryPresent = true
+
+                  if len == 4 && word == TrueWord then
+                    directPrimaryOk = true
+                    directPrimaryBoolVal = true
+                  else if len == 5 && word == FalseWord then
+                    directPrimaryOk = true
+                    directPrimaryBoolVal = false
+                  else
+                    directPrimaryOk = false
+                    directPrimaryText = sliceText(atomStart)
+
+                  finish()
+
+                case _ =>
+                  directPrimaryPresent = true
+                  directPrimaryText = sliceText(atomStart)
+                  finish()
+
     // The entry's primary atom as text — the first inline atom's, or Unset when
     // the line carries none (a source/literal atom never supplies it), mirroring
     // `Tel#primaryAtom`. Backs the `Text`/text-codec primitive readers.
-    private[stratiform] def directAtomText(): Optional[Text] raises TelError =
+    private[stratiform] def directAtomText()(using Tactic[TelError]): Optional[Text] =
       consumeDirectEntry(PrimaryText)
       val captured = directPrimaryText
       if captured == null then Unset else Optional(Text(captured))
@@ -4406,31 +4656,41 @@ object Tel extends Tel2:
     // The entry's primary atom parsed straight from its bytes as an integer, or
     // Unset for a missing / non-integer atom — the `Int`/`Long` readers, saving
     // the value `String` the `Text` path would materialize only to re-scan.
-    private[stratiform] def directAtomLong(): Optional[Long] raises TelError =
+    private[stratiform] def directAtomLong()(using Tactic[TelError]): Optional[Long] =
       consumeDirectEntry(PrimaryLong)
       if directPrimaryPresent && directPrimaryOk then Optional(directPrimaryLongVal) else Unset
 
     // As `directAtomLong`, additionally requiring the value to fit `Int`.
-    private[stratiform] def directAtomInt(): Optional[Int] raises TelError =
+    private[stratiform] def directAtomInt()(using Tactic[TelError]): Optional[Int] =
       consumeDirectEntry(PrimaryInt)
       if directPrimaryPresent && directPrimaryOk then Optional(directPrimaryLongVal.toInt) else Unset
 
     // The entry's primary atom parsed straight from its bytes as a boolean, or
     // Unset for a missing atom or anything but `true` / `false`.
-    private[stratiform] def directAtomBoolean(): Optional[Boolean] raises TelError =
+    private[stratiform] def directAtomBoolean()(using Tactic[TelError]): Optional[Boolean] =
       consumeDirectEntry(PrimaryBoolean)
       if directPrimaryPresent && directPrimaryOk then Optional(directPrimaryBoolVal) else Unset
 
     // Consume the rest of the entry's own line (atoms, remark) and any
     // source/literal continuation, but not its child lines — the step before
     // a nested record parses those children one level deeper.
-    private[stratiform] def directFinishLine(): Unit raises TelError =
+    private[stratiform] def directFinishLine()(using Tactic[TelError]): Unit =
       val spaces = directEntrySpaces
       val indent = directEntryIndent
       val tabulated = directTabulation.present
-      val atomsStart = atomScratchIx
-      parseCompoundLineRest(directEntryLine)
-      atomScratchIx = atomsStart
+
+      // A record entry is usually a bare `keyword` line: nothing to scan.
+      val bare = inHold:
+        if more && (peek == LF || peek == CR) then
+          consumeLineEnding()
+          compoundLineRemark = Unset
+          true
+        else false
+
+      if !bare then
+        val atomsStart = atomScratchIx
+        parseCompoundLineRest(directEntryLine)
+        atomScratchIx = atomsStart
       prevContentLeadingSpaces = spaces
       prevLineWasBoundary = false
       fillHead()
@@ -4448,17 +4708,17 @@ object Tel extends Tel2:
     // Skip the whole entry — line remainder, continuation and subtree —
     // discarding it. Used for unknown keywords and duplicate non-repeatable
     // fields (where the AST's `field()` keeps the first match).
-    private[stratiform] def directSkipEntry(indent: Int): Unit raises TelError =
+    private[stratiform] def directSkipEntry(indent: Int)(using Tactic[TelError]): Unit =
       directCompound(indent)
 
     // Materialize this one entry as a `Tel` — the AST bridge for field types
     // that only carry a `Tel.Decodable`.
-    private[stratiform] def directValue(indent: Int): Tel raises TelError =
+    private[stratiform] def directValue(indent: Int)(using Tactic[TelError]): Tel =
       Tel.make(directCompound(indent))
 
     // Materialize everything that remains as a document-rooted `Tel` — the
     // AST bridge for a whole-input read of a `Decodable`-only type.
-    private[stratiform] def directDocument(): Tel raises TelError =
+    private[stratiform] def directDocument()(using Tactic[TelError]): Tel =
       Tel.make(Tel.Document(Unset, Unset, lineEndings, parseChildren(-1)))
 
     // Peek whether the current entry has substance — an inline atom on its
@@ -4467,7 +4727,7 @@ object Tel extends Tel2:
     // atom and contributes none). The entry is parsed in full under a mark
     // and then rewound, restoring every piece of parser state the parse
     // touched, so the caller can still consume the entry either way.
-    private[stratiform] def directEntrySubstance(): Boolean raises TelError = inHold:
+    private[stratiform] def directEntrySubstance()(using Tactic[TelError]): Boolean = inHold:
       val mk = beginMark()
 
       val savedHead = (head.leadingSpaces, head.indentLevels, head.blank, head.eof,
