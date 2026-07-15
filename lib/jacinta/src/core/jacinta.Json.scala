@@ -392,6 +392,13 @@ trait Json2 extends Json3:
       // dispatching through the decoder. Sealed per the codec-thunk
       // pattern: each instance captures resolution-scoped tactics.
       caps.unsafe.unsafeAssumePure:
+        // Wire tag → variant label, a per-derivation constant: built once
+        // here rather than on every `parse` call, whose profile it dominated
+        // (map building plus generic-equality lookups, per occurrence).
+        val variantNames: Map[Text, Text] =
+          variantRelabelling[derivation, Json].map: (variant, wire) =>
+            wire -> variant
+
         infer[derivation is Discriminable in Json] match
           case fielded: Json.DiscriminantField[?] =>
             new Json.Field:
@@ -401,10 +408,6 @@ trait Json2 extends Json3:
               def parse(reader: JsonReader^): derivation =
                 provide[Tactic[JsonError]]:
                   provide[Tactic[VariantError]]:
-                    val variantNames: Map[Text, Text] =
-                      variantRelabelling[derivation, Json].map: (variant, wire) =>
-                        wire -> variant
-
                     val wire: Text = reader.discriminant(fielded.field).or:
                       abort(JsonError(Reason.Absent))
 
@@ -421,10 +424,6 @@ trait Json2 extends Json3:
               def parse(reader: JsonReader^): derivation =
                 provide[Tactic[JsonError]]:
                   provide[Tactic[VariantError]]:
-                    val variantNames: Map[Text, Text] =
-                      variantRelabelling[derivation, Json].map: (variant, wire) =>
-                        wire -> variant
-
                     reader.openObject()
                     val wire: Text = reader.key().or(abort(JsonError(Reason.Absent)))
 
@@ -445,10 +444,6 @@ trait Json2 extends Json3:
               def parse(reader: JsonReader^): derivation =
                 provide[Tactic[JsonError]]:
                   provide[Tactic[VariantError]]:
-                    val variantNames: Map[Text, Text] =
-                      variantRelabelling[derivation, Json].map: (variant, wire) =>
-                        wire -> variant
-
                     val wire: Text = reader.discriminant(envelope.tagField).or:
                       abort(JsonError(Reason.Absent))
 
