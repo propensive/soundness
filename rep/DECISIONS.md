@@ -52,6 +52,11 @@ the order the legs need them:
   `urticose.Internet` → `caps.SharedCapability` (aliasable effect evidence, no teardown). Scope
   methods then take form A (`block: Ctx ?=> result` with unconstrained `result`), matching
   `parasite.supervise`/`enigmatic.expose`, plus a CaptureTests-style negative regression each.
+  AMENDED in Phase 2 (compiler-forced): `Random` and `Internet` are `caps.Unscoped`, not
+  `SharedCapability` — `Unscoped extends ExclusiveCapability`, so the two classifiers cannot
+  combine, and both types have deliberately-ambient static instances (`Random.global`,
+  `object Online`, `internetAccess.online`) that scoped classifiers forbid. Unscoped is exactly
+  contingency's ambient-strategy precedent: tracked in capture sets, storable statically.
 - **D2 — coaxial `listen` scoped redesign** (existing ⚑4; needed for Phase 5): recommend the loan
   form `def listen[result](lambda: Input => Output)(block: SocketService^ ?=> result): result`
   (bind, run block, always stop in `finally`), which both fixes the `val server` fresh-escape and
@@ -2010,3 +2015,43 @@ decoder is NOT covered by dictcaps and resisted a jacinta-style restructure (it
 persisted and crashed rechecking). The two telekinesis Query-decode tests that
 hit it (`Dereference a query` — also broken #1500 — and `Decode a query`) are
 disabled with a comment, to revisit. See [[reference_dictcaps_compiler_fix]].
+
+## Capture-honesty Phase 2: effect channels + Cli are capabilities (2026-07-15, branch capture-honesty)
+
+`capricious.Random`, `urticose.Internet`/`Online` → `caps.Unscoped`; `polaris.Buffer` →
+`caps.ExclusiveCapability`; `exoskeleton.Cli` → `caps.ExclusiveCapability`. The scope methods
+(`stochastic`, `internet`, `require`/`appropriate`, `buffer`, `Executive.process`) keep their
+`Ctx ?=> result` shape — with the context types now capability classes, the bare name is
+auto-tracked (the `supervise` form). Gates: JVM 10301/10301, JS 8006/8006; suites green
+(telekinesis's 4 per-module Query failures reproduce exactly at the attested base — the known
+umbrella/per-module implicit-scope artifact).
+
+Recipes this leg (all compiler-forced, reusable):
+- Classifier lattice: `Unscoped extends ExclusiveCapability` — it cannot combine with
+  `SharedCapability`. Ambient-storable tracked types therefore go on the exclusive line.
+- A capability-typed FIELD forces its owner to extend Capability: `Random.global` now stores
+  the untracked JDK generator and mints a fresh `Random` wrapper per call; urticose's
+  `internetAccess.online` given became `inline given` (a fresh `Online` per summon site, no
+  static field); `Internet.require`/`appropriate` mint `Online()` per block instead of
+  referencing the singleton (a capability object referenced from a class body charges the
+  class's capture set).
+- polaris `Unpackable.iarray`: the curried continuation no longer captures the caller's
+  `Buffer` — it records the (pure) backing `Data` + start offset and mints its own buffer per
+  invocation. This keeps the trait signature pure for every other instance; the earlier
+  attempts (trait-level `Wrap[Self]^{buffer}`, transparent-inline unpackFrom with fresh `^`)
+  failed because hypotenuse's opaques (`U16 = Short` etc.) have no pure bounds, so nothing
+  downstream is statically pure and fresh `^` never collapses. FUTURE OPTION: pure upper
+  bounds on hypotenuse opaques (the zephyrine Credit<:Long precedent) would unlock
+  static-purity-based collapse tree-wide; needs Jon (exposes `U16 <: Short` subtyping).
+- exoskeleton `Executive.process` block param narrowed `Interface ?=> Return` → `Cli ?=>
+  Return`: adapting a `Cli ?=>` context function to an abstract-`Interface ?=>` one trips
+  capture-root unification ("any² cannot flow into {any}"), and every entry point routes a
+  `Cli ?=>` block anyway.
+- telekinesis staged fetch/submit: the `given online0: Online = $online` bindings inside
+  quotes DELETED — nothing in the generated code summons `Online` (it gates the extension
+  method's summonability), and a capability-typed local given inside a quote violates the
+  quote wall and (under sep) the statement rule.
+- Givens gated on `Online` evidence become honest capabilities: coaxial
+  `Connectable.tcpEndpoint` + `SecureEndpoint.connectable` (named params, `^{online,
+  caps.any}` results, named-class/new-instance form), perihelion `wsClient` and jacinta
+  `fetchingRegistry` (added `online` to their existing capture sets).

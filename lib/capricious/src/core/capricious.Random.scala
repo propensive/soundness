@@ -39,12 +39,25 @@ import scala.util as su
 import beneficence.*
 
 object Random:
-  lazy val global: Random = new Random(randomization.unseededRandomization.initialize())
+  // The underlying JDK generator is a plain (untracked) value, so it may be stored statically;
+  // `global` mints a fresh capability wrapper around the same shared generator state each time
+  // (a capability-typed field would force `Random`'s companion to become a capability itself).
+  private lazy val globalGenerator: su.Random =
+    randomization.unseededRandomization.initialize()
+
+  def global: Random = new Random(globalGenerator)
 
   def apply(seed: Seed)(using randomization: Randomization): Random =
     new Random(randomization.initialize())
 
-class Random(private val generator: su.Random) extends Findable:
+// A `Random` is a *capability*: drawing from a pseudorandom generator is an effect (the
+// generator's state advances), so code that consumes randomness carries `{random}` in its
+// capture set. `caps.Unscoped` (like contingency's ambient strategies) rather than
+// `SharedCapability`: a generator captures nothing scoped itself, and the deliberately-ambient
+// `Random.global` (and `randomization`-package givens) must be storable statically, which the
+// scoped classifiers forbid. (`Unscoped` is in the exclusive-classifier line, so it cannot be
+// combined with `SharedCapability`.)
+class Random(private val generator: su.Random) extends Findable, caps.Unscoped:
   def long(): Long = generator.nextLong()
   def gaussian(): Double = generator.nextGaussian()
   def unitInterval(): Double = generator.nextDouble()

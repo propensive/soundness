@@ -54,7 +54,7 @@ package jsonPointerRegistries:
   // capability — a given constructed from capabilities produces a capability (Jon,
   // 2026-07-06; see rep/DECISIONS.md).
   given fetchingRegistry: (online: Online, loggable: HttpEvent is Loggable, client: HttpClient)
-  =>  (JsonPointer.Registry^{client}) =
+  =>  (JsonPointer.Registry^{online, client}) =
     new JsonPointer.Registry:
       protected def lookup(url: HttpUrl): Optional[Json] =
         recover:

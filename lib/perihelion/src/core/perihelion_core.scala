@@ -192,7 +192,7 @@ given wsClient: ( online:            Online,
                   httpResponseError: Tactic[HttpResponseError],
                   portError:         Tactic[PortError] )
 =>  (((WsUrl is Duplexable) { type Output = Data; type Connection = WsConnection })
-      ^{monitor, websocketError, httpResponseError, portError}) =
+      ^{online, monitor, websocketError, httpResponseError, portError}) =
   // The client retains its `Monitor` (the frame pump daemon) and tactics, so the instance
   // is a capability — a given constructed from capabilities produces a capability (see
   // rep/DECISIONS.md).

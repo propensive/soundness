@@ -130,7 +130,10 @@ object internal:
           case method: Expr[Http.Method] => method
 
         ' {
-            given online0: Online = $online
+            // No `Online` binding in the staged code: the permission gates summonability of
+            // the enclosing extension method, and (with `Online` a capability) a local
+            // capability-typed given inside the quote would trip the quote wall and, under
+            // separation checking, hide the outer parameter from later statements.
 
             // Staging-boundary seal: quoted types must stay pure, so the (honestly
             // tracked) evidence is sealed on entry to the generated code. The
@@ -173,7 +176,7 @@ object internal:
           case method: Expr[Http.Method] => method
 
         ' {
-            given online0: Online = $online
+            // No `Online` binding, as in `submit` above.
             given loggable0: HttpEvent is Loggable = $loggable
 
             val path = $fetch.originForm
