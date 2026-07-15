@@ -43,6 +43,29 @@ case class Order(id: Int, name: String, active: Boolean)
 case class Rank(value: Int)
 case class Reading(celsius: Celsius, station: String)
 
+// A same-compilation-run counterpart of `Celsius`: its conditional companion
+// given has the shape the staging tier evaluates, but it is compiled in the
+// same run as its use site. The PoC's decisive finding: which tier serves it
+// is NONDETERMINISTIC — on a clean build no classfile exists, so the macro
+// degrades to the runtime tier, but on an incremental rebuild the module's
+// output directory (on the macro classpath) still holds the previous
+// compile's classfile, and the staging tier loads it — potentially STALE
+// bytecode if the instance was edited in this very run. So neither tier
+// soundly escapes the earlier-compilation requirement; its runtime sibling
+// is therefore real, and the test asserts only the value.
+case class Fahrenheit(degrees: Int)
+case class Sample(fahrenheit: Fahrenheit)
+
+object Fahrenheit:
+  given inlinable: (dummy: DummyImplicit) => (Fahrenheit is Inlinable) = new Inlinable:
+    type Self = Fahrenheit
+
+    def read(input: Expr[String])(using Quotes): Expr[Fahrenheit] =
+      '{ Fahrenheit(java.lang.Integer.parseInt($input.trim.nn)) }
+
+    def readRuntime(input: String): Fahrenheit =
+      Fahrenheit(java.lang.Integer.parseInt(input.trim.nn))
+
 object Tests extends Suite(m"Prescience tests"):
   def run(): Unit =
     suite(m"Tier A: static instances evaluated at expansion time"):
@@ -81,3 +104,10 @@ object Tests extends Suite(m"Prescience tests"):
         // sibling throws, so this passing proves it did.
         Prescience.readStaging[Reading]("21,Kew")
       . assert(_ == Reading(Celsius(21), "Kew"))
+
+      test(m"A same-run instance decodes, whichever tier serves it"):
+        // Clean build: runtime tier (no classfile yet). Incremental rebuild:
+        // the staging tier resolves it from the PREVIOUS compile's classfile
+        // in the output directory — the staleness hazard documented above.
+        Prescience.readStaging[Sample]("70")
+      . assert(_ == Sample(Fahrenheit(70)))
