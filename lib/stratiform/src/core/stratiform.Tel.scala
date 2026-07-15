@@ -1871,6 +1871,11 @@ object Tel extends Tel2:
       p.reset(Cursor[Data](input), Unset)
       p.documentStream(first = true)
 
+    // The shared empty-children array: `IArray.empty[Tel.Block]` builds a
+    // fresh zero-length array through a reflective `ClassTag` on every call,
+    // and `parseChildren` returns it once per leaf entry.
+    private val EmptyBlocks: IArray[Tel.Block] = IArray.empty[Tel.Block]
+
     private final val SP: Byte = 0x20
     private final val LF: Byte = 0x0A
     private final val CR: Byte = 0x0D
@@ -1918,6 +1923,27 @@ object Tel extends Tel2:
     // Per-lane "does this byte equal the target?" mask.
     private inline def matchByte(v: Long, replicated: Long): Long =
       haszero(v ^ replicated)
+
+    // A compound-line scan's stop bytes — space, LF, CR — in one mask; zero
+    // means all eight bytes are keyword or atom content. Little-endian
+    // (`longView`), so `numberOfTrailingZeros(mask) >> 3` is the offset of
+    // the first stop byte.
+    private inline def contentStops(word: Long): Long =
+      matchByte(word, SpRepl) | matchByte(word, LfRepl) | matchByte(word, CrRepl)
+
+    // The packed-keyword printability test: true when the first `len` bytes
+    // of `packed` are all printable ASCII (0x21–0x7E), so the packed form
+    // cannot alias a shorter keyword's or a sentinel. The tail is filled
+    // with a printable byte so only real content can trip the below-0x21,
+    // DEL or high-bit conditions.
+    private inline def printableWord(packed: Long, len: Int): Boolean =
+      val tail = if len == 8 then 0L else -1L << (len*8)
+      val filled = packed | (tail & 0x2121212121212121L)
+      val below = (filled - 0x2121212121212121L) & ~filled & HighBitsMask
+      val del = { val x = filled ^ 0x7F7F7F7F7F7F7F7FL
+                  (x - OnesMask) & ~x & HighBitsMask }
+
+      (below | del | (packed & HighBitsMask)) == 0L
 
     // Carries the look-ahead state for the next unconsumed line. Parsed once
     // by `fillHead`, then consulted by recursive-descent functions to decide
@@ -2074,11 +2100,6 @@ object Tel extends Tel2:
     private inline val PrimaryLong = 1
     private inline val PrimaryBoolean = 2
     private inline val PrimaryInt = 3
-
-    // `true` and `false` packed LSB-first, for the leaf fast path's boolean
-    // comparison.
-    private inline val TrueWord = 0x65757274L
-    private inline val FalseWord = 0x65736C6166L
 
     private var directPrimaryOnly:    Boolean       = false
     private var directPrimaryMode:    Int           = PrimaryText
@@ -2261,7 +2282,7 @@ object Tel extends Tel2:
         result.asInstanceOf[IArray[Tel.Compound]]
 
     private inline def takeBlocks(count: Int): IArray[Tel.Block] =
-      if count == 0 then IArray.empty[Tel.Block]
+      if count == 0 then EmptyBlocks
       else
         val result = new Array[Tel.Block](count)
         System.arraycopy(scratchBlocks, blockScratchIx - count, result, 0, count)
@@ -2826,6 +2847,23 @@ object Tel extends Tel2:
     private inline def countLeadingSpaces(): Int =
       var count = 0
 
+      // A word at a time while the window allows: indent runs are short, so
+      // one load usually decides.
+      while pos + 8 <= bufEnd && {
+        val nonSpace =
+          ~Parser.matchByte(Parser.longView(bytes, pos), Parser.SpRepl) & Parser.HighBitsMask
+
+        if nonSpace == 0L then
+          pos += 8
+          count += 8
+          true
+        else
+          val run = java.lang.Long.numberOfTrailingZeros(nonSpace) >> 3
+          pos += run
+          count += run
+          false
+      } do ()
+
       while more && peek == SP do
         advance()
         count += 1
@@ -3172,7 +3210,7 @@ object Tel extends Tel2:
       val expected = parentIndent + 1
 
       if head.eof || head.separator || head.indentLevels < expected
-      then IArray.empty[Tel.Block]
+      then EmptyBlocks
       else
         val start = blockScratchIx
 
@@ -3310,7 +3348,7 @@ object Tel extends Tel2:
 
             val children =
               if extraAtom.absent && tabulation.absent then parseChildren(indent)
-              else IArray.empty[Tel.Block]
+              else EmptyBlocks
 
             val atoms = takeAtoms(atomScratchIx - atomsStart)
             pushCompound(Tel.Compound(compoundKeyword, atoms, compoundRemark, children))
@@ -4160,6 +4198,46 @@ object Tel extends Tel2:
     // keyword's or a sentinel — is sliced eagerly, exactly as `readKeyword`
     // would, and reported `KeywordOpaque`.
     private def readKeywordFast()(using Tactic[TelError]): Unit =
+      // Fused scan-and-pack: the word loaded to find the keyword's end *is*
+      // its packed form, so a packable keyword costs one load. A keyword at
+      // the window's edge, longer than eight bytes or carrying unpackable
+      // bytes takes the per-byte slow path.
+      var slow = true
+
+      if pos + 8 <= bufEnd then
+        val word: Long = Parser.longView(bytes, pos)
+        val stops = Parser.contentStops(word)
+
+        if stops != 0L then
+          val len = java.lang.Long.numberOfTrailingZeros(stops) >> 3
+
+          if len >= 1 then
+            val packed = word & ((1L << (len*8)) - 1L)
+
+            if Parser.printableWord(packed, len) then
+              directKeywordLow = packed & 0xFFFFFFFFL
+              directKeywordHigh = packed >>> 32
+              directKeywordLen = len
+              directKeywordPacked = packed
+              directEntryKeywordLazy = true
+              pos += len
+              slow = false
+        else if pos + 8 < bufEnd then
+          // No stop in the first eight bytes: exactly eight, or oversized.
+          val b8 = bytes(pos + 8)
+
+          if (b8 == SP || b8 == LF || b8 == CR) && Parser.printableWord(word, 8) then
+            directKeywordLow = word & 0xFFFFFFFFL
+            directKeywordHigh = word >>> 32
+            directKeywordLen = 8
+            directKeywordPacked = word
+            directEntryKeywordLazy = true
+            pos += 8
+            slow = false
+
+      if slow then readKeywordSlow()
+
+    private def readKeywordSlow()(using Tactic[TelError]): Unit =
       val startMark = beginMark()
       var low:  Long = 0L
       var high: Long = 0L
@@ -4186,21 +4264,7 @@ object Tel extends Tel2:
 
       val packed = (low & 0xFFFFFFFFL) | (high << 32)
 
-      // SWAR printability test on the first `len` bytes, with the tail
-      // filled printable so only real content can trip the below-0x21, DEL
-      // or high-bit conditions (see `directKeywordWord`'s former test).
-      val printable =
-        len >= 1 && len <= 8 && {
-          val tail = if len == 8 then 0L else -1L << (len*8)
-          val filled = packed | (tail & 0x2121212121212121L)
-          val below = (filled - 0x2121212121212121L) & ~filled & 0x8080808080808080L
-          val del = { val x = filled ^ 0x7F7F7F7F7F7F7F7FL
-                      (x - 0x0101010101010101L) & ~x & 0x8080808080808080L }
-
-          (below | del | (packed & 0x8080808080808080L)) == 0L
-        }
-
-      if printable then
+      if len >= 1 && len <= 8 && Parser.printableWord(packed, len) then
         directKeywordPacked = packed
         directEntryKeywordLazy = true
       else
@@ -4366,7 +4430,10 @@ object Tel extends Tel2:
           done = true
         else if head.indentLevels > indent then
           errorAt(directOverIndentReason, head.startLine, 1)
-        else if isCommentBody() then
+        // Both comment and tabulation lines open with the sigil, so a
+        // compound line — the overwhelmingly common step — skips both
+        // classifiers (and their hold ceremony) on one byte test.
+        else if more && peek == sigil && isCommentBody() then
           // §9 E109 check, exactly as `parseBlock` performs it before
           // consuming a comment line.
           if !prevLineWasBoundary && prevContentLeadingSpaces >= 0 &&
@@ -4379,7 +4446,7 @@ object Tel extends Tel2:
           prevLineWasBoundary = true
           hasConsumedNonBlankLine = true
           fillHead()
-        else if isTabulationBody() then
+        else if more && peek == sigil && isTabulationBody() then
           val leadingSpaces = head.leadingSpaces
           directTabulation = Optional(parseTabulationLine())
           directGroup = DirectTabulationHeader
@@ -4476,7 +4543,7 @@ object Tel extends Tel2:
 
       val children: IArray[Tel.Block] =
         if !tabulated && extraAtom.absent then parseChildren(indent)
-        else IArray.empty[Tel.Block]
+        else EmptyBlocks
 
       // When children were not parsed (extra atom or tabulated row), a
       // following deeper line is over-indented — the enclosing AST loop
@@ -4495,7 +4562,7 @@ object Tel extends Tel2:
     // (`takeAtoms`) and no `Tel.Atom.Inline`: the first inline atom is consumed
     // straight into the slot, and the source/literal continuation and child
     // subtree are consumed (discarded) so the reader lands on the next sibling.
-    private def consumeDirectEntry(mode: Int)(using Tactic[TelError]): Unit =
+    private inline def consumeDirectEntry(inline mode: Int)(using Tactic[TelError]): Unit =
       val spaces = directEntrySpaces
       val indent = directEntryIndent
       val tabulated = directTabulation.present
@@ -4533,7 +4600,10 @@ object Tel extends Tel2:
     // eighteen digits); any other line shape rewinds to the line's remainder
     // and takes the general path, so the two routes agree by construction.
     // Returns whether the line was consumed.
-    private def directLeafLine(mode: Int)(using Tactic[TelError]): Boolean = inHold:
+    // Inline with an inline `mode`, so each primitive reader expands its own
+    // mode-specialized copy — the dead mode arms fold away and the hot
+    // methods stay small enough to inline predictably.
+    private inline def directLeafLine(inline mode: Int)(using Tactic[TelError]): Boolean = inHold:
       val entry = beginMark()
 
       if !more then false
@@ -4558,92 +4628,115 @@ object Tel extends Tel2:
             false
           else
             val atomStart = beginMark()
-            var word = 0L
-            var value = 0L
-            var digits = 0
-            var len = 0
-            var neg = false
-            var numeric = true
+            val startPos = pos
 
-            while
-              while pos < bufEnd && bytes(pos) != SP && bytes(pos) != LF && bytes(pos) != CR do
-                val b = bytes(pos)
+            // Find the atom's end within the buffered window, a word at a
+            // time; the window's edge (a refill would be needed) takes the
+            // general path.
+            var endPos = -1
+            var scan = pos
 
-                if len < 8 then word |= (b & 0xFF).toLong << (len*8)
+            while endPos < 0 && scan + 8 <= bufEnd do
+              val word: Long = Parser.longView(bytes, scan)
+              val stops = Parser.contentStops(word)
 
-                if b >= '0'.toByte && b <= '9'.toByte then
-                  // Eighteen digits can never overflow; longer runs are
-                  // `parseArenaLong`'s to judge.
-                  if digits >= 18 then numeric = false else
-                    value = value*10L + (b - '0'.toByte)
-                    digits += 1
-                else if b == '-'.toByte && len == 0 then neg = true
-                else numeric = false
+              if stops != 0L
+              then endPos = scan + (java.lang.Long.numberOfTrailingZeros(stops) >> 3)
+              else scan += 8
 
-                len += 1
-                pos += 1
-
-              pos == bufEnd && more
-            do ()
-
-            if more && peek == SP then
-              // More atoms, a remark or a trailing space follow: general.
+            if endPos < 0 then
               rewindTo(entry)
               false
             else
-              // A single-atom line: capture the primary in the requested
-              // mode, then consume the ending — `parseCompoundLineRest`'s
-              // exit, with no trailing space possible (the atom's last byte
-              // precedes the ending).
-              inline def finish(): Boolean =
-                consumeLineEnding()
-                compoundLineRemark = Unset
-                true
+              pos = endPos
 
-              mode match
-                case PrimaryLong | PrimaryInt =>
-                  if numeric && digits > 0 && digits + (if neg then 1 else 0) == len then
-                    val signed = if neg then -value else value
+              if peek == SP then
+                // More atoms, a remark or a trailing space follow: general.
+                rewindTo(entry)
+                false
+              else
+                // A single-atom line, wholly in the window: capture the
+                // primary in the requested mode, then consume the ending —
+                // `parseCompoundLineRest`'s exit, with no trailing space
+                // possible (the atom's last byte precedes the ending).
+                val len = endPos - startPos
 
+                def finish(): Boolean =
+                  consumeLineEnding()
+                  compoundLineRemark = Unset
+                  true
+
+                mode match
+                  case PrimaryLong | PrimaryInt =>
+                    var index = startPos
+                    var neg = false
+
+                    if bytes(index) == '-'.toByte then
+                      neg = true
+                      index += 1
+
+                    // Eighteen digits can never overflow; anything else —
+                    // `+`, nineteen digits, non-digits — is
+                    // `parseArenaLong`'s to judge, on the general path.
+                    val digits = endPos - index
+                    var ok = digits >= 1 && digits <= 18
+                    var value = 0L
+
+                    while ok && index < endPos do
+                      val digit = bytes(index) - '0'.toByte
+                      if digit < 0 || digit > 9 then ok = false else
+                        value = value*10L + digit
+                        index += 1
+
+                    if ok then
+                      val signed = if neg then -value else value
+
+                      directPrimaryPresent = true
+
+                      if mode == PrimaryInt
+                        && (signed < Int.MinValue.toLong || signed > Int.MaxValue.toLong)
+                      then
+                        // In `Long` range but not `Int`: `NotScalar`, with
+                        // the atom's text for the error.
+                        directPrimaryOk = false
+                        directPrimaryText = sliceText(atomStart)
+                      else
+                        directPrimaryOk = true
+                        directPrimaryLongVal = signed
+
+                      finish()
+                    else
+                      rewindTo(entry)
+                      false
+
+                  case PrimaryBoolean =>
                     directPrimaryPresent = true
 
-                    if mode == PrimaryInt
-                      && (signed < Int.MinValue.toLong || signed > Int.MaxValue.toLong)
+                    if len == 4 && bytes(startPos) == 't'.toByte
+                      && bytes(startPos + 1) == 'r'.toByte
+                      && bytes(startPos + 2) == 'u'.toByte
+                      && bytes(startPos + 3) == 'e'.toByte
                     then
-                      // In `Long` range but not `Int`: `NotScalar`, with the
-                      // atom's text for the error.
+                      directPrimaryOk = true
+                      directPrimaryBoolVal = true
+                    else if len == 5 && bytes(startPos) == 'f'.toByte
+                      && bytes(startPos + 1) == 'a'.toByte
+                      && bytes(startPos + 2) == 'l'.toByte
+                      && bytes(startPos + 3) == 's'.toByte
+                      && bytes(startPos + 4) == 'e'.toByte
+                    then
+                      directPrimaryOk = true
+                      directPrimaryBoolVal = false
+                    else
                       directPrimaryOk = false
                       directPrimaryText = sliceText(atomStart)
-                    else
-                      directPrimaryOk = true
-                      directPrimaryLongVal = signed
 
                     finish()
-                  else
-                    // An exotic spelling (`+`, nineteen digits, non-digits):
-                    // `parseArenaLong` decides, on the general path.
-                    rewindTo(entry)
-                    false
 
-                case PrimaryBoolean =>
-                  directPrimaryPresent = true
-
-                  if len == 4 && word == TrueWord then
-                    directPrimaryOk = true
-                    directPrimaryBoolVal = true
-                  else if len == 5 && word == FalseWord then
-                    directPrimaryOk = true
-                    directPrimaryBoolVal = false
-                  else
-                    directPrimaryOk = false
+                  case _ =>
+                    directPrimaryPresent = true
                     directPrimaryText = sliceText(atomStart)
-
-                  finish()
-
-                case _ =>
-                  directPrimaryPresent = true
-                  directPrimaryText = sliceText(atomStart)
-                  finish()
+                    finish()
 
     // The entry's primary atom as text — the first inline atom's, or Unset when
     // the line carries none (a source/literal atom never supplies it), mirroring
