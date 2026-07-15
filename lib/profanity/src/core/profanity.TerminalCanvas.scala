@@ -43,8 +43,9 @@ object TerminalCanvas:
 
   // Build a surface covering the whole terminal, reading its size live (so a
   // resize is reflected the next time the layout is solved) and writing through
-  // its `Stdio`.
-  def apply(terminal: Terminal): TerminalCanvas =
+  // its `Stdio`. The size thunks retain the terminal, so the canvas honestly
+  // captures it.
+  def apply(terminal: Terminal): TerminalCanvas^{terminal} =
     new TerminalCanvas(() => terminal.knownColumns, () => terminal.knownRows)(using terminal.stdio)
 
 // A `Canvas` over a real terminal: every positioning operation maps to an

@@ -118,13 +118,22 @@ object Keypress:
     def key(symbol: Text): Text = t"[$symbol]"
 
     keypress match
-      case Shift(inner) => t"${key(t"⇧")}+${render(inner)}"
-      case Alt(inner)   => t"${key(t"⌥")}+${render(inner)}"
-      case Meta(inner)  => t"${key(t"⌘")}+${render(inner)}"
+      // Typed patterns with field access rather than extractors: under capture checking, an
+      // enum-case unapply of a union-typed field fails to unify with the synthesized
+      // capture-variable-decorated scrutinee.
+      case shift: Shift => t"${key(t"⇧")}+${render(shift.keypress)}"
+      case alt: Alt     => t"${key(t"⌥")}+${render(alt.keypress)}"
+      case meta: Meta   => t"${key(t"⌘")}+${render(meta.keypress)}"
 
-      case Ctrl(inner) => inner match
-        case char: Char      => t"${key(t"⌃")}+${key(char.show)}"
-        case other: Keypress => t"${key(t"⌃")}+${render(other)}"
+      case ctrl: Ctrl =>
+        // Widened to a clean binary union first: a type test against the raw field type's
+        // GADT-narrowed intersections fails to unify with its capture-variable-decorated
+        // form under capture checking.
+        val inner: Keypress | Char = ctrl.keypress
+
+        inner match
+          case char: Char      => t"${key(t"⌃")}+${key(char.show)}"
+          case other: Keypress => t"${key(t"⌃")}+${render(other)}"
 
       case CharKey(' ')      => key(t"␣")
       case CharKey(char)     => key(char.show)

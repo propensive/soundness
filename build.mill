@@ -1749,7 +1749,7 @@ object profanity extends Library:
   object core extends Component(ambience.core, eucalyptus.core, diuretic.core, iridescence.core,
                                 quantitative.units, frontier.core, escapade.csi):
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, exoskeleton.rig):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
@@ -1941,7 +1941,7 @@ object surveillance extends Library:
   object core extends Component(eucalyptus.core):
     override def scalaJs = false // file watching (`java.nio.file` WatchService)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core, galilei.jvm, imperial.core, diuretic.core, quantitative.units):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())
@@ -1968,7 +1968,7 @@ object tarantula extends Library:
   object core extends Component(jacinta.core, telekinesis.jvm, cataclysm.core, hallucination.core, diuretic.core, gastronomy.core, guillotine.core):
     override def scalaJs = false // browser automation; depends on JVM-only `hallucination`
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
   object test extends Tests(core):
     override def scalacOptions = Task:
       settings.cc(super.scalacOptions())

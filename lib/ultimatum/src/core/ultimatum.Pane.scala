@@ -44,7 +44,7 @@ package ultimatum
 enum Pane:
   def sizing: Sizing
 
-  case Leaf(sizing: Sizing, content: Extent -> Unit)
+  case Leaf(sizing: Sizing, content: Extent^ -> Unit)
   case Widget(sizing: Sizing, focus: Focus)
   case Branch(sizing: Sizing, axis: Axis, panes: Panes)
 

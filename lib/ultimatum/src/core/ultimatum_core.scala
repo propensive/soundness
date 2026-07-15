@@ -51,7 +51,7 @@ def panel
     maxWidth:  Optional[Int] = Unset,
     minHeight: Int           = 0,
     maxHeight: Optional[Int] = Unset )
-  ( content: Extent ?-> Unit )
+  ( content: (Extent^) ?-> Unit )
 :   Pane =
 
   val sizing = Sizing(fraction, minWidth, maxWidth, minHeight, maxHeight)
@@ -200,7 +200,7 @@ def dirtyCells(previous: IndexedSeq[Rect], current: IndexedSeq[Rect], changed: S
 // Solve `pane` against `root` once and paint each leaf's content into its
 // rectangle (no event loop). An `InlineRoot` is sized to the height its content
 // needs and presented at the cursor; any other canvas fills its own height.
-def paint(root: Canvas, pane: Pane): Unit =
+def paint(root: Canvas^, pane: Pane): Unit =
   val height = root match
     case _: InlineRoot => pane.frame.measure(Axis.Rank).min
     case _             => root.height

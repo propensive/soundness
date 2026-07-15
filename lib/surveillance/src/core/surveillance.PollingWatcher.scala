@@ -59,7 +59,7 @@ extends Watcher:
 
   private case class Entry(directory: Boolean, modified: Long, size: Long)
 
-  private def scan(directory: jnf.Path, filter: Text => Boolean): Map[Text, Entry] =
+  private def scan(directory: jnf.Path, filter: Text -> Boolean): Map[Text, Entry] =
     Optional(directory.toFile.nn.listFiles()).let: files =>
       scala.collection.immutable.ArraySeq.unsafeWrapArray(files).flatMap: file =>
         val entry = file.nn
@@ -94,7 +94,7 @@ extends Watcher:
     previous.each: (name, _) =>
       if !current.contains(name) then spool.put(WatchEvent.Delete(base, name))
 
-  def watch(directories: Map[jnf.Path, Text => Boolean], spool: Spool[WatchEvent])
+  def watch(directories: Map[jnf.Path, Text -> Boolean], spool: Spool[WatchEvent])
   :   Watcher.Registration raises WatchError =
 
     directories.each: (directory, _) =>

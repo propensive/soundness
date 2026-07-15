@@ -2055,3 +2055,62 @@ Recipes this leg (all compiler-forced, reusable):
   `Connectable.tcpEndpoint` + `SecureEndpoint.connectable` (named params, `^{online,
   caps.any}` results, named-class/new-instance form), perihelion `wsClient` and jacinta
   `fetchingRegistry` (added `online` to their existing capture sets).
+
+## Capture-honesty Phase 3a: profanity/tarantula/surveillance capture-checked (2026-07-15)
+
+`settings.cc` flipped on profanity.core, tarantula.core, surveillance.core (branch
+capture-honesty). The Terminal/Server capability classifications planned for Phase 4a/4b were
+pulled forward — the modules do not compile under CC without them. Gates: JVM 10301/10301,
+JS 8006/8006; suites profanity 51/0, surveillance 4/0, ultimatum 66/0, exoskeleton 67/0
+(tarantula has no runnable suite).
+
+profanity recipes:
+- `Terminal extends Interactivity[TerminalEvent], caps.ExclusiveCapability` (holds Monitor/
+  Probate, spawns the pump daemon, torn down by `interactive`'s finally). Field typings:
+  `keyboard: Keyboard.Standard^{monitor}` (Probate is a plain trait — NOT nameable in capture
+  sets); mutable size/brightness state hoisted to a plain `Terminal.Metrics` holder so `cap`
+  (Termcap) and the `stdio` given stay PURE (`Stdio.termcap` requires a pure member) and the
+  pump daemon body needs no `this` rim at all. Public `var` API preserved via def accessors.
+- Pump daemon: block-local bindings + `AnyRef` cast-rim for the capability-typed keyboard
+  (cordillera recipe); the stdin LazyList crosses as a plain value (LazyList is not
+  capture-tracked). `dark` relocated to the companion (a class-private helper call charges
+  `this` in a pure closure). Signal-trap handler bound over `locally:` block locals.
+- Keyboard `As[Int]` extractor in a nested pattern: evidence summons against a skolem-typed
+  scrutinee fail under CC → explicit `safely(x.as[Int])` decoding. Enum-case unapply of
+  union-typed fields (`case Shift(inner)`) fails against the capture-decorated scrutinee →
+  typed patterns + field access; GADT-narrowed Char-literal unions widened to a clean
+  `Keypress | Char` binding first.
+- `Interaction` givens (`selectMenu`/`lineEditor`) take `(surface: Canvas^)` and return
+  `^{surface}`-annotated instances in `new`-instance form (the colon-body given's synthesized
+  class does not admit the result annotation).
+- `TerminalCanvas(terminal)`/`InlineRoot(terminal)` return `^{terminal}` (live size thunks);
+  ultimatum `Form(root: Canvas^)`, `paint(root: Canvas^)`, `FlowExtent(parent: Canvas^)`,
+  `Pane.Leaf(content: Extent^ -> Unit)`, `panel(content: (Extent^) ?-> Unit)`.
+- turbulence `Out`/`Err` print/write/println now take `(using Stdio^)` — honest acceptance of
+  capturing stdio evidence (an `Extent` is an `Stdio` and now captures its canvas).
+
+tarantula recipes:
+- ★ FIRST USE OF THE `uses` CLAUSE (fork feature): `case class Server(...) extends
+  caps.ExclusiveCapability uses Navigator.this:` — declares the outer reference of `stop()`.
+  Syntax: after the extends parents, before the colon (see fork tests
+  tests/pos-custom-args/captures/nested-classes-tracked.scala).
+- `WebDriver`/`Session`/`Element` are PURE ID-holders over the server's port; the live
+  resource is the `Server` capability, confined to `session` (launched there, stopped in its
+  finally). Capability-classing Session/Element was attempted and REVERTED: constructing
+  fresh capabilities inside `map(Element(_))` lambdas and passing a fresh `launch` result
+  into a fresh constructor param both hit unbridgeable fresh-root mismatches ("any² not
+  visible from any"). A leaked Session is a dangling ID over a stopped server; full handle
+  tracking waits on guillotine Job classification (D3/8b).
+- `launch` de-sugared (`logs` → explicit `using ExecEvent is Loggable`) with the VALUE param
+  LAST (`(using ...)(port: Int): Server^`): a fresh result under a trailing using clause is
+  invisible outside the implicit application. `session` likewise de-sugared.
+- `Focusable.apply` takes a pure (`->`) focus lambda (all instances are pure selector
+  renderers).
+
+surveillance recipes:
+- `Watcher.watch` filters are pure (`Text -> Boolean`) end-to-end — they are built by
+  `Watch.apply` from path names only, and registrations live in backend-global state which
+  must not capture. The filename is pre-read outside the lambda (`val filename = ...`).
+- Inside inline `Mutex.apply` blocks, the object-field `watches` HashMap is bound to a local
+  first: the `at` extension's evidence summon against the object-field singleton path fails
+  to unify under CC.

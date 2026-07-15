@@ -41,16 +41,25 @@ import telekinesis.*
 trait Navigator(name: Text):
   transparent inline def browser = this
 
-  case class Server(port: Int, value: Job[Label, Text]):
+  // A `Server` is a *capability*: it wraps the live browser-automation process. Its `stop`
+  // reaches back to the defining `Navigator`, declared by the `uses` clause.
+  case class Server(port: Int, value: Job[Label, Text]) extends caps.ExclusiveCapability
+  uses Navigator.this:
     def stop(): Unit logs ExecEvent logs HttpEvent = browser.stop(this)
 
-  def launch(port: Int)(using WorkingDirectory, Monitor): Server logs ExecEvent
+  def launch(using WorkingDirectory, Monitor)(using ExecEvent is Loggable)(port: Int): Server^
   def stop(server: Server): Unit logs HttpEvent logs ExecEvent
 
 
+  // Explicit `using` evidence instead of stacked `logs` sugar: the fresh `Server` capability
+  // bound in the body cannot cross the nested context-function results the sugar desugars to
+  // (the stacked-raises convention; see rep/DECISIONS.md).
   def session[result](port: Int = 4444)(block: (session: WebDriver#Session) ?=> result)
     ( using WorkingDirectory, Monitor )
-  :   result logs HttpEvent logs ExecEvent =
+    ( using HttpEvent is Loggable, ExecEvent is Loggable )
+  :   result =
 
+    // The fresh `Server` capability stays confined to this method; the `WebDriver` passed to
+    // the block is a pure port-holder.
     val server = launch(port)
-    try block(using WebDriver(server).startSession()) finally server.stop()
+    try block(using WebDriver(port).startSession()) finally server.stop()

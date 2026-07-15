@@ -38,9 +38,9 @@ import rudiments.*
 object Err:
   private val mutex: Mutex = Mutex()
 
-  def write(bytes: Data)(using stdio: Stdio): Unit = stdio.writeErr(bytes)
+  def write(bytes: Data)(using stdio: Stdio^): Unit = stdio.writeErr(bytes)
 
-  def print[textual: Printable as printable](text: Termcap ?=> textual)(using stdio: Stdio): Unit =
+  def print[textual: Printable as printable](text: Termcap ?=> textual)(using stdio: Stdio^): Unit =
     stdio.printErr(printable.print(text(using stdio.termcap), stdio.termcap))
 
   def println[textual: Printable as printable, C^](lines: (Termcap ?->{C} textual)*)
@@ -52,4 +52,4 @@ object Err:
         stdio.printErr(printable.print(line(using stdio.termcap), stdio.termcap))
         stdio.printErr("\n".tt)
 
-  def println()(using Stdio): Unit = print("\n".tt)
+  def println()(using Stdio^): Unit = print("\n".tt)

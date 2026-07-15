@@ -43,7 +43,7 @@ import turbulence.*
 // parent's `move`/`put` (so positioning is always expressed through the `Canvas`
 // interface, never as inline escapes). It is also an `Stdio`, so bare
 // `Out.println` in a panel body flows into it.
-class FlowExtent(parent: Canvas, val rect: Rect)
+class FlowExtent(parent: Canvas^, val rect: Rect)
 extends GridSurface(rect.width, rect.height), Extent:
   def cursor(visible: Boolean): Unit = parent.cursor(visible)
 

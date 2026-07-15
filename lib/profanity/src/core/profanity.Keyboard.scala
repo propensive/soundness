@@ -163,12 +163,20 @@ object Keyboard:
                   case 'u' #:: tail =>
                     Keyboard.csiu(sequence.to(List)) #:: process(tail)
 
-                  case 'R' #:: tail => sequence.map(_.show).join.cut(';').to(List) match
-                    case List(As[Int](rows), As[Int](cols)) =>
-                      TerminalInfo.WindowSize(rows, cols) #:: process(tail)
+                  case 'R' #:: tail =>
+                    // Explicit decoding rather than the `As[Int]` extractor: in a nested
+                    // pattern the extractor's evidence is summoned against a skolem-typed
+                    // scrutinee, which fails to unify under capture checking.
+                    val fields: List[Text] = sequence.map(_.show).join.cut(';').to(List)
 
-                    case _ =>
-                      process(tail)
+                    val size: Optional[TerminalInfo.WindowSize] = fields match
+                      case List(rows, cols) =>
+                        safely(TerminalInfo.WindowSize(rows.as[Int], cols.as[Int]))
+
+                      case _ =>
+                        Unset
+
+                    size.lay(process(tail))(_ #:: process(tail))
 
                   case 'O' #:: tail =>
                     TerminalInfo.LoseFocus #:: process(tail)
