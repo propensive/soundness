@@ -419,6 +419,98 @@ object Tests extends Suite(m"Stratiform Tests"):
         (doc.read[Tests.Crew in Tel], parity[Tests.Crew](doc))
       . assert(_ == (Tests.Crew(Tests.Worker(t"Syd", 0), 3), true))
 
+    suite(m"Staged direct parsing tests"):
+      given Tests.Person is Tel.Parsable = Tel.Parsable.staged
+      given Tests.Team is Tel.Parsable = Tel.Parsable.staged
+      given Tests.Renamed is Tel.Parsable = Tel.Parsable.staged
+      given Tests.WithDefault is Tel.Parsable = Tel.Parsable.staged
+      given Tests.KebabRecord is Tel.Parsable = Tel.Parsable.staged
+      given Tests.Company is Tel.Parsable = Tel.Parsable.staged
+      given Tests.OptField is Tel.Parsable = Tel.Parsable.staged
+      given Tests.Tree is Tel.Parsable = Tel.Parsable.staged
+      given Tests.TreeOpt is Tel.Parsable = Tel.Parsable.staged
+
+      // The acceptance criterion for staged generation: the staged read must
+      // equal the AST-path read, for the same input.
+      inline def parity[value](tel: Text)(using value is Tel.Parsable, value is Tel.Decodable)
+      :   Boolean =
+        tel.read[value in Tel] == tel.read[Tel].as[value]
+
+      test(m"A staged parser reads a simple record"):
+        t"name Alice\nage 30\n".read[Tests.Person in Tel]
+      . assert(_ == Tests.Person(t"Alice", 30))
+
+      test(m"A staged parser accepts reordered fields, equally on both paths"):
+        parity[Tests.Person](t"age 30\nname Alice\n")
+      . assert(identity)
+
+      test(m"Staged field names map to kebab-case keywords"):
+        t"first-name Jo\nshoe-size 9\n".read[Tests.KebabRecord in Tel]
+      . assert(_ == Tests.KebabRecord(t"Jo", 9))
+
+      test(m"@name renames apply to staged parsing"):
+        parity[Tests.Renamed](t"full_name Jon\nyob 1983\n")
+      . assert(identity)
+
+      test(m"A staged parser takes declared defaults"):
+        t"name Kid\n".read[Tests.WithDefault in Tel]
+      . assert(_ == Tests.WithDefault(t"Kid", 18))
+
+      test(m"A staged parser raises TelError Absent for missing required fields"):
+        capture[TelError](t"age 30\n".read[Tests.Person in Tel]).reason
+      . assert(_ == TelError.Reason.Absent)
+
+      test(m"A staged parser gathers a repeatable field's scattered occurrences"):
+        val doc = t"members\n  name Amy\n  age 1\nname Alpha\nmembers\n  name Bea\n  age 2\n"
+        (doc.read[Tests.Team in Tel], parity[Tests.Team](doc))
+      . assert(_ == (Tests.Team(t"Alpha", List(Tests.Person(t"Amy", 1), Tests.Person(t"Bea", 2))),
+          true))
+
+      test(m"A staged parser keeps the first match of a duplicate keyword"):
+        val doc = t"name Amy\nname Bea\nage 50\n"
+        (doc.read[Tests.Person in Tel], parity[Tests.Person](doc))
+      . assert(_ == (Tests.Person(t"Amy", 50), true))
+
+      test(m"Nested records parse through sibling staged instances"):
+        val doc = t"title Acme\nboss\n  name Bob\n  age 40\n"
+        (doc.read[Tests.Company in Tel], parity[Tests.Company](doc))
+      . assert(_ == (Tests.Company(t"Acme", Tests.Person(t"Bob", 40)), true))
+
+      test(m"A staged parser reads absent and present Optional fields"):
+        ( t"x 1\n".read[Tests.OptField in Tel],
+          t"x 1\nnote hello\n".read[Tests.OptField in Tel] )
+      . assert(_ == (Tests.OptField(1, Unset), Tests.OptField(1, t"hello")))
+
+      test(m"A staged parser skips unknown keywords with their subtrees"):
+        t"name Amy\nextra one two\n  deep 1\n  deeper\n    x 9\nage 50\n"
+        . read[Tests.Person in Tel]
+      . assert(_ == Tests.Person(t"Amy", 50))
+
+      test(m"Comments and blank lines are transparent to a staged parser"):
+        parity[Tests.Person](t"# leading\nname Amy\n\n# interlude\nage 50\n")
+      . assert(identity)
+
+      test(m"Recursive types parse through a staged instance"):
+        val doc = t"value a\nchildren\n  value b\nchildren\n  value c\n"
+        (doc.read[Tests.Tree in Tel], parity[Tests.Tree](doc))
+      . assert(_ == (Tests.Tree(t"a", List(Tests.Tree(t"b", Nil), Tests.Tree(t"c", Nil))), true))
+
+      test(m"Recursion through an Optional parses through a staged instance"):
+        val doc = t"value a\nchild\n  value b\n"
+        (doc.read[Tests.TreeOpt in Tel], parity[Tests.TreeOpt](doc))
+      . assert(_ == (Tests.TreeOpt(t"a", Tests.TreeOpt(t"b", Unset)), true))
+
+      test(m"A top-level collection reads staged elements"):
+        val doc = t"p\n  name Amy\n  age 1\nq\n  name Bea\n  age 2\n"
+        (doc.read[List[Tests.Person] in Tel], parity[List[Tests.Person]](doc))
+      . assert(_ == (List(Tests.Person(t"Amy", 1), Tests.Person(t"Bea", 2)), true))
+
+      test(m"A keyword longer than eight bytes dispatches through the text step"):
+        // `first-name` cannot pack into a single word, so it exercises the
+        // `KeywordOpaque` fallback; `shoe-size` stays on the packed chain.
+        parity[Tests.KebabRecord](t"shoe-size 9\nfirst-name Jo\n")
+      . assert(identity)
+
     suite(m"tel\"…\" interpolator"):
       test(m"simple literal"):
         val parsed = tel"hello"

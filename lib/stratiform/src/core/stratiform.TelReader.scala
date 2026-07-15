@@ -37,6 +37,11 @@ import contingency.*
 import vacuous.*
 
 object TelReader:
+  // Sentinels of `keywordWord()`; impossible as packed keywords, whose bytes
+  // are all printable ASCII.
+  inline final val KeywordEnd = -1L
+  inline final val KeywordOpaque = -2L
+
   // Only stratiform's read path (`Tel.parseDirect`) constructs readers, so
   // the parser-pool invariants (one exclusive `Parser` per thread) and the
   // resolution scope of the carried tactic are preserved by construction.
@@ -72,6 +77,20 @@ extends caps.ExclusiveCapability, caps.Stateful:
   update def keyword(indent: Int): Optional[Text] =
     val next = parser.directKeyword(indent)(using errorTactic)
     if next == null then Unset else next.nn
+
+  // The next keyword step in packed form, for parsers that compare keywords
+  // against literal constants (staged parsers compile wire keywords to
+  // immediates): the keyword's bytes packed LSB-first (at most eight
+  // printable-ASCII bytes), `KeywordEnd` once the entry region ends, or
+  // `KeywordOpaque` for a keyword that cannot pack — the keyword is still
+  // consumed, and `keywordText` identifies it for a general dispatch. Public
+  // because staged parsers are generated into user modules.
+  update def keywordWord(indent: Int): Long =
+    parser.directKeywordWord(indent)(using errorTactic)
+
+  // The keyword most recently stepped to — the `KeywordOpaque` complement of
+  // `keywordWord`.
+  update def keywordText: Text = parser.directKeywordText
 
   // Peeks (without consuming) whether the entry has substance — an inline
   // atom or a child compound — the AST `optionalDecodable`'s emptiness test,

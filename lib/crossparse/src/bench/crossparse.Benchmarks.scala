@@ -220,9 +220,18 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     given order: Order is Json.Parsable = Json.Parsable.staged
     given orders: Orders is Json.Parsable = Json.Parsable.staged
 
+    given telLineItem: LineItem is Tel.Parsable = Tel.Parsable.staged
+    given telCustomer: Customer is Tel.Parsable = Tel.Parsable.staged
+    given telOrder: Order is Tel.Parsable = Tel.Parsable.staged
+    given telOrders: Orders is Tel.Parsable = Tel.Parsable.staged
+
   def decodeJsonStaged(): Orders =
     import staged.orders
     jsonData.read[Orders in Json]
+
+  def decodeTelStaged(): Orders =
+    import staged.telOrders
+    telData.read[Orders in Tel]
   def decodeTelDirect(): Orders = telData.read[Orders in Tel]
   def decodeTelAst(): Orders = telData.read[Tel].as[Orders]
   def decodeXmlDirect(): Orders = xmlText.read[Orders in Xml]
@@ -288,6 +297,7 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     assert(decodeJsonStaged() == corpus, "JSON staged decode disagrees with the corpus")
     assert(decodeJsonAst() == corpus, "JSON AST decode disagrees with the corpus")
     assert(decodeTelDirect() == corpus, "TEL direct decode disagrees with the corpus")
+    assert(decodeTelStaged() == corpus, "TEL staged decode disagrees with the corpus")
     assert(decodeTelAst() == corpus, "TEL AST decode disagrees with the corpus")
     assert(decodeXmlDirect() == corpus, "XML direct decode disagrees with the corpus")
     assert(decodeXmlAst() == corpus, "XML AST decode disagrees with the corpus")
@@ -312,6 +322,9 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
 
       bench(m"TEL direct")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeTelDirect() }
+
+      bench(m"TEL staged")(target = 1*Second):
+        '{ crossparse.Benchmarks.decodeTelStaged() }
 
       bench(m"TEL via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeTelAst() }
@@ -339,6 +352,9 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     suite(m"Profile: direct-parser hotspots"):
       profile(m"TEL direct")(target = 5*Second):
         '{ crossparse.Benchmarks.decodeTelDirect() }
+
+      profile(m"TEL staged")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeTelStaged() }
 
       profile(m"XML direct")(target = 5*Second):
         '{ crossparse.Benchmarks.decodeXmlDirect() }

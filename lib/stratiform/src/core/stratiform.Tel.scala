@@ -234,6 +234,18 @@ object Tel extends Tel2:
     inline def derived[value](using Reflection[value]): value is Tel.Parsable =
       fromField(ParsableDerivation.derivedOne[value])
 
+    // The staged counterpart of `derived`: a macro-generated monomorphic
+    // parser whose field values live in typed locals, whose keywords dispatch
+    // through packed-`Long` literal comparisons, and whose record is built by
+    // a direct constructor call — no `Array[Any]` buffer, no `Mirror`, no
+    // per-field boxing. Semantics (wire keywords, gathering, first-match-wins
+    // duplicates, defaults, absents, error foci) mirror `derived` exactly;
+    // the generated instance's `shape()` is `Morphology.Any`. Requires a
+    // top-level or object-nested case class with a single parameter list —
+    // sums, method-local classes and other shapes use `derived`.
+    inline def staged[value]: value is Tel.Parsable =
+      ${ stratiform.internal.stagedParsable[value]('{ adversaria.relabelling[value, Tel] }) }
+
     def fromField[value](field0: (value is Tel.Parsing)^)
     :   ((value is Tel.Parsable)^{field0}) =
 
@@ -356,6 +368,65 @@ object Tel extends Tel2:
     // per-field focus.
     private def descend(base0: Optional[Tel.Focus], keyword: Text): Tel.Focus =
       Tel.Focus(base0.let(_.pointer).or(TelPath.Root).prepend(keyword))
+
+    // Support points for staged parsers, which are generated into user
+    // modules and so may only reference public members.
+
+    // The wire keywords of a product's fields: `@name` renames applied
+    // verbatim, camel→kebab otherwise — the same mapping as the derivations.
+    def wireKeywords(names: IArray[String], renames: Map[Text, Text]): IArray[String] =
+      names.map { name => renames.at(name.tt).or(camelToKebab(name)).s }
+
+    // A required primitive field whose keyword never arrived: the primitives'
+    // `absent()` semantics — raise and continue with the sentinel.
+    def missing[value](sentinel: value)(using Tactic[TelError]): value =
+      raise(TelError(TelError.Reason.Absent)) yet sentinel
+
+    // A present entry whose atom was missing or unparseable: the byte-parsed
+    // primitives' fault split — a missing atom is `Absent`, a
+    // present-but-unparseable one `NotScalar` with the offending atom's text.
+    def scalarFault[value](reader: TelReader^, expected: Text, sentinel: value): value =
+      if reader.primaryPresent
+      then
+        reader.fault(TelError.Reason.NotScalar(reader.primaryText.or(t""), expected))
+        sentinel
+      else reader.fault(TelError.Reason.Absent) yet sentinel
+
+    // Focus bookkeeping for one field read, compiled away when the ambient
+    // `Foci` is the inert default — the same short-circuit as the derived
+    // parser's loop.
+    inline def focusing[result](foci: Foci[Tel.Focus], keyword: Text)(inline block: => result)
+    :   result =
+      if foci.active then focus(using foci)(descend(prior, keyword))(block) else block
+
+    // Linear keyword dispatch for the general step — an unpackable wire
+    // keyword, or any keyword of a `@name`-annotated record.
+    def keywordIndex(keys: IArray[String], keyword: Text): Int =
+      val count = keys.length
+      val name: String = keyword.s
+      var index = 0
+
+      while index < count do
+        if keys(index) == name then return index
+        index += 1
+
+      -1
+
+    // The repeatable-field hooks, looking through the `Field.Adapter` — for
+    // staged parsers, which cannot name the private `Gathering` trait. A
+    // field gathers only when its (unwrapped) instance is a repeatable
+    // `Gathering`, exactly the derived engine's test.
+    def repeats(parsing: Tel.Parsing): Boolean =
+      val actual = unwrap(parsing)
+      actual.repeatable && actual.isInstanceOf[Gathering]
+
+    def parseElement(parsing: Tel.Parsing, reader: TelReader^, indent: Int): Any =
+      (unwrap(parsing): @unchecked) match
+        case gathering: Gathering => gathering.parseElement(reader, indent)
+
+    def gathered[value](parsing: Tel.Parsing, elements: List[Any]): value =
+      (unwrap(parsing): @unchecked) match
+        case gathering: Gathering => gathering.gathered(elements).asInstanceOf[value]
 
     // Field instances travel wrapped in the `Field.Adapter`; the engine
     // looks through it for repeatability and element hooks.
@@ -1369,16 +1440,13 @@ object Tel extends Tel2:
   given stringParsable: String is Tel.Parsable =
     primitiveParsable(Morphology.Str, t"String", ""): atom => atom.s
 
-  // Distinguish the two ways a byte-parsed primitive can be `Unset`: a missing
-  // atom raises `Absent`, a present-but-unparseable one raises
-  // `NotScalar(text, expected)` with the offending atom's text — exactly the
-  // `primitiveFault` split the AST path performs, so the two paths' errors agree.
-  private def byteScalarFault[value](reader: TelReader^, expected: Text, sentinel: value): value =
-    if reader.primaryPresent
-    then reader.fault(TelError.Reason.NotScalar(reader.primaryText.or(t""), expected)) yet sentinel
-    else reader.fault(TelError.Reason.Absent) yet sentinel
-
-  // `Int`/`Long`/`Boolean` read their value straight from the atom's arena
+  // `Int`/`Long`/`Boolean` distinguish the two ways a byte-parsed primitive
+  // can be `Unset` through `Parsable.scalarFault`: a missing atom raises
+  // `Absent`, a present-but-unparseable one raises `NotScalar(text, expected)`
+  // with the offending atom's text — exactly the `primitiveFault` split the
+  // AST path performs, so the two paths' errors agree.
+  //
+  // They read their value straight from the atom's arena
   // bytes (`reader.int()`/`long()`/`boolean()`), so a valid scalar never
   // materializes the value `String` that `atom()` would — only a rejected one
   // does, for its error. `Double` keeps the text path: replicating
@@ -1390,7 +1458,7 @@ object Tel extends Tel2:
       def shape(): Morphology = Morphology.Whole
 
       def parse(reader: TelReader^, indent: Int): Int =
-        reader.int().lay(byteScalarFault(reader, t"Int", 0))(identity)
+        reader.int().lay(Parsable.scalarFault(reader, t"Int", 0))(identity)
 
       override def absent()(using Tactic[TelError]): Int =
         raise(TelError(TelError.Reason.Absent)) yet 0
@@ -1401,7 +1469,7 @@ object Tel extends Tel2:
       def shape(): Morphology = Morphology.Whole
 
       def parse(reader: TelReader^, indent: Int): Long =
-        reader.long().lay(byteScalarFault(reader, t"Long", 0L))(identity)
+        reader.long().lay(Parsable.scalarFault(reader, t"Long", 0L))(identity)
 
       override def absent()(using Tactic[TelError]): Long =
         raise(TelError(TelError.Reason.Absent)) yet 0L
@@ -1416,7 +1484,7 @@ object Tel extends Tel2:
       def shape(): Morphology = Morphology.Bool
 
       def parse(reader: TelReader^, indent: Int): Boolean =
-        reader.boolean().lay(byteScalarFault(reader, t"Boolean", false))(identity)
+        reader.boolean().lay(Parsable.scalarFault(reader, t"Boolean", false))(identity)
 
       override def absent()(using Tactic[TelError]): Boolean =
         raise(TelError(TelError.Reason.Absent)) yet false
@@ -4024,6 +4092,10 @@ object Tel extends Tel2:
         pos == bufEnd && more
       do ()
 
+      directKeywordLow = low
+      directKeywordHigh = high
+      directKeywordLen = len
+
       if len == 0 then t""
       else if len > 8 then
         Text(sliceText(startMark))
@@ -4072,6 +4144,13 @@ object Tel extends Tel2:
     private var directEntryIndent:  Int = 0
     private var directEntryLine:    Int = 1
     private var directEntryKeyword: Text = t""
+
+    // Fingerprint of the keyword most recently read by `readKeyword` — the
+    // packed words it computes anyway for the intern cache (low = bytes 0–3,
+    // high = bytes 4–7, LSB-first), and the keyword's byte length.
+    private var directKeywordLow:  Long = 0L
+    private var directKeywordHigh: Long = 0L
+    private var directKeywordLen:  Int = 0
 
     // The tabulation header governing subsequent rows at the same indent, and
     // the classification of the most recent group of consumed lines — the
@@ -4196,6 +4275,41 @@ object Tel extends Tel2:
           done = true
 
       result
+
+    // The keyword most recently stepped to, as interned text — behind
+    // `TelReader.keywordText`, for staged parsers whose packed step reported
+    // the keyword opaque.
+    private[stratiform] def directKeywordText: Text = directEntryKeyword
+
+    // As `directKeyword`, but returning the keyword in packed form for staged
+    // parsers that compare keywords against literal constants: the keyword's
+    // bytes 0–7, LSB-first (`TelReader.KeywordEnd` once the entry region
+    // ends, or `TelReader.KeywordOpaque` for a keyword that cannot pack —
+    // empty, longer than eight bytes, or carrying bytes outside printable
+    // ASCII, whose packed form could alias a shorter keyword's or a
+    // sentinel). An opaque keyword is still consumed: `directKeywordText`
+    // identifies it for the caller's general dispatch.
+    private[stratiform] def directKeywordWord(indent: Int): Long raises TelError =
+      if directKeyword(indent) == null then TelReader.KeywordEnd
+      else
+        val len = directKeywordLen
+
+        if len < 1 || len > 8 then TelReader.KeywordOpaque
+        else
+          val packed = (directKeywordLow & 0xFFFFFFFFL) | (directKeywordHigh << 32)
+
+          // SWAR printability test on the first `len` bytes: the tail is
+          // filled with a printable byte so only real content can trip the
+          // below-0x21, DEL or high-bit conditions.
+          val tail = if len == 8 then 0L else -1L << (len*8)
+          val filled = packed | (tail & 0x2121212121212121L)
+          val below = (filled - 0x2121212121212121L) & ~filled & 0x8080808080808080L
+          val del = { val x = filled ^ 0x7F7F7F7F7F7F7F7FL
+                      (x - 0x0101010101010101L) & ~x & 0x8080808080808080L }
+
+          if (below | del | (packed & 0x8080808080808080L)) != 0L
+          then TelReader.KeywordOpaque
+          else packed
 
     // Consume the current entry in full — line remainder, source/literal
     // continuation, and children — materializing it as the single compound
