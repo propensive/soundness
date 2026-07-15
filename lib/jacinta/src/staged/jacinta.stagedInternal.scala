@@ -39,6 +39,7 @@ import anticipation.*
 import contingency.*
 import prepositional.*
 import vacuous.*
+import zephyrine.*
 
 // The machinery behind `Json.Inlinable`: expansion-time instance resolution
 // (through an in-macro staging compiler), the structural generators for
@@ -340,10 +341,12 @@ object stagedInternal:
               val builder = factory.newBuilder
               val foci = infer[Foci[Json.Focus]]
               val focused = foci.active
-              $reader.openArray()
+              val parser = $reader.rawParser.asInstanceOf[Parser]
+              val ptactic = $reader.rawTactic.asInstanceOf[Tactic[ParseError]]
+              parser.directOpenArray()(using ptactic)
               var index = 0
 
-              while $reader.element() do
+              while parser.directElement()(using ptactic) do
                 builder +=
                   ( if focused then
                       Json.Parsable.focusing(foci, index.toString.tt)(parseElement())
@@ -418,7 +421,9 @@ object stagedInternal:
     def body
       ( foci:    Expr[Foci[Json.Focus]],
         focused: Expr[Boolean],
-        tactic:  Expr[Tactic[JsonError]] )
+        tactic:  Expr[Tactic[JsonError]],
+        parser:  Expr[Parser],
+        ptactic: Expr[Tactic[ParseError]] )
     :   Expr[product] =
 
       val owner = Symbol.spliceOwner
@@ -446,10 +451,32 @@ object stagedInternal:
 
       val unit = Literal(UnitConstant())
 
+      // EXPERIMENT(cc-bypass): builtins read straight off the parser bound
+      // once per record, skipping the JsonReader rim entirely.
+      def builtinDirect(tpe: TypeRepr): Option[Expr[Any]] =
+        if tpe =:= TypeRepr.of[Int] then Some('{ $parser.directLong()(using $ptactic).toInt })
+        else if tpe =:= TypeRepr.of[Long] then Some('{ $parser.directLong()(using $ptactic) })
+        else if tpe =:= TypeRepr.of[Double] then
+          Some('{ $parser.directDouble()(using $ptactic) })
+        else if tpe =:= TypeRepr.of[Boolean] then
+          Some('{ $parser.directBoolean()(using $ptactic) })
+        else if tpe =:= TypeRepr.of[Text] then
+          Some('{ $parser.directString()(using $ptactic).tt })
+        else if tpe =:= TypeRepr.of[String] then
+          Some('{ $parser.directString()(using $ptactic) })
+        else None
+
       // Per-field parse and absent expressions, through the ladder.
       def fieldExprs(index: Int): (Expr[Any], Expr[Any]) =
         fieldTypes(index).asType match
           case '[fieldType] =>
+            builtinDirect(fieldTypes(index)) match
+              case Some(direct) =>
+                return (direct, '{ Json.Parsable.missing[fieldType]()(using $tactic) })
+
+              case None =>
+                ()
+
             resolve[fieldType](cache) match
               case Some(instance0) =>
                 val instance = instance0.asInstanceOf[Inlinable { type Self = fieldType }]
@@ -499,7 +526,8 @@ object stagedInternal:
 
         CaseDef(Literal(IntConstant(index)), None, rhs)
 
-      def fallthrough = CaseDef(Wildcard(), None, '{ $reader.skipValue() }.asTerm)
+      def fallthrough =
+        CaseDef(Wildcard(), None, '{ $parser.directSkipValue()(using $ptactic) }.asTerm)
 
       val run = Symbol.newVal(owner, "run", TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
 
@@ -551,7 +579,7 @@ object stagedInternal:
             ( '{ $wordRef == JsonReader.KeyOpaque }.asTerm,
               opaque.asTerm,
               Block
-                ( List(ValDef(high, Some('{ $reader.keyWordHigh }.asTerm))),
+                ( List(ValDef(high, Some('{ $parser.directKeyWordHigh }.asTerm))),
                   packedChainOver(wordRef, highRef)(0) ) )
 
         Block
@@ -571,10 +599,10 @@ object stagedInternal:
       val loop: List[Statement] =
         readDefDefs :::
           List
-            ( '{ $reader.openObject() }.asTerm,
+            ( '{ $parser.directOpenObject()(using $ptactic) }.asTerm,
               ValDef(run, Some(Literal(BooleanConstant(true)))),
-              step('{ $reader.keyWordFirst() }),
-              While(Ref(run), step('{ $reader.keyWordNext() })) )
+              step('{ $parser.directKeyWordFirst() }),
+              While(Ref(run), step('{ $parser.directKeyWordNext() })) )
 
       val absents: List[Term] = List.range(0, arity).map: index =>
         fieldTypes(index).asType match
@@ -604,7 +632,9 @@ object stagedInternal:
       val foci = infer[Foci[Json.Focus]]
       val focused = foci.active
       val tactic = infer[Tactic[JsonError]]
-      ${ body('foci, 'focused, 'tactic) }
+      val parser = $reader.rawParser.asInstanceOf[Parser]
+      val ptactic = $reader.rawTactic.asInstanceOf[Tactic[ParseError]]
+      ${ body('foci, 'focused, 'tactic, 'parser, 'ptactic) }
     }
 
   // ── The entry macro ────────────────────────────────────────────────────

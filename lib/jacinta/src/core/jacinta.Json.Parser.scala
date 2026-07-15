@@ -243,7 +243,9 @@ private[jacinta] object Parser:
 // the per-thread pool), with every state-mutating method classified `update`. This unit
 // is separation-checked; consumers (capture-checked only) interact through the exclusive
 // reference the pool hands out.
-private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.Stateful:
+// EXPERIMENT(cc-bypass): temporarily public so staged-generated code can be
+// measured calling the parser directly, without the JsonReader rim.
+final class Parser extends caps.ExclusiveCapability, caps.Stateful:
   import scala.annotation.switch
   import scala.collection.mutable.ArrayBuffer
   import Json.Ast.AsciiByte.*
@@ -2110,7 +2112,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // Structure-aware skip of one whole value: a validated scan that enforces
   // the same grammar (and raises the same `Issue`s) as `parseValue`'s loops,
   // but builds nothing — no AST nodes, no scratch buffers, no key strings.
-  private[jacinta] update def directSkipValue()(using Tactic[ParseError]): Unit =
+  update def directSkipValue()(using Tactic[ParseError]): Unit =
     skip()
     skipValue1()
 
@@ -2267,7 +2269,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
               else if (ch & 0xF8) == 0xF0 then { next(); next(); next(); advance() }
               else advance()
 
-  private[jacinta] update def directString()(using Tactic[ParseError]): String =
+  update def directString()(using Tactic[ParseError]): String =
     skip()
     if must() == Quote then
       advance()
@@ -2299,7 +2301,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       else parseString()
     else errorAt(Issue.ExpectedString(peek.toChar))
 
-  private[jacinta] update def directBoolean()(using Tactic[ParseError]): Boolean =
+  update def directBoolean()(using Tactic[ParseError]): Boolean =
     skip()
     must() match
       case LowerT => parseTrue()
@@ -2343,7 +2345,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // fractions and exponents, a 19th digit, a leading zero (which must
   // raise), and numbers touching the window's end (more digits may follow
   // in the next chunk).
-  private[jacinta] update def directLong()(using Tactic[ParseError]): Long =
+  update def directLong()(using Tactic[ParseError]): Long =
     skip()
     val start = pos
     val limit = bufEnd
@@ -2398,7 +2400,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // the general path and bails out (a plain `pos` reset; nothing here
   // refills) for everything else: a sixteenth digit, a leading zero before
   // a digit, an out-of-range exponent, or the window's end.
-  private[jacinta] update def directDouble()(using Tactic[ParseError]): Double =
+  update def directDouble()(using Tactic[ParseError]): Double =
     skip()
     val start = pos
     val limit = bufEnd
@@ -2511,7 +2513,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
       case _ =>
         caps.unsafe.unsafeAssumePure(Bcd(BigDecimal(0L))) // unreachable
 
-  private[jacinta] update def directOpenObject()(using Tactic[ParseError]): Unit =
+  update def directOpenObject()(using Tactic[ParseError]): Unit =
     skip()
 
     if must() == OpenBrace then
@@ -2657,7 +2659,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // High word of the key most recently scanned by `directKeyWordFast`.
   private var directKeyHigh: Long = 0L
 
-  private[jacinta] update def directKeyWordHigh: Long = directKeyHigh
+  update def directKeyWordHigh: Long = directKeyHigh
 
   // As `directKeyIndexFast`, but exposing the key's packed form instead of
   // resolving it against a table, so generated (staged) parsers can compare
@@ -2761,7 +2763,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // consults no per-key state at all. Both preserve `directKeyWordFast`'s
   // exact sentinels and fallback discipline, so an opaque outcome still
   // resolves through the general, state-aware step.
-  private[jacinta] update def directKeyWordFirst(): Long =
+  update def directKeyWordFirst(): Long =
     val limit = bufEnd
     var i = pos
 
@@ -2833,7 +2835,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     directKeyHigh = high
     low
 
-  private[jacinta] update def directKeyWordNext(): Long =
+  update def directKeyWordNext(): Long =
     val limit = bufEnd
     var i = pos
 
@@ -3029,7 +3031,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
         out
     else parseObjectKey()
 
-  private[jacinta] update def directOpenArray()(using Tactic[ParseError]): Unit =
+  update def directOpenArray()(using Tactic[ParseError]): Unit =
     skip()
 
     if must() == OpenBracket then
@@ -3039,7 +3041,7 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
 
   // True when another element follows (positioned at it, with any separator
   // comma consumed); false after consuming the closing bracket.
-  private[jacinta] update def directElement()(using Tactic[ParseError]): Boolean =
+  update def directElement()(using Tactic[ParseError]): Boolean =
     // Buffer-local fast path, mirroring `directKeyIndexFast`.
     val limit = bufEnd
     var i = pos

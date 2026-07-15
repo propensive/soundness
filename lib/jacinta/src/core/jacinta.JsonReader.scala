@@ -67,6 +67,12 @@ object JsonReader:
 final class JsonReader private (parser0: AnyRef, tactic0: AnyRef)
 extends caps.ExclusiveCapability, caps.Stateful:
   private inline def parser: Parser^ = parser0.asInstanceOf[Parser^]
+
+  // EXPERIMENT(cc-bypass): the wrapped capabilities as neutral carriers, so
+  // staged-generated code (in unchecked modules) can bind the parser once
+  // per record and bypass this rim — measuring what the rim costs.
+  def rawParser: AnyRef = parser0
+  def rawTactic: AnyRef = tactic0
   private inline def tactic: Tactic[ParseError] = tactic0.asInstanceOf[Tactic[ParseError]]
 
   // ── Scalars: one JSON value each. Numbers coerce exactly as the
