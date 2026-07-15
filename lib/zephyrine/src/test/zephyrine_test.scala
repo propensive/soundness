@@ -909,6 +909,79 @@ object Tests extends Suite(m"Zephyrine tests"):
             sum
         . assert(_ == bytes.to(List).map(_ & 0xff).sum.toLong)
 
+        test(m"toLazyList yields the stream's chunks in order"):
+          Stream(Iterator(IArray[Byte](1, 2, 3), IArray[Byte](4, 5))).toLazyList.to(List)
+          . map(_.to(List))
+        . assert(_ == List(List[Byte](1, 2, 3), List[Byte](4, 5)))
+
+        test(m"toLazyList of an empty stream is empty"):
+          Iterator.empty[Data].stream.toLazyList.to(List)
+        . assert(_ == List())
+
+        test(m"toLazyList construction pulls nothing"):
+          var pulled: Int = 0
+          val chunks = Iterator(IArray[Byte](1.toByte), IArray[Byte](2.toByte)).map { chunk => pulled += 1; chunk }
+          val list = chunks.stream.toLazyList
+          pulled
+        . assert(_ == 0)
+
+        test(m"toLazyList pulls chunks only as cells are forced"):
+          var pulled: Int = 0
+          val chunks = Iterator(IArray[Byte](1.toByte), IArray[Byte](2.toByte)).map { chunk => pulled += 1; chunk }
+          val list = chunks.stream.toLazyList
+          list.head
+          pulled
+        . assert(_ == 1)
+
+        test(m"toLazyList reassembles a transformed pipeline"):
+          val text = Stream(Iterator(IArray[Byte](104, 105))).via(summon[CharDecoder]).toLazyList
+          text.to(List).map(_.s).mkString
+        . assert(_ == "hi")
+
+        test(m"elements iterates records across chunks in order"):
+          Stream(Iterator(IArray(Row(1), Row(2)), IArray(Row(3)))).elements.to(List)
+        . assert(_ == List(Row(1), Row(2), Row(3)))
+
+        test(m"elements of an empty record stream is empty"):
+          Iterator.empty[IArray[Row]].stream.elements.to(List)
+        . assert(_ == List())
+
+        test(m"elements composes with take"):
+          Stream(Iterator(IArray(Row(1), Row(2)), IArray(Row(3), Row(4)))).take(3).elements
+          . to(List)
+        . assert(_ == List(Row(1), Row(2), Row(3)))
+
+        test(m"streamOf lends a bounded sub-stream of a cursor"):
+          val cursor = Cursor(Data.fill(10)(_.toByte))
+          streamOf(cursor, 4).memoize.to(List)
+        . assert(_ == List[Byte](0, 1, 2, 3))
+
+        test(m"the lent cursor resumes at the boundary"):
+          val cursor = Cursor(Data.fill(10)(_.toByte))
+          streamOf(cursor, 4).memoize
+          cursor.remainder.to(List).flatMap(_.to(List))
+        . assert(_ == List[Byte](4, 5, 6, 7, 8, 9))
+
+        test(m"streamOf without a length lends the whole remainder"):
+          val cursor = Cursor(Data.fill(6)(_.toByte))
+          streamOf(cursor).memoize.to(List)
+        . assert(_ == List[Byte](0, 1, 2, 3, 4, 5))
+
+        test(m"streamOf spans cursor refills"):
+          val cursor = Cursor(Iterator(IArray[Byte](0, 1, 2), IArray[Byte](3, 4, 5), IArray[Byte](6.toByte)))
+          streamOf(cursor, 5).memoize.to(List)
+        . assert(_ == List[Byte](0, 1, 2, 3, 4))
+
+        test(m"a lent sub-stream and the resumed cursor partition the input"):
+          val cursor = Cursor(Iterator(IArray[Byte](0, 1, 2), IArray[Byte](3, 4, 5), IArray[Byte](6.toByte)))
+          val lent = streamOf(cursor, 5).memoize.to(List)
+          val rest = cursor.remainder.to(List).flatMap(_.to(List))
+          (lent, rest)
+        . assert(_ == (List[Byte](0, 1, 2, 3, 4), List[Byte](5, 6)))
+
+
+  // A reference-typed record for the boxed-medium (record stream) tests.
+  case class Row(id: Int)
 
   // A byte intake that gathers everything written to it, with a configurable
   // reported demand, for asserting demand translation.
