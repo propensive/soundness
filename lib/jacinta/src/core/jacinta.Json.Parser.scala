@@ -738,7 +738,9 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     while
       more && {
         val ch = peek
-        ch == Space || ch == Tab || ch == Newline || ch == Return
+        // One comparison for the common non-whitespace byte; the full test
+        // only for bytes at or below the space character.
+        ch <= Space && (ch == Space || ch == Tab || ch == Newline || ch == Return)
       }
     do advance()
 
@@ -2052,27 +2054,39 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
   // comma is required before the next). Exclusive scratch: reached only
   // through this (exclusive) parser.
   private var directDepth: Int = 0
+  private var directMask0: Long = 0L
   private var directMask: Array[Long]^ = new Array[Long](1)
 
+  // Depths zero to sixty-three — all realistic JSON — keep their seen-bits
+  // in a single `Long` field, so the per-key `directSeen` test is two
+  // register operations; the array carries deeper nesting only.
   private update def directPush(): Unit =
     val level = directDepth
-    val word = level >> 6
 
-    if directMask.length <= word then
-      val grown = new Array[Long](directMask.length*2)
-      System.arraycopy(directMask, 0, grown, 0, directMask.length)
-      directMask = grown
+    if level < 64 then directMask0 &= ~(1L << level)
+    else
+      val word = (level - 64) >> 6
 
-    directMask(word) &= ~(1L << (level & 63))
+      if directMask.length <= word then
+        val grown = new Array[Long](directMask.length*2)
+        System.arraycopy(directMask, 0, grown, 0, directMask.length)
+        directMask = grown
+
+      directMask(word) &= ~(1L << ((level - 64) & 63))
+
     directDepth = level + 1
 
   private update def directSeen(): Boolean =
     val level = directDepth - 1
-    (directMask(level >> 6) & (1L << (level & 63))) != 0
+
+    if level < 64 then (directMask0 & (1L << level)) != 0
+    else (directMask((level - 64) >> 6) & (1L << ((level - 64) & 63))) != 0
 
   private update def directMark(): Unit =
     val level = directDepth - 1
-    directMask(level >> 6) |= 1L << (level & 63)
+
+    if level < 64 then directMask0 |= 1L << level
+    else directMask((level - 64) >> 6) |= 1L << ((level - 64) & 63)
 
   private update def directPop(): Unit = directDepth -= 1
 
@@ -2737,6 +2751,168 @@ private[jacinta] final class Parser extends caps.ExclusiveCapability, caps.State
     if k >= limit || bytes(k) != Colon then return -2L
 
     if !seen then directMark()
+    pos = k + 1
+    directKeyHigh = high
+    low
+
+  // The split key protocol for generated parsers whose loop statically
+  // knows which step is first: `directKeyWordFirst` expects no separator and
+  // marks the depth's seen-bit; `directKeyWordNext` expects a comma and
+  // consults no per-key state at all. Both preserve `directKeyWordFast`'s
+  // exact sentinels and fallback discipline, so an opaque outcome still
+  // resolves through the general, state-aware step.
+  private[jacinta] update def directKeyWordFirst(): Long =
+    val limit = bufEnd
+    var i = pos
+
+    while
+      i < limit && {
+        val b = bytes(i)
+        b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
+      }
+    do i += 1
+
+    if i >= limit then return -2L
+    val b = bytes(i)
+
+    if b == CloseBrace then
+      pos = i + 1
+      directPop()
+      return -1L
+
+    if b != Quote then return -2L
+    val start = i + 1
+
+    // Fused scan-and-pack: the word loaded to find the key's closing quote
+    // *is* its packed form, so a short key costs one load and a 16-byte key
+    // two — where the two-pass shape re-loaded the same words to pack after
+    // scanning. A key at the window's edge takes the general step, exactly
+    // like an escaped or oversized one.
+    if start + 8 > limit then return -2L
+    val word0: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start)
+    val stops0 = stringStops(word0)
+    var low = 0L
+    var high = 0L
+    var j = 0
+
+    if stops0 != 0L then
+      val length = java.lang.Long.numberOfTrailingZeros(stops0) >> 3
+      j = start + length
+      if bytes(j) != Quote || length == 0 then return -2L
+      low = word0 & ((1L << (length*8)) - 1)
+    else
+      if start + 16 > limit then return -2L
+      val word1: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start + 8)
+      val stops1 = stringStops(word1)
+      low = word0
+
+      if stops1 != 0L then
+        val length1 = java.lang.Long.numberOfTrailingZeros(stops1) >> 3
+        j = start + 8 + length1
+        if bytes(j) != Quote then return -2L
+        if length1 > 0 then high = word1 & ((1L << (length1*8)) - 1)
+      else
+        // Exactly sixteen bytes, or too long for the fast path.
+        j = start + 16
+        if j >= limit || bytes(j) != Quote then return -2L
+        high = word1
+
+    var k = j + 1
+
+    while
+      k < limit && {
+        val b3 = bytes(k)
+        b3 <= Space && (b3 == Space || b3 == Tab || b3 == Newline || b3 == Return)
+      }
+    do k += 1
+
+    if k >= limit || bytes(k) != Colon then return -2L
+
+    directMark()
+    pos = k + 1
+    directKeyHigh = high
+    low
+
+  private[jacinta] update def directKeyWordNext(): Long =
+    val limit = bufEnd
+    var i = pos
+
+    while
+      i < limit && {
+        val b = bytes(i)
+        b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
+      }
+    do i += 1
+
+    if i >= limit then return -2L
+    var b = bytes(i)
+
+    if b == CloseBrace then
+      pos = i + 1
+      directPop()
+      return -1L
+
+    if b != Comma then return -2L
+    i += 1
+
+    while
+      i < limit && {
+        val b2 = bytes(i)
+        b2 <= Space && (b2 == Space || b2 == Tab || b2 == Newline || b2 == Return)
+      }
+    do i += 1
+
+    if i >= limit then return -2L
+    b = bytes(i)
+
+    if b != Quote then return -2L
+    val start = i + 1
+
+    // Fused scan-and-pack: the word loaded to find the key's closing quote
+    // *is* its packed form, so a short key costs one load and a 16-byte key
+    // two — where the two-pass shape re-loaded the same words to pack after
+    // scanning. A key at the window's edge takes the general step, exactly
+    // like an escaped or oversized one.
+    if start + 8 > limit then return -2L
+    val word0: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start)
+    val stops0 = stringStops(word0)
+    var low = 0L
+    var high = 0L
+    var j = 0
+
+    if stops0 != 0L then
+      val length = java.lang.Long.numberOfTrailingZeros(stops0) >> 3
+      j = start + length
+      if bytes(j) != Quote || length == 0 then return -2L
+      low = word0 & ((1L << (length*8)) - 1)
+    else
+      if start + 16 > limit then return -2L
+      val word1: Long = WordAccess.get(bytes.asInstanceOf[Array[Byte]], start + 8)
+      val stops1 = stringStops(word1)
+      low = word0
+
+      if stops1 != 0L then
+        val length1 = java.lang.Long.numberOfTrailingZeros(stops1) >> 3
+        j = start + 8 + length1
+        if bytes(j) != Quote then return -2L
+        if length1 > 0 then high = word1 & ((1L << (length1*8)) - 1)
+      else
+        // Exactly sixteen bytes, or too long for the fast path.
+        j = start + 16
+        if j >= limit || bytes(j) != Quote then return -2L
+        high = word1
+
+    var k = j + 1
+
+    while
+      k < limit && {
+        val b3 = bytes(k)
+        b3 <= Space && (b3 == Space || b3 == Tab || b3 == Newline || b3 == Return)
+      }
+    do k += 1
+
+    if k >= limit || bytes(k) != Colon then return -2L
+
     pos = k + 1
     directKeyHigh = high
     low

@@ -467,8 +467,16 @@ object stagedInternal:
 
       val fieldCode: List[(Expr[Any], Expr[Any])] = List.range(0, arity).map(fieldExprs)
 
-      val arms = List.range(0, arity).map: index =>
-        val read: Term =
+      // Each field's read is generated once, as a local def both key steps'
+      // arms call — the arms themselves are regenerated per step (trees may
+      // not be shared), but stay one call each.
+      val readDefs = List.range(0, arity).map: index =>
+        Symbol.newMethod
+          ( owner, "readField"+index,
+            MethodType(Nil)(_ => Nil, _ => fieldTypes(index)) )
+
+      val readDefDefs = List.range(0, arity).map: index =>
+        val rhs: Term =
           fieldTypes(index).asType match
             case '[fieldType] =>
               val raw = fieldCode(index)(0).asExprOf[fieldType]
@@ -479,37 +487,32 @@ object stagedInternal:
                 else $raw
               }.asTerm
 
+        DefDef(readDefs(index), _ => Some(rhs.changeOwner(readDefs(index))))
+
+      def arms: List[CaseDef] = List.range(0, arity).map: index =>
         val rhs =
           Block
             ( List
-                ( Assign(Ref(slots(index)), read),
+                ( Assign(Ref(slots(index)), Apply(Ref(readDefs(index)), Nil)),
                   Assign(Ref(seens(index)), Literal(BooleanConstant(true))) ),
               unit )
 
         CaseDef(Literal(IntConstant(index)), None, rhs)
 
-      val fallthrough = CaseDef(Wildcard(), None, '{ $reader.skipValue() }.asTerm)
+      def fallthrough = CaseDef(Wildcard(), None, '{ $reader.skipValue() }.asTerm)
 
       val run = Symbol.newVal(owner, "run", TypeRepr.of[Boolean], Flags.Mutable, Symbol.noSymbol)
-      val word = Symbol.newVal(owner, "word", TypeRepr.of[Long], Flags.EmptyFlags, Symbol.noSymbol)
-      val high = Symbol.newVal(owner, "high", TypeRepr.of[Long], Flags.EmptyFlags, Symbol.noSymbol)
 
-      val found =
-        Symbol.newVal(owner, "found", TypeRepr.of[Int], Flags.EmptyFlags, Symbol.noSymbol)
-
-      val wordRef = Ref(word).asExprOf[Long]
-      val highRef = Ref(high).asExprOf[Long]
-
-      def packedChain(index: Int): Term =
+      def packedChainOver(wordRef: Expr[Long], highRef: Expr[Long])(index: Int): Term =
         if index == arity then Literal(IntConstant(-1))
         else packedNames(index) match
-          case None => packedChain(index + 1)
+          case None => packedChainOver(wordRef, highRef)(index + 1)
 
           case Some((low, highWord)) =>
             If
               ( '{ $wordRef == ${Expr(low)} && $highRef == ${Expr(highWord)} }.asTerm,
                 Literal(IntConstant(index)),
-                packedChain(index + 1) )
+                packedChainOver(wordRef, highRef)(index + 1) )
 
       def namedChain(name: Expr[String], index: Int): Expr[Int] =
         if index == arity then Expr(-1)
@@ -519,24 +522,40 @@ object stagedInternal:
             else ${ namedChain(name, index + 1) }
           }
 
-      // An opaque key (window edge, escapes, oversized) resolves through the
-      // generally-consumed interned name; `null` there is a close brace that
-      // became visible only after a refill.
-      val opaque: Expr[Int] =
-        '{
-          val name = $reader.keyName()
-          if name == null then -2 else ${ namedChain('{name.nn}, 0) }
-        }
+      // One key step: fresh symbols and arm trees per instantiation (trees
+      // may not be shared between the unrolled first step and the loop).
+      def step(wordStep: Expr[Long]): Term =
+        val word =
+          Symbol.newVal(owner, "word", TypeRepr.of[Long], Flags.EmptyFlags, Symbol.noSymbol)
 
-      val resolveStep: Term =
-        If
-          ( '{ $wordRef == JsonReader.KeyOpaque }.asTerm,
-            opaque.asTerm,
-            Block(List(ValDef(high, Some('{ $reader.keyWordHigh }.asTerm))), packedChain(0)) )
+        val high =
+          Symbol.newVal(owner, "high", TypeRepr.of[Long], Flags.EmptyFlags, Symbol.noSymbol)
 
-      val step: Term =
+        val found =
+          Symbol.newVal(owner, "found", TypeRepr.of[Int], Flags.EmptyFlags, Symbol.noSymbol)
+
+        val wordRef = Ref(word).asExprOf[Long]
+        val highRef = Ref(high).asExprOf[Long]
+
+        // An opaque key (window edge, escapes, oversized) resolves through
+        // the generally-consumed interned name; `null` there is a close
+        // brace that became visible only after a refill.
+        val opaque: Expr[Int] =
+          '{
+            val name = $reader.keyName()
+            if name == null then -2 else ${ namedChain('{name.nn}, 0) }
+          }
+
+        val resolveStep: Term =
+          If
+            ( '{ $wordRef == JsonReader.KeyOpaque }.asTerm,
+              opaque.asTerm,
+              Block
+                ( List(ValDef(high, Some('{ $reader.keyWordHigh }.asTerm))),
+                  packedChainOver(wordRef, highRef)(0) ) )
+
         Block
-          ( List(ValDef(word, Some('{ $reader.keyWord() }.asTerm))),
+          ( List(ValDef(word, Some(wordStep.asTerm))),
             If
               ( '{ $wordRef == JsonReader.KeyEnd }.asTerm,
                 Assign(Ref(run), Literal(BooleanConstant(false))),
@@ -547,11 +566,15 @@ object stagedInternal:
                         Assign(Ref(run), Literal(BooleanConstant(false))),
                         Match(Ref(found), arms :+ fallthrough) ) ) ) )
 
+      // The first key step is unrolled ahead of the loop, so the steady-state
+      // step consults no per-key seen/comma state.
       val loop: List[Statement] =
-        List
-          ( '{ $reader.openObject() }.asTerm,
-            ValDef(run, Some(Literal(BooleanConstant(true)))),
-            While(Ref(run), step) )
+        readDefDefs :::
+          List
+            ( '{ $reader.openObject() }.asTerm,
+              ValDef(run, Some(Literal(BooleanConstant(true)))),
+              step('{ $reader.keyWordFirst() }),
+              While(Ref(run), step('{ $reader.keyWordNext() })) )
 
       val absents: List[Term] = List.range(0, arity).map: index =>
         fieldTypes(index).asType match

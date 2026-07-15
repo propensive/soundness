@@ -116,6 +116,12 @@ extends caps.ExclusiveCapability, caps.Stateful:
   // instead, which consumes it generally.
   update def keyWord(): Long = parser.directKeyWordFast()
 
+  // The split protocol for generated parsers whose loop statically knows
+  // which step is first — the steady-state step consults no per-key state.
+  update def keyWordFirst(): Long = parser.directKeyWordFirst()
+
+  update def keyWordNext(): Long = parser.directKeyWordNext()
+
   update def keyWordHigh: Long = parser.directKeyWordHigh
 
   update def openArray(): Unit = parser.directOpenArray()(using tactic)
