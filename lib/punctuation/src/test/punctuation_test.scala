@@ -63,6 +63,19 @@ object Tests extends Suite(m"Punctuation tests"):
                   Parser.parse(testcase.markdown).html.show
                 . assert(_ == html.show)
 
+                test(m"Commonmark test case ${testcase.example}, streamed in single chars"):
+                  Parser.parse(testcase.markdown.s.grouped(1).map(_.tt).stream).html.show
+                . assert(_ == html.show)
+
+    suite(m"Streaming reads"):
+      test(m"markdown reads from a fragmented stream through the Aggregable given"):
+        val md = t"# Title\n\nA [link][ref] here.\n\n[ref]: https://example.org\n"
+
+        summon[(Markdown of Layout) is Aggregable by Text]
+        . accept(md.s.grouped(3).map(_.tt).stream)
+        . children.length
+      . assert(_ == 2)
+
     suite(m"Serializer round-trip"):
       def roundTrip(markdown: Text): Markdown of Layout =
         Parser.parse(Parser.parse(markdown).show)

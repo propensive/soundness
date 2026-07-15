@@ -39,6 +39,7 @@ import denominative.*
 import fulminate.*
 import prepositional.*
 import vacuous.*
+import zephyrine.*
 
 // Pass 1: line-by-line dispatch over a stack of open block builders. The
 // algorithm follows CommonMark's "phase 1" (block parsing):
@@ -78,10 +79,38 @@ private[punctuation] final class BlockParser:
         pos = nlPos + 1
         lineNum += 1
 
+    finish()
+
+  // The streaming entry: lines are read incrementally off a cursor, so the
+  // input is consumed as it arrives and only the AST (plus each paragraph's
+  // deferred raw text) is retained. The direct `String` path above remains
+  // for materialized text, where the intrinsified scan wins; per-line
+  // behaviour is identical (`\n`-only splitting, `\r` retained).
+  def parse(cursor: Cursor[Text, {}]^): Markdown of Layout =
+    var lineNum = 0
+
+    while !cursor.finished do
+      val line = cursor.hold:
+        val start = cursor.mark
+
+        while !cursor.finished && !(cursor.peek == '\n') do cursor.next()
+
+        val line = cursor.grab(start, cursor.mark)
+        if !cursor.finished then cursor.next()
+        line
+
+      processLine(line, lineNum.z)
+      lineNum += 1
+
+    finish()
+
+  private def finish(): Markdown of Layout =
     closeAll()
 
     // Post-pass: with the link-reference table now fully populated, run the
-    // inline parser over each Paragraph/Heading's deferred raw text.
+    // inline parser over each Paragraph/Heading's deferred raw text. (This is
+    // why parsing cannot emit blocks as it goes: a link-reference definition
+    // may follow its uses, so no inline content is final until end of input.)
     val resolved = docBuilder.children.iterator.map(resolveInlines).toSeq
     Markdown(refs.all, resolved*)
 

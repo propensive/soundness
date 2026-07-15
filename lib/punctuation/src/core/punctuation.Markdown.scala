@@ -63,6 +63,23 @@ object Markdown:
 
   case class LinkRef(label: Text, title: Optional[Text], destination: Text)
 
+  // Markdown reads directly from any streaming source (`file.read[Markdown of
+  // Layout]`): parsing is total, so the given is unconditional, and the
+  // streaming `accept` path consumes its input incrementally.
+  given aggregable: (Markdown of Layout) is turbulence.Aggregable by Text =
+    new turbulence.Aggregable:
+      type Self = Markdown of Layout
+      type Operand = Text
+
+      def aggregate(stream: LazyList[Text]): Markdown of Layout = Parser.parse(stream.iterator)
+
+      override def accept(stream: (zephyrine.Stream[Text] over zephyrine.Credit)^)
+      :   Markdown of Layout =
+        // The non-consume `accept` crosses to the consuming factory as a
+        // neutral reference; each accept delivers a single-use stream.
+        Parser.parse:
+          stream.asInstanceOf[AnyRef].asInstanceOf[(zephyrine.Stream[Text] over zephyrine.Credit)^]
+
   // FIXME: This implementation needs to be cleaned up
   private def url(text: Text): Text =
     val builder = StringBuilder()
