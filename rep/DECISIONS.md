@@ -36,6 +36,60 @@ around by cast/launder with a comment; the patched compiler may be used without 
    options = compiler feature work, or a `Validate`/`protect` redesign avoiding function-value
    indirection in tests, or defer the 5 suites.
 
+## ⚑ Capture-honesty campaign: decision packet for Jon (2026-07-15)
+
+The campaign (branch series starting at `capture-honesty`) targets the two remaining dishonesty
+classes: scope-introducing context functions whose context value is a live resource but not a
+tracked capability (`profanity.interactive`, `tarantula.session`, `exoskeleton.sandbox`/`tmux`,
+scintillate handlers, effect channels), and typeclass families without honest markers. Plan file:
+`~/.claude/plans/soundness-has-been-updated-delegated-stardust.md`. Decisions needed, roughly in
+the order the legs need them:
+
+- **D1 — capability parents for scope-method context types** (needed for legs 2/4; proposal,
+  confirm or adjust): `Terminal`, `Enclave.Tool`, `Tmux`, `WebDriver#Session`, `HttpConnection`,
+  `Cli` (via its own declaration, not `Console`), `polaris.Buffer` → `caps.ExclusiveCapability`
+  (each is a stateful, torn-down-after-scope resource); `capricious.Random`,
+  `urticose.Internet` → `caps.SharedCapability` (aliasable effect evidence, no teardown). Scope
+  methods then take form A (`block: Ctx ?=> result` with unconstrained `result`), matching
+  `parasite.supervise`/`enigmatic.expose`, plus a CaptureTests-style negative regression each.
+- **D2 — coaxial `listen` scoped redesign** (existing ⚑4; needed for Phase 5): recommend the loan
+  form `def listen[result](lambda: Input => Output)(block: SocketService^ ?=> result): result`
+  (bind, run block, always stop in `finally`), which both fixes the `val server` fresh-escape and
+  matches form A. Alternative: an `Openable`-style owner object (`Server.open(port)(handler)(...)`,
+  the galilei `Result = Handle^` precedent). `caps.Unscoped` is a non-option (SocketService
+  genuinely must not escape). Ethereal's process-lifetime daemon becomes
+  `domainSocket.listen(handler) { service ?=> park() }`.
+- **D3 — guillotine `Process`/`Job` as capabilities**: live process handles currently returned
+  freely as plain classes. Classifying them is honest but the fallout sweep (every `.exec[]`/
+  `.fork[]` caller: octogenarian, ethereal, tarantula, eucalyptus.syslog, exoskeleton.rig) makes
+  it its own late leg. Go/no-go.
+- **D4 — eucalyptus `Logger` as capability**: holds an `enqueue` closure; capability-classing it
+  ripples through the `logs` alias exactly like `raises`/Tactic did (aliascap/ctxresult
+  territory). Probe-gated own leg. Go/no-go.
+- **D5 — wisteria capture-polymorphic `conjunction`/`disjunction`** (the ⚑1 open sub-question):
+  the bare `typeclass[derivation]` results are the root cause of every downstream codec-thunk
+  seal. Probe-first plan: (i) capturing leaf + derived product all-CC; (ii) through summonInline
+  chains with `aka`-Tagged params; (iii) expanded inside a staged quote. Sweep scope = whichever
+  stages are green. Two prior reverts recorded; treat as HIGH RISK. Go/no-go.
+- **D6 — parasite `Task^`** (existing ⚑3-adjacent): honest `Task^`/`Daemon^` handle types would
+  replace the 12 `unsafeAssumePure` sites in parasite core, but interact with the mercator
+  `Monad` instance for `Task` (see below). Go/no-go.
+- **D7 — Pure-flip policy for seal-bearing families**: flipping a trait to `Typeclass.Pure`
+  makes future honest capturing instances impossible, so families whose instances carry seals or
+  honest captures stay plain `Typeclass`: confirmed `Addable` (hellenism `LocalClasspath is
+  Addable ^{pathTactic, ioTactic}` is honest), `Parsable` (instances capture resolution-scoped
+  tactics by design — its own doc comment), `Extractable`/`Requirable` (sealed instances).
+  Also `mercator.Functor` CANNOT flip while `Monad extends Functor` and parasite's `Task` Monad
+  captures (a Pure parent would propagate); left plain, noted here.
+
+Probe results (2026-07-15, `rep/probe-core.sh` with the p2 release toolchain; logs in
+`rep/_probe/*/compile.log`): profanity.core RED (6 errors, E007 conversion shapes),
+tarantula.core RED (1×E223 + 2×E007), surveillance.core RED (6, NativeWatcher),
+scintillate.server RED (3, Tactic[ServerError] evidence shapes), ethereal.core RED (6+, E007),
+exoskeleton.rig RED (1×E007, Enclave.scala:105), anthology.bundle RED (1×E007, Bundler.scala:98).
+No macro-wall or quote-wall shapes at first depth — all seven look like ordinary conversion legs;
+rig and bundle look trivial.
+
 ## Toolchain (CURRENT: downloaded from the propensive/proscala releases)
 
 Since 2026-07-13 the build downloads the compiler from the `propensive/proscala` GitHub releases
