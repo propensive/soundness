@@ -1368,14 +1368,19 @@ object Tel extends Tel2:
   // Concatenate the chunks of a `LazyList[Data]` source into a single byte array.
   private[stratiform] def concatenate(source: LazyList[Data]): Data =
     import denominative.nil
-    var acc    = IArray.empty[Byte]
-    var stream = source
 
-    while !stream.nil do
-      acc = acc ++ stream.head
-      stream = stream.tail
+    // A single in-memory block — the common case — is returned as-is
+    // rather than copied into a fresh array (jacinta's single-chunk fast
+    // path; the copy dominated the entry cost of fast direct reads).
+    if !source.nil && source.tail.nil then source.head else
+      var acc    = IArray.empty[Byte]
+      var stream = source
 
-    acc
+      while !stream.nil do
+        acc = acc ++ stream.head
+        stream = stream.tail
+
+      acc
 
   // `bytes.read[Tel]` for any LazyList[Data] source: concatenates the
   // chunks and parses the result. The metadata (interpreter directive,
@@ -1395,6 +1400,16 @@ object Tel extends Tel2:
   =>  ( tactic: Tactic[TelError] )
   =>  ( ((value in Tel) is Aggregable by Data)^{parsable, tactic} ) =
     source => parseDirect(concatenate(source), parsable).asInstanceOf[value in Tel]
+
+  // Whole-`Data` direct read: when the entire content is already in hand,
+  // parse it in place rather than wrapping it in a one-element stream —
+  // jacinta's `readableParsed` precedent. Concrete in `Data`, so it beats
+  // the composed pipeline by specificity.
+  given readableParsed: [value]
+  =>  ( parsable: (value is Tel.Parsable)^ )
+  =>  ( tactic: Tactic[TelError] )
+  =>  ( (Data is Readable to (value in Tel))^{parsable, tactic} ) =
+    data => parseDirect(data, parsable).asInstanceOf[value in Tel]
 
   // Direct-parsing counterpart of `parse`: drives a `Tel.Parsable` instance
   // over the input through a `TelReader`, so no document AST is built for the

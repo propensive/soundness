@@ -280,7 +280,93 @@ object stagedInternal:
       case _ =>
         None
     else if productSupported(tpe) then Some(Inlinable.ProductInlinable[field]())
-    else None
+    else sumFor[field](cache)
+
+  // A sealed sum qualifies when every variant is itself an inlinable case
+  // class (resolved through the ladder, so custom variant instances
+  // compose) and its `Discriminable in Xml` — obtained live through the
+  // staging summon — is an `Xml.DiscriminantAttribute`, whose dispatch can
+  // be read straight off the open tag. Anything else — singleton variants,
+  // `@name` renames, an unresolvable variant, a label-based or custom
+  // discriminator — degrades to the runtime seam, preserving the derived
+  // semantics exactly.
+  private def sumFor[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
+    sumVariants(quotes.reflect.TypeRepr.of[field].dealias).flatMap: variants =>
+      val resolvable = variants.forall: (_, variantType) =>
+        variantType.asType match
+          case '[variantType] => resolve[variantType](cache).isDefined
+
+      if !resolvable then None
+      else discriminantAttribute[field].map { attribute => Inlinable.SumInlinable[field](attribute) }
+
+  // The variants of a stageable sealed sum: `(label, type)` per variant, or
+  // `None` when the shape is unsupported.
+  private def sumVariants(using Quotes)(tpe: quotes.reflect.TypeRepr)
+  :   Option[List[(String, quotes.reflect.TypeRepr)]] =
+
+    import quotes.reflect.*
+
+    tpe.classSymbol.flatMap: classSymbol =>
+      val applied = tpe match
+        case AppliedType(_, _) => true
+        case _                 => false
+
+      val children = classSymbol.children
+
+      val supported =
+        !applied
+        && classSymbol.flags.is(Flags.Sealed)
+        && children.nonEmpty
+        && children.forall: child =>
+             child.isClassDef && child.flags.is(Flags.Case) && !hasAnnotations(child)
+
+      if supported then Some(children.map { child => (child.name, child.typeRef) }) else None
+
+  // The sum's discriminator attribute, when its `Discriminable in Xml`
+  // resolves — inside the staging compiler, so the instance is live — to an
+  // `Xml.DiscriminantAttribute`.
+  private def discriminantAttribute[sum: Type](using Quotes): Option[String] =
+    import quotes.reflect.*
+    import scala.quoted.staging
+
+    shapeOf(TypeRepr.of[sum]).flatMap: shape =>
+      try
+        given settings: staging.Compiler.Settings =
+          staging.Compiler.Settings.make
+            (None, List("-experimental", "-classpath", innerClasspath))
+
+        given staging.Compiler = staging.Compiler.make(macroClassloader)
+
+        val result: Any = staging.run:
+          val quotes2 = summon[Quotes]
+          import quotes2.reflect as r2
+
+          def rebuild(shape: TypeShape): r2.TypeRepr =
+            val base = r2.TypeRepr.typeConstructorOf(shape.clazz)
+            if shape.arguments.isEmpty then base
+            else base.appliedTo(shape.arguments.map(rebuild))
+
+          val xml = r2.TypeRepr.of[Xml]
+
+          val target =
+            r2.Refinement
+              ( r2.Refinement
+                  ( r2.TypeRepr.of[wisteria.Discriminable], "Self",
+                    r2.TypeBounds(rebuild(shape), rebuild(shape)) ),
+                "Form",
+                r2.TypeBounds(xml, xml) )
+
+          target.asType match
+            case '[target] => '{ scala.compiletime.summonInline[target] }
+
+        result match
+          case attribute: Xml.DiscriminantAttribute[?] => Some(attribute.attribute.s)
+          case _                                       => None
+      catch
+        case _: ReflectiveOperationException => None
+        case _: LinkageError                 => None
+        case _: AssertionError               => None
+        case _: Exception                    => None
 
   private[xylophone] def productSupported(using Quotes)(tpe: quotes.reflect.TypeRepr)
   :   Boolean =
@@ -929,6 +1015,81 @@ object stagedInternal:
           raise(XmlError())(using $tactic)
           ${ build() }
         }
+
+  // ── The sum generator ──────────────────────────────────────────────────
+  // The variant rides in an attribute of the just-opened element — the
+  // `Xml.DiscriminantAttribute` shape — so dispatch reads it straight off
+  // the open tag and the chosen variant's fields parse as the element's
+  // children, in place. A missing or unrecognised discriminator skips the
+  // element and takes the AST disjunction's fallback: a raise-plus-`Default`
+  // when the user supplied one, an abort otherwise.
+  private[xylophone] def sumBody[sum: Type](reader: Expr[XmlReader], attribute: String)
+    (using Quotes)
+  :   Expr[sum] =
+
+    sumBody[sum](reader, attribute, scm.HashMap())
+
+  private def sumBody[sum: Type](reader: Expr[XmlReader], attribute: String, cache: Cache)
+    (using Quotes)
+  :   Expr[sum] =
+
+    import quotes.reflect.*
+
+    val variants = sumVariants(TypeRepr.of[sum].dealias).getOrElse:
+      report.errorAndAbort
+        (s"xylophone: ${TypeRepr.of[sum].show} is not an inlinable sum (a non-generic sealed "+
+          "type whose variants are all case classes without annotations)")
+
+    val arity = variants.length
+
+    def fallback(tactic: Expr[Tactic[XmlError]]): Expr[sum] =
+      Expr.summon[Default[sum]] match
+        case Some(default) =>
+          '{
+            $reader.skipElement()
+            raise(XmlError())(using $tactic)
+            $default()
+          }
+
+        case None =>
+          '{ abort(XmlError())(using $tactic) }
+
+    def dispatch(index: Int, wire: Expr[String], tactic: Expr[Tactic[XmlError]]): Expr[sum] =
+      if index == arity then fallback(tactic)
+      else variants(index)(1).asType match
+        case '[type variantType <: sum; variantType] =>
+          val instance = resolve[variantType](cache).getOrElse:
+            report.errorAndAbort
+              (s"xylophone: no Inlinable for variant ${variants(index)(0)}")
+          . asInstanceOf[Inlinable { type Self = variantType }]
+
+          '{
+            if $wire == ${Expr(variants(index)(0))} then
+              def parseVariant(): variantType = ${ instance.parse(reader) }
+              parseVariant()
+            else ${ dispatch(index + 1, wire, tactic) }
+          }
+
+    '{
+      val tactic = $reader.errorTactic
+      val wire: String = Attributes.fetch($reader.attributes())(${Expr(attribute)}.tt).let(_.s).or("")
+      ${ dispatch(0, 'wire, 'tactic) }
+    }
+
+  // A missing sum field: no discriminator, so the AST disjunction's
+  // fallback — a raise-plus-`Default` or an abort.
+  private[xylophone] def sumAbsent[sum: Type](tactic: Expr[Tactic[XmlError]])(using Quotes)
+  :   Expr[sum] =
+
+    Expr.summon[Default[sum]] match
+      case Some(default) =>
+        '{
+          raise(XmlError())(using $tactic)
+          $default()
+        }
+
+      case None =>
+        '{ abort(XmlError())(using $tactic) }
 
   // ── The entry macro ────────────────────────────────────────────────────
   def inlinableParsable[value: Type](using Quotes): Expr[value is Xml.Parsable] =

@@ -60,27 +60,10 @@ object Payment:
   // default `Discriminable`: the product encoder relabels the variant
   // element with the *field's* name, which destroys the discriminator. The
   // variant rides in a `type` attribute instead — `<payment type="Card">` —
-  // mirroring the discriminator key the JSON and YAML corpora carry.
-  given xmlDiscriminable: Payment is Discriminable in Xml = new Discriminable:
-    type Self = Payment
-    type Form = Xml
-
-    def discriminate(xml: Xml): Optional[Text] = xml match
-      case Element(_, attributes, _)           => attributes.at(t"type")
-      case Fragment(Element(_, attributes, _)) => attributes.at(t"type")
-      case _                                   => Unset
-
-    def rewrite(kind: Text, xml: Xml): Xml = xml match
-      case Element(label, attributes, children) =>
-        Element(label, attributes.updated(t"type", kind), children)
-
-      case Fragment(Element(label, attributes, children)) =>
-        Element(label, attributes.updated(t"type", kind), children)
-
-      case other =>
-        other
-
-    def variant(xml: Xml): Xml = xml
+  // mirroring the discriminator key the JSON and YAML corpora carry. The
+  // named `DiscriminantAttribute` shape also lets the inlined XML parser
+  // dispatch on the attribute straight off the open tag.
+  given xmlDiscriminable: Payment is Discriminable in Xml = Xml.DiscriminantAttribute(t"type")
 
 case class LineItem(sku: Text, description: Text, quantity: Int, price: Double, taxed: Boolean)
 

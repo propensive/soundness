@@ -94,6 +94,17 @@ object Inlinable:
         ${ stagedInternal.productFields[product](reader, 'indent1) }
       }
 
+  // The structural instance for a sealed sum whose variants are all
+  // inlinable case classes: the wire form is a single child compound keyed
+  // by the variant's kebab-cased name (the AST disjunction's form), so the
+  // generated code dispatches on that keyword and parses the chosen variant
+  // in place — no document AST, no `delegate`.
+  private[stratiform] final class SumInlinable[sum]() extends Inlinable:
+    type Self = sum
+
+    def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[sum]): Expr[sum] =
+      stagedInternal.sumBody[sum](reader, indent)
+
   private[stratiform] final class IterableInlinable[element](val element0: element is Inlinable)
   extends Inlinable:
     type Self = Iterable[element]

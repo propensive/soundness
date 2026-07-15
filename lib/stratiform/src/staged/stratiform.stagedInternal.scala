@@ -279,7 +279,43 @@ object stagedInternal:
       case _ =>
         None
     else if productSupported(tpe) then Some(Inlinable.ProductInlinable[field]())
-    else None
+    else sumFor[field](cache)
+
+  // A sealed sum qualifies when every variant is itself an inlinable case
+  // class (resolved through the ladder, so custom variant instances
+  // compose); anything else — singleton variants, `@name` renames, an
+  // unresolvable variant — degrades to the runtime seam, preserving the
+  // derived semantics exactly.
+  private def sumFor[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
+    sumVariants(quotes.reflect.TypeRepr.of[field].dealias).flatMap: variants =>
+      val resolvable = variants.forall: (_, variantType) =>
+        variantType.asType match
+          case '[variantType] => resolve[variantType](cache).isDefined
+
+      if resolvable then Some(Inlinable.SumInlinable[field]()) else None
+
+  // The variants of a stageable sealed sum: `(label, type)` per variant, or
+  // `None` when the shape is unsupported.
+  private def sumVariants(using Quotes)(tpe: quotes.reflect.TypeRepr)
+  :   Option[List[(String, quotes.reflect.TypeRepr)]] =
+
+    import quotes.reflect.*
+
+    tpe.classSymbol.flatMap: classSymbol =>
+      val applied = tpe match
+        case AppliedType(_, _) => true
+        case _                 => false
+
+      val children = classSymbol.children
+
+      val supported =
+        !applied
+        && classSymbol.flags.is(Flags.Sealed)
+        && children.nonEmpty
+        && children.forall: child =>
+             child.isClassDef && child.flags.is(Flags.Case) && !hasRenames(child)
+
+      if supported then Some(children.map { child => (child.name, child.typeRef) }) else None
 
   private[stratiform] def productSupported(using Quotes)(tpe: quotes.reflect.TypeRepr)
   :   Boolean =
@@ -293,6 +329,25 @@ object stagedInternal:
       && classSymbol.primaryConstructor.paramSymss
          . filterNot(_.exists(_.isTypeParam)).length == 1
       && !hasRenames(classSymbol)
+
+  // A wire keyword's packed form (at most eight printable-ASCII bytes,
+  // LSB-first, the same packing as `TelReader.keywordWord`), or `None` when
+  // it cannot pack.
+  private def packedTelKeyword(name: String): Option[Long] =
+    val length = name.length
+
+    val packs = length > 0 && length <= 8 &&
+      name.forall { char => char >= '!' && char <= '~' }
+
+    if !packs then None else
+      var word = 0L
+      var position = 0
+
+      while position < length do
+        word |= (name.charAt(position).toLong & 0xFF) << (position*8)
+        position += 1
+
+      Some(word)
 
   // `@name` renames resolve through inline machinery the structural
   // generator does not replicate; annotated records stay on `staged`.
@@ -423,24 +478,8 @@ object stagedInternal:
     // that cannot pack (longer than eight bytes) always arrives as
     // `KeywordOpaque` and resolves through the literal text step, which
     // matches all fields by string.
-    def packedKeyword(index: Int): Option[Long] =
-      val name = wireNames(index)
-      val length = name.length
-
-      val packs = length > 0 && length <= 8 &&
-        name.forall { char => char >= '!' && char <= '~' }
-
-      if !packs then None else
-        var word = 0L
-        var position = 0
-
-        while position < length do
-          word |= (name.charAt(position).toLong & 0xFF) << (position*8)
-          position += 1
-
-        Some(word)
-
-    val packedKeywords: List[Option[Long]] = List.range(0, arity).map(packedKeyword)
+    val packedKeywords: List[Option[Long]] =
+      List.range(0, arity).map { index => packedTelKeyword(wireNames(index)) }
 
     val owner = Symbol.spliceOwner
     val unit = Literal(UnitConstant())
@@ -803,6 +842,90 @@ object stagedInternal:
       ( slotDefs ::: seenDefs ::: gatherDefs ::: seamDefs ::: nestedDefs ::: loop ::: absents,
         construct )
     . asExprOf[product]
+
+  // ── The sum generator ──────────────────────────────────────────────────
+  // A sum's wire form is a single child compound keyed by the variant's
+  // kebab-cased name (the AST disjunction's form): consume the entry line,
+  // dispatch on the child's keyword — packed-word comparisons with a text
+  // step for opaque keywords — and parse the chosen variant in place. Extra
+  // entries after the variant are skipped (the AST path reads only the
+  // first child compound); an unknown keyword aborts through the splice
+  // site's `Tactic[VariantError]`, exactly as `delegate` does.
+  private[stratiform] def sumBody[sum: Type](reader: Expr[TelReader], indent: Expr[Int])
+    (using Quotes)
+  :   Expr[sum] =
+
+    sumBody[sum](reader, indent, scm.HashMap())
+
+  private def sumBody[sum: Type](reader: Expr[TelReader], indent: Expr[Int], cache: Cache)
+    (using Quotes)
+  :   Expr[sum] =
+
+    import quotes.reflect.*
+
+    val variants = sumVariants(TypeRepr.of[sum].dealias).getOrElse:
+      report.errorAndAbort
+        (s"stratiform: ${TypeRepr.of[sum].show} is not an inlinable sum (a non-generic sealed "+
+          "type whose variants are all case classes without `@name` renames)")
+
+    val arity = variants.length
+    val wireNames: List[String] = variants.map { (name, _) => Tel.camelToKebab(name).s }
+
+    def dispatch
+      ( index:   Int,
+        word:    Expr[Long],
+        indent1: Expr[Int] )
+    :   Expr[sum] =
+
+      if index == arity then
+        '{
+          provide[Tactic[wisteria.VariantError]]:
+            abort(wisteria.VariantError[sum]($reader.keywordText))
+        }
+      else variants(index)(1).asType match
+        case '[type variantType <: sum; variantType] =>
+          val instance = resolve[variantType](cache).getOrElse:
+            report.errorAndAbort
+              (s"stratiform: no Inlinable for variant ${variants(index)(0)}")
+          . asInstanceOf[Inlinable { type Self = variantType }]
+
+          val name = wireNames(index)
+
+          val condition: Expr[Boolean] = packedTelKeyword(name) match
+            case Some(packed) =>
+              '{
+                $word == ${Expr(packed)}
+                || ($word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)})
+              }
+
+            case None =>
+              '{ $word == TelReader.KeywordOpaque && $reader.keywordText.s == ${Expr(name)} }
+
+          '{
+            if $condition then
+              def parseVariant(): variantType = ${ instance.parse(reader, indent1) }
+              parseVariant()
+            else ${ dispatch(index + 1, word, indent1) }
+          }
+
+    '{
+      val tactic = infer[Tactic[TelError]]
+      $reader.finishLine()
+      val indent1 = $indent + 1
+      val word = $reader.keywordWord(indent1)
+
+      if word == TelReader.KeywordEnd
+      then abort(TelError(TelError.Reason.Absent))(using tactic)
+      else
+        val result: sum = ${ dispatch(0, 'word, 'indent1) }
+        var next = $reader.keywordWord(indent1)
+
+        while next != TelReader.KeywordEnd do
+          $reader.skipEntry(indent1)
+          next = $reader.keywordWord(indent1)
+
+        result
+    }
 
   // ── The entry macro ────────────────────────────────────────────────────
   def inlinableParsable[value: Type](using Quotes): Expr[value is Tel.Parsable] =

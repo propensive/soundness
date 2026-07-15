@@ -505,6 +505,35 @@ object Xml extends Tag.Container
                     case _ =>
                       abort(XmlError())
 
+  // A sum discriminated by an attribute on the value's element —
+  // `<payment type="Card">…</payment>`. This is the shape a sum nested
+  // inside a product needs: the product encoder relabels the variant
+  // element with the *field's* name, which destroys the label-based default
+  // discriminator, so the variant rides in an attribute instead. A named,
+  // recognisable class (like jacinta's `DiscriminantField`), so staged and
+  // inlined sum parsers can dispatch on the attribute straight off the open
+  // tag, without materializing the element.
+  final class DiscriminantAttribute[derivation](val attribute: Text) extends Discriminable:
+    type Self = derivation
+    type Form = xylophone.Xml
+
+    def discriminate(xml: xylophone.Xml): Optional[Text] = xml match
+      case Element(_, attributes, _)           => attributes.at(attribute)
+      case Fragment(Element(_, attributes, _)) => attributes.at(attribute)
+      case _                                   => Unset
+
+    def rewrite(kind: Text, xml: xylophone.Xml): xylophone.Xml = xml match
+      case Element(label, attributes, children) =>
+        Element(label, attributes.updated(attribute, kind), children)
+
+      case Fragment(Element(label, attributes, children)) =>
+        Element(label, attributes.updated(attribute, kind), children)
+
+      case other =>
+        other
+
+    def variant(xml: xylophone.Xml): xylophone.Xml = xml
+
   // Wisteria-based encoder, the mirror of `DecodableDerivation`. A product
   // encodes to an `Element` labelled with the type's short name (`typeName`);
   // each field becomes a child `Element` labelled with the field name via
@@ -1330,6 +1359,18 @@ object Xml extends Tag.Container
   =>  ( ((value in Xml) is Aggregable by Text)^{parsable, tactic, xmlTactic} ) =
 
     input => parseDirect(input.iterator, parsable).asInstanceOf[value in Xml]
+
+  // Whole-`Text` direct read: when the entire content is already in hand,
+  // parse it in place rather than wrapping it in a one-element stream —
+  // jacinta's `readableParsed` precedent. Concrete in `Text`, so it beats
+  // the composed pipeline by specificity.
+  given readableParsed: [value]
+  =>  ( parsable: (value is Xml.Parsable)^ )
+  =>  ( schema: XmlSchema )
+  =>  ( tactic: Tactic[ParseError], xmlTactic: Tactic[XmlError], foci: Foci[Xml.Focus] )
+  =>  ( (Text is Readable to (value in Xml))^{parsable, tactic, xmlTactic} ) =
+
+    text => parseDirect(Iterator(text), parsable).asInstanceOf[value in Xml]
 
   // Direct-parsing counterpart of `Xml2.aggregableIn`: drives an
   // `Xml.Parsable` instance over the input through an `XmlReader`, so no

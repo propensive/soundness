@@ -97,6 +97,26 @@ object Inlinable:
 
       stagedInternal.productAbsent[product](tactic, foci)
 
+  // The structural instance for a sealed sum whose variants are all
+  // inlinable case classes and whose `Discriminable in Xml` is an
+  // `Xml.DiscriminantAttribute` (established live, through the staging
+  // summon): the variant rides in an attribute of the open tag, so the
+  // generated code dispatches on it straight off the reader and parses the
+  // chosen variant's fields in place — no element AST, no `delegate`.
+  private[xylophone] final class SumInlinable[sum](val attribute: String) extends Inlinable:
+    type Self = sum
+
+    def parse(reader: Expr[XmlReader])(using Quotes, Type[sum]): Expr[sum] =
+      stagedInternal.sumBody[sum](reader, attribute)
+
+    // A missing sum field: the AST disjunction over the `Absent` sentinel —
+    // no discriminator, so a raise-plus-`Default` or an abort.
+    override def absent(tactic: Expr[Tactic[XmlError]], foci: Expr[Foci[Xml.Focus]])
+      (using Quotes, Type[sum])
+    :   Expr[sum] =
+
+      stagedInternal.sumAbsent[sum](tactic)
+
   private[xylophone] final class IterableInlinable[element](val element0: element is Inlinable)
   extends Inlinable:
     type Self = Iterable[element]
