@@ -225,6 +225,11 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     given telOrder: Order is Tel.Parsable = Tel.Parsable.staged
     given telOrders: Orders is Tel.Parsable = Tel.Parsable.staged
 
+    given xmlLineItem: LineItem is Xml.Parsable = Xml.Parsable.staged
+    given xmlCustomer: Customer is Xml.Parsable = Xml.Parsable.staged
+    given xmlOrder: Order is Xml.Parsable = Xml.Parsable.staged
+    given xmlOrders: Orders is Xml.Parsable = Xml.Parsable.staged
+
   def decodeJsonStaged(): Orders =
     import staged.orders
     jsonData.read[Orders in Json]
@@ -232,6 +237,10 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
   def decodeTelStaged(): Orders =
     import staged.telOrders
     telData.read[Orders in Tel]
+
+  def decodeXmlStaged(): Orders =
+    import staged.xmlOrders
+    xmlText.read[Orders in Xml]
   def decodeTelDirect(): Orders = telData.read[Orders in Tel]
   def decodeTelAst(): Orders = telData.read[Tel].as[Orders]
   def decodeXmlDirect(): Orders = xmlText.read[Orders in Xml]
@@ -300,6 +309,7 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     assert(decodeTelStaged() == corpus, "TEL staged decode disagrees with the corpus")
     assert(decodeTelAst() == corpus, "TEL AST decode disagrees with the corpus")
     assert(decodeXmlDirect() == corpus, "XML direct decode disagrees with the corpus")
+    assert(decodeXmlStaged() == corpus, "XML staged decode disagrees with the corpus")
     assert(decodeXmlAst() == corpus, "XML AST decode disagrees with the corpus")
     assert(decodeYamlAst() == corpus, "YAML AST decode disagrees with the corpus")
 
@@ -332,6 +342,9 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
       bench(m"XML direct")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeXmlDirect() }
 
+      bench(m"XML staged")(target = 1*Second):
+        '{ crossparse.Benchmarks.decodeXmlStaged() }
+
       bench(m"XML via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeXmlAst() }
 
@@ -358,6 +371,9 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
 
       profile(m"XML direct")(target = 5*Second):
         '{ crossparse.Benchmarks.decodeXmlDirect() }
+
+      profile(m"XML staged")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeXmlStaged() }
 
       profile(m"JSON direct")(target = 5*Second):
         '{ crossparse.Benchmarks.decodeJsonDirect() }
