@@ -71,7 +71,7 @@ object settings:
   // `3.9.0-RC1-propensive`. Override the coordinate with `SOUNDNESS_SCALA_VERSION` (e.g. the
   // 3.10.0 row is version "3.10.0-propensive").
   val scalaVersion = sys.env.getOrElse("SOUNDNESS_SCALA_VERSION", "3.9.0-RC1-propensive")
-  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "3.9.0-RC1-p2")
+  val scalaRelease = sys.env.getOrElse("SOUNDNESS_SCALA_RELEASE", "3.9.0-RC1-p3")
   // Empty by default → download `scalaRelease`. Set to a local `release` directory to use its
   // `release/lib` jars directly (fork-developer mode).
   val scalaHome = sys.env.getOrElse("SOUNDNESS_SCALA_HOME", "")
