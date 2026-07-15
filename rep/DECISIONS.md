@@ -2209,3 +2209,14 @@ perihelion 28/0, scintillate 20/0.
   read between (nested handle-loan lambdas mint fresh roots that cannot unify; the `Eof`
   two-evidence dependent-`Result` chain has the same problem, so the append uses a direct
   `open(..., List(OpenFlag.Append))`).
+
+## Capture-honesty Phase 6: seal audits on the Pure traits (2026-07-16)
+
+- `spectacular.Inspectable`'s 11 seals AUDITED, UNCHANGED: they are already the narrowest
+  form — a pure-thunk binding of the by-name element instance (unnameable in capture sets;
+  upstream candidate #5), yielding a compiler-verified-pure instance. Not the
+  `@untrackedCaptures`-field idiom, but narrower than a whole-instance seal, and truthfully
+  commented in place.
+- `gastronomy.Digestible`'s 7 WHOLE-INSTANCE seals NARROWED to the same thunk form: the seal
+  now covers only the by-name thunk, and each SAM instance is itself compiler-checked pure.
+  gastronomy suite 114/0; gates green.
