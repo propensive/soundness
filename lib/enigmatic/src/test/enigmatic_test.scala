@@ -112,6 +112,32 @@ object Tests extends Suite(m"Gastronomy tests"):
       Pem.parse(request).serialize
     . assert(_ == request.trim)
 
+    test(m"PEM parses from a stream through accept"):
+      import alphabets.base64Standard
+      val stream = request.s.grouped(7).map(_.tt).stream
+      summon[Pem is Aggregable by Text].accept(stream).data.digest[Md5].serialize[Base64]
+    . assert(_ == t"iMwRdyDFStqq08vqjPbzYw==")
+
+    test(m"PEM parses from a single-char-chunk stream"):
+      val stream = request.s.grouped(1).map(_.tt).stream
+      summon[Pem is Aggregable by Text].accept(stream).label
+    . assert(_ == PemLabel.CertificateRequest)
+
+    test(m"PEM certificate chain parses lazily from a stream"):
+      val example = t"-----BEGIN EXAMPLE-----\nAAAA\n-----END EXAMPLE-----\n"
+      val chain = t"subject=/CN=example\n$example\nissuer comment\n$example$example"
+      val stream = chain.s.grouped(11).map(_.tt).stream
+      summon[LazyList[Pem] is Aggregable by Text].accept(stream).map(_.label).to(List)
+    . assert(_ == List.fill(3)(PemLabel.Proprietary(t"EXAMPLE")))
+
+    test(m"PEM chain of an input without blocks is empty"):
+      summon[LazyList[Pem] is Aggregable by Text].accept(t"no blocks here\n".stream).to(List)
+    . assert(_ == List())
+
+    test(m"PEM streams its armored form"):
+      Pem.parse(request).lazyList[Text].join.trim
+    . assert(_ == request.trim)
+
     test(m"RSA roundtrip"):
       val privateKey: PrivateKey[Rsa[1024]] = PrivateKey.generate[Rsa[1024]]()
       val message: Data = privateKey.public.expose:
