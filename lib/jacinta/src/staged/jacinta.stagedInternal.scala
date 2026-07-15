@@ -45,6 +45,16 @@ import vacuous.*
 // products and collections, and the `Inlinable.parsable` entry macro.
 object stagedInternal:
 
+  // The runtime seam for a field type without an `Inlinable`: a nominal
+  // `Parsable` (a staged sum, a custom instance) is called directly,
+  // skipping the `Field.Adapter` the fallback chain would otherwise
+  // construct per occurrence. An inline method because `summonFrom` may
+  // only live in one; it expands where the generated parser is spliced.
+  inline def fieldSeam[fieldType](reader: JsonReader): fieldType =
+    scala.compiletime.summonFrom:
+      case parsable: (`fieldType` is Json.Parsable) => parsable.parse(reader)
+      case _ => scala.compiletime.summonInline[fieldType is Json.Field].parse(reader)
+
   // ── Expansion-time environment ─────────────────────────────────────────
 
   private def macroClassloader: ClassLoader =
@@ -406,8 +416,9 @@ object stagedInternal:
     val packedNames: List[Option[(Long, Long)]] = List.range(0, arity).map(packedName)
 
     def body
-      ( foci:   Expr[Foci[Json.Focus]],
-        tactic: Expr[Tactic[JsonError]] )
+      ( foci:    Expr[Foci[Json.Focus]],
+        focused: Expr[Boolean],
+        tactic:  Expr[Tactic[JsonError]] )
     :   Expr[product] =
 
       val owner = Symbol.spliceOwner
@@ -445,9 +456,10 @@ object stagedInternal:
                 (nested[fieldType](instance, reader), instance.absent(tactic))
 
               case None =>
-                ( '{
-                    scala.compiletime.summonInline[fieldType is Json.Field].parse($reader)
-                  },
+                // A nominal `Parsable` (a staged sum, a custom instance) is
+                // called directly, skipping the `Field.Adapter` the fallback
+                // chain would otherwise construct per occurrence.
+                ( '{ stagedInternal.fieldSeam[fieldType]($reader) },
                   '{
                     scala.compiletime.summonInline[fieldType is Json.Field]
                     . absent()(using $tactic)
@@ -456,14 +468,15 @@ object stagedInternal:
       val fieldCode: List[(Expr[Any], Expr[Any])] = List.range(0, arity).map(fieldExprs)
 
       val arms = List.range(0, arity).map: index =>
-        val keyText: Expr[Text] = '{ ${Expr(fieldNames(index))}.tt }
-
         val read: Term =
           fieldTypes(index).asType match
             case '[fieldType] =>
+              val raw = fieldCode(index)(0).asExprOf[fieldType]
+
               '{
-                Json.Parsable.focusing($foci, $keyText)
-                  (${ fieldCode(index)(0).asExprOf[fieldType] })
+                if $focused then
+                  Json.Parsable.focusing($foci, ${Expr(fieldNames(index))}.tt)($raw)
+                else $raw
               }.asTerm
 
         val rhs =
@@ -566,8 +579,9 @@ object stagedInternal:
 
     '{
       val foci = infer[Foci[Json.Focus]]
+      val focused = foci.active
       val tactic = infer[Tactic[JsonError]]
-      ${ body('foci, 'tactic) }
+      ${ body('foci, 'focused, 'tactic) }
     }
 
   // ── The entry macro ────────────────────────────────────────────────────
