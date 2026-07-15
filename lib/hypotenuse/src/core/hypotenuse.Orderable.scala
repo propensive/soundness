@@ -39,7 +39,7 @@ trait Orderable extends Commensurable:
 
   type Contrast = Self
 
-  def contramap[self](lambda: self => Self): (self is Orderable)^{this, lambda} = new Orderable:
+  def contramap[self](lambda: self -> Self): self is Orderable = new Orderable:
     type Self = self
 
 

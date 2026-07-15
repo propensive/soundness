@@ -94,6 +94,6 @@ object Countable:
     def size(self: Text): Int = self.s.length
     override def nil(self: Text): Boolean = self.s.isEmpty
 
-trait Countable extends Typeclass:
+trait Countable extends Typeclass.Pure:
   def size(self: Self): Int
   def nil(self: Self): Boolean = size(self) == 0

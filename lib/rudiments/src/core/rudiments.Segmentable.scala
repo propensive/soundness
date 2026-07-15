@@ -54,5 +54,5 @@ object Segmentable:
     val max = interval.limit.n0.min(text.s.length)
     text.s.substring(min, max).nn.tt
 
-trait Segmentable extends Typeclass:
+trait Segmentable extends Typeclass.Pure:
   def segment(entity: Self, interval: Interval): Self
