@@ -1526,23 +1526,94 @@ object Yaml extends Yaml2, Dynamic:
       case Yaml.Tracking.Off =>
         Yaml.Parser.parseAll(input).map(Yaml(_))
 
-  given aggregable: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
-  =>  ((Yaml is Aggregable by Text)^{tactic}) =
-    summon[Text is Aggregable by Text].map: text =>
-      summon[Yaml.Tracking] match
-        case Yaml.Tracking.On =>
-          val (ast, ints) = Yaml.Parser.parseTracked(text)
+  // Parse a whole in-memory document (the honest one-shot transcode path).
+  private def fromText(text: Text)(using Tactic[ParseError], Yaml.Tracking): Yaml =
+    summon[Yaml.Tracking] match
+      case Yaml.Tracking.On =>
+        val (ast, ints) = Yaml.Parser.parseTracked(text)
+        new Yaml(ast, Yaml.PositionIndex(ints))
+
+      case Yaml.Tracking.Off =>
+        Yaml(Yaml.Parser.parse(text))
+
+  // Parse a byte pull-endpoint under the ambient tracking mode: the parser's
+  // cursor refills straight from the stream, so the input is never
+  // concatenated or copied through `getBytes`.
+  private def fromStream(stream: (Stream[Data] over Credit)^)
+    ( using Tactic[ParseError], Yaml.Tracking, Buffering )
+  :   Yaml =
+
+    summon[Yaml.Tracking] match
+      case Yaml.Tracking.On =>
+        val (ast, ints) = Yaml.Parser.parseTracked(stream)
+        new Yaml(ast, Yaml.PositionIndex(ints))
+
+      case Yaml.Tracking.Off =>
+        Yaml(Yaml.Parser.parse(stream))
+
+  private def fromStreamAll(stream: (Stream[Data] over Credit)^)
+    ( using Tactic[ParseError], Yaml.Tracking, Buffering )
+  :   List[Yaml] =
+
+    summon[Yaml.Tracking] match
+      case Yaml.Tracking.On =>
+        Yaml.Parser.parseAllTracked(stream).map: (ast, ints) =>
           new Yaml(ast, Yaml.PositionIndex(ints))
 
-        case Yaml.Tracking.Off =>
-          Yaml(Yaml.Parser.parse(text))
+      case Yaml.Tracking.Off =>
+        Yaml.Parser.parseAll(stream).map(Yaml(_))
+
+  // The parser is UTF-8-byte-based, so a character stream transcodes through
+  // the UTF-8 encoder duct — windowed, not whole-document.
+  private def utf8Stream(stream: (Stream[Text] over Credit)^)(using Buffering)
+  :   (Stream[Data] over Credit)^ =
+    stream.via(hieroglyph.charEncoders.utf8Encoder).asInstanceOf[(Stream[Data] over Credit)^]
+
+  given aggregable: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
+  =>  ((Yaml is Aggregable by Text)^{tactic}) =
+    new Aggregable:
+      type Self = Yaml
+      type Operand = Text
+
+      def aggregate(stream: LazyList[Text]): Yaml =
+        fromText(summon[Text is Aggregable by Text].aggregate(stream))
+
+      override def accept(stream: (Stream[Text] over Credit)^): Yaml =
+        // The non-consume `accept` crosses to the consuming transcode duct
+        // and cursor as a neutral reference; each accept delivers a
+        // single-use stream.
+        fromStream(utf8Stream(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
+
+  // Byte sources (files, HTTP bodies) skip transcoding entirely: the parser
+  // reads the bytes as delivered, and `skipBom()` already absorbs a UTF-8 BOM.
+  given aggregableData: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
+  =>  ((Yaml is Aggregable by Data)^{tactic}) =
+    new Aggregable:
+      type Self = Yaml
+      type Operand = Data
+
+      def aggregate(stream: LazyList[Data]): Yaml = fromStream(Stream(stream.iterator))
+
+      override def accept(stream: (Stream[Data] over Credit)^): Yaml =
+        // See `aggregable` above.
+        fromStream(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Data] over Credit)^])
 
   // Multi-document reads (`---`-separated YAML) through the uniform `.read`
   // API: `text.read[List[Yaml]]` yields one `Yaml` per document. Backed by
   // `parseAll`, this replaces the former bespoke `Text.readAll` extension.
   given aggregableAll: (tactic: Tactic[ParseError], tracking: Yaml.Tracking)
   =>  ((List[Yaml] is Aggregable by Text)^{tactic}) =
-    summon[Text is Aggregable by Text].map(parseAll(_))
+    new Aggregable:
+      type Self = List[Yaml]
+      type Operand = Text
+
+      def aggregate(stream: LazyList[Text]): List[Yaml] =
+        parseAll(summon[Text is Aggregable by Text].aggregate(stream))
+
+      override def accept(stream: (Stream[Text] over Credit)^): List[Yaml] =
+        // See `aggregable` above.
+        fromStreamAll:
+          utf8Stream(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^])
 
   // HTTP content-type integration. `Abstractable across HttpStreams` makes a
   // `Yaml` value usable as an HTTP request/response body (telekinesis derives
@@ -1575,16 +1646,18 @@ object Yaml extends Yaml2, Dynamic:
   =>  ( tactic: Tactic[ParseError], yamlTactic: Tactic[YamlError], tracking: Yaml.Tracking )
   =>  (((value in Yaml) is Aggregable by Text)^{tactic, yamlTactic}) =
 
-    summon[Text is Aggregable by Text].map: text =>
-      val yaml = summon[Yaml.Tracking] match
-        case Yaml.Tracking.On =>
-          val (ast, ints) = Yaml.Parser.parseTracked(text)
-          new Yaml(ast, Yaml.PositionIndex(ints))
+    new Aggregable:
+      type Self = value in Yaml
+      type Operand = Text
 
-        case Yaml.Tracking.Off =>
-          Yaml(Yaml.Parser.parse(text))
+      def aggregate(stream: LazyList[Text]): value in Yaml =
+        fromText(summon[Text is Aggregable by Text].aggregate(stream))
+        . as[value].asInstanceOf[value in Yaml]
 
-      yaml.as[value].asInstanceOf[value in Yaml]
+      override def accept(stream: (Stream[Text] over Credit)^): value in Yaml =
+        // See `aggregable` above.
+        fromStream(utf8Stream(stream.asInstanceOf[AnyRef].asInstanceOf[(Stream[Text] over Credit)^]))
+        . as[value].asInstanceOf[value in Yaml]
 
   def primitive(ast: Yaml.Ast): YamlPrimitive =
     if ast.isNull then YamlPrimitive.Null
@@ -1637,6 +1710,48 @@ object Yaml extends Yaml2, Dynamic:
       parser.tracking = false
       parser.resetData(input)
       parser.parseAll()
+
+    // Streaming entry points — the parser consumes a byte pull-endpoint
+    // directly through a stream-fed cursor, so the input is never
+    // concatenated into a single `Text` or copied through `getBytes`. (The
+    // whole-parse `holding:` still accumulates the document once in the
+    // cursor's own buffer; narrowing the holds is a separate campaign.)
+    def parse(input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering): Yaml.Ast =
+      val parser = borrow()
+      parser.tracking = false
+      parser.resetStream(input)
+      parser.parse()
+
+    def parseAll(input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering)
+    :   List[Yaml.Ast] =
+
+      val parser = borrow()
+      parser.tracking = false
+      parser.resetStream(input)
+      parser.parseAll()
+
+    def parseTracked(input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering)
+    :   (Yaml.Ast, IArray[Int]) =
+
+      val parser = borrow()
+      parser.tracking = true
+
+      try
+        parser.resetStream(input)
+        val ast = parser.parse()
+        (ast, IArray.unsafeFromArray(parser.rootIndex.nn))
+      finally parser.tracking = false
+
+    def parseAllTracked(input: (Stream[Data] over Credit)^)(using Tactic[ParseError], Buffering)
+    :   List[(Yaml.Ast, IArray[Int])] =
+
+      val parser = borrow()
+      parser.tracking = true
+
+      try
+        parser.resetStream(input)
+        parser.parseAllTracked()
+      finally parser.tracking = false
 
     // Tracked entry points — produce the AST plus a flat `IArray[Int]`
     // descriptor index. Used by the tracking-aware `Decodable`/`Aggregable`
@@ -1790,12 +1905,28 @@ object Yaml extends Yaml2, Dynamic:
       cursor = cursor0
       resetParserState()
 
+    // As `resetData`, over a pull endpoint: the cursor refills from the
+    // stream (single-copy, credit-bounded) instead of borrowing a preset
+    // block. The stream is adopted by the cursor — single ownership passes
+    // with the call, by the `accept` convention.
+    def resetStream(input: (Stream[Data] over Credit)^)(using Buffering): Unit =
+      val cursor0 = makeStreamCursor(input)
+      cursor = cursor0
+      resetParserState()
+
     // Build a `Cursor[Data, {}]` with the appropriate `Lineation`. The two
     // `import`s are mutually exclusive — both define a `Lineation` for
     // `Data` and bringing both into scope at the same time would render
     // `Cursor[Data, {}]` constructor resolution ambiguous. Local-import-per-
     // branch is the workaround established by jacinta #1147.
     private def makeCursor(input: Data): Cursor[Data, {}]^ =
+      if tracking then zephyrine.lineation.linefeedByte.give(Cursor[Data](input))
+      else Lineation.untrackedData.give(Cursor[Data](input))
+
+    // As `makeCursor`, over a pull endpoint (see the mutually-exclusive
+    // `Lineation` note above).
+    private def makeStreamCursor(input: (Stream[Data] over Credit)^)(using Buffering)
+    :   Cursor[Data, {}]^ =
       if tracking then zephyrine.lineation.linefeedByte.give(Cursor[Data](input))
       else Lineation.untrackedData.give(Cursor[Data](input))
 
@@ -2313,10 +2444,40 @@ object Yaml extends Yaml2, Dynamic:
 
       sawAny
 
+    // Ensure at least `n` bytes are buffered ahead of `pos`, refilling as
+    // needed; fewer remain buffered only at end-of-input. A preset (whole-
+    // document) cursor always has everything buffered, so the fast path is a
+    // single comparison; a stream-fed cursor advances through a held mark to
+    // force refills (the hold extends the buffer instead of compacting, and
+    // `cue` restores both the position and the lineation coordinates).
+    private def buffered(n: Int): Unit =
+      if bufEnd - pos < n then
+        syncTo()
+        if tracking then reconcileLineation()
+
+        cursor.hold:
+          val mark = cursor.mark
+          var advanced = 0
+          var continue = true
+
+          while advanced < n && continue do
+            if cursor.more then
+              cursor.advance()
+              advanced += 1
+            else continue = false
+
+          cursor.cue(mark)
+
+        syncFrom()
+
     // True if the cursor is positioned at a document marker (three of
     // the same byte followed by a line-boundary or end-of-input). Does
-    // not consume.
-    private inline def isDocumentMarker(b: Byte): Boolean =
+    // not consume. The four-byte lookahead must be buffered first: a
+    // stream-fed cursor may hold fewer, and an unbuffered `---` would
+    // otherwise parse as a plain scalar.
+    private def isDocumentMarker(b: Byte): Boolean =
+      buffered(4)
+
       pos + 2 < bufEnd && bytes(pos) == b && bytes(pos+1) == b && bytes(pos+2) == b &&
         (pos + 3 >= bufEnd || {
             val nb = bytes(pos+3)

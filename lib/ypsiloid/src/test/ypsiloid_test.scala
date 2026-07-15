@@ -583,6 +583,43 @@ object Tests extends Suite(m"Ypsiloid Tests"):
         t"---\n1\n---\n2\n---\n3".read[List[Yaml]].map(_.as[Int])
       . assert(_ == List(1, 2, 3))
 
+      suite(m"Streaming reads"):
+        val personDoc = t"name: Alice\nage: 42"
+
+        test(m"a document parses from a fragmented text stream"):
+          summon[Yaml is Aggregable by Text]
+          . accept(personDoc.s.grouped(3).map(_.tt).stream).as[Person]
+        . assert(_ == Person(t"Alice", 42))
+
+        test(m"a document parses from a single-char-chunk stream"):
+          summon[Yaml is Aggregable by Text]
+          . accept(personDoc.s.grouped(1).map(_.tt).stream).as[Person]
+        . assert(_ == Person(t"Alice", 42))
+
+        test(m"a document parses from a byte stream without transcoding"):
+          import charEncoders.utf8Encoder
+          summon[Yaml is Aggregable by Data].accept(personDoc.in[Data].stream).as[Person]
+        . assert(_ == Person(t"Alice", 42))
+
+        test(m"multi-document YAML parses from a stream"):
+          summon[List[Yaml] is Aggregable by Text]
+          . accept(t"---\n1\n---\n2\n---\n3".s.grouped(2).map(_.tt).stream)
+          . map(_.as[Int])
+        . assert(_ == List(1, 2, 3))
+
+        test(m"non-ASCII content survives the streaming transcode"):
+          // Single-char chunks split the astral character's surrogate pair
+          // across encoder windows; the duct must carry it.
+          summon[Yaml is Aggregable by Text]
+          . accept(t"name: Zoë £€𐍈\nage: 1".s.grouped(1).map(_.tt).stream).as[Person]
+        . assert(_ == Person(t"Zoë £€𐍈", 1))
+
+        test(m"a tracked parse works over a stream"):
+          given Yaml.Tracking = Yaml.Tracking.On
+          summon[Yaml is Aggregable by Text]
+          . accept(personDoc.s.grouped(3).map(_.tt).stream).as[Person]
+        . assert(_ == Person(t"Alice", 42))
+
       test(m"Empty stream yields no documents"):
         t"".read[List[Yaml]].length
       . assert(_ == 0)
