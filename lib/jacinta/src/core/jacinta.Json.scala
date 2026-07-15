@@ -628,12 +628,39 @@ object Json extends Json2, Dynamic:
     inline def derived[value](using Reflection[value]): value is Json.Parsable =
       fromField(ParsableDerivation.derivedOne[value])
 
-    // Generates a monomorphic parser for a case class at compile time — the
-    // staged counterpart of `derived`, with identical semantics but no
-    // interpretive machinery at runtime. Sums, method-local classes and
-    // curried case classes stay on `derived`.
-    inline def staged[value]: value is Json.Parsable =
+    // Generates a monomorphic parser at compile time — the staged
+    // counterpart of `derived`, with identical semantics but no interpretive
+    // machinery at runtime. A case class parses through typed local slots
+    // and packed-literal key dispatch; a sealed sum (whose `Discriminable`
+    // must be a field-discriminated shape, like `jsonByKindDiscriminable`)
+    // dispatches its scan-ahead tag through a monomorphic comparison chain
+    // into per-variant `Json.Field` instances. Method-local classes,
+    // curried case classes, singleton variants and generic sums stay on
+    // `derived`.
+    inline def staged[value]: value is Json.Parsable = summonFrom:
+      case given SumReflection[`value`] => stagedSum[value]
+      case _                            => stagedProduct[value]
+
+    private inline def stagedProduct[value]: value is Json.Parsable =
       ${ jacinta.internal.stagedParsable[value]('{ relabelling[value, Json] }) }
+
+    private inline def stagedSum[value]: value is Json.Parsable =
+      ${ jacinta.internal.stagedSum[value]('{ variantRelabelling[value, Json] }) }
+
+    // The scan-ahead tag field of a field-discriminated sum, for staged
+    // parsers, which dispatch on it monomorphically. The other shapes have
+    // no equivalent single step, so a staged sum whose `Discriminable` is
+    // not a `DiscriminantField` fails fast at instance construction. Public
+    // because staged parsers are generated into user modules.
+    def discriminantField(discriminable: Discriminable in Json): Text =
+      discriminable match
+        case fielded: Json.DiscriminantField[?] => fielded.field
+
+        case other =>
+          panic
+            (m"""staged sum parsing requires a field-discriminated sum (a `DiscriminantField`
+                 `Discriminable`, like `jsonByKindDiscriminable`); other shapes use
+                 `Json.Parsable.derived`""")
 
     def fromField[value](field0: (value is Json.Parsing)^)
     :   ((value is Json.Parsable)^{field0}) =

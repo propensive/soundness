@@ -217,6 +217,9 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
   object staged:
     given lineItem: LineItem is Json.Parsable = Json.Parsable.staged
     given customer: Customer is Json.Parsable = Json.Parsable.staged
+    given card: Payment.Card is Json.Parsable = Json.Parsable.staged
+    given transfer: Payment.Transfer is Json.Parsable = Json.Parsable.staged
+    given payment: Payment is Json.Parsable = Json.Parsable.staged
     given order: Order is Json.Parsable = Json.Parsable.staged
     given orders: Orders is Json.Parsable = Json.Parsable.staged
 
