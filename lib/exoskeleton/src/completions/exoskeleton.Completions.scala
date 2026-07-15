@@ -106,7 +106,7 @@ object Completions:
         case AlreadyInstalled(_, path) => path
 
 
-  def ensure(force: Boolean = false)(using Entrypoint, WorkingDirectory, Diagnostics)
+  def ensure(force: Boolean = false)(using Entrypoint^, WorkingDirectory, Diagnostics)
   :   List[Text] logs CliEvent =
 
     if force then safely(effectful(install(force))).let(_.paths).or(Nil)
@@ -122,7 +122,7 @@ object Completions:
       Nil
 
 
-  def install(force: Boolean = false)(using entrypoint: Entrypoint)(using erased effectful: Effectful)
+  def install(force: Boolean = false)(using entrypoint: Entrypoint^)(using erased effectful: Effectful)
     ( using WorkingDirectory, Diagnostics )
   :   Installation raises InstallError logs CliEvent =
 

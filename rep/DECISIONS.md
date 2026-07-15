@@ -21,8 +21,8 @@ around by cast/launder with a comment; the patched compiler may be used without 
    = given-resolution lifetime.
 3. **parasite daemon error propagation** (`ad3511b34`, pre-existing flag): deleted
    handler-nesting tests + Task monad dropped `Tactic[AsyncError]`; bless or redesign.
-4. **coaxial `port.listen`** result leaking `any` into `val server` (also surfaces inside
-   ethereal.core at `domainSocket.listen`): genuine escape; scoped-API redesign candidate.
+4. **coaxial `port.listen`** — CLOSED (2026-07-15, capture-honesty Phase 5): `listen` is now
+   a loan (`listen(lambda)(block: SocketService ?=> result)`), stop always in `finally`.
 5. **zeppelin.core `Zip.Entry`** lazily-captured `storedBytes` thunk: genuine capture
    (LazyList-confinement limit); design case.
 6. **tarantula `Navigator`** (browser session as capability), **probably.cli**
@@ -2182,3 +2182,30 @@ enablement legs, since the modules would not compile under CC without them. The 
   scoping.
 
 Suites: profanity 54/0, exoskeleton 69/0, scintillate 20/0.
+
+## Capture-honesty Phase 5: coaxial listen is a loan; ethereal.core capture-checked (2026-07-15)
+
+CLOSES open decision ⚑4 (`port.listen` fresh-escape). Gates: JVM 10301/10301, JS 8006/8006;
+suites coaxial 36/0, ethereal 49/0, exoskeleton 69/0, cordillera 30/0, obligatory 22/0,
+perihelion 28/0, scintillate 20/0.
+
+- `Bindable.listen` and `DomainServer.listenConnections` are now LOANS: they bind, lend the
+  running server to a block as a `SocketService` capability, and always stop it in `finally`.
+  The interface variant is `listenOn(interface)(lambda)(block)` — overloading on the interface
+  clause is ambiguous against the trailing block. Ethereal's process-lifetime daemon nests its
+  readiness files, pid-watcher and park inside the block (it only leaves via `System.exit`).
+- `DaemonService` → `caps.ExclusiveCapability` (the 2026-07-06 service-class ruling);
+  `Executive.invocation`'s `entrypoint` param and `Completions.ensure/install` evidence are
+  `Entrypoint^`.
+- `ambience.Directories` converted to the honest capturing-evidence form `Xdg` already used
+  (`(path is Instantiable across Paths from Text)^` instead of a pure context bound) — it had
+  simply never had a CC-enabled caller before.
+- galilei's `Eof` `Openable` given takes named capturing evidence with an honest
+  `^{openable, caps.any}` result and a `{ type Result = openable.Result }` refinement (the
+  pure context bound could not accept `FileOpenable^` instances).
+- ethereal recipes: the `Client.invocation` promise is an `AnyRef` rim (a `Cli` capability
+  crossing fibers; cast at both ends); `Assembler.assemble` de-sugared (stacked `raises` →
+  explicit using) and its jar-append restructured as TWO SEQUENTIAL opens with a strict
+  read between (nested handle-loan lambdas mint fresh roots that cannot unify; the `Eof`
+  two-evidence dependent-`Result` chain has the same problem, so the append uses a direct
+  `open(..., List(OpenFlag.Append))`).

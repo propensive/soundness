@@ -103,7 +103,7 @@ package executives:
         environment:      Environment,
         workingDirectory: WorkingDirectory,
         stdio:            Stdio,
-        entrypoint:       Entrypoint,
+        entrypoint:       Entrypoint^,
         login:            Login )
       ( using interpreter: Interpreter )
     :   Invocation =

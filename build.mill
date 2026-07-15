@@ -1092,7 +1092,7 @@ object ethereal extends Library:
   object core extends Component(surveillance.core, eucalyptus.syslog, hellenism.core, exoskeleton.core, coaxial.jvm, quantitative.units, telekinesis.jvm, urticose.url, gastronomy.core):
     override def scalaJs = false // transitively JVM-only (networking/crypto/fs/process)
     override def scalacOptions = Task:
-      super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium")
+      settings.cc(super.scalacOptions() ++ Seq("-Yno-predef", "-Yimports:java.lang,scala,proscenium"))
     // The platforms the reusable native runner stubs target — (label, binary filename).
     // The stubs are built and published independently of this build (see `make
     // runners-build` / `make runners-release`); the Soundness build never compiles them,

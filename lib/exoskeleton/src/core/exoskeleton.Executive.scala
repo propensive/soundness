@@ -48,7 +48,7 @@ trait Executive extends Findable:
       environment:      Environment,
       workingDirectory: WorkingDirectory,
       stdio:            Stdio,
-      entrypoint:       Entrypoint,
+      entrypoint:       Entrypoint^,
       login:            Login )
     ( using interpreter: Interpreter )
   :   Interface

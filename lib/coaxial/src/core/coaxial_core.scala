@@ -47,19 +47,27 @@ import vacuous.*
 import Control.*
 
 extension [bindable: {Bindable, Showable}](socket: bindable)
+  // `listen` is a loan: it binds, lends the running server to `block` as a `SocketService`
+  // capability, and always stops it afterwards. The capability form (rather than returning
+  // the service) means capture checking confines the accept loop to the block — the earlier
+  // `val server = port.listen(...)` shape was a genuine fresh-capability escape
+  // (rep/DECISIONS.md ⚑4, closed by this design).
+  //
   // A default argument cannot be combined with the path-dependent `bindable.Input`/`.Output`
-  // types here (default-getter synthesis fails), so the interface-less form is a separate
-  // overload that delegates with `Unset`.
+  // types here (default-getter synthesis fails), and overloading on the interface clause is
+  // ambiguous against the trailing block, so the interface form has its own name.
   transparent inline def listen[input](using Monitor, Probate)[result]
     ( lambda: bindable.Input => bindable.Output )
-  :   (SocketService^) raises BindError logs SocketEvent =
+    ( block: SocketService ?=> result )
+  :   result raises BindError logs SocketEvent =
 
-    socket.listen(lambda)(Unset)
+    socket.listenOn(Unset)(lambda)(block)
 
-  transparent inline def listen[input](using Monitor, Probate)[result]
-    ( lambda: bindable.Input => bindable.Output )
+  transparent inline def listenOn[input](using Monitor, Probate)[result]
     ( interface: Optional[MacAddress] )
-  :   (SocketService^) raises BindError logs SocketEvent =
+    ( lambda: bindable.Input => bindable.Output )
+    ( block: SocketService ?=> result )
+  :   result raises BindError logs SocketEvent =
 
     val binding = bindable.bind(socket, interface)
     Log.info(SocketEvent.Listening(socket.show))
@@ -81,11 +89,13 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
 
     val task = async(bindLoop.run())
 
-    SocketService: () =>
+    val service = SocketService: () =>
       bindLoop.stop()
       bindable.stop(binding)
       safely(task.await())
       Log.fine(SocketEvent.Closed(socket.show))
+
+    try block(using service) finally service.stop()
 
 
 // `Serviceable` instances are capabilities (their givens retain tactics and socket options), so
