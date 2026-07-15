@@ -45,14 +45,15 @@ case class Reading(celsius: Celsius, station: String)
 
 // A same-compilation-run counterpart of `Celsius`: its conditional companion
 // given has the shape the staging tier evaluates, but it is compiled in the
-// same run as its use site. The PoC's decisive finding: which tier serves it
-// is NONDETERMINISTIC — on a clean build no classfile exists, so the macro
-// degrades to the runtime tier, but on an incremental rebuild the module's
-// output directory (on the macro classpath) still holds the previous
-// compile's classfile, and the staging tier loads it — potentially STALE
-// bytecode if the instance was edited in this very run. So neither tier
-// soundly escapes the earlier-compilation requirement; its runtime sibling
-// is therefore real, and the test asserts only the value.
+// same run as its use site, so no trustworthy classfile exists at expansion
+// time (an incremental rebuild leaves a STALE one from the previous compile
+// in the output directory, which sits on the macro classpath). Both tiers
+// therefore refuse same-run definitions outright — the evaluator through a
+// current-run symbol check, the staging tier by that check plus excluding
+// the output directory from its inner classpath — and the macro
+// deterministically degrades to the runtime tier, whose sibling here is
+// real so the observable behavior is identical on clean and incremental
+// builds.
 case class Fahrenheit(degrees: Int)
 case class Sample(fahrenheit: Fahrenheit)
 
@@ -105,9 +106,9 @@ object Tests extends Suite(m"Prescience tests"):
         Prescience.readStaging[Reading]("21,Kew")
       . assert(_ == Reading(Celsius(21), "Kew"))
 
-      test(m"A same-run instance decodes, whichever tier serves it"):
-        // Clean build: runtime tier (no classfile yet). Incremental rebuild:
-        // the staging tier resolves it from the PREVIOUS compile's classfile
-        // in the output directory — the staleness hazard documented above.
+      test(m"A same-run instance deterministically takes the runtime tier"):
+        // Would be nondeterministic without the same-run guards (see the
+        // comment on `Fahrenheit`); with them, clean and incremental builds
+        // agree: the runtime tier serves it.
         Prescience.readStaging[Sample]("70")
       . assert(_ == Sample(Fahrenheit(70)))

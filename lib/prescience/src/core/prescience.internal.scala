@@ -81,14 +81,17 @@ object internal:
       case Typed(inner, _)        => eval(inner)
       case Block(Nil, inner)      => eval(inner)
 
-      case Select(qualifier, name) =>
-        if term.symbol.flags.is(Flags.Module) then loadModule(moduleBinaryName(term.symbol))
+      case select @ Select(qualifier, name) =>
+        if definedInCurrentRun(select.symbol) then None
+        else if select.symbol.flags.is(Flags.Module) then
+          loadModule(moduleBinaryName(select.symbol))
         else eval(qualifier).flatMap(invokeMember(_, name))
 
       case ref: Ref =>
         val symbol = ref.symbol
 
-        if symbol.flags.is(Flags.Module) then loadModule(moduleBinaryName(symbol))
+        if definedInCurrentRun(symbol) then None
+        else if symbol.flags.is(Flags.Module) then loadModule(moduleBinaryName(symbol))
         else if symbol.owner.flags.is(Flags.Module) then
           loadModule(moduleBinaryName(symbol.owner)).flatMap(invokeMember(_, symbol.name))
         else None
@@ -103,6 +106,64 @@ object internal:
     // classloader for the duration of the expansion.
     val contextual = Thread.currentThread.nn.getContextClassLoader
     if contextual != null then contextual else getClass.getClassLoader.nn
+
+  // The current compilation's output directory, through the compiler's own
+  // context (reachable because `scala3-compiler` is on this module's
+  // classpath). `None` when the output is virtual or the internals shift.
+  private def currentOutputDirectory(using Quotes): Option[String] =
+    try
+      val ctx = quotes.asInstanceOf[scala.quoted.runtime.impl.QuotesImpl].ctx
+      given dotty.tools.dotc.core.Contexts.Context = ctx
+      import dotty.tools.dotc.config.Settings.Setting.value
+
+      Option(ctx.settings.outputDir.value.file).map(_.nn.getCanonicalPath.nn)
+    catch case _: Exception => None
+
+  // Whether a symbol's definition belongs to the compilation run in
+  // progress: its classfile either does not exist yet or — worse — exists
+  // stale from a previous incremental compile, so neither evaluation tier
+  // may touch it and the caller must degrade to the runtime tier.
+  private def definedInCurrentRun(using Quotes)(symbol: quotes.reflect.Symbol): Boolean =
+    try
+      val ctx = quotes.asInstanceOf[scala.quoted.runtime.impl.QuotesImpl].ctx
+      val run = ctx.run
+
+      if run == null then false else
+        val sources = run.nn.units.map(_.source.file.path).toSet
+        val position = symbol.pos
+        position.exists { position => sources.contains(position.sourceFile.path) }
+    catch case _: Exception => false
+
+  // The macro classpath minus the current output directory, so the staging
+  // tier's inner compiler can never resolve a same-run definition against a
+  // stale classfile.
+  private def innerClasspath(using Quotes): String =
+    val separator = java.io.File.pathSeparator.nn
+    val full = dotty.tools.dotc.util.ClasspathFromClassloader(macroClassloader).nn
+
+    currentOutputDirectory match
+      case None =>
+        full
+
+      case Some(excluded) =>
+        val entries = full.split(separator).nn
+        val joined = StringBuilder()
+        var index = 0
+
+        while index < entries.length do
+          val entry = entries(index).nn
+
+          val retain =
+            try java.io.File(entry).getCanonicalPath != excluded
+            catch case _: java.io.IOException => true
+
+          if retain then
+            if joined.nonEmpty then joined.append(separator)
+            joined.append(entry)
+
+          index += 1
+
+        joined.toString
 
   // ── Tier B: implicit search under an in-macro staging compiler ────────────
   // Evaluates any instance that implicit search can resolve from *global*
@@ -120,13 +181,21 @@ object internal:
     import scala.quoted.staging
 
     TypeRepr.of[field].classSymbol.flatMap: classSymbol =>
-      try
+      if definedInCurrentRun(classSymbol) then None else try
         val clazz = Class.forName(classSymbol.fullName, false, macroClassloader).nn
-        // The repo compiles under experimental language features, so its
-        // symbols are `@experimental`-tagged; the inner compiler must opt in
-        // to reference them.
+
+        // The compiled snippet lands in a real directory, and the inner
+        // compiler's classpath excludes the current output directory, so a
+        // same-run instance can never resolve against a stale classfile from
+        // a previous incremental compile. `-experimental` because the repo
+        // compiles under experimental language features, so its symbols are
+        // `@experimental`-tagged.
+        val outputDir: String =
+          java.nio.file.Files.createTempDirectory("prescience").nn.toString
+
         given settings: staging.Compiler.Settings =
-          staging.Compiler.Settings.make(None, List("-experimental"))
+          staging.Compiler.Settings.make
+            (Some(outputDir), List("-experimental", "-classpath", innerClasspath))
 
         given staging.Compiler = staging.Compiler.make(macroClassloader)
         val started = System.nanoTime
@@ -149,10 +218,29 @@ object internal:
           target.asType match
             case '[target] => '{ scala.compiletime.summonInline[target] }
 
-        val duration = (System.nanoTime - started)/1000000L
-        report.info(s"prescience: staged summon for ${classSymbol.fullName} took ${duration}ms")
+        // The snippet's classes are now ordinary files in `outputDir`; a new
+        // classloader over that directory (parented by the macro classloader,
+        // which supplies the instance's own classes) can reconstruct the
+        // instance independently of `staging.run`'s internal loader — the
+        // basis for caching a compiled summon across expansions.
+        val reloaded: Any =
+          try
+            val url = java.io.File(outputDir).toURI.nn.toURL.nn
+            val loader = java.net.URLClassLoader(Array(url), macroClassloader)
+            val generated = loader.loadClass("Generated$Code$From$Quoted").nn
+            val instance = generated.getConstructor().nn.newInstance()
+            generated.getMethod("apply").nn.invoke(instance)
+          catch
+            case _: ReflectiveOperationException => result
+            case _: LinkageError                 => result
 
-        result match
+        val duration = (System.nanoTime - started)/1000000L
+
+        report.info
+          (s"prescience: staged summon for ${classSymbol.fullName} took ${duration}ms; "+
+            s"classes in $outputDir")
+
+        reloaded match
           case instance: Inlinable => Some(instance)
           case _                   => None
       catch
