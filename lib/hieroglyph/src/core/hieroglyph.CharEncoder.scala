@@ -36,6 +36,7 @@ import java.nio as jn, jn.charset as jnc
 
 import anticipation.*
 import beneficence.*
+import denominative.*
 import rudiments.*
 import vacuous.*
 
@@ -51,4 +52,47 @@ extends Encodable, Findable:
   type Form = Data
 
   def encoded(text: Text): Data = text.s.getBytes(encoding.name.s).nn.immutable(using Unsafe)
-  def encoded(stream: LazyList[Text]): LazyList[Data] = stream.map(encode)
+
+  // Chunk boundaries are not character boundaries: a surrogate pair may be
+  // split across two chunks, so encoding each chunk independently (as this
+  // method formerly did) corrupts any astral character on a boundary. Chars
+  // stage through a `CharBuffer` — the mirror of `CharDecoder.decoded` — so
+  // pairs carry whole across chunks; malformed and unmappable input is
+  // replaced, matching `getBytes` on the whole-value path above.
+  def encoded(stream: LazyList[Text]): LazyList[Data] =
+    val encoder =
+      encoding.charset.newEncoder().nn
+      . onMalformedInput(jnc.CodingErrorAction.REPLACE).nn
+      . onUnmappableCharacter(jnc.CodingErrorAction.REPLACE).nn
+
+    val in = jn.CharBuffer.allocate(4096).nn
+    val out = jn.ByteBuffer.allocate(4096).nn
+
+    def recur(todo: LazyList[Text], offset: Int = 0): LazyList[Data] =
+      val count = in.remaining
+
+      if !todo.nil then
+        in.put(todo.head.s, offset, offset + count.min(todo.head.s.length - offset))
+
+      in.flip()
+      val status = encoder.encode(in, out, todo.nil).nn
+
+      // An overflowed final round loops to drain; `flush` (significant only
+      // for stateful charsets) happens on the true final round.
+      if todo.nil && !status.isOverflow then encoder.flush(out)
+
+      out.flip()
+      val array = new Array[Byte](out.remaining)
+      out.get(array)
+      val data: Data = array.immutable(using Unsafe)
+      out.clear()
+      in.compact()
+
+      def continue =
+        if todo.nil && !status.isOverflow then LazyList()
+        else if !todo.nil && count >= todo.head.s.length - offset then recur(todo.tail, 0)
+        else recur(todo, offset + count)
+
+      if data.length == 0 then continue else data #:: continue
+
+    recur(stream)

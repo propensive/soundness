@@ -95,6 +95,25 @@ object Tests extends Suite(m"Turbulence tests"):
           result.s
         . assert(_ == string.s)
 
+      test(m"a surrogate pair split across chunks encodes correctly"):
+        val gothic = t"𐍈"
+        val high = gothic.s.charAt(0).toString.tt
+        val low = gothic.s.charAt(1).toString.tt
+
+        summon[CharEncoder].encoded(LazyList(t"a", high, low, t"b"))
+        . to(List).reduce(_ ++ _).to(List)
+      . assert(_ == t"a𐍈b".in[Data].to(List))
+
+      test(m"per-char-chunk streams roundtrip through encode and decode"):
+        val string = "aë€𐍈z"
+
+        val chunks =
+          (0 until string.length).map { index => string.charAt(index).toString.tt }.to(LazyList)
+
+        summon[CharDecoder].decoded(summon[CharEncoder].encoded(chunks))
+        . to(List).map(_.s).mkString
+      . assert(_ == "aë€𐍈z")
+
     val qbf = t"The quick brown fox\njumps over the lazy dog"
     val qbfData = qbf.in[Data]
 
