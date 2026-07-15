@@ -36,6 +36,7 @@ import java.io as ji
 import java.lang as jl
 
 import scala.collection.mutable as scm
+import scala.reflect.ClassTag
 
 import anticipation.*
 import denominative.*
@@ -113,20 +114,22 @@ object Addressable:
   // counted in records, and `Buffering` sizes these buffers by reference
   // count (`Substrate.Boxes`), since their memory usage isn't
   // deterministically bounded. Erasure means the medium's element type must
-  // be a reference type; the `IArray`s this instance materializes are backed
-  // by `Array[AnyRef]`, which is indistinguishable at erased use sites.
-  given boxed: [element <: AnyRef] => IArray[element] is Addressable:
+  // be a reference type, and the `IArray`s this instance MATERIALIZES must be
+  // genuine `element[]`s (an `IArray[element]` value checkcasts to one at any
+  // concretely-typed use site) — hence the `ClassTag`; only the working
+  // storage is an erased `Array[AnyRef]`.
+  given boxed: [element <: AnyRef: ClassTag] => IArray[element] is Addressable:
     type Operand = element
     type Target = scm.ArrayBuffer[element]
     type Storage = Array[AnyRef]
 
-    val empty: IArray[element] = IArray.empty[AnyRef].asInstanceOf[IArray[element]]
+    val empty: IArray[element] = IArray.empty[element]
 
     def substrate: Substrate = Substrate.Boxes
     def blank(size: Int): scm.ArrayBuffer[element] = scm.ArrayBuffer[element]()
 
     def build(target: scm.ArrayBuffer[element]): IArray[element] =
-      target.toArray[AnyRef].asInstanceOf[IArray[element]]
+      target.toArray[element].immutable(using Unsafe)
 
     def length(block: IArray[element]): Int = block.length
     def address(block: IArray[element], index: Ordinal): element = block(index.n0)
@@ -174,9 +177,9 @@ object Addressable:
     :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
 
     def materialize(storage: Array[AnyRef], off: Int, len: Int): IArray[element] =
-      val array = new Array[AnyRef](len)
+      val array = new Array[element](len)
       System.arraycopy(storage, off, array, 0, len)
-      array.asInstanceOf[IArray[element]]
+      array.immutable(using Unsafe)
 
     def cloneStorage
       (storage: Array[AnyRef], off: Int, len: Int)(target: scm.ArrayBuffer[element])

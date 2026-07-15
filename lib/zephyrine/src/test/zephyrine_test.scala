@@ -946,6 +946,11 @@ object Tests extends Suite(m"Zephyrine tests"):
           Iterator.empty[IArray[Row]].stream.elements.to(List)
         . assert(_ == List())
 
+        test(m"memoize materializes a record stream into one IArray"):
+          val rows: IArray[Row] = Stream(Iterator(IArray(Row(1), Row(2)), IArray(Row(3)))).memoize
+          rows.to(List)
+        . assert(_ == List(Row(1), Row(2), Row(3)))
+
         test(m"elements composes with take"):
           Stream(Iterator(IArray(Row(1), Row(2)), IArray(Row(3), Row(4)))).take(3).elements
           . to(List)

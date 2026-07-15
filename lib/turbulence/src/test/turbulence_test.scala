@@ -414,6 +414,67 @@ object Tests extends Suite(m"Turbulence tests"):
         supervise(l1.multiplex(l2).filter(_%2 == 1))
       . assert(_ == l2)
 
+    suite(m"Relay tests"):
+      test(m"records put before draining arrive in order"):
+        val relay = Relay[Text]()
+        relay.put(t"one")
+        relay.put(t"two")
+        relay.put(t"three")
+        relay.stop()
+        relay.stream.elements.to(List)
+      . assert(_ == List(t"one", t"two", t"three"))
+
+      test(m"records already queued batch into one window"):
+        val relay = Relay[Text]()
+        relay.put(t"a")
+        relay.put(t"b")
+        relay.put(t"c")
+        relay.stop()
+        var windows: Int = 0
+
+        relay.stream.sweep: (storage, start, count) =>
+          windows += 1
+
+        windows
+      . assert(_ == 1)
+
+      test(m"an immediately-stopped relay yields no records"):
+        val relay = Relay[Text]()
+        relay.stop()
+        relay.stream.elements.to(List)
+      . assert(_ == List())
+
+      test(m"records after stop are not delivered"):
+        val relay = Relay[Text]()
+        relay.put(t"before")
+        relay.stop()
+        relay.put(t"after")
+        relay.stream.elements.to(List)
+      . assert(_ == List(t"before"))
+
+      test(m"the reader blocks for records from concurrent producers"):
+        supervise:
+          val relay = Relay[Text]()
+          val producers = (1 to 4).map: index =>
+            async:
+              for value <- 1 to 25 do relay.put(t"${index*100 + value}")
+
+          val reader = async(relay.stream.elements.to(Set))
+          producers.each(_.await())
+          relay.stop()
+          unsafely(reader.await())
+      . assert(_ == (for index <- 1 to 4; value <- 1 to 25 yield t"${index*100 + value}").to(Set))
+
+      test(m"per-producer order is preserved through the relay"):
+        supervise:
+          val relay = Relay[Text]()
+          val producer = async:
+            for value <- 1 to 100 do relay.put(t"$value")
+            relay.stop()
+
+          unsafely(async(relay.stream.elements.to(List)).await())
+      . assert(_ == (1 to 100).to(List).map { value => t"$value" })
+
     suite(m"Compression tests"):
       test(m"Compress a single block with GZip"):
         LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Gzip].to(List).map(_.to(List))
