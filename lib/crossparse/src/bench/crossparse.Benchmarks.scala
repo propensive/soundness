@@ -208,6 +208,21 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
   // AST-only (YAML aliases require materialized subtrees).
   def decodeJsonDirect(): Orders = jsonData.read[Orders in Json]
   def decodeJsonAst(): Orders = jsonData.read[Json].as[Orders]
+
+  // The staged arm: monomorphic generated parsers for each record type,
+  // hoisted so the KeyTables and instance arrays are built once. The nested
+  // record types' staged givens are siblings, so each expansion finds them;
+  // `items` (a `List`) and `payment` (a sum) still cross runtime `Json.Field`
+  // seams — the current staged composition boundary.
+  object staged:
+    given lineItem: LineItem is Json.Parsable = Json.Parsable.staged
+    given customer: Customer is Json.Parsable = Json.Parsable.staged
+    given order: Order is Json.Parsable = Json.Parsable.staged
+    given orders: Orders is Json.Parsable = Json.Parsable.staged
+
+  def decodeJsonStaged(): Orders =
+    import staged.orders
+    jsonData.read[Orders in Json]
   def decodeTelDirect(): Orders = telData.read[Orders in Tel]
   def decodeTelAst(): Orders = telData.read[Tel].as[Orders]
   def decodeXmlDirect(): Orders = xmlText.read[Orders in Xml]
@@ -270,6 +285,7 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     // The correctness gate: every arm must reproduce the original value
     // before anything is timed.
     assert(decodeJsonDirect() == corpus, "JSON direct decode disagrees with the corpus")
+    assert(decodeJsonStaged() == corpus, "JSON staged decode disagrees with the corpus")
     assert(decodeJsonAst() == corpus, "JSON AST decode disagrees with the corpus")
     assert(decodeTelDirect() == corpus, "TEL direct decode disagrees with the corpus")
     assert(decodeTelAst() == corpus, "TEL AST decode disagrees with the corpus")
@@ -287,6 +303,9 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     suite(m"Decode a ~10 KB order corpus to case classes"):
       bench(m"JSON direct")(target = 1*Second, baseline = Baseline(compare = Min)):
         '{ crossparse.Benchmarks.decodeJsonDirect() }
+
+      bench(m"JSON staged")(target = 1*Second):
+        '{ crossparse.Benchmarks.decodeJsonStaged() }
 
       bench(m"JSON via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeJsonAst() }
@@ -326,6 +345,9 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
 
       profile(m"JSON direct")(target = 5*Second):
         '{ crossparse.Benchmarks.decodeJsonDirect() }
+
+      profile(m"JSON staged")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeJsonStaged() }
 
       profile(m"Jsoniter direct")(target = 5*Second):
         '{ crossparse.Benchmarks.decodeJsoniterDirect() }
