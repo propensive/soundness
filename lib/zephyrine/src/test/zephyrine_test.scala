@@ -938,12 +938,12 @@ object Tests extends Suite(m"Zephyrine tests"):
           text.to(List).map(_.s).mkString
         . assert(_ == "hi")
 
-        test(m"elements iterates records across chunks in order"):
-          Stream(Iterator(IArray(Row(1), Row(2)), IArray(Row(3)))).elements.to(List)
+        test(m"records iterates across chunks in order"):
+          Stream(Iterator(IArray(Row(1), Row(2)), IArray(Row(3)))).records.to(List)
         . assert(_ == List(Row(1), Row(2), Row(3)))
 
-        test(m"elements of an empty record stream is empty"):
-          Iterator.empty[IArray[Row]].stream.elements.to(List)
+        test(m"records of an empty record stream is empty"):
+          Iterator.empty[IArray[Row]].stream.records.to(List)
         . assert(_ == List())
 
         test(m"memoize materializes a record stream into one IArray"):
@@ -951,8 +951,8 @@ object Tests extends Suite(m"Zephyrine tests"):
           rows.to(List)
         . assert(_ == List(Row(1), Row(2), Row(3)))
 
-        test(m"elements composes with take"):
-          Stream(Iterator(IArray(Row(1), Row(2)), IArray(Row(3), Row(4)))).take(3).elements
+        test(m"records composes with take"):
+          Stream(Iterator(IArray(Row(1), Row(2)), IArray(Row(3), Row(4)))).take(3).records
           . to(List)
         . assert(_ == List(Row(1), Row(2), Row(3)))
 

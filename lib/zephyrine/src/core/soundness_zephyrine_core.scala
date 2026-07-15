@@ -34,7 +34,7 @@ package soundness
 
 export zephyrine.{Addressable, Buffering, Conduit, Credit, Cursor, Datum, Duct, Ductile, Pace,
     Format, Formatting, Intake, Lineation, ParseError, PositionTracking, Producer, Positionable,
-    Records, Regulation, Spring, Stream, Substrate, elements, locate, locateKey, memoize, pump,
+    Records, records, Regulation, Spring, Stream, Substrate, locate, locateKey, memoize, pump,
     stream, streamOf, sweep, toLazyList}
 
 // Hand-written forwarders: the synthesized export forwarders for these dependent-typed

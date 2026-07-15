@@ -98,7 +98,7 @@ extension [medium, transport](consume stream: (Stream[medium] over transport)^)
 extension (consume stream: (Stream[Text] over Credit)^)
   // Split a character stream into a record stream of its lines (each `Text`,
   // without its terminator), under the ambient `LineSeparation` policy. Drain
-  // with `.elements`/`.memoize`, or compose onward like any record stream.
+  // with `.records`/`.memoize`, or compose onward like any record stream.
   // (Named to steer clear of gossamer's value-level `lines` — same-named
   // extensions from different modules shadow, not overload, under the flat
   // `soundness.*` re-export.)

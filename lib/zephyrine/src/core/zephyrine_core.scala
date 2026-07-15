@@ -266,7 +266,7 @@ extension [record](consume stream: (Stream[IArray[record]] over Credit)^)
   // (or close the stream by other means) to release the upstream. Per-record
   // combinators come free from the `Iterator` interface (and rudiments' `each`);
   // window-level access for hot loops is `sweep`/`fold` above.
-  def elements(using Buffering): Iterator[record]^ = recordIterator(stream)
+  def records(using Buffering): Iterator[record]^ = recordIterator(stream)
 
 // A pull endpoint lending a bounded view of a cursor: the next `length` elements
 // (or all remaining, if `Unset`), exposed zero-copy — the cursor's own buffer
