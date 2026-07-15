@@ -2625,7 +2625,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     if stops0 != 0L then
       val length = java.lang.Long.numberOfTrailingZeros(stops0) >> 3
       j = start + length
-      if bytes(j) != Quote || length == 0 then return Int.MinValue
+      if ((word0 >>> (length*8)) & 0xFFL) != Quote || length == 0 then return Int.MinValue
       low = word0 & ((1L << (length*8)) - 1)
     else
       if start + 16 > limit then return Int.MinValue
@@ -2636,7 +2636,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       if stops1 != 0L then
         val length1 = java.lang.Long.numberOfTrailingZeros(stops1) >> 3
         j = start + 8 + length1
-        if bytes(j) != Quote then return Int.MinValue
+        if ((word1 >>> (length1*8)) & 0xFFL) != Quote then return Int.MinValue
         if length1 > 0 then high = word1 & ((1L << (length1*8)) - 1)
       else
         j = start + 16
@@ -2724,7 +2724,9 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     if stops0 != 0L then
       val length = java.lang.Long.numberOfTrailingZeros(stops0) >> 3
       j = start + length
-      if bytes(j) != Quote || length == 0 then return -2L
+      // The stop byte is already in the loaded word: verify it there rather
+      // than through a bounds-checked array read.
+      if ((word0 >>> (length*8)) & 0xFFL) != Quote || length == 0 then return -2L
       low = word0 & ((1L << (length*8)) - 1)
     else
       if start + 16 > limit then return -2L
@@ -2735,7 +2737,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       if stops1 != 0L then
         val length1 = java.lang.Long.numberOfTrailingZeros(stops1) >> 3
         j = start + 8 + length1
-        if bytes(j) != Quote then return -2L
+        if ((word1 >>> (length1*8)) & 0xFFL) != Quote then return -2L
         if length1 > 0 then high = word1 & ((1L << (length1*8)) - 1)
       else
         // Exactly sixteen bytes, or too long for the fast path.
@@ -2802,7 +2804,9 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     if stops0 != 0L then
       val length = java.lang.Long.numberOfTrailingZeros(stops0) >> 3
       j = start + length
-      if bytes(j) != Quote || length == 0 then return -2L
+      // The stop byte is already in the loaded word: verify it there rather
+      // than through a bounds-checked array read.
+      if ((word0 >>> (length*8)) & 0xFFL) != Quote || length == 0 then return -2L
       low = word0 & ((1L << (length*8)) - 1)
     else
       if start + 16 > limit then return -2L
@@ -2813,7 +2817,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       if stops1 != 0L then
         val length1 = java.lang.Long.numberOfTrailingZeros(stops1) >> 3
         j = start + 8 + length1
-        if bytes(j) != Quote then return -2L
+        if ((word1 >>> (length1*8)) & 0xFFL) != Quote then return -2L
         if length1 > 0 then high = word1 & ((1L << (length1*8)) - 1)
       else
         // Exactly sixteen bytes, or too long for the fast path.
@@ -2887,7 +2891,9 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
     if stops0 != 0L then
       val length = java.lang.Long.numberOfTrailingZeros(stops0) >> 3
       j = start + length
-      if bytes(j) != Quote || length == 0 then return -2L
+      // The stop byte is already in the loaded word: verify it there rather
+      // than through a bounds-checked array read.
+      if ((word0 >>> (length*8)) & 0xFFL) != Quote || length == 0 then return -2L
       low = word0 & ((1L << (length*8)) - 1)
     else
       if start + 16 > limit then return -2L
@@ -2898,7 +2904,7 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       if stops1 != 0L then
         val length1 = java.lang.Long.numberOfTrailingZeros(stops1) >> 3
         j = start + 8 + length1
-        if bytes(j) != Quote then return -2L
+        if ((word1 >>> (length1*8)) & 0xFFL) != Quote then return -2L
         if length1 > 0 then high = word1 & ((1L << (length1*8)) - 1)
       else
         // Exactly sixteen bytes, or too long for the fast path.
@@ -3070,6 +3076,61 @@ final class Parser extends caps.ExclusiveCapability, caps.Stateful:
       else
         directMark()
         pos = i
+        return true
+
+    directElementGeneral()
+
+  // The split element protocol for generated collection loops that know
+  // which step is first: `directElementFirst` expects a value or the closing
+  // bracket and marks the depth; `directElementNext` expects a comma or the
+  // closing bracket and consults no per-element state. Fallbacks preserve
+  // `directElement`'s exact semantics.
+  update def directElementFirst()(using Tactic[ParseError]): Boolean =
+    val limit = bufEnd
+    var i = pos
+
+    while
+      i < limit && {
+        val b = bytes(i)
+        b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
+      }
+    do i += 1
+
+    if i < limit then
+      val b = bytes(i)
+
+      if b == CloseBracket then
+        pos = i + 1
+        directPop()
+        return false
+
+      directMark()
+      pos = i
+      return true
+
+    directElementGeneral()
+
+  update def directElementNext()(using Tactic[ParseError]): Boolean =
+    val limit = bufEnd
+    var i = pos
+
+    while
+      i < limit && {
+        val b = bytes(i)
+        b <= Space && (b == Space || b == Tab || b == Newline || b == Return)
+      }
+    do i += 1
+
+    if i < limit then
+      val b = bytes(i)
+
+      if b == CloseBracket then
+        pos = i + 1
+        directPop()
+        return false
+
+      if b == Comma then
+        pos = i + 1
         return true
 
     directElementGeneral()

@@ -345,14 +345,16 @@ object stagedInternal:
               val ptactic = $reader.rawTactic.asInstanceOf[Tactic[ParseError]]
               parser.directOpenArray()(using ptactic)
               var index = 0
+              var continue = parser.directElementFirst()(using ptactic)
 
-              while parser.directElement()(using ptactic) do
+              while continue do
                 builder +=
                   ( if focused then
                       Json.Parsable.focusing(foci, index.toString.tt)(parseElement())
                     else parseElement() )
 
                 index += 1
+                continue = parser.directElementNext()(using ptactic)
 
               builder.result()
             }
@@ -619,6 +621,13 @@ object stagedInternal:
                 ( List(ValDef(high, Some('{ $parser.directKeyWordHigh }.asTerm))),
                   packedChainOver(wordRef, highRef)(0) ) )
 
+        // The refill-revealed close brace (-2) is one more dispatch case
+        // rather than a comparison ahead of every dispatch.
+        val ended =
+          CaseDef
+            ( Literal(IntConstant(-2)), None,
+              Assign(Ref(run), Literal(BooleanConstant(false))) )
+
         Block
           ( List(ValDef(word, Some(wordStep.asTerm))),
             If
@@ -626,10 +635,7 @@ object stagedInternal:
                 Assign(Ref(run), Literal(BooleanConstant(false))),
                 Block
                   ( List(ValDef(found, Some(resolveStep))),
-                    If
-                      ( '{ ${Ref(found).asExprOf[Int]} == -2 }.asTerm,
-                        Assign(Ref(run), Literal(BooleanConstant(false))),
-                        Match(Ref(found), arms :+ fallthrough) ) ) ) )
+                    Match(Ref(found), arms ::: List(ended, fallthrough)) ) ) )
 
       // The first key step is unrolled ahead of the loop, so the steady-state
       // step consults no per-key seen/comma state.
