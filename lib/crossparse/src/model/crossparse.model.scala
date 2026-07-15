@@ -84,20 +84,29 @@ object Payment:
 
 case class LineItem(sku: Text, description: Text, quantity: Int, price: Double, taxed: Boolean)
 
+// The per-format `Inlinable` givens are qualified: each format's staged
+// component declares its own `Inlinable`, and this module imports all three
+// packages.
 object LineItem:
-  given inlinable: (LineItem is Inlinable) = Inlinable.derived
+  given jsonInlinable: (LineItem is jacinta.Inlinable) = jacinta.Inlinable.derived
+  given telInlinable: (LineItem is stratiform.Inlinable) = stratiform.Inlinable.derived
+  given xmlInlinable: (LineItem is xylophone.Inlinable) = xylophone.Inlinable.derived
 
 case class Customer(id: Long, name: Text, email: Text, region: Text)
 
 object Customer:
-  given inlinable: (Customer is Inlinable) = Inlinable.derived
+  given jsonInlinable: (Customer is jacinta.Inlinable) = jacinta.Inlinable.derived
+  given telInlinable: (Customer is stratiform.Inlinable) = stratiform.Inlinable.derived
+  given xmlInlinable: (Customer is xylophone.Inlinable) = xylophone.Inlinable.derived
 
 case class Order
   ( reference: Text, customer: Customer, items: List[LineItem], payment: Payment,
     priority: Boolean, discount: Double )
 
 object Order:
-  given inlinable: (Order is Inlinable) = Inlinable.derived
+  given jsonInlinable: (Order is jacinta.Inlinable) = jacinta.Inlinable.derived
+  given telInlinable: (Order is stratiform.Inlinable) = stratiform.Inlinable.derived
+  given xmlInlinable: (Order is xylophone.Inlinable) = xylophone.Inlinable.derived
 
 case class Orders(orders: List[Order])
 
@@ -109,4 +118,6 @@ object Orders:
   given telParsable: Orders is Tel.Parsable = Tel.Parsable.derived
   given xmlParsable: Orders is Xml.Parsable = Xml.Parsable.derived
 
-  given inlinable: (Orders is Inlinable) = Inlinable.derived
+  given jsonInlinable: (Orders is jacinta.Inlinable) = jacinta.Inlinable.derived
+  given telInlinable: (Orders is stratiform.Inlinable) = stratiform.Inlinable.derived
+  given xmlInlinable: (Orders is xylophone.Inlinable) = xylophone.Inlinable.derived

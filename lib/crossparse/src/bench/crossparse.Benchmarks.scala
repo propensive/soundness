@@ -183,12 +183,23 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     given xmlOrder: Order is Xml.Parsable = Xml.Parsable.staged
     given xmlOrders: Orders is Xml.Parsable = Xml.Parsable.staged
 
-    // The Inlinable-composed parser: the whole instance graph (records,
-    // collection loops, leaf parsers) resolves live inside an in-macro
+    // The nominal direct parsers for the sum: TEL and XML have no staged
+    // sum generation, so `payment` crosses each inlined parser's runtime
+    // seam — these sibling given vals make that seam a value reference (one
+    // Wisteria derivation per instance, not per parse), the same role the
+    // staged JSON sum given plays for the JSON inlined arm.
+    given telPayment: Payment is Tel.Parsable = Tel.Parsable.derived
+    given xmlPayment: Payment is Xml.Parsable = Xml.Parsable.derived
+
+    // The Inlinable-composed parsers: the whole instance graph (records,
+    // collection gathering, leaf parsers) resolves live inside an in-macro
     // staging compiler — the model component's companion givens — and
-    // inlines into one flat parser. `payment` (a sum) has no Inlinable and
-    // splices a runtime call to the sibling staged sum given above.
-    given inlinedOrders: Orders is Json.Parsable = Inlinable.parsable[Orders]
+    // inlines into one flat parser per format. `payment` (a sum) has no
+    // Inlinable and binds the sibling nominal instance above through the
+    // runtime seam.
+    given inlinedOrders: Orders is Json.Parsable = jacinta.Inlinable.parsable[Orders]
+    given inlinedTelOrders: Orders is Tel.Parsable = stratiform.Inlinable.parsable[Orders]
+    given inlinedXmlOrders: Orders is Xml.Parsable = xylophone.Inlinable.parsable[Orders]
 
   def decodeJsonStaged(): Orders =
     import staged.orders
@@ -202,8 +213,16 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     import staged.telOrders
     telData.read[Orders in Tel]
 
+  def decodeTelInlined(): Orders =
+    import staged.inlinedTelOrders
+    telData.read[Orders in Tel]
+
   def decodeXmlStaged(): Orders =
     import staged.xmlOrders
+    xmlText.read[Orders in Xml]
+
+  def decodeXmlInlined(): Orders =
+    import staged.inlinedXmlOrders
     xmlText.read[Orders in Xml]
   def decodeTelDirect(): Orders = telData.read[Orders in Tel]
   def decodeTelAst(): Orders = telData.read[Tel].as[Orders]
@@ -272,9 +291,11 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     assert(decodeJsonAst() == corpus, "JSON AST decode disagrees with the corpus")
     assert(decodeTelDirect() == corpus, "TEL direct decode disagrees with the corpus")
     assert(decodeTelStaged() == corpus, "TEL staged decode disagrees with the corpus")
+    assert(decodeTelInlined() == corpus, "TEL inlined decode disagrees with the corpus")
     assert(decodeTelAst() == corpus, "TEL AST decode disagrees with the corpus")
     assert(decodeXmlDirect() == corpus, "XML direct decode disagrees with the corpus")
     assert(decodeXmlStaged() == corpus, "XML staged decode disagrees with the corpus")
+    assert(decodeXmlInlined() == corpus, "XML inlined decode disagrees with the corpus")
     assert(decodeXmlAst() == corpus, "XML AST decode disagrees with the corpus")
     assert(decodeYamlAst() == corpus, "YAML AST decode disagrees with the corpus")
 
@@ -304,6 +325,9 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
       bench(m"TEL staged")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeTelStaged() }
 
+      bench(m"TEL inlined")(target = 1*Second):
+        '{ crossparse.Benchmarks.decodeTelInlined() }
+
       bench(m"TEL via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeTelAst() }
 
@@ -312,6 +336,9 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
 
       bench(m"XML staged")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeXmlStaged() }
+
+      bench(m"XML inlined")(target = 1*Second):
+        '{ crossparse.Benchmarks.decodeXmlInlined() }
 
       bench(m"XML via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeXmlAst() }
@@ -337,11 +364,17 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
       profile(m"TEL staged")(target = 5*Second):
         '{ crossparse.Benchmarks.decodeTelStaged() }
 
+      profile(m"TEL inlined")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeTelInlined() }
+
       profile(m"XML direct")(target = 5*Second):
         '{ crossparse.Benchmarks.decodeXmlDirect() }
 
       profile(m"XML staged")(target = 5*Second):
         '{ crossparse.Benchmarks.decodeXmlStaged() }
+
+      profile(m"XML inlined")(target = 5*Second):
+        '{ crossparse.Benchmarks.decodeXmlInlined() }
 
       profile(m"JSON direct")(target = 5*Second):
         '{ crossparse.Benchmarks.decodeJsonDirect() }
