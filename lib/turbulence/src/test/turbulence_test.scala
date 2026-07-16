@@ -511,6 +511,26 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"Roundtrip compress/decompress a long repetitive stream with Gzip"):
         longData.compress[Gzip].decompress[Gzip]
       . assert(_.flatten == longData.flatten)
+
+      test(m"Roundtrip compress/decompress a single block with LZW"):
+        LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Lzw].decompress[Lzw]
+      . assert(_.flatten == LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).flatten)
+
+      // Varied enough to push the code table through its 9-, 10- and 11-bit widths.
+      val variedData =
+        LazyList(IArray.from((0 until 20000).map { index => ((index*index + index/3)%251).toByte }))
+
+      test(m"Roundtrip compress/decompress across LZW width growth"):
+        variedData.compress[Lzw].decompress[Lzw]
+      . assert(_.flatten == variedData.flatten)
+
+      test(m"Roundtrip compress/decompress a long stream across LZW table clears"):
+        longData.compress[Lzw].decompress[Lzw]
+      . assert(_.flatten == longData.flatten)
+
+      test(m"LZW without early change also roundtrips"):
+        Lzw.decompress(Lzw.compress(variedData, earlyChange = false), earlyChange = false)
+      . assert(_.flatten == variedData.flatten)
       test(m"Compress a single block with Zlib"):
         LazyList(Data(1, 1, 2, 3, 5, 8, 13, 21, 34)).compress[Zlib].to(List).map(_.to(List))
       . assert(_ == List(List(120, -100, 98, 100, 100, 98, 102, -27, -32, 21, 85, 2, 0, 0, 0, -1, -1), List(3, 0, 0, -26, 0, 89)))
