@@ -474,9 +474,12 @@ object Tests extends Suite(m"Turbulence tests"):
       test(m"the reader blocks for records from concurrent producers"):
         supervise:
           val relay = Relay[Text]()
+          // Handles collected for concurrent await: sealed per the pure-façade convention
+          // (D6; the `Seq[Task].sequence` shape).
           val producers = (1 to 4).map: index =>
-            async:
-              for value <- 1 to 25 do relay.put(t"${index*100 + value}")
+            caps.unsafe.unsafeAssumePure:
+              async:
+                for value <- 1 to 25 do relay.put(t"${index*100 + value}")
 
           val reader = async(relay.stream.records.to(Set))
           producers.each(_.await())
