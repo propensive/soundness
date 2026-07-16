@@ -71,39 +71,27 @@ object Payment:
   // on a scan-ahead of that entry.
   given cborDiscriminable: Payment is Discriminable in Cbor = Cbor.DiscriminantKey(t"type")
 
+// The per-format `Inlinable` instances arrive through `derives` clauses:
+// each format's carrier (`Inlinable.ForJson`, `Inlinable.ForTel`, …) is the
+// `Self`-typed typeclass, synthesized into the companion, where the staging
+// summons resolve them live.
 case class LineItem(sku: Text, description: Text, quantity: Int, price: Double, taxed: Boolean)
-
-// The per-format `Inlinable` givens are qualified: each format's staged
-// component declares its own `Inlinable`, and this module imports all three
-// packages.
-object LineItem:
-  given jsonInlinable: (LineItem is jacinta.Inlinable) = jacinta.Inlinable.derived
-  given telInlinable: (LineItem is stratiform.Inlinable) = stratiform.Inlinable.derived
-  given xmlInlinable: (LineItem is xylophone.Inlinable) = xylophone.Inlinable.derived
-  given cborInlinable: (LineItem is breviloquence.Inlinable) = breviloquence.Inlinable.derived
-  given protobufInlinable: (LineItem is locomotion.Inlinable) = locomotion.Inlinable.derived
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf
 
 case class Customer(id: Long, name: Text, email: Text, region: Text)
-
-object Customer:
-  given jsonInlinable: (Customer is jacinta.Inlinable) = jacinta.Inlinable.derived
-  given telInlinable: (Customer is stratiform.Inlinable) = stratiform.Inlinable.derived
-  given xmlInlinable: (Customer is xylophone.Inlinable) = xylophone.Inlinable.derived
-  given cborInlinable: (Customer is breviloquence.Inlinable) = breviloquence.Inlinable.derived
-  given protobufInlinable: (Customer is locomotion.Inlinable) = locomotion.Inlinable.derived
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf
 
 case class Order
   ( reference: Text, customer: Customer, items: List[LineItem], payment: Payment,
     priority: Boolean, discount: Double )
-
-object Order:
-  given jsonInlinable: (Order is jacinta.Inlinable) = jacinta.Inlinable.derived
-  given telInlinable: (Order is stratiform.Inlinable) = stratiform.Inlinable.derived
-  given xmlInlinable: (Order is xylophone.Inlinable) = xylophone.Inlinable.derived
-  given cborInlinable: (Order is breviloquence.Inlinable) = breviloquence.Inlinable.derived
-  given protobufInlinable: (Order is locomotion.Inlinable) = locomotion.Inlinable.derived
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf
 
 case class Orders(orders: List[Order])
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf
 
 object Orders:
   // Direct parsing is opt-in per format; only the top type needs a nominal
@@ -113,8 +101,105 @@ object Orders:
   given telParsable: Orders is Tel.Parsable = Tel.Parsable.derived
   given xmlParsable: Orders is Xml.Parsable = Xml.Parsable.derived
 
-  given jsonInlinable: (Orders is jacinta.Inlinable) = jacinta.Inlinable.derived
-  given telInlinable: (Orders is stratiform.Inlinable) = stratiform.Inlinable.derived
-  given xmlInlinable: (Orders is xylophone.Inlinable) = xylophone.Inlinable.derived
-  given cborInlinable: (Orders is breviloquence.Inlinable) = breviloquence.Inlinable.derived
-  given protobufInlinable: (Orders is locomotion.Inlinable) = locomotion.Inlinable.derived
+// ── The document matrix ─────────────────────────────────────────────────
+// Typed translations of the jacinta benchmark corpus (a servlet config, a
+// menu fragment, user records, log entries, blockchain transactions, and
+// two numeric arrays), adapted so every format can represent them: uniform
+// record shapes (heterogeneous parameter objects become key/value lists),
+// identifier-safe field names, no sums (BinTEL cannot decode a sum in field
+// position), and wrapper records for the bare arrays (Protobuf and BinTEL
+// need a message root). High-precision numerics travel as `Text`, since no
+// common typed representation exists across the formats.
+
+case class Param(key: Text, value: Text)
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class Servlet(servletName: Text, servletClass: Text, params: List[Param])
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class Mapping(servletName: Text, url: Text)
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class Taglib(uri: Text, location: Text)
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class WebApp(servlets: List[Servlet], mappings: List[Mapping], taglib: Taglib)
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class Config(webApp: WebApp)
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class MenuItem(value: Text, onclick: Text)
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class Popup(menuitems: List[MenuItem])
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class Menu(id: Text, value: Text, popup: Popup)
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class MenuDoc(menu: Menu)
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class User(id: Int, username: Text, email: Text, active: Boolean, role: Text)
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class Users(users: List[User])
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class LogEntry
+  ( timestamp: Long, level: Text, service: Text, requestId: Text, userId: Int, message: Text )
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class Logs(logs: List[LogEntry])
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class Transaction
+  ( from: Text, to: Text, valueWei: Text, valueEth: Text, gasPriceWei: Text, gasUsed: Int,
+    blockNumber: Long, nonce: Int, temperatureDelta: Double )
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class Transactions(transactions: List[Transaction])
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class Ints(values: List[Int])
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel
+
+case class Decimals(values: List[Double])
+derives jacinta.Inlinable.ForJson, stratiform.Inlinable.ForTel, xylophone.Inlinable.ForXml,
+    breviloquence.Inlinable.ForCbor, locomotion.Inlinable.ForProtobuf,
+    BintelInlinable.ForBintel

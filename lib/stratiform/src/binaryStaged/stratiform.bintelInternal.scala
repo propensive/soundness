@@ -268,11 +268,21 @@ object bintelInternal:
     val tpe = TypeRepr.of[field].dealias
 
     if builtinKind(tpe).isDefined then None else
-      cache.instances.getOrElseUpdate(tpe.show, summonViaStaging[field])
+      cache.instances.getOrElseUpdate(tpe.show, summonViaStaging[field].map(unwrap))
       . orElse:
           if productSupported(tpe) && !cache.active.contains(tpe.show)
           then Some(BintelInlinable.ProductInlinable[field]())
           else None
+
+  // A `derives`-clause carrier delegates to a structural instance; the
+  // ladder works with the delegate so generator identities stay
+  // recognizable.
+  private def unwrap(instance: BintelInlinable): BintelInlinable = instance match
+    case derived: BintelInlinable.ForBintel[?] =>
+      derived.delegate.asInstanceOf[BintelInlinable]
+
+    case other =>
+      other
 
   // A custom scalar leaf: its `Decodable in Text`, resolved at expansion
   // time with a reflection-level search and an erasing cast across the

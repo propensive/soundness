@@ -266,9 +266,16 @@ object stagedInternal:
     val tpe = TypeRepr.of[field].dealias
 
     builtinFor(tpe).orElse:
-      cache.instances.getOrElseUpdate(tpe.show, summonViaStaging[field])
+      cache.instances.getOrElseUpdate(tpe.show, summonViaStaging[field].map(unwrap))
       . orElse(structuralFor[field](cache))
       . orElse(runtimeFor[field])
+
+  // A `derives`-clause carrier delegates to a structural instance; the
+  // ladder works with the delegate so generator identities stay
+  // recognizable.
+  private def unwrap(instance: Inlinable): Inlinable = instance match
+    case derived: Inlinable.ForCbor[?] => derived.delegate.asInstanceOf[Inlinable]
+    case other                         => other
 
   // The runtime tiers, resolved with a reflection-level implicit search at
   // expansion time and called through neutral-carrier helpers (the erasing

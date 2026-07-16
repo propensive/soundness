@@ -331,7 +331,7 @@ object stagedInternal:
     val tpe = TypeRepr.of[field].dealias
 
     if builtinKind(tpe).isDefined then None else
-      cache.instances.getOrElseUpdate(tpe.show, summonViaStaging[field])
+      cache.instances.getOrElseUpdate(tpe.show, summonViaStaging[field].map(unwrap))
       . orElse(structuralFor[field](cache))
 
   private def structuralFor[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
@@ -341,6 +341,13 @@ object stagedInternal:
 
     if productSupported(tpe) then Some(Inlinable.ProductInlinable[field]())
     else sumFor[field](cache)
+
+  // A `derives`-clause carrier delegates to a structural instance; the
+  // ladder works with the delegate so generator identities stay
+  // recognizable.
+  private def unwrap(instance: Inlinable): Inlinable = instance match
+    case derived: Inlinable.ForProtobuf[?] => derived.delegate.asInstanceOf[Inlinable]
+    case other                         => other
 
   // An `Optional[inner]` field: `inner | Unset.type`. Handled by the
   // generator itself (an absent field reads as `Unset`; a present one as

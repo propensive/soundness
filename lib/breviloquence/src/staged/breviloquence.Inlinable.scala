@@ -75,6 +75,27 @@ object Inlinable:
   // (no macro — `Type[Self]` arrives with the call).
   def derived[product]: product is Inlinable = ProductInlinable[product]()
 
+  // The `derives`-clause carrier: a `Self`-typed typeclass cannot appear in
+  // a `derives` clause (it has no type parameters), so `case class Foo(...)
+  // derives Inlinable.ForCbor` synthesizes this parameterized subtrait —
+  // which *is* a `Foo is Inlinable` — into `Foo`'s companion, where the
+  // staging summon finds it. The resolution ladder unwraps the delegate so
+  // structural instances keep their generator identities.
+  final class ForCbor[value](delegate0: value is Inlinable) extends Inlinable:
+    type Self = value
+    private[breviloquence] def delegate: value is Inlinable = delegate0
+
+    def parse(reader: Expr[CborReader])(using Quotes, Type[value]): Expr[value] =
+      delegate0.parse(reader)
+
+    override def absent(tactic: Expr[Tactic[CborError]])(using Quotes, Type[value])
+    :   Expr[value] =
+
+      delegate0.absent(tactic)
+
+  object ForCbor:
+    def derived[value]: ForCbor[value] = ForCbor(Inlinable.derived[value])
+
   private[breviloquence] final class ProductInlinable[product]() extends Inlinable:
     type Self = product
 

@@ -279,6 +279,14 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
     assert(decodeProtobufInlined() == corpus, "Protobuf inlined decode disagrees with the corpus")
     assert(decodeProtobufAst() == corpus, "Protobuf AST decode disagrees with the corpus")
 
+    matrixConfig.check()
+    matrixMenu.check()
+    matrixUsers.check()
+    matrixLogs.check()
+    matrixTransactions.check()
+    matrixInts.check()
+    matrixDecimals.check()
+
     val jsoniterExpected = jsoniterMirror(corpus)
     assert(decodeJsoniterDirect() == jsoniterExpected, "Jsoniter direct decode disagrees")
     assert(decodeJsoniterAst() == jsoniterExpected, "Jsoniter AST decode disagrees")
@@ -330,6 +338,21 @@ object Benchmarks extends Suite(m"Cross-format direct-parsing benchmarks"):
 
       bench(m"Jsoniter via AST")(target = 1*Second):
         '{ crossparse.Benchmarks.decodeJsoniterAst() }
+
+
+    matrixConfig.suites(bench)
+
+    matrixMenu.suites(bench)
+
+    matrixUsers.suites(bench)
+
+    matrixLogs.suites(bench)
+
+    matrixTransactions.suites(bench)
+
+    matrixInts.suites(bench)
+
+    matrixDecimals.suites(bench)
 
     // Where the self-time actually goes in each inlined arm — a JFR hotspot
     // histogram per parser, coloured by package. Jsoniter direct is the

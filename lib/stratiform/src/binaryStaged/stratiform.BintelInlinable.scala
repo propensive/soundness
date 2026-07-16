@@ -75,6 +75,28 @@ object BintelInlinable:
   // (no macro — `Type[Self]` arrives with the call).
   def derived[product]: product is BintelInlinable = ProductInlinable[product]()
 
+  // The `derives`-clause carrier: a `Self`-typed typeclass cannot appear in
+  // a `derives` clause (it has no type parameters), so `case class Foo(...)
+  // derives BintelInlinable.ForBintel` synthesizes this parameterized
+  // subtrait — which *is* a `Foo is BintelInlinable` — into `Foo`'s
+  // companion, where the staging summon finds it. The resolution ladder
+  // unwraps the delegate so structural instances keep their generator
+  // identities.
+  final class ForBintel[value](delegate0: value is BintelInlinable) extends BintelInlinable:
+    type Self = value
+    private[stratiform] def delegate: value is BintelInlinable = delegate0
+
+    def parse(reader: Expr[BintelReader])(using Quotes, Type[value]): Expr[value] =
+      delegate0.parse(reader)
+
+    override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[value])
+    :   Expr[value] =
+
+      delegate0.absent(tactic)
+
+  object ForBintel:
+    def derived[value]: ForBintel[value] = ForBintel(BintelInlinable.derived[value])
+
   private[stratiform] final class ProductInlinable[product]() extends BintelInlinable:
     type Self = product
 
