@@ -72,6 +72,33 @@ extension (stream: LazyList[Data])
 
     algorithm.encryptStream(stream, encryptor.bytes, iv)
 
+extension (stream: (zephyrine.Stream[Data] over zephyrine.Credit)^)
+  // Kernel-native streaming encryption: the pipeline-stage counterpart of the
+  // `LazyList` form above, with the same IV-prefix framing.
+  def encrypt[cipher <: BlockCipher](iv: InitializationVector)
+    ( using encryptor:  Encryptor[cipher],
+            algorithm:  cipher & Encryption,
+            buffering:  zephyrine.Buffering,
+            erased weakness: Permit[Weakness[cipher]],
+            erased authentication: Permit[Authentication[cipher]] )
+  :   (zephyrine.Stream[Data] over zephyrine.Credit)^ =
+
+    algorithm.encrypt(stream, encryptor.bytes, iv)
+
+  // Kernel-native streaming decryption of `iv ++ ciphertext` framing,
+  // yielding plaintext bytes as they become available. An AEAD mode releases
+  // nothing until its tag verifies at end-of-stream (the provider buffers the
+  // whole message), so this bounds memory only for non-AEAD modes.
+  def decrypt[cipher <: BlockCipher]
+    ( using decryptor:  Decryptor[cipher],
+            algorithm:  cipher & Encryption,
+            buffering:  zephyrine.Buffering,
+            erased weakness: ProcessingPermit[Weakness[cipher]],
+            erased authentication: ProcessingPermit[Authentication[cipher]] )
+  :   (zephyrine.Stream[Data] over zephyrine.Credit)^ =
+
+    algorithm.decrypt(stream, decryptor.bytes)
+
 extension (data: Data)
   def decrypt[decodable: Decodable in Data, cipher <: Cipher]
     ( using decryptor: Decryptor[cipher],

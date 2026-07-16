@@ -185,6 +185,51 @@ object Tests extends Suite(m"Gastronomy tests"):
         t"Hello world".encrypt(InitializationVector.random).decrypt.as[Text]
     . assert(_ == t"Hello world")
 
+    test(m"stream-encrypted data decrypts through the whole-value path"):
+      import blockCipherMode.cbc, blockCipherPadding.pkcs7
+      import charEncoders.utf8Encoder
+      val key = SymmetricKey.generate[Aes[256]]()
+      key.expose:
+        t"Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize
+        . decrypt.as[Text]
+    . assert(_ == t"Hello world")
+
+    test(m"whole-value-encrypted data decrypts through a stream"):
+      import blockCipherMode.cbc, blockCipherPadding.pkcs7
+      import charEncoders.utf8Encoder
+      val key = SymmetricKey.generate[Aes[256]]()
+      key.expose:
+        t"Hello world".encrypt(InitializationVector.random).stream.decrypt.memoize.to(List)
+    . assert(_ == t"Hello world".in[Data].to(List))
+
+    test(m"one-byte-chunk streams roundtrip through stream encrypt and decrypt"):
+      import blockCipherMode.cbc, blockCipherPadding.pkcs7
+      import charEncoders.utf8Encoder
+      val key = SymmetricKey.generate[Aes[256]]()
+      key.expose:
+        val plain = t"The quick brown fox jumps over the lazy dog".in[Data]
+        val encrypted = plain.grouped(1).iterator.stream.encrypt(InitializationVector.random)
+        encrypted.memoize.grouped(1).iterator.stream.decrypt.memoize.to(List)
+    . assert(_ == t"The quick brown fox jumps over the lazy dog".in[Data].to(List))
+
+    test(m"CTR/NoPadding streams roundtrip (stream-aligned check at end)"):
+      import charEncoders.utf8Encoder
+      val key = SymmetricKey.generate[Aes[128] over Ctr against NoPadding]()
+      key.expose:
+        t"Hello world".in[Data].stream.encrypt(InitializationVector.random).memoize
+        . stream.decrypt.memoize.to(List)
+    . assert(_ == t"Hello world".in[Data].to(List))
+
+    test(m"legacy LazyList encryption survives one-byte chunks"):
+      import blockCipherMode.cbc, blockCipherPadding.pkcs7
+      import charEncoders.utf8Encoder
+      val key = SymmetricKey.generate[Aes[256]]()
+      key.expose:
+        val plain = t"Hello world".in[Data]
+        val chunks = plain.grouped(1).map { chunk => chunk }.to(LazyList)
+        chunks.encrypt(InitializationVector.random).reduce(_ ++ _).decrypt.as[Text]
+    . assert(_ == t"Hello world")
+
     test(m"CBC encryption of the same plaintext differs run-to-run (random IV)"):
       val key = SymmetricKey.generate[Aes[256] over Cbc against Pkcs7]()
       key.expose:

@@ -170,13 +170,25 @@ object JavaStdlibCrypto extends Crypto:
         cipher.doFinal(input.drop(size)).nn.immutable(using Unsafe)
 
     def stream(transformation: Text, key: Data, iv: Optional[Data]): CipherSession =
+      session(transformation, key, iv, jc.Cipher.ENCRYPT_MODE)
+
+    def decryptStream(transformation: Text, key: Data, iv: Optional[Data]): CipherSession =
+      session(transformation, key, iv, jc.Cipher.DECRYPT_MODE)
+
+    private def session(transformation: Text, key: Data, iv: Optional[Data], opmode: Int)
+    :   CipherSession =
+
       val cipher = jc.Cipher.getInstance(transformation.s).nn
 
-      iv.lay(cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key))): iv =>
-        cipher.init(jc.Cipher.ENCRYPT_MODE, makeKey(key), IvParameterSpec(iv.mutable(using Unsafe)))
+      iv.lay(cipher.init(opmode, makeKey(key))): iv =>
+        cipher.init(opmode, makeKey(key), IvParameterSpec(iv.mutable(using Unsafe)))
 
       new CipherSession:
         def update(chunk: Data): Data =
-          cipher.update(chunk.mutable(using Unsafe)).nn.immutable(using Unsafe)
+          // `Cipher.update` returns null when a block cipher has buffered the
+          // whole input pending a complete block.
+          cipher.update(chunk.mutable(using Unsafe)) match
+            case null              => Data()
+            case out: Array[Byte]  => out.immutable(using Unsafe)
 
         def finish(): Data = cipher.doFinal().nn.immutable(using Unsafe)
