@@ -172,6 +172,36 @@ object Tel extends Tel2:
     def absent()(using Tactic[TelError]): Self = abort(TelError(TelError.Reason.Absent))
 
   object Parsable:
+    // The base of generated parsers: generated code is capture-erased, so
+    // the bodies receive the reader as a neutral carrier, and the
+    // capability is asserted here at the rim — the audited point — like the
+    // reader's own accessors. (A generated override of `parse` itself would
+    // narrow the trait's `TelReader^` parameter to a pure type, which
+    // capture checking rejects at the instantiation site.)
+    abstract class Direct[value] extends Tel.Parsable:
+      type Self = value
+
+      def shape(): Morphology = Morphology.Any
+
+      protected def parseEntry(reader: AnyRef, indent: Int): value
+      protected def parseWhole(reader: AnyRef): value
+
+      def parse(reader: TelReader^, indent: Int): value =
+        parseEntry(reader.asInstanceOf[AnyRef], indent)
+
+      override def parse(reader: TelReader^): value = parseWhole(reader.asInstanceOf[AnyRef])
+
+    // The call points for a nominal `Parsing` instance in an entry position
+    // of a *generated* parser (a recursive record's own `Parsable`, a
+    // hand-written one, or the `Tel.Field` fallback chain). Both travel as
+    // neutral carriers — generated code is capture-erased — and the
+    // capability is reasserted here, at the audited point.
+    def parseField[value](parsing: AnyRef, reader: AnyRef, indent: Int): value =
+      parsing.asInstanceOf[value is Tel.Parsing].parse(reader.asInstanceOf[TelReader^], indent)
+
+    def absentField[value](parsing: AnyRef)(using Tactic[TelError]): value =
+      parsing.asInstanceOf[value is Tel.Parsing].absent()
+
     def apply[value](shape0: => Morphology)(parser: (reader: TelReader^) => value)
     :   ((value is Tel.Parsable)^{parser}) =
 

@@ -38,142 +38,150 @@ import anticipation.*
 import contingency.*
 import gossamer.*
 import prepositional.*
-import vacuous.*
 
-// The Expr-level counterpart of `Tel.Parsable`: a typeclass whose methods
-// are macro-time code generators, following jacinta's `Inlinable` exactly.
-// An instance receives an `Expr` of the reader (and, because a TEL value is
-// an *entry* whose extent depends on its indent, an `Expr` of the current
-// indent) and returns an `Expr` of the decoded value, which the deriving
-// macro splices directly into its generated parser — so an instance
-// contributes *inlined* code, with no runtime dispatch, no instance arrays
-// and no adapter hops between composed parsers.
+// The Expr-level counterpart of `Bintel.Parsable`: a typeclass whose
+// methods are macro-time code generators, mirroring `stratiform.Inlinable`
+// (the text format's) for the binary encoding. An instance receives an
+// `Expr` of the reader — positioned at its value's payload — and returns an
+// `Expr` of the decoded value, spliced directly into the composed parser.
 //
-// Instances are ordinary runtime values: code generation is deferred to the
-// `parse` call, which receives the `Quotes` and the `Type` of `Self`, so
-// `derived` needs no macro of its own. At a `Inlinable.parsable[T]`
-// expansion, the instance behind each summoned given is obtained *live* by
-// running the implicit search inside an in-macro staging compiler (the
-// prescience mechanism), which composes conditional instances — a collection
-// of a custom element, for example — through ordinary given resolution. The
-// constraint this inherits: an instance (and its type) must be compiled in
-// an earlier run than the expansion; same-run instances degrade to a spliced
-// runtime call through `Tel.Field`.
-trait Inlinable extends Typeclass:
-  def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Self]): Expr[Self]
+// BinTEL is schema-driven: the wire carries no keywords, only flat keyword
+// *indices* resolved against the schema derived from the value's type. The
+// derivation gives every case-class field exactly one flat slot, in
+// declaration order, so the generated dispatch is a positional table — the
+// index IS the field's position. Decoding a BinTEL document through the AST
+// path ends in the *text* format's `Tel.Decodable`, so a generated parser's
+// value semantics (leaf faults, absent handling, foci) mirror the text
+// format's `Inlinable` exactly.
+trait BintelInlinable extends Typeclass:
+  def parse(reader: Expr[BintelReader])(using Quotes, Type[Self]): Expr[Self]
 
-  // What a field of this type yields when its keyword never arrives,
-  // mirroring the runtime instances: an abort unless overridden (the
-  // primitive instances raise and continue with a sentinel).
+  // What a field of this type yields when its index is absent from the
+  // struct body, mirroring the text format's instances: an abort unless
+  // overridden.
   def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[Self]): Expr[Self] =
     '{ abort(TelError(TelError.Reason.Absent))(using $tactic) }
 
-object Inlinable:
-  // Generates a monomorphic `Tel.Parsable` for a case class at compile
-  // time, like `Tel.Parsable.staged`, but composed through `Inlinable`
-  // instances: nested records, collection gathering and custom leaf parsers
-  // all inline into one flat parser.
-  inline def parsable[value]: value is Tel.Parsable =
-    ${ stratiform.stagedInternal.inlinableParsable[value] }
+object BintelInlinable:
+  // Generates a monomorphic `Bintel.Parsable` for a case class or a sealed
+  // sum at compile time: nested records, repeated-field gathering, variant
+  // dispatch and leaf parsers all inline into one flat parser over the
+  // body bytes — no `Tel.Element` tree, no `Tel` presentation, no
+  // text-format decode.
+  inline def parsable[value]: value is Bintel.Parsable =
+    ${ stratiform.bintelInternal.inlinableParsable[value] }
 
   // The structural instance for a case class: reflects `Self` when invoked
   // (no macro — `Type[Self]` arrives with the call).
-  def derived[product]: product is Inlinable = ProductInlinable[product]()
+  def derived[product]: product is BintelInlinable = ProductInlinable[product]()
 
   // The `derives`-clause carrier: a `Self`-typed typeclass cannot appear in
   // a `derives` clause (it has no type parameters), so `case class Foo(...)
-  // derives Inlinable.ForTel` synthesizes this parameterized subtrait —
-  // which *is* a `Foo is Inlinable` — into `Foo`'s companion, where the
-  // staging summon finds it. The resolution ladder unwraps the delegate so
-  // structural instances keep their generator identities.
-  final class ForTel[value](delegate0: value is Inlinable) extends Inlinable:
+  // derives BintelInlinable.ForBintel` synthesizes this parameterized
+  // subtrait — which *is* a `Foo is BintelInlinable` — into `Foo`'s
+  // companion, where the staging summon finds it. The resolution ladder
+  // unwraps the delegate so structural instances keep their generator
+  // identities.
+  final class ForBintel[value](delegate0: value is BintelInlinable) extends BintelInlinable:
     type Self = value
-    private[stratiform] def delegate: value is Inlinable = delegate0
+    private[stratiform] def delegate: value is BintelInlinable = delegate0
 
-    def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[value])
-    :   Expr[value] =
-
-      delegate0.parse(reader, indent)
+    def parse(reader: Expr[BintelReader])(using Quotes, Type[value]): Expr[value] =
+      delegate0.parse(reader)
 
     override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[value])
     :   Expr[value] =
 
       delegate0.absent(tactic)
 
-  object ForTel:
-    def derived[value]: ForTel[value] = ForTel(Inlinable.derived[value])
+  object ForBintel:
+    def derived[value]: ForBintel[value] = ForBintel(BintelInlinable.derived[value])
 
-  private[stratiform] final class ProductInlinable[product]() extends Inlinable:
+  private[stratiform] final class ProductInlinable[product]() extends BintelInlinable:
     type Self = product
 
-    // A record field's value is its children, one level deeper than its own
-    // entry line — the derived engine's `parse(reader, indent)`.
-    def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[product])
-    :   Expr[product] =
+    def parse(reader: Expr[BintelReader])(using Quotes, Type[product]): Expr[product] =
+      bintelInternal.productBody[product](reader)
 
-      '{
-        $reader.finishLine()
-        val indent1 = $indent + 1
-        ${ stagedInternal.productFields[product](reader, 'indent1) }
-      }
-
-  // The structural instance for a sealed sum whose variants are all
-  // inlinable case classes: the wire form is a single child compound keyed
-  // by the variant's kebab-cased name (the AST disjunction's form), so the
-  // generated code dispatches on that keyword and parses the chosen variant
-  // in place — no document AST, no `delegate`.
-  private[stratiform] final class SumInlinable[sum]() extends Inlinable:
-    type Self = sum
-
-    def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[sum]): Expr[sum] =
-      stagedInternal.sumBody[sum](reader, indent)
-
-  private[stratiform] final class IterableInlinable[element](val element0: element is Inlinable)
-  extends Inlinable:
+  // A marker in the resolution ladder: a repeatable field's occurrences are
+  // gathered by its *struct's* generated parser (they repeat the field's
+  // keyword index), so collection parsing lives in the product generator.
+  private[stratiform] final class IterableInlinable[element]
+    (val element0: element is BintelInlinable)
+  extends BintelInlinable:
     type Self = Iterable[element]
 
-    // A single entry read as a collection: one element — the runtime
-    // `Tel.Parsable.iterable`'s behavior when handed a lone compound. In
-    // *field* position the deriving generator never calls this: it gathers
-    // each occurrence of the keyword through the element's own generator.
-    def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Iterable[element]])
+    def parse(reader: Expr[BintelReader])(using Quotes, Type[Iterable[element]])
     :   Expr[Iterable[element]] =
 
-      stagedInternal.iterableBody[Iterable[element]](reader, indent, element0)
+      quotes.reflect.report.errorAndAbort
+        ("stratiform: a repeatable field parses through its struct's generated parser; a "+
+          "collection has no standalone BinTEL form")
+
+  // The structural instance for a *top-level* sealed sum, whose schema root
+  // is a struct with one `SelectRef` member: one flat slot per variant, so
+  // the wire index chooses the variant directly. (A sum in *field*
+  // position derives to an unresolvable `Reference` on the AST path too,
+  // so nested sums are rejected during planning.)
+  private[stratiform] final class SumInlinable[sum]() extends BintelInlinable:
+    type Self = sum
+
+    def parse(reader: Expr[BintelReader])(using Quotes, Type[sum]): Expr[sum] =
+      bintelInternal.sumBody[sum](reader)
 
   // ── Instances ──────────────────────────────────────────────────────────
-  // The leaf generators mirror the primitive `Tel.Parsable` instances
-  // exactly — including the `Absent`/`NotScalar` fault split — so direct,
-  // staged and inlined reads yield equal values and equal errors. `Double`
-  // keeps the text path, like `doubleParsable`.
+  // The leaf generators mirror the text format's primitive semantics
+  // exactly — including the `Absent`/`NotScalar` fault split and sentinel
+  // values — since the AST path decodes the presented `Tel` through the
+  // very same text-format instances. A BinTEL scalar always carries text,
+  // so only the `NotScalar` arm of the fault split is reachable.
 
-  given int: (Int is Inlinable) = new Inlinable:
+  given int: (Int is BintelInlinable) = new BintelInlinable:
     type Self = Int
 
-    def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Int]): Expr[Int] =
-      '{ $reader.int().lay(Tel.Parsable.scalarFault($reader, t"Int", 0)) { value => value } }
+    def parse(reader: Expr[BintelReader])(using Quotes, Type[Int]): Expr[Int] =
+      '{
+        val atom = $reader.scalar()
+
+        try atom.s.toInt catch case _: NumberFormatException =>
+          raise(TelError(TelError.Reason.NotScalar(atom, t"Int")))(using infer[Tactic[TelError]])
+          0
+      }
 
     override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[Int]): Expr[Int] =
       '{ Tel.Parsable.missing[Int](0)(using $tactic) }
 
-  given long: (Long is Inlinable) = new Inlinable:
+  given long: (Long is BintelInlinable) = new BintelInlinable:
     type Self = Long
 
-    def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Long]): Expr[Long] =
-      '{ $reader.long().lay(Tel.Parsable.scalarFault($reader, t"Long", 0L)) { value => value } }
+    def parse(reader: Expr[BintelReader])(using Quotes, Type[Long]): Expr[Long] =
+      '{
+        val atom = $reader.scalar()
+
+        try atom.s.toLong catch case _: NumberFormatException =>
+          raise(TelError(TelError.Reason.NotScalar(atom, t"Long")))(using infer[Tactic[TelError]])
+          0L
+      }
 
     override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[Long]): Expr[Long] =
       '{ Tel.Parsable.missing[Long](0L)(using $tactic) }
 
-  given boolean: (Boolean is Inlinable) = new Inlinable:
+  given boolean: (Boolean is BintelInlinable) = new BintelInlinable:
     type Self = Boolean
 
-    def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Boolean])
-    :   Expr[Boolean] =
-
+    def parse(reader: Expr[BintelReader])(using Quotes, Type[Boolean]): Expr[Boolean] =
       '{
-        $reader.boolean().lay(Tel.Parsable.scalarFault($reader, t"Boolean", false)):
-          value => value
+        val atom = $reader.scalar()
+
+        atom.s match
+          case "true"  => true
+          case "false" => false
+
+          case _ =>
+            raise(TelError(TelError.Reason.NotScalar(atom, t"Boolean")))
+              (using infer[Tactic[TelError]])
+
+            false
       }
 
     override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[Boolean])
@@ -181,18 +189,18 @@ object Inlinable:
 
       '{ Tel.Parsable.missing[Boolean](false)(using $tactic) }
 
-  given double: (Double is Inlinable) = new Inlinable:
+  given double: (Double is BintelInlinable) = new BintelInlinable:
     type Self = Double
 
-    def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Double])
-    :   Expr[Double] =
-
+    def parse(reader: Expr[BintelReader])(using Quotes, Type[Double]): Expr[Double] =
       '{
-        $reader.atom().lay({ $reader.fault(TelError.Reason.Absent); 0.0 }): atom =>
-          try java.lang.Double.parseDouble(atom.s)
-          catch case _: NumberFormatException =>
-            $reader.fault(TelError.Reason.NotScalar(atom, t"Double"))
-            0.0
+        val atom = $reader.scalar()
+
+        try atom.s.toDouble catch case _: NumberFormatException =>
+          raise(TelError(TelError.Reason.NotScalar(atom, t"Double")))
+            (using infer[Tactic[TelError]])
+
+          0.0
       }
 
     override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[Double])
@@ -200,22 +208,20 @@ object Inlinable:
 
       '{ Tel.Parsable.missing[Double](0.0)(using $tactic) }
 
-  given text: (Text is Inlinable) = new Inlinable:
+  given text: (Text is BintelInlinable) = new BintelInlinable:
     type Self = Text
 
-    def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[Text]): Expr[Text] =
-      '{ $reader.atom().lay({ $reader.fault(TelError.Reason.Absent); t"" }) { atom => atom } }
+    def parse(reader: Expr[BintelReader])(using Quotes, Type[Text]): Expr[Text] =
+      '{ $reader.scalar() }
 
     override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[Text]): Expr[Text] =
       '{ Tel.Parsable.missing[Text](t"")(using $tactic) }
 
-  given string: (String is Inlinable) = new Inlinable:
+  given string: (String is BintelInlinable) = new BintelInlinable:
     type Self = String
 
-    def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[String])
-    :   Expr[String] =
-
-      '{ $reader.atom().lay({ $reader.fault(TelError.Reason.Absent); "" }) { atom => atom.s } }
+    def parse(reader: Expr[BintelReader])(using Quotes, Type[String]): Expr[String] =
+      '{ $reader.scalar().s }
 
     override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[String])
     :   Expr[String] =
@@ -223,6 +229,6 @@ object Inlinable:
       '{ Tel.Parsable.missing[String]("")(using $tactic) }
 
   given iterable: [collection <: Iterable, element]
-  =>  (element0: element is Inlinable)
-  =>  (collection[element] is Inlinable) =
-    IterableInlinable[element](element0).asInstanceOf[collection[element] is Inlinable]
+  =>  (element0: element is BintelInlinable)
+  =>  (collection[element] is BintelInlinable) =
+    IterableInlinable[element](element0).asInstanceOf[collection[element] is BintelInlinable]

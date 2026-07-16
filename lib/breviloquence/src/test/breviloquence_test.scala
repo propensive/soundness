@@ -55,6 +55,15 @@ enum Shape derives CanEqual:
   case Circle(radius: Double)
   case Square(side: Double)
 
+// Model types for the direct-parsing (`Inlinable`) suite. Same-run types
+// stay on the structural ladder: the staging summon refuses them, which is
+// exactly the degradation the suite exercises.
+case class Defaulted(x: Int, y: Int = 7) derives CanEqual
+case class Wide(seventeenCharacter: Int, y: Int) derives CanEqual
+case class Blob(data: IArray[Byte])
+case class Nums(values: List[Int]) derives CanEqual
+case class Mixed(a: Double, b: Boolean, c: Text) derives CanEqual
+
 enum CStatus derives CanEqual:
   @name[Cbor](t"ok") case Active(since: Int)
   @name(t"gone")     case Removed(at: Int)
@@ -430,3 +439,109 @@ object Tests extends Suite(m"Breviloquence Tests"):
         val bytes = Cbor.Ast.encodable.encoded(Cbor.unseal(OptPerson(t"Eve", Unset).in[Cbor]))
         Cbor.ast(Cbor.Ast.parse(bytes)).as[OptPerson]
       . assert(_ == OptPerson(t"Eve", Unset))
+
+    suite(m"Direct parsing (Inlinable)"):
+      given (Point is Cbor.Parsable) = Inlinable.parsable[Point]
+      given (Person is Cbor.Parsable) = Inlinable.parsable[Person]
+      given (Wrapper is Cbor.Parsable) = Inlinable.parsable[Wrapper]
+      given (Team is Cbor.Parsable) = Inlinable.parsable[Team]
+      given (OptPerson is Cbor.Parsable) = Inlinable.parsable[OptPerson]
+      given (Defaulted is Cbor.Parsable) = Inlinable.parsable[Defaulted]
+      given (Wide is Cbor.Parsable) = Inlinable.parsable[Wide]
+      given (Blob is Cbor.Parsable) = Inlinable.parsable[Blob]
+      given (Nums is Cbor.Parsable) = Inlinable.parsable[Nums]
+      given (Mixed is Cbor.Parsable) = Inlinable.parsable[Mixed]
+
+      def encoded[value: Encodable in Cbor](value: value): IArray[Byte] =
+        Cbor.Ast.encodable.encoded(Cbor.unseal(value.in[Cbor]))
+
+      test(m"a flat product reads directly from bytes"):
+        encoded(Point(3, 4)).read[Point in Cbor]
+      . assert(_ == Point(3, 4))
+
+      test(m"text and numeric scalars agree with the AST path"):
+        encoded(Mixed(2.5, true, t"hello")).read[Mixed in Cbor]
+      . assert(_ == Mixed(2.5, true, t"hello"))
+
+      test(m"a nested product inlines through its own generated parser"):
+        encoded(Team(Person(t"Ada", 36), 5)).read[Team in Cbor]
+      . assert(_ == Team(Person(t"Ada", 36), 5))
+
+      test(m"a collection field loops over a definite-length array"):
+        encoded(Wrapper(List(1, 2, 3), t"hi")).read[Wrapper in Cbor]
+      . assert(_ == Wrapper(List(1, 2, 3), t"hi"))
+
+      test(m"a byte-string field reads in place"):
+        encoded(Blob(hex("01020304"))).read[Blob in Cbor].data.to(List)
+      . assert(_ == List[Byte](1, 2, 3, 4))
+
+      test(m"an indefinite-length map parses to the same record"):
+        hex("bf 6178 03 6179 04 ff").read[Point in Cbor]
+      . assert(_ == Point(3, 4))
+
+      test(m"an indefinite-length array parses to the same collection"):
+        hex("a1 6676616c756573 9f 010203 ff").read[Nums in Cbor]
+      . assert(_ == Nums(List(1, 2, 3)))
+
+      test(m"an unknown key is skipped whole"):
+        hex("a3 617a 05 6178 03 6179 04").read[Point in Cbor]
+      . assert(_ == Point(3, 4))
+
+      test(m"the first occurrence of a repeated key wins"):
+        hex("a3 6178 03 6178 09 6179 04").read[Point in Cbor]
+      . assert(_ == Point(3, 4))
+
+      test(m"a non-text-keyed entry is ignored"):
+        hex("a3 05 05 6178 03 6179 04").read[Point in Cbor]
+      . assert(_ == Point(3, 4))
+
+      test(m"a float coerces into an integer field as the AST accessor"):
+        hex("a2 6178 fb3ff8000000000000 6179 02").read[Point in Cbor]
+      . assert(_ == Point(1, 2))
+
+      test(m"a key too long to pack resolves through the general step"):
+        encoded(Wide(9, 2)).read[Wide in Cbor]
+      . assert(_ == Wide(9, 2))
+
+      test(m"a missing required field aborts with Absent"):
+        capture[CborError](hex("a1 6178 03").read[Point in Cbor]).reason
+      . assert(_ == CborError.Reason.Absent)
+
+      test(m"a missing field with a declared default takes it"):
+        hex("a1 6178 03").read[Defaulted in Cbor]
+      . assert(_ == Defaulted(3, 7))
+
+      test(m"an Optional field bridges to Unset when absent"):
+        hex("a1 646e616d65 63457665").read[OptPerson in Cbor]
+      . assert(_ == OptPerson(t"Eve", Unset))
+
+      test(m"an Optional field bridges to Unset from a wire undefined"):
+        hex("a2 646e616d65 63457665 63616765 f7").read[OptPerson in Cbor]
+      . assert(_ == OptPerson(t"Eve", Unset))
+
+      test(m"an Optional field reads its value when present"):
+        encoded(OptPerson(t"Ada", 36)).read[OptPerson in Cbor]
+      . assert(_ == OptPerson(t"Ada", 36))
+
+      test(m"a non-map item reads as an empty record"):
+        capture[CborError](hex("07").read[Point in Cbor]).reason
+      . assert(_ == CborError.Reason.Absent)
+
+      test(m"trailing bytes are rejected as on the AST path"):
+        val bytes = encoded(Point(3, 4))
+        val padded = IArray.from(bytes.to(List) :+ 0.toByte)
+        capture[CborError](padded.read[Point in Cbor]).reason match
+          case CborError.Reason.Trailing(offset) => offset
+          case _                                 => -1L
+      . assert(_ == 7L)
+
+      test(m"the aggregable trigger routes a stream through the direct parser"):
+        val bytes = encoded(Person(t"Ada", 36))
+        LazyList(bytes).read[Person in Cbor]
+      . assert(_ == Person(t"Ada", 36))
+
+      test(m"a recursive type degrades its recursive field to the seam"):
+        given (Tree is Cbor.Parsable) = Inlinable.parsable[Tree]
+        val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+        encoded(tree).read[Tree in Cbor]
+      . assert(_ == Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil))))))
