@@ -38,6 +38,7 @@ import escapade.*
 import gossamer.*
 import hieroglyph.*, textMetrics.wideCharacterWidthMetric
 import profanity.*
+import vacuous.*
 import yossarian.*
 
 // The shared styled-grapheme grid behind `FlowExtent` (a clipped sub-rectangle that
@@ -55,6 +56,24 @@ extends Canvas:
   protected var screen: Screen[StyleWord] = Screen(gridWidth, gridHeight, StyleWord.Default)
   protected var col: Int = 0
   protected var row: Int = 0
+
+  // The physical-screen model: a copy of the grid as the last present actually drew it,
+  // tagged with the absolute top row and column count it was drawn at, so the next
+  // present can emit only the cells that differ (an unchanged overprint is a no-op).
+  // It models the TERMINAL, not the compose grid: `reshape` and `clear` leave it alone
+  // (they only blank what will be composed next), and only `invalidate` drops it —
+  // forcing the next present to redraw everything, e.g. after a resize has reflowed
+  // whatever was really on screen.
+  protected var snapshot: Optional[Screen[StyleWord]] = Unset
+  protected var snapshotTop: Int = 0
+  protected var snapshotColumns: Int = 0
+  protected var invalidated: Boolean = false
+
+  // Mark the next present as a full repaint: the screen can no longer be assumed to
+  // match the snapshot (typically after a WINCH, when the terminal has reflowed it).
+  def invalidate(): Unit =
+    invalidated = true
+    snapshot = Unset
 
   private val metric: Grapheme is Measurable = summon[Grapheme is Measurable]
 
@@ -138,10 +157,14 @@ extends Canvas:
   // A styled `Teletype` of row `r`, up to `columns` cells (wide-trailing sentinels
   // skipped), so the row's colour can be composited onto a parent surface or rendered
   // to SGR by the inline presenter.
-  protected def rowContent(r: Int, columns: Int): Teletype =
+  protected def rowContent(r: Int, columns: Int): Teletype = runContent(r, 0, columns)
+
+  // A styled `Teletype` of the cells `[from, until)` of row `r` (wide-trailing
+  // sentinels skipped): a single damaged run of the row, ready to render to SGR.
+  protected def runContent(r: Int, from: Int, until: Int): Teletype =
     var content = Teletype.empty
-    val limit = columns.min(gridWidth)
-    var c = 0
+    val limit = until.min(gridWidth)
+    var c = from
 
     while c < limit do
       val grapheme = screen.grapheme(c.z, r.z).text
@@ -149,6 +172,65 @@ extends Canvas:
       c += 1
 
     content
+
+  // Record the grid as what is now really on screen, drawn at absolute row `top` and
+  // clipped to `columns`. Called by a presenter after every present, on both the full
+  // and the diffed path.
+  protected def recordSnapshot(top: Int, columns: Int): Unit =
+    snapshot = screen.copy()
+    snapshotTop = top
+    snapshotColumns = columns
+
+  // Whether the snapshot really describes the screen region about to be presented: the
+  // same absolute top, the same column clip and the same grid dimensions. Any geometry
+  // change means the diff would be against the wrong cells, so the caller must fall
+  // back to a full redraw.
+  protected def snapshotValid(top: Int, columns: Int, h: Int): Boolean =
+    snapshot.lay(false): snap =>
+      snapshotTop == top && snapshotColumns == columns
+        && snap.height == h && snap.width == gridWidth
+
+  // Whether the cell at `(c, r)` differs from the snapshot's. A cell is one grapheme
+  // with one style; links never reach the grid (`putCell` always writes `t""`), so the
+  // pair is the whole identity.
+  private def cellChanged(snap: Screen[StyleWord], c: Int, r: Int): Boolean =
+    screen.grapheme(c.z, r.z).text != snap.grapheme(c.z, r.z).text
+      || screen.style(c.z, r.z).raw != snap.style(c.z, r.z).raw
+
+  // Diff the grid (drawn at absolute rows `top..top + h - 1`, clipped to `columns`)
+  // against the snapshot, appending one absolutely-addressed run per contiguous patch
+  // of changed cells: `cup` to the patch, its cells as SGR, and a style reset after any
+  // run that emitted SGR (each run renders self-contained, like a full row today).
+  // Returns the number of runs, so a caller can skip the write when nothing changed.
+  // A wide glyph never straddles a run boundary: its trailing sentinel carries the
+  // leading cell's style, so the two cells always change (or not) together; backing a
+  // run up off a sentinel start is a defensive backstop.
+  protected def emitDiffRuns
+    ( frame: StringBuilder, top: Int, columns: Int, h: Int, termcap: Termcap )
+  :   Int =
+
+    val snap = snapshot.vouch
+    var runs = 0
+    var r = 0
+
+    while r < h do
+      var c = 0
+
+      while c < columns do
+        if cellChanged(snap, c, r) then
+          var start = c
+          if screen.grapheme(start.z, r.z).text.nil && start > 0 then start -= 1
+          while c < columns && cellChanged(snap, c, r) do c += 1
+          frame.append(csi.cup(top + r, start + 1).s)
+          val rendered = runContent(r, start, c).render(termcap)
+          frame.append(rendered.s)
+          if rendered.contains(t"\e") then frame.append(csi.sgr(0).s)
+          runs += 1
+        else c += 1
+
+      r += 1
+
+    runs
 
   // A `Teletype` of `text` in one uniform style (sparse single-run form).
   private def styledCell(text: Text, style: StyleWord): Teletype =
