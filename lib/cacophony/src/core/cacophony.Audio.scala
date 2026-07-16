@@ -42,12 +42,13 @@ import quantitative.*
 import rudiments.*
 import symbolism.*
 import turbulence.*
-import zephyrine.Credit
+import zephyrine.*
 import vacuous.*
 
 object Audio:
-  def apply[streamable: Streamable by Data](input: streamable): Audio raises AudioError =
-    val rawBytes: Array[Byte] = input.lazyList[Data].read[Data].javaInputStream.readAllBytes.nn
+  def apply[streamable: Streamable by Data over Credit](input: streamable)
+  :   Audio raises AudioError =
+    val rawBytes: Array[Byte] = input.read[Data].mutable(using Unsafe)
 
     val raw: jss.AudioInputStream =
       try jss.AudioSystem.getAudioInputStream(ji.ByteArrayInputStream(rawBytes)).nn
@@ -119,7 +120,7 @@ object Audio:
     type Result = HttpStreams.Content
 
     def genericize(audio: Audio in format): HttpStreams.Content =
-      (format.mediaType.basic, HttpStreams.Body(audio.lazyList[Data].iterator))
+      (format.mediaType.basic, HttpStreams.Body(audio.source[Data].toLazyList.iterator))
 
   given aggregable: [format: Audible as audible] => (tactic: Tactic[AudioError])
   =>  (((Audio in format) is Aggregable by Data)^{tactic}) =

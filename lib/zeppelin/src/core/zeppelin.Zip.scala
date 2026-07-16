@@ -87,23 +87,21 @@ object Zip:
     case Deflate(level: Int)
 
   object Entry:
-    def apply[content: Streamable by Data](ref: Path on Zip, content: content)
+    def apply[content: Streamable by Data over Credit](ref: Path on Zip, content: content)
       ( using Compression )
     :   Entry =
 
-      build(ref, gather(content.lazyList[Data]))
-
-    def apply(ref: Path on Zip, content: () => LazyList[Data])(using Compression): Entry =
-      build(ref, gather(content()))
+      build(ref, content.source[Data].memoize)
 
     // Construct an entry from raw bytes, compressing once per the contextual policy.
-    def at[content: Streamable by Data, instant: Abstractable across Instants to Long]
+    def at[content: Streamable by Data over Credit,
+           instant: Abstractable across Instants to Long]
       ( ref: Path on Zip, content: content, modified: instant )
         ( using Compression )
     :   Entry =
 
       val (time, date) = dosDateTime(modified.generic)
-      build(ref, gather(content.lazyList[Data]), time, date)
+      build(ref, content.source[Data].memoize, time, date)
 
     private def build
       ( ref: Path on Zip, raw: Data, time: Int = epochTime, date: Int = epochDate )

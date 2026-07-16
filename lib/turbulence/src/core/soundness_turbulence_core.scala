@@ -36,8 +36,8 @@ export
   turbulence
   . { Aggregable, chunked, compress, Compression, Compressor, decompress, deduplicate,
       defer, delineate, discard, Document, Documentary, Eof, Err, In, inputStream,
-      Io, Line, LineSeparation, load, Loadable, more, Out, read, Relay, shred,
-      Confluence, Divergence, Readable, Sink, Source, Stdio, lazyList, Streamable, StreamError,
+      Io, Line, LineSeparation, load, Loadable, more, Out, read, Relay, shred, source,
+      Confluence, Divergence, Readable, Sink, Stdio, Streamable, StreamError,
       StreamOutputStream, strict, take, Writable, writeTo, flow }
 
 package stdios:

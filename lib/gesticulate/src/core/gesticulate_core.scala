@@ -34,10 +34,16 @@ package gesticulate
 
 import anticipation.*
 import contextual.*
+import prepositional.*
 import turbulence.*
+import zephyrine.*
 
 extension (inline context: StringContext)
   transparent inline def media: Interpolation = interpolation[MediaType](context)
 
 extension [media](value: media)
-  inline def ascribe(media: MediaType): Content = Content(media, value.lazyList[Data])
+  inline def ascribe(media: MediaType)
+    ( using streamable: (media is Streamable by Data over Credit)^, buffering: Buffering )
+  :   Content =
+
+    Content(media, streamable.stream(value).toLazyList)

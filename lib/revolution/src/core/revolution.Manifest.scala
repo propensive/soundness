@@ -45,8 +45,8 @@ import zephyrine.Credit
 import vacuous.*
 
 object Manifest:
-  protected def parse[streamable: Streamable by Data](source: streamable): Manifest =
-    val java = juj.Manifest(source.lazyList[Data].inputStream)
+  protected def parse[streamable: Streamable by Data over Credit](source: streamable): Manifest =
+    val java = juj.Manifest(source.source[Data].inputStream)
 
     Manifest:
       java.getMainAttributes.nn.asScala.to(List).map: (key, value) =>

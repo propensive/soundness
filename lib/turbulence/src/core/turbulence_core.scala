@@ -57,10 +57,14 @@ import probates.awaitProbate
 inline def more[value](using value: value aka "more"): value = value()
 
 extension [value](value: value)
-  // The legacy `LazyList` view of a streamable value (the kernel `.stream`
-  // builds a `zephyrine.Stream` instead). Named `lazyList` to free `stream`.
-  inline def lazyList[element]: LazyList[element] =
-    ${turbulence.internal.lazyList[value, element]('value)}
+  // A streamable value's pull endpoint: the fluent form of
+  // `Streamable.stream` (`file.source`, `entry.source`). (Named `source`
+  // because zephyrine's `.stream` constructor already owns that name under
+  // the flat `soundness.*` re-export.)
+  def source[element](using streamable: (value is Streamable by element over Credit)^)
+  :   (Stream[element] over Credit)^ =
+
+    streamable.stream(value)
 
   inline def read[result](using readable: (value is Readable to result)^): result =
     readable.read(value)

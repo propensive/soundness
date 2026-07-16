@@ -41,6 +41,7 @@ import contingency.*
 import prepositional.*
 import rudiments.*
 import turbulence.*
+import zephyrine.*
 
 object Raster:
   def apply(width: Int, height: Int)(pixel: (Int, Int) => Chroma): Raster =
@@ -53,8 +54,8 @@ object Raster:
 
     new Raster(image)
 
-  def apply[streamable: Streamable by Data](input: streamable): Raster =
-    new Raster(ji.ImageIO.read(input.lazyList[Data].read[Data].javaInputStream).nn)
+  def apply[streamable: Streamable by Data over zephyrine.Credit](input: streamable): Raster =
+    new Raster(ji.ImageIO.read(input.read[Data].javaInputStream).nn)
 
   def apply[form: Rasterizable as rasterizable](image: jai.BufferedImage): Raster in form =
     new Raster(image):
@@ -73,7 +74,7 @@ object Raster:
     type Result = HttpStreams.Content
 
     def genericize(image: Raster in format): HttpStreams.Content =
-      (format.mediaType.basic, HttpStreams.Body(image.lazyList[Data].iterator))
+      (format.mediaType.basic, HttpStreams.Body(image.source[Data].toLazyList.iterator))
 
   given graphical: Raster is Graphical:
     def pixel(raster: Raster, x: Int, y: Int): Chroma = raster(x, y)

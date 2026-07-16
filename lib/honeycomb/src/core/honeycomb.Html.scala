@@ -284,7 +284,7 @@ object Html extends Tag.Container
   // contextual `Formatting`. The whole emission lives in this instance so `.stream` is the single
   // route to streamed HTML; the producing code runs on a separate fiber.
   given streamable: (monitor: Monitor, probate: Probate)
-  =>  ((Document[Html] is Streamable by Text)^{monitor, caps.any}) = document =>
+  =>  ((Document[Html] is Streamable by Text over Credit)^{monitor, caps.any}) = document =>
     val formatting = summon[Formatting]
     val dom = document.metadata
     val producer = Producer[Text](4096)

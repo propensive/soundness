@@ -76,7 +76,7 @@ object Gzip:
 
       recur(stream)
 
-    // Hand-rolled read loop rather than `unsafely(….lazyList[Data])`: the lazy stream would
+    // Hand-rolled read loop rather than `unsafely(….toLazyList)`: the lazy stream would
     // capture the tactic beyond the scope `unsafely` seals (see rep/DECISIONS.md).
     def decompress(stream: LazyList[Data]): LazyList[Data] =
       val in = juz.GZIPInputStream(stream.inputStream)

@@ -72,7 +72,10 @@ object Sheet:
             case '\t' => t"text/tab-separated-values"
             case _    => t"text/csv"
 
-        (mediaType, HttpStreams.Body(dsv.lazyList[Text].map(_.in[Data]).iterator))
+        val stream: (Stream[Data] over Credit)^ =
+          dsv.source[Text].via(summon[CharEncoder]).asInstanceOf[(Stream[Data] over Credit)^]
+
+        (mediaType, HttpStreams.Body(stream.toLazyList.iterator))
 
 
   given tabular: Sheet is Tabular[Text]:

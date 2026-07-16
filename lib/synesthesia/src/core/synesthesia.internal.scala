@@ -49,6 +49,7 @@ import rudiments.*
 import spectacular.*
 import turbulence.*
 import vacuous.*
+import zephyrine.*
 
 
 object internal:
@@ -292,27 +293,27 @@ object internal:
                                 . uri
                               }
 
-                          val rhs = Expr.summon[result is Streamable by Text] match
+                          val rhs = Expr.summon[result is Streamable by Text over Credit] match
                             case Some(streamable) =>
                               ' {
-                                  given result is Streamable by Text = $streamable
+                                  given result is Streamable by Text over Credit = $streamable
 
                                   Mcp.Contents:
                                     Mcp.TextResourceContents
                                       ( $uri,
                                         mimeType = t"text/html;profile=mcp-app", // FIXME
-                                        text = $value.lazyList[Text].read[Text] )
+                                        text = $value.read[Text] )
                                 }
 
-                            case None => Expr.summon[result is Streamable by Data] match
+                            case None => Expr.summon[result is Streamable by Data over Credit] match
                               case Some(streamable) =>
                                 ' {
                                     import alphabets.base64Standard
-                                    given result is Streamable by Data = $streamable
+                                    given result is Streamable by Data over Credit = $streamable
 
                                     Mcp.Contents:
                                       Mcp.BlobResourceContents
-                                        ( $uri, Unset, blob = $value.lazyList[Data].read[Data].serialize[Base64] )
+                                        ( $uri, Unset, blob = $value.read[Data].serialize[Base64] )
                                   }
 
                               case None => halt:
