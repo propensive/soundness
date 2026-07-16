@@ -30,23 +30,31 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package enigmatic
 
-// `Concession`, `Permit`, `ProcessingPermit` and the `crypto.permit…Crypto`
-// aggregates are re-exported by gastronomy (where they now live).
-export
-  enigmatic
-  . { Aes, Blowfish, BlockCipher, BlockCipherMode, BlockCipherPadding, Cbc, Cfb, Cipher,
-      CipherSession, Cleartext, cleartext, Crypto, CryptoError, Ctr, decrypt, Decryptor, Des,
-      Divulgence,
-      Dsa, Ecb, encrypt, Encryptor, Encryption, expose,
-      Hmac, hmac, InitializationVector, Iso10126, JavaStdlibCrypto, NoPadding, Ofb, Pem, PemError,
-      PemLabel, Password,
-      Permits, Pkcs7, PrivateKey, PublicKey, Rc2, Rsa, Signature, Signing,
-      Symmetric, SymmetricKey, TripleDes }
+import anticipation.*
+import gossamer.*
+import spectacular.*
 
-package blockCipherMode:
-  export enigmatic.blockCipherMode.{cbc, cfb, ctr, ofb}
+object Password:
+  def apply(cleartext: Text): Password = new Password(cleartext)
 
-package blockCipherPadding:
-  export enigmatic.blockCipherPadding.{iso10126, pkcs7}
+  // Never renders the secret: a `Password` is safe to log or embed in a message.
+  given showable: Password is Showable = _ => t"Password(•••)"
+
+// A password held opaquely: constructed from cleartext, but with no way to read that
+// cleartext back except through `expose`, which lends it — as a scoped `Cleartext`
+// capability — to a block, exactly as `PrivateKey.expose` lends a `Decryptor`. Capture
+// checking confines the capability to the block, so it (and any closure over it) cannot
+// escape; `result` is instantiated at the call site.
+class Password(private val cleartext: Text):
+  def expose[result](block: Cleartext^ ?=> result): result = block(using Cleartext(cleartext))
+
+// The scoped view of a password's cleartext, lent within `expose`. A stateless
+// `SharedCapability`, freely aliasable within the block but not beyond it.
+class Cleartext private[enigmatic] (private val secret: Text) extends caps.SharedCapability:
+  def text: Text = secret
+
+// The cleartext lent within an `expose` block, reached contextually: `cleartext.text` rather
+// than `summon[Cleartext].text`, following the same idiom as parasite's `monitor`.
+transparent inline def cleartext: Cleartext^ = infer[Cleartext^]
