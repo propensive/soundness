@@ -1,1 +1,0 @@
-the nature of the problem with the media type

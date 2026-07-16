@@ -1,1 +1,0 @@
-a _subgraph_ in the DOT language, as a `:Statement` making up part of a `:Graph` or `:Digraph`

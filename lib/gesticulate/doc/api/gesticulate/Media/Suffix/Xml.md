@@ -1,1 +1,0 @@
-represents the `+xml` media type suffix

@@ -1,1 +1,0 @@
-a textual representation of the suffix to the media type

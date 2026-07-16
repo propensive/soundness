@@ -1,1 +1,0 @@
-the type of each node in the directed acyclic graph

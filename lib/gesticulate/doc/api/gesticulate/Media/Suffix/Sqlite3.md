@@ -1,1 +1,0 @@
-represents the `+sqlite3` media type suffix

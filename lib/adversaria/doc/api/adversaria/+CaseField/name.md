@@ -1,1 +1,0 @@
-the name of the field represented by this `:CaseField`

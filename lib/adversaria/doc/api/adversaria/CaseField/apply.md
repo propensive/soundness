@@ -1,1 +1,0 @@
-constructs a new `:CaseField`

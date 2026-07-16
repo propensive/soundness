@@ -1,1 +1,0 @@
-an accessor for a field on a case class of type `:T` with an annotation of type `:A` and name, `name`
