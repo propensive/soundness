@@ -36,15 +36,17 @@ import language.experimental.pureFunctions
 
 import anticipation.*
 import contingency.*
+import prepositional.*
 import turbulence.*
+import zephyrine.*
 
 // A running native subprocess, viewed without reference to any platform-specific process type (such
 // as `java.lang.Process`), so that `Computable` instances — and future non-JVM backends — never
 // mention one. The JVM implementation is `Job`.
 trait Subprocess:
-  def stdout(): LazyList[Data] raises StreamError
-  def stderr(): LazyList[Data] raises StreamError
+  def stdout()(using Tactic[StreamError]): (Stream[Data] over Credit)^
+  def stderr()(using Tactic[StreamError]): (Stream[Data] over Credit)^
   def text(): Text
   def errorText(): Text
-  def lines(): LazyList[Text]
+  def lines()(using Tactic[StreamError]): (Stream[IArray[Text]] over Credit)^
   def status(): Int
