@@ -30,7 +30,26 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package facsimile
 
-export facsimile.{Annotation, Bookmark, Cos, Destination, Page, Pdf, PdfError, PdfFile,
-    PdfFont, PdfInfo, PdfMatrix, PdfOperator, PdfRect, TextRun, pdf}
+object PdfMatrix:
+  val Identity: PdfMatrix = PdfMatrix(1, 0, 0, 1, 0, 0)
+
+// The six live entries of a PDF transformation matrix (ISO 32000-2 §8.3.4):
+//
+//   ⎡ a b 0 ⎤
+//   ⎢ c d 0 ⎥
+//   ⎣ e f 1 ⎦
+//
+// applied to row vectors, so `this * that` transforms by `this` first.
+case class PdfMatrix(a: Double, b: Double, c: Double, d: Double, e: Double, f: Double):
+  def * (that: PdfMatrix): PdfMatrix =
+    PdfMatrix
+      ( a*that.a + b*that.c,
+        a*that.b + b*that.d,
+        c*that.a + d*that.c,
+        c*that.b + d*that.d,
+        e*that.a + f*that.c + that.e,
+        e*that.b + f*that.d + that.f )
+
+  def apply(x: Double, y: Double): (Double, Double) = (a*x + c*y + e, b*x + d*y + f)

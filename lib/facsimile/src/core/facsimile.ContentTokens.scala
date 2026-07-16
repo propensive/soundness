@@ -30,7 +30,55 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package facsimile
 
-export facsimile.{Annotation, Bookmark, Cos, Destination, Page, Pdf, PdfError, PdfFile,
-    PdfFont, PdfInfo, PdfMatrix, PdfOperator, PdfRect, TextRun, pdf}
+import anticipation.*
+import contingency.*
+import gossamer.*
+import rudiments.*
+import vacuous.*
+
+// Lexes a decoded content stream — or the concatenation of a `/Contents` array, which the
+// specification requires to be treated as one stream — into instructions: operands followed
+// by an operator. The COS lexer serves unchanged (§7.8.2 shares the lexical grammar), with
+// reference lookahead disabled, since `R` here is an operator. Inline images, the one
+// lexical special case, are folded into a single `BI` instruction of dictionary-plus-bytes.
+private[facsimile] object ContentTokens:
+  case class Instruction(operands: List[Cos], operator: Text)
+
+  def read(data: Data): List[Instruction] raises PdfError =
+    val lexer = CosLexer(Scan(data))
+    val parser = CosParser(lexer, references = false)
+    val instructions = List.newBuilder[Instruction]
+    var done = false
+
+    while !done do
+      parser.instruction().let: (operands, operator) =>
+        if operator.s == "BI" then instructions += inlineImage(lexer, parser)
+        else instructions += Instruction(operands, operator)
+
+      . or:
+          done = true
+
+    instructions.result()
+
+  // `BI <key value ...> ID <bytes> EI`: the keys parse as ordinary tokens up to the `ID`
+  // operator, the payload is consumed at the byte level, and the closing `EI` is checked.
+  private def inlineImage(lexer: CosLexer, parser: CosParser): Instruction raises PdfError =
+    val entries = parser.instruction().let: (operands, operator) =>
+      if operator.s != "ID" then abort(PdfError(PdfError.Reason.MalformedOperator(t"BI")))
+
+      operands.grouped(2).to(List).flatMap:
+        case List(Cos.Name(key), value) => List(key -> value)
+        case _                          => List()
+
+      . to(Map)
+
+    . or(abort(PdfError(PdfError.Reason.MalformedOperator(t"BI"))))
+
+    val length = entries.at(t"L").or(entries.at(t"Length")).let(_.long).let(_.toInt)
+    val data = lexer.imageData(length)
+
+    val closed = parser.instruction().let(_(1).s == "EI").or(false)
+    if !closed then abort(PdfError(PdfError.Reason.MalformedOperator(t"BI")))
+    Instruction(List(Cos.Dictionary(entries), Cos.Chars(data)), t"BI")

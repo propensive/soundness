@@ -35,6 +35,7 @@ package facsimile
 import anticipation.*
 import contingency.*
 import gossamer.*
+import vacuous.*
 
 // A recursive-descent parser over `CosToken`s. It never resolves indirect references — that
 // is `Pdf`'s job — and never reads stream payloads: a `stream` keyword yields a `Cos.Body`
@@ -71,8 +72,11 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
     val position = offset
 
     advance() match
-      case CosToken.Integral(value) => value.toInt
-      case _ => abort(PdfError(PdfError.Reason.Unparseable(position, expected)))
+      case CosToken.Integral(value) =>
+        value.toInt
+
+      case _ =>
+        abort(PdfError(PdfError.Reason.Unparseable(position, expected)))
 
   private def content(): Cos raises PdfError =
     val content = value()
@@ -94,6 +98,38 @@ private[facsimile] class CosParser(lexer: CosLexer, references: Boolean = true):
 
       case _ =>
         abort(PdfError(PdfError.Reason.Unparseable(offset, t"the keyword 'endobj'")))
+
+  // One content-stream instruction: operand values followed by an operator keyword, or
+  // `Unset` at the end of the stream. Operands left dangling by a truncated stream are
+  // dropped, matching viewer behaviour.
+  private[facsimile] def instruction(): Optional[(List[Cos], Text)] raises PdfError =
+    val operands = List.newBuilder[Cos]
+
+    def recur(): Optional[(List[Cos], Text)] = advance() match
+      case CosToken.End =>
+        Unset
+
+      case CosToken.Keyword(word) => word.s match
+        case "true" =>
+          operands += Cos.Truth(true)
+          recur()
+
+        case "false" =>
+          operands += Cos.Truth(false)
+          recur()
+
+        case "null" =>
+          operands += Cos.Nil
+          recur()
+
+        case _ =>
+          (operands.result(), word)
+
+      case token =>
+        operands += interpret(token)
+        recur()
+
+    recur()
 
   private def expect(token: CosToken, expected: Text): Unit raises PdfError =
     val position = offset

@@ -105,6 +105,52 @@ class Page private[facsimile]
     case Page.Rotation.Quarter | Page.Rotation.ThreeQuarters => cropBox.width
     case _                                                   => cropBox.height
 
+  // The page's fonts, keyed by resource name — the names `Tf` refers to.
+  def fonts: Map[Text, PdfFont] raises PdfError =
+    val resources = pdf.resolved(entries.at(t"Resources").or(inherited.resources).or(Cos.Nil))
+      . dictionary.or(Map[Text, Cos]())
+
+    pdf.resolved(resources.at(t"Font").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
+    . to(List).flatMap: (name, value) =>
+        PdfFont.read(pdf.resolved(value))(using pdf).lay(List()): font =>
+          List(name -> font)
+
+    . to(Map)
+
+  // The page's content: its `/Contents` streams decoded and concatenated, which the
+  // specification requires to be treated as a single stream, with whitespace between.
+  def content: Data raises PdfError =
+    val streams = pdf.resolved(entries.at(t"Contents").or(Cos.Nil)) match
+      case body: Cos.Body =>
+        List(body)
+
+      case Cos.Sequence(elements) =>
+        elements.flatMap: element =>
+          pdf.resolved(element) match
+            case body: Cos.Body => List(body)
+            case _              => List()
+
+      case _ =>
+        List()
+
+    streams.map(pdf.payload(_)) match
+      case List()       => IArray.empty[Byte]
+      case List(single) => single
+      case many         => many.reduce(_ ++ IArray(0x0a.toByte) ++ _)
+
+  def operators: List[PdfOperator] raises PdfError =
+    ContentTokens.read(content).map(PdfOperator.read(_))
+
+  // Every show-text operation, decoded and positioned in points.
+  def runs: List[TextRun] raises PdfError =
+    TextExtractor.extract(operators, fonts, userUnit)(0)
+
+  // The page's plain text, in content order: spaces bridge gaps on a baseline, newlines mark
+  // baseline movement — the fidelity of `pdftotext -raw`; layout-aware ordering can come
+  // later as an additive option.
+  def text: Text raises PdfError =
+    TextExtractor.extract(operators, fonts, userUnit)(1)
+
   def annotations: List[Annotation] raises PdfError =
     val pages = pdf.pageNumbers
     val named = pdf.rawDestinations

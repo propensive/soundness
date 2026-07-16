@@ -398,9 +398,8 @@ extends caps.ExclusiveCapability:
   // real files, the nearest `endstream`, less the end-of-line before it.
   private def payloadEnd(body: Cos.Body): Long raises PdfError =
     resolved(body.entries.at(t"Length").or(Cos.Nil)).long.let: length =>
-      if length >= 0 && body.start + length <= source.size
-         && endstreamFollows(body.start + length)
-      then body.start + length else Unset
+      val end = body.start + length
+      if length >= 0 && end <= source.size && endstreamFollows(end) then end else Unset
 
     . or:
         val marker = t"endstream"
