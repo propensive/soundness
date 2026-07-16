@@ -30,6 +30,8 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package zeppelin
 
-export zeppelin.{zip, Zip, ZipDataOpenable, ZipError, ZipEvent, Zipfile, ZipHandle, ZipOpenable}
+// The contextual archive handle within an `open[Zip]` block, in the manner of galilei's `file`.
+// Transparent inline so the handle's precise (grant-refined, capturing) type is preserved.
+transparent inline def zip(using handle: ZipHandle): handle.type = handle

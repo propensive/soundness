@@ -254,6 +254,29 @@ object Tests extends Suite(m"Zeppelin tests"):
         capture[ZipError](Zipfile.read(t"this is not a zip file".in[Data])).reason
       . assert(_ == ZipError.Reason.MissingEocd)
 
+    suite(m"Scoped opening"):
+      val archive = writeZip(t"scoped.zip", entry(t"a.txt", t"alpha"), entry(t"b/c.txt", t"gamma"))
+
+      test(m"an archive opened as Zip lists its entries"):
+        archive.open[Zip]():
+          zip.entries.to(List).map(_.ref.encode)
+      . assert(_ == List(t"a.txt", t"b/c.txt"))
+
+      test(m"entry content resolves within the scope"):
+        archive.open[Zip]():
+          zip.entry(zipRef(t"b/c.txt")).read[Text]
+      . assert(_ == t"gamma")
+
+      test(m"in-memory data opens as Zip"):
+        bytesOf(archive).open[Zip]():
+          zip.entries.to(List).map(_.ref.encode)
+      . assert(_ == List(t"a.txt", t"b/c.txt"))
+
+      test(m"opening for writing is refused"):
+        import errorDiagnostics.emptyDiagnostics
+        capture[ZipError](archive.open[Zip](Write) { () }).reason
+      . assert(_ == ZipError.Reason.WriteUnsupported)
+
     suite(m"Interoperability with the JDK writer"):
       test(m"reads entry names from an externally (JDK) written archive"):
         names(readEntries(writeRawZip(t"foreign.zip", t"one.txt", t"two.txt")))
