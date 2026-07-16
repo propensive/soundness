@@ -82,10 +82,14 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
     // loop is already `Stopping`, so the interrupted `accept()` simply unwinds.
     val bindLoop = loop:
       safely(bindable.connect(binding)).let: connection =>
+        // Fire-and-forget: the fresh task handle is discarded (a lambda result may not
+        // carry it).
         async:
           safely:
             try bindable.transmit(binding, connection, lambda(connection))
             finally bindable.close(connection)
+
+        ()
 
     val task = async(bindLoop.run())
 

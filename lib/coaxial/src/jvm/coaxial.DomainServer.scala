@@ -70,8 +70,12 @@ extension (domainSocket: DomainSocket)
         Connection(jnc.Channels.newInputStream(client).nn, jnc.Channels.newOutputStream(client).nn)
 
       . let: connection =>
+          // Fire-and-forget: the fresh task handle is discarded (a lambda result may not
+          // carry it).
           async:
             safely(try handler(connection) finally connection.close())
+
+          ()
 
     val task = async(bindLoop.run())
 

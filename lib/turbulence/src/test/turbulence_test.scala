@@ -772,11 +772,14 @@ object Tests extends Suite(m"Turbulence tests"):
           val source = summon[Data is Source by Data over Credit].stream(payload)
           val subscribers = Divergence(source, 3)
 
+          // Handles collected for concurrent await: sealed per the pure-façade convention
+          // (D6; the `Seq[Task].sequence` shape).
           val results = subscribers.map: stream =>
-            async:
-              val gather = Gather2()
-              stream.pump(gather)
-              gather.data.to(List)
+            caps.unsafe.unsafeAssumePure:
+              async:
+                val gather = Gather2()
+                stream.pump(gather)
+                gather.data.to(List)
 
           results.map { task => task.await() }.to(List)
       . assert(_ == List.fill(3)(payload.to(List)))
@@ -801,11 +804,14 @@ object Tests extends Suite(m"Turbulence tests"):
 
           val subscribers = Divergence(source, 3)
 
+          // Handles collected for concurrent await: sealed per the pure-façade convention
+          // (D6; the `Seq[Task].sequence` shape).
           val results = subscribers.map: stream =>
-            async:
-              val gather = Gather2()
-              stream.pump(gather)
-              gather.data.to(List)
+            caps.unsafe.unsafeAssumePure:
+              async:
+                val gather = Gather2()
+                stream.pump(gather)
+                gather.data.to(List)
 
           results.map { task => task.await() }.to(List)
       . assert(_ == List.fill(3)(mixed.to(List)))

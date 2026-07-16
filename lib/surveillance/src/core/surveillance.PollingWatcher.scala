@@ -108,9 +108,11 @@ extends Watcher:
     directories.each: (directory, filter) =>
       snapshots(directory) = scan(directory, filter)
 
+    // Sealed per the pure-façade convention (D6), like `NativeWatcher`: the handle is held
+    // only to keep the supervised poll task alive for the registration's lifetime.
     val async: Optional[Task[Unit]] = safely:
       supervise:
-        task(n"surveillance-poll"):
+        val polling = task(n"surveillance-poll"):
           try
             while true do
               snooze(interval)
@@ -121,6 +123,8 @@ extends Watcher:
                 snapshots(directory) = current
 
           catch case _: InterruptedException => ()
+
+        caps.unsafe.unsafeAssumePure(polling)
 
     Registration(async)
 

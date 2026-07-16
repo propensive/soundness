@@ -59,7 +59,10 @@ object NativeWatcher extends Watcher:
       pollLoop.stop()
       try watchService.close() catch case _: ji.IOException => ()
 
-    val async: Optional[Task[Unit]] = safely(supervise(task(n"surveillance")(pollLoop.run())))
+    // Registry-lifetime storage of the poll task's handle (held only to keep the supervised
+    // task alive); sealed inside the block, per the pure-façade convention (D6 ruling).
+    val async: Optional[Task[Unit]] =
+      safely(supervise(caps.unsafe.unsafeAssumePure(task(n"surveillance")(pollLoop.run()))))
 
   private val serviceMutex: Mutex = Mutex()
   private val watchesMutex: Mutex = Mutex()

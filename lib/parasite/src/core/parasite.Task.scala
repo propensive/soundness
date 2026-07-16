@@ -47,18 +47,16 @@ import vacuous.*
 object Task:
   def apply[result, error <: Hazard](evaluate: Worker => result, name: Optional[Name[Async]])
     ( using monitor: Monitor^, codepoint: Codepoint, probate: Probate^ )
-  :   Task[result] { type Error = error } =
+  :   (Task[result] { type Error = error })^ =
 
-    // The body closure may capture stack-scoped capabilities (an error tactic, a `boundary.Label`);
-    // that capture is checked at the `async`/`task` entry point and laundered to pure here. A `Task`
-    // is itself a `Worker` (a capability), but task handles are freely shared and collected (e.g.
-    // `Seq[Task].sequence`), which a tracked `Task^` could not be — so the handle is laundered to a
-    // pure `Task` too. The worker remains a supervised child of `monitor`; only the *handle*'s static
-    // capture is dropped (the effect capabilities `Tactic`/`Emit` it may use are still tracked).
-    val evaluate0: Worker -> result = caps.unsafe.unsafeAssumePure(evaluate)
+    // The handle is a fresh (`^`) capability — a `Task` IS a `Worker` — so both the handle
+    // and its body closure are honestly tracked (D6 ruling, 2026-07-16). Composition over
+    // collections of tasks goes through the sealed pure façade (`Task.monad` and the
+    // `sequence` extensions below).
+    val evaluate0: Worker => result = evaluate
     inline def name0: Optional[Name[Async]] = name
 
-    caps.unsafe.unsafeAssumePure:
+    locally:
       new Worker(codepoint, monitor, probate) with Task[result]:
         type Result = result
         type Error = error
@@ -74,10 +72,12 @@ object Task:
           deliver[error, duration](duration)
 
 
-  // `mercator.Monad[Task]` abstracts over `Task` as a *pure* type constructor, but a `Task` is a
-  // capability (a `Worker`), so the scope-capturing handles produced by `async`/`bind`/`map` are
-  // boxed to the pure `Task` the `Monad` interface demands. The capture is recoverable bookkeeping
-  // here — the tasks are bound and awaited within the same `Monitor` scope this given requires.
+  // THE PURE FAÇADE (D6 ruling, option c): `mercator.Monad[Task]` abstracts over `Task` as a
+  // *pure* type constructor, but a `Task` handle is an honest capability (a `Worker`), so the
+  // fresh handles produced by `async`/`bind`/`map` are sealed to the pure `Task` the `Monad`
+  // interface demands — once, here, at the composition boundary. The capture is recoverable
+  // bookkeeping: the tasks are bound and awaited within the same `Monitor` scope this given
+  // requires.
   given monad: (Monitor^, Probate^) => Monad[Task] = caps.unsafe.unsafeAssumePure:
     new Monad[Task]:
       def bind[value, value2](value: Task[value])(lambda: value => Task[value2]): Task[value2] =
@@ -89,8 +89,9 @@ object Task:
         caps.unsafe.unsafeAssumePure(value.map(lambda))
 
   extension [result](tasks: Seq[Task[result]])
+    // Part of the pure façade (see `monad` above): the fresh handle is sealed once here.
     def sequence(using Monitor^, Probate^): Task[Seq[result]] emits AsyncError =
-      async(tasks.map(_.join()))
+      caps.unsafe.unsafeAssumePure(async(tasks.map(_.join())))
 
   extension [result](tasks: Iterable[Task[result]])
     def race()(using Monitor^, Probate^): result raises AsyncError =
@@ -125,7 +126,7 @@ trait Task[+result]:
   :   result raises AsyncError
 
   def bind[result2](lambda: result => Task[result2])(using Monitor^, Probate^)
-  :   Task[result2] emits AsyncError
+  :   (Task[result2] emits AsyncError)^
 
   def map[result2](lambda: result => result2)(using Monitor^, Probate^)
-  :   Task[result2] emits AsyncError
+  :   (Task[result2] emits AsyncError)^

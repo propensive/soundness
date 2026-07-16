@@ -2285,3 +2285,23 @@ D4 — logging:
   cannot parse `^`; mixed-mode overrides use the bare form). The telekinesis fetch/submit
   macros seal the evidence at the staging boundary like `postable0` (quote wall); the
   scintillate connection daemon rims it as `AnyRef`.
+
+## Capture-honesty Phase 8, leg 3: Task is an honest capability with a pure façade (2026-07-16)
+
+D6 RESOLVED per Jon's ruling (option c: "Task wants to be a capability, and it's not pure").
+Gates: JVM 10301/10301, JS 8006/8006; suites parasite 148/0, turbulence 73/0, zephyrine
+252/0, coaxial 36/0, surveillance 4/0, ethereal 49/0, exoskeleton 69/0, profanity 54/0.
+
+- `Task.apply`, `async` and `task` return FRESH handles (`(Task[result] emits …)^`); the
+  handle-and-body seals in `Task.apply` are DELETED (a `Task` IS a `Worker`, a capability —
+  the fresh result admits the body closure's captures honestly). `Task.map`/`bind` (trait
+  and `Worker` impl) return `^` likewise.
+- THE PURE FAÇADE: `Task.monad` (the mercator instance, which must abstract over `Task` as a
+  pure constructor) and the `Seq[Task].sequence` extension keep their seals, now documented
+  as the single composition boundary where fresh handles are deliberately narrowed. `daemon`
+  is unchanged (a `Daemon` handle was already this shape).
+- Storage/collection fallout, each resolved by the matching recipe: surveillance's poll-task
+  registry handles seal inside their `supervise` blocks (registry-lifetime, the façade
+  convention); coaxial's per-connection fire-and-forget `async` calls discard the handle
+  explicitly (`()` — a lambda result may not carry a fresh); the turbulence manifold test
+  seals its collected handles (the `sequence` shape).
