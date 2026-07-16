@@ -45,4 +45,14 @@ object Ndjson:
 
     Ndjson(value.lazyList[Line].map { line => line.content.read[Json] })
 
+  // The endpoint form: lines split through the duct kernel, one `Json` per
+  // forced element. (The `Ndjson` value's LazyList field is the lazy view —
+  // the audited bridge idiom — pending the value's redesign.)
+  def parse(consume stream: (Stream[Text] over Credit)^)
+    ( using Tactic[ParseError], Buffering, CharEncoder )
+  :   Ndjson =
+
+    import turbulence.lineSeparation.adaptiveLinefeedLineSeparation
+    Ndjson(LazyList.from(stream.delineate.records.map(_.read[Json])))
+
 case class Ndjson(stream: LazyList[Json])
