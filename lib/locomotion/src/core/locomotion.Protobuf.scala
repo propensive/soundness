@@ -411,25 +411,25 @@ object Protobuf extends Protobuf2:
 
   object DecodableDerivation extends Derivable[Decodable in Protobuf]:
     inline def conjunction[derivation <: Product: ProductReflection]
-    :   derivation is Decodable in Protobuf =
+    :   (derivation is Decodable in Protobuf)^ =
 
       val numbers = fieldNumbers[derivation]
 
       // The decode lambda closes over the resolution-scoped `Tactic` that `provide` summons
-      // at the derivation site, sharing the instance's given-resolution lifetime; laundered
-      // pure per the codec-thunk seal pattern (see rep/DECISIONS.md).
-      caps.unsafe.unsafeAssumePure: protobuf =>
+      // at the derivation site, sharing the instance's given-resolution lifetime; the fresh
+      // (`^`) trait result honestly admits the capture — no seal.
+      { protobuf =>
         provide[Tactic[ProtobufError]]:
           val map = ProtobufParser(protobuf.payload).fields()
 
           build[derivation]:
             [field0] => context =>
               map.at(numbers(label)).lay(default.or(context.decoded(Protobuf.Absent))): values =>
-                context.decoded(Protobuf.Repeated(values))
+                context.decoded(Protobuf.Repeated(values)) }
 
-    inline def disjunction[derivation: SumReflection]: derivation is Decodable in Protobuf =
-      // Laundered pure as for `conjunction` above.
-      caps.unsafe.unsafeAssumePure: protobuf =>
+    inline def disjunction[derivation: SumReflection]: (derivation is Decodable in Protobuf)^ =
+      // A fresh (`^`) result honestly admitting the capture, as for `conjunction` above.
+      { protobuf =>
         provide[Tactic[ProtobufError]]:
           provide[Tactic[VariantError]]:
             val map = ProtobufParser(protobuf.payload).fields()
@@ -441,7 +441,7 @@ object Protobuf extends Protobuf2:
 
             delegate(labels(index)):
               [variant <: derivation] => context =>
-                context.decoded(Protobuf.Repeated(map(index + 1)))
+                context.decoded(Protobuf.Repeated(map(index + 1))) }
 
     inline def fieldNumbers[derivation <: Product: ProductReflection]: Map[Text, Int] =
       val annotated: Map[Text, Set[field]] = infer[derivation is Annotated by field] match

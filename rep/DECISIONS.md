@@ -2220,3 +2220,32 @@ perihelion 28/0, scintillate 20/0.
 - `gastronomy.Digestible`'s 7 WHOLE-INSTANCE seals NARROWED to the same thunk form: the seal
   now covers only the by-name thunk, and each SAM instance is itself compiler-checked pure.
   gastronomy suite 114/0; gates green.
+
+## Capture-honesty Phase 7: capture-polymorphic derivation — the seal class is deleted (2026-07-16)
+
+RESOLVES the deferred design question from typeclass-purity leg 2 ("making those givens
+honestly tracked is the remaining design question") and the ⚑1 open sub-question, for the
+DERIVATION-level seals. Design (probe-gated per plan; all three stages ran GREEN against the
+p2 toolchain):
+
+- `ProductDerivation.Methods.conjunction` and `SumDerivation.Methods.disjunction` return
+  FRESH (`typeclass[derivation]^`) instances: a derived codec may honestly capture its
+  resolution-scoped capabilities. Pure implementations are unaffected (narrowing a fresh
+  result is a legal override), so only the six sealed implementations changed.
+- `derivedOne`'s existing GADT re-typing match is now documented as the ONE engine-level
+  erasure of the derivation boundary: `deriveGraph`'s quoted trees cannot carry `^` types
+  (the quote wall), so the honest type narrows there, once — the `fieldInstance` erasing
+  cast's counterpart in the other direction. `derived` (the macro given) is unchanged.
+- SEALS DELETED (6): jacinta `DecodableDerivation.conjunction`, `Json.Field` conjunction +
+  disjunction; locomotion `DecodableDerivation` conjunction + disjunction; caesura Dsv
+  `DecodableDerivation.conjunction` (its `DsvProductDecoder` lambda param widened to `=>`).
+- Stage sentinels all green: (i) jacinta 366/0 + embarcadero.test compiles (the dictcaps
+  sentinel); (ii) locomotion 38/0 (the summonInline+`aka`-Tagged path — the misdiagnosed
+  "second summon path" needed nothing); (iii) ethereal 49/0, profanity 54/0, exoskeleton
+  69/0 (`Enclave.dispatch` staged quotes reach the honest derivations — THE QUOTE WALL DID
+  NOT BITE), embarcadero 30/0, austronesian 8/0, caesura 70/0. Gates: JVM 10301/10301,
+  JS 8006/8006. telekinesis's 4 per-module failures and superlunary's "no main class"
+  runner artifact reproduce identically at the attested base (pre-existing).
+- REMAINING seals (out of scope, unchanged): the by-name element-codec seals (jacinta
+  optional/list primitives — sep-blocked, upstream candidate #5) and the pure-thunk seals
+  on the Pure traits (Phase 6 form).

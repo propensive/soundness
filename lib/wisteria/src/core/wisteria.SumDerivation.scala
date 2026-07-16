@@ -297,7 +297,8 @@ object SumDerivation:
           else panic(m"Should be unreachable")
 
 
-    inline def disjunction[derivation: SumReflection]: typeclass[derivation]
+    // A fresh (`^`) result, like `conjunction`.
+    inline def disjunction[derivation: SumReflection]: typeclass[derivation]^
 
 trait SumDerivation[typeclass[_]] extends SumDerivation.Methods[typeclass]:
   inline def derivedOne[derivation]: typeclass[derivation] =
