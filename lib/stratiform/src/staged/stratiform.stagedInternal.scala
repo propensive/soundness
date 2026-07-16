@@ -242,7 +242,13 @@ object stagedInternal:
   // runtime seam. The cache spans one entry expansion, so a type's staging
   // summon runs at most once however often it recurs in the graph.
 
-  private type Cache = scm.HashMap[String, Option[Inlinable]]
+  // The per-entry expansion cache: memoized staging summons, and the set of
+  // types whose generators are currently on the expansion stack — a
+  // recursive occurrence (`Tree` with `children: List[Tree]`) must degrade
+  // to the runtime seam rather than expand forever.
+  private[stratiform] final class Cache:
+    val instances: scm.HashMap[String, Option[Inlinable]] = scm.HashMap()
+    val active: scm.Set[String] = scm.Set()
 
   private def resolve[field: Type](cache: Cache)(using Quotes): Option[Inlinable] =
     import quotes.reflect.*
@@ -250,7 +256,44 @@ object stagedInternal:
     val tpe = TypeRepr.of[field].dealias
 
     builtinFor(tpe).orElse:
-      cache.getOrElseUpdate(tpe.show, summonViaStaging[field]).orElse(structuralFor[field](cache))
+      cache.instances.getOrElseUpdate(tpe.show, summonViaStaging[field])
+      . orElse(structuralFor[field](cache))
+      . orElse(runtimeFor[field])
+
+  // The runtime tiers, resolved with a reflection-level implicit search at
+  // expansion time and called through neutral-carrier helpers (the erasing
+  // cast crosses the capability boundary, as wisteria's field-instance
+  // engine does): a nominal `Parsable` — the recursion tie, since a
+  // recursive record's own alias given (a lazy val) is found from inside
+  // its own definition — then the `Tel.Field` fallback chain. Neither
+  // `summonInline` nor a `using` parameter works for these from inside the
+  // generated parser's inline context.
+  private def runtimeFor[field: Type](using Quotes): Option[Inlinable] =
+    import quotes.reflect.*
+
+    def searched(target: TypeRepr): Option[Expr[Any]] =
+      Implicits.search(target) match
+        case success: ImplicitSearchSuccess => Some(success.tree.asExpr)
+        case _                              => None
+
+    searched(TypeRepr.of[field is Tel.Parsable]).map(RuntimeInlinable[field](_)).orElse:
+      searched(TypeRepr.of[field is Tel.Field]).map(RuntimeInlinable[field](_))
+
+  private[stratiform] final class RuntimeInlinable[value](parsing: Expr[Any]) extends Inlinable:
+    type Self = value
+
+    def parse(reader: Expr[TelReader], indent: Expr[Int])(using Quotes, Type[value])
+    :   Expr[value] =
+
+      '{
+        Tel.Parsable.parseField[value]
+          ($parsing.asInstanceOf[AnyRef], $reader.asInstanceOf[AnyRef], $indent)
+      }
+
+    override def absent(tactic: Expr[Tactic[TelError]])(using Quotes, Type[value])
+    :   Expr[value] =
+
+      '{ Tel.Parsable.absentField[value]($parsing.asInstanceOf[AnyRef])(using $tactic) }
 
   private def builtinFor(using Quotes)(tpe: quotes.reflect.TypeRepr): Option[Inlinable] =
     import quotes.reflect.*
@@ -268,7 +311,11 @@ object stagedInternal:
 
     val tpe = TypeRepr.of[field].dealias
 
-    if tpe <:< TypeRepr.of[Iterable[Any]] then tpe match
+    // A `Map` is an `Iterable` of pairs, but its wire form is not a
+    // repeated field of tuples — it stays on the runtime seam.
+    val isMap = tpe.derivesFrom(Symbol.requiredClass("scala.collection.Map"))
+
+    if !isMap && tpe <:< TypeRepr.of[Iterable[Any]] then tpe match
       case AppliedType(_, arguments) =>
         arguments.last.asType match
           case '[element] =>
@@ -278,6 +325,9 @@ object stagedInternal:
 
       case _ =>
         None
+    // A recursive occurrence degrades to the runtime seam, whose
+    // derivation is lazy.
+    else if cache.active.contains(tpe.show) then None
     else if productSupported(tpe) then Some(Inlinable.ProductInlinable[field]())
     else sumFor[field](cache)
 
@@ -409,9 +459,21 @@ object stagedInternal:
     (using Quotes)
   :   Expr[product] =
 
-    productFields[product](reader, indent, scm.HashMap())
+    productFields[product](reader, indent, Cache())
 
   private[stratiform] def productFields[product: Type]
+    (reader: Expr[TelReader], indent: Expr[Int], cache: Cache)
+    (using Quotes)
+  :   Expr[product] =
+
+    import quotes.reflect.TypeRepr
+
+    cache.active += TypeRepr.of[product].dealias.show
+
+    try productFields0[product](reader, indent, cache)
+    finally cache.active -= TypeRepr.of[product].dealias.show
+
+  private def productFields0[product: Type]
     (reader: Expr[TelReader], indent: Expr[Int], cache: Cache)
     (using Quotes)
   :   Expr[product] =
@@ -855,9 +917,20 @@ object stagedInternal:
     (using Quotes)
   :   Expr[sum] =
 
-    sumBody[sum](reader, indent, scm.HashMap())
+    sumBody[sum](reader, indent, Cache())
 
   private def sumBody[sum: Type](reader: Expr[TelReader], indent: Expr[Int], cache: Cache)
+    (using Quotes)
+  :   Expr[sum] =
+
+    import quotes.reflect.*
+
+    cache.active += TypeRepr.of[sum].dealias.show
+
+    try sumBody0[sum](reader, indent, cache)
+    finally cache.active -= TypeRepr.of[sum].dealias.show
+
+  private def sumBody0[sum: Type](reader: Expr[TelReader], indent: Expr[Int], cache: Cache)
     (using Quotes)
   :   Expr[sum] =
 
@@ -931,7 +1004,7 @@ object stagedInternal:
   def inlinableParsable[value: Type](using Quotes): Expr[value is Tel.Parsable] =
     import quotes.reflect.*
 
-    val cache: Cache = scm.HashMap()
+    val cache: Cache = Cache()
 
     if !productSupported(TypeRepr.of[value].dealias) then
       report.errorAndAbort
@@ -943,15 +1016,14 @@ object stagedInternal:
       // Sealed per the codec-thunk pattern, like the staged instances: the
       // generated body resolves its capabilities where it is spliced.
       caps.unsafe.unsafeAssumePure:
-        new Tel.Parsable:
-          type Self = value
-          def shape(): Morphology = Morphology.Any
-
-          def parse(reader: TelReader, indent: Int): value =
-            reader.finishLine()
+        new Tel.Parsable.Direct[value]:
+          protected def parseEntry(reader0: AnyRef, indent: Int): value =
+            // A capability class cannot be quoted into a pure hole, so
+            // every use casts from the neutral carrier afresh.
+            reader0.asInstanceOf[TelReader].finishLine()
             val indent1 = indent + 1
-            ${ productFields[value]('reader, 'indent1, cache) }
+            ${ productFields[value]('{ reader0.asInstanceOf[TelReader] }, 'indent1, cache) }
 
-          override def parse(reader: TelReader): value =
-            ${ productFields[value]('reader, '{0}, cache) }
+          protected def parseWhole(reader0: AnyRef): value =
+            ${ productFields[value]('{ reader0.asInstanceOf[TelReader] }, '{0}, cache) }
     }

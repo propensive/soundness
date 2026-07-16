@@ -539,3 +539,9 @@ object Tests extends Suite(m"Breviloquence Tests"):
         val bytes = encoded(Person(t"Ada", 36))
         LazyList(bytes).read[Person in Cbor]
       . assert(_ == Person(t"Ada", 36))
+
+      test(m"a recursive type degrades its recursive field to the seam"):
+        given (Tree is Cbor.Parsable) = Inlinable.parsable[Tree]
+        val tree = Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil)))))
+        encoded(tree).read[Tree in Cbor]
+      . assert(_ == Tree(t"root", List(Tree(t"a", Nil), Tree(t"b", List(Tree(t"c", Nil))))))

@@ -668,6 +668,30 @@ object Xml extends Tag.Container
     def attribute(text: Text)(using Tactic[XmlError], Foci[Xml.Focus]): Self = absent()
 
   object Parsable:
+    // The base of generated parsers: generated code is capture-erased, so
+    // the body receives the reader as a neutral carrier, and the capability
+    // is asserted here at the rim — the audited point — like the reader's
+    // own accessors. (A generated override of `parse` itself would narrow
+    // the trait's `XmlReader^` parameter to a pure type, which capture
+    // checking rejects at the instantiation site.)
+    abstract class Direct[value] extends Xml.Parsable:
+      type Self = value
+
+      protected def parseCarrier(reader: AnyRef): value
+
+      def parse(reader: XmlReader^): value = parseCarrier(reader.asInstanceOf[AnyRef])
+
+    // The call points for a nominal `Parsing` instance in a field position
+    // of a *generated* parser (a recursive record's own `Parsable`, a
+    // hand-written one, or the `Xml.Field` fallback chain). Both travel as
+    // neutral carriers — generated code is capture-erased — and the
+    // capability is reasserted here, at the audited point.
+    def parseField[value](parsing: AnyRef, reader: AnyRef): value =
+      parsing.asInstanceOf[value is Xml.Parsing].parse(reader.asInstanceOf[XmlReader^])
+
+    def absentField[value](parsing: AnyRef)(using Tactic[XmlError], Foci[Xml.Focus]): value =
+      parsing.asInstanceOf[value is Xml.Parsing].absent()
+
     def apply[value](parser: (reader: XmlReader^) => value)
     :   ((value is Xml.Parsable)^{parser}) =
 

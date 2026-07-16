@@ -2289,3 +2289,11 @@ object Tests extends Suite(m"Stratiform Tests"):
         val padded = IArray.from(good.to(List) :+ 0.toByte)
         capture[BintelError](Bintel.parse[Tests.Person](padded)).reason
       . assert(_ == BintelError.Reason.TrailingBytes)
+
+    suite(m"TEL direct parsing recursion"):
+      test(m"an inlined recursive type ties through its own nominal Parsable"):
+        given (Tests.Tree is Tel.Parsable) = Inlinable.parsable[Tests.Tree]
+        val tree = Tests.Tree(t"root", List(Tests.Tree(t"a", Nil)))
+        val data: Data = tree.in[Tel].show.s.getBytes("UTF-8").nn.immutable(using Unsafe)
+        data.read[Tests.Tree in Tel]
+      . assert(_ == Tests.Tree(t"root", List(Tests.Tree(t"a", Nil))))

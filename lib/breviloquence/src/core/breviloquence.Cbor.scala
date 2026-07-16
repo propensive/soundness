@@ -570,6 +570,19 @@ object Cbor extends Cbor2, Dynamic:
         (t"application/cbor", HttpStreams.Body(Ast.encodable.encoded(Cbor.unseal(value))))
 
   object Parsable:
+    // The base of generated parsers: generated code is capture-erased, so
+    // the body receives the reader as a neutral carrier, and the capability
+    // is asserted here at the rim — the audited point — like the reader's
+    // own accessors. (A generated override of `parse` itself would narrow
+    // the trait's `Reader^` parameter to a pure type, which capture
+    // checking rejects at the instantiation site.)
+    abstract class Direct[value] extends Cbor.Parsable:
+      type Self = value
+
+      protected def parseCarrier(reader: AnyRef): value
+
+      def parse(reader: CborReader^): value = parseCarrier(reader.asInstanceOf[AnyRef])
+
     def apply[value](parser: (reader: CborReader^) => value)
     :   ((value is Cbor.Parsable)^{parser}) =
 
@@ -594,6 +607,17 @@ object Cbor extends Cbor2, Dynamic:
     // A required field whose key was absent from the map. Public because
     // generated parsers are spliced into user modules.
     def missing[value]()(using Tactic[CborError]): value = abort(CborError(Reason.Absent))
+
+    // The call points for a nominal `Parsable` in a field position of a
+    // *generated* parser (a recursive record's own instance, or a
+    // hand-written one). Both travel as neutral carriers — generated code
+    // is capture-erased — and the capability is reasserted here, at the
+    // audited point, exactly as the reader's own rim accessors do.
+    def parseField[value](parsable: AnyRef, reader: AnyRef): value =
+      parsable.asInstanceOf[value is Cbor.Parsable].parse(reader.asInstanceOf[CborReader^])
+
+    def absentField[value](parsable: AnyRef)(using Tactic[CborError]): value =
+      parsable.asInstanceOf[value is Cbor.Parsable].absent()
 
   // The direct-parsing counterpart of `Decodable in Cbor`: consumes data
   // items straight off the input bytes through a `CborReader` instead of

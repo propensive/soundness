@@ -60,6 +60,7 @@ case class PReading(temp: PTemperature, station: Text) derives CanEqual
 // in document order — one with a leaf-element list, one with a nested-record
 // list.
 case class PPlaylist(name: Text, songs: List[Text]) derives CanEqual
+case class PTree(value: Text, children: List[PTree]) derives CanEqual
 case class PTeam(name: Text, members: List[PWorker]) derives CanEqual
 
 case class PIssues(items: List[(Text, XmlError)] = Nil)(using Diagnostics)
@@ -112,6 +113,7 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
     given PReading is Xml.Parsable = Xml.Parsable.derived
     given PPlaylist is Xml.Parsable = Xml.Parsable.derived
     given PTeam is Xml.Parsable = Xml.Parsable.derived
+    given PTree is Xml.Parsable = Inlinable.parsable[PTree]
 
     // The acceptance criterion: the direct read must equal the AST-path
     // read (parse to an `Xml` tree, then decode), for the same input.
@@ -240,6 +242,12 @@ object DirectParsingTests extends Suite(m"Xylophone direct parsing tests"):
         capture[XmlError](t"<Triangle><foo>1</foo></Triangle>".read[PShape in Xml])
         true
       . assert(identity)
+
+    suite(m"Recursion"):
+      test(m"an inlined recursive type ties through its own nominal Parsable"):
+        val tree = PTree(t"root", List(PTree(t"a", Nil), PTree(t"b", List(PTree(t"c", Nil)))))
+        tree.in[Xml].show.read[PTree in Xml]
+      . assert(_ == PTree(t"root", List(PTree(t"a", Nil), PTree(t"b", List(PTree(t"c", Nil))))))
 
     suite(m"Collections"):
       test(m"Contiguous repeated elements gather in order, equally on both paths"):
