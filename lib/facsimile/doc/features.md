@@ -3,6 +3,9 @@
 - follows incremental-update chains, with the newest version of each object winning
 - loads objects lazily and on demand, including from compressed object streams
 - decodes FlateDecode, ASCIIHexDecode and RunLengthDecode filters, with PNG and TIFF predictors
+- flattens the page tree with attribute inheritance, and typed page boxes in `Quantity[Points[1]]`
+- reads document information (with PDF date parsing), bookmarks, named destinations and annotations
+- surfaces embedded files, page labels and the XMP metadata packet
 - capture checking confines the open file to its scope; extracted values are pure and portable
 - tolerates common real-world deviations: prepended junk, raw deflate streams, truncated data
 - no third-party dependencies

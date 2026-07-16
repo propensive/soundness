@@ -32,11 +32,50 @@
                                                                                                   */
 package facsimile
 
+import java.nio.charset as jncs
+
 import anticipation.*
 import rudiments.*
 import vacuous.*
 
 object Cos:
+  // The code points at which PDFDocEncoding (ISO 32000-2 Annex D.7) differs from Latin-1:
+  // typographic accents at 0x18–0x1F and publishing characters at 0x80–0x9F, with the euro
+  // sign at 0xA0.
+  private val docEncodingLow: IArray[Char] = IArray
+    ( '˘', 'ˇ', 'ˆ', '˙', '˝', '˛', '˚', '˜' )
+
+  private val docEncodingHigh: IArray[Char] = IArray
+    ( '•', '†', '‡', '…', '—', '–', 'ƒ', '⁄',
+      '‹', '›', '−', '‰', '„', '“', '”', '‘',
+      '’', '‚', '™', 'ﬁ', 'ﬂ', 'Ł', 'Œ', 'Š',
+      'Ÿ', 'Ž', 'ı', 'ł', 'œ', 'š', 'ž', '�' )
+
+  // A text string (ISO 32000-2 §7.9.2.2): UTF-16BE or UTF-8 by byte-order mark, otherwise
+  // PDFDocEncoding.
+  private[facsimile] def decodeText(bytes: Data): Text =
+    if bytes.length >= 2 && (bytes(0) & 0xff) == 0xfe && (bytes(1) & 0xff) == 0xff
+    then String(bytes.drop(2).mutable(using Unsafe), jncs.StandardCharsets.UTF_16BE).nn.tt
+    else if bytes.length >= 3
+            && (bytes(0) & 0xff) == 0xef && (bytes(1) & 0xff) == 0xbb && (bytes(2) & 0xff) == 0xbf
+    then String(bytes.drop(3).mutable(using Unsafe), jncs.StandardCharsets.UTF_8).nn.tt
+    else
+      val chars = new Array[Char](bytes.length)
+      var i = 0
+
+      while i < bytes.length do
+        val byte = bytes(i) & 0xff
+
+        chars(i) =
+          if byte >= 0x18 && byte <= 0x1f then docEncodingLow(byte - 0x18)
+          else if byte >= 0x80 && byte <= 0x9f then docEncodingHigh(byte - 0x80)
+          else if byte == 0xa0 then '€'
+          else byte.toChar
+
+        i += 1
+
+      String(chars).tt
+
   extension (cos: Cos)
     def dictionary: Optional[Map[Text, Cos]] = cos match
       case Cos.Dictionary(entries) => entries
@@ -69,6 +108,11 @@ object Cos:
 
     def chars: Optional[Data] = cos match
       case Cos.Chars(bytes) => bytes
+      case _                => Unset
+
+    // The string's content as text, interpreting its byte-order mark or PDFDocEncoding.
+    def text: Optional[Text] = cos match
+      case Cos.Chars(bytes) => decodeText(bytes)
       case _                => Unset
 
     def elements: Optional[List[Cos]] = cos match

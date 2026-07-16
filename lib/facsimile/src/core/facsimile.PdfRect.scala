@@ -28,9 +28,40 @@
 ┃    either express or implied. See the License for the specific language governing permissions    ┃
 ┃    and limitations under the License.                                                            ┃
 ┃                                                                                                  ┃
-┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package facsimile
 
-export facsimile.{Annotation, Bookmark, Cos, Destination, Page, Pdf, PdfError, PdfFile,
-    PdfInfo, PdfRect, pdf}
+import anticipation.*
+import contingency.*
+import quantitative.*
+import symbolism.*
+import vacuous.*
+
+object PdfRect:
+  // A `/Rect`-shaped array: four numbers whose corners may be given in any order, normalized
+  // here to lower-left and upper-right (ISO 32000-2 §7.9.5). `scale` carries `/UserUnit`,
+  // converting user-space units to points.
+  private[facsimile] def read(cos: Cos, scale: Double)(using pdf: Pdf)
+  :   Optional[PdfRect] raises PdfError =
+
+    pdf.resolved(cos).elements.let: elements =>
+      if elements.length != 4 then Unset else
+        val values = elements.map(pdf.resolved(_).double.or(0.0)*scale)
+
+        PdfRect
+          ( Quantity[Points[1]](values(0).min(values(2))),
+            Quantity[Points[1]](values(1).min(values(3))),
+            Quantity[Points[1]](values(0).max(values(2))),
+            Quantity[Points[1]](values(1).max(values(3))) )
+
+// A rectangle in default user space, held as typesafe lengths: one PDF point is exactly
+// 1/72 inch, which is `quantitative`'s `Points` unit.
+case class PdfRect
+  ( left:   Quantity[Points[1]],
+    bottom: Quantity[Points[1]],
+    right:  Quantity[Points[1]],
+    top:    Quantity[Points[1]] ):
+
+  def width: Quantity[Points[1]] = right - left
+  def height: Quantity[Points[1]] = top - bottom

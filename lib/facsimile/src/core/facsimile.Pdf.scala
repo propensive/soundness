@@ -34,12 +34,27 @@ package facsimile
 
 import anticipation.*
 import contingency.*
+import denominative.*
 import gossamer.*
 import rudiments.*
 import vacuous.*
 
 object Pdf:
   case class Version(major: Int, minor: Int)
+
+  // An embedded file from the `/EmbeddedFiles` name tree. Its metadata is materialized, but
+  // `data` still reads through the document, so an `Attachment` is confined to the scope;
+  // call `data` inside and keep the result.
+  class Attachment private[facsimile]
+    ( pdf:             Pdf,
+      val name:        Text,
+      val filename:    Optional[Text],
+      val description: Optional[Text],
+      val mediaType:   Optional[Text],
+      body:            Optional[Cos.Body] ):
+
+    def data: Data raises PdfError =
+      body.let(pdf.payload(_)).or(abort(PdfError(PdfError.Reason.MissingEntry(t"EF"))))
 
   // Until the encryption milestone lands, an encrypted file is refused outright rather
   // than misread: strings and streams would otherwise surface as ciphertext.
@@ -63,10 +78,8 @@ object Pdf:
       var j = 0
       while j < marker.length && (window(i + j) & 0xff) == marker.s.charAt(j).toInt do j += 1
 
-      if j == marker.length
-         && digit(window(i + 5) & 0xff)
-         && (window(i + 6) & 0xff) == '.'
-         && digit(window(i + 7) & 0xff)
+      if j == marker.length && digit(window(i + 5) & 0xff) &&
+        (window(i + 6) & 0xff) == '.' && digit(window(i + 7) & 0xff)
       then found = Version((window(i + 5) & 0xff) - '0', (window(i + 7) & 0xff) - '0')
       else i += 1
 
@@ -93,6 +106,191 @@ extends caps.ExclusiveCapability:
     scala.collection.mutable.HashMap()
 
   def trailer: Map[Text, Cos] = xref.trailer
+
+  def catalog: Map[Text, Cos] raises PdfError =
+    resolved(trailer.at(t"Root").or(Cos.Nil)).dictionary
+    . or(abort(PdfError(PdfError.Reason.MissingEntry(t"Root"))))
+
+  // The page tree flattened into reading order, with the inheritable attributes accumulated
+  // along each path; the object number of each leaf is kept so that destinations can refer
+  // back to a page by reference.
+  private[facsimile] def pageEntries
+  :   Vector[(Optional[Int], Map[Text, Cos], Page.Inherited)] raises PdfError =
+
+    var visited = Set[Int]()
+
+    def recur(node: Cos, number: Optional[Int], inherited: Page.Inherited)
+    :   Vector[(Optional[Int], Map[Text, Cos], Page.Inherited)] =
+
+      node match
+        case Cos.Ref(reference, _) =>
+          if visited.contains(reference)
+          then abort(PdfError(PdfError.Reason.CircularPageTree))
+
+          visited += reference
+          recur(resolved(node), reference, inherited)
+
+        case Cos.Dictionary(entries) => entries.at(t"Type").let(_.name) match
+          case t"Pages" =>
+            val updated = inherited.update(entries)
+
+            resolved(entries.at(t"Kids").or(Cos.Nil)).elements.lay(Vector()): kids =>
+              kids.to(Vector).flatMap(recur(_, Unset, updated))
+
+          case _ =>
+            Vector((number, entries, inherited))
+
+        case _ =>
+          Vector()
+
+    recur(catalog.at(t"Pages").or(Cos.Nil), Unset, Page.Inherited())
+
+  def pages: Vector[Page^{this}] raises PdfError =
+    pageEntries.zipWithIndex.map: (entry, index) =>
+      Page(this, index.z, entry(1), entry(2))
+
+  // Leaf object numbers mapped to positions in the flattened page sequence, for resolving
+  // destinations that refer to pages by reference.
+  private[facsimile] def pageNumbers: Map[Int, Ordinal] raises PdfError =
+    pageEntries.zipWithIndex.flatMap: (entry, index) =>
+      entry(0).lay(List()): number =>
+        List(number -> index.z)
+
+    . to(Map)
+
+  // Named destinations from both homes: the old-style `/Dests` dictionary and the
+  // `/Names /Dests` name tree, still as raw COS values.
+  private[facsimile] def rawDestinations: Map[Text, Cos] raises PdfError =
+    val old = resolved(catalog.at(t"Dests").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
+
+    val tree = resolved(catalog.at(t"Names").or(Cos.Nil))(t"Dests")
+      . let(Trees.names(_)(using this).to(Map)).or(Map[Text, Cos]())
+
+    old ++ tree
+
+  def destinations: Map[Text, Destination] raises PdfError =
+    val pages = pageNumbers
+    val raw = rawDestinations
+
+    raw.to(List).flatMap: (name, value) =>
+      Destination.read(value, pages, raw.at(_))(using this)
+      . lay(List()): destination =>
+          List(name -> destination)
+
+    . to(Map)
+
+  def bookmarks: List[Bookmark] raises PdfError =
+    val pages = pageNumbers
+    val raw = rawDestinations
+    var visited = Set[Int]()
+
+    // `/Dest` directly, or the `/D` of a `/GoTo` action.
+    def target(entries: Map[Text, Cos]): Optional[Cos] raises PdfError =
+      entries.at(t"Dest").or:
+        val action = resolved(entries.at(t"A").or(Cos.Nil))
+
+        if action(t"S").let(_.name).or(t"") == t"GoTo" then action(t"D") else Unset
+
+    def item(value: Cos): List[Bookmark] raises PdfError = value match
+      case Cos.Ref(number, _) =>
+        if visited.contains(number) then List() else
+          visited += number
+          item(resolved(value))
+
+      case Cos.Dictionary(entries) =>
+        val title = entries.at(t"Title").let(resolved(_).text).or(t"")
+
+        val destination =
+          target(entries).let(Destination.read(_, pages, raw.at(_))(using this))
+
+        Bookmark(title, destination, chain(entries.at(t"First"))) ::
+          chain(entries.at(t"Next"))
+
+      case _ =>
+        List()
+
+    def chain(first: Optional[Cos]): List[Bookmark] raises PdfError =
+      first.lay(List())(item(_))
+
+    chain(resolved(catalog.at(t"Outlines").or(Cos.Nil))(t"First"))
+
+  def attachments: List[Pdf.Attachment^{this}] raises PdfError =
+    resolved(catalog.at(t"Names").or(Cos.Nil))(t"EmbeddedFiles").lay(List()): tree =>
+      Trees.names(tree)(using this).map: (name, value) =>
+        val spec = resolved(value).dictionary.or(Map[Text, Cos]())
+        val filename = spec.at(t"UF").or(spec.at(t"F")).let(resolved(_).text)
+        val description = spec.at(t"Desc").let(resolved(_).text)
+        val files = resolved(spec.at(t"EF").or(Cos.Nil))
+
+        val body: Optional[Cos.Body] =
+          resolved(files(t"UF").or(files(t"F")).or(Cos.Nil)) match
+            case body: Cos.Body => body
+            case _              => Unset
+
+        val mediaType = body.let(_.entries.at(t"Subtype")).let(_.name)
+        Pdf.Attachment(this, name, filename, description, mediaType, body)
+
+  // The label a viewer displays for a page (ISO 32000-2 §12.4.2): styled and prefixed by
+  // the `/PageLabels` number tree, or the plain one-based page number when absent.
+  def pageLabel(index: Ordinal): Text raises PdfError =
+    catalog.at(t"PageLabels").lay(index.n1.toString.tt): tree =>
+      val ranges = Trees.numbers(tree)(using this).filter(_(0) <= index.n0)
+
+      if ranges.isEmpty then index.n1.toString.tt else
+        val (start, value) = ranges.maxBy(_(0))
+        val entries = resolved(value).dictionary.or(Map[Text, Cos]())
+        val prefix = entries.at(t"P").let(resolved(_).text).or(t"")
+        val first = entries.at(t"St").let(resolved(_).long).or(1L)
+        val number = first + (index.n0 - start)
+
+        val formatted = entries.at(t"S").let(resolved(_).name).lay(t""):
+          case t"D" => number.toString.tt
+          case t"R" => roman(number)
+          case t"r" => roman(number).s.toLowerCase.nn.tt
+          case t"A" => alphabetic(number)
+          case t"a" => alphabetic(number).s.toLowerCase.nn.tt
+          case _    => t""
+
+        t"$prefix$formatted"
+
+  private def roman(number: Long): Text =
+    val numerals =
+      List
+        ( 1000L -> "M", 900L -> "CM", 500L -> "D", 400L -> "CD", 100L -> "C", 90L -> "XC",
+          50L -> "L", 40L -> "XL", 10L -> "X", 9L -> "IX", 5L -> "V", 4L -> "IV", 1L -> "I" )
+
+    def recur(remaining: Long, numerals: List[(Long, String)], result: String): String =
+      numerals match
+        case (value, numeral) :: rest =>
+          if remaining >= value then recur(remaining - value, numerals, result + numeral)
+          else recur(remaining, rest, result)
+
+        case _ =>
+          result
+
+    if number <= 0 then t"" else recur(number, numerals, "").tt
+
+  // A, B, ..., Z, AA, BB, ..., ZZ, AAA, ... — the same letter repeated, per the spec.
+  private def alphabetic(number: Long): Text =
+    if number <= 0 then t"" else
+      val letter = ('A' + ((number - 1)%26)).toChar.toString
+      letter.repeat((((number - 1)/26) + 1).toInt).nn.tt
+
+  // The document-level XMP packet, undecoded: XML parsing belongs downstream.
+  def xmp: Optional[Data] raises PdfError =
+    resolved(catalog.at(t"Metadata").or(Cos.Nil)) match
+      case body: Cos.Body => payload(body)
+      case _              => Unset
+
+  def info: PdfInfo raises PdfError =
+    val entries = resolved(trailer.at(t"Info").or(Cos.Nil)).dictionary.or(Map[Text, Cos]())
+    def field(key: Text): Optional[Text] = entries.at(key).let(resolved(_).text)
+
+    PdfInfo
+      ( field(t"Title"), field(t"Author"), field(t"Subject"), field(t"Keywords"),
+        field(t"Creator"), field(t"Producer"),
+        field(t"CreationDate").let(PdfInfo.parseDate(_)),
+        field(t"ModDate").let(PdfInfo.parseDate(_)) )
 
   def apply(ref: Cos.Ref): Cos raises PdfError = apply(ref.number, ref.generation)
 
@@ -141,18 +339,19 @@ extends caps.ExclusiveCapability:
     val raw = source.read(body.start, length)
     if raw.length < length then abort(PdfError(PdfError.Reason.Truncated))
 
-    val chain = Filter.chain
-      ( body.entries.at(t"Filter").let(deepResolved(_)),
-        body.entries.at(t"DecodeParms").let(deepResolved(_)) )
+    val chain =
+      Filter.chain
+        ( body.entries.at(t"Filter").let(deepResolved(_)),
+          body.entries.at(t"DecodeParms").let(deepResolved(_)) )
 
     Filter.decode(raw, chain)
 
   // Resolves a value and, one level down, the elements of an array or the values of a
   // dictionary: sufficient for `/Filter` and `/DecodeParms` shapes.
   private def deepResolved(value: Cos): Cos raises PdfError = resolved(value) match
-    case Cos.Sequence(elements) => Cos.Sequence(elements.map(resolved(_)))
+    case Cos.Sequence(elements)  => Cos.Sequence(elements.map(resolved(_)))
     case Cos.Dictionary(entries) => Cos.Dictionary(entries.view.mapValues(resolved(_)).toMap)
-    case other => other
+    case other                   => other
 
   private def containerStream(container: Int): ObjectStream raises PdfError =
     containers.at(container).or:

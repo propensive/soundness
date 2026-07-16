@@ -30,7 +30,45 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package facsimile
 
-export facsimile.{Annotation, Bookmark, Cos, Destination, Page, Pdf, PdfError, PdfFile,
-    PdfInfo, PdfRect, pdf}
+import anticipation.*
+import contingency.*
+import gossamer.*
+import rudiments.*
+import vacuous.*
+
+// Name trees and number trees (ISO 32000-2 §7.9.6–7.9.7): balanced trees of `/Kids` whose
+// leaves carry sorted `/Names` or `/Nums` pair arrays. Both flatten to their in-order pairs,
+// with reference cycles guarded.
+private[facsimile] object Trees:
+  def names(root: Cos)(using Pdf): List[(Text, Cos)] raises PdfError =
+    pairs(root, t"Names", Set()).flatMap: (key, value) =>
+      key.text.let(text => List((text, value))).or(List())
+
+  def numbers(root: Cos)(using Pdf): List[(Long, Cos)] raises PdfError =
+    pairs(root, t"Nums", Set()).flatMap: (key, value) =>
+      key.long.let(number => List((number, value))).or(List())
+
+  private def pairs(node: Cos, key: Text, visited: Set[Int])(using pdf: Pdf)
+  :   List[(Cos, Cos)] raises PdfError =
+
+    node match
+      case Cos.Ref(number, _) =>
+        if visited.contains(number) then List()
+        else pairs(pdf.resolved(node), key, visited + number)
+
+      case Cos.Dictionary(entries) =>
+        entries.at(t"Kids").let(pdf.resolved(_).elements).lay(leaf(entries, key)): kids =>
+          kids.flatMap(pairs(_, key, visited))
+
+      case _ =>
+        List()
+
+  private def leaf(entries: Map[Text, Cos], key: Text)(using pdf: Pdf)
+  :   List[(Cos, Cos)] raises PdfError =
+
+    pdf.resolved(entries.at(key).or(Cos.Nil)).elements.lay(List()): elements =>
+      elements.grouped(2).to(List).flatMap:
+        case List(key, value) => List((pdf.resolved(key), value))
+        case _                => List()
