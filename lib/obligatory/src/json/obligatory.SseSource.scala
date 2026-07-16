@@ -38,6 +38,7 @@ import prepositional.*
 import rudiments.*
 import spectacular.*
 import turbulence.*
+import zephyrine.*
 import vacuous.*
 
 class SseSource(capacity: Int):
@@ -45,7 +46,7 @@ class SseSource(capacity: Int):
   private val buffer: Array[Sse] = new Array(capacity)
 
   private var current: Int = 0
-  private var spool: Spool[Sse] = Spool()
+  private var spool: Relay[Sse] = Relay()
 
   def put[entity: Encodable in Sse](value: entity): Unit = mutex:
     val sse = value.encode.copy(id = current.show)
@@ -56,10 +57,10 @@ class SseSource(capacity: Int):
   def stream(start: Optional[Int] = Unset): LazyList[Sse] raises SseError = mutex:
     start.let: start =>
       spool.stop()
-      spool = Spool()
+      spool = Relay()
 
       if current - start - 1 > capacity then abort(SseError(SseError.Reason.CapacityExceeded)) else
         ((start + 1) until current).map: index =>
           spool.put(buffer(index%capacity))
 
-    spool.stream
+    LazyList.from(spool.stream.records)

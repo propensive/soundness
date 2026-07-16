@@ -48,7 +48,7 @@ object Logger:
   // Every construction site (a `Codepoint`) owns exactly one spool + writer daemon, so a `given`
   // re-evaluated on each summon (a context-parameterised given is a method, not a lazy val) reuses
   // the same resource instead of leaking a fresh thread per log call.
-  private val registry: juc.ConcurrentHashMap[Codepoint, Spool[?]] = juc.ConcurrentHashMap()
+  private val registry: juc.ConcurrentHashMap[Codepoint, Relay[?]] = juc.ConcurrentHashMap()
 
   def apply[eventType, loggingType, format, target]
     ( destination: target,
@@ -62,11 +62,11 @@ object Logger:
             probate:     Probate )
   :   Logger[eventType, loggingType] =
 
-    val spool: Spool[format] =
+    val spool: Relay[format] =
       registry
       . computeIfAbsent(codepoint, _ => establish[format, target](destination))
       . nn
-      . asInstanceOf[Spool[format]]
+      . asInstanceOf[Relay[format]]
 
     // The enqueue closure retains the formatter and writer, whose lifetime is the global
     // spool registry's (application-wide, by design of the shared-spool scheme); laundered
@@ -88,7 +88,7 @@ object Logger:
             monitor:   Monitor,
             codepoint: Codepoint,
             probate:   Probate )
-  :   Spool[format] =
+  :   Relay[format] =
 
     val stopped: juc.atomic.AtomicBoolean = juc.atomic.AtomicBoolean(false)
 
@@ -96,10 +96,10 @@ object Logger:
     // the global spool registry's, so it is laundered pure for use inside the daemon.
     val writable0: target is Writable by format = caps.unsafe.unsafeAssumePure(writable)
 
-    Spool[format]().tap: spool =>
+    Relay[format]().tap: spool =>
       daemon:
         while !stopped.get() do
-          try spool.stream.writeTo(destination)(using writable = writable0)
+          try spool.lazyList.writeTo(destination)(using writable = writable0)
           catch case _: StreamError => ()
 
       Os.intercept[Shutdown]:

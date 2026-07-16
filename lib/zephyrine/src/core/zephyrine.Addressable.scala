@@ -283,6 +283,91 @@ object Addressable:
         index += 1
 
 
+  // Chunks of `Data` records (frames, messages): like `texts`, the element
+  // type is concrete and not `<: AnyRef` (`Data` is transparently
+  // `IArray[Byte]`), so the generic `boxed` instance does not admit it, and
+  // materialized chunks must genuinely be `byte[][]`s.
+  given frames: IArray[Data] is Addressable:
+    type Operand = Data
+    type Target = scm.ArrayBuffer[Data]
+    type Storage = Array[AnyRef]
+
+    val empty: IArray[Data] = new Array[Array[Byte]](0).asInstanceOf[IArray[Data]]
+
+    def substrate: Substrate = Substrate.Boxes
+    def blank(size: Int): scm.ArrayBuffer[Data] = scm.ArrayBuffer[Data]()
+
+    def build(target: scm.ArrayBuffer[Data]): IArray[Data] =
+      val array = new Array[Array[Byte]](target.length)
+      var index = 0
+
+      while index < target.length do
+        array(index) = target(index).asInstanceOf[Array[Byte]]
+        index += 1
+
+      array.asInstanceOf[IArray[Data]]
+
+    def length(block: IArray[Data]): Int = block.length
+    def address(block: IArray[Data], index: Ordinal): Data = block(index.n0)
+
+    def grab(block: IArray[Data], start: Ordinal, end: Ordinal): IArray[Data] =
+      block.slice(start.n0, end.n0)
+
+    def clone(source: IArray[Data], start: Ordinal, end: Ordinal)
+      ( target: scm.ArrayBuffer[Data] )
+    :   Unit =
+
+      var index = start.n0
+
+      while index <= end.n0 do
+        target += source(index)
+        index += 1
+
+    def allocate(size: Int): Array[AnyRef] = new Array[AnyRef](size)
+    def storageSize(storage: Array[AnyRef]): Int = storage.length
+
+    def storageAddress(storage: Array[AnyRef], index: Int): Data =
+      storage(index).asInstanceOf[Data]
+
+    def storageUpdate(storage: Array[AnyRef]^, index: Int, operand: Data): Unit =
+      storage(index) = operand.asInstanceOf[AnyRef]
+
+    def append(target: scm.ArrayBuffer[Data], operand: Data): Unit = target += operand
+
+    def copyChunk
+      ( source:  IArray[Data],
+       srcOff:  Int,
+       dest:    Array[AnyRef]^,
+       destOff: Int,
+       len:     Int )
+    :   Unit =
+
+      System.arraycopy(source.asInstanceOf[Array[AnyRef]], srcOff, dest, destOff, len)
+
+    def transfer
+      ( src:     Array[AnyRef],
+       srcOff:  Int,
+       dest:    Array[AnyRef]^,
+       destOff: Int,
+       len:     Int )
+    :   Unit = System.arraycopy(src, srcOff, dest, destOff, len)
+
+    def materialize(storage: Array[AnyRef], off: Int, len: Int): IArray[Data] =
+      val array = new Array[Array[Byte]](len)
+      System.arraycopy(storage, off, array, 0, len)
+      array.asInstanceOf[IArray[Data]]
+
+    def cloneStorage
+      (storage: Array[AnyRef], off: Int, len: Int)(target: scm.ArrayBuffer[Data])
+    :   Unit =
+
+      var index = off
+
+      while index < off + len do
+        target += storage(index).asInstanceOf[Data]
+        index += 1
+
+
   inline given text: Text is Addressable:
     type Operand = Char
     type Target = jl.StringBuilder
