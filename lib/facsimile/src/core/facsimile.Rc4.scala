@@ -32,60 +32,47 @@
                                                                                                   */
 package facsimile
 
-import java.io as ji
-import java.nio.channels as jnc
-import java.nio.file as jnf
-
 import anticipation.*
-import contingency.*
-import enigmatic.*
-import gossamer.*
-import prepositional.*
 import rudiments.*
 import vacuous.*
 
-object PdfFile:
-  def apply[path: Abstractable across Paths to Text](path: path): PdfFile =
-    new PdfFile(Origin.OnDisk(path.generic))
+// RC4, the stream cipher of the PDF standard security handler at revisions 2–4 (ISO
+// 32000-2 §7.6.3). Symmetric, so the same operation encrypts and decrypts. Implemented here
+// rather than pulled from the JDK, whose `ARCFOUR` provider is not guaranteed present and
+// which would need per-call `Cipher` machinery for what is a dozen lines of arithmetic.
+private[facsimile] object Rc4:
+  def apply(key: Data, data: Data): Data =
+    val state = new Array[Int](256)
+    var i = 0
 
-  def apply(data: Data): PdfFile = new PdfFile(Origin.InMemory(data))
+    while i < 256 do
+      state(i) = i
+      i += 1
 
-  private enum Origin:
-    case OnDisk(filename: Text)
-    case InMemory(data: Data)
+    // Key-scheduling.
+    var j = 0
+    i = 0
 
-// An unopened PDF: a locator, analogous to `Zipfile`, holding either a path or in-memory
-// bytes. Nothing is read until `open` is called; a future write mode becomes a sibling scope
-// (`edit`) rather than a change to this one.
-class PdfFile private (origin: PdfFile.Origin):
-  import PdfFile.Origin
+    while i < 256 do
+      j = (j + state(i) + (key(i%key.length) & 0xff)) & 0xff
+      val swap = state(i)
+      state(i) = state(j)
+      state(j) = swap
+      i += 1
 
-  // Runs `block` with a contextual `Pdf` — reached through the package-level `pdf` accessor —
-  // over a source held open exactly for the block's duration. The header, cross-reference
-  // chain and, for an encrypted document, the encryption keys are read eagerly, so a
-  // malformed file — or a wrong password — fails here and not at first access. Capture
-  // checking confines the `Pdf`, and anything that still resolves through it, to the block.
-  def open[result](password: Optional[Password] = Unset)(block: Pdf ?=> result)
-  :   result raises PdfError =
+    // Pseudo-random generation, XORed into the data.
+    val out = new Array[Byte](data.length)
+    var a = 0
+    var b = 0
+    var k = 0
 
-    origin match
-      case Origin.InMemory(data) =>
-        read(DataSource(data), password)(block)
+    while k < data.length do
+      a = (a + 1) & 0xff
+      b = (b + state(a)) & 0xff
+      val swap = state(a)
+      state(a) = state(b)
+      state(b) = swap
+      out(k) = (data(k) ^ state((state(a) + state(b)) & 0xff)).toByte
+      k += 1
 
-      case Origin.OnDisk(filename) =>
-        val channel =
-          try jnc.FileChannel.open(jnf.Path.of(filename.s), jnf.StandardOpenOption.READ).nn
-          catch case error: ji.IOException =>
-            abort(PdfError(PdfError.Reason.Io(error.getMessage.nn.tt)))
-
-        try read(ChannelSource(channel), password)(block) finally channel.close()
-
-  // The capability must be minted where the block is applied: a `Pdf` returned from another
-  // method is a distinct fresh capability which could not flow into the block's own.
-  private def read[result](source: ByteSource, password: Optional[Password])(block: Pdf ?=> result)
-  :   result raises PdfError =
-
-    val version = Pdf.readVersion(source) // check the header before anything else is trusted
-    val pdf = Pdf(source, Xref.load(source), version)
-    Pdf.unlock(pdf, password)
-    block(using pdf)
+    out.immutable(using Unsafe)

@@ -112,3 +112,24 @@ object CaptureTests extends Suite(m"Capability confinement tests"):
         val ciphertext = key.expose:
           LazyList(t"Hello world".in[Data]).encrypt(InitializationVector.random)
     . assert(_ == Nil)
+
+    test(m"a password's cleartext is available within expose"):
+      Password(t"hunter2").expose(cleartext.text)
+    . assert(_ == t"hunter2")
+
+    test(m"the Cleartext capability cannot be returned from expose"):
+      demilitarize:
+        val password = Password(t"hunter2")
+        val stolen = password.expose(summon[Cleartext])
+      . map(_.message)
+    . assert(_.exists(_.contains("outlives its scope")))
+
+    test(m"a closure reading the cleartext later cannot escape expose"):
+      demilitarize:
+        val password = Password(t"hunter2")
+        val later = password.expose(() => cleartext.text)
+    . assert(_.nonEmpty)
+
+    test(m"a password never renders its secret"):
+      Password(t"hunter2").show
+    . assert(_ == t"Password(•••)")

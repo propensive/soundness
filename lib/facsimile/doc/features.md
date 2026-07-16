@@ -12,5 +12,6 @@
 - reads fonts — standard-14 metrics, encodings, ToUnicode maps, embedded programs as `Ttf`s
 - extracts positioned text runs and plain text through the full text machinery
 - capture checking confines the open file to its scope; extracted values are pure and portable
+- decrypts documents secured with the standard handler: RC4, AES-128 and AES-256 (R2–R6)
 - tolerates common real-world deviations: prepended junk, raw deflate streams, truncated data
 - no third-party dependencies

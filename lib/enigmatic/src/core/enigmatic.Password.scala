@@ -30,62 +30,31 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package facsimile
-
-import java.io as ji
-import java.nio.channels as jnc
-import java.nio.file as jnf
+package enigmatic
 
 import anticipation.*
-import contingency.*
-import enigmatic.*
 import gossamer.*
-import prepositional.*
-import rudiments.*
-import vacuous.*
+import spectacular.*
 
-object PdfFile:
-  def apply[path: Abstractable across Paths to Text](path: path): PdfFile =
-    new PdfFile(Origin.OnDisk(path.generic))
+object Password:
+  def apply(cleartext: Text): Password = new Password(cleartext)
 
-  def apply(data: Data): PdfFile = new PdfFile(Origin.InMemory(data))
+  // Never renders the secret: a `Password` is safe to log or embed in a message.
+  given showable: Password is Showable = _ => t"Password(•••)"
 
-  private enum Origin:
-    case OnDisk(filename: Text)
-    case InMemory(data: Data)
+// A password held opaquely: constructed from cleartext, but with no way to read that
+// cleartext back except through `expose`, which lends it — as a scoped `Cleartext`
+// capability — to a block, exactly as `PrivateKey.expose` lends a `Decryptor`. Capture
+// checking confines the capability to the block, so it (and any closure over it) cannot
+// escape; `result` is instantiated at the call site.
+class Password(private val cleartext: Text):
+  def expose[result](block: Cleartext^ ?=> result): result = block(using Cleartext(cleartext))
 
-// An unopened PDF: a locator, analogous to `Zipfile`, holding either a path or in-memory
-// bytes. Nothing is read until `open` is called; a future write mode becomes a sibling scope
-// (`edit`) rather than a change to this one.
-class PdfFile private (origin: PdfFile.Origin):
-  import PdfFile.Origin
+// The scoped view of a password's cleartext, lent within `expose`. A stateless
+// `SharedCapability`, freely aliasable within the block but not beyond it.
+class Cleartext private[enigmatic] (private val secret: Text) extends caps.SharedCapability:
+  def text: Text = secret
 
-  // Runs `block` with a contextual `Pdf` — reached through the package-level `pdf` accessor —
-  // over a source held open exactly for the block's duration. The header, cross-reference
-  // chain and, for an encrypted document, the encryption keys are read eagerly, so a
-  // malformed file — or a wrong password — fails here and not at first access. Capture
-  // checking confines the `Pdf`, and anything that still resolves through it, to the block.
-  def open[result](password: Optional[Password] = Unset)(block: Pdf ?=> result)
-  :   result raises PdfError =
-
-    origin match
-      case Origin.InMemory(data) =>
-        read(DataSource(data), password)(block)
-
-      case Origin.OnDisk(filename) =>
-        val channel =
-          try jnc.FileChannel.open(jnf.Path.of(filename.s), jnf.StandardOpenOption.READ).nn
-          catch case error: ji.IOException =>
-            abort(PdfError(PdfError.Reason.Io(error.getMessage.nn.tt)))
-
-        try read(ChannelSource(channel), password)(block) finally channel.close()
-
-  // The capability must be minted where the block is applied: a `Pdf` returned from another
-  // method is a distinct fresh capability which could not flow into the block's own.
-  private def read[result](source: ByteSource, password: Optional[Password])(block: Pdf ?=> result)
-  :   result raises PdfError =
-
-    val version = Pdf.readVersion(source) // check the header before anything else is trusted
-    val pdf = Pdf(source, Xref.load(source), version)
-    Pdf.unlock(pdf, password)
-    block(using pdf)
+// The cleartext lent within an `expose` block, reached contextually: `cleartext.text` rather
+// than `summon[Cleartext].text`, following the same idiom as parasite's `monitor`.
+transparent inline def cleartext: Cleartext^ = infer[Cleartext^]
