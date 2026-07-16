@@ -65,6 +65,14 @@ re-materializable `Spring[Data]` instead: each application mints a fresh streami
 endpoint which reads and decodes incrementally, never holding the whole payload. The
 endpoint reads through the document, so it is likewise confined to the scope.
 
+### Damaged files
+
+Real-world PDFs are frequently damaged — a missing or corrupt cross-reference table,
+prepended junk shifting every recorded offset, a truncated tail. When the cross-reference
+machinery cannot be trusted, Facsimile falls back to scanning the whole file for objects and
+rebuilding the table, and it corrects individually shifted offsets as objects are resolved,
+so a document that any conformant reader would open still opens here.
+
 ### Pages
 
 The page tree is flattened into reading order, with the inheritable attributes — resources,

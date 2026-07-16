@@ -329,11 +329,10 @@ extends caps.ExclusiveCapability:
         val resolution = xref.entries.at(number) match
           case Xref.Entry.Direct(offset, expected) =>
             if expected != generation then Cos.Nil else
-              val parser = CosParser(CosLexer(new Scan(source, offset)))
-              val (foundNumber, foundGeneration, content) = parser.indirect()
-
-              if foundNumber != number || foundGeneration != generation
-              then abort(PdfError(PdfError.Reason.MissingObject(number, generation)))
+              // If the recorded offset does not hold this object — a corrupt or shifted
+              // cross-reference table — fall back to the offset found by a full-file scan.
+              val content = atOffset(number, generation, offset).or:
+                recoveredOffset(number).let(atOffset(number, generation, _)).or(Cos.Nil)
 
               // A top-level indirect stream: record its owner so its payload can be
               // decrypted with the right key.
@@ -356,6 +355,22 @@ extends caps.ExclusiveCapability:
         cache(number) = resolution
         resolution
       finally loading.remove(number)
+
+  // Parses the object at an offset, returning its content only if the header matches the
+  // number and generation asked for; a mismatch (a lie in the cross-reference table) is
+  // `Unset`, so the caller can try a recovered offset instead.
+  private def atOffset(number: Int, generation: Int, offset: Long): Optional[Cos] raises PdfError =
+    if offset < 0 || offset >= source.size then Unset else
+      safely(CosParser(CosLexer(new Scan(source, offset))).indirect()).let: (found, gen, content) =>
+        if found == number && gen == generation then content else Unset
+
+  // A cross-reference table rebuilt by scanning the whole file for objects, computed once and
+  // only when the recorded table is found to be lying.
+  private lazy val recovered: Xref = safely(Xref.rebuild(source)).or(Xref(Map(), Map()))
+
+  private def recoveredOffset(number: Int): Optional[Long] = recovered.entries.at(number).let:
+    case Xref.Entry.Direct(offset, _) => offset
+    case _                            => Unset
 
   def resolved(value: Cos): Cos raises PdfError = value match
     case ref: Cos.Ref => apply(ref)
