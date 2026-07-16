@@ -55,7 +55,7 @@ extension (domainSocket: DomainSocket)
   // A loan, like `Bindable.listen`: the running server is lent to `block` as a
   // `SocketService` capability and always stopped afterwards.
   def listenConnections[result](using Monitor, Probate)(handler: Connection => Unit)
-    ( using SocketEvent is Loggable )
+    ( using (SocketEvent is Loggable)^ )
     ( block: SocketService ?=> result )
   :   result =
 

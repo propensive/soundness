@@ -141,7 +141,9 @@ object internal:
             given postable0: (payload is Postable) =
               caps.unsafe.unsafeAssumePure($postable)
 
-            given loggable0: HttpEvent is Loggable = $loggable
+            // Staging-boundary seal, like `postable0` below: quoted types must stay pure.
+            given loggable0: HttpEvent is Loggable =
+              caps.unsafe.unsafeAssumePure($loggable)
             val host: Host = $submit.host
             val path = $submit.originForm
             val contentType = Http.Header("content-type".tt, postable0.mediaType($payload).show)
@@ -177,7 +179,9 @@ object internal:
 
         ' {
             // No `Online` binding, as in `submit` above.
-            given loggable0: HttpEvent is Loggable = $loggable
+            // Staging-boundary seal, like `postable0` below: quoted types must stay pure.
+            given loggable0: HttpEvent is Loggable =
+              caps.unsafe.unsafeAssumePure($loggable)
 
             val path = $fetch.originForm
 

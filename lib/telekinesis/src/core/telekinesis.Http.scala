@@ -961,7 +961,7 @@ object Http:
     inline def applyDynamicNamed[payload](id: "apply")(inline headers: (Label, Any)*)
       ( payload: payload )
       ( using online:   Online,
-              loggable: HttpEvent is Loggable,
+              loggable: (HttpEvent is Loggable)^,
               postable: (payload is Postable)^,
               client:   HttpClient onto target )
     :   Http.Response =
@@ -975,7 +975,7 @@ object Http:
     inline def applyDynamic[payload](id: "apply")(inline headers: Any*)
       ( payload: payload )
       ( using online:   Online,
-              loggable: HttpEvent is Loggable,
+              loggable: (HttpEvent is Loggable)^,
               postable: (payload is Postable)^,
               client:   HttpClient onto target )
     :   Http.Response =
@@ -991,7 +991,7 @@ object Http:
 
     inline def applyDynamicNamed(id: "apply")(inline headers: (Label, Any)*)
       ( using online:   Online,
-              loggable: HttpEvent is Loggable,
+              loggable: (HttpEvent is Loggable)^,
               postable: (Unit is Postable)^,
               client:   HttpClient onto target )
     :   Http.Response =
@@ -1001,7 +1001,7 @@ object Http:
 
     inline def applyDynamic[payload](id: "apply")(inline headers: Any*)
       ( using online:   Online,
-              loggable: HttpEvent is Loggable,
+              loggable: (HttpEvent is Loggable)^,
               client:   HttpClient onto target )
     :   Http.Response =
 

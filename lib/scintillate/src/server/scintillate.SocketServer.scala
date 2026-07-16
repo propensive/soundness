@@ -154,7 +154,7 @@ extends RequestServable:
   // involvement. The caller owns the streams (closing, read timeouts).
   def serveConnection(handler: HttpConnection ?=> Http.Response)
     ( in: ji.InputStream, out: ji.OutputStream )
-    ( using HttpServerEvent is Loggable )
+    ( using (HttpServerEvent is Loggable)^ )
   :   Unit =
 
     val closeHeader: Http.Header = Http.Header(t"connection", t"close")
@@ -268,7 +268,7 @@ extends RequestServable:
         while continue && !cursor.finished do continue = serveRequest(cursor)
 
   def handle(handler: HttpConnection ?=> Http.Response)(using Monitor, Probate)
-    ( using HttpServerEvent is Loggable, Tactic[ServerError] )
+    ( using (HttpServerEvent is Loggable)^, Tactic[ServerError] )
   :   Service^ =
 
     val idleTimeout: Int = 30000
@@ -299,6 +299,8 @@ extends RequestServable:
         val handler1: AnyRef => AnyRef =
           connection => handler(using connection.asInstanceOf[HttpConnection])
         val handler0: AnyRef = handler1.asInstanceOf[AnyRef]
+        // The (capability-typed) Loggable evidence crosses as an `AnyRef` rim too.
+        val loggable0: AnyRef = summon[(HttpServerEvent is Loggable)^].asInstanceOf[AnyRef]
 
         val acceptLoop = loop:
           safely(serverSocket.accept().nn).let: socket =>
@@ -316,6 +318,7 @@ extends RequestServable:
                 . serveConnection
                     (h(summon[HttpConnection].asInstanceOf[AnyRef]).asInstanceOf[Http.Response])
                     (socket1.getInputStream.nn, socket1.getOutputStream.nn)
+                    (using loggable0.asInstanceOf[HttpServerEvent is Loggable])
 
               finally safely(socket1.close())
 

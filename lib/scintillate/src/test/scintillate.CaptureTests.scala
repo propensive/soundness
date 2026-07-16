@@ -44,7 +44,7 @@ object CaptureTests extends Suite(m"Connection confinement tests"):
     test(m"the connection cannot be stashed in an outer variable"):
       demilitarize:
         def attempt(server: SocketServer)
-          ( using Monitor, Probate, HttpServerEvent is Loggable, Tactic[ServerError] )
+          ( using Monitor, Probate, (HttpServerEvent is Loggable)^, Tactic[ServerError] )
         :   Unit =
           var stash: () => Unit = () => ()
 

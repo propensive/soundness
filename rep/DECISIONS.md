@@ -2249,3 +2249,39 @@ p2 toolchain):
 - REMAINING seals (out of scope, unchanged): the by-name element-codec seals (jacinta
   optional/list primitives — sep-blocked, upstream candidate #5) and the pure-thunk seals
   on the Pure traits (Phase 6 form).
+
+## Capture-honesty Phase 8, legs 1+2: process handles and logging are honest (2026-07-16)
+
+D3 and D4 RESOLVED per Jon's rulings (tracked fresh handles; Unscoped logging). Gates: JVM
+10301/10301, JS 8006/8006; suites guillotine 88/0, eucalyptus 5/0, ethereal 49/0,
+exoskeleton 69/0, scintillate 20/0, coaxial 36/0, hellenism 6/0.
+
+D3 — guillotine:
+- `Job` and `Process` → `caps.ExclusiveCapability` (live process handles, one owner);
+  `fork()` de-sugared with a fresh `Job[Exec, result]^` result (only `fork` — de-sugaring
+  `exec`/`apply` too broke UNRELATED overload resolution of `Pipeline(...)` patterns with a
+  phantom "(intelligible: Nothing & Any).Result" error; the sugar on delegating methods is
+  harmless since their results are not fresh). `Computable.compute` takes `Subprocess^`
+  (SAM instances adapt; `Subprocess` itself stays a plain callback-scoped trait).
+- Recipes: the JDK `start()` runs inside the `try`, the `Job` is minted OUTSIDE it (a fresh
+  may not be created within a `try` expression); `Process.all`/`roots`/`children` build
+  their lists in while-loops in a helper METHOD (fresh may not be minted in `map` lambdas;
+  the elements box); `Job`'s `Writable` givens are capability-polymorphic
+  (`job <: Job[…]^`, the galilei Handle recipe); eucalyptus.syslog binds the fresh Job
+  before `writeTo`.
+
+D4 — logging:
+- `anticipation.LogSink extends caps.Unscoped`: sinks are deliberately ambient (importable
+  package givens, application-lifetime registries) — the tracking is effect-visibility, not
+  scope-confinement. `Logger` inherits it; its `enqueue` field is pure-typed (`->`, already
+  sealed at construction with the registry-lifetime justification).
+- `logs` now MIRRORS `raises`: `((event is Loggable)^) ?=> result`. `Loggable`'s self type
+  is `Loggable^` (a bare self type pinned every instance pure); `contramap` result adds
+  `{this}`. `Loggable.fanOut` is capture-polymorphic over the sinks (`cap^`, the Cursor
+  pattern — the compiler's own suggestion for the reach-capability leak):
+  `sinks: Every[LogSink[event, carrier]^{cap}]` → `(event is Loggable)^{cap, caps.any}`.
+- `Log.fine/info/warn/fail` take explicit `(loggable is Loggable)^` evidence; ~20 bare
+  `X is Loggable` using-params widened tree-wide (telekinesis.jvm excepted — a NON-CC unit
+  cannot parse `^`; mixed-mode overrides use the bare form). The telekinesis fetch/submit
+  macros seal the evidence at the staging boundary like `postable0` (quote wall); the
+  scintillate connection daemon rims it as `AnyRef`.

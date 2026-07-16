@@ -47,7 +47,7 @@ trait Navigator(name: Text):
   uses Navigator.this:
     def stop(): Unit logs ExecEvent logs HttpEvent = browser.stop(this)
 
-  def launch(using WorkingDirectory, Monitor)(using ExecEvent is Loggable)(port: Int): Server^
+  def launch(using WorkingDirectory, Monitor)(using (ExecEvent is Loggable)^)(port: Int): Server^
   def stop(server: Server): Unit logs HttpEvent logs ExecEvent
 
 
@@ -56,7 +56,7 @@ trait Navigator(name: Text):
   // (the stacked-raises convention; see rep/DECISIONS.md).
   def session[result](port: Int = 4444)(block: (session: WebDriver#Session) ?=> result)
     ( using WorkingDirectory, Monitor )
-    ( using HttpEvent is Loggable, ExecEvent is Loggable )
+    ( using (HttpEvent is Loggable)^, (ExecEvent is Loggable)^ )
   :   result =
 
     // The fresh `Server` capability stays confined to this method; the `WebDriver` passed to

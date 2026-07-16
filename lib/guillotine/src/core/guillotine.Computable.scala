@@ -73,7 +73,7 @@ object Computable:
 
 
 trait Computable extends Typeclass:
-  def compute(process: Subprocess): Self
+  def compute(process: Subprocess^): Self
 
   def map[self2](lambda: Self => self2): (self2 is Computable)^{this, lambda} =
     process => lambda(compute(process))

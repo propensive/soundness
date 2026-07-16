@@ -56,7 +56,7 @@ object HttpConnection:
   // in the body cannot cross the nested context-function results the sugar desugars to (the
   // stacked-raises convention; see rep/DECISIONS.md).
   def apply(exchange: csnh.HttpExchange)
-    ( using HttpServerEvent is Loggable, Tactic[HostnameError] )
+    ( using (HttpServerEvent is Loggable)^, Tactic[HostnameError] )
   :   HttpConnection^ =
 
     val uri = exchange.getRequestURI.nn

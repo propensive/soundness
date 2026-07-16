@@ -44,7 +44,7 @@ import abstractables.instantAbstractable
 import strategies.throwUnsafely
 
 object Firefox extends Navigator(t"firefox"):
-  def launch(using WorkingDirectory, Monitor)(using ExecEvent is Loggable)(port: Int): Server^ =
+  def launch(using WorkingDirectory, Monitor)(using (ExecEvent is Loggable)^)(port: Int): Server^ =
     val server: Job["geckodriver", Text] = sh"geckodriver --port $port".fork()
     sleep(100L)
     Server(port, server)

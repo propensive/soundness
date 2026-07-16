@@ -102,7 +102,7 @@ extension [bindable: {Bindable, Showable}](socket: bindable)
 // the evidence is an explicit capturing using-parameter rather than a context bound, which would
 // demand a pure instance.
 extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint is Serviceable)^)
-  def transmit[message: Transmissible](input: message)(using SocketEvent is Loggable)
+  def transmit[message: Transmissible](input: message)(using (SocketEvent is Loggable)^)
   :   (Stream[Data] over Credit)^{serviceable, caps.any} =
     val connection = serviceable.connect(endpoint, Unset)
     Log.fine(SocketEvent.Connected(endpoint.show))
@@ -116,7 +116,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using serviceable: (endpoint 
   // initiate; a `Duplexable` additionally offers `exchange`, which can also send proactively.
   def react[state](initialState: state)[message: Ingressive]
     ( handle: (state: state) ?=> message => Control[state] )
-    ( using SocketEvent is Loggable )(using buffering: Buffering)
+    ( using (SocketEvent is Loggable)^ )(using buffering: Buffering)
   :   state =
 
     val connection = serviceable.connect(endpoint, Unset)
@@ -170,7 +170,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
   def exchange[state](initialState: state)[message: {Ingressive, Transmissible}]
     ( handle: (state: state) ?=> message => Control[state] )
     ( interact: Transmitter[message]^ => Unit )
-    ( using SocketEvent is Loggable )(using buffering: Buffering)
+    ( using (SocketEvent is Loggable)^ )(using buffering: Buffering)
   :   state =
 
     val connection = duplexable.connect(endpoint, Unset)
@@ -219,7 +219,7 @@ extension [endpoint: Showable](endpoint: endpoint)(using duplexable: (endpoint i
 
 extension [endpoint: {Routable as routable, Showable}](endpoint: endpoint)
   def transmit[transmissible: Transmissible](message: transmissible)
-    ( using Monitor, Tactic[StreamError], SocketEvent is Loggable )
+    ( using Monitor, Tactic[StreamError], (SocketEvent is Loggable)^ )
   :   Unit =
 
     Log.fine(SocketEvent.Connected(endpoint.show))
@@ -234,11 +234,11 @@ extension [endpoint: {Connectable as connectable, Showable}](endpoint: endpoint)
   // connection is never half-closed. A long-lived connection that must outlive any
   // single block keeps `lambda` running (e.g. parked on its supervisor) until the
   // enclosing scope ends, at which point the loan closes the connection.
-  def duplex[result](lambda: Duplex => result)(using SocketEvent is Loggable): result =
+  def duplex[result](lambda: Duplex => result)(using (SocketEvent is Loggable)^): result =
     duplex(lambda)(Unset)
 
   def duplex[result](lambda: Duplex => result)(interface: Optional[MacAddress])
-    ( using SocketEvent is Loggable )
+    ( using (SocketEvent is Loggable)^ )
   :   result =
 
     val connection = connectable.connect(endpoint, interface)

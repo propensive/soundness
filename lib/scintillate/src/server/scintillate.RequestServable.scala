@@ -40,5 +40,5 @@ import urticose.*
 
 trait RequestServable:
   def handle(handle: HttpConnection ?=> Http.Response)(using Monitor, Probate)
-    ( using HttpServerEvent is Loggable, Tactic[ServerError] )
+    ( using (HttpServerEvent is Loggable)^, Tactic[ServerError] )
   :   Service^

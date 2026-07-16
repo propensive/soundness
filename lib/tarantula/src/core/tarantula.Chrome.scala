@@ -44,7 +44,7 @@ import abstractables.instantAbstractable
 import strategies.throwUnsafely
 
 object Chrome extends Navigator(t"chrome"):
-  def launch(using WorkingDirectory, Monitor)(using ExecEvent is Loggable)(port: Int): Server^ =
+  def launch(using WorkingDirectory, Monitor)(using (ExecEvent is Loggable)^)(port: Int): Server^ =
     val server: Job["chromedriver", Text] = sh"chromedriver --port=$port".fork()
     sleep(100L)
     Server(port, server)
