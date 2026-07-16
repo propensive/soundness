@@ -30,139 +30,121 @@
 ┃                                                                                                  ┃
 ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛
                                                                                                   */
-package soundness
+package aperture
 
-object Tests extends Suite(m"Soundness tests"):
-  def run(): Unit =
-    abacist.Tests()
-    acyclicity.Tests()
-    adversaria.Tests()
-    ambience.Tests()
-    anamnesis.Tests()
-    anthology.Tests()
-    anticipation.Tests()
-    aperture.Tests()
-    apoplexy.Tests()
-    austronesian.Tests()
-    aviation.Tests()
-    baroque.Tests()
-    beneficence.Tests()
-    bitumen.Tests()
-    breviloquence.Tests()
-    burdock.Tests()
-    cacophony.Tests()
-    caduceus.Tests()
-    caesura.Tests()
-    camouflage.Tests()
-    capricious.Tests()
-    cardinality.Tests()
-    cataclysm.Tests()
-    charisma.Tests()
-    chiaroscuro.Tests()
-    coaxial.Tests()
-    _root_.contextual.Tests()
-    contingency.Tests()
-    cordillera.Tests()
-    //cosmopolite.Tests()
-    decorum.Tests()
-    dendrology.Tests()
-    denominative.Tests()
-    digression.Tests()
-    dissonance.Tests()
-    distillate.Tests()
-    diuretic.Tests()
-    embarcadero.Tests()
-    enigmatic.Tests()
-    escapade.Tests()
-    //escritoire.Tests()
-    ethereal.Tests()
-    //eucalyptus.Tests()
-    exegesis.Tests()
-    exoskeleton.Tests()
-    frontier.Tests()
-    fulminate.Tests()
-    galilei.Tests()
-    gastronomy.Tests()
-    geodesy.Tests()
-    gesticulate.Tests()
-    //gigantism.Tests()
-    gnossienne.Tests()
-    gossamer.Tests()
-    guillotine.Tests()
-    hallucination.Tests()
-    harlequin.Tests()
-    hellenism.Tests()
-    hieroglyph.Tests()
-    honeycomb.Tests()
-    hyperbole.Tests()
-    hypotenuse.Tests()
-    imperial.Tests()
-    inimitable.Tests()
-    iridescence.Tests()
-    jacinta.Tests()
-    kaleidoscope.Tests()
-    larceny.Tests()
-    //legerdemain.Tests()
-    locomotion.Tests()
-    mandible.Tests()
-    mercator.Tests()
-    metamorphose.Tests()
-    monotonous.Tests()
-    mosquito.Tests()
-    nomenclature.Tests()
-    obligatory.Tests()
-    octogenarian.Tests()
-    //orthodoxy.Tests()
-    panopticon.Tests()
-    parasite.Tests()
-    perihelion.Tests()
-    phoenicia.Tests()
-    polaris.Tests()
-    plutocrat.Tests()
-    polysyllabic.Tests()
-    polyvinyl.Tests()
-    prepositional.Tests()
-    probably.Tests()
-    profanity.Tests()
-    proscenium.Tests()
-    punctuation.Tests()
-    quantitative.Tests()
-    querencia.Tests()
-    revolution.Tests()
-    rudiments.Tests()
-    savagery.Tests()
-    scintillate.Tests()
-    sedentary.Tests()
-    serpentine.Tests()
-    spectacular.Tests()
-    stenography.Tests()
-    stratiform.Tests()
-    superlunary.Tests()
-    surveillance.Tests()
-    synesthesia.Tests()
-    symbolism.Tests()
-    tarantula.Tests()
-    typonym.Tests()
-    ultimatum.Tests()
-    ulysses.Tests()
-    //umbrageous.Tests() - lib/umbrageous test file is an example, not a Tests suite
-    urticose.Tests()
-    vexillology.Tests()
-    vacuous.Tests()
-    vicarious.Tests()
-    jacinta.RecordsTests()
-    jacinta.ValidationTests()
-    wisteria.Tests()
-    xenophile.Tests()
-    xylophone.Tests()
-    ypsiloid.Tests()
-    yossarian.Tests()
-    zephyrine.Tests()
-    zeppelin.Tests()
-    ziggurat.Tests()
+import soundness.*
 
-object FailingTests extends Suite(m"Failing tests"):
+// Openable instances for testing: an in-memory "document" openable in two different forms
+// from the same target type (to exercise form selection and its ambiguity), and in a unique
+// form from another (to exercise form inference).
+trait Doc
+trait Bin
+
+case class Ref(name: Text)
+case class Sole(name: Text)
+
+enum TestFlag:
+  case Fast, Careful
+
+class DocHandle(val name: Text, val flags: List[TestFlag]) extends caps.ExclusiveCapability:
+  private var appended: List[Text] = Nil
+  def titleOf: Text = t"doc:$name"
+  def appendedText: Text = appended.reverse.join
+
+extension (handle: (DocHandle & Granting[Grant.Read])^)
+  def title: Text = handle.titleOf
+
+extension (handle: (DocHandle & Granting[Grant.Write])^)
+  def append(text: Text): Unit = ()
+
+// Named classes rather than anonymous given instances: instantiating an anonymous subclass
+// freshens the handle's capability type in the inferred `Result` member (see the equivalent
+// comment on galilei's `FileOpenable`).
+class DocOpenable extends Openable:
+  type Self = Ref
+  type Form = Doc
+  type Operand = TestFlag
+  type Result = DocHandle
+
+  def open[grants <: Grant, result]
+    ( value: Ref, mode: Mode granting grants, flags: List[TestFlag] )
+    ( block: ((DocHandle & Granting[grants])^) ?=> result )
+  :   result =
+
+    block(using new DocHandle(value.name, flags) with Granting[grants] {})
+
+class BinOpenable extends Openable:
+  type Self = Ref
+  type Form = Bin
+  type Operand = TestFlag
+  type Result = DocHandle
+
+  def open[grants <: Grant, result]
+    ( value: Ref, mode: Mode granting grants, flags: List[TestFlag] )
+    ( block: ((DocHandle & Granting[grants])^) ?=> result )
+  :   result =
+
+    block(using new DocHandle(t"bin:"+value.name, flags) with Granting[grants] {})
+
+class SoleOpenable extends Openable:
+  type Self = Sole
+  type Form = Doc
+  type Operand = TestFlag
+  type Result = DocHandle
+
+  def open[grants <: Grant, result]
+    ( value: Sole, mode: Mode granting grants, flags: List[TestFlag] )
+    ( block: ((DocHandle & Granting[grants])^) ?=> result )
+  :   result =
+
+    block(using new DocHandle(value.name, flags) with Granting[grants] {})
+
+given docOpenable: DocOpenable = DocOpenable()
+given binOpenable: BinOpenable = BinOpenable()
+given soleOpenable: SoleOpenable = SoleOpenable()
+
+object Tests extends Suite(m"Aperture Tests"):
   def run(): Unit =
-    jacinta.ParserTests()
-    telekinesis.Tests()
-    // turbulence.Tests() - deadlock
+    test(m"An entity opens readably by default"):
+      Ref(t"alpha").open[Doc]() { handle ?=> handle.title }
+    . assert(_ == t"doc:alpha")
+
+    test(m"An explicit form selects between instances"):
+      Ref(t"alpha").open[Bin]() { handle ?=> handle.title }
+    . assert(_ == t"doc:bin:alpha")
+
+    test(m"The form is inferred when the target has a unique instance"):
+      Sole(t"beta").open() { handle ?=> handle.title }
+    . assert(_ == t"doc:beta")
+
+    test(m"A mode of Read & Write permits both kinds of operation"):
+      Ref(t"gamma").open[Doc](Read & Write): handle ?=>
+        handle.append(t"more")
+        handle.title
+    . assert(_ == t"doc:gamma")
+
+    test(m"Flags are passed through to the instance"):
+      Ref(t"delta").open[Doc](TestFlag.Fast, TestFlag.Careful) { handle ?=> handle.flags }
+    . assert(_ == List(TestFlag.Fast, TestFlag.Careful))
+
+    test(m"Flags may follow an explicit mode"):
+      Ref(t"epsilon").open[Doc](Read & Write, TestFlag.Fast) { handle ?=> handle.flags }
+    . assert(_ == List(TestFlag.Fast))
+
+    test(m"A write operation without the Write grant does not compile"):
+      demilitarize:
+        Ref(t"zeta").open[Doc]() { handle ?=> handle.append(t"nope") }
+      . map(_.message)
+    . assert(_.nonEmpty)
+
+    test(m"An ambiguous form does not compile"):
+      demilitarize:
+        Ref(t"eta").open() { handle ?=> handle.title }
+      . map(_.message)
+    . assert(_.nonEmpty)
+
+    test(m"A read operation with only the Write grant does not compile"):
+      demilitarize:
+        Ref(t"theta").open[Doc](Write) { handle ?=> handle.title }
+      . map(_.message)
+    . assert(_.nonEmpty)
